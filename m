@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120Ab3LMIm0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 03:42:26 -0500
-Received: from sauhun.de ([89.238.76.85]:41840 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751943Ab3LMImW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 03:42:22 -0500
-Date: Fri, 13 Dec 2013 09:42:20 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PULL REQUEST] i2c for 3.13
-Message-ID: <20131213084215.GA3324@katana>
+	id S1752044Ab3LMItI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 03:49:08 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:36329 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab3LMItG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 03:49:06 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NzB8fVQJ5HfG6fxh"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131212182414.GF2480@laptop.programming.kicks-ass.net>
+References: <1386593950-26475-1-git-send-email-chris.redpath@arm.com>
+ <1386593950-26475-3-git-send-email-chris.redpath@arm.com> <20131210114825.GF12849@twins.programming.kicks-ass.net>
+ <52A71605.5090509@arm.com> <20131210151428.GH12849@twins.programming.kicks-ass.net>
+ <52A7397F.4000806@arm.com> <20131212182414.GF2480@laptop.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Fri, 13 Dec 2013 09:48:45 +0100
+Message-ID: <CAKfTPtDsPkXGAGr_AmKxcaBBfVO-fEyg+2DAw76SmBcd+y9P=A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] sched: update runqueue clock before migrations away
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Chris Redpath <chris.redpath@arm.com>, "pjt@google.com" <pjt@google.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "alex.shi@linaro.org" <alex.shi@linaro.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bsegall@google.com" <bsegall@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12 December 2013 19:24, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Dec 10, 2013 at 03:55:43PM +0000, Chris Redpath wrote:
+>> >That's guestimating the last_runnable_update based on decay_count, and
+>> >per the previous the decay count can get slightly out of sync.
+>>
+>> The guesstimation works fine, the issue is only that we can't tell at
+>> this point how much time that entity was asleep when the CPU it ran on
+>> has no tick and since it is too expensive to synchronize the clocks,
+>> there isn't (currently) a way to find out without updating the rq we
+>> came from.
+>>
+>> I can't see anything handy lying around in struct rq, but is there a
+>> copy of the jiffies held anywhere per-cpu presuming it would stop being
+>> updated when the tick stops? If not, I could store one somewhere as part
+>> of turning the tick off and then we could use the difference between
+>> that and the current jiffies count to estimate the amount of time in
+>> limbo. That would almost certainly be accurate enough for me - a few ms
+>> won't hurt but when we lose seconds it does.
+>
+> Would pre_schedule_idle() -> rq_last_tick_reset() -> rq->last_sched_tick
+> be useful?
+>
+> I suppose we could easily lift that to NO_HZ_COMMON.
+>
+> Which raises another point; I dislike this idle pre/post business. Why
+> can't the post_schedule_idle() calls be done from pick_next_task_idle()
+> and pre_schedule_idle() done from put_prev_task_idle() ?
 
---NzB8fVQJ5HfG6fxh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The update of runnable_avg for a cpu that becomes idle, must be done
+before the call to idle_balance which will use it; So idle_enter_fair
+is called in pre_schedule_idle.
+idle_exit_fair has been put in the post_schedule function in order to
+be symmetric and coherent but nothing prevent from moving it in
+pick_next_task_idle.
 
-Linus,
+Vincent
 
-here are two simple but wanted fixes for the i2c subsystem. Please pull.
-
-Thanks,
-
-   Wolfram
-
-
-The following changes since commit 374b105797c3d4f29c685f3be535c35f5689b30e:
-
-  Linux 3.13-rc3 (2013-12-06 09:34:04 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/for-current
-
-for you to fetch changes up to e5bf216a945e7292f8718276372d2b41486bed26:
-
-  i2c: imx: Check the return value from clk_prepare_enable() (2013-12-12 22:48:22 +0100)
-
-----------------------------------------------------------------
-Elie De Brauwer (1):
-      i2c: mux: Inherit retry count and timeout from parent for muxed bus
-
-Fabio Estevam (1):
-      i2c: imx: Check the return value from clk_prepare_enable()
-
- drivers/i2c/busses/i2c-imx.c | 4 +++-
- drivers/i2c/i2c-mux.c        | 2 ++
- 2 files changed, 5 insertions(+), 1 deletion(-)
-
---NzB8fVQJ5HfG6fxh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSqshnAAoJEBQN5MwUoCm2qlEP/2cIRPoetMQSLeWQTH6rY8+V
-ggiYGKyUa57KZOx8Xn/0V3lGSr7CLbkmF7LSioY0pte/qAUXVxugReJCxmhFr39v
-+FhufJ0EKHxtHY9w1HTWaEjongGyaun3OtdfrIgBscvUMNsuJwpjsRiaWIXwurlO
-2zKHNvEf0t5NfNkEySGgyRfq2Vmc2iuoXzVIneXaUQWgG2bDpu5ohfmmvw1OG+YH
-du97cU2/ZWe/3aObaI/I15RqWBQyAXSsFcBOXstGmP+hMqKuNt0l5xaTme0sXouS
-kcMfwHSuVg+ztcLq8Yp25hm3U9mW0iw01KiI4Tmuz8AhA8cgj6A+SDqZl+7EbQu6
-P3SgO93J2KWhan3n/14RZ5n0CFqCdusxiju8Qpie3hVXr7DyPWLrzNz3W89SPjQu
-S5EPPCJK2vrcWZVflco4ckFmOaMu2UT1hta7YrkX4naxloXXxwOwrGidRpK9j7pt
-8XSaLNHTtL7LdoX4dyDDEx9fgeiLMCNUxhL+BrSWFW5/y5j272jj0PWuCcugqwLA
-OeP+Gw5NQ/17H57wAw3ie6km+mZ8KFbg1W6QZxN+QVr8Cp7WP+oJ8xgJOOkAYNcK
-cUFikbIQaJAkBUDNGUhqR1puAe8gvjXVLROEiPSUq/XovGir5b5oWowHMHVuxzJc
-Cq4eKbvrFeSqsKjCeE4C
-=Zwor
------END PGP SIGNATURE-----
-
---NzB8fVQJ5HfG6fxh--
+>
+> That would avoid the post_schedule() rq->lock dance.
+>
+> Vince?
