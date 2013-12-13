@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab3LMRgu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 12:36:50 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:35620 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360Ab3LMRgs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 12:36:48 -0500
+	id S1753472Ab3LMRhN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 12:37:13 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:36152 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753365Ab3LMRgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 12:36:49 -0500
+Message-ID: <52AB45AF.8040902@ti.com>
+Date: Fri, 13 Dec 2013 11:36:47 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20131213164154.GH20803@infradead.org>
-References: <1386944873-16796-1-git-send-email-zwu.kernel@gmail.com>
-	<1386944873-16796-6-git-send-email-zwu.kernel@gmail.com>
-	<20131213164154.GH20803@infradead.org>
-Date: Sat, 14 Dec 2013 01:36:47 +0800
-Message-ID: <CAEH94LimS8mUCFwmnVi876mG9GB7DWsqG9p1O=R41XJ3-u1NQg@mail.gmail.com>
-Subject: Re: [PATCH 5/5] xfs: allow linkat() on O_TMPFILE files
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: xfstests <xfs@oss.sgi.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tony Lindgren <tony@atomide.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, Roger Quadros <rogerq@ti.com>,
+        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] gpio: twl4030: fix regression for twl gpio outputs for
+ led pins
+References: <1386953222-26396-1-git-send-email-nm@ti.com> <20131213172810.GE28184@atomide.com>
+In-Reply-To: <20131213172810.GE28184@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 14, 2013 at 12:41 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Fri, Dec 13, 2013 at 10:27:53PM +0800, Zhi Yong Wu wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On 12/13/2013 11:28 AM, Tony Lindgren wrote:
+> * Nishanth Menon <nm@ti.com> [131213 08:48]:
+>> Commit 0b2aa8b (gpio: twl4030: Fix regression for twl gpio output)
+>> introduces yet another regression by ignoring the fact that we use twl
+>> gpio even for LED. For example, leda (offset 18) is used for USB port2
+>> power on beagleboard-xm.
 >>
->> Enable O_TMPFILE support in linkat().
->> For more info, please refer to:
->>   http://oss.sgi.com/archives/xfs/2013-08/msg00341.html
->
-> Generall you should provide all reasonable information in the changelog
-> instead of linking to it.
-will apply this, thanks.
->
->> +     if (sip->i_d.di_nlink == 0)
->> +             tres = &M_RES(mp)->tr_link_tmpfile;
->> +     else
->> +             tres = &M_RES(mp)->tr_link;
->
-> As mentioned before I think Dave wanted you to always use the same
-> reservation, but I'll leave that discussion to him.
-If as you said, when some tons of regular files are created, it won't
-waste some disk space? e.g. some files want to reserve some space, but
-get NOSPACE due to other files reserving additional space?
+>> The original logic was supposed to setup the TWL4030 GPIO direction
+>> if the offset was < TWL4030_GPIO_MAX, and anything greater used
+>> twl4030_led_set_value as part of twl_set to setup the LED pin. However,
+>> with the commit mentioned above, LEDa pin request will result in fail
+>> as the GPIO number for LEDa is equal to TWL4030_GPIO_MAX and USB fails
+>> to function on beagleboard-xm. This is reported in the log as:
+>> hsusb2_vbus: Failed to request enable GPIO510: -22
+>>
+>> To fix this, we should handle the fail case of
+>> twl4030_set_gpio_direction independent of the offset < TWL4030_GPIO_MAX
+>> check.
+> 
+> Heh again :) Linus has already queued a similar fix, see
+> "[PATCH v2 1/1] gpio: twl4030: Fix regression for twl gpio LED output".
+> 
 
->
->> +/* For creating a link to an O_TMPFILE inode, except modifying
->> + * those metadata for regular inode, we still need to remove an inode
->> + * from unlinked list at first. That is,  we can modify:
->> + *    the agi hash list and counters: sector size
->> + *    the on disk inode before ours in the agi hash list: inode cluster size
->> + */
->
-> We always have an emptry content
-Done, thanks.
->
-> /*
->
-> line at the beginning of comments in XFS and the Linux kernel in
-> general.
->
-
+Alrite, I admit it, I need a vacation ;).. Sigh..
+http://marc.info/?l=linux-gpio&w=2&r=1&s=twl4030&q=t is not good
+enough :(..
 
 
 -- 
 Regards,
-
-Zhi Yong Wu
+Nishanth Menon
