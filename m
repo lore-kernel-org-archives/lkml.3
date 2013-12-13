@@ -1,128 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab3LMO5L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 09:57:11 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:58704 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab3LMO5J (ORCPT
+	id S1752948Ab3LMO7z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 09:59:55 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:10718 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746Ab3LMO7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 09:57:09 -0500
+	Fri, 13 Dec 2013 09:59:54 -0500
+X-IronPort-AV: E=Sophos;i="4.95,479,1384300800"; 
+   d="scan'208";a="82009006"
+Date: Fri, 13 Dec 2013 14:59:24 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <george.dunlap@eu.citrix.com>, <ian.jackson@eu.citrix.com>,
+        <mukesh.rathor@oracle.com>, <tim@xen.org>, <jbeulich@suse.com>,
+        <boris.ostrovsky@oracle.com>
+Subject: Re: [PATCH V10 02/14] xen/pvh: Extend vcpu_guest_context, p2m, event,
+ and XenBus.
+In-Reply-To: <20131213142651.GD2923@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1312131453000.8667@kaball.uk.xensource.com>
+References: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com> <1386900621-27528-3-git-send-email-konrad.wilk@oracle.com> <52AAE7D8.2030602@citrix.com> <20131213142651.GD2923@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <52AB1875.2090207@tycho.nsa.gov>
-References: <1386018639-18916-1-git-send-email-wroberts@tresys.com>
-	<1386018639-18916-3-git-send-email-wroberts@tresys.com>
-	<52AB1875.2090207@tycho.nsa.gov>
-Date: Fri, 13 Dec 2013 09:57:07 -0500
-Message-ID: <CAFftDdoqGbuO3uifsvjyRHNQbRqq7FuGiA5s8qjFk=0ZcWexMQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] proc: Update get proc_pid_cmdline() to use mm.h helpers
-From: William Roberts <bill.c.roberts@gmail.com>
-To: Stephen Smalley <sds@tycho.nsa.gov>
-Cc: "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Guy Briggs <rgb@redhat.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        William Roberts <wroberts@tresys.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 9:23 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
-> On 12/02/2013 04:10 PM, William Roberts wrote:
->> Re-factor proc_pid_cmdline() to use get_cmdline_length() and
->> copy_cmdline() helpers from mm.h
->>
->> Signed-off-by: William Roberts <wroberts@tresys.com>
->> ---
->>  fs/proc/base.c |   35 ++++++++++-------------------------
->>  1 file changed, 10 insertions(+), 25 deletions(-)
->>
->> diff --git a/fs/proc/base.c b/fs/proc/base.c
->> index 03c8d74..fb4eda5 100644
->> --- a/fs/proc/base.c
->> +++ b/fs/proc/base.c
->> @@ -203,37 +203,22 @@ static int proc_root_link(struct dentry *dentry, struct path *path)
->>  static int proc_pid_cmdline(struct task_struct *task, char * buffer)
->>  {
->>       int res = 0;
->> -     unsigned int len;
->> +     unsigned int len = 0;
->
-> Why?  You set len below before first use, so this is redundant.
->
-Yep you're right.
+On Fri, 13 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> On Fri, Dec 13, 2013 at 10:56:24AM +0000, David Vrabel wrote:
+> > On 13/12/13 02:10, Konrad Rzeszutek Wilk wrote:
+> > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > > 
+> > > Make gdt_frames[]/gdt_ents into a union with {gdtaddr, gdtsz},
+> > > as PVH only needs to send down gdtaddr and gdtsz in the
+> > > vcpu_guest_context structure..
+> > > 
+> > > For interrupts, PVH uses native_irq_ops so we can skip most of the
+> > > PV ones. In the future we can support the pirq_eoi_map..
+> > > Also VCPU hotplug is currently not available for PVH.
+> > > 
+> > > For events (and IRQs) we follow what PVHVM does - so use callback
+> > > vector.  Lastly, for XenBus we use the same logic that is used in
+> > > the PVHVM case.
+> > [...]
+> > > --- a/arch/x86/include/asm/xen/interface.h
+> > > +++ b/arch/x86/include/asm/xen/interface.h
+> > > @@ -145,7 +145,16 @@ struct vcpu_guest_context {
+> > >      struct cpu_user_regs user_regs;         /* User-level CPU registers     */
+> > >      struct trap_info trap_ctxt[256];        /* Virtual IDT                  */
+> > >      unsigned long ldt_base, ldt_ents;       /* LDT (linear address, # ents) */
+> > > -    unsigned long gdt_frames[16], gdt_ents; /* GDT (machine frames, # ents) */
+> > > +    union {
+> > > +	struct {
+> > > +		/* PV: GDT (machine frames, # ents).*/
+> > > +		unsigned long gdt_frames[16], gdt_ents;
+> > > +	} pv;
+> > > +	struct {
+> > > +		/* PVH: GDTR addr and size */
+> > > +		unsigned long gdtaddr, gdtsz;
+> > > +	} pvh;
+> > > +    } u;
+> > 
+> > Doesn't match the hypervisor.
+> 
+> Right. Mukesh is going to post follow on patches to fix that.
+> 
+> > 
+> > > --- a/arch/x86/xen/p2m.c
+> > > +++ b/arch/x86/xen/p2m.c
+> > > @@ -800,8 +800,10 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+> > >  	unsigned topidx, mididx, idx;
+> > >  
+> > >  	/* don't track P2M changes in autotranslate guests */
+> > > -	if (unlikely(xen_feature(XENFEAT_auto_translated_physmap)))
+> > > +	if (unlikely(xen_feature(XENFEAT_auto_translated_physmap))) {
+> > > +		BUG_ON(pfn != mfn && mfn != INVALID_P2M_ENTRY);
+> > >  		return true;
+> > > +	}
+> > 
+> > Isn't this undoing a recent change that removed this BUG_ON()?
+> 
+> This one:
+> commit 2f558d40911c1b8f929b8a382833ae1da5df3293
+> Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Date:   Wed Oct 9 20:39:01 2013 +0000
+> 
+>     xen/x86: allow __set_phys_to_machine for autotranslate guests
+>     
+>     Allow __set_phys_to_machine to be called for autotranslate guests.
+>     It can be used to keep track of phys_to_machine changes, however we
+>     don't do anything with the information at the moment.
+>     
+>     Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> 
+> I am not actually sure why the BUG_ON was removed in Stefano's patch.
+> Stefano?
 
->>       struct mm_struct *mm = get_task_mm(task);
->>       if (!mm)
->> -             goto out;
->> -     if (!mm->arg_end)
->> -             goto out_mm;    /* Shh! No looking before we're done */
->> +             return 0;
->
-> Equivalent to goto out in the original code, so why change it?  Don't
-> make unnecessary changes.
->
-> Also, I think the get_task_mm() ought to move into the helper (or all of
-> proc_pid_cmdline() should just become the helper).  In what situation
-> will you not be calling get_task_mm() and mmput() around every call to
-> the helper?
+The following commit:
 
-Again my thought on this is to reduce get_task_mm() and mmput() calls.
-How expensive are they, etc. However, just to recap the other email. If we
-move to saying the audit cache of this can be capped at PATH_MAX even
-if it results in some wasted memory, we can just take the original procfs code
-and add a length argument.
+commit 3d24bbd7dddbea54358a9795abaf051b0f18973c
+Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Date:   Fri Oct 25 10:41:44 2013 +0000
 
->
->>
->> -     len = mm->arg_end - mm->arg_start;
->> -
->> +     len = get_cmdline_length(mm);
->> +     if (!len)
->> +             goto mm_out;
->
-> Could be moved into the helper.  Not sure how the inline function helps
-> readability or maintainability.
-
-Sure... mostly for readability.
-
->
->> +
->> +     /*The caller of this allocates a page */
->>       if (len > PAGE_SIZE)
->>               len = PAGE_SIZE;
->
-> If the capping of len is handled by the caller, then pass an int to your
-> helper rather than an unsigned int to avoid problems later with
-> access_process_vm().
-
-Ok... just weird that lengths are signed to me. when will you ever have negative
-space?
-
->
->> -out_mm:
->> +
->> +     res = copy_cmdline(task, mm, buffer, len);
->> +mm_out:
->>       mmput(mm);
->
-> Odd style.  If there is only one exit path, just call it out; if there
-> are two, keep them as out_mm and out.
->
-
-Yes their is only 1 jmp label. Your right, this is odd.
-
->> -out:
->>       return res;
->>  }
->>
->>
->
-
-
-
--- 
-Respectfully,
-
-William C Roberts
+    grant-table: call set_phys_to_machine after mapping grant refs
+    
+introduces set_phys_to_machine calls for auto_translated guests
+(even on x86) in gnttab_map_refs and gnttab_unmap_refs.
+They are necessary to allow the kernel to keep track of foreign grant
+mappings: without an IOMMU the kernel needs to take special care of
+these pages because they can't be used directly in dma operations unless
+translated by swiotlb-xen.
