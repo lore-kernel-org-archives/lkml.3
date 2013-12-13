@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab3LMHok (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 02:44:40 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:41455 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300Ab3LMHoj (ORCPT
+	id S1752110Ab3LMHsw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 02:48:52 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:38236 "EHLO
+	vsp-authed-01-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751577Ab3LMHst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 02:44:39 -0500
-Date: Thu, 12 Dec 2013 23:44:28 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>
-Subject: [GIT PULL] MTD fixes for 3.13-rc
-Message-ID: <20131213074428.GA24650@norris-Latitude-E6410>
+	Fri, 13 Dec 2013 02:48:49 -0500
+Message-ID: <52AABBCE.8000709@gaisler.com>
+Date: Fri, 13 Dec 2013 08:48:30 +0100
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: balbi@ti.com
+CC: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        software@gaisler.com
+Subject: Re: [PATCH v3] usb: gadget: Add UDC driver for Aeroflex Gaisler GRUSBDC
+References: <1386144838-16403-1-git-send-email-andreas@gaisler.com> <20131212180106.GF1939@saruman.home>
+In-Reply-To: <20131212180106.GF1939@saruman.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 2013-12-12 19:01, Felipe Balbi wrote:
+> Hi,
+>
+> On Wed, Dec 04, 2013 at 09:13:58AM +0100, Andreas Larsson wrote:
+>> +static void gr_finish_request(struct gr_ep *ep, struct gr_request *req,
+>> +			      int status)
+>> +{
+>> +	struct gr_udc *dev;
+>> +
+>> +	list_del_init(&req->queue);
+>> +
+>> +	if (likely(req->req.status == -EINPROGRESS))
+>> +		req->req.status = status;
+>> +	else
+>> +		status = req->req.status;
+>> +
+>> +	dev = ep->dev;
+>> +	usb_gadget_unmap_request(&dev->gadget, &req->req, ep->is_in);
+>> +	gr_free_dma_desc_chain(dev, req);
+>> +
+>> +	if (ep->is_in) /* For OUT, actual gets updated bit by bit */
+>> +		req->req.actual = req->req.length;
+>> +
+>> +	if (!status) {
+>> +		if (ep->is_in)
+>> +			gr_dbgprint_request("SENT", ep, req);
+>> +		else
+>> +			gr_dbgprint_request("RECV", ep, req);
+>> +	}
+>> +
+>> +	/* Prevent changes to ep->queue during callback */
+>> +	ep->callback = 1;
+>> +	if (req == dev->ep0reqo && !status) {
+>> +		if (req->setup)
+>> +			gr_ep0_setup(dev, req);
+>> +		else
+>> +			dev_err(dev->dev,
+>> +				"Unexpected non setup packet on ep0in\n");
+>> +	} else if (req->req.complete) {
+>> +		unsigned long flags;
+>> +
+>> +		/*
+>> +		 * Complete should be called with interrupts disabled according
+>> +		 * to the contract of struct usb_request
+>> +		 */
+>> +		local_irq_save(flags);
+>
+> sorry but this driver isn't ready for inclusion. local_irq_save() is a
+> pretty good hint that there's something wrong in the driver. Consider
+> the fact that local_irq_save() will disable preemption even when
+> CONFIG_PREEMPT_FULL is enabled and you have a bit a problem.
 
-Here are two MTD fixes for the pxa3xx-nand driver.
+This connection between local_irq_save and CONFIG_PREEMPT_RT_FULL was 
+unknown to me. Sure, I can disable interrupts right at spin lock time.
 
-Brian
 
-The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+> Also, the way you're using thread IRQs is quite wrong. I can't let that
+> pass and get merged upstream, sorry.
 
-  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+What is quite wrong? What is it that I need to fix?
 
-are available in the git repository at:
 
-  git://git.infradead.org/linux-mtd.git tags/for-linus-20131212
+Best regards,
+Andreas Larsson
 
-for you to fetch changes up to 15b540c71cac840f0a3e8b1b4b7a773deb847ffb:
-
-  mtd: nand: pxa3xx: Use info->use_dma to release DMA resources (2013-12-12 15:02:04 -0800)
-
-----------------------------------------------------------------
-Two MTD fixes, for the pxa3xx-nand driver:
-
- - This driver was not ready to fully support Armada 370 NAND, with
-   particularly notable problems seen on flash with 2KB page sizes. This
-   "compatible" entry really should have been held back until 3.14 or
-   later.
-
- - Fix a bug seen in rare cases on the error path of a failed probe attempt,
-   where we free unallocated DMA resources
-
-----------------------------------------------------------------
-Ezequiel Garcia (2):
-      Partially revert "mtd: nand: pxa3xx: Introduce 'marvell,armada370-nand' compatible string"
-      mtd: nand: pxa3xx: Use info->use_dma to release DMA resources
-
- drivers/mtd/nand/pxa3xx_nand.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
