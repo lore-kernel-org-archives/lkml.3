@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab3LMQZD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 11:25:03 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38251 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752305Ab3LMQZB (ORCPT
+	id S1752632Ab3LMQcP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 11:32:15 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:55815 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab3LMQcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 11:25:01 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        gordan@bobich.net
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [RFC PATCH 2/5] xen-pciback: First reset, then free.
-Date: Fri, 13 Dec 2013 11:09:35 -0500
-Message-Id: <1386950978-8628-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
-References: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 13 Dec 2013 11:32:14 -0500
+Date: Fri, 13 Dec 2013 08:32:11 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] xfs: factor prid related codes into
+ xfs_get_initial_prid()
+Message-ID: <20131213163211.GD20803@infradead.org>
+References: <1386944873-16796-1-git-send-email-zwu.kernel@gmail.com>
+ <1386944873-16796-2-git-send-email-zwu.kernel@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386944873-16796-2-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We were doing the operations of freeing and reset in the wrong
-order. Granted nothing broke b/c the reset functions just
-set bar->which = 0.
+> +static inline prid_t xfs_get_initial_prid(struct xfs_inode *dp)
+> +{
+> +	if (dp->i_d.di_flags & XFS_DIFLAG_PROJINHERIT)
+> +		return xfs_get_projid(dp);
+> +	else
+> +		return XFS_PROJID_DEFAULT;
+> +}
 
-But nonethless this was incorrect.
+You could skip the else here.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/xen-pciback/pci_stub.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Otherwise looks good,
 
-diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-index 5300a21..36dd4f3 100644
---- a/drivers/xen/xen-pciback/pci_stub.c
-+++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -278,8 +278,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
- 	xen_pcibk_reset_device(dev);
- 
- 	/* And cleanup up our emulated fields. */
--	xen_pcibk_config_free_dyn_fields(dev);
- 	xen_pcibk_config_reset_dev(dev);
-+	xen_pcibk_config_free_dyn_fields(dev);
- 
- 	xen_unregister_device_domain_owner(dev);
- 
--- 
-1.8.3.1
-
+Reviewed-by: Christoph Hellwig <hch@lst.de>
