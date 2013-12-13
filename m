@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab3LMC1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 21:27:48 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:65438 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615Ab3LMC1r (ORCPT
+	id S1751999Ab3LMC2H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 21:28:07 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:44902 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615Ab3LMC2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 21:27:47 -0500
+	Thu, 12 Dec 2013 21:28:04 -0500
 From: Sergei Ianovich <ynvich@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Sergei Ianovich <ynvich@gmail.com>, Daniel Mack <zonque@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: [PATCH v2 00/16] ARM: support for ICP DAS LP-8x4x (with dts)
-Date: Fri, 13 Dec 2013 06:27:09 +0400
-Message-Id: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...)
+Subject: [PATCH v2 01/16] ARM: dts: pxa2xx fix compatible strings
+Date: Fri, 13 Dec 2013 06:27:10 +0400
+Message-Id: <1386901645-28895-2-git-send-email-ynvich@gmail.com>
 X-Mailer: git-send-email 1.8.4.3
-In-Reply-To: <1386543229-1542-1-git-send-email-ynvich@gmail.com>
+In-Reply-To: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
 References: <1386543229-1542-1-git-send-email-ynvich@gmail.com>
+ <1386901645-28895-1-git-send-email-ynvich@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed most review requirements. Details in respective patches.
+Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
+CC: Daniel Mack <zonque@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>
+---
+   v1..v2
+   * no changes
 
-I've completely met the requirement for using dmaengine-based DMA
-in patch v2-03/16. Tests showed new DMA was underperforming. It added
-on top of a pre-existing problem with MMC bus width and made the system
-barely usable. However, the new code in this patch work correctly with
-both the existing and the new DMA. Even if the new DMA is compiled into
-the kernel, the exisitng DMA initializes first.
+ arch/arm/boot/dts/pxa2xx.dtsi | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-I've also decided not to create a single mfd device for
-machine-specific devices. Instead each type is supported by a separate
-driver in respective subsystem. It was tempting to hardcode all the
-constants in one source file, but that requires ugly initialization.
-The taken way produces much cleaner code.
-
-Sergei Ianovich (16):
-  ARM: dts: pxa2xx fix compatible strings
-  ARM: dts: fix pxa27x-gpio interrupts
-  ARM: dts: provide DMA config to pxamci
-  ARM: dts: pxa3xx: move declaration to header
-  ARM: dts: pxa27x: irq init using device tree
-  ARM: pxa27x: device tree support ICP DAS LP-8x4x
-  rtc: support DS1302 RTC on ICP DAS LP-8x4x
-  mtd: support BB SRAM on ICP DAS LP-8x4x
-  ARM: pxa: support ICP DAS LP-8x4x FPGA irq
-  serial: support for 16550A serial ports on LP-8x4x
-  misc: support for LP-8x4x custom parallel bus
-  misc: support for serial slots in LP-8x4x
-  misc: support for parallel slots in LP-8x4x
-  misc: support for I-8041 in LP-8x4x
-  misc: support for I-8042 in LP-8x4x
-  misc: support for I-8024 in LP-8x4x
-
- .../bindings/interrupt-controller/irq-lp8x4x.txt   |  49 ++
- .../devicetree/bindings/misc/lp8x4x-bus.txt        |  18 +
- Documentation/devicetree/bindings/mmc/pxa-mmc.txt  |   5 +
- .../devicetree/bindings/rtc/rtc-ds1302.txt         |  14 +
- .../devicetree/bindings/serial/lp8x4x-serial.txt   |  35 ++
- Documentation/misc-devices/lp8x4x_bus.txt          |  74 +++
- arch/arm/boot/dts/Makefile                         |   1 +
- arch/arm/boot/dts/pxa27x-lp8x4x.dts                | 165 ++++++
- arch/arm/boot/dts/pxa27x.dtsi                      |  20 +
- arch/arm/boot/dts/pxa2xx.dtsi                      |   5 +-
- arch/arm/configs/lp8x4x_defconfig                  | 164 ++++++
- arch/arm/mach-pxa/Kconfig                          |  15 +
- arch/arm/mach-pxa/Makefile                         |   1 +
- arch/arm/mach-pxa/include/mach/irqs.h              |   2 +
- arch/arm/mach-pxa/include/mach/pxa27x.h            |   1 +
- arch/arm/mach-pxa/pxa27x-dt.c                      |  64 +++
- arch/arm/mach-pxa/pxa27x.c                         |  10 +
- arch/arm/mach-pxa/pxa3xx.c                         |   2 -
- drivers/irqchip/Kconfig                            |   5 +
- drivers/irqchip/Makefile                           |   1 +
- drivers/irqchip/irq-lp8x4x.c                       | 238 +++++++++
- drivers/misc/Kconfig                               |  13 +
- drivers/misc/Makefile                              |   1 +
- drivers/misc/lp8x4x_bus.c                          | 570 +++++++++++++++++++++
- drivers/mmc/host/pxamci.c                          |  59 ++-
- drivers/mtd/devices/Kconfig                        |  14 +
- drivers/mtd/devices/Makefile                       |   1 +
- drivers/mtd/devices/sram_lp8x4x.c                  | 227 ++++++++
- drivers/rtc/Kconfig                                |   2 +-
- drivers/rtc/rtc-ds1302.c                           | 111 +++-
- drivers/tty/serial/8250/8250_lp8x4x.c              | 161 ++++++
- drivers/tty/serial/8250/Kconfig                    |  12 +
- drivers/tty/serial/8250/Makefile                   |   1 +
- 33 files changed, 2042 insertions(+), 19 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/irq-lp8x4x.txt
- create mode 100644 Documentation/devicetree/bindings/misc/lp8x4x-bus.txt
- create mode 100644 Documentation/devicetree/bindings/rtc/rtc-ds1302.txt
- create mode 100644 Documentation/devicetree/bindings/serial/lp8x4x-serial.txt
- create mode 100644 Documentation/misc-devices/lp8x4x_bus.txt
- create mode 100644 arch/arm/boot/dts/pxa27x-lp8x4x.dts
- create mode 100644 arch/arm/configs/lp8x4x_defconfig
- create mode 100644 arch/arm/mach-pxa/pxa27x-dt.c
- create mode 100644 drivers/irqchip/irq-lp8x4x.c
- create mode 100644 drivers/misc/lp8x4x_bus.c
- create mode 100644 drivers/mtd/devices/sram_lp8x4x.c
- create mode 100644 drivers/tty/serial/8250/8250_lp8x4x.c
-
+diff --git a/arch/arm/boot/dts/pxa2xx.dtsi b/arch/arm/boot/dts/pxa2xx.dtsi
+index a5e90f0..3419f87 100644
+--- a/arch/arm/boot/dts/pxa2xx.dtsi
++++ b/arch/arm/boot/dts/pxa2xx.dtsi
+@@ -18,7 +18,6 @@
+ 		serial1 = &btuart;
+ 		serial2 = &stuart;
+ 		serial3 = &hwuart;
+-		i2c0 = &pwri2c;
+ 		i2c1 = &pxai2c1;
+ 	};
+ 
+@@ -113,14 +112,14 @@
+ 		};
+ 
+ 		usb0: ohci@4c000000 {
+-			compatible = "mrvl,pxa-ohci";
++			compatible = "marvell,pxa-ohci";
+ 			reg = <0x4c000000 0x10000>;
+ 			interrupts = <3>;
+ 			status = "disabled";
+ 		};
+ 
+ 		mmc0: mmc@41100000 {
+-			compatible = "mrvl,pxa-mmc";
++			compatible = "marvell,pxa-mmc";
+ 			reg = <0x41100000 0x1000>;
+ 			interrupts = <23>;
+ 			status = "disabled";
 -- 
 1.8.4.3
 
