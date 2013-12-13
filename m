@@ -1,128 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab3LMCLS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 21:11:18 -0500
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:45932 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab3LMCKt (ORCPT
+	id S1752338Ab3LMCMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 21:12:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60535 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314Ab3LMCMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 21:10:49 -0500
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        george.dunlap@eu.citrix.com, ian.jackson@eu.citrix.com,
-        mukesh.rathor@oracle.com, tim@xen.org, jbeulich@suse.com,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH V10 11/14] xen/pvh: remove code to map iomem from guest
-Date: Thu, 12 Dec 2013 21:10:18 -0500
-Message-Id: <1386900621-27528-12-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com>
-References: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com>
+	Thu, 12 Dec 2013 21:12:12 -0500
+Date: Thu, 12 Dec 2013 18:14:02 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Hiroshi Doyu <hdoyu@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        swarren@nvidia.com, will.deacon@arm.com, thierry.reding@gmail.com,
+        robherring2@gmail.com, joro@8bytes.org, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, lorenzo.pieralisi@arm.com,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        galak@codeaurora.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv7 04/12] driver/core: populate devices in order for IOMMUs
+Message-ID: <20131213021402.GB14192@kroah.com>
+References: <1386835033-4701-1-git-send-email-hdoyu@nvidia.com>
+ <1386835033-4701-5-git-send-email-hdoyu@nvidia.com>
+ <20131212113920.70E8BC40637@trevor.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131212113920.70E8BC40637@trevor.secretlab.ca>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
+On Thu, Dec 12, 2013 at 11:39:20AM +0000, Grant Likely wrote:
+> On Thu, 12 Dec 2013 09:57:05 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
+> > IOMMU devices on the bus need to be poplulated first, then iommu
+> > master devices are done later.
+> > 
+> > With CONFIG_OF_IOMMU, "iommus=" DT binding would be used to identify
+> > whether a device can be an iommu msater or not. If a device can, we'll
+> > defer to populate that device till an iommu device is populated. Then,
+> > those deferred iommu master devices are populated and configured with
+> > help of the already populated iommu device.
+> > 
+> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > ---
+> > This is related to the following discussion:
+> >   [RFC PATCH] Documentation: devicetree: add description for generic bus properties
+> >   http://lists.infradead.org/pipermail/linux-arm-kernel/2013-November/215042.html
+> > 
+> > v6:
+> > Spinned off only driver core part from:
+> >   [PATCHv5 2/9] driver/core: populate devices in order for IOMMUs
+> > 
+> > v5:
+> > Use "iommus=" binding instread of arm,smmu's "#stream-id-cells".
+> > 
+> > v4:
+> > This is newly added, and the successor of the following RFC:
+> >   [RFC][PATCHv3+ 1/2] driver/core: Add of_iommu_attach()
+> >   http://lists.linuxfoundation.org/pipermail/iommu/2013-November/006914.html
+> > 
+> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> > ---
+> >  drivers/base/dd.c | 5 +++++
+> >  1 file changed, 5 insertions(+)
+> > 
+> > diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+> > index 0605176..0605f52 100644
+> > --- a/drivers/base/dd.c
+> > +++ b/drivers/base/dd.c
+> > @@ -25,6 +25,7 @@
+> >  #include <linux/async.h>
+> >  #include <linux/pm_runtime.h>
+> >  #include <linux/pinctrl/devinfo.h>
+> > +#include <linux/of_iommu.h>
+> >  
+> >  #include "base.h"
+> >  #include "power/power.h"
+> > @@ -273,6 +274,10 @@ static int really_probe(struct device *dev, struct device_driver *drv)
+> >  
+> >  	dev->driver = drv;
+> >  
+> > +	ret = of_iommu_attach(dev);
+> > +	if (ret)
+> > +		goto probe_failed;
+> > +
+> 
+> As discussed before, I really don't think hooking in to dd.c is the
+> right thing to do here, and certainly not as a device tree specific
+> function. ACPI or PCI described devices may have the same constraints
+> and those won't have DT descriptions.
 
-It was decided during xen patch review that xen map the iomem
-transparently, so remove xen_set_clr_mmio_pvh_pte() and the sub
-hypercall PHYSDEVOP_map_iomem.
+I agree, this shouldn't be in the driver core.
 
-Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-[v1: Fixed up the comment]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/mmu.c              |   14 --------------
- arch/x86/xen/setup.c            |   17 ++++++-----------
- include/xen/interface/physdev.h |   10 ----------
- 3 files changed, 6 insertions(+), 35 deletions(-)
-
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index a31449f..108fb4a 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -333,20 +333,6 @@ static void xen_set_pte(pte_t *ptep, pte_t pteval)
- 	__xen_set_pte(ptep, pteval);
- }
- 
--void xen_set_clr_mmio_pvh_pte(unsigned long pfn, unsigned long mfn,
--			      int nr_mfns, int add_mapping)
--{
--	struct physdev_map_iomem iomem;
--
--	iomem.first_gfn = pfn;
--	iomem.first_mfn = mfn;
--	iomem.nr_mfns = nr_mfns;
--	iomem.add_mapping = add_mapping;
--
--	if (HYPERVISOR_physdev_op(PHYSDEVOP_map_iomem, &iomem))
--		BUG();
--}
--
- static void xen_set_pte_at(struct mm_struct *mm, unsigned long addr,
- 		    pte_t *ptep, pte_t pteval)
- {
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index e3dcd8c..94c9b49 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -244,20 +244,15 @@ static void __init xen_set_identity_and_release_chunk(
- 	*identity += set_phys_range_identity(start_pfn, end_pfn);
- }
- 
--/* For PVH, the pfns [0..MAX] are mapped to mfn's in the EPT/NPT. The mfns
-- * are released as part of this 1:1 mapping hypercall back to the dom heap.
-- * Also, we map the entire IO space, ie, beyond max_pfn_mapped.
-+
-+/*
-+ * PVH: xen has already mapped the IO space in the EPT/NPT for us, so we
-+ * just need to adjust the released and identity count.
-  */
--static void __init xen_pvh_identity_map_chunk(unsigned long start_pfn,
-+static void __init xen_pvh_adjust_stats(unsigned long start_pfn,
- 		unsigned long end_pfn, unsigned long *released,
- 		unsigned long *identity, unsigned long max_pfn)
- {
--	unsigned long pfn;
--	int numpfns = 1, add_mapping = 1;
--
--	for (pfn = start_pfn; pfn < end_pfn; pfn++)
--		xen_set_clr_mmio_pvh_pte(pfn, pfn, numpfns, add_mapping);
--
- 	if (start_pfn <= max_pfn) {
- 		unsigned long end = min(max_pfn_mapped, end_pfn);
- 		*released += end - start_pfn;
-@@ -297,7 +292,7 @@ static unsigned long __init xen_set_identity_and_release(
- 
- 			if (start_pfn < end_pfn) {
- 				if (xlated_phys) {
--					xen_pvh_identity_map_chunk(start_pfn,
-+					xen_pvh_adjust_stats(start_pfn,
- 						end_pfn, &released, &identity,
- 						nr_pages);
- 				} else {
-diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
-index 19d30ad..42721d1 100644
---- a/include/xen/interface/physdev.h
-+++ b/include/xen/interface/physdev.h
-@@ -291,16 +291,6 @@ struct physdev_dbgp_op {
-     } u;
- };
- 
--#define PHYSDEVOP_map_iomem        30
--struct physdev_map_iomem {
--    /* IN */
--    uint64_t first_gfn;
--    uint64_t first_mfn;
--    uint32_t nr_mfns;
--    uint32_t add_mapping; /* 1 == add mapping;  0 == unmap */
--
--};
--
- /*
-  * Notify that some PIRQ-bound event channels have been unmasked.
-  * ** This command is obsolete since interface version 0x00030202 and is **
--- 
-1.7.7.6
-
+greg k-h
