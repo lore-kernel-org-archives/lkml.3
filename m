@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab3LMRem (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 12:34:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1290 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753112Ab3LMRek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 12:34:40 -0500
-Date: Fri, 13 Dec 2013 18:34:06 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: PATCH? introduce get_compound_page (Was: process 'stuck' at exit)
-Message-ID: <20131213173406.GG5408@redhat.com>
-References: <20131210214143.GG27373@redhat.com>
- <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com>
- <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
- <CA+55aFw_emAUOr5BYx0TfTCGEOrW6-ZRATWbm00DvCXsGD7=DQ@mail.gmail.com>
- <20131211170844.GA21700@redhat.com>
- <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de>
- <20131211175615.GA24546@redhat.com>
- <20131211191855.GA32485@redhat.com>
- <20131213151035.GE5408@redhat.com>
- <20131213162240.GA11762@redhat.com>
+	id S1753355Ab3LMRgq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 12:36:46 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:16956 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab3LMRgp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 12:36:45 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 64.17.244.34
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18rSh5VlUUjoL8KKEX2Fi+Z
+Date: Fri, 13 Dec 2013 09:36:36 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Belisko Marek <marek.belisko@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Subject: Re: [PATCH] omap: twl-common: Fix musb-hdrc device name.
+Message-ID: <20131213173636.GG28184@atomide.com>
+References: <1386059589-4030-1-git-send-email-marek.belisko@open-nandra.com>
+ <529D9D43.6040101@ti.com>
+ <CAAfyv37Vie1vZK2XQ1cfVq6eVnSuaBLfykk6pU8fwEyqvPF4BA@mail.gmail.com>
+ <CAAfyv35gVVNydrk8vifSyidpFjEXjGiT4-i2dgN5Un2=FuHaqQ@mail.gmail.com>
+ <20131205184323.GF26766@atomide.com>
+ <CAAfyv37e9+OLH-KegPCEhc0sbBS7UVnaSGU0mBw2AxAN9D7Akw@mail.gmail.com>
+ <20131209175006.GD12527@atomide.com>
+ <CAAfyv36P7DDcdaLWtXnZXPfQWPL20shE3kOHWtD0mSmH7aixdg@mail.gmail.com>
+ <52AAF5E6.1050900@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131213162240.GA11762@redhat.com>
+In-Reply-To: <52AAF5E6.1050900@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 05:22:40PM +0100, Oleg Nesterov wrote:
-> Andrea. Thanks a lot for the detailed reply.
+* Kishon Vijay Abraham I <kishon@ti.com> [131213 03:57]:
+> On Friday 13 December 2013 04:57 PM, Belisko Marek wrote:
+> > Kishon can you please comment on that? Would be possible to get your
+> > patch to 3.13 (I seen some comments from Felipe).
 > 
-> On 12/13, Andrea Arcangeli wrote:
-> >
-> > On Wed, Dec 11, 2013 at 08:18:55PM +0100, Oleg Nesterov wrote:
-> >
-> > get_huge_page_tail checks different invariants in the VM_BUG_ON and is
-> > only used by gup.c not sure why to call that here.
+> I'm not sure as my patch modifies all the board files. There was initially some
+> confusion w.r.t when the board files will be dropped. But since board files
+> will still be there in 3.13, I'd recommend my patch  [1] to be taken. Anyways
+> if you have tested my patch (series), pls give your Tested-by.
 > 
-> Compared to __get_page_tail_foll(get_page_head => F) get_huge_page_tail()
-> lacks  the ->first_page->_count, but it is called right after
-> get_page_unless_zero(page_head) so to me get_huge_page_tail() looks a bit
-> better.
-> 
-> Personally, I think that even this change
-> 
-> 	--- x/kernel/events/../../mm/internal.h
-> 	+++ x/kernel/events/../../mm/internal.h
-> 	@@ -47,11 +47,9 @@ static inline void __get_page_tail_foll(
-> 		 * page_cache_get_speculative()) on tail pages.
-> 		 */
-> 		VM_BUG_ON(atomic_read(&page->first_page->_count) <= 0);
-> 	-	VM_BUG_ON(atomic_read(&page->_count) != 0);
-> 	-	VM_BUG_ON(page_mapcount(page) < 0);
-> 		if (get_page_head)
-> 			atomic_inc(&page->first_page->_count);
-> 	-	atomic_inc(&page->_mapcount);
-> 	+	get_huge_page_tail(page);
-> 	 }
-> 	 
-> 	 /*
-> 
-> makes sense. But this is minor and subjective, I am not going to argue.
+> Tony, summary of the issue..
+> After the platform devices are created using PLATFORM_DEVID_AUTO, the
+> device names given in usb_bind_phy (in board file) does not match with
+> the actual device name causing the USB PHY library not to return the
+> PHY reference when the MUSB controller request for the PHY in the non-dt boot
+> case. So removed creating platform devices using PLATFORM_DEVID_AUTO in
+> omap2430.c. So had to make the corresponding changes in board files.
 
-The above diff looks a straightforward cleanup you could submit it as
-a separate patch in a v2 series. This more clearly shows the
-difference between the two functions, so there is less overlap
-too.
+OK. Can you please repost with a proper commit id for what caused the
+regression and summararize why it should be fixed this way. Something like:
 
-Feel free to change it further if you want, but the current model was
-to have get_huge_page_tail only for arch/*/mm/gup.c (in mm.h) and
-__get_page_tail_foll in internal.h for mm/*.c and with the ability to
-obtain the head page too (needed in some of the mm/*.c cases, and
-never needed for arch/*/mm/gup.c).
+Commit abcd1234 (usb: blah foo bar) caused blah blah blah. Fix the issue
+with blah blah blah. Note that the board-*.c files will be removed soon,
+but for v3.13 we still support both legacy booting and device tree based
+booting and need to fix it.
 
-> I'll try to make v2 based on -mm and your suggestions.
+Regards,
 
-Ok great!
-
-Thanks,
-Andrea
+Tony
+ 
+> [1] -> http://lists.scusting.com/index.php?t=msg&th=375579&start=0&S=Google
