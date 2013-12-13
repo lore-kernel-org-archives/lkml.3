@@ -1,186 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab3LMPbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:31:42 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:37922 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751872Ab3LMPbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:31:40 -0500
-X-IronPort-AV: E=Sophos;i="4.95,479,1384300800"; 
-   d="scan'208";a="84318469"
-Date: Fri, 13 Dec 2013 15:31:39 +0000
-From: Wei Liu <wei.liu2@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v2 1/9] xen-netback: Introduce TX grant map
- definitions
-Message-ID: <20131213153138.GL21900@zion.uk.xensource.com>
-References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
- <1386892097-15502-2-git-send-email-zoltan.kiss@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1386892097-15502-2-git-send-email-zoltan.kiss@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DLP: MIA2
+	id S1752996Ab3LMPco (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:32:44 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:8643 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab3LMPcm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 10:32:42 -0500
+From: Betty Dall <betty.dall@hp.com>
+To: lenb@kernel.org, rjw@rjwysocki.net, bhelgaas@google.com
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Betty Dall <betty.dall@hp.com>
+Subject: [PATCH] PCI AER: Handle non-AER HEST error sources in aer_hest_parse()
+Date: Fri, 13 Dec 2013 08:23:16 -0700
+Message-Id: <1386948196-9409-1-git-send-email-betty.dall@hp.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 11:48:09PM +0000, Zoltan Kiss wrote:
-> This patch contains the new definitions necessary for grant mapping.
-> 
-> v2:
-> - move unmapping to separate thread. The NAPI instance has to be scheduled
->   even from thread context, which can cause huge delays
-> - that causes unfortunately bigger struct xenvif
-> - store grant handle after checking validity
-> 
+aer_hest_parse() could pass a non-AER HEST error source to the function
+hest_match_pci(). hest_match_pci() assumes that the HEST error source is
+type ACPI_HEST_TYPE_AER_ROOT_PORT, ACPI_HEST_TYPE_AER_ENDPOINT, or
+ACPI_HEST_TYPE_AER_BRIDGE. I have a platform that has some
+ACPI_HEST_TYPE_GENERIC error sources where hest_match_pci() was trying to
+access the structure as if it had the acpi_hest_aer_common fields.
 
-If the size of xenvif really becomes a problem, you can try to make
-sratch space like struct gnttab_copy per-cpu. The downside is that
-approach requires much coding and carefully guard against race
-conditions. You would need to consider cost v.s. benefit.
+aer_hest_parse() is only ever interested in the AER type HEST error
+sources. Add a check on the type of the error souce at the beginning of
+aer_hest_parse().
 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> 
-> ---
-[...]
->  #define XENVIF_QUEUE_LENGTH 32
->  #define XENVIF_NAPI_WEIGHT  64
-> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-> index c1b7a42..3ddc474 100644
-> --- a/drivers/net/xen-netback/netback.c
-> +++ b/drivers/net/xen-netback/netback.c
-> @@ -772,6 +772,20 @@ static struct page *xenvif_alloc_page(struct xenvif *vif,
->  	return page;
->  }
->  
-> +static inline void xenvif_tx_create_gop(struct xenvif *vif, u16 pending_idx,
-> +	       struct xen_netif_tx_request *txp,
-> +	       struct gnttab_map_grant_ref *gop)
-> +{
-> +	vif->pages_to_map[gop-vif->tx_map_ops] = vif->mmap_pages[pending_idx];
-> +	gnttab_set_map_op(gop, idx_to_kaddr(vif, pending_idx),
-> +			  GNTMAP_host_map | GNTMAP_readonly,
-> +			  txp->gref, vif->domid);
-> +
-> +	memcpy(&vif->pending_tx_info[pending_idx].req, txp,
-> +	       sizeof(*txp));
-> +
-> +}
-> +
+Signed-off-by: Betty Dall <betty.dall@hp.com>
+---
 
-This helper function is not used until next patch. Probably you can move
-it to the second patch.
+ drivers/pci/pcie/aer/aerdrv_acpi.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-The same applies to other helper functions as well. Move them to the
-patch they are used. It would be easier for people to review.
 
->  static struct gnttab_copy *xenvif_get_requests(struct xenvif *vif,
->  					       struct sk_buff *skb,
->  					       struct xen_netif_tx_request *txp,
-> @@ -1593,6 +1607,106 @@ static int xenvif_tx_submit(struct xenvif *vif)
->  	return work_done;
->  }
->  
-> +void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
-> +{
-
-Do we care about zerocopy_success? I don't see it used in this function.
-
-> +	unsigned long flags;
-> +	pending_ring_idx_t index;
-> +	u16 pending_idx = ubuf->desc;
-> +	struct pending_tx_info *temp =
-> +		container_of(ubuf, struct pending_tx_info, callback_struct);
-> +	struct xenvif *vif =
-> +		container_of(temp - pending_idx, struct xenvif,
-> +			pending_tx_info[0]);
-> +
-
-The third parameter to container_of should be the name of the member
-within the struct.
-
-> +	spin_lock_irqsave(&vif->dealloc_lock, flags);
-> +	do {
-> +		pending_idx = ubuf->desc;
-> +		ubuf = (struct ubuf_info *) ubuf->ctx;
-> +		index = pending_index(vif->dealloc_prod);
-> +		vif->dealloc_ring[index] = pending_idx;
-> +		/* Sync with xenvif_tx_action_dealloc:
-> +		 * insert idx then incr producer.
-> +		 */
-> +		smp_wmb();
-> +		vif->dealloc_prod++;
-> +	} while (ubuf);
-> +	wake_up(&vif->dealloc_wq);
-> +	spin_unlock_irqrestore(&vif->dealloc_lock, flags);
-> +}
-> +
-> +static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
-> +{
-> +	struct gnttab_unmap_grant_ref *gop;
-> +	pending_ring_idx_t dc, dp;
-> +	u16 pending_idx, pending_idx_release[MAX_PENDING_REQS];
-> +	unsigned int i = 0;
-> +
-> +	dc = vif->dealloc_cons;
-> +	gop = vif->tx_unmap_ops;
-> +
-> +	/* Free up any grants we have finished using */
-> +	do {
-> +		dp = vif->dealloc_prod;
-> +
-> +		/* Ensure we see all indices enqueued by netif_idx_release(). */
-
-There is no netif_idx_release in netback code. :-)
-
-> +		smp_rmb();
-> +
-> +		while (dc != dp) {
-> +			pending_idx =
-> +				vif->dealloc_ring[pending_index(dc++)];
-> +
-> +			/* Already unmapped? */
-> +			if (vif->grant_tx_handle[pending_idx] ==
-> +				NETBACK_INVALID_HANDLE) {
-> +				netdev_err(vif->dev,
-> +					"Trying to unmap invalid handle! "
-> +					"pending_idx: %x\n", pending_idx);
-> +				continue;
-> +			}
-
-Should this be BUG_ON? AIUI this kthread should be the only one doing
-unmap, right?
-
-> +
-> +			pending_idx_release[gop-vif->tx_unmap_ops] =
-> +				pending_idx;
-> +			vif->pages_to_unmap[gop-vif->tx_unmap_ops] =
-> +				vif->mmap_pages[pending_idx];
-> +			gnttab_set_unmap_op(gop,
-> +					idx_to_kaddr(vif, pending_idx),
-> +					GNTMAP_host_map,
-> +					vif->grant_tx_handle[pending_idx]);
-> +			vif->grant_tx_handle[pending_idx] =
-> +				NETBACK_INVALID_HANDLE;
-> +			++gop;
-> +		}
-> +
-[...]
-> +}
->  
->  static void make_tx_response(struct xenvif *vif,
->  			     struct xen_netif_tx_request *txp,
-> @@ -1720,6 +1854,14 @@ static inline int tx_work_todo(struct xenvif *vif)
->  	return 0;
->  }
->  
-> +static inline int tx_dealloc_work_todo(struct xenvif *vif)
-
-static inline bool
-
-Wei.
+diff --git a/drivers/pci/pcie/aer/aerdrv_acpi.c b/drivers/pci/pcie/aer/aerdrv_acpi.c
+index cf611ab..39186e3 100644
+--- a/drivers/pci/pcie/aer/aerdrv_acpi.c
++++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
+@@ -56,6 +56,10 @@ static int aer_hest_parse(struct acpi_hest_header *hest_hdr, void *data)
+ 	struct acpi_hest_aer_common *p;
+ 	int ff;
+ 
++	if (hest_hdr->type != ACPI_HEST_TYPE_AER_ROOT_PORT &&
++		hest_hdr->type != ACPI_HEST_TYPE_AER_ENDPOINT &&
++		hest_hdr->type != ACPI_HEST_TYPE_AER_BRIDGE)
++		return 0;
+ 	p = (struct acpi_hest_aer_common *)(hest_hdr + 1);
+ 	ff = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
+ 	if (p->flags & ACPI_HEST_GLOBAL) {
