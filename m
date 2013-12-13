@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab3LMQcP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 11:32:15 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:55815 "EHLO
+	id S1752821Ab3LMQcg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 11:32:36 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:55826 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849Ab3LMQcO (ORCPT
+	with ESMTP id S1752706Ab3LMQce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 11:32:14 -0500
-Date: Fri, 13 Dec 2013 08:32:11 -0800
+	Fri, 13 Dec 2013 11:32:34 -0500
+Date: Fri, 13 Dec 2013 08:32:30 -0800
 From: Christoph Hellwig <hch@infradead.org>
 To: Zhi Yong Wu <zwu.kernel@gmail.com>
 Cc: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
         Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] xfs: factor prid related codes into
- xfs_get_initial_prid()
-Message-ID: <20131213163211.GD20803@infradead.org>
+Subject: Re: [PATCH 2/5] xfs: adjust the interface of xfs_qm_vop_dqalloc()
+Message-ID: <20131213163230.GE20803@infradead.org>
 References: <1386944873-16796-1-git-send-email-zwu.kernel@gmail.com>
- <1386944873-16796-2-git-send-email-zwu.kernel@gmail.com>
+ <1386944873-16796-3-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386944873-16796-2-git-send-email-zwu.kernel@gmail.com>
+In-Reply-To: <1386944873-16796-3-git-send-email-zwu.kernel@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -28,16 +27,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static inline prid_t xfs_get_initial_prid(struct xfs_inode *dp)
-> +{
-> +	if (dp->i_d.di_flags & XFS_DIFLAG_PROJINHERIT)
-> +		return xfs_get_projid(dp);
-> +	else
-> +		return XFS_PROJID_DEFAULT;
-> +}
+On Fri, Dec 13, 2013 at 10:27:50PM +0800, Zhi Yong Wu wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> 
+> There may be not a parent inode or a name for O_TMPFILE support, but will pass
+> a struct xfs_mount to xfs_qm_vop_dqalloc(). So its interface need to be
+> adjusted in order that O_TMPFILE creation function can also use it.
+> 
+> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-You could skip the else here.
+This patch is not actually needed, as we do get passed a parent.
 
-Otherwise looks good,
-
-Reviewed-by: Christoph Hellwig <hch@lst.de>
