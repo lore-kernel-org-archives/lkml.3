@@ -1,114 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab3LMXQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 18:16:59 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:25762 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196Ab3LMXQ6 (ORCPT
+	id S1752825Ab3LMXVm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 18:21:42 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57548 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958Ab3LMXVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 18:16:58 -0500
-Message-ID: <1386976612.10497.80.camel@ejdallLaptop>
-Subject: Re: [PATCH] PCI AER: handle
- pci_cleanup_aer_uncorrect_error_status() in firmware first mode
-From: Betty Dall <betty.dall@hp.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Date: Fri, 13 Dec 2013 16:16:52 -0700
-In-Reply-To: <CAErSpo4tswv8PHGOQDviFj6Rc7QMYkWQ5rhMCFmHZFL9jM6oBQ@mail.gmail.com>
-References: <1386949306-30601-1-git-send-email-betty.dall@hp.com>
-	 <CAErSpo4tswv8PHGOQDviFj6Rc7QMYkWQ5rhMCFmHZFL9jM6oBQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Fri, 13 Dec 2013 18:21:38 -0500
+Message-ID: <52AB967F.9030900@wwwdotorg.org>
+Date: Fri, 13 Dec 2013 16:21:35 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Bill Huang <bilhuang@nvidia.com>, rjw@rjwysocki.net,
+        viresh.kumar@linaro.org, thierry.reding@gmail.com
+CC: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v4 1/1] cpufreq: tegra: Re-model Tegra20 cpufreq driver
+References: <1386840835-28751-1-git-send-email-bilhuang@nvidia.com>
+In-Reply-To: <1386840835-28751-1-git-send-email-bilhuang@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-12-13 at 15:35 -0700, Bjorn Helgaas wrote:
-> On Fri, Dec 13, 2013 at 8:41 AM, Betty Dall <betty.dall@hp.com> wrote:
-> > There are three functions exported from aerdrv_core.c that could be
-> > called when the system is in firmware first mode:
-> > pci_enable_pcie_error_reporting(), pci_disable_pcie_error_reporting, and
-> > pci_cleanup_aer_uncorrect_error_status(). The first two functions check if
-> > we are in firmware first mode and return immediately.
-> > pci_cleanup_aer_uncorrect_error_status() does not check firmware first
-> > mode. The problem is that all of these functions should not access the AER
-> > registers in firmware first mode because the firmware has not granted OS
-> > control of the AER registers through the _OSC.
+On 12/12/2013 02:33 AM, Bill Huang wrote:
+> Re-model Tegra20 cpufreq driver as below.
 > 
-> This looks like a good fix to me.  If I read aer_acpi_firmware_first()
-> correctly, we don't even *ask* for control of AER if
-> ACPI_HEST_FIRMWARE_FIRST appears anywhere in the HEST.  Does that
-> match your understanding?
+> * Rename tegra-cpufreq.c to tegra20-cpufreq.c since this file supports
+>   only Tegra20.
+> * Add probe function so defer probe can be used when we're going to
+>   support DVFS.
+> * Create a fake cpufreq platform device with its name being
+>   "${root_compatible}-cpufreq" so SoC cpufreq driver can bind to it
+>   accordingly.
 
-Yes, when the system is in firmware first mode the code setting the _OSC
-control register does not ask for AER control. 
+> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
 
-> 
-> > Many drivers call this
-> > function in their pci_error_handlers in firmware first mode.
-> 
-> Drivers don't have any idea whether their device is in firmware-first
-> mode, do they?
+> +config ARM_TEGRA20_CPUFREQ
+> +	bool "NVIDIA TEGRA20"
+> +	depends on ARM_TEGRA_CPUFREQ && ARCH_TEGRA_2x_SOC
+> +	default y
+> +	help
+> +	  This enables Tegra20 cpufreq functionality, it adds
+> +	  Tegra20 CPU frequency ladder and the call back functions
+> +	  to set CPU rate. All the non-SoC dependant codes are
+> +	  controlled by the config ARM_TEGRA20_CPUFREQ.
 
-Right. And I think we want to keep it that way. Having this function is
-a good thing so that the firmware first can be abstracted from the
-drivers.
+I think that last sentence is no longer true in this patch version. Or,
+did you mean to write ARM_TEGRA_CPUFREQ rather than ARM_TEGRA20_CPUFREQ?
 
-> 
-> > The fix is to change pci_cleanup_aer_uncorrect_error_status() to check
-> > firmware first mode before accessing the AER registers. If it is in firmware
-> > first mode, return 0. I considered returning -EIO, but decided the status
-> > has been cleaned up appropriately for firmware first. Returning 0 also avoids
-> > an error message. Not many places check the return of this function, and the
-> > ones that do, print an error message and continue such as:
-> >    err = pci_cleanup_aer_uncorrect_error_status(pdev);
-> >    if (err) {
-> >        dev_err(&pdev->dev,
-> >            "pci_cleanup_aer_uncorrect_error_status failed 0x%0x\n",
-> >             err); /* non-fatal, continue */
-> >    }
-> > That error message is how I found this problem, and it is not applicable
-> > for the firmware first recovery path.
-> 
-> I'm curious -- did you find this problem because you saw a message
-> when pci_cleanup_aer_uncorrect_error_status() returned failure?  The
-> only way it can return failure is if there is no AER capability, and
-> that should be completely independent of whether we're in
-> firmware-first mode.
+> diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
 
-Yes, I saw the error message during error injection testing and using a
-firmware that denies access to AER control because it is firmware first.
-You are right that it would only print out when there is no AER
-capability. I was reading code looking for places that might access the
-AER registers in firmware first mode. This is the only one I found.
+> +static const char * const tegra_soc_compat[] = {
+> +	"nvidia,tegra124",
+> +	"nvidia,tegra114",
+> +	"nvidia,tegra30",
+> +	"nvidia,tegra20",
+> +	NULL
+>  };
 
--Betty
+That table will need editing for each chip. I wonder if you can do
+something like always use the very last entry in /compatible. That would
+assume a particular ordering of the compatible entries, but they should
+be in the order $board, $soc anyway...
 
-> 
-> > Signed-off-by: Betty Dall <betty.dall@hp.com>
-> > ---
-> >
-> >  drivers/pci/pcie/aer/aerdrv_core.c |    3 +++
-> >  1 files changed, 3 insertions(+), 0 deletions(-)
-> >
-> >
-> > diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
-> > index b2c8881..1f60408 100644
-> > --- a/drivers/pci/pcie/aer/aerdrv_core.c
-> > +++ b/drivers/pci/pcie/aer/aerdrv_core.c
-> > @@ -62,6 +62,9 @@ int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev)
-> >         int pos;
-> >         u32 status;
-> >
-> > +       if (pcie_aer_get_firmware_first(dev))
-> > +               return 0;
-> > +
-> >         pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR);
-> >         if (!pos)
-> >                 return -EIO;
+> +int __init tegra_cpufreq_init(void)
+> +	int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(tegra_soc_compat); i++) {
+> +		if (of_machine_is_compatible(tegra_soc_compat[i])) {
+> +			struct platform_device_info devinfo;
+> +			char buf[40];
+> +
+> +			memset(&devinfo, 0, sizeof(devinfo));
+> +			strcpy(buf, tegra_soc_compat[i]);
+> +			strcat(buf, "-cpufreq");
 
+kasprintf() might be simpler, and would avoid the arbitrary 39-character
+string limit and possibility of overflow.
 
+> +			devinfo.name = buf;
+> +			platform_device_register_full(&devinfo);
+
+Does the devinfo struct need to stick around, i.e. does
+platform_device_register_full keep the pointer, or take a copy of the
+struct? If it keeps the pointer, it'd be best to make devinfo a static
+global variable.
+
+> diff --git a/drivers/cpufreq/tegra20-cpufreq.c b/drivers/cpufreq/tegra20-cpufreq.c
+
+Please pass the "-C" option to "git format-patch"; I assume that almost
+all the code in this file is simply cut/paste verbatim from
+tegra-cpufreq.c where it was deleted.
+
+> + * Copyright (C) 2010 Google, Inc.
+
+It's worth adding NV (c) here too.
+
+> +static int tegra20_cpufreq_remove(struct platform_device *pdev)
+> +{
+> +	cpufreq_unregister_driver(&tegra20_cpufreq_driver);
+> +	return 0;
+> +}
+
+That leaks all the clk_get_sys() calls. Does building this as a module
+work OK?
+
+> +MODULE_LICENSE("GPL");
+
+That should be "GPL v2".
+
+> diff --git a/include/linux/tegra-cpufreq.h b/include/linux/tegra-cpufreq.h
+
+> +#ifdef CONFIG_ARM_TEGRA_CPUFREQ
+> +int tegra_cpufreq_init(void);
+> +#else
+> +static inline int tegra_cpufreq_init(void)
+> +{ return; }
+> +#endif
+
+If you're going to wrap the { } onto one line, then I think it'd be best
+to wrap the whole thing (prototype and body) onto one line. Otherwise,
+write:
+
+{
+	return;
+}
+
+Oh, and you need "return 0" not just "return".
