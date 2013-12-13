@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab3LMChu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 21:37:50 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28068 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774Ab3LMChr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 21:37:47 -0500
-Message-ID: <52AA72B4.4080807@huawei.com>
-Date: Fri, 13 Dec 2013 10:36:36 +0800
-From: Xie XiuQi <xiexiuqi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1752281Ab3LMCiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 21:38:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14809 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751805Ab3LMCiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 21:38:19 -0500
+Date: Fri, 13 Dec 2013 10:38:14 +0800
+From: Dave Young <dyoung@redhat.com>
+To: akpm@linux-foundation.org, rob@landley.net, gregkh@linuxfoundation.org,
+        grant.likely@secretlab.ca, sebastian.capella@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] use initmpfs even if there's root= cmdline
+Message-ID: <20131213023814.GA5519@dhcp-16-126.nay.redhat.com>
+References: <20131212092542.GA14218@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-To: Corey Minyard <minyard@acm.org>
-CC: Hushiyuan <hushiyuan@huawei.com>,
-        <openipmi-developer@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zhangdianfang <zhangdianfang@huawei.com>
-Subject: [PATCH 0/2] ipmi: fix timeout calculation when bmc is disconnected
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.18]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131212092542.GA14218@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hu Shiyuan report, when loading ipmi_si module while bmc is
-disconnected, we found the timeout is longer than 5 secs.
-Actually it takes about 3 mins and 20 secs (HZ=250).
+On 12/12/13 at 05:25pm, Dave Young wrote:
+> 
+> Current code use ramfs instead of tmpfs for stub when root= defined.
+> 
+> But for real use case with initramfs, usually there's like cmdline like
+> root=UUID=$UUID the root dev is the real device. For that case we have
+> no way to use initmpfs, thus this patch removes the limitation so tmpfs
+> can benefit more people.
+> 
+> The logic become:
+> if CONFIG_TMPFS && rootfstype is not ramfs
+>     use tmpfs
+> else
+>     use ramfs
+> 
 
-error message as below:
-Dec 12 19:08:59 linux kernel: IPMI BT: timeout in RD_WAIT [ ] 1 retries left
-Dec 12 19:08:59 linux kernel: BT: write 4 bytes seq=0x01 03 18 00 01
-[...]
-Dec 12 19:12:19 linux kernel: IPMI BT: timeout in RD_WAIT [ ]
-Dec 12 19:12:19 linux kernel: failed 2 retries, sending error response
-Dec 12 19:12:19 linux kernel: IPMI: BT reset (takes 5 secs)
-Dec 12 19:12:19 linux kernel: IPMI BT: flag reset [ ]
+Discussed with Vivek Goyal about the kdump use case, I missed one thing that
+tmpfs has default size limit though we can tune it.
 
-Function wait_for_msg_done() use schedule_timeout_uninterruptible(1)
-to sleep 1 tick, so we should subtract jiffies_to_usecs(1) usecs
-instead of 100 usecs from timeout.
+So I will think more about it, will address this later, please ignore this
+patch.
 
-For more clearly, I used USEC_PER_SEC instead of 1000000.
-
-Xie XiuQi (2):
-  ipmi: use USEC_PER_SEC instead of 1000000 for more meaningful
-  ipmi: fix timeout calculation when bmc is disconnected
-
- drivers/char/ipmi/ipmi_bt_sm.c   | 8 ++++----
- drivers/char/ipmi/ipmi_kcs_sm.c  | 4 ++--
- drivers/char/ipmi/ipmi_si_intf.c | 2 +-
- drivers/char/ipmi/ipmi_smic_sm.c | 2 +-
- 4 files changed, 8 insertions(+), 8 deletions(-)
-
--- 
-1.8.2.2
-
-
+Thanks
+Dave
