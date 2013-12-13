@@ -1,100 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab3LMOqP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 09:46:15 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:53808 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab3LMOqN (ORCPT
+	id S1752883Ab3LMOtp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 09:49:45 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:56062 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab3LMOto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 09:46:13 -0500
-Date: Fri, 13 Dec 2013 11:46:03 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/2] perf tools: Fix next_pow2_l()
-Message-ID: <20131213144603.GB29275@ghostprotocols.net>
-References: <1386924816-24402-1-git-send-email-adrian.hunter@intel.com>
- <1386924816-24402-2-git-send-email-adrian.hunter@intel.com>
+	Fri, 13 Dec 2013 09:49:44 -0500
+X-IronPort-AV: E=Sophos;i="4.95,479,1384300800"; 
+   d="scan'208";a="82005502"
+Date: Fri, 13 Dec 2013 14:49:15 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <george.dunlap@eu.citrix.com>, <ian.jackson@eu.citrix.com>,
+        <mukesh.rathor@oracle.com>, <tim@xen.org>, <jbeulich@suse.com>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>
+Subject: Re: [PATCH V10 05/14] xen/pvh: balloon and grant changes.
+In-Reply-To: <20131213143620.GH2923@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1312131448340.8667@kaball.uk.xensource.com>
+References: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com> <1386900621-27528-6-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1312131147230.8667@kaball.uk.xensource.com> <20131213143620.GH2923@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386924816-24402-2-git-send-email-adrian.hunter@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Dec 13, 2013 at 10:53:35AM +0200, Adrian Hunter escreveu:
-
-> My implementation of next_pow2_l() was incorrect.  e.g.
- 
->   perf record -m4296015872 uname
->   rounding mmap pages size to 17592186044416 bytes (4294967296 pages)
->   Invalid argument for --mmap_pages/-m
- 
-> Notice that the next power-of-2 value 4294967296 is less than the
-> option value 4296015872.
- 
-> Change to using  __builtin_clzl() and prevent the shift being equal to
-> the width of the operand.  Also __builtin_clzl(x) is undefined if x is
-> 0, so adjust the condition to preclude that possibility.  Now:
-
-Can we try to look first if there is an implementation for what we need
-being used in the kernel sources, in include/ and then try to use, if
-possible, exactly like done in kernel code?
-
-For instance, include/linux/log2.h has roundup_pow_of_two() that seems
-to be what you need, lemme check...
-
-roundup_pow_of_two(4296015872)=8589934592
-
-So, it yields what we need, I'll try to cook up a patch that makes us
-use it, as I did in my dwarves tools in this changeset:
-
-https://git.kernel.org/cgit/devel/pahole/pahole.git/commit/?id=e31fda3063e3c88ca0b93a9fb5e6d6e32478e36b
-
-- Arnaldo
-	 
->   perf record -m4296015872 uname
->   rounding mmap pages size to 35184372088832 bytes (8589934592 pages)
->   Invalid argument for --mmap_pages/-m
+On Fri, 13 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> On Fri, Dec 13, 2013 at 11:56:31AM +0000, Stefano Stabellini wrote:
+> > On Thu, 12 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > > 
+> > > For balloon changes we skip setting of local P2M as it's updated
+> > > in Xen. For grant, the shared grant frame is the PFN and not MFN,
+> > > hence its mapped via the same code path as HVM.
+> > > 
+> > > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > > [v1: Rebase on v3.7-rc3]
+> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > CC: <stefano.stabellini@eu.citrix.com>
+> > > Conflicts:
+> > > 	drivers/xen/balloon.c
+> > > [v2: Rebase on v3.13-rc3 has lot of ARM changes.]
+> > > ---
+> > >  drivers/xen/balloon.c     |   37 ++++++++++++++++++++-----------------
+> > >  drivers/xen/gntdev.c      |    3 ++-
+> > >  drivers/xen/grant-table.c |   25 ++++++++++++++++++++++---
+> > >  3 files changed, 44 insertions(+), 21 deletions(-)
+> > > 
+> > > diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+> > > index 55ea73f..0e9875a 100644
+> > > --- a/drivers/xen/balloon.c
+> > > +++ b/drivers/xen/balloon.c
+> > > @@ -354,7 +354,9 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
+> > >  
+> > >  #ifdef CONFIG_XEN_HAVE_PVMMU
+> > >  		/* Link back into the page tables if not highmem. */
+> > > -		if (xen_pv_domain() && !PageHighMem(page)) {
+> > > +		if (xen_pv_domain() && !PageHighMem(page) &&
+> > > +		    !xen_feature(XENFEAT_auto_translated_physmap)) {
+> > > +
+> > >  			int ret;
+> > >  			ret = HYPERVISOR_update_va_mapping(
+> > >  				(unsigned long)__va(pfn << PAGE_SHIFT),
+> > > @@ -411,28 +413,29 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
+> > >  
+> > >  		scrub_page(page);
+> > >  
+> > > -		/*
+> > > -		 * Ballooned out frames are effectively replaced with
+> > > -		 * a scratch frame.  Ensure direct mappings and the
+> > > -		 * p2m are consistent.
+> > > -		 */
+> > > -		scratch_page = get_balloon_scratch_page();
+> > > +		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+> > > +			unsigned long p;
+> > > +
+> > > +			/*
+> > > +			 * Ballooned out frames are effectively replaced with
+> > > +			 * a scratch frame.  Ensure direct mappings and the
+> > > +			 * p2m are consistent.
+> > > +			 */
+> > > +			scratch_page = get_balloon_scratch_page();
+> > >  #ifdef CONFIG_XEN_HAVE_PVMMU
+> > > -		if (xen_pv_domain() && !PageHighMem(page)) {
+> > > -			ret = HYPERVISOR_update_va_mapping(
+> > > -				(unsigned long)__va(pfn << PAGE_SHIFT),
+> > > -				pfn_pte(page_to_pfn(scratch_page),
+> > > +			if (xen_pv_domain() && !PageHighMem(page)) {
+> > > +				ret = HYPERVISOR_update_va_mapping(
+> > > +					(unsigned long)__va(pfn << PAGE_SHIFT),
+> > > +					pfn_pte(page_to_pfn(scratch_page),
+> > >  					PAGE_KERNEL_RO), 0);
+> > > -			BUG_ON(ret);
+> > > -		}
+> > > +				BUG_ON(ret);
+> > > +			}
+> > >  #endif
+> > > -		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+> > > -			unsigned long p;
+> > >  			p = page_to_pfn(scratch_page);
+> > >  			__set_phys_to_machine(pfn, pfn_to_mfn(p));
+> > > -		}
+> > > -		put_balloon_scratch_page();
+> > >  
+> > > +			put_balloon_scratch_page();
+> > > +		}
+> > >  		balloon_append(pfn_to_page(pfn));
+> > >  	}
+> > 
+> > These changes to balloon.c are similar to my patch but:
+> > 
+> > - they don't prevent set_phys_to_machine from being called by
+> > increase_reservation for auto_translated guests
 > 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->  tools/perf/util/util.h | 15 ++++++++-------
->  1 file changed, 8 insertions(+), 7 deletions(-)
+> <nods>
+> > 
+> > - they don't prevent wasteful balloon_scratch_page from being allocated
+> > for auto_translated guests
 > 
-> diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-> index a1eea3e..ae609fe 100644
-> --- a/tools/perf/util/util.h
-> +++ b/tools/perf/util/util.h
-> @@ -284,13 +284,14 @@ static inline unsigned next_pow2(unsigned x)
->  
->  static inline unsigned long next_pow2_l(unsigned long x)
->  {
-> -#if BITS_PER_LONG == 64
-> -	if (x <= (1UL << 31))
-> -		return next_pow2(x);
-> -	return (unsigned long)next_pow2(x >> 32) << 32;
-> -#else
-> -	return next_pow2(x);
-> -#endif
-> +	int leading_zeros;
-> +
-> +	if (x < 2)
-> +		return 1;
-> +	leading_zeros = __builtin_clzl(x - 1);
-> +	if (!leading_zeros)
-> +		return 0;
-> +	return 1UL << (BITS_PER_LONG - leading_zeros);
->  }
->  
->  size_t hex_width(u64 v);
-> -- 
-> 1.7.11.7
+> <nods>
+> > 
+> > I think that it would be best to take my patch instead.
+> 
+> Lets focus the review on your patch then and have it part of this
+> series. 
+
+OK, but keep in mind that Xen on ARMv8 is currently broken without that
+patch.
