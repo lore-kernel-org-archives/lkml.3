@@ -1,310 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab3LMBDV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 20:03:21 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:57702 "EHLO bear.ext.ti.com"
+	id S1751920Ab3LMBGm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 20:06:42 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38141 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751568Ab3LMBDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 20:03:19 -0500
-From: Nishanth Menon <nm@ti.com>
-To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>
-CC: <linux-omap@vger.kernel.org>, Roger Quadros <rogerq@ti.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH] ARM: dts: omap3: split pinctrl for core into two parts
-Date: Thu, 12 Dec 2013 19:02:39 -0600
-Message-ID: <1386896559-24376-1-git-send-email-nm@ti.com>
+	id S1751761Ab3LMBGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 20:06:39 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <linux-usb@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] usb: host: xhci: Move suspend ops under PM_SLEEP to avoid warning
+Date: Thu, 12 Dec 2013 20:06:24 -0500
+Message-ID: <1386896784-23916-1-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3430 TRM(SWPU222W) states that control core module padconf
-registers have ranges:
-0x48002030 to 0x48002264(CONTROL_PADCONF_SDRC_CKE1)
-0x480025D8(CONTROL_PADCONF_ETK_CLK) to 0x480025F8.
+Otherwise you get below build warnings
 
-AM3517 TRM(SPRUGR0C) states that control core module padconf
-registers has a single range:
-0x48002030 to 0x48002264(CONTROL_PADCONF_SDRC_CKE1)
+drivers/usb/host/xhci-plat.c:201:12: warning: ‘xhci_plat_suspend’ defined but not used [-Wunused-function]
+drivers/usb/host/xhci-plat.c:209:12: warning: ‘xhci_plat_resume’ defined but not used [-Wunused-function]
 
-3630 TRM(SWPU176AB) states that control core module padconf
-registers have ranges:
-0x48002030 to 0x48002264(CONTROL_PADCONF_SDRC_CKE1)
-0x480025A0(CONTROL_PADCONF_SDRC_BA0) to 0x480025F8
-
-We currently map 0x48002030 to 0x480025F8 resulting in the bug
-reported in [1].
-
-To fix this, we split this into a another pinctrl device region
-specific to the SoC. update board files that get impacted with this
-change to ensure bisectability is maintained.
-
-[1] http://marc.info/?l=linux-omap&m=138689141531466&w=2
-
-Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
-Applies on v3.13-rc3
-Tested on the following platform:
-Beagle-XM (OMAP3630): http://pastebin.mozilla.org/3764783
-CraneBoard(AM3517): http://pastebin.mozilla.org/3764784
-SDP3430 (OMAP3430): http://pastebin.mozilla.org/3764786
+ drivers/usb/host/xhci-plat.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I have not been able to test function impacted by this, but I applied
-the following delta for the impacted padconfs I could find:
-3430: -0x5A8
-3630: -0x570
-
-The other option would be to modify pinctrl-single driver to accept multiple
-reg ranges for the same device, which I think was not the intent
-
- arch/arm/boot/dts/omap3-beagle-xm.dts |   24 +++++++++++++++-----
- arch/arm/boot/dts/omap3-beagle.dts    |   24 +++++++++++++++-----
- arch/arm/boot/dts/omap3-igep.dtsi     |    3 +++
- arch/arm/boot/dts/omap3-igep0020.dts  |   40 +++++++++++++++++++--------------
- arch/arm/boot/dts/omap3-igep0030.dts  |    2 +-
- arch/arm/boot/dts/omap3.dtsi          |    2 +-
- arch/arm/boot/dts/omap34xx.dtsi       |   13 +++++++++++
- arch/arm/boot/dts/omap36xx.dtsi       |   11 +++++++++
- 8 files changed, 88 insertions(+), 31 deletions(-)
-
-diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
-index df33a50..2a9508b 100644
---- a/arch/arm/boot/dts/omap3-beagle-xm.dts
-+++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
-@@ -96,6 +96,24 @@
- 	};
- };
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index d9c169f..4875be5 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -197,7 +197,7 @@ static int xhci_plat_remove(struct platform_device *dev)
+ 	return 0;
+ }
  
-+&omap3_pmx_core2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <
-+			&hsusbb2_pins2
-+	>;
-+
-+	hsusbb2_pins: pinmux_hsusbb2_pins {
-+		pinctrl-single,pins = <
-+			0x050 (PIN_OUTPUT | MUX_MODE3)		/* etk_d10.hsusb2_clk */
-+			0x052 (PIN_OUTPUT | MUX_MODE3)		/* etk_d11.hsusb2_stp */
-+			0x054 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d12.hsusb2_dir */
-+			0x056 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d13.hsusb2_nxt */
-+			0x058 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d14.hsusb2_data0 */
-+			0x05a (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d15.hsusb2_data1 */
-+		>;
-+	};
-+};
-+
- &omap3_pmx_core {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <
-@@ -111,12 +129,6 @@
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int xhci_plat_suspend(struct device *dev)
+ {
+ 	struct usb_hcd	*hcd = dev_get_drvdata(dev);
+@@ -220,7 +220,7 @@ static const struct dev_pm_ops xhci_plat_pm_ops = {
+ #define DEV_PM_OPS	(&xhci_plat_pm_ops)
+ #else
+ #define DEV_PM_OPS	NULL
+-#endif /* CONFIG_PM */
++#endif /* CONFIG_PM_SLEEP */
  
- 	hsusbb2_pins: pinmux_hsusbb2_pins {
- 		pinctrl-single,pins = <
--			0x5c0 (PIN_OUTPUT | MUX_MODE3)		/* etk_d10.hsusb2_clk */
--			0x5c2 (PIN_OUTPUT | MUX_MODE3)		/* etk_d11.hsusb2_stp */
--			0x5c4 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d12.hsusb2_dir */
--			0x5c6 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d13.hsusb2_nxt */
--			0x5c8 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d14.hsusb2_data0 */
--			0x5cA (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d15.hsusb2_data1 */
- 			0x1a4 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi1_cs3.hsusb2_data2 */
- 			0x1a6 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_clk.hsusb2_data7 */
- 			0x1a8 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_simo.hsusb2_data4 */
-diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
-index 3ba4a62..7b9e418 100644
---- a/arch/arm/boot/dts/omap3-beagle.dts
-+++ b/arch/arm/boot/dts/omap3-beagle.dts
-@@ -90,6 +90,24 @@
- 	};
- };
- 
-+&omap3_pmx_core2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <
-+			&hsusbb2_pins2
-+	>;
-+
-+	hsusbb2_pins2: pinmux_hsusbb2_pins2 {
-+		pinctrl-single,pins = <
-+			0x018 (PIN_OUTPUT | MUX_MODE3)		/* etk_d10.hsusb2_clk */
-+			0x01a (PIN_OUTPUT | MUX_MODE3)		/* etk_d11.hsusb2_stp */
-+			0x01c (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d12.hsusb2_dir */
-+			0x01e (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d13.hsusb2_nxt */
-+			0x020 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d14.hsusb2_data0 */
-+			0x022 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d15.hsusb2_data1 */
-+		>;
-+	};
-+};
-+
- &omap3_pmx_core {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <
-@@ -98,12 +116,6 @@
- 
- 	hsusbb2_pins: pinmux_hsusbb2_pins {
- 		pinctrl-single,pins = <
--			0x5c0 (PIN_OUTPUT | MUX_MODE3)		/* etk_d10.hsusb2_clk */
--			0x5c2 (PIN_OUTPUT | MUX_MODE3)		/* etk_d11.hsusb2_stp */
--			0x5c4 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d12.hsusb2_dir */
--			0x5c6 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d13.hsusb2_nxt */
--			0x5c8 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d14.hsusb2_data0 */
--			0x5cA (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d15.hsusb2_data1 */
- 			0x1a4 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi1_cs3.hsusb2_data2 */
- 			0x1a6 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_clk.hsusb2_data7 */
- 			0x1a8 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_simo.hsusb2_data4 */
-diff --git a/arch/arm/boot/dts/omap3-igep.dtsi b/arch/arm/boot/dts/omap3-igep.dtsi
-index 165aaf7..e608b46 100644
---- a/arch/arm/boot/dts/omap3-igep.dtsi
-+++ b/arch/arm/boot/dts/omap3-igep.dtsi
-@@ -134,6 +134,9 @@
- 		>;
- 	};
- 
-+};
-+
-+&omap3_pmx_core2 {
- 	leds_pins: pinmux_leds_pins { };
- };
- 
-diff --git a/arch/arm/boot/dts/omap3-igep0020.dts b/arch/arm/boot/dts/omap3-igep0020.dts
-index 1c7e74d..e6723c5 100644
---- a/arch/arm/boot/dts/omap3-igep0020.dts
-+++ b/arch/arm/boot/dts/omap3-igep0020.dts
-@@ -67,26 +67,32 @@
- 	pinctrl-names = "default";
- 	pinctrl-0 = <
- 		&hsusbb1_pins
--		&tfp410_pins
--		&dss_pins
- 	>;
- 
- 	hsusbb1_pins: pinmux_hsusbb1_pins {
- 		pinctrl-single,pins = <
--			0x5aa (PIN_OUTPUT | MUX_MODE3)		/* etk_ctl.hsusb1_clk */
--			0x5a8 (PIN_OUTPUT | MUX_MODE3)		/* etk_clk.hsusb1_stp */
--			0x5bc (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d8.hsusb1_dir */
--			0x5be (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d9.hsusb1_nxt */
--			0x5ac (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d0.hsusb1_data0 */
--			0x5ae (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d1.hsusb1_data1 */
--			0x5b0 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d2.hsusb1_data2 */
--			0x5b2 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d3.hsusb1_data7 */
--			0x5b4 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d4.hsusb1_data4 */
--			0x5b6 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d5.hsusb1_data5 */
--			0x5b8 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d6.hsusb1_data6 */
--			0x5ba (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d7.hsusb1_data3 */
-+			0x03a (PIN_OUTPUT | MUX_MODE3)		/* etk_ctl.hsusb1_clk */
-+			0x038 (PIN_OUTPUT | MUX_MODE3)		/* etk_clk.hsusb1_stp */
-+			0x04c (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d8.hsusb1_dir */
-+			0x04e (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d9.hsusb1_nxt */
-+			0x03c (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d0.hsusb1_data0 */
-+			0x03e (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d1.hsusb1_data1 */
-+			0x040 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d2.hsusb1_data2 */
-+			0x042 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d3.hsusb1_data7 */
-+			0x044 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d4.hsusb1_data4 */
-+			0x046 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d5.hsusb1_data5 */
-+			0x048 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d6.hsusb1_data6 */
-+			0x04a (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d7.hsusb1_data3 */
- 		>;
- 	};
-+};
-+
-+&omap3_pmx_core {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <
-+		&tfp410_pins
-+		&dss_pins
-+	>;
- 
- 	tfp410_pins: tfp410_dvi_pins {
- 		pinctrl-single,pins = <
-@@ -130,9 +136,9 @@
- 
- &leds_pins {
- 	pinctrl-single,pins = <
--		0x5c4 (PIN_OUTPUT | MUX_MODE4) /* etk_d12.gpio_26 */
--		0x5c6 (PIN_OUTPUT | MUX_MODE4) /* etk_d13.gpio_27 */
--		0x5c8 (PIN_OUTPUT | MUX_MODE4) /* etk_d14.gpio_28 */
-+		0x054 (PIN_OUTPUT | MUX_MODE4) /* etk_d12.gpio_26 */
-+		0x056 (PIN_OUTPUT | MUX_MODE4) /* etk_d13.gpio_27 */
-+		0x058 (PIN_OUTPUT | MUX_MODE4) /* etk_d14.gpio_28 */
- 	>;
- };
- 
-diff --git a/arch/arm/boot/dts/omap3-igep0030.dts b/arch/arm/boot/dts/omap3-igep0030.dts
-index 02a23f8..e9372f3 100644
---- a/arch/arm/boot/dts/omap3-igep0030.dts
-+++ b/arch/arm/boot/dts/omap3-igep0030.dts
-@@ -48,7 +48,7 @@
- 
- &leds_pins {
- 	pinctrl-single,pins = <
--		0x5b0 (PIN_OUTPUT | MUX_MODE4) /* etk_d2.gpio_16 */
-+		0x040 (PIN_OUTPUT | MUX_MODE4) /* etk_d2.gpio_16 */
- 	>;
- };
- 
-diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-index daabf99..427395c 100644
---- a/arch/arm/boot/dts/omap3.dtsi
-+++ b/arch/arm/boot/dts/omap3.dtsi
-@@ -117,7 +117,7 @@
- 
- 		omap3_pmx_core: pinmux@48002030 {
- 			compatible = "ti,omap3-padconf", "pinctrl-single";
--			reg = <0x48002030 0x05cc>;
-+			reg = <0x48002030 0x0238>;
- 			#address-cells = <1>;
- 			#size-cells = <0>;
- 			#interrupt-cells = <1>;
-diff --git a/arch/arm/boot/dts/omap34xx.dtsi b/arch/arm/boot/dts/omap34xx.dtsi
-index 5355d61..77d1246 100644
---- a/arch/arm/boot/dts/omap34xx.dtsi
-+++ b/arch/arm/boot/dts/omap34xx.dtsi
-@@ -25,4 +25,17 @@
- 			clock-latency = <300000>; /* From legacy driver */
- 		};
- 	};
-+
-+	ocp {
-+		omap3_pmx_core2: pinmux@480025d8 {
-+			compatible = "ti,omap3-padconf", "pinctrl-single";
-+			reg = <0x480025d8 0x24>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			#interrupt-cells = <1>;
-+			interrupt-controller;
-+			pinctrl-single,register-width = <16>;
-+			pinctrl-single,function-mask = <0xff1f>;
-+		};
-+	};
- };
-diff --git a/arch/arm/boot/dts/omap36xx.dtsi b/arch/arm/boot/dts/omap36xx.dtsi
-index 380c22e..b7c7bd9 100644
---- a/arch/arm/boot/dts/omap36xx.dtsi
-+++ b/arch/arm/boot/dts/omap36xx.dtsi
-@@ -38,5 +38,16 @@
- 			ti,hwmods = "uart4";
- 			clock-frequency = <48000000>;
- 		};
-+
-+		omap3_pmx_core2: pinmux@480025a0 {
-+			compatible = "ti,omap3-padconf", "pinctrl-single";
-+			reg = <0x480025a0 0x5c>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			#interrupt-cells = <1>;
-+			interrupt-controller;
-+			pinctrl-single,register-width = <16>;
-+			pinctrl-single,function-mask = <0xff1f>;
-+		};
- 	};
- };
+ #ifdef CONFIG_OF
+ static const struct of_device_id usb_xhci_of_match[] = {
 -- 
 1.7.9.5
 
