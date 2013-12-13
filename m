@@ -1,99 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab3LMKVj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 05:21:39 -0500
-Received: from mga11.intel.com ([192.55.52.93]:45563 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752318Ab3LMKVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 05:21:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,477,1384329600"; 
-   d="scan'208";a="443658437"
-Message-ID: <52AADFB1.5050407@intel.com>
-Date: Fri, 13 Dec 2013 12:21:37 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752569Ab3LMKWn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 05:22:43 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:49292 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752386Ab3LMKWl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 05:22:41 -0500
+Message-ID: <52AADFC4.1070003@st.com>
+Date: Fri, 13 Dec 2013 11:21:56 +0100
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH V3] perf script: Improve srcline display for BTS
-References: <1386315778-11633-1-git-send-email-adrian.hunter@intel.com> <1386315778-11633-4-git-send-email-adrian.hunter@intel.com> <20131209180441.GA8098@ghostprotocols.net> <52A6BCE0.9010805@intel.com> <52A6BD34.60006@intel.com>
-In-Reply-To: <52A6BD34.60006@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Chen-Yu Tsai <wens@csie.org>, netdev <netdev@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <linux-sunxi@googlegroups.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: Re: [PATCH 07/10] ARM: dts: sun7i: cubietruck: Enable the GMAC
+References: <1386350983-13281-1-git-send-email-wens@csie.org> <1386350983-13281-8-git-send-email-wens@csie.org> <CAGVrzcb_r9_p4urz4XkE2A-G85KAHJa4PJ=Gt9a4RPYQNJ6j0g@mail.gmail.com> <CAGb2v64yFhkTXvdq=1VpemULhXew-5fvmSoTBzEb6iFDiSqy1Q@mail.gmail.com> <CAGVrzcaxV88dU3vEVGUiEQihUHLxq+QvQVQ6VvmOFVRsqbbX7w@mail.gmail.com>
+In-Reply-To: <CAGVrzcaxV88dU3vEVGUiEQihUHLxq+QvQVQ6VvmOFVRsqbbX7w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.52.138.128]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the order of the output to put the srcline last.
-e.g.
+On 12/7/2013 2:57 AM, Florian Fainelli wrote:
+> 2013/12/6 Chen-Yu Tsai <wens@csie.org>:
+>> On Sat, Dec 7, 2013 at 5:09 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+>>> 2013/12/6 Chen-Yu Tsai <wens@csie.org>:
+>>>> The CubieTruck uses the GMAC with an RGMII phy.
+>>>>
+>>>> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>>>> ---
+>>>>   arch/arm/boot/dts/sun7i-a20-cubietruck.dts | 8 ++++++++
+>>>>   1 file changed, 8 insertions(+)
+>>>>
+>>>> diff --git a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+>>>> index 8a1009d..af212a2 100644
+>>>> --- a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+>>>> +++ b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+>>>> @@ -33,6 +33,14 @@
+>>>>                          pinctrl-0 = <&uart0_pins_a>;
+>>>>                          status = "okay";
+>>>>                  };
+>>>> +
+>>>> +               gmac: ethernet@01c50000 {
+>>>> +                       pinctrl-names = "default";
+>>>> +                       pinctrl-0 = <&gmac_pins_rgmii>;
+>>>> +                       snps,phy-addr = <1>;
+>>>
+>>> What is this snps,phy-addr property? Why is not a standard device tree
+>>> node for an Ethernet PHY node used?
+>>
+>> This property is implemented by stmmac and documented in the DT
+>> bindings. stmmac has not been updated to use Ethernet PHY nodes.
+>
+> This driver property should be removed and deprecated since there is
+> an ePAPR standardized Ethernet PHY node. What I am worried here is the
+> loss of information, the standard Ethernet DT node allows to specify
+> much more information (clause, maximum speed, compatible string
+> etc...).
 
-	perf record -e branches:u -c 1 -d ls
-	perf script -fip,sym,symoff,dso,addr,srcline
 
-old format:
+yes Florian you are right and I have already started updating the
+driver. I do not sure that I'll be able to send all the patches soon
+but for sure I can re-base them.
 
-          4028fc main+0x2c (/bin/ls)
-  /build/buildd/coreutils-8.20/src/ls.c:1269 =>           40d8a0 set_program_name+0x0 (/bin/ls)
-
-new format:
-
-          4028fc main+0x2c (/bin/ls) =>           40d8a0 set_program_name+0x0 (/bin/ls)
-  /build/buildd/coreutils-8.20/src/ls.c:1269
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/builtin-script.c | 20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 7a571fb..8997b69 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -428,15 +428,22 @@ static void print_sample_bts(union perf_event *event,
- 			     struct addr_location *al)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
-+	bool print_srcline_last = false;
- 
- 	/* print branch_from information */
- 	if (PRINT_FIELD(IP)) {
--		if (!symbol_conf.use_callchain)
--			printf(" ");
--		else
-+		unsigned int print_opts = output[attr->type].print_ip_opts;
-+
-+		if (symbol_conf.use_callchain && sample->callchain) {
- 			printf("\n");
--		perf_evsel__print_ip(evsel, sample, machine, al,
--				     output[attr->type].print_ip_opts,
-+		} else {
-+			printf(" ");
-+			if (print_opts & PRINT_IP_OPT_SRCLINE) {
-+				print_srcline_last = true;
-+				print_opts &= ~PRINT_IP_OPT_SRCLINE;
-+			}
-+		}
-+		perf_evsel__print_ip(evsel, sample, machine, al, print_opts,
- 				     PERF_MAX_STACK_DEPTH);
- 	}
- 
-@@ -448,6 +455,9 @@ static void print_sample_bts(union perf_event *event,
- 	     !output[attr->type].user_set))
- 		print_sample_addr(event, sample, machine, thread, attr);
- 
-+	if (print_srcline_last)
-+		map__fprintf_srcline(al->map, al->addr, "\n  ", stdout);
-+
- 	printf("\n");
- }
- 
--- 1.7.11.7
+>>
+>> Removing this property will not affect the function of the driver.
+>> The driver probes its MDIO bus and selects the lowest available
+>> address if not specified.
+>
+> So if this is just giving the driver a hint on where to  probe for a
+> PHY on the MDIO bus, then let's drop it and use the standard DT node
+> no?
+>
+>>
+>>>> +                       phy-mode = "rgmii";
+>>>
+>>> Especially since you use the relatively standard "phy-mode" property here?
+>>
+>> Used as specified in stmmac DT bindings.
+>
+> That one is kind of okay because of_get_phy_mode() knows about it,
+> even though ePAPR states this should be "phy-connection-type", so I am
+> okay with keeping that one because current practice and helpers are
+> here.
+>
 
