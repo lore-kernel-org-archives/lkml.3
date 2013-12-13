@@ -1,87 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab3LMA7E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 19:59:04 -0500
-Received: from ozlabs.org ([203.10.76.45]:33248 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751765Ab3LMA7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 19:59:01 -0500
-Date: Fri, 13 Dec 2013 11:58:54 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jani Nikula <jani.nikula@intel.com>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>
-Subject: linux-next: manual merge of the drm-intel tree with Linus' tree
-Message-Id: <20131213115854.5f103f7b91aefd3e65ad5ae6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__13_Dec_2013_11_58_54_+1100_1x57eyI+jz0TnAHL"
+	id S1751870Ab3LMBCS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 20:02:18 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63042 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502Ab3LMBCQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 20:02:16 -0500
+Message-ID: <52AA5C92.7030207@linaro.org>
+Date: Fri, 13 Dec 2013 09:02:10 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Mel Gorman <mgorman@suse.de>, H Peter Anvin <hpa@zytor.com>,
+        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH 2/3] x86: mm: Change tlb_flushall_shift for IvyBridge
+References: <1386849309-22584-1-git-send-email-mgorman@suse.de> <1386849309-22584-3-git-send-email-mgorman@suse.de> <20131212131309.GD5806@gmail.com> <52A9BC3A.7010602@linaro.org> <20131212141147.GB17059@gmail.com>
+In-Reply-To: <20131212141147.GB17059@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__13_Dec_2013_11_58_54_+1100_1x57eyI+jz0TnAHL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/12/2013 10:11 PM, Ingo Molnar wrote:
+> 
+> * Alex Shi <alex.shi@linaro.org> wrote:
+> 
+>> On 12/12/2013 09:13 PM, Ingo Molnar wrote:
+>>>
+>>> * Mel Gorman <mgorman@suse.de> wrote:
+>>>
+>>>> There was a large performance regression that was bisected to commit 611ae8e3
+>>>> (x86/tlb: enable tlb flush range support for x86). This patch simply changes
+>>>> the default balance point between a local and global flush for IvyBridge.
+>>>>
+>>>> Signed-off-by: Mel Gorman <mgorman@suse.de>
+>>>> ---
+>>>>  arch/x86/kernel/cpu/intel.c | 2 +-
+>>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+>>>> index dc1ec0d..2d93753 100644
+>>>> --- a/arch/x86/kernel/cpu/intel.c
+>>>> +++ b/arch/x86/kernel/cpu/intel.c
+>>>> @@ -627,7 +627,7 @@ static void intel_tlb_flushall_shift_set(struct cpuinfo_x86 *c)
+>>>>  		tlb_flushall_shift = 5;
+>>>>  		break;
+>>>>  	case 0x63a: /* Ivybridge */
+>>>> -		tlb_flushall_shift = 1;
+>>>> +		tlb_flushall_shift = 2;
+>>>>  		break;
+>>>
+>>> I'd not be surprised if other CPU models showed similar weaknesses 
+>>> under ebizzy as well.
+>>>
+>>> I don't particularly like the tuning aspect of the whole feature: the 
+>>> tunings are model specific and they seem to come out of thin air, 
+>>> without explicit measurements visible.
+>>>
+>>> In particular the first commit that added this optimization:
+>>>
+>>>  commit c4211f42d3e66875298a5e26a75109878c80f15b
+>>>  Date:   Thu Jun 28 09:02:19 2012 +0800
+>>>
+>>>     x86/tlb: add tlb_flushall_shift for specific CPU
+>>>
+>>> already had these magic tunings, with no explanation about what kind 
+>>> of measurement was done to back up those tunings.
+>>>
+>>> I don't think this is acceptable and until this is cleared up I think 
+>>> we might be better off turning off this feature altogether, or making 
+>>> a constant, very low tuning point.
+>>>
+>>> The original code came via:
+>>>
+>>>   611ae8e3f520 x86/tlb: enable tlb flush range support for x86
+>>>
+>>> which references a couple of benchmarks, in particular a 
+>>> micro-benchmark:
+>>>
+>>>   My micro benchmark 'mummap' http://lkml.org/lkml/2012/5/17/59
+>>>   show that the random memory access on other CPU has 0~50% speed up
+>>>   on a 2P * 4cores * HT NHM EP while do 'munmap'.
+>>>
+>>> if the tunings were done with the micro-benchmark then I think they 
+>>> are bogus, because AFAICS it does not measure the adversarial case of 
+>>> the optimization.
+> 
+> You have not replied to this concern of mine: if my concern is valid 
+> then that invalidates much of the current tunings.
 
-Hi all,
+The benefit from pretend flush range is not unconditional, since invlpg
+also cost time. And different CPU has different invlpg/flush_all
+execution time. That is part of reason for different flushall_shift
+value, another reason, if my memory right, is multiple invlpg execution
+time is not strict linearity. Can't confirm this, Sorry.
 
-Today's linux-next merge of the drm-intel tree got a conflict in
-drivers/gpu/drm/i915/intel_ddi.c between commit 76bb80ed3027
-("drm/i915/ddi: set sink to power down mode on dp disable") from Linus'
-tree and commit dff392dbd258 ("drm/i915: don't touch the VDD when
-disabling the panel") from the drm-intel tree.
+In theory the benefit is there, but most of benchmark can not show the
+performance improvement, because most of benchmark don't do flush_range
+frequency. So, need a micro benchmark to discover this if the benefit
+really exists. And the micro benchmark also can find regressions if use
+too much invlpg. The balance point is the flushall_shift value. Maybe
+the flushall_shift value are bit aggressive or maybe testing scenario
+doesn't cover everything. So I don't mind to take more conservative value.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+BTW, at that time, I tested every benchmark in hands, no regression found.
+> 
+>>> So I'd say at minimum we need to remove the per model tunings, and 
+>>> need to use very conservative defaults, to make sure we don't slow 
+>>> down reasonable workloads.
+>>
+>> I also hate to depends on mysterious hardware differentiation. But 
+>> there do have some changes in tlb/cache part on different Intel 
+>> CPU.(Guess HPA know this more). And the different shift value get 
+>> from testing not from air. :)
+> 
+> As far as I could see from the changelogs and the code itself the 
+> various tunings came from nowhere.
+> 
+> So I don't see my concerns addressed. My inclination would be to start 
+> with something like Mel's known-good tuning value below, we know that 
+> ebizzy does not regress with that setting. Any more aggressive tuning 
+> needs to be backed up with ebizzy-alike adversarial workload 
+> performance numbers.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Testing can tell us more.
 
-diff --cc drivers/gpu/drm/i915/intel_ddi.c
-index 526c8ded16b0,cec06a5453cc..000000000000
---- a/drivers/gpu/drm/i915/intel_ddi.c
-+++ b/drivers/gpu/drm/i915/intel_ddi.c
-@@@ -1158,10 -1235,9 +1235,10 @@@ static void intel_ddi_post_disable(stru
-  	if (wait)
-  		intel_wait_ddi_buf_idle(dev_priv, port);
- =20
- -	if (type =3D=3D INTEL_OUTPUT_EDP) {
- +	if (type =3D=3D INTEL_OUTPUT_DISPLAYPORT || type =3D=3D INTEL_OUTPUT_EDP=
-) {
-  		struct intel_dp *intel_dp =3D enc_to_intel_dp(encoder);
-- 		ironlake_edp_panel_vdd_on(intel_dp);
-+=20
- +		intel_dp_sink_dpms(intel_dp, DRM_MODE_DPMS_OFF);
-  		ironlake_edp_panel_off(intel_dp);
-  	}
- =20
+CC to fengguang for the following patch.
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
+> (Patch totally untested.)
+> 
+> =============>
+> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+> index dc1ec0d..c98385d 100644
+> --- a/arch/x86/kernel/cpu/intel.c
+> +++ b/arch/x86/kernel/cpu/intel.c
+> @@ -614,23 +614,8 @@ static void intel_tlb_flushall_shift_set(struct cpuinfo_x86 *c)
+>  	case 0x61d: /* six-core 45 nm xeon "Dunnington" */
+>  		tlb_flushall_shift = -1;
+>  		break;
+> -	case 0x61a: /* 45 nm nehalem, "Bloomfield" */
+> -	case 0x61e: /* 45 nm nehalem, "Lynnfield" */
+> -	case 0x625: /* 32 nm nehalem, "Clarkdale" */
+> -	case 0x62c: /* 32 nm nehalem, "Gulftown" */
+> -	case 0x62e: /* 45 nm nehalem-ex, "Beckton" */
+> -	case 0x62f: /* 32 nm Xeon E7 */
+> -		tlb_flushall_shift = 6;
+> -		break;
+> -	case 0x62a: /* SandyBridge */
+> -	case 0x62d: /* SandyBridge, "Romely-EP" */
+> -		tlb_flushall_shift = 5;
+> -		break;
+> -	case 0x63a: /* Ivybridge */
+> -		tlb_flushall_shift = 1;
+> -		break;
+>  	default:
+> -		tlb_flushall_shift = 6;
+> +		tlb_flushall_shift = 2;
+>  	}
+>  }
+>  
+> 
 
---Signature=_Fri__13_Dec_2013_11_58_54_+1100_1x57eyI+jz0TnAHL
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSqlvSAAoJEMDTa8Ir7ZwVY+QP/jJGQUI6cutH0UaqxMO8FCZ3
-wTsFbWq7mG/zOGdBZIMMn3IvWyPTvNDg+EHYhPinROotsHKY65kazmEpYex9pNeL
-SldgK9XWboVnCLEyGwEsPjRJYfS8qEc++ceBqXxBGkDWkvzgcKg32lx7pAkomjBz
-4xj1PNbtiE+3Sb4yKXDdBb+vrPidqmBRQhZBAwHWj/5xHCr4QgqpvT0S7/J1DoGT
-QBfANEROwrUq75T07+Q5tcZ0xQJV53BFtckMmWV2RVVq8Zf/Nr/20tlLremKV0pc
-IAcaeWessAzwoFPfwLSqLQ79FBuQETEg3DmZ0EBQeRdJBTKcLjZ+vYW/flDyA1yQ
-3PZ3WMBBHh2Tnwm8zx9l98jZzhvTnzCvLMGXK/Sng6KPzHZOOWQM0qwV8XgBfAUO
-LfBSY9FdD0aElZgo+Mms+GZtBM0Wu+3rmd1Dm3MX7BXvEkJOwzMv/YKs1dkZpQJR
-mrceQJl5N2YXB3Sdq882HMNh4HrpZg2IpqAQfNEggXEhDHonpvONfIojrMvBrFbW
-iaSm2baIM9MEc7Yc9MNCsVYh38/EWClw8FS7hlxEx2YgdoE4qUWOrCk5b0bwYCdU
-m6qpw1DkNyUkTvFoOvZ2XIvH1NaEDo1hZJmlko8xeYkxqe4dp33AWHG71IRWR+uM
-F+SM8hxOJMItFN3f0b9M
-=FHKI
------END PGP SIGNATURE-----
-
---Signature=_Fri__13_Dec_2013_11_58_54_+1100_1x57eyI+jz0TnAHL--
+-- 
+Thanks
+    Alex
