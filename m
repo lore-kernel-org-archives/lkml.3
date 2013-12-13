@@ -1,97 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab3LMCMQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 21:12:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60535 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314Ab3LMCMM (ORCPT
+	id S1752139Ab3LMCLN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 21:11:13 -0500
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:43164 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929Ab3LMCKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 21:12:12 -0500
-Date: Thu, 12 Dec 2013 18:14:02 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Hiroshi Doyu <hdoyu@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        swarren@nvidia.com, will.deacon@arm.com, thierry.reding@gmail.com,
-        robherring2@gmail.com, joro@8bytes.org, mark.rutland@arm.com,
-        devicetree@vger.kernel.org, lorenzo.pieralisi@arm.com,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        galak@codeaurora.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv7 04/12] driver/core: populate devices in order for IOMMUs
-Message-ID: <20131213021402.GB14192@kroah.com>
-References: <1386835033-4701-1-git-send-email-hdoyu@nvidia.com>
- <1386835033-4701-5-git-send-email-hdoyu@nvidia.com>
- <20131212113920.70E8BC40637@trevor.secretlab.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131212113920.70E8BC40637@trevor.secretlab.ca>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Thu, 12 Dec 2013 21:10:46 -0500
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        george.dunlap@eu.citrix.com, ian.jackson@eu.citrix.com,
+        mukesh.rathor@oracle.com, tim@xen.org, jbeulich@suse.com,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com
+Cc: Alexander Duyck <alexander.h.duyck@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH V10 08/14] x86/xen: Use __pa_symbol instead of __pa on C visible symbols
+Date: Thu, 12 Dec 2013 21:10:15 -0500
+Message-Id: <1386900621-27528-9-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com>
+References: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 11:39:20AM +0000, Grant Likely wrote:
-> On Thu, 12 Dec 2013 09:57:05 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
-> > IOMMU devices on the bus need to be poplulated first, then iommu
-> > master devices are done later.
-> > 
-> > With CONFIG_OF_IOMMU, "iommus=" DT binding would be used to identify
-> > whether a device can be an iommu msater or not. If a device can, we'll
-> > defer to populate that device till an iommu device is populated. Then,
-> > those deferred iommu master devices are populated and configured with
-> > help of the already populated iommu device.
-> > 
-> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > ---
-> > This is related to the following discussion:
-> >   [RFC PATCH] Documentation: devicetree: add description for generic bus properties
-> >   http://lists.infradead.org/pipermail/linux-arm-kernel/2013-November/215042.html
-> > 
-> > v6:
-> > Spinned off only driver core part from:
-> >   [PATCHv5 2/9] driver/core: populate devices in order for IOMMUs
-> > 
-> > v5:
-> > Use "iommus=" binding instread of arm,smmu's "#stream-id-cells".
-> > 
-> > v4:
-> > This is newly added, and the successor of the following RFC:
-> >   [RFC][PATCHv3+ 1/2] driver/core: Add of_iommu_attach()
-> >   http://lists.linuxfoundation.org/pipermail/iommu/2013-November/006914.html
-> > 
-> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> > ---
-> >  drivers/base/dd.c | 5 +++++
-> >  1 file changed, 5 insertions(+)
-> > 
-> > diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-> > index 0605176..0605f52 100644
-> > --- a/drivers/base/dd.c
-> > +++ b/drivers/base/dd.c
-> > @@ -25,6 +25,7 @@
-> >  #include <linux/async.h>
-> >  #include <linux/pm_runtime.h>
-> >  #include <linux/pinctrl/devinfo.h>
-> > +#include <linux/of_iommu.h>
-> >  
-> >  #include "base.h"
-> >  #include "power/power.h"
-> > @@ -273,6 +274,10 @@ static int really_probe(struct device *dev, struct device_driver *drv)
-> >  
-> >  	dev->driver = drv;
-> >  
-> > +	ret = of_iommu_attach(dev);
-> > +	if (ret)
-> > +		goto probe_failed;
-> > +
-> 
-> As discussed before, I really don't think hooking in to dd.c is the
-> right thing to do here, and certainly not as a device tree specific
-> function. ACPI or PCI described devices may have the same constraints
-> and those won't have DT descriptions.
+From: Alexander Duyck <alexander.h.duyck@intel.com>
 
-I agree, this shouldn't be in the driver core.
+This change updates a few of the functions to use __pa_symbol when
+translating C visible symbols instead of __pa.  By using __pa_symbol we are
+able to drop a few extra lines of code as don't have to test to see if the
+virtual pointer is a part of the kernel text or just standard virtual memory.
 
-greg k-h
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/mmu.c |   21 +++++++++++----------
+ 1 files changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index e334134..1d1fbdb 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1508,7 +1508,8 @@ static int xen_pgd_alloc(struct mm_struct *mm)
+ 
+ 		if (user_pgd != NULL) {
+ 			user_pgd[pgd_index(VSYSCALL_START)] =
+-				__pgd(__pa(level3_user_vsyscall) | _PAGE_TABLE);
++				__pgd(__pa_symbol(level3_user_vsyscall) |
++				      _PAGE_TABLE);
+ 			ret = 0;
+ 		}
+ 
+@@ -1971,10 +1972,10 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 	 * pgd.
+ 	 */
+ 	if (xen_feature(XENFEAT_writable_page_tables)) {
+-		native_write_cr3(__pa(init_level4_pgt));
++		native_write_cr3(__pa_symbol(init_level4_pgt));
+ 	} else {
+ 		xen_mc_batch();
+-		__xen_write_cr3(true, __pa(init_level4_pgt));
++		__xen_write_cr3(true, __pa_symbol(init_level4_pgt));
+ 		xen_mc_issue(PARAVIRT_LAZY_CPU);
+ 	}
+ 	/* We can't that easily rip out L3 and L2, as the Xen pagetables are
+@@ -1997,10 +1998,10 @@ static RESERVE_BRK_ARRAY(pmd_t, swapper_kernel_pmd, PTRS_PER_PMD);
+ 
+ static void __init xen_write_cr3_init(unsigned long cr3)
+ {
+-	unsigned long pfn = PFN_DOWN(__pa(swapper_pg_dir));
++	unsigned long pfn = PFN_DOWN(__pa_symbol(swapper_pg_dir));
+ 
+-	BUG_ON(read_cr3() != __pa(initial_page_table));
+-	BUG_ON(cr3 != __pa(swapper_pg_dir));
++	BUG_ON(read_cr3() != __pa_symbol(initial_page_table));
++	BUG_ON(cr3 != __pa_symbol(swapper_pg_dir));
+ 
+ 	/*
+ 	 * We are switching to swapper_pg_dir for the first time (from
+@@ -2024,7 +2025,7 @@ static void __init xen_write_cr3_init(unsigned long cr3)
+ 	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, pfn);
+ 
+ 	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE,
+-			  PFN_DOWN(__pa(initial_page_table)));
++			  PFN_DOWN(__pa_symbol(initial_page_table)));
+ 	set_page_prot(initial_page_table, PAGE_KERNEL);
+ 	set_page_prot(initial_kernel_pmd, PAGE_KERNEL);
+ 
+@@ -2049,7 +2050,7 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 
+ 	copy_page(initial_page_table, pgd);
+ 	initial_page_table[KERNEL_PGD_BOUNDARY] =
+-		__pgd(__pa(initial_kernel_pmd) | _PAGE_PRESENT);
++		__pgd(__pa_symbol(initial_kernel_pmd) | _PAGE_PRESENT);
+ 
+ 	set_page_prot(initial_kernel_pmd, PAGE_KERNEL_RO);
+ 	set_page_prot(initial_page_table, PAGE_KERNEL_RO);
+@@ -2058,8 +2059,8 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
+ 
+ 	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE,
+-			  PFN_DOWN(__pa(initial_page_table)));
+-	xen_write_cr3(__pa(initial_page_table));
++			  PFN_DOWN(__pa_symbol(initial_page_table)));
++	xen_write_cr3(__pa_symbol(initial_page_table));
+ 
+ 	memblock_reserve(__pa(xen_start_info->pt_base),
+ 			 xen_start_info->nr_pt_frames * PAGE_SIZE);
+-- 
+1.7.7.6
+
