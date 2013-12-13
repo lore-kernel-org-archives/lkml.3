@@ -1,54 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab3LMQSZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 11:18:25 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22309 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801Ab3LMQSX (ORCPT
+	id S1752828Ab3LMQUX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 11:20:23 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:32161 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752194Ab3LMQUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 11:18:23 -0500
-Date: Fri, 13 Dec 2013 11:18:13 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        gordan@bobich.net
-Subject: Re: [RFC PATCH 5/5] xen/pciback: PCI reset slot or bus
-Message-ID: <20131213161813.GA8794@phenom.dumpdata.com>
-References: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
- <1386950978-8628-6-git-send-email-konrad.wilk@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386950978-8628-6-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 13 Dec 2013 11:20:22 -0500
+Date: Fri, 13 Dec 2013 11:20:19 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Andrew Jones <drjones@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jason Baron <jbaron@akamai.com>
+Subject: Re: [PATCH v6 7/7] jump_label: use defined macros instead of
+ hard-coding for better readability
+Message-ID: <20131213112019.751f7946@gandalf.local.home>
+In-Reply-To: <1386691433-6827-8-git-send-email-liuj97@gmail.com>
+References: <1386691433-6827-1-git-send-email-liuj97@gmail.com>
+	<1386691433-6827-8-git-send-email-liuj97@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +/* Called when 'bind' */
->  static int pcistub_probe(struct pci_dev *dev, const struct pci_device_id *id)
+On Wed, 11 Dec 2013 00:03:53 +0800
+Jiang Liu <liuj97@gmail.com> wrote:
+
+> Use macro JUMP_LABEL_TRUE_BRANCH instead of hard-coding for better
+> readability.
+
+Looks good, just a little nit. (see below)
+
+> 
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+> ---
+>  include/linux/jump_label.h | 15 ++++++++++-----
+>  1 file changed, 10 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+> index 3999977..192ccba 100644
+> --- a/include/linux/jump_label.h
+> +++ b/include/linux/jump_label.h
+> @@ -81,18 +81,21 @@ struct module;
+>  #include <linux/atomic.h>
+>  #ifdef HAVE_JUMP_LABEL
+>  
+> -#define JUMP_LABEL_TRUE_BRANCH 1UL
+> +#define JUMP_LABEL_TYPE_FALSE_BRANCH	0UL
+> +#define JUMP_LABEL_TYPE_TRUE_BRANCH	1UL
+> +#define JUMP_LABEL_TYPE_MASK		1UL
+>  
+>  static
+>  inline struct jump_entry *jump_label_get_entries(struct static_key *key)
 >  {
->  	int err = 0;
-> @@ -528,6 +617,7 @@ out:
->  	return err;
+>  	return (struct jump_entry *)((unsigned long)key->entries
+> -						& ~JUMP_LABEL_TRUE_BRANCH);
+> +						& ~JUMP_LABEL_TYPE_MASK);
 >  }
 >  
-> +/* Called when 'unbind' */
->  static void pcistub_remove(struct pci_dev *dev)
+>  static inline bool jump_label_get_branch_default(struct static_key *key)
 >  {
->  	struct pcistub_device *psdev, *found_psdev = NULL;
-> @@ -1183,7 +1273,7 @@ static ssize_t pcistub_irq_handler_show(struct device_driver *drv, char *buf)
->  			continue;
->  		count +=
->  		    scnprintf(buf + count, PAGE_SIZE - count,
-> -			      "%s:%s:%sing:%ld\n",
-> +			      "%s:%s:%sing:%ld:%s\n",
+> -	if ((unsigned long)key->entries & JUMP_LABEL_TRUE_BRANCH)
+> +	if (((unsigned long)key->entries & JUMP_LABEL_TYPE_MASK) ==
+> +	    JUMP_LABEL_TYPE_TRUE_BRANCH)
+>  		return true;
+>  	return false;
+>  }
+> @@ -123,9 +126,11 @@ extern void static_key_slow_dec(struct static_key *key);
+>  extern void jump_label_apply_nops(struct module *mod);
+>  
+>  #define STATIC_KEY_INIT_TRUE ((struct static_key) \
+> -	{ .enabled = ATOMIC_INIT(1), .entries = (void *)1 })
+> +	{ .enabled = ATOMIC_INIT(1), \
+> +	  .entries = (void *)JUMP_LABEL_TYPE_TRUE_BRANCH })
+>  #define STATIC_KEY_INIT_FALSE ((struct static_key) \
+> -	{ .enabled = ATOMIC_INIT(0), .entries = (void *)0 })
+> +	{ .enabled = ATOMIC_INIT(0), \
+> +	  .entries = (void *)JUMP_LABEL_TYPE_FALSE_BRANCH })
 
-Um.. clearly it is RFC :-)
+Can we prettify the backslashes like:
 
->  			      pci_name(psdev->dev),
->  			      dev_data->isr_on ? "on" : "off",
->  			      dev_data->ack_intr ? "ack" : "not ack",
-> -- 
-> 1.8.3.1
-> 
+#define STATIC_KEY_INIT_TRUE ((struct static_key)		\
+	{ .enabled = ATOMIC_INIT(1),				\
+	  .entries = (void *)JUMP_LABEL_TYPE_TRUE_BRANCH })
+#define STATIC_KEY_INIT_FALSE ((struct static_key)		\
+	{ .enabled = ATOMIC_INIT(0),				\
+	  .entries = (void *)JUMP_LABEL_TYPE_FALSE_BRANCH })
+
+
+Other than that.
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+>  
+>  #else  /* !HAVE_JUMP_LABEL */
+>  
+
