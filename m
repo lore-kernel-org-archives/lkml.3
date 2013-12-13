@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909Ab3LMFLZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 00:11:25 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:62340 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab3LMFLX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 00:11:23 -0500
-From: panchaxari <panchaxari.prasannamurthy@linaro.org>
-To: kgene.kim@samsung.com
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        panchaxari.prasannamurthy@linaro.org,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH CFT] ARM:S5PC100: Enable ARM_PATCH_PHYS_VIRT and AUTO_ZRELADDR by default
-Date: Fri, 13 Dec 2013 10:41:06 +0530
-Message-Id: <1386911466-19139-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752032Ab3LMFNs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 00:13:48 -0500
+Received: from mga02.intel.com ([134.134.136.20]:44826 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751306Ab3LMFNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 00:13:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,476,1384329600"; 
+   d="scan'208";a="423990252"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: pavel@ucw.cz, rjw@rjwysocki.net, len.brown@intel.com,
+        sarah.a.sharp@linux.intel.com, gregkh@linuxfoundation.org
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, santosh.shilimkar@ti.com,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: [RFC/PATCH 3/3] usb/xhci-plat: remove unnecessary #ifdef checks for CONFIG_PM_SLEEP
+Date: Thu, 12 Dec 2013 21:18:25 -0800
+Message-Id: <1386911905-2366-4-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1386911905-2366-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1386911905-2366-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARM_PATCH_PHYS_VIRT and AUTO_ZRELADDR have been enabled as default configs
-to S5PC100 platform
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-Introduction of PHYS_VIRT config as default would enable phy-to-virt and
-virt-to-phy translation function at boot and module loading time
-and enforce dynamic reallocation of memory. AUTO_ZRELADDR config would
-enable calculation of kernel load address at run time.
+Drivers using SET_*_PM_OPS() no longer need to #ifdef for CONFIG_PM_*
+So, let's remove the unnecessary #ifdef's.
 
-PHYS_VIRT config is mutually exclusive to XIP_KERNEL, XIP_KERNEL is used in
-systems with NOR flash devices, and ZRELADDR config is mutually exclusive
-to ZBOOT_ROM.
-
-CFT::Call For Testing
-
-Requesting maintainers of S5PC100 platforms to evaluate the changes on the board
-and comment, as I dont have the board for testing and also requesting an ACK.
-
-Signed-off-by: panchaxari <panchaxari.prasannamurthy@linaro.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Heiko Stuebner <heiko@sntech.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 ---
- arch/arm/Kconfig |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/host/xhci-plat.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 8986335..ec1faea 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -778,7 +778,9 @@ config ARCH_S5P64X0
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index d9c169f470d3..b1d93c344e04 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -197,7 +197,6 @@ static int xhci_plat_remove(struct platform_device *dev)
+ 	return 0;
+ }
  
- config ARCH_S5PC100
- 	bool "Samsung S5PC100"
-+	select ARM_PATCH_PHYS_VIRT
- 	select ARCH_REQUIRE_GPIOLIB
-+	select AUTO_ZRELADDR
- 	select CLKDEV_LOOKUP
- 	select CLKSRC_SAMSUNG_PWM
- 	select CPU_V7
+-#ifdef CONFIG_PM
+ static int xhci_plat_suspend(struct device *dev)
+ {
+ 	struct usb_hcd	*hcd = dev_get_drvdata(dev);
+@@ -217,10 +216,6 @@ static int xhci_plat_resume(struct device *dev)
+ static const struct dev_pm_ops xhci_plat_pm_ops = {
+ 	SET_SYSTEM_SLEEP_PM_OPS(xhci_plat_suspend, xhci_plat_resume)
+ };
+-#define DEV_PM_OPS	(&xhci_plat_pm_ops)
+-#else
+-#define DEV_PM_OPS	NULL
+-#endif /* CONFIG_PM */
+ 
+ #ifdef CONFIG_OF
+ static const struct of_device_id usb_xhci_of_match[] = {
+@@ -235,7 +230,7 @@ static struct platform_driver usb_xhci_driver = {
+ 	.remove	= xhci_plat_remove,
+ 	.driver	= {
+ 		.name = "xhci-hcd",
+-		.pm = DEV_PM_OPS,
++		.pm = &xhci_plat_pm_ops,
+ 		.of_match_table = of_match_ptr(usb_xhci_of_match),
+ 	},
+ };
 -- 
-1.7.10.4
+1.8.4.2
 
