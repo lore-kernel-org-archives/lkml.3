@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765Ab3LMGsm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 01:48:42 -0500
-Received: from us01smtp3.synopsys.com ([198.182.44.81]:55418 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756Ab3LMGsl (ORCPT
+	id S1751887Ab3LMGud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 01:50:33 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:52563 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab3LMGuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 01:48:41 -0500
-Message-ID: <52AAADA7.4000508@synopsys.com>
-Date: Fri, 13 Dec 2013 12:18:07 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: linus Torvalds <torvalds@linux-foundation.org>
-CC: lkml <linux-kernel@vger.kernel.org>,
-        francois Bedard <Francois.Bedard@synopsys.com>
-Subject: [GIT PULL] ARC Fixes for 3.13
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.95]
+	Fri, 13 Dec 2013 01:50:32 -0500
+X-AuditID: 9c93017e-b7c17ae000003961-c1-52aaae35abc2
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Rafael Aquini <aquini@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Joonsoo Kim <js1304@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 0/6] correct and clean-up migration related stuff
+Date: Fri, 13 Dec 2013 15:53:25 +0900
+Message-Id: <1386917611-11319-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Changes From v2
+- Drop 7th patch which try to remove result argument on page allocation
+function for migration since it is wrong.
+- Fix one missed word on changelog for 2nd patch, "correct failure
+handling if !hugepage_migration_support()"
+- Remove missed callsite for putback_lru_pages() on 4th patch
+- Add Acked-by and Review-by
 
-Please pull ARC fixes for 3.13. These are couple of weeks old already, but I just
-couldn't get them to you earlier.
+Here is the patchset for correcting and cleaning-up migration
+related stuff. These are random correction and clean-up, so
+please see each patches ;)
 
-Thx,
--Vineet
---------------------->
-The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+Thanks.
 
-  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+Naoya Horiguchi (1):
+  mm/migrate: add comment about permanent failure path
 
-are available in the git repository at:
+Joonsoo Kim (5):
+  mm/migrate: correct failure handling if !hugepage_migration_support()
+  mm/mempolicy: correct putback method for isolate pages if failed
+  mm/migrate: remove putback_lru_pages, fix comment on
+    putback_movable_pages
+  mm/compaction: respect ignore_skip_hint in update_pageblock_skip
+  mm/migrate: remove unused function, fail_migrate_page()
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/vgupta/arc.git/
-tags/arc-fixes-for-3.13
+ include/linux/migrate.h |    6 ------
+ mm/compaction.c         |    4 ++++
+ mm/memory-failure.c     |    8 +++++++-
+ mm/mempolicy.c          |    2 +-
+ mm/migrate.c            |   51 +++++++++++++++++++----------------------------
+ 5 files changed, 32 insertions(+), 39 deletions(-)
 
-for you to fetch changes up to da990a4f2d5a321911026c26c7eeec3bbc6fb7b7:
+-- 
+1.7.9.5
 
-  ARC: [perf] Fix a few thinkos (2013-11-28 15:49:59 +0530)
-
-----------------------------------------------------------------
-ARC Fixes for 3.13
-
-- Couple of fixes for recently added perf code
-- Build time extable sort
-
-----------------------------------------------------------------
-Vineet Gupta (3):
-      ARC: extable: Enable sorting at build time
-      ARC: Add guard macro to uapi/asm/unistd.h
-      ARC: [perf] Fix a few thinkos
-
- arch/arc/Kconfig                   | 1 +
- arch/arc/include/uapi/asm/unistd.h | 5 +++++
- arch/arc/kernel/perf_event.c       | 4 ++--
- scripts/sortextable.c              | 5 +++++
- 4 files changed, 13 insertions(+), 2 deletions(-)
