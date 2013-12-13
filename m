@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab3LLUYq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 15:24:46 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:53106 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab3LLUYo (ORCPT
+	id S1751976Ab3LLU1g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 15:27:36 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:12647 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751526Ab3LLU1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 15:24:44 -0500
-Message-ID: <52AA1B72.1070905@gmail.com>
-Date: Thu, 12 Dec 2013 22:24:18 +0200
-From: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 12 Dec 2013 15:27:34 -0500
+Date: Thu, 12 Dec 2013 20:24:17 -0800
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 2/3] pinctrl: Add msm8x74 configuration
+Message-ID: <20131213042416.GL11990@sonymobile.com>
+References: <1386295805-13708-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <1386295805-13708-3-git-send-email-bjorn.andersson@sonymobile.com>
+ <52A24E08.706@codeaurora.org>
+ <20131210084140.GF11990@sonymobile.com>
+ <52A7C4BB.6000701@codeaurora.org>
+ <CACRpkdY9Z71VcS6ERiaDbg9P7qPEK_jCVXLvoCDx6YztYCnR2Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>, Dan Williams <dcbw@redhat.com>
-CC: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        =?UTF-8?B?UGFsaSBSb2jDoQ==?= =?UTF-8?B?cg==?= 
-	<pali.rohar@gmail.com>,
-        Kalle Valo <kvalo@adurom.com>, Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: Re: [PATCH v2 15/16] wl1251: Add sysfs file address for setting permanent
- mac address
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>	 <201312101814.35112@pali> <1386697762.30202.6.camel@dcbw.foobar.com>	 <201312101852.17030@pali>	 <1386796654.1516.268.camel@bwh-desktop.uk.level5networks.com>	 <52A8DA9A.50501@gmail.com>	 <1386800135.1516.296.camel@bwh-desktop.uk.level5networks.com>	 <1386802416.17188.69.camel@dcbw.foobar.com> <1386878159.1516.312.camel@bwh-desktop.uk.level5networks.com>
-In-Reply-To: <1386878159.1516.312.camel@bwh-desktop.uk.level5networks.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdY9Z71VcS6ERiaDbg9P7qPEK_jCVXLvoCDx6YztYCnR2Q@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu 12 Dec 11:15 PST 2013, Linus Walleij wrote:
 
-On 12.12.2013 21:55, Ben Hutchings wrote:
-> On Wed, 2013-12-11 at 16:53 -0600, Dan Williams wrote:
->> On Wed, 2013-12-11 at 22:15 +0000, Ben Hutchings wrote:
->>> On Wed, 2013-12-11 at 23:35 +0200, Ivajlo Dimitrov wrote:
->>>> On 11.12.2013 23:17, Ben Hutchings wrote:
->>>>> I think that's an even worse idea.  This is not firmware and it already
->>>>> exists in separate storage.
->>>>>
->>>>> I think that rx51_init_wl1251() in
->>>>> arch/arm/mach-omap2/board-rx51-peripherals.c should either copy the MAC
->>>>> address out of NVRAM, or if it's too early to do that, then schedule a
->>>>> function to run later and only then set up wl1251 platform data.
->>>>>
->>>>> Ben.
->>>>>
->>>> And how will that work with DT when board files will be in the history?
->>> 1. Boot loader reads the MAC address from NVRAM and puts it in the DT
->>> node.
->>> or
->>> 2. NVRAM reading is done by a tiny driver that is loaded based on the
->>> platform name and updates the DT node in memory.  (But I don't know how
->>> wl1251 should decide to defer probing if it's probed before that other
->>> driver.)
->> I'm uncomfortable with it too, and yes the permanent MAC should really
->> be known before the interface is even registered, but...
->>
->> Imagine if the MAC address for your ethernet device was stored
->> in /etc/my-mac-addr.txt, except that /etc was a read-only protected
->> partition from a very small SSD.  That's essentially the N900; it's
->> stored in a file in a normal ext2/ext3 (?) filesystem on a partition of
->> the internal flash.
-> Oh, from my quick look I got the impression that this 'CAL' was stored
-> directly in a specific flash partition.
->
->>    It seems like overkill to write a small driver that
->> duplicates the ext3 + MTD drivers just to read the MAC.
-> [...]
->
-> I don't see that anything would need to be duplicated.  But reading
-> files from the kernel is really ugly, and deciding when to read the file
-> would be another problem (as you noted).
->
-> Ben
->
-Yes, CAL is stored in /dev/mtd1, a dedicated partition in the NAND 
-flash. But reading the data stored in it from the kernel is not a 
-trivial task, as it uses its own pseudo-fs format etc. Not impossible (I 
-RE-ed libcal a while ago [0], so there is a code that could be reused, 
-calvaria works too afaik), but still doesn't sound like a very good idea.
+> On Wed, Dec 11, 2013 at 2:49 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+...
+> > I don't follow what Linus is recommending. How could
+> > .gpio_request_enable()/.gpio_disable_free() help us here?
+> 
+> That removes the need to define a single group for each pin that
+> can be used as GPIO.
 
-[0] 
-https://gitorious.org/community-ssu/libcal/source/d4c5fd9293ddb693c9b032b4c084cd0343b3ea26:
+For the TLMM chip the pin can not be used as GPIO when another function is
+selected for the pin. And upon leaving a state with a function defined the
+choosen mux is disabled, turning the pin back to a GPIO pin.
+So I don't think this is applicable for us, any unused pin is a GPIO pin.
 
-Ivo
+
+The reason why there are 1 pingroup per pin is because a pingroup represent
+a configurable entity, i.e. a config register in the TLMM chip; which is one
+per pin for the GPIO pins.
+
+Regards,
+Bjorn
