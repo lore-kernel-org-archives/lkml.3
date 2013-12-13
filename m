@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab3LMPoW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:44:22 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:60693 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab3LMPoR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:44:17 -0500
+	id S1752965Ab3LMPoj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:44:39 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:18854 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752428Ab3LMPoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 10:44:37 -0500
+X-IronPort-AV: E=Sophos;i="4.95,479,1384300800"; 
+   d="scan'208";a="84323725"
+Date: Fri, 13 Dec 2013 15:44:35 +0000
+From: Wei Liu <wei.liu2@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v2 9/9] xen-netback: Aggregate TX unmap
+ operations
+Message-ID: <20131213154435.GP21900@zion.uk.xensource.com>
+References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
+ <1386892097-15502-10-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUHSF4YCQR7DmCZPSviBGDxVdot9vYPVZtTnLMBgviLow@mail.gmail.com>
-References: <20131127184652.GA1856@kroah.com> <CAErSpo46LZP8t+aLnYOtJ1mXKKkCF7sOy97MFd0hWo+OOoz68Q@mail.gmail.com>
- <CAE9FiQUeyxN5OAaXqfhdQkzTwjV83BN-L3r6kH0sO0t1b1-63Q@mail.gmail.com>
- <CAErSpo6_s6-Dc__-AzausBVDvOAY5beh7ivng2dWHUN1iRyj+g@mail.gmail.com>
- <20131213020620.GF13333@kroah.com> <CAErSpo6F_oLE2XLt9q5iQE3izuP1ZKW_rib60KKokaL9ewZogA@mail.gmail.com>
- <CAE9FiQUHSF4YCQR7DmCZPSviBGDxVdot9vYPVZtTnLMBgviLow@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 13 Dec 2013 08:43:56 -0700
-Message-ID: <CAErSpo4b69MLo6b=hH7Esum94abmki6sZDhvK8eRg0_u8K4-QA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: export MSI mode using attributes, not kobjects
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1386892097-15502-10-git-send-email-zoltan.kiss@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 10:59 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Thu, Dec 12, 2013 at 8:32 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> No problem.  I have
->>
->> CONFIG_LOCKDEP_SUPPORT=y
->> CONFIG_LOCKDEP=y
->> CONFIG_DEBUG_LOCKDEP=y
->>
->> and I still don't see the problem booting the qemu q35 model.
->> Whatever, I folded it in anyway.
->
-> Does qemu q35 use MSI?
+On Thu, Dec 12, 2013 at 11:48:17PM +0000, Zoltan Kiss wrote:
+> Unmapping causes TLB flushing, therefore we should make it in the largest
+> possible batches. However we shouldn't starve the guest for too long. So if
+> the guest has space for at least two big packets and we don't have at least a
+> quarter ring to unmap, delay it for at most 1 milisec.
+> 
 
-Oops, sorry, I *do* see the problem on qemu q35.  I must have messed
-something up when I tried it yesterday.  And I verified that your
-change fixes it.  Sorry for the noise.
+Is this solution temporary or permanent? If it is permanent would it
+make sense to make these parameter tunable?
 
-Bjorn
+Wei.
