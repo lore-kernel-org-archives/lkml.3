@@ -1,181 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab3LMJIX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 04:08:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34156 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752224Ab3LMJIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 04:08:13 -0500
-Message-ID: <52AACE79.20804@suse.cz>
-Date: Fri, 13 Dec 2013 10:08:09 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752190Ab3LMJOJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 04:14:09 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:41768 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab3LMJOE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 04:14:04 -0500
+Message-ID: <52AACF63.2020004@oracle.com>
+Date: Fri, 13 Dec 2013 10:12:03 +0100
+From: Vegard Nossum <vegard.nossum@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Bob Liu <bob.liu@oracle.com>, Sasha Levin <sasha.levin@oracle.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, joern@logfs.org,
-        mgorman@suse.de, Michel Lespinasse <walken@google.com>,
-        riel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: kernel BUG in munlock_vma_pages_range
-References: <52A3D0C3.1080504@oracle.com> <52A58E8A.3050401@suse.cz> <52A5F83F.4000207@oracle.com> <52A5F9EE.4010605@suse.cz> <52A6275F.4040007@oracle.com> <52A8EE38.2060004@suse.cz> <52A92A8D.20603@oracle.com> <52A943BC.2090001@oracle.com> <52A9AEF2.2030600@suse.cz> <52AA2510.8080908@oracle.com> <52AACA0B.6080602@oracle.com>
-In-Reply-To: <52AACA0B.6080602@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kees Cook <keescook@chromium.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: Re: [PATCH 1/9] Known exploit detection
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>	<20131212190659.GG13547@thunk.org> <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
+In-Reply-To: <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2013 09:49 AM, Bob Liu wrote:
-> On 12/13/2013 05:05 AM, Sasha Levin wrote:
->> On 12/12/2013 07:41 AM, Vlastimil Babka wrote:
->>> On 12/12/2013 06:03 AM, Bob Liu wrote:
->>>>
->>>> On 12/12/2013 11:16 AM, Sasha Levin wrote:
->>>>> On 12/11/2013 05:59 PM, Vlastimil Babka wrote:
->>>>>> On 12/09/2013 09:26 PM, Sasha Levin wrote:
->>>>>>> On 12/09/2013 12:12 PM, Vlastimil Babka wrote:
->>>>>>>> On 12/09/2013 06:05 PM, Sasha Levin wrote:
->>>>>>>>> On 12/09/2013 04:34 AM, Vlastimil Babka wrote:
->>>>>>>>>> Hello, I will look at it, thanks.
->>>>>>>>>> Do you have specific reproduction instructions?
->>>>>>>>>
->>>>>>>>> Not really, the fuzzer hit it once and I've been unable to trigger
->>>>>>>>> it again. Looking at
->>>>>>>>> the piece of code involved it might have had something to do with
->>>>>>>>> hugetlbfs, so I'll crank
->>>>>>>>> up testing on that part.
->>>>>>>>
->>>>>>>> Thanks. Do you have trinity log and the .config file? I'm currently
->>>>>>>> unable to even boot linux-next
->>>>>>>> with my config/setup due to a GPF.
->>>>>>>> Looking at code I wouldn't expect that it could encounter a tail
->>>>>>>> page, without first encountering a
->>>>>>>> head page and skipping the whole huge page. At least in THP case, as
->>>>>>>> TLB pages should be split when
->>>>>>>> a vma is split. As for hugetlbfs, it should be skipped for
->>>>>>>> mlock/munlock operations completely. One
->>>>>>>> of these assumptions is probably failing here...
->>>>>>>
->>>>>>> If it helps, I've added a dump_page() in case we hit a tail page
->>>>>>> there and got:
->>>>>>>
->>>>>>> [  980.172299] page:ffffea003e5e8040 count:0 mapcount:1
->>>>>>> mapping:          (null) index:0
->>>>>>> x0
->>>>>>> [  980.173412] page flags: 0x2fffff80008000(tail)
->>>>>>>
->>>>>>> I can also add anything else in there to get other debug output if
->>>>>>> you think of something else useful.
->>>>>>
->>>>>> Please try the following. Thanks in advance.
->>>>>
->>>>> [  428.499889] page:ffffea003e5c0040 count:0 mapcount:4
->>>>> mapping:          (null) index:0x0
->>>>> [  428.499889] page flags: 0x2fffff80008000(tail)
->>>>> [  428.499889] start=140117131923456 pfn=16347137
->>>>> orig_start=140117130543104 page_increm
->>>>> =1 vm_start=140117130543104 vm_end=140117134688256 vm_flags=135266419
->>>>> [  428.499889] first_page pfn=16347136
->>>>> [  428.499889] page:ffffea003e5c0000 count:204 mapcount:44
->>>>> mapping:ffff880fb5c466c1 inde
->>>>> x:0x7f6f8fe00
->>>>> [  428.499889] page flags:
->>>>> 0x2fffff80084068(uptodate|lru|active|head|swapbacked)
->>>>
->>>>    From this print, it looks like the page is still a huge page.
->>>> One situation I guess is a huge page which isn't PageMlocked and passed
->>>> to munlock_vma_page(). I'm not sure whether this will happen.
->>>
->>> Yes that's quite likely the case. It's not illegal to happen I would say.
->>>
->>>> Please take a try this patch.
->>>
->>> I've made a simpler version that does away with the ugly page_mask
->>> thing completely.
->>> Please try that as well. Thanks.
->>>
->>> Also when working on this I think I found another potential but much
->>> rare problem
->>> when munlock_vma_page races with a THP split. That would however
->>> manifest such that
->>> part of the former tail pages would stay PageMlocked. But that still
->>> needs more thought.
->>> The bug at hand should however be fixed by this patch.
->>
->> Yup, this patch seems to fix the issue previously reported.
->>
->> However, I'll piggyback another thing that popped up now that the vm
->> could run for a while which
->> also seems to be caused by the original patch. It looks like a pretty
->> straightforward deadlock, but
+On 12/12/2013 10:13 PM, Kees Cook wrote:
+> On Thu, Dec 12, 2013 at 11:06 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+>> On Thu, Dec 12, 2013 at 05:52:24PM +0100, vegard.nossum@oracle.com wrote:
+>>> The idea is simple -- since different kernel versions are vulnerable to
+>>> different root exploits, hackers most likely try multiple exploits before
+>>> they actually succeed.
+>
+> I like it. I like how lightweight it is, and I like that it can be
+> trivially compiled out. My concerns would be:
+>
+> - how do we avoid bikeshedding about which exploits are "serious
+> enough" to trigger a report?
 
-Sigh, put one down, patch it around... :)
+Well, I've already suggested that only bugs that potentially lead to 
+privilege escalation/intrusion (local and remote) would be candidates. 
+This probably includes any kind of buffer overflow or "wild write" bug.
 
-> Looks like put_page() in __munlock_pagevec() need to get the
-> zone->lru_lock which is already held when entering __munlock_pagevec().
+Clearly, a bug should also be present over a complete release cycle 
+before it's worth annotating. A bug introduced in -rc1 and fixed in -rc5 
+is NOT a candidate.
 
-I've come to the same conclusion, however:
+> - who will keep adding these triggers going forward?
+>
+> I'm more than happy to assist with adding future triggers, but I don't
+> want to be the only person doing it. :)
 
-> How about fix like this?
+Thanks! Without making any promises, I am fairly sure that my team has 
+an interest in adding and maintaining triggers.
 
-That unfortunately removes most of the purpose of this function which was to avoid repeated locking. 
-
-Please try this patch.
-
--------8<-------
-From: Vlastimil Babka <vbabka@suse.cz>
-Date: Fri, 13 Dec 2013 10:03:25 +0100
-Subject: [PATCH] Deadlock in __munlock_pagevec candidate fix
-
----
- mm/mlock.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
-
-diff --git a/mm/mlock.c b/mm/mlock.c
-index a34dfdc..c97273e 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -281,10 +281,12 @@ static void __munlock_pagevec(struct pagevec *pvec, struct zone *zone)
- {
- 	int i;
- 	int nr = pagevec_count(pvec);
--	int delta_munlocked = -nr;
-+	int delta_munlocked;
- 	struct pagevec pvec_putback;
- 	int pgrescued = 0;
- 
-+	pagevec_init(&pvec_putback, 0);
-+
- 	/* Phase 1: page isolation */
- 	spin_lock_irq(&zone->lru_lock);
- 	for (i = 0; i < nr; i++) {
-@@ -313,16 +315,22 @@ skip_munlock:
- 			/*
- 			 * We won't be munlocking this page in the next phase
- 			 * but we still need to release the follow_page_mask()
--			 * pin.
-+			 * pin. We cannot do it under lru_lock however. If it's
-+			 * the last pin, __page_cache_release would deadlock.
- 			 */
-+			pagevec_add(&pvec_putback, pvec->pages[i]);
- 			pvec->pages[i] = NULL;
--			put_page(page);
--			delta_munlocked++;
- 		}
- 	}
-+	delta_munlocked = -nr + pagevec_count(&pvec_putback);
- 	__mod_zone_page_state(zone, NR_MLOCK, delta_munlocked);
- 	spin_unlock_irq(&zone->lru_lock);
- 
-+	/* Now we can release pins of pages that we are not munlocking */
-+	for (i = 0; i < pagevec_count(&pvec_putback); i++) {
-+		put_page(pvec_putback.pages[i]);
-+	}
-+
- 	/* Phase 2: page munlock */
- 	pagevec_init(&pvec_putback, 0);
- 	for (i = 0; i < nr; i++) {
--- 
-1.8.4
+Based on some of the later comments in this thread, I think it might be 
+a good idea to keep a separate git tree for the triggers for a while. 
+You are of course welcome to contribute in any case.
 
 
+Vegard
