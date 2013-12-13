@@ -1,145 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab3LMMLp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 07:11:45 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:50952 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740Ab3LMML0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752758Ab3LMML0 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 13 Dec 2013 07:11:26 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:50772 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568Ab3LMMLW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 07:11:22 -0500
 From: dietmar.eggemann@arm.com
 To: peterz@infradead.org, mingo@redhat.com, vincent.guittot@linaro.org,
         morten.rasmussen@arm.com, chris.redpath@arm.com
 Cc: linux-kernel@vger.kernel.org, dietmar.eggemann@arm.com
-Subject: [RFC PATCH 8/8] sched: remove scheduler domain naming
-Date: Fri, 13 Dec 2013 12:11:28 +0000
-Message-Id: <1386936688-29113-9-git-send-email-dietmar.eggemann@arm.com>
+Subject: [RFC PATCH 0/8] change scheduler domain hierarchy set-up
+Date: Fri, 13 Dec 2013 12:11:20 +0000
+Message-Id: <1386936688-29113-1-git-send-email-dietmar.eggemann@arm.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386936688-29113-1-git-send-email-dietmar.eggemann@arm.com>
-References: <1386936688-29113-1-git-send-email-dietmar.eggemann@arm.com>
-X-OriginalArrivalTime: 13 Dec 2013 12:11:22.0929 (UTC) FILETIME=[705D1210:01CEF7FC]
-X-MC-Unique: 113121312112410801
+X-OriginalArrivalTime: 13 Dec 2013 12:11:19.0288 (UTC) FILETIME=[6E317F80:01CEF7FC]
+X-MC-Unique: 113121312111907001
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id rBDCBulw009906
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id rBDCC6oY009910
 
 From: Dietmar Eggemann <dietmar.eggemann@arm.com>
 
-In case the arch is allowed to define the conventional scheduler domain
-topology level (i.e. the one without SD_NUMA topology flag) layout, it is
-not feasible any more for the scheduler to name these levels.  Therefore,
-this patch gets rid of of the sched_domain_topology_level structure
-member 'name' and the corresponding SD_INIT_NAME macro.  It was only used
-when CONFIG_SCHED_DEBUG was set any way.
+This patch-set cleans up the scheduler domain level initialization code.
+It is based on the idea of Peter Zijlstra to use a single scheduler domain
+init function sketched here: https://lkml.org/lkml/2013/11/5/239 
 
-Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
----
- include/linux/sched.h |    3 ---
- kernel/sched/core.c   |   20 ++++----------------
- 2 files changed, 4 insertions(+), 19 deletions(-)
+What does the patch-set try to achieve:
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 768b037dfacb..511700ddd7f7 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -866,9 +866,6 @@ struct sched_domain {
- 	unsigned int ttwu_move_affine;
- 	unsigned int ttwu_move_balance;
- #endif
--#ifdef CONFIG_SCHED_DEBUG
--	char *name;
--#endif
- 	union {
- 		void *private;		/* used during construction */
- 		struct rcu_head rcu;	/* used during destruction */
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 3bb8e3e2e58a..e4f6a184333a 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4302,7 +4302,7 @@ set_table_entry(struct ctl_table *entry,
- static struct ctl_table *
- sd_alloc_ctl_domain_table(struct sched_domain *sd)
- {
--	struct ctl_table *table = sd_alloc_ctl_entry(13);
-+	struct ctl_table *table = sd_alloc_ctl_entry(12);
- 
- 	if (table == NULL)
- 		return NULL;
-@@ -4330,9 +4330,7 @@ sd_alloc_ctl_domain_table(struct sched_domain *sd)
- 		sizeof(int), 0644, proc_dointvec_minmax, false);
- 	set_table_entry(&table[10], "flags", &sd->flags,
- 		sizeof(int), 0644, proc_dointvec_minmax, false);
--	set_table_entry(&table[11], "name", sd->name,
--		CORENAME_MAX_SIZE, 0444, proc_dostring, false);
--	/* &table[12] is terminator */
-+	/* &table[11] is terminator */
- 
- 	return table;
- }
-@@ -4573,7 +4571,7 @@ static int sched_domain_debug_one(struct sched_domain *sd, int cpu, int level,
- 	cpulist_scnprintf(str, sizeof(str), sched_domain_span(sd));
- 	cpumask_clear(groupmask);
- 
--	printk(KERN_DEBUG "%*s domain %d: ", level, "", level);
-+	printk(KERN_DEBUG "%*s domain level %d: ", level, "", level);
- 
- 	if (!(sd->flags & SD_LOAD_BALANCE)) {
- 		printk("does not load-balance\n");
-@@ -4583,7 +4581,7 @@ static int sched_domain_debug_one(struct sched_domain *sd, int cpu, int level,
- 		return -1;
- 	}
- 
--	printk(KERN_CONT "span %s level %s\n", str, sd->name);
-+	printk(KERN_CONT "span %s\n", str);
- 
- 	if (!cpumask_test_cpu(cpu, sched_domain_span(sd))) {
- 		printk(KERN_ERR "ERROR: domain->span does not contain "
-@@ -5241,12 +5239,6 @@ int __weak arch_sd_sibling_asym_packing(void)
-  * Non-inlined to reduce accumulated stack pressure in build_sched_domains()
-  */
- 
--#ifdef CONFIG_SCHED_DEBUG
--# define SD_INIT_NAME(sd, type)		sd->name = #type
--#else
--# define SD_INIT_NAME(sd, type)		do { } while (0)
--#endif
--
- static int default_relax_domain_level = -1;
- int sched_domain_level_max;
- 
-@@ -5494,7 +5486,6 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
- 	if (sd->flags & SD_SHARE_CPUPOWER) {
- 		sd->imbalance_pct = 110;
- 		sd->smt_gain = 1178; /* ~15% */
--		SD_INIT_NAME(sd, SMT);
- 	} else if (sd->flags & SD_SHARE_PKG_RESOURCES) {
- 		sd->cache_nice_tries = 1;
- 		sd->busy_idx = 2;
-@@ -5507,7 +5498,6 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
- 		 */
- 		sd->flags |= arch_sd_sibling_asym_packing();
- 
--		SD_INIT_NAME(sd, MC);
- #ifdef CONFIG_NUMA
- 	} else if (sd->flags & SD_NUMA) {
- 		sd->busy_factor = 32,
-@@ -5521,13 +5511,11 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
- 				       SD_BALANCE_FORK |
- 				       SD_WAKE_AFFINE);
- 		}
--		SD_INIT_NAME(sd, NUMA);
- #endif
- 	} else {
- 		sd->cache_nice_tries = 1;
- 		sd->busy_idx = 2;
- 		sd->idle_idx = 1;
--		SD_INIT_NAME(sd, CPU);
- 	}
- 
- 	sd->private = &tl->data;
+1) Let the arch define the conventional (here defined to all levels except
+   the NUMA levels) scheduler domain hierarchy.  The arch specifies per
+   scheduler domain the pointer to the getter function of the
+   corresponding cpu mask as well as the topology related scheduler
+   domain flags.
+
+2) Unify the set-up code for conventional and NUMA scheduler domains.
+   All scheduler domain topology levels are now allocated in the same
+   function and the scheduler does not rely on a default scheduler
+   domain topology array any more.  All scheduler domains now use a
+   common initialization function which makes the existing SD_FOO_INIT
+   macros redundant.
+
+3) The arch is no longer limited to the existing scheduler domain levels
+   (SMT, MC, BOOK, CPU) but can easily define additional levels.
+
+4) Prepare the mechanics to make it easier to integrate the provision of
+   additional topology related data (e.g. energy information) to the
+   scheduler.
+
+Current limitations:
+
+1) The arch interface for scheduler domain set-up is only implemented for
+   the ARM and the x86 arch and tested on an ARM TC2 (2 clusters, one with
+   2 Cortex A15 and the other with 3 Cortex A7) and an Intel i5-520M (2
+   cores with 2 threads each) platform.   
+
+2) For other archs it has only been compile tested for certain
+   configurations (powerpc: chroma_defconfig, mips: ip27_defconfig,
+   s390: defconfig, tile: tilegx_defconfig).  Obviously, linking these
+   kernels doesn't succeed due to the missing arch interface for
+   scheduler domain set-up implementation (undefined reference to
+   arch_sched_domain_info).
+
+3) It does not delete the arch specific SD_FOO_INIT macros for ia64,
+   metag, s390 and tile arch.
+
+4) It does not delete the arch_sd_sibling_asym_packing function which
+   will be redundant once the arch interface for scheduler domain set-up
+   has been implemented for powerpc arch.
+
+5) There is no default set-up any more.  Each arch has to define a
+   arch_sched_domain_info array, a circumstance which might not be
+   desirable.
+
+6) It has to be specified what happens when an arch specifies an
+   arch_sched_domain_info array with only a { NULL, } entry.
+
+The patch-set is against v3.13-rc3.
+
+I restrict the discussion to the scheduler community for now and will cc
+the arch maintainer later, in case some level of agreement over these
+patches can be reached.
+
+Dietmar Eggemann (8):
+  sched: arch interface for scheduler domain setup
+  arm: implement arch interface for scheduler domain setup
+  x86: implement arch interface for scheduler domain setup
+  sched: allocate the entire topology array dynamically
+  sched: introduce common topology level init function
+  sched: replace for_each_sd_topology with explicit for loop
+  sched: replace topology level init func ptr with sd_init
+  sched: remove scheduler domain naming
+
+ arch/arm/kernel/topology.c |    8 +
+ arch/x86/kernel/topology.c |   12 ++
+ include/linux/sched.h      |    3 -
+ include/linux/topology.h   |  156 +++++-------------
+ kernel/sched/core.c        |  380 +++++++++++++++++++++-----------------------
+ kernel/sched/sched.h       |   19 +++
+ 6 files changed, 258 insertions(+), 320 deletions(-)
+
 -- 
 1.7.9.5
 
