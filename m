@@ -1,74 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab3LMNzJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 08:55:09 -0500
-Received: from mailp.voltaire.com ([193.47.165.129]:55102 "EHLO mellanox.co.il"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752224Ab3LMNzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 08:55:07 -0500
-From: Doron Tsur <doront@mellanox.com>
-To: linux-kernel@vger.kernel.org
-Cc: itaib@mellanox.com, Doron Tsur <doront@mellanox.com>
-Subject: [PATCH] User level kernel headers -Wall -Wextra -Werror support fix For code using: #include <linux/netlink.h> NLMSG_OK -I<INSTALL_HDR_PATH>/include
-Date: Fri, 13 Dec 2013 15:54:58 +0200
-Message-Id: <1386942898-21620-1-git-send-email-doront@mellanox.com>
-X-Mailer: git-send-email 1.7.8.2
+	id S1752629Ab3LMN4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 08:56:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40056 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752425Ab3LMN4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 08:56:12 -0500
+Date: Fri, 13 Dec 2013 14:56:08 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Emanuel Krenz <emanuelkrenz@web.de>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: hid-multitouch: add support for SiS panel in LG
+ 23ET83V
+In-Reply-To: <trinity-1ba34dee-30ba-4815-8f91-cbeb762f4b32-1386941992832@3capp-webde-bs44>
+Message-ID: <alpine.LNX.2.00.1312131455440.12702@pobox.suse.cz>
+References: <trinity-1ba34dee-30ba-4815-8f91-cbeb762f4b32-1386941992832@3capp-webde-bs44>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tested-by: Doron Tsur <doront@mellanox.com>
-Test log:
-Compilation environments:
-Ubuntu 13.10, x86_64, gcc (Ubuntu/Linaro 4.8.1-10ubuntu9) 4.8.1
-Ubuntu 13.04, x86_64, gcc (Ubuntu/Linaro 4.7.3-1ubuntu1) 4.7.3
-[ -ftrack-macro-expansion=2 issue submitted:
-  http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59495 ]
-Kernel headers installed at:
-make -C .../linux-stable headers_install \
-    INSTALL_HDR_PATH=/builds/kernel_tests_user_headers/
-Pre-patch compilation:
-gcc -Wall -Wextra -Werror
--I/builds/kernel_tests_pre_patch_user_headers/include
-include-uapi-linux-netlink.h.test.c
-In file included from include-uapi-linux-netlink.h.test.c:2:0:
-include-uapi-linux-netlink.h.test.c: In function ‘main’:
-/builds/kernel_tests_pre_patch_user_headers/include/linux/netlink.h:89:24:
-error: comparison between signed and unsigned integer expressions
-[-Werror=sign-compare]
-       (nlh)->nlmsg_len <= (len))
-                        ^
-include-uapi-linux-netlink.h.test.c:26:5: note: in expansion of macro ‘NLMSG_OK’
-     NLMSG_OK(&auxiliary_netlink_header, active_len));
-     ^
-cc1: all warnings being treated as errors
-$ ./a.out
-nlmsg_len= 1, len = 1 NLMSG_OK(nlh,len) test result: 0
-nlmsg_len= 1, len = 3000 NLMSG_OK(nlh,len) test result: 0
-nlmsg_len= 3000, len = 1 NLMSG_OK(nlh,len) test result: 0
-nlmsg_len= 3000, len = 3000 NLMSG_OK(nlh,len) test result: 1
+On Fri, 13 Dec 2013, Emanuel Krenz wrote:
 
-Signed-off-by: Doron Tsur <doront@mellanox.com>
----
- include/uapi/linux/netlink.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> I bought an LG 23ET83V multitouch monitor, whose idProduct=1030 wasn't 
+> yet included in the hid-multitouch driver. So I wrote following patch to 
+> include the ID number 1030 and patched the latest stable 3.12.5 kernel. 
+> The SiS touchpanel in my monitor works for me now. This is my first 
+> submitted patch, hope it's okay now, ...well every beginning is 
+> difficult ;-).
 
-diff --git a/include/uapi/linux/netlink.h b/include/uapi/linux/netlink.h
-index 1a85940..1884d4e 100644
---- a/include/uapi/linux/netlink.h
-+++ b/include/uapi/linux/netlink.h
-@@ -86,7 +86,7 @@ struct nlmsghdr {
- 				  (struct nlmsghdr*)(((char*)(nlh)) + NLMSG_ALIGN((nlh)->nlmsg_len)))
- #define NLMSG_OK(nlh,len) ((len) >= (int)sizeof(struct nlmsghdr) && \
- 			   (nlh)->nlmsg_len >= sizeof(struct nlmsghdr) && \
--			   (nlh)->nlmsg_len <= (len))
-+			   (int)(nlh)->nlmsg_len <= (len))
- #define NLMSG_PAYLOAD(nlh,len) ((nlh)->nlmsg_len - NLMSG_SPACE((len)))
- 
- #define NLMSG_NOOP		0x1	/* Nothing.		*/
+Now applied (after refreshing it to apply on top of the SIS quirk 
+merging). Thanks,
+
 -- 
-1.7.1
-
+Jiri Kosina
+SUSE Labs
