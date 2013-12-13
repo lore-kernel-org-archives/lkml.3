@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab3LMOgF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 09:36:05 -0500
-Received: from eu1sys200aog123.obsmtp.com ([207.126.144.155]:44136 "EHLO
-	eu1sys200aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753020Ab3LMOgD (ORCPT
+	id S1753207Ab3LMOgW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 09:36:22 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:51198 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752948Ab3LMOgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 09:36:03 -0500
-Message-ID: <52AB1B14.6030905@st.com>
-Date: Fri, 13 Dec 2013 14:35:00 +0000
-From: Angus Clark <angus.clark@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100312 Lightning/1.0b2pre Shredder/3.0.1
+	Fri, 13 Dec 2013 09:36:19 -0500
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <dwmw2@infradead.org>,
-        <linus.walleij@linaro.org>, <linux-mtd@lists.infradead.org>,
-        Angus CLARK <angus.clark@st.com>
-Subject: Re: [PATCH v3 04/36] mtd: st_spi_fsm: Supply framework for device
- requests
-References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org> <1385727565-25794-5-git-send-email-lee.jones@linaro.org> <20131210201943.GC27149@ld-irv-0074.broadcom.com>
-In-Reply-To: <20131210201943.GC27149@ld-irv-0074.broadcom.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.65.49.178]
+X-Originating-IP: [76.119.162.148]
+In-Reply-To: <CA+5PVA4fcf526u=AF4TwQP3xdajV-qE5Jn6NKG2mme=YK8nvhw@mail.gmail.com>
+References: <alpine.LRH.2.02.1312131351140.31472@tundra.namei.org>
+	<CA+5PVA4fcf526u=AF4TwQP3xdajV-qE5Jn6NKG2mme=YK8nvhw@mail.gmail.com>
+Date: Fri, 13 Dec 2013 09:36:18 -0500
+Message-ID: <CAHC9VhRHeukZ0e_RYDFuh_eQThZnNtNnsUgtB5S+VjHjAXcCKQ@mail.gmail.com>
+Subject: Re: [GIT] SELinux fixes
+From: Paul Moore <paul@paul-moore.com>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: James Morris <jmorris@namei.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 08:19 PM, Brian Norris wrote:
-> On Fri, Nov 29, 2013 at 12:18:53PM +0000, Lee Jones wrote:
->> --- a/drivers/mtd/devices/st_spi_fsm.c
->> +static void stfsm_wait_seq(struct stfsm *fsm)
->> +{
->> +	unsigned long timeo = jiffies + HZ;
->> +
->> +	while (time_before(jiffies, timeo)) {
->> +		if (stfsm_is_idle(fsm))
->> +			return;
->> +
->> +		cond_resched();
->> +	}
->> +
->> +	dev_err(fsm->dev, "timeout on sequence completion\n");
-> 
-> I believe the timeout logic is incorrect. What if we wait a "long time"
-> to call stfsm_wait_seq() (due to scheduling, or otherwise)? Then the
-> while loop might not even run once (time_before(x, y) is false). Or what
-> if cond_resched() waits for a long time...
-> 
-> So you need an extra check of stfsm_is_idle() after the while loop,
-> before you declare a timeout.
+On Fri, Dec 13, 2013 at 9:02 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> Should probably figure out which path to take on this one soon:
+>
+> http://thread.gmane.org/gmane.linux.kernel/1611662
+>
+> A revert might be the easiest for now.
 
-Yes, good catch, this needs to updated.
+Yeah, I followed the discussion you and Eric were having earlier this
+week; I was hoping that you guys would be able to arrive at a fix as I
+would much prefer to fix the issue and not have to revert.
 
-Cheers,
+If I don't see something from Eric within the next couple of hours
+I'll go ahead and do the revert.
 
-Angus
+-Paul
+
+-- 
+paul moore
+www.paul-moore.com
