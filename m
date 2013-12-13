@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807Ab3LMF7X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 00:59:23 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:61830 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab3LMF7W (ORCPT
+	id S1751831Ab3LMGDZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 01:03:25 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:46378 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab3LMGDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 00:59:22 -0500
-X-Greylist: delayed 106691 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Dec 2013 00:59:22 EST
+	Fri, 13 Dec 2013 01:03:24 -0500
+Date: Fri, 13 Dec 2013 11:33:11 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: [PATCH 1/3] drivers: message: Mark function mpt_SoftResetHandler()
+ as static in mptbase.c
+Message-ID: <0a6b017550306ed600769dbe4fac868aa88cd9d6.1386914148.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo6F_oLE2XLt9q5iQE3izuP1ZKW_rib60KKokaL9ewZogA@mail.gmail.com>
-References: <20131127184652.GA1856@kroah.com>
-	<CAErSpo46LZP8t+aLnYOtJ1mXKKkCF7sOy97MFd0hWo+OOoz68Q@mail.gmail.com>
-	<CAE9FiQUeyxN5OAaXqfhdQkzTwjV83BN-L3r6kH0sO0t1b1-63Q@mail.gmail.com>
-	<CAErSpo6_s6-Dc__-AzausBVDvOAY5beh7ivng2dWHUN1iRyj+g@mail.gmail.com>
-	<20131213020620.GF13333@kroah.com>
-	<CAErSpo6F_oLE2XLt9q5iQE3izuP1ZKW_rib60KKokaL9ewZogA@mail.gmail.com>
-Date: Thu, 12 Dec 2013 21:59:21 -0800
-X-Google-Sender-Auth: 0RTngvxL5CMlhY-6VHAJuhe_xQ4
-Message-ID: <CAE9FiQUHSF4YCQR7DmCZPSviBGDxVdot9vYPVZtTnLMBgviLow@mail.gmail.com>
-Subject: Re: [PATCH] PCI: export MSI mode using attributes, not kobjects
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 8:32 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> No problem.  I have
->
-> CONFIG_LOCKDEP_SUPPORT=y
-> CONFIG_LOCKDEP=y
-> CONFIG_DEBUG_LOCKDEP=y
->
-> and I still don't see the problem booting the qemu q35 model.
-> Whatever, I folded it in anyway.
+This patch marks the function mpt_SoftResetHandler() as static in mptbase.c
+because it is not used outside this file.
 
-Does qemu q35 use MSI?
+Thus, it also eliminates the following warning in fusion/mptbase.c:
+drivers/message/fusion/mptbase.c:7011:1: warning: no previous prototype for ‘mpt_SoftResetHandler’ [-Wmissing-prototypes]
 
-Yinghai
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+---
+ drivers/message/fusion/mptbase.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
+index 767ff4d..c783a42 100644
+--- a/drivers/message/fusion/mptbase.c
++++ b/drivers/message/fusion/mptbase.c
+@@ -7007,7 +7007,7 @@ EXPORT_SYMBOL(mpt_halt_firmware);
+  *	IOC doesn't reply to any outstanding request. This will transfer IOC
+  *	to READY state.
+  **/
+-int
++static int
+ mpt_SoftResetHandler(MPT_ADAPTER *ioc, int sleepFlag)
+ {
+ 	int		 rc;
+-- 
+1.7.9.5
+
