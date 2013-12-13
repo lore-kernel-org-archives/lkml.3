@@ -1,222 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab3LMWq6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 17:46:58 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:49464 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753525Ab3LMW0c (ORCPT
+	id S1754915Ab3LMWrV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 17:47:21 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:36606 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754295Ab3LMWrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 17:26:32 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 017/115] gpu: ion: Modify the system heap to try to allocate large/huge pages
-Date: Fri, 13 Dec 2013 14:23:51 -0800
-Message-Id: <1386973529-4884-18-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
-References: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
+	Fri, 13 Dec 2013 17:47:18 -0500
+Message-ID: <52AB8F02.6030101@gmail.com>
+Date: Sat, 14 Dec 2013 09:49:38 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Vegard Nossum <vegard.nossum@oracle.com>
+CC: Kees Cook <keescook@chromium.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: Re: [PATCH 1/9] Known exploit detection
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>	<20131212190659.GG13547@thunk.org> <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com> <52AA4BC8.1080207@gmail.com> <52AAD178.6020607@oracle.com>
+In-Reply-To: <52AAD178.6020607@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rebecca Schultz Zavin <rebecca@android.com>
+On 13/12/13 20:20, Vegard Nossum wrote:
 
-On some systems there is a performance benefit to reducing tlb pressure
-by minimizing the number of chunks in an allocation.
+> On 12/13/2013 12:50 AM, Ryan Mallon wrote:
+>> On 13/12/13 08:13, Kees Cook wrote:
+>>> On Thu, Dec 12, 2013 at 11:06 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+>>>> On Thu, Dec 12, 2013 at 05:52:24PM +0100, vegard.nossum@oracle.com wrote:
+>>>>> The idea is simple -- since different kernel versions are vulnerable to
+>>>>> different root exploits, hackers most likely try multiple exploits before
+>>>>> they actually succeed.
+>>
+>> The _exploit() notifications could also be used to spam the syslogs.
+>> Although they are individually ratelimited, if there are enough
+>> _exploit() markers in the kernel then an annoying person can cycle
+>> through them all to generate large amounts of useless syslog.
+> 
+> They are rate limited collectively, not individually, so this should not be an issue.
 
-Signed-off-by: Rebecca Schultz Zavin <rebecca@android.com>
-[jstultz: modified patch to apply to staging directory]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/staging/android/ion/ion_system_heap.c | 116 ++++++++++++++++++++------
- 1 file changed, 90 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
-index dceed5b..98711ce 100644
---- a/drivers/staging/android/ion/ion_system_heap.c
-+++ b/drivers/staging/android/ion/ion_system_heap.c
-@@ -14,7 +14,10 @@
-  *
-  */
- 
-+#include <asm/page.h>
-+#include <linux/dma-mapping.h>
- #include <linux/err.h>
-+#include <linux/highmem.h>
- #include <linux/mm.h>
- #include <linux/scatterlist.h>
- #include <linux/slab.h>
-@@ -22,6 +25,35 @@
- #include "ion.h"
- #include "ion_priv.h"
- 
-+struct page_info {
-+	struct page *page;
-+	unsigned long order;
-+	struct list_head list;
-+};
-+
-+static struct page_info *alloc_largest_available(unsigned long size)
-+{
-+	static unsigned int orders[] = {8, 4, 0};
-+	struct page *page;
-+	struct page_info *info;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(orders); i++) {
-+		if (size < (1 << orders[i]) * PAGE_SIZE)
-+			continue;
-+		page = alloc_pages(GFP_HIGHUSER | __GFP_ZERO | __GFP_COMP |
-+				   __GFP_NOWARN | __GFP_NORETRY, orders[i]);
-+		if (!page)
-+			continue;
-+		split_page(page, orders[i]);
-+		info = kmap(page);
-+		info->page = page;
-+		info->order = orders[i];
-+		return info;
-+	}
-+	return NULL;
-+}
-+
- static int ion_system_heap_allocate(struct ion_heap *heap,
- 				     struct ion_buffer *buffer,
- 				     unsigned long size, unsigned long align,
-@@ -29,30 +61,54 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
- {
- 	struct sg_table *table;
- 	struct scatterlist *sg;
--	int i, j;
--	int npages = PAGE_ALIGN(size) / PAGE_SIZE;
-+	int ret;
-+	struct list_head pages;
-+	struct page_info *info, *tmp_info;
-+	int i;
-+	long size_remaining = PAGE_ALIGN(size);
-+
-+	INIT_LIST_HEAD(&pages);
-+	while (size_remaining > 0) {
-+		info = alloc_largest_available(size_remaining);
-+		if (!info)
-+			goto err;
-+		list_add_tail(&info->list, &pages);
-+		size_remaining -= (1 << info->order) * PAGE_SIZE;
-+	}
- 
- 	table = kmalloc(sizeof(struct sg_table), GFP_KERNEL);
- 	if (!table)
--		return -ENOMEM;
--	i = sg_alloc_table(table, npages, GFP_KERNEL);
--	if (i)
--		goto err0;
--	for_each_sg(table->sgl, sg, table->nents, i) {
--		struct page *page;
--		page = alloc_page(GFP_HIGHUSER | __GFP_ZERO);
--		if (!page)
--			goto err1;
--		sg_set_page(sg, page, PAGE_SIZE, 0);
-+		goto err;
-+
-+	ret = sg_alloc_table(table, PAGE_ALIGN(size) / PAGE_SIZE, GFP_KERNEL);
-+	if (ret)
-+		goto err1;
-+
-+	sg = table->sgl;
-+	list_for_each_entry_safe(info, tmp_info, &pages, list) {
-+		struct page *page = info->page;
-+		for (i = 0; i < (1 << info->order); i++) {
-+			sg_set_page(sg, page + i, PAGE_SIZE, 0);
-+			sg = sg_next(sg);
-+		}
-+		list_del(&info->list);
-+		memset(info, 0, sizeof(struct page_info));
-+		kunmap(page);
- 	}
-+
-+	dma_sync_sg_for_device(NULL, table->sgl, table->nents,
-+			       DMA_BIDIRECTIONAL);
-+
- 	buffer->priv_virt = table;
- 	return 0;
- err1:
--	for_each_sg(table->sgl, sg, i, j)
--		__free_page(sg_page(sg));
--	sg_free_table(table);
--err0:
- 	kfree(table);
-+err:
-+	list_for_each_entry(info, &pages, list) {
-+		for (i = 0; i < (1 << info->order); i++)
-+			__free_page(info->page + i);
-+		kunmap(info->page);
-+	}
- 	return -ENOMEM;
- }
- 
-@@ -63,7 +119,7 @@ void ion_system_heap_free(struct ion_buffer *buffer)
- 	struct sg_table *table = buffer->priv_virt;
- 
- 	for_each_sg(table->sgl, sg, table->nents, i)
--		__free_page(sg_page(sg));
-+		__free_pages(sg_page(sg), get_order(sg_dma_len(sg)));
- 	if (buffer->sg_table)
- 		sg_free_table(buffer->sg_table);
- 	kfree(buffer->sg_table);
-@@ -85,22 +141,29 @@ void *ion_system_heap_map_kernel(struct ion_heap *heap,
- 				 struct ion_buffer *buffer)
- {
- 	struct scatterlist *sg;
--	int i;
-+	int i, j;
- 	void *vaddr;
- 	pgprot_t pgprot;
- 	struct sg_table *table = buffer->priv_virt;
--	struct page **pages = kmalloc(sizeof(struct page *) * table->nents,
--				      GFP_KERNEL);
--
--	for_each_sg(table->sgl, sg, table->nents, i)
--		pages[i] = sg_page(sg);
-+	int npages = PAGE_ALIGN(buffer->size) / PAGE_SIZE;
-+	struct page **pages = kzalloc(sizeof(struct page *) * npages,
-+				     GFP_KERNEL);
-+	struct page **tmp = pages;
- 
- 	if (buffer->flags & ION_FLAG_CACHED)
- 		pgprot = PAGE_KERNEL;
- 	else
- 		pgprot = pgprot_writecombine(PAGE_KERNEL);
- 
--	vaddr = vmap(pages, table->nents, VM_MAP, pgprot);
-+	for_each_sg(table->sgl, sg, table->nents, i) {
-+		int npages_this_entry = PAGE_ALIGN(sg_dma_len(sg)) / PAGE_SIZE;
-+		struct page *page = sg_page(sg);
-+		BUG_ON(i >= npages);
-+		for (j = 0; j < npages_this_entry; j++) {
-+			*(tmp++) = page++;
-+		}
-+	}
-+	vaddr = vmap(pages, npages, VM_MAP, pgprot);
- 	kfree(pages);
- 
- 	return vaddr;
-@@ -126,8 +189,9 @@ int ion_system_heap_map_user(struct ion_heap *heap, struct ion_buffer *buffer,
- 			offset--;
- 			continue;
- 		}
--		vm_insert_page(vma, addr, sg_page(sg));
--		addr += PAGE_SIZE;
-+		remap_pfn_range(vma, addr, page_to_pfn(sg_page(sg)),
-+				sg_dma_len(sg), vma->vm_page_prot);
-+		addr += sg_dma_len(sg);
- 	}
- 	return 0;
- }
--- 
-1.8.3.2
+Yes, sorry, I misread the code.
+
+I wonder if the exploit() function name should be changed though. Having:
+
+	exploit("CVE-xxxx");
+
+In the code looks like some sort of injection/testing framework. Maybe:
+
+	warn_known_exploit("CVE-xxxx");
+
+would be clearer?
+
+~Ryan
 
