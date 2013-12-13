@@ -1,100 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab3LMU0F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 15:26:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21331 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752798Ab3LMU0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 15:26:03 -0500
-Date: Fri, 13 Dec 2013 15:25:54 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Alasdair G Kergon <agk@redhat.com>, Joe Thornber <ejt@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Vincent Pelletier <plr.vincent@gmail.com>
-Subject: [git pull] device mapper fixes for 3.13
-Message-ID: <20131213202554.GA1736@redhat.com>
+	id S1753261Ab3LMU2y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 15:28:54 -0500
+Received: from smtpauth05h.mfg.siteprotect.com ([64.26.60.146]:53529 "EHLO
+	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752378Ab3LMU2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 15:28:53 -0500
+Date: Fri, 13 Dec 2013 15:31:30 -0500 (EST)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, ak@linux.intel.com, tglx@linutronix.de
+Subject: Re: [tip:perf/core] perf: Add generic transaction flags
+In-Reply-To: <tip-fdfbbd07e91f8fe387140776f3fd94605f0c89e5@git.kernel.org>
+Message-ID: <alpine.DEB.2.02.1312131526550.10244@pianoman.cluster.toy>
+References: <1379688044-14173-2-git-send-email-andi@firstfloor.org> <tip-fdfbbd07e91f8fe387140776f3fd94605f0c89e5@git.kernel.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020208.52AB6E04.0145,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 7b6b2bc98c0303b7f043ad5b35906f833e56308d:
+On Fri, 4 Oct 2013, tip-bot for Andi Kleen wrote:
 
-  dm cache: resolve small nits and improve Documentation (2013-11-12 13:11:09 -0500)
+> Commit-ID:  fdfbbd07e91f8fe387140776f3fd94605f0c89e5
+> Gitweb:     http://git.kernel.org/tip/fdfbbd07e91f8fe387140776f3fd94605f0c89e5
+> Author:     Andi Kleen <ak@linux.intel.com>
+> AuthorDate: Fri, 20 Sep 2013 07:40:39 -0700
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Fri, 4 Oct 2013 10:06:08 +0200
+> 
+> perf: Add generic transaction flags
 
-are available in the git repository at:
+...
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm.git tags/dm-3.13-fixes
+>  extern void perf_output_sample(struct perf_output_handle *handle,
+> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+> index 009a655..da48837 100644
+> --- a/include/uapi/linux/perf_event.h
+> +++ b/include/uapi/linux/perf_event.h
+> @@ -136,8 +136,9 @@ enum perf_event_sample_format {
+>  	PERF_SAMPLE_WEIGHT			= 1U << 14,
+>  	PERF_SAMPLE_DATA_SRC			= 1U << 15,
+>  	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
+> +	PERF_SAMPLE_TRANSACTION			= 1U << 17,
+>  
+> -	PERF_SAMPLE_MAX = 1U << 17,		/* non-ABI */
+> +	PERF_SAMPLE_MAX = 1U << 18,		/* non-ABI */
+>  };
 
-for you to fetch changes up to ed9571f0cf1fe09d3506302610f3ccdfa1d22c4a:
+I know this is a bit late, but isn't this patch missing something like
+(not a real patch):
 
-  dm array: fix a reference counting bug in shadow_ablock (2013-12-13 14:22:10 -0500)
 
-Please pull, thanks.
-Mike
+         *      { u64                   weight;   } && PERF_SAMPLE_WEIGHT
+         *      { u64                   data_src; } && PERF_SAMPLE_DATA_SRC
++        *      { u64                   transaction; } && PERF_SAMPLE_TRANSACTION
+         * };
+         */
 
-----------------------------------------------------------------
-A set of device-mapper fixes for 3.13.
-
-A fix for possible memory corruption during DM table load, fix a
-possible leak of snapshot space in case of a crash, fix a possible
-deadlock due to a shared workqueue in the delay target, fix to
-initialize read-only module parameters that are used to export metrics
-for dm stats and dm bufio.
-
-Quite a few stable fixes were identified for both the thin-provisioning
-and caching targets as a result of increased regression testing using
-the device-mapper-test-suite (dmts).  The most notable of these are the
-reference counting fixes for the space map btree that is used by the
-dm-array interface -- without these the dm-cache metadata will leak,
-resulting in dm-cache devices running out of metadata blocks.  Also,
-some important fixes related to the thin-provisioning target's
-transition to read-only mode on error.
-
-----------------------------------------------------------------
-Joe Thornber (7):
-      dm thin: switch to read only mode if a mapping insert fails
-      dm thin: always fallback the pool mode if commit fails
-      dm thin: re-establish read-only state when switching to fail mode
-      dm thin: allow pool in read-only mode to transition to read-write mode
-      dm cache policy mq: fix promotions to occur as expected
-      dm space map: disallow decrementing a reference count below zero
-      dm array: fix a reference counting bug in shadow_ablock
-
-Mike Snitzer (3):
-      dm space map metadata: return on failure in sm_metadata_new_block
-      dm thin: switch to read-only mode if metadata space is exhausted
-      dm cache: update Documentation for invalidate_cblocks's range syntax
-
-Mikulas Patocka (5):
-      dm delay: fix a possible deadlock due to shared workqueue
-      dm snapshot: avoid snapshot space leak on crash
-      dm table: fail dm_table_create on dm_round_up overflow
-      dm bufio: initialize read-only module parameters
-      dm stats: initialize read-only module parameter
-
-Vincent Pelletier (1):
-      dm cache: actually resize cache
-
- Documentation/device-mapper/cache.txt              | 10 +--
- drivers/md/dm-bufio.c                              |  5 ++
- drivers/md/dm-cache-policy-mq.c                    | 13 ++--
- drivers/md/dm-cache-target.c                       |  2 +-
- drivers/md/dm-delay.c                              | 23 ++++---
- drivers/md/dm-snap.c                               | 71 +++++++++++++++++++---
- drivers/md/dm-stats.c                              |  1 +
- drivers/md/dm-table.c                              |  5 ++
- drivers/md/dm-thin-metadata.c                      |  8 +++
- drivers/md/dm-thin-metadata.h                      |  1 +
- drivers/md/dm-thin.c                               | 66 ++++++++++++--------
- drivers/md/persistent-data/dm-array.c              | 10 ++-
- drivers/md/persistent-data/dm-block-manager.c      |  6 ++
- drivers/md/persistent-data/dm-block-manager.h      |  7 ++-
- drivers/md/persistent-data/dm-space-map-common.c   | 32 +++++++---
- drivers/md/persistent-data/dm-space-map-metadata.c |  8 ++-
- 16 files changed, 197 insertions(+), 71 deletions(-)
+  
+>  /*
+> + * Values for the memory transaction event qualifier, mostly for
+> + * abort events. Multiple bits can be set.
+> + */
+> +enum {
+> +	PERF_TXN_ELISION        = (1 << 0), /* From elision */
+> +	PERF_TXN_TRANSACTION    = (1 << 1), /* From transaction */
+> +	PERF_TXN_SYNC           = (1 << 2), /* Instruction is related */
+> +	PERF_TXN_ASYNC          = (1 << 3), /* Instruction not related */
+> +	PERF_TXN_RETRY          = (1 << 4), /* Retry possible */
+> +	PERF_TXN_CONFLICT       = (1 << 5), /* Conflict abort */
+> +	PERF_TXN_CAPACITY_WRITE = (1 << 6), /* Capacity write abort */
+> +	PERF_TXN_CAPACITY_READ  = (1 << 7), /* Capacity read abort */
+> +
+> +	PERF_TXN_MAX	        = (1 << 8), /* non-ABI */
+> +
+> +	/* bits 32..63 are reserved for the abort code */
+> +
+> +	PERF_TXN_ABORT_MASK  = (0xffffffffULL << 32),
+> +	PERF_TXN_ABORT_SHIFT = 32,
+> +};
+> +
+> +/*
+>   * The format of the data returned by read() on a perf event fd,
+>   * as specified by attr.read_format:
+>   *
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index b25d65c..c716385 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -1201,6 +1201,9 @@ static void perf_event__header_size(struct perf_event *event)
+>  	if (sample_type & PERF_SAMPLE_DATA_SRC)
+>  		size += sizeof(data->data_src.val);
+>  
+> +	if (sample_type & PERF_SAMPLE_TRANSACTION)
+> +		size += sizeof(data->txn);
+> +
+>  	event->header_size = size;
+>  }
+>  
+> @@ -4572,6 +4575,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+>  	if (sample_type & PERF_SAMPLE_DATA_SRC)
+>  		perf_output_put(handle, data->data_src.val);
+>  
+> +	if (sample_type & PERF_SAMPLE_TRANSACTION)
+> +		perf_output_put(handle, data->txn);
+> +
+>  	if (!event->attr.watermark) {
+>  		int wakeup_events = event->attr.wakeup_events;
