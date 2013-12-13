@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449Ab3LMLVm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 06:21:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3293 "EHLO mx1.redhat.com"
+	id S1752658Ab3LMLX1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 06:23:27 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:51041 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751846Ab3LMLVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 06:21:40 -0500
-Date: Fri, 13 Dec 2013 15:27:42 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
-Subject: Re: [PATCH v5 09/14] efi: passing kexec necessary efi data via
- setup_data
-Message-ID: <20131213072742.GC11164@dhcp-16-126.nay.redhat.com>
-References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
- <1386582147-9802-10-git-send-email-dyoung@redhat.com>
- <20131211222057.GB8863@pd.tnic>
- <20131212030619.GG3751@dhcp-16-126.nay.redhat.com>
- <20131212071743.GJ3751@dhcp-16-126.nay.redhat.com>
- <20131212210439.GB30162@pd.tnic>
+	id S1752215Ab3LMLXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 06:23:25 -0500
+Message-ID: <52AAEE0D.7010203@ti.com>
+Date: Fri, 13 Dec 2013 16:52:53 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131212210439.GB30162@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-samsung-soc@vger.kernel.org>, <devicetree@vger.kernel.org>
+CC: <t.figa@samsung.com>, <kgene.kim@samsung.com>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>, <sylvester.nawrocki@gmail.com>,
+        <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] phy: Add exynos-phy driver
+References: <1385558788-10880-1-git-send-email-t.stanislaws@samsung.com> <52A8364B.5020204@ti.com> <52A83B87.205@samsung.com>
+In-Reply-To: <52A83B87.205@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/13 at 10:04pm, Borislav Petkov wrote:
-> On Thu, Dec 12, 2013 at 03:17:43PM +0800, Dave Young wrote:
-> > Rethink about this issue, moving them to efi_$(BITS).c I need move the
-> > efi_setup from a static variable to an extern, It looks not worth.
+Hi,
+
+On Wednesday 11 December 2013 03:46 PM, Sylwester Nawrocki wrote:
+> On 11/12/13 10:54, Kishon Vijay Abraham I wrote:
+>> On Wednesday 27 November 2013 06:56 PM, Tomasz Stanislawski wrote:
+>>>> Hello everyone,
+>>>> The Samsung SoCs from Exynos family are enhanced with a bunch of switches
+>>>> dedicated for IP blocks. Those switches are called PHYs in Exynos
+>>>> specification. They are usually controlled by a single bit in a single
+>>>> one-word-long register.
+>>
+>> So only enabling this switch is enough for the controller or some other actual
+>> PHY IP is needed along with this switch?
+>>
+>> However I'm not sure if the switch should be modelled as PHY as it is not a PHY
+>> in the real sense.
 > 
-> Dave, would you please do what is suggested to you? A big part of
-> the efi code is split into 32-bit and 64-bit functionality. If you
-> have a serious argument why it shouldn't be done so then sure, by all
-> means, but stop coming up with silly arguments like having an extern
-> declaration is a bad thing. Please.
+> These are ordinary PHY devices embedded in an SoC. I wouldn't really call
+> them "switches", as they indeed provide the physical layer functionality 
+> for various interfaces, like USB, HDMI, MIPI CSI/DSI, etc. Their control 
 
-Ok, will do.
+Are they used along with the phy IPs for which Kamil and others have sent
+patches or this is used in different SoCs from what Kamil uses?
 
---
 Thanks
-Dave
+Kishon
+
+> interface is often very simple - usually only an enable and a reset 
+> control bit. But that can't change the fact they are real PHY devices,
+> so let's not call them switches, that's just untrue.
+> 
+> Regards,
+> Sylwester
+> 
+
