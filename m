@@ -1,116 +1,1090 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab3LMNN7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 08:13:59 -0500
-Received: from mga09.intel.com ([134.134.136.24]:44128 "EHLO mga09.intel.com"
+	id S1752535Ab3LMNQp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 08:16:45 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:56437 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751892Ab3LMNN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 08:13:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,478,1384329600"; 
-   d="scan'208";a="451814908"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20131212180057.GD134240@sgi.com>
-References: <cover.1386790423.git.athorlton@sgi.com>
- <20131212180057.GD134240@sgi.com>
-Subject: RE: [RFC PATCH 3/3] Change THP behavior
-Content-Transfer-Encoding: 7bit
-Message-Id: <20131213131349.D8DE9E0090@blue.fi.intel.com>
-Date: Fri, 13 Dec 2013 15:13:49 +0200 (EET)
+	id S1751946Ab3LMNQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 08:16:42 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: <viro@zeniv.linux.org.uk>, <linux-fsdevel@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: James Hogan <james.hogan@imgtec.com>, <linux-metag@vger.kernel.org>
+Subject: [PATCH v10] fs: imgdafs: Add IMG DAFS filesystem for metag
+Date: Fri, 13 Dec 2013 13:15:42 +0000
+Message-ID: <1386940542-22998-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_12_13_13_16_39
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex Thorlton wrote:
-> +	/*
-> +	 * now that we've done the accounting work, we check to see if
-> +	 * we've exceeded our threshold
-> +	 */
-> +	if (temp_thp->ref_count >= mm->thp_threshold) {
-> +		pmd_t pmd_entry;
-> +		pgtable_t pgtable;
-> +
-> +		/*
-> +		 * we'll do all of the following beneath the big ptl for now
-> +		 * this will need to be modified to work with the split ptl
-> +		 */
-> +		spin_lock(&mm->page_table_lock);
-> +
-> +		/*
-> +		 * once we get past the lock we have to make sure that somebody
-> +		 * else hasn't already turned this guy into a THP, if they have,
-> +		 * then the page we need is already faulted in as part of the THP
-> +		 * they created
-> +		 */
-> +		if (PageTransHuge(temp_thp->page)) {
-> +			spin_unlock(&mm->page_table_lock);
-> +			return 0;
-> +		}
-> +
-> +		pgtable = pte_alloc_one(mm, haddr);
-> +		if (unlikely(!pgtable)) {
-> +			spin_unlock(&mm->page_table_lock);
-> +			return VM_FAULT_OOM;
-> +		}
-> +
-> +		/* might wanna move this? */
-> +		__SetPageUptodate(temp_thp->page);
-> +
-> +		/* turn the pages into one compound page */
-> +		make_compound_page(temp_thp->page, HPAGE_PMD_ORDER);
-> +
-> +		/* set up the pmd */
-> +		pmd_entry = mk_huge_pmd(temp_thp->page, vma->vm_page_prot);
-> +		pmd_entry = maybe_pmd_mkwrite(pmd_mkdirty(pmd_entry), vma);
-> +
-> +		/* remap the new page since we cleared the mappings */
-> +		page_add_anon_rmap(temp_thp->page, vma, address);
-> +
-> +		/* deposit the thp */
-> +		pgtable_trans_huge_deposit(mm, pmd, pgtable);
-> +
-> +		set_pmd_at(mm, haddr, pmd, pmd_entry);
-> +		add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR - mm->thp_threshold + 1);
-> +		/* mm->nr_ptes++; */
-> +
-> +		/* delete the reference to this compound page from our list */
-> +		spin_lock(&mm->thp_list_lock);
-> +		list_del(&temp_thp->list);
-> +		spin_unlock(&mm->thp_list_lock);
-> +
-> +		spin_unlock(&mm->page_table_lock);
-> +		return 0;
+Add the IMG Debug Adapter File System (DAFS) for metag, which uses
+SWITCH operations to communicate with a file server on a host computer
+via a JTAG debug adapter.
 
-Hm. I think this part is not correct: you collapse temp thp page
-into real one only for current procees. What will happen if a process with
-temp thp pages was forked?
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org
+Cc: linux-metag@vger.kernel.org
+---
+I haven't received any feedback on this patch since v6 in March. If it's
+acceptable, how should it find its way into mainline? I'm happy to take
+it in the arch/metag tree if somebody on the fs side would be willing to
+ACK it.
 
-And I don't think this problem is an easy one. khugepaged can't collapse
-pages with page->_count != 1 for the same reason: to make it properly you
-need to take mmap_sem for all processes and collapse all pages at once.
-And if a page is pinned, we also can't collapse.
+v10 (Dec 2013):
+  * add release() callback to write back file mappings (same problem as
+    fixed in hostfs by commit 65984ff9d217 um: hostfs: Fix writeback)
+  * implement basic fsync() to write back file mappings
+  * use simple_dentry_operations, like hostfs change in commit
+    b26d4cd385fc (consolidate simple ->d_delete() instances)
 
-Sorry, I don't think the whole idea has much potential. :(
+v9 (Jul 2013):
+  * updated dafs_readdir to use iterate() file operation and dir_emit()
+    to match changes in v3.11-rc1.
 
+v8 (May 2013):
+  * enabled building as a module (commit e605ff8 merged during v3.10
+    merge window exports the necessary symbols)
+
+v7 (Mar 2013):
+  * use explicit sized types in da_stat and da_finddata (Al Viro)
+  * move IMGDAFS_SUPER_MAGIC to <linux/magic.h> (Al Viro)
+  * use fmode_t instead of int in a couple of places (Al Viro)
+  * removed "will unlock" comment (Al Viro)
+  * use kmalloc and init hi->mode explicitly (Al Viro)
+  * kmalloc instead of using dynamic array for path (Al Viro)
+  * use file_inode() helper in dafs_readdir (Al Viro)
+
+v6 (Mar 2013):
+  * use file_inode() helper introduced in v3.9-rc1
+  * remove dafs_iops as it only contained directory methods
+  * add MODULE_ALIAS_FS()
+
+v5 (Mar 2013):
+  * removed arch/metag changes (the arch/metag patchset it was
+    previously part of is now mainline with those changes)
+
+v4 (Jan 2013):
+  * clean up fscall similarly to chancall in tty/metag_da
+
+v2 (Dec 2012):
+  * fixed fserrno problem (Al Viro)
+  * renamed to imgdafs
+---
+ fs/Kconfig                 |   1 +
+ fs/Makefile                |   1 +
+ fs/imgdafs/Kconfig         |   6 +
+ fs/imgdafs/Makefile        |   7 +
+ fs/imgdafs/imgdafs.h       |  82 +++++
+ fs/imgdafs/inode.c         | 843 +++++++++++++++++++++++++++++++++++++++++++++
+ include/uapi/linux/magic.h |   1 +
+ 7 files changed, 941 insertions(+)
+ create mode 100644 fs/imgdafs/Kconfig
+ create mode 100644 fs/imgdafs/Makefile
+ create mode 100644 fs/imgdafs/imgdafs.h
+ create mode 100644 fs/imgdafs/inode.c
+
+diff --git a/fs/Kconfig b/fs/Kconfig
+index c229f828eb01..839ef10842eb 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -212,6 +212,7 @@ source "fs/ufs/Kconfig"
+ source "fs/exofs/Kconfig"
+ source "fs/f2fs/Kconfig"
+ source "fs/efivarfs/Kconfig"
++source "fs/imgdafs/Kconfig"
+ 
+ endif # MISC_FILESYSTEMS
+ 
+diff --git a/fs/Makefile b/fs/Makefile
+index 4fe6df3ec28f..25a93c793b74 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -126,3 +126,4 @@ obj-y				+= exofs/ # Multiple modules
+ obj-$(CONFIG_CEPH_FS)		+= ceph/
+ obj-$(CONFIG_PSTORE)		+= pstore/
+ obj-$(CONFIG_EFIVAR_FS)		+= efivarfs/
++obj-$(CONFIG_IMGDAFS_FS)	+= imgdafs/
+diff --git a/fs/imgdafs/Kconfig b/fs/imgdafs/Kconfig
+new file mode 100644
+index 000000000000..844e6cf0e9ed
+--- /dev/null
++++ b/fs/imgdafs/Kconfig
+@@ -0,0 +1,6 @@
++config IMGDAFS_FS
++	tristate "Meta DA filesystem support"
++	depends on METAG_DA
++	help
++	  This enables the DA filesystem, which allows Linux to
++	  to access files on a system attached via a debug adapter.
+diff --git a/fs/imgdafs/Makefile b/fs/imgdafs/Makefile
+new file mode 100644
+index 000000000000..169a3c6b5fa4
+--- /dev/null
++++ b/fs/imgdafs/Makefile
+@@ -0,0 +1,7 @@
++#
++# Makefile for DAfs the Debug Adapter filesystem.
++#
++
++obj-$(CONFIG_IMGDAFS_FS) += imgdafs.o
++
++imgdafs-objs := inode.o
+diff --git a/fs/imgdafs/imgdafs.h b/fs/imgdafs/imgdafs.h
+new file mode 100644
+index 000000000000..0350220eb321
+--- /dev/null
++++ b/fs/imgdafs/imgdafs.h
+@@ -0,0 +1,82 @@
++#ifndef _IMGDAFS_H_
++#define _IMGDAFS_H_
++
++#include <linux/types.h>
++
++#define DA_OP_OPEN 0
++#define DA_OP_CREAT 1
++#define DA_OP_READ 2
++#define DA_OP_WRITE 3
++#define DA_OP_CLOSE 4
++#define DA_OP_LINK 5
++#define DA_OP_LSEEK 6
++#define DA_OP_UNLINK 7
++#define DA_OP_ISATTY 8
++#define DA_OP_FCNTL 9
++#define DA_OP_STAT 10
++#define DA_OP_FSTAT 11
++#define DA_OP_GETCWD 12
++#define DA_OP_CHDIR 13
++#define DA_OP_MKDIR 14
++#define DA_OP_RMDIR 15
++#define DA_OP_FINDFIRST 16
++#define DA_OP_FINDNEXT 17
++#define DA_OP_FINDCLOSE 18
++#define DA_OP_CHMOD 19
++#define DA_OP_PREAD 20
++#define DA_OP_PWRITE 21
++
++#define OS_TYPE_FILE 1
++#define OS_TYPE_DIR 2
++#define OS_TYPE_SYMLINK 3
++#define OS_TYPE_CHARDEV 4
++#define OS_TYPE_BLOCKDEV 5
++#define OS_TYPE_FIFO 6
++#define OS_TYPE_SOCK 7
++
++#define DA_O_RDONLY 0
++#define DA_O_WRONLY 1
++#define DA_O_RDWR 2
++#define DA_O_APPEND 8
++#define DA_O_CREAT 0x0200
++#define DA_O_TRUNC 0x0400
++#define DA_O_EXCL 0x0800
++
++#define DA_O_AFFINITY_THREAD_0 0x10000
++#define DA_O_AFFINITY_THREAD_1 0x20000
++#define DA_O_AFFINITY_THREAD_2 0x40000
++#define DA_O_AFFINITY_THREAD_3 0x80000
++#define DA_O_AFFINITY_SHIFT 16
++
++#define DA_S_IWUSR	0200	/* 0x80 */
++#define DA_S_IRUSR	0400	/* 0x100 */
++
++struct da_stat {
++	s16 st_dev;
++	u16 st_ino;
++	u32 st_mode;
++	u16 st_nlink;
++	u16 st_uid;
++	u16 st_gid;
++	s16 st_rdev;
++	s32 st_size;
++	s32 st_atime;
++	s32 st_spare1;
++	s32 st_mtime;
++	s32 st_spare2;
++	s32 st_ctime;
++	s32 st_spare3;
++	s32 st_blksize;
++	s32 st_blocks;
++	s32 st_spare4[2];
++};
++
++#define _A_SUBDIR 0x10
++
++struct da_finddata {
++	u32 size;
++	u32 attrib;
++	u8 name[260];
++};
++
++#endif
+diff --git a/fs/imgdafs/inode.c b/fs/imgdafs/inode.c
+new file mode 100644
+index 000000000000..f444f67af0d8
+--- /dev/null
++++ b/fs/imgdafs/inode.c
+@@ -0,0 +1,843 @@
++/*
++ * Copyright (C) 2008-2013 Imagination Technologies Ltd.
++ * Licensed under the GPL
++ *
++ * Based on hostfs for UML.
++ *
++ */
++
++#include <linux/fs.h>
++#include <linux/magic.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <linux/pagemap.h>
++#include <linux/seq_file.h>
++#include <linux/mount.h>
++#include <linux/slab.h>
++
++#include <asm/da.h>
++#include <asm/hwthread.h>
++
++#include "imgdafs.h"
++
++static int fscall(int in_system_call, int in_arg1, int in_arg2, int in_arg3,
++		  int in_arg4, int in_arg5, int *fserrno)
++{
++	register int arg1            asm("D1Ar1") = in_arg1;
++	register int arg2            asm("D0Ar2") = in_arg2;
++	register int arg3            asm("D1Ar3") = in_arg3;
++	register int arg4            asm("D0Ar4") = in_arg4;
++	register int arg5            asm("D1Ar5") = in_arg5;
++	register int system_call     asm("D0Ar6") = in_system_call;
++	register int result          asm("D0Re0");
++	register int errno           asm("D1Re0");
++
++	asm volatile (
++		"MSETL	[A0StP++], %7,%5,%3\n\t"
++		"ADD	A0StP, A0StP, #8\n\t"
++		"SWITCH	#0x0C00208\n\t"
++		"GETL	%0, %1, [A0StP+#-8]\n\t"
++		"SUB	A0StP, A0StP, #(4*6)+8\n\t"
++		: "=r" (result),
++		  "=r" (errno)
++		: "r" (arg1),
++		  "r" (arg2),
++		  "r" (arg3),
++		  "r" (arg4),
++		  "r" (arg5),
++		  "r" (system_call)
++		: "memory");
++
++	if (fserrno)
++		*fserrno = errno;
++
++	return result;
++}
++
++struct dafs_inode_info {
++	int fd;
++	fmode_t mode;
++	struct inode vfs_inode;
++};
++
++static inline struct dafs_inode_info *DAFS_I(struct inode *inode)
++{
++	return container_of(inode, struct dafs_inode_info, vfs_inode);
++}
++
++#define FILE_DAFS_I(file) DAFS_I(file_inode(file))
++
++static const struct inode_operations dafs_dir_iops;
++
++static char *__dentry_name(struct dentry *dentry, char *name)
++{
++	char *p = dentry_path_raw(dentry, name, PATH_MAX);
++	char *root;
++	size_t len;
++
++	root = dentry->d_sb->s_fs_info;
++	len = strlen(root);
++	if (IS_ERR(p)) {
++		__putname(name);
++		return NULL;
++	}
++
++	strlcpy(name, root, PATH_MAX);
++	if (len > p - name) {
++		__putname(name);
++		return NULL;
++	}
++	if (p > name + len) {
++		char *s = name + len;
++		while ((*s++ = *p++) != '\0')
++			;
++	}
++	return name;
++}
++
++static char *dentry_name(struct dentry *dentry)
++{
++	char *name = __getname();
++	if (!name)
++		return NULL;
++
++	return __dentry_name(dentry, name);
++}
++
++static int stat_file(const char *path, struct da_stat *p, int fd)
++{
++	int ret;
++	int fserrno;
++	memset(p, 0, sizeof(*p));
++
++	if (fd >= 0) {
++		ret = fscall(DA_OP_FSTAT, fd, (int)p, 0, 0, 0, &fserrno);
++		if (ret < 0) {
++			/* Some versions of Codescape do not fill out errno. */
++			if (ret < 0 && fserrno == 0)
++				fserrno = ENOENT;
++			return -fserrno;
++		}
++	} else {
++		ret = fscall(DA_OP_STAT, (int)path, (int)p, strlen(path), 0, 0,
++			     &fserrno);
++		if (ret < 0) {
++			/* Some versions of Codescape do not fill out errno. */
++			if (ret < 0 && fserrno == 0)
++				fserrno = ENOENT;
++			return -fserrno;
++		}
++	}
++
++	return 0;
++}
++
++static struct inode *dafs_iget(struct super_block *sb)
++{
++	struct inode *inode = new_inode(sb);
++	if (!inode)
++		return ERR_PTR(-ENOMEM);
++	return inode;
++}
++
++static struct inode *dafs_alloc_inode(struct super_block *sb)
++{
++	struct dafs_inode_info *hi;
++
++	hi = kmalloc(sizeof(*hi), GFP_KERNEL);
++	if (hi == NULL)
++		return NULL;
++
++	hi->fd = -1;
++	hi->mode = 0;
++	inode_init_once(&hi->vfs_inode);
++	return &hi->vfs_inode;
++}
++
++static void close_file(void *stream)
++{
++	int fd = *((int *) stream);
++
++	fscall(DA_OP_CLOSE, fd, 0, 0, 0, 0, NULL);
++}
++
++static void dafs_evict_inode(struct inode *inode)
++{
++	truncate_inode_pages(&inode->i_data, 0);
++	clear_inode(inode);
++	if (DAFS_I(inode)->fd != -1) {
++		close_file(&DAFS_I(inode)->fd);
++		DAFS_I(inode)->fd = -1;
++	}
++}
++
++static void dafs_i_callback(struct rcu_head *head)
++{
++	struct inode *inode = container_of(head, struct inode, i_rcu);
++	kfree(DAFS_I(inode));
++}
++
++static void dafs_destroy_inode(struct inode *inode)
++{
++	call_rcu(&inode->i_rcu, dafs_i_callback);
++}
++
++static const struct super_operations dafs_sbops = {
++	.alloc_inode	= dafs_alloc_inode,
++	.drop_inode	= generic_delete_inode,
++	.evict_inode	= dafs_evict_inode,
++	.destroy_inode	= dafs_destroy_inode,
++};
++
++static int open_dir(char *path, struct da_finddata *finddata, int *fserrno)
++{
++	int len = strlen(path);
++	char *buf;
++	int ret;
++
++	buf = kmalloc(len + 3, GFP_KERNEL);
++	if (!buf) {
++		*fserrno = ENOMEM;
++		return -1;
++	}
++
++	strcpy(buf, path);
++	if (buf[len - 1] != '/')
++		strcat(buf, "/*");
++	else
++		strcat(buf, "*");
++
++	ret = fscall(DA_OP_FINDFIRST, (int)buf, (int)finddata, 0, 0, 0,
++		     fserrno);
++	kfree(buf);
++	return ret;
++}
++
++static void close_dir(int handle)
++{
++	fscall(DA_OP_FINDCLOSE, handle, 0, 0, 0, 0, NULL);
++}
++
++static int read_dir(int handle, struct da_finddata *finddata)
++{
++	return fscall(DA_OP_FINDNEXT, handle, (int)finddata, 0, 0, 0, NULL);
++}
++
++static int dafs_readdir(struct file *file, struct dir_context *ctx)
++{
++	struct inode *inode = file_inode(file);
++	struct super_block *sb = inode->i_sb;
++	char *name;
++	int handle;
++	int fserrno;
++	unsigned long long next, ino;
++	int error = 0;
++	struct da_finddata finddata;
++
++	name = dentry_name(file->f_path.dentry);
++	if (name == NULL)
++		return -ENOMEM;
++	handle = open_dir(name, &finddata, &fserrno);
++	__putname(name);
++	if (handle == -1)
++		return -fserrno;
++
++	next = 1;
++
++	if (ctx->pos == 0) {
++		if (!dir_emit(ctx, ".", ctx->pos + 1, inode->i_ino, DT_DIR))
++			goto out;
++		ctx->pos++;
++	}
++
++	while (1) {
++		error = read_dir(handle, &finddata);
++		if (error)
++			break;
++
++		if (next >= ctx->pos) {
++			size_t len = strlen(finddata.name);
++			ino = iunique(sb, 100);
++			if (!dir_emit(ctx, finddata.name, len, ino,
++				      (finddata.attrib & _A_SUBDIR) ?
++				      DT_DIR : DT_REG))
++				break;
++			ctx->pos++;
++		}
++		next++;
++	}
++out:
++	close_dir(handle);
++	return 0;
++}
++
++static int dafs_file_open(struct inode *ino, struct file *file)
++{
++	static DEFINE_MUTEX(open_mutex);
++	char *name;
++	fmode_t mode, fmode;
++	int flags = 0, r = 0, w = 0, fd;
++	int cpu;
++
++	fmode = file->f_mode & (FMODE_READ | FMODE_WRITE);
++	if ((fmode & DAFS_I(ino)->mode) == fmode)
++		return 0;
++
++	mode = ino->i_mode & (DA_S_IWUSR | DA_S_IRUSR);
++
++	mode |= DAFS_I(ino)->mode;
++
++	DAFS_I(ino)->mode |= fmode;
++	if (DAFS_I(ino)->mode & FMODE_READ)
++		r = 1;
++	if (DAFS_I(ino)->mode & FMODE_WRITE) {
++		w = 1;
++		r = 1;
++	}
++
++retry:
++	if (r && !w)
++		flags |= DA_O_RDONLY;
++	else if (!r && w)
++		flags |= DA_O_WRONLY;
++	else if (r && w)
++		flags |= DA_O_RDWR;
++
++	if (file->f_flags & O_CREAT)
++		flags |= DA_O_CREAT;
++
++	if (file->f_flags & O_TRUNC)
++		flags |= DA_O_TRUNC;
++
++	/*
++	 * Set the affinity for this file handle to all CPUs. If we
++	 * don't do this then, if the process that opened the file
++	 * migrates to a different cpu, the FileServer will not accept
++	 * the file handle.
++	 */
++	for_each_possible_cpu(cpu) {
++		u8 hwthread = cpu_2_hwthread_id[cpu];
++		flags |= (1 << (DA_O_AFFINITY_SHIFT + hwthread));
++	}
++
++	name = dentry_name(file->f_path.dentry);
++	if (name == NULL)
++		return -ENOMEM;
++
++	fd = fscall(DA_OP_OPEN, (int)name, flags, mode, strlen(name), 0, NULL);
++	__putname(name);
++	if (fd < 0)
++		return fd;
++
++	mutex_lock(&open_mutex);
++	/* somebody else had handled it first? */
++	if ((mode & DAFS_I(ino)->mode) == mode) {
++		mutex_unlock(&open_mutex);
++		return 0;
++	}
++	if ((mode | DAFS_I(ino)->mode) != mode) {
++		mode |= DAFS_I(ino)->mode;
++		mutex_unlock(&open_mutex);
++		close_file(&fd);
++		goto retry;
++	}
++	DAFS_I(ino)->fd = fd;
++	DAFS_I(ino)->mode = mode;
++	mutex_unlock(&open_mutex);
++
++	return 0;
++}
++
++static int dafs_file_release(struct inode *inode, struct file *file)
++{
++	filemap_write_and_wait(inode->i_mapping);
++
++	return 0;
++}
++
++static int dafs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
++{
++	struct inode *inode = file->f_mapping->host;
++
++	return filemap_write_and_wait_range(inode->i_mapping, start, end);
++}
++
++static const struct file_operations dafs_file_fops = {
++	.llseek		= generic_file_llseek,
++	.read		= do_sync_read,
++	.splice_read	= generic_file_splice_read,
++	.aio_read	= generic_file_aio_read,
++	.aio_write	= generic_file_aio_write,
++	.write		= do_sync_write,
++	.mmap		= generic_file_mmap,
++	.open		= dafs_file_open,
++	.release	= dafs_file_release,
++	.fsync		= dafs_fsync,
++};
++
++static const struct file_operations dafs_dir_fops = {
++	.llseek		= generic_file_llseek,
++	.iterate	= dafs_readdir,
++	.read		= generic_read_dir,
++};
++
++static int read_file(int fd, unsigned long long *offset, const char *buf,
++		     int len)
++{
++	int n;
++	int fserrno;
++
++	n = fscall(DA_OP_PREAD, fd, (int)buf, len, (int)*offset, 0, &fserrno);
++
++	if (n < 0)
++		return -fserrno;
++
++	return n;
++}
++
++static int write_file(int fd, unsigned long long *offset, const char *buf,
++		      int len)
++{
++	int n;
++	int fserrno;
++
++	n = fscall(DA_OP_PWRITE, fd, (int)buf, len, (int)*offset, 0, &fserrno);
++
++	if (n < 0)
++		return -fserrno;
++
++	return n;
++}
++
++static int dafs_writepage(struct page *page, struct writeback_control *wbc)
++{
++	struct address_space *mapping = page->mapping;
++	struct inode *inode = mapping->host;
++	char *buffer;
++	unsigned long long base;
++	int count = PAGE_CACHE_SIZE;
++	int end_index = inode->i_size >> PAGE_CACHE_SHIFT;
++	int err;
++
++	if (page->index >= end_index)
++		count = inode->i_size & (PAGE_CACHE_SIZE-1);
++
++	buffer = kmap(page);
++	base = ((unsigned long long) page->index) << PAGE_CACHE_SHIFT;
++
++	err = write_file(DAFS_I(inode)->fd, &base, buffer, count);
++	if (err != count) {
++		ClearPageUptodate(page);
++		goto out;
++	}
++
++	if (base > inode->i_size)
++		inode->i_size = base;
++
++	if (PageError(page))
++		ClearPageError(page);
++	err = 0;
++
++ out:
++	kunmap(page);
++
++	unlock_page(page);
++	return err;
++}
++
++static int dafs_readpage(struct file *file, struct page *page)
++{
++	char *buffer;
++	long long start;
++	int err = 0;
++
++	start = (long long) page->index << PAGE_CACHE_SHIFT;
++	buffer = kmap(page);
++	err = read_file(FILE_DAFS_I(file)->fd, &start, buffer,
++			PAGE_CACHE_SIZE);
++	if (err < 0)
++		goto out;
++
++	memset(&buffer[err], 0, PAGE_CACHE_SIZE - err);
++
++	flush_dcache_page(page);
++	SetPageUptodate(page);
++	if (PageError(page))
++		ClearPageError(page);
++	err = 0;
++ out:
++	kunmap(page);
++	unlock_page(page);
++	return err;
++}
++
++static int dafs_write_begin(struct file *file, struct address_space *mapping,
++			loff_t pos, unsigned len, unsigned flags,
++			struct page **pagep, void **fsdata)
++{
++	pgoff_t index = pos >> PAGE_CACHE_SHIFT;
++
++	*pagep = grab_cache_page_write_begin(mapping, index, flags);
++	if (!*pagep)
++		return -ENOMEM;
++	return 0;
++}
++
++static int dafs_write_end(struct file *file, struct address_space *mapping,
++			loff_t pos, unsigned len, unsigned copied,
++			struct page *page, void *fsdata)
++{
++	struct inode *inode = mapping->host;
++	void *buffer;
++	unsigned from = pos & (PAGE_CACHE_SIZE - 1);
++	int err;
++
++	buffer = kmap(page);
++	err = write_file(FILE_DAFS_I(file)->fd, &pos, buffer + from, copied);
++	kunmap(page);
++
++	if (!PageUptodate(page) && err == PAGE_CACHE_SIZE)
++		SetPageUptodate(page);
++
++	/*
++	 * If err > 0, write_file has added err to pos, so we are comparing
++	 * i_size against the last byte written.
++	 */
++	if (err > 0 && (pos > inode->i_size))
++		inode->i_size = pos;
++	unlock_page(page);
++	page_cache_release(page);
++
++	return err;
++}
++
++static const struct address_space_operations dafs_aops = {
++	.writepage	= dafs_writepage,
++	.readpage	= dafs_readpage,
++	.set_page_dirty	= __set_page_dirty_nobuffers,
++	.write_begin	= dafs_write_begin,
++	.write_end	= dafs_write_end,
++};
++
++static int read_name(struct inode *ino, char *name)
++{
++	dev_t rdev;
++	struct da_stat st;
++	int err = stat_file(name, &st, -1);
++	if (err)
++		return err;
++
++	/* No valid maj and min from DA.*/
++	rdev = MKDEV(0, 0);
++
++	switch (st.st_mode & S_IFMT) {
++	case S_IFDIR:
++		ino->i_op = &dafs_dir_iops;
++		ino->i_fop = &dafs_dir_fops;
++		break;
++	case S_IFCHR:
++	case S_IFBLK:
++	case S_IFIFO:
++	case S_IFSOCK:
++		init_special_inode(ino, st.st_mode & S_IFMT, rdev);
++		break;
++
++	case S_IFLNK:
++	default:
++		ino->i_fop = &dafs_file_fops;
++		ino->i_mapping->a_ops = &dafs_aops;
++	}
++
++	ino->i_ino = st.st_ino;
++	ino->i_mode = st.st_mode;
++	set_nlink(ino, st.st_nlink);
++
++	i_uid_write(ino, st.st_uid);
++	i_gid_write(ino, st.st_gid);
++	ino->i_atime.tv_sec = st.st_atime;
++	ino->i_atime.tv_nsec = 0;
++	ino->i_mtime.tv_sec = st.st_mtime;
++	ino->i_mtime.tv_nsec = 0;
++	ino->i_ctime.tv_sec = st.st_ctime;
++	ino->i_ctime.tv_nsec = 0;
++	ino->i_size = st.st_size;
++	ino->i_blocks = st.st_blocks;
++	return 0;
++}
++
++static int dafs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
++		       bool excl)
++{
++	struct inode *inode;
++	char *name;
++	int error, fd;
++	int damode;
++	int creat_flags = DA_O_TRUNC | DA_O_CREAT | DA_O_WRONLY;
++	int cpu;
++
++	inode = dafs_iget(dir->i_sb);
++	if (IS_ERR(inode)) {
++		error = PTR_ERR(inode);
++		goto out;
++	}
++
++	damode = mode & (DA_S_IWUSR | DA_S_IRUSR);
++
++	error = -ENOMEM;
++	name = dentry_name(dentry);
++	if (name == NULL)
++		goto out_put;
++
++	/*
++	 * creat() will only create text mode files on a Windows host
++	 * at present.  Replicate the creat() functionality with an
++	 * open() call, which always creates binary files. Set the
++	 * affinity to all hardware threads.
++	 */
++	for_each_possible_cpu(cpu) {
++		u8 hwthread = cpu_2_hwthread_id[cpu];
++		creat_flags |= (1 << (DA_O_AFFINITY_SHIFT + hwthread));
++	}
++
++	fd = fscall(DA_OP_OPEN, (int)name, creat_flags, damode, strlen(name),
++		    0, NULL);
++	if (fd < 0)
++		error = fd;
++	else
++		error = read_name(inode, name);
++
++	kfree(name);
++	if (error)
++		goto out_put;
++
++	DAFS_I(inode)->fd = fd;
++	DAFS_I(inode)->mode = FMODE_READ | FMODE_WRITE;
++	d_instantiate(dentry, inode);
++	return 0;
++
++ out_put:
++	iput(inode);
++ out:
++	return error;
++}
++
++static struct dentry *dafs_lookup(struct inode *ino, struct dentry *dentry,
++				  unsigned int flags)
++{
++	struct inode *inode;
++	char *name;
++	int err;
++
++	inode = dafs_iget(ino->i_sb);
++	if (IS_ERR(inode)) {
++		err = PTR_ERR(inode);
++		goto out;
++	}
++
++	err = -ENOMEM;
++	name = dentry_name(dentry);
++	if (name == NULL)
++		goto out_put;
++
++	err = read_name(inode, name);
++
++	__putname(name);
++	if (err == -ENOENT) {
++		iput(inode);
++		inode = NULL;
++	} else if (err)
++		goto out_put;
++
++	d_add(dentry, inode);
++	return NULL;
++
++ out_put:
++	iput(inode);
++ out:
++	return ERR_PTR(err);
++}
++
++static int dafs_link(struct dentry *to, struct inode *ino, struct dentry *from)
++{
++	char *from_name, *to_name;
++	int err;
++
++	from_name = dentry_name(from);
++	if (from_name == NULL)
++		return -ENOMEM;
++	to_name = dentry_name(to);
++	if (to_name == NULL) {
++		__putname(from_name);
++		return -ENOMEM;
++	}
++	err = -EINVAL;
++	__putname(from_name);
++	__putname(to_name);
++	return err;
++}
++
++static int dafs_unlink(struct inode *ino, struct dentry *dentry)
++{
++	char *file;
++	int err;
++	int fserrno;
++
++	file = dentry_name(dentry);
++	if (file == NULL)
++		return -ENOMEM;
++
++	err = fscall(DA_OP_UNLINK, (int)file, 0, 0, 0, 0, &fserrno);
++	__putname(file);
++	if (err)
++		return -fserrno;
++	return 0;
++}
++
++static int do_mkdir(const char *file, int mode)
++{
++	int err;
++	int fserrno;
++
++	err = fscall(DA_OP_MKDIR, (int)file, mode, strlen(file), 0, 0,
++		     &fserrno);
++	if (err)
++		return -fserrno;
++	return 0;
++}
++
++static int dafs_mkdir(struct inode *ino, struct dentry *dentry, umode_t mode)
++{
++	char *file;
++	int err;
++
++	file = dentry_name(dentry);
++	if (file == NULL)
++		return -ENOMEM;
++	err = do_mkdir(file, mode);
++	__putname(file);
++	return err;
++}
++
++static int do_rmdir(const char *file)
++{
++	int err;
++	int fserrno;
++
++	err = fscall(DA_OP_RMDIR, (int)file, strlen(file), 0, 0, 0, &fserrno);
++	if (err)
++		return -fserrno;
++	return 0;
++}
++
++static int dafs_rmdir(struct inode *ino, struct dentry *dentry)
++{
++	char *file;
++	int err;
++
++	file = dentry_name(dentry);
++	if (file == NULL)
++		return -ENOMEM;
++	err = do_rmdir(file);
++	__putname(file);
++	return err;
++}
++
++static int dafs_rename(struct inode *from_ino, struct dentry *from,
++		  struct inode *to_ino, struct dentry *to)
++{
++	char *from_name, *to_name;
++	int err;
++
++	from_name = dentry_name(from);
++	if (from_name == NULL)
++		return -ENOMEM;
++	to_name = dentry_name(to);
++	if (to_name == NULL) {
++		__putname(from_name);
++		return -ENOMEM;
++	}
++	err = -EINVAL;
++	__putname(from_name);
++	__putname(to_name);
++	return err;
++}
++
++static const struct inode_operations dafs_dir_iops = {
++	.create		= dafs_create,
++	.lookup		= dafs_lookup,
++	.link		= dafs_link,
++	.unlink		= dafs_unlink,
++	.mkdir		= dafs_mkdir,
++	.rmdir		= dafs_rmdir,
++	.rename		= dafs_rename,
++};
++
++static char *host_root_path = ".";
++
++static int dafs_fill_sb_common(struct super_block *sb, void *d, int silent)
++{
++	struct inode *root_inode;
++	int err;
++
++	sb->s_blocksize = 1024;
++	sb->s_blocksize_bits = 10;
++	sb->s_magic = IMGDAFS_SUPER_MAGIC;
++	sb->s_op = &dafs_sbops;
++	sb->s_d_op = &simple_dentry_operations;
++	sb->s_maxbytes = MAX_LFS_FILESIZE;
++
++	err = -ENOMEM;
++
++	root_inode = new_inode(sb);
++	if (!root_inode)
++		goto out;
++
++	err = read_name(root_inode, host_root_path);
++	if (err)
++		goto out_put;
++
++	err = -ENOMEM;
++	sb->s_fs_info = host_root_path;
++	sb->s_root = d_make_root(root_inode);
++	if (sb->s_root == NULL)
++		goto out;
++
++	return 0;
++
++out_put:
++	iput(root_inode);
++out:
++	return err;
++}
++
++static struct dentry *dafs_read_sb(struct file_system_type *type,
++				   int flags, const char *dev_name,
++				   void *data)
++{
++	if (!metag_da_enabled())
++		return ERR_PTR(-ENODEV);
++	return mount_nodev(type, flags, data, dafs_fill_sb_common);
++}
++
++static struct file_system_type dafs_type = {
++	.owner		= THIS_MODULE,
++	.name		= "imgdafs",
++	.mount		= dafs_read_sb,
++	.kill_sb	= kill_anon_super,
++	.fs_flags	= 0,
++};
++MODULE_ALIAS_FS("imgdafs");
++
++static int __init init_dafs(void)
++{
++	return register_filesystem(&dafs_type);
++}
++
++static void __exit exit_dafs(void)
++{
++	unregister_filesystem(&dafs_type);
++}
++
++module_init(init_dafs)
++module_exit(exit_dafs)
++MODULE_LICENSE("GPL");
+diff --git a/include/uapi/linux/magic.h b/include/uapi/linux/magic.h
+index 77c60311a6c6..2487967f5e96 100644
+--- a/include/uapi/linux/magic.h
++++ b/include/uapi/linux/magic.h
+@@ -31,6 +31,7 @@
+ #define PSTOREFS_MAGIC		0x6165676C
+ #define EFIVARFS_MAGIC		0xde5e81e4
+ #define HOSTFS_SUPER_MAGIC	0x00c0ffee
++#define IMGDAFS_SUPER_MAGIC	0xdadadaf5
+ 
+ #define MINIX_SUPER_MAGIC	0x137F		/* minix v1 fs, 14 char names */
+ #define MINIX_SUPER_MAGIC2	0x138F		/* minix v1 fs, 30 char names */
 -- 
- Kirill A. Shutemov
+1.8.1.2
+
+
