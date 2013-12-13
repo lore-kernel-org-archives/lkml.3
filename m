@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab3LLX6F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 18:58:05 -0500
-Received: from mga11.intel.com ([192.55.52.93]:11328 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752057Ab3LLX6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 18:58:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,475,1384329600"; 
-   d="scan'208";a="449239743"
-From: Andi Kleen <andi@firstfloor.org>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/2] x86, microcode: Add option to allow downgrading of microcode
-Date: Thu, 12 Dec 2013 15:57:48 -0800
-Message-Id: <1386892668-22256-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1386892668-22256-1-git-send-email-andi@firstfloor.org>
-References: <1386892668-22256-1-git-send-email-andi@firstfloor.org>
+	id S1752010Ab3LMAAt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 19:00:49 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:36650 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab3LMAAr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 19:00:47 -0500
+Message-ID: <52AA4E2C.3070605@zankel.net>
+Date: Thu, 12 Dec 2013 16:00:44 -0800
+From: czankel <chris@zankel.net>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>, Max Filippov <jcmvbkbc@gmail.com>
+CC: "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH] xtensa: Switch to sched_clock_register()
+References: <1384558303-10731-1-git-send-email-sboyd@codeaurora.org> <CAMo8Bf+kQi7-7FfteB-DpdauSYJn4Ztjuy6oTOnVXk9aVBzUbQ@mail.gmail.com> <528CFEE9.3060108@codeaurora.org> <52AA4CB8.1010008@codeaurora.org>
+In-Reply-To: <52AA4CB8.1010008@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Hi Stephen,
 
-For testing purposes it can be useful to downgrade microcode.
-Normally the driver only allows upgrading.
+Sorry for the delay. Will add it later today.
 
-Add a module_param (default off) that allows downgrading.
+Thanks,
+-Chris
 
-Note the module_param can currently not be set for early
-ucode update, only for late.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/microcode_intel_lib.c | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/arch/x86/kernel/microcode_intel_lib.c b/arch/x86/kernel/microcode_intel_lib.c
-index ce69320..18d5325 100644
---- a/arch/x86/kernel/microcode_intel_lib.c
-+++ b/arch/x86/kernel/microcode_intel_lib.c
-@@ -26,11 +26,16 @@
- #include <linux/uaccess.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/moduleparam.h>
- 
- #include <asm/microcode_intel.h>
- #include <asm/processor.h>
- #include <asm/msr.h>
- 
-+static bool allow_downgrade;
-+module_param(allow_downgrade, bool, 0644);
-+MODULE_PARM_DESC(allow_downgrade, "Allow downgrading microcode");
-+
- static inline int
- update_match_cpu(unsigned int csig, unsigned int cpf,
- 		 unsigned int sig, unsigned int pf)
-@@ -41,6 +46,8 @@ update_match_cpu(unsigned int csig, unsigned int cpf,
- int
- update_match_revision(struct microcode_header_intel *mc_header, int rev)
- {
-+	if (allow_downgrade)
-+		return 1;
- 	return (mc_header->rev <= rev) ? 0 : 1;
- }
- 
--- 
-1.8.3.1
+On 12/12/13 3:54 PM, Stephen Boyd wrote:
+> On 11/20/13 10:26, Stephen Boyd wrote:
+>> On 11/17/13 12:27, Max Filippov wrote:
+>>> On Sat, Nov 16, 2013 at 3:31 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>>> The 32 bit sched_clock interface now supports 64 bits. Upgrade
+>>>> to the 64 bit function to allow us to remove the 32 bit
+>>>> registration interface.
+>>>>
+>>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>>>> ---
+>>>>
+>>>> Patch is based on Linus' tip. Not event compile tested.
+>>>>
+>>>>   arch/xtensa/kernel/time.c | 4 ++--
+>>>>   1 file changed, 2 insertions(+), 2 deletions(-)
+>>> Build and run-tested, appears to work.
+>>> Acked-by: Max Filippov <jcmvbkbc@gmail.com>
+>>>
+>>> Should it go through xtensa tree, or through some other tree as a part
+>>> of a bigger conversion series?
+>> If it can go through xtensa that sounds like the best option. Otherwise
+>> we can send it through the tip/timers tree.
+>>
+> Ping? I don't see this patch in linux-next yet so should I send this
+> through the tip/timers tree?
+>
 
