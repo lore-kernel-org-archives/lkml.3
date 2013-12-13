@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab3LMB5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 20:57:55 -0500
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:50417 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806Ab3LMB5t (ORCPT
+	id S1752040Ab3LMB64 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 20:58:56 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:33043 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab3LMB6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 20:57:49 -0500
+	Thu, 12 Dec 2013 20:58:54 -0500
+Message-ID: <52AA69D6.3020705@hitachi.com>
+Date: Fri, 13 Dec 2013 10:58:46 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <20131209223905.GU31386@dastard>
-References: <20131209223905.GU31386@dastard>
-Date: Fri, 13 Dec 2013 09:57:48 +0800
-Message-ID: <CACVXFVNLqEQpoKPS-r9Lj_hJek5FnCGMagkMt+LUUxt8c3XCbA@mail.gmail.com>
-Subject: Re: [HANG 3.13-rc3] blk-mq/virtio: mkfs.ext4 hangs in blk_mq_wait_for_tags
-From: Ming Lei <tom.leiming@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 16/17] uprobes: Allocate ->utask before handler_chain()
+ for tracing handlers
+References: <1386570005-3368-1-git-send-email-namhyung@kernel.org> <1386570005-3368-17-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1386570005-3368-17-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 6:39 AM, Dave Chinner <david@fromorbit.com> wrote:
-> Hi Jens,
->
-> Another day, another blkmq/virtio problem. Running mkfs.ext4 on a
-> sparse 100TB VM file image, it hangs hard while writing superblock
-> information:
->
-> $ tests/fsmark-50-test-ext4.sh
-> mke2fs 1.43-WIP (20-Jun-2013)
-> Filesystem label=
-> OS type: Linux
-> Block size=4096 (log=2)
-> Fragment size=4096 (log=2)
-> Stride=0 blocks, Stripe width=0 blocks
-> 1677721600 inodes, 26843545600 blocks
-> 1342177280 blocks (5.00%) reserved for the super user
-> First data block=0
-> 819200 block groups
-> 32768 blocks per group, 32768 fragments per group
-> 2048 inodes per group
-> Superblock backups stored on blocks:
->         32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208,
->         4096000, 7962624, 11239424, 20480000, 23887872, 71663616, 78675968,
->         102400000, 214990848, 512000000, 550731776, 644972544, 1934917632,
->         2560000000, 3855122432, 5804752896, 12800000000, 17414258688
->
-> Allocating group tables: done
-> Writing inode tables: done
-> Creating journal (32768 blocks): done
-> Writing superblocks and filesystem accounting information:
->
-> It writes a few superblocks, then hangs. Immediately after it stops
-> updating that last line, I see this:
->
-> root@test4:~# echo w > /proc/sysrq-trigger
+(2013/12/09 15:20), Namhyung Kim wrote:
+> From: Oleg Nesterov <oleg@redhat.com>
+> 
+> uprobe_trace_print() and uprobe_perf_print() need to pass the additional
+> info to call_fetch() methods, currently there is no simple way to do this.
+> 
+> current->utask looks like a natural place to hold this info, but we need
+> to allocate it before handler_chain().
+> 
+> This is a bit unfortunate, perhaps we will find a better solution later,
+> but this is simnple and should work right now.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 
-It might be helpful to do below and post the result before the sysrq-trigger:
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-         cat    /sys/class/block/vda/mq/0/tags
+Thank you!
+
+> ---
+>  kernel/events/uprobes.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 24b7d6ca871b..3cc8e0bb8acf 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -1828,6 +1828,10 @@ static void handle_swbp(struct pt_regs *regs)
+>  	if (unlikely(!test_bit(UPROBE_COPY_INSN, &uprobe->flags)))
+>  		goto out;
+>  
+> +	/* Tracing handlers use ->utask to communicate with fetch methods */
+> +	if (!get_utask())
+> +		goto out;
+> +
+>  	handler_chain(uprobe, regs);
+>  	if (can_skip_sstep(uprobe, regs))
+>  		goto out;
+> 
 
 
-Thanks,
 -- 
-Ming Lei
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
