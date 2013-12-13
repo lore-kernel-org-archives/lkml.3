@@ -1,112 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab3LMJx3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 04:53:29 -0500
-Received: from asix.com.tw ([113.196.140.82]:13702 "EHLO freebsd1.asix.com.tw"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751802Ab3LMJx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 04:53:26 -0500
-From: freddy@asix.com.tw
-To: netdev@vger.kernel.org, davem@davemloft.net, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, louis@asix.com.tw, allan@asix.com.tw
-Cc: Freddy Xin <freddy@asix.com.tw>
-Subject: [PATCH 1/1] AX88179_178A: Add FLAG_HW_IPALIGN to determine whether reserving NET_IP_ALIGN bytes for an SKB.
-Date: Fri, 13 Dec 2013 17:25:08 +0800
-Message-Id: <1386926708-2343-1-git-send-email-freddy@asix.com.tw>
-X-Mailer: git-send-email 1.8.3.2
+	id S1752479Ab3LMJ4w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 04:56:52 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56545 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752223Ab3LMJ4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 04:56:49 -0500
+Message-ID: <52AAD9A6.40907@ti.com>
+Date: Fri, 13 Dec 2013 15:25:50 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: <balbi@ti.com>, Matt Porter <mporter@linaro.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>, Tomasz Figa <t.figa@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: Re: [PATCH v5 1/9] phy: add phy_get_bus_width()/phy_set_bus_width()
+ calls
+References: <1386854770-2173-1-git-send-email-mporter@linaro.org> <1386854770-2173-2-git-send-email-mporter@linaro.org> <20131212181818.GI1939@saruman.home>
+In-Reply-To: <20131212181818.GI1939@saruman.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Freddy Xin <freddy@asix.com.tw>
+On Thursday 12 December 2013 11:48 PM, Felipe Balbi wrote:
+> Hi,
+> 
+> On Thu, Dec 12, 2013 at 08:26:02AM -0500, Matt Porter wrote:
+>> This adds a pair of APIs that allows the generic PHY subsystem to
+>> provide information on the PHY bus width. The PHY provider driver may
+>> use phy_set_bus_width() to set the bus width that the PHY supports.
+>> The controller driver may then use phy_get_bus_width() to fetch the
+>> PHY bus width in order to properly configure the controller.
+>>
+>> Signed-off-by: Matt Porter <mporter@linaro.org>
+> 
+> Kishon, I need your Acked-by here, if you're ok with the change.
 
-The AX88179_178A has a hardware feature that it can insert a
-2-bytes pseudo header in front of each received frame by setting
-the AX_RX_CTL_IPE bit. This feature is used to let the IP header
-be aligned on a doubleword-aligned address, so the rx_submit() of
-usbnet.c needn't reserve NET_IP_ALIGN bytes for an SKB in the case.
-
-This patch adds a flag of driver_info "FLAG_HW_IPALIGN" which is
-used in rx_submit() of usbnet.c to determine whether reserving
-NET_IP_ALIGN bytes for an SKB.
-
-Signed-off-by: Freddy Xin <freddy@asix.com.tw>
----
- drivers/net/usb/ax88179_178a.c | 8 ++++----
- drivers/net/usb/usbnet.c       | 5 ++++-
- include/linux/usb/usbnet.h     | 3 +++
- 3 files changed, 11 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
-index 8e8d0fc..04a2cc9 100644
---- a/drivers/net/usb/ax88179_178a.c
-+++ b/drivers/net/usb/ax88179_178a.c
-@@ -1374,7 +1374,7 @@ static const struct driver_info ax88179_info = {
- 	.link_reset = ax88179_link_reset,
- 	.reset = ax88179_reset,
- 	.stop = ax88179_stop,
--	.flags = FLAG_ETHER | FLAG_FRAMING_AX,
-+	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_HW_IPALIGN,
- 	.rx_fixup = ax88179_rx_fixup,
- 	.tx_fixup = ax88179_tx_fixup,
- };
-@@ -1387,7 +1387,7 @@ static const struct driver_info ax88178a_info = {
- 	.link_reset = ax88179_link_reset,
- 	.reset = ax88179_reset,
- 	.stop = ax88179_stop,
--	.flags = FLAG_ETHER | FLAG_FRAMING_AX,
-+	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_HW_IPALIGN,
- 	.rx_fixup = ax88179_rx_fixup,
- 	.tx_fixup = ax88179_tx_fixup,
- };
-@@ -1400,7 +1400,7 @@ static const struct driver_info sitecom_info = {
- 	.link_reset = ax88179_link_reset,
- 	.reset = ax88179_reset,
- 	.stop = ax88179_stop,
--	.flags = FLAG_ETHER | FLAG_FRAMING_AX,
-+	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_HW_IPALIGN,
- 	.rx_fixup = ax88179_rx_fixup,
- 	.tx_fixup = ax88179_tx_fixup,
- };
-@@ -1413,7 +1413,7 @@ static const struct driver_info samsung_info = {
- 	.link_reset = ax88179_link_reset,
- 	.reset = ax88179_reset,
- 	.stop = ax88179_stop,
--	.flags = FLAG_ETHER | FLAG_FRAMING_AX,
-+	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_HW_IPALIGN,
- 	.rx_fixup = ax88179_rx_fixup,
- 	.tx_fixup = ax88179_tx_fixup,
- };
-diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
-index 8494bb5..8a618b8 100644
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -473,7 +473,10 @@ static int rx_submit (struct usbnet *dev, struct urb *urb, gfp_t flags)
- 		return -ENOLINK;
- 	}
- 
--	skb = __netdev_alloc_skb_ip_align(dev->net, size, flags);
-+	if (dev->driver_info->flags & FLAG_HW_IPALIGN)
-+		skb = __netdev_alloc_skb(dev->net, size, flags);
-+	else
-+		skb = __netdev_alloc_skb_ip_align(dev->net, size, flags);
- 	if (!skb) {
- 		netif_dbg(dev, rx_err, dev->net, "no rx skb\n");
- 		usbnet_defer_kevent (dev, EVENT_RX_MEMORY);
-diff --git a/include/linux/usb/usbnet.h b/include/linux/usb/usbnet.h
-index e303eef..e4855cf 100644
---- a/include/linux/usb/usbnet.h
-+++ b/include/linux/usb/usbnet.h
-@@ -116,6 +116,9 @@ struct driver_info {
- #define FLAG_MULTI_PACKET	0x2000
- #define FLAG_RX_ASSEMBLE	0x4000	/* rx packets may span >1 frames */
- #define FLAG_NOARP		0x8000	/* device can't do ARP */
-+#define FLAG_HW_IPALIGN		0x10000 /* hardware adds headers to let the
-+					 * IP header align on a dword-aligned
-+					 * address */
- 
- 	/* init device ... can sleep, or cause probe() failure */
- 	int	(*bind)(struct usbnet *, struct usb_interface *);
--- 
-1.8.3.2
+here it goes..
+Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+> 
 
