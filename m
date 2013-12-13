@@ -1,161 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab3LMWPw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 17:15:52 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:46672 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751625Ab3LMWPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 17:15:51 -0500
-Date: Fri, 13 Dec 2013 17:15:41 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/7] mm: page_alloc: Default allow file pages to use
- remote nodes for fair allocation policy
-Message-ID: <20131213221541.GQ21724@cmpxchg.org>
-References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
- <1386943807-29601-8-git-send-email-mgorman@suse.de>
- <20131213170443.GO22729@cmpxchg.org>
- <20131213192014.GL11295@suse.de>
+	id S1753136Ab3LMWQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 17:16:26 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:53387 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835Ab3LMWQY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 17:16:24 -0500
+Date: Fri, 13 Dec 2013 15:16:16 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Betty Dall <betty.dall@hp.com>
+Cc: lenb@kernel.org, rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] PCI AER: Handle non-AER HEST error sources in
+ aer_hest_parse()
+Message-ID: <20131213221616.GC6746@google.com>
+References: <1386948196-9409-1-git-send-email-betty.dall@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131213192014.GL11295@suse.de>
+In-Reply-To: <1386948196-9409-1-git-send-email-betty.dall@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 07:20:14PM +0000, Mel Gorman wrote:
-> On Fri, Dec 13, 2013 at 12:04:43PM -0500, Johannes Weiner wrote:
-> > On Fri, Dec 13, 2013 at 02:10:07PM +0000, Mel Gorman wrote:
-> > > Indications from Johannes that he wanted this. Needs some data and/or justification why
-> > > thrash protection needs it plus docs describing how MPOL_LOCAL is now different before
-> > > it should be considered finished. I do not necessarily agree this patch is necessary
-> > > but it's worth punting it out there for discussion and testing.
-> > 
-> > I demonstrated enormous gains in the original submission of the fair
-> > allocation patch and
+On Fri, Dec 13, 2013 at 08:23:16AM -0700, Betty Dall wrote:
+> aer_hest_parse() could pass a non-AER HEST error source to the function
+> hest_match_pci(). hest_match_pci() assumes that the HEST error source is
+> type ACPI_HEST_TYPE_AER_ROOT_PORT, ACPI_HEST_TYPE_AER_ENDPOINT, or
+> ACPI_HEST_TYPE_AER_BRIDGE. I have a platform that has some
+> ACPI_HEST_TYPE_GENERIC error sources where hest_match_pci() was trying to
+> access the structure as if it had the acpi_hest_aer_common fields.
 > 
-> And the same test missed that it broke MPOL_DEFAULT and regressed any workload
-> that does not hit reclaim by incurring remote accesses unnecessarily.
-
-And none of this was nice, agreed, but it does not invalidate the
-gains, it only changes what we are comparing them to.
-
-> With this patch applied, MPOL_DEFAULT again does not act as
-> documented by Documentation/vm/numa_memory_policy.txt and that file
-> has been around a long time. It also does not match the documented
-> behaviour of mbind where it says
+> aer_hest_parse() is only ever interested in the AER type HEST error
+> sources. Add a check on the type of the error souce at the beginning of
+> aer_hest_parse().
 > 
-> 	The  system-wide  default  policy allocates  pages  on	the node of
-> 	the CPU that triggers the allocation.  For MPOL_DEFAULT, the nodemask
-> 	and maxnode arguments must be specify the empty set of nodes.
+> Signed-off-by: Betty Dall <betty.dall@hp.com>
+> ---
 > 
-> That said, that documentation is also strictly wrong as MPOL_DEFAULT *may*
-> allocate on remote nodes.
->
-> > your tests haven't really shown downsides to the
-> > cache-over-nodes portion of it. 
-> > the cache-over-nodes fairness without any supporting data.
-> > 
+>  drivers/pci/pcie/aer/aerdrv_acpi.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
 > 
-> It breaks MPOL_LOCAL for file-backed mappings in a manner that cannot be
-> overridden by policies and it is not even documented.  The same effect
-> could have been achieved for the repeatedly reading files by running the
-> processes with the MPOL_INTERLEAVE policy.  There was also no convenient
-> way for a user to override that behaviour. Hard-binding to a node would
-> work but tough luck if the process needs more than one node of memory.
-
-Hardbinding or enabling zone_reclaim_mode, yes.  But agreed, let's fix
-these problems.
-
-> What I will admit is that I doubt anyone cares that file-backed pages
-> are not node-local as documented as the cost of the IO itself probably
-> dominates but just because something does not make sense does not mean
-> someone is depending on the behaviour.
-
-And that's why I very much agree that we need a way for people to
-revert to the old behavior in case we are wrong about this.
-
-But it's also a very strong argument for what the new default should
-be, given that we allow people to revert our decision in the field.
-
-> That alone is pretty heavy justification even in the absense of supporting
-> data showing a workload that depends on file pages being node-local that
-> is not hidden by the cost of the IO itself.
-
-Even if we anticipate that nobody will care about it and we provide a
-way to revert the behavior in the field in case we are wrong?
-
-I disagree.
-
-We should definitely allow the user to override our decision, but the
-default should be what we anticipate will benefit most users.
-
-And I'm really not trying to be ignorant of long-standing documented
-behavior that users may have come to expect.  The bug reports will
-land on my desk just as well.  But it looks like the current behavior
-does not make much sense and is unlikely to be missed.
-
-> > Reverting cross-node fairness for anon and slab is a good idea.  It
-> > was always about cache and the original patch was too broad stroked,
-> > but it doesn't invalidate everything it was about.
-> > 
 > 
-> No it doesn't, but it should at least have been documented.
+> diff --git a/drivers/pci/pcie/aer/aerdrv_acpi.c b/drivers/pci/pcie/aer/aerdrv_acpi.c
+> index cf611ab..39186e3 100644
+> --- a/drivers/pci/pcie/aer/aerdrv_acpi.c
+> +++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
+> @@ -56,6 +56,10 @@ static int aer_hest_parse(struct acpi_hest_header *hest_hdr, void *data)
+>  	struct acpi_hest_aer_common *p;
+>  	int ff;
+>  
+> +	if (hest_hdr->type != ACPI_HEST_TYPE_AER_ROOT_PORT &&
+> +		hest_hdr->type != ACPI_HEST_TYPE_AER_ENDPOINT &&
+> +		hest_hdr->type != ACPI_HEST_TYPE_AER_BRIDGE)
+> +		return 0;
+>  	p = (struct acpi_hest_aer_common *)(hest_hdr + 1);
+>  	ff = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
+>  	if (p->flags & ACPI_HEST_GLOBAL) {
 
-Yes, no argument there.
+Hi Betty,
 
-> > I can see, however, that we might want to make this configurable, but
-> > I'm not eager on exporting user interfaces unless we have to.  As the
-> > node-local fairness was never questioned by anybody, is it necessary
-> > to make it configurable? 
-> 
-> It's only there since 3.12 and it takes a long time for people to notice
-> NUMA regressions, especially ones that would just be within a few percent
-> like this was unless they were specifically looking for it.
+I propose the following tweaked version.  Will this work for you?
 
-No, I meant only the case where we distribute memory fairly among the
-zones WITHIN a given node.  This does not affect NUMA placement.  I
-wouldn't want to make this configurable unless you think people might
-want to disable this.  I can't think of a reason, anyway.
 
-> > Shouldn't we be okay with just a single
-> > vm.pagecache_interleave (name by Rik) sysctl that defaults to 1 but
-> > allows users to go back to pagecache obeying mempolicy?
-> > 
-> 
-> That can be done. I can put together a patch that defaults it to 0 and
-> sets the DISTRIBUTE_REMOTE_FILE  flag if someone writes to it. That's a
-> crude hack but many people will be ok with it.
-> 
-> To make it a default though should require more work though.
-> Create an MPOL_DISTRIB_PAGECACHE memory policy (name because it
-> is not strictly interleave). Abstract MPOL_DEFAULT to be either
-> MPOL_LOCAL or MPOL_DISTRIB_PAGECACHE depending on the value of
-> vm.pagecache_interleave. Update manual pages, and Documentation/ then set
-> the default of vm.pagecache_interleave to 1.
-> 
-> That would allow more sane defaults and also allow users to override it
-> on a per task and per VMA basis as they can for any other type of memory
-> policy.
+PCI/AER: Ingore non-PCIe AER error sources in aer_hest_parse()
 
-Not using round-robin placement for cache creates weird artifacts in
-our LRU aging decisions.  By not aging all pages in a workingset
-equally, we may end up activating barely used pages on a remote node
-and creating pressure on its active list for no reason.
+From: Betty Dall <betty.dall@hp.com>
 
-This has little to do with the thrash detection patches, either, they
-will just potentially trigger a few more non-sensical activations but
-for the same reason that the aging is skewed.
+aer_set_firmware_first() searches the HEST for an error source descriptor
+matching the specified PCI device.  It uses the apei_hest_parse() iterator
+to call aer_hest_parse() for every descriptor in the HEST.
 
-Because of that I really don't want to implement round-robin cache
-placement as just another possible mempolicy when other parts of the
-VM rely on it to be there.
+Previously, aer_hest_parse() incorrectly assumed every descriptor was for a
+PCIe error source.  This patch adds a check to avoid that error.
 
-It would make more sense to me to ignore mempolicies for cache per
-default and provide a single sysctl to honor them for the sole reason
-that we have been honoring them for a very long time.  And document
-the whole thing properly of course.
+[bhelgaas: factor check into helper function, changelog]
+Signed-off-by: Betty Dall <betty.dall@hp.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/pci/pcie/aer/aerdrv_acpi.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/drivers/pci/pcie/aer/aerdrv_acpi.c b/drivers/pci/pcie/aer/aerdrv_acpi.c
+index cf611ab2193a..f670313479ee 100644
+--- a/drivers/pci/pcie/aer/aerdrv_acpi.c
++++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
+@@ -50,12 +50,24 @@ struct aer_hest_parse_info {
+ 	int firmware_first;
+ };
+ 
++static int hest_source_is_pcie_aer(struct acpi_hest_header *hest_hdr)
++{
++	if (hest_hdr->type == ACPI_HEST_TYPE_AER_ROOT_PORT ||
++	    hest_hdr->type == ACPI_HEST_TYPE_AER_ENDPOINT ||
++	    hest_hdr->type == ACPI_HEST_TYPE_AER_BRIDGE)
++		return 1;
++	return 0;
++}
++
+ static int aer_hest_parse(struct acpi_hest_header *hest_hdr, void *data)
+ {
+ 	struct aer_hest_parse_info *info = data;
+ 	struct acpi_hest_aer_common *p;
+ 	int ff;
+ 
++	if (!hest_source_is_pcie_aer(hest_hdr))
++		return 0;
++
+ 	p = (struct acpi_hest_aer_common *)(hest_hdr + 1);
+ 	ff = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
+ 	if (p->flags & ACPI_HEST_GLOBAL) {
