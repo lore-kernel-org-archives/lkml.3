@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948Ab3LMAZt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 19:25:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60592 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751571Ab3LMAZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 19:25:47 -0500
-Date: Thu, 12 Dec 2013 19:25:23 -0500
-From: Dave Jones <davej@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, vegard.nossum@oracle.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: Re: [PATCH 1/9] Known exploit detection
-Message-ID: <20131213002523.GA20706@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Kees Cook <keescook@chromium.org>, Theodore Ts'o <tytso@mit.edu>,
-	vegard.nossum@oracle.com, LKML <linux-kernel@vger.kernel.org>,
-	Tommi Rantala <tt.rantala@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Alan Cox <alan@linux.intel.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Jason Wang <jasowang@redhat.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	Dan Carpenter <dan.carpenter@oracle.com>,
-	James Morris <james.l.morris@oracle.com>
-References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
- <20131212190659.GG13547@thunk.org>
- <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
+	id S1751912Ab3LMAc3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 19:32:29 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:36450 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab3LMAc2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 19:32:28 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        bsd@redhat.com, laijs@cn.fujitsu.com
+Subject: Re: [Query] Ticks happen in pair for NO_HZ_FULL cores ?
+References: <CAKohponch=o3nBKTmakA87OiN=HbgnEwJUL23mGkjQiNoJWjWw@mail.gmail.com>
+	<20131211132212.GA7862@localhost.localdomain>
+	<20131211211400.GB7683@mtj.dyndns.org>
+Date: Thu, 12 Dec 2013 16:32:25 -0800
+In-Reply-To: <20131211211400.GB7683@mtj.dyndns.org> (Tejun Heo's message of
+	"Wed, 11 Dec 2013 16:14:00 -0500")
+Message-ID: <87iout615y.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 01:13:41PM -0800, Kees Cook wrote:
+Tejun Heo <tj@kernel.org> writes:
 
- > - who will keep adding these triggers going forward?
+> Hey, guys.
+>
+> On Wed, Dec 11, 2013 at 02:22:14PM +0100, Frederic Weisbecker wrote:
+>> I fear I don't understand your question. Do you mean why don't we prevent from
+>> that bdi writeback work to run when we are in full dynticks mode?
+>> 
+>> We can't just ignore workqueues and timers callback when they are scheduled
+>> otherwise the kernel is going to behave randomly.
+>> 
+>> OTOH what we can do is to work on these per cpu workqueues and timers and do
+>> what's necessary to avoid them to fire, as explained in detail there Documentation/kernel-per-CPU-kthreads.txt
+>
+> Hmmm... some per-cpu workqueues can be turned into unbound ones and
+> the writeback is one of those.  
 
-also..
+Ah, looks like the writeback one is already unbound, and configurable
+from sysfs.
 
-- Who will test the existing triggers are doing the right thing when related code changes.
+Viresh, add this to your test script, and it should get this workqueue
+out of the way:
 
-We could add something to tests/ maybe for each exploit() addition, to make sure some
-new change isn't introducing an oopsable (or worse!) bug in the actual exploit test.
+   # pin the writeback workqueue to CPU0
+   echo 1 > /sys/bus/workqueue/devices/writeback/cpumask
 
-It does mean someone needs to be regularly running said tests though.
-As history has shown, things like nx_test have been broken for months at a time without
-anyone complaining.  Perhaps Fenguang Wu can add something to the daily test runs if
-we add an over all "make test-secure" target or similar.
+Kevin
 
-	Dave
-
+> Currently, this is used for
+> powersaving on mobile but could also be useful for jitter control.  In
+> the long term, it could be beneficial to strictly distinguish the
+> workqueues which really need per-cpu behavior and the ones which are
+> per-cpu just for optimization.
+>
+>> There is also the problem of unbound workqueues for which we don't
+>> have a solution yet. But the idea is that we could tweak their
+>> affinity from sysfs.
+>
+> Yes, this is a long term todo item but I'm currently a bit too swamped
+> to tackle it myself.  cc'ing Lai, who has pretty good knowledge of
+> workqueue internals, and Bandan, who seemed interested in working on
+> implementing default attrs.
+>
+> Thanks.
