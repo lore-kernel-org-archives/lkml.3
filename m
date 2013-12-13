@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166Ab3LMB5r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 20:57:47 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:39783 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806Ab3LMB5q (ORCPT
+	id S1752191Ab3LMB5z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 20:57:55 -0500
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:50417 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806Ab3LMB5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 20:57:46 -0500
-Message-ID: <52AA6993.6080804@hitachi.com>
-Date: Fri, 13 Dec 2013 10:57:39 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 12 Dec 2013 20:57:49 -0500
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 16/17] uprobes: Allocate ->utask before handler_chain()
- for tracing handlers
-References: <1386570005-3368-1-git-send-email-namhyung@kernel.org> <1386570005-3368-17-git-send-email-namhyung@kernel.org> <52A6EFD7.8050602@hitachi.com> <20131210155744.GA21466@redhat.com> <52A7C347.1060402@hitachi.com> <20131211181155.GA25144@redhat.com> <52A94FED.3020705@hitachi.com> <20131212194628.GA5786@redhat.com>
-In-Reply-To: <20131212194628.GA5786@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131209223905.GU31386@dastard>
+References: <20131209223905.GU31386@dastard>
+Date: Fri, 13 Dec 2013 09:57:48 +0800
+Message-ID: <CACVXFVNLqEQpoKPS-r9Lj_hJek5FnCGMagkMt+LUUxt8c3XCbA@mail.gmail.com>
+Subject: Re: [HANG 3.13-rc3] blk-mq/virtio: mkfs.ext4 hangs in blk_mq_wait_for_tags
+From: Ming Lei <tom.leiming@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/13 4:46), Oleg Nesterov wrote:
-> On 12/12, Masami Hiramatsu wrote:
->>
->> (2013/12/12 3:11), Oleg Nesterov wrote:
->>> On 12/11, Masami Hiramatsu wrote:
->>>>
->>>> But it could skip the handler_chain silently. It could confuse users
->>>> why their probe doesn't hit as expected.
->>>
->>> No, we will restart the same (probed) instruction, handle_swbp()
->>> will be called again, get_utask() will be called again.
->>
->> Hmm, in that case, how would you avoid infinite recursive loop??
-> 
-> Masami, I do not understand your concerns ;) see below.
-> 
->> Would you repeat it until get_utask() != NULL?
-> 
-> Yes, the task will loop until kmalloc(GFP_KERNEL) succeeds, and I see
-> nothing wrong here.
-> 
-> Just in case, let me remind that it won't loop in kernel mode, it can
-> take a signal, it can be killed. And it is not recursive, this is
-> like restart after page fault (which btw can fault again if the page
-> was unmapped again, and "in theory" this loop can be infinite too).
+On Tue, Dec 10, 2013 at 6:39 AM, Dave Chinner <david@fromorbit.com> wrote:
+> Hi Jens,
+>
+> Another day, another blkmq/virtio problem. Running mkfs.ext4 on a
+> sparse 100TB VM file image, it hangs hard while writing superblock
+> information:
+>
+> $ tests/fsmark-50-test-ext4.sh
+> mke2fs 1.43-WIP (20-Jun-2013)
+> Filesystem label=
+> OS type: Linux
+> Block size=4096 (log=2)
+> Fragment size=4096 (log=2)
+> Stride=0 blocks, Stripe width=0 blocks
+> 1677721600 inodes, 26843545600 blocks
+> 1342177280 blocks (5.00%) reserved for the super user
+> First data block=0
+> 819200 block groups
+> 32768 blocks per group, 32768 fragments per group
+> 2048 inodes per group
+> Superblock backups stored on blocks:
+>         32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208,
+>         4096000, 7962624, 11239424, 20480000, 23887872, 71663616, 78675968,
+>         102400000, 214990848, 512000000, 550731776, 644972544, 1934917632,
+>         2560000000, 3855122432, 5804752896, 12800000000, 17414258688
+>
+> Allocating group tables: done
+> Writing inode tables: done
+> Creating journal (32768 blocks): done
+> Writing superblocks and filesystem accounting information:
+>
+> It writes a few superblocks, then hangs. Immediately after it stops
+> updating that last line, I see this:
+>
+> root@test4:~# echo w > /proc/sysrq-trigger
 
-Ah! I got it :)
+It might be helpful to do below and post the result before the sysrq-trigger:
 
-> And why this is bad? Once again, this is GFP_KERNEL allocation, if it
-> loops "indefinitely" there is something wrong. Even a single GFP_KERNEL
-> failure likely means the task is already killed by oom, so it will
-> simply exit when it returns to user-mode.
-
-Indeed. It should be killed.
-
-> And how this differs from, say, the "endless" should_alloc_retry() loop
-> in __alloc_pages_slowpath() ? And note that in this case we loop in
-> kernel mode. Of course this is not possible "in practice", but the same
-> is true for the "endless" loop you are worried about.
-
-Agreed, at least that is not uprobe's business :)
-
-> 
->>>> Hmm, in that case, should uprobes handlers never be called on ppc with
->>>> this change?
->>>
->>> Why? With this change ppc will have ->utask != NULL even if it doesn't
->>> need it at all.
->>
->> Ah, I see. This changes that.
-> 
-> Yes, this is why the changelog says "a bit unfortunate", we allocate the
-> memory even there is no trace_uprobe consumer. So it would be nice to
-> cleanup this later somehow, but imho this is a low priority problem and
-> perhaps we will simply postulate that uprobe_consumer->handler() can
-> rely on task->utask != NULL and remove get_utask() from pre_ssout().
-> The only necessary cleanup (in my opinion) is that we should add another
-> member into the union in uprobe_task for trace_uprobe.c, but again I
-> think we should do this later to avoid the (potentially conflicting)
-> changes in this series.
-> 
-> Oleg.
-> 
-
-Thank you,
+         cat    /sys/class/block/vda/mq/0/tags
 
 
+Thanks,
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Ming Lei
