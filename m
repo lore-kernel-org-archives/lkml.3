@@ -1,168 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab3LMXBt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 18:01:49 -0500
-Received: from smtprelay0211.hostedemail.com ([216.40.44.211]:38900 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751561Ab3LMXBr (ORCPT
+	id S1753721Ab3LMXEe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 18:04:34 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:44342 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab3LMXEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 18:01:47 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:2:41:355:379:541:967:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1535:1593:1594:1605:1606:1730:1747:1777:1792:2194:2199:2393:2525:2560:2563:2682:2685:2828:2859:2911:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3865:3866:3867:3870:3872:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4425:5007:6119:6691:7652:7903:8985:9025:9388:10004:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12555:12679:13025:13161:13180:13229:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bone53_66b25b6230657
-X-Filterd-Recvd-Size: 5938
-Message-ID: <1386975703.2479.48.camel@joe-AO722>
-Subject: bnx2x_sriov.c: Missing switch/case breaks?
-From: Joe Perches <joe@perches.com>
-To: Ariel Elior <ariele@broadcom.com>
-Cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 13 Dec 2013 15:01:43 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Fri, 13 Dec 2013 18:04:32 -0500
+Message-ID: <52AB9317.7080602@gmail.com>
+Date: Sat, 14 Dec 2013 10:07:03 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Kees Cook <keescook@chromium.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        vegard.nossum@oracle.com, LKML <linux-kernel@vger.kernel.org>,
+        Tommi Rantala <tt.rantala@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: Re: [PATCH 1/9] Known exploit detection
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com> <20131212190659.GG13547@thunk.org> <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com> <52AA4BC8.1080207@gmail.com> <20131213130648.GA10870@gmail.com>
+In-Reply-To: <20131213130648.GA10870@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ariel.
+On 14/12/13 00:06, Ingo Molnar wrote:
 
-I wrote a little checkpatch script to look for missing
-switch/case breaks.
+> 
+> * Ryan Mallon <rmallon@gmail.com> wrote:
+> 
+>> On 13/12/13 08:13, Kees Cook wrote:
+>>> On Thu, Dec 12, 2013 at 11:06 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+>>>> On Thu, Dec 12, 2013 at 05:52:24PM +0100, vegard.nossum@oracle.com wrote:
+>>>>> From: Vegard Nossum <vegard.nossum@oracle.com>
+>>>>>
+>>>>> The idea is simple -- since different kernel versions are vulnerable to
+>>>>> different root exploits, hackers most likely try multiple exploits before
+>>>>> they actually succeed.
+>>>
+>>> I like this idea. It serves a few purposes, not the least of which is
+>>> very clearly marking in code where we've had problems, regardless of
+>>> the fact that it reports badness to the system owner. And I think
+>>> getting any additional notifications about bad behavior is a nice idea
+>>> too.
+>>
+>> Though, if an attacker is running through a series of exploits, and 
+>> one eventually succeeds then the first thing to do would be to clean 
+>> traces of the _exploit() notifications from the syslog. [...]
+> 
+> There are several solutions to that:
+> 
+> 1)
+> 
+> Critical sites use remote logging over a fast LAN, so a successful 
+> exploit would have to zap the remote logging daemon pretty quickly 
+> before the log message goes out over the network.
+> 
+> 2)
+> 
+> Some sites also log to append-only media [such as a printer] or other 
+> append-only storage interfaces - which cannot be manipulated from the 
+> attacked system alone after a successful break-in.
+> 
+> 3)
+> 
+> In future the exploit() code could trigger actual active defensive 
+> measures, such as immediately freezing all tasks of that UID and 
+> blocking further fork()s/exec()s of that UID.
+> 
+> Depending on how critical the security of the system is, such active 
+> measures might still be a preferable outcome even if there's a chance 
+> of false positives. (Such active measures that freeze the UID will 
+> also help with forensics, if the attack is indeed real.)
+> 
+>> [...] Since running through a series of exploits is pretty quick, 
+>> this can probably all be done before the sysadmin ever notices.
+> 
+> It's not necessarily the sysadmin the attacker is racing against, but 
+> against append-only logging and other defensive measures - which too 
+> are programs.
+> 
+>> The _exploit() notifications could also be used to spam the syslogs. 
+>> Although they are individually ratelimited, if there are enough 
+>> _exploit() markers in the kernel then an annoying person can cycle 
+>> through them all to generate large amounts of useless syslog.
+> 
+> AFAICS they are globally rate-limited, just like many other 
+> attacker-triggerable printk()s the kernel may generate.
 
-http://www.kernelhub.org/?msg=379933&p=2
 
-There are _many_ instances of case blocks in sriov.c
-that could be missing breaks as they use fall-throughs.
+Actually, that opens another possibility for an attacker. Since they
+know the logging is rate-limited, they can first attempt a low risk
+CVE (or one that is known to have false positives, see comments from
+others about dumb user-space/corrupted file-systems, etc). So that
+attempt gets logged, and possibly ignored, but then more attempts
+can be quickly made that will not be logged.
 
-It would be good if these are actually intended to be
-fall-throughs to add a /* fall-through */ comment between
-each case block.
+Of course, if you have some policy that kicks the user or some such 
+then that would limit this approach, but just rate-limited logging
+by itself might not be enough. The problem with policy based 
+solutions, though, is that if the attacker knows what the policy
+is then they can game it. E.g. don't bother trying the known exploits
+which will immediately get you kicked; add sufficient delay between
+attempts, etc.
 
-For instance:
+~Ryan
+ 
 
-static void bnx2x_vfop_qctor(struct bnx2x *bp, struct bnx2x_virtf *vf)
-{
-[...]
-	switch (state) {
-	case BNX2X_VFOP_QCTOR_INIT:
-
-		/* has this queue already been opened? */
-		if (bnx2x_get_q_logical_state(bp, q_params->q_obj) ==
-		    BNX2X_Q_LOGICAL_STATE_ACTIVE) {
-			DP(BNX2X_MSG_IOV,
-			   "Entered qctor but queue was already up. Aborting gracefully\n");
-			goto op_done;
-		}
-
-		/* next state */
-		vfop->state = BNX2X_VFOP_QCTOR_SETUP;
-
-		q_params->cmd = BNX2X_Q_CMD_INIT;
-		vfop->rc = bnx2x_queue_state_change(bp, q_params);
-
-		bnx2x_vfop_finalize(vf, vfop->rc, VFOP_CONT);
-
-	case BNX2X_VFOP_QCTOR_SETUP:
-		/* next state */
-		vfop->state = BNX2X_VFOP_QCTOR_INT_EN;
-
-		/* copy pre-prepared setup params to the queue-state params */
-		vfop->op_p->qctor.qstate.params.setup =
-			vfop->op_p->qctor.prep_qsetup;
-
-		q_params->cmd = BNX2X_Q_CMD_SETUP;
-		vfop->rc = bnx2x_queue_state_change(bp, q_params);
-
-		bnx2x_vfop_finalize(vf, vfop->rc, VFOP_CONT);
-
----
-
-Here's the checkpatch output on that file
-
-$ ./scripts/checkpatch.pl -f --types=missing_break drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#326: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:326:
-+	case BNX2X_VFOP_QCTOR_SETUP:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#339: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:339:
-+	case BNX2X_VFOP_QCTOR_INT_EN:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#416: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:416:
-+	case BNX2X_VFOP_QDTOR_TERMINATE:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#425: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:425:
-+	case BNX2X_VFOP_QDTOR_CFCDEL:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#437: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:437:
-+	case BNX2X_VFOP_QDTOR_DONE:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#622: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:622:
-+	case BNX2X_VFOP_VLAN_MAC_CONFIG_SINGLE:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#633: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:633:
-+	case BNX2X_VFOP_VLAN_MAC_CHK_DONE:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#637: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:637:
-+	case BNX2X_VFOP_MAC_CONFIG_LIST:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#650: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:650:
-+	case BNX2X_VFOP_VLAN_CONFIG_LIST:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#662: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:662:
-+	default:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#971: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:971:
-+	case BNX2X_VFOP_QSETUP_DONE:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#1068: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:1068:
-+	case BNX2X_VFOP_QFLR_DONE:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#1119: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:1119:
-+	case BNX2X_VFOP_MCAST_ADD:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#1136: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:1136:
-+	case BNX2X_VFOP_MCAST_CHK_DONE:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#1139: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:1139:
-+	default:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#1217: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:1217:
-+	case BNX2X_VFOP_RXMODE_DONE:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#1326: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:1326:
-+	case BNX2X_VFOP_QTEARDOWN_DONE:
-
-WARNING: Possible switch case/default not preceeded by break or fallthrough comment
-#2985: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:2985:
-+	case BNX2X_VFOP_RSS_DONE:
-
-total: 0 errors, 18 warnings, 3683 lines checked
-
-NOTE: Used message types: MISSING_BREAK
-
-drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c has style problems, please review.
-
-If any of these errors are false positives, please report
-them to the maintainer, see CHECKPATCH in MAINTAINERS.
-total: 0 errors, 0 warnings, 2006 lines checked
-
-NOTE: Used message types: MISSING_BREAK
 
 
