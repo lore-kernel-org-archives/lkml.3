@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab3LMWpw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 17:45:52 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:48637 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab3LMW0j (ORCPT
+	id S1754878Ab3LMWqU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 17:46:20 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:39527 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584Ab3LMW0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 17:26:39 -0500
+	Fri, 13 Dec 2013 17:26:36 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Greg KH <gregkh@linuxfoundation.org>,
@@ -15,9 +15,9 @@ Cc: Greg KH <gregkh@linuxfoundation.org>,
         Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>,
         Olav Haugan <ohaugan@codeaurora.org>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 022/115] gpu: ion: IOCTL return success when error occurs
-Date: Fri, 13 Dec 2013 14:23:56 -0800
-Message-Id: <1386973529-4884-23-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 020/115] gpu: ion: Add missing argument to WARN call
+Date: Fri, 13 Dec 2013 14:23:54 -0800
+Message-Id: <1386973529-4884-21-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
 References: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
@@ -27,52 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Olav Haugan <ohaugan@codeaurora.org>
 
-ION_IOC_MAP, ION_IOC_SHARE, and ION_IOC_IMPORT may return
-success when an error occurs.
-
-Add correct error handling to ION_IOC_MAP, ION_IOC_SHARE, and
-ION_IOC_IMPORT.
+The condition argument to the WARN call in ion_free and
+ion_share_dma_buf are missing. Add the argument to
+allow correct printing of warning message.
 
 Signed-off-by: Olav Haugan <ohaugan@codeaurora.org>
 [jstultz: modified patch to apply to staging directory]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/ion/ion.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/staging/android/ion/ion.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
-index f536ce5..a054edd 100644
+index d4e4c68..5872dd3 100644
 --- a/drivers/staging/android/ion/ion.c
 +++ b/drivers/staging/android/ion/ion.c
-@@ -1040,20 +1040,27 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		data.fd = ion_share_dma_buf(client, data.handle);
- 		if (copy_to_user((void __user *)arg, &data, sizeof(data)))
- 			return -EFAULT;
-+		if (data.fd < 0)
-+			return data.fd;
- 		break;
+@@ -408,7 +408,7 @@ void ion_free(struct ion_client *client, struct ion_handle *handle)
+ 	mutex_unlock(&client->lock);
+ 
+ 	if (!valid_handle) {
+-		WARN("%s: invalid handle passed to free.\n", __func__);
++		WARN(1, "%s: invalid handle passed to free.\n", __func__);
+ 		return;
  	}
- 	case ION_IOC_IMPORT:
- 	{
- 		struct ion_fd_data data;
-+		int ret = 0;
- 		if (copy_from_user(&data, (void __user *)arg,
- 				   sizeof(struct ion_fd_data)))
- 			return -EFAULT;
- 		data.handle = ion_import_dma_buf(client, data.fd);
--		if (IS_ERR(data.handle))
-+		if (IS_ERR(data.handle)) {
-+			ret = PTR_ERR(data.handle);
- 			data.handle = NULL;
-+		}
- 		if (copy_to_user((void __user *)arg, &data,
- 				 sizeof(struct ion_fd_data)))
- 			return -EFAULT;
-+		if (ret < 0)
-+			return ret;
- 		break;
+ 	ion_handle_put(handle);
+@@ -906,7 +906,7 @@ int ion_share_dma_buf(struct ion_client *client, struct ion_handle *handle)
+ 	valid_handle = ion_handle_validate(client, handle);
+ 	mutex_unlock(&client->lock);
+ 	if (!valid_handle) {
+-		WARN("%s: invalid handle passed to share.\n", __func__);
++		WARN(1, "%s: invalid handle passed to share.\n", __func__);
+ 		return -EINVAL;
  	}
- 	case ION_IOC_SYNC:
+ 
 -- 
 1.8.3.2
 
