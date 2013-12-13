@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867Ab3LMG13 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 01:27:29 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:14566 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab3LMG11 (ORCPT
+	id S1751523Ab3LMGgD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 01:36:03 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:7198 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab3LMGgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 01:27:27 -0500
+	Fri, 13 Dec 2013 01:36:01 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 12 Dec 2013 22:30:02 -0800
-Message-ID: <52AAA80A.7010905@nvidia.com>
-Date: Fri, 13 Dec 2013 11:54:10 +0530
+	by hqnvupgp07.nvidia.com on Thu, 12 Dec 2013 22:38:36 -0800
+Message-ID: <52AAAA0B.7010307@nvidia.com>
+Date: Fri, 13 Dec 2013 12:02:43 +0530
 From: Laxman Dewangan <ldewangan@nvidia.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
 To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+CC: "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: tegra: enable ams AS3722 drivers
-References: <1386855064-10993-1-git-send-email-ldewangan@nvidia.com> <52AA2891.2020502@wwwdotorg.org> <52AA2FD1.3020000@wwwdotorg.org>
-In-Reply-To: <52AA2FD1.3020000@wwwdotorg.org>
+        Stephen Warren <swarren@nvidia.com>, Kerwin Wan <kerwinw@nvidia.com>,
+        "david@gibson.dropbear.id.au" <david@gibson.dropbear.id.au>
+Subject: Re: [PATCH 1/2] of: add support for reading s32 property value
+References: <1386854693-10871-1-git-send-email-ldewangan@nvidia.com> <52A9FA00.7080506@wwwdotorg.org>
+In-Reply-To: <52A9FA00.7080506@wwwdotorg.org>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 13 December 2013 03:21 AM, Stephen Warren wrote:
-> On 12/12/2013 02:20 PM, Stephen Warren wrote:
->> On 12/12/2013 06:31 AM, Laxman Dewangan wrote:
->>> ams AS3722 is the system power manager module IC for the Tegra124 based
->>> Venice2 platform. Enable configs for gpio, pincontrol, rtc, regulator
->>> support from this device.
->> I've squashed patch 1/2 into Tegra's for-3.14/defconfig branch.
->>
->> I've applied patch 2/2 to Tegra's for-3.14/dt branch.
-> Actually, I'm dropping patch 2/2 since it causes a whole bunch of error
-> spew during boot:
+On Thursday 12 December 2013 11:31 PM, Stephen Warren wrote:
+> On 12/12/2013 06:24 AM, Laxman Dewangan wrote:
+>> Add of_property_read_s32() to read the signed 32bit number
+>> from dt property value. This supports to pass the -ve numbers
+>> from dt. Use 2's complement method for represnting negative number
+>> and passed as u32 from dts. When reading back the value, again
+>> converted to 2's complement if msb shows as 1.
+>> diff --git a/include/linux/of.h b/include/linux/of.h
+>> +static inline int of_property_read_s32(const struct device_node *np,
+>> +				       const char *propname,
+>> +				       s32 *out_value)
+>> +{
+>> +	u32 val;
+>> +	int ret;
+>> +
+>> +	ret = of_property_read_u32(np, propname, &val);
+>> +	if (ret < 0)
+>> +		return ret;
+>> +
+>> +	/* 2's complement if MSB is 1 */
+>> +	*out_value = (val & 0x80000000U) ? -((val ^ 0xFFFFFFFFU) + 1) : val;
+> I may not be thinking straight today since I have a cold, but doesn't
+> patch 2/2 encode negative values as 2's complement, and an s32 variable
+> in the kernel is also encoded as 2's complement, so all you need here is
+> a cast:
 >
->> [    0.628315] tegra124-pinctrl 70000868.pinmux: invalid group "dap2_dout_pp2" for function "rsvd4"
->> [    0.635309] tegra124-pinctrl 70000868.pinmux: does not have pin group dap2_dout_pp2
->> [    0.642999] tegra124-pinctrl 70000868.pinmux: could not map group config for "dap2_dout_pp2"
->> [    0.731176] as3722-pinctrl as3722-pinctrl: pin gpio0 already requested by as3722-pinctrl; cannot claim for as3722-regulator
->> [    0.742312] as3722-pinctrl as3722-pinctrl: pin-0 (as3722-regulator) status -22
->> [    0.749526] as3722-pinctrl as3722-pinctrl: could not request pin 0 (gpio0) from group gpio0  on device as3722-pinctrl
->> [    0.760133] as3722-regulator as3722-regulator: Error applying setting, reverse things back
->> [    0.835838] as3722-regulator as3722-regulator: Failed to find supply vin-ldo1-6
->> [    0.843312] as3722-regulator as3722-regulator: regulator 8 register failed -517
->> [    0.852263] platform as3722-regulator: Driver as3722-regulator requests probe deferral
->> [    0.984920] as3722-pinctrl as3722-pinctrl: pin gpio0 already requested by as3722-pinctrl; cannot claim for as3722-rtc
->> [    0.995537] as3722-pinctrl as3722-pinctrl: pin-0 (as3722-rtc) status -22
->> [    1.002244] as3722-pinctrl as3722-pinctrl: could not request pin 0 (gpio0) from group gpio0  on device as3722-pinctrl
->> [    1.012848] as3722-rtc as3722-rtc: Error applying setting, reverse things back
+> 	*out_value = (s32)val;
+>
+> ... since the cast doesn't change the binary representation?
 
-I did not observe this issue in my log, probably overlooked.
-I will repro this and fix/update the issue/patch.
-
-Thanks,
-laxman
-
+This is correct if all architecture follows the 2's complement for -Ve 
+number representation.
+If this is true then the patch will become more easy.
