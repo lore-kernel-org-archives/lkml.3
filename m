@@ -1,89 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab3LMOnM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 09:43:12 -0500
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:59645 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab3LMOnK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 09:43:10 -0500
-X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat9gtPvzOaM
-X-RZG-CLASS-ID: mo00
-Subject: Re: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION GTM601 during RING indication
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-In-Reply-To: <B1808224-5850-41E3-9A8F-0F350F84FF89@goldelico.com>
-Date: Fri, 13 Dec 2013 15:43:06 +0100
-Cc: Belisko Marek <marek.belisko@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <541AADAC-7D20-4410-90FC-3E354B0C1457@goldelico.com>
-References: <B1808224-5850-41E3-9A8F-0F350F84FF89@goldelico.com>
-To: Jan Dumon <j.dumon@option.com>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-X-Mailer: Apple Mail (2.1085)
+	id S1753010Ab3LMOnv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 09:43:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2251 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752848Ab3LMOnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 09:43:50 -0500
+Date: Fri, 13 Dec 2013 09:43:20 -0500
+From: Rik van Riel <riel@redhat.com>
+To: pageexec@freemail.hu
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, Dmitry Vyukov <dvyukov@google.com>
+Subject: [PATCH -v2] mm: fix use-after-free in sys_remap_file_pages
+Message-ID: <20131213094320.2291c210@annuminas.surriel.com>
+In-Reply-To: <52AAEB19.27706.CCB8B7D@pageexec.freemail.hu>
+References: <20131212220757.GA14928@www.outflux.net>
+	<20131212224118.17a951c2@annuminas.surriel.com>
+	<52AAEB19.27706.CCB8B7D@pageexec.freemail.hu>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 13 Dec 2013 12:10:17 +0100
+"PaX Team" <pageexec@freemail.hu> wrote:
 
-Am 02.10.2013 um 09:00 schrieb Dr. H. Nikolaus Schaller:
+> pass in vm_flags instead of vma->vm_flags just to prevent someone
+> from 'optimizing' away the read in the future?
 
-> Hi Jan,
-> 
-> we are using a GTM601 modem (Firmware 1.7) for a while and have spotted an
-> issue that under some conditions the modem sends a packed wIndex over USB
-> that is rejected by the hso driver making troubles afterwards. Not rejecting makes
-> it work fine.
-> 
-> BR,
-> Nikolaus Schaller
-> 
-> ---
-> 
-> From f5c7e15b61f2ce4fe3105ff914f6bfaf5d74af0d Mon Sep 17 00:00:00 2001
-> From: "H. Nikolaus Schaller" <hns@goldelico.com>
-> Date: Thu, 15 Nov 2012 14:40:57 +0100
-> Subject: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION
-> GTM601 during RING indication
-> 
-> It has been observed that the GTM601 with 1.7 firmware sometimes sends a value
-> wIndex that has bit 0x04 set instead of being reset as the code expects. So we
-> mask it for the error check.
-> 
-> See http://lists.goldelico.com/pipermail/gta04-owner/2012-February/001643.html
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.de>
-> ---
-> drivers/net/usb/hso.c |    3 ++-
-> 1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-> index cba1d46..d146e26 100644
-> --- a/drivers/net/usb/hso.c
-> +++ b/drivers/net/usb/hso.c
-> @@ -1503,7 +1503,8 @@ static void tiocmget_intr_callback(struct urb *urb)
-> 	if (serial_state_notification->bmRequestType != BM_REQUEST_TYPE ||
-> 	    serial_state_notification->bNotification != B_NOTIFICATION ||
-> 	    le16_to_cpu(serial_state_notification->wValue) != W_VALUE ||
-> -	    le16_to_cpu(serial_state_notification->wIndex) != W_INDEX ||
-> +	    (le16_to_cpu(serial_state_notification->wIndex) & ~0x4) !=
-> +		W_INDEX ||
-> 	    le16_to_cpu(serial_state_notification->wLength) != W_LENGTH) {
-> 		dev_warn(&usb->dev,
-> 			 "hso received invalid serial state notification\n");
-> -- 
-> 1.7.7.4
-> 
-> 
+In that case, we should probably also use ACCESS_ONCE, if
+only to be explicit about it.
+ 
+> perhaps {copy,move} this comment above the previous hunk since that's
+> where the relevant action is?
 
-I have found this (better) proposal by OPTION, but wonder what did happen to it.
-It neither shows in mainline 3.13-rc nor linux-next:
+See the new version below:
 
-https://lkml.org/lkml/2013/10/9/263
+---8<---
+Subject: mm: fix use-after-free in sys_remap_file_pages
 
-BR,
-Nikolaus
+remap_file_pages calls mmap_region, which may merge the VMA with other existing
+VMAs, and free "vma". This can lead to a use-after-free bug. Avoid the bug by
+remembering vm_flags before calling mmap_region, and not trying to dereference
+vma later.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reported-by: Dmitry Vyukov <dvyukov@google.com>
+Cc: stable@vger.kernel.org
+---
+ mm/fremap.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/mm/fremap.c b/mm/fremap.c
+index 87da359..c85e2ec 100644
+--- a/mm/fremap.c
++++ b/mm/fremap.c
+@@ -203,9 +203,10 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
+ 		if (mapping_cap_account_dirty(mapping)) {
+ 			unsigned long addr;
+ 			struct file *file = get_file(vma->vm_file);
++			/* mmap_region may free vma; grab the info now */
++			vm_flags = ACCESS_ONCE(vma->vm_flags);
+ 
+-			addr = mmap_region(file, start, size,
+-					vma->vm_flags, pgoff);
++			addr = mmap_region(file, start, size, vm_flags, pgoff);
+ 			fput(file);
+ 			if (IS_ERR_VALUE(addr)) {
+ 				err = addr;
+@@ -213,7 +214,7 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
+ 				BUG_ON(addr != start);
+ 				err = 0;
+ 			}
+-			goto out;
++			goto out_freed;
+ 		}
+ 		mutex_lock(&mapping->i_mmap_mutex);
+ 		flush_dcache_mmap_lock(mapping);
+@@ -248,6 +249,7 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
+ out:
+ 	if (vma)
+ 		vm_flags = vma->vm_flags;
++out_freed:
+ 	if (likely(!has_write_lock))
+ 		up_read(&mm->mmap_sem);
+ 	else
 
