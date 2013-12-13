@@ -1,218 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab3LMPgR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:36:17 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:55509 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab3LMPgP (ORCPT
+	id S1752635Ab3LMPhd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:37:33 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:48460
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752285Ab3LMPhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:36:15 -0500
-X-IronPort-AV: E=Sophos;i="4.95,479,1384300800"; 
-   d="scan'208";a="82026513"
-Date: Fri, 13 Dec 2013 15:36:12 +0000
-From: Wei Liu <wei.liu2@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v2 2/9] xen-netback: Change TX path from grant
- copy to mapping
-Message-ID: <20131213153612.GM21900@zion.uk.xensource.com>
-References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
- <1386892097-15502-3-git-send-email-zoltan.kiss@citrix.com>
+	Fri, 13 Dec 2013 10:37:32 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: <shawn.guo@linaro.org>, <kernel@pengutronix.de>
+CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ARM: imx6: Derive spdif clock from pll3_pfd3_454m
+Date: Fri, 13 Dec 2013 23:37:52 +0800
+Message-ID: <1386949072-6520-1-git-send-email-Guangyu.Chen@freescale.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1386892097-15502-3-git-send-email-zoltan.kiss@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DLP: MIA2
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 11:48:10PM +0000, Zoltan Kiss wrote:
-> This patch changes the grant copy on the TX patch to grant mapping
-> 
-> v2:
-> - delete branch for handling fragmented packets fit PKT_PROT_LINE sized first
-                                                      ^ PKT_PROT_LEN
->   request
-> - mark the effect of using ballooned pages in a comment
-> - place setting of skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY right
->   before netif_receive_skb, and mark the importance of it
-> - grab dealloc_lock before __napi_complete to avoid contention with the
->   callback's napi_schedule
-> - handle fragmented packets where first request < PKT_PROT_LINE
-                                                    ^ PKT_PROT_LEN
-> - fix up error path when checksum_setup failed
-> - check before teardown for pending grants, and start complain if they are
->   there after 10 second
-> 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> ---
-[...]
->  void xenvif_free(struct xenvif *vif)
->  {
-> +	int i, unmap_timeout = 0;
-> +
-> +	for (i = 0; i < MAX_PENDING_REQS; ++i) {
-> +		if (vif->grant_tx_handle[i] != NETBACK_INVALID_HANDLE) {
-> +			i = 0;
-> +			unmap_timeout++;
-> +			msleep(1000);
-> +			if (unmap_timeout > 9 &&
-> +				net_ratelimit())
-> +				netdev_err(vif->dev,
-> +					"Page still granted! Index: %x\n", i);
-> +		}
-> +	}
-> +
-> +	free_xenballooned_pages(MAX_PENDING_REQS, vif->mmap_pages);
-> +
+SPDIF can derive a TX clock for playback from one of its clock sources --
+spdif root clock to match its supporting sample rates. So this patch set
+the spdif root clock's parent to pll3_pfd3_454m since the pll3_pfd3_454m
+can approximately meet its sample rate requirement.
 
-If some pages are stuck and you just free them will it cause Dom0 to
-crash? I mean, if those pages are recycled by other balloon page users.
+Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
+---
+ arch/arm/mach-imx/clk-imx6q.c  | 3 +++
+ arch/arm/mach-imx/clk-imx6sl.c | 3 +++
+ 2 files changed, 6 insertions(+)
 
-Even if it will not cause Dom0 to crash, will it leak any resource in
-Dom0? At plain sight it looks like at least grant table entry is leaked,
-isn't it? We need to be careful about this because a malicious might be
-able to DoS Dom0 with resource leakage.
+diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
+index 74ecceb..af2e582 100644
+--- a/arch/arm/mach-imx/clk-imx6q.c
++++ b/arch/arm/mach-imx/clk-imx6q.c
+@@ -475,6 +475,9 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
+ 	if (ret)
+ 		pr_warn("failed to set up CLKO: %d\n", ret);
+ 
++	/* Audio-related clocks configuration */
++	clk_set_parent(clk[spdif_sel], clk[pll3_pfd3_454m]);
++
+ 	/* All existing boards with PCIe use LVDS1 */
+ 	if (IS_ENABLED(CONFIG_PCI_IMX6))
+ 		clk_set_parent(clk[lvds1_sel], clk[sata_ref]);
+diff --git a/arch/arm/mach-imx/clk-imx6sl.c b/arch/arm/mach-imx/clk-imx6sl.c
+index a747a7d..a222280 100644
+--- a/arch/arm/mach-imx/clk-imx6sl.c
++++ b/arch/arm/mach-imx/clk-imx6sl.c
+@@ -261,6 +261,9 @@ static void __init imx6sl_clocks_init(struct device_node *ccm_node)
+ 		clk_prepare_enable(clks[IMX6SL_CLK_USBPHY2_GATE]);
+ 	}
+ 
++	/* Audio-related clocks configuration */
++	clk_set_parent(clks[IMX6SL_CLK_SPDIF0_SEL], clks[IMX6SL_CLK_PLL3_PFD3]);
++
+ 	np = of_find_compatible_node(NULL, NULL, "fsl,imx6sl-gpt");
+ 	base = of_iomap(np, 0);
+ 	WARN_ON(!base);
+-- 
+1.8.4
 
->  	netif_napi_del(&vif->napi);
->  
->  	unregister_netdev(vif->dev);
-> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-> index 3ddc474..20352be 100644
-> --- a/drivers/net/xen-netback/netback.c
-> +++ b/drivers/net/xen-netback/netback.c
-> @@ -645,9 +645,12 @@ static void xenvif_tx_err(struct xenvif *vif,
->  			  struct xen_netif_tx_request *txp, RING_IDX end)
->  {
->  	RING_IDX cons = vif->tx.req_cons;
-> +	unsigned long flags;
->  
->  	do {
-> +		spin_lock_irqsave(&vif->response_lock, flags);
->  		make_tx_response(vif, txp, XEN_NETIF_RSP_ERROR);
-> +		spin_unlock_irqrestore(&vif->response_lock, flags);
 
-You only hold the lock for one function call is this intentional?
-
->  		if (cons == end)
->  			break;
->  		txp = RING_GET_REQUEST(&vif->tx, cons++);
-> @@ -786,10 +789,10 @@ static inline void xenvif_tx_create_gop(struct xenvif *vif, u16 pending_idx,
->  
->  }
->  
-> -static struct gnttab_copy *xenvif_get_requests(struct xenvif *vif,
-> +static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
->  					       struct sk_buff *skb,
->  					       struct xen_netif_tx_request *txp,
-> -					       struct gnttab_copy *gop)
-> +					       struct gnttab_map_grant_ref *gop)
->  {
->  	struct skb_shared_info *shinfo = skb_shinfo(skb);
->  	skb_frag_t *frags = shinfo->frags;
-> @@ -810,83 +813,12 @@ static struct gnttab_copy *xenvif_get_requests(struct xenvif *vif,
->  	/* Skip first skb fragment if it is on same page as header fragment. */
->  	start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
->  
-[...]
->  		if (checksum_setup(vif, skb)) {
->  			netdev_dbg(vif->dev,
->  				   "Can't setup checksum in net_tx_action\n");
-> +			if (skb_shinfo(skb)->destructor_arg)
-> +				skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
->  			kfree_skb(skb);
->  			continue;
->  		}
-> @@ -1601,6 +1559,14 @@ static int xenvif_tx_submit(struct xenvif *vif)
->  
->  		work_done++;
->  
-> +		/* Set this flag right before netif_receive_skb, otherwise
-> +		 * someone might think this packet already left netback, and
-> +		 * do a skb_copy_ubufs while we are still in control of the
-> +		 * skb. E.g. the __pskb_pull_tail earlier can do such thing.
-> +		 */
-> +		if (skb_shinfo(skb)->destructor_arg)
-> +			skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
-> +
-
-This is really tricky. :-P
-
->  		netif_receive_skb(skb);
->  	}
->  
-> @@ -1711,7 +1677,7 @@ static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
->  int xenvif_tx_action(struct xenvif *vif, int budget)
->  {
->  	unsigned nr_gops;
-> -	int work_done;
-> +	int work_done, ret;
->  
->  	if (unlikely(!tx_work_todo(vif)))
->  		return 0;
-> @@ -1721,7 +1687,13 @@ int xenvif_tx_action(struct xenvif *vif, int budget)
->  	if (nr_gops == 0)
->  		return 0;
->  
-> -	gnttab_batch_copy(vif->tx_copy_ops, nr_gops);
-> +	if (nr_gops) {
-
-Surely you can remove this "if". At this point nr_gops cannot be zero --
-see two lines above.
-
-> +		ret = gnttab_map_refs(vif->tx_map_ops,
-> +			NULL,
-> +			vif->pages_to_map,
-> +			nr_gops);
-> +		BUG_ON(ret);
-> +	}
->  
->  	work_done = xenvif_tx_submit(vif);
->  
-> @@ -1732,61 +1704,37 @@ static void xenvif_idx_release(struct xenvif *vif, u16 pending_idx,
->  			       u8 status)
->  {
-[...]
->  
->  void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
->  {
->  	int ret;
-> +	struct gnttab_unmap_grant_ref tx_unmap_op;
-> +
->  	if (vif->grant_tx_handle[pending_idx] == NETBACK_INVALID_HANDLE) {
->  		netdev_err(vif->dev,
->  				"Trying to unmap invalid handle! pending_idx: %x\n",
->  				pending_idx);
->  		return;
->  	}
-> -	gnttab_set_unmap_op(&vif->tx_unmap_ops[0],
-> +	gnttab_set_unmap_op(&tx_unmap_op,
->  			idx_to_kaddr(vif, pending_idx),
->  			GNTMAP_host_map,
->  			vif->grant_tx_handle[pending_idx]);
-> -	ret = gnttab_unmap_refs(vif->tx_unmap_ops,
-> +	ret = gnttab_unmap_refs(&tx_unmap_op,
->  			NULL,
->  			&vif->mmap_pages[pending_idx],
->  			1);
-
-This change should be squashed to patch 1. Or as I suggested the changes
-in patch 1 should be moved here.
-
-> @@ -1845,7 +1793,6 @@ static inline int rx_work_todo(struct xenvif *vif)
->  
->  static inline int tx_work_todo(struct xenvif *vif)
->  {
-> -
-
-Stray blank line change.
-
-Wei.
-
->  	if (likely(RING_HAS_UNCONSUMED_REQUESTS(&vif->tx)) &&
->  	    (nr_pending_reqs(vif) + XEN_NETBK_LEGACY_SLOTS_MAX
->  	     < MAX_PENDING_REQS))
