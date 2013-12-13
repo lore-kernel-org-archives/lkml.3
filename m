@@ -1,195 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab3LMTO2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 14:14:28 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:36446 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752785Ab3LMTO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 14:14:27 -0500
-X-IronPort-AV: E=Sophos;i="4.95,481,1384300800"; 
-   d="scan'208";a="84399227"
-Date: Fri, 13 Dec 2013 19:14:23 +0000
-From: Wei Liu <wei.liu2@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: Wei Liu <wei.liu2@citrix.com>, <ian.campbell@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v2 1/9] xen-netback: Introduce TX grant map
- definitions
-Message-ID: <20131213191423.GA12582@zion.uk.xensource.com>
-References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
- <1386892097-15502-2-git-send-email-zoltan.kiss@citrix.com>
- <20131213153138.GL21900@zion.uk.xensource.com>
- <52AB506E.3040509@citrix.com>
+	id S1753220Ab3LMTRs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 14:17:48 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:61643 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602Ab3LMTRr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 14:17:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <52AB506E.3040509@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DLP: MIA1
+In-Reply-To: <CAMuHMdXs16E1WZ4FL=r9BkLBF-q7B432pzpVoGiH-53HZxVx-Q@mail.gmail.com>
+References: <20131213145657.265414969@infradead.org>
+	<20131213150640.846368594@infradead.org>
+	<CAMuHMdXs16E1WZ4FL=r9BkLBF-q7B432pzpVoGiH-53HZxVx-Q@mail.gmail.com>
+Date: Fri, 13 Dec 2013 20:17:46 +0100
+X-Google-Sender-Auth: 9CZV-aObsg1zUPk2auzP4vsKlFw
+Message-ID: <CAMuHMdU1d8T=A2dM8rY86xrZ5WYj9pLme6pc08ypxwCAUC123g@mail.gmail.com>
+Subject: Fwd: [PATCH 3/4] arch: Clean up asm/barrier.h implementations using asm-generic/barrier.h
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 06:22:38PM +0000, Zoltan Kiss wrote:
-> On 13/12/13 15:31, Wei Liu wrote:
-> >On Thu, Dec 12, 2013 at 11:48:09PM +0000, Zoltan Kiss wrote:
-> >>This patch contains the new definitions necessary for grant mapping.
-> >>
-> >>v2:
-> >>- move unmapping to separate thread. The NAPI instance has to be scheduled
-> >>   even from thread context, which can cause huge delays
-> >>- that causes unfortunately bigger struct xenvif
-> >>- store grant handle after checking validity
-> >>
-> >
-> >If the size of xenvif really becomes a problem, you can try to make
-> >sratch space like struct gnttab_copy per-cpu. The downside is that
-> >approach requires much coding and carefully guard against race
-> >conditions. You would need to consider cost v.s. benefit.
-> 
-> I mentioned this because for the first series I had comments that I
-> should be more vigilant about this. At that time there was a problem
-> with struct xenvif allocation which was solved by now. My quick
-> calculation showed this patch will increase the size with ~15kb
-> 
+Woops, misspelling of kernel.org in the original email...
 
-15kb doesn't seem a lot. And the fragmentation problem causing
-allocation failure was fixed. So I guess this won't be a problem.
+---------- Forwarded message ----------
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Fri, Dec 13, 2013 at 8:16 PM
+Subject: Re: [PATCH 3/4] arch: Clean up asm/barrier.h implementations
+using asm-generic/barrier.h
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+linux-kernel@vger.kerne.org, Paul McKenney
+<paulmck@linux.vnet.ibm.com>, Linus Torvalds
+<torvalds@linux-foundation.org>, Victor Kaplansky
+<VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>, Anton Blanchard
+<anton@samba.org>, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Frédéric Weisbecker <fweisbec@gmail.com>, Mathieu Desnoyers
+<mathieu.desnoyers@polymtl.ca>, Michael Ellerman
+<michael@ellerman.id.au>, Michael Neuling <mikey@neuling.org>, Russell
+King <linux@arm.linux.org.uk>, Martin Schwidefsky
+<schwidefsky@de.ibm.com>, Heiko Carstens <heiko.carstens@de.ibm.com>,
+Tony Luck <tony.luck@intel.com>
 
-> >
-> >>Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> >>
-> >>---
-> >[...]
-> >>  #define XENVIF_QUEUE_LENGTH 32
-> >>  #define XENVIF_NAPI_WEIGHT  64
-> >>diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-> >>index c1b7a42..3ddc474 100644
-> >>--- a/drivers/net/xen-netback/netback.c
-> >>+++ b/drivers/net/xen-netback/netback.c
-> >>@@ -772,6 +772,20 @@ static struct page *xenvif_alloc_page(struct xenvif *vif,
-> >>  	return page;
-> >>  }
-> >>
-> >>+static inline void xenvif_tx_create_gop(struct xenvif *vif, u16 pending_idx,
-> >>+	       struct xen_netif_tx_request *txp,
-> >>+	       struct gnttab_map_grant_ref *gop)
-> >>+{
-> >>+	vif->pages_to_map[gop-vif->tx_map_ops] = vif->mmap_pages[pending_idx];
-> >>+	gnttab_set_map_op(gop, idx_to_kaddr(vif, pending_idx),
-> >>+			  GNTMAP_host_map | GNTMAP_readonly,
-> >>+			  txp->gref, vif->domid);
-> >>+
-> >>+	memcpy(&vif->pending_tx_info[pending_idx].req, txp,
-> >>+	       sizeof(*txp));
-> >>+
-> >>+}
-> >>+
-> >
-> >This helper function is not used until next patch. Probably you can move
-> >it to the second patch.
-> >
-> >The same applies to other helper functions as well. Move them to the
-> >patch they are used. It would be easier for people to review.
-> I just moved them here because the second patch is already huge, and
-> I couldn't have an idea to splice it up while keeping it bisectable
-> and logically consistent. As I mentioned, I welcome ideas about
-> that.
-> 
 
-My personal idea would be for a new feature it is not the size of a
-patch matters most, it's the logic matters most. So I'm fine with long
-consolidated patches. The incremental changes you made makes the patches
-hard to review IMHO.
+Hi Peter,
 
-That's merely my personal opinion. Let's see what other people say.
+On Fri, Dec 13, 2013 at 3:57 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> There are a few architectures (m32r, m68k) that could probably
+> do away with their barrier.h file entirely but are kept for now due to
+> their unconventional nop() implementation.
 
-> >
-> >>  static struct gnttab_copy *xenvif_get_requests(struct xenvif *vif,
-> >>  					       struct sk_buff *skb,
-> >>  					       struct xen_netif_tx_request *txp,
-> >>@@ -1593,6 +1607,106 @@ static int xenvif_tx_submit(struct xenvif *vif)
-> >>  	return work_done;
-> >>  }
-> >>
-> >>+void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
-> >>+{
-> >
-> >Do we care about zerocopy_success? I don't see it used in this function.
-> It will be used in the 5th patch. Anyway, it's in the definition of
-> the zerocopy callback.
-> 
+m32r uses `__asm__ __volatile__ ("nop" : : )' instead of
+`asm volatile ("nop")'. Isn't the latter just a shorthand of the former?
 
-Oh right, it is actually used. Then you should rearrange you series.
-Move the patches to add stats before this one, then provide a single
-patch for functions instead of making incremental changes.
+m68k has an additional `barrier()', which I think is unneeded.
+I looked at the asm output for drivers/block/ataflop.c and
+drivers/video/macfb.c, with and without the barrier.
+For ataflop, there were no differences.
+For macfb, removing the barrier allowed the compiler to keep the base
+addresses of the MMIO registers in registers, but there were no changes
+to the register accesses themselves.
 
-> >
-> >>+	unsigned long flags;
-> >>+	pending_ring_idx_t index;
-> >>+	u16 pending_idx = ubuf->desc;
-> >>+	struct pending_tx_info *temp =
-> >>+		container_of(ubuf, struct pending_tx_info, callback_struct);
-> >>+	struct xenvif *vif =
-> >>+		container_of(temp - pending_idx, struct xenvif,
-> >>+			pending_tx_info[0]);
-> >>+
-> >
-> >The third parameter to container_of should be the name of the member
-> >within the struct.
-> Here we have the pending_idx, so we get a pointer for the holding
-> struct pending_tx_info, then for the beginning of pending_tx_info
-> (temp - pending_idx), and then to the struct xenvif. It's a bit
-> tricky and not straightforward, I admit :)
-> 
+So IMHO both m32r and m68k can switch to the asm-generic version.
 
-Well, macro trick. :-)
+I'm wondering whether we can just drop nop() from the in-kernel API?
+There are few users outside arch/:
 
-> >
-> >>+	spin_lock_irqsave(&vif->dealloc_lock, flags);
-> >>+	do {
-> >>+		pending_idx = ubuf->desc;
-> >>+		ubuf = (struct ubuf_info *) ubuf->ctx;
-> >>+		index = pending_index(vif->dealloc_prod);
-> >>+		vif->dealloc_ring[index] = pending_idx;
-> >>+		/* Sync with xenvif_tx_action_dealloc:
-> >>+		 * insert idx then incr producer.
-> >>+		 */
-> >>+		smp_wmb();
-> >>+		vif->dealloc_prod++;
-> >>+	} while (ubuf);
-> >>+	wake_up(&vif->dealloc_wq);
-> >>+	spin_unlock_irqrestore(&vif->dealloc_lock, flags);
-[...]
-> >
-> >>+		smp_rmb();
-> >>+
-> >>+		while (dc != dp) {
-> >>+			pending_idx =
-> >>+				vif->dealloc_ring[pending_index(dc++)];
-> >>+
-> >>+			/* Already unmapped? */
-> >>+			if (vif->grant_tx_handle[pending_idx] ==
-> >>+				NETBACK_INVALID_HANDLE) {
-> >>+				netdev_err(vif->dev,
-> >>+					"Trying to unmap invalid handle! "
-> >>+					"pending_idx: %x\n", pending_idx);
-> >>+				continue;
-> >>+			}
-> >
-> >Should this be BUG_ON? AIUI this kthread should be the only one doing
-> >unmap, right?
-> The NAPI instance can do it as well if it is a small packet fits
-> into PKT_PROT_LEN. But still this scenario shouldn't really happen,
-> I was just not sure we have to crash immediately. Maybe handle it as
-> a fatal error and destroy the vif?
-> 
+drivers/block/ataflop.c
+drivers/net/ethernet/amd/am79c961a.c
+drivers/tty/serial/crisv10.c
+drivers/video/macfb.c
 
-It depends. If this is within the trust boundary, i.e. everything at the
-stage should have been sanitized then we should BUG_ON because there's
-clearly a bug somewhere in the sanitization process, or in the
-interaction of various backend routines.
+>From a quick glance, all of them (ab)use nop() instead of one of the other
+primitives. For the macfb case, it seems to be due to missing ordering
+inside the nubus_*() I/O accessors.
 
-Wei.
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
+
+
+-- 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
