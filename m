@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab3LMQvt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 11:51:49 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:51722 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab3LMQvp (ORCPT
+	id S1753364Ab3LMQwi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 11:52:38 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:42358 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753285Ab3LMQvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 11:51:45 -0500
+	Fri, 13 Dec 2013 11:51:54 -0500
 From: Matt Porter <mporter@linaro.org>
 To: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -25,9 +25,9 @@ Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Devicetree List <devicetree@vger.kernel.org>,
         Linaro Patches <patches@linaro.org>
-Subject: [PATCH v6 5/9] usb: gadget: s3c-hsotg: use generic phy_init()/phy_exit() support
-Date: Fri, 13 Dec 2013 11:51:19 -0500
-Message-Id: <1386953483-21631-6-git-send-email-mporter@linaro.org>
+Subject: [PATCH v6 9/9] ARM: dts: add usb udc support to bcm281xx
+Date: Fri, 13 Dec 2013 11:51:23 -0500
+Message-Id: <1386953483-21631-10-git-send-email-mporter@linaro.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1386953483-21631-1-git-send-email-mporter@linaro.org>
 References: <1386953483-21631-1-git-send-email-mporter@linaro.org>
@@ -35,38 +35,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a generic phy is present, call phy_init()/phy_exit(). This supports
-generic phys that must be soft reset before power on.
+Adds USB OTG/PHY and clock support to BCM281xx and enables
+UDC support on the bcm11351-brt and bcm28155-ap boards.
 
 Signed-off-by: Matt Porter <mporter@linaro.org>
-Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
 ---
- drivers/usb/gadget/s3c-hsotg.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/boot/dts/bcm11351-brt.dts |  6 ++++++
+ arch/arm/boot/dts/bcm11351.dtsi    | 18 ++++++++++++++++++
+ arch/arm/boot/dts/bcm28155-ap.dts  |  8 ++++++++
+ 3 files changed, 32 insertions(+)
 
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index 7c5d8bd..e9683c2 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -3621,6 +3621,9 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
- 		goto err_supplies;
- 	}
+diff --git a/arch/arm/boot/dts/bcm11351-brt.dts b/arch/arm/boot/dts/bcm11351-brt.dts
+index 23cd16d..396b704 100644
+--- a/arch/arm/boot/dts/bcm11351-brt.dts
++++ b/arch/arm/boot/dts/bcm11351-brt.dts
+@@ -44,5 +44,11 @@
+ 		status = "okay";
+ 	};
  
-+	if (hsotg->phy)
-+		phy_init(hsotg->phy);
++	usbotg: usb@3f120000 {
++		status = "okay";
++	};
+ 
++	usbphy: usb-phy@3f130000 {
++		status = "okay";
++	};
+ };
+diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
+index 1246885..0fbb455 100644
+--- a/arch/arm/boot/dts/bcm11351.dtsi
++++ b/arch/arm/boot/dts/bcm11351.dtsi
+@@ -243,4 +243,22 @@
+ 			#clock-cells = <0>;
+ 		};
+ 	};
 +
- 	/* usb phy enable */
- 	s3c_hsotg_phy_enable(hsotg);
- 
-@@ -3714,6 +3717,8 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
- 	}
- 
- 	s3c_hsotg_phy_disable(hsotg);
-+	if (hsotg->phy)
-+		phy_exit(hsotg->phy);
- 	clk_disable_unprepare(hsotg->clk);
- 
- 	return 0;
++	usbotg: usb@3f120000 {
++		compatible = "snps,dwc2";
++		reg = <0x3f120000 0x10000>;
++		interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&usb_otg_ahb_clk>;
++		clock-names = "otg";
++		phys = <&usbphy>;
++		phy-names = "usb2-phy";
++		status = "disabled";
++	};
++
++	usbphy: usb-phy@3f130000 {
++		compatible = "brcm,kona-usb2-phy";
++		reg = <0x3f130000 0x28>;
++		#phy-cells = <0>;
++		status = "disabled";
++	};
+ };
+diff --git a/arch/arm/boot/dts/bcm28155-ap.dts b/arch/arm/boot/dts/bcm28155-ap.dts
+index 08e47c2..a3bc436 100644
+--- a/arch/arm/boot/dts/bcm28155-ap.dts
++++ b/arch/arm/boot/dts/bcm28155-ap.dts
+@@ -43,4 +43,12 @@
+ 		cd-gpios = <&gpio 14 0>;
+ 		status = "okay";
+ 	};
++
++	usbotg: usb@3f120000 {
++		status = "okay";
++	};
++
++	usbphy: usb-phy@3f130000 {
++		status = "okay";
++	};
+ };
 -- 
 1.8.4
 
