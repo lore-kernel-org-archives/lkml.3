@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174Ab3LMCk0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 21:40:26 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28808 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab3LMCkV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 21:40:21 -0500
-Message-ID: <52AA7377.4070408@huawei.com>
-Date: Fri, 13 Dec 2013 10:39:51 +0800
-From: Xie XiuQi <xiexiuqi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Corey Minyard <minyard@acm.org>
-CC: Hushiyuan <hushiyuan@huawei.com>,
-        <openipmi-developer@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zhangdianfang <zhangdianfang@huawei.com>
-Subject: [PATCH 2/2] ipmi: fix timeout calculation when bmc is disconnected
-References: <52AA72B4.4080807@huawei.com>
-In-Reply-To: <52AA72B4.4080807@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1751929Ab3LMCrs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 21:47:48 -0500
+Received: from ozlabs.org ([203.10.76.45]:35193 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751643Ab3LMCrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 21:47:47 -0500
+Message-ID: <1386902862.3853.0.camel@concordia>
+Subject: Re: [PATCH V4 08/10] powerpc, perf: Enable SW filtering in branch
+ stack sampling framework
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: mikey@neuling.org, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        eranian@google.com, linuxppc-dev@ozlabs.org, acme@ghostprotocols.net,
+        sukadev@linux.vnet.ibm.com, mingo@kernel.org
+Date: Fri, 13 Dec 2013 13:47:42 +1100
+In-Reply-To: <52A9779B.1030003@linux.vnet.ibm.com>
+References: <20131209062146.EABBE2C00C1@ozlabs.org>
+	 <52A6AD61.4050408@linux.vnet.ibm.com> <52A9779B.1030003@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.18]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Loading ipmi_si module while bmc is disconnected, we found the timeout
-is longer than 5 secs. Actually it takes about 3 mins and 20 secs.(HZ=250)
+On Thu, 2013-12-12 at 14:15 +0530, Anshuman Khandual wrote:
+> On 12/10/2013 11:27 AM, Anshuman Khandual wrote:
+> > On 12/09/2013 11:51 AM, Michael Ellerman wrote:
+> >> This code was already in need of some unindentation, and now it's just
+> >> ridiculous.
+> >>
+> >> To start with at the beginning of this routine we have:
+> >>
+> >> while (..) {
+> >> 	if (!val)
+> >> 		break;
+> >> 	else {
+> >> 		// Bulk of the logic
+> >> 		...
+> >> 	}
+> >> }
+> >>
+> >> That should almost always become:
+> >>
+> >> while (..) {
+> >> 	if (!val)
+> >> 		break;
+> >>
+> >> 	// Bulk of the logic
+> >> 	...
+> >> }
+> >>
+> >>
+> >> But in this case that's not enough. Please send a precursor patch which moves
+> >> this logic out into a helper function.
+> > 
+> > Hey Michael,
+> > 
+> > I believe this patch should be able to take care of this.
 
-error message as below:
-Dec 12 19:08:59 linux kernel: IPMI BT: timeout in RD_WAIT [ ] 1 retries left
-Dec 12 19:08:59 linux kernel: BT: write 4 bytes seq=0x01 03 18 00 01
-[...]
-Dec 12 19:12:19 linux kernel: IPMI BT: timeout in RD_WAIT [ ]
-Dec 12 19:12:19 linux kernel: failed 2 retries, sending error response
-Dec 12 19:12:19 linux kernel: IPMI: BT reset (takes 5 secs)
-Dec 12 19:12:19 linux kernel: IPMI BT: flag reset [ ]
+...
+ 
+> Does the patch looks okay ? In which case will send it out separately. Do let
+> me know. Thank you.
 
-Function wait_for_msg_done() use schedule_timeout_uninterruptible(1) to
-sleep 1 tick, so we should subtract jiffies_to_usecs(1) instead of 100
-usecs from timeout.
+It's OK.
 
-Reported-by: Hu Shiyuan <hushiyuan@huawei.com>
-Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
----
- drivers/char/ipmi/ipmi_si_intf.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Don't send it out separately, make it the first patch in your series.
 
-diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-index af4b23f..e086d82 100644
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -2707,7 +2707,7 @@ static int wait_for_msg_done(struct smi_info *smi_info)
- 		    smi_result == SI_SM_CALL_WITH_TICK_DELAY) {
- 			schedule_timeout_uninterruptible(1);
- 			smi_result = smi_info->handlers->event(
--				smi_info->si_sm, 100);
-+				smi_info->si_sm, jiffies_to_usecs(1));
- 		} else if (smi_result == SI_SM_CALL_WITHOUT_DELAY) {
- 			smi_result = smi_info->handlers->event(
- 				smi_info->si_sm, 0);
--- 
-1.8.2.2
+cheers
 
 
