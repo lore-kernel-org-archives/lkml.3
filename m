@@ -1,123 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab3LMPEm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:04:42 -0500
-Received: from emvm-gh1-uea09.nsa.gov ([63.239.67.10]:61123 "EHLO nsa.gov"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752561Ab3LMPEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:04:41 -0500
-X-TM-IMSS-Message-ID: <897497800016f82c@nsa.gov>
-Message-ID: <52AB21F1.6030003@tycho.nsa.gov>
-Date: Fri, 13 Dec 2013 10:04:17 -0500
-From: Stephen Smalley <sds@tycho.nsa.gov>
-Organization: National Security Agency
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752418Ab3LMPHq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:07:46 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:38307 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751489Ab3LMPHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 10:07:45 -0500
+Message-ID: <52AB228D.5030003@st.com>
+Date: Fri, 13 Dec 2013 15:06:53 +0000
+From: Angus Clark <angus.clark@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100312 Lightning/1.0b2pre Shredder/3.0.1
 MIME-Version: 1.0
-To: William Roberts <bill.c.roberts@gmail.com>
-CC: "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Guy Briggs <rgb@redhat.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        William Roberts <wroberts@tresys.com>
-Subject: Re: [PATCH 1/3] mm: Create utility functions for accessing a tasks
- commandline value
-References: <1386018639-18916-1-git-send-email-wroberts@tresys.com>	<1386018639-18916-2-git-send-email-wroberts@tresys.com>	<52AB15C0.7090701@tycho.nsa.gov> <CAFftDdquPe9dE_4x_mr0BT2jziUAEtdyjk4DqXvt2-nnBf73zg@mail.gmail.com>
-In-Reply-To: <CAFftDdquPe9dE_4x_mr0BT2jziUAEtdyjk4DqXvt2-nnBf73zg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <dwmw2@infradead.org>,
+        <linus.walleij@linaro.org>, <linux-mtd@lists.infradead.org>,
+        Angus CLARK <angus.clark@st.com>
+Subject: Re: [PATCH v3 08/36] mtd: devices: Provide header for shared OPCODEs
+ and SFDP commands
+References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org> <1385727565-25794-9-git-send-email-lee.jones@linaro.org> <20131210214849.GE27149@ld-irv-0074.broadcom.com>
+In-Reply-To: <20131210214849.GE27149@ld-irv-0074.broadcom.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.65.49.178]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2013 09:51 AM, William Roberts wrote:
-> On Fri, Dec 13, 2013 at 9:12 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
->> Also, why not just get_task_mm(task) within the function rather than
->> pass it in by the caller?
->>
+On 12/10/2013 09:48 PM, Brian Norris wrote:
+> On Fri, Nov 29, 2013 at 12:18:57PM +0000, Lee Jones wrote:
+>> JEDEC have helped to standardise a great deal of the commands which
+>> can be issued to a Serial Flash devices. Many of the OPCODEs and all
+>> of the Serial Flash Discoverable Parameters (SFDP) commands are
+>> generic across devices. This patch provides a shared point where
+>> these commands can be defined.
+
+This comment isn't entirely correct.  The SFDP standard (JESD216A) does not go
+as far as standardising the OPCODES, but merely a way of determining at runtime
+which operations are supported (e.g. READ_1_1_4, READ_1_4_4), and the associated
+opcodes; vendors are still free to use a different opcode for a particular
+operation.
+
+>> +/* JEDEC Standard - Serial Flash Discoverable Parmeters (SFDP) Commands */
+>> +#define FLASH_CMD_READ		0x03	/* READ */
+>> +#define FLASH_CMD_READ_FAST	0x0b	/* FAST READ */
+>> +#define FLASH_CMD_READ_1_1_2	0x3b	/* DUAL OUTPUT READ */
+>> +#define FLASH_CMD_READ_1_2_2	0xbb	/* DUAL I/O READ */
+>> +#define FLASH_CMD_READ_1_1_4	0x6b	/* QUAD OUTPUT READ */
+>> +#define FLASH_CMD_READ_1_4_4	0xeb	/* QUAD I/O READ */
 > 
-> Yes I was debating whether or not to drop the pointer checks... np
-> 
-> WRT the locking and moving it into the function. You need to take the lock
-> to determine the size of the cmdline area. The idea on the interface is you
-> would take the locks, acquire the size via the inline func, alloc memory and
-> then call the copy function. In some cases, like proc/pid/cmdline, they just
-> alloc a page and truncate on that boundary. However, one may with to truncate
-> on an arbitrary boundry, especially when cacheing the values, as you don't want
-> to allocate too much. So inbetween functions calls that get the length and copy,
-> one can make a decision based on their allocation scheme. Moving the locks
-> to the functions would require multiple locks and unlocks in the common case.
+> All of these {1,2,4}_{1,2,4}_{1,2,4} suffixes are a little cryptic; I
+> ended up referring to the SFDP spec to figure out what the first number
+> meant. Can you document them briefly at the top of this SFDP list?
 
-I don't think it is a good idea to split it up, as what happens if the
-range changes between the time you compute the length and the time you
-copy?  And your current callers appear to always get_task_mm(), compute
-len, call the helper, and mmput.  So just take it all to the helper (at
-which point the helper essentially becomes proc_pid_cmdline).
+I think the {x,y,z} descriptions offer the simplest way of representing the
+myriad of operations supported by various devices -- it was one thing SFDP did
+get right.  However, I agree, the nomenclature  does need explained.  We also
+need a way of representing 32-bit address commands, and SDR vs DDR commands --
+this has not yet been addresses by SFDP.
 
->> Unsigned int buflen passed as int len argument without a range check?
->> Note that in the proc_pid_cmdline() code, they first cap it at PAGE_SIZE
->> before passing it.
->>
-> 
-> buflen is passed by the caller. So if you look in the following patch
-> introducing its
-> use in proc/fs/base.c, their is a check.
->         /*The caller of this allocates a page */
->         if (len > PAGE_SIZE)
->                 len = PAGE_SIZE;
-> 
->         res = copy_cmdline(task, mm, buffer, len);
+> Since you list these, does SFDP even describe the 32-bit addressing
+> commands? 
 
-I understand that, but you are making correct operation of the helper
-dependent on the caller already having applied such a cap to the length.
- Which is unsafe practice and may not hold true for future callers.
+Not yet, but I believe "JESD216B" will include a parameter table related to
+32-bit address instructions.
 
->>> +     if (res <= 0)
->>> +             return 0;
->>> +
->>> +     if (res > buflen)
->>> +             res = buflen;
->>
->> Is this a possible condition?  Under what circumstances?
-> 
-> for  (res <= 0), in that case, the underlying call
-> to __access_remote_vm() returns an int. Most of the mm functions look
-> like they are using
-> ints for probably some historical reason I am not aware of. I tried to
-> pick the strongest invariant,
-> however, I don't think < 0 is possible.
-> 
-> For the res > buflen check, that might might be an artifact from the
-> PAGE_SIZE cap from the original
-> code. It would only be possible if a process was able to write to
-> their mm when the semaphores are held.
-> I am assuming the case of:
-> kernel gets size
-> kernel allocs buffer
-> kernel copys but size has differed. I guess if I broke the locking out
-> it could happen, you need size and copy
-> to be autonomous.
+> It seems like it assumes the device is switched (statefully)
+> between 24-bit and 32-bit address modes (or kept permanently in one or
+> the other).
 
-Sorry, you misunderstood.  The <=0 case is clearly possible; I was only
-asking about the res > buflen check, which seems impossible as you
-provided buflen as the max for the access_process_vm() call.  That one
-does not make sense to me and has no equivalent in the original
-proc_pid_cmdline() code.
+And the complexity increases!  The st_spi_fsm H/W also supports a memory-mapped
+mode for booting.  However, the boot controller is hard-coded to issue 24-bit
+address cycles.  If the Serial Flash device includes a dedicated REST pin, and
+this is appropriately routed to the system reset, then we have no issue -- the
+device will reset to its power-on state following a warm reset.  If a reset pin
+is not available, then certain precautions can be followed to minimise problems
+with warm resets.   If the Serial Flash device supports a 32-bit instruction
+set, then this should be used in preference, and we can avoid any statefull
+transitions.  Failing that, we can minimise the window in which a reset would
+fail by issuing EN4B/EX4B before/after each operation.  Of course, if we know
+the system is not subject to these constraints, then we just need to issue EN4B
+at the start, and stay in 4B mode.
 
->> I think you are better off just copying proc_pid_cmdline() exactly as is
->> into a common helper function and then reusing it for audit.  Far less
->> work, and far less potential for mistakes.
-> 
-> I don't like caching a whole page in that audit context. So most of
-> the complexity relates to
-> determining the size of the cache. Steve Grub was in favor of limiting
-> the cmdline value to
-> PATH_MAX. So if that is an acceptable cache size, we can take the
-> existing code from
-> procfs/base.c and just add an argument indicating the size of the
-> buffer. procfs will be
-> PAGE_SIZE and audit will be PATH_MAX. Thoughts?
-
-Yes, that seems reasonable to me.
-
+All this knowledge needs to be in the spi-nor layer...
 
