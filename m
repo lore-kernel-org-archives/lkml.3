@@ -1,39 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab3LMN4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 08:56:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40056 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752425Ab3LMN4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 08:56:12 -0500
-Date: Fri, 13 Dec 2013 14:56:08 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Emanuel Krenz <emanuelkrenz@web.de>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: hid-multitouch: add support for SiS panel in LG
- 23ET83V
-In-Reply-To: <trinity-1ba34dee-30ba-4815-8f91-cbeb762f4b32-1386941992832@3capp-webde-bs44>
-Message-ID: <alpine.LNX.2.00.1312131455440.12702@pobox.suse.cz>
-References: <trinity-1ba34dee-30ba-4815-8f91-cbeb762f4b32-1386941992832@3capp-webde-bs44>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752710Ab3LMN4v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 08:56:51 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43247 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab3LMN4u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 08:56:50 -0500
+Date: Fri, 13 Dec 2013 14:56:26 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/15] cleanups and optimizations
+Message-ID: <20131213135626.GL21999@twins.programming.kicks-ass.net>
+References: <20131212140835.729222186@infradead.org>
+ <52AAE61D.4060406@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52AAE61D.4060406@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Dec 2013, Emanuel Krenz wrote:
+On Fri, Dec 13, 2013 at 12:49:01PM +0200, Eliezer Tamir wrote:
+> On 12/12/2013 16:08, Peter Zijlstra wrote:
+> > This series contains the preempt_enable_no_resched() cleanups that include
+> > spin_lock_bh() optimizations and local_clock() optimizations.
+> 
+> I'm trying to test this on tip/master.
+> Patch 3 fails to apply on kenrel/softirq.c
 
-> I bought an LG 23ET83V multitouch monitor, whose idProduct=1030 wasn't 
-> yet included in the hid-multitouch driver. So I wrote following patch to 
-> include the ID number 1030 and patched the latest stable 3.12.5 kernel. 
-> The SiS touchpanel in my monitor works for me now. This is my first 
-> submitted patch, hope it's okay now, ...well every beginning is 
-> difficult ;-).
+https://git.kernel.org/cgit/linux/kernel/git/peterz/queue.git/log/?h=preempt_clock
 
-Now applied (after refreshing it to apply on top of the SIS quirk 
-merging). Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+Applied just fine here.. stuffed it in a git tree.
