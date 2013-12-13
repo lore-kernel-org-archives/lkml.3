@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab3LMPvM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:51:12 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:16487 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872Ab3LMPvK (ORCPT
+	id S1752858Ab3LMPvW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:51:22 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:60134 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752786Ab3LMPvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:51:10 -0500
-From: Betty Dall <betty.dall@hp.com>
-To: rjw@rjwysocki.net, bhelgaas@google.com
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Betty Dall <betty.dall@hp.com>
-Subject: [PATCH] PCI AER: handle pci_cleanup_aer_uncorrect_error_status() in firmware first mode
-Date: Fri, 13 Dec 2013 08:41:46 -0700
-Message-Id: <1386949306-30601-1-git-send-email-betty.dall@hp.com>
-X-Mailer: git-send-email 1.7.7.6
+	Fri, 13 Dec 2013 10:51:19 -0500
+Date: Fri, 13 Dec 2013 16:51:33 +0100
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Mark Salter <msalter@redhat.com>
+Cc: Matt Fleming <matt@console-pimps.org>, Dave Young <dyoung@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        x86@kernel.org, mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com,
+        Tony Luck <tony.luck@gmail.com>
+Subject: Re: [PATCH v5 02/14] efi: use early_memremap and early_memunmap
+Message-ID: <20131213155133.GR22356@rocoto.smurfnet.nu>
+References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
+ <1386582147-9802-3-git-send-email-dyoung@redhat.com>
+ <20131211103903.GC19196@console-pimps.org>
+ <20131211110227.GK22356@rocoto.smurfnet.nu>
+ <20131211113207.GA29980@console-pimps.org>
+ <1386775078.1979.98.camel@deneb.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386775078.1979.98.camel@deneb.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are three functions exported from aerdrv_core.c that could be
-called when the system is in firmware first mode:
-pci_enable_pcie_error_reporting(), pci_disable_pcie_error_reporting, and
-pci_cleanup_aer_uncorrect_error_status(). The first two functions check if
-we are in firmware first mode and return immediately.
-pci_cleanup_aer_uncorrect_error_status() does not check firmware first
-mode. The problem is that all of these functions should not access the AER
-registers in firmware first mode because the firmware has not granted OS
-control of the AER registers through the _OSC. Many drivers call this
-function in their pci_error_handlers in firmware first mode.
+On Wed, Dec 11, 2013 at 10:17:58AM -0500, Mark Salter wrote:
+> Anyway, I posted a patch to create a generic early_ioremap
+> implementation using generic bits of the x86 code:
+> 
+>   https://lkml.org/lkml/2013/11/27/621
+> 
+> So maybe Dave's patch 1/14 should be part of that series or
+> get rebased on top of it.
 
-The fix is to change pci_cleanup_aer_uncorrect_error_status() to check
-firmware first mode before accessing the AER registers. If it is in firmware
-first mode, return 0. I considered returning -EIO, but decided the status
-has been cleaned up appropriately for firmware first. Returning 0 also avoids
-an error message. Not many places check the return of this function, and the
-ones that do, print an error message and continue such as:
-   err = pci_cleanup_aer_uncorrect_error_status(pdev);
-   if (err) {
-       dev_err(&pdev->dev,
-           "pci_cleanup_aer_uncorrect_error_status failed 0x%0x\n",
-            err); /* non-fatal, continue */
-   }
-That error message is how I found this problem, and it is not applicable
-for the firmware first recovery path.
+Yes, having those two sets of changes to the same bits floating around
+at the same time is painful.
+If you could integrate those changes into your set, everyone wins.
 
-Signed-off-by: Betty Dall <betty.dall@hp.com>
----
-
- drivers/pci/pcie/aer/aerdrv_core.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-
-diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
-index b2c8881..1f60408 100644
---- a/drivers/pci/pcie/aer/aerdrv_core.c
-+++ b/drivers/pci/pcie/aer/aerdrv_core.c
-@@ -62,6 +62,9 @@ int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev)
- 	int pos;
- 	u32 status;
- 
-+	if (pcie_aer_get_firmware_first(dev))
-+		return 0;
-+
- 	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR);
- 	if (!pos)
- 		return -EIO;
+/
+    Leif
