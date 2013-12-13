@@ -1,105 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab3LMQH7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 11:07:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35677 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752171Ab3LMQH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 11:07:57 -0500
-Date: Fri, 13 Dec 2013 17:07:54 +0100
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, gleb@redhat.com, kvm@vger.kernel.org,
-        pmatouse@redhat.com, stable@vger.kernel.org, larsbull@google.com
-Subject: Re: [PATCH] KVM: x86: fix guest-initiated crash with x2apic
- (CVE-2013-6376)
-Message-ID: <20131213160754.GA20763@hpx.cz>
-References: <1386880614-23300-4-git-send-email-pbonzini@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386880614-23300-4-git-send-email-pbonzini@redhat.com>
+	id S1752843Ab3LMQKD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 11:10:03 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:30126 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab3LMQKA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 11:10:00 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        gordan@bobich.net
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [RFC PATCH 3/5] xen-pciback: Document when we FLR an PCI device.
+Date: Fri, 13 Dec 2013 11:09:36 -0500
+Message-Id: <1386950978-8628-4-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
+References: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-12-12 21:36+0100, Paolo Bonzini:
-> From: Gleb Natapov <gleb@redhat.com>
-> 
-> A guest can cause a BUG_ON() leading to a host kernel crash.
-> When the guest writes to the ICR to request an IPI, while in x2apic
-> mode the following things happen, the destination is read from
-> ICR2, which is a register that the guest can control.
-> 
-> kvm_irq_delivery_to_apic_fast uses the high 16 bits of ICR2 as the
-> cluster id.  A BUG_ON is triggered, which is a protection against
-> accessing map->logical_map with an out-of-bounds access and manages
-> to avoid that anything really unsafe occurs.
-> 
-> The logic in the code is correct from real HW point of view. The problem
-> is that KVM supports only one cluster with ID 0 in clustered mode, but
-> the code that has the bug does not take this into account.
+When the toolstack wants us to drop or add an PCI device it
+changes the XenBus state to Configuring - and as result of that
+we find out which devices we should still be exporting out and
+which ones not. For the ones we don't need anymore we need to
+do an PCI reset so that it is ready for the next guest.
 
-The more I read about x2apic, the more confused I am ...
+We are already doing it - but it was not clear _how_
+it was done. This should make it more obvious.
 
- - How was the cluster x2apic enabled?
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/xen/xen-pciback/pci_stub.c | 12 +-----------
+ drivers/xen/xen-pciback/xenbus.c   |  5 ++++-
+ 2 files changed, 5 insertions(+), 12 deletions(-)
 
-   Linux won't enable cluster x2apic without interrupt remapping and I
-   had no idea we were allowed to do it.
+diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+index 36dd4f3..b6a856f 100644
+--- a/drivers/xen/xen-pciback/pci_stub.c
++++ b/drivers/xen/xen-pciback/pci_stub.c
+@@ -267,18 +267,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+ 	/* Cleanup our device
+ 	 * (so it's ready for the next domain)
+ 	 */
++	pcistub_reset_pci_dev(dev);
+ 
+-	/* This is OK - we are running from workqueue context
+-	 * and want to inhibit the user from fiddling with 'reset'
+-	 */
+-	pci_reset_function(dev);
+-	pci_restore_state(dev);
+-
+-	/* This disables the device. */
+-	xen_pcibk_reset_device(dev);
+-
+-	/* And cleanup up our emulated fields. */
+-	xen_pcibk_config_reset_dev(dev);
+ 	xen_pcibk_config_free_dyn_fields(dev);
+ 
+ 	xen_unregister_device_domain_owner(dev);
+diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
+index a9ed867..301d1bc 100644
+--- a/drivers/xen/xen-pciback/xenbus.c
++++ b/drivers/xen/xen-pciback/xenbus.c
+@@ -93,6 +93,8 @@ static void free_pdev(struct xen_pcibk_device *pdev)
+ 
+ 	xen_pcibk_disconnect(pdev);
+ 
++	/* N.B. This calls pcistub_put_pci_dev which does the FLR on all
++	 * of the PCIe devices. */
+ 	xen_pcibk_release_devices(pdev);
+ 
+ 	dev_set_drvdata(&pdev->xdev->dev, NULL);
+@@ -252,7 +254,6 @@ static int xen_pcibk_export_device(struct xen_pcibk_device *pdev,
+ 		xen_unregister_device_domain_owner(dev);
+ 		xen_register_device_domain_owner(dev, pdev->xdev->otherend_id);
+ 	}
+-
+ 	/* TODO: It'd be nice to export a bridge and have all of its children
+ 	 * get exported with it. This may be best done in xend (which will
+ 	 * have to calculate resource usage anyway) but we probably want to
+@@ -286,6 +287,8 @@ static int xen_pcibk_remove_device(struct xen_pcibk_device *pdev,
+ 	dev_dbg(&dev->dev, "unregistering for %d\n", pdev->xdev->otherend_id);
+ 	xen_unregister_device_domain_owner(dev);
+ 
++	/* N.B. This ends up calling pcistub_put_pci_dev which ends up
++	 * doing the FLR. */
+ 	xen_pcibk_release_pci_dev(pdev, dev);
+ 
+ out:
+-- 
+1.8.3.1
 
- - A hardware test-suite found this?
-
-   This bug can only be hit when the destination cpu is > 256, so the
-   request itself is buggy -- we don't support that many in kvm and it
-   would crash when initializing the vcpus if we did.
-   => It looks like we should just ignore the ipi, because we have no
-      vcpus in that cluster.
-
- - Where does the 'only one supported cluster' come from?
-
-   I only see we use 'struct kvm_lapic *logical_map[16][16];', which
-   supports 16 clusters of 16 apics = first 256 vcpus, so if we map
-   everything to logical_map[0][0:15], we would not work correctly in
-   the cluster x2apic, with > 16 vcpus.
-
-Thanks.
-
-> Reported-by: Lars Bull <larsbull@google.com>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  arch/x86/kvm/lapic.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-> index b8bec45c1610..801dc3fd66e1 100644
-> --- a/arch/x86/kvm/lapic.c
-> +++ b/arch/x86/kvm/lapic.c
-> @@ -143,6 +143,8 @@ static inline int kvm_apic_id(struct kvm_lapic *apic)
->  	return (kvm_apic_get_reg(apic, APIC_ID) >> 24) & 0xff;
->  }
->  
-> +#define KMV_X2APIC_CID_BITS 0
-> +
->  static void recalculate_apic_map(struct kvm *kvm)
->  {
->  	struct kvm_apic_map *new, *old = NULL;
-> @@ -180,7 +182,8 @@ static void recalculate_apic_map(struct kvm *kvm)
->  		if (apic_x2apic_mode(apic)) {
->  			new->ldr_bits = 32;
->  			new->cid_shift = 16;
-> -			new->cid_mask = new->lid_mask = 0xffff;
-> +			new->cid_mask = (1 << KMV_X2APIC_CID_BITS) - 1;
-> +			new->lid_mask = 0xffff;
->  		} else if (kvm_apic_sw_enabled(apic) &&
->  				!new->cid_mask /* flat mode */ &&
->  				kvm_apic_get_reg(apic, APIC_DFR) == APIC_DFR_CLUSTER) {
-> -- 
-> 1.8.3.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
