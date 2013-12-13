@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471Ab3LMKcQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 05:32:16 -0500
-Received: from mout.web.de ([212.227.17.12]:60619 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752286Ab3LMKcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 05:32:14 -0500
-Message-ID: <52AAE22A.30701@web.de>
-Date: Fri, 13 Dec 2013 11:32:10 +0100
-From: Emanuel Krenz <emanuelkrenz@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752566Ab3LMKcU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 05:32:20 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:41341 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517Ab3LMKcR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 05:32:17 -0500
+Message-ID: <52AAE214.7020109@ahsoftware.de>
+Date: Fri, 13 Dec 2013 11:31:48 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>, Greg KH <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: hid-multitouch: add support for SiS panel in LG
- 23ET83V
-References: <52AA2810.2010807@web.de> <20131213020542.GE13333@kroah.com> <alpine.LRH.2.00.1312131036520.7125@twin.jikos.cz>
-In-Reply-To: <alpine.LRH.2.00.1312131036520.7125@twin.jikos.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>, Kees Cook <keescook@chromium.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, vegard.nossum@oracle.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alan Cox <alan@linux.intel.com>, Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: Re: [PATCH 1/9] Known exploit detection
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com> <20131212190659.GG13547@thunk.org> <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com> <20131213002523.GA20706@redhat.com> <20131213014220.GB11068@kroah.com>
+In-Reply-To: <20131213014220.GB11068@kroah.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:87gB3J6XBW0XpOPNYcTEkPVGAJltcWRf97lk+SgQiasfeJYBm5J
- lY7mNE9X6kf7/pUzPIivFeZPo5xaNmchjNAfqYD8Lgd1ywKJci74tLd8kPwI3DOu2O78FQl
- OoxFzmklpR0vDnCxtjWxW11bqjSMxUcGEY8pX8kfKXYTT/9T/fTxW0m2Ip3V01WeX+aY+PY
- NLAAwoTdED+R6uwxOQQAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 13.12.2013 10:39, schrieb Jiri Kosina:
-> On Thu, 12 Dec 2013, Greg KH wrote:
+Am 13.12.2013 02:42, schrieb Greg Kroah-Hartman:
+> On Thu, Dec 12, 2013 at 07:25:23PM -0500, Dave Jones wrote:
+>> On Thu, Dec 12, 2013 at 01:13:41PM -0800, Kees Cook wrote:
+>>
+>>   > - who will keep adding these triggers going forward?
+>>
+>> also..
+>>
+>> - Who will test the existing triggers are doing the right thing when related code changes.
 >
->>> 3.12.5-stable patch
->>>
->>> --------------------
->>> From: Emanuel Krenz <emanuelkrenz@web.de>
->>>
->>> Add support for SiS multitouch panel in the touch monitor LG 23ET83V.
->>>
->>> Signed-off-by: Emanuel Krenz <emanuelkrenz@web.de>
->>> Signed-off-by: Forest Bond <forest.bond@rapidrollout.com>
->>> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
->>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> I signed off on this?  What is the git commit id of the patch in Linus's
->> tree?
-> I haven't either, and I don't think I have ever seen this patch (it's
-> definitely neither in Linus' nor my tree).
+> And:
+>    - how do you determine an "expoit attempt" from "userspace program
+>      doing something stupid" / "corrupted filesytem mounted"?
 >
-> Emanuel, what is going on here, please? Is it that you authored this patch
-> yourself, and would like to have it included in Linus' tree (only then it
-> can go to -stable)?
->
-> If so, please remove all Signoffs of people who haven't provided it to
-> you, and resubmit it to maintainer (./scripts/get_maintainer.pl will tell
-> you who are proper recepients of this patch).
->
-> Thanks,
->
-Hello,
-I'm sorry, guys. I thought I have to add those "Signed-off-by" lines to 
-mention, where I got the ideas for this patch from.
-It was actually this patch: https://lkml.org/lkml/2013/12/2/647
-That was obviously a mistake, please forgive me.
-As I mentioned, this was my first submitted patch, I was just so excited 
-that I might help developing.
 
-Thank you, Jiri, for telling me, to remove this "Signed-off-by" lines 
-and resubmit the patch after using get_maintainer.pl.
-Now I actually got your name as the maintainer of HID CORE LAYER. So 
-i'll send it to you again without those lines, i hope it's correct now.
+And what makes a bug marked as exploit more serious than the all the 
+other bugs? I assume there exists many, many more serious (fixed or not) 
+bugs than just those which found there way into the CVE database. And I 
+think most bugs are getting fixed without such a number and often even 
+those for which CVEs do exist, the CVE is unknown to the dev(s).
 
-Thanks, guys, for all your work and help!
+So people might be think they are safe if they call some tool which 
+tests for existing CVEs which are marked as such inside the kernel, 
+which just isn't the reality.
+
+And, as already mentioned, those CVE marks might block refactoring, as 
+devs might become careful to remove such a CVE marker when code changed.
+
+I've never seen a comment inside the kernel sources which does point to 
+a CVE, so I assume there already does exists some agreement about not 
+doing so.
+
+Regards,
+
+Alexander Holler
 
