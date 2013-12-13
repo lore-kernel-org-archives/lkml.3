@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab3LMPoM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:44:12 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:32568 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab3LMPoK (ORCPT
+	id S1752877Ab3LMPoW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:44:22 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:60693 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752785Ab3LMPoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:44:10 -0500
-X-IronPort-AV: E=Sophos;i="4.95,479,1384300800"; 
-   d="scan'208";a="82029765"
-Date: Fri, 13 Dec 2013 15:44:06 +0000
-From: Wei Liu <wei.liu2@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v2 8/9] xen-netback: Timeout packets in RX path
-Message-ID: <20131213154406.GO21900@zion.uk.xensource.com>
-References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
- <1386892097-15502-9-git-send-email-zoltan.kiss@citrix.com>
+	Fri, 13 Dec 2013 10:44:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1386892097-15502-9-git-send-email-zoltan.kiss@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DLP: MIA1
+In-Reply-To: <CAE9FiQUHSF4YCQR7DmCZPSviBGDxVdot9vYPVZtTnLMBgviLow@mail.gmail.com>
+References: <20131127184652.GA1856@kroah.com> <CAErSpo46LZP8t+aLnYOtJ1mXKKkCF7sOy97MFd0hWo+OOoz68Q@mail.gmail.com>
+ <CAE9FiQUeyxN5OAaXqfhdQkzTwjV83BN-L3r6kH0sO0t1b1-63Q@mail.gmail.com>
+ <CAErSpo6_s6-Dc__-AzausBVDvOAY5beh7ivng2dWHUN1iRyj+g@mail.gmail.com>
+ <20131213020620.GF13333@kroah.com> <CAErSpo6F_oLE2XLt9q5iQE3izuP1ZKW_rib60KKokaL9ewZogA@mail.gmail.com>
+ <CAE9FiQUHSF4YCQR7DmCZPSviBGDxVdot9vYPVZtTnLMBgviLow@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 13 Dec 2013 08:43:56 -0700
+Message-ID: <CAErSpo4b69MLo6b=hH7Esum94abmki6sZDhvK8eRg0_u8K4-QA@mail.gmail.com>
+Subject: Re: [PATCH] PCI: export MSI mode using attributes, not kobjects
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 11:48:16PM +0000, Zoltan Kiss wrote:
-> A malicious or buggy guest can leave its queue filled indefinitely, in which
-> case qdisc start to queue packets for that VIF. If those packets came from an
-> another guest, it can block its slots and prevent shutdown. To avoid that, we
-> make sure the queue is drained in every 10 seconds
-> 
+On Thu, Dec 12, 2013 at 10:59 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Thu, Dec 12, 2013 at 8:32 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> No problem.  I have
+>>
+>> CONFIG_LOCKDEP_SUPPORT=y
+>> CONFIG_LOCKDEP=y
+>> CONFIG_DEBUG_LOCKDEP=y
+>>
+>> and I still don't see the problem booting the qemu q35 model.
+>> Whatever, I folded it in anyway.
+>
+> Does qemu q35 use MSI?
 
-Oh I see where the 10 second constraint in previous patch comes from.
+Oops, sorry, I *do* see the problem on qemu q35.  I must have messed
+something up when I tried it yesterday.  And I verified that your
+change fixes it.  Sorry for the noise.
 
-Could you define a macro for this constant then use it everywhere.
-
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> ---
-[...]
-> +static void xenvif_wake_queue(unsigned long data)
-> +{
-> +	struct xenvif *vif = (struct xenvif *)data;
-> +
-> +	netdev_err(vif->dev, "timer fires\n");
-
-What timer? This error message needs to be more specific.
-
-> +	if (netif_queue_stopped(vif->dev)) {
-> +		netdev_err(vif->dev, "draining TX queue\n");
-> +		netif_wake_queue(vif->dev);
-> +	}
-> +}
-> +
->  static int xenvif_start_xmit(struct sk_buff *skb, struct net_device *dev)
->  {
->  	struct xenvif *vif = netdev_priv(dev);
-> @@ -141,8 +152,13 @@ static int xenvif_start_xmit(struct sk_buff *skb, struct net_device *dev)
->  	 * then turn off the queue to give the ring a chance to
->  	 * drain.
->  	 */
-> -	if (!xenvif_rx_ring_slots_available(vif, min_slots_needed))
-> +	if (!xenvif_rx_ring_slots_available(vif, min_slots_needed)) {
-> +		vif->wake_queue.function = xenvif_wake_queue;
-> +		vif->wake_queue.data = (unsigned long)vif;
->  		xenvif_stop_queue(vif);
-> +		mod_timer(&vif->wake_queue,
-> +			jiffies + rx_drain_timeout_jiffies);
-> +	}
->  
-
-Do you need to use jiffies_64 instead of jiffies?
-
-This timer is only armed when ring is full. So what happens when the
-ring is not full and some other parts of the system holds on to the
-packets forever? Can this happen?
-
-Wei.
+Bjorn
