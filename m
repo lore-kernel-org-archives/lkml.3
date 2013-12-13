@@ -1,301 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab3LMPZF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:25:05 -0500
-Received: from 14.mo4.mail-out.ovh.net ([46.105.40.29]:48092 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751571Ab3LMPZC (ORCPT
+	id S1752736Ab3LMP0W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:26:22 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:42671 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab3LMP0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:25:02 -0500
-Date: Fri, 13 Dec 2013 16:18:25 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Olof Johansson <olof@lixom.net>, khilman@linaro.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] ARM: at91: remove AT91_PROGRAMMABLE_CLOCKS configuration
- option
-Message-ID: <20131213151721.GP14627@ns203013.ovh.net>
-References: <52A9C81B.7050007@atmel.com>
- <1386864045-25198-1-git-send-email-nicolas.ferre@atmel.com>
+	Fri, 13 Dec 2013 10:26:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386864045-25198-1-git-send-email-nicolas.ferre@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Ovh-Tracer-Id: 2689774879287126892
-X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrleegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrleegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <52AB21F1.6030003@tycho.nsa.gov>
+References: <1386018639-18916-1-git-send-email-wroberts@tresys.com>
+	<1386018639-18916-2-git-send-email-wroberts@tresys.com>
+	<52AB15C0.7090701@tycho.nsa.gov>
+	<CAFftDdquPe9dE_4x_mr0BT2jziUAEtdyjk4DqXvt2-nnBf73zg@mail.gmail.com>
+	<52AB21F1.6030003@tycho.nsa.gov>
+Date: Fri, 13 Dec 2013 10:26:20 -0500
+Message-ID: <CAFftDdq-qS2nMC07bVReZk6ksg0-Nkp7GkNSQ47Z_TsDEbZcfw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mm: Create utility functions for accessing a tasks
+ commandline value
+From: William Roberts <bill.c.roberts@gmail.com>
+To: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: "linux-audit@redhat.com" <linux-audit@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Guy Briggs <rgb@redhat.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        William Roberts <wroberts@tresys.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17:00 Thu 12 Dec     , Nicolas Ferre wrote:
-> This AT91 specific Kconfig option removed the code that dealt with
-> programmable clocks. Each AT91 SoC embeds programmable clocks and
-> there is little gain to remove this code in case that such a clock
-> is not used.
-> If this option is not selected, it causes certain drivers to fail
-> to build. We simply remove this option instead of adding code just
-> to build a workaround.
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+On Fri, Dec 13, 2013 at 10:04 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+> On 12/13/2013 09:51 AM, William Roberts wrote:
+>> On Fri, Dec 13, 2013 at 9:12 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+>>> Also, why not just get_task_mm(task) within the function rather than
+>>> pass it in by the caller?
+>>>
+>>
+>> Yes I was debating whether or not to drop the pointer checks... np
+>>
+>> WRT the locking and moving it into the function. You need to take the lock
+>> to determine the size of the cmdline area. The idea on the interface is you
+>> would take the locks, acquire the size via the inline func, alloc memory and
+>> then call the copy function. In some cases, like proc/pid/cmdline, they just
+>> alloc a page and truncate on that boundary. However, one may with to truncate
+>> on an arbitrary boundry, especially when cacheing the values, as you don't want
+>> to allocate too much. So inbetween functions calls that get the length and copy,
+>> one can make a decision based on their allocation scheme. Moving the locks
+>> to the functions would require multiple locks and unlocks in the common case.
+>
+> I don't think it is a good idea to split it up, as what happens if the
+> range changes between the time you compute the length and the time you
+> copy?  And your current callers appear to always get_task_mm(), compute
+> len, call the helper, and mmput.  So just take it all to the helper (at
+> which point the helper essentially becomes proc_pid_cmdline).
+>
 
-Best Regards,
-J.
-> ---
-> Olof, Kevin,
-> 
-> This patch goes on top of the AT91 "cleanup" branch.
-> 
-> Bye,
-> 
-> 
->  arch/arm/configs/at91_dt_defconfig          | 1 -
->  arch/arm/configs/at91rm9200_defconfig       | 1 -
->  arch/arm/configs/at91sam9260_9g20_defconfig | 1 -
->  arch/arm/configs/at91sam9261_9g10_defconfig | 1 -
->  arch/arm/configs/at91sam9g45_defconfig      | 1 -
->  arch/arm/configs/at91sam9rl_defconfig       | 1 -
->  arch/arm/configs/sama5_defconfig            | 1 -
->  arch/arm/mach-at91/Kconfig                  | 6 ------
->  arch/arm/mach-at91/clock.c                  | 6 ------
->  arch/arm/mach-at91/pm.c                     | 3 ---
->  drivers/clk/at91/Makefile                   | 3 +--
->  drivers/clk/at91/pmc.c                      | 2 --
->  drivers/clk/at91/pmc.h                      | 2 --
->  sound/soc/atmel/Kconfig                     | 2 +-
->  14 files changed, 2 insertions(+), 29 deletions(-)
-> 
-> diff --git a/arch/arm/configs/at91_dt_defconfig b/arch/arm/configs/at91_dt_defconfig
-> index 690e89273230..0b4e9b5210d8 100644
-> --- a/arch/arm/configs/at91_dt_defconfig
-> +++ b/arch/arm/configs/at91_dt_defconfig
-> @@ -22,7 +22,6 @@ CONFIG_SOC_AT91SAM9X5=y
->  CONFIG_SOC_AT91SAM9N12=y
->  CONFIG_MACH_AT91RM9200_DT=y
->  CONFIG_MACH_AT91SAM9_DT=y
-> -CONFIG_AT91_PROGRAMMABLE_CLOCKS=y
->  CONFIG_AT91_TIMER_HZ=128
->  CONFIG_AEABI=y
->  # CONFIG_OABI_COMPAT is not set
-> diff --git a/arch/arm/configs/at91rm9200_defconfig b/arch/arm/configs/at91rm9200_defconfig
-> index 75502c4d222c..bf057719dab0 100644
-> --- a/arch/arm/configs/at91rm9200_defconfig
-> +++ b/arch/arm/configs/at91rm9200_defconfig
-> @@ -31,7 +31,6 @@ CONFIG_MACH_YL9200=y
->  CONFIG_MACH_CPUAT91=y
->  CONFIG_MACH_ECO920=y
->  CONFIG_MTD_AT91_DATAFLASH_CARD=y
-> -CONFIG_AT91_PROGRAMMABLE_CLOCKS=y
->  CONFIG_AT91_TIMER_HZ=100
->  # CONFIG_ARM_THUMB is not set
->  CONFIG_PCCARD=y
-> diff --git a/arch/arm/configs/at91sam9260_9g20_defconfig b/arch/arm/configs/at91sam9260_9g20_defconfig
-> index 69b6928d3d9d..955dc480f3ee 100644
-> --- a/arch/arm/configs/at91sam9260_9g20_defconfig
-> +++ b/arch/arm/configs/at91sam9260_9g20_defconfig
-> @@ -28,7 +28,6 @@ CONFIG_MACH_PCONTROL_G20=y
->  CONFIG_MACH_GSIA18S=y
->  CONFIG_MACH_SNAPPER_9260=y
->  CONFIG_MACH_AT91SAM9_DT=y
-> -CONFIG_AT91_PROGRAMMABLE_CLOCKS=y
->  CONFIG_AT91_SLOW_CLOCK=y
->  # CONFIG_ARM_THUMB is not set
->  CONFIG_AEABI=y
-> diff --git a/arch/arm/configs/at91sam9261_9g10_defconfig b/arch/arm/configs/at91sam9261_9g10_defconfig
-> index 9d35cd81c611..f80e993b04ce 100644
-> --- a/arch/arm/configs/at91sam9261_9g10_defconfig
-> +++ b/arch/arm/configs/at91sam9261_9g10_defconfig
-> @@ -18,7 +18,6 @@ CONFIG_ARCH_AT91=y
->  CONFIG_ARCH_AT91SAM9261=y
->  CONFIG_MACH_AT91SAM9261EK=y
->  CONFIG_MACH_AT91SAM9G10EK=y
-> -CONFIG_AT91_PROGRAMMABLE_CLOCKS=y
->  # CONFIG_ARM_THUMB is not set
->  CONFIG_AEABI=y
->  # CONFIG_OABI_COMPAT is not set
-> diff --git a/arch/arm/configs/at91sam9g45_defconfig b/arch/arm/configs/at91sam9g45_defconfig
-> index 08166cd4e7d6..e181a50fd65a 100644
-> --- a/arch/arm/configs/at91sam9g45_defconfig
-> +++ b/arch/arm/configs/at91sam9g45_defconfig
-> @@ -18,7 +18,6 @@ CONFIG_ARCH_AT91=y
->  CONFIG_ARCH_AT91SAM9G45=y
->  CONFIG_MACH_AT91SAM9M10G45EK=y
->  CONFIG_MACH_AT91SAM9_DT=y
-> -CONFIG_AT91_PROGRAMMABLE_CLOCKS=y
->  CONFIG_AT91_SLOW_CLOCK=y
->  CONFIG_AEABI=y
->  # CONFIG_OABI_COMPAT is not set
-> diff --git a/arch/arm/configs/at91sam9rl_defconfig b/arch/arm/configs/at91sam9rl_defconfig
-> index 7cf87856d63c..7b6f131cecd6 100644
-> --- a/arch/arm/configs/at91sam9rl_defconfig
-> +++ b/arch/arm/configs/at91sam9rl_defconfig
-> @@ -13,7 +13,6 @@ CONFIG_MODULE_UNLOAD=y
->  CONFIG_ARCH_AT91=y
->  CONFIG_ARCH_AT91SAM9RL=y
->  CONFIG_MACH_AT91SAM9RLEK=y
-> -CONFIG_AT91_PROGRAMMABLE_CLOCKS=y
->  # CONFIG_ARM_THUMB is not set
->  CONFIG_ZBOOT_ROM_TEXT=0x0
->  CONFIG_ZBOOT_ROM_BSS=0x0
-> diff --git a/arch/arm/configs/sama5_defconfig b/arch/arm/configs/sama5_defconfig
-> index f6e78f83c3c3..dc3881e07630 100644
-> --- a/arch/arm/configs/sama5_defconfig
-> +++ b/arch/arm/configs/sama5_defconfig
-> @@ -20,7 +20,6 @@ CONFIG_ARCH_AT91=y
->  CONFIG_SOC_SAM_V7=y
->  CONFIG_SOC_SAMA5D3=y
->  CONFIG_MACH_SAMA5_DT=y
-> -CONFIG_AT91_PROGRAMMABLE_CLOCKS=y
->  CONFIG_AEABI=y
->  # CONFIG_OABI_COMPAT is not set
->  CONFIG_UACCESS_WITH_MEMCPY=y
-> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-> index aac7814db4f9..f1bf952da747 100644
-> --- a/arch/arm/mach-at91/Kconfig
-> +++ b/arch/arm/mach-at91/Kconfig
-> @@ -214,12 +214,6 @@ config MACH_SAMA5_DT
->  
->  comment "AT91 Feature Selections"
->  
-> -config AT91_PROGRAMMABLE_CLOCKS
-> -	bool "Programmable Clocks"
-> -	help
-> -	  Select this if you need to program one or more of the PCK0..PCK3
-> -	  programmable clock outputs.
-> -
->  config AT91_SLOW_CLOCK
->  	bool "Suspend-to-RAM disables main oscillator"
->  	depends on SUSPEND
-> diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
-> index 72b257944733..034529d801b2 100644
-> --- a/arch/arm/mach-at91/clock.c
-> +++ b/arch/arm/mach-at91/clock.c
-> @@ -330,8 +330,6 @@ EXPORT_SYMBOL(clk_get_rate);
->  
->  /*------------------------------------------------------------------------*/
->  
-> -#ifdef CONFIG_AT91_PROGRAMMABLE_CLOCKS
-> -
->  /*
->   * For now, only the programmable clocks support reparenting (MCK could
->   * do this too, with care) or rate changing (the PLLs could do this too,
-> @@ -459,8 +457,6 @@ static void __init init_programmable_clock(struct clk *clk)
->  	clk->rate_hz = parent->rate_hz / pmc_prescaler_divider(pckr);
->  }
->  
-> -#endif	/* CONFIG_AT91_PROGRAMMABLE_CLOCKS */
-> -
->  /*------------------------------------------------------------------------*/
->  
->  #ifdef CONFIG_DEBUG_FS
-> @@ -577,12 +573,10 @@ int __init clk_register(struct clk *clk)
->  		clk->parent = &mck;
->  		clk->mode = pmc_sys_mode;
->  	}
-> -#ifdef CONFIG_AT91_PROGRAMMABLE_CLOCKS
->  	else if (clk_is_programmable(clk)) {
->  		clk->mode = pmc_sys_mode;
->  		init_programmable_clock(clk);
->  	}
-> -#endif
->  
->  	at91_clk_add(clk);
->  
-> diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-> index d43b79f56e94..590b52dea9f7 100644
-> --- a/arch/arm/mach-at91/pm.c
-> +++ b/arch/arm/mach-at91/pm.c
-> @@ -155,9 +155,6 @@ static int at91_pm_verify_clocks(void)
->  		}
->  	}
->  
-> -	if (!IS_ENABLED(CONFIG_AT91_PROGRAMMABLE_CLOCKS))
-> -		return 1;
-> -
->  	/* PCK0..PCK3 must be disabled, or configured to use clk32k */
->  	for (i = 0; i < 4; i++) {
->  		u32 css;
-> diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-> index 0e92b716f934..46c1d3d0d66b 100644
-> --- a/drivers/clk/at91/Makefile
-> +++ b/drivers/clk/at91/Makefile
-> @@ -4,9 +4,8 @@
->  
->  obj-y += pmc.o
->  obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
-> -obj-y += clk-system.o clk-peripheral.o
-> +obj-y += clk-system.o clk-peripheral.o clk-programmable.o
->  
-> -obj-$(CONFIG_AT91_PROGRAMMABLE_CLOCKS)	+= clk-programmable.o
->  obj-$(CONFIG_HAVE_AT91_UTMI)		+= clk-utmi.o
->  obj-$(CONFIG_HAVE_AT91_USB_CLK)		+= clk-usb.o
->  obj-$(CONFIG_HAVE_AT91_SMD)		+= clk-smd.o
-> diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
-> index 7b9db603b936..11fceff8d9f1 100644
-> --- a/drivers/clk/at91/pmc.c
-> +++ b/drivers/clk/at91/pmc.c
-> @@ -279,7 +279,6 @@ static const struct of_device_id pmc_clk_ids[] __initdata = {
->  		.data = of_at91sam9x5_clk_periph_setup,
->  	},
->  	/* Programmable clocks */
-> -#if defined(CONFIG_AT91_PROGRAMMABLE_CLOCKS)
->  	{
->  		.compatible = "atmel,at91rm9200-clk-programmable",
->  		.data = of_at91rm9200_clk_prog_setup,
-> @@ -292,7 +291,6 @@ static const struct of_device_id pmc_clk_ids[] __initdata = {
->  		.compatible = "atmel,at91sam9x5-clk-programmable",
->  		.data = of_at91sam9x5_clk_prog_setup,
->  	},
-> -#endif
->  	/* UTMI clock */
->  #if defined(CONFIG_HAVE_AT91_UTMI)
->  	{
-> diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
-> index ba8d14233f80..441350983ccb 100644
-> --- a/drivers/clk/at91/pmc.h
-> +++ b/drivers/clk/at91/pmc.h
-> @@ -85,14 +85,12 @@ extern void __init of_at91rm9200_clk_periph_setup(struct device_node *np,
->  extern void __init of_at91sam9x5_clk_periph_setup(struct device_node *np,
->  						  struct at91_pmc *pmc);
->  
-> -#if defined(CONFIG_AT91_PROGRAMMABLE_CLOCKS)
->  extern void __init of_at91rm9200_clk_prog_setup(struct device_node *np,
->  						struct at91_pmc *pmc);
->  extern void __init of_at91sam9g45_clk_prog_setup(struct device_node *np,
->  						 struct at91_pmc *pmc);
->  extern void __init of_at91sam9x5_clk_prog_setup(struct device_node *np,
->  						struct at91_pmc *pmc);
-> -#endif
->  
->  #if defined(CONFIG_HAVE_AT91_UTMI)
->  extern void __init of_at91sam9x5_clk_utmi_setup(struct device_node *np,
-> diff --git a/sound/soc/atmel/Kconfig b/sound/soc/atmel/Kconfig
-> index e48d38a1b95c..e634eb78ed03 100644
-> --- a/sound/soc/atmel/Kconfig
-> +++ b/sound/soc/atmel/Kconfig
-> @@ -25,7 +25,7 @@ config SND_ATMEL_SOC_SSC
->  
->  config SND_AT91_SOC_SAM9G20_WM8731
->  	tristate "SoC Audio support for WM8731-based At91sam9g20 evaluation board"
-> -	depends on ARCH_AT91 && ATMEL_SSC && SND_ATMEL_SOC && AT91_PROGRAMMABLE_CLOCKS
-> +	depends on ARCH_AT91 && ATMEL_SSC && SND_ATMEL_SOC
->  	select SND_ATMEL_SOC_PDC
->  	select SND_ATMEL_SOC_SSC
->  	select SND_SOC_WM8731
-> -- 
-> 1.8.2.2
-> 
+That's why I keep the semaphore over the whole operation. The issue arises with
+the amount to allocate by the caller, which is a bit of a shot in the
+dark. The caller
+may not wish to over allocate a buffer. This same issue could arise in
+the current
+code, but they hold the sem.
+
+>>> Unsigned int buflen passed as int len argument without a range check?
+>>> Note that in the proc_pid_cmdline() code, they first cap it at PAGE_SIZE
+>>> before passing it.
+>>>
+>>
+>> buflen is passed by the caller. So if you look in the following patch
+>> introducing its
+>> use in proc/fs/base.c, their is a check.
+>>         /*The caller of this allocates a page */
+>>         if (len > PAGE_SIZE)
+>>                 len = PAGE_SIZE;
+>>
+>>         res = copy_cmdline(task, mm, buffer, len);
+>
+> I understand that, but you are making correct operation of the helper
+> dependent on the caller already having applied such a cap to the length.
+>  Which is unsafe practice and may not hold true for future callers.
+>
+
+Again, what if the caller wished to cap it as 32, 64, 128, or 2 * PAGE_SIZE?
+They can just pass the value on which to cap, which is their buffer that they
+allocated. Thus they know the size. Again, all of this boils down to
+the allocation
+scheme which you comment on below. With that said, this becomes a whole lot
+simpler.
+
+>>>> +     if (res <= 0)
+>>>> +             return 0;
+>>>> +
+>>>> +     if (res > buflen)
+>>>> +             res = buflen;
+>>>
+>>> Is this a possible condition?  Under what circumstances?
+>>
+>> for  (res <= 0), in that case, the underlying call
+>> to __access_remote_vm() returns an int. Most of the mm functions look
+>> like they are using
+>> ints for probably some historical reason I am not aware of. I tried to
+>> pick the strongest invariant,
+>> however, I don't think < 0 is possible.
+>>
+>> For the res > buflen check, that might might be an artifact from the
+>> PAGE_SIZE cap from the original
+>> code. It would only be possible if a process was able to write to
+>> their mm when the semaphores are held.
+>> I am assuming the case of:
+>> kernel gets size
+>> kernel allocs buffer
+>> kernel copys but size has differed. I guess if I broke the locking out
+>> it could happen, you need size and copy
+>> to be autonomous.
+>
+> Sorry, you misunderstood.  The <=0 case is clearly possible; I was only
+> asking about the res > buflen check, which seems impossible as you
+> provided buflen as the max for the access_process_vm() call.  That one
+> does not make sense to me and has no equivalent in the original
+> proc_pid_cmdline() code.
+>
+>>> I think you are better off just copying proc_pid_cmdline() exactly as is
+>>> into a common helper function and then reusing it for audit.  Far less
+>>> work, and far less potential for mistakes.
+>>
+>> I don't like caching a whole page in that audit context. So most of
+>> the complexity relates to
+>> determining the size of the cache. Steve Grub was in favor of limiting
+>> the cmdline value to
+>> PATH_MAX. So if that is an acceptable cache size, we can take the
+>> existing code from
+>> procfs/base.c and just add an argument indicating the size of the
+>> buffer. procfs will be
+>> PAGE_SIZE and audit will be PATH_MAX. Thoughts?
+>
+> Yes, that seems reasonable to me.
+>
+>
+
+SGTM, Ill go that route with these... much simpler and avoids
+the caller having to know how to lock the memory region properly.
+
+-- 
+Respectfully,
+
+William C Roberts
