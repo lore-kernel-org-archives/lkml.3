@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab3LMQLp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 11:11:45 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:39144 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752800Ab3LMQLo (ORCPT
+	id S1752388Ab3LMQRk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 11:17:40 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:60676 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab3LMQRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 11:11:44 -0500
-Date: Fri, 13 Dec 2013 11:11:40 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Andrew Jones <drjones@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jason Baron <jbaron@akamai.com>
-Subject: Re: [PATCH v6 7/7] jump_label: use defined macros instead of
- hard-coding for better readability
-Message-ID: <20131213111140.064b9616@gandalf.local.home>
-In-Reply-To: <20131213160041.GK19177@mudshark.cambridge.arm.com>
-References: <1386691433-6827-1-git-send-email-liuj97@gmail.com>
-	<1386691433-6827-8-git-send-email-liuj97@gmail.com>
-	<20131213160041.GK19177@mudshark.cambridge.arm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 13 Dec 2013 11:17:39 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Subject: Re: [PATCH v4 1/2] ARM: mach-moxart: add MOXA ART SoC platform files
+Date: Fri, 13 Dec 2013 17:17:25 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, arm@kernel.org,
+        linux@arm.linux.org.uk, olof@lixom.net
+References: <1386945188-8316-1-git-send-email-jonas.jensen@gmail.com> <1386945188-8316-2-git-send-email-jonas.jensen@gmail.com>
+In-Reply-To: <1386945188-8316-2-git-send-email-jonas.jensen@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Message-Id: <201312131717.25435.arnd@arndb.de>
+X-Provags-ID: V02:K0:daur9HR0p+dIG9gdan+txndOVuD9lkyZH/qb9dCYhUS
+ kVSrpgIIRHjgvwNze9HDLyiq5/UCsNS87A6IR5ZH9+aV7XJhtA
+ Bz5jarkXJaPfcBqSVvKfse4lYW5M2fvpRWiiK/vz5JRVaIPKPh
+ XuL19RmDh3+VM1EPR5gDoSyp+++iOxccBW3BhSKXUKBYIcgZAI
+ xqYK8HpiJG4wUomwFONEPlXfZdia+cKy0lGCW5IbHpAPaE58iD
+ 2JSdF8pSunbVIyXpObTG2yrGA8wFcs092fBShyIdsHygEzcow5
+ YOQ1yNe1zk1YjwuJL9A4qLxlBOLkH1Os2tIoms5ktRT/QQdqKO
+ D3vNwM9qA44g+zH5+RwM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-[ added Jason Baron too (the original author) ]
-
-On Fri, 13 Dec 2013 16:00:41 +0000
-Will Deacon <will.deacon@arm.com> wrote:
-
-> On Tue, Dec 10, 2013 at 04:03:53PM +0000, Jiang Liu wrote:
-> > Use macro JUMP_LABEL_TRUE_BRANCH instead of hard-coding for better
-> > readability.
-> > 
-> > Signed-off-by: Jiang Liu <liuj97@gmail.com>
-> > ---
-> >  include/linux/jump_label.h | 15 ++++++++++-----
-> >  1 file changed, 10 insertions(+), 5 deletions(-)
+On Friday 13 December 2013, Jonas Jensen wrote:
+> The MOXA ART SoC is based on Faraday's FA526. This is a ARMv4 32-bit
+> 192 MHz CPU with MMU and 16KB/8KB D/I-cache.
 > 
-> Whilst this looks alright to me, I think we probably need an ack from Steve
-> in order to take changes to the core code.
+> Add platform support for this SoC.
 > 
-> Will
+> Also add UC-7112-LX as a machine.
 > 
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 
-Thanks for the heads up. I'll take a look at it.
+Let's make sure we get this merged this time. I'm definitely fine with this
+version going in. My questions are just for clarification on my part for
+potential future follow-ups.
 
--- Steve
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+> diff --git a/arch/arm/configs/moxart_defconfig b/arch/arm/configs/moxart_defconfig
+> new file mode 100644
+> index 0000000..51f0f03
+> --- /dev/null
+> +++ b/arch/arm/configs/moxart_defconfig
+> @@ -0,0 +1,148 @@
+> +# CONFIG_LOCALVERSION_AUTO is not set
+> +# CONFIG_SWAP is not set
+> +CONFIG_SYSVIPC=y
+> +CONFIG_NO_HZ=y
+> +CONFIG_IKCONFIG=y
+
+IIRC the separate defconfig is needed because we have never gotten a mixed fa526+arm9
+kernel to boot, right? In theory it is supposed to work and there is most likely just
+a small bug somewhere. Once that is working, we can think about adding a generic
+multi_v4_v5_defconfig that handles all multipltform capable platforms along the lines
+of multi_v7_defconfig.
+
+> +static void __init moxart_dt_init(void)
+> +{
+> +       moxart_setup_restart();
+> +       of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+> +}
+
+I've been out of the loop a bit here. I initially suggested having the restart
+handler be part of the watchdog driver, and I thought you had done that in an
+earlier version. What has changed your mind?
+
+	Arnd
