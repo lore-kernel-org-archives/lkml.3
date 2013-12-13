@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3LMSOo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 13:14:44 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:40525 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752489Ab3LMSOn (ORCPT
+	id S1753381Ab3LMSPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 13:15:54 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:60508 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752732Ab3LMSPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 13:14:43 -0500
+	Fri, 13 Dec 2013 13:15:53 -0500
+Date: Fri, 13 Dec 2013 13:15:52 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Dan Williams <dan.j.williams@intel.com>
+cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Julius Werner <jwerner@chromium.org>,
+        Vikas Sajjan <sajjan.linux@gmail.com>,
+        Vikas Sajjan <vikas.sajjan@linaro.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Ksenia Ragiadakou <burzalodowa@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Douglas Anderson <dianders@chromium.org>, Felipe Balbi <balbi@ti.com>,
+        sunil joshi <joshi@samsung.com>
+Subject: Re: [PATCH] USB: core: Add warm reset while reset-resuming SuperSpeed
+ HUBs
+In-Reply-To: <CAPcyv4jvh_3ech7iCCcHyjwUjO=ki5oZo_bT-odt6_765oTi8Q@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1312131312230.1185-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jKOvngwCStCabR7wK0wwcu2H4eTz7=29FbbBWdGpoC78g@mail.gmail.com>
-References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
-	<20131212190659.GG13547@thunk.org>
-	<CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
-	<20131213002523.GA20706@redhat.com>
-	<20131213014220.GB11068@kroah.com>
-	<CAGXu5jKOvngwCStCabR7wK0wwcu2H4eTz7=29FbbBWdGpoC78g@mail.gmail.com>
-Date: Fri, 13 Dec 2013 10:14:42 -0800
-X-Google-Sender-Auth: z9jers32mxgSKSjt5mDVT8BuXE8
-Message-ID: <CA+55aFxKsaRFR=Tjs9VJfFk3X4USbGWOvNrMg7BQYv7VX28_zQ@mail.gmail.com>
-Subject: Re: [PATCH 1/9] Known exploit detection
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        vegard.nossum@oracle.com, LKML <linux-kernel@vger.kernel.org>,
-        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Alan Cox <alan@linux.intel.com>, Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Morris <james.l.morris@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 9:58 AM, Kees Cook <keescook@chromium.org> wrote:
->
-> These locations tend to be very hard to reach accidentally
+On Fri, 13 Dec 2013, Dan Williams wrote:
 
-Not necessarily.
+> > I'm actually leaning towards enabling the check for warm reset broadly.
+> > It seems like it wouldn't hurt to issue a warm reset on the USB 3.0
+> > ports if they're in compliance, poll, or rx.detect.  So, let's enable
+> > this broadly in xhci_resume, mark the patch for stable, but ask for the
+> > backport to be delayed until 3.13.3 is out, to allow for more testing.
+> > If anyone complains of xHCI behavior changes, we'll change the code to
+> > add a quirk.
+> 
+> Is there a clean way to make this per-port rather than globally at
+> xhci_resume()?  I am looking to hook into this for port power recovery
+> as Tianyu's testing encountered "warm reset required" conditions at
+> runtime_resume.  I'm still on the hunt for a solid reproducer, but it
+> indicates this is a more general quirk with power session recovery.
 
-Don't get me wrong - I think that it's a good idea to at least have
-the option to complain about certain errors, and leave markers in the
-logs about things that look suspicious.
+There's no reason you can't do per-port testing inside xhci_resume
+(assuming you know what to test for) as well as putting a warm reset in
+the port-power handler of xhci_hub_control.
 
-But looking through the recent list of commits that explicitly mention
-a CVE, the only one I find where a syslog message would make sense is
-the HID validation ones. There, adding a warning about malicious HID
-devices sounds like a good idea.
+Of course, doing simultaneous warm resets on multiple ports will use 
+less time than resetting each port individually, in sequence.
 
-But a *lot* of the rest is just checking ranges or making sure we have
-proper string handling etc that just wouldn't be practical to check.
-So the error itself may be "hard to reach accidentally", but
-*checking* it would be so complex/painful that it would likely just
-introduce more room for bugs.
+Alan Stern
 
-So I think the "WARNING" thing is a good idea, but I think it is a
-good idea if it's used very judiciously. IOW, not for "random CVE"
-(because quite frankly, most of them seem to be utter shit), but for
-serious known issues. And for those issues *only*.
-
-If I start seeing patches adding warnings "just because there's a
-CVE", then I'm not in the least interested. But if there is some known
-root-kit or similar, then by all means..
-
-                    Linus
