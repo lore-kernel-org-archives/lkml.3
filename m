@@ -1,165 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab3LMTKL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 14:10:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45618 "EHLO mx2.suse.de"
+	id S1753406Ab3LMTO2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 14:14:28 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:36446 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752605Ab3LMTKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 14:10:09 -0500
-Date: Fri, 13 Dec 2013 20:10:05 +0100
-From: Jan Kara <jack@suse.cz>
-To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Cc: Richard Weinberger <richard.weinberger@gmail.com>, Jan Kara <jack@suse.cz>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        UML devel <user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: [uml-devel] why does index in truncate_inode_pages_range() grows
- so much ?
-Message-ID: <20131213191005.GA23630@quack.suse.cz>
-References: <529217CD.1000204@gmx.de>
- <20131203140214.GB31128@quack.suse.cz>
- <529E3450.9000700@gmx.de>
- <20131203230058.GA24037@quack.suse.cz>
- <20131204130639.GA31973@quack.suse.cz>
- <52A36389.7010103@gmx.de>
- <20131211202639.GE1163@quack.suse.cz>
- <52AAD8D4.2060807@gmx.de>
- <CAFLxGvy16wv0m4D+ydmqbksUu9CaEaDtGdtnk1YHa56jAU+SEA@mail.gmail.com>
- <52AB052E.9000404@gmx.de>
+	id S1752785Ab3LMTO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 14:14:27 -0500
+X-IronPort-AV: E=Sophos;i="4.95,481,1384300800"; 
+   d="scan'208";a="84399227"
+Date: Fri, 13 Dec 2013 19:14:23 +0000
+From: Wei Liu <wei.liu2@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: Wei Liu <wei.liu2@citrix.com>, <ian.campbell@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v2 1/9] xen-netback: Introduce TX grant map
+ definitions
+Message-ID: <20131213191423.GA12582@zion.uk.xensource.com>
+References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
+ <1386892097-15502-2-git-send-email-zoltan.kiss@citrix.com>
+ <20131213153138.GL21900@zion.uk.xensource.com>
+ <52AB506E.3040509@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52AB052E.9000404@gmx.de>
+In-Reply-To: <52AB506E.3040509@citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 13-12-13 14:01:34, Toralf Förster wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA256
-> 
-> On 12/13/2013 11:51 AM, Richard Weinberger wrote:
-> > On Fri, Dec 13, 2013 at 10:52 AM, Toralf Förster <toralf.foerster@gmx.de> wrote:
-> >> -----BEGIN PGP SIGNED MESSAGE-----
-> >> Hash: SHA256
+On Fri, Dec 13, 2013 at 06:22:38PM +0000, Zoltan Kiss wrote:
+> On 13/12/13 15:31, Wei Liu wrote:
+> >On Thu, Dec 12, 2013 at 11:48:09PM +0000, Zoltan Kiss wrote:
+> >>This patch contains the new definitions necessary for grant mapping.
 > >>
-> >> On 12/11/2013 09:26 PM, Jan Kara wrote:
-> >>> Thanks! So this works more or less as expected - trinity issued a
-> >>> read at absurdly high offset so we created pagecache page a that
-> >>> offset and tried to read data into it. That failed. We left the
-> >>> page in the pagecache where it was for reclaim to reclaim it when
-> >>> free pages are needed. Everything works as designed except we could
-> >>> possibly argue that it's not the most efficient way to use
-> >>> pages...
-> >>>
-> >>> Patch 'vfs: fix a bug when we do some dio reads with append dio
-> >>> writes' (http://www.spinics.net/lists/linux-fsdevel/msg70899.html)
-> >>> should actually change the situation and we won't unnecessarily
-> >>> cache these pages.
-> >>>
-> >> confirmed - applied to latest git tree of Linus I helps.
-> > 
-> > Good to know! :-)
-> > 
+> >>v2:
+> >>- move unmapping to separate thread. The NAPI instance has to be scheduled
+> >>   even from thread context, which can cause huge delays
+> >>- that causes unfortunately bigger struct xenvif
+> >>- store grant handle after checking validity
+> >>
+> >
+> >If the size of xenvif really becomes a problem, you can try to make
+> >sratch space like struct gnttab_copy per-cpu. The downside is that
+> >approach requires much coding and carefully guard against race
+> >conditions. You would need to consider cost v.s. benefit.
 > 
-> OTOH - there's seems to be more places for an improvement - now trinity
-> often runs hours w/o problem (before it runs within a rather short time
-> into such issues).
+> I mentioned this because for the first series I had comments that I
+> should be more vigilant about this. At that time there was a problem
+> with struct xenvif allocation which was solved by now. My quick
+> calculation showed this patch will increase the size with ~15kb
 > 
-> But today I got another case (I did not patched the source files except
-> the mentioned patch by Jan Kara) where the trinity call cycles since 2
-> hours w/o any progress. But fortunately the system is still responsive,
-> ssh works and I can shutdown that virtual machine smoothly, furthermore
-> all local and remote file systems can be unounted cleanly - so that patch
-> is a big improvement).
-  OK, that is indeed strange. Can you step through find_get_pages() in gdb
-to see where exactly are we looping? From the traces below the argument
-values look somewhat unreliable so it's not clear to me what is exactly
-happening.
 
-								Honza
+15kb doesn't seem a lot. And the fragmentation problem causing
+allocation failure was fixed. So I guess this won't be a problem.
 
-> tfoerste@n22 ~/devel/github/bingo $ date; sudo gdb /home/tfoerste/devel/linux/linux 9776 -n -batch -ex 'bt'
-> Fri Dec 13 13:54:33 CET 2013
-> find_get_pages (mapping=0x45182810, start=0, nr_pages=14, pages=0x0) at mm/filemap.c:885
-> 885     }
-> #0  find_get_pages (mapping=0x45182810, start=0, nr_pages=14, pages=0x0) at mm/filemap.c:885
-> #1  0x080d669a in pagevec_lookup (pvec=0x40607d40, mapping=0x0, start=0, nr_pages=0) at mm/swap.c:937
-> #2  0x080d6a9a in truncate_inode_pages_range (mapping=0x45182810, lstart=0, lend=-1) at mm/truncate.c:241
-> #3  0x080d6e3f in truncate_inode_pages (mapping=0x0, lstart=0) at mm/truncate.c:358
-> #4  0x0818c2d2 in ext4_evict_inode (inode=0x45182758) at fs/ext4/inode.c:228
-> #5  0x0811b5ff in evict (inode=0x45182758) at fs/inode.c:549
-> #6  0x0811c0ed in iput_final (inode=<optimized out>) at fs/inode.c:1419
-> #7  iput (inode=0x45182758) at fs/inode.c:1437
-> #8  0x08112056 in do_unlinkat (dfd=5, pathname=0x8065d84 <register_lines+276> "") at fs/namei.c:3718
-> #9  0x081121c5 in SYSC_unlinkat (flag=<optimized out>, pathname=<optimized out>, dfd=<optimized out>) at fs/namei.c:3754
-> #10 SyS_unlinkat (dfd=5, pathname=134634884, flag=0) at fs/namei.c:3746
-> #11 0x08062a94 in handle_syscall (r=0x473b59cc) at arch/um/kernel/skas/syscall.c:35
-> #12 0x080750f5 in handle_trap (local_using_sysemu=<optimized out>, regs=<optimized out>, pid=<optimized out>) at arch/um/os-Linux/skas/process.c:198
-> #13 userspace (regs=0x473b59cc) at arch/um/os-Linux/skas/process.c:431
-> #14 0x0805f750 in fork_handler () at arch/um/kernel/process.c:149
-> #15 0x5a5a5a5a in ?? ()
+> >
+> >>Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> >>
+> >>---
+> >[...]
+> >>  #define XENVIF_QUEUE_LENGTH 32
+> >>  #define XENVIF_NAPI_WEIGHT  64
+> >>diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> >>index c1b7a42..3ddc474 100644
+> >>--- a/drivers/net/xen-netback/netback.c
+> >>+++ b/drivers/net/xen-netback/netback.c
+> >>@@ -772,6 +772,20 @@ static struct page *xenvif_alloc_page(struct xenvif *vif,
+> >>  	return page;
+> >>  }
+> >>
+> >>+static inline void xenvif_tx_create_gop(struct xenvif *vif, u16 pending_idx,
+> >>+	       struct xen_netif_tx_request *txp,
+> >>+	       struct gnttab_map_grant_ref *gop)
+> >>+{
+> >>+	vif->pages_to_map[gop-vif->tx_map_ops] = vif->mmap_pages[pending_idx];
+> >>+	gnttab_set_map_op(gop, idx_to_kaddr(vif, pending_idx),
+> >>+			  GNTMAP_host_map | GNTMAP_readonly,
+> >>+			  txp->gref, vif->domid);
+> >>+
+> >>+	memcpy(&vif->pending_tx_info[pending_idx].req, txp,
+> >>+	       sizeof(*txp));
+> >>+
+> >>+}
+> >>+
+> >
+> >This helper function is not used until next patch. Probably you can move
+> >it to the second patch.
+> >
+> >The same applies to other helper functions as well. Move them to the
+> >patch they are used. It would be easier for people to review.
+> I just moved them here because the second patch is already huge, and
+> I couldn't have an idea to splice it up while keeping it bisectable
+> and logically consistent. As I mentioned, I welcome ideas about
+> that.
 > 
+
+My personal idea would be for a new feature it is not the size of a
+patch matters most, it's the logic matters most. So I'm fine with long
+consolidated patches. The incremental changes you made makes the patches
+hard to review IMHO.
+
+That's merely my personal opinion. Let's see what other people say.
+
+> >
+> >>  static struct gnttab_copy *xenvif_get_requests(struct xenvif *vif,
+> >>  					       struct sk_buff *skb,
+> >>  					       struct xen_netif_tx_request *txp,
+> >>@@ -1593,6 +1607,106 @@ static int xenvif_tx_submit(struct xenvif *vif)
+> >>  	return work_done;
+> >>  }
+> >>
+> >>+void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
+> >>+{
+> >
+> >Do we care about zerocopy_success? I don't see it used in this function.
+> It will be used in the 5th patch. Anyway, it's in the definition of
+> the zerocopy callback.
 > 
-> tfoerste@n22 ~/devel/github/bingo $ date; sudo gdb /home/tfoerste/devel/linux/linux 9776 -n -batch -ex 'bt'
-> Fri Dec 13 13:54:47 CET 2013
-> radix_tree_next_chunk (root=0x3f, iter=0x40607cdc, flags=6) at lib/radix-tree.c:773
-> 773                             index &= ~((RADIX_TREE_MAP_SIZE << shift) - 1);
-> #0  radix_tree_next_chunk (root=0x3f, iter=0x40607cdc, flags=6) at lib/radix-tree.c:773
-> #1  0x080cc88e in find_get_pages (mapping=0x45182810, start=0, nr_pages=14, pages=0x6) at mm/filemap.c:844
-> #2  0x080d669a in pagevec_lookup (pvec=0x40607d40, mapping=0x3f, start=63, nr_pages=63) at mm/swap.c:937
-> #3  0x080d6a9a in truncate_inode_pages_range (mapping=0x45182810, lstart=0, lend=-1) at mm/truncate.c:241
-> #4  0x080d6e3f in truncate_inode_pages (mapping=0x3f, lstart=25769803839) at mm/truncate.c:358
-> #5  0x0818c2d2 in ext4_evict_inode (inode=0x45182758) at fs/ext4/inode.c:228
-> #6  0x0811b5ff in evict (inode=0x45182758) at fs/inode.c:549
-> #7  0x0811c0ed in iput_final (inode=<optimized out>) at fs/inode.c:1419
-> #8  iput (inode=0x45182758) at fs/inode.c:1437
-> #9  0x08112056 in do_unlinkat (dfd=5, pathname=0x8065d84 <register_lines+276> "") at fs/namei.c:3718
-> #10 0x081121c5 in SYSC_unlinkat (flag=<optimized out>, pathname=<optimized out>, dfd=<optimized out>) at fs/namei.c:3754
-> #11 SyS_unlinkat (dfd=5, pathname=134634884, flag=0) at fs/namei.c:3746
-> #12 0x08062a94 in handle_syscall (r=0x473b59cc) at arch/um/kernel/skas/syscall.c:35
-> #13 0x080750f5 in handle_trap (local_using_sysemu=<optimized out>, regs=<optimized out>, pid=<optimized out>) at arch/um/os-Linux/skas/process.c:198
-> #14 userspace (regs=0x473b59cc) at arch/um/os-Linux/skas/process.c:431
-> #15 0x0805f750 in fork_handler () at arch/um/kernel/process.c:149
-> #16 0x5a5a5a5a in ?? ()
+
+Oh right, it is actually used. Then you should rearrange you series.
+Move the patches to add stats before this one, then provide a single
+patch for functions instead of making incremental changes.
+
+> >
+> >>+	unsigned long flags;
+> >>+	pending_ring_idx_t index;
+> >>+	u16 pending_idx = ubuf->desc;
+> >>+	struct pending_tx_info *temp =
+> >>+		container_of(ubuf, struct pending_tx_info, callback_struct);
+> >>+	struct xenvif *vif =
+> >>+		container_of(temp - pending_idx, struct xenvif,
+> >>+			pending_tx_info[0]);
+> >>+
+> >
+> >The third parameter to container_of should be the name of the member
+> >within the struct.
+> Here we have the pending_idx, so we get a pointer for the holding
+> struct pending_tx_info, then for the beginning of pending_tx_info
+> (temp - pending_idx), and then to the struct xenvif. It's a bit
+> tricky and not straightforward, I admit :)
 > 
+
+Well, macro trick. :-)
+
+> >
+> >>+	spin_lock_irqsave(&vif->dealloc_lock, flags);
+> >>+	do {
+> >>+		pending_idx = ubuf->desc;
+> >>+		ubuf = (struct ubuf_info *) ubuf->ctx;
+> >>+		index = pending_index(vif->dealloc_prod);
+> >>+		vif->dealloc_ring[index] = pending_idx;
+> >>+		/* Sync with xenvif_tx_action_dealloc:
+> >>+		 * insert idx then incr producer.
+> >>+		 */
+> >>+		smp_wmb();
+> >>+		vif->dealloc_prod++;
+> >>+	} while (ubuf);
+> >>+	wake_up(&vif->dealloc_wq);
+> >>+	spin_unlock_irqrestore(&vif->dealloc_lock, flags);
+[...]
+> >
+> >>+		smp_rmb();
+> >>+
+> >>+		while (dc != dp) {
+> >>+			pending_idx =
+> >>+				vif->dealloc_ring[pending_index(dc++)];
+> >>+
+> >>+			/* Already unmapped? */
+> >>+			if (vif->grant_tx_handle[pending_idx] ==
+> >>+				NETBACK_INVALID_HANDLE) {
+> >>+				netdev_err(vif->dev,
+> >>+					"Trying to unmap invalid handle! "
+> >>+					"pending_idx: %x\n", pending_idx);
+> >>+				continue;
+> >>+			}
+> >
+> >Should this be BUG_ON? AIUI this kthread should be the only one doing
+> >unmap, right?
+> The NAPI instance can do it as well if it is a small packet fits
+> into PKT_PROT_LEN. But still this scenario shouldn't really happen,
+> I was just not sure we have to crash immediately. Maybe handle it as
+> a fatal error and destroy the vif?
 > 
-> tfoerste@n22 ~/devel/github/bingo $ date; sudo gdb /home/tfoerste/devel/linux/linux 9776 -n -batch -ex 'bt'
-> Fri Dec 13 13:57:16 CET 2013
-> radix_tree_next_chunk (root=0x10, iter=0x40607cdc, flags=6) at lib/radix-tree.c:769
-> 769                                     while (++offset < RADIX_TREE_MAP_SIZE) {
-> #0  radix_tree_next_chunk (root=0x10, iter=0x40607cdc, flags=6) at lib/radix-tree.c:769
-> #1  0x080cc88e in find_get_pages (mapping=0x45182810, start=0, nr_pages=14, pages=0x6) at mm/filemap.c:844
-> #2  0x080d669a in pagevec_lookup (pvec=0x40607d40, mapping=0x10, start=16, nr_pages=16) at mm/swap.c:937
-> #3  0x080d6a9a in truncate_inode_pages_range (mapping=0x45182810, lstart=0, lend=-1) at mm/truncate.c:241
-> #4  0x080d6e3f in truncate_inode_pages (mapping=0x10, lstart=25769803792) at mm/truncate.c:358
-> #5  0x0818c2d2 in ext4_evict_inode (inode=0x45182758) at fs/ext4/inode.c:228
-> #6  0x0811b5ff in evict (inode=0x45182758) at fs/inode.c:549
-> #7  0x0811c0ed in iput_final (inode=<optimized out>) at fs/inode.c:1419
-> #8  iput (inode=0x45182758) at fs/inode.c:1437
-> #9  0x08112056 in do_unlinkat (dfd=5, pathname=0x8065d84 <register_lines+276> "") at fs/namei.c:3718
-> #10 0x081121c5 in SYSC_unlinkat (flag=<optimized out>, pathname=<optimized out>, dfd=<optimized out>) at fs/namei.c:3754
-> #11 SyS_unlinkat (dfd=5, pathname=134634884, flag=0) at fs/namei.c:3746
-> #12 0x08062a94 in handle_syscall (r=0x473b59cc) at arch/um/kernel/skas/syscall.c:35
-> #13 0x080750f5 in handle_trap (local_using_sysemu=<optimized out>, regs=<optimized out>, pid=<optimized out>) at arch/um/os-Linux/skas/process.c:198
-> #14 userspace (regs=0x473b59cc) at arch/um/os-Linux/skas/process.c:431
-> #15 0x0805f750 in fork_handler () at arch/um/kernel/process.c:149
-> #16 0x5a5a5a5a in ?? ()
-> 
-> - -- 
-> MfG/Sincerely
-> Toralf Förster
-> pgp finger print:1A37 6F99 4A9D 026F 13E2 4DCF C4EA CDDE 0076 E94E
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v2.0.22 (GNU/Linux)
-> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-> 
-> iF4EAREIAAYFAlKrBS0ACgkQxOrN3gB26U4bRgD/U/5sIELFBZUTeEgfM9eJBnxh
-> PhdMMBTTJHoB3v9z70YA/iEZzD9L30vVSWqYrybOWNPYwDR1i67F41nUemmPczqu
-> =u/iT
-> -----END PGP SIGNATURE-----
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+
+It depends. If this is within the trust boundary, i.e. everything at the
+stage should have been sanitized then we should BUG_ON because there's
+clearly a bug somewhere in the sanitization process, or in the
+interaction of various backend routines.
+
+Wei.
+
