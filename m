@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab3LMGvL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 01:51:11 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:43203 "EHLO
+	id S1752113Ab3LMGvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 01:51:09 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:52563 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898Ab3LMGuf (ORCPT
+	with ESMTP id S1751935Ab3LMGuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Dec 2013 01:50:35 -0500
-X-AuditID: 9c93017e-b7c17ae000003961-d5-52aaae38d092
+X-AuditID: 9c93017e-b7c17ae000003961-d9-52aaae3850da
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
@@ -19,9 +19,9 @@ Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v3 5/6] mm/compaction: respect ignore_skip_hint in update_pageblock_skip
-Date: Fri, 13 Dec 2013 15:53:30 +0900
-Message-Id: <1386917611-11319-6-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 6/6] mm/migrate: remove unused function, fail_migrate_page()
+Date: Fri, 13 Dec 2013 15:53:31 +0900
+Message-Id: <1386917611-11319-7-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386917611-11319-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1386917611-11319-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -30,33 +30,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-update_pageblock_skip() only fits to compaction which tries to isolate by
-pageblock unit. If isolate_migratepages_range() is called by CMA, it try to
-isolate regardless of pageblock unit and it don't reference
-get_pageblock_skip() by ignore_skip_hint. We should also respect it on
-update_pageblock_skip() to prevent from setting the wrong information.
+fail_migrate_page() isn't used anywhere, so remove it.
 
-Cc: <stable@vger.kernel.org> # 3.7+
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Acked-by: Christoph Lameter <cl@linux.com>
 Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 805165b..f58bcd0 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -134,6 +134,10 @@ static void update_pageblock_skip(struct compact_control *cc,
- 			bool migrate_scanner)
- {
- 	struct zone *zone = cc->zone;
-+
-+	if (cc->ignore_skip_hint)
-+		return;
-+
- 	if (!page)
- 		return;
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+index e4671f9..4308018 100644
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -41,9 +41,6 @@ extern int migrate_page(struct address_space *,
+ extern int migrate_pages(struct list_head *l, new_page_t x,
+ 		unsigned long private, enum migrate_mode mode, int reason);
  
+-extern int fail_migrate_page(struct address_space *,
+-			struct page *, struct page *);
+-
+ extern int migrate_prep(void);
+ extern int migrate_prep_local(void);
+ extern int migrate_vmas(struct mm_struct *mm,
+@@ -83,7 +80,6 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
+ 
+ /* Possible settings for the migrate_page() method in address_operations */
+ #define migrate_page NULL
+-#define fail_migrate_page NULL
+ 
+ #endif /* CONFIG_MIGRATION */
+ 
+diff --git a/mm/migrate.c b/mm/migrate.c
+index fa73ee3..d538404 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -550,14 +550,6 @@ void migrate_page_copy(struct page *newpage, struct page *page)
+  *                    Migration functions
+  ***********************************************************/
+ 
+-/* Always fail migration. Used for mappings that are not movable */
+-int fail_migrate_page(struct address_space *mapping,
+-			struct page *newpage, struct page *page)
+-{
+-	return -EIO;
+-}
+-EXPORT_SYMBOL(fail_migrate_page);
+-
+ /*
+  * Common logic to directly migrate a single page suitable for
+  * pages that do not use PagePrivate/PagePrivate2.
 -- 
 1.7.9.5
 
