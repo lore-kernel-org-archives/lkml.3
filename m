@@ -1,88 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752418Ab3LMPHq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:07:46 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:38307 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751489Ab3LMPHp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:07:45 -0500
-Message-ID: <52AB228D.5030003@st.com>
-Date: Fri, 13 Dec 2013 15:06:53 +0000
-From: Angus Clark <angus.clark@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100312 Lightning/1.0b2pre Shredder/3.0.1
+	id S1752674Ab3LMPLO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:11:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36926 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752018Ab3LMPLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 10:11:13 -0500
+Date: Fri, 13 Dec 2013 16:10:35 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: PATCH? introduce get_compound_page (Was: process 'stuck' at exit)
+Message-ID: <20131213151035.GE5408@redhat.com>
+References: <20131210204925.GB27373@redhat.com>
+ <20131210213431.GA6342@redhat.com>
+ <20131210214143.GG27373@redhat.com>
+ <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com>
+ <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
+ <CA+55aFw_emAUOr5BYx0TfTCGEOrW6-ZRATWbm00DvCXsGD7=DQ@mail.gmail.com>
+ <20131211170844.GA21700@redhat.com>
+ <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de>
+ <20131211175615.GA24546@redhat.com>
+ <20131211191855.GA32485@redhat.com>
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <dwmw2@infradead.org>,
-        <linus.walleij@linaro.org>, <linux-mtd@lists.infradead.org>,
-        Angus CLARK <angus.clark@st.com>
-Subject: Re: [PATCH v3 08/36] mtd: devices: Provide header for shared OPCODEs
- and SFDP commands
-References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org> <1385727565-25794-9-git-send-email-lee.jones@linaro.org> <20131210214849.GE27149@ld-irv-0074.broadcom.com>
-In-Reply-To: <20131210214849.GE27149@ld-irv-0074.broadcom.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.65.49.178]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131211191855.GA32485@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 09:48 PM, Brian Norris wrote:
-> On Fri, Nov 29, 2013 at 12:18:57PM +0000, Lee Jones wrote:
->> JEDEC have helped to standardise a great deal of the commands which
->> can be issued to a Serial Flash devices. Many of the OPCODEs and all
->> of the Serial Flash Discoverable Parameters (SFDP) commands are
->> generic across devices. This patch provides a shared point where
->> these commands can be defined.
+On Wed, Dec 11, 2013 at 08:18:55PM +0100, Oleg Nesterov wrote:
+> --- a/mm/swap.c
+> +++ b/mm/swap.c
+> @@ -210,7 +210,7 @@ EXPORT_SYMBOL(put_page);
+>   * This function is exported but must not be called by anything other
+>   * than get_page(). It implements the slow path of get_page().
+>   */
+> -bool __get_page_tail(struct page *page)
+> +static struct page *__get_compound_head(struct page *page, bool and_tail)
+>  {
 
-This comment isn't entirely correct.  The SFDP standard (JESD216A) does not go
-as far as standardising the OPCODES, but merely a way of determining at runtime
-which operations are supported (e.g. READ_1_1_4, READ_1_4_4), and the associated
-opcodes; vendors are still free to use a different opcode for a particular
-operation.
+This is not necessarily inline (unlike __get_page_tail_foll which is
+inline and optimizes away the build time known "false"/"true" params).
 
->> +/* JEDEC Standard - Serial Flash Discoverable Parmeters (SFDP) Commands */
->> +#define FLASH_CMD_READ		0x03	/* READ */
->> +#define FLASH_CMD_READ_FAST	0x0b	/* FAST READ */
->> +#define FLASH_CMD_READ_1_1_2	0x3b	/* DUAL OUTPUT READ */
->> +#define FLASH_CMD_READ_1_2_2	0xbb	/* DUAL I/O READ */
->> +#define FLASH_CMD_READ_1_1_4	0x6b	/* QUAD OUTPUT READ */
->> +#define FLASH_CMD_READ_1_4_4	0xeb	/* QUAD I/O READ */
-> 
-> All of these {1,2,4}_{1,2,4}_{1,2,4} suffixes are a little cryptic; I
-> ended up referring to the SFDP spec to figure out what the first number
-> meant. Can you document them briefly at the top of this SFDP list?
+>  	/*
+>  	 * This takes care of get_page() if run on a tail page
+> @@ -234,8 +234,9 @@ bool __get_page_tail(struct page *page)
+>  				 * cannot race here.
+>  				 */
+>  				VM_BUG_ON(!PageHead(page_head));
+> -				__get_page_tail_foll(page, false);
+> -				return true;
+> +				if (and_tail)
+> +					get_huge_page_tail(page);
 
-I think the {x,y,z} descriptions offer the simplest way of representing the
-myriad of operations supported by various devices -- it was one thing SFDP did
-get right.  However, I agree, the nomenclature  does need explained.  We also
-need a way of representing 32-bit address commands, and SDR vs DDR commands --
-this has not yet been addresses by SFDP.
+So you may be introducing a real branch here unless gcc decides to
+self-inline the static func.
 
-> Since you list these, does SFDP even describe the 32-bit addressing
-> commands? 
+> +				return page_head;
+>  			} else {
+>  				/*
+>  				 * __split_huge_page_refcount run
+> @@ -260,17 +261,34 @@ bool __get_page_tail(struct page *page)
+>  		flags = compound_lock_irqsave(page_head);
+>  		/* here __split_huge_page_refcount won't run anymore */
+>  		if (likely(PageTail(page))) {
+> -			__get_page_tail_foll(page, false);
+> +			if (and_tail)
+> +				get_huge_page_tail(page);
 
-Not yet, but I believe "JESD216B" will include a parameter table related to
-32-bit address instructions.
+Same here.
 
-> It seems like it assumes the device is switched (statefully)
-> between 24-bit and 32-bit address modes (or kept permanently in one or
-> the other).
+> +bool __get_page_tail(struct page *page)
+> +{
+> +	return !!__get_compound_head(page, true);
+>  }
 
-And the complexity increases!  The st_spi_fsm H/W also supports a memory-mapped
-mode for booting.  However, the boot controller is hard-coded to issue 24-bit
-address cycles.  If the Serial Flash device includes a dedicated REST pin, and
-this is appropriately routed to the system reset, then we have no issue -- the
-device will reset to its power-on state following a warm reset.  If a reset pin
-is not available, then certain precautions can be followed to minimise problems
-with warm resets.   If the Serial Flash device supports a 32-bit instruction
-set, then this should be used in preference, and we can avoid any statefull
-transitions.  Failing that, we can minimise the window in which a reset would
-fail by issuing EN4B/EX4B before/after each operation.  Of course, if we know
-the system is not subject to these constraints, then we just need to issue EN4B
-at the start, and stay in 4B mode.
+I hope gcc would optimize away the !! overhead vs the old got =
+true/false, once __get_compound_head is inline.
 
-All this knowledge needs to be in the spi-nor layer...
+So I think you should add inline to __get_compound_head, there's no
+benefit to keep the get_compound_head in the CPU icache.
 
+get_huge_page_tail checks different invariants in the VM_BUG_ON and is
+only used by gup.c not sure why to call that here.
+
+But __get_page_tail has changed in -mm so the above will reject, in
+-mm you will find __get_page_tail_foll called with "true" parameter
+too in __get_page_tail for example (not equivalent to
+get_huge_page_tail even ignoring the invariant checking in VM_BUG_ON)
+and it defines a fast path for hugetlbfs and slab (faster than the one
+upstream).
+
+But here we have a "tail page" that has reference on both head and
+tail, and you're taking one more reference on the head, just to
+release it later by releasing the tail.
+
+Your objective is to do:
+	 
+	page_head = get_compound_head(page);
+	if (page_head)
+		put_page(page);
+	else
+		page_head = page;
+
+If we've to mess with the compound lock for this, considering
+get_compound_head would have only this user anyway, we could do:
+
+     page_head = put_compound_tail(page);
+     if (!page_head)
+     	page_head = page;
+
+Implemented as:
+
+put_compound_tail(page) {
+	    page_head = compound_trans_head(page);
+	    if (!__compound_tail_refcounted(page_head)) {
+	       smp_rmb();
+	       if (PageTail(page)) {
+			VM_BUG_ON(!PageHead(page_head));
+			VM_BUG_ON(atomic_read(&page_head->_count) <= 0);
+			VM_BUG_ON(page_mapcount(page) != 0);
+			return page_head;
+		} else
+		  return NULL;
+
+	    }
+	    flags = compound_lock_irqsave(page_head);
+	    if (!PageTail(page)) {
+	       unlock
+	       return NULL
+	    }
+            VM_BUG_ON(page_head != page->first_page);
+	    /* __split_huge_page_refcount will wait now */
+	    VM_BUG_ON(page_mapcount(page) <= 0);
+	    atomic_dec(&page->_mapcount);
+	    VM_BUG_ON(atomic_read(&page_head->_count) <= 0);
+	    VM_BUG_ON(atomic_read(&page->_count) != 0);
+	    compound_unlock_irqrestore(page_head, flags);
+	    return page_head;
+}
+
+Considering this is going incremental with -mm, and that the -mm
+previous patches the above would depend on are not upstream yet, I'd
+suggest to fix the bug in futex with Linus patch now (s/1/!ro/).
+
+The strict obviously safe fix Linus posted, is not going to interfere
+with these optimization later, so there's no downside to apply it now
+and defer the optimizations to the -mm queue.
+
+Thanks!
+Andrea
