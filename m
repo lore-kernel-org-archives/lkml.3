@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab3LMPQY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:16:24 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45248 "EHLO
+	id S1753508Ab3LMPQW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:16:22 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45256 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753142Ab3LMPMS (ORCPT
+	with ESMTP id S1752961Ab3LMPMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:12:18 -0500
+	Fri, 13 Dec 2013 10:12:19 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/20] tools lib traceevent: Get rid of malloc_or_die() in read_token()
-Date: Fri, 13 Dec 2013 12:11:58 -0300
-Message-Id: <1386947526-7118-13-git-send-email-acme@infradead.org>
+Subject: [PATCH 19/20] tools lib traceevent: Make pevent_filter_add_filter_str() return pevent_errno
+Date: Fri, 13 Dec 2013 12:12:05 -0300
+Message-Id: <1386947526-7118-20-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386947526-7118-1-git-send-email-acme@infradead.org>
 References: <1386947526-7118-1-git-send-email-acme@infradead.org>
@@ -27,48 +27,235 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Namhyung Kim <namhyung.kim@lge.com>
+
+Refactor the pevent_filter_add_filter_str() to return a proper error
+code and get rid of the third error_str argument.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386833777-3790-5-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1386833777-3790-12-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/parse-filter.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ tools/lib/traceevent/event-parse.h  |  8 ++--
+ tools/lib/traceevent/parse-filter.c | 78 +++++++++++--------------------------
+ 2 files changed, 27 insertions(+), 59 deletions(-)
 
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index da942d59cc3a..089964e56ed4 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -372,7 +372,8 @@ enum pevent_flag {
+ 	_PE(ILLEGAL_TOKEN,	"illegal token"),			      \
+ 	_PE(INVALID_PAREN,	"open parenthesis cannot come here"), 	      \
+ 	_PE(UNBALANCED_PAREN,	"unbalanced number of parenthesis"),	      \
+-	_PE(UNKNOWN_TOKEN,	"unknown token")
++	_PE(UNKNOWN_TOKEN,	"unknown token"),			      \
++	_PE(FILTER_NOT_FOUND,	"no filter found")
+ 
+ #undef _PE
+ #define _PE(__code, __str) PEVENT_ERRNO__ ## __code
+@@ -863,9 +864,8 @@ enum filter_trivial_type {
+ 	FILTER_TRIVIAL_BOTH,
+ };
+ 
+-int pevent_filter_add_filter_str(struct event_filter *filter,
+-				 const char *filter_str,
+-				 char **error_str);
++enum pevent_errno pevent_filter_add_filter_str(struct event_filter *filter,
++					       const char *filter_str);
+ 
+ 
+ int pevent_filter_match(struct event_filter *filter,
 diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index ab9cefe320b4..246ee81e1f93 100644
+index 5aa5012a17ee..78440d73e0ad 100644
 --- a/tools/lib/traceevent/parse-filter.c
 +++ b/tools/lib/traceevent/parse-filter.c
-@@ -109,7 +109,11 @@ static enum event_type read_token(char **tok)
- 	    (strcmp(token, "=") == 0 || strcmp(token, "!") == 0) &&
- 	    pevent_peek_char() == '~') {
- 		/* append it */
--		*tok = malloc_or_die(3);
-+		*tok = malloc(3);
-+		if (*tok == NULL) {
-+			free_token(token);
-+			return EVENT_ERROR;
-+		}
- 		sprintf(*tok, "%c%c", *token, '~');
- 		free_token(token);
- 		/* Now remove the '~' from the buffer */
-@@ -1123,6 +1127,8 @@ process_filter(struct event_format *event, struct filter_arg **parg,
- 			break;
- 		case EVENT_NONE:
- 			break;
-+		case EVENT_ERROR:
-+			goto fail_alloc;
- 		default:
- 			goto fail_print;
+@@ -1209,7 +1209,7 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 	return ret;
+ }
+ 
+-static int
++static enum pevent_errno
+ process_event(struct event_format *event, const char *filter_str,
+ 	      struct filter_arg **parg, char **error_str)
+ {
+@@ -1218,21 +1218,15 @@ process_event(struct event_format *event, const char *filter_str,
+ 	pevent_buffer_init(filter_str, strlen(filter_str));
+ 
+ 	ret = process_filter(event, parg, error_str, 0);
+-	if (ret == 1) {
+-		show_error(error_str,
+-			   "Unbalanced number of ')'");
+-		return -1;
+-	}
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* If parg is NULL, then make it into FALSE */
+ 	if (!*parg) {
+ 		*parg = allocate_arg();
+-		if (*parg == NULL) {
+-			show_error(error_str, "failed to allocate filter arg");
+-			return -1;
+-		}
++		if (*parg == NULL)
++			return PEVENT_ERRNO__MEM_ALLOC_FAILED;
++
+ 		(*parg)->type = FILTER_ARG_BOOLEAN;
+ 		(*parg)->boolean.value = FILTER_FALSE;
+ 	}
+@@ -1240,13 +1234,13 @@ process_event(struct event_format *event, const char *filter_str,
+ 	return 0;
+ }
+ 
+-static int filter_event(struct event_filter *filter,
+-			struct event_format *event,
+-			const char *filter_str, char **error_str)
++static enum pevent_errno
++filter_event(struct event_filter *filter, struct event_format *event,
++	     const char *filter_str, char **error_str)
+ {
+ 	struct filter_type *filter_type;
+ 	struct filter_arg *arg;
+-	int ret;
++	enum pevent_errno ret;
+ 
+ 	if (filter_str) {
+ 		ret = process_event(event, filter_str, &arg, error_str);
+@@ -1256,20 +1250,16 @@ static int filter_event(struct event_filter *filter,
+ 	} else {
+ 		/* just add a TRUE arg */
+ 		arg = allocate_arg();
+-		if (arg == NULL) {
+-			show_error(error_str, "failed to allocate filter arg");
+-			return -1;
+-		}
++		if (arg == NULL)
++			return PEVENT_ERRNO__MEM_ALLOC_FAILED;
++
+ 		arg->type = FILTER_ARG_BOOLEAN;
+ 		arg->boolean.value = FILTER_TRUE;
+ 	}
+ 
+ 	filter_type = add_filter_type(filter, event->id);
+-	if (filter_type == NULL) {
+-		show_error(error_str, "failed to add a new filter: %s",
+-			   filter_str ? filter_str : "true");
+-		return -1;
+-	}
++	if (filter_type == NULL)
++		return PEVENT_ERRNO__MEM_ALLOC_FAILED;
+ 
+ 	if (filter_type->filter)
+ 		free_arg(filter_type->filter);
+@@ -1282,18 +1272,12 @@ static int filter_event(struct event_filter *filter,
+  * pevent_filter_add_filter_str - add a new filter
+  * @filter: the event filter to add to
+  * @filter_str: the filter string that contains the filter
+- * @error_str: string containing reason for failed filter
+- *
+- * Returns 0 if the filter was successfully added
+- *   -1 if there was an error.
+  *
+- * On error, if @error_str points to a string pointer,
+- * it is set to the reason that the filter failed.
+- * This string must be freed with "free".
++ * Returns 0 if the filter was successfully added or a
++ * negative error code.
+  */
+-int pevent_filter_add_filter_str(struct event_filter *filter,
+-				 const char *filter_str,
+-				 char **error_str)
++enum pevent_errno pevent_filter_add_filter_str(struct event_filter *filter,
++					       const char *filter_str)
+ {
+ 	struct pevent *pevent = filter->pevent;
+ 	struct event_list *event;
+@@ -1304,23 +1288,20 @@ int pevent_filter_add_filter_str(struct event_filter *filter,
+ 	char *event_name = NULL;
+ 	char *sys_name = NULL;
+ 	char *sp;
+-	int rtn = 0;
++	enum pevent_errno rtn = 0; /* PEVENT_ERRNO__SUCCESS */
+ 	int len;
+ 	int ret;
++	char *error_str = NULL;
+ 
+ 	/* clear buffer to reset show error */
+ 	pevent_buffer_init("", 0);
+ 
+-	if (error_str)
+-		*error_str = NULL;
+-
+ 	filter_start = strchr(filter_str, ':');
+ 	if (filter_start)
+ 		len = filter_start - filter_str;
+ 	else
+ 		len = strlen(filter_str);
+ 
+-
+ 	do {
+ 		next_event = strchr(filter_str, ',');
+ 		if (next_event &&
+@@ -1333,10 +1314,9 @@ int pevent_filter_add_filter_str(struct event_filter *filter,
+ 
+ 		this_event = malloc(len + 1);
+ 		if (this_event == NULL) {
+-			show_error(error_str, "Memory allocation failure");
+ 			/* This can only happen when events is NULL, but still */
+ 			free_events(events);
+-			return -1;
++			return PEVENT_ERRNO__MEM_ALLOC_FAILED;
  		}
+ 		memcpy(this_event, filter_str, len);
+ 		this_event[len] = 0;
+@@ -1350,30 +1330,18 @@ int pevent_filter_add_filter_str(struct event_filter *filter,
+ 		event_name = strtok_r(NULL, "/", &sp);
+ 
+ 		if (!sys_name) {
+-			show_error(error_str, "No filter found");
+ 			/* This can only happen when events is NULL, but still */
+ 			free_events(events);
+ 			free(this_event);
+-			return -1;
++			return PEVENT_ERRNO__FILTER_NOT_FOUND;
+ 		}
+ 
+ 		/* Find this event */
+ 		ret = find_event(pevent, &events, strim(sys_name), strim(event_name));
+ 		if (ret < 0) {
+-			if (ret == PEVENT_ERRNO__MEM_ALLOC_FAILED)
+-				show_error(error_str,
+-					   "Memory allocation failure");
+-			else if (event_name)
+-				show_error(error_str,
+-					   "No event found under '%s.%s'",
+-					   sys_name, event_name);
+-			else
+-				show_error(error_str,
+-					   "No event found under '%s'",
+-					   sys_name);
+ 			free_events(events);
+ 			free(this_event);
+-			return -1;
++			return ret;
+ 		}
+ 		free(this_event);
+ 	} while (filter_str);
+@@ -1385,7 +1353,7 @@ int pevent_filter_add_filter_str(struct event_filter *filter,
+ 	/* filter starts here */
+ 	for (event = events; event; event = event->next) {
+ 		ret = filter_event(filter, event->event, filter_start,
+-				   error_str);
++				   &error_str);
+ 		/* Failures are returned if a parse error happened */
+ 		if (ret < 0)
+ 			rtn = ret;
 -- 
 1.8.1.4
 
