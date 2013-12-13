@@ -1,82 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103Ab3LMShR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 13:37:17 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:39612 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab3LMShP (ORCPT
+	id S1753319Ab3LMSjP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 13:39:15 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:54819 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221Ab3LMSjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 13:37:15 -0500
+	Fri, 13 Dec 2013 13:39:11 -0500
+Date: Fri, 13 Dec 2013 11:39:05 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jonas Bonn <jonas@southpole.se>, Jingoo Han <jg1.han@samsung.com>,
+        "'Guenter Roeck'" <linux@roeck-us.net>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Andy Whitcroft'" <apw@canonical.com>, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] pci/checkpatch: Deprecate DEFINE_PCI_DEVICE_TABLE
+Message-ID: <20131213183905.GA6746@google.com>
+References: <1385617213.12210.5.camel@joe-AO722>
+ <20131128055328.GA565@kroah.com>
+ <1385619863.12210.14.camel@joe-AO722>
+ <529C026E.2000302@roeck-us.net>
+ <000f01ceef11$a14acf00$e3e06d00$%han@samsung.com>
+ <529C04C7.9050506@roeck-us.net>
+ <001001ceef13$7fa3ee70$7eebcb50$%han@samsung.com>
+ <1385963295.2680.2.camel@joe-AO722>
+ <529C6495.3020305@southpole.se>
+ <1386006217.2680.13.camel@joe-AO722>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxKsaRFR=Tjs9VJfFk3X4USbGWOvNrMg7BQYv7VX28_zQ@mail.gmail.com>
-References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
-	<20131212190659.GG13547@thunk.org>
-	<CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
-	<20131213002523.GA20706@redhat.com>
-	<20131213014220.GB11068@kroah.com>
-	<CAGXu5jKOvngwCStCabR7wK0wwcu2H4eTz7=29FbbBWdGpoC78g@mail.gmail.com>
-	<CA+55aFxKsaRFR=Tjs9VJfFk3X4USbGWOvNrMg7BQYv7VX28_zQ@mail.gmail.com>
-Date: Fri, 13 Dec 2013 10:37:14 -0800
-X-Google-Sender-Auth: dF_33i8DEEzyathgHjD8CQHPG0Y
-Message-ID: <CAGXu5jKJ7+VKjr=1s9XL=Y8g1=ypgDkA+RLOjOE2R9nsojjwBg@mail.gmail.com>
-Subject: Re: [PATCH 1/9] Known exploit detection
-From: Kees Cook <keescook@chromium.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        vegard.nossum@oracle.com, LKML <linux-kernel@vger.kernel.org>,
-        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Alan Cox <alan@linux.intel.com>, Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Morris <james.l.morris@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386006217.2680.13.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 10:14 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Dec 13, 2013 at 9:58 AM, Kees Cook <keescook@chromium.org> wrote:
->>
->> These locations tend to be very hard to reach accidentally
->
-> Not necessarily.
->
-> Don't get me wrong - I think that it's a good idea to at least have
-> the option to complain about certain errors, and leave markers in the
-> logs about things that look suspicious.
->
-> But looking through the recent list of commits that explicitly mention
-> a CVE, the only one I find where a syslog message would make sense is
-> the HID validation ones. There, adding a warning about malicious HID
-> devices sounds like a good idea.
->
-> But a *lot* of the rest is just checking ranges or making sure we have
-> proper string handling etc that just wouldn't be practical to check.
-> So the error itself may be "hard to reach accidentally", but
-> *checking* it would be so complex/painful that it would likely just
-> introduce more room for bugs.
->
-> So I think the "WARNING" thing is a good idea, but I think it is a
-> good idea if it's used very judiciously. IOW, not for "random CVE"
-> (because quite frankly, most of them seem to be utter shit), but for
-> serious known issues. And for those issues *only*.
->
-> If I start seeing patches adding warnings "just because there's a
-> CVE", then I'm not in the least interested. But if there is some known
-> root-kit or similar, then by all means..
+On Mon, Dec 02, 2013 at 09:43:37AM -0800, Joe Perches wrote:
+> Prefer use of the direct definition of struct pci_device_id
+> instead of indirection via macro DEFINE_PCI_DEVICE_TABLE.
+> 
+> Update the PCI documentation to deprecate DEFINE_PCI_DEVICE_TABLE.
+> Update checkpatch adding --fix option.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Yeah, totally agreed. Doing it for all CVEs (or even most) would be a
-disaster. Stuff like memory content leak CVEs are usually on common
-paths that userspace uses all the time. Vegard proposed only doing it
-for serious privilege escalation issues, and I couldn't agree more.
+Applied with Jingoo's ack for v3.14, thanks!
 
--Kees
+Bjorn
 
--- 
-Kees Cook
-Chrome OS Security
+> ---
+>  Documentation/PCI/pci.txt |  6 ++++--
+>  include/linux/pci.h       |  3 +--
+>  scripts/checkpatch.pl     | 11 +++++++----
+>  3 files changed, 12 insertions(+), 8 deletions(-)
+> 
+> diff --git a/Documentation/PCI/pci.txt b/Documentation/PCI/pci.txt
+> index 6f45856..9518006 100644
+> --- a/Documentation/PCI/pci.txt
+> +++ b/Documentation/PCI/pci.txt
+> @@ -123,8 +123,10 @@ initialization with a pointer to a structure describing the driver
+>  
+>  
+>  The ID table is an array of struct pci_device_id entries ending with an
+> -all-zero entry; use of the macro DEFINE_PCI_DEVICE_TABLE is the preferred
+> -method of declaring the table.  Each entry consists of:
+> +all-zero entry.  Definitions with static const are generally preferred.
+> +Use of the deprecated macro DEFINE_PCI_DEVICE_TABLE should be avoided.
+> +
+> +Each entry consists of:
+>  
+>  	vendor,device	Vendor and device ID to match (or PCI_ANY_ID)
+>  
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 1084a15..88674b0 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -634,8 +634,7 @@ struct pci_driver {
+>   * DEFINE_PCI_DEVICE_TABLE - macro used to describe a pci device table
+>   * @_table: device table name
+>   *
+> - * This macro is used to create a struct pci_device_id array (a device table)
+> - * in a generic manner.
+> + * This macro is deprecated and should not be used in new code.
+>   */
+>  #define DEFINE_PCI_DEVICE_TABLE(_table) \
+>  	const struct pci_device_id _table[]
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 38be5d5..6f883f0 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -2643,10 +2643,13 @@ sub process {
+>  			}
+>  		}
+>  
+> -# check for declarations of struct pci_device_id
+> -		if ($line =~ /\bstruct\s+pci_device_id\s+\w+\s*\[\s*\]\s*\=\s*\{/) {
+> -			WARN("DEFINE_PCI_DEVICE_TABLE",
+> -			     "Use DEFINE_PCI_DEVICE_TABLE for struct pci_device_id\n" . $herecurr);
+> +# check for uses of DEFINE_PCI_DEVICE_TABLE
+> +		if ($line =~ /\bDEFINE_PCI_DEVICE_TABLE\s*\(\s*(\w+)\s*\)\s*=/) {
+> +			if (WARN("DEFINE_PCI_DEVICE_TABLE",
+> +				 "Prefer struct pci_device_id over deprecated DEFINE_PCI_DEVICE_TABLE\n" . $herecurr) &&
+> +			    $fix) {
+> +				$fixed[$linenr - 1] =~ s/\b(?:static\s+|)DEFINE_PCI_DEVICE_TABLE\s*\(\s*(\w+)\s*\)\s*=\s*/static const struct pci_device_id $1\[\] = /;
+> +			}
+>  		}
+>  
+>  # check for new typedefs, only function parameters and sparse annotations
+> 
+> 
