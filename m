@@ -1,115 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab3LMLrm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 06:47:42 -0500
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:49538 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752336Ab3LMLrj (ORCPT
+	id S1752711Ab3LMLtT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 06:49:19 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:47311 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496Ab3LMLtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 06:47:39 -0500
-Date: Fri, 13 Dec 2013 06:47:34 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Tim Hockin <thockin@hockin.org>
-Cc: David Rientjes <rientjes@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Cgroups <cgroups@vger.kernel.org>,
-        Victor Marmol <vmarmol@google.com>
-Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom
- notifications to access reserves
-Message-ID: <20131213114734.GA22074@htj.dyndns.org>
-References: <20131206190105.GE13373@htj.dyndns.org>
- <alpine.DEB.2.02.1312061441390.8949@chino.kir.corp.google.com>
- <20131210215037.GB9143@htj.dyndns.org>
- <alpine.DEB.2.02.1312101522400.22701@chino.kir.corp.google.com>
- <20131211124240.GA24557@htj.dyndns.org>
- <CAAAKZwsmM-C=kLGV=RW=Y4Mq=BWpQzuPruW6zvEr9p0Xs4GD5g@mail.gmail.com>
- <20131212142156.GB32683@htj.dyndns.org>
- <CAAAKZwtuydFdiiSsKMuOUv3nr9trjuKvKoDO2aM0QsJKu1TMZA@mail.gmail.com>
- <20131212192319.GL32683@htj.dyndns.org>
- <CAAAKZwtQc212_-oqf56ToxjSG7f9bsNcBwwurSezpGKiPDT+nQ@mail.gmail.com>
+	Fri, 13 Dec 2013 06:49:18 -0500
+Date: Fri, 13 Dec 2013 14:48:41 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>, Kees Cook <keescook@chromium.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, vegard.nossum@oracle.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alan Cox <alan@linux.intel.com>, Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <james.l.morris@oracle.com>
+Subject: Re: [PATCH 1/9] Known exploit detection
+Message-ID: <20131213114841.GA5443@mwanda>
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
+ <20131212190659.GG13547@thunk.org>
+ <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
+ <20131213002523.GA20706@redhat.com>
+ <20131213014220.GB11068@kroah.com>
+ <52AAE214.7020109@ahsoftware.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAAKZwtQc212_-oqf56ToxjSG7f9bsNcBwwurSezpGKiPDT+nQ@mail.gmail.com>
+In-Reply-To: <52AAE214.7020109@ahsoftware.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Tim.
+On Fri, Dec 13, 2013 at 11:31:48AM +0100, Alexander Holler wrote:
+> I've never seen a comment inside the kernel sources which does point
+> to a CVE, so I assume there already does exists some agreement about
+> not doing so.
 
-On Thu, Dec 12, 2013 at 04:23:18PM -0800, Tim Hockin wrote:
-> Just to be clear - I say this because it doesn't feel right to impose
-> my craziness on others, and it sucks when we try and are met with
-> "you're crazy, go away".  And you have to admit that happens to
-> Google. :)  Punching an escape valve that allows us to be crazy
-> without hurting anyone else sounds ideal, IF and ONLY IF that escape
-> valve is itself maintainable.
+We do occasionally put CVE numbers in the commit message, but normally
+the commit comes first before we ask for a CVE number.
 
-I don't think google being considered crazy is a good thing in
-general, highly likely not something to be proud of.  It sure is
-partly indicative of the specialization that you guys need but I
-suspect is a much stronger signal for room for better engineering.
+If you want a list of kernel CVEs then you can use the Ubuntu list:
+https://launchpad.net/ubuntu-cve-tracker
+http://people.canonical.com/~ubuntu-security/cve/main.html
+It has the commit which introduced the bug and commit which fixes the
+bug.  Suse has a public CVE list as well.
 
-I'm fairly certain the blame is abundant for everybody to share.  The
-point I'm trying to make is "let's please stop diverging".  It hurts
-everybody.
+You are right that probably some security commits don't get a CVE.  When
+you spot one then feel free to ask for a CVE from the
+oss-security@lists.openwall.com email list.
 
-> If the escape valve is userspace it's REALLY easy to iterate on our
-> craziness.  If it is kernel space, it's somewhat less easy, but not
-> impossible.
+regards,
+dan carpenter
 
-As I'm sure you've gathered from this thread, even punching the
-initial hole is a sizable burden and contortion to the general memory
-management and I'm sure as you guys develop further down the path
-you'll encounter cases where you need further support or holes from
-the kernel.  I can't anticipate the details but the fact that those
-will follow is as evident as the day to me, especially given the
-mindset leading to the current situation in the first place.
-
-Please note that this part of discussion is more abstract than
-necessary for this particular patchset or hole.  I'm quite doubtful
-that system-level OOM handling with separate physical reserve is
-likely to survive even just on technical details.  The reason why I'm
-keeping at this abstract point is because this seems to be a
-continuing trend rather than a single occurrence and I really hope it
-changes.
-
-> Well that's an awesome start.  We have or had patches to do a lot of
-> this.  I don't know how well scrubbed they are for pushing or whether
-> they apply at all to current head, though.
-
-Awesome, this looks like something everyone agrees on. :)
-
-> As an aside: mucking about with extra nesting levels to achieve a
-> stable OOM semantic sounds doable, but it certainly sucks in a unified
-> hierarchy.  We'll end up with 1, 2, or 3 (or more in esoteric cases?
-> not sure) extra nesting levels for every other resource dimension.
-> And lawd help us if we ever need to do something similar in a
-> different resource dimension - the cross product is mind-bending.
-> What we do with split-hierarchies is this but on a smaller scale.
-
-Yes, agreed but I believe there are substantial benefits to having
-certain level of structural constraints.  It encourages people to
-ponder the underlying issues and make active trade-offs.  Not that
-going off that extreme would be good either but we've gone too far
-towards the other end.
-
-This being a special issue with memcg, if this turns out to be a big
-enough problem, I don't think having a provision to be able to handle
-it without further nesting would be too crazy - e.g. the ability to
-mark a single cgroup at the root level as for OOM handler or whatever
-- as long as we stay within the boundaries of memcg and cgroup proper,
-but we seem to have ways to go before worrying about that one.
-
-Thanks.
-
--- 
-tejun
