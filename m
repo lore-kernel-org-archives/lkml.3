@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab3LMDCS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 22:02:18 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:58632 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab3LMDCQ (ORCPT
+	id S1752029Ab3LMDHP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 22:07:15 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:52222 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751784Ab3LMDHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 22:02:16 -0500
-Message-ID: <52AA78AE.2050800@ozlabs.ru>
-Date: Fri, 13 Dec 2013 14:02:06 +1100
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: linuxppc-dev@lists.ozlabs.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Varun Sethi <Varun.Sethi@freescale.com>,
-        Bharat Bhushan <bharat.bhushan@freescale.com>
-Subject: Re: [1/3] powerpc/vfio: Enable on POWERNV platform
-References: <1369107191-28547-2-git-send-email-aik@ozlabs.ru> <20131212233527.GA16929@home.buserror.net>
-In-Reply-To: <20131212233527.GA16929@home.buserror.net>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Dec 2013 22:07:13 -0500
+Date: Fri, 13 Dec 2013 04:07:11 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>,
+        Christian Grothoff <grothoff@in.tum.de>,
+        Jacob Appelbaum <jacob@appelbaum.net>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, knock@gnunet.org
+Subject: Re: [PATCH] TCP: add option for silent port knocking with integrity protection
+Message-ID: <20131213030711.GA30876@order.stressinduktion.org>
+Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
+	Christian Grothoff <grothoff@in.tum.de>,
+	Jacob Appelbaum <jacob@appelbaum.net>,
+	Andi Kleen <andi@firstfloor.org>,
+	Stephen Hemminger <stephen@networkplumber.org>,
+	David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org, knock@gnunet.org
+References: <20131211.150137.368953964178408437.davem@davemloft.net> <52A8C8B4.4060109@in.tum.de> <20131211122637.75b09074@nehalam.linuxnetplumber.net> <87bo0nulkt.fsf@tassilo.jf.intel.com> <52A8ECF5.3070604@in.tum.de> <20131212012317.GL21717@two.firstfloor.org> <52A98DBF.4090702@appelbaum.net> <52A9A17F.6050505@in.tum.de> <1386858864.19078.60.camel@edumazet-glaptop2.roam.corp.google.com> <20131212154637.GG4675@order.stressinduktion.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131212154637.GG4675@order.stressinduktion.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2013 10:35 AM, Scott Wood wrote:
-> On Tue, May 21, 2013 at 01:33:09PM +1000, Alexey Kardashevskiy wrote:
->> +static int iommu_add_device(struct device *dev)
->> +{
->> +	struct iommu_table *tbl;
->> +	int ret = 0;
->> +
->> +	if (WARN_ON(dev->iommu_group)) {
->> +		pr_warn("iommu_tce: device %s is already in iommu group %d, skipping\n",
->> +				dev_name(dev),
->> +				iommu_group_id(dev->iommu_group));
->> +		return -EBUSY;
->> +	}
-> [snip]
->> +static int __init tce_iommu_init(void)
->> +{
->> +	struct pci_dev *pdev = NULL;
->> +
->> +	BUILD_BUG_ON(PAGE_SIZE < IOMMU_PAGE_SIZE);
->> +
->> +	for_each_pci_dev(pdev)
->> +		iommu_add_device(&pdev->dev);
->> +
->> +	bus_register_notifier(&pci_bus_type, &tce_iommu_bus_nb);
->> +	return 0;
->> +}
->> +
->> +subsys_initcall_sync(tce_iommu_init);
+On Thu, Dec 12, 2013 at 04:46:37PM +0100, Hannes Frederic Sowa wrote:
+> On Thu, Dec 12, 2013 at 06:34:24AM -0800, Eric Dumazet wrote:
+> > With various proposals (like TCP minion), maybe its time to be able to
+> > implement part of TCP stack in user land (Keep the mux inside the
+> > kernel, and forward raw incoming packets to user land where all the
+> > crazy things can be done without kernel patching.)
 > 
-> This is missing a check to see whether the appropriate hardware is
-> present.  This file should also be renamed to something less generic, and
-> depend on a kconfig symbol more specific than CONFIG_PPC64.
-> 
-> When this is combined with CONFIG_FSL_PAMU on hardware with a PAMU, I get
-> a bunch of those "WARN_ON(dev->iommu_group)" dumps because PAMU already
-> got to them.  Presumably without PAMU it silently (or with just pr_debug)
-> bails out at some other point.
+> Maybe this knocking scheme is implementable with a socket filter and we could
+> add a switch to tweak drop behaviour.
 
+Just fyi, maybe it is useful. I haven't tested it:
 
-I posted (yet again) yesterday "[PATCH v11] PPC: POWERNV: move
-iommu_add_device earlier" which should fix this. And Bharat asked many
-times for this to get accepted :)
+For the sending side one could craft the handshake by hand (raw/packet
+sockets) and splice in an already established socket via tcp connection
+repair.
 
-
-
--- 
-Alexey
