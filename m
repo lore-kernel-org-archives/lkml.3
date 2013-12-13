@@ -1,104 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab3LMLNK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 06:13:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38680 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751496Ab3LMLNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 06:13:08 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: kys@microsoft.com, haiyangz@microsoft.com, devel@linuxdriverproject.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [PATCH net] netvsc: don't flush peers notifying work during setting mtu
-Date: Fri, 13 Dec 2013 17:21:27 +0800
-Message-Id: <1386926487-30822-1-git-send-email-jasowang@redhat.com>
+	id S1752698Ab3LMLOE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 06:14:04 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39969 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675Ab3LMLOC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 06:14:02 -0500
+Date: Fri, 13 Dec 2013 11:14:03 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: vegard.nossum@oracle.com
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 5/9] hfsplus: Known exploit detection for CVE-2012-2319
+Message-ID: <20131213111403.77a8122c@alan.etchedpixels.co.uk>
+In-Reply-To: <1386867152-24072-5-git-send-email-vegard.nossum@oracle.com>
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
+	<1386867152-24072-5-git-send-email-vegard.nossum@oracle.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a possible deadlock if we flush the peers notifying work during setting
-mtu:
+On Thu, 12 Dec 2013 17:52:28 +0100
+vegard.nossum@oracle.com wrote:
 
-[   22.991149] ======================================================
-[   22.991173] [ INFO: possible circular locking dependency detected ]
-[   22.991198] 3.10.0-54.0.1.el7.x86_64.debug #1 Not tainted
-[   22.991219] -------------------------------------------------------
-[   22.991243] ip/974 is trying to acquire lock:
-[   22.991261]  ((&(&net_device_ctx->dwork)->work)){+.+.+.}, at: [<ffffffff8108af95>] flush_work+0x5/0x2e0
-[   22.991307]
-but task is already holding lock:
-[   22.991330]  (rtnl_mutex){+.+.+.}, at: [<ffffffff81539deb>] rtnetlink_rcv+0x1b/0x40
-[   22.991367]
-which lock already depends on the new lock.
+> From: Vegard Nossum <vegard.nossum@oracle.com>
+> 
+> See 6f24f892871acc47b40dd594c63606a17c714f77.
+> 
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
+> ---
+>  fs/hfsplus/catalog.c |    2 ++
+>  fs/hfsplus/dir.c     |    3 +++
+>  2 files changed, 5 insertions(+)
+> 
+> diff --git a/fs/hfsplus/catalog.c b/fs/hfsplus/catalog.c
+> index 968ce41..5f47a1a 100644
+> --- a/fs/hfsplus/catalog.c
+> +++ b/fs/hfsplus/catalog.c
+> @@ -8,6 +8,7 @@
+>   * Handling of catalog records
+>   */
+>  
+> +#include <linux/exploit.h>
+>  
+>  #include "hfsplus_fs.h"
+>  #include "hfsplus_raw.h"
+> @@ -374,6 +375,7 @@ int hfsplus_rename_cat(u32 cnid,
+>  	if (err)
+>  		goto out;
+>  	if (src_fd.entrylength > sizeof(entry) || src_fd.entrylength < 0) {
+> +		exploit("CVE-2012-2319");
 
-[   22.991398]
-the existing dependency chain (in reverse order) is:
-[   22.991426]
--> #1 (rtnl_mutex){+.+.+.}:
-[   22.991449]        [<ffffffff810dfdd9>] __lock_acquire+0xb19/0x1260
-[   22.991477]        [<ffffffff810e0d12>] lock_acquire+0xa2/0x1f0
-[   22.991501]        [<ffffffff81673659>] mutex_lock_nested+0x89/0x4f0
-[   22.991529]        [<ffffffff815392b7>] rtnl_lock+0x17/0x20
-[   22.991552]        [<ffffffff815230b2>] netdev_notify_peers+0x12/0x30
-[   22.991579]        [<ffffffffa0340212>] netvsc_send_garp+0x22/0x30 [hv_netvsc]
-[   22.991610]        [<ffffffff8108d251>] process_one_work+0x211/0x6e0
-[   22.991637]        [<ffffffff8108d83b>] worker_thread+0x11b/0x3a0
-[   22.991663]        [<ffffffff81095e5d>] kthread+0xed/0x100
-[   22.991686]        [<ffffffff81681c6c>] ret_from_fork+0x7c/0xb0
-[   22.991715]
--> #0 ((&(&net_device_ctx->dwork)->work)){+.+.+.}:
-[   22.991715]        [<ffffffff810de817>] check_prevs_add+0x967/0x970
-[   22.991715]        [<ffffffff810dfdd9>] __lock_acquire+0xb19/0x1260
-[   22.991715]        [<ffffffff810e0d12>] lock_acquire+0xa2/0x1f0
-[   22.991715]        [<ffffffff8108afde>] flush_work+0x4e/0x2e0
-[   22.991715]        [<ffffffff8108e1b5>] __cancel_work_timer+0x95/0x130
-[   22.991715]        [<ffffffff8108e303>] cancel_delayed_work_sync+0x13/0x20
-[   22.991715]        [<ffffffffa03404e4>] netvsc_change_mtu+0x84/0x200 [hv_netvsc]
-[   22.991715]        [<ffffffff815233d4>] dev_set_mtu+0x34/0x80
-[   22.991715]        [<ffffffff8153bc2a>] do_setlink+0x23a/0xa00
-[   22.991715]        [<ffffffff8153d054>] rtnl_newlink+0x394/0x5e0
-[   22.991715]        [<ffffffff81539eac>] rtnetlink_rcv_msg+0x9c/0x260
-[   22.991715]        [<ffffffff8155cdd9>] netlink_rcv_skb+0xa9/0xc0
-[   22.991715]        [<ffffffff81539dfa>] rtnetlink_rcv+0x2a/0x40
-[   22.991715]        [<ffffffff8155c41d>] netlink_unicast+0xdd/0x190
-[   22.991715]        [<ffffffff8155c807>] netlink_sendmsg+0x337/0x750
-[   22.991715]        [<ffffffff8150d219>] sock_sendmsg+0x99/0xd0
-[   22.991715]        [<ffffffff8150d63e>] ___sys_sendmsg+0x39e/0x3b0
-[   22.991715]        [<ffffffff8150eba2>] __sys_sendmsg+0x42/0x80
-[   22.991715]        [<ffffffff8150ebf2>] SyS_sendmsg+0x12/0x20
-[   22.991715]        [<ffffffff81681d19>] system_call_fastpath+0x16/0x1b
+Whooppee but if I drive the box totally out of memory with several of
+these file systems I can cause all sorts of problems due to missing null
+checks, and I can feed some others such as reiserfs (why do we still ship
+that ?) corrupt disk images and patch the kernel that way.
 
-This is because we hold the rtnl_lock() before ndo_change_mtu() and try to flush
-the work in netvsc_change_mtu(), in the mean time, netdev_notify_peers() may be
-called from worker and also trying to hold the rtnl_lock. This will lead the
-flush won't succeed forever. Solve this by not canceling and flushing the work,
-this is safe because the transmission done by NETDEV_NOTIFY_PEERS was
-synchronized with the netif_tx_disable() called by netvsc_change_mtu().
+So surely we ought to be fixing the actual bugs first ?
 
-Reported-by: Yaju Cao <yacao@redhat.com>
-Tested-by: Yaju Cao <yacao@redhat.com>
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
-The patch is needed for stable.
----
- drivers/net/hyperv/netvsc_drv.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 524f713..f813572 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -327,7 +327,6 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
- 		return -EINVAL;
- 
- 	nvdev->start_remove = true;
--	cancel_delayed_work_sync(&ndevctx->dwork);
- 	cancel_work_sync(&ndevctx->work);
- 	netif_tx_disable(ndev);
- 	rndis_filter_device_remove(hdev);
--- 
-1.8.3.2
-
+Alan
