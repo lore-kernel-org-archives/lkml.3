@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab3LMPQV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:16:21 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45255 "EHLO
+	id S1753466Ab3LMPQT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:16:19 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45258 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097Ab3LMPMT (ORCPT
+	with ESMTP id S1753180Ab3LMPMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Dec 2013 10:12:19 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 16/20] tools lib traceevent: Get rid of die() in reparent_op_arg()
-Date: Fri, 13 Dec 2013 12:12:02 -0300
-Message-Id: <1386947526-7118-17-git-send-email-acme@infradead.org>
+Subject: [PATCH 20/20] tools lib traceevent: Refactor pevent_filter_match() to get rid of die()
+Date: Fri, 13 Dec 2013 12:12:06 -0300
+Message-Id: <1386947526-7118-21-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386947526-7118-1-git-send-email-acme@infradead.org>
 References: <1386947526-7118-1-git-send-email-acme@infradead.org>
@@ -29,262 +29,359 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-To do that, make the function returns the error code.  Also pass
-error_str so that it can set proper error message when error occurred.
+The test_filter() function is for testing given filter is matched to a
+given record.  However it doesn't handle error cases properly so add a
+new argument err to save error info during the test and also pass it to
+internal test functions.
+
+The return value of pevent_filter_match() also converted to pevent_errno
+to indicate an exact error case.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386833777-3790-9-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1386833777-3790-13-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.h  |  5 +-
- tools/lib/traceevent/parse-filter.c | 94 +++++++++++++++++++++++--------------
- 2 files changed, 64 insertions(+), 35 deletions(-)
+ tools/lib/traceevent/event-parse.h  |  21 ++++--
+ tools/lib/traceevent/parse-filter.c | 135 +++++++++++++++++++++++-------------
+ 2 files changed, 99 insertions(+), 57 deletions(-)
 
 diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 89e4dfd40db6..5e4392d8e2d4 100644
+index 089964e56ed4..3ad784f5f647 100644
 --- a/tools/lib/traceevent/event-parse.h
 +++ b/tools/lib/traceevent/event-parse.h
-@@ -364,7 +364,10 @@ enum pevent_flag {
- 	_PE(ILLEGAL_LVALUE,	"illegal lvalue for string comparison"),      \
- 	_PE(INVALID_REGEX,	"regex did not compute"),		      \
- 	_PE(ILLEGAL_STRING_CMP,	"illegal comparison for string"), 	      \
--	_PE(ILLEGAL_INTEGER_CMP,"illegal comparison for integer")
-+	_PE(ILLEGAL_INTEGER_CMP,"illegal comparison for integer"), 	      \
-+	_PE(REPARENT_NOT_OP,	"cannot reparent other than OP"),	      \
-+	_PE(REPARENT_FAILED,	"failed to reparent filter OP"),	      \
-+	_PE(BAD_FILTER_ARG,	"bad arg in filter tree")
+@@ -357,6 +357,8 @@ enum pevent_flag {
+ 	_PE(READ_PRINT_FAILED,	"failed to read event print fmt"), 	      \
+ 	_PE(OLD_FTRACE_ARG_FAILED,"failed to allocate field name for ftrace"),\
+ 	_PE(INVALID_ARG_TYPE,	"invalid argument type"),		      \
++	_PE(INVALID_EXP_TYPE,	"invalid expression type"),		      \
++	_PE(INVALID_OP_TYPE,	"invalid operator type"),		      \
+ 	_PE(INVALID_EVENT_NAME,	"invalid event name"),			      \
+ 	_PE(EVENT_NOT_FOUND,	"no event found"),			      \
+ 	_PE(SYNTAX_ERROR,	"syntax error"),			      \
+@@ -373,12 +375,16 @@ enum pevent_flag {
+ 	_PE(INVALID_PAREN,	"open parenthesis cannot come here"), 	      \
+ 	_PE(UNBALANCED_PAREN,	"unbalanced number of parenthesis"),	      \
+ 	_PE(UNKNOWN_TOKEN,	"unknown token"),			      \
+-	_PE(FILTER_NOT_FOUND,	"no filter found")
++	_PE(FILTER_NOT_FOUND,	"no filter found"),			      \
++	_PE(NOT_A_NUMBER,	"must have number field"),		      \
++	_PE(NO_FILTER,		"no filters exists"),			      \
++	_PE(FILTER_MISS,	"record does not match to filter")
  
  #undef _PE
  #define _PE(__code, __str) PEVENT_ERRNO__ ## __code
+ enum pevent_errno {
+ 	PEVENT_ERRNO__SUCCESS			= 0,
++	PEVENT_ERRNO__FILTER_MATCH		= PEVENT_ERRNO__SUCCESS,
+ 
+ 	/*
+ 	 * Choose an arbitrary negative big number not to clash with standard
+@@ -853,10 +859,11 @@ struct event_filter {
+ 
+ struct event_filter *pevent_filter_alloc(struct pevent *pevent);
+ 
+-#define FILTER_NONE		-2
+-#define FILTER_NOEXIST		-1
+-#define FILTER_MISS		0
+-#define FILTER_MATCH		1
++/* for backward compatibility */
++#define FILTER_NONE		PEVENT_ERRNO__FILTER_NOT_FOUND
++#define FILTER_NOEXIST		PEVENT_ERRNO__NO_FILTER
++#define FILTER_MISS		PEVENT_ERRNO__FILTER_MISS
++#define FILTER_MATCH		PEVENT_ERRNO__FILTER_MATCH
+ 
+ enum filter_trivial_type {
+ 	FILTER_TRIVIAL_FALSE,
+@@ -868,8 +875,8 @@ enum pevent_errno pevent_filter_add_filter_str(struct event_filter *filter,
+ 					       const char *filter_str);
+ 
+ 
+-int pevent_filter_match(struct event_filter *filter,
+-			struct pevent_record *record);
++enum pevent_errno pevent_filter_match(struct event_filter *filter,
++				      struct pevent_record *record);
+ 
+ int pevent_event_filtered(struct event_filter *filter,
+ 			  int event_id);
 diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index 774c3e4c1d9f..9b05892566e0 100644
+index 78440d73e0ad..9303c55128db 100644
 --- a/tools/lib/traceevent/parse-filter.c
 +++ b/tools/lib/traceevent/parse-filter.c
-@@ -784,15 +784,18 @@ enum filter_vals {
- 	FILTER_VAL_TRUE,
- };
- 
--void reparent_op_arg(struct filter_arg *parent, struct filter_arg *old_child,
--		  struct filter_arg *arg)
-+static enum pevent_errno
-+reparent_op_arg(struct filter_arg *parent, struct filter_arg *old_child,
-+		struct filter_arg *arg, char **error_str)
- {
- 	struct filter_arg *other_child;
- 	struct filter_arg **ptr;
- 
- 	if (parent->type != FILTER_ARG_OP &&
--	    arg->type != FILTER_ARG_OP)
--		die("can not reparent other than OP");
-+	    arg->type != FILTER_ARG_OP) {
-+		show_error(error_str, "can not reparent other than OP");
-+		return PEVENT_ERRNO__REPARENT_NOT_OP;
-+	}
- 
- 	/* Get the sibling */
- 	if (old_child->op.right == arg) {
-@@ -801,8 +804,10 @@ void reparent_op_arg(struct filter_arg *parent, struct filter_arg *old_child,
- 	} else if (old_child->op.left == arg) {
- 		ptr = &old_child->op.left;
- 		other_child = old_child->op.right;
--	} else
--		die("Error in reparent op, find other child");
-+	} else {
-+		show_error(error_str, "Error in reparent op, find other child");
-+		return PEVENT_ERRNO__REPARENT_FAILED;
-+	}
- 
- 	/* Detach arg from old_child */
- 	*ptr = NULL;
-@@ -813,23 +818,29 @@ void reparent_op_arg(struct filter_arg *parent, struct filter_arg *old_child,
- 		*parent = *arg;
- 		/* Free arg without recussion */
- 		free(arg);
--		return;
-+		return 0;
+@@ -1678,8 +1678,8 @@ int pevent_filter_event_has_trivial(struct event_filter *filter,
  	}
- 
- 	if (parent->op.right == old_child)
- 		ptr = &parent->op.right;
- 	else if (parent->op.left == old_child)
- 		ptr = &parent->op.left;
--	else
--		die("Error in reparent op");
-+	else {
-+		show_error(error_str, "Error in reparent op");
-+		return PEVENT_ERRNO__REPARENT_FAILED;
-+	}
-+
- 	*ptr = arg;
- 
- 	free_arg(old_child);
-+	return 0;
  }
  
--enum filter_vals test_arg(struct filter_arg *parent, struct filter_arg *arg)
-+/* Returns either filter_vals (success) or pevent_errno (failfure) */
-+static int test_arg(struct filter_arg *parent, struct filter_arg *arg,
-+		    char **error_str)
+-static int test_filter(struct event_format *event,
+-		       struct filter_arg *arg, struct pevent_record *record);
++static int test_filter(struct event_format *event, struct filter_arg *arg,
++		       struct pevent_record *record, enum pevent_errno *err);
+ 
+ static const char *
+ get_comm(struct event_format *event, struct pevent_record *record)
+@@ -1725,15 +1725,24 @@ get_value(struct event_format *event,
+ }
+ 
+ static unsigned long long
+-get_arg_value(struct event_format *event, struct filter_arg *arg, struct pevent_record *record);
++get_arg_value(struct event_format *event, struct filter_arg *arg,
++	      struct pevent_record *record, enum pevent_errno *err);
+ 
+ static unsigned long long
+-get_exp_value(struct event_format *event, struct filter_arg *arg, struct pevent_record *record)
++get_exp_value(struct event_format *event, struct filter_arg *arg,
++	      struct pevent_record *record, enum pevent_errno *err)
  {
--	enum filter_vals lval, rval;
-+	int lval, rval;
+ 	unsigned long long lval, rval;
  
+-	lval = get_arg_value(event, arg->exp.left, record);
+-	rval = get_arg_value(event, arg->exp.right, record);
++	lval = get_arg_value(event, arg->exp.left, record, err);
++	rval = get_arg_value(event, arg->exp.right, record, err);
++
++	if (*err) {
++		/*
++		 * There was an error, no need to process anymore.
++		 */
++		return 0;
++	}
+ 
+ 	switch (arg->exp.type) {
+ 	case FILTER_EXP_ADD:
+@@ -1768,39 +1777,51 @@ get_exp_value(struct event_format *event, struct filter_arg *arg, struct pevent_
+ 
+ 	case FILTER_EXP_NOT:
+ 	default:
+-		die("error in exp");
++		if (!*err)
++			*err = PEVENT_ERRNO__INVALID_EXP_TYPE;
+ 	}
+ 	return 0;
+ }
+ 
+ static unsigned long long
+-get_arg_value(struct event_format *event, struct filter_arg *arg, struct pevent_record *record)
++get_arg_value(struct event_format *event, struct filter_arg *arg,
++	      struct pevent_record *record, enum pevent_errno *err)
+ {
  	switch (arg->type) {
+ 	case FILTER_ARG_FIELD:
+ 		return get_value(event, arg->field.field, record);
  
-@@ -844,63 +855,68 @@ enum filter_vals test_arg(struct filter_arg *parent, struct filter_arg *arg)
- 		return FILTER_VAL_NORM;
+ 	case FILTER_ARG_VALUE:
+-		if (arg->value.type != FILTER_NUMBER)
+-			die("must have number field!");
++		if (arg->value.type != FILTER_NUMBER) {
++			if (!*err)
++				*err = PEVENT_ERRNO__NOT_A_NUMBER;
++		}
+ 		return arg->value.val;
  
  	case FILTER_ARG_EXP:
--		lval = test_arg(arg, arg->exp.left);
-+		lval = test_arg(arg, arg->exp.left, error_str);
- 		if (lval != FILTER_VAL_NORM)
- 			return lval;
--		rval = test_arg(arg, arg->exp.right);
-+		rval = test_arg(arg, arg->exp.right, error_str);
- 		if (rval != FILTER_VAL_NORM)
- 			return rval;
- 		return FILTER_VAL_NORM;
+-		return get_exp_value(event, arg, record);
++		return get_exp_value(event, arg, record, err);
  
- 	case FILTER_ARG_NUM:
--		lval = test_arg(arg, arg->num.left);
-+		lval = test_arg(arg, arg->num.left, error_str);
- 		if (lval != FILTER_VAL_NORM)
- 			return lval;
--		rval = test_arg(arg, arg->num.right);
-+		rval = test_arg(arg, arg->num.right, error_str);
- 		if (rval != FILTER_VAL_NORM)
- 			return rval;
- 		return FILTER_VAL_NORM;
- 
- 	case FILTER_ARG_OP:
- 		if (arg->op.type != FILTER_OP_NOT) {
--			lval = test_arg(arg, arg->op.left);
-+			lval = test_arg(arg, arg->op.left, error_str);
- 			switch (lval) {
- 			case FILTER_VAL_NORM:
- 				break;
- 			case FILTER_VAL_TRUE:
- 				if (arg->op.type == FILTER_OP_OR)
- 					return FILTER_VAL_TRUE;
--				rval = test_arg(arg, arg->op.right);
-+				rval = test_arg(arg, arg->op.right, error_str);
- 				if (rval != FILTER_VAL_NORM)
- 					return rval;
- 
--				reparent_op_arg(parent, arg, arg->op.right);
--				return FILTER_VAL_NORM;
-+				return reparent_op_arg(parent, arg, arg->op.right,
-+						       error_str);
- 
- 			case FILTER_VAL_FALSE:
- 				if (arg->op.type == FILTER_OP_AND)
- 					return FILTER_VAL_FALSE;
--				rval = test_arg(arg, arg->op.right);
-+				rval = test_arg(arg, arg->op.right, error_str);
- 				if (rval != FILTER_VAL_NORM)
- 					return rval;
- 
--				reparent_op_arg(parent, arg, arg->op.right);
--				return FILTER_VAL_NORM;
-+				return reparent_op_arg(parent, arg, arg->op.right,
-+						       error_str);
-+
-+			default:
-+				return lval;
- 			}
- 		}
- 
--		rval = test_arg(arg, arg->op.right);
-+		rval = test_arg(arg, arg->op.right, error_str);
- 		switch (rval) {
- 		case FILTER_VAL_NORM:
-+		default:
- 			break;
-+
- 		case FILTER_VAL_TRUE:
- 			if (arg->op.type == FILTER_OP_OR)
- 				return FILTER_VAL_TRUE;
- 			if (arg->op.type == FILTER_OP_NOT)
- 				return FILTER_VAL_FALSE;
- 
--			reparent_op_arg(parent, arg, arg->op.left);
--			return FILTER_VAL_NORM;
-+			return reparent_op_arg(parent, arg, arg->op.left,
-+					       error_str);
- 
- 		case FILTER_VAL_FALSE:
- 			if (arg->op.type == FILTER_OP_AND)
-@@ -908,26 +924,27 @@ enum filter_vals test_arg(struct filter_arg *parent, struct filter_arg *arg)
- 			if (arg->op.type == FILTER_OP_NOT)
- 				return FILTER_VAL_TRUE;
- 
--			reparent_op_arg(parent, arg, arg->op.left);
--			return FILTER_VAL_NORM;
-+			return reparent_op_arg(parent, arg, arg->op.left,
-+					       error_str);
- 		}
- 
--		return FILTER_VAL_NORM;
-+		return rval;
  	default:
--		die("bad arg in filter tree");
-+		show_error(error_str, "bad arg in filter tree");
-+		return PEVENT_ERRNO__BAD_FILTER_ARG;
+-		die("oops in filter");
++		if (!*err)
++			*err = PEVENT_ERRNO__INVALID_ARG_TYPE;
  	}
- 	return FILTER_VAL_NORM;
+ 	return 0;
  }
  
- /* Remove any unknown event fields */
--static struct filter_arg *collapse_tree(struct filter_arg *arg)
-+static struct filter_arg *collapse_tree(struct filter_arg *arg, char **error_str)
+-static int test_num(struct event_format *event,
+-		    struct filter_arg *arg, struct pevent_record *record)
++static int test_num(struct event_format *event, struct filter_arg *arg,
++		    struct pevent_record *record, enum pevent_errno *err)
  {
- 	enum filter_vals ret;
+ 	unsigned long long lval, rval;
  
--	ret = test_arg(arg, arg);
-+	ret = test_arg(arg, arg, error_str);
- 	switch (ret) {
- 	case FILTER_VAL_NORM:
--		return arg;
-+		break;
- 
- 	case FILTER_VAL_TRUE:
- 	case FILTER_VAL_FALSE:
-@@ -936,7 +953,16 @@ static struct filter_arg *collapse_tree(struct filter_arg *arg)
- 		if (arg) {
- 			arg->type = FILTER_ARG_BOOLEAN;
- 			arg->boolean.value = ret == FILTER_VAL_TRUE;
-+		} else {
-+			show_error(error_str, "Failed to allocate filter arg");
- 		}
-+		break;
+-	lval = get_arg_value(event, arg->num.left, record);
+-	rval = get_arg_value(event, arg->num.right, record);
++	lval = get_arg_value(event, arg->num.left, record, err);
++	rval = get_arg_value(event, arg->num.right, record, err);
 +
-+	default:
-+		/* test_arg() already set the error_str */
-+		free_arg(arg);
-+		arg = NULL;
-+		break;
++	if (*err) {
++		/*
++		 * There was an error, no need to process anymore.
++		 */
++		return 0;
++	}
+ 
+ 	switch (arg->num.type) {
+ 	case FILTER_CMP_EQ:
+@@ -1822,7 +1843,8 @@ static int test_num(struct event_format *event,
+ 		return lval <= rval;
+ 
+ 	default:
+-		/* ?? */
++		if (!*err)
++			*err = PEVENT_ERRNO__ILLEGAL_INTEGER_CMP;
+ 		return 0;
  	}
+ }
+@@ -1869,8 +1891,8 @@ static const char *get_field_str(struct filter_arg *arg, struct pevent_record *r
+ 	return val;
+ }
  
- 	return arg;
-@@ -1152,9 +1178,9 @@ process_filter(struct event_format *event, struct filter_arg **parg,
- 	if (!current_op)
- 		current_op = current_exp;
+-static int test_str(struct event_format *event,
+-		    struct filter_arg *arg, struct pevent_record *record)
++static int test_str(struct event_format *event, struct filter_arg *arg,
++		    struct pevent_record *record, enum pevent_errno *err)
+ {
+ 	const char *val;
  
--	current_op = collapse_tree(current_op);
-+	current_op = collapse_tree(current_op, error_str);
- 	if (current_op == NULL)
--		goto fail_alloc;
-+		goto fail;
+@@ -1894,48 +1916,57 @@ static int test_str(struct event_format *event,
+ 		return regexec(&arg->str.reg, val, 0, NULL, 0);
  
- 	*parg = current_op;
+ 	default:
+-		/* ?? */
++		if (!*err)
++			*err = PEVENT_ERRNO__ILLEGAL_STRING_CMP;
+ 		return 0;
+ 	}
+ }
  
+-static int test_op(struct event_format *event,
+-		   struct filter_arg *arg, struct pevent_record *record)
++static int test_op(struct event_format *event, struct filter_arg *arg,
++		   struct pevent_record *record, enum pevent_errno *err)
+ {
+ 	switch (arg->op.type) {
+ 	case FILTER_OP_AND:
+-		return test_filter(event, arg->op.left, record) &&
+-			test_filter(event, arg->op.right, record);
++		return test_filter(event, arg->op.left, record, err) &&
++			test_filter(event, arg->op.right, record, err);
+ 
+ 	case FILTER_OP_OR:
+-		return test_filter(event, arg->op.left, record) ||
+-			test_filter(event, arg->op.right, record);
++		return test_filter(event, arg->op.left, record, err) ||
++			test_filter(event, arg->op.right, record, err);
+ 
+ 	case FILTER_OP_NOT:
+-		return !test_filter(event, arg->op.right, record);
++		return !test_filter(event, arg->op.right, record, err);
+ 
+ 	default:
+-		/* ?? */
++		if (!*err)
++			*err = PEVENT_ERRNO__INVALID_OP_TYPE;
+ 		return 0;
+ 	}
+ }
+ 
+-static int test_filter(struct event_format *event,
+-		       struct filter_arg *arg, struct pevent_record *record)
++static int test_filter(struct event_format *event, struct filter_arg *arg,
++		       struct pevent_record *record, enum pevent_errno *err)
+ {
++	if (*err) {
++		/*
++		 * There was an error, no need to process anymore.
++		 */
++		return 0;
++	}
++
+ 	switch (arg->type) {
+ 	case FILTER_ARG_BOOLEAN:
+ 		/* easy case */
+ 		return arg->boolean.value;
+ 
+ 	case FILTER_ARG_OP:
+-		return test_op(event, arg, record);
++		return test_op(event, arg, record, err);
+ 
+ 	case FILTER_ARG_NUM:
+-		return test_num(event, arg, record);
++		return test_num(event, arg, record, err);
+ 
+ 	case FILTER_ARG_STR:
+-		return test_str(event, arg, record);
++		return test_str(event, arg, record, err);
+ 
+ 	case FILTER_ARG_EXP:
+ 	case FILTER_ARG_VALUE:
+@@ -1944,11 +1975,11 @@ static int test_filter(struct event_format *event,
+ 		 * Expressions, fields and values evaluate
+ 		 * to true if they return non zero
+ 		 */
+-		return !!get_arg_value(event, arg, record);
++		return !!get_arg_value(event, arg, record, err);
+ 
+ 	default:
+-		die("oops!");
+-		/* ?? */
++		if (!*err)
++			*err = PEVENT_ERRNO__INVALID_ARG_TYPE;
+ 		return 0;
+ 	}
+ }
+@@ -1961,8 +1992,7 @@ static int test_filter(struct event_format *event,
+  * Returns 1 if filter found for @event_id
+  *   otherwise 0;
+  */
+-int pevent_event_filtered(struct event_filter *filter,
+-			  int event_id)
++int pevent_event_filtered(struct event_filter *filter, int event_id)
+ {
+ 	struct filter_type *filter_type;
+ 
+@@ -1979,31 +2009,36 @@ int pevent_event_filtered(struct event_filter *filter,
+  * @filter: filter struct with filter information
+  * @record: the record to test against the filter
+  *
+- * Returns:
+- *  1 - filter found for event and @record matches
+- *  0 - filter found for event and @record does not match
+- * -1 - no filter found for @record's event
+- * -2 - if no filters exist
++ * Returns: match result or error code (prefixed with PEVENT_ERRNO__)
++ * FILTER_MATCH - filter found for event and @record matches
++ * FILTER_MISS  - filter found for event and @record does not match
++ * FILTER_NOT_FOUND - no filter found for @record's event
++ * NO_FILTER - if no filters exist
++ * otherwise - error occurred during test
+  */
+-int pevent_filter_match(struct event_filter *filter,
+-			struct pevent_record *record)
++enum pevent_errno pevent_filter_match(struct event_filter *filter,
++				      struct pevent_record *record)
+ {
+ 	struct pevent *pevent = filter->pevent;
+ 	struct filter_type *filter_type;
+ 	int event_id;
++	int ret;
++	enum pevent_errno err = 0;
+ 
+ 	if (!filter->filters)
+-		return FILTER_NONE;
++		return PEVENT_ERRNO__NO_FILTER;
+ 
+ 	event_id = pevent_data_type(pevent, record);
+ 
+ 	filter_type = find_filter_type(filter, event_id);
+-
+ 	if (!filter_type)
+-		return FILTER_NOEXIST;
++		return PEVENT_ERRNO__FILTER_NOT_FOUND;
++
++	ret = test_filter(filter_type->event, filter_type->filter, record, &err);
++	if (err)
++		return err;
+ 
+-	return test_filter(filter_type->event, filter_type->filter, record) ?
+-		FILTER_MATCH : FILTER_MISS;
++	return ret ? PEVENT_ERRNO__FILTER_MATCH : PEVENT_ERRNO__FILTER_MISS;
+ }
+ 
+ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
 -- 
 1.8.1.4
 
