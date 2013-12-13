@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab3LMKli (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 05:41:38 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40275 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752269Ab3LMKlh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 05:41:37 -0500
-Date: Fri, 13 Dec 2013 10:41:28 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Srinivas Ramana <sramana@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <20131213104128.GT11044@sirena.org.uk>
-References: <1386718523-2587-1-git-send-email-sboyd@codeaurora.org>
- <1386718523-2587-4-git-send-email-sboyd@codeaurora.org>
- <20131210235000.GK11468@sirena.org.uk>
- <52A7AE1B.3040201@codeaurora.org>
- <20131211005106.GL11468@sirena.org.uk>
- <52A7C0C3.2070805@codeaurora.org>
- <20131211132729.GT11468@sirena.org.uk>
- <52AA42FD.4040503@codeaurora.org>
+	id S1752622Ab3LMKoS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 05:44:18 -0500
+Received: from mout.web.de ([212.227.15.4]:49519 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752383Ab3LMKoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 05:44:17 -0500
+Message-ID: <52AAE4FE.6090000@web.de>
+Date: Fri, 13 Dec 2013 11:44:14 +0100
+From: Emanuel Krenz <emanuelkrenz@web.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dBMBt2YGaTHbdllf"
-Content-Disposition: inline
-In-Reply-To: <52AA42FD.4040503@codeaurora.org>
-X-Cookie: You will be successful in love.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/8] regmap: Add support for using regmap over ssbi
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] HID: hid-multitouch: add support for SiS panel in LG 23ET83V
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:iyh42oN90nQ3Z+1CjSBeCTbEyH+AvugLlCvjf5tAb7pdNzsnKUZ
+ j7HWWxaUMRwrrM6ZSPhLl19leFWoSgsKnRGgZF3st/+AoQGcM33GS/3Dxz/olCvOGmcuOwK
+ rho0AYMaw8tpuAkCSVGDATfsW0Tn1wfYyzdceQVr6Bp0guoz/BvCy2BgsiNRRjpmSlxEfxD
+ OQPis2fljkRV0LnEqLIkg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--------------------
+From: Emanuel Krenz <emanuelkrenz@web.de>
 
---dBMBt2YGaTHbdllf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Add support for SiS multitouch panel in the touch monitor LG 23ET83V.
 
-On Thu, Dec 12, 2013 at 03:13:01PM -0800, Stephen Boyd wrote:
+---
 
-> > bulk_read() should decay to individual reads if there isn't a block
-> > operaton and it's not like the hardware actually supports bulk reads
-> > anyway.
+I bought an LG 23ET83V multitouch monitor, whose idProduct=1030 wasn't 
+yet included in the hid-multitouch driver.
+So I wrote following patch to include the ID number 1030 and patched the 
+latest stable 3.12.5 kernel. The SiS touchpanel in my monitor works for 
+me now.
+This is my first submitted patch by now, hope it's okay.
 
-> So regmap_bulk_read() should work if I don't have a map->bus? To make it
-> work with reg_read/write I had to do this. I'm not sure how to make
-> bulk_write work.
+------------------
 
-Yes, I'd expect the operation to work.  Your changes below are mostly
-fine (we should add an additional check for values that aren't integer
-numbers of bytes, I can add that) - can you send as a signed off patch
-please and I'll apply?
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1823,6 +1823,7 @@ static const struct hid_device_id hid_ha
+      { HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, 
+USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE) },
+      { HID_USB_DEVICE(USB_VENDOR_ID_SIS2_TOUCH, 
+USB_DEVICE_ID_SIS9200_TOUCH) },
+      { HID_USB_DEVICE(USB_VENDOR_ID_SIS2_TOUCH, 
+USB_DEVICE_ID_SIS817_TOUCH) },
++    { HID_USB_DEVICE(USB_VENDOR_ID_SIS2_TOUCH, 
+USB_DEVICE_ID_SIS1030_TOUCH) },
+      { HID_USB_DEVICE(USB_VENDOR_ID_SKYCABLE, 
+USB_DEVICE_ID_SKYCABLE_WIRELESS_PRESENTER) },
+      { HID_USB_DEVICE(USB_VENDOR_ID_SONY, 
+USB_DEVICE_ID_SONY_BUZZ_CONTROLLER) },
+      { HID_USB_DEVICE(USB_VENDOR_ID_SONY, 
+USB_DEVICE_ID_SONY_WIRELESS_BUZZ_CONTROLLER) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -755,6 +755,7 @@
+  #define USB_VENDOR_ID_SIS2_TOUCH    0x0457
+  #define USB_DEVICE_ID_SIS9200_TOUCH    0x9200
+  #define USB_DEVICE_ID_SIS817_TOUCH    0x0817
++#define USB_DEVICE_ID_SIS1030_TOUCH    0x1030
 
---dBMBt2YGaTHbdllf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+  #define USB_VENDOR_ID_SKYCABLE            0x1223
+  #define    USB_DEVICE_ID_SKYCABLE_WIRELESS_PRESENTER    0x3F07
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -1306,6 +1306,9 @@ static const struct hid_device_id mt_dev
+      { .driver_data = MT_CLS_DEFAULT,
+          HID_USB_DEVICE(USB_VENDOR_ID_SIS2_TOUCH,
+          USB_DEVICE_ID_SIS817_TOUCH) },
++    { .driver_data = MT_CLS_DEFAULT,
++        HID_USB_DEVICE(USB_VENDOR_ID_SIS2_TOUCH,
++        USB_DEVICE_ID_SIS1030_TOUCH) },
 
-iQIcBAEBAgAGBQJSquRVAAoJELSic+t+oim9bUYP/iqE/7vqweHgX3+bC/PySrmO
-370UV1hgg6q1cpOlm6EbZNnRt7PSRr8whYeTBQhXR+TbP3QMnlAEMT8VXpq7PEEL
-gvrHeQ5yPzRsWfXxro2bxssqHBTUM6Ob8lxdkYoj0M6/3+Tbkhs+GDqdSeUA/ME0
-Fs8XXy5WUB/7Zux3VrbVc6ciVvSjAB99CuEvdmvjD1gPqHm/DQpjZixLpTc+V3ik
-XzHRT2n1fjTvaww2w123vY9G+kF4qvQ7dmRpaFvTWABO3d9HnMzZ05Yab1fc2qis
-tEp5nMpIZQqKC2IkU1vuYTCwfEd/UI7/wwQ7gTrCftYy+i88b9OZlKQpt28gfRgn
-9OSeoBhSzU2SRn+dMOAELED7uCvbsf2GuF3WYgVcet6KpKuxZ/8G/xyXcba+9dPP
-CfFWlcfdTTpN/Ymyqm2t89uxSud1VfQoJu5P31weMtDXq6A/lZlQhs3T6kGq/LuI
-1yfEh7YpxmRgd4nzh4/9KxITFkNEocUs7eTLt3KeDG8NQ1xn9ebKeeiDGLqWL/9F
-0GvhE5nPfzFlB65HcG6F9cqZKRejv+15b1yy+vPixylnouC6S9pqWdijvCkqaKXn
-EvaYfi3wwvlLOlepBKg5bHQaH7vb/N3bjLH0eLq9yadefF8kNIVxvPWG8eGIWoBX
-NjO7CsbTchRj1d3t07Ab
-=Se/7
------END PGP SIGNATURE-----
-
---dBMBt2YGaTHbdllf--
+      /* Stantum panels */
+      { .driver_data = MT_CLS_CONFIDENCE,
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -86,6 +86,7 @@ static const struct hid_blacklist {
+      { USB_VENDOR_ID_SIGMATEL, USB_DEVICE_ID_SIGMATEL_STMP3780, 
+HID_QUIRK_NOGET },
+      { USB_VENDOR_ID_SIS2_TOUCH, USB_DEVICE_ID_SIS9200_TOUCH, 
+HID_QUIRK_NOGET },
+      { USB_VENDOR_ID_SIS2_TOUCH, USB_DEVICE_ID_SIS817_TOUCH, 
+HID_QUIRK_NOGET },
++    { USB_VENDOR_ID_SIS2_TOUCH, USB_DEVICE_ID_SIS1030_TOUCH, 
+HID_QUIRK_NOGET },
+      { USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, 
+HID_QUIRK_NOGET },
+      { USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_1, 
+HID_QUIRK_NOGET },
+      { USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_2, 
+HID_QUIRK_NOGET },
