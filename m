@@ -1,62 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab3LMJwY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 04:52:24 -0500
-Received: from mout.gmx.net ([212.227.15.19]:60030 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752262Ab3LMJwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 04:52:22 -0500
-Message-ID: <52AAD8D4.2060807@gmx.de>
-Date: Fri, 13 Dec 2013 10:52:20 +0100
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: UML devel <user-mode-linux-devel@lists.sourceforge.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: why does index in truncate_inode_pages_range() grows so much
- ?
-References: <529217CD.1000204@gmx.de> <20131203140214.GB31128@quack.suse.cz> <529E3450.9000700@gmx.de> <20131203230058.GA24037@quack.suse.cz> <20131204130639.GA31973@quack.suse.cz> <52A36389.7010103@gmx.de> <20131211202639.GE1163@quack.suse.cz>
-In-Reply-To: <20131211202639.GE1163@quack.suse.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:SazQRlDn0hTbo40H0rwTuPnNFqlT5AYb24vr4MRV5p1D9WeWTaH
- DjvQTuMnPh5pCCOMoe0pu6WQUwzFbX3x6jrnjjMGiDG+DMWFqnkpqlQdxHIfO4/omzGeiKb
- E3XOu0fkpDkKvDZsLUf8DjsIDVaGJykFrGMD3C6iXk/bW3Pu6len0S0pkWhWMQ5RTDW145y
- 0otm6WtSeX6JM+oeDf+aw==
+	id S1752526Ab3LMJx3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 04:53:29 -0500
+Received: from asix.com.tw ([113.196.140.82]:13702 "EHLO freebsd1.asix.com.tw"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751802Ab3LMJx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 04:53:26 -0500
+From: freddy@asix.com.tw
+To: netdev@vger.kernel.org, davem@davemloft.net, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, louis@asix.com.tw, allan@asix.com.tw
+Cc: Freddy Xin <freddy@asix.com.tw>
+Subject: [PATCH 1/1] AX88179_178A: Add FLAG_HW_IPALIGN to determine whether reserving NET_IP_ALIGN bytes for an SKB.
+Date: Fri, 13 Dec 2013 17:25:08 +0800
+Message-Id: <1386926708-2343-1-git-send-email-freddy@asix.com.tw>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
+From: Freddy Xin <freddy@asix.com.tw>
 
-On 12/11/2013 09:26 PM, Jan Kara wrote:
-> Thanks! So this works more or less as expected - trinity issued a
-> read at absurdly high offset so we created pagecache page a that
-> offset and tried to read data into it. That failed. We left the
-> page in the pagecache where it was for reclaim to reclaim it when
-> free pages are needed. Everything works as designed except we could
-> possibly argue that it's not the most efficient way to use
-> pages...
-> 
-> Patch 'vfs: fix a bug when we do some dio reads with append dio
-> writes' (http://www.spinics.net/lists/linux-fsdevel/msg70899.html)
-> should actually change the situation and we won't unnecessarily
-> cache these pages.
-> 
-confirmed - applied to latest git tree of Linus I helps.
+The AX88179_178A has a hardware feature that it can insert a
+2-bytes pseudo header in front of each received frame by setting
+the AX_RX_CTL_IPE bit. This feature is used to let the IP header
+be aligned on a doubleword-aligned address, so the rx_submit() of
+usbnet.c needn't reserve NET_IP_ALIGN bytes for an SKB in the case.
 
-- -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print:1A37 6F99 4A9D 026F 13E2 4DCF C4EA CDDE 0076 E94E
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+This patch adds a flag of driver_info "FLAG_HW_IPALIGN" which is
+used in rx_submit() of usbnet.c to determine whether reserving
+NET_IP_ALIGN bytes for an SKB.
 
-iF4EAREIAAYFAlKq2NQACgkQxOrN3gB26U5LJgD/f0jU9NXrgVw7UthV613FrCMX
-zUTRpvoNy8oKgpyiejwA/R2oVVwYXhKTcs0XHstQ9w3mjBcjp9t2ub2GAWa8hDnb
-=KAh4
------END PGP SIGNATURE-----
+Signed-off-by: Freddy Xin <freddy@asix.com.tw>
+---
+ drivers/net/usb/ax88179_178a.c | 8 ++++----
+ drivers/net/usb/usbnet.c       | 5 ++++-
+ include/linux/usb/usbnet.h     | 3 +++
+ 3 files changed, 11 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
+index 8e8d0fc..04a2cc9 100644
+--- a/drivers/net/usb/ax88179_178a.c
++++ b/drivers/net/usb/ax88179_178a.c
+@@ -1374,7 +1374,7 @@ static const struct driver_info ax88179_info = {
+ 	.link_reset = ax88179_link_reset,
+ 	.reset = ax88179_reset,
+ 	.stop = ax88179_stop,
+-	.flags = FLAG_ETHER | FLAG_FRAMING_AX,
++	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_HW_IPALIGN,
+ 	.rx_fixup = ax88179_rx_fixup,
+ 	.tx_fixup = ax88179_tx_fixup,
+ };
+@@ -1387,7 +1387,7 @@ static const struct driver_info ax88178a_info = {
+ 	.link_reset = ax88179_link_reset,
+ 	.reset = ax88179_reset,
+ 	.stop = ax88179_stop,
+-	.flags = FLAG_ETHER | FLAG_FRAMING_AX,
++	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_HW_IPALIGN,
+ 	.rx_fixup = ax88179_rx_fixup,
+ 	.tx_fixup = ax88179_tx_fixup,
+ };
+@@ -1400,7 +1400,7 @@ static const struct driver_info sitecom_info = {
+ 	.link_reset = ax88179_link_reset,
+ 	.reset = ax88179_reset,
+ 	.stop = ax88179_stop,
+-	.flags = FLAG_ETHER | FLAG_FRAMING_AX,
++	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_HW_IPALIGN,
+ 	.rx_fixup = ax88179_rx_fixup,
+ 	.tx_fixup = ax88179_tx_fixup,
+ };
+@@ -1413,7 +1413,7 @@ static const struct driver_info samsung_info = {
+ 	.link_reset = ax88179_link_reset,
+ 	.reset = ax88179_reset,
+ 	.stop = ax88179_stop,
+-	.flags = FLAG_ETHER | FLAG_FRAMING_AX,
++	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_HW_IPALIGN,
+ 	.rx_fixup = ax88179_rx_fixup,
+ 	.tx_fixup = ax88179_tx_fixup,
+ };
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index 8494bb5..8a618b8 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -473,7 +473,10 @@ static int rx_submit (struct usbnet *dev, struct urb *urb, gfp_t flags)
+ 		return -ENOLINK;
+ 	}
+ 
+-	skb = __netdev_alloc_skb_ip_align(dev->net, size, flags);
++	if (dev->driver_info->flags & FLAG_HW_IPALIGN)
++		skb = __netdev_alloc_skb(dev->net, size, flags);
++	else
++		skb = __netdev_alloc_skb_ip_align(dev->net, size, flags);
+ 	if (!skb) {
+ 		netif_dbg(dev, rx_err, dev->net, "no rx skb\n");
+ 		usbnet_defer_kevent (dev, EVENT_RX_MEMORY);
+diff --git a/include/linux/usb/usbnet.h b/include/linux/usb/usbnet.h
+index e303eef..e4855cf 100644
+--- a/include/linux/usb/usbnet.h
++++ b/include/linux/usb/usbnet.h
+@@ -116,6 +116,9 @@ struct driver_info {
+ #define FLAG_MULTI_PACKET	0x2000
+ #define FLAG_RX_ASSEMBLE	0x4000	/* rx packets may span >1 frames */
+ #define FLAG_NOARP		0x8000	/* device can't do ARP */
++#define FLAG_HW_IPALIGN		0x10000 /* hardware adds headers to let the
++					 * IP header align on a dword-aligned
++					 * address */
+ 
+ 	/* init device ... can sleep, or cause probe() failure */
+ 	int	(*bind)(struct usbnet *, struct usb_interface *);
+-- 
+1.8.3.2
+
