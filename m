@@ -1,482 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab3LMWrl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 17:47:41 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:59676 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753526Ab3LMW0a (ORCPT
+	id S1754960Ab3LMWrz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 17:47:55 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:41604 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754922Ab3LMWrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 17:26:30 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 016/115] gpu: ion: Add cache maintenance to ion.
-Date: Fri, 13 Dec 2013 14:23:50 -0800
-Message-Id: <1386973529-4884-17-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
-References: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
+	Fri, 13 Dec 2013 17:47:39 -0500
+Message-ID: <1386974853.10497.64.camel@ejdallLaptop>
+Subject: Re: [PATCH] PCI AER: Handle non-AER HEST error sources in
+ aer_hest_parse()
+From: Betty Dall <betty.dall@hp.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: lenb@kernel.org, rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Date: Fri, 13 Dec 2013 15:47:33 -0700
+In-Reply-To: <20131213221616.GC6746@google.com>
+References: <1386948196-9409-1-git-send-email-betty.dall@hp.com>
+	 <20131213221616.GC6746@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rebecca Schultz Zavin <rebecca@android.com>
+On Fri, 2013-12-13 at 15:16 -0700, Bjorn Helgaas wrote:
+> On Fri, Dec 13, 2013 at 08:23:16AM -0700, Betty Dall wrote:
+> > aer_hest_parse() could pass a non-AER HEST error source to the function
+> > hest_match_pci(). hest_match_pci() assumes that the HEST error source is
+> > type ACPI_HEST_TYPE_AER_ROOT_PORT, ACPI_HEST_TYPE_AER_ENDPOINT, or
+> > ACPI_HEST_TYPE_AER_BRIDGE. I have a platform that has some
+> > ACPI_HEST_TYPE_GENERIC error sources where hest_match_pci() was trying to
+> > access the structure as if it had the acpi_hest_aer_common fields.
+> > 
+> > aer_hest_parse() is only ever interested in the AER type HEST error
+> > sources. Add a check on the type of the error souce at the beginning of
+> > aer_hest_parse().
+> > 
+> > Signed-off-by: Betty Dall <betty.dall@hp.com>
+> > ---
+> > 
+> >  drivers/pci/pcie/aer/aerdrv_acpi.c |    4 ++++
+> >  1 files changed, 4 insertions(+), 0 deletions(-)
+> > 
+> > 
+> > diff --git a/drivers/pci/pcie/aer/aerdrv_acpi.c b/drivers/pci/pcie/aer/aerdrv_acpi.c
+> > index cf611ab..39186e3 100644
+> > --- a/drivers/pci/pcie/aer/aerdrv_acpi.c
+> > +++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
+> > @@ -56,6 +56,10 @@ static int aer_hest_parse(struct acpi_hest_header *hest_hdr, void *data)
+> >  	struct acpi_hest_aer_common *p;
+> >  	int ff;
+> >  
+> > +	if (hest_hdr->type != ACPI_HEST_TYPE_AER_ROOT_PORT &&
+> > +		hest_hdr->type != ACPI_HEST_TYPE_AER_ENDPOINT &&
+> > +		hest_hdr->type != ACPI_HEST_TYPE_AER_BRIDGE)
+> > +		return 0;
+> >  	p = (struct acpi_hest_aer_common *)(hest_hdr + 1);
+> >  	ff = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
+> >  	if (p->flags & ACPI_HEST_GLOBAL) {
+> 
+> Hi Betty,
+> 
+> I propose the following tweaked version.  Will this work for you?
+> 
+> 
+> PCI/AER: Ingore non-PCIe AER error sources in aer_hest_parse()
+> 
+> From: Betty Dall <betty.dall@hp.com>
+> 
+> aer_set_firmware_first() searches the HEST for an error source descriptor
+> matching the specified PCI device.  It uses the apei_hest_parse() iterator
+> to call aer_hest_parse() for every descriptor in the HEST.
+> 
+> Previously, aer_hest_parse() incorrectly assumed every descriptor was for a
+> PCIe error source.  This patch adds a check to avoid that error.
+> 
+> [bhelgaas: factor check into helper function, changelog]
+> Signed-off-by: Betty Dall <betty.dall@hp.com>
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> ---
+>  drivers/pci/pcie/aer/aerdrv_acpi.c |   12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+> 
+> diff --git a/drivers/pci/pcie/aer/aerdrv_acpi.c b/drivers/pci/pcie/aer/aerdrv_acpi.c
+> index cf611ab2193a..f670313479ee 100644
+> --- a/drivers/pci/pcie/aer/aerdrv_acpi.c
+> +++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
+> @@ -50,12 +50,24 @@ struct aer_hest_parse_info {
+>  	int firmware_first;
+>  };
+>  
+> +static int hest_source_is_pcie_aer(struct acpi_hest_header *hest_hdr)
+> +{
+> +	if (hest_hdr->type == ACPI_HEST_TYPE_AER_ROOT_PORT ||
+> +	    hest_hdr->type == ACPI_HEST_TYPE_AER_ENDPOINT ||
+> +	    hest_hdr->type == ACPI_HEST_TYPE_AER_BRIDGE)
+> +		return 1;
+> +	return 0;
+> +}
+> +
+>  static int aer_hest_parse(struct acpi_hest_header *hest_hdr, void *data)
+>  {
+>  	struct aer_hest_parse_info *info = data;
+>  	struct acpi_hest_aer_common *p;
+>  	int ff;
+>  
+> +	if (!hest_source_is_pcie_aer(hest_hdr))
+> +		return 0;
+> +
+>  	p = (struct acpi_hest_aer_common *)(hest_hdr + 1);
+>  	ff = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
+>  	if (p->flags & ACPI_HEST_GLOBAL) {
 
-This patch adds cache maintenance operations to ion.  As per mailing
-list discussions regarding dma_buf, cache operations are done implicitly.
-At buffer allocaiton time the user can select whether he'd like mappings
-(both kernel and user) to be cached.  When cached mappings are selected,
-no mappings will be created for a buffer at mmap time.  Instead pages will
-be faulted in one at a time so we can track which pages require flushing
-before dma.  When the buffers are mapped for dma (via the dma_buf apis)
-any pages which were touched will be synced for device.
+Hi Bjorn,
 
-Signed-off-by: Rebecca Schultz Zavin <rebecca@android.com>
-[jstultz: modified patch to apply to staging directory]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/staging/android/ion/ion.c               | 162 ++++++++++++++++++++++--
- drivers/staging/android/ion/ion.h               |  19 ++-
- drivers/staging/android/ion/ion_carveout_heap.c |  26 +++-
- drivers/staging/android/ion/ion_priv.h          |   2 +
- drivers/staging/android/ion/ion_system_heap.c   |  20 ++-
- 5 files changed, 210 insertions(+), 19 deletions(-)
+Yes, that is more readable code. Thanks for revising it. I tested it on
+my system that has non-AER error sources and it works fine. One nit is
+that "Ignore" is misspelled in the subject line. 
 
-diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
-index dc7174d..bc9e922 100644
---- a/drivers/staging/android/ion/ion.c
-+++ b/drivers/staging/android/ion/ion.c
-@@ -34,7 +34,6 @@
- 
- #include "ion.h"
- #include "ion_priv.h"
--#define DEBUG
- 
- /**
-  * struct ion_device - the metadata of the ion device node
-@@ -127,6 +126,8 @@ static void ion_buffer_add(struct ion_device *dev,
- 	rb_insert_color(&buffer->node, &dev->buffers);
- }
- 
-+static int ion_buffer_alloc_dirty(struct ion_buffer *buffer);
-+
- /* this function should only be called while dev->lock is held */
- static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
- 				     struct ion_device *dev,
-@@ -154,15 +155,38 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
- 
- 	buffer->dev = dev;
- 	buffer->size = len;
-+	buffer->flags = flags;
- 
--	table = buffer->heap->ops->map_dma(buffer->heap, buffer);
-+	table = heap->ops->map_dma(heap, buffer);
- 	if (IS_ERR_OR_NULL(table)) {
- 		heap->ops->free(buffer);
- 		kfree(buffer);
- 		return ERR_PTR(PTR_ERR(table));
- 	}
- 	buffer->sg_table = table;
-+	if (buffer->flags & ION_FLAG_CACHED)
-+		for_each_sg(buffer->sg_table->sgl, sg, buffer->sg_table->nents,
-+			    i) {
-+			if (sg_dma_len(sg) == PAGE_SIZE)
-+				continue;
-+			pr_err("%s: cached mappings must have pagewise "
-+			       "sg_lists\n", __func__);
-+			heap->ops->unmap_dma(heap, buffer);
-+			kfree(buffer);
-+			return ERR_PTR(-EINVAL);
-+		}
- 
-+	ret = ion_buffer_alloc_dirty(buffer);
-+	if (ret) {
-+		heap->ops->unmap_dma(heap, buffer);
-+		heap->ops->free(buffer);
-+		kfree(buffer);
-+		return ERR_PTR(ret);
-+	}
-+
-+	buffer->dev = dev;
-+	buffer->size = len;
-+	INIT_LIST_HEAD(&buffer->vmas);
- 	mutex_init(&buffer->lock);
- 	/* this will set up dma addresses for the sglist -- it is not
- 	   technically correct as per the dma api -- a specific
-@@ -313,13 +337,16 @@ static void ion_handle_add(struct ion_client *client, struct ion_handle *handle)
- }
- 
- struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
--			     size_t align, unsigned int flags)
-+			     size_t align, unsigned int heap_mask,
-+			     unsigned int flags)
- {
- 	struct rb_node *n;
- 	struct ion_handle *handle;
- 	struct ion_device *dev = client->dev;
- 	struct ion_buffer *buffer = NULL;
- 
-+	pr_debug("%s: len %d align %d heap_mask %u flags %x\n", __func__, len,
-+		 align, heap_mask, flags);
- 	/*
- 	 * traverse the list of heaps available in this system in priority
- 	 * order.  If the heap type is supported by the client, and matches the
-@@ -338,7 +365,7 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
- 		if (!((1 << heap->type) & client->heap_mask))
- 			continue;
- 		/* if the caller didn't specify this heap type */
--		if (!((1 << heap->id) & flags))
-+		if (!((1 << heap->id) & heap_mask))
- 			continue;
- 		buffer = ion_buffer_create(heap, dev, len, align, flags);
- 		if (!IS_ERR_OR_NULL(buffer))
-@@ -647,12 +674,18 @@ struct sg_table *ion_sg_table(struct ion_client *client,
- 	return table;
- }
- 
-+static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
-+				       struct device *dev,
-+				       enum dma_data_direction direction);
-+
- static struct sg_table *ion_map_dma_buf(struct dma_buf_attachment *attachment,
- 					enum dma_data_direction direction)
- {
- 	struct dma_buf *dmabuf = attachment->dmabuf;
- 	struct ion_buffer *buffer = dmabuf->priv;
- 
-+	if (buffer->flags & ION_FLAG_CACHED)
-+		ion_buffer_sync_for_device(buffer, attachment->dev, direction);
- 	return buffer->sg_table;
- }
- 
-@@ -662,10 +695,112 @@ static void ion_unmap_dma_buf(struct dma_buf_attachment *attachment,
- {
- }
- 
-+static int ion_buffer_alloc_dirty(struct ion_buffer *buffer)
-+{
-+	unsigned long pages = buffer->sg_table->nents;
-+	unsigned long length = (pages + BITS_PER_LONG - 1)/BITS_PER_LONG;
-+
-+	buffer->dirty = kzalloc(length * sizeof(unsigned long), GFP_KERNEL);
-+	if (!buffer->dirty)
-+		return -ENOMEM;
-+	return 0;
-+}
-+
-+struct ion_vma_list {
-+	struct list_head list;
-+	struct vm_area_struct *vma;
-+};
-+
-+static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
-+				       struct device *dev,
-+				       enum dma_data_direction dir)
-+{
-+	struct scatterlist *sg;
-+	int i;
-+	struct ion_vma_list *vma_list;
-+
-+	pr_debug("%s: syncing for device %s\n", __func__,
-+		 dev ? dev_name(dev) : "null");
-+	mutex_lock(&buffer->lock);
-+	for_each_sg(buffer->sg_table->sgl, sg, buffer->sg_table->nents, i) {
-+		if (!test_bit(i, buffer->dirty))
-+			continue;
-+		dma_sync_sg_for_device(dev, sg, 1, dir);
-+		clear_bit(i, buffer->dirty);
-+	}
-+	list_for_each_entry(vma_list, &buffer->vmas, list) {
-+		struct vm_area_struct *vma = vma_list->vma;
-+
-+		zap_page_range(vma, vma->vm_start, vma->vm_end - vma->vm_start,
-+			       NULL);
-+	}
-+	mutex_unlock(&buffer->lock);
-+}
-+
-+int ion_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-+{
-+	struct ion_buffer *buffer = vma->vm_private_data;
-+	struct scatterlist *sg;
-+	int i;
-+
-+	mutex_lock(&buffer->lock);
-+	set_bit(vmf->pgoff, buffer->dirty);
-+
-+	for_each_sg(buffer->sg_table->sgl, sg, buffer->sg_table->nents, i) {
-+		if (i != vmf->pgoff)
-+			continue;
-+		dma_sync_sg_for_cpu(NULL, sg, 1, DMA_BIDIRECTIONAL);
-+		vm_insert_page(vma, (unsigned long)vmf->virtual_address,
-+			       sg_page(sg));
-+		break;
-+	}
-+	mutex_unlock(&buffer->lock);
-+	return VM_FAULT_NOPAGE;
-+}
-+
-+static void ion_vm_open(struct vm_area_struct *vma)
-+{
-+	struct ion_buffer *buffer = vma->vm_private_data;
-+	struct ion_vma_list *vma_list;
-+
-+	vma_list = kmalloc(sizeof(struct ion_vma_list), GFP_KERNEL);
-+	if (!vma_list)
-+		return;
-+	vma_list->vma = vma;
-+	mutex_lock(&buffer->lock);
-+	list_add(&vma_list->list, &buffer->vmas);
-+	mutex_unlock(&buffer->lock);
-+	pr_debug("%s: adding %p\n", __func__, vma);
-+}
-+
-+static void ion_vm_close(struct vm_area_struct *vma)
-+{
-+	struct ion_buffer *buffer = vma->vm_private_data;
-+	struct ion_vma_list *vma_list, *tmp;
-+
-+	pr_debug("%s\n", __func__);
-+	mutex_lock(&buffer->lock);
-+	list_for_each_entry_safe(vma_list, tmp, &buffer->vmas, list) {
-+		if (vma_list->vma != vma)
-+			continue;
-+		list_del(&vma_list->list);
-+		kfree(vma_list);
-+		pr_debug("%s: deleting %p\n", __func__, vma);
-+		break;
-+	}
-+	mutex_unlock(&buffer->lock);
-+}
-+
-+struct vm_operations_struct ion_vma_ops = {
-+	.open = ion_vm_open,
-+	.close = ion_vm_close,
-+	.fault = ion_vm_fault,
-+};
-+
- static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
- {
- 	struct ion_buffer *buffer = dmabuf->priv;
--	int ret;
-+	int ret = 0;
- 
- 	if (!buffer->heap->ops->map_user) {
- 		pr_err("%s: this heap does not define a method for mapping "
-@@ -673,10 +808,17 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
- 		return -EINVAL;
- 	}
- 
--	mutex_lock(&buffer->lock);
--	/* now map it to userspace */
--	ret = buffer->heap->ops->map_user(buffer->heap, buffer, vma);
--	mutex_unlock(&buffer->lock);
-+	if (buffer->flags & ION_FLAG_CACHED) {
-+		vma->vm_private_data = buffer;
-+		vma->vm_ops = &ion_vma_ops;
-+		ion_vm_open(vma);
-+	} else {
-+		vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
-+		mutex_lock(&buffer->lock);
-+		/* now map it to userspace */
-+		ret = buffer->heap->ops->map_user(buffer->heap, buffer, vma);
-+		mutex_unlock(&buffer->lock);
-+	}
- 
- 	if (ret)
- 		pr_err("%s: failure mapping buffer to userspace\n",
-@@ -828,7 +970,7 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		if (copy_from_user(&data, (void __user *)arg, sizeof(data)))
- 			return -EFAULT;
- 		data.handle = ion_alloc(client, data.len, data.align,
--					     data.flags);
-+					     data.heap_mask, data.flags);
- 
- 		if (IS_ERR(data.handle))
- 			return PTR_ERR(data.handle);
-diff --git a/drivers/staging/android/ion/ion.h b/drivers/staging/android/ion/ion.h
-index 28810c8..88b9a2f 100644
---- a/drivers/staging/android/ion/ion.h
-+++ b/drivers/staging/android/ion/ion.h
-@@ -42,6 +42,15 @@ enum ion_heap_type {
- #define ION_HEAP_SYSTEM_CONTIG_MASK	(1 << ION_HEAP_TYPE_SYSTEM_CONTIG)
- #define ION_HEAP_CARVEOUT_MASK		(1 << ION_HEAP_TYPE_CARVEOUT)
- 
-+/**
-+ * heap flags - the lower 16 bits are used by core ion, the upper 16
-+ * bits are reserved for use by the heaps themselves.
-+ */
-+#define ION_FLAG_CACHED 1		/* mappings of this buffer should be
-+					   cached, ion will do cache
-+					   maintenance when the buffer is
-+					   mapped for dma */
-+
- #ifdef __KERNEL__
- struct ion_device;
- struct ion_heap;
-@@ -121,14 +130,18 @@ void ion_client_destroy(struct ion_client *client);
-  * @len:	size of the allocation
-  * @align:	requested allocation alignment, lots of hardware blocks have
-  *		alignment requirements of some kind
-- * @flags:	mask of heaps to allocate from, if multiple bits are set
-+ * @heap_mask:	mask of heaps to allocate from, if multiple bits are set
-  *		heaps will be tried in order from lowest to highest order bit
-+ * @flags:	heap flags, the low 16 bits are consumed by ion, the high 16
-+ *		bits are passed on to the respective heap and can be heap
-+ * 		custom
-  *
-  * Allocate memory in one of the heaps provided in heap mask and return
-  * an opaque handle to it.
-  */
- struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
--			     size_t align, unsigned int flags);
-+			     size_t align, unsigned int heap_mask,
-+			     unsigned int flags);
- 
- /**
-  * ion_free - free a handle
-@@ -218,6 +231,7 @@ struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd);
-  * struct ion_allocation_data - metadata passed from userspace for allocations
-  * @len:	size of the allocation
-  * @align:	required alignment of the allocation
-+ * @heap_mask:	mask of heaps to allocate from
-  * @flags:	flags passed to heap
-  * @handle:	pointer that will be populated with a cookie to use to refer
-  *		to this allocation
-@@ -227,6 +241,7 @@ struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd);
- struct ion_allocation_data {
- 	size_t len;
- 	size_t align;
-+	unsigned int heap_mask;
- 	unsigned int flags;
- 	struct ion_handle *handle;
- };
-diff --git a/drivers/staging/android/ion/ion_carveout_heap.c b/drivers/staging/android/ion/ion_carveout_heap.c
-index 16f4fc7..daa348e 100644
---- a/drivers/staging/android/ion/ion_carveout_heap.c
-+++ b/drivers/staging/android/ion/ion_carveout_heap.c
-@@ -84,23 +84,41 @@ static void ion_carveout_heap_free(struct ion_buffer *buffer)
- 	buffer->priv_phys = ION_CARVEOUT_ALLOCATE_FAIL;
- }
- 
--struct scatterlist *ion_carveout_heap_map_dma(struct ion_heap *heap,
-+struct sg_table *ion_carveout_heap_map_dma(struct ion_heap *heap,
- 					      struct ion_buffer *buffer)
- {
--	return ERR_PTR(-EINVAL);
-+	struct sg_table *table;
-+	int ret;
-+
-+	table = kzalloc(sizeof(struct sg_table), GFP_KERNEL);
-+	if (!table)
-+		return ERR_PTR(-ENOMEM);
-+	ret = sg_alloc_table(table, 1, GFP_KERNEL);
-+	if (ret) {
-+		kfree(table);
-+		return ERR_PTR(ret);
-+	}
-+	sg_set_page(table->sgl, phys_to_page(buffer->priv_phys), buffer->size,
-+		    0);
-+	return table;
- }
- 
- void ion_carveout_heap_unmap_dma(struct ion_heap *heap,
- 				 struct ion_buffer *buffer)
- {
--	return;
-+	sg_free_table(buffer->sg_table);
- }
- 
- void *ion_carveout_heap_map_kernel(struct ion_heap *heap,
- 				   struct ion_buffer *buffer)
- {
-+	int mtype = MT_MEMORY_NONCACHED;
-+
-+	if (buffer->flags & ION_FLAG_CACHED)
-+		mtype = MT_MEMORY;
-+
- 	return __arm_ioremap(buffer->priv_phys, buffer->size,
--			      MT_MEMORY_NONCACHED);
-+			      mtype);
- }
- 
- void ion_carveout_heap_unmap_kernel(struct ion_heap *heap,
-diff --git a/drivers/staging/android/ion/ion_priv.h b/drivers/staging/android/ion/ion_priv.h
-index 7a77f6f..406d1f4 100644
---- a/drivers/staging/android/ion/ion_priv.h
-+++ b/drivers/staging/android/ion/ion_priv.h
-@@ -60,6 +60,8 @@ struct ion_buffer {
- 	void *vaddr;
- 	int dmap_cnt;
- 	struct sg_table *sg_table;
-+	unsigned long *dirty;
-+	struct list_head vmas;
- };
- 
- /**
-diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
-index 35b3726..dceed5b 100644
---- a/drivers/staging/android/ion/ion_system_heap.c
-+++ b/drivers/staging/android/ion/ion_system_heap.c
-@@ -87,13 +87,20 @@ void *ion_system_heap_map_kernel(struct ion_heap *heap,
- 	struct scatterlist *sg;
- 	int i;
- 	void *vaddr;
-+	pgprot_t pgprot;
- 	struct sg_table *table = buffer->priv_virt;
- 	struct page **pages = kmalloc(sizeof(struct page *) * table->nents,
- 				      GFP_KERNEL);
- 
- 	for_each_sg(table->sgl, sg, table->nents, i)
- 		pages[i] = sg_page(sg);
--	vaddr = vmap(pages, table->nents, VM_MAP, PAGE_KERNEL);
-+
-+	if (buffer->flags & ION_FLAG_CACHED)
-+		pgprot = PAGE_KERNEL;
-+	else
-+		pgprot = pgprot_writecombine(PAGE_KERNEL);
-+
-+	vaddr = vmap(pages, table->nents, VM_MAP, pgprot);
- 	kfree(pages);
- 
- 	return vaddr;
-@@ -179,7 +186,7 @@ static int ion_system_contig_heap_phys(struct ion_heap *heap,
- }
- 
- struct sg_table *ion_system_contig_heap_map_dma(struct ion_heap *heap,
--						   struct ion_buffer *buffer)
-+						struct ion_buffer *buffer)
- {
- 	struct sg_table *table;
- 	int ret;
-@@ -197,6 +204,13 @@ struct sg_table *ion_system_contig_heap_map_dma(struct ion_heap *heap,
- 	return table;
- }
- 
-+void ion_system_contig_heap_unmap_dma(struct ion_heap *heap,
-+				      struct ion_buffer *buffer)
-+{
-+	sg_free_table(buffer->sg_table);
-+	kfree(buffer->sg_table);
-+}
-+
- int ion_system_contig_heap_map_user(struct ion_heap *heap,
- 				    struct ion_buffer *buffer,
- 				    struct vm_area_struct *vma)
-@@ -213,7 +227,7 @@ static struct ion_heap_ops kmalloc_ops = {
- 	.free = ion_system_contig_heap_free,
- 	.phys = ion_system_contig_heap_phys,
- 	.map_dma = ion_system_contig_heap_map_dma,
--	.unmap_dma = ion_system_heap_unmap_dma,
-+	.unmap_dma = ion_system_contig_heap_unmap_dma,
- 	.map_kernel = ion_system_heap_map_kernel,
- 	.unmap_kernel = ion_system_heap_unmap_kernel,
- 	.map_user = ion_system_contig_heap_map_user,
--- 
-1.8.3.2
+-Betty
+
 
