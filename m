@@ -1,158 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745Ab3LMPq4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:46:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34460 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752523Ab3LMPqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:46:52 -0500
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Denys Vlasenko <dvlasenk@redhat.com>, davem@davemloft.net,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, jpirko@redhat.com
-Subject: [patch net-next v3] ipv6: log autoconfiguration failures
-Date: Fri, 13 Dec 2013 16:45:47 +0100
-Message-Id: <1386949547-23457-1-git-send-email-dvlasenk@redhat.com>
+	id S1753321Ab3LMPsT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:48:19 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:22766 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752719Ab3LMPsQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 10:48:16 -0500
+Date: Fri, 13 Dec 2013 10:48:06 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: David Howells <dhowells@redhat.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wolfram Sang <wolfram@the-dreams.de>
+Subject: Re: [PATCH] i2c: Add message transfer tracepoints for I2C and SMBUS
+Message-ID: <20131213104806.4fb56012@gandalf.local.home>
+In-Reply-To: <20131213163349.4bc686c0@endymion.delvare>
+References: <20131213142627.4014.42860.stgit@warthog.procyon.org.uk>
+	<20131213163349.4bc686c0@endymion.delvare>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If ipv6 auto-configuration does not work, currently it's hard
-to track what's going on. This change adds log messages
-(at debug level) on every code path where ipv6 autoconf fails.
+On Fri, 13 Dec 2013 16:33:49 +0100
+Jean Delvare <khali@linux-fr.org> wrote:
 
-v3: changed pr_debug's to pr_warn's.
+> Hi David,
+> 
+> Please note that I am no longer maintaining the i2c subsystem so you
+> should have sent this to Wolfram, not me.
+> 
+> On Fri, 13 Dec 2013 14:26:27 +0000, David Howells wrote:
+> > Add tracepoints into the I2C and SMBUS message transfer functions to retrieve
+> > the message sent or received.  The following config options must be turned on
+> > to make use of the facility:
+> > 
+> > 	CONFIG_FTRACE
+> > 	CONFIG_ENABLE_DEFAULT_TRACERS
+> > 
+> > The I2C tracepoint can be enabled thusly:
+> > 
+> > 	echo 1 >/sys/kernel/debug/tracing/events/i2c/i2c_transfer/enable
+> > 
+> > and will dump messages that can be viewed in /sys/kernel/debug/tracing/trace
+> > that look like:
+> > 
+> >         ... i2c_transfer: i2c-5 f=00 a=44 l=6 ret=1 [021433000000]
+> > 
+> > formatted as:
+> > 
+> > 	i2c-<adapter-nr>
+> > 	f=<flags>
+> > 	a=<addr>
+> > 	l=<datalen>
+> > 	ret=<result>
+> > 	[<data>]
+> > 
+> > (Bit 0 of the flags is set if this was a read and clear if it was a write).
+> 
+> Wouldn't the traces be more readable if the direction was written
+> explicitly as R or W?
 
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
----
- net/ipv6/addrconf.c | 45 ++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 36 insertions(+), 9 deletions(-)
+We can easily do that by adding in the TP_printk()
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index 3c3425e..0b354f0 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -1694,8 +1694,11 @@ static void addrconf_leave_anycast(struct inet6_ifaddr *ifp)
- 
- static int addrconf_ifid_eui48(u8 *eui, struct net_device *dev)
- {
--	if (dev->addr_len != ETH_ALEN)
-+	if (dev->addr_len != ETH_ALEN) {
-+		pr_warn("IPv6 addrconf: %s: address length %d != %s\n",
-+			dev->name, dev->addr_len, "ETH_ALEN");
- 		return -1;
-+	}
- 	memcpy(eui, dev->dev_addr, 3);
- 	memcpy(eui + 5, dev->dev_addr + 3, 3);
- 
-@@ -1725,8 +1728,11 @@ static int addrconf_ifid_eui48(u8 *eui, struct net_device *dev)
- 
- static int addrconf_ifid_eui64(u8 *eui, struct net_device *dev)
- {
--	if (dev->addr_len != IEEE802154_ADDR_LEN)
-+	if (dev->addr_len != IEEE802154_ADDR_LEN) {
-+		pr_warn("IPv6 addrconf: %s: address length %d != %s\n",
-+			dev->name, dev->addr_len, "IEEE802154_ADDR_LEN");
- 		return -1;
-+	}
- 	memcpy(eui, dev->dev_addr, 8);
- 	eui[0] ^= 2;
- 	return 0;
-@@ -1736,8 +1742,11 @@ static int addrconf_ifid_ieee1394(u8 *eui, struct net_device *dev)
- {
- 	union fwnet_hwaddr *ha;
- 
--	if (dev->addr_len != FWNET_ALEN)
-+	if (dev->addr_len != FWNET_ALEN) {
-+		pr_warn("IPv6 addrconf: %s: address length %d != %s\n",
-+			dev->name, dev->addr_len, "FWNET_ALEN");
- 		return -1;
-+	}
- 
- 	ha = (union fwnet_hwaddr *)dev->dev_addr;
- 
-@@ -1749,8 +1758,11 @@ static int addrconf_ifid_ieee1394(u8 *eui, struct net_device *dev)
- static int addrconf_ifid_arcnet(u8 *eui, struct net_device *dev)
- {
- 	/* XXX: inherit EUI-64 from other interface -- yoshfuji */
--	if (dev->addr_len != ARCNET_ALEN)
-+	if (dev->addr_len != ARCNET_ALEN) {
-+		pr_warn("IPv6 addrconf: %s: address length %d != %s\n",
-+			dev->name, dev->addr_len, "ARCNET_ALEN");
- 		return -1;
-+	}
- 	memset(eui, 0, 7);
- 	eui[7] = *(u8 *)dev->dev_addr;
- 	return 0;
-@@ -1758,17 +1770,25 @@ static int addrconf_ifid_arcnet(u8 *eui, struct net_device *dev)
- 
- static int addrconf_ifid_infiniband(u8 *eui, struct net_device *dev)
- {
--	if (dev->addr_len != INFINIBAND_ALEN)
-+	if (dev->addr_len != INFINIBAND_ALEN) {
-+		pr_warn("IPv6 addrconf: %s: address length %d != %s\n",
-+			dev->name, dev->addr_len, "INFINIBAND_ALEN");
- 		return -1;
-+	}
- 	memcpy(eui, dev->dev_addr + 12, 8);
- 	eui[0] |= 2;
- 	return 0;
- }
- 
--static int __ipv6_isatap_ifid(u8 *eui, __be32 addr)
-+static int __ipv6_isatap_ifid(u8 *eui, struct net_device *dev)
- {
--	if (addr == 0)
-+	__be32 addr = *(__be32 *)dev->dev_addr;
-+
-+	if (addr == 0) {
-+		pr_warn("IPv6 addrconf: %s: bad dev_addr %pM\n",
-+			dev->name, dev->dev_addr);
- 		return -1;
-+	}
- 	eui[0] = (ipv4_is_zeronet(addr) || ipv4_is_private_10(addr) ||
- 		  ipv4_is_loopback(addr) || ipv4_is_linklocal_169(addr) ||
- 		  ipv4_is_private_172(addr) || ipv4_is_test_192(addr) ||
-@@ -1785,13 +1805,14 @@ static int __ipv6_isatap_ifid(u8 *eui, __be32 addr)
- static int addrconf_ifid_sit(u8 *eui, struct net_device *dev)
- {
- 	if (dev->priv_flags & IFF_ISATAP)
--		return __ipv6_isatap_ifid(eui, *(__be32 *)dev->dev_addr);
-+		return __ipv6_isatap_ifid(eui, dev);
-+	pr_warn("IPv6 addrconf: %s: IFF_ISATAP is unset\n", dev->name);
- 	return -1;
- }
- 
- static int addrconf_ifid_gre(u8 *eui, struct net_device *dev)
- {
--	return __ipv6_isatap_ifid(eui, *(__be32 *)dev->dev_addr);
-+	return __ipv6_isatap_ifid(eui, dev);
- }
- 
- static int addrconf_ifid_ip6tnl(u8 *eui, struct net_device *dev)
-@@ -1825,6 +1846,8 @@ static int ipv6_generate_eui64(u8 *eui, struct net_device *dev)
- 	case ARPHRD_TUNNEL6:
- 		return addrconf_ifid_ip6tnl(eui, dev);
- 	}
-+	pr_warn("IPv6 addrconf: %s: dev->type %d is not supported\n",
-+		dev->name, dev->type);
- 	return -1;
- }
- 
-@@ -1842,6 +1865,10 @@ static int ipv6_inherit_eui64(u8 *eui, struct inet6_dev *idev)
- 		}
- 	}
- 	read_unlock_bh(&idev->lock);
-+	if (err)
-+		pr_warn("IPv6 addrconf: "
-+			"%s: no link-local address to inherit\n",
-+			idev->dev->name);
- 	return err;
- }
- 
--- 
-1.8.1.4
+	".. (%s) ..", ..., __entry->flags & 1 ? "R" : "W", ...
 
+> 
+> > 
+> > 
+> > The SMBUS tracepoint can be enabled thusly:
+> > 
+> > 	echo 1 >/sys/kernel/debug/tracing/events/i2c/smbus_transfer/enable
+> > 
+> > and will dump messages that can be viewed in /sys/kernel/debug/tracing/trace
+> > that look like:
+> > 
+> > 	... smbus_transfer: i2c-0 f=00 a=51 r=1 c=0 p=2 res=0 [80ff0100000000000000800c693d0088ffffb83aee3b0088ffff0100000000000000]
+> > 
+> > formatted as:
+> > 
+> > 	i2c-<adapter-nr>
+> > 	f=<flags>
+> > 	a=<addr>
+> > 	r=<read_write>
+> 
+> Here too I would consider R and W as more readable than r=1 and r=0.
+
+Same thing can be done here.
+
+> 
+> > 	c=<command>
+> > 	p=<protocol>
+> 
+> Would it be possible to print this as a string rather than a number?
+> The protocol numbers are completely arbitrary, so the reader would have
+> to open i2c.h each time to figure out what is what.
+
+That can be done in the TP_printk() with:
+
+	".. %s ..", ..,
+	__print_symbolic(__entry->protocol,
+		{ I2C_SMBUS_QUICK	,	"QUICK"	},
+		{ I2C_SMBUS_BYTE	,	"BYTE"	},
+		{ I2C_SMBUS_BYTE_DATA	,	"BYTE_DATA" },
+		[...]
+		{ I2C_SMBUS_I2C_BLOCK_DATA,	"I2C_BLOCK_DATA"}), ...
+
+
+> 
+> > 	res=<result>
+> > 	[<data-block>]
+> > 
+> > 
+> > In both cases, the adapters to be traced can be selected by something like:
+> > 
+> > 	echo adapter_nr==1 >/sys/kernel/debug/tracing/events/i2c/{i2c,smbus}_transfer/filter
+> 
+> I have no objection to the feature, but it should be noted that
+> i2c-core already offers something similar (albeit less flexible) for
+> I2C level transfers:
+> 
+> #ifdef DEBUG
+> 		for (ret = 0; ret < num; ret++) {
+> 			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=0x%02x, "
+> 				"len=%d%s\n", ret, (msgs[ret].flags & I2C_M_RD)
+> 				? 'R' : 'W', msgs[ret].addr, msgs[ret].len,
+> 				(msgs[ret].flags & I2C_M_RECV_LEN) ? "+" : "");
+> 		}
+> #endif
+> 
+> If your code goes in, I suppose the code above should be removed to
+> avoid redundancy.
+> 
+> One significant difference between both implementations is that the old
+> one logs before the actual transfer, while yours logs afterward. While I
+> understand this allows you to log the result of the transfer, this also
+> means you'll miss the log if the actual transaction locks the system
+> (we've seen this before.) Something to think about...
+> 
+
+Note, as this is being added to the trace system, one can use function
+tracing to see if this is causing the crash. Yeah, you wont be able to
+see what the transfer packet was, but you can use kprobes to help there
+too.
+
+-- Steve
