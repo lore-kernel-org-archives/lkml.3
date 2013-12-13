@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999Ab3LMC2H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 21:28:07 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:44902 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615Ab3LMC2E (ORCPT
+	id S1752034Ab3LMC2N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 21:28:13 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:58288 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab3LMC2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 21:28:04 -0500
+	Thu, 12 Dec 2013 21:28:07 -0500
 From: Sergei Ianovich <ynvich@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Sergei Ianovich <ynvich@gmail.com>, Daniel Mack <zonque@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Sergei Ianovich <ynvich@gmail.com>, Daniel Mack <zonque@gmail.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Russell King <linux@arm.linux.org.uk>,
         devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...)
-Subject: [PATCH v2 01/16] ARM: dts: pxa2xx fix compatible strings
-Date: Fri, 13 Dec 2013 06:27:10 +0400
-Message-Id: <1386901645-28895-2-git-send-email-ynvich@gmail.com>
+Subject: [PATCH v2 02/16] ARM: dts: fix pxa27x-gpio interrupts
+Date: Fri, 13 Dec 2013 06:27:11 +0400
+Message-Id: <1386901645-28895-3-git-send-email-ynvich@gmail.com>
 X-Mailer: git-send-email 1.8.4.3
 In-Reply-To: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
 References: <1386543229-1542-1-git-send-email-ynvich@gmail.com>
@@ -34,38 +34,25 @@ CC: Arnd Bergmann <arnd@arndb.de>
    v1..v2
    * no changes
 
- arch/arm/boot/dts/pxa2xx.dtsi | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/arm/boot/dts/pxa27x.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/boot/dts/pxa2xx.dtsi b/arch/arm/boot/dts/pxa2xx.dtsi
-index a5e90f0..3419f87 100644
---- a/arch/arm/boot/dts/pxa2xx.dtsi
-+++ b/arch/arm/boot/dts/pxa2xx.dtsi
-@@ -18,7 +18,6 @@
- 		serial1 = &btuart;
- 		serial2 = &stuart;
- 		serial3 = &hwuart;
--		i2c0 = &pwri2c;
- 		i2c1 = &pxai2c1;
+diff --git a/arch/arm/boot/dts/pxa27x.dtsi b/arch/arm/boot/dts/pxa27x.dtsi
+index d7c5d72..44df554 100644
+--- a/arch/arm/boot/dts/pxa27x.dtsi
++++ b/arch/arm/boot/dts/pxa27x.dtsi
+@@ -10,5 +10,11 @@
+ 			marvell,intc-priority;
+ 			marvell,intc-nr-irqs = <34>;
+ 		};
++
++		gpio: gpio@40e00000 {
++			compatible = "intel,pxa27x-gpio";
++			interrupts = <8>, <9>, <10>;
++			interrupt-names = "gpio0", "gpio1", "gpio_mux";
++		};
  	};
- 
-@@ -113,14 +112,14 @@
- 		};
- 
- 		usb0: ohci@4c000000 {
--			compatible = "mrvl,pxa-ohci";
-+			compatible = "marvell,pxa-ohci";
- 			reg = <0x4c000000 0x10000>;
- 			interrupts = <3>;
- 			status = "disabled";
- 		};
- 
- 		mmc0: mmc@41100000 {
--			compatible = "mrvl,pxa-mmc";
-+			compatible = "marvell,pxa-mmc";
- 			reg = <0x41100000 0x1000>;
- 			interrupts = <23>;
- 			status = "disabled";
+ };
 -- 
 1.8.4.3
 
