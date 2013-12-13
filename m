@@ -1,315 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab3LMOdr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 09:33:47 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:33706 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab3LMOdj (ORCPT
+	id S1753111Ab3LMOdd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 09:33:33 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:35307 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599Ab3LMOdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 09:33:39 -0500
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        arm@kernel.org, linux@arm.linux.org.uk, arnd@arndb.de, olof@lixom.net,
-        Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH v4 2/2] ARM: mach-moxart: add MOXA ART SoC device tree files
-Date: Fri, 13 Dec 2013 15:33:08 +0100
-Message-Id: <1386945188-8316-3-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1386945188-8316-1-git-send-email-jonas.jensen@gmail.com>
-References: <1386945188-8316-1-git-send-email-jonas.jensen@gmail.com>
+	Fri, 13 Dec 2013 09:33:32 -0500
+Date: Fri, 13 Dec 2013 09:32:17 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, george.dunlap@eu.citrix.com,
+        ian.jackson@eu.citrix.com, mukesh.rathor@oracle.com, tim@xen.org,
+        jbeulich@suse.com, boris.ostrovsky@oracle.com
+Subject: Re: [PATCH V10 01/14] xen/pvh: Support ParaVirtualized Hardware
+ extensions.
+Message-ID: <20131213143217.GG2923@phenom.dumpdata.com>
+References: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com>
+ <1386900621-27528-2-git-send-email-konrad.wilk@oracle.com>
+ <52AAE50F.3000009@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52AAE50F.3000009@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a generic (dtsi) include file for MOXA ART SoCs.
+On Fri, Dec 13, 2013 at 10:44:31AM +0000, David Vrabel wrote:
+> On 13/12/13 02:10, Konrad Rzeszutek Wilk wrote:
+> > From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > 
+> > PVH allows PV linux guest to utilize hardware extended capabilities, such
+> > as running MMU updates in a HVM container.
+> > 
+> > This patch allows it to be configured and enabled. Also, basic header file
+> > changes to add new subcalls to physmap hypercall.
+> > 
+> > Lastly, mfn_to_local_pfn must return mfn for paging mode translate
+> > (since we let the hypervisor - or CPU - do them for us).
+> [...]
+> > --- a/arch/x86/include/asm/xen/page.h
+> > +++ b/arch/x86/include/asm/xen/page.h
+> > @@ -168,6 +168,9 @@ static inline xpaddr_t machine_to_phys(xmaddr_t machine)
+> >  static inline unsigned long mfn_to_local_pfn(unsigned long mfn)
+> >  {
+> >  	unsigned long pfn = mfn_to_pfn(mfn);
+> > +
+> > +	if (xen_feature(XENFEAT_auto_translated_physmap))
+> > +		return mfn;
+> 
+> This does the mfn_to_pfn() call first and then ignores the result.
+> 
+> >  	if (get_phys_to_machine(pfn) != mfn)
+> >  		return -1; /* force !pfn_valid() */
+> >  	return pfn;
+> > diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+> > index 1a3c765..4d890c3 100644
+> > --- a/arch/x86/xen/Kconfig
+> > +++ b/arch/x86/xen/Kconfig
+> > @@ -51,3 +51,13 @@ config XEN_DEBUG_FS
+> >  	  Enable statistics output and various tuning options in debugfs.
+> >  	  Enabling this option may incur a significant performance overhead.
+> >  
+> > +config XEN_X86_PVH
+> > +	bool "Support for running as a PVH guest (EXPERIMENTAL)"
+> > +	depends on X86_64 && XEN && EXPERIMENTAL
+> 
+> Drop EXPERIMENTAL here (not in the follow up patch).
+> 
+> > +	default n
+> 
+> default y or don't provide this as a user selectable choice.
+> 
+> > diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
+> > index 7faed58..1a6bca1 100644
+> > --- a/arch/x86/xen/xen-head.S
+> > +++ b/arch/x86/xen/xen-head.S
+> > @@ -13,6 +13,15 @@
+> >  #include <xen/interface/elfnote.h>
+> >  #include <asm/xen/interface.h>
+> >  
+> > +#ifdef CONFIG_XEN_X86_PVH
+> > +#define FEATURES_PVH "|writable_descriptor_tables" \
+> > +		     "|auto_translated_physmap" \
+> > +		     "|supervisor_mode_kernel" \
+> > +		     "|hvm_callback_vector"
+> > +#else
+> > +#define FEATURES_PVH /* Not supported */
+> > +#endif
+> > +
+> >  	__INIT
+> >  ENTRY(startup_xen)
+> >  	cld
+> > @@ -95,7 +104,7 @@ NEXT_HYPERCALL(arch_6)
+> >  #endif
+> >  	ELFNOTE(Xen, XEN_ELFNOTE_ENTRY,          _ASM_PTR startup_xen)
+> >  	ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, _ASM_PTR hypercall_page)
+> > -	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .asciz "!writable_page_tables|pae_pgdir_above_4gb")
+> > +	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .asciz "!writable_page_tables|pae_pgdir_above_4gb"FEATURES_PVH)
+> >  	ELFNOTE(Xen, XEN_ELFNOTE_PAE_MODE,       .asciz "yes")
+> >  	ELFNOTE(Xen, XEN_ELFNOTE_LOADER,         .asciz "generic")
+> >  	ELFNOTE(Xen, XEN_ELFNOTE_L1_MFN_VALID,
+> 
+> Not clear how this can be part of the first patch.  A guest with only
+> this patch cannot actually work in PVH mode, right?
 
-Also add a file for UC-7112-LX.
+Good point. We should make this one of the last patches or split
+this part out.
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
----
- Documentation/devicetree/bindings/arm/moxart.txt |  12 +++
- arch/arm/boot/dts/Makefile                       |   1 +
- arch/arm/boot/dts/moxart-uc7112lx.dts            | 131 +++++++++++++++++++++++
- arch/arm/boot/dts/moxart.dtsi                    | 100 +++++++++++++++++
- 4 files changed, 244 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/moxart.txt
- create mode 100644 arch/arm/boot/dts/moxart-uc7112lx.dts
- create mode 100644 arch/arm/boot/dts/moxart.dtsi
+> 
+> > diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
+> > index 2ecfe4f..a122164 100644
+> > --- a/include/xen/interface/memory.h
+> > +++ b/include/xen/interface/memory.h
+> > @@ -175,7 +175,10 @@ struct xen_add_to_physmap {
+> >      uint16_t    size;
+> >  
+> >      /* Source mapping space. */
+> > -    unsigned int space;
+> > +    uint16_t space;
+> > +    domid_t foreign_domid;         /* IFF XENMAPSPACE_gmfn_foreign */
+> > +
+> > +#define XENMAPIDX_grant_table_status 0x80000000
+> 
+> What's this change?  It doesn't match the hypervisor.
+> 
+> > --- a/include/xen/interface/physdev.h
+> > +++ b/include/xen/interface/physdev.h
+> > @@ -291,6 +291,16 @@ struct physdev_dbgp_op {
+> >      } u;
+> >  };
+> >  
+> > +#define PHYSDEVOP_map_iomem        30
+> > +struct physdev_map_iomem {
+> > +    /* IN */
+> > +    uint64_t first_gfn;
+> > +    uint64_t first_mfn;
+> > +    uint32_t nr_mfns;
+> > +    uint32_t add_mapping; /* 1 == add mapping;  0 == unmap */
+> > +
+> > +};
+> > +
+> 
+> Not provided by the hypervisor.
 
-diff --git a/Documentation/devicetree/bindings/arm/moxart.txt b/Documentation/devicetree/bindings/arm/moxart.txt
-new file mode 100644
-index 0000000..11087ed
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/moxart.txt
-@@ -0,0 +1,12 @@
-+MOXA ART device tree bindings
-+
-+Boards with the MOXA ART SoC shall have the following properties:
-+
-+Required root node property:
-+
-+compatible = "moxa,moxart";
-+
-+Boards:
-+
-+- UC-7112-LX: embedded computer
-+  compatible = "moxa,moxart-uc-7112-lx", "moxa,moxart"
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 9fe33e7..f331b22 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -318,6 +318,7 @@ dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
- dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb \
- 	zynq-zc706.dtb \
- 	zynq-zed.dtb
-+dtb-$(CONFIG_ARCH_MOXART) += moxart-uc7112lx.dtb
- 
- targets += dtbs
- targets += $(dtb-y)
-diff --git a/arch/arm/boot/dts/moxart-uc7112lx.dts b/arch/arm/boot/dts/moxart-uc7112lx.dts
-new file mode 100644
-index 0000000..c63d013
---- /dev/null
-+++ b/arch/arm/boot/dts/moxart-uc7112lx.dts
-@@ -0,0 +1,131 @@
-+/* moxart-uc7112lx.dts - Device Tree file for MOXA UC-7112-LX
-+ *
-+ * Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * Licensed under GPLv2 or later.
-+ */
-+
-+/dts-v1/;
-+/include/ "moxart.dtsi"
-+
-+/ {
-+	model = "MOXA UC-7112-LX";
-+	compatible = "moxa,moxart-uc-7112-lx", "moxa,moxart";
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x0 0x2000000>;
-+	};
-+
-+	flash@80000000,0 {
-+		compatible = "numonyx,js28f128", "cfi-flash";
-+		reg = <0x80000000 0x1000000>;
-+		bank-width = <2>;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		partition@0 {
-+			label = "bootloader";
-+			reg = <0x0 0x40000>;
-+		};
-+		partition@40000 {
-+			label = "linux kernel";
-+			reg = <0x40000 0x1C0000>;
-+		};
-+		partition@200000 {
-+			label = "root filesystem";
-+			reg = <0x200000 0x800000>;
-+		};
-+		partition@a00000 {
-+			label = "user filesystem";
-+			reg = <0xa00000 0x600000>;
-+		};
-+	};
-+
-+	sdhci: sdhci@98e00000 {
-+		compatible = "moxa,moxart-sdhci";
-+		reg = <0x98e00000 0x5C>;
-+		interrupts = <5 0>;
-+		clocks = <&clk_apb>;
-+		dmas =	<&dma 5>,
-+			<&dma 5>;
-+		dma-names = "tx", "rx";
-+	};
-+
-+	mdio0: mdio@90900090 {
-+		compatible = "moxa,moxart-mdio";
-+		reg = <0x90900090 0x8>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		ethphy0: ethernet-phy@1 {
-+			device_type = "ethernet-phy";
-+			compatible = "moxa,moxart-rtl8201cp", "ethernet-phy-ieee802.3-c22";
-+			reg = <1>;
-+		};
-+	};
-+
-+	mdio1: mdio@92000090 {
-+		compatible = "moxa,moxart-mdio";
-+		reg = <0x92000090 0x8>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		ethphy1: ethernet-phy@1 {
-+			device_type = "ethernet-phy";
-+			compatible = "moxa,moxart-rtl8201cp", "ethernet-phy-ieee802.3-c22";
-+			reg = <1>;
-+		};
-+	};
-+
-+	mac0: mac@90900000 {
-+		compatible = "moxa,moxart-mac";
-+		reg = <0x90900000 0x90>;
-+		interrupts = <25 0>;
-+		phy-handle = <&ethphy0>;
-+		phy-mode = "mii";
-+	};
-+
-+	mac1: mac@92000000 {
-+		compatible = "moxa,moxart-mac";
-+		reg = <0x92000000 0x90>;
-+		interrupts = <27 0>;
-+		phy-handle = <&ethphy1>;
-+		phy-mode = "mii";
-+	};
-+
-+	uart0: uart@98200000 {
-+		compatible = "ns16550a";
-+		reg = <0x98200000 0x20>;
-+		interrupts = <31 8>;
-+		reg-shift = <2>;
-+		reg-io-width = <4>;
-+		clock-frequency = <14745600>;
-+		status = "okay";
-+	};
-+
-+	leds {
-+		compatible = "gpio-leds";
-+		user-led {
-+			label = "ready-led";
-+			gpios = <&gpio 27 0x1>;
-+			default-state = "on";
-+			linux,default-trigger = "default-on";
-+		};
-+	};
-+
-+	gpio_keys_polled {
-+		compatible = "gpio-keys-polled";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		poll-interval = <500>;
-+		button@25 {
-+			label = "GPIO Reset";
-+			linux,code = <116>;
-+			gpios = <&gpio 25 1>;
-+		};
-+	};
-+
-+	chosen {
-+		bootargs = "console=ttyS0,115200n8 earlyprintk root=/dev/mmcblk0p1 rw rootwait";
-+	};
-+};
-diff --git a/arch/arm/boot/dts/moxart.dtsi b/arch/arm/boot/dts/moxart.dtsi
-new file mode 100644
-index 0000000..0ea51ed
---- /dev/null
-+++ b/arch/arm/boot/dts/moxart.dtsi
-@@ -0,0 +1,100 @@
-+/* moxart.dtsi - Device Tree Include file for MOXA ART family SoC
-+ *
-+ * Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * Licensed under GPLv2 or later.
-+ */
-+
-+/include/ "skeleton.dtsi"
-+
-+/ {
-+	compatible = "moxa,moxart";
-+	model = "MOXART";
-+	interrupt-parent = <&intc>;
-+
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			device_type = "cpu";
-+			compatible = "faraday,fa526";
-+			reg = <0>;
-+		};
-+	};
-+
-+	clocks {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		ref12: ref12M {
-+			compatible = "fixed-clock";
-+			#clock-cells = <0>;
-+			clock-frequency = <12000000>;
-+		};
-+	};
-+
-+	soc {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		reg = <0x90000000 0x10000000>;
-+		ranges;
-+
-+		intc: interrupt-controller@98800000 {
-+			compatible = "moxa,moxart-ic";
-+			reg = <0x98800000 0x38>;
-+			interrupt-controller;
-+			#interrupt-cells = <2>;
-+			interrupt-mask = <0x00080000>;
-+		};
-+
-+		clk_pll: clk_pll@98100000 {
-+			compatible = "moxa,moxart-pll-clock";
-+			#clock-cells = <0>;
-+			reg = <0x98100000 0x34>;
-+			clocks = <&ref12>;
-+		};
-+
-+		clk_apb: clk_apb@98100000 {
-+			compatible = "moxa,moxart-apb-clock";
-+			#clock-cells = <0>;
-+			reg = <0x98100000 0x34>;
-+			clocks = <&clk_pll>;
-+		};
-+
-+		timer: timer@98400000 {
-+			compatible = "moxa,moxart-timer";
-+			reg = <0x98400000 0x42>;
-+			interrupts = <19 1>;
-+			clocks = <&clk_apb>;
-+		};
-+
-+		gpio: gpio@98700000 {
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			compatible = "moxa,moxart-gpio";
-+			reg = <0x98700000 0xC>;
-+		};
-+
-+		rtc: rtc {
-+			compatible = "moxa,moxart-rtc";
-+			gpio-rtc-sclk = <&gpio 5 0>;
-+			gpio-rtc-data = <&gpio 6 0>;
-+			gpio-rtc-reset = <&gpio 7 0>;
-+		};
-+
-+		dma: dma@90500000 {
-+			compatible = "moxa,moxart-dma";
-+			reg = <0x90500080 0x40>;
-+			interrupts = <24 0>;
-+			#dma-cells = <1>;
-+		};
-+
-+		watchdog: watchdog@98500000 {
-+			compatible = "moxa,moxart-watchdog";
-+			reg = <0x98500000 0x10>;
-+			clocks = <&clk_apb>;
-+		};
-+	};
-+};
--- 
-1.8.2.1
+Mukesh, could you send a followup patch to the entire patchset which
+fixes the change so I can make sure to have the right hypervisor ABI please?
 
+
+> 
+> David
