@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984Ab3LMOLj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 09:11:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40426 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752772Ab3LMOKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752748Ab3LMOKO (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 13 Dec 2013 09:10:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40411 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752555Ab3LMOKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 09:10:12 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 4/7] mm: Annotate page cache allocations
-Date: Fri, 13 Dec 2013 14:10:04 +0000
-Message-Id: <1386943807-29601-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 1/7] mm: page_alloc: exclude unreclaimable allocations from zone fairness policy
+Date: Fri, 13 Dec 2013 14:10:01 +0000
+Message-Id: <1386943807-29601-2-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1386943807-29601-1-git-send-email-mgorman@suse.de>
 References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
@@ -22,74 +22,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Annotations will be used for fair zone allocation policy. Patch is mostly
-taken from a link posted by Johannes on IRC. It's not perfect because all
-callers of these paths are not guaranteed to be allocating pages for page
-cache. However, it's probably close enough to cover all cases that matter
-with minimal distortion.
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-Not-signed-off
+Dave Hansen noted a regression in a microbenchmark that loops around
+open() and close() on an 8-node NUMA machine and bisected it down to
+81c0a2bb515f ("mm: page_alloc: fair zone allocator policy").  That
+change forces the slab allocations of the file descriptor to spread
+out to all 8 nodes, causing remote references in the page allocator
+and slab.
+
+The round-robin policy is only there to provide fairness among memory
+allocations that are reclaimed involuntarily based on pressure in each
+zone.  It does not make sense to apply it to unreclaimable kernel
+allocations that are freed manually, in this case instantly after the
+allocation, and incur the remote reference costs twice for no reason.
+
+Only round-robin allocations that are usually freed through page
+reclaim or slab shrinking.
+
+Cc: <stable@kernel.org>
+Bisected-by: Dave Hansen <dave.hansen@intel.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/gfp.h     | 4 +++-
- include/linux/pagemap.h | 2 +-
- mm/filemap.c            | 2 ++
- 3 files changed, 6 insertions(+), 2 deletions(-)
+ mm/page_alloc.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 9b4dd49..f69e4cb 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -35,6 +35,7 @@ struct vm_area_struct;
- #define ___GFP_NO_KSWAPD	0x400000u
- #define ___GFP_OTHER_NODE	0x800000u
- #define ___GFP_WRITE		0x1000000u
-+#define ___GFP_PAGECACHE	0x2000000u
- /* If the above are modified, __GFP_BITS_SHIFT may need updating */
- 
- /*
-@@ -92,6 +93,7 @@ struct vm_area_struct;
- #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
- #define __GFP_KMEMCG	((__force gfp_t)___GFP_KMEMCG) /* Allocation comes from a memcg-accounted resource */
- #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
-+#define __GFP_PAGECACHE ((__force gfp_t)___GFP_PAGECACHE)   /* Page cache allocation */
- 
- /*
-  * This may seem redundant, but it's a way of annotating false positives vs.
-@@ -99,7 +101,7 @@ struct vm_area_struct;
-  */
- #define __GFP_NOTRACK_FALSE_POSITIVE (__GFP_NOTRACK)
- 
--#define __GFP_BITS_SHIFT 25	/* Room for N __GFP_FOO bits */
-+#define __GFP_BITS_SHIFT 26	/* Room for N __GFP_FOO bits */
- #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
- 
- /* This equals 0, but use constants in case they ever change */
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index e3dea75..bda4845 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -221,7 +221,7 @@ extern struct page *__page_cache_alloc(gfp_t gfp);
- #else
- static inline struct page *__page_cache_alloc(gfp_t gfp)
- {
--	return alloc_pages(gfp, 0);
-+	return alloc_pages(gfp | __GFP_PAGECACHE, 0);
- }
- #endif
- 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index b7749a9..5bb9225 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -517,6 +517,8 @@ struct page *__page_cache_alloc(gfp_t gfp)
- 	int n;
- 	struct page *page;
- 
-+	gfp |= __GFP_PAGECACHE;
-+
- 	if (cpuset_do_page_mem_spread()) {
- 		unsigned int cpuset_mems_cookie;
- 		do {
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 580a5f0..f861d02 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1920,7 +1920,8 @@ zonelist_scan:
+ 		 * back to remote zones that do not partake in the
+ 		 * fairness round-robin cycle of this zonelist.
+ 		 */
+-		if (alloc_flags & ALLOC_WMARK_LOW) {
++		if ((alloc_flags & ALLOC_WMARK_LOW) &&
++		    (gfp_mask & GFP_MOVABLE_MASK)) {
+ 			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+ 				continue;
+ 			if (zone_reclaim_mode &&
 -- 
 1.8.4
 
