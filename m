@@ -1,114 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab3LMUkr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 15:40:47 -0500
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:39325 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172Ab3LMUkp (ORCPT
+	id S1753277Ab3LMUm1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 15:42:27 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:52998 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752774Ab3LMUm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 15:40:45 -0500
-Date: Fri, 13 Dec 2013 15:40:34 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jens Axboe <axboe@kernel.dk>
-Cc: tomaz.solc@tablix.org, aaron.lu@intel.com, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH] libata, freezer: avoid block device removal while system is
- frozen
-Message-ID: <20131213204034.GE27070@htj.dyndns.org>
-References: <20131213174932.GA27070@htj.dyndns.org>
- <20131213185237.GD27070@htj.dyndns.org>
+	Fri, 13 Dec 2013 15:42:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131213185237.GD27070@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1386962557-8899-1-git-send-email-levex@linux.com>
+References: <1386962557-8899-1-git-send-email-levex@linux.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 13 Dec 2013 13:42:05 -0700
+Message-ID: <CAErSpo4dJFsK+Wcfz8PrH=Ras343nLS=XgQFbEr_KCgFVED52Q@mail.gmail.com>
+Subject: Re: [PATCH 0/4] treewide: add missing put_device calls
+To: Levente Kurusa <levex@linux.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+[+cc Greg]
 
-So, this is the laughable workaround that I came up with.  Seriously,
-this is tragic.  :(
+On Fri, Dec 13, 2013 at 12:22 PM, Levente Kurusa <levex@linux.com> wrote:
+> Hi,
+>
+> This is just the beginning of patchset-set that aims to fix possible
+> problems caused by not calling put_device() if device_register() fails.
+>
+> The root cause for the need to call put_device() is that the underlying
+> kobject still has a reference count of 1. Thus, device.release() will not
+> be called and the device will just sit there waiting for a put_device().
+> Adding the put_device() also removes the need for the call to kfree() as most
+> release functions already call kfree() on the container of the device.
+>
+> While these have not been experienced, they are potential issues and thus
+> they need to be fixed. Also, they are a few more files that have the same
+> kind of issue, those will be fixed if these are accepted.
 
-Thanks.
+Thanks for doing this.  This is the sort of mistake that just gets
+copied everywhere, so fixing the examples in the tree will help
+prevent the problem from spreading more.
 
-------- 8< -------
-Freezable kthreads and workqueues are fundamentally problematic in
-that they effectively introduce a big kernel lock widely used in the
-kernel and have already been the culprit of several deadlock
-scenarios.  This is the latest occurrence.
+I don't know if there's really value in having device_register()
+return an error but rely on the caller to do the put_device().  Are
+there cases where the caller still needs the struct device even if
+device_register() fails?  E.g., could we do something like this
+instead (I know some callers would also require corresponding changes
+to avoid double puts):
 
-During resume, libata rescans all the ports and revalidates all
-pre-existing devices.  If it determines that a device has gone
-missing, the device is removed from the system which involves
-invalidating block device and flushing bdi while holding driver core
-layer locks.  Unfortunately, this can race with the rest of device
-resume.  Because freezable kthreads and workqueues are thawed after
-device resume is complete and block device removal depends on
-freezable workqueues and kthreads (e.g. bdi_wq, jbd2) to make
-progress, this can lead to deadlock - block device removal can't
-proceed because kthreads are frozen and kthreads can't be thawed
-because device resume is blocked behind block device removal.
-
-839a8e8660b6 ("writeback: replace custom worker pool implementation
-with unbound workqueue") made this particular deadlock scenario more
-visible but the underlying problem has always been there - the
-original forker task and jbd2 are freezable too.  In fact, this is
-highly likely just one of many possible deadlock scenarios given that
-freezer behaves as a big kernel lock and we don't have any debug
-mechanism around it.
-
-I believe the right thing to do is getting rid of freezable kthreads
-and workqueues.  This is something fundamentally broken.  For now,
-implement a funny workaround in libata - just avoid doing block device
-hot[un]plug while the system is frozen.  Kernel engineering at its
-finest.  :(
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Tomaž Šolc <tomaz.solc@tablix.org>
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=62801
-Link: http://lkml.kernel.org/r/20131213174932.GA27070@htj.dyndns.org
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: stable@vger.kernel.org
----
- drivers/ata/libata-scsi.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
-
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index ab58556..60a01d3 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3872,6 +3872,25 @@ void ata_scsi_hotplug(struct work_struct *work)
- 		return;
- 	}
- 
-+	/*
-+	 * XXX - UGLY HACK
-+	 *
-+	 * The core suspend/resume path is fundamentally broken due to
-+	 * freezable kthreads and workqueue and may deadlock if a block
-+	 * device gets removed while resume is in progress.  I don't know
-+	 * what the solution is short of removing freezable kthreads and
-+	 * workqueues altogether.
-+	 *
-+	 * The following is an ugly hack to avoid kicking off device
-+	 * removal while freezer is active.  This is a joke but does avoid
-+	 * this particular deadlock scenario.
-+	 *
-+	 * https://bugzilla.kernel.org/show_bug.cgi?id=62801
-+	 * http://marc.info/?l=linux-kernel&m=138695698516487
-+	 */
-+	while (pm_freezing)
-+		msleep(100);
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1139,8 +1139,13 @@ EXPORT_SYMBOL_GPL(device_add);
+  */
+ int device_register(struct device *dev)
+ {
++       int ret;
 +
- 	DPRINTK("ENTER\n");
- 	mutex_lock(&ap->scsi_scan_mutex);
- 
+        device_initialize(dev);
+-       return device_add(dev);
++       ret = device_add(dev);
++       if (ret)
++               put_device(dev);
++       return ret;
+ }
+ EXPORT_SYMBOL_GPL(device_register);
