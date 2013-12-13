@@ -1,113 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab3LMSjP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 13:39:15 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:54819 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221Ab3LMSjL (ORCPT
+	id S1753232Ab3LMSmd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 13:42:33 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39104 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab3LMSmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 13:39:11 -0500
-Date: Fri, 13 Dec 2013 11:39:05 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jonas Bonn <jonas@southpole.se>, Jingoo Han <jg1.han@samsung.com>,
-        "'Guenter Roeck'" <linux@roeck-us.net>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Andy Whitcroft'" <apw@canonical.com>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] pci/checkpatch: Deprecate DEFINE_PCI_DEVICE_TABLE
-Message-ID: <20131213183905.GA6746@google.com>
-References: <1385617213.12210.5.camel@joe-AO722>
- <20131128055328.GA565@kroah.com>
- <1385619863.12210.14.camel@joe-AO722>
- <529C026E.2000302@roeck-us.net>
- <000f01ceef11$a14acf00$e3e06d00$%han@samsung.com>
- <529C04C7.9050506@roeck-us.net>
- <001001ceef13$7fa3ee70$7eebcb50$%han@samsung.com>
- <1385963295.2680.2.camel@joe-AO722>
- <529C6495.3020305@southpole.se>
- <1386006217.2680.13.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386006217.2680.13.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 13 Dec 2013 13:42:32 -0500
+From: "Chen.Yu" <chyyuu@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: levex@linux.com, xiaoqixue_1@163.com, fanwlexca@gmail.com,
+        "Chen.Yu" <chyyuu@gmail.com>
+Subject: [PATCH] scsi: integer overflow in megadev_ioctl()
+Date: Sat, 14 Dec 2013 02:41:32 +0800
+Message-Id: <1386960092-32475-1-git-send-email-chyyuu@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 09:43:37AM -0800, Joe Perches wrote:
-> Prefer use of the direct definition of struct pci_device_id
-> instead of indirection via macro DEFINE_PCI_DEVICE_TABLE.
-> 
-> Update the PCI documentation to deprecate DEFINE_PCI_DEVICE_TABLE.
-> Update checkpatch adding --fix option.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+From: "Chen.Yu" <chyyuu@gmail.com>
 
-Applied with Jingoo's ack for v3.14, thanks!
+There is a potential integer overflow in megadev_ioctl() if
+userspace passes in a large u32 variable uioc.adapno.
+The int variable adapno would < 0, leading to an error
+array access for hdb_soft_state[adapno], or an error
+copy_to_user(uioc.uioc_uaddr, mcontroller+adapno,..)
 
-Bjorn
+Reported-by: Wenliang Fan <fanwlexca@gmail.com>
+Suggested-by: Qixue Xiao <xiaoqixue_1@163.com>
+Signed-off-by: Yu Chen <chyyuu@gmail.com>
+Reviewed-by: Levente Kurusa <levex@linux.com>
+---
+ drivers/scsi/megaraid.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-> ---
->  Documentation/PCI/pci.txt |  6 ++++--
->  include/linux/pci.h       |  3 +--
->  scripts/checkpatch.pl     | 11 +++++++----
->  3 files changed, 12 insertions(+), 8 deletions(-)
-> 
-> diff --git a/Documentation/PCI/pci.txt b/Documentation/PCI/pci.txt
-> index 6f45856..9518006 100644
-> --- a/Documentation/PCI/pci.txt
-> +++ b/Documentation/PCI/pci.txt
-> @@ -123,8 +123,10 @@ initialization with a pointer to a structure describing the driver
->  
->  
->  The ID table is an array of struct pci_device_id entries ending with an
-> -all-zero entry; use of the macro DEFINE_PCI_DEVICE_TABLE is the preferred
-> -method of declaring the table.  Each entry consists of:
-> +all-zero entry.  Definitions with static const are generally preferred.
-> +Use of the deprecated macro DEFINE_PCI_DEVICE_TABLE should be avoided.
-> +
-> +Each entry consists of:
->  
->  	vendor,device	Vendor and device ID to match (or PCI_ANY_ID)
->  
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 1084a15..88674b0 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -634,8 +634,7 @@ struct pci_driver {
->   * DEFINE_PCI_DEVICE_TABLE - macro used to describe a pci device table
->   * @_table: device table name
->   *
-> - * This macro is used to create a struct pci_device_id array (a device table)
-> - * in a generic manner.
-> + * This macro is deprecated and should not be used in new code.
->   */
->  #define DEFINE_PCI_DEVICE_TABLE(_table) \
->  	const struct pci_device_id _table[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 38be5d5..6f883f0 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2643,10 +2643,13 @@ sub process {
->  			}
->  		}
->  
-> -# check for declarations of struct pci_device_id
-> -		if ($line =~ /\bstruct\s+pci_device_id\s+\w+\s*\[\s*\]\s*\=\s*\{/) {
-> -			WARN("DEFINE_PCI_DEVICE_TABLE",
-> -			     "Use DEFINE_PCI_DEVICE_TABLE for struct pci_device_id\n" . $herecurr);
-> +# check for uses of DEFINE_PCI_DEVICE_TABLE
-> +		if ($line =~ /\bDEFINE_PCI_DEVICE_TABLE\s*\(\s*(\w+)\s*\)\s*=/) {
-> +			if (WARN("DEFINE_PCI_DEVICE_TABLE",
-> +				 "Prefer struct pci_device_id over deprecated DEFINE_PCI_DEVICE_TABLE\n" . $herecurr) &&
-> +			    $fix) {
-> +				$fixed[$linenr - 1] =~ s/\b(?:static\s+|)DEFINE_PCI_DEVICE_TABLE\s*\(\s*(\w+)\s*\)\s*=\s*/static const struct pci_device_id $1\[\] = /;
-> +			}
->  		}
->  
->  # check for new typedefs, only function parameters and sparse annotations
-> 
-> 
+diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
+index 816db12..0b90c54 100644
+--- a/drivers/scsi/megaraid.c
++++ b/drivers/scsi/megaraid.c
+@@ -3099,7 +3099,10 @@ megadev_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+ 		/*
+ 		 * Which adapter
+ 		 */
+-		if( (adapno = GETADAP(uioc.adapno)) >= hba_count )
++		adapno = GETADAP(uioc.adapno);
++		if( adapno < 0 )
++			return (-EINVAL);
++		if( adapno >= hba_count )
+ 			return (-ENODEV);
+ 
+ 		if( copy_to_user(uioc.uioc_uaddr, mcontroller+adapno,
+@@ -3113,7 +3116,10 @@ megadev_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+ 		/*
+ 		 * Which adapter
+ 		 */
+-		if( (adapno = GETADAP(uioc.adapno)) >= hba_count )
++		adapno = GETADAP(uioc.adapno);
++		if( adapno < 0 )
++			return (-EINVAL);
++		if( adapno >= hba_count )
+ 			return (-ENODEV);
+ 
+ 		adapter = hba_soft_state[adapno];
+@@ -3160,7 +3166,10 @@ megadev_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+ 		/*
+ 		 * Which adapter
+ 		 */
+-		if( (adapno = GETADAP(uioc.adapno)) >= hba_count )
++		adapno = GETADAP(uioc.adapno);
++		if( adapno < 0 )
++			return (-EINVAL);
++		if( adapno >= hba_count )
+ 			return (-ENODEV);
+ 
+ 		adapter = hba_soft_state[adapno];
+-- 
+1.8.3.2
+
