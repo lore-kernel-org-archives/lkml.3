@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751022Ab3LMFEb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 00:04:31 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:42987 "EHLO
+	id S1751585Ab3LMFIE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 00:08:04 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:44292 "EHLO
 	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab3LMFE3 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1750720Ab3LMFIC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 00:04:29 -0500
+	Fri, 13 Dec 2013 00:08:02 -0500
 From: Caizhiyong <caizhiyong@hisilicon.com>
 To: David Woodhouse <dwmw2@infradead.org>,
         "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
@@ -19,9 +19,9 @@ CC: Huang Shijie <b32955@freescale.com>,
 Subject: [PATCH] mtd: increase max page/OOB size to support 16K pagesize NAND
 Thread-Topic: [PATCH] mtd: increase max page/OOB size to support 16K
  pagesize NAND
-Thread-Index: Ac73wHFUVxllXJ0gQ5W2mMUVtZIWEQ==
-Date: Fri, 13 Dec 2013 05:01:56 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F25E47448@SZXEMA512-MBX.china.huawei.com>
+Thread-Index: Ac73wLSIfXMFy3+HQFSy5QaQsDobRA==
+Date: Fri, 13 Dec 2013 05:03:49 +0000
+Message-ID: <C3050A4DBA34F345975765E43127F10F25E47455@SZXEMA512-MBX.china.huawei.com>
 Accept-Language: zh-CN, en-US
 Content-Language: zh-CN
 X-MS-Has-Attach: 
@@ -41,10 +41,6 @@ Subject: [PATCH] mtd: increase max page/OOB size to support 16K pagesize NAND.
 
 The Toshiba's TC58TEG5DCJTA pagesize is 16K, oob size is 1280 bytes.
 So increase the NAND_MAX_OOBSIZE and NAND_MAX_PAGESIZE.
-
-Signed-off-by: Huang Shijie <b32955@freescale.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 
 Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
 ---
