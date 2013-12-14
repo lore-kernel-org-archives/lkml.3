@@ -1,116 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab3LNPvo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 10:51:44 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:15954 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844Ab3LNPvl convert rfc822-to-8bit (ORCPT
+	id S1753855Ab3LNQLy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 11:11:54 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:42285 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758Ab3LNQLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 10:51:41 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sat, 14 Dec 2013 07:53:12 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: Stephen Warren <swarren@nvidia.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
-CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sat, 14 Dec 2013 16:51:15 +0100
-Subject: Re: [PATCHv6+ 01/13] of: introduce
- of_property_for_earch_phandle_with_args()
-Thread-Topic: [PATCHv6+ 01/13] of: introduce
- of_property_for_earch_phandle_with_args()
-Thread-Index: Ac745FNNv/FSKpURTeS1kFMOg6okTQ==
-Message-ID: <20131214.175115.1251935659998248370.hdoyu@nvidia.com>
-References: <20131211.153338.2186623380643957232.hdoyu@nvidia.com><20131212113417.BDCD0C40637@trevor.secretlab.ca><20131212.141404.684884000513445038.hdoyu@nvidia.com>
-In-Reply-To: <20131212.141404.684884000513445038.hdoyu@nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Sat, 14 Dec 2013 11:11:52 -0500
 MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <20131214123709.GE17467@mithrandir>
+References: <1386858989-1487-1-git-send-email-treding@nvidia.com>
+	<52AA0FC4.3090606@vmware.com>
+	<CAKMK7uGOt2CYCgyE5rnXE3wJJjJiRpoQMB_-+_+m_qhk3TH8QQ@mail.gmail.com>
+	<20131214123709.GE17467@mithrandir>
+Date: Sat, 14 Dec 2013 17:05:31 +0100
+X-Google-Sender-Auth: NPafyf4qUA5fvlXLttwANN3UKSA
+Message-ID: <CAKMK7uFG3tB4iQi8p4wdA8+g0P7uDxk4JwLMEXiG0fxx1qvrWw@mail.gmail.com>
+Subject: Re: [RFC] dma-buf: Implement test module
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Thomas Hellstrom <thellstrom@vmware.com>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hiroshi Doyu <hdoyu@nvidia.com> wrote @ Thu, 12 Dec 2013 14:14:04 +0200 (EET):
+On Sat, Dec 14, 2013 at 1:37 PM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Thu, Dec 12, 2013 at 11:30:23PM +0100, Daniel Vetter wrote:
+>> On Thu, Dec 12, 2013 at 8:34 PM, Thomas Hellstrom <thellstrom@vmware.com> wrote:
+>> > On 12/12/2013 03:36 PM, Thierry Reding wrote:
+>> >>
+>> >> This is a simple test module that can be used to allocate, export and
+>> >> delete DMA-BUF objects. It can be used to test DMA-BUF sharing in
+>> >> systems that lack a real second driver.
+>> >>
+>> >>
+>> >
+>> > Looks nice. I wonder whether this could be extended to create a "streaming"
+>> > dma-buf from a user space mapping. That could be used as a generic way to
+>> > implement streaming (user) buffer objects, rather than to add explicit
+>> > support for those in, for example, TTM.
+>>
+>> Atm there's no way to get gpus to unbind their dma-buf mappings, so
+>> their essentially pinned forever from first use on.
+>
+> Shouldn't this work by simply calling the GEM_CLOSE IOCTL on the handle
+> returned by drmPrimeFDToHandle()? I mean that should drop the last
+> reference on the GEM object and cause it to be cleaned up (which should
+> include detaching the DMA-BUF).
 
-> > > From 8f7c0404aa68f0e8dbe0babc240590f6528ecc1f Mon Sep 17 00:00:00 2001
-> > > From: Hiroshi Doyu <hdoyu@nvidia.com>
-> > > Date: Fri, 15 Nov 2013 10:52:53 +0200
-> > > Subject: [PATCH] of: introduce of_property_for_each_phandle_with_args()
-> > >
-> > > Iterating over a property containing a list of phandles with arguments
-> > > is a common operation for device drivers. This patch adds a new
-> > > of_property_for_each_phandle_with_args() macro to make the iteration
-> > > simpler.
-> > >
-> > > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> > > Cc: Rob Herring <robherring2@gmail.com>
-....
-> > > ---
-> > >  drivers/of/base.c  | 46 ++++++++++++++++++++++++++++++++++++++++++++++
-> > >  include/linux/of.h | 32 ++++++++++++++++++++++++++++++++
-> > >  2 files changed, 78 insertions(+)
-> > >
-> > > diff --git a/drivers/of/base.c b/drivers/of/base.c
-> > > index f807d0e..cd4ab05 100644
-> > > --- a/drivers/of/base.c
-> > > +++ b/drivers/of/base.c
-> > > @@ -1201,6 +1201,52 @@ void of_print_phandle_args(const char *msg, const struct of_phandle_args *args)
-> > >       printk("\n");
-> > >  }
-> > >
-> > > +const __be32 *of_phandle_iter_next(const char *cells_name, int cell_count,
-> > > +                                const __be32 *cur, const __be32 *end,
-> > > +                                struct of_phandle_args *out_args)
-> > 
-> > Having to pass in cells_name, cell_count, cur and end each time seems a
-> > little odd. Can a state structure be used instead?
-> > 
-> > struct of_phandle_iter_state {
-> >         const char *cells_name;
-> >         int cells_count;
-> >         const __be32 *cur;
-> >         const __be32 *end;
-> >         struct of_phandle_args out_args;
-> > }
-> > 
-> > Make the caller provide one of those and fill it in with the init
-> > function.
-> 
-> I rewrote this a few times and so now I have a few version of this
-> implementations :-) The above proposal is similar to the version v6+++
-> mentioned in the above patch note:
-> 
-> > > v6+++:
-> > > Introduced a new struct "of_phandle_iter" to keep the state when
-> > > iterating over the list.
-> 
-> which is:
-> 
->   [RFC][PATCHv6+++ 01/13] of: introduce of_property_for_earch_phandle_with_args()
->     http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007087.html
-> 
-> Stephen seemed to prefer the version without state struct. I like the
-> idea to not pass the same arguments repeatly. Instead, wrapping them
-> in a struct with state may look better.
-> 
-> So if Stephen agrees, I'll rewrite the version with state struct
-> again.
-
-Stephen, let me know what you think.
+Yeah, but that has the side-effect of also dropping the reference. And
+requires an explicit action from userspace. The entire point of kernel
+buffer managers is that this is all done transparently in the kernel
+and when low on memory some objects get swapped out behind userspaces
+back (and then pulled in again if needed).
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
