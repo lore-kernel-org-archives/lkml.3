@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab3LNI0E (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 03:26:04 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:49390 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab3LNI0C (ORCPT
+	id S1752826Ab3LNIaj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 03:30:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55957 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979Ab3LNIai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 03:26:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <1386271244-3927-8-git-send-email-tim.kryger@linaro.org>
-References: <1386271244-3927-1-git-send-email-tim.kryger@linaro.org>
-	<1386271244-3927-8-git-send-email-tim.kryger@linaro.org>
-Date: Sat, 14 Dec 2013 00:26:00 -0800
-Message-ID: <CAEPRUYqg2hzwudwLq+MyBfY119e22HzBe5H+03vGA4VVrL9rYw@mail.gmail.com>
-Subject: Re: [PATCH v4 7/8] clocksource: kona: Add basic use of external clock
-From: Christian Daudt <bcm@fixthebug.org>
-To: Tim Kryger <tim.kryger@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
-        Axel Lin <axel.lin@ingics.com>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linaro Patches List <patches@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 14 Dec 2013 03:30:38 -0500
+Date: Sat, 14 Dec 2013 00:32:08 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        <linux-acpi@vger.kernel.org>,
+        xen-devel <xen-devel@lists.xenproject.org>,
+        Dietmar Hahn <dietmar.hahn@ts.fujitsu.com>
+Subject: Re: vunmap() on large regions may trigger soft lockup warnings
+Message-Id: <20131214003208.f99bc37c.akpm@linux-foundation.org>
+In-Reply-To: <52A9B127.9010501@citrix.com>
+References: <52A899AB.3010506@citrix.com>
+	<20131211133917.dd10cb2c4360dba65d8e6ce2@linux-foundation.org>
+	<52A9B127.9010501@citrix.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 5, 2013 at 11:20 AM, Tim Kryger <tim.kryger@linaro.org> wrote:
-> When an clock is specified in the device tree, enable it and use it to
-> determine the external clock frequency.
->
-> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-> Reviewed-by: Matt Porter <matt.porter@linaro.org>
-> ---
+On Thu, 12 Dec 2013 12:50:47 +0000 David Vrabel <david.vrabel@citrix.com> wrote:
 
-Reviewed-by: Christian Daudt <bcm@fixthebug.org>
+> > each time.  But that would require difficult tuning of N.
+> > 
+> > I suppose we could just do
+> > 
+> > 	if (!in_interrupt())
+> > 		cond_resched();
+> > 
+> > in vunmap_pmd_range(), but that's pretty specific to ghes.c and doesn't
+> > permit unmap-inside-spinlock.
+> > 
+> > So I can't immediately think of a suitable fix apart from adding a new
+> > unmap_kernel_range_atomic().  Then add a `bool atomic' arg to
+> > vunmap_page_range() and pass that all the way down.
+> 
+> That would work for the unmap, but looking at the GHES driver some more
+> and it looks like it's call to ioremap_page_range() is already unsafe --
+> it may need to allocate a new PTE page with a non-atomic alloc in
+> pte_alloc_one_kernel().
+> 
+> Perhaps what's needed here is a pair of ioremap_page_atomic() and
+> iounmap_page_atomic() calls?  With some prep function to sure the PTE
+> pages (etc.) are preallocated.
 
-Daniel,
- Are you ok with me pulling this patch in with the rest of the
-patchset into the bcm tree ?
+Is ghes.c the only problem source here?  If so then a suitable solution
+would be to declare that driver hopelessly busted and proceed as if it
+didn't exist :(
 
- Thanks,
-   csd
+Just from a quick look, the thing is doing ioremap() from NMI context! 
+ioremap has to do a bunch of memory allocations, takes spinlocks etc.
+
