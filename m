@@ -1,131 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab3LNJq0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 04:46:26 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:37095 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab3LNJqV convert rfc822-to-8bit (ORCPT
+	id S1753271Ab3LNJ6s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 04:58:48 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:40974 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752258Ab3LNJ6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 04:46:21 -0500
-Date: Sat, 14 Dec 2013 11:46:14 +0200
-From: Gleb Natapov <gleb@minantech.com>
-To: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        gleb@redhat.com, kvm@vger.kernel.org, pmatouse@redhat.com,
-        stable@vger.kernel.org, larsbull@google.com
-Subject: Re: [PATCH] KVM: x86: fix guest-initiated crash with x2apic
- (CVE-2013-6376)
-Message-ID: <20131214094614.GF21068@minantech.com>
-References: <1386880614-23300-4-git-send-email-pbonzini@redhat.com>
- <20131213160754.GA20763@hpx.cz>
+	Sat, 14 Dec 2013 04:58:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20131213160754.GA20763@hpx.cz>
+In-Reply-To: <20131214081944.GR31386@dastard>
+References: <1386944873-16796-1-git-send-email-zwu.kernel@gmail.com>
+	<1386944873-16796-6-git-send-email-zwu.kernel@gmail.com>
+	<20131213164154.GH20803@infradead.org>
+	<CAEH94LimS8mUCFwmnVi876mG9GB7DWsqG9p1O=R41XJ3-u1NQg@mail.gmail.com>
+	<20131214081944.GR31386@dastard>
+Date: Sat, 14 Dec 2013 17:58:45 +0800
+Message-ID: <CAEH94Lj_J0X-jP1JoyUCSJPNiPGCPbDnRmJO2GhJX1T+3da-Ug@mail.gmail.com>
+Subject: Re: [PATCH 5/5] xfs: allow linkat() on O_TMPFILE files
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        xfstests <xfs@oss.sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 05:07:54PM +0100, Radim Krčmář wrote:
-> 2013-12-12 21:36+0100, Paolo Bonzini:
-> > From: Gleb Natapov <gleb@redhat.com>
-> > 
-> > A guest can cause a BUG_ON() leading to a host kernel crash.
-> > When the guest writes to the ICR to request an IPI, while in x2apic
-> > mode the following things happen, the destination is read from
-> > ICR2, which is a register that the guest can control.
-> > 
-> > kvm_irq_delivery_to_apic_fast uses the high 16 bits of ICR2 as the
-> > cluster id.  A BUG_ON is triggered, which is a protection against
-> > accessing map->logical_map with an out-of-bounds access and manages
-> > to avoid that anything really unsafe occurs.
-> > 
-> > The logic in the code is correct from real HW point of view. The problem
-> > is that KVM supports only one cluster with ID 0 in clustered mode, but
-> > the code that has the bug does not take this into account.
-> 
-> The more I read about x2apic, the more confused I am ...
-> 
->  - How was the cluster x2apic enabled?
-> 
->    Linux won't enable cluster x2apic without interrupt remapping and I
->    had no idea we were allowed to do it.
-> 
-Malicious code can do it.
+On Sat, Dec 14, 2013 at 4:19 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Sat, Dec 14, 2013 at 01:36:47AM +0800, Zhi Yong Wu wrote:
+>> On Sat, Dec 14, 2013 at 12:41 AM, Christoph Hellwig <hch@infradead.org> wrote:
+>> > On Fri, Dec 13, 2013 at 10:27:53PM +0800, Zhi Yong Wu wrote:
+>> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>> >>
+>> >> Enable O_TMPFILE support in linkat().
+>> >> For more info, please refer to:
+>> >>   http://oss.sgi.com/archives/xfs/2013-08/msg00341.html
+>> >
+>> > Generall you should provide all reasonable information in the changelog
+>> > instead of linking to it.
+>> will apply this, thanks.
+>> >
+>> >> +     if (sip->i_d.di_nlink == 0)
+>> >> +             tres = &M_RES(mp)->tr_link_tmpfile;
+>> >> +     else
+>> >> +             tres = &M_RES(mp)->tr_link;
+>> >
+>> > As mentioned before I think Dave wanted you to always use the same
+>> > reservation, but I'll leave that discussion to him.
+>> If as you said, when some tons of regular files are created, it won't
+>> waste some disk space? e.g. some files want to reserve some space, but
+>> get NOSPACE due to other files reserving additional space?
+>
+> This is a log space reservation, not a disk space reservation. End
+> either way, what is unused by the transaction is returned to the
+> free space pool at the end of the transaction. So for simplicity,
+> we should just use the one reservation for the link transaction -
+> take whichever is larger at calculation time.
+Good explaination, thanks Dave and Christoph. By the way, can you help
+check if the log reservation for adding/removing one inode to/from
+unlinked list is correct? or  will you check after i post next version
+out?
 
->  - A hardware test-suite found this?
-> 
->    This bug can only be hit when the destination cpu is > 256, so the
->    request itself is buggy -- we don't support that many in kvm and it
->    would crash when initializing the vcpus if we did.
->    => It looks like we should just ignore the ipi, because we have no
->       vcpus in that cluster.
-> 
-That's the nature of malicious code: it does what your code does not expects
-it to do :)
-
-
->  - Where does the 'only one supported cluster' come from?
-> 
-"only one supported cluster" comes from 8 bit cpuid limitation of KVM's x2apic
-implementation. With 8 bit cpuid you can only address cluster 0 in logical mode.
-
->    I only see we use 'struct kvm_lapic *logical_map[16][16];', which
->    supports 16 clusters of 16 apics = first 256 vcpus, so if we map
->    everything to logical_map[0][0:15], we would not work correctly in
->    the cluster x2apic, with > 16 vcpus.
-> 
-Such config cannot work today because of 8 bit cpuid limitation. When the limitation
-will be removed KMV_X2APIC_CID_BITS will be set to actual number of bits we want to support.
-It will likely be smaller then 16 bit though since full 18 bit support will require huge tables.
-
-> Thanks.
-> 
-> > Reported-by: Lars Bull <larsbull@google.com>
-> > Cc: stable@vger.kernel.org
-> > Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> > Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> > ---
-> >  arch/x86/kvm/lapic.c | 5 ++++-
-> >  1 file changed, 4 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-> > index b8bec45c1610..801dc3fd66e1 100644
-> > --- a/arch/x86/kvm/lapic.c
-> > +++ b/arch/x86/kvm/lapic.c
-> > @@ -143,6 +143,8 @@ static inline int kvm_apic_id(struct kvm_lapic *apic)
-> >  	return (kvm_apic_get_reg(apic, APIC_ID) >> 24) & 0xff;
-> >  }
-> >  
-> > +#define KMV_X2APIC_CID_BITS 0
-> > +
-> >  static void recalculate_apic_map(struct kvm *kvm)
-> >  {
-> >  	struct kvm_apic_map *new, *old = NULL;
-> > @@ -180,7 +182,8 @@ static void recalculate_apic_map(struct kvm *kvm)
-> >  		if (apic_x2apic_mode(apic)) {
-> >  			new->ldr_bits = 32;
-> >  			new->cid_shift = 16;
-> > -			new->cid_mask = new->lid_mask = 0xffff;
-> > +			new->cid_mask = (1 << KMV_X2APIC_CID_BITS) - 1;
-> > +			new->lid_mask = 0xffff;
-> >  		} else if (kvm_apic_sw_enabled(apic) &&
-> >  				!new->cid_mask /* flat mode */ &&
-> >  				kvm_apic_get_reg(apic, APIC_DFR) == APIC_DFR_CLUSTER) {
-> > -- 
-> > 1.8.3.1
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+>
+> Cheers,
+>
+> Dave.
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Dave Chinner
+> david@fromorbit.com
 
---
-			Gleb.
+
+
+-- 
+Regards,
+
+Zhi Yong Wu
