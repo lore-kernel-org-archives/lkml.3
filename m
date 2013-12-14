@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab3LNTSq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 14:18:46 -0500
-Received: from mga02.intel.com ([134.134.136.20]:39505 "EHLO mga02.intel.com"
+	id S1754055Ab3LNTTg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 14:19:36 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:47291 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753596Ab3LNTSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 14:18:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,486,1384329600"; 
-   d="scan'208";a="424738999"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH] x86: intel-mid: make X86_INTEL_MID depending on SFI
-Date: Sat, 14 Dec 2013 11:23:24 -0800
-Message-Id: <1387049004-21622-1-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.2
+	id S1753612Ab3LNTTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Dec 2013 14:19:34 -0500
+Message-ID: <52ACAF0C.6060205@ti.com>
+Date: Sat, 14 Dec 2013 14:18:36 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: <dwmw2@infradead.org>
+CC: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v3 0/9] Reuse davinci-nand driver for Keystone arch
+References: <1386264358-9738-1-git-send-email-ivan.khoronzhuk@ti.com> <52A5F355.9020704@ti.com>
+In-Reply-To: <52A5F355.9020704@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Despite our intention to not make Intel MID dependent of SFI, it does
-not reflect the current situation.
-If SFI is not selected, Intel MID can't select APB_TIMER otherwise this
-happens:
+On Monday 09 December 2013 11:44 AM, Santosh Shilimkar wrote:
+> David,
+> 
+> On Thursday 05 December 2013 12:25 PM, Ivan Khoronzhuk wrote:
+>> This series contains fixes and updates of Davinci nand driver in
+>> order to reuse it for Keystone platform.
+>>
+>> v2..v3:
+>> - mtd: nand: davinci: don't set timings if AEMIF is used
+>> 	dropped, it would be replaced by alone patch
+>> 	ARM: davinci: aemif: get rid of davinci-nand driver dependency on aemif
+>>
+>> v1..v2
+>> The series is combination of two following series:
+>> - Davinci nand driver fixes and updates:
+>> https://lkml.org/lkml/2013/11/20/271
+>> - Reuse davinci-nand driver for Keystone arch
+>> https://lkml.org/lkml/2013/11/20/315
+>>
+>> - mtd: nand: davinci: extend description of bindings
+>> 	clarified changeset description
+>>
+>> - mtd: nand: davinci: reuse driver for Keystone arch
+>> 	removed "ti,keystone-nand" compatible from driver
+>>
+>> Ivan Khoronzhuk (9):
+>>   mtd: nand: davinci: fix driver registration
+>>   mtd: nand: davinci: return ENOMEM if memory allocation is failed
+>>   mtd: nand: davinci: check required ti,davinci-chipselect property
+>>   mtd: nand: davinci: simplify error handling
+>>   mtd: nand: davinci: move bindings under mtd
+>>   mtd: nand: davinci: extend description of bindings
+>>   mtd: nand: davinci: adjust DT properties to MTD generic
+>>   mtd: nand: davinci: reuse driver for Keystone arch
+>>   mtd: nand: davinci: don't request AEMIF address range
+>>
+> Can you please pick up the $subject series if you are happy
+> with it ?
+> It lets us re-use Davinci nand driver on Keystone SOCs.
+> 
+Ping..
 
-arch/x86/built-in.o: In function `apbt_set_mapping':
-arch/x86/kernel/apb_timer.c:91: undefined reference to `sfi_get_mtmr'
-arch/x86/kernel/apb_timer.c:109: undefined reference to `sfi_free_mtmr'
-arch/x86/kernel/apb_timer.c:112: undefined reference to `sfi_get_mtmr'
-arch/x86/kernel/apb_timer.c:91: undefined reference to `sfi_get_mtmr'
-arch/x86/kernel/apb_timer.c:109: undefined reference to `sfi_free_mtmr'
-arch/x86/kernel/apb_timer.c:112: undefined reference to `sfi_get_mtmr'
-
-This patch solves such problem by adding SFI as dependence of
-X86_INTEL_MID. As soon as we make Intel MID completely independent of
-SFI this patch is safe to be reverted.
-
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
----
-
-This patch is intended to be applied on kernel 3.13-rc release.
-
-As a matter of curiosity, CONFIG_APB_TIMER does depend on CONFIG_SFI. But looks
-like CONFIG_X86_INTEL_MID is able to bypass it.
-Maybe we need to check Kconfig itself too?
-
- arch/x86/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 00fa3b7d2abe..5802476d4e91 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -447,6 +447,7 @@ config X86_INTEL_MID
- 	depends on PCI
- 	depends on PCI_GOANY
- 	depends on X86_IO_APIC
-+	depends on SFI
- 	select DW_APB_TIMER
- 	select APB_TIMER
- 	select INTEL_SCU_IPC
--- 
-1.8.4.2
+regards,
+Santosh
 
