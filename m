@@ -1,41 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab3LNLEN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 06:04:13 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.151]:31162 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751625Ab3LNLEM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 06:04:12 -0500
-X-Greylist: delayed 373 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Dec 2013 06:04:11 EST
-X-Env-Sender: zhijun@live.com
-X-Msg-Ref: server-10.tower-178.messagelabs.com!1387018675!28298449!1
-X-Originating-IP: [81.138.121.125]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1753456Ab3LNLIt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 06:08:49 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:48306 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab3LNLIr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Dec 2013 06:08:47 -0500
+Date: Sat, 14 Dec 2013 06:08:44 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v3 08/23] mm/memblock: Add memblock memory allocation apis
+Message-ID: <20131214110844.GB17954@htj.dyndns.org>
+References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
+ <1386625856-12942-9-git-send-email-santosh.shilimkar@ti.com>
+ <20131213213735.GM27070@htj.dyndns.org>
+ <52ABABDA.4020808@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Guten Tag
-To: Recipients <zhijun@live.com>
-From: "Mr. SUN Zhijun" <zhijun@live.com>
-Date: Sat, 14 Dec 2013 11:57:29 +0100
-Reply-To: s_zhijun001@qq.com
-Message-ID: <TAUNTON1860EWmRj4fX00002207@mail.matrix.uk.com>
-X-OriginalArrivalTime: 14 Dec 2013 10:59:39.0067 (UTC) FILETIME=[957998B0:01CEF8BB]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52ABABDA.4020808@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guten Tag,
+Hello, Santosh.
 
-Mein Name ist Mr.SUN Zhijun, ich mit der Bank of China zu arbeiten. Ich brauche Ihre Unterstützung in Durchführung einer Transaktion bei $ 18,5 Millionen Dollar geschätzt, möchte ich Ihnen 30% der gesamten Mittel als Ausgleich für Ihre Unterstützung in dieser Transaktion. Ich werde Sie über die vollständige Transaktion benachrichtigt nach Eingang Ihrer Antwort, wenn interessiert, bitte senden Sie mir Ihren vollständigen detials als unten, um meine E-Mail aufgeführt: s_zhijun001@qq.com
+On Fri, Dec 13, 2013 at 07:52:42PM -0500, Santosh Shilimkar wrote:
+> >> +static void * __init memblock_virt_alloc_internal(
+> >> +				phys_addr_t size, phys_addr_t align,
+> >> +				phys_addr_t min_addr, phys_addr_t max_addr,
+> >> +				int nid)
+> >> +{
+> >> +	phys_addr_t alloc;
+> >> +	void *ptr;
+> >> +
+> >> +	if (nid == MAX_NUMNODES)
+> >> +		pr_warn("%s: usage of MAX_NUMNODES is depricated. Use NUMA_NO_NODE\n",
+> >> +			__func__);
+> > 
+> > Why not use WARN_ONCE()?  Also, shouldn't nid be set to NUMA_NO_NODE
+> > here?
+> > 
+> You want all the users using MAX_NUMNODES to know about it so that
+> the wrong usage can be fixed. WARN_ONCE will hide that.
 
-1. Vollständiger Name
-2.Private Telefonnummer
-3.Current Wohnadresse
+Well, it doesn't really help anyone to be printing multiple messages
+without any info on who was the caller and if this thing is gonna be
+in mainline triggering of the warning should be rare anyway.  It's
+more of a tool to gather one-off cases in the wild.  WARN_ONCE()
+usually is the better choice as otherwise the warnings can swamp the
+machine and console output in certain cases.
 
-Mit freundlichen Grüßen,
-Mr.SUN Zhijun
+> > ...
+> >> +	if (nid != NUMA_NO_NODE) {
+> > 
+> > Otherwise, the above test is broken.
+> > 
+> So the idea was just to warn the users and allow them to fix
+> the code. Well we are just allowing the existing users of using
+> either MAX_NUMNODES or NUMA_NO_NODE continue to work. Thats what
+> we discussed, right ?
+
+Huh?  Yeah, sure.  You're testing @nid against MAX_NUMNODES at the
+beginning of the function.  If it's MAX_NUMNODES, you print a warning
+but nothing else, so the if() conditional above, which should succeed,
+would fail.  Am I missing sth here?
+
+Thanks.
+
+-- 
+tejun
