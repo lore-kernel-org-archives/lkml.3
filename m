@@ -1,114 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab3LNKRw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 05:17:52 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:53820 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab3LNKRu (ORCPT
+	id S1753401Ab3LNKjd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 05:39:33 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:55030 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab3LNKjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 05:17:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <2150956.98751386754831696.JavaMail.weblogic@epml23>
-References: <2150956.98751386754831696.JavaMail.weblogic@epml23>
-Date: Sat, 14 Dec 2013 15:47:49 +0530
-Message-ID: <CAPoNrtskGRsdi63cL75Pr2dTq_AepF8bPgZjSFvxRWgRgdcJBQ@mail.gmail.com>
-Subject: Re: [PATCH V6] ARM : unwinder : Prevent data abort due to stack overflow
-From: Anurag Aggarwal <anurag19aggarwal@gmail.com>
-To: Anurag Aggarwal <a.anurag@samsung.com>
-Cc: Dave Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Naveen Kumar <naveen.sel@samsung.com>,
-        Narendra Meher <narendra.m1@samsung.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ashish Kalra <ashish.kalra@samsung.com>, "cpgs ." <cpgs@samsung.com>,
-        "naveenkrishna.ch@gmail.com" <naveenkrishna.ch@gmail.com>,
-        Rajat Suri <rajat.suri@samsung.com>,
-        Poorva Srivastava <poorva.s@samsung.com>,
-        Mohammad Irfan Ansari <mohammad.a2@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 14 Dec 2013 05:39:31 -0500
+Date: Sat, 14 Dec 2013 11:39:29 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: David Miller <davem@davemloft.net>
+Cc: dvlasenk@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, jpirko@redhat.com
+Subject: Re: [patch net-next v3] ipv6: log autoconfiguration failures
+Message-ID: <20131214103929.GE23563@order.stressinduktion.org>
+Mail-Followup-To: David Miller <davem@davemloft.net>, dvlasenk@redhat.com,
+	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+	kaber@trash.net, jpirko@redhat.com
+References: <1386949547-23457-1-git-send-email-dvlasenk@redhat.com> <20131213.175709.414078764436451428.davem@davemloft.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131213.175709.414078764436451428.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->You could try adding some debug printks to see how the backtrace fails.
->You could also try adding a few hand-crafted assembler functions
->with appropriate code and unwind directives to trigger different kinds
->of backtrace failure.  You might have to add a way to artificially limit
->sp_high to check the cases where you run out of stack in the middle of
->popping multiple registers.
+On Fri, Dec 13, 2013 at 05:57:09PM -0500, David Miller wrote:
+> From: Denys Vlasenko <dvlasenk@redhat.com>
+> Date: Fri, 13 Dec 2013 16:45:47 +0100
+> 
+> > If ipv6 auto-configuration does not work, currently it's hard
+> > to track what's going on. This change adds log messages
+> > (at debug level) on every code path where ipv6 autoconf fails.
+> > 
+> > v3: changed pr_debug's to pr_warn's.
+> > 
+> > Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> 
+> I already made it clear I want to see statistics added instead of log
+> messages for this.
 
-I added a a printk statement
-+               if (*vsp >= (unsigned long *)ctrl->sp_high) {
-+                       printk(KERN_ERR "Stack Overflow Detected, vsp = %lx",
-+                               (unsigned long)*vsp);
-+                       return -URC_FAILURE;
-+               }
+Hmm... I gave this a bit more thought.
 
-I ran a many test cases to try and get the above print in the dmesg log.
+I would go with counters, too. What if we add something like per interface
+softerror states. So that we e.g. can see that one protocol had an error on an
+interface and it needs attention of an administrator?
 
-I tried the following things :
+E.g.
 
-1) Calling unwind_backtrace from diffrenet locations in the kernel, I
-added the unwind call
-in some irq, fork, exit and some sysfs entries call.
-2) I limited the value of sp_high in unwind_frame() itself, I tried
-many values of sp_high,
-varrying from (low + sizeof(ctrl.vrs)/4) to (low + 4*sizeof(ctrl.vrs)).
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP,SOFT_FAIL>
 
-When running the above cases I was able to see the above printk quiet
-a few times in dmesg log.
+Would catch the eyes more quickly. If counters are implemented we could
+do that completly in user space and add that flag as soon as one of the
+observed counters are above 0 (and of course, iproute needs colors).
 
-So, the error condition is being handled.
+What do you think?
 
-If you have some test cases for verifying the unwinder, please share
-the same. They might help
-in thorough testing of unwinder.
-
-
-
-Regards
-
-On Wed, Dec 11, 2013 at 3:10 PM, Anurag Aggarwal <a.anurag@samsung.com> wrote:
->>You could try adding some debug printks to see how the backtrace fails.
->>You could also try adding a few hand-crafted assembler functions
->>with appropriate code and unwind directives to trigger different kinds
->>of backtrace failure.  You might have to add a way to artificially limit
->>sp_high to check the cases where you run out of stack in the middle of
->>popping multiple registers.
->
-> I added a a printk statement
-> +               if (*vsp >= (unsigned long *)ctrl->sp_high) {
-> +                       printk(KERN_ERR "Stack Overflow Detected, vsp = %lx",
-> +                               (unsigned long)*vsp);
-> +                       return -URC_FAILURE;
-> +               }
->
-> I ran a many test cases to try and get the above print in the dmesg log.
->
-> I tried the following things :
->
-> 1) Calling unwind_backtrace from diffrenet locations in the kernel, I added the unwind call
-> in some irq, fork, exit and some sysfs entries call.
-> 2) I limited the value of sp_high in unwind_frame() itself, I tried many values of sp_high,
-> varrying from (low + sizeof(ctrl.vrs)/4) to (low + 4*sizeof(ctrl.vrs)).
->
-> When running the above cases I was able to see the above printk quiet a few times in dmesg log.
->
-> So, the error condition is being handled.
->
-> If you have some test cases for verifying the unwinder, please share the same. They might help
-> in thorough testing of unwinder.
->
->
->
-> Regards
-> Anurag
-
-
-
--- 
-Anurag Aggarwal
