@@ -1,47 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab3LNFy3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 00:54:29 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53835 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233Ab3LNFy2 (ORCPT
+	id S1752039Ab3LNGHr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 01:07:47 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:54385 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab3LNGHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 00:54:28 -0500
-Date: Fri, 13 Dec 2013 21:54:23 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: linux-mtd@lists.infradead.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] MTD maintenance updates
-Message-ID: <20131214055423.GB2454@norris-Latitude-E6410>
-References: <1386199726-28074-1-git-send-email-computersforpeace@gmail.com>
- <1386232488.23205.283.camel@sauron.fi.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386232488.23205.283.camel@sauron.fi.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 14 Dec 2013 01:07:45 -0500
+From: Simon Horman <horms+renesas@verge.net.au>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-kernel@vger.kernel.org,
+        Simon Horman <horms+renesas@verge.net.au>
+Subject: [PATCH] clocksource: sh_cmt: Add clk_prepare/unprepare support
+Date: Sat, 14 Dec 2013 15:07:32 +0900
+Message-Id: <d78e9474459768c9aaf8cfd8bc54957d44771f46.1387000863.git.horms+renesas@verge.net.au>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <cover.1387000863.git.horms+renesas@verge.net.au>
+References: <cover.1387000863.git.horms+renesas@verge.net.au>
+In-Reply-To: <cover.1387000863.git.horms+renesas@verge.net.au>
+References: <cover.1387000863.git.horms+renesas@verge.net.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 10:34:48AM +0200, Artem Bityutskiy wrote:
-> On Wed, 2013-12-04 at 15:28 -0800, Brian Norris wrote:
-> > BTW, I'd like to get David's "ack" for these patches, and it'd be nice
-> > to hear
-> > from Artem too, since he has previously been an unofficial maintainer
-> > (and is
-> > understandably distracted by non-MTD work these days).
-> 
-> Acked-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-> 
-> Thanks Brian for taking care of the MTD subsystem.
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-Happy to!
+Prepare the clock at probe time, as there is no other appropriate place
+in the driver where we're allowed to sleep.
 
-Pushed both to l2-mtd.git. I'll give David a chance to yell before
-3.14-rc1.
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
+---
+ drivers/clocksource/sh_cmt.c | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
-Brian
+diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
+index 0965e98..940341a 100644
+--- a/drivers/clocksource/sh_cmt.c
++++ b/drivers/clocksource/sh_cmt.c
+@@ -634,12 +634,18 @@ static int sh_cmt_clock_event_next(unsigned long delta,
+ 
+ static void sh_cmt_clock_event_suspend(struct clock_event_device *ced)
+ {
+-	pm_genpd_syscore_poweroff(&ced_to_sh_cmt(ced)->pdev->dev);
++	struct sh_cmt_priv *p = ced_to_sh_cmt(ced);
++
++	pm_genpd_syscore_poweroff(&p->pdev->dev);
++	clk_unprepare(p->clk);
+ }
+ 
+ static void sh_cmt_clock_event_resume(struct clock_event_device *ced)
+ {
+-	pm_genpd_syscore_poweron(&ced_to_sh_cmt(ced)->pdev->dev);
++	struct sh_cmt_priv *p = ced_to_sh_cmt(ced);
++
++	clk_prepare(p->clk);
++	pm_genpd_syscore_poweron(&p->pdev->dev);
+ }
+ 
+ static void sh_cmt_register_clockevent(struct sh_cmt_priv *p,
+@@ -737,6 +743,10 @@ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
+ 		goto err2;
+ 	}
+ 
++	ret = clk_prepare(p->clk);
++	if (ret < 0)
++		goto err3;
++
+ 	if (res2 && (resource_size(res2) == 4)) {
+ 		/* assume both CMSTR and CMCSR to be 32-bit */
+ 		p->read_control = sh_cmt_read32;
+@@ -773,19 +783,21 @@ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
+ 			      cfg->clocksource_rating);
+ 	if (ret) {
+ 		dev_err(&p->pdev->dev, "registration failed\n");
+-		goto err3;
++		goto err4;
+ 	}
+ 	p->cs_enabled = false;
+ 
+ 	ret = setup_irq(irq, &p->irqaction);
+ 	if (ret) {
+ 		dev_err(&p->pdev->dev, "failed to request irq %d\n", irq);
+-		goto err3;
++		goto err4;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, p);
+ 
+ 	return 0;
++err4:
++	clk_unprepare(p->clk);
+ err3:
+ 	clk_put(p->clk);
+ err2:
+-- 
+1.8.4
+
