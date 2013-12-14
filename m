@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab3LMXHu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 18:07:50 -0500
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:57075 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562Ab3LMXHt (ORCPT
+	id S1753630Ab3LMXJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 18:09:30 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:52174 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab3LMXJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 18:07:49 -0500
-Date: Fri, 13 Dec 2013 18:07:44 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Nigel Cunningham <nigel@nigelcunningham.com.au>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
-        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] libata, freezer: avoid block device removal while system
- is frozen
-Message-ID: <20131213230744.GA17954@htj.dyndns.org>
-References: <20131213174932.GA27070@htj.dyndns.org>
- <20131213185237.GD27070@htj.dyndns.org>
- <20131213204034.GE27070@htj.dyndns.org>
- <52AB8E27.90308@nigelcunningham.com.au>
+	Fri, 13 Dec 2013 18:09:29 -0500
+To: tglx@linutronix.de, linux-sh@vger.kernel.org
+Subject: [PATCH] irq-renesas-irqc: simplify irq_set_type() method
+Cc: linux-kernel@vger.kernel.org, magnus.damm@gmail.com
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+Date: Sat, 14 Dec 2013 03:09:31 +0300
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52AB8E27.90308@nigelcunningham.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312140309.31407.sergei.shtylyov@cogentembedded.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Nigel.
+Value 0 of the sense  selection field of CONFIG_n register means "disable event
+detection" and serves in irqc_sense[] for marking the invalid values of the IRQ
+type (by just omitting initializers). There is no need for INTC_IRQ_SENSE_VALID
+and hence INTC_IRQ_SENSE() as all field values matching to the  valid IRQ types
+are non-zero anyway.
 
-On Sat, Dec 14, 2013 at 09:45:59AM +1100, Nigel Cunningham wrote:
-> In your first email, in the first substantial paragraph (starting
-> "Now, if the rest.."), you say "libata device removal waits for the
-> scheduled writeback work item to finish". I wonder if that's the
-> lynchpin. If we know the device is gone, why are we trying to write
-> to it?
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-It's just a standard part of block device removal -
-invalidate_partition(), bdi_wb_shutdown().
+---
+The patch is against the 'irq/core' branch of the 'tip.git' repo.
 
-> All pending I/O should have been flushed when suspend/hibernate
-> started, and there's no point in trying to update metadata on a
+ drivers/irqchip/irq-renesas-irqc.c |   17 +++++++----------
+ 1 file changed, 7 insertions(+), 10 deletions(-)
 
-Frozen or not, it isn't guaranteed that bdi wb queue is empty when the
-system went to suspend.  They're likely to be empty but there's no
-guarantee.  Conversion to workqueue only makes the behavior more
-deterministic.
-
-> device we can't access, so there should be no writeback needed (and
-> anything that does somehow get there should just be discarded since
-> it will never succeed anyway).
-
-Even if they'll never succeed, they still need to be issued and
-drained; otherwise, we'll end up with leaked items and hung issuers.
-
-> Having said the above, I agree that we shouldn't need to freeze
-> kernel threads and workqueues themselves. I think we should be
-> giving the producers of I/O the nous needed to avoid producing I/O
-> during suspend/hibernate. But perhaps I'm missing something here,
-> too.
-
-I never understood that part.  Why do we need to control the
-producers?  The chain between the producer and consumer is a long one
-and no matter what we do with the producers, the consumers need to be
-plugged all the same.  Why bother with the producers at all?  I think
-that's where all this freezable kthreads started but I don't
-understand what the benefit of that is.  Not only that, freezer is
-awefully inadequate in its role too.  There are flurry of activities
-which happen in the IO path without any thread involved and many of
-them can lead to issuance of new IO, so the only thing freezer is
-achieving is making existing bugs less visible, which is a bad thing
-especially for suspend/resume as the failure mode often doesn't yield
-to easy debugging.
-
-I asked the same question years ago and ISTR getting only fairly vague
-answers but this whole freezable kthread is expectedly proving to be a
-continuous source of problems.  Let's at least find out whether we
-need it and why if so.  Not some "I feel better knowing things are
-calmer" type vagueness but actual technical necessity of it.
-
-Thanks.
-
--- 
-tejun
+Index: renesas/drivers/irqchip/irq-renesas-irqc.c
+===================================================================
+--- renesas.orig/drivers/irqchip/irq-renesas-irqc.c
++++ renesas/drivers/irqchip/irq-renesas-irqc.c
+@@ -81,15 +81,12 @@ static void irqc_irq_disable(struct irq_
+ 	iowrite32(BIT(hw_irq), p->cpu_int_base + IRQC_EN_STS);
+ }
+ 
+-#define INTC_IRQ_SENSE_VALID 0x10
+-#define INTC_IRQ_SENSE(x) (x + INTC_IRQ_SENSE_VALID)
+-
+ static unsigned char irqc_sense[IRQ_TYPE_SENSE_MASK + 1] = {
+-	[IRQ_TYPE_LEVEL_LOW] = INTC_IRQ_SENSE(0x01),
+-	[IRQ_TYPE_LEVEL_HIGH] = INTC_IRQ_SENSE(0x02),
+-	[IRQ_TYPE_EDGE_FALLING] = INTC_IRQ_SENSE(0x04), /* Synchronous */
+-	[IRQ_TYPE_EDGE_RISING] = INTC_IRQ_SENSE(0x08), /* Synchronous */
+-	[IRQ_TYPE_EDGE_BOTH] = INTC_IRQ_SENSE(0x0c),  /* Synchronous */
++	[IRQ_TYPE_LEVEL_LOW]	= 0x01,
++	[IRQ_TYPE_LEVEL_HIGH]	= 0x02,
++	[IRQ_TYPE_EDGE_FALLING]	= 0x04,	/* Synchronous */
++	[IRQ_TYPE_EDGE_RISING]	= 0x08,	/* Synchronous */
++	[IRQ_TYPE_EDGE_BOTH]	= 0x0c,	/* Synchronous */
+ };
+ 
+ static int irqc_irq_set_type(struct irq_data *d, unsigned int type)
+@@ -101,12 +98,12 @@ static int irqc_irq_set_type(struct irq_
+ 
+ 	irqc_dbg(&p->irq[hw_irq], "sense");
+ 
+-	if (!(value & INTC_IRQ_SENSE_VALID))
++	if (!value)
+ 		return -EINVAL;
+ 
+ 	tmp = ioread32(p->iomem + IRQC_CONFIG(hw_irq));
+ 	tmp &= ~0x3f;
+-	tmp |= value ^ INTC_IRQ_SENSE_VALID;
++	tmp |= value;
+ 	iowrite32(tmp, p->iomem + IRQC_CONFIG(hw_irq));
+ 	return 0;
+ }
