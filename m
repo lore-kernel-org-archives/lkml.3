@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab3LNLIt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 06:08:49 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:48306 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126Ab3LNLIr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 06:08:47 -0500
-Date: Sat, 14 Dec 2013 06:08:44 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v3 08/23] mm/memblock: Add memblock memory allocation apis
-Message-ID: <20131214110844.GB17954@htj.dyndns.org>
-References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
- <1386625856-12942-9-git-send-email-santosh.shilimkar@ti.com>
- <20131213213735.GM27070@htj.dyndns.org>
- <52ABABDA.4020808@ti.com>
+	id S1753411Ab3LNLPW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 06:15:22 -0500
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:53920 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752126Ab3LNLPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Dec 2013 06:15:21 -0500
+Date: Sat, 14 Dec 2013 13:15:15 +0200 (EET)
+From: Meelis Roos <mroos@linux.ee>
+To: Peter Hurley <peter@hurleysoftware.com>
+cc: Christoph Lameter <cl@linux.com>, Ethan Zhao <ethan.kernel@gmail.com>,
+        alokk@calsoftinc.com, shobhit@calsoftinc.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/slab.c: check pointer slabp before using it in
+ alloc_slabmgmt()
+In-Reply-To: <52A73EF9.4050105@hurleysoftware.com>
+Message-ID: <alpine.SOC.1.00.1312141310250.28548@math.ut.ee>
+References: <1386495533-413-1-git-send-email-ethan.kernel@gmail.com> <00000142d82085d4-edeac9e1-d603-458f-9ceb-904e2b706679-000000@email.amazonses.com> <CABawtvPdQ2smcawTywp605KceKAQF+CsvpBqG1zEaKfP-PLB6A@mail.gmail.com> <CABawtvM6MpwHH7kFjnqSr69QWboFXsEiu6Fv0MMJkhQbaXCLxw@mail.gmail.com>
+ <00000142dd262a23-776dfc34-c3e4-4229-8684-d99131a2f758-000000@email.amazonses.com> <52A73EF9.4050105@hurleysoftware.com>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52ABABDA.4020808@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Santosh.
-
-On Fri, Dec 13, 2013 at 07:52:42PM -0500, Santosh Shilimkar wrote:
-> >> +static void * __init memblock_virt_alloc_internal(
-> >> +				phys_addr_t size, phys_addr_t align,
-> >> +				phys_addr_t min_addr, phys_addr_t max_addr,
-> >> +				int nid)
-> >> +{
-> >> +	phys_addr_t alloc;
-> >> +	void *ptr;
-> >> +
-> >> +	if (nid == MAX_NUMNODES)
-> >> +		pr_warn("%s: usage of MAX_NUMNODES is depricated. Use NUMA_NO_NODE\n",
-> >> +			__func__);
+> > On Tue, 10 Dec 2013, Ethan Zhao wrote:
 > > 
-> > Why not use WARN_ONCE()?  Also, shouldn't nid be set to NUMA_NO_NODE
-> > here?
+> > >       No, stable 3.12.4 and 3.12.3 need this patch.  3.13RC doesn't
+> > > need it anymore.
 > > 
-> You want all the users using MAX_NUMNODES to know about it so that
-> the wrong usage can be fixed. WARN_ONCE will hide that.
+> > Hmmm.. Then this commit may have fixed it:
+> 
+> Cross-threaded from [Re: Slab BUG with DEBUG_* options ]
+> 
+> On 12/08/2013 10:00 AM, Meelis Roos wrote:
+> > ldata alloc change + your second slab patch + slab debug: hang on boot
+> > after
+> > console [tty0] enabled, bootconsole disabled
+> > (after that, I should see all the dmesg again on serial but I do not).
+> 
+> Meelis,
+> 
+> Please grab this patch below and see if it fixes your 'hang on boot'
+> with Christoph's other slab patch + slab debug.
 
-Well, it doesn't really help anyone to be printing multiple messages
-without any info on who was the caller and if this thing is gonna be
-in mainline triggering of the warning should be rare anyway.  It's
-more of a tool to gather one-off cases in the wild.  WARN_ONCE()
-usually is the better choice as otherwise the warnings can swamp the
-machine and console output in certain cases.
-
-> > ...
-> >> +	if (nid != NUMA_NO_NODE) {
-> > 
-> > Otherwise, the above test is broken.
-> > 
-> So the idea was just to warn the users and allow them to fix
-> the code. Well we are just allowing the existing users of using
-> either MAX_NUMNODES or NUMA_NO_NODE continue to work. Thats what
-> we discussed, right ?
-
-Huh?  Yeah, sure.  You're testing @nid against MAX_NUMNODES at the
-beginning of the function.  If it's MAX_NUMNODES, you print a warning
-but nothing else, so the if() conditional above, which should succeed,
-would fail.  Am I missing sth here?
-
-Thanks.
+Tried it on top of 3.12 + second slab patch + ldata alloc change, and 
+lsab debug conf. No change - still hangs on boot.
 
 -- 
-tejun
+Meelis Roos (mroos@linux.ee)
