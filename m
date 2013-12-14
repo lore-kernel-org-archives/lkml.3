@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953Ab3LND16 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 22:27:58 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:50385 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753492Ab3LND1N (ORCPT
+	id S1753932Ab3LND15 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 22:27:57 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:58235 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484Ab3LND1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 22:27:13 -0500
+	Fri, 13 Dec 2013 22:27:12 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Greg KH <gregkh@linuxfoundation.org>,
@@ -14,9 +14,9 @@ Cc: Greg KH <gregkh@linuxfoundation.org>,
         Sumit Semwal <sumit.semwal@linaro.org>,
         Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 110/115] ion: add helper to zero contiguous region of pages
-Date: Fri, 13 Dec 2013 19:26:30 -0800
-Message-Id: <1386991595-6251-18-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 109/115] ion: carveout heap: zero buffers on free, fix memory leak
+Date: Fri, 13 Dec 2013 19:26:29 -0800
+Message-Id: <1386991595-6251-17-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386991595-6251-1-git-send-email-john.stultz@linaro.org>
 References: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
@@ -27,195 +27,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Colin Cross <ccross@android.com>
 
-Add ion_heap_pages_zero for ion heaps to use to zero pages
-during initialization or allocation, when a struct ion_buffer
-may not be available.  Use it from the chunk heap and carveout
-heaps.
+The carveout heap wasn't zeroing its buffers after use.
+Create the sg_table during allocate instead of map_dma, to allow
+using the sg_table during free, and call ion_heap_buffer_zero
+during free.  Also fixes a missing kfree when destroying the
+table.
 
 Signed-off-by: Colin Cross <ccross@android.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/ion/ion_carveout_heap.c | 13 ++++++
- drivers/staging/android/ion/ion_chunk_heap.c    | 39 ++++++------------
- drivers/staging/android/ion/ion_heap.c          | 53 +++++++++++++++----------
- drivers/staging/android/ion/ion_priv.h          |  1 +
- 4 files changed, 58 insertions(+), 48 deletions(-)
+ drivers/staging/android/ion/ion_carveout_heap.c | 69 +++++++++++++++++--------
+ 1 file changed, 48 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/staging/android/ion/ion_carveout_heap.c b/drivers/staging/android/ion/ion_carveout_heap.c
-index 66dec4c..3cb05b9 100644
+index 9bf20a3..66dec4c 100644
 --- a/drivers/staging/android/ion/ion_carveout_heap.c
 +++ b/drivers/staging/android/ion/ion_carveout_heap.c
-@@ -150,6 +150,19 @@ static struct ion_heap_ops carveout_heap_ops = {
- struct ion_heap *ion_carveout_heap_create(struct ion_platform_heap *heap_data)
+@@ -14,7 +14,7 @@
+  *
+  */
+ #include <linux/spinlock.h>
+-
++#include <linux/dma-mapping.h>
+ #include <linux/err.h>
+ #include <linux/genalloc.h>
+ #include <linux/io.h>
+@@ -60,7 +60,11 @@ static int ion_carveout_heap_phys(struct ion_heap *heap,
+ 				  struct ion_buffer *buffer,
+ 				  ion_phys_addr_t *addr, size_t *len)
  {
- 	struct ion_carveout_heap *carveout_heap;
-+	int ret;
+-	*addr = buffer->priv_phys;
++	struct sg_table *table = buffer->priv_virt;
++	struct page *page = sg_page(table->sgl);
++	ion_phys_addr_t paddr = PFN_PHYS(page_to_pfn(page));
 +
-+	struct page *page;
-+	size_t size;
-+
-+	page = pfn_to_page(PFN_DOWN(heap_data->base));
-+	size = heap_data->size;
-+
-+	ion_pages_sync_for_device(NULL, page, size, DMA_BIDIRECTIONAL);
-+
-+	ret = ion_heap_pages_zero(page, size, pgprot_writecombine(PAGE_KERNEL));
-+	if (ret)
-+		return ERR_PTR(ret);
- 
- 	carveout_heap = kzalloc(sizeof(struct ion_carveout_heap), GFP_KERNEL);
- 	if (!carveout_heap)
-diff --git a/drivers/staging/android/ion/ion_chunk_heap.c b/drivers/staging/android/ion/ion_chunk_heap.c
-index 46e8a3b..f21530f 100644
---- a/drivers/staging/android/ion/ion_chunk_heap.c
-+++ b/drivers/staging/android/ion/ion_chunk_heap.c
-@@ -140,9 +140,18 @@ static struct ion_heap_ops chunk_heap_ops = {
- struct ion_heap *ion_chunk_heap_create(struct ion_platform_heap *heap_data)
- {
- 	struct ion_chunk_heap *chunk_heap;
--	struct vm_struct *vm_struct;
--	pgprot_t pgprot = pgprot_writecombine(PAGE_KERNEL);
--	int i, ret;
-+	int ret;
-+	struct page *page;
-+	size_t size;
-+
-+	page = pfn_to_page(PFN_DOWN(heap_data->base));
-+	size = heap_data->size;
-+
-+	ion_pages_sync_for_device(NULL, page, size, DMA_BIDIRECTIONAL);
-+
-+	ret = ion_heap_pages_zero(page, size, pgprot_writecombine(PAGE_KERNEL));
-+	if (ret)
-+		return ERR_PTR(ret);
- 
- 	chunk_heap = kzalloc(sizeof(struct ion_chunk_heap), GFP_KERNEL);
- 	if (!chunk_heap)
-@@ -159,26 +168,6 @@ struct ion_heap *ion_chunk_heap_create(struct ion_platform_heap *heap_data)
- 	chunk_heap->size = heap_data->size;
- 	chunk_heap->allocated = 0;
- 
--	vm_struct = get_vm_area(PAGE_SIZE, VM_ALLOC);
--	if (!vm_struct) {
--		ret = -ENOMEM;
--		goto error;
--	}
--	for (i = 0; i < chunk_heap->size; i += PAGE_SIZE) {
--		struct page *page = pfn_to_page(PFN_DOWN(chunk_heap->base + i));
--		struct page **pages = &page;
--
--		ret = map_vm_area(vm_struct, pgprot, &pages);
--		if (ret)
--			goto error_map_vm_area;
--		memset(vm_struct->addr, 0, PAGE_SIZE);
--		unmap_kernel_range((unsigned long)vm_struct->addr, PAGE_SIZE);
--	}
--	free_vm_area(vm_struct);
--
--	ion_pages_sync_for_device(NULL, pfn_to_page(PFN_DOWN(heap_data->base)),
--			heap_data->size, DMA_BIDIRECTIONAL);
--
- 	gen_pool_add(chunk_heap->pool, chunk_heap->base, heap_data->size, -1);
- 	chunk_heap->heap.ops = &chunk_heap_ops;
- 	chunk_heap->heap.type = ION_HEAP_TYPE_CHUNK;
-@@ -188,10 +177,6 @@ struct ion_heap *ion_chunk_heap_create(struct ion_platform_heap *heap_data)
- 
- 	return &chunk_heap->heap;
- 
--error_map_vm_area:
--	free_vm_area(vm_struct);
--error:
--	gen_pool_destroy(chunk_heap->pool);
- error_gen_pool_create:
- 	kfree(chunk_heap);
- 	return ERR_PTR(ret);
-diff --git a/drivers/staging/android/ion/ion_heap.c b/drivers/staging/android/ion/ion_heap.c
-index c3a213b..2d1d555 100644
---- a/drivers/staging/android/ion/ion_heap.c
-+++ b/drivers/staging/android/ion/ion_heap.c
-@@ -114,38 +114,49 @@ static int ion_heap_clear_pages(struct page **pages, int num, pgprot_t pgprot)
++	*addr = paddr;
+ 	*len = buffer->size;
  	return 0;
  }
- 
-+static int ion_heap_sglist_zero(struct scatterlist *sgl, unsigned int nents,
-+						pgprot_t pgprot)
-+{
-+	int p = 0;
-+	int ret = 0;
-+	struct sg_page_iter piter;
-+	struct page *pages[32];
-+
-+	for_each_sg_page(sgl, &piter, nents, 0) {
-+		pages[p++] = sg_page_iter_page(&piter);
-+		if (p == ARRAY_SIZE(pages)) {
-+			ret = ion_heap_clear_pages(pages, p, pgprot);
-+			if (ret)
-+				return ret;
-+			p = 0;
-+		}
-+	}
-+	if (p)
-+		ret = ion_heap_clear_pages(pages, p, pgprot);
-+
-+	return ret;
-+}
-+
- int ion_heap_buffer_zero(struct ion_buffer *buffer)
+@@ -70,44 +74,66 @@ static int ion_carveout_heap_allocate(struct ion_heap *heap,
+ 				      unsigned long size, unsigned long align,
+ 				      unsigned long flags)
  {
- 	struct sg_table *table = buffer->sg_table;
- 	pgprot_t pgprot;
--	struct scatterlist *sg;
--	int i, j, ret = 0;
--	struct page *pages[32];
--	int k = 0;
- 
- 	if (buffer->flags & ION_FLAG_CACHED)
- 		pgprot = PAGE_KERNEL;
- 	else
- 		pgprot = pgprot_writecombine(PAGE_KERNEL);
- 
--	for_each_sg(table->sgl, sg, table->nents, i) {
--		struct page *page = sg_page(sg);
--		unsigned long len = sg->length;
-+	return ion_heap_sglist_zero(table->sgl, table->nents, pgprot);
-+}
- 
--		for (j = 0; j < len / PAGE_SIZE; j++) {
--			pages[k++] = page + j;
--			if (k == ARRAY_SIZE(pages)) {
--				ret = ion_heap_clear_pages(pages, k, pgprot);
--				if (ret)
--					goto end;
--				k = 0;
--			}
--		}
--		if (k)
--			ret = ion_heap_clear_pages(pages, k, pgprot);
--	}
--end:
--	return ret;
-+int ion_heap_pages_zero(struct page *page, size_t size, pgprot_t pgprot)
-+{
-+	struct scatterlist sg;
++	struct sg_table *table;
++	ion_phys_addr_t paddr;
++	int ret;
 +
-+	sg_init_table(&sg, 1);
-+	sg_set_page(&sg, page, size, 0);
-+	return ion_heap_sglist_zero(&sg, 1, pgprot);
+ 	if (align > PAGE_SIZE)
+ 		return -EINVAL;
+ 
+-	buffer->priv_phys = ion_carveout_allocate(heap, size, align);
+-	return buffer->priv_phys == ION_CARVEOUT_ALLOCATE_FAIL ? -ENOMEM : 0;
++	table = kzalloc(sizeof(struct sg_table), GFP_KERNEL);
++	if (!table)
++		return -ENOMEM;
++	ret = sg_alloc_table(table, 1, GFP_KERNEL);
++	if (ret)
++		goto err_free;
++
++	paddr = ion_carveout_allocate(heap, size, align);
++	if (paddr == ION_CARVEOUT_ALLOCATE_FAIL) {
++		ret = -ENOMEM;
++		goto err_free_table;
++	}
++
++	sg_set_page(table->sgl, pfn_to_page(PFN_DOWN(paddr)), size, 0);
++	buffer->priv_virt = table;
++
++	return 0;
++
++err_free_table:
++	sg_free_table(table);
++err_free:
++	kfree(table);
++	return ret;
  }
  
- void ion_heap_freelist_add(struct ion_heap *heap, struct ion_buffer * buffer)
-diff --git a/drivers/staging/android/ion/ion_priv.h b/drivers/staging/android/ion/ion_priv.h
-index c9b507d..fa96175 100644
---- a/drivers/staging/android/ion/ion_priv.h
-+++ b/drivers/staging/android/ion/ion_priv.h
-@@ -215,6 +215,7 @@ void ion_heap_unmap_kernel(struct ion_heap *, struct ion_buffer *);
- int ion_heap_map_user(struct ion_heap *, struct ion_buffer *,
- 			struct vm_area_struct *);
- int ion_heap_buffer_zero(struct ion_buffer *buffer);
-+int ion_heap_pages_zero(struct page *page, size_t size, pgprot_t pgprot);
+ static void ion_carveout_heap_free(struct ion_buffer *buffer)
+ {
+ 	struct ion_heap *heap = buffer->heap;
++	struct sg_table *table = buffer->priv_virt;
++	struct page *page = sg_page(table->sgl);
++	ion_phys_addr_t paddr = PFN_PHYS(page_to_pfn(page));
++
++	ion_heap_buffer_zero(buffer);
  
- /**
-  * ion_heap_init_deferred_free -- initialize deferred free functionality
+-	ion_carveout_free(heap, buffer->priv_phys, buffer->size);
+-	buffer->priv_phys = ION_CARVEOUT_ALLOCATE_FAIL;
++	if (ion_buffer_cached(buffer))
++		dma_sync_sg_for_device(NULL, table->sgl, table->nents,
++							DMA_BIDIRECTIONAL);
++
++	ion_carveout_free(heap, paddr, buffer->size);
++	sg_free_table(table);
++	kfree(table);
+ }
+ 
+ static struct sg_table *ion_carveout_heap_map_dma(struct ion_heap *heap,
+ 						  struct ion_buffer *buffer)
+ {
+-	struct sg_table *table;
+-	int ret;
+-
+-	table = kzalloc(sizeof(struct sg_table), GFP_KERNEL);
+-	if (!table)
+-		return ERR_PTR(-ENOMEM);
+-	ret = sg_alloc_table(table, 1, GFP_KERNEL);
+-	if (ret) {
+-		kfree(table);
+-		return ERR_PTR(ret);
+-	}
+-	sg_set_page(table->sgl, pfn_to_page(PFN_DOWN(buffer->priv_phys)),
+-			buffer->size, 0);
+-	return table;
++	return buffer->priv_virt;
+ }
+ 
+ static void ion_carveout_heap_unmap_dma(struct ion_heap *heap,
+ 					struct ion_buffer *buffer)
+ {
+-	sg_free_table(buffer->sg_table);
++	return;
+ }
+ 
+ static struct ion_heap_ops carveout_heap_ops = {
+@@ -139,6 +165,7 @@ struct ion_heap *ion_carveout_heap_create(struct ion_platform_heap *heap_data)
+ 		     -1);
+ 	carveout_heap->heap.ops = &carveout_heap_ops;
+ 	carveout_heap->heap.type = ION_HEAP_TYPE_CARVEOUT;
++	carveout_heap->heap.flags = ION_HEAP_FLAG_DEFER_FREE;
+ 
+ 	return &carveout_heap->heap;
+ }
 -- 
 1.8.3.2
 
