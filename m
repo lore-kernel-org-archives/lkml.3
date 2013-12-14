@@ -1,50 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab3LNUHC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 15:07:02 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:50113 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab3LNUG7 (ORCPT
+	id S1754005Ab3LNUNe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 15:13:34 -0500
+Received: from relay.parallels.com ([195.214.232.42]:49281 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791Ab3LNUNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 15:06:59 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 2/2] ion: Reenable the build
-Date: Sat, 14 Dec 2013 12:06:46 -0800
-Message-Id: <1387051606-10440-2-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387051606-10440-1-git-send-email-john.stultz@linaro.org>
-References: <20131214170618.GA17461@kroah.com>
- <1387051606-10440-1-git-send-email-john.stultz@linaro.org>
+	Sat, 14 Dec 2013 15:13:32 -0500
+Message-ID: <52ACBBE5.1020806@parallels.com>
+Date: Sun, 15 Dec 2013 00:13:25 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+MIME-Version: 1.0
+To: <mhocko@suse.cz>
+CC: <glommer@gmail.com>, Balbir Singh <bsingharora@gmail.com>,
+        <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@openvz.org>,
+        <linux-mm@kvack.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, <cgroups@vger.kernel.org>,
+        <devel@openvz.org>
+Subject: Re: [Devel] [PATCH 2/2] memcg: do not use vmalloc for mem_cgroup
+ allocations
+References: <965cbb70fb55fe50a77382537b9a1b7455deac86.1387007793.git.vdavydov@parallels.com> <ce02d52baac3730d659c046a181c2784c6cee2c4.1387007793.git.vdavydov@parallels.com>
+In-Reply-To: <ce02d52baac3730d659c046a181c2784c6cee2c4.1387007793.git.vdavydov@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.24.25.125]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that ION builds, reenable it in the build.
+On 12/14/2013 12:15 PM, Vladimir Davydov wrote:
+> The vmalloc was introduced by patch 333279 ("memcgroup: use vmalloc for
+> mem_cgroup allocation"), because at that time MAX_NUMNODES was used for
+> defining the per-node array in the mem_cgroup structure so that the
+> structure could be huge even if the system had the only NUMA node.
+>
+> The situation was significantly improved by patch 45cf7e ("memcg: reduce
+> the size of struct memcg 244-fold"), which made the size of the
+> mem_cgroup structure calculated dynamically depending on the real number
+> of NUMA nodes installed on the system (nr_node_ids), so now there is no
+> point in using vmalloc here: the structure is allocated rarely and on
+> most systems its size is about 1K.
 
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/staging/android/Makefile | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+After a bit of thinking I refused to use wait_on_bit() on
+kmem_account_flags in the kmemcg shrinkers patchset I'm trying to
+submit, so if this patch is going to be committed, it is better to
+remove the paragraph below from the commit message :-)
 
-diff --git a/drivers/staging/android/Makefile b/drivers/staging/android/Makefile
-index 29c5ff0..0a01e191 100644
---- a/drivers/staging/android/Makefile
-+++ b/drivers/staging/android/Makefile
-@@ -1,7 +1,6 @@
- ccflags-y += -I$(src)			# needed for trace events
- 
--# ION doesn't build just yet, so disable it from the build
--#obj-y					+= ion/
-+obj-y					+= ion/
- 
- obj-$(CONFIG_ANDROID_BINDER_IPC)	+= binder.o
- obj-$(CONFIG_ASHMEM)			+= ashmem.o
--- 
-1.8.3.2
+However, I still think this patch is reasonable, because I haven't found
+a place in the kernel source tree where we used vmalloc() for allocating
+an array of nr_node_ids pointers. On the other hand, there are plenty of
+places where we allocate per-node data using kmalloc. For instance, in
+list_lru_init() we have
+
+    size_t size = sizeof(struct list_lru_node) * nr_node_ids;
+    lru->node = kzalloc(size, GFP_KERNEL);
+
+where the list_lru_node structure is at least 4 words at size.
+
+> Personally I'd like to remove this vmalloc, because I'm considering
+> using wait_on_bit() on mem_cgroup::kmem_account_flags in the kmemcg
+> shrinkers implementation, which is impossible on vmalloc'd areas.
+>
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Glauber Costa <glommer@openvz.org>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Balbir Singh <bsingharora@gmail.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c |   28 ++++++----------------------
+>  1 file changed, 6 insertions(+), 22 deletions(-)
+>
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 7f1a356..205eb7b 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -48,7 +48,6 @@
+>  #include <linux/sort.h>
+>  #include <linux/fs.h>
+>  #include <linux/seq_file.h>
+> -#include <linux/vmalloc.h>
+>  #include <linux/vmpressure.h>
+>  #include <linux/mm_inline.h>
+>  #include <linux/page_cgroup.h>
+> @@ -335,12 +334,6 @@ struct mem_cgroup {
+>  	/* WARNING: nodeinfo must be the last member here */
+>  };
+>  
+> -static size_t memcg_size(void)
+> -{
+> -	return sizeof(struct mem_cgroup) +
+> -		nr_node_ids * sizeof(struct mem_cgroup_per_node *);
+> -}
+> -
+>  /* internal only representation about the status of kmem accounting. */
+>  enum {
+>  	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
+> @@ -6139,14 +6132,12 @@ static void free_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+>  static struct mem_cgroup *mem_cgroup_alloc(void)
+>  {
+>  	struct mem_cgroup *memcg;
+> -	size_t size = memcg_size();
+> +	size_t size;
+>  
+> -	/* Can be very big if nr_node_ids is very big */
+> -	if (size < PAGE_SIZE)
+> -		memcg = kzalloc(size, GFP_KERNEL);
+> -	else
+> -		memcg = vzalloc(size);
+> +	size = sizeof(struct mem_cgroup);
+> +	size += nr_node_ids * sizeof(struct mem_cgroup_per_node *);
+>  
+> +	memcg = kzalloc(size, GFP_KERNEL);
+>  	if (!memcg)
+>  		return NULL;
+>  
+> @@ -6157,10 +6148,7 @@ static struct mem_cgroup *mem_cgroup_alloc(void)
+>  	return memcg;
+>  
+>  out_free:
+> -	if (size < PAGE_SIZE)
+> -		kfree(memcg);
+> -	else
+> -		vfree(memcg);
+> +	kfree(memcg);
+>  	return NULL;
+>  }
+>  
+> @@ -6178,7 +6166,6 @@ out_free:
+>  static void __mem_cgroup_free(struct mem_cgroup *memcg)
+>  {
+>  	int node;
+> -	size_t size = memcg_size();
+>  
+>  	mem_cgroup_remove_from_trees(memcg);
+>  
+> @@ -6199,10 +6186,7 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
+>  	 * the cgroup_lock.
+>  	 */
+>  	disarm_static_keys(memcg);
+> -	if (size < PAGE_SIZE)
+> -		kfree(memcg);
+> -	else
+> -		vfree(memcg);
+> +	kfree(memcg);
+>  }
+>  
+>  /*
 
