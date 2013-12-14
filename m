@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab3LNMjS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 07:39:18 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:45715 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460Ab3LNMjR (ORCPT
+	id S1753560Ab3LNMqk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 07:46:40 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:39638 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053Ab3LNMqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 07:39:17 -0500
-Date: Sat, 14 Dec 2013 13:39:13 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>, linaro-mm-sig@lists.linaro.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [RFC] dma-buf: Implement test module
-Message-ID: <20131214123912.GF17467@mithrandir>
-References: <1386858989-1487-1-git-send-email-treding@nvidia.com>
- <52AA0FC4.3090606@vmware.com>
+	Sat, 14 Dec 2013 07:46:39 -0500
+Date: Sat, 14 Dec 2013 18:16:28 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Matt Porter <mporter@kernel.crashing.org>,
+        Alexandre Bounine <alexandre.bounine@idt.com>, josh@joshtriplett.org
+Subject: [PATCH 1/3] drivers: rapidio: Include appropriate header file in
+ rio-access.c
+Message-ID: <8522e3b2fefdb6625e9d7ae651cfa2dfd4733293.1386926041.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4f28nU6agdXSinmL"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52AA0FC4.3090606@vmware.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch includes appropriate header file linux/rio_drv.h in
+rio-access.c because functions __rio_local_read_config_8,
+__rio_local_read_config_16, __rio_local_read_config_32,
+__rio_local_write_config_8, __rio_local_write_config_16,
+__rio_local_write_config_32, rio_mport_read_config_8,
+rio_mport_read_config_16, rio_mport_read_config_32,
+rio_mport_write_config_8, rio_mport_write_config_16,
+rio_mport_write_config_32 and rio_mport_send_doorbell have their
+prototype declaration in linux/rio_drv.h.
 
---4f28nU6agdXSinmL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thus, it also eliminates the following warning in rio-access.c:
 
-On Thu, Dec 12, 2013 at 08:34:28PM +0100, Thomas Hellstrom wrote:
-> On 12/12/2013 03:36 PM, Thierry Reding wrote:
-> >This is a simple test module that can be used to allocate, export and
-> >delete DMA-BUF objects. It can be used to test DMA-BUF sharing in
-> >systems that lack a real second driver.
-> >
-> >
->=20
-> Looks nice. I wonder whether this could be extended to create a "streamin=
-g"
-> dma-buf from a user space mapping. That could be used as a generic way to
-> implement streaming (user) buffer objects, rather than to add explicit
-> support for those in, for example, TTM.
+drivers/rapidio/rio-access.c:79:1: warning: no previous prototype for ‘__rio_local_read_config_8’ [-Wmissing-prototypes]
+drivers/rapidio/rio-access.c:80:1: warning: no previous prototype for ‘__rio_local_read_config_16’ [-Wmissing-prototypes]
+drivers/rapidio/rio-access.c:81:1: warning: no previous prototype for ‘__rio_local_read_config_32’ [-Wmissing-prototypes]
+drivers/rapidio/rio-access.c:82:1: warning: no previous prototype for ‘__rio_local_write_config_8’ [-Wmissing-prototypes]
+drivers/rapidio/rio-access.c:83:1: warning: no previous prototype for ‘__rio_local_write_config_16’ [-Wmissing-prototypes]
+drivers/rapidio/rio-access.c:84:1: warning: no previous prototype for ‘__rio_local_write_config_32’ [-Wmissing-prototypes]
+drivers/rapidio/rio-access.c:139:1: warning: no previous prototype for ‘rio_mport_read_config_8’ [-Wmissing-prototypes]
+drivers/rapidio/rio-access.c:140:1: warning: no previous prototype for ‘rio_mport_read_config_16’ [-Wmissing-prototypes]
+drivers/rapidio/rio-access.c:141:1: warning: no previous prototype for ‘rio_mport_read_config_32’ [-Wmissing-prototypes]
+drivers/rapidio/rio-access.c:142:1: warning: no previous prototype for ‘rio_mport_write_config_8’ [-Wmissing-prototypes]
+drivers/rapidio/rio-access.c:143:1: warning: no previous prototype for ‘rio_mport_write_config_16’ [-Wmissing-prototypes]
+drivers/rapidio/rio-access.c:144:1: warning: no previous prototype for ‘rio_mport_write_config_32’ [-Wmissing-prototypes]
+drivers/rapidio/rio-access.c:163:5: warning: no previous prototype for ‘rio_mport_send_doorbell’ [-Wmissing-prototypes]
 
-I'm somewhat reluctant to beef this up needlessly to prevent it from
-being used for purposes other than testing.
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+---
+ drivers/rapidio/rio-access.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Thierry
+diff --git a/drivers/rapidio/rio-access.c b/drivers/rapidio/rio-access.c
+index a3824ba..5e6c7eb 100644
+--- a/drivers/rapidio/rio-access.c
++++ b/drivers/rapidio/rio-access.c
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include <linux/rio.h>
++#include <linux/rio_drv.h>
+ #include <linux/module.h>
+ 
+ /*
+-- 
+1.7.9.5
 
---4f28nU6agdXSinmL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSrFFwAAoJEN0jrNd/PrOhLJ4P+gMyHIBKKHsorpmlBOJrWbYG
-FqXH7BjPNh3wTI7zLC7MSdzN+ErBs5YfbyejTCQPDf0e+Adql7zVskx+0ond7H7A
-OrXUDTdM5b7sdDX8W3VZMUknk3ZcZmCNSmGdf53afkejxttT5h2/HMvSziPCsoa2
-2idcPB/fUa51pnYtOJD7faPPOFhGoia02wqQn4iEU3hOBr3Ay/jbnOzkaExNtBQv
-dx8cLxt27fl8KYBwThBpMfwwX5HvpgXPYgVKgihSP5zKzwznSCvI4eX8i3G5+i4j
-b2ZPEHUbquyaERzE80TERejHNZsm4u4G7XNB/xBaCndDc9vPJ3HuTT+wH7/xf2jL
-/auXoeXwSZbKSf47m5YnR3JJ3+BbWN0wnlcwIXNreSmf4FNA+TyUjyRvuIaJeBAd
-qvD4Twlnaeu/yq7BKABG/czAMM57ZoGERQsIzC1EcT6gWDaV41AL81a0YOMN6j3a
-/+YY1G742Y5I2hfFTz75/p4JqvQMSIFNfAER/k0esXp4v3faJTV6pZ9Fj/UhwIOh
-1naVROu6AbUIZf+mcKYOW3VWCeDcohmMF5d9awwjwo/XnVzg/1cpj2O/iLDrMNQ+
-yBE1wZ5tdwYODV224dmPzma3kucZJo2hvoebMxE+0RdBnT0pRP3eH9bJj8HFVi08
-6IZ9yi/jWblqKkTDYaVn
-=fZEz
------END PGP SIGNATURE-----
-
---4f28nU6agdXSinmL--
