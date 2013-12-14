@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab3LNDtM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 22:49:12 -0500
-Received: from seketeli.net ([91.121.166.71]:48107 "EHLO ms.seketeli.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753253Ab3LNDsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 22:48:40 -0500
-From: Apelete Seketeli <apelete@seketeli.net>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 0/3] Add USB support for Ingenic JZ4740
-Date: Sat, 14 Dec 2013 04:48:35 +0100
-Message-Id: <1386992918-1531-1-git-send-email-apelete@seketeli.net>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753407Ab3LNEBv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 23:01:51 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:50428 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753266Ab3LNEBt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 23:01:49 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH v4 1/2] ARM: mach-moxart: add MOXA ART SoC platform files
+Date: Sat, 14 Dec 2013 05:01:05 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Jonas Jensen <jonas.jensen@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>
+References: <1386945188-8316-1-git-send-email-jonas.jensen@gmail.com> <CACmBeS0Uz+Z=MsqvXburO1swCdyGvEXHhfs8M7ZnMMKBNJjG1A@mail.gmail.com> <20131213190707.GA9713@roeck-us.net>
+In-Reply-To: <20131213190707.GA9713@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312140501.05749.arnd@arndb.de>
+X-Provags-ID: V02:K0:bSap13+ZEHCWKoBSQpkMocQmEPTky1Nj2Rtpu5VkTJ5
+ TFfCHqonzbU2dJVKp1/ZS3L/0QGveYowQxZfkaQszmJzsb6E4w
+ 5/c9uIS73BMIxkOOK5iiatisvpYMQ/fioSpzJ0NifJiug+qOvd
+ xBZT7j/piIRK1kLiMtkqxGNSHkujERcbfnlHwAI28p0v+DYOIf
+ 1ybp4CajYM5oSrADq9m6QO462K2o0j/DlDx4WNU6emTCYScpOS
+ cw+U1AO2O+Ft0bQSuqZHtC7URKR+1T+JbI/Xz6RNItqAUJvGsC
+ ktYF3ALsxWQCpL+L2ThjGY9YBP5qLgqzeqGQcGny94Im0Q8S/M
+ fY3Ry+ccTcAlVpMywbe4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Friday 13 December 2013, Guenter Roeck wrote:
+> On Fri, Dec 13, 2013 at 06:23:44PM +0100, Jonas Jensen wrote:
+> > On 13 December 2013 17:17, Arnd Bergmann <arnd@arndb.de> wrote:
+> > > I've been out of the loop a bit here. I initially suggested having the restart
+> > > handler be part of the watchdog driver, and I thought you had done that in an
+> > > earlier version. What has changed your mind?
+> > 
+> > I got the impression from Guenter Roeck's review, that it doesn't belong there,
+> > maybe I was too quick to remove it?
+> > 
+> You'd have to answer the questions I raised in my review if you want it in
+> there.
+> 
 
-Following the fix I submitted a few weeks ago, here is a set of
-patches that add USB support for the Ingenic JZ4740 MIPS SoC.
+Let me reply to your comment from that email:
 
-The JZ4740 is found in the Ben NanoNote handheld computer which is
-built by the Qi-Hardware community.
-Even though Ben NanoNote is already supported in the kernel, we were
-relying on an out-of-tree gadget driver to make use of the JZ4740 USB
-Device Controller.
+> > +
+> > +	arm_pm_restart = moxart_wdt_restart;
+>
+> It is quite unusual that system restart code is implemented in a watchdog
+> driver (which may not even be compiled into an image, or not be loaded).
 
-The patches that come as a follow-up of this message are an attempt to
-provide USB support through an musb glue layer.
+I had asked Jonas to do it in the watchdog driver because that driver is
+the place that handles this particular register. We have moved a bunch
+of restart handlers into drivers/power for similar reasons, and those
+can also be compiled out. The restart handler isn't actually essential
+for most operations, and we have moved some far more important drivers
+from arch/arm into drivers/, such as clocks, interrupts, timers etc.
 
-Changes were rebased on top of Felipe Balbi's USB Subsystem master
-branch, built and tested on device successfully.
+The restart handler in this case is the only piece of code that remains in
+mach-moxart, and I would really like it to be completely empty.
 
-The following changes since commit 9bdff34517bc49d8e98558659e077ea9f9df3d60:
-
-  Merge branch 'next'
-
-are available in the git repository at:
-
-  git://seketeli.fr/~apelete/linux-usb.git musb-jz4740
-
-Apelete Seketeli (3):
-  mips: qi_lb60: add defconfig for Ben NanoNote
-  usb: musb: add support for JZ4740 usb device controller
-  usb: musb: fix setting JZ4740 gadget periphal mode on reset
-
- arch/mips/configs/qi_lb60_defconfig          |  188 +++++++++++++++++++++
- arch/mips/include/asm/mach-jz4740/platform.h |    1 +
- arch/mips/jz4740/board-qi_lb60.c             |    1 +
- arch/mips/jz4740/platform.c                  |   55 +++++--
- drivers/usb/musb/Kconfig                     |    8 +-
- drivers/usb/musb/Makefile                    |    1 +
- drivers/usb/musb/jz4740.c                    |  229 ++++++++++++++++++++++++++
- drivers/usb/musb/musb_core.c                 |   14 ++
- drivers/usb/musb/musb_gadget.c               |    9 +
- 9 files changed, 489 insertions(+), 17 deletions(-)
- create mode 100644 arch/mips/configs/qi_lb60_defconfig
- create mode 100644 drivers/usb/musb/jz4740.c
-
--- 
-1.7.10.4
-
+	Arnd
