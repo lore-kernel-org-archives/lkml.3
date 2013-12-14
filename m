@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab3LNIch (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 03:32:37 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:38726 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab3LNIcg (ORCPT
+	id S1752392Ab3LNJGN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 04:06:13 -0500
+Received: from science.horizon.com ([71.41.210.146]:15300 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752040Ab3LNJGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 03:32:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131213190707.GA9713@roeck-us.net>
-References: <1386945188-8316-1-git-send-email-jonas.jensen@gmail.com>
-	<1386945188-8316-2-git-send-email-jonas.jensen@gmail.com>
-	<201312131717.25435.arnd@arndb.de>
-	<CACmBeS0Uz+Z=MsqvXburO1swCdyGvEXHhfs8M7ZnMMKBNJjG1A@mail.gmail.com>
-	<20131213190707.GA9713@roeck-us.net>
-Date: Sat, 14 Dec 2013 09:32:36 +0100
-Message-ID: <CACmBeS2_WZj6_HJo0N50TBwneNVmeB9TyXbHRLm9CJFGNN+HtQ@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] ARM: mach-moxart: add MOXA ART SoC platform files
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 14 Dec 2013 04:06:09 -0500
+Date: 14 Dec 2013 04:06:07 -0500
+Message-ID: <20131214090607.30797.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: tytso@mit.edu
+Subject: Replace /dev/random input mix polynomial with Brent's xorgen?
+Cc: linux@horizon.com, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 December 2013 20:07, Guenter Roeck <linux@roeck-us.net> wrote:
->> I got the impression from Guenter Roeck's review, that it doesn't belong there,
->> maybe I was too quick to remove it?
->>
-> You'd have to answer the questions I raised in my review if you want it in
-> there.
+Richard Brent extended some efficient XOR-based PRNGs designed by George
+Marsaglia into a family of "xorgen" generators which are efficent,
+non-sparse, maximal-period polynomials of length 64, 128, 256,... 4096
+bits.
 
-I didn't see a solution at the time. Now I'm thinking arm_pm_restart
-can be set later in probe, preventing a crash on load failure, and
-maybe it can be unset on unload.
+(It ends there because proving period 2^n-1 requires knowing the
+factorization of 2^n-1, and 2^8192-1 = (2^4096+1)*(2^2048+1)*...*(2^1+1).
+The factorization of 2^4096+1 = F_12 is currently stuck on an 1133-digit
+composite residue; see http://caramel.loria.fr/f12.txt)
 
-Would you accept a patch for this?
+http://maths-people.anu.edu.au/~brent/pub/pub224.html
+"Some long-period random number generators using shifts and xors",
 
-Best regards,
-Jonas
+Related background papers:
+http://www.jstatsoft.org/v08/i14/paper
+"Xorshift RNGs"
+http://maths-people.anu.edu.au/~brent/pub/pub218.html
+"Note on Marsaglia's xorshift RNGs"
+
+Anyway, the algorithm boils down to
+
+t1 = x[i-r];	t2 = x[i-s];
+t1 ^= t1 << a;	t2 ^= t2 << c;
+t1 ^= t1 >> b;	t2 ^= t2 >> d;
+x[i] = t1 ^ t2;
+
+For various constants r = 2..128, s < r, and shifts a, b, c and d.
+Both 32- and 64-bit versions are included.
+
+This is both more efficient and (especually using 64-bit words) more
+thorough than the current code, for sizes up to 4096 bits.  Although the
+current code has tables for larger pools, everything larger than 32x128 =
+4096 bits is currenty commented out and not used.
+
+Would you be interested in a patch to revise _mix_pool_bytes()?
+
+I'm also thinking of revising the input rotate-by-7 to use
+Marsaglia's original xorshift as a whitener.
