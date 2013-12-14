@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746Ab3LNMc0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 07:32:26 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:61492 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab3LNMcZ (ORCPT
+	id S1753824Ab3LNMcy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 07:32:54 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:40194 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753312Ab3LNMcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 07:32:25 -0500
-Date: Sat, 14 Dec 2013 18:02:16 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: [PATCH v2 9/9] drivers: net: Mark function xenvif_count_frag_slots()
- as static in netback.c
-Message-ID: <609db9fcc843525f9ca2f18673744cad2fb9fb8c.1386911124.git.rashika.kheria@gmail.com>
-References: <a610f6ee6bb992b91e43bdc851f3db62fc3decd5.1386911123.git.rashika.kheria@gmail.com>
+	Sat, 14 Dec 2013 07:32:53 -0500
+Date: Sat, 14 Dec 2013 13:32:49 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] dma-buf: Implement test module
+Message-ID: <20131214123248.GD17467@mithrandir>
+References: <1386858989-1487-1-git-send-email-treding@nvidia.com>
+ <20131212144210.GA1527@ulmo.nvidia.com>
+ <20131213020258.GC13333@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="F8dlzb82+Fcn6AgP"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <a610f6ee6bb992b91e43bdc851f3db62fc3decd5.1386911123.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131213020258.GC13333@kroah.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch marks the function xenvif_count_frag_slots() in netback.c as
-static because they are not used outside this file.
 
-Thus, it also removes the following warning in xen-netback/netback.c:
-drivers/net/xen-netback/netback.c:218:14: warning: no previous prototype for ‘xenvif_count_frag_slots’ [-Wmissing-prototypes]
+--F8dlzb82+Fcn6AgP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
+On Thu, Dec 12, 2013 at 06:02:58PM -0800, Greg Kroah-Hartman wrote:
+> On Thu, Dec 12, 2013 at 03:42:12PM +0100, Thierry Reding wrote:
+> > On Thu, Dec 12, 2013 at 03:36:29PM +0100, Thierry Reding wrote:
+> > > This is a simple test module that can be used to allocate, export and
+> > > delete DMA-BUF objects. It can be used to test DMA-BUF sharing in
+> > > systems that lack a real second driver.
+> > >=20
+> > > Signed-off-by: Thierry Reding <treding@nvidia.com>
+> > > ---
+> > >  drivers/base/Kconfig        |   4 +
+> > >  drivers/base/Makefile       |   1 +
+> > >  drivers/base/dma-buf-test.c | 308 ++++++++++++++++++++++++++++++++++=
+++++++++++
+> > >  3 files changed, 313 insertions(+)
+> > >  create mode 100644 drivers/base/dma-buf-test.c
+> >=20
+> > And attached is a small test program that I've been using to test this
+> > new module. It can be built with:
+> >=20
+> > 	$ gcc -O2 -g -Wall -Werror -I/usr/include/libdrm -o dma-buf-test dma-b=
+uf-test.c -ldrm
+>=20
+> Please put this in the patch as well (scripts/tests/ ?)
 
-This revision fixes the following issues of the previous revision:
-Change commit message subject
+There is also samples/ which already contains various test programs of a
+similar nature.
 
- drivers/net/xen-netback/netback.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Also fix up the uapi stuff for the ioctls.
 
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 64f0e0d..9e4f399 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -215,7 +215,7 @@ struct xenvif_count_slot_state {
- 	bool head;
- };
- 
--unsigned int xenvif_count_frag_slots(struct xenvif *vif,
-+static unsigned int xenvif_count_frag_slots(struct xenvif *vif,
- 				     unsigned long offset, unsigned long size,
- 				     struct xenvif_count_slot_state *state)
- {
--- 
-1.7.9.5
+Will do.
 
+Thanks,
+Thierry
+
+--F8dlzb82+Fcn6AgP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSrE/vAAoJEN0jrNd/PrOh0MMP/A3O3HWkcTfk2452WNjKm2WJ
+pQfMyxa+zW72EDwUQY0+JumVWmJfOSgKvl6ttze/8kGnGVbZlrKeJc/qO7/MPGjs
+nRoWmEqBrufkOIpMl0rGnKL8EAWcFaeEGlizPFFe3jKMTlBXZt8YjqyutFlqhqjt
+Y3kb9mCC0nRNC36rVFAORYhtX7YLT1aYtvewFxicZt6anctFwazVFu7p0t2m2UkO
+Fm6sFfpaMf7kDiHIhFgSuZ/PCDkSZtOL3ZUBllvRUywkDN732aPMaqjaWxiQ0p4I
+1/GiIIyY3RPoIpFrOtsr7bfiKnEBX+ZXPZRNhPJtO6XYR0DIjyZrEIROlvenmYc0
+sYRqXGZD2dXKy3j+f9byiABOG/b9Mzz7xIgm7EvHtUdHEUDl6fXyyiEQYdSZjAve
+GpYHLefO2A4zatBwHtDMc0LoF+z/qR0E1wRET23DQCd4xxTQ/8aZZh1rfaqpbU8u
+8T/0yhzQecM5sjc3EET30DNppUB8EbHnQbzcgmMstEjxa3i4q0VCYfqwidIMOQLF
+xDcWIuKZ5NDMClq4eFt7A4cH+S7g3fvFGZPr3roto5fnB0lPcYgbQtmv/4XZc7i4
+GIe/G5SaoE33e+AeV5SawoOPZoWVziJJL3j0ODQ/nh9UnBb5lDN5kUcSLO9j2d9G
+RSctYIE4DymCDdVsX+r0
+=4fl5
+-----END PGP SIGNATURE-----
+
+--F8dlzb82+Fcn6AgP--
