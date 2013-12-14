@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab3LNRar (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 12:30:47 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:45855 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753882Ab3LNRaf (ORCPT
+	id S1753983Ab3LNRbL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 12:31:11 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:53070 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753885Ab3LNRah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 12:30:35 -0500
+	Sat, 14 Dec 2013 12:30:37 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, lm-sensors@lm-sensors.org,
         linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 01/14] i8k: Convert to use pr_ functions instead of printk
-Date: Sat, 14 Dec 2013 09:30:08 -0800
-Message-Id: <1387042221-3671-2-git-send-email-linux@roeck-us.net>
+Subject: [PATCH 02/14] i8k: Fix various checkpatch warnings and errors
+Date: Sat, 14 Dec 2013 09:30:09 -0800
+Message-Id: <1387042221-3671-3-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.7.9.7
 In-Reply-To: <1387042221-3671-1-git-send-email-linux@roeck-us.net>
 References: <1387042221-3671-1-git-send-email-linux@roeck-us.net>
@@ -22,83 +22,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix:
+WARNING: Use #include <linux/uaccess.h> instead of <asm/uaccess.h>
+WARNING: Use #include <linux/io.h> instead of <asm/io.h>
+WARNING: __packed is preferred over __attribute__((packed))
+WARNING: externs should be avoided in .c files
+ERROR: spaces required around that ':' (ctx:ExV)
+ERROR: do not use assignment in if condition
+WARNING: line over 80 characters
+WARNING: __initdata should be placed after i8k_dmi_table[]
+ERROR: code indent should use tabs where possible
+WARNING: please, no spaces at the start of a line
+
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/char/i8k.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ drivers/char/i8k.c |   40 +++++++++++++++++++++++-----------------
+ 1 file changed, 23 insertions(+), 17 deletions(-)
 
 diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
-index 40cc0cf2..0c48e7f 100644
+index 0c48e7f..71da6b7 100644
 --- a/drivers/char/i8k.c
 +++ b/drivers/char/i8k.c
-@@ -19,6 +19,8 @@
-  * General Public License for more details.
-  */
+@@ -31,8 +31,8 @@
+ #include <linux/mutex.h>
+ #include <linux/hwmon.h>
+ #include <linux/hwmon-sysfs.h>
+-#include <asm/uaccess.h>
+-#include <asm/io.h>
++#include <linux/uaccess.h>
++#include <linux/io.h>
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/types.h>
- #include <linux/init.h>
-@@ -535,7 +537,7 @@ static int __init i8k_init_hwmon(void)
- 	if (IS_ERR(i8k_hwmon_dev)) {
- 		err = PTR_ERR(i8k_hwmon_dev);
- 		i8k_hwmon_dev = NULL;
--		printk(KERN_ERR "i8k: hwmon registration failed (%d)\n", err);
-+		pr_err("hwmon registration failed (%d)\n", err);
- 		return err;
- 	}
+ #include <linux/i8k.h>
  
-@@ -682,8 +684,8 @@ static int __init i8k_probe(void)
- 		if (!ignore_dmi && !force)
- 			return -ENODEV;
+@@ -105,11 +105,11 @@ static const struct file_operations i8k_fops = {
  
--		printk(KERN_INFO "i8k: not running on a supported Dell system.\n");
--		printk(KERN_INFO "i8k: vendor=%s, model=%s, version=%s\n",
-+		pr_info("not running on a supported Dell system.\n");
-+		pr_info("vendor=%s, model=%s, version=%s\n",
- 			i8k_get_dmi_data(DMI_SYS_VENDOR),
- 			i8k_get_dmi_data(DMI_PRODUCT_NAME),
+ struct smm_regs {
+ 	unsigned int eax;
+-	unsigned int ebx __attribute__ ((packed));
+-	unsigned int ecx __attribute__ ((packed));
+-	unsigned int edx __attribute__ ((packed));
+-	unsigned int esi __attribute__ ((packed));
+-	unsigned int edi __attribute__ ((packed));
++	unsigned int ebx __packed;
++	unsigned int ecx __packed;
++	unsigned int edx __packed;
++	unsigned int esi __packed;
++	unsigned int edi __packed;
+ };
+ 
+ static inline const char *i8k_get_dmi_data(int field)
+@@ -150,7 +150,7 @@ static int i8k_smm(struct smm_regs *regs)
+ 		"pushfq\n\t"
+ 		"popq %%rax\n\t"
+ 		"andl $1,%%eax\n"
+-		:"=a"(rc)
++		: "=a"(rc)
+ 		:    "a"(regs)
+ 		:    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
+ #else
+@@ -176,7 +176,7 @@ static int i8k_smm(struct smm_regs *regs)
+ 	    "lahf\n\t"
+ 	    "shrl $8,%%eax\n\t"
+ 	    "andl $1,%%eax\n"
+-	    :"=a"(rc)
++	    : "=a"(rc)
+ 	    :    "a"(regs)
+ 	    :    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
+ #endif
+@@ -205,7 +205,8 @@ static int i8k_get_fn_status(void)
+ 	struct smm_regs regs = { .eax = I8K_SMM_FN_STATUS, };
+ 	int rc;
+ 
+-	if ((rc = i8k_smm(&regs)) < 0)
++	rc = i8k_smm(&regs);
++	if (rc < 0)
+ 		return rc;
+ 
+ 	switch ((regs.eax >> I8K_FN_SHIFT) & I8K_FN_MASK) {
+@@ -228,7 +229,8 @@ static int i8k_get_power_status(void)
+ 	struct smm_regs regs = { .eax = I8K_SMM_POWER_STATUS, };
+ 	int rc;
+ 
+-	if ((rc = i8k_smm(&regs)) < 0)
++	rc = i8k_smm(&regs);
++	if (rc < 0)
+ 		return rc;
+ 
+ 	return (regs.eax & 0xff) == I8K_POWER_AC ? I8K_AC : I8K_BATTERY;
+@@ -282,7 +284,8 @@ static int i8k_get_temp(int sensor)
+ 	static int prev;
+ #endif
+ 	regs.ebx = sensor & 0xff;
+-	if ((rc = i8k_smm(&regs)) < 0)
++	rc = i8k_smm(&regs);
++	if (rc < 0)
+ 		return rc;
+ 
+ 	temp = regs.eax & 0xff;
+@@ -311,7 +314,8 @@ static int i8k_get_dell_signature(int req_fn)
+ 	struct smm_regs regs = { .eax = req_fn, };
+ 	int rc;
+ 
+-	if ((rc = i8k_smm(&regs)) < 0)
++	rc = i8k_smm(&regs);
++	if (rc < 0)
+ 		return rc;
+ 
+ 	return regs.eax == 1145651527 && regs.edx == 1145392204 ? 0 : -1;
+@@ -335,7 +339,8 @@ i8k_ioctl_unlocked(struct file *fp, unsigned int cmd, unsigned long arg)
+ 
+ 	case I8K_MACHINE_ID:
+ 		memset(buff, 0, 16);
+-		strlcpy(buff, i8k_get_dmi_data(DMI_PRODUCT_SERIAL), sizeof(buff));
++		strlcpy(buff, i8k_get_dmi_data(DMI_PRODUCT_SERIAL),
++			sizeof(buff));
+ 		break;
+ 
+ 	case I8K_FN_STATUS:
+@@ -609,7 +614,7 @@ static void __exit i8k_exit_hwmon(void)
+ 	hwmon_device_unregister(i8k_hwmon_dev);
+ }
+ 
+-static struct dmi_system_id __initdata i8k_dmi_table[] = {
++static struct dmi_system_id i8k_dmi_table[] __initdata = {
+ 	{
+ 		.ident = "Dell Inspiron",
+ 		.matches = {
+@@ -666,7 +671,7 @@ static struct dmi_system_id __initdata i8k_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Vostro"),
+ 		},
+ 	},
+-        { }
++	{ }
+ };
+ 
+ /*
+@@ -691,7 +696,8 @@ static int __init i8k_probe(void)
  			i8k_get_dmi_data(DMI_BIOS_VERSION));
-@@ -696,7 +698,7 @@ static int __init i8k_probe(void)
- 	 */
- 	if (i8k_get_dell_signature(I8K_SMM_GET_DELL_SIG1) &&
- 	    i8k_get_dell_signature(I8K_SMM_GET_DELL_SIG2)) {
--		printk(KERN_ERR "i8k: unable to get SMM Dell signature\n");
-+		pr_err("unable to get SMM Dell signature\n");
- 		if (!force)
- 			return -ENODEV;
- 	}
-@@ -706,7 +708,7 @@ static int __init i8k_probe(void)
- 	 */
- 	version = i8k_get_bios_version();
- 	if (version <= 0) {
--		printk(KERN_WARNING "i8k: unable to get SMM BIOS version\n");
-+		pr_warn("unable to get SMM BIOS version\n");
- 	} else {
- 		buff[0] = (version >> 16) & 0xff;
- 		buff[1] = (version >> 8) & 0xff;
-@@ -722,7 +724,7 @@ static int __init i8k_probe(void)
- 		 * Check if the two versions match.
- 		 */
- 		if (strncmp(buff, bios_version, sizeof(bios_version)) != 0)
--			printk(KERN_WARNING "i8k: BIOS version mismatch: %s != %s\n",
-+			pr_warn("BIOS version mismatch: %s != %s\n",
- 				buff, bios_version);
  	}
  
-@@ -747,9 +749,8 @@ static int __init i8k_init(void)
- 	if (err)
- 		goto exit_remove_proc;
+-	strlcpy(bios_version, i8k_get_dmi_data(DMI_BIOS_VERSION), sizeof(bios_version));
++	strlcpy(bios_version, i8k_get_dmi_data(DMI_BIOS_VERSION),
++		sizeof(bios_version));
  
--	printk(KERN_INFO
--	       "Dell laptop SMM driver v%s Massimo Dal Zotto (dz@debian.org)\n",
--	       I8K_VERSION);
-+	pr_info("Dell laptop SMM driver v%s Massimo Dal Zotto (dz@debian.org)\n",
-+		I8K_VERSION);
- 
- 	return 0;
- 
+ 	/*
+ 	 * Get SMM Dell signature
 -- 
 1.7.9.7
 
