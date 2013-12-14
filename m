@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab3LNDjQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 22:39:16 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:57243 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158Ab3LNDjO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 22:39:14 -0500
-Date: Fri, 13 Dec 2013 19:39:11 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Rajat Jain <rajatjain@juniper.net>,
-        Rajat Jain <rajatjain.linux@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, Paul Bolle <pebolle@tiscali.nl>,
-        Rajat Jain <rajatxjain@gmail.com>, Guenter Roeck <groeck@juniper.net>
-Subject: Re: [PATCH v2 2/4] pciehp: Use link change notifications for
- hot-plug and removal
-Message-ID: <20131214033911.GA25115@roeck-us.net>
-References: <529E5C0E.80903@gmail.com>
- <20131212224407.GL4699@google.com>
- <CAE9FiQX8XXkwbhhuNhCF-pHdc_3or_dMEH-VN5NBSEV_eXE-Pg@mail.gmail.com>
- <CAErSpo5BsaLNrny3T1sYknz3wo4hN0SKJk0_u6eNyEd6qq5o=g@mail.gmail.com>
- <428d664592c2466c9e5e6b393df9d690@DM2PR05MB671.namprd05.prod.outlook.com>
- <CAErSpo5NjOCqkao03Ea=98gunVEaUUitq8mGLarpKW_DQoDF8g@mail.gmail.com>
- <CAE9FiQX-ZP0R-weuPoOJ6GkPxOLp5jk9thnjfPQ+Q5tCHugD4w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQX-ZP0R-weuPoOJ6GkPxOLp5jk9thnjfPQ+Q5tCHugD4w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753415Ab3LNDsm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 22:48:42 -0500
+Received: from seketeli.net ([91.121.166.71]:48108 "EHLO ms.seketeli.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753228Ab3LNDsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 22:48:40 -0500
+From: Apelete Seketeli <apelete@seketeli.net>
+To: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 3/3] usb: musb: fix setting JZ4740 gadget periphal mode on reset
+Date: Sat, 14 Dec 2013 04:48:38 +0100
+Message-Id: <1386992918-1531-4-git-send-email-apelete@seketeli.net>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1386992918-1531-1-git-send-email-apelete@seketeli.net>
+References: <1386992918-1531-1-git-send-email-apelete@seketeli.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 05:58:08PM -0800, Yinghai Lu wrote:
-> On Fri, Dec 13, 2013 at 1:14 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > On Fri, Dec 13, 2013 at 12:04 PM, Rajat Jain <rajatjain@juniper.net> wrote:
-> >
-> >> Once again: the way I interpret this is:
-> >> * Always enable Link events.
-> >> * Disable presence events if attention button is present.
-> >
-> > That sounds like a good plan to me.
-> 
-> How about Diag_Reset from MPT2SAS and others?
-> link could up and down
-> 
+JZ4740 USB Device Controller is not OTG compatible and does not have DEVCTL
+register in silicon.
 
-Good question. Another question is how this would play together
-with AER functions, specifically link_reset and slot_reset.
+During ethernet-over-usb transactions, on reset, musb driver tries to
+read from DEVCTL and consequently sets device as host (A-Device)
+instead of peripheral (B-Device), which makes it a composite device to
+the USB gadget driver.
+This induces a kernel panic during power down where the USB gadget
+driver does a null pointer dereference when trying to access the
+composite device configuration.
 
-In this context ... is it possible that the link_reset function from struct
-pci_error_handlers is never called, or am I missing something ?
+On reset, do not rely on DEVCTL value for setting gadget peripheral
+mode: hardcode it instead to B-Device.
 
-Guenter
+Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
+---
+ drivers/usb/musb/musb_gadget.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index 32fb057..b4bea7a 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -2119,6 +2119,14 @@ __acquires(musb->lock)
+ 	/* Normal reset, as B-Device;
+ 	 * or else after HNP, as A-Device
+ 	 */
++#if defined(CONFIG_USB_MUSB_JZ4740) || defined(CONFIG_USB_MUSB_JZ4740_MODULE)
++	/* JZ4740 UDC Controller is not OTG compatible and does not
++	 * have DEVCTL register in silicon: do not rely on devctl for
++	 * setting peripheral mode.
++	 */
++	musb->xceiv->state = OTG_STATE_B_PERIPHERAL;
++	musb->g.is_a_peripheral = 0;
++#else
+ 	if (devctl & MUSB_DEVCTL_BDEVICE) {
+ 		musb->xceiv->state = OTG_STATE_B_PERIPHERAL;
+ 		musb->g.is_a_peripheral = 0;
+@@ -2126,6 +2134,7 @@ __acquires(musb->lock)
+ 		musb->xceiv->state = OTG_STATE_A_PERIPHERAL;
+ 		musb->g.is_a_peripheral = 1;
+ 	}
++#endif
+ 
+ 	/* start with default limits on VBUS power draw */
+ 	(void) musb_gadget_vbus_draw(&musb->g, 8);
+-- 
+1.7.10.4
+
