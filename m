@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711Ab3LNNid (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 08:38:33 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:60435 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312Ab3LNNib (ORCPT
+	id S1753678Ab3LNNop (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 08:44:45 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:39035 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753312Ab3LNNoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 08:38:31 -0500
-Date: Sat, 14 Dec 2013 19:08:22 +0530
+	Sat, 14 Dec 2013 08:44:44 -0500
+Date: Sat, 14 Dec 2013 19:14:36 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Ferruh Yigit <fery@cypress.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH] drivers: input: Include appropriate header file in
- cyttsp_i2c_common.c
-Message-ID: <20131214133822.GA13124@rashika>
+Cc: Dan Williams <djbw@fb.com>, Maciej Sosnowski <maciej.sosnowski@intel.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>, josh@joshtriplett.org
+Subject: [PATCH] drivers: dca: Mark the function dca_common_get_tag() as
+ static in dca-core.c
+Message-ID: <20131214134436.GA13211@rashika>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
@@ -25,34 +24,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch includes appropriate header file cyttsp4_core.h in
-touchscreen/cyttsp_i2c_common.c because functions
-cyttsp_i2c_read_block_data() and cyttsp_i2c_write_block_data()
-have their prototype declaration in cyttsp4_core.h.
+This patch marks the function dca_common_get_tag() as static in
+dca-core.c because it is not used outside this file.
 
-Thus, it also eliminates the following warning in cyttsp_i2c_common.c:
-drivers/input/touchscreen/cyttsp_i2c_common.c:34:5: warning: no previous prototype for ‘cyttsp_i2c_read_block_data’ [-Wmissing-prototypes]
-drivers/input/touchscreen/cyttsp_i2c_common.c:64:5: warning: no previous prototype for ‘cyttsp_i2c_write_block_data’ [-Wmissing-prototypes]
-
+Thus, it also eliminates the following warning in dca-core.c:
+drivers/dca/dca-core.c:273:4: warning: no previous prototype for ‘dca_common_get_tag’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 ---
- drivers/input/touchscreen/cyttsp_i2c_common.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/dca/dca-core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/input/touchscreen/cyttsp_i2c_common.c b/drivers/input/touchscreen/cyttsp_i2c_common.c
-index 1d7b6f1..ccefa56 100644
---- a/drivers/input/touchscreen/cyttsp_i2c_common.c
-+++ b/drivers/input/touchscreen/cyttsp_i2c_common.c
-@@ -31,6 +31,8 @@
- #include <linux/module.h>
- #include <linux/types.h>
- 
-+#include "cyttsp4_core.h"
-+
- int cyttsp_i2c_read_block_data(struct device *dev, u8 *xfer_buf,
- 				      u16 addr, u8 length, void *values)
+diff --git a/drivers/dca/dca-core.c b/drivers/dca/dca-core.c
+index 819dfda..9096e59 100644
+--- a/drivers/dca/dca-core.c
++++ b/drivers/dca/dca-core.c
+@@ -270,7 +270,7 @@ EXPORT_SYMBOL_GPL(dca_remove_requester);
+  * @dev - the device that wants dca service
+  * @cpu - the cpuid as returned by get_cpu()
+  */
+-u8 dca_common_get_tag(struct device *dev, int cpu)
++static u8 dca_common_get_tag(struct device *dev, int cpu)
  {
+ 	struct dca_provider *dca;
+ 	u8 tag;
 -- 
 1.7.9.5
 
