@@ -1,69 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab3LNO1u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 09:27:50 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35507 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312Ab3LNO1t (ORCPT
+	id S1753867Ab3LNO3V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 09:29:21 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:14996 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753729Ab3LNO3T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 09:27:49 -0500
-Date: Sat, 14 Dec 2013 15:27:41 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@linaro.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        H Peter Anvin <hpa@zytor.com>, Linux-X86 <x86@kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH 2/3] x86: mm: Change tlb_flushall_shift for IvyBridge
-Message-ID: <20131214142741.GB16438@laptop.programming.kicks-ass.net>
-References: <1386849309-22584-1-git-send-email-mgorman@suse.de>
- <1386849309-22584-3-git-send-email-mgorman@suse.de>
- <20131212131309.GD5806@gmail.com>
- <52A9BC3A.7010602@linaro.org>
- <20131212141147.GB17059@gmail.com>
- <52AA5C92.7030207@linaro.org>
- <52AA6CB9.60302@linaro.org>
- <20131214141902.GA16438@laptop.programming.kicks-ass.net>
+	Sat, 14 Dec 2013 09:29:19 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sat, 14 Dec 2013 06:30:50 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "thierry.reding@gmail.com" <thierry.reding@gmail.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Sat, 14 Dec 2013 15:28:59 +0100
+Subject: Re: [PATCHv7 04/12] driver/core: populate devices in order for
+ IOMMUs
+Thread-Topic: [PATCHv7 04/12] driver/core: populate devices in order for
+ IOMMUs
+Thread-Index: Ac742NR5Byy/bnmET46blQP6uMloOw==
+Message-ID: <20131214.162859.271135324424271489.hdoyu@nvidia.com>
+References: <20131212113920.70E8BC40637@trevor.secretlab.ca><20131213021402.GB14192@kroah.com><20131214122421.GB17467@mithrandir>
+In-Reply-To: <20131214122421.GB17467@mithrandir>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131214141902.GA16438@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 14, 2013 at 03:19:02PM +0100, Peter Zijlstra wrote:
-> On Fri, Dec 13, 2013 at 10:11:05AM +0800, Alex Shi wrote:
-> > BTW,
-> > A bewitching idea is till attracting me.
-> > https://lkml.org/lkml/2012/5/23/148
-> > Even it was sentenced to death by HPA.
-> > https://lkml.org/lkml/2012/5/24/143
-> > 
-> > That is that just flush one of thread TLB is enough for SMT/HT, seems
-> > TLB is still shared in core on Intel CPU. This benefit is unconditional,
-> > and if my memory right, Kbuild testing can improve about 1~2% in average
-> > level.
-> > 
-> > So could you like to accept some ugly quirks to do this lazy TLB flush
-> > on known working CPU?
-> > Forgive me if it's stupid.
-> 
-> I think there's a further problem with that patch -- aside of it being
-> right from a hardware point of view.
-> 
-> We currently rely on the tlb flush IPI to synchronize with lockless page
-> table walkers like gup_fast().
-> 
-> By not sending an IPI to all CPUs you can get into trouble and crash the
-> kernel.
-> 
-> We absolutely must keep sending the IPI to all relevant CPUs, we can
-> choose not to actually do the flush on some CPUs, but we must keep
-> sending the IPI.
+Thierry Reding <thierry.reding@gmail.com> wrote @ Sat, 14 Dec 2013 13:24:22 +0100:
 
-The alternative is switching x86 over to use HAVE_RCU_TABLE_FREE.
+> * PGP Signed by an unknown key
+> 
+> On Thu, Dec 12, 2013 at 06:14:02PM -0800, Greg KH wrote:
+> > On Thu, Dec 12, 2013 at 11:39:20AM +0000, Grant Likely wrote:
+> > > On Thu, 12 Dec 2013 09:57:05 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
+> > > > IOMMU devices on the bus need to be poplulated first, then iommu
+> > > > master devices are done later.
+> > > > 
+> > > > With CONFIG_OF_IOMMU, "iommus=" DT binding would be used to identify
+> > > > whether a device can be an iommu msater or not. If a device can, we'll
+> > > > defer to populate that device till an iommu device is populated. Then,
+> > > > those deferred iommu master devices are populated and configured with
+> > > > help of the already populated iommu device.
+> > > > 
+> > > > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> > > > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > > ---
+> > > > This is related to the following discussion:
+> > > >   [RFC PATCH] Documentation: devicetree: add description for generic bus properties
+> > > >   http://lists.infradead.org/pipermail/linux-arm-kernel/2013-November/215042.html
+> > > > 
+> > > > v6:
+> > > > Spinned off only driver core part from:
+> > > >   [PATCHv5 2/9] driver/core: populate devices in order for IOMMUs
+> > > > 
+> > > > v5:
+> > > > Use "iommus=" binding instread of arm,smmu's "#stream-id-cells".
+> > > > 
+> > > > v4:
+> > > > This is newly added, and the successor of the following RFC:
+> > > >   [RFC][PATCHv3+ 1/2] driver/core: Add of_iommu_attach()
+> > > >   http://lists.linuxfoundation.org/pipermail/iommu/2013-November/006914.html
+> > > > 
+> > > > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> > > > ---
+> > > >  drivers/base/dd.c | 5 +++++
+> > > >  1 file changed, 5 insertions(+)
+> > > > 
+> > > > diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+> > > > index 0605176..0605f52 100644
+> > > > --- a/drivers/base/dd.c
+> > > > +++ b/drivers/base/dd.c
+> > > > @@ -25,6 +25,7 @@
+> > > >  #include <linux/async.h>
+> > > >  #include <linux/pm_runtime.h>
+> > > >  #include <linux/pinctrl/devinfo.h>
+> > > > +#include <linux/of_iommu.h>
+> > > >  
+> > > >  #include "base.h"
+> > > >  #include "power/power.h"
+> > > > @@ -273,6 +274,10 @@ static int really_probe(struct device *dev, struct device_driver *drv)
+> > > >  
+> > > >  	dev->driver = drv;
+> > > >  
+> > > > +	ret = of_iommu_attach(dev);
+> > > > +	if (ret)
+> > > > +		goto probe_failed;
+> > > > +
+> > > 
+> > > As discussed before, I really don't think hooking in to dd.c is the
+> > > right thing to do here, and certainly not as a device tree specific
+> > > function. ACPI or PCI described devices may have the same constraints
+> > > and those won't have DT descriptions.
+> > 
+> > I agree, this shouldn't be in the driver core.
+> 
+> Okay, so what would be an alternative? Grant's objection makes sense and
+> we could easily just wrap the call to of_iommu_attach() within a generic
+> iommu_attach() that could decide at runtime which exact implementation
+> to call, depending on whether the device is DT, ACPI, PCI or whatnot.
+> 
+> If we don't want something like that in the core either, then the only
+> other alternative would be to call this from each driver. However given
+> the desire to handle IOMMUs completely transparently for device drivers
+> that would be missing the point.
+
+What about using "bus_notifier" to send -EPROBE_DEFER?
+
+The current bus_notifier framework doesn't have the ability to defer
+the probe, but I may think that this change is acceptable relatively.
+
+The fundamental problem is that IOMMU doesn't follow the exact bus
+model like "chained IOMMU" cases, but this discussion may take long to
+be solved. I think that "bus_notifier" with send -EPROBE_DEFER would
+cover most of the normal cases, like normal IOMMU device probe
+population order.
