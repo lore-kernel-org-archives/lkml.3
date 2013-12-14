@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab3LNN0U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 08:26:20 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:57590 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753618Ab3LNN0T (ORCPT
+	id S1753878Ab3LNN01 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 08:26:27 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:3413 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855Ab3LNN0W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 08:26:19 -0500
-Date: Sat, 14 Dec 2013 18:56:10 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Philipp Zabel <p.zabel@pengutronix.de>, Pavel Machek <pavel@ucw.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>, josh@joshtriplett.org
-Subject: [PATCH] drivers: reset: Mark function as static in core.c
-Message-ID: <20131214132610.GA8691@rashika>
+	Sat, 14 Dec 2013 08:26:22 -0500
+X-IronPort-AV: E=Sophos;i="4.95,485,1384329600"; 
+   d="scan'208";a="2704080"
+From: Yuval Mintz <yuvalmin@broadcom.com>
+To: Joe Perches <joe@perches.com>
+CC: Ariel Elior <ariele@broadcom.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: bnx2x_sriov.c: Missing switch/case breaks?
+Thread-Topic: bnx2x_sriov.c: Missing switch/case breaks?
+Thread-Index: AQHO+Fd6O6q+V/fIYEGAkgOT1NGloJpTNeHggACTI4D//+PQEA==
+Date: Sat, 14 Dec 2013 13:26:19 +0000
+Message-ID: <979A8436335E3744ADCD3A9F2A2B68A52AF1A7FF@SJEXCHMB10.corp.ad.broadcom.com>
+References: <1386975703.2479.48.camel@joe-AO722>
+	 <979A8436335E3744ADCD3A9F2A2B68A52AF1A735@SJEXCHMB10.corp.ad.broadcom.com>
+ <1387004267.2276.7.camel@joe-AO722>
+In-Reply-To: <1387004267.2276.7.camel@joe-AO722>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch marks the function of_reset_simple_xlate() and
-devm_reset_control_put() as static in core.c because it is not used
-outside this file.
+> > > Hi Ariel.
+> > >
+> > > I wrote a little checkpatch script to look for missing
+> > > switch/case breaks.
+> > >
+> > > http://www.kernelhub.org/?msg=379933&p=2
+> > >
+> > > There are _many_ instances of case blocks in sriov.c
+> > > that could be missing breaks as they use fall-throughs.
+> > >
+> > > It would be good if these are actually intended to be
+> > > fall-throughs to add a /* fall-through */ comment between
+> > > each case block.
+> > >
+> > Hi Joe,
+> 
+> Hi Yuval.
+> 
+> > The `vfop' part of the code contains a lot of usage of the
+> `bnx2x_vfop_finalize()',
+> > which either goto or return at the end of almost every case.
+> > "Normal" analysis tools/scripts fail to recognize them as  valid case
+> breaks.
+> >
+> > Adding `fallthrough' comments would make little sense, as this is not the
+> real
+> > behavior; Perhaps we need some alternative comment? (something in the
+> line
+> > of `macro case break')
+> 
+> No idea.  It's certainly an ugly macro.
+> 
 
-Thus, it also eliminate the following warnings in core.c:
-drivers/reset/core.c:46:5: warning: no previous prototype for ‘of_reset_simple_xlate’ [-Wmissing-prototypes]
-drivers/reset/core.c:262:6: warning: no previous prototype for ‘devm_reset_control_put’ [-Wmissing-prototypes]
+True.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
----
- drivers/reset/core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> This does have a fallthrough path though when
+> (rc == 0  && next == VFOP_VERIFY_PEND) so
 
-diff --git a/drivers/reset/core.c b/drivers/reset/core.c
-index d1b6089..8604053 100644
---- a/drivers/reset/core.c
-+++ b/drivers/reset/core.c
-@@ -43,7 +43,7 @@ struct reset_control {
-  * This simple translation function should be used for reset controllers
-  * with 1:1 mapping, where reset lines can be indexed by number without gaps.
-  */
--int of_reset_simple_xlate(struct reset_controller_dev *rcdev,
-+static int of_reset_simple_xlate(struct reset_controller_dev *rcdev,
- 			  const struct of_phandle_args *reset_spec)
- {
- 	if (WARN_ON(reset_spec->args_count != rcdev->of_reset_n_cells))
-@@ -259,7 +259,7 @@ static int devm_reset_control_match(struct device *dev, void *res, void *data)
-  * This function will not need to be called normally, as devres will take
-  * care of freeing the resource.
-  */
--void devm_reset_control_put(struct reset_control *rstc)
-+static void devm_reset_control_put(struct reset_control *rstc)
- {
- 	int ret;
- 
--- 
-1.7.9.5
+This is a very rare path - there's exactly one place in the bnx2x code
+Where `next == VFOP_VERIFY_PEND' (also notice this path prints an
+error, so this is obviously not the expected behaviour).
 
+> maybe there should be a break after most all
+> uses of this macro anyway.  When next is
+
+Won't some static code analysis tools regard such `break' calls as
+unreachable code?
+
+> VFOP_VERIFY_PEND, then a "fall-through" comment
+> would be appropriate.
+> 
+> cheers, Joe
+
+Thanks,
+Yuval
