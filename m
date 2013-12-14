@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab3LOA3z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 19:29:55 -0500
-Received: from www.prifuk.cz ([31.31.77.241]:40257 "EHLO prifuk.cz"
+	id S1754454Ab3LOAfA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 19:35:00 -0500
+Received: from www.prifuk.cz ([31.31.77.241]:40261 "EHLO prifuk.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754329Ab3LOA3x convert rfc822-to-8bit (ORCPT
+	id S1754404Ab3LOAe4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 19:29:53 -0500
-X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Dec 2013 19:29:53 EST
+	Sat, 14 Dec 2013 19:34:56 -0500
 From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@prifuk.cz>
 To: dmitry.torokhov@gmail.com
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
         elias.vds@gmail.com, anssi.hannula@iki.fi
 Subject: [RFC] Add ff-memless-next driver
-Date: Sun, 15 Dec 2013 01:19:52 +0100
-Message-ID: <20107437.IkYg87uJMY@geidi-prime>
+Date: Sat, 14 Dec 2013 21:58:45 +0100
+Message-ID: <1742860.KNd72mBNnt@geidi-prime>
 User-Agent: KMail/4.11.4 (Linux/3.13.0-1-ARCHMOD; KDE/4.11.4; x86_64; ; )
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
@@ -811,5 +810,6 @@ index 0000000..0711c1c
 +int input_ff_create_mlnx(struct input_dev *dev, void *data, int(*control_effect)(struct input_dev *, void *, const struct mlnx_effect_command *), const u16 update_rate);
 -- 
 1.8.5.1
+
 
 
