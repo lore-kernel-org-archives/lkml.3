@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab3LNTe3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 14:34:29 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:48712 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab3LNTe1 (ORCPT
+	id S1753963Ab3LNTns (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 14:43:48 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:47898 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753612Ab3LNTnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 14:34:27 -0500
-Message-ID: <1387049660.7152.317.camel@host5.omatika.ru>
-Subject: Re: [PATCH v2 03/16] ARM: dts: provide DMA config to pxamci
-From: Sergei Ianovich <ynvich@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Daniel Mack <zonque@gmail.com>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Chris Ball <cjb@laptop.org>, Viresh Kumar <viresh.kumar@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        linux-mmc@vger.kernel.org
-Date: Sat, 14 Dec 2013 23:34:20 +0400
-In-Reply-To: <201312142006.26979.arnd@arndb.de>
-References: <1386543229-1542-1-git-send-email-ynvich@gmail.com>
-	 <1386901645-28895-1-git-send-email-ynvich@gmail.com>
-	 <1386901645-28895-4-git-send-email-ynvich@gmail.com>
-	 <201312142006.26979.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
+	Sat, 14 Dec 2013 14:43:46 -0500
+Message-ID: <52ACB4EF.3010406@linaro.org>
+Date: Sat, 14 Dec 2013 11:43:43 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>
+Subject: Re: [PATCH 001/115] gpu: ion: Add ION Memory Manager
+References: <1386973529-4884-1-git-send-email-john.stultz@linaro.org> <1386973529-4884-2-git-send-email-john.stultz@linaro.org> <20131213235028.GA4919@kroah.com> <52ABB1C8.1060406@linaro.org> <20131214170618.GA17461@kroah.com>
+In-Reply-To: <20131214170618.GA17461@kroah.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-12-14 at 20:06 +0100, Arnd Bergmann wrote:
-> On Friday 13 December 2013, Sergei Ianovich wrote:
-> > Non-dts implementation supply required DMA channel numbers as
-> > IORESOURCE_DMA. However, there is was no way to get them from
-> > device tree.
-> 
-> Please update this changeset comment, I think it still refers to
-> the earlier version.
+On 12/14/2013 09:06 AM, Greg KH wrote:
+> On Fri, Dec 13, 2013 at 05:18:00PM -0800, John Stultz wrote:
+>> 0117-ion-Reenable-the-build.patch - This can be applied to the end of
+>> the series, or folded into the last patch "ion: Update system heap
+>> shrinker to use the new count/scan interface"
+> Was there a 0116 patch somewhere?
+No.. the disable build patch was inserted between patch 1 and 2, so
+after the renumbering the re-enable patch was 117.
 
----
-Non-dts implementation supply required DMA channel numbers as
-IORESOURCE_DMA. We can also get them from the device tree, if it
-is present.
----
+When I selected the disable patch to send I renamed it 0001 just to make
+it more clear which one it would apply to.
 
-Is this fine?
+Sorry for the confusion.
 
-Should I post v3, if so? 
+> Everything works fine until this one (i.e. the driver doesn't build),
+> but after applying this patch, the build breaks with a ton of undefined
+> symbols at link time, here's a sample of some of them:
+>
+> ERROR: "ion_carveout_heap_destroy" [drivers/staging/android/ion/ion_heap.ko] undefined!
+> ERROR: "ion_chunk_heap_destroy" [drivers/staging/android/ion/ion_heap.ko] undefined!
+> ERROR: "ion_system_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
+> ERROR: "ion_carveout_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
+> ERROR: "ion_system_contig_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
+> ERROR: "ion_cma_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
+> ERROR: "ion_chunk_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
+> ERROR: "ion_buffer_destroy" [drivers/staging/android/ion/ion_heap.ko] undefined!
+> ERROR: "ion_heap_map_user" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
+> ERROR: "ion_heap_unmap_kernel" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
+> ERROR: "ion_heap_map_kernel" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
+> ERROR: "ion_heap_pages_zero" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
+> ERROR: "ion_pages_sync_for_device" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
+> ERROR: "ion_buffer_cached" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
+> ERROR: "ion_heap_buffer_zero" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
+>
+> So I'm not going to apply this patch, but I have the 115 previous
+> patches (I took your modified 001 patch that you sent off-list to me.)
 
-> > Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
-> > CC: Daniel Mack <zonque@gmail.com>
-> > CC: Arnd Bergmann <arnd@arndb.de>
-> 
-> The patch looks ok in case we are merging your patches for 3.14
-> and Daniel's patches later than that. If they end up in the
-> same merge window however, we'd have to be care to resolve
-> the obvious conflict in a proper way.
+? Hrmm. I'm not seeing this (I wouldn't have sent the patches if I did!).
 
-The most recently published Daniel's patch (Aug 2013) wraps
-IORESOURCE_DMA handling on DT presence in a similar way, but doesn't do
-any actual DT processing. So there is no conflict at the moment. Daniel
-can comment better on this, though.
+If you have the chance, could you send me your config?
+
+> Care to fix up the symbol issues in a new series of patches and then
+> enabling the driver to build?
+Will do.
+
+thanks
+-john
 
 
