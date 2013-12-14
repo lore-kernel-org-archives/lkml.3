@@ -1,104 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab3LNGHr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 01:07:47 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:54385 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab3LNGHp (ORCPT
+	id S1752114Ab3LNGQu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 01:16:50 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:61824 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab3LNGQs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 01:07:45 -0500
-From: Simon Horman <horms+renesas@verge.net.au>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-kernel@vger.kernel.org,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: [PATCH] clocksource: sh_cmt: Add clk_prepare/unprepare support
-Date: Sat, 14 Dec 2013 15:07:32 +0900
-Message-Id: <d78e9474459768c9aaf8cfd8bc54957d44771f46.1387000863.git.horms+renesas@verge.net.au>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <cover.1387000863.git.horms+renesas@verge.net.au>
-References: <cover.1387000863.git.horms+renesas@verge.net.au>
-In-Reply-To: <cover.1387000863.git.horms+renesas@verge.net.au>
-References: <cover.1387000863.git.horms+renesas@verge.net.au>
+	Sat, 14 Dec 2013 01:16:48 -0500
+X-IronPort-AV: E=Sophos;i="4.95,484,1384329600"; 
+   d="scan'208";a="2366660"
+From: Yuval Mintz <yuvalmin@broadcom.com>
+To: Joe Perches <joe@perches.com>, Ariel Elior <ariele@broadcom.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: bnx2x_sriov.c: Missing switch/case breaks?
+Thread-Topic: bnx2x_sriov.c: Missing switch/case breaks?
+Thread-Index: AQHO+Fd6O6q+V/fIYEGAkgOT1NGloJpTNeHg
+Date: Sat, 14 Dec 2013 06:16:46 +0000
+Message-ID: <979A8436335E3744ADCD3A9F2A2B68A52AF1A735@SJEXCHMB10.corp.ad.broadcom.com>
+References: <1386975703.2479.48.camel@joe-AO722>
+In-Reply-To: <1386975703.2479.48.camel@joe-AO722>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+> Hi Ariel.
+> 
+> I wrote a little checkpatch script to look for missing
+> switch/case breaks.
+> 
+> http://www.kernelhub.org/?msg=379933&p=2
+> 
+> There are _many_ instances of case blocks in sriov.c
+> that could be missing breaks as they use fall-throughs.
+> 
+> It would be good if these are actually intended to be
+> fall-throughs to add a /* fall-through */ comment between
+> each case block.
+> 
+> For instance:
+> 
+> static void bnx2x_vfop_qctor(struct bnx2x *bp, struct bnx2x_virtf *vf)
+> {
+> [...]
+> 	switch (state) {
+> 	case BNX2X_VFOP_QCTOR_INIT:
+> 
+> 		/* has this queue already been opened? */
+> 		if (bnx2x_get_q_logical_state(bp, q_params->q_obj) ==
+> 		    BNX2X_Q_LOGICAL_STATE_ACTIVE) {
+> 			DP(BNX2X_MSG_IOV,
+> 			   "Entered qctor but queue was already up. Aborting
+> gracefully\n");
+> 			goto op_done;
+> 		}
+> 
+> 		/* next state */
+> 		vfop->state = BNX2X_VFOP_QCTOR_SETUP;
+> 
+> 		q_params->cmd = BNX2X_Q_CMD_INIT;
+> 		vfop->rc = bnx2x_queue_state_change(bp, q_params);
+> 
+> 		bnx2x_vfop_finalize(vf, vfop->rc, VFOP_CONT); 
 
-Prepare the clock at probe time, as there is no other appropriate place
-in the driver where we're allowed to sleep.
+Hi Joe,
 
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
----
- drivers/clocksource/sh_cmt.c | 20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+The `vfop' part of the code contains a lot of usage of the `bnx2x_vfop_finalize()',
+which either goto or return at the end of almost every case.
+"Normal" analysis tools/scripts fail to recognize them as  valid case breaks.
 
-diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
-index 0965e98..940341a 100644
---- a/drivers/clocksource/sh_cmt.c
-+++ b/drivers/clocksource/sh_cmt.c
-@@ -634,12 +634,18 @@ static int sh_cmt_clock_event_next(unsigned long delta,
- 
- static void sh_cmt_clock_event_suspend(struct clock_event_device *ced)
- {
--	pm_genpd_syscore_poweroff(&ced_to_sh_cmt(ced)->pdev->dev);
-+	struct sh_cmt_priv *p = ced_to_sh_cmt(ced);
-+
-+	pm_genpd_syscore_poweroff(&p->pdev->dev);
-+	clk_unprepare(p->clk);
- }
- 
- static void sh_cmt_clock_event_resume(struct clock_event_device *ced)
- {
--	pm_genpd_syscore_poweron(&ced_to_sh_cmt(ced)->pdev->dev);
-+	struct sh_cmt_priv *p = ced_to_sh_cmt(ced);
-+
-+	clk_prepare(p->clk);
-+	pm_genpd_syscore_poweron(&p->pdev->dev);
- }
- 
- static void sh_cmt_register_clockevent(struct sh_cmt_priv *p,
-@@ -737,6 +743,10 @@ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
- 		goto err2;
- 	}
- 
-+	ret = clk_prepare(p->clk);
-+	if (ret < 0)
-+		goto err3;
-+
- 	if (res2 && (resource_size(res2) == 4)) {
- 		/* assume both CMSTR and CMCSR to be 32-bit */
- 		p->read_control = sh_cmt_read32;
-@@ -773,19 +783,21 @@ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
- 			      cfg->clocksource_rating);
- 	if (ret) {
- 		dev_err(&p->pdev->dev, "registration failed\n");
--		goto err3;
-+		goto err4;
- 	}
- 	p->cs_enabled = false;
- 
- 	ret = setup_irq(irq, &p->irqaction);
- 	if (ret) {
- 		dev_err(&p->pdev->dev, "failed to request irq %d\n", irq);
--		goto err3;
-+		goto err4;
- 	}
- 
- 	platform_set_drvdata(pdev, p);
- 
- 	return 0;
-+err4:
-+	clk_unprepare(p->clk);
- err3:
- 	clk_put(p->clk);
- err2:
--- 
-1.8.4
+Adding `fallthrough' comments would make little sense, as this is not the real
+behavior; Perhaps we need some alternative comment? (something in the line
+of `macro case break')
+
+Cheers,
+Yuval
 
