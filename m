@@ -1,102 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab3LNUXa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 15:23:30 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:40441 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753480Ab3LNUX2 (ORCPT
+	id S1754133Ab3LNUY6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 15:24:58 -0500
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:59343 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754105Ab3LNUY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 15:23:28 -0500
-Date: Sat, 14 Dec 2013 15:23:24 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        tomaz.solc@tablix.org, aaron.lu@intel.com,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: Writeback threads and freezable
-Message-ID: <20131214202324.GA4020@htj.dyndns.org>
-References: <20131213174932.GA27070@htj.dyndns.org>
- <20131214015343.GP31386@dastard>
+	Sat, 14 Dec 2013 15:24:56 -0500
+Date: Sat, 14 Dec 2013 15:25:18 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Namhyung Kim <namhyung@kernel.org>
+cc: linux-kernel@vger.kernel.org, Chad Paradis <chad.paradis@umit.maine.edu>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: [patch v3] perf tools: perf list broken on ARM
+In-Reply-To: <87a9g8i1ea.fsf@sejong.aot.lge.com>
+Message-ID: <alpine.DEB.2.10.1312141516120.15216@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1312101439590.7745@vincent-weaver-1.um.maine.edu> <87a9g8i1ea.fsf@sejong.aot.lge.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131214015343.GP31386@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Dave.
 
-On Sat, Dec 14, 2013 at 12:53:43PM +1100, Dave Chinner wrote:
-> That's the fundamental problem here - device removal asks the device
-> to fsync the filesystem on top of the device that was just removed.
-> The simple way to trigger this is to pull a device from underneath
-> an active filesystem (e.g. user unplugs a USB device without first
-> unmounting it). There are many years worth of bug reports showing
-> that this attempt by the device removal code to sync the filesystem
-> leads to deadlocks.
+OK, here's an updated version that reuses evsel and hopefully doesn't leak 
+memory like the previous patch I posted.
 
-What are you suggesting?  Implementing separate warm and hot unplug
-paths?  That makes no sense whatsoever.  Device hot unplug is just a
-sub operation of general device unplug which should be able to succeed
-whether the underlying device is failing IOs or not.
 
-Another thing to consider is that you want to excercise your error
-handling path as often as possible.  IOs could still fail even during
-device warm unplugs.  If anything atop the driver can't handle that,
-that's a bug and we want to fix them.  The fact that we have bug
-reports going back years on the subject simply means that we've been
-traditionally lousy with error handling throughout the layers - those
-were the occassions where we fixed actual error handling bugs, hot
-unplug or not.  Special casing hot unplug would just make existing
-error handling bugs more difficult to find.
+"perf list" listing of hardware events doesn't work on older ARM devices.
+The change enabling event detection:
 
-> It's simply not a valid thing to do - just how is the filesystem
-> supposed to sync to a non-existent device?
+ commit b41f1cec91c37eeea6fdb15effbfa24ea0a5536b
+ Author: Namhyung Kim <namhyung.kim@lge.com>
+ Date:   Tue Aug 27 11:41:53 2013 +0900
 
-By issuing all IOs and then handling the failures appropriately.
-Exactly just as it would handle *ANY* io errors.  This actually is the
-simplest thing to do to drain the pipe - pushing things down all the
-way and fail them at single point.  What's the alternative?  Implement
-quick exit path at each layer?  That's just silly and error-prone.
+     perf list: Skip unsupported events
 
-> I've raised this each time a user reports it over the past few years
-> and never been able to convince any to fix the filesystem
-> re-entrancy problem device removal causes. Syncing the filesystem
 
-Well, it isn't a good idea.
+uses the following code in tools/perf/util/parse-events.c:
 
-> will require taking locks that are by IO in progress, and so can't
-> make progress until the IO is completed, but that can't happen
-> until the error handling completes the sync of the filesystem....
+        struct perf_event_attr attr = {
+                .type = type,
+                .config = config,
+                .disabled = 1,
+                .exclude_kernel = 1,
+        };
 
-IOs in progress shouldn't ever be stalled by filesystem sync.  That's
-a massive layering violation.  Where and how does that happen?
+On ARM machines pre-dating the Cortex-A15 this doesn't work, as
+these machines don't support .exclude_kernel.  So starting with 3.12
+"perf list" does not report any hardware events at all on older
+machines (seen on Rasp-Pi, Pandaboard, Beagleboard, etc).
 
-> Preventing fs/io re-entrancy from contexts where we might be holding
-> locks is the same reason we have GFP_NOFS and GFP_NOIO for memory
-> allocation: re-entering a filesystem or IO subsystem whenever we are
-> holding locks or serialised context in the fs/io path can deadlock
-> the fs/io path.
->
-> IOWs, syncing the filesystem from the device delete code is just
-> plain wrong. That's what needs fixing - removing the cause of
-> re-entrancy, not the workqueue or writeback code...
+This version of the patch makes changes suggested by Namhyung Kim
+to check for EACCESS and retry (instead of just dropping
+the exclude_kernel) so we can properly handle machines where 
+/proc/sys/kernel/perf_event_paranoid is set to 2.
 
-No, the wrong thing there is having IO failures depending on
-filesystem sync.  Nothing else.
+Reported-by: Chad Paradis <chad.paradis@umit.maine.edu>
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
 
-> > Ideas?
-> 
-> Fix the device delete error handling not to re-enter the
-> filesystem and IO path. It's just wrong.
-
-Nope, bad idea.
-
-Thanks.
-
--- 
-tejun
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 6de6f89..1fa98b9 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -1082,12 +1082,12 @@ int is_valid_tracepoint(const char *event_string)
+ static bool is_event_supported(u8 type, unsigned config)
+ {
+ 	bool ret = true;
++	int open_return;
+ 	struct perf_evsel *evsel;
+ 	struct perf_event_attr attr = {
+ 		.type = type,
+ 		.config = config,
+ 		.disabled = 1,
+-		.exclude_kernel = 1,
+ 	};
+ 	struct {
+ 		struct thread_map map;
+@@ -1099,7 +1099,20 @@ static bool is_event_supported(u8 type, unsigned config)
+ 
+ 	evsel = perf_evsel__new(&attr);
+ 	if (evsel) {
+-		ret = perf_evsel__open(evsel, NULL, &tmap.map) >= 0;
++		open_return = perf_evsel__open(evsel, NULL, &tmap.map);
++		ret = open_return >= 0;
++
++		if (open_return == -EACCES) {
++			/*
++			 * This happens if the paranoid value
++			 * /proc/sys/kernel/perf_event_paranoid is set to 2
++			 * Re-run with exclude_kernel set; we don't do that
++			 * by default as some ARM machines do not support it.
++			 *
++			 */
++			evsel->attr.exclude_kernel = 1;
++			ret = perf_evsel__open(evsel, NULL, &tmap.map) >= 0;
++		}
+ 		perf_evsel__delete(evsel);
+ 	}
+ 
