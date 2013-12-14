@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab3LNWQC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 17:16:02 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:47970 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753950Ab3LNWQA (ORCPT
+	id S1754218Ab3LNWTH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 17:19:07 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:50842 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753950Ab3LNWTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 17:16:00 -0500
+	Sat, 14 Dec 2013 17:19:06 -0500
+Message-ID: <52ACD955.6090900@linaro.org>
+Date: Sat, 14 Dec 2013 14:19:01 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20131214220145.GA27585@kroah.com>
-References: <CAMxnaaWgUPRb3L2aKpUu62F73GR2iXOfd6LUnTkU0O=Gq-E_sQ@mail.gmail.com>
- <20131214220145.GA27585@kroah.com>
-From: Andreas Noever <andreas.noever@gmail.com>
-Date: Sat, 14 Dec 2013 23:15:39 +0100
-Message-ID: <CAMxnaaXzvxTJc+fP_E9fQhMTsVcj2PCJCsp=PNae3Pv47JONdQ@mail.gmail.com>
-Subject: Re: How to reserve pci bus numbers for hotplug?
 To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>
+Subject: Re: [PATCH 1/2] ion: Don't allow building ION as a module.
+References: <20131214170618.GA17461@kroah.com> <1387051606-10440-1-git-send-email-john.stultz@linaro.org> <20131214214820.GA26981@kroah.com>
+In-Reply-To: <20131214214820.GA26981@kroah.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 14, 2013 at 11:01 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Thu, Dec 12, 2013 at 12:37:50AM +0100, Andreas Noever wrote:
+On 12/14/2013 01:48 PM, Greg KH wrote:
+> On Sat, Dec 14, 2013 at 12:06:45PM -0800, John Stultz wrote:
+>> ION doesn't export the proper symbols for it to be a module. This
+>> causes build issues when ION is configured as a module.
 >>
->> If I could get Linux to assign enough resources (bus numbers for now)
->> then I could drop the acpi_osi parameter and make thunderbolt work
->> after suspend... So, is there an easy way to fix this? (Quirks,
->> reconfiguring bus number assignments from a platform driver, ...?)
+>> Since Andorid kernels rarely use modules (I think recent policy
+>> requires no modules?), go ahead and set the ION config to a bool
+>> from the tristate option.
+>>
+>> If folks decide ION as a module is important, we will have to go
+>> through and export the various needed symbols.
+>>
+>> Signed-off-by: John Stultz <john.stultz@linaro.org>
+>> ---
+>>  drivers/staging/android/ion/Kconfig | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/staging/android/ion/Kconfig b/drivers/staging/android/ion/Kconfig
+>> index a342d96..b95281e 100644
+>> --- a/drivers/staging/android/ion/Kconfig
+>> +++ b/drivers/staging/android/ion/Kconfig
+>> @@ -1,5 +1,5 @@
+>>  menuconfig ION
+>> -	tristate "Ion Memory Manager"
+>> +	bool "Ion Memory Manager"
+> Or you can do:
+> 	depends on m
+> and leave it as a "tristate", then when switching it off, I think you
+> can then be prompted as 'm' again, but I could be wrong about that.
 >
-> I think you are going to have to do a lot more here, what is needed is a
-> whole connection manager for Thunderbolt, emulating what the BIOS does,
-> in order to get all of this working properly.
->
-> But don't let that stop you from trying, however the work involved is
-> really not trivial at all.
->
-> good luck,
->
-> greg k-h
+> So should ION ever be able to be built as a module in the future?
+My understanding is that Android is moving away from using modules, but
+others could comment more authoritatively. So I don't think this is an
+issue. But as I said in the patch, if folks do want to have ION as a
+module, we'll have to export all the various symbols that ION users need.
 
-Actually the thunderbolt part is already working (for non chaining
-devices, see https://lkml.org/lkml/2013/11/28/492 if you are
-interested). I can completely bootstrap the tb side of things. The
-only problem is that if power has been cut by the firmware (during
-boot without osi_acpi=Darwin or after a suspend/resume cycle) then
-Linux does not allocate enough PCI resources...
+thanks
+-john
 
-Cheers,
-Andreas
