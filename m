@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab3LNOKd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 09:10:33 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:47335 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3LNOKb (ORCPT
+	id S1753731Ab3LNOOm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 09:14:42 -0500
+Received: from mail-db9lp0252.outbound.messaging.microsoft.com ([213.199.154.252]:36057
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751407Ab3LNOOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 09:10:31 -0500
-Date: Sat, 14 Dec 2013 19:40:21 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: [PATCH 2/2] drivers: ata: Mark the function as static in libahci.c
-Message-ID: <a4302d91071258c77de3e4086845adf630a3f8d6.1387029964.git.rashika.kheria@gmail.com>
-References: <81391ee13d565f1db31247dfda803cd7123bb8a9.1387029964.git.rashika.kheria@gmail.com>
+	Sat, 14 Dec 2013 09:14:41 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Sat, 14 Dec 2013 22:15:19 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: imx6: Derive spdif clock from pll3_pfd3_454m
+Message-ID: <20131214141518.GF16177@S2101-09.ap.freescale.net>
+References: <1386949072-6520-1-git-send-email-Guangyu.Chen@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <81391ee13d565f1db31247dfda803cd7123bb8a9.1387029964.git.rashika.kheria@gmail.com>
+In-Reply-To: <1386949072-6520-1-git-send-email-Guangyu.Chen@freescale.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch marks the function ahci_port_intr() and
-ahci_hw_port_interrupt() as static in libahci.c because they are not
-used outside this file.
+On Fri, Dec 13, 2013 at 11:37:52PM +0800, Nicolin Chen wrote:
+> SPDIF can derive a TX clock for playback from one of its clock sources --
+> spdif root clock to match its supporting sample rates. So this patch set
+> the spdif root clock's parent to pll3_pfd3_454m since the pll3_pfd3_454m
+> can approximately meet its sample rate requirement.
+> 
+> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
 
-Thus, it also eliminates the following warnings in libahci.c:
-drivers/ata/libahci.c:1767:6: warning: no previous prototype for ‘ahci_port_intr’ [-Wmissing-prototypes]
-drivers/ata/libahci.c:1800:6: warning: no previous prototype for ‘ahci_hw_port_interrupt’ [-Wmissing-prototypes]
-
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
----
- drivers/ata/libahci.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index c482f8c..36605ab 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -1764,7 +1764,7 @@ static void ahci_handle_port_interrupt(struct ata_port *ap,
- 	}
- }
- 
--void ahci_port_intr(struct ata_port *ap)
-+static void ahci_port_intr(struct ata_port *ap)
- {
- 	void __iomem *port_mmio = ahci_port_base(ap);
- 	u32 status;
-@@ -1797,7 +1797,7 @@ irqreturn_t ahci_thread_fn(int irq, void *dev_instance)
- }
- EXPORT_SYMBOL_GPL(ahci_thread_fn);
- 
--void ahci_hw_port_interrupt(struct ata_port *ap)
-+static void ahci_hw_port_interrupt(struct ata_port *ap)
- {
- 	void __iomem *port_mmio = ahci_port_base(ap);
- 	struct ahci_port_priv *pp = ap->private_data;
--- 
-1.7.9.5
+Applied, thanks.
 
