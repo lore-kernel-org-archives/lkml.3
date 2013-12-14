@@ -1,29 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980Ab3LNQd4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 11:33:56 -0500
-Received: from linode.aoot.com ([69.164.194.13]:38096 "EHLO linode.aoot.com"
+	id S1753874Ab3LNQ7w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 11:59:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47938 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753900Ab3LNQd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 11:33:56 -0500
-X-Greylist: delayed 1939 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Dec 2013 11:33:55 EST
-Message-ID: <52AC80E0.7060800@opengridcomputing.com>
-Date: Sat, 14 Dec 2013 10:01:36 -0600
-From: Steve Wise <swise@opengridcomputing.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org
-CC: Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: Re: [PATCH] drivers: infiniband: Mark function _c4iw_write_mem_dma()
- as static in mem.c
-References: <20131214131214.GA8459@rashika>
-In-Reply-To: <20131214131214.GA8459@rashika>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753801Ab3LNQ7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Dec 2013 11:59:51 -0500
+From: Mark Salter <msalter@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Salter <msalter@redhat.com>
+Subject: [PATCH 00/10] Kconfig: cleanup SERIO_I8042 dependencies
+Date: Sat, 14 Dec 2013 11:59:26 -0500
+Message-Id: <1387040376-26906-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Steve Wise <swise@opengridcomputing.com>
+This patch series removes the messy dependencies from SERIO_I8042
+by having it depend on one variable (ARCH_MAY_HAVE_PC_SERIO) and
+having architectures which need it select that variable in
+arch/*/Kconfig.
+
+New architectures are unlikely to need SERIO_I8042, so this avoids
+having an ever growing list of architectures to exclude. If an
+architecture without i8042 support isn't excluded through the
+dependency list for SERIO_I8042 or through explicit disabling in
+a config, it will likely panic on boot with something similar to
+this (from arm64):
+
+[   27.426181] [<ffffffc000403b1c>] i8042_flush+0x88/0x10c
+[   27.426251] [<ffffffc00084cc2c>] i8042_init+0x58/0xe8
+[   27.426320] [<ffffffc000080bec>] do_one_initcall+0xc4/0x14c
+[   27.426404] [<ffffffc000820970>] kernel_init_freeable+0x1a4/0x244
+[   27.426480] [<ffffffc0005a894c>] kernel_init+0x18/0x148
+[   27.426561] Code: d2800c82 f2bf7c02 f2dff7e2 f2ffffe2 (39400042) 
+[   27.426789] ---[ end trace ac076843cf0f383e ]---
+[   27.426875] Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+
+A tree with these patches is at:
+
+   git://github.com/mosalter/linux.git (serio-i8042 branch)
+
+Mark Salter (10):
+  alpha: select ARCH_MIGHT_HAVE_PC_SERIO
+  arm: select ARCH_MIGHT_HAVE_PC_SERIO
+  ia64: select ARCH_MIGHT_HAVE_PC_SERIO
+  mips: select ARCH_MIGHT_HAVE_PC_SERIO
+  powerpc: select ARCH_MIGHT_HAVE_PC_SERIO
+  sh: select ARCH_MIGHT_HAVE_PC_SERIO
+  sparc: select ARCH_MIGHT_HAVE_PC_SERIO
+  unicore32: select ARCH_MIGHT_HAVE_PC_SERIO
+  x86: select ARCH_MIGHT_HAVE_PC_SERIO
+  Kconfig: cleanup SERIO_I8042 dependencies
+
+ arch/alpha/Kconfig          |  1 +
+ arch/arm/Kconfig            |  1 +
+ arch/ia64/Kconfig           |  1 +
+ arch/mips/Kconfig           |  1 +
+ arch/powerpc/Kconfig        |  1 +
+ arch/sh/Kconfig             |  1 +
+ arch/sparc/Kconfig          |  1 +
+ arch/unicore32/Kconfig      |  1 +
+ arch/x86/Kconfig            |  1 +
+ drivers/input/serio/Kconfig | 11 ++++++++---
+ 10 files changed, 17 insertions(+), 3 deletions(-)
+
+-- 
+1.8.3.1
+
