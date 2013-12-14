@@ -1,166 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309Ab3LNX0R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 18:26:17 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:37587 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753941Ab3LNX0P (ORCPT
+	id S1754330Ab3LNXkG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 18:40:06 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:60604 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753941Ab3LNXkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 18:26:15 -0500
-Message-ID: <52ACE809.1000406@gmail.com>
-Date: Sat, 14 Dec 2013 15:21:45 -0800
-From: Connor Behan <connor.behan@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	Sat, 14 Dec 2013 18:40:03 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sergei Ianovich <ynvich@gmail.com>
+Subject: Re: [PATCH v2 03/16] ARM: dts: provide DMA config to pxamci
+Date: Sun, 15 Dec 2013 00:39:46 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Daniel Mack <zonque@gmail.com>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Chris Ball <cjb@laptop.org>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        linux-mmc@vger.kernel.org
+References: <1386543229-1542-1-git-send-email-ynvich@gmail.com> <201312142006.26979.arnd@arndb.de> <1387049660.7152.317.camel@host5.omatika.ru>
+In-Reply-To: <1387049660.7152.317.camel@host5.omatika.ru>
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-CC: Frederik Himpe <fhimpe@telenet.be>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: stable regression: tda18271_read_regs: [1-0060|M] ERROR: i2c_transfer
- returned: -19
-References: <1386969579.3914.13.camel@piranha.localdomain> <20131214092443.622b069d@samsung.com>
-In-Reply-To: <20131214092443.622b069d@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="43opuuhA6toJ4OQONkWvwGwPgul4wW2St"
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312150039.46681.arnd@arndb.de>
+X-Provags-ID: V02:K0:D+IZESZonT/S8Gr1aA6vmbVnz9RPUOwAL8UpaLuji8E
+ afS2l+HiR81MFhR1CHy69IKXLqyP1P6mDkAb8JrpiHJ3npQKYO
+ SR4b2IhKtDb7ePzBcGt5pEJQibPnfa4BKytrr62v5IFNVKcXV5
+ XlwSBZJqXocokaLNBLd3Eivr1emYFewF2vkx9Q7tcY9I9THC9K
+ 0iudYW8PkaVOW8tH1wDVSbGOefi/qEeJW3HsNRrdoDBzjY6inq
+ bUlqve3tZakeugwEF2PocEsFlgRq7bZTp35uES1vk0MD1CGPjt
+ DqJIDslO3BfaqTSlrxEm/25gHF6uKWEIbvICzJzqKhwI1ycCQS
+ J1PES33Hh6wifPFpnM3Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---43opuuhA6toJ4OQONkWvwGwPgul4wW2St
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Saturday 14 December 2013, Sergei Ianovich wrote:
+> On Sat, 2013-12-14 at 20:06 +0100, Arnd Bergmann wrote:
+> > On Friday 13 December 2013, Sergei Ianovich wrote:
+> > > Non-dts implementation supply required DMA channel numbers as
+> > > IORESOURCE_DMA. However, there is was no way to get them from
+> > > device tree.
+> > 
+> > Please update this changeset comment, I think it still refers to
+> > the earlier version.
+> 
+> ---
+> Non-dts implementation supply required DMA channel numbers as
+> IORESOURCE_DMA. We can also get them from the device tree, if it
+> is present.
+> ---
+> 
+> Is this fine?
 
-On 14/12/13 03:24 AM, Mauro Carvalho Chehab wrote:
-> Em Fri, 13 Dec 2013 22:19:39 +0100
-> Frederik Himpe <fhimpe@telenet.be> escreveu:
->
->> [My excuses for multiposting, it seems gmane does not permit posting t=
-o all
->> the relevant lists]
->>
->> Since upgrading my system from Linux 3.12 to 3.12.3, my PCTV Systems
->> nanoStick T2 290e does not work anymore.
->>
->> This happens with 3.12.3:
->>
->> [    3.778817] em28174 #0: i2c eeprom 0000: 26 00 01 00 02 09 d8 85 80=
- 80 e5 80 f4 f5 94 90
->> [    3.779741] em28174 #0: i2c eeprom 0010: 78 0d e4 f0 f5 46 12 00 5a=
- c2 eb c2 e8 30 e9 03
->> [    3.780643] em28174 #0: i2c eeprom 0020: 12 09 de 30 eb 03 12 09 10=
- 30 ec f1 12 07 72 80
->> [    3.781562] em28174 #0: i2c eeprom 0030: ec 00 60 00 e5 f5 64 01 60=
- 09 e5 f5 64 09 60 03
->> [    3.782473] em28174 #0: i2c eeprom 0040: c2 c6 22 e5 f7 b4 03 13 e5=
- f6 b4 87 03 02 09 92
->> [    3.783406] em28174 #0: i2c eeprom 0050: e5 f6 b4 93 03 02 07 e6 c2=
- c6 22 c2 c6 22 12 09
->> [    3.784314] em28174 #0: i2c eeprom 0060: cf 02 06 19 1a eb 67 95 13=
- 20 4f 02 c0 13 6b 10
->> [    3.785213] em28174 #0: i2c eeprom 0070: a0 1a ba 14 ce 1a 39 57 00=
- 5c 18 00 00 00 00 00
->> [    3.786140] em28174 #0: i2c eeprom 0080: 00 00 00 00 44 36 00 00 f0=
- 10 02 00 00 00 00 00
->> [    3.787057] em28174 #0: i2c eeprom 0090: 5b 23 c0 00 00 00 20 40 20=
- 80 02 20 01 01 00 00
->> [    3.787970] em28174 #0: i2c eeprom 00a0: 00 00 00 00 00 00 00 00 00=
- 00 00 00 00 00 00 00
->> [    3.788879] em28174 #0: i2c eeprom 00b0: c6 40 00 00 00 00 a7 00 00=
- 00 00 00 00 00 00 00
->> [    3.789790] em28174 #0: i2c eeprom 00c0: 00 00 00 00 00 00 00 00 00=
- 00 00 00 00 00 38 32
->> [    3.790709] em28174 #0: i2c eeprom 00d0: 34 31 30 31 31 36 36 30 31=
- 37 31 32 32 31 46 4b
->> [    3.791625] em28174 #0: i2c eeprom 00e0: 4a 31 00 4f 53 49 30 30 33=
- 30 38 44 30 31 31 30
->> [    3.792531] em28174 #0: i2c eeprom 00f0: 46 4b 4a 31 00 00 00 00 00=
- 00 00 00 00 00 31 30
->> [    3.793444] em28174 #0: i2c eeprom 0100: ... (skipped)
->> [    3.793502] em28174 #0: EEPROM ID =3D 26 00 01 00, EEPROM hash =3D =
-0xfcf432bb
->> [    3.793559] em28174 #0: EEPROM info:
->> [    3.793616] em28174 #0: 	microcode start address =3D 0x0004, boot c=
-onfiguration =3D 0x01
->> [    3.804741] scsi 8:0:0:0: Direct-Access     Generic  Ultra HS-SD/MM=
-C  1.82 PQ: 0 ANSI: 0
->> [    3.805345] sd 8:0:0:0: Attached scsi generic sg3 type 0
->> [    3.818139] em28174 #0: 	No audio on board.
->> [    3.818194] em28174 #0: 	500mA max power
->> [    3.818247] em28174 #0: 	Table at offset 0x39, strings=3D0x1aa0, 0x=
-14ba, 0x1ace
->> [    3.818318] em28174 #0: Identified as PCTV nanoStick T2 290e (card=3D=
-78)
->> [    3.818374] em28174 #0: v4l2 driver version 0.2.0
->> [    3.821522] sd 8:0:0:0: [sdc] Attached SCSI removable disk
->> [    3.823606] em28174 #0: V4L2 video device registered as video0
->> [    3.823662] em28174 #0: dvb set to isoc mode.
->> [    3.823972] usbcore: registered new interface driver em28xx
->> [    3.844020] tda18271 1-0060: creating new instance
->> [    3.868422] tda18271_read_regs: [1-0060|M] ERROR: i2c_transfer retu=
-rned: -19
->> [    3.868492] Error reading device ID @ 1-0060, bailing out.
->> [    3.868548] tda18271_attach: [1-0060|M] error -5 on line 1285
->> [    3.868603] tda18271 1-0060: destroying instance
->> [    3.868666] Em28xx: Initialized (Em28xx dvb Extension) extension
->> [    3.894687] Registered IR keymap rc-pinnacle-pctv-hd
->> [    3.894819] input: em28xx IR (em28174 #0) as /devices/pci0000:00/00=
-00:00:1d.0/usb2/2-1/2-1.7/rc/rc0/input23
->> [    3.894979] rc0: em28xx IR (em28174 #0) as /devices/pci0000:00/0000=
-:00:1d.0/usb2/2-1/2-1.7/rc/rc0
->> [    3.895570] Em28xx: Initialized (Em28xx Input Extension) extension
->>
->> I see the same problem reported here:
->> https://github.com/Hexxeh/rpi-firmware/issues/38 where it is mentioned=
+I would mention that the binding is designed to work with the dmaengine
+framework as soon as we have figured out how to make that work without
+the problems you found.
 
->> that this regression also appeared in 3.10 stable series recently.
->>
->> I noticed upstream commit 8393796dfa4cf5dffcceec464c7789bec3a2f471
->> (media: dvb-frontends: Don't use dynamic static allocation)
->> entered both 3.10.22 (which is the first version introducing the
->> regression in 3.10 stable according to the linked bug), and 3.12.3.
->> This file contains stuff related to tda18271. Could this be the=20
->> culprit?
->>
-> Well, for board EM28174_BOARD_PCTV_290E, it first attaches cxd2820r
-> and then the tuner tda18271.
->
-> I suspect that the issue is at cxd2820r. Could you please apply this
-> patch:
-> 	http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/=
-?id=3D0db3fa2741ad8371c21b3a6785416a4afc0cc1d4=20
-> and see if it solves the issue?
->
-I hope this isn't too off-topic, but this problem seems similar to what
-I've been seeing with a HAUPPAGE_EXETER device:
-http://www.mail-archive.com/linux-media@vger.kernel.org/msg69081.html
+> Should I post v3, if so? 
 
-My basic problem is
+I'd wait a little longer for more comments.
 
-__tda18271_write_regs: [1-0060|M] ERROR: idx =3D 0x0, len =3D 39, i2c_tra=
-nsfer returned: -32
-
-where it attaches lgdt3305 before tda18271. Do you know a similar patch
-that could help me?
-
-
---43opuuhA6toJ4OQONkWvwGwPgul4wW2St
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBAgAGBQJSrOgYAAoJENU6BEW0eg2rPI8IAJBsjlQrS4GiZmpN9CLy9dSw
-v3TbBHUdJnHzrfJPxXYTK/l0iwDLzSpkSf5EsO8286ztmQiizsgsz6dcBQPTulvn
-RH0U3QEBz68Lri/BVa+sAIT+ynj3Y4McycTzDXSbH6BI2k6Qmd56VPEhY1W03FxA
-VcpWSOZ8cniaD60HuBizKj93BjZqN7ZRJB4cqhN9xwNTeFsssqzRDBzqw5weS/a/
-Bozg0s0f+XCKfua/a7LnY7aG6TWOVEYFXcPtOWSeVZksPNcHi+NJZ41tD6h88kBL
-EF7UxdHnqYxzPQnGaM32pnzf4qTwb4v4sw1RARwxxvhTczGfuGyckUKVgjfjB60=
-=Ktc7
------END PGP SIGNATURE-----
-
---43opuuhA6toJ4OQONkWvwGwPgul4wW2St--
+	Arnd
