@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab3LNApD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 19:45:03 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:57554 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244Ab3LNApB (ORCPT
+	id S1753011Ab3LNAwS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 19:52:18 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:36541 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646Ab3LNAwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 19:45:01 -0500
-Message-ID: <52ABA9EC.5070100@ti.com>
-Date: Fri, 13 Dec 2013 19:44:28 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v3 07/23] mm/memblock: switch to use NUMA_NO_NODE instead
- of MAX_NUMNODES
-References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com> <1386625856-12942-8-git-send-email-santosh.shilimkar@ti.com> <20131213212912.GL27070@htj.dyndns.org>
-In-Reply-To: <20131213212912.GL27070@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Dec 2013 19:52:16 -0500
+From: "Chen.Yu" <chyyuu@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: levex@linux.com, fanwlexca@gmail.com, mans@mansr.com,
+        "Chen.Yu" <chyyuu@gmail.com>
+Subject: [PATCH] scsi: integer overflow in megadev_ioctl()
+Date: Sat, 14 Dec 2013 08:51:53 +0800
+Message-Id: <1386982313-30054-1-git-send-email-chyyuu@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 13 December 2013 04:29 PM, Tejun Heo wrote:
-> On Mon, Dec 09, 2013 at 04:50:40PM -0500, Santosh Shilimkar wrote:
->> +	if (nid == MAX_NUMNODES)
->> +		pr_warn_once("%s: Usage of MAX_NUMNODES is depricated. Use NUMA_NO_NODE instead\n",
->> +			     __func__);
-> 
-> Why not just use WARN_ONCE()?  We'd want to know who the caller is
-> anyway.  Also, wouldn't something like the following simpler?
-> 
-> 	if (WARN_ONCE(nid == MAX_NUMNODES, blah blah))
-> 		nid = NUMA_NO_NODE;
-> 
-Agree.
+From: "Chen.Yu" <chyyuu@gmail.com>
 
->> @@ -768,6 +773,11 @@ void __init_memblock __next_free_mem_range_rev(u64 *idx, int nid,
->>  	struct memblock_type *rsv = &memblock.reserved;
->>  	int mi = *idx & 0xffffffff;
->>  	int ri = *idx >> 32;
->> +	bool check_node = (nid != NUMA_NO_NODE) && (nid != MAX_NUMNODES);
->> +
->> +	if (nid == MAX_NUMNODES)
->> +		pr_warn_once("%s: Usage of MAX_NUMNODES is depricated. Use NUMA_NO_NODE instead\n",
->> +			     __func__);
-> 
-> Ditto.
->
-OK.
+There is a potential integer overflow in megadev_ioctl() if
+userspace passes in a large u32 variable uioc.adapno.
+The int variable adapno would < 0, leading to an error
+array access for hdb_soft_state[adapno], or an error
+copy_to_user(uioc.uioc_uaddr, mcontroller+adapno,..).
+The simple fix is to  the simpler fix is to change the type
+of 'adapno' to u32, which is the type of uioc.adapno to u32.
 
-> 
-> Reviwed-by: Tejun Heo <tj@kernel.org>
-> 
-Thanks
+Signed-off-by: Yu Chen <chyyuu@gmail.com>
+---
+ drivers/scsi/megaraid.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
+index 816db12..724c5a5 100644
+--- a/drivers/scsi/megaraid.c
++++ b/drivers/scsi/megaraid.c
+@@ -3038,7 +3038,7 @@ megadev_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+ {
+ 	adapter_t	*adapter;
+ 	nitioctl_t	uioc;
+-	int		adapno;
++	u32		adapno;
+ 	int		rval;
+ 	mega_passthru	__user *upthru;	/* user address for passthru */
+ 	mega_passthru	*pthru;		/* copy user passthru here */
+-- 
+1.8.3.2
 
