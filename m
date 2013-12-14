@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab3LNSeK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 13:34:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53917 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753640Ab3LNSeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 13:34:07 -0500
-Message-ID: <52ACA43F.2040402@zytor.com>
-Date: Sat, 14 Dec 2013 10:32:31 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753910Ab3LNSmK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 13:42:10 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55125 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753810Ab3LNSmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Dec 2013 13:42:09 -0500
+Date: Sat, 14 Dec 2013 18:41:53 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Salter <msalter@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 02/10] arm: select ARCH_MIGHT_HAVE_PC_SERIO
+Message-ID: <20131214184153.GM4360@n2100.arm.linux.org.uk>
+References: <1387040376-26906-1-git-send-email-msalter@redhat.com> <1387040376-26906-3-git-send-email-msalter@redhat.com>
 MIME-Version: 1.0
-To: Mark Salter <msalter@redhat.com>, linux-kernel@vger.kernel.org
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
-Subject: Re: [PATCH 10/10] Kconfig: cleanup SERIO_I8042 dependencies
-References: <1387040376-26906-1-git-send-email-msalter@redhat.com> <1387040376-26906-11-git-send-email-msalter@redhat.com>
-In-Reply-To: <1387040376-26906-11-git-send-email-msalter@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387040376-26906-3-git-send-email-msalter@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2013 08:59 AM, Mark Salter wrote:
-> Remove messy dependencies from SERIO_I8042 by having it depend on one
-> Kconfig symbol (ARCH_MIGHT_HAVE_PC_SERIO) and having architectures
-> which need it select ARCH_MIGHT_HAVE_PC_SERIO in arch/*/Kconfig.
-> New architectures are unlikely to need SERIO_I8042, so this avoids
-> having an ever growing list of architectures to exclude.
+On Sat, Dec 14, 2013 at 11:59:28AM -0500, Mark Salter wrote:
+> Architectures which might use an i8042 for serial IO to keyboard,
+> mouse, etc should select ARCH_MIGHT_HAVE_PC_SERIO.
 > 
 > Signed-off-by: Mark Salter <msalter@redhat.com>
-> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> CC: Richard Henderson <rth@twiddle.net>
-> CC: linux-alpha@vger.kernel.org
 > CC: Russell King <linux@arm.linux.org.uk>
 > CC: linux-arm-kernel@lists.infradead.org
-> CC: Tony Luck <tony.luck@intel.com>
-> CC: Fenghua Yu <fenghua.yu@intel.com>
-> CC: linux-ia64@vger.kernel.org
-> CC: Ralf Baechle <ralf@linux-mips.org>
-> CC: linux-mips@linux-mips.org
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: linuxppc-dev@lists.ozlabs.org
-> CC: Paul Mundt <lethal@linux-sh.org>
-> CC: linux-sh@vger.kernel.org
-> CC: "David S. Miller" <davem@davemloft.net>
-> CC: sparclinux@vger.kernel.org
-> CC: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> CC: Ingo Molnar <mingo@redhat.com>
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: "H. Peter Anvin" <hpa@zytor.com>
-> CC: x86@kernel.org
+> ---
+>  arch/arm/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index c1f1a7e..6990dc5 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -6,6 +6,7 @@ config ARM
+>  	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
+>  	select ARCH_HAVE_CUSTOM_GPIO_H
+>  	select ARCH_MIGHT_HAVE_PC_PARPORT
+> +	select ARCH_MIGHT_HAVE_PC_SERIO if FOOTBRIDGE_HOST
+>  	select ARCH_USE_CMPXCHG_LOCKREF
+>  	select ARCH_WANT_IPC_PARSE_VERSION
+>  	select BUILDTIME_EXTABLE_SORT if MMU
 
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+It would be better to put this in arch/arm/mach-footbridge/Kconfig -
+ARM is impled as being true there.
 
-
+Thanks.
