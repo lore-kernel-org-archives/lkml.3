@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab3LNSmK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 13:42:10 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55125 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753810Ab3LNSmJ (ORCPT
+	id S1753930Ab3LNSqT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 13:46:19 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:62035 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753810Ab3LNSqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 13:42:09 -0500
-Date: Sat, 14 Dec 2013 18:41:53 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Salter <msalter@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 02/10] arm: select ARCH_MIGHT_HAVE_PC_SERIO
-Message-ID: <20131214184153.GM4360@n2100.arm.linux.org.uk>
-References: <1387040376-26906-1-git-send-email-msalter@redhat.com> <1387040376-26906-3-git-send-email-msalter@redhat.com>
+	Sat, 14 Dec 2013 13:46:18 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH 00/12] i8k patch series
+Date: Sat, 14 Dec 2013 19:45:19 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+References: <1387042221-3671-1-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1387042221-3671-1-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387040376-26906-3-git-send-email-msalter@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312141945.20348.arnd@arndb.de>
+X-Provags-ID: V02:K0:Pb3eaBGZdfYtriPt+lDUZcjjBFv9QfLu2XBSo6+79HX
+ Rg7KmRifBfnm1c6Mi62CtqMxCnh1XgGeSYfeLT/yP0uE3S4CWc
+ cC2VlTwNUBbmODqteDOJp3jBa2rEcf+jIAVJyYHiG3D0sqRPwX
+ eXt3BUX0IS+Z5MO8nSp6BaN1usAQuxPb19dTbQnZkS3U/2GtIW
+ cA+oO9xD8mow15DdUa7u+coP5Qs7G1Zx+/7msEOHW9eirTbPSN
+ OdFeblvUp8w52FZC1BT1IimdcLt5K0W3jxbWirklrs2ssEHQMc
+ KswSRMaFfr5Q3vlhth2U9QfXTAab97G2ofmhuQJmAUr9A+h90a
+ rxpTw1pO3h2yh1c49kyE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 14, 2013 at 11:59:28AM -0500, Mark Salter wrote:
-> Architectures which might use an i8042 for serial IO to keyboard,
-> mouse, etc should select ARCH_MIGHT_HAVE_PC_SERIO.
+On Saturday 14 December 2013, Guenter Roeck wrote:
+> Clean up and simplify the driver, add support for additional temperature
+> sensors, fix a problem seen with multi-core CPU, and add support
+> for additional systems.
 > 
-> Signed-off-by: Mark Salter <msalter@redhat.com>
-> CC: Russell King <linux@arm.linux.org.uk>
-> CC: linux-arm-kernel@lists.infradead.org
-> ---
->  arch/arm/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
+> ----------------------------------------------------------------
+> Guenter Roeck (14):
+>       i8k: Convert to use pr_ functions instead of printk
+>       i8k: Fix various checkpatch warnings and errors
+>       i8k: Convert to use to hwmon_device_register_with_groups hwmon API
+>       i8k: Support additional temperature sensors
+>       MAINTAINERS: Add myself as i8k maintainer
+>       i8k: Remove obsolete link to out-of-tree driver
+>       i8k: Drop driver version number and info message at startup
+>       i8k: Force SMM to run on CPU 0
+>       i8k: Add copyright
+>       i8k: Add support for Dell Studio laptops
+>       i8k: Add support for Dell XPS M140
+>       i8k: Use driver_data field of dmi_system_id to override fan multiplier
+>       i8k: Stop reading SMM BIOS version during driver probe
+>       i8k: Implement hwmon based fan speed control
 > 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index c1f1a7e..6990dc5 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -6,6 +6,7 @@ config ARM
->  	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
->  	select ARCH_HAVE_CUSTOM_GPIO_H
->  	select ARCH_MIGHT_HAVE_PC_PARPORT
-> +	select ARCH_MIGHT_HAVE_PC_SERIO if FOOTBRIDGE_HOST
->  	select ARCH_USE_CMPXCHG_LOCKREF
->  	select ARCH_WANT_IPC_PARSE_VERSION
->  	select BUILDTIME_EXTABLE_SORT if MMU
+>  MAINTAINERS        |    2 +-
+>  drivers/char/i8k.c |  358 +++++++++++++++++++++++++++++-----------------------
+>  2 files changed, 201 insertions(+), 159 deletions(-)
+> 
 
-It would be better to put this in arch/arm/mach-footbridge/Kconfig -
-ARM is impled as being true there.
+All changes in this patch set look good to me.
 
-Thanks.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+I wonder if it makes sense to move the driver to drivers/platform/x86/, which
+has a bunch of similar ones already.
+
+	Arnd
