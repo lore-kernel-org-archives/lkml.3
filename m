@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab3LND1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 22:27:52 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:60092 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753476Ab3LND1H (ORCPT
+	id S1753859Ab3LND1u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 22:27:50 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:38139 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753469Ab3LND1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 22:27:07 -0500
+	Fri, 13 Dec 2013 22:27:05 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Greg KH <gregkh@linuxfoundation.org>,
@@ -14,9 +14,9 @@ Cc: Greg KH <gregkh@linuxfoundation.org>,
         Sumit Semwal <sumit.semwal@linaro.org>,
         Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 106/115] ion: allow cached mappings of chunk and system heap buffers
-Date: Fri, 13 Dec 2013 19:26:26 -0800
-Message-Id: <1386991595-6251-14-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 104/115] ion: use vm_insert_pfn for faulted pages
+Date: Fri, 13 Dec 2013 19:26:24 -0800
+Message-Id: <1386991595-6251-12-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386991595-6251-1-git-send-email-john.stultz@linaro.org>
 References: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
@@ -27,45 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Colin Cross <ccross@android.com>
 
-Now that ion_vm_fault uses vm_insert_pfn instead of vm_insert_page
-cached buffers can be supported in any heap.  Remove the checks
-in the chunk and system heaps.
+Most ion userspace mappings are created with remap_pfn_range.  Use
+vm_insert_pfn instead of vm_insert_page to make faulted cached
+mappings look more like uncached mappings.
 
 Signed-off-by: Colin Cross <ccross@android.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/ion/ion_chunk_heap.c  | 3 ---
- drivers/staging/android/ion/ion_system_heap.c | 3 ---
- 2 files changed, 6 deletions(-)
+ drivers/staging/android/ion/ion.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/android/ion/ion_chunk_heap.c b/drivers/staging/android/ion/ion_chunk_heap.c
-index 4eacf52..34d1d18 100644
---- a/drivers/staging/android/ion/ion_chunk_heap.c
-+++ b/drivers/staging/android/ion/ion_chunk_heap.c
-@@ -47,9 +47,6 @@ static int ion_chunk_heap_allocate(struct ion_heap *heap,
- 	unsigned long num_chunks;
- 	unsigned long allocated_size;
+diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+index fc77aa6..45127f5 100644
+--- a/drivers/staging/android/ion/ion.c
++++ b/drivers/staging/android/ion/ion.c
+@@ -890,14 +890,15 @@ static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
+ int ion_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ {
+ 	struct ion_buffer *buffer = vma->vm_private_data;
++	unsigned long pfn;
+ 	int ret;
  
--	if (ion_buffer_fault_user_mappings(buffer))
--		return -ENOMEM;
+ 	mutex_lock(&buffer->lock);
+ 	ion_buffer_page_dirty(buffer->pages + vmf->pgoff);
 -
- 	allocated_size = ALIGN(size, chunk_heap->chunk_size);
- 	num_chunks = allocated_size / chunk_heap->chunk_size;
+ 	BUG_ON(!buffer->pages || !buffer->pages[vmf->pgoff]);
+-	ret = vm_insert_page(vma, (unsigned long)vmf->virtual_address,
+-			     ion_buffer_page(buffer->pages[vmf->pgoff]));
++
++	pfn = page_to_pfn(ion_buffer_page(buffer->pages[vmf->pgoff]));
++	ret = vm_insert_pfn(vma, (unsigned long)vmf->virtual_address, pfn);
+ 	mutex_unlock(&buffer->lock);
+ 	if (ret)
+ 		return VM_FAULT_ERROR;
+@@ -956,6 +957,8 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
+ 	}
  
-diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
-index a4bcf09..53afa33 100644
---- a/drivers/staging/android/ion/ion_system_heap.c
-+++ b/drivers/staging/android/ion/ion_system_heap.c
-@@ -148,9 +148,6 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
- 	if (align > PAGE_SIZE)
- 		return -EINVAL;
- 
--	if (ion_buffer_fault_user_mappings(buffer))
--		return -EINVAL;
--
- 	INIT_LIST_HEAD(&pages);
- 	while (size_remaining > 0) {
- 		info = alloc_largest_available(sys_heap, buffer, size_remaining, max_order);
+ 	if (ion_buffer_fault_user_mappings(buffer)) {
++		vma->vm_flags |= VM_IO | VM_PFNMAP | VM_DONTEXPAND |
++							VM_DONTDUMP;
+ 		vma->vm_private_data = buffer;
+ 		vma->vm_ops = &ion_vma_ops;
+ 		ion_vm_open(vma);
 -- 
 1.8.3.2
 
