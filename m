@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab3LNU6o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 15:58:44 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:44059 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754369Ab3LNU6n convert rfc822-to-8bit (ORCPT
+	id S1754414Ab3LNVAO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 16:00:14 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:51995 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753870Ab3LNVAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 15:58:43 -0500
-X-Originating-IP: 50.43.14.201
-Date: Sat, 14 Dec 2013 12:58:37 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH] drivers: pnp: Mark the function pnp_build_option() as
- static in resource.c
-Message-ID: <20131214205836.GU17601@leaf>
-References: <20131214132056.GA8624@rashika>
+	Sat, 14 Dec 2013 16:00:13 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sergei Ianovich <ynvich@gmail.com>
+Subject: Re: [PATCH v2 16/16] misc: support for I-8024 in LP-8x4x
+Date: Sat, 14 Dec 2013 21:59:39 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rob Landley <rob@landley.net>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
+References: <1386543229-1542-1-git-send-email-ynvich@gmail.com> <1386901645-28895-1-git-send-email-ynvich@gmail.com> <1386901645-28895-17-git-send-email-ynvich@gmail.com>
+In-Reply-To: <1386901645-28895-17-git-send-email-ynvich@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131214132056.GA8624@rashika>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312142159.40250.arnd@arndb.de>
+X-Provags-ID: V02:K0:F8ufDW9WOdwBA2QWFK3vFP2+LXqiSrEDZYk/fU41Tau
+ EwEkPtIjadfYyj8QZ8SDkzH+yFbJ5SGzJ3IJ4U22FX0B7gUX2Y
+ w31nU4F2a0ZYJ8ytzsTTbjOxy+J0zUMF5B4+7Rn2HC1J+N35aJ
+ vP1cWN8q7QbVi8BP9V03XWl+Qf0hA6ObaNVVmxf27s/JgT/MkU
+ TAYzFsj/sQLteYxWwcVyTOZqGYmKZ+UTTWJbWi8lwmjIu4LG9s
+ OlGnsWg+yf+L1ijtxLMeQ/6OgCVl0QGUEnFMVXshHrAPIEj5Im
+ a8jmsW81jxDt7udpd5uh0o7iwfG50sad75hKOlw+tVma/ofQ7Y
+ DNfruw5+eZ0s8VV6Ks2M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 14, 2013 at 06:50:56PM +0530, Rashika Kheria wrote:
-> This patch marks the function pnp_build_option() as static in resource.c
-> because it is not used outside this file.
-> 
-> Thus, it also eliminates the following warning in resource.c:
-> drivers/pnp/resource.c:34:20: warning: no previous prototype for ‘pnp_build_option’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+On Friday 13 December 2013, Sergei Ianovich wrote:
+> +void nsleep(unsigned long nanosec)
+> +{
+> +       ktime_t t = ns_to_ktime(nanosec);
+> +       long state = current->state;
+> +
+> +       __set_current_state(TASK_UNINTERRUPTIBLE);
+> +       schedule_hrtimeout(&t, HRTIMER_MODE_REL);
+> +       __set_current_state(state);
+> +}
+> +
+> +static void lp8x4x_slot_reset_AO(struct lp8x4x_slot *s)
+> +{
+> +       int i;
+> +       mutex_lock(&s->lock);
+> +       for (i = 0; i < s->AO_len; i++)
+> +               s->AO[i] = 0x2000;
+> +       iowrite8(0x00, s->data_addr);
+> +       nsleep(450);
+> +       iowrite8(0xff, s->data_addr);
+> +       mutex_unlock(&s->lock);
+> +}
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Have you checked that the nsleep definition actually does the
+right thing here? 450 nanoseconds must be close the latency
+you get from calling schedule_hrtimeout(). I'd suggest using
+either ndelay() or usleep_range() instead, depending on your
+needs.
 
->  drivers/pnp/resource.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/pnp/resource.c b/drivers/pnp/resource.c
-> index d95e101..bacddd1 100644
-> --- a/drivers/pnp/resource.c
-> +++ b/drivers/pnp/resource.c
-> @@ -31,7 +31,7 @@ static int pnp_reserve_mem[16] = {[0 ... 15] = -1 };	/* reserve (don't use) some
->   * option registration
->   */
->  
-> -struct pnp_option *pnp_build_option(struct pnp_dev *dev, unsigned long type,
-> +static struct pnp_option *pnp_build_option(struct pnp_dev *dev, unsigned long type,
->  				    unsigned int option_flags)
->  {
->  	struct pnp_option *option;
-> -- 
-> 1.7.9.5
-> 
+If nsleep is really useful here, we should probably add that
+as a generic API rather than having it in one driver.
+
+	Arnd
