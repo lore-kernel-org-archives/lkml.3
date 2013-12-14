@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab3LNDsm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 22:48:42 -0500
-Received: from seketeli.net ([91.121.166.71]:48108 "EHLO ms.seketeli.net"
+	id S1753562Ab3LNDtQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 22:49:16 -0500
+Received: from seketeli.net ([91.121.166.71]:48120 "EHLO ms.seketeli.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753228Ab3LNDsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753271Ab3LNDsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Dec 2013 22:48:40 -0500
 From: Apelete Seketeli <apelete@seketeli.net>
 To: linux-usb@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 3/3] usb: musb: fix setting JZ4740 gadget periphal mode on reset
-Date: Sat, 14 Dec 2013 04:48:38 +0100
-Message-Id: <1386992918-1531-4-git-send-email-apelete@seketeli.net>
+Subject: [PATCH 2/3] usb: musb: add support for JZ4740 usb device controller
+Date: Sat, 14 Dec 2013 04:48:37 +0100
+Message-Id: <1386992918-1531-3-git-send-email-apelete@seketeli.net>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1386992918-1531-1-git-send-email-apelete@seketeli.net>
 References: <1386992918-1531-1-git-send-email-apelete@seketeli.net>
@@ -20,52 +20,446 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-JZ4740 USB Device Controller is not OTG compatible and does not have DEVCTL
-register in silicon.
+Add support for Ingenic JZ4740 USB Device Controller through a
+specific musb glue layer.
 
-During ethernet-over-usb transactions, on reset, musb driver tries to
-read from DEVCTL and consequently sets device as host (A-Device)
-instead of peripheral (B-Device), which makes it a composite device to
-the USB gadget driver.
-This induces a kernel panic during power down where the USB gadget
-driver does a null pointer dereference when trying to access the
-composite device configuration.
+The platform data already available in tree for that USB Device
+Controller was previously used by an out-of-tree USB gadget driver
+which was not relying on the musb driver and was written by Ingenic
+and the Qi-Hardware community.
 
-On reset, do not rely on DEVCTL value for setting gadget peripheral
-mode: hardcode it instead to B-Device.
+JZ4740 UDC not being OTG compatible and missing some hardware
+registers, this musb glue layer is written from scratch to be used in
+gadget mode only and take silicon design specifics into account.
 
 Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
 ---
- drivers/usb/musb/musb_gadget.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/mips/include/asm/mach-jz4740/platform.h |    1 +
+ arch/mips/jz4740/board-qi_lb60.c             |    1 +
+ arch/mips/jz4740/platform.c                  |   55 +++++--
+ drivers/usb/musb/Kconfig                     |    8 +-
+ drivers/usb/musb/Makefile                    |    1 +
+ drivers/usb/musb/jz4740.c                    |  229 ++++++++++++++++++++++++++
+ drivers/usb/musb/musb_core.c                 |   14 ++
+ 7 files changed, 292 insertions(+), 17 deletions(-)
+ create mode 100644 drivers/usb/musb/jz4740.c
 
-diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-index 32fb057..b4bea7a 100644
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -2119,6 +2119,14 @@ __acquires(musb->lock)
- 	/* Normal reset, as B-Device;
- 	 * or else after HNP, as A-Device
- 	 */
-+#if defined(CONFIG_USB_MUSB_JZ4740) || defined(CONFIG_USB_MUSB_JZ4740_MODULE)
-+	/* JZ4740 UDC Controller is not OTG compatible and does not
-+	 * have DEVCTL register in silicon: do not rely on devctl for
-+	 * setting peripheral mode.
-+	 */
-+	musb->xceiv->state = OTG_STATE_B_PERIPHERAL;
-+	musb->g.is_a_peripheral = 0;
-+#else
- 	if (devctl & MUSB_DEVCTL_BDEVICE) {
- 		musb->xceiv->state = OTG_STATE_B_PERIPHERAL;
- 		musb->g.is_a_peripheral = 0;
-@@ -2126,6 +2134,7 @@ __acquires(musb->lock)
- 		musb->xceiv->state = OTG_STATE_A_PERIPHERAL;
- 		musb->g.is_a_peripheral = 1;
- 	}
-+#endif
+diff --git a/arch/mips/include/asm/mach-jz4740/platform.h b/arch/mips/include/asm/mach-jz4740/platform.h
+index 05988c2..069b43a 100644
+--- a/arch/mips/include/asm/mach-jz4740/platform.h
++++ b/arch/mips/include/asm/mach-jz4740/platform.h
+@@ -21,6 +21,7 @@
  
- 	/* start with default limits on VBUS power draw */
- 	(void) musb_gadget_vbus_draw(&musb->g, 8);
+ extern struct platform_device jz4740_usb_ohci_device;
+ extern struct platform_device jz4740_udc_device;
++extern struct platform_device jz4740_udc_xceiv_device;
+ extern struct platform_device jz4740_mmc_device;
+ extern struct platform_device jz4740_rtc_device;
+ extern struct platform_device jz4740_i2c_device;
+diff --git a/arch/mips/jz4740/board-qi_lb60.c b/arch/mips/jz4740/board-qi_lb60.c
+index 8a5ec0e..c01900e 100644
+--- a/arch/mips/jz4740/board-qi_lb60.c
++++ b/arch/mips/jz4740/board-qi_lb60.c
+@@ -427,6 +427,7 @@ static struct platform_device qi_lb60_audio_device = {
+ 
+ static struct platform_device *jz_platform_devices[] __initdata = {
+ 	&jz4740_udc_device,
++	&jz4740_udc_xceiv_device,
+ 	&jz4740_mmc_device,
+ 	&jz4740_nand_device,
+ 	&qi_lb60_keypad,
+diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
+index df65677..c55ff0a 100644
+--- a/arch/mips/jz4740/platform.c
++++ b/arch/mips/jz4740/platform.c
+@@ -21,6 +21,8 @@
+ 
+ #include <linux/dma-mapping.h>
+ 
++#include <linux/usb/musb.h>
++
+ #include <asm/mach-jz4740/platform.h>
+ #include <asm/mach-jz4740/base.h>
+ #include <asm/mach-jz4740/irq.h>
+@@ -56,29 +58,50 @@ struct platform_device jz4740_usb_ohci_device = {
+ 	.resource	= jz4740_usb_ohci_resources,
+ };
+ 
+-/* UDC (USB gadget controller) */
+-static struct resource jz4740_usb_gdt_resources[] = {
+-	{
+-		.start	= JZ4740_UDC_BASE_ADDR,
+-		.end	= JZ4740_UDC_BASE_ADDR + 0x1000 - 1,
+-		.flags	= IORESOURCE_MEM,
++/* USB Device Controller */
++struct platform_device jz4740_udc_xceiv_device = {
++	.name = "usb_phy_gen_xceiv",
++	.id   = 0,
++};
++
++static struct musb_hdrc_config jz4740_udc_config = {
++	/* Silicon does not implement USB OTG. */
++	.multipoint = 0,
++	/* Max EPs scanned, driver will decide which EP can be used. */
++	.num_eps    = 4,
++	/* RAMbits needed to configure EPs from table */
++	.ram_bits   = 9,
++};
++
++static struct musb_hdrc_platform_data jz4740_udc_platform_data = {
++	.mode   = MUSB_PERIPHERAL,
++	.config = &jz4740_udc_config,
++};
++
++static struct resource jz4740_udc_resources[] = {
++	[0] = {
++		.start = JZ4740_UDC_BASE_ADDR,
++		.end   = JZ4740_UDC_BASE_ADDR + 0x10000 - 1,
++		.flags = IORESOURCE_MEM,
+ 	},
+-	{
+-		.start	= JZ4740_IRQ_UDC,
+-		.end	= JZ4740_IRQ_UDC,
+-		.flags	= IORESOURCE_IRQ,
++	[1] = {
++		.start = JZ4740_IRQ_UDC,
++		.end   = JZ4740_IRQ_UDC,
++		.flags = IORESOURCE_IRQ,
++		.name  = "mc",
+ 	},
+ };
+ 
+ struct platform_device jz4740_udc_device = {
+-	.name		= "jz-udc",
+-	.id		= -1,
+-	.dev = {
+-		.dma_mask = &jz4740_udc_device.dev.coherent_dma_mask,
++	.name = "musb-jz4740",
++	.id   = -1,
++	.dev  = {
++		.dma_mask          = &jz4740_udc_device.dev.coherent_dma_mask,
+ 		.coherent_dma_mask = DMA_BIT_MASK(32),
++		.platform_data     = &jz4740_udc_platform_data,
+ 	},
+-	.num_resources	= ARRAY_SIZE(jz4740_usb_gdt_resources),
+-	.resource	= jz4740_usb_gdt_resources,
++	.num_resources = ARRAY_SIZE(jz4740_udc_resources),
++	.resource      = jz4740_udc_resources,
+ };
+ 
+ /* MMC/SD controller */
+diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
+index 57dfc0c..a45ed15 100644
+--- a/drivers/usb/musb/Kconfig
++++ b/drivers/usb/musb/Kconfig
+@@ -93,6 +93,12 @@ config USB_MUSB_BLACKFIN
+ config USB_MUSB_UX500
+ 	tristate "Ux500 platforms"
+ 
++config USB_MUSB_JZ4740
++	tristate "JZ4740"
++	depends on MACH_JZ4740
++	depends on USB_MUSB_GADGET
++	depends on USB_OTG_BLACKLIST_HUB
++
+ endchoice
+ 
+ config USB_MUSB_AM335X_CHILD
+@@ -100,7 +106,7 @@ config USB_MUSB_AM335X_CHILD
+ 
+ choice
+ 	prompt 'MUSB DMA mode'
+-	default MUSB_PIO_ONLY if ARCH_MULTIPLATFORM
++	default MUSB_PIO_ONLY if ARCH_MULTIPLATFORM || USB_MUSB_JZ4740
+ 	default USB_UX500_DMA if USB_MUSB_UX500
+ 	default USB_INVENTRA_DMA if USB_MUSB_OMAP2PLUS || USB_MUSB_BLACKFIN
+ 	default USB_TI_CPPI_DMA if USB_MUSB_DAVINCI
+diff --git a/drivers/usb/musb/Makefile b/drivers/usb/musb/Makefile
+index c5ea5c6..ba49501 100644
+--- a/drivers/usb/musb/Makefile
++++ b/drivers/usb/musb/Makefile
+@@ -19,6 +19,7 @@ obj-$(CONFIG_USB_MUSB_DAVINCI)			+= davinci.o
+ obj-$(CONFIG_USB_MUSB_DA8XX)			+= da8xx.o
+ obj-$(CONFIG_USB_MUSB_BLACKFIN)			+= blackfin.o
+ obj-$(CONFIG_USB_MUSB_UX500)			+= ux500.o
++obj-$(CONFIG_USB_MUSB_JZ4740)			+= jz4740.o
+ 
+ 
+ obj-$(CONFIG_USB_MUSB_AM335X_CHILD)		+= musb_am335x.o
+diff --git a/drivers/usb/musb/jz4740.c b/drivers/usb/musb/jz4740.c
+new file mode 100644
+index 0000000..49539a8
+--- /dev/null
++++ b/drivers/usb/musb/jz4740.c
+@@ -0,0 +1,229 @@
++/*
++ * Ingenic JZ4740 "glue layer"
++ *
++ * Copyright (C) 2013, Apelete Seketeli <apelete@seketeli.net>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++#include <linux/clk.h>
++#include <linux/dma-mapping.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++
++#include "musb_core.h"
++
++struct jz4740_glue {
++	struct device           *dev;
++	struct platform_device  *musb;
++	struct clk		*clk;
++};
++
++static void jz4740_musb_set_vbus(struct musb *musb, int is_on)
++{
++	u8 devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
++
++	/* HDRC controls CPEN, but beware current surges during device
++	 * connect.  They can trigger transient overcurrent conditions
++	 * that must be ignored.
++	 */
++
++	if (is_on) {
++		musb->is_active = 1;
++		musb->xceiv->otg->default_a = 1;
++		musb->xceiv->state = OTG_STATE_A_WAIT_VRISE;
++		devctl |= MUSB_DEVCTL_SESSION;
++
++		MUSB_HST_MODE(musb);
++	} else {
++		musb->is_active = 0;
++
++		/* NOTE:  we're skipping A_WAIT_VFALL -> A_IDLE and
++		 * jumping right to B_IDLE...
++		 */
++
++		musb->xceiv->otg->default_a = 0;
++		musb->xceiv->state = OTG_STATE_B_IDLE;
++		devctl &= ~MUSB_DEVCTL_SESSION;
++
++		MUSB_DEV_MODE(musb);
++	}
++	musb_writeb(musb->mregs, MUSB_DEVCTL, devctl);
++
++	dev_dbg(musb->xceiv->dev, "VBUS %s, devctl %02x "
++		/* otg %3x conf %08x prcm %08x */ "\n",
++		usb_otg_state_string(musb->xceiv->state),
++		musb_readb(musb->mregs, MUSB_DEVCTL));
++}
++
++static irqreturn_t jz4740_musb_interrupt(int irq, void *__hci)
++{
++	unsigned long   flags;
++	irqreturn_t     retval = IRQ_NONE;
++	struct musb     *musb = __hci;
++
++	spin_lock_irqsave(&musb->lock, flags);
++
++	musb->int_usb = musb_readb(musb->mregs, MUSB_INTRUSB);
++	musb->int_tx = musb_readw(musb->mregs, MUSB_INTRTX);
++	musb->int_rx = musb_readw(musb->mregs, MUSB_INTRRX);
++
++	if (musb->int_usb || musb->int_tx || musb->int_rx)
++		retval = musb_interrupt(musb);
++
++	spin_unlock_irqrestore(&musb->lock, flags);
++
++	return retval;
++}
++
++static int jz4740_musb_init(struct musb *musb)
++{
++	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
++	if (!musb->xceiv) {
++		pr_err("HS UDC: no transceiver configured\n");
++		return -ENODEV;
++	}
++
++	/* Silicon does not implement ConfigData register.
++	 * Set dyn_fifo to avoid reading EP config from hardware.
++	 */
++	musb->dyn_fifo = true;
++
++	musb->isr = jz4740_musb_interrupt;
++
++	return 0;
++}
++
++static int jz4740_musb_exit(struct musb *musb)
++{
++	usb_put_phy(musb->xceiv);
++
++	return 0;
++}
++
++static const struct musb_platform_ops jz4740_musb_ops = {
++	.init		= jz4740_musb_init,
++	.exit		= jz4740_musb_exit,
++
++	.set_vbus       = jz4740_musb_set_vbus,
++};
++
++static int jz4740_probe(struct platform_device *pdev)
++{
++	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
++	struct platform_device		*musb;
++	struct jz4740_glue		*glue;
++	struct clk                      *clk;
++
++	int				ret = -ENOMEM;
++
++	if (!pdata) {
++		dev_err(&pdev->dev, "failed to allocate platform data\n");
++		goto err0;
++	}
++
++	glue = devm_kzalloc(&pdev->dev, sizeof(*glue), GFP_KERNEL);
++	if (!glue) {
++		dev_err(&pdev->dev, "failed to allocate glue context\n");
++		goto err0;
++	}
++
++	musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
++	if (!musb) {
++		dev_err(&pdev->dev, "failed to allocate musb device\n");
++		goto err1;
++	}
++
++	clk = devm_clk_get(&pdev->dev, "udc");
++	if (IS_ERR(clk)) {
++		dev_err(&pdev->dev, "failed to get clock\n");
++		ret = PTR_ERR(clk);
++		goto err2;
++	}
++
++	ret = clk_prepare_enable(clk);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to enable clock\n");
++		goto err3;
++	}
++
++	musb->dev.parent		= &pdev->dev;
++
++	glue->dev			= &pdev->dev;
++	glue->musb			= musb;
++	glue->clk			= clk;
++
++	pdata->platform_ops		= &jz4740_musb_ops;
++
++	platform_set_drvdata(pdev, glue);
++
++	ret = platform_device_add_resources(musb, pdev->resource,
++					    pdev->num_resources);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to add resources\n");
++		goto err4;
++	}
++
++	ret = platform_device_add_data(musb, pdata, sizeof(*pdata));
++	if (ret) {
++		dev_err(&pdev->dev, "failed to add platform_data\n");
++		goto err4;
++	}
++
++	ret = platform_device_add(musb);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to register musb device\n");
++		goto err4;
++	}
++
++	return 0;
++
++err4:
++	clk_disable_unprepare(clk);
++
++err3:
++	devm_clk_put(&pdev->dev, clk);
++
++err2:
++	platform_device_put(musb);
++
++err1:
++	devm_kfree(&pdev->dev, glue);
++
++err0:
++	return ret;
++}
++
++static int jz4740_remove(struct platform_device *pdev)
++{
++	struct jz4740_glue	*glue = platform_get_drvdata(pdev);
++
++	platform_device_unregister(glue->musb);
++	clk_disable_unprepare(glue->clk);
++	clk_put(glue->clk);
++	devm_kfree(&pdev->dev, glue);
++
++	return 0;
++}
++
++static struct platform_driver jz4740_driver = {
++	.probe		= jz4740_probe,
++	.remove		= jz4740_remove,
++	.driver		= {
++		.name	= "musb-jz4740",
++	},
++};
++
++MODULE_DESCRIPTION("JZ4740 MUSB Glue Layer");
++MODULE_AUTHOR("Apelete Seketeli <apelete@seketeli.net>");
++MODULE_LICENSE("GPL v2");
++module_platform_driver(jz4740_driver);
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index 1ecdb94..ec4d0f4 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1038,6 +1038,9 @@ static ushort fifo_mode = 4;
+ #elif defined(CONFIG_USB_MUSB_UX500)			\
+ 	|| defined(CONFIG_USB_MUSB_UX500_MODULE)
+ static ushort fifo_mode = 5;
++#elif defined(CONFIG_USB_MUSB_JZ4740)			\
++	|| defined(CONFIG_USB_MUSB_JZ4740_MODULE)
++static ushort fifo_mode = 6;
+ #else
+ static ushort fifo_mode = 2;
+ #endif
+@@ -1151,6 +1154,13 @@ static struct musb_fifo_cfg mode_5_cfg[] = {
+ { .hw_ep_num = 15, .style = FIFO_RXTX, .maxpacket = 1024, },
+ };
+ 
++/* mode 6 - fits in 2KB */
++static struct musb_fifo_cfg mode_6_cfg[] = {
++{ .hw_ep_num = 1, .style = FIFO_TX, .maxpacket = 512, },
++{ .hw_ep_num = 1, .style = FIFO_RX, .maxpacket = 512, },
++{ .hw_ep_num = 2, .style = FIFO_TX, .maxpacket = 64, },
++};
++
+ /*
+  * configure a fifo; for non-shared endpoints, this may be called
+  * once for a tx fifo and once for an rx fifo.
+@@ -1273,6 +1283,10 @@ static int ep_config_from_table(struct musb *musb)
+ 		cfg = mode_5_cfg;
+ 		n = ARRAY_SIZE(mode_5_cfg);
+ 		break;
++	case 6:
++		cfg = mode_6_cfg;
++		n = ARRAY_SIZE(mode_6_cfg);
++		break;
+ 	}
+ 
+ 	printk(KERN_DEBUG "%s: setup fifo_mode %d\n",
 -- 
 1.7.10.4
 
