@@ -1,79 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab3LNKMB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 05:12:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52715 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752169Ab3LNKL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 05:11:59 -0500
-Date: Sat, 14 Dec 2013 11:11:44 +0100
-From: Borislav Petkov <bp@suse.de>
-To: x86-ml <x86@kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>, linux-edac <linux-edac@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] RAS for 3.14
-Message-ID: <20131214101144.GA21353@pd.tnic>
+	id S1753448Ab3LNKRw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 05:17:52 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:53820 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab3LNKRu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Dec 2013 05:17:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <2150956.98751386754831696.JavaMail.weblogic@epml23>
+References: <2150956.98751386754831696.JavaMail.weblogic@epml23>
+Date: Sat, 14 Dec 2013 15:47:49 +0530
+Message-ID: <CAPoNrtskGRsdi63cL75Pr2dTq_AepF8bPgZjSFvxRWgRgdcJBQ@mail.gmail.com>
+Subject: Re: [PATCH V6] ARM : unwinder : Prevent data abort due to stack overflow
+From: Anurag Aggarwal <anurag19aggarwal@gmail.com>
+To: Anurag Aggarwal <a.anurag@samsung.com>
+Cc: Dave Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Naveen Kumar <naveen.sel@samsung.com>,
+        Narendra Meher <narendra.m1@samsung.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ashish Kalra <ashish.kalra@samsung.com>, "cpgs ." <cpgs@samsung.com>,
+        "naveenkrishna.ch@gmail.com" <naveenkrishna.ch@gmail.com>,
+        Rajat Suri <rajat.suri@samsung.com>,
+        Poorva Srivastava <poorva.s@samsung.com>,
+        Mohammad Irfan Ansari <mohammad.a2@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+>You could try adding some debug printks to see how the backtrace fails.
+>You could also try adding a few hand-crafted assembler functions
+>with appropriate code and unwind directives to trigger different kinds
+>of backtrace failure.  You might have to add a way to artificially limit
+>sp_high to check the cases where you run out of stack in the middle of
+>popping multiple registers.
 
-please queue for 3.14.
+I added a a printk statement
++               if (*vsp >= (unsigned long *)ctrl->sp_high) {
++                       printk(KERN_ERR "Stack Overflow Detected, vsp = %lx",
++                               (unsigned long)*vsp);
++                       return -URC_FAILURE;
++               }
 
-Thanks.
+I ran a many test cases to try and get the above print in the dmesg log.
 
---
-The following changes since commit dc1ccc48159d63eca5089e507c82c7d22ef60839:
+I tried the following things :
 
-  Linux 3.13-rc2 (2013-11-29 12:57:14 -0800)
+1) Calling unwind_backtrace from diffrenet locations in the kernel, I
+added the unwind call
+in some irq, fork, exit and some sysfs entries call.
+2) I limited the value of sp_high in unwind_frame() itself, I tried
+many values of sp_high,
+varrying from (low + sizeof(ctrl.vrs)/4) to (low + 4*sizeof(ctrl.vrs)).
 
-are available in the git repository at:
+When running the above cases I was able to see the above printk quiet
+a few times in dmesg log.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/ras_for_3.14
+So, the error condition is being handled.
 
-for you to fetch changes up to 42139eb356e3384759ca143ae04d82376346eb4c:
+If you have some test cases for verifying the unwinder, please share
+the same. They might help
+in thorough testing of unwinder.
 
-  ACPI, eMCA: Combine eMCA/EDAC event reporting priority (2013-12-11 19:04:37 +0100)
 
-----------------------------------------------------------------
-* Add the functionality to override error reporting agents as some
-machines are sporting a new extended error logging capability which, if
-done properly in the BIOS, makes a corresponding EDAC module redundant,
-from Gong Chen.
 
-* PCIe AER tracepoint severity levels fix, from Rui Wang.
+Regards
 
-* Error path correction for the mce device init, from Levente Kurusa.
+On Wed, Dec 11, 2013 at 3:10 PM, Anurag Aggarwal <a.anurag@samsung.com> wrote:
+>>You could try adding some debug printks to see how the backtrace fails.
+>>You could also try adding a few hand-crafted assembler functions
+>>with appropriate code and unwind directives to trigger different kinds
+>>of backtrace failure.  You might have to add a way to artificially limit
+>>sp_high to check the cases where you run out of stack in the middle of
+>>popping multiple registers.
+>
+> I added a a printk statement
+> +               if (*vsp >= (unsigned long *)ctrl->sp_high) {
+> +                       printk(KERN_ERR "Stack Overflow Detected, vsp = %lx",
+> +                               (unsigned long)*vsp);
+> +                       return -URC_FAILURE;
+> +               }
+>
+> I ran a many test cases to try and get the above print in the dmesg log.
+>
+> I tried the following things :
+>
+> 1) Calling unwind_backtrace from diffrenet locations in the kernel, I added the unwind call
+> in some irq, fork, exit and some sysfs entries call.
+> 2) I limited the value of sp_high in unwind_frame() itself, I tried many values of sp_high,
+> varrying from (low + sizeof(ctrl.vrs)/4) to (low + 4*sizeof(ctrl.vrs)).
+>
+> When running the above cases I was able to see the above printk quiet a few times in dmesg log.
+>
+> So, the error condition is being handled.
+>
+> If you have some test cases for verifying the unwinder, please share the same. They might help
+> in thorough testing of unwinder.
+>
+>
+>
+> Regards
+> Anurag
 
-----------------------------------------------------------------
-Chen, Gong (3):
-      EDAC: Add an edac_report parameter to EDAC
-      EDAC, sb_edac: Modify H/W event reporting policy
-      ACPI, eMCA: Combine eMCA/EDAC event reporting priority
 
-Levente Kurusa (1):
-      x86, mce: Call put_device on device_register failure
-
-Rui Wang (1):
-      PCI, AER: Fix severity usage in aer trace event
-
- Documentation/kernel-parameters.txt |  8 ++++++++
- arch/x86/kernel/cpu/mcheck/mce.c    |  4 +++-
- drivers/acpi/acpi_extlog.c          | 18 ++++++++++++++++--
- drivers/edac/edac_stub.c            | 19 +++++++++++++++++++
- drivers/edac/sb_edac.c              |  6 +++++-
- include/linux/edac.h                | 28 ++++++++++++++++++++++++++++
- include/trace/events/ras.h          | 10 +++++-----
- 7 files changed, 84 insertions(+), 9 deletions(-)
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Anurag Aggarwal
