@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab3LNNqn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 08:46:43 -0500
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:34541 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751407Ab3LNNql (ORCPT
+	id S1753645Ab3LNNwJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 08:52:09 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:55030 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab3LNNwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 08:46:41 -0500
-X-Greylist: delayed 651 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Dec 2013 08:46:41 EST
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-From: Roman Gushchin <klamm@yandex-team.ru>
-To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Wang YanQing <udknight@gmail.com>,
-        Xie XiuQi <xiexiuqi@huawei.com>
-Cc: linux-kernel@vger.kernel.org, Roman Gushchin <klamm@yandex-team.ru>
-Subject: [PATCH] smp: remove cpumask_ipi
-Date: Sat, 14 Dec 2013 17:34:31 +0400
-Message-Id: <1387028071-31566-1-git-send-email-klamm@yandex-team.ru>
-X-Mailer: git-send-email 1.8.3.2
+	Sat, 14 Dec 2013 08:52:07 -0500
+Date: Sat, 14 Dec 2013 19:21:48 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, josh@joshtriplett.org
+Subject: [PATCH] drivers: char: Include appropriate header file in frontend.c
+Message-ID: <20131214135148.GA13291@rashika>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit 9a46ad6 (smp: make smp_call_function_many() use logic
-similar to smp_call_function_single()), cfd->cpumask is accessed only
-in smp_call_function_many(). So there is no more need to copy it
-into cfd->cpumask_ipi before putting csd into the list.
-The cpumask_ipi field is obsolete and can be removed.
+This patch includes appropriate header file compat_ioctl.h in
+agp/frontend.c because functions agp_find_mem_by_key(),
+agp_create_segment(), agp_find_private(), agp_free_memory_wrap(),
+agp_allocate_memory_wrap(), agp_find_client_by_pid(),
+agp_create_client(), agp_remove_client(), agpioc_acquire_wrap(),
+agpioc_release_wrap(), agpioc_setup_wrap(), agpioc_protect_wrap() and
+agpioc_deallocate_wrap() have their prototype declaration in
+compat_ioctl.h.
 
-Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+Thus, it also eliminates the following warnings in agp/frontend.c:
+drivers/char/agp/frontend.c:48:20: warning: no previous prototype for ‘agp_find_mem_by_key’ [-Wmissing-prototypes]
+drivers/char/agp/frontend.c:164:5: warning: no previous prototype for ‘agp_create_segment’ [-Wmissing-prototypes]
+drivers/char/agp/frontend.c:216:26: warning: no previous prototype for ‘agp_find_private’ [-Wmissing-prototypes]
+drivers/char/agp/frontend.c:271:6: warning: no previous prototype for ‘agp_free_memory_wrap’ [-Wmissing-prototypes]
+drivers/char/agp/frontend.c:277:20: warning: no previous prototype for ‘agp_allocate_memory_wrap’ [-Wmissing-prototypes]
+drivers/char/agp/frontend.c:489:20: warning: no previous prototype for ‘agp_find_client_by_pid’ [-Wmissing-prototypes]
+drivers/char/agp/frontend.c:514:20: warning: no previous prototype for ‘agp_create_client’ [-Wmissing-prototypes]
+drivers/char/agp/frontend.c:527:5: warning: no previous prototype for ‘agp_remove_client’ [-Wmissing-prototypes]
+drivers/char/agp/frontend.c:750:5: warning: no previous prototype for ‘agpioc_acquire_wrap’ [-Wmissing-prototypes]
+drivers/char/agp/frontend.c:793:5: warning: no previous prototype for ‘agpioc_release_wrap’ [-Wmissing-prototypes]
+drivers/char/agp/frontend.c:800:5: warning: no previous prototype for ‘agpioc_setup_wrap’ [-Wmissing-prototypes]
+drivers/char/agp/frontend.c:880:5: warning: no previous prototype for ‘agpioc_protect_wrap’ [-Wmissing-prototypes]
+drivers/char/agp/frontend.c:914:5: warning: no previous prototype for ‘agpioc_deallocate_wrap’ [-Wmissing-prototypes]
+
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 ---
- kernel/smp.c | 17 +----------------
- 1 file changed, 1 insertion(+), 16 deletions(-)
+ drivers/char/agp/frontend.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/smp.c b/kernel/smp.c
-index bd9f940..dfdce07 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -23,7 +23,6 @@ enum {
- struct call_function_data {
- 	struct call_single_data	__percpu *csd;
- 	cpumask_var_t		cpumask;
--	cpumask_var_t		cpumask_ipi;
- };
+diff --git a/drivers/char/agp/frontend.c b/drivers/char/agp/frontend.c
+index 1b19239..79c8666 100644
+--- a/drivers/char/agp/frontend.c
++++ b/drivers/char/agp/frontend.c
+@@ -42,6 +42,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+ #include "agp.h"
++#include "compat_ioctl.h"
  
- static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_function_data, cfd_data);
-@@ -47,14 +46,8 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
- 				cpu_to_node(cpu)))
- 			return notifier_from_errno(-ENOMEM);
--		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi, GFP_KERNEL,
--				cpu_to_node(cpu))) {
--			free_cpumask_var(cfd->cpumask);
--			return notifier_from_errno(-ENOMEM);
--		}
- 		cfd->csd = alloc_percpu(struct call_single_data);
- 		if (!cfd->csd) {
--			free_cpumask_var(cfd->cpumask_ipi);
- 			free_cpumask_var(cfd->cpumask);
- 			return notifier_from_errno(-ENOMEM);
- 		}
-@@ -67,7 +60,6 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
- 		free_cpumask_var(cfd->cpumask);
--		free_cpumask_var(cfd->cpumask_ipi);
- 		free_percpu(cfd->csd);
- 		break;
- #endif
-@@ -402,13 +394,6 @@ void smp_call_function_many(const struct cpumask *mask,
- 	if (unlikely(!cpumask_weight(cfd->cpumask)))
- 		return;
+ struct agp_front_data agp_fe;
  
--	/*
--	 * After we put an entry into the list, cfd->cpumask may be cleared
--	 * again when another CPU sends another IPI for a SMP function call, so
--	 * cfd->cpumask will be zero.
--	 */
--	cpumask_copy(cfd->cpumask_ipi, cfd->cpumask);
--
- 	for_each_cpu(cpu, cfd->cpumask) {
- 		struct call_single_data *csd = per_cpu_ptr(cfd->csd, cpu);
- 		struct call_single_queue *dst =
-@@ -425,7 +410,7 @@ void smp_call_function_many(const struct cpumask *mask,
- 	}
- 
- 	/* Send a message to all CPUs in the map */
--	arch_send_call_function_ipi_mask(cfd->cpumask_ipi);
-+	arch_send_call_function_ipi_mask(cfd->cpumask);
- 
- 	if (wait) {
- 		for_each_cpu(cpu, cfd->cpumask) {
 -- 
-1.8.3.2
+1.7.9.5
 
