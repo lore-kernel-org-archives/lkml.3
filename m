@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524Ab3LNFDf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 00:03:35 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:58976 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786Ab3LNFDe (ORCPT
+	id S1751976Ab3LNFWh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 00:22:37 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:62312 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab3LNFWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 00:03:34 -0500
-Date: Fri, 13 Dec 2013 21:03:15 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [GIT PULL] MTD fixes for 3.13-rc
-Message-ID: <20131214050315.GA2454@norris-Latitude-E6410>
-References: <20131213074428.GA24650@norris-Latitude-E6410>
- <CA+55aFxM+fMw5trODzJouaqgewoLy06mxRcdvA5WPTw1=Gk4pw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxM+fMw5trODzJouaqgewoLy06mxRcdvA5WPTw1=Gk4pw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 14 Dec 2013 00:22:35 -0500
+From: Alex Ling <kasimling@gmail.com>
+To: ben-linux@fluff.org, kgene.kim@samsung.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Alex Ling <kasimling@gmail.com>
+Subject: [PATCH v2 1/1] ARM: dts: Add missing clocks for exynos4412 dwmmc node
+Date: Sat, 14 Dec 2013 13:21:30 +0800
+Message-Id: <1386998490-19456-1-git-send-email-kasimling@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 11:37:36AM -0800, Linus Torvalds wrote:
-> I do note that your pgp key still has very few signatures, and none of
-> them in my normal key ring. Any possibility that you might expand on
-> your signatures a bit?
+This patch adds "biu" and "ciu" clocks for exynos4412 dwmmc
+node. Without this patch, dwmmc host driver will skip enabling the
+two clocks and it will break dwmmc host function on exynos4412.
+Tested on FriendlyARM TINY4412 board.
 
-I'll see what I can do. dwmw2 offered to sign, but we're not exactly on
-the same continent AFAIK. I'll try to get out to another conference
-sometime soon.
+Signed-off-by: Alex Ling <kasimling@gmail.com>
+---
+Changes for v2:
+   - Fix patch description as Mark Rutland suggested
 
-Brian
+ arch/arm/boot/dts/exynos4412.dtsi |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/boot/dts/exynos4412.dtsi b/arch/arm/boot/dts/exynos4412.dtsi
+index e743e67..67bef99 100644
+--- a/arch/arm/boot/dts/exynos4412.dtsi
++++ b/arch/arm/boot/dts/exynos4412.dtsi
+@@ -67,5 +67,7 @@
+ 		interrupts = <0 77 0>;
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
++		clocks = <&clock 301>, <&clock 149>;
++		clock-names = "biu", "ciu";
+ 	};
+ };
+-- 
+1.7.9.5
+
