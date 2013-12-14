@@ -1,64 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635Ab3LNMPl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 07:15:41 -0500
-Received: from mail-db9lp0252.outbound.messaging.microsoft.com ([213.199.154.252]:50108
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753568Ab3LNMPf (ORCPT
+	id S1753723Ab3LNMQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 07:16:27 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:52436 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab3LNMQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 07:15:35 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z579eh37d5kz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz17326ah8275dh1de097h186068hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Sat, 14 Dec 2013 20:16:15 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Philippe De Muyter <phdm@macq.eu>
-CC: <linux-kernel@vger.kernel.org>, <b29396@freescale.com>, <cjb@laptop.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: ARM,sdhci_esdhc_imx: INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock
- order detected
-Message-ID: <20131214121613.GA16177@S2101-09.ap.freescale.net>
-References: <20131212144925.GA14995@frolo.macqel>
- <20131213133430.GW18380@S2101-09.ap.freescale.net>
- <20131213221425.GA32189@frolo.macqel>
+	Sat, 14 Dec 2013 07:16:26 -0500
+Date: Sat, 14 Dec 2013 13:16:21 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] dma-buf: Implement test module
+Message-ID: <20131214121620.GA17467@mithrandir>
+References: <1386858989-1487-1-git-send-email-treding@nvidia.com>
+ <20131213020413.GD13333@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="45Z9DzgjV8m4Oswq"
 Content-Disposition: inline
-In-Reply-To: <20131213221425.GA32189@frolo.macqel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20131213020413.GD13333@kroah.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 11:14:25PM +0100, Philippe De Muyter wrote:
-> Hi Shawn,
-> 
-> On Fri, Dec 13, 2013 at 09:34:32PM +0800, Shawn Guo wrote:
-> > Hi Philippe,
-> > 
-> > On Thu, Dec 12, 2013 at 03:49:25PM +0100, Philippe De Muyter wrote:
-> > > Hello,
-> > > 
-> > > I have just booted 3.13-rc3 on my i.MX6DL board, done nothing but watch
-> > > it start, and I have got this!
-> > 
-> > There is a patch [1] from Fabio for this issue.
-> > 
-> > Shawn
-> > 
-> > [1] http://thread.gmane.org/gmane.linux.kernel.mmc/23786
-> > 
-> > > ======================================================
-> > > [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
-> ...
-> 
-> Thanks.  That fixed the problem.  Will that go to 3.13 final ?
 
-That's a question for Chris.
+--45Z9DzgjV8m4Oswq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Shawn
+On Thu, Dec 12, 2013 at 06:04:13PM -0800, Greg Kroah-Hartman wrote:
+> On Thu, Dec 12, 2013 at 03:36:29PM +0100, Thierry Reding wrote:
+> > This is a simple test module that can be used to allocate, export and
+> > delete DMA-BUF objects. It can be used to test DMA-BUF sharing in
+> > systems that lack a real second driver.
+> >=20
+> > Signed-off-by: Thierry Reding <treding@nvidia.com>
+> > ---
+> >  drivers/base/Kconfig        |   4 +
+> >  drivers/base/Makefile       |   1 +
+> >  drivers/base/dma-buf-test.c | 308 ++++++++++++++++++++++++++++++++++++=
+++++++++
+> >  3 files changed, 313 insertions(+)
+> >  create mode 100644 drivers/base/dma-buf-test.c
+> >=20
+> > diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+> > index e373671652b0..bed2abb9491b 100644
+> > --- a/drivers/base/Kconfig
+> > +++ b/drivers/base/Kconfig
+> > @@ -200,6 +200,10 @@ config DMA_SHARED_BUFFER
+> >  	  APIs extension; the file's descriptor can then be passed on to other
+> >  	  driver.
+> > =20
+> > +config DMA_BUF_TEST
+> > +	tristate "DMA-BUF test module"
+> > +	depends on DMA_SHARED_BUFFER
+>=20
+> We need some good documentation here.
 
+I agree. The description should go into more details about what exactly
+this is meant to address.
+
+> > > +static struct miscdevice dmabuf_device =3D {
+> > +	.minor =3D 128,
+>=20
+> Why did you pick this minor?  Why not just make it dynamic?
+
+It seemed like minors are statically allocated for miscdevice and 128
+seemed to be as good as any. The tentative plan was to go through the
+official way of having one allocated as explained in the comment in
+include/linux/miscdevice.h.
+
+Reading that comment again, there's MISC_DYNAMIC_MINOR, which I guess
+would be appropriate here. Chances are that if you want to test DMA-BUF
+you'll have a reasonably modern userspace that will create the device
+dynamically.
+
+Alternatively I guess I could instead turn this into a more full-fledged
+cdev and do the whole alloc_chrdev_region() dance. Although that will
+only allocate the major dynamically.
+
+I'm not aware of any function that just allocates a single major/minor
+pair completely dynamically. Is there one that you could point me to?
+
+Thierry
+
+--45Z9DzgjV8m4Oswq
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSrEwUAAoJEN0jrNd/PrOhHtgQAJYDLxZlUaSdYI6dNNTYxi0J
+DDXpO8RKUIqhS4ojZfgGcIpvb0/YSLJ7gF/HBIQISrvoXk3pJL4UG/C6x2ad7p3T
+t3X+6LI/JbyLhhwfC55Y/tGy8zGe+s0VpDsZg3Yrs3tjodNpoz55EfPqYSsaxU2e
+hDUb8eBU7CaJ1eNGYHmxLwPhT4Nu9O821yCPMKVatGgygW5Z/kjoDx/LROSiwe43
+upUeBP6ioGKM9FQXXiqoAsuk6FQ3XH/DIMvvewLBCY13eeCuIhhEW84zBsWT9dpu
+d08Z1LeQvsNA0pxD5qqupWvA1ivOYEyRtKlkJyZ97/QTPh9rHygFmq/FD0IoZOc/
+A8kuprDdEd2woQ/driAhXp/AXuyZcgCTrkrScXLM6yJ3amXhlTPXIl1n52SK0MIN
+EubaJHUjhIDwtblzwvfQP37d8vnSIaaEUFKhIBUd9Yb9dWSitQIKzB71bxp9cCgf
+lgRFWaRrTYIA7ZP5runuldX6IrKBiPdX8/boBQHDE8ze5OZpBSOVr2z9Cfg3Sygx
+o6Q5iy3H1DwTyabYNMFs8DlX6/aUGb/13/rJJJUf1+wGEhTJPw8x70ZEU5qWN4UL
+W3Iqf+TYPF2WoftJDiB/TW93bAO1F1tIVw5OZbSw4/nJvkI4mYVNp3OR6U9FpiNt
+4ug2bx5/47DQIDUdJAg1
+=4Eas
+-----END PGP SIGNATURE-----
+
+--45Z9DzgjV8m4Oswq--
