@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab3LNMTW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 07:19:22 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:57451 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379Ab3LNMTV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 07:19:21 -0500
-Date: Sat, 14 Dec 2013 17:49:08 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Himanshu Madhani <himanshu.madhani@qlogic.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        Shahed Shaikh <shahed.shaikh@qlogic.com>,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Sony Chacko <sony.chacko@qlogic.com>,
-        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>,
-        linux-driver@qlogic.com, netdev@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH v2 3/9] drivers: net: Mark functions as static in
- qlcnic_83xx_hw.c
-Message-ID: <96780e5cbd998e41b64872661e7e4072a29912c6.1386911124.git.rashika.kheria@gmail.com>
-References: <a610f6ee6bb992b91e43bdc851f3db62fc3decd5.1386911123.git.rashika.kheria@gmail.com>
+	id S1753638Ab3LNMVe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 07:21:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53767 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752372Ab3LNMVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Dec 2013 07:21:33 -0500
+Date: Sat, 14 Dec 2013 13:21:17 +0100
+From: Borislav Petkov <bp@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-edac <linux-edac@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] EDAC fix for 3.13
+Message-ID: <20131214122117.GA28904@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <a610f6ee6bb992b91e43bdc851f3db62fc3decd5.1386911123.git.rashika.kheria@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch marks the function qlcnic_83xx_clear_legacy_intr_mask(),
-qlcnic_83xx_set_legacy_intr_mask() and
-qlcnic_83xx_enable_legacy_msix_mbx_intr() in qlcnic_83xx_hw.c as static
-because they are not used outside this file.
+Hi Linus,
 
-Thus, it also removes the following warnings
-in ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c:
+please pull this annoyance fix.
 
-drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c:318:13: warning: no previous prototype for ‘qlcnic_83xx_clear_legacy_intr_mask’ [-Wmissing-prototypes]
-drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c:323:13: warning: no previous prototype for ‘qlcnic_83xx_set_legacy_intr_mask’ [-Wmissing-prototypes]
-drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c:343:13: warning: no previous prototype for ‘qlcnic_83xx_enable_legacy_msix_mbx_intr’ [-Wmissing-prototypes]
+Thanks.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- .../net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c    |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+The following changes since commit dc1ccc48159d63eca5089e507c82c7d22ef60839:
 
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c
-index b1cb0ff..d0c2cd4 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c
-@@ -315,12 +315,12 @@ int qlcnic_83xx_setup_intr(struct qlcnic_adapter *adapter)
- 	return 0;
- }
- 
--inline void qlcnic_83xx_clear_legacy_intr_mask(struct qlcnic_adapter *adapter)
-+static inline void qlcnic_83xx_clear_legacy_intr_mask(struct qlcnic_adapter *adapter)
- {
- 	writel(0, adapter->tgt_mask_reg);
- }
- 
--inline void qlcnic_83xx_set_legacy_intr_mask(struct qlcnic_adapter *adapter)
-+static inline void qlcnic_83xx_set_legacy_intr_mask(struct qlcnic_adapter *adapter)
- {
- 	if (adapter->tgt_mask_reg)
- 		writel(1, adapter->tgt_mask_reg);
-@@ -340,7 +340,7 @@ void qlcnic_83xx_disable_intr(struct qlcnic_adapter *adapter,
- 	writel(1, sds_ring->crb_intr_mask);
- }
- 
--inline void qlcnic_83xx_enable_legacy_msix_mbx_intr(struct qlcnic_adapter
-+static inline void qlcnic_83xx_enable_legacy_msix_mbx_intr(struct qlcnic_adapter
- 						    *adapter)
- {
- 	u32 mask;
+  Linux 3.13-rc2 (2013-11-29 12:57:14 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/edac_fixes_for_3.13
+
+for you to fetch changes up to bd4b9683623d0d91e87cf22f09008c05f56d7483:
+
+  sb_edac: Shut up compiler warning when EDAC_DEBUG is enabled (2013-11-30 12:26:36 +0100)
+
+----------------------------------------------------------------
+Silence a compiler warning in sb_edac.
+
+----------------------------------------------------------------
+Aristeu Rozanski (1):
+      sb_edac: Shut up compiler warning when EDAC_DEBUG is enabled
+
+ drivers/edac/sb_edac.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
