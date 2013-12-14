@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab3LNMuh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 07:50:37 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:63650 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753526Ab3LNMug (ORCPT
+	id S1753690Ab3LNMxU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 07:53:20 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:37818 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053Ab3LNMxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 07:50:36 -0500
-Date: Sat, 14 Dec 2013 18:20:29 +0530
+	Sat, 14 Dec 2013 07:53:18 -0500
+Date: Sat, 14 Dec 2013 18:23:10 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Matt Porter <mporter@kernel.crashing.org>,
         Alexandre Bounine <alexandre.bounine@idt.com>, josh@joshtriplett.org
-Subject: [PATCH 2/3] drivers: rapidio: Include appropriate header file in
- rio-driver.c
-Message-ID: <955c21bd0ce986e1e616f8f912a57568421f5078.1386926041.git.rashika.kheria@gmail.com>
+Subject: [PATCH 3/3] drivers: rapidio: Remove unused function
+ rio_remove_sysfs_dev_files() in rio-sysfs.c
+Message-ID: <63f565ae73de586db2277390618fa781535a55f9.1386926041.git.rashika.kheria@gmail.com>
 References: <8522e3b2fefdb6625e9d7ae651cfa2dfd4733293.1386926041.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -26,35 +26,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch includes the header file linux/rio_drv.h in rio-driver.c
-because functions rio_dev_get(), rio_dev_put(), rio_register_driver()
-and rio_unregister_driver() have their prototype declarations in
-linux/rio_drv.h.
+This patch removes the function rio_remove_sysfs_dev_files() in
+rio-sysfs.c because it is unused.
 
-Thus, it also eliminates the following warnings in rio-driver.c:
-
-drivers/rapidio/rio-driver.c:57:17: warning: no previous prototype for ‘rio_dev_get’ [-Wmissing-prototypes]
-drivers/rapidio/rio-driver.c:74:6: warning: no previous prototype for ‘rio_dev_put’ [-Wmissing-prototypes]
-drivers/rapidio/rio-driver.c:143:5: warning: no previous prototype for ‘rio_register_driver’ [-Wmissing-prototypes]
-drivers/rapidio/rio-driver.c:162:6: warning: no previous prototype for ‘rio_unregister_driver’ [-Wmissing-prototypes]
+Thus, it also eliminates the following warning in rio-sysfs.c:
+drivers/rapidio/rio-sysfs.c:295:6: warning: no previous prototype for ‘rio_remove_sysfs_dev_files’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 ---
- drivers/rapidio/rio-driver.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/rapidio/rio-sysfs.c |   16 ----------------
+ 1 file changed, 16 deletions(-)
 
-diff --git a/drivers/rapidio/rio-driver.c b/drivers/rapidio/rio-driver.c
-index c9ae692..df73419 100644
---- a/drivers/rapidio/rio-driver.c
-+++ b/drivers/rapidio/rio-driver.c
-@@ -13,6 +13,7 @@
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/rio.h>
-+#include <linux/rio_drv.h>
- #include <linux/rio_ids.h>
+diff --git a/drivers/rapidio/rio-sysfs.c b/drivers/rapidio/rio-sysfs.c
+index e0221c6..8929b9e 100644
+--- a/drivers/rapidio/rio-sysfs.c
++++ b/drivers/rapidio/rio-sysfs.c
+@@ -286,22 +286,6 @@ int rio_create_sysfs_dev_files(struct rio_dev *rdev)
+ 	return err;
+ }
  
- #include "rio.h"
+-/**
+- * rio_remove_sysfs_dev_files - cleanup RIO specific sysfs files
+- * @rdev: device whose entries we should free
+- *
+- * Cleanup when @rdev is removed from sysfs.
+- */
+-void rio_remove_sysfs_dev_files(struct rio_dev *rdev)
+-{
+-	device_remove_bin_file(&rdev->dev, &rio_config_attr);
+-	if (rdev->pef & RIO_PEF_SWITCH) {
+-		device_remove_file(&rdev->dev, &dev_attr_routes);
+-		device_remove_file(&rdev->dev, &dev_attr_lnext);
+-		device_remove_file(&rdev->dev, &dev_attr_hopcount);
+-	}
+-}
+-
+ static ssize_t bus_scan_store(struct bus_type *bus, const char *buf,
+ 				size_t count)
+ {
 -- 
 1.7.9.5
 
