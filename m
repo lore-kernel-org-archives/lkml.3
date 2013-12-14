@@ -1,90 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab3LNM3k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 07:29:40 -0500
-Received: from mga09.intel.com ([134.134.136.24]:56394 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753443Ab3LNM3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 07:29:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,485,1384329600"; 
-   d="asc'?scan'208";a="444244997"
-Message-ID: <1387024162.2204.101.camel@jtkirshe-mobl>
-Subject: Re: [PATCH v2 1/9] drivers: net: Remove unused function
- igb_get_eee_status_i354() in e1000_82575.c
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Akeem G Abodunrin <akeem.g.abodunrin@intel.com>,
-        Matthew Vick <matthew.vick@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+	id S1753857Ab3LNMaf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 07:30:35 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:48286 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab3LNMae (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Dec 2013 07:30:34 -0500
+Date: Sat, 14 Dec 2013 18:00:25 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         josh@joshtriplett.org
-Date: Sat, 14 Dec 2013 04:29:22 -0800
-In-Reply-To: <a610f6ee6bb992b91e43bdc851f3db62fc3decd5.1386911123.git.rashika.kheria@gmail.com>
+Subject: [PATCH v2 8/9] drivers: net: Mark functions as static in debug.c
+Message-ID: <f72a822c9171b17d2d51a221820e30d0ca1ecd36.1386911124.git.rashika.kheria@gmail.com>
 References: <a610f6ee6bb992b91e43bdc851f3db62fc3decd5.1386911123.git.rashika.kheria@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-n1TkLQ83bPY1pcvcqPoS"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <a610f6ee6bb992b91e43bdc851f3db62fc3decd5.1386911123.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch marks the function il_clear_traffic_stats() in debug.c as
+static because they are not used outside this file.
 
---=-n1TkLQ83bPY1pcvcqPoS
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Thus, it also removes the following warnings in
+wireless/iwlegacy/debug.c:
 
-On Sat, 2013-12-14 at 17:44 +0530, Rashika Kheria wrote:
-> This patch removes the function igb_get_eee_status_i354() in
-> e1000_82575.c because it is unused.
->=20
-> It thus eliminates the following warning in
-> ethernet/intel/igb/e1000_82575.c:
-> drivers/net/ethernet/intel/igb/e1000_82575.c:2591:5: warning: no
-> previous prototype for
-> =E2=80=98igb_get_eee_status_i354=E2=80=99 [-Wmissing-prototypes]
->=20
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> ---
->  drivers/net/ethernet/intel/igb/e1000_82575.c |   32
-> --------------------------
->  1 file changed, 32 deletions(-)
+drivers/net/wireless/iwlegacy/debug.c:35:1: warning: no previous prototype for ‘il_clear_traffic_stats’ [-Wmissing-prototypes]
 
-Thanks Rashika, I have added the patch to my queue.
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/net/wireless/iwlegacy/debug.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---=-n1TkLQ83bPY1pcvcqPoS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAABCgAGBQJSrE8iAAoJEOVv75VaS+3O96YP/1uitKdatDy2OYjP33qTGKJz
-Gdr6B9qry1j7WpLBx5SXrGOjHO6yEhjBwMtYvjQMZxYeFC6hYpGCstbAxO9wYbjU
-C4wvCaNJKPklPmCb1Q2IvN+rNWrRP+d1fnxoTMRP37J05TEiP9IDR/rM6GJywhPx
-zUeQYPNfJk+fAV1/SZ5cky6xRZLys2OUpSQRu72j5MAonLvhihjL8j0lyHE1aWI6
-Pj1OuKjmltO9bSXm/7CLvQ2UuH+ufA++APqeo5KRXH3vGkw6xrAlujp33SqVEO6l
-2Ril/BKYm10K1XeJdG6/8LDetIzrAvZ9RVaP06Ucv9Mu5EGV9eKEkHcG59j3jQcQ
-i9eZju4GBhf4xwfeZJPpXft4hni2OYiAQxeGHBKBfATknbYT5Vz08cmEcaGyBwOg
-oGfk0TPsis1WmoSPdRFLqm4rM+/D1g2RgMLSgTIdn9+A9la+3wGwkYt4wHEuxzpk
-l1ZuNjc1xHa7oobfzQLKU+n/iEfjp4rXlFQntx4ZF0+EnIsfQ9tEwnBjyz66yrac
-VBwfyeEON9Iw6JcpQnPNvhkxQVRLM5UAiPTV0kZiUEnouKFkkr14IS1lUK6uHaGB
-wcDbg9YoLgaGBy64dEwTxtE6vTylqaCWzH12YADc3jv/t/HLii+qPaY7tndHiVh4
-JW3U4I1aNPK7lronFelo
-=CHdQ
------END PGP SIGNATURE-----
-
---=-n1TkLQ83bPY1pcvcqPoS--
+diff --git a/drivers/net/wireless/iwlegacy/debug.c b/drivers/net/wireless/iwlegacy/debug.c
+index eff2650..b7e03dd 100644
+--- a/drivers/net/wireless/iwlegacy/debug.c
++++ b/drivers/net/wireless/iwlegacy/debug.c
+@@ -31,7 +31,7 @@
+ 
+ #include "common.h"
+ 
+-void
++static void
+ il_clear_traffic_stats(struct il_priv *il)
+ {
+ 	memset(&il->tx_stats, 0, sizeof(struct traffic_stats));
+-- 
+1.7.9.5
 
