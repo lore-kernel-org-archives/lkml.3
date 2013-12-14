@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842Ab3LNSul (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 13:50:41 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:56990 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3LNSuk (ORCPT
+	id S1753901Ab3LNS5R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 13:57:17 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:55317 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab3LNS5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 13:50:40 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Subject: Re: [PATCH v4 1/2] ARM: mach-moxart: add MOXA ART SoC platform files
-Date: Sat, 14 Dec 2013 19:50:09 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>
-References: <1386945188-8316-1-git-send-email-jonas.jensen@gmail.com> <52AC7E41.7050201@roeck-us.net> <CACmBeS3Xse5KkFqkM5Ye+qaaxpVCjyeGz7Oc9sr0PN+pZ9sztQ@mail.gmail.com>
-In-Reply-To: <CACmBeS3Xse5KkFqkM5Ye+qaaxpVCjyeGz7Oc9sr0PN+pZ9sztQ@mail.gmail.com>
+	Sat, 14 Dec 2013 13:57:15 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Alex Ling <kasimling@gmail.com>
+Cc: rob.herring@calxeda.com, mark.rutland@arm.com, linux@arm.linux.org.uk,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
+        kgene.kim@samsung.com, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: add board dts file for EXYNOS4412 based TINY4412 board
+Date: Sat, 14 Dec 2013 19:57:06 +0100
+Message-ID: <23915888.rvPOtSbknd@flatron>
+User-Agent: KMail/4.11.4 (Linux/3.12.2-gentoo; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <1384520969-2450-1-git-send-email-kasimling@gmail.com>
+References: <1384520969-2450-1-git-send-email-kasimling@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312141950.09447.arnd@arndb.de>
-X-Provags-ID: V02:K0:SgnWjTB809BedXaojBXVVPbhKo1hjYZr9UcQjorjgAT
- 2jjhmvgxPDxpiWu7FRhhywlboubvUATokHOa9E00n2iY677zSX
- YWKvdEpSbp9pTtNtmBFDXKMYDz5HcB9W9244wSH3ht3XLN3fu+
- 48LK6swQ97rKXR0ReeJfD9NPT6IkjL4pCekbyb5t3znd3t0UBk
- RDZLnpJQBDezx79i7l9BHHVaBR5TMeTwgT/INKlPyo57Iu+oqA
- na4pc3B+qOVXE9ao5UyHtyPxKbLx6o6H0oyEAliE4fmrYpOgT1
- mlTOV14oN8xSSNT93bOGbuFfh1uOkwjly/EBDS6dOQAdP7LngS
- Ohikf/pZEzOj4UjAXKXs=
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 14 December 2013, Jonas Jensen wrote:
-> >
-> > Conceptually it might be cleaner to write a separate driver, for example
-> > in drivers/power/restart, than plugging the functionality into
-> > the watchdog driver, at least if you don't want it in architecture
-> > or platform code. The xgene restart driver is a good example.
-> >
-> 
-> Moving it to a new power/restart driver seems reasonable to me, I'm
-> really just looking for a home for it, I would have preferred a
-> hardware with reset in a separate register though.
-> 
-> I now plan to remove it for v5 and submit a separate driver.
+Hi Alex,
 
-I still think it's better to leave it in the watchdog driver: This
-driver attaches to the watchdog device, and adding a separate driver
-for reset means we have to trick the core Linux code into attaching
-two drivers to one device in some way, or the device tree has to fake
-a second device that doesn't exist in hardware but is only needed
-because of Linux implementation details.
+On Friday 15 of November 2013 21:09:29 Alex Ling wrote:
+> Add a minimal board dts file for EXYNOS4412 based FriendlyARM's
+> TINY4412 board. This patch including adds the node to support
+> peripherals like UART, SD card on SDMMC2 port, and this patch
+> adds GPIO connected LEDS and configure its properties like
+> following:
+> LED1: use 'heartbeat' trigger, blinking while the board is running.
+> LED4: use 'mmc0' trigger, on when mmc0 is accessing.
+> LED2 and LED3 can be controlled from userspace.
 
-	Arnd
+Well, all the LEDs can be controlled from userspace. The default trigger
+is just the initial setting, which can be changed later by userspace.
+It's just a general comment, not an issue with the patch, though.
+
+Anyway, you don't need such detailed patch description, as you can see
+most of the things directly from the code. In case of this patch, just the
+list of supported peripherals is fine, without going into minor details,
+such as LED triggers.
+
+Also, please see my comments inline.
+
+[snip]
+> diff --git a/arch/arm/boot/dts/exynos4412-tiny4412.dts b/arch/arm/boot/dts/exynos4412-tiny4412.dts
+> new file mode 100644
+> index 0000000..78ace14
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/exynos4412-tiny4412.dts
+[snip]
+> +	leds {
+> +		compatible = "gpio-leds";
+
+style: A blank line should be separating properties from nodes.
+
+> +		led1 {
+> +			label = "led1:heart";
+
+Are the labels for this and the LEDs below related to the hardware?
+I mean, the label should preferrably come from the board documentation,
+or a label on the PCB next to the LED. Also they shouldn't represent
+any particular use case, so you should remove the ":heart" suffix.
+
+> +			gpios = <&gpm4 0 1>;
+> +			default-state = "off";
+> +			linux,default-trigger = "heartbeat";
+> +		};
+
+style: Subnodes should be separated with blank lines.
+
+Otherwise the patch looks fine.
+
+Best regards,
+Tomasz
+
