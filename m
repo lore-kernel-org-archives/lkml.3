@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab3LNIaj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 03:30:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55957 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab3LNIai (ORCPT
+	id S1753178Ab3LNIch (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 03:32:37 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:38726 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab3LNIcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 03:30:38 -0500
-Date: Sat, 14 Dec 2013 00:32:08 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        <linux-acpi@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xenproject.org>,
-        Dietmar Hahn <dietmar.hahn@ts.fujitsu.com>
-Subject: Re: vunmap() on large regions may trigger soft lockup warnings
-Message-Id: <20131214003208.f99bc37c.akpm@linux-foundation.org>
-In-Reply-To: <52A9B127.9010501@citrix.com>
-References: <52A899AB.3010506@citrix.com>
-	<20131211133917.dd10cb2c4360dba65d8e6ce2@linux-foundation.org>
-	<52A9B127.9010501@citrix.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 14 Dec 2013 03:32:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131213190707.GA9713@roeck-us.net>
+References: <1386945188-8316-1-git-send-email-jonas.jensen@gmail.com>
+	<1386945188-8316-2-git-send-email-jonas.jensen@gmail.com>
+	<201312131717.25435.arnd@arndb.de>
+	<CACmBeS0Uz+Z=MsqvXburO1swCdyGvEXHhfs8M7ZnMMKBNJjG1A@mail.gmail.com>
+	<20131213190707.GA9713@roeck-us.net>
+Date: Sat, 14 Dec 2013 09:32:36 +0100
+Message-ID: <CACmBeS2_WZj6_HJo0N50TBwneNVmeB9TyXbHRLm9CJFGNN+HtQ@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] ARM: mach-moxart: add MOXA ART SoC platform files
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Dec 2013 12:50:47 +0000 David Vrabel <david.vrabel@citrix.com> wrote:
+On 13 December 2013 20:07, Guenter Roeck <linux@roeck-us.net> wrote:
+>> I got the impression from Guenter Roeck's review, that it doesn't belong there,
+>> maybe I was too quick to remove it?
+>>
+> You'd have to answer the questions I raised in my review if you want it in
+> there.
 
-> > each time.  But that would require difficult tuning of N.
-> > 
-> > I suppose we could just do
-> > 
-> > 	if (!in_interrupt())
-> > 		cond_resched();
-> > 
-> > in vunmap_pmd_range(), but that's pretty specific to ghes.c and doesn't
-> > permit unmap-inside-spinlock.
-> > 
-> > So I can't immediately think of a suitable fix apart from adding a new
-> > unmap_kernel_range_atomic().  Then add a `bool atomic' arg to
-> > vunmap_page_range() and pass that all the way down.
-> 
-> That would work for the unmap, but looking at the GHES driver some more
-> and it looks like it's call to ioremap_page_range() is already unsafe --
-> it may need to allocate a new PTE page with a non-atomic alloc in
-> pte_alloc_one_kernel().
-> 
-> Perhaps what's needed here is a pair of ioremap_page_atomic() and
-> iounmap_page_atomic() calls?  With some prep function to sure the PTE
-> pages (etc.) are preallocated.
+I didn't see a solution at the time. Now I'm thinking arm_pm_restart
+can be set later in probe, preventing a crash on load failure, and
+maybe it can be unset on unload.
 
-Is ghes.c the only problem source here?  If so then a suitable solution
-would be to declare that driver hopelessly busted and proceed as if it
-didn't exist :(
+Would you accept a patch for this?
 
-Just from a quick look, the thing is doing ioremap() from NMI context! 
-ioremap has to do a bunch of memory allocations, takes spinlocks etc.
-
+Best regards,
+Jonas
