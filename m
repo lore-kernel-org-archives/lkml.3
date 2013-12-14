@@ -1,89 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab3LNT1Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 14:27:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58668 "EHLO
+	id S1754156Ab3LNT1p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 14:27:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58641 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab3LNT1E (ORCPT
+	with ESMTP id S1753970Ab3LNT1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 14:27:04 -0500
-Date: Sat, 14 Dec 2013 11:26:11 -0800
+	Sat, 14 Dec 2013 14:27:00 -0500
+Date: Sat, 14 Dec 2013 09:24:19 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Sumit Semwal <sumit.semwal@linaro.org>, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] dma-buf: Implement test module
-Message-ID: <20131214192611.GA23651@kroah.com>
-References: <1386858989-1487-1-git-send-email-treding@nvidia.com>
- <20131213020413.GD13333@kroah.com>
- <20131214121620.GA17467@mithrandir>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Levente Kurusa <levex@linux.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] treewide: add missing put_device calls
+Message-ID: <20131214172419.GC22520@kroah.com>
+References: <1386962557-8899-1-git-send-email-levex@linux.com>
+ <CAErSpo4dJFsK+Wcfz8PrH=Ras343nLS=XgQFbEr_KCgFVED52Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131214121620.GA17467@mithrandir>
+In-Reply-To: <CAErSpo4dJFsK+Wcfz8PrH=Ras343nLS=XgQFbEr_KCgFVED52Q@mail.gmail.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 14, 2013 at 01:16:21PM +0100, Thierry Reding wrote:
-> On Thu, Dec 12, 2013 at 06:04:13PM -0800, Greg Kroah-Hartman wrote:
-> > On Thu, Dec 12, 2013 at 03:36:29PM +0100, Thierry Reding wrote:
-> > > This is a simple test module that can be used to allocate, export and
-> > > delete DMA-BUF objects. It can be used to test DMA-BUF sharing in
-> > > systems that lack a real second driver.
-> > > 
-> > > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> > > ---
-> > >  drivers/base/Kconfig        |   4 +
-> > >  drivers/base/Makefile       |   1 +
-> > >  drivers/base/dma-buf-test.c | 308 ++++++++++++++++++++++++++++++++++++++++++++
-> > >  3 files changed, 313 insertions(+)
-> > >  create mode 100644 drivers/base/dma-buf-test.c
-> > > 
-> > > diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-> > > index e373671652b0..bed2abb9491b 100644
-> > > --- a/drivers/base/Kconfig
-> > > +++ b/drivers/base/Kconfig
-> > > @@ -200,6 +200,10 @@ config DMA_SHARED_BUFFER
-> > >  	  APIs extension; the file's descriptor can then be passed on to other
-> > >  	  driver.
-> > >  
-> > > +config DMA_BUF_TEST
-> > > +	tristate "DMA-BUF test module"
-> > > +	depends on DMA_SHARED_BUFFER
-> > 
-> > We need some good documentation here.
+On Fri, Dec 13, 2013 at 01:42:05PM -0700, Bjorn Helgaas wrote:
+> [+cc Greg]
 > 
-> I agree. The description should go into more details about what exactly
-> this is meant to address.
+> On Fri, Dec 13, 2013 at 12:22 PM, Levente Kurusa <levex@linux.com> wrote:
+> > Hi,
+> >
+> > This is just the beginning of patchset-set that aims to fix possible
+> > problems caused by not calling put_device() if device_register() fails.
+> >
+> > The root cause for the need to call put_device() is that the underlying
+> > kobject still has a reference count of 1. Thus, device.release() will not
+> > be called and the device will just sit there waiting for a put_device().
+> > Adding the put_device() also removes the need for the call to kfree() as most
+> > release functions already call kfree() on the container of the device.
+> >
+> > While these have not been experienced, they are potential issues and thus
+> > they need to be fixed. Also, they are a few more files that have the same
+> > kind of issue, those will be fixed if these are accepted.
 > 
-> > > > +static struct miscdevice dmabuf_device = {
-> > > +	.minor = 128,
-> > 
-> > Why did you pick this minor?  Why not just make it dynamic?
+> Thanks for doing this.  This is the sort of mistake that just gets
+> copied everywhere, so fixing the examples in the tree will help
+> prevent the problem from spreading more.
 > 
-> It seemed like minors are statically allocated for miscdevice and 128
-> seemed to be as good as any. The tentative plan was to go through the
-> official way of having one allocated as explained in the comment in
-> include/linux/miscdevice.h.
-> 
-> Reading that comment again, there's MISC_DYNAMIC_MINOR, which I guess
-> would be appropriate here. Chances are that if you want to test DMA-BUF
-> you'll have a reasonably modern userspace that will create the device
-> dynamically.
-> 
-> Alternatively I guess I could instead turn this into a more full-fledged
-> cdev and do the whole alloc_chrdev_region() dance. Although that will
-> only allocate the major dynamically.
+> I don't know if there's really value in having device_register()
+> return an error but rely on the caller to do the put_device().  Are
+> there cases where the caller still needs the struct device even if
+> device_register() fails?  E.g., could we do something like this
+> instead (I know some callers would also require corresponding changes
+> to avoid double puts):
 
-No, just use a dynamic misc device and all will be fine.  Bonus is that
-you can create multiple misc devices if you ever really need to in the
-future, with no need to change much code at all (i.e. no chrdev crud.)
+Yeah, that might make more sense, but I was trying to not have the
+driver core suddenly free memory if something you pass to it goes wrong.
+That's a pretty "odd" thing for an api call to do in the kernel, usually
+the caller is always responsible for cleaning up for errors happening.
 
-> I'm not aware of any function that just allocates a single major/minor
-> pair completely dynamically. Is there one that you could point me to?
+And there's going to be a ton of changes to get this fixed, as you
+really need to do it all in one patch, which makes for a bad "flag-day"
+of the api.
 
-Nope, that's what misc devices are for :)
+thanks,
 
 greg k-h
