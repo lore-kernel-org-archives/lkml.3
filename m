@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab3LNN2M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 08:28:12 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:53956 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab3LNN2K (ORCPT
+	id S1753868Ab3LNNaQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 08:30:16 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:65500 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753460Ab3LNNaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 08:28:10 -0500
-Message-ID: <52AC5CDF.8050209@linaro.org>
-Date: Sat, 14 Dec 2013 21:27:59 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Sat, 14 Dec 2013 08:30:14 -0500
+Date: Sat, 14 Dec 2013 19:00:06 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org,
+        josh@joshtriplett.org
+Subject: [PATCH] drivers: hv: Mark the function hv_synic_free_cpu() as static
+ in hv.c
+Message-ID: <20131214133006.GA8773@rashika>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@redhat.com, morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        daniel.lezcano@linaro.org, fweisbec@gmail.com, linux@arm.linux.org.uk,
-        tony.luck@intel.com, fenghua.yu@intel.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        fengguang.wu@intel.com, james.hogan@imgtec.com, jason.low2@hp.com,
-        gregkh@linuxfoundation.org, hanjun.guo@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] sched: remove cpu_load decay
-References: <1386061556-28233-1-git-send-email-alex.shi@linaro.org> <20131213200303.GI2480@laptop.programming.kicks-ass.net>
-In-Reply-To: <20131213200303.GI2480@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2013 04:03 AM, Peter Zijlstra wrote:
-> 
-> 
-> I had a quick peek at the actual patches.
-> 
-> afaict we're now using weighted_cpuload() aka runnable_load_avg as the
-> ->cpu_load. Whatever happened to also using the blocked_avg?
+This patch marks the function hv_synic_free_cpu() as static in hv.c
+because it is not used outside this file.
 
-When enabling the sched_avg in load balance, I didn't find any positive
-testing result for several blocked_avg trying, just few regression. :(
+Thus, it also eliminates the following warning in hv.c:
+drivers/hv/hv.c:304:6: warning: no previous prototype for ‘hv_synic_free_cpu’ [-Wmissing-prototypes]
 
-And since this patchset is almost clean up only, no blocked_load_avg
-trying again...
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+---
+ drivers/hv/hv.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> 
-> I totally hate patch 4; it seems like a random hack to make up for the
-> lack of blocked_avg.
-
-Yes, this bias criteria seems a bit arbitrary. :)
-But, anyway even with blocked_load_avg, we still need to consider to
-bias to local cpu. like in a scenario, 2 cpus both has nearly zero
-blocked_load_avg.
-
-BTW,
-
-Paul, do you has new idea on blocked_load_avg using?
-
+diff --git a/drivers/hv/hv.c b/drivers/hv/hv.c
+index f0c5e07..bcb4950 100644
+--- a/drivers/hv/hv.c
++++ b/drivers/hv/hv.c
+@@ -301,7 +301,7 @@ err:
+ 	return -ENOMEM;
+ }
+ 
+-void hv_synic_free_cpu(int cpu)
++static void hv_synic_free_cpu(int cpu)
+ {
+ 	kfree(hv_context.event_dpc[cpu]);
+ 	if (hv_context.synic_event_page[cpu])
 -- 
-Thanks
-    Alex
+1.7.9.5
+
