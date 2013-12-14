@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057Ab3LNIPt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 03:15:49 -0500
-Received: from relay.parallels.com ([195.214.232.42]:36208 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab3LNIPr (ORCPT
+	id S1753417Ab3LNITM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 03:19:12 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:65055 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070Ab3LNITK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 03:15:47 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <mhocko@suse.cz>
-CC: <glommer@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
-        "Glauber Costa" <glommer@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Balbir Singh" <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 1/2] memcg: fix memcg_size() calculation
-Date: Sat, 14 Dec 2013 12:15:33 +0400
-Message-ID: <965cbb70fb55fe50a77382537b9a1b7455deac86.1387007793.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 14 Dec 2013 03:19:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.24.25.125]
+In-Reply-To: <1386271244-3927-7-git-send-email-tim.kryger@linaro.org>
+References: <1386271244-3927-1-git-send-email-tim.kryger@linaro.org>
+	<1386271244-3927-7-git-send-email-tim.kryger@linaro.org>
+Date: Sat, 14 Dec 2013 00:19:08 -0800
+Message-ID: <CAEPRUYo+7G2KT_87bA9sY-97MmiNFVdgGHQo2o4cSX=kGf2hfg@mail.gmail.com>
+Subject: Re: [PATCH v4 6/8] Documentation: dt: kona-timer: Add clocks property
+From: Christian Daudt <bcm@fixthebug.org>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        Axel Lin <axel.lin@ingics.com>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linaro Patches List <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mem_cgroup structure contains nr_node_ids pointers to
-mem_cgroup_per_node objects, not the objects themselves.
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index bf5e894..7f1a356 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -338,7 +338,7 @@ struct mem_cgroup {
- static size_t memcg_size(void)
- {
- 	return sizeof(struct mem_cgroup) +
--		nr_node_ids * sizeof(struct mem_cgroup_per_node);
-+		nr_node_ids * sizeof(struct mem_cgroup_per_node *);
- }
- 
- /* internal only representation about the status of kmem accounting. */
--- 
-1.7.10.4
-
+On Thu, Dec 5, 2013 at 11:20 AM, Tim Kryger <tim.kryger@linaro.org> wrote:
+> The frequency for the Kona timer can either be specified through the
+> device tree or determined by checking the rate of the clock specified
+> in the device tree.  Update the documentation to reflect both ways.
+>
+> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+> ---
+>  Documentation/devicetree/bindings/arm/bcm/kona-timer.txt | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+>
+> diff --git a/Documentation/devicetree/bindings/arm/bcm/kona-timer.txt b/Documentation/devicetree/bindings/arm/bcm/kona-timer.txt
+> index 17d88b2..39adf54 100644
+> --- a/Documentation/devicetree/bindings/arm/bcm/kona-timer.txt
+> +++ b/Documentation/devicetree/bindings/arm/bcm/kona-timer.txt
+> @@ -8,13 +8,18 @@ Required properties:
+>  - DEPRECATED: compatible : "bcm,kona-timer"
+>  - reg : Register range for the timer
+>  - interrupts : interrupt for the timer
+> +- clocks: phandle + clock specifier pair of the external clock
+>  - clock-frequency: frequency that the clock operates
+>
+> +Only one of clocks or clock-frequency should be specified.
+> +
+> +Refer to clocks/clock-bindings.txt for generic clock consumer properties.
+> +
+>  Example:
+>         timer@35006000 {
+>                 compatible = "brcm,kona-timer";
+>                 reg = <0x35006000 0x1000>;
+>                 interrupts = <0x0 7 0x4>;
+> -               clock-frequency = <32768>;
+> +               clocks = <&hub_timer_clk>;
+>         };
+>
+> --
+> 1.8.0.1
+>
+Reviewed-by: Christian Daudt <bcm@fixthebug.org>
