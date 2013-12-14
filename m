@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064Ab3LNVVq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 16:21:46 -0500
-Received: from nigelcunningham.com.au ([178.79.133.97]:51162 "EHLO
-	nigelcunningham.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753906Ab3LNVVp (ORCPT
+	id S1754155Ab3LNVXQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 16:23:16 -0500
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:48202 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554Ab3LNVXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 16:21:45 -0500
-Message-ID: <52ACCBE0.5060404@nigelcunningham.com.au>
-Date: Sun, 15 Dec 2013 08:21:36 +1100
-From: Nigel Cunningham <nigel@nigelcunningham.com.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sat, 14 Dec 2013 16:23:14 -0500
+Date: Sat, 14 Dec 2013 16:23:11 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: Re: [PATCH 2/2] drivers: ata: Mark the function as static in
+ libahci.c
+Message-ID: <20131214212311.GA13216@htj.dyndns.org>
+References: <81391ee13d565f1db31247dfda803cd7123bb8a9.1387029964.git.rashika.kheria@gmail.com>
+ <a4302d91071258c77de3e4086845adf630a3f8d6.1387029964.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-CC: Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org, aaron.lu@intel.com,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] libata, freezer: avoid block device removal while system
- is frozen
-References: <20131213174932.GA27070@htj.dyndns.org> <20131213185237.GD27070@htj.dyndns.org> <20131213204034.GE27070@htj.dyndns.org> <52AB8E27.90308@nigelcunningham.com.au> <20131213230744.GA17954@htj.dyndns.org> <52AB9509.1080004@nigelcunningham.com.au> <20131214203121.GB4020@htj.dyndns.org> <20131214203652.GC4020@htj.dyndns.org>
-In-Reply-To: <20131214203652.GC4020@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <a4302d91071258c77de3e4086845adf630a3f8d6.1387029964.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Sat, Dec 14, 2013 at 07:40:21PM +0530, Rashika Kheria wrote:
+> This patch marks the function ahci_port_intr() and
+> ahci_hw_port_interrupt() as static in libahci.c because they are not
+> used outside this file.
+> 
+> Thus, it also eliminates the following warnings in libahci.c:
+> drivers/ata/libahci.c:1767:6: warning: no previous prototype for ‘ahci_port_intr’ [-Wmissing-prototypes]
+> drivers/ata/libahci.c:1800:6: warning: no previous prototype for ‘ahci_hw_port_interrupt’ [-Wmissing-prototypes]
+> 
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 
-On 15/12/13 07:36, Tejun Heo wrote:
-> On Sat, Dec 14, 2013 at 03:31:21PM -0500, Tejun Heo wrote:
->> So, all this is about hibernation?  Does that mean that it's safe to
->> unfreeze before invoking resume?  ie. we currently do,
->>
->> 	freeze
->> 	suspend devs
->> 	resume devs
->> 	unfreeze
->>
->> If we can just do,
->>
->> 	freeze
->> 	suspend devs
->> 	unfreeze
->> 	resume devs
-> Ummm... even better, does that mean, in the long term, we can decouple
-> freezing and device pm operations?  If this is just about hibernation,
-> there's no reason to wrap device driver pm ops with freezer, right?
->
-> Thanks.
->
-Rafael has spent far more time than me thinking about the semantics 
-here, so I'd like to defer to him. Rafael?...
+Applied 1-2 to libata/for-3.14.
 
-Regards,
+Thanks.
 
-Nigel
+-- 
+tejun
