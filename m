@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab3LNOTT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 09:19:19 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35447 "EHLO
+	id S1753742Ab3LNO1u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 09:27:50 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35507 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3LNOTS (ORCPT
+	with ESMTP id S1753312Ab3LNO1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 09:19:18 -0500
-Date: Sat, 14 Dec 2013 15:19:02 +0100
+	Sat, 14 Dec 2013 09:27:49 -0500
+Date: Sat, 14 Dec 2013 15:27:41 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: Alex Shi <alex.shi@linaro.org>
 Cc: Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
@@ -18,7 +18,7 @@ Cc: Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
         Thomas Gleixner <tglx@linutronix.de>,
         Fengguang Wu <fengguang.wu@intel.com>
 Subject: Re: [PATCH 2/3] x86: mm: Change tlb_flushall_shift for IvyBridge
-Message-ID: <20131214141902.GA16438@laptop.programming.kicks-ass.net>
+Message-ID: <20131214142741.GB16438@laptop.programming.kicks-ass.net>
 References: <1386849309-22584-1-git-send-email-mgorman@suse.de>
  <1386849309-22584-3-git-send-email-mgorman@suse.de>
  <20131212131309.GD5806@gmail.com>
@@ -26,40 +26,44 @@ References: <1386849309-22584-1-git-send-email-mgorman@suse.de>
  <20131212141147.GB17059@gmail.com>
  <52AA5C92.7030207@linaro.org>
  <52AA6CB9.60302@linaro.org>
+ <20131214141902.GA16438@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52AA6CB9.60302@linaro.org>
+In-Reply-To: <20131214141902.GA16438@laptop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 10:11:05AM +0800, Alex Shi wrote:
-> BTW,
-> A bewitching idea is till attracting me.
-> https://lkml.org/lkml/2012/5/23/148
-> Even it was sentenced to death by HPA.
-> https://lkml.org/lkml/2012/5/24/143
+On Sat, Dec 14, 2013 at 03:19:02PM +0100, Peter Zijlstra wrote:
+> On Fri, Dec 13, 2013 at 10:11:05AM +0800, Alex Shi wrote:
+> > BTW,
+> > A bewitching idea is till attracting me.
+> > https://lkml.org/lkml/2012/5/23/148
+> > Even it was sentenced to death by HPA.
+> > https://lkml.org/lkml/2012/5/24/143
+> > 
+> > That is that just flush one of thread TLB is enough for SMT/HT, seems
+> > TLB is still shared in core on Intel CPU. This benefit is unconditional,
+> > and if my memory right, Kbuild testing can improve about 1~2% in average
+> > level.
+> > 
+> > So could you like to accept some ugly quirks to do this lazy TLB flush
+> > on known working CPU?
+> > Forgive me if it's stupid.
 > 
-> That is that just flush one of thread TLB is enough for SMT/HT, seems
-> TLB is still shared in core on Intel CPU. This benefit is unconditional,
-> and if my memory right, Kbuild testing can improve about 1~2% in average
-> level.
+> I think there's a further problem with that patch -- aside of it being
+> right from a hardware point of view.
 > 
-> So could you like to accept some ugly quirks to do this lazy TLB flush
-> on known working CPU?
-> Forgive me if it's stupid.
+> We currently rely on the tlb flush IPI to synchronize with lockless page
+> table walkers like gup_fast().
+> 
+> By not sending an IPI to all CPUs you can get into trouble and crash the
+> kernel.
+> 
+> We absolutely must keep sending the IPI to all relevant CPUs, we can
+> choose not to actually do the flush on some CPUs, but we must keep
+> sending the IPI.
 
-I think there's a further problem with that patch -- aside of it being
-right from a hardware point of view.
-
-We currently rely on the tlb flush IPI to synchronize with lockless page
-table walkers like gup_fast().
-
-By not sending an IPI to all CPUs you can get into trouble and crash the
-kernel.
-
-We absolutely must keep sending the IPI to all relevant CPUs, we can
-choose not to actually do the flush on some CPUs, but we must keep
-sending the IPI.
+The alternative is switching x86 over to use HAVE_RCU_TABLE_FREE.
