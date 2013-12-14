@@ -1,91 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab3LNBSi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 20:18:38 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:20974 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752649Ab3LNBSG (ORCPT
+	id S1753192Ab3LNBxt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 20:53:49 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:44103 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752867Ab3LNBxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 20:18:06 -0500
-X-IronPort-AV: E=Sophos;i="4.95,483,1384329600"; 
-   d="scan'208";a="2589743"
-Message-ID: <52ABB150.1030702@broadcom.com>
-Date: Fri, 13 Dec 2013 17:16:00 -0800
-From: Sherman Yin <syin@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 13 Dec 2013 20:53:48 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMIAEW5q1J5LHyk/2dsb2JhbABSB4MKOIMEsGKFT4EhF3SCJQEBBAE6HCMFCwgDDgoJJQ8FJQMhE4d8Bw7KcwQWjjdIB4Q2BJgVkhWDPiiBLCM
+Date: Sat, 14 Dec 2013 12:53:43 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        tomaz.solc@tablix.org, aaron.lu@intel.com,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: Writeback threads and freezable
+Message-ID: <20131214015343.GP31386@dastard>
+References: <20131213174932.GA27070@htj.dyndns.org>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Rob Herring <rob.herring@calxeda.com>,
-        =?ISO-8859-1?Q?Heiko_St=FCbn?= =?ISO-8859-1?Q?er?= 
-	<heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 4/6] pinctrl: Add pinctrl binding for Broadcom Capri
- SoCs
-References: <1381174108-25168-1-git-send-email-syin@broadcom.com>	<1386787041-6035-1-git-send-email-syin@broadcom.com>	<1386787041-6035-5-git-send-email-syin@broadcom.com> <CACRpkdY7s+eUFkg0AsaN5B9-1y_mTJ29Y-D9CkRG2GQ3JshP+w@mail.gmail.com>
-In-Reply-To: <CACRpkdY7s+eUFkg0AsaN5B9-1y_mTJ29Y-D9CkRG2GQ3JshP+w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131213174932.GA27070@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-12-12 12:37 PM, Linus Walleij wrote:
-> On Wed, Dec 11, 2013 at 7:37 PM, Sherman Yin <syin@broadcom.com> wrote:
->
->> Adds pinctrl driver devicetree binding for Broadcom Capri (BCM281xx) SoCs.
->>
->> Signed-off-by: Sherman Yin <syin@broadcom.com>
->> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
->> Reviewed-by: Matt Porter <matt.porter@linaro.org>
->> ---
->> v3: Use generic pin config properties instead of brcm-specific ones.  Clarified
->>      pin types (standard, i2c, hdmi).
->> v2: Use hyphens instead of underscore in DT property names.
->
-> Overall this is very nice!
+On Fri, Dec 13, 2013 at 12:49:32PM -0500, Tejun Heo wrote:
+> Hello, guys.
+> 
+> This is discovered while investigating bug 62801 - "EliteBoot hangs at
+> dock, suspend, undock, resume".
+> 
+>  https://bugzilla.kernel.org/show_bug.cgi?id=62801
+> 
+> The laptop locks up during resume if undocked while suspended.  The
+> dock contains a hard drive and the drive removal path and resume path
+> get stuck.  This got bisected to 839a8e8660b6 ("writeback: replace
+> custom worker pool implementation with unbound workqueue") by the
+> reporter.  The problem can be reproduced by just removing mounted
+> harddrive while a machine is suspended.  I first thought it was some
+> dumb mistake but it turns out to be something fundamental.
+> 
+> So, here's the lock up.
+> 
+> * Resume starts and libata resume is kicked off.
+> 
+> * libata EH determines that the device is gone.  Eventually it invokes
+>   device_del() through a work item.
+> 
+> * device_del() tries to delete the block device which invokes
+>   writeback_inodes_sb() on the mounted filesystem which in turn
+>   schedules and flushes bdi work item.  Note that at this point, the
+>   kworker is holding multiple driver layer locks.
 
-Thanks!
+That's the fundamental problem here - device removal asks the device
+to fsync the filesystem on top of the device that was just removed.
+The simple way to trigger this is to pull a device from underneath
+an active filesystem (e.g. user unplugs a USB device without first
+unmounting it). There are many years worth of bug reports showing
+that this attempt by the device removal code to sync the filesystem
+leads to deadlocks.
 
->> +- bias-pull-up:                        Integer. Pull up strength in Ohm:
->> +                                       1: 1.2 kOhm
->> +                                       2: 1.8 kOhm
->> +                                       3: 720 Ohm
->> +                                       4: 2.7 kOhm
->> +                                       5: 831 Ohm
->> +                                       6: 1.08 kOhm
->> +                                       7: 568 Ohm
->
-> Please do not use these custom enumerators 1 thru 7.
-> Instead say that the argument is given in ohms, so for
-> example:
->
-> bias-pull-up = <12000>;
->
-> Then translate this into the proper enumerator in your
-> driver instead.
+It's simply not a valid thing to do - just how is the filesystem
+supposed to sync to a non-existent device?
 
-Ok.  The 3 bits in this enumeration correspond to enabling the 3 pull up 
-Rs (1.2k, 1.8k, 2.7k) in parallel, so the enum kind of make sense. But 
-sure I can change it to actual ohms and will error out in the driver if 
-specified value is not one of the 7.
+I've raised this each time a user reports it over the past few years
+and never been able to convince any to fix the filesystem
+re-entrancy problem device removal causes. Syncing the filesystem
+will require taking locks that are by IO in progress, and so can't
+make progress until the IO is completed, but that can't happen
+until the error handling completes the sync of the filesystem....
 
-> No full example provided in the binding! This needs to
-> be there for understanding.
+Preventing fs/io re-entrancy from contexts where we might be holding
+locks is the same reason we have GFP_NOFS and GFP_NOIO for memory
+allocation: re-entering a filesystem or IO subsystem whenever we are
+holding locks or serialised context in the fs/io path can deadlock
+the fs/io path.
 
-Ok Will add some examples.
+IOWs, syncing the filesystem from the device delete code is just
+plain wrong. That's what needs fixing - removing the cause of
+re-entrancy, not the workqueue or writeback code...
 
-Thanks,
-Sherman
+> Ideas?
 
+Fix the device delete error handling not to re-enter the
+filesystem and IO path. It's just wrong.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
