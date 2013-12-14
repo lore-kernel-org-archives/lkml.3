@@ -1,152 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab3LNUNe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 15:13:34 -0500
-Received: from relay.parallels.com ([195.214.232.42]:49281 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab3LNUNc (ORCPT
+	id S1754067Ab3LNUOT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 15:14:19 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:64811 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791Ab3LNUOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 15:13:32 -0500
-Message-ID: <52ACBBE5.1020806@parallels.com>
-Date: Sun, 15 Dec 2013 00:13:25 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	Sat, 14 Dec 2013 15:14:18 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52ACBC18.6020301@roeck-us.net>
+Date: Sat, 14 Dec 2013 12:14:16 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: <mhocko@suse.cz>
-CC: <glommer@gmail.com>, Balbir Singh <bsingharora@gmail.com>,
-        <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@openvz.org>,
-        <linux-mm@kvack.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, <cgroups@vger.kernel.org>,
-        <devel@openvz.org>
-Subject: Re: [Devel] [PATCH 2/2] memcg: do not use vmalloc for mem_cgroup
- allocations
-References: <965cbb70fb55fe50a77382537b9a1b7455deac86.1387007793.git.vdavydov@parallels.com> <ce02d52baac3730d659c046a181c2784c6cee2c4.1387007793.git.vdavydov@parallels.com>
-In-Reply-To: <ce02d52baac3730d659c046a181c2784c6cee2c4.1387007793.git.vdavydov@parallels.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Arnd Bergmann <arnd@arndb.de>, Jonas Jensen <jonas.jensen@gmail.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v4 1/2] ARM: mach-moxart: add MOXA ART SoC platform files
+References: <1386945188-8316-1-git-send-email-jonas.jensen@gmail.com> <52AC7E41.7050201@roeck-us.net> <CACmBeS3Xse5KkFqkM5Ye+qaaxpVCjyeGz7Oc9sr0PN+pZ9sztQ@mail.gmail.com> <201312141950.09447.arnd@arndb.de>
+In-Reply-To: <201312141950.09447.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.24.25.125]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2013 12:15 PM, Vladimir Davydov wrote:
-> The vmalloc was introduced by patch 333279 ("memcgroup: use vmalloc for
-> mem_cgroup allocation"), because at that time MAX_NUMNODES was used for
-> defining the per-node array in the mem_cgroup structure so that the
-> structure could be huge even if the system had the only NUMA node.
+On 12/14/2013 10:50 AM, Arnd Bergmann wrote:
+> On Saturday 14 December 2013, Jonas Jensen wrote:
+>>>
+>>> Conceptually it might be cleaner to write a separate driver, for example
+>>> in drivers/power/restart, than plugging the functionality into
+>>> the watchdog driver, at least if you don't want it in architecture
+>>> or platform code. The xgene restart driver is a good example.
+>>>
+>>
+>> Moving it to a new power/restart driver seems reasonable to me, I'm
+>> really just looking for a home for it, I would have preferred a
+>> hardware with reset in a separate register though.
+>>
+>> I now plan to remove it for v5 and submit a separate driver.
 >
-> The situation was significantly improved by patch 45cf7e ("memcg: reduce
-> the size of struct memcg 244-fold"), which made the size of the
-> mem_cgroup structure calculated dynamically depending on the real number
-> of NUMA nodes installed on the system (nr_node_ids), so now there is no
-> point in using vmalloc here: the structure is allocated rarely and on
-> most systems its size is about 1K.
-
-After a bit of thinking I refused to use wait_on_bit() on
-kmem_account_flags in the kmemcg shrinkers patchset I'm trying to
-submit, so if this patch is going to be committed, it is better to
-remove the paragraph below from the commit message :-)
-
-However, I still think this patch is reasonable, because I haven't found
-a place in the kernel source tree where we used vmalloc() for allocating
-an array of nr_node_ids pointers. On the other hand, there are plenty of
-places where we allocate per-node data using kmalloc. For instance, in
-list_lru_init() we have
-
-    size_t size = sizeof(struct list_lru_node) * nr_node_ids;
-    lru->node = kzalloc(size, GFP_KERNEL);
-
-where the list_lru_node structure is at least 4 words at size.
-
-> Personally I'd like to remove this vmalloc, because I'm considering
-> using wait_on_bit() on mem_cgroup::kmem_account_flags in the kmemcg
-> shrinkers implementation, which is impossible on vmalloc'd areas.
+> I still think it's better to leave it in the watchdog driver: This
+> driver attaches to the watchdog device, and adding a separate driver
+> for reset means we have to trick the core Linux code into attaching
+> two drivers to one device in some way, or the device tree has to fake
+> a second device that doesn't exist in hardware but is only needed
+> because of Linux implementation details.
 >
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Glauber Costa <glommer@openvz.org>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |   28 ++++++----------------------
->  1 file changed, 6 insertions(+), 22 deletions(-)
->
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 7f1a356..205eb7b 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -48,7 +48,6 @@
->  #include <linux/sort.h>
->  #include <linux/fs.h>
->  #include <linux/seq_file.h>
-> -#include <linux/vmalloc.h>
->  #include <linux/vmpressure.h>
->  #include <linux/mm_inline.h>
->  #include <linux/page_cgroup.h>
-> @@ -335,12 +334,6 @@ struct mem_cgroup {
->  	/* WARNING: nodeinfo must be the last member here */
->  };
->  
-> -static size_t memcg_size(void)
-> -{
-> -	return sizeof(struct mem_cgroup) +
-> -		nr_node_ids * sizeof(struct mem_cgroup_per_node *);
-> -}
-> -
->  /* internal only representation about the status of kmem accounting. */
->  enum {
->  	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
-> @@ -6139,14 +6132,12 @@ static void free_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
->  static struct mem_cgroup *mem_cgroup_alloc(void)
->  {
->  	struct mem_cgroup *memcg;
-> -	size_t size = memcg_size();
-> +	size_t size;
->  
-> -	/* Can be very big if nr_node_ids is very big */
-> -	if (size < PAGE_SIZE)
-> -		memcg = kzalloc(size, GFP_KERNEL);
-> -	else
-> -		memcg = vzalloc(size);
-> +	size = sizeof(struct mem_cgroup);
-> +	size += nr_node_ids * sizeof(struct mem_cgroup_per_node *);
->  
-> +	memcg = kzalloc(size, GFP_KERNEL);
->  	if (!memcg)
->  		return NULL;
->  
-> @@ -6157,10 +6148,7 @@ static struct mem_cgroup *mem_cgroup_alloc(void)
->  	return memcg;
->  
->  out_free:
-> -	if (size < PAGE_SIZE)
-> -		kfree(memcg);
-> -	else
-> -		vfree(memcg);
-> +	kfree(memcg);
->  	return NULL;
->  }
->  
-> @@ -6178,7 +6166,6 @@ out_free:
->  static void __mem_cgroup_free(struct mem_cgroup *memcg)
->  {
->  	int node;
-> -	size_t size = memcg_size();
->  
->  	mem_cgroup_remove_from_trees(memcg);
->  
-> @@ -6199,10 +6186,7 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
->  	 * the cgroup_lock.
->  	 */
->  	disarm_static_keys(memcg);
-> -	if (size < PAGE_SIZE)
-> -		kfree(memcg);
-> -	else
-> -		vfree(memcg);
-> +	kfree(memcg);
->  }
->  
->  /*
+
+Hmm ... not sure I agree. I don't see a problem with something like "arm,moxart-reboot".
+There are already vexpress-reboot and xgene-reboot properties which do pretty much
+the same.
+
+Actually, you don't even need that; the reset driver could simply re-use the
+"moxa,moxart-watchdog" property. After all, all that specifies is that there
+is a compatible driver. Look for "samsung,s3c2410-wdt" for an example of another
+reset handler doing just that.
+
+Attaching it to the watchdog device seems to be more problematic given the
+(currently) optional nature of the watchdog driver and its different scope.
+
+Thanks,
+Guenter
 
