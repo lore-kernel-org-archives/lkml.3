@@ -1,45 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab3LNDPJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 22:15:09 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:35739 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab3LNDPH (ORCPT
+	id S1753395Ab3LND0s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 22:26:48 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:59210 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab3LND0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 22:15:07 -0500
-From: "Preetam D'Souza" <preetamjdsouza@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        "Preetam D'Souza" <preetamjdsouza@gmail.com>
-Subject: [PATCH] Staging: rts5139: fix parantheses coding style issue in ms.c
-Date: Fri, 13 Dec 2013 19:13:47 -0800
-Message-Id: <1386990827-23933-1-git-send-email-preetamjdsouza@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 13 Dec 2013 22:26:47 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 093/115] ion: don't use phys_to_page or __phys_to_pfn
+Date: Fri, 13 Dec 2013 19:26:13 -0800
+Message-Id: <1386991595-6251-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
+References: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes an unnecessary return statement parantheses error
-found in ms.c by the checkpatch.pl tool.
+From: Colin Cross <ccross@android.com>
 
-Signed-off-by: Preetam D'Souza <preetamjdsouza@gmail.com>
+phys_to_page and __phys_to_pfn don't exist on all platforms.
+Use a combination of pfn_to_page, PFN_DOWN, page_to_pfn, and
+virt_to_page to get the same results.
+
+Signed-off-by: Colin Cross <ccross@android.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/rts5139/ms.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/android/ion/ion_carveout_heap.c | 4 ++--
+ drivers/staging/android/ion/ion_chunk_heap.c    | 5 +++--
+ drivers/staging/android/ion/ion_system_heap.c   | 2 +-
+ 3 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/rts5139/ms.c b/drivers/staging/rts5139/ms.c
-index a27f7e2..9253f6a 100644
---- a/drivers/staging/rts5139/ms.c
-+++ b/drivers/staging/rts5139/ms.c
-@@ -48,7 +48,7 @@ static inline int ms_check_err_code(struct rts51x_chip *chip, u8 err_code)
- {
- 	struct ms_info *ms_card = &(chip->ms_card);
- 
--	return (ms_card->err_code == err_code);
-+	return ms_card->err_code == err_code;
+diff --git a/drivers/staging/android/ion/ion_carveout_heap.c b/drivers/staging/android/ion/ion_carveout_heap.c
+index 051363a..1d53e91 100644
+--- a/drivers/staging/android/ion/ion_carveout_heap.c
++++ b/drivers/staging/android/ion/ion_carveout_heap.c
+@@ -96,8 +96,8 @@ struct sg_table *ion_carveout_heap_map_dma(struct ion_heap *heap,
+ 		kfree(table);
+ 		return ERR_PTR(ret);
+ 	}
+-	sg_set_page(table->sgl, phys_to_page(buffer->priv_phys), buffer->size,
+-		    0);
++	sg_set_page(table->sgl, pfn_to_page(PFN_DOWN(buffer->priv_phys)),
++			buffer->size, 0);
+ 	return table;
  }
  
- static int ms_parse_err_code(struct rts51x_chip *chip)
+diff --git a/drivers/staging/android/ion/ion_chunk_heap.c b/drivers/staging/android/ion/ion_chunk_heap.c
+index d3363d6..fb1a7b9 100644
+--- a/drivers/staging/android/ion/ion_chunk_heap.c
++++ b/drivers/staging/android/ion/ion_chunk_heap.c
+@@ -71,7 +71,8 @@ static int ion_chunk_heap_allocate(struct ion_heap *heap,
+ 						     chunk_heap->chunk_size);
+ 		if (!paddr)
+ 			goto err;
+-		sg_set_page(sg, phys_to_page(paddr), chunk_heap->chunk_size, 0);
++		sg_set_page(sg, pfn_to_page(PFN_DOWN(paddr)),
++				chunk_heap->chunk_size, 0);
+ 		sg = sg_next(sg);
+ 	}
+ 
+@@ -167,7 +168,7 @@ struct ion_heap *ion_chunk_heap_create(struct ion_platform_heap *heap_data)
+ 		goto error;
+ 	}
+ 	for (i = 0; i < chunk_heap->size; i += PAGE_SIZE) {
+-		struct page *page = phys_to_page(chunk_heap->base + i);
++		struct page *page = pfn_to_page(PFN_DOWN(chunk_heap->base + i));
+ 		struct page **pages = &page;
+ 
+ 		ret = map_vm_area(vm_struct, pgprot, &pages);
+diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
+index 62a07ec..3b2f420 100644
+--- a/drivers/staging/android/ion/ion_system_heap.c
++++ b/drivers/staging/android/ion/ion_system_heap.c
+@@ -426,7 +426,7 @@ int ion_system_contig_heap_map_user(struct ion_heap *heap,
+ 				    struct ion_buffer *buffer,
+ 				    struct vm_area_struct *vma)
+ {
+-	unsigned long pfn = __phys_to_pfn(virt_to_phys(buffer->priv_virt));
++	unsigned long pfn = page_to_pfn(virt_to_page(buffer->priv_virt));
+ 	return remap_pfn_range(vma, vma->vm_start, pfn + vma->vm_pgoff,
+ 			       vma->vm_end - vma->vm_start,
+ 			       vma->vm_page_prot);
 -- 
-1.7.10.4
+1.8.3.2
 
