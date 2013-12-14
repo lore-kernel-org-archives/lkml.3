@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab3LNNMY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 08:12:24 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:44355 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312Ab3LNNMX (ORCPT
+	id S1753699Ab3LNNQk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 08:16:40 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:63034 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393Ab3LNNQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 08:12:23 -0500
-Date: Sat, 14 Dec 2013 18:42:14 +0530
+	Sat, 14 Dec 2013 08:16:39 -0500
+Date: Sat, 14 Dec 2013 18:46:31 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Steve Wise <swise@chelsio.com>, Roland Dreier <roland@kernel.org>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
         josh@joshtriplett.org
-Subject: [PATCH] drivers: infiniband: Mark function _c4iw_write_mem_dma() as
- static in mem.c
-Message-ID: <20131214131214.GA8459@rashika>
+Subject: [PATCH] drivers: mmc: Mark the function sdhci_disable_irq_wakeups()
+ as static in sdhci.c
+Message-ID: <20131214131631.GA8543@rashika>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
@@ -26,30 +24,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch marks the function _c4iw_write_mem_dma() as static in
-hw/cxgb4/mem.c because it is not used outside this file.
+This patch marks the function sdhci_disable_irq_wakeups() as static in
+host/sdhci.c because it is not used outside this file.
 
-Thus, it also eliminates the following warning in hw/cxgb4/mem.c:
-drivers/infiniband/hw/cxgb4/mem.c:176:5: warning: no previous prototype for ‘_c4iw_write_mem_dma’ [-Wmissing-prototypes]
+Thus, it also eliminates the following warning in host/sdhci.c:
+drivers/mmc/host/sdhci.c:2553:6: warning: no previous prototype for ‘sdhci_disable_irq_wakeups’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 ---
- drivers/infiniband/hw/cxgb4/mem.c |    2 +-
+ drivers/mmc/host/sdhci.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/hw/cxgb4/mem.c b/drivers/infiniband/hw/cxgb4/mem.c
-index 4cb8eb2..84e4500 100644
---- a/drivers/infiniband/hw/cxgb4/mem.c
-+++ b/drivers/infiniband/hw/cxgb4/mem.c
-@@ -173,7 +173,7 @@ static int _c4iw_write_mem_inline(struct c4iw_rdev *rdev, u32 addr, u32 len,
- 	return ret;
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index bd8a098..8de50e8 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -2550,7 +2550,7 @@ void sdhci_enable_irq_wakeups(struct sdhci_host *host)
  }
+ EXPORT_SYMBOL_GPL(sdhci_enable_irq_wakeups);
  
--int _c4iw_write_mem_dma(struct c4iw_rdev *rdev, u32 addr, u32 len, void *data)
-+static int _c4iw_write_mem_dma(struct c4iw_rdev *rdev, u32 addr, u32 len, void *data)
+-void sdhci_disable_irq_wakeups(struct sdhci_host *host)
++static void sdhci_disable_irq_wakeups(struct sdhci_host *host)
  {
- 	u32 remain = len;
- 	u32 dmalen;
+ 	u8 val;
+ 	u8 mask = SDHCI_WAKE_ON_INSERT | SDHCI_WAKE_ON_REMOVE
 -- 
 1.7.9.5
 
