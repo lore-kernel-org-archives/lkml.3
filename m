@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab3LNRbd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 12:31:33 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:39125 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab3LNRaw (ORCPT
+	id S1754259Ab3LNRbf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 12:31:35 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:59127 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949Ab3LNRay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 12:30:52 -0500
+	Sat, 14 Dec 2013 12:30:54 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 13/14] i8k: Stop reading SMM BIOS version during driver probe
-Date: Sat, 14 Dec 2013 09:30:20 -0800
-Message-Id: <1387042221-3671-14-git-send-email-linux@roeck-us.net>
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [PATCH 14/14] i8k: Implement hwmon based fan speed control
+Date: Sat, 14 Dec 2013 09:30:21 -0800
+Message-Id: <1387042221-3671-15-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.7.9.7
 In-Reply-To: <1387042221-3671-1-git-send-email-linux@roeck-us.net>
 References: <1387042221-3671-1-git-send-email-linux@roeck-us.net>
@@ -22,96 +23,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This doesn't work on Studio, XPS, Vostro, and Precision laptops,
-and it doesn't provide any value except to cause confusion when
-it does not work. Drop it and always use DMI BIOS version instead.
+Fan speed can be set to off, slow, and fast, which can be exported
+to userspace through the hwmon ABI as pwm1 / pwm2.
 
+Cc: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/char/i8k.c |   42 ++----------------------------------------
- 1 file changed, 2 insertions(+), 40 deletions(-)
+ drivers/char/i8k.c |   49 ++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 44 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
-index 67e4256..ce826d9 100644
+index ce826d9..70c8df2 100644
 --- a/drivers/char/i8k.c
 +++ b/drivers/char/i8k.c
-@@ -44,7 +44,6 @@
- #define I8K_SMM_GET_TEMP	0x10a3
- #define I8K_SMM_GET_DELL_SIG1	0xfea3
- #define I8K_SMM_GET_DELL_SIG2	0xffa3
--#define I8K_SMM_BIOS_VERSION	0x00a6
- 
- #define I8K_FAN_MULT		30
- #define I8K_MAX_TEMP		127
-@@ -208,17 +207,6 @@ out:
+@@ -509,6 +509,39 @@ static ssize_t i8k_hwmon_show_fan(struct device *dev,
+ 	return sprintf(buf, "%d\n", fan_speed);
  }
  
- /*
-- * Read the bios version. Return the version as an integer corresponding
-- * to the ascii value, for example "A17" is returned as 0x00413137.
-- */
--static int i8k_get_bios_version(void)
--{
--	struct smm_regs regs = { .eax = I8K_SMM_BIOS_VERSION, };
--
--	return i8k_smm(&regs) ? : regs.eax;
--}
--
--/*
-  * Read the Fn key status.
-  */
- static int i8k_get_fn_status(void)
-@@ -355,7 +343,8 @@ i8k_ioctl_unlocked(struct file *fp, unsigned int cmd, unsigned long arg)
++static ssize_t i8k_hwmon_show_pwm(struct device *dev,
++				  struct device_attribute *devattr,
++				  char *buf)
++{
++	int index = to_sensor_dev_attr(devattr)->index;
++	int status;
++
++	status = i8k_get_fan_status(index);
++	if (status < 0)
++		return -EIO;
++	return sprintf(buf, "%d\n", clamp_val(status * 128, 0, 255));
++}
++
++static ssize_t i8k_hwmon_set_pwm(struct device *dev,
++				 struct device_attribute *attr,
++				 const char *buf, size_t count)
++{
++	int index = to_sensor_dev_attr(attr)->index;
++	unsigned long val;
++	int err;
++
++	err = kstrtoul(buf, 10, &val);
++	if (err)
++		return err;
++	val = clamp_val(DIV_ROUND_CLOSEST(val, 128), 0, 2);
++
++	mutex_lock(&i8k_mutex);
++	err = i8k_set_fan(index, val);
++	mutex_unlock(&i8k_mutex);
++
++	return err < 0 ? -EIO : count;
++}
++
+ static ssize_t i8k_hwmon_show_label(struct device *dev,
+ 				    struct device_attribute *devattr,
+ 				    char *buf)
+@@ -529,8 +562,12 @@ static SENSOR_DEVICE_ATTR(temp3_input, S_IRUGO, i8k_hwmon_show_temp, NULL, 2);
+ static SENSOR_DEVICE_ATTR(temp4_input, S_IRUGO, i8k_hwmon_show_temp, NULL, 3);
+ static SENSOR_DEVICE_ATTR(fan1_input, S_IRUGO, i8k_hwmon_show_fan, NULL,
+ 			  I8K_FAN_LEFT);
++static SENSOR_DEVICE_ATTR(pwm1, S_IRUGO | S_IWUSR, i8k_hwmon_show_pwm,
++			  i8k_hwmon_set_pwm, I8K_FAN_LEFT);
+ static SENSOR_DEVICE_ATTR(fan2_input, S_IRUGO, i8k_hwmon_show_fan, NULL,
+ 			  I8K_FAN_RIGHT);
++static SENSOR_DEVICE_ATTR(pwm2, S_IRUGO | S_IWUSR, i8k_hwmon_show_pwm,
++			  i8k_hwmon_set_pwm, I8K_FAN_RIGHT);
+ static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, i8k_hwmon_show_label, NULL, 0);
+ static SENSOR_DEVICE_ATTR(fan1_label, S_IRUGO, i8k_hwmon_show_label, NULL, 1);
+ static SENSOR_DEVICE_ATTR(fan2_label, S_IRUGO, i8k_hwmon_show_label, NULL, 2);
+@@ -542,9 +579,11 @@ static struct attribute *i8k_attrs[] = {
+ 	&sensor_dev_attr_temp3_input.dev_attr.attr,	/* 3 */
+ 	&sensor_dev_attr_temp4_input.dev_attr.attr,	/* 4 */
+ 	&sensor_dev_attr_fan1_input.dev_attr.attr,	/* 5 */
+-	&sensor_dev_attr_fan1_label.dev_attr.attr,	/* 6 */
+-	&sensor_dev_attr_fan2_input.dev_attr.attr,	/* 7 */
+-	&sensor_dev_attr_fan2_label.dev_attr.attr,	/* 8 */
++	&sensor_dev_attr_pwm1.dev_attr.attr,		/* 6 */
++	&sensor_dev_attr_fan1_label.dev_attr.attr,	/* 7 */
++	&sensor_dev_attr_fan2_input.dev_attr.attr,	/* 8 */
++	&sensor_dev_attr_pwm2.dev_attr.attr,		/* 9 */
++	&sensor_dev_attr_fan2_label.dev_attr.attr,	/* 10 */
+ 	NULL
+ };
  
- 	switch (cmd) {
- 	case I8K_BIOS_VERSION:
--		val = i8k_get_bios_version();
-+		val = (bios_version[0] << 16) |
-+				(bios_version[1] << 8) | bios_version[2];
- 		break;
+@@ -560,10 +599,10 @@ static umode_t i8k_is_visible(struct kobject *kobj, struct attribute *attr,
+ 		return 0;
+ 	if (index == 4 && !(i8k_hwmon_flags & I8K_HWMON_HAVE_TEMP4))
+ 		return 0;
+-	if ((index == 5 || index == 6) &&
++	if (index >= 5 && index <= 7 &&
+ 	    !(i8k_hwmon_flags & I8K_HWMON_HAVE_FAN1))
+ 		return 0;
+-	if ((index == 7 || index == 8) &&
++	if (index >= 8 && index <= 10 &&
+ 	    !(i8k_hwmon_flags & I8K_HWMON_HAVE_FAN2))
+ 		return 0;
  
- 	case I8K_MACHINE_ID:
-@@ -710,8 +699,6 @@ static struct dmi_system_id i8k_dmi_table[] __initdata = {
-  */
- static int __init i8k_probe(void)
- {
--	char buff[4];
--	int version;
- 	const struct dmi_system_id *id;
- 
- 	/*
-@@ -741,31 +728,6 @@ static int __init i8k_probe(void)
- 			return -ENODEV;
- 	}
- 
--	/*
--	 * Get SMM BIOS version.
--	 */
--	version = i8k_get_bios_version();
--	if (version <= 0) {
--		pr_warn("unable to get SMM BIOS version\n");
--	} else {
--		buff[0] = (version >> 16) & 0xff;
--		buff[1] = (version >> 8) & 0xff;
--		buff[2] = (version) & 0xff;
--		buff[3] = '\0';
--		/*
--		 * If DMI BIOS version is unknown use SMM BIOS version.
--		 */
--		if (!dmi_get_system_info(DMI_BIOS_VERSION))
--			strlcpy(bios_version, buff, sizeof(bios_version));
--
--		/*
--		 * Check if the two versions match.
--		 */
--		if (strncmp(buff, bios_version, sizeof(bios_version)) != 0)
--			pr_warn("BIOS version mismatch: %s != %s\n",
--				buff, bios_version);
--	}
--
- 	i8k_fan_mult = fan_mult;
- 	id = dmi_first_match(i8k_dmi_table);
- 	if (id && fan_mult == I8K_FAN_MULT && id->driver_data)
 -- 
 1.7.9.7
 
