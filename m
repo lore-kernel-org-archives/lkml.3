@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab3LNUOT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 15:14:19 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:64811 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab3LNUOS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 15:14:18 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52ACBC18.6020301@roeck-us.net>
-Date: Sat, 14 Dec 2013 12:14:16 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1754101Ab3LNUR0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 15:17:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60327 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753880Ab3LNURY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Dec 2013 15:17:24 -0500
+Date: Sat, 14 Dec 2013 21:17:46 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Dave Jones <davej@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: process 'stuck' at exit.
+Message-ID: <20131214201746.GA31023@redhat.com>
+References: <20131210213431.GA6342@redhat.com> <20131210214143.GG27373@redhat.com> <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com> <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com> <alpine.DEB.2.02.1312102329201.28330@ionos.tec.linutronix.de> <CA+55aFzhCSvc4Vy7tEC2K972h+vne6Y0QSekDDZbV_ATB-9mxw@mail.gmail.com> <20131210230009.GF5050@redhat.com> <20131211000504.GA13710@home.goodmis.org> <20131211002330.GA12924@redhat.com> <20131211005550.GA20404@redhat.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Jonas Jensen <jonas.jensen@gmail.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v4 1/2] ARM: mach-moxart: add MOXA ART SoC platform files
-References: <1386945188-8316-1-git-send-email-jonas.jensen@gmail.com> <52AC7E41.7050201@roeck-us.net> <CACmBeS3Xse5KkFqkM5Ye+qaaxpVCjyeGz7Oc9sr0PN+pZ9sztQ@mail.gmail.com> <201312141950.09447.arnd@arndb.de>
-In-Reply-To: <201312141950.09447.arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131211005550.GA20404@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2013 10:50 AM, Arnd Bergmann wrote:
-> On Saturday 14 December 2013, Jonas Jensen wrote:
->>>
->>> Conceptually it might be cleaner to write a separate driver, for example
->>> in drivers/power/restart, than plugging the functionality into
->>> the watchdog driver, at least if you don't want it in architecture
->>> or platform code. The xgene restart driver is a good example.
->>>
->>
->> Moving it to a new power/restart driver seems reasonable to me, I'm
->> really just looking for a home for it, I would have preferred a
->> hardware with reset in a separate register though.
->>
->> I now plan to remove it for v5 and submit a separate driver.
+On 12/10, Dave Jones wrote:
 >
-> I still think it's better to leave it in the watchdog driver: This
-> driver attaches to the watchdog device, and adding a separate driver
-> for reset means we have to trick the core Linux code into attaching
-> two drivers to one device in some way, or the device tree has to fake
-> a second device that doesn't exist in hardware but is only needed
-> because of Linux implementation details.
+> On Tue, Dec 10, 2013 at 07:23:30PM -0500, Dave Jones wrote:
 >
+>  > I was distracted by seeing all the other threads exiting, so I was only looking at
+>  > what this one had already done.
+>
+> another thing that distracted me was that /proc/10818/stack was just showing that
+>
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> output.
+>
+> For my own education, what causes that ?
 
-Hmm ... not sure I agree. I don't see a problem with something like "arm,moxart-reboot".
-There are already vexpress-reboot and xgene-reboot properties which do pretty much
-the same.
+save_stack_trace_tsk() adds ULONG_MAX as the "last" entry.
 
-Actually, you don't even need that; the reset driver could simply re-use the
-"moxa,moxart-watchdog" property. After all, all that specifies is that there
-is a compatible driver. Look for "samsung,s3c2410-wdt" for an example of another
-reset handler doing just that.
+and dump_trace() fails if task is running and != current (note that
+cat /proc/self/stack works).
 
-Attaching it to the watchdog device seems to be more problematic given the
-(currently) optional nature of the watchdog driver and its different scope.
+> How come it didn't show the same trace I saw when I sysrq-t'd ?
 
-Thanks,
-Guenter
+Because print_trace_address() does not skip !reliable entries,
+unlike __save_stack_address(). This (afaics) makes the difference.
+
+I'll try to make a patch but I am not sure... I am not even sure
+it makes sense, but in any case this all doesn't look right to me.
+
+First of all, stack = task->thread.sp is not really right if this
+task is running. Worse, bp = *stack returned by stack_frame() is
+random in this case. This equally applies to sysrq-t's output.
+Not that bad, but still wrong and confusing, imho.
+
+And lets look at dump_trace(),
+
+	const unsigned cpu = get_cpu();
+	unsigned long *irq_stack_end =
+		(unsigned long *)per_cpu(irq_stack_ptr, cpu);
+
+This (in general) has nothing to do with task_cpu(task).
+
+And why dump_trace() checks irq_stack_end != NULL ? This is always true.
+
+I think that these paths should not even try to guess what bp is
+if the task is not running/current. But it is not clear to "disable"
+reliable check in __save_stack_address(), we should report this fact
+in proc_pid_stack()->seq_printf() somehow.
+
+And proc_pid_stack() should drop ->cred_guard_mutex right after
+save_stack_trace_tsk(), although this is off-topic.
+
+Oleg.
 
