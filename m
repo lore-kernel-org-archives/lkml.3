@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab3LNTuR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 14:50:17 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:53719 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab3LNTuQ (ORCPT
+	id S1753969Ab3LNTyB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 14:54:01 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:62700 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753480Ab3LNTyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 14:50:16 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52ACB675.6060304@roeck-us.net>
-Date: Sat, 14 Dec 2013 11:50:13 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Sat, 14 Dec 2013 14:54:00 -0500
+Message-ID: <52ACB753.1040105@linaro.org>
+Date: Sat, 14 Dec 2013 11:53:55 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>, Arnd Bergmann <arnd@arndb.de>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>
-Subject: Re: [lm-sensors] [PATCH 00/12] i8k patch series
-References: <1387042221-3671-1-git-send-email-linux@roeck-us.net>	<201312141945.20348.arnd@arndb.de> <20131214200309.3a2007f4@endymion.delvare>
-In-Reply-To: <20131214200309.3a2007f4@endymion.delvare>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>
+Subject: Re: [PATCH 001/115] gpu: ion: Add ION Memory Manager
+References: <1386973529-4884-1-git-send-email-john.stultz@linaro.org> <1386973529-4884-2-git-send-email-john.stultz@linaro.org> <20131213235028.GA4919@kroah.com> <52ABB1C8.1060406@linaro.org> <20131214170618.GA17461@kroah.com> <52ACB4EF.3010406@linaro.org>
+In-Reply-To: <52ACB4EF.3010406@linaro.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2013 11:03 AM, Jean Delvare wrote:
-> On Sat, 14 Dec 2013 19:45:19 +0100, Arnd Bergmann wrote:
->> On Saturday 14 December 2013, Guenter Roeck wrote:
->>> Clean up and simplify the driver, add support for additional temperature
->>> sensors, fix a problem seen with multi-core CPU, and add support
->>> for additional systems.
->>>
->>> ----------------------------------------------------------------
->>> Guenter Roeck (14):
->>>        i8k: Convert to use pr_ functions instead of printk
->>>        i8k: Fix various checkpatch warnings and errors
->>>        i8k: Convert to use to hwmon_device_register_with_groups hwmon API
->>>        i8k: Support additional temperature sensors
->>>        MAINTAINERS: Add myself as i8k maintainer
->>>        i8k: Remove obsolete link to out-of-tree driver
->>>        i8k: Drop driver version number and info message at startup
->>>        i8k: Force SMM to run on CPU 0
->>>        i8k: Add copyright
->>>        i8k: Add support for Dell Studio laptops
->>>        i8k: Add support for Dell XPS M140
->>>        i8k: Use driver_data field of dmi_system_id to override fan multiplier
->>>        i8k: Stop reading SMM BIOS version during driver probe
->>>        i8k: Implement hwmon based fan speed control
->>>
->>>   MAINTAINERS        |    2 +-
->>>   drivers/char/i8k.c |  358 +++++++++++++++++++++++++++++-----------------------
->>>   2 files changed, 201 insertions(+), 159 deletions(-)
->>>
+On 12/14/2013 11:43 AM, John Stultz wrote:
+> On 12/14/2013 09:06 AM, Greg KH wrote:
+>> Everything works fine until this one (i.e. the driver doesn't build),
+>> but after applying this patch, the build breaks with a ton of undefined
+>> symbols at link time, here's a sample of some of them:
 >>
->> All changes in this patch set look good to me.
+>> ERROR: "ion_carveout_heap_destroy" [drivers/staging/android/ion/ion_heap.ko] undefined!
+>> ERROR: "ion_chunk_heap_destroy" [drivers/staging/android/ion/ion_heap.ko] undefined!
+>> ERROR: "ion_system_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
+>> ERROR: "ion_carveout_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
+>> ERROR: "ion_system_contig_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
+>> ERROR: "ion_cma_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
+>> ERROR: "ion_chunk_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
+>> ERROR: "ion_buffer_destroy" [drivers/staging/android/ion/ion_heap.ko] undefined!
+>> ERROR: "ion_heap_map_user" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
+>> ERROR: "ion_heap_unmap_kernel" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
+>> ERROR: "ion_heap_map_kernel" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
+>> ERROR: "ion_heap_pages_zero" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
+>> ERROR: "ion_pages_sync_for_device" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
+>> ERROR: "ion_buffer_cached" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
+>> ERROR: "ion_heap_buffer_zero" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
 >>
->> Acked-by: Arnd Bergmann <arnd@arndb.de>
->>
->> I wonder if it makes sense to move the driver to drivers/platform/x86/, which
->> has a bunch of similar ones already.
->
-> That would be a good idea IMHO.
->
+>> So I'm not going to apply this patch, but I have the 115 previous
+>> patches (I took your modified 001 patch that you sent off-list to me.)
+> ? Hrmm. I'm not seeing this (I wouldn't have sent the patches if I did!).
 
-I agree; drivers/char doesn't seem to be a good location. Guess it is mostly historic
-that it is there in the first place. Maybe it can even use the API provided by the
-dell-laptop driver if I can ever figure out how that works.
+Ah.. its a problem with make modules. I see it now. Will have a fix for
+you shortly.
 
-Copying the platform-x86 mailing list and Matthew for additional input.
+thanks
+-john
 
-Thanks,
-Guenter
 
