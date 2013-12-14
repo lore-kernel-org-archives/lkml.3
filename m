@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab3LNATx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 19:19:53 -0500
-Received: from longford.logfs.org ([213.229.74.203]:53298 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab3LNATw (ORCPT
+	id S1752841Ab3LNAfh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 19:35:37 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:59011 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752363Ab3LNAfg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 19:19:52 -0500
-Date: Fri, 13 Dec 2013 17:58:02 -0500
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: Rob Landley <rob@landley.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Copy on write hard links?
-Message-ID: <20131213225802.GA21911@logfs.org>
-References: <0EF3994A-6BC7-4FC7-AD2D-B4BE087EBFCA@m3y3r.de>
- <1380117572.1974.81@driftwood>
- <1380119333.7453.4.camel@localhost.localdomain>
+	Fri, 13 Dec 2013 19:35:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1380119333.7453.4.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <yw1xbo0kinkv.fsf@unicorn.mansr.com>
+References: <1386960092-32475-1-git-send-email-chyyuu@gmail.com>
+	<yw1xbo0kinkv.fsf@unicorn.mansr.com>
+Date: Sat, 14 Dec 2013 08:35:35 +0800
+Message-ID: <CAAdffVGbCO5cvrCg2Xu4SvZdgLUJNnWscjd_HXhCjsb2cKfVtw@mail.gmail.com>
+Subject: Re: [PATCH] scsi: integer overflow in megadev_ioctl()
+From: Yu Chen <chyyuu@gmail.com>
+To: =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+Cc: linux-kernel@vger.kernel.org, Levente Kurusa <levex@linux.com>,
+        xiaoqixue_1 <xiaoqixue_1@163.com>,
+        =?GB2312?B?t7bOxMG8?= <fanwlexca@gmail.com>, megaraidlinux@lsi.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 September 2013 16:28:53 +0200, Thomas Meyer wrote:
-> 
-> I wonder how hard it would be to implement this on vfs layer?
+I agree that the simpler fix is to change the type of 'adapno' to u32,
+which is the type of uioc.adapno to u32.
 
-As an ugly hack: a few weeks maybe.  Did it back in 2005 or so.  If
-you have higher standards, you will need support from the underlying
-filesystem.  Especially in order to make copying a large file on slow
-storage anything but a nightmare.
 
-JÃ¶rn
+2013/12/14 Måns Rullgård <mans@mansr.com>:
+> "Chen.Yu" <chyyuu@gmail.com> writes:
+>
+>> From: "Chen.Yu" <chyyuu@gmail.com>
+>>
+>> There is a potential integer overflow in megadev_ioctl() if
+>> userspace passes in a large u32 variable uioc.adapno.
+>> The int variable adapno would < 0, leading to an error
+>> array access for hdb_soft_state[adapno], or an error
+>> copy_to_user(uioc.uioc_uaddr, mcontroller+adapno,..)
+>>
+>> Reported-by: Wenliang Fan <fanwlexca@gmail.com>
+>> Suggested-by: Qixue Xiao <xiaoqixue_1@163.com>
+>> Signed-off-by: Yu Chen <chyyuu@gmail.com>
+>> Reviewed-by: Levente Kurusa <levex@linux.com>
+>> ---
+>>  drivers/scsi/megaraid.c | 15 ++++++++++++---
+>>  1 file changed, 12 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
+>> index 816db12..0b90c54 100644
+>> --- a/drivers/scsi/megaraid.c
+>> +++ b/drivers/scsi/megaraid.c
+>> @@ -3099,7 +3099,10 @@ megadev_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+>>               /*
+>>                * Which adapter
+>>                */
+>> -             if( (adapno = GETADAP(uioc.adapno)) >= hba_count )
+>> +             adapno = GETADAP(uioc.adapno);
+>> +             if( adapno < 0 )
+>> +                     return (-EINVAL);
+>> +             if( adapno >= hba_count )
+>>                       return (-ENODEV);
+>
+> This relies on implementation-defined behaviour when converting an
+> unsigned integer to signed integer.  A simpler and more robust fix is to
+> make the local variable 'adapno' unsigned.
+>
+> --
+> Måns Rullgård
+> mans@mansr.com
+
+
 
 --
-When in doubt, use brute force.
--- Ken Thompson
