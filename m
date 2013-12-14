@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab3LNTns (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 14:43:48 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:47898 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753612Ab3LNTnq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 14:43:46 -0500
-Message-ID: <52ACB4EF.3010406@linaro.org>
-Date: Sat, 14 Dec 2013 11:43:43 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754021Ab3LNTsw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 14:48:52 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:47815 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753751Ab3LNTsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Dec 2013 14:48:51 -0500
+Message-ID: <52ACB608.3050802@ti.com>
+Date: Sat, 14 Dec 2013 14:48:24 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>
-Subject: Re: [PATCH 001/115] gpu: ion: Add ION Memory Manager
-References: <1386973529-4884-1-git-send-email-john.stultz@linaro.org> <1386973529-4884-2-git-send-email-john.stultz@linaro.org> <20131213235028.GA4919@kroah.com> <52ABB1C8.1060406@linaro.org> <20131214170618.GA17461@kroah.com>
-In-Reply-To: <20131214170618.GA17461@kroah.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v3 08/23] mm/memblock: Add memblock memory allocation
+ apis
+References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com> <1386625856-12942-9-git-send-email-santosh.shilimkar@ti.com> <20131213213735.GM27070@htj.dyndns.org> <52ABABDA.4020808@ti.com> <20131214110844.GB17954@htj.dyndns.org>
+In-Reply-To: <20131214110844.GB17954@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2013 09:06 AM, Greg KH wrote:
-> On Fri, Dec 13, 2013 at 05:18:00PM -0800, John Stultz wrote:
->> 0117-ion-Reenable-the-build.patch - This can be applied to the end of
->> the series, or folded into the last patch "ion: Update system heap
->> shrinker to use the new count/scan interface"
-> Was there a 0116 patch somewhere?
-No.. the disable build patch was inserted between patch 1 and 2, so
-after the renumbering the re-enable patch was 117.
-
-When I selected the disable patch to send I renamed it 0001 just to make
-it more clear which one it would apply to.
-
-Sorry for the confusion.
-
-> Everything works fine until this one (i.e. the driver doesn't build),
-> but after applying this patch, the build breaks with a ton of undefined
-> symbols at link time, here's a sample of some of them:
+On Saturday 14 December 2013 06:08 AM, Tejun Heo wrote:
+> Hello, Santosh.
+> 
+> On Fri, Dec 13, 2013 at 07:52:42PM -0500, Santosh Shilimkar wrote:
+>>>> +static void * __init memblock_virt_alloc_internal(
+>>>> +				phys_addr_t size, phys_addr_t align,
+>>>> +				phys_addr_t min_addr, phys_addr_t max_addr,
+>>>> +				int nid)
+>>>> +{
+>>>> +	phys_addr_t alloc;
+>>>> +	void *ptr;
+>>>> +
+>>>> +	if (nid == MAX_NUMNODES)
+>>>> +		pr_warn("%s: usage of MAX_NUMNODES is depricated. Use NUMA_NO_NODE\n",
+>>>> +			__func__);
+>>>
+>>> Why not use WARN_ONCE()?  Also, shouldn't nid be set to NUMA_NO_NODE
+>>> here?
+>>>
+>> You want all the users using MAX_NUMNODES to know about it so that
+>> the wrong usage can be fixed. WARN_ONCE will hide that.
+> 
+> Well, it doesn't really help anyone to be printing multiple messages
+> without any info on who was the caller and if this thing is gonna be
+> in mainline triggering of the warning should be rare anyway.  It's
+> more of a tool to gather one-off cases in the wild.  WARN_ONCE()
+> usually is the better choice as otherwise the warnings can swamp the
+> machine and console output in certain cases.
 >
-> ERROR: "ion_carveout_heap_destroy" [drivers/staging/android/ion/ion_heap.ko] undefined!
-> ERROR: "ion_chunk_heap_destroy" [drivers/staging/android/ion/ion_heap.ko] undefined!
-> ERROR: "ion_system_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
-> ERROR: "ion_carveout_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
-> ERROR: "ion_system_contig_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
-> ERROR: "ion_cma_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
-> ERROR: "ion_chunk_heap_create" [drivers/staging/android/ion/ion_heap.ko] undefined!
-> ERROR: "ion_buffer_destroy" [drivers/staging/android/ion/ion_heap.ko] undefined!
-> ERROR: "ion_heap_map_user" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
-> ERROR: "ion_heap_unmap_kernel" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
-> ERROR: "ion_heap_map_kernel" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
-> ERROR: "ion_heap_pages_zero" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
-> ERROR: "ion_pages_sync_for_device" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
-> ERROR: "ion_buffer_cached" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
-> ERROR: "ion_heap_buffer_zero" [drivers/staging/android/ion/ion_chunk_heap.ko] undefined!
->
-> So I'm not going to apply this patch, but I have the 115 previous
-> patches (I took your modified 001 patch that you sent off-list to me.)
+Fair enough.
+ 
+>>> ...
+>>>> +	if (nid != NUMA_NO_NODE) {
+>>>
+>>> Otherwise, the above test is broken.
+>>>
+>> So the idea was just to warn the users and allow them to fix
+>> the code. Well we are just allowing the existing users of using
+>> either MAX_NUMNODES or NUMA_NO_NODE continue to work. Thats what
+>> we discussed, right ?
+> 
+> Huh?  Yeah, sure.  You're testing @nid against MAX_NUMNODES at the
+> beginning of the function.  If it's MAX_NUMNODES, you print a warning
+> but nothing else, so the if() conditional above, which should succeed,
+> would fail.  Am I missing sth here?
+> 
+I get it now. Sorry I missed your point in first part. We will fix this.
 
-? Hrmm. I'm not seeing this (I wouldn't have sent the patches if I did!).
-
-If you have the chance, could you send me your config?
-
-> Care to fix up the symbol issues in a new series of patches and then
-> enabling the driver to build?
-Will do.
-
-thanks
--john
-
+Regards,
+Santosh
 
