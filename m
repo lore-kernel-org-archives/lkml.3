@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab3LNQLy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 11:11:54 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:42285 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758Ab3LNQLw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 11:11:52 -0500
+	id S1753872Ab3LNQU1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 11:20:27 -0500
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.173]:20711 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753729Ab3LNQUZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Dec 2013 11:20:25 -0500
+X-Greylist: delayed 395 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Dec 2013 11:20:25 EST
+X-Env-Sender: sunzh@live.hk
+X-Msg-Ref: server-8.tower-38.messagelabs.com!1387037626!11784877!4
+X-Originating-IP: [81.138.121.125]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20131214123709.GE17467@mithrandir>
-References: <1386858989-1487-1-git-send-email-treding@nvidia.com>
-	<52AA0FC4.3090606@vmware.com>
-	<CAKMK7uGOt2CYCgyE5rnXE3wJJjJiRpoQMB_-+_+m_qhk3TH8QQ@mail.gmail.com>
-	<20131214123709.GE17467@mithrandir>
-Date: Sat, 14 Dec 2013 17:05:31 +0100
-X-Google-Sender-Auth: NPafyf4qUA5fvlXLttwANN3UKSA
-Message-ID: <CAKMK7uFG3tB4iQi8p4wdA8+g0P7uDxk4JwLMEXiG0fxx1qvrWw@mail.gmail.com>
-Subject: Re: [RFC] dma-buf: Implement test module
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Thomas Hellstrom <thellstrom@vmware.com>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Guten Tag!
+To: Recipients <sunzh@live.hk>
+From: "Mr. SUN Zhijun" <sunzh@live.hk>
+Date: Sat, 14 Dec 2013 17:13:29 +0100
+Reply-To: s_zhijun001@qq.com
+Message-ID: <TAUNTON1yu7G81Gp7pr000070ab@mail.matrix.uk.com>
+X-OriginalArrivalTime: 14 Dec 2013 16:15:33.0349 (UTC) FILETIME=[B71B8150:01CEF8E7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 14, 2013 at 1:37 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Thu, Dec 12, 2013 at 11:30:23PM +0100, Daniel Vetter wrote:
->> On Thu, Dec 12, 2013 at 8:34 PM, Thomas Hellstrom <thellstrom@vmware.com> wrote:
->> > On 12/12/2013 03:36 PM, Thierry Reding wrote:
->> >>
->> >> This is a simple test module that can be used to allocate, export and
->> >> delete DMA-BUF objects. It can be used to test DMA-BUF sharing in
->> >> systems that lack a real second driver.
->> >>
->> >>
->> >
->> > Looks nice. I wonder whether this could be extended to create a "streaming"
->> > dma-buf from a user space mapping. That could be used as a generic way to
->> > implement streaming (user) buffer objects, rather than to add explicit
->> > support for those in, for example, TTM.
->>
->> Atm there's no way to get gpus to unbind their dma-buf mappings, so
->> their essentially pinned forever from first use on.
->
-> Shouldn't this work by simply calling the GEM_CLOSE IOCTL on the handle
-> returned by drmPrimeFDToHandle()? I mean that should drop the last
-> reference on the GEM object and cause it to be cleaned up (which should
-> include detaching the DMA-BUF).
+Guten Tag,
 
-Yeah, but that has the side-effect of also dropping the reference. And
-requires an explicit action from userspace. The entire point of kernel
-buffer managers is that this is all done transparently in the kernel
-and when low on memory some objects get swapped out behind userspaces
-back (and then pulled in again if needed).
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Mein Name ist Mr.SUN Zhijun, ich mit der Bank of China zu arbeiten. Ich brauche Ihre Unterstützung in Durchführung einer Transaktion bei $ 18,5 Millionen Dollar geschätzt, möchte ich Ihnen 30% der gesamten Mittel als Ausgleich für Ihre Unterstützung in dieser Transaktion. Ich werde Sie über die vollständige Transaktion benachrichtigt nach Eingang Ihrer Antwort, wenn interessiert, bitte senden Sie mir Ihren vollständigen detials als unten, um meine E-Mail aufgeführt: s_zhijun001@qq.com
+
+1. Vollständiger Name
+2.Private Telefonnummer
+3.Current Wohnadresse
+
+Mit freundlichen Grüßen,
+Mr.SUN Zhijun
