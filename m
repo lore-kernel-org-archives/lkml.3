@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab3LNAfh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 19:35:37 -0500
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:59011 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab3LNAfg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 19:35:36 -0500
+	id S1753176Ab3LNAit (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 19:38:49 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51884 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753011Ab3LNAis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 19:38:48 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH] mm/ARM: fix ARMs __ffs() to conform to avoid warning with NO_BOOTMEM
+Date: Fri, 13 Dec 2013 19:38:06 -0500
+Message-ID: <1386981486-3173-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <yw1xbo0kinkv.fsf@unicorn.mansr.com>
-References: <1386960092-32475-1-git-send-email-chyyuu@gmail.com>
-	<yw1xbo0kinkv.fsf@unicorn.mansr.com>
-Date: Sat, 14 Dec 2013 08:35:35 +0800
-Message-ID: <CAAdffVGbCO5cvrCg2Xu4SvZdgLUJNnWscjd_HXhCjsb2cKfVtw@mail.gmail.com>
-Subject: Re: [PATCH] scsi: integer overflow in megadev_ioctl()
-From: Yu Chen <chyyuu@gmail.com>
-To: =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-Cc: linux-kernel@vger.kernel.org, Levente Kurusa <levex@linux.com>,
-        xiaoqixue_1 <xiaoqixue_1@163.com>,
-        =?GB2312?B?t7bOxMG8?= <fanwlexca@gmail.com>, megaraidlinux@lsi.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I agree that the simpler fix is to change the type of 'adapno' to u32,
-which is the type of uioc.adapno to u32.
+Building ARM with NO_BOOTMEM generates below warning.
 
+mm/nobootmem.c: In function _____free_pages_memory___:
+mm/nobootmem.c:88:11: warning: comparison of distinct pointer types lacks a cast
 
-2013/12/14 Måns Rullgård <mans@mansr.com>:
-> "Chen.Yu" <chyyuu@gmail.com> writes:
->
->> From: "Chen.Yu" <chyyuu@gmail.com>
->>
->> There is a potential integer overflow in megadev_ioctl() if
->> userspace passes in a large u32 variable uioc.adapno.
->> The int variable adapno would < 0, leading to an error
->> array access for hdb_soft_state[adapno], or an error
->> copy_to_user(uioc.uioc_uaddr, mcontroller+adapno,..)
->>
->> Reported-by: Wenliang Fan <fanwlexca@gmail.com>
->> Suggested-by: Qixue Xiao <xiaoqixue_1@163.com>
->> Signed-off-by: Yu Chen <chyyuu@gmail.com>
->> Reviewed-by: Levente Kurusa <levex@linux.com>
->> ---
->>  drivers/scsi/megaraid.c | 15 ++++++++++++---
->>  1 file changed, 12 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
->> index 816db12..0b90c54 100644
->> --- a/drivers/scsi/megaraid.c
->> +++ b/drivers/scsi/megaraid.c
->> @@ -3099,7 +3099,10 @@ megadev_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
->>               /*
->>                * Which adapter
->>                */
->> -             if( (adapno = GETADAP(uioc.adapno)) >= hba_count )
->> +             adapno = GETADAP(uioc.adapno);
->> +             if( adapno < 0 )
->> +                     return (-EINVAL);
->> +             if( adapno >= hba_count )
->>                       return (-ENODEV);
->
-> This relies on implementation-defined behaviour when converting an
-> unsigned integer to signed integer.  A simpler and more robust fix is to
-> make the local variable 'adapno' unsigned.
->
-> --
-> Måns Rullgård
-> mans@mansr.com
+	order = min(MAX_ORDER - 1UL, __ffs(start));
 
+ARM's __ffs() differs from other architectures in that it ends up being
+an int, whereas almost everyone else is unsigned long.
 
+So fix ARMs __ffs() to conform to other architectures. Suggested by
+Russell King <linux@arm.linux.org.uk>
 
---
+Some more details in below thread -
+	https://lkml.org/lkml/2013/12/9/807
+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ arch/arm/include/asm/bitops.h |   23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
+index e691ec9..5f41d81 100644
+--- a/arch/arm/include/asm/bitops.h
++++ b/arch/arm/include/asm/bitops.h
+@@ -270,10 +270,25 @@ static inline int fls(int x)
+ 	return ret;
+ }
+ 
+-#define __fls(x) (fls(x) - 1)
+-#define ffs(x) ({ unsigned long __t = (x); fls(__t & -__t); })
+-#define __ffs(x) (ffs(x) - 1)
+-#define ffz(x) __ffs( ~(x) )
++static inline unsigned long __fls(unsigned long x)
++{
++	return fls(x) - 1;
++}
++
++static inline int ffs(int x)
++{
++	return fls(x & -x);
++}
++
++static inline unsigned long __ffs(unsigned long x)
++{
++	return ffs(x) - 1;
++}
++
++static inline unsigned long ffz(unsigned long x)
++{
++	return __ffs(~x);
++}
+ 
+ #endif
+ 
+-- 
+1.7.9.5
+
