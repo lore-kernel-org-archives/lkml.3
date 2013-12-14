@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930Ab3LNSqT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 13:46:19 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:62035 "EHLO
+	id S1753842Ab3LNSul (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 13:50:41 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:56990 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753810Ab3LNSqS (ORCPT
+	with ESMTP id S1751407Ab3LNSuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 13:46:18 -0500
+	Sat, 14 Dec 2013 13:50:40 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH 00/12] i8k patch series
-Date: Sat, 14 Dec 2013 19:45:19 +0100
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Subject: Re: [PATCH v4 1/2] ARM: mach-moxart: add MOXA ART SoC platform files
+Date: Sat, 14 Dec 2013 19:50:09 +0100
 User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-References: <1387042221-3671-1-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1387042221-3671-1-git-send-email-linux@roeck-us.net>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>
+References: <1386945188-8316-1-git-send-email-jonas.jensen@gmail.com> <52AC7E41.7050201@roeck-us.net> <CACmBeS3Xse5KkFqkM5Ye+qaaxpVCjyeGz7Oc9sr0PN+pZ9sztQ@mail.gmail.com>
+In-Reply-To: <CACmBeS3Xse5KkFqkM5Ye+qaaxpVCjyeGz7Oc9sr0PN+pZ9sztQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-15"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201312141945.20348.arnd@arndb.de>
-X-Provags-ID: V02:K0:Pb3eaBGZdfYtriPt+lDUZcjjBFv9QfLu2XBSo6+79HX
- Rg7KmRifBfnm1c6Mi62CtqMxCnh1XgGeSYfeLT/yP0uE3S4CWc
- cC2VlTwNUBbmODqteDOJp3jBa2rEcf+jIAVJyYHiG3D0sqRPwX
- eXt3BUX0IS+Z5MO8nSp6BaN1usAQuxPb19dTbQnZkS3U/2GtIW
- cA+oO9xD8mow15DdUa7u+coP5Qs7G1Zx+/7msEOHW9eirTbPSN
- OdFeblvUp8w52FZC1BT1IimdcLt5K0W3jxbWirklrs2ssEHQMc
- KswSRMaFfr5Q3vlhth2U9QfXTAab97G2ofmhuQJmAUr9A+h90a
- rxpTw1pO3h2yh1c49kyE=
+Message-Id: <201312141950.09447.arnd@arndb.de>
+X-Provags-ID: V02:K0:SgnWjTB809BedXaojBXVVPbhKo1hjYZr9UcQjorjgAT
+ 2jjhmvgxPDxpiWu7FRhhywlboubvUATokHOa9E00n2iY677zSX
+ YWKvdEpSbp9pTtNtmBFDXKMYDz5HcB9W9244wSH3ht3XLN3fu+
+ 48LK6swQ97rKXR0ReeJfD9NPT6IkjL4pCekbyb5t3znd3t0UBk
+ RDZLnpJQBDezx79i7l9BHHVaBR5TMeTwgT/INKlPyo57Iu+oqA
+ na4pc3B+qOVXE9ao5UyHtyPxKbLx6o6H0oyEAliE4fmrYpOgT1
+ mlTOV14oN8xSSNT93bOGbuFfh1uOkwjly/EBDS6dOQAdP7LngS
+ Ohikf/pZEzOj4UjAXKXs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 14 December 2013, Guenter Roeck wrote:
-> Clean up and simplify the driver, add support for additional temperature
-> sensors, fix a problem seen with multi-core CPU, and add support
-> for additional systems.
+On Saturday 14 December 2013, Jonas Jensen wrote:
+> >
+> > Conceptually it might be cleaner to write a separate driver, for example
+> > in drivers/power/restart, than plugging the functionality into
+> > the watchdog driver, at least if you don't want it in architecture
+> > or platform code. The xgene restart driver is a good example.
+> >
 > 
-> ----------------------------------------------------------------
-> Guenter Roeck (14):
->       i8k: Convert to use pr_ functions instead of printk
->       i8k: Fix various checkpatch warnings and errors
->       i8k: Convert to use to hwmon_device_register_with_groups hwmon API
->       i8k: Support additional temperature sensors
->       MAINTAINERS: Add myself as i8k maintainer
->       i8k: Remove obsolete link to out-of-tree driver
->       i8k: Drop driver version number and info message at startup
->       i8k: Force SMM to run on CPU 0
->       i8k: Add copyright
->       i8k: Add support for Dell Studio laptops
->       i8k: Add support for Dell XPS M140
->       i8k: Use driver_data field of dmi_system_id to override fan multiplier
->       i8k: Stop reading SMM BIOS version during driver probe
->       i8k: Implement hwmon based fan speed control
+> Moving it to a new power/restart driver seems reasonable to me, I'm
+> really just looking for a home for it, I would have preferred a
+> hardware with reset in a separate register though.
 > 
->  MAINTAINERS        |    2 +-
->  drivers/char/i8k.c |  358 +++++++++++++++++++++++++++++-----------------------
->  2 files changed, 201 insertions(+), 159 deletions(-)
-> 
+> I now plan to remove it for v5 and submit a separate driver.
 
-All changes in this patch set look good to me.
-
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-
-I wonder if it makes sense to move the driver to drivers/platform/x86/, which
-has a bunch of similar ones already.
+I still think it's better to leave it in the watchdog driver: This
+driver attaches to the watchdog device, and adding a separate driver
+for reset means we have to trick the core Linux code into attaching
+two drivers to one device in some way, or the device tree has to fake
+a second device that doesn't exist in hardware but is only needed
+because of Linux implementation details.
 
 	Arnd
