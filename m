@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab3LNDtQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 22:49:16 -0500
-Received: from seketeli.net ([91.121.166.71]:48120 "EHLO ms.seketeli.net"
+	id S1753519Ab3LNDtP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 22:49:15 -0500
+Received: from seketeli.net ([91.121.166.71]:48112 "EHLO ms.seketeli.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753271Ab3LNDsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753266Ab3LNDsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Dec 2013 22:48:40 -0500
 From: Apelete Seketeli <apelete@seketeli.net>
 To: linux-usb@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 2/3] usb: musb: add support for JZ4740 usb device controller
-Date: Sat, 14 Dec 2013 04:48:37 +0100
-Message-Id: <1386992918-1531-3-git-send-email-apelete@seketeli.net>
+Subject: [PATCH 1/3] mips: qi_lb60: add defconfig for Ben NanoNote
+Date: Sat, 14 Dec 2013 04:48:36 +0100
+Message-Id: <1386992918-1531-2-git-send-email-apelete@seketeli.net>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1386992918-1531-1-git-send-email-apelete@seketeli.net>
 References: <1386992918-1531-1-git-send-email-apelete@seketeli.net>
@@ -20,446 +20,209 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for Ingenic JZ4740 USB Device Controller through a
-specific musb glue layer.
-
-The platform data already available in tree for that USB Device
-Controller was previously used by an out-of-tree USB gadget driver
-which was not relying on the musb driver and was written by Ingenic
-and the Qi-Hardware community.
-
-JZ4740 UDC not being OTG compatible and missing some hardware
-registers, this musb glue layer is written from scratch to be used in
-gadget mode only and take silicon design specifics into account.
+Add defconfig for the Ben NanoNote handheld computer which is built
+around QI_LB60 board and Ingenic JZ4740 MIPS SoC.
 
 Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
 ---
- arch/mips/include/asm/mach-jz4740/platform.h |    1 +
- arch/mips/jz4740/board-qi_lb60.c             |    1 +
- arch/mips/jz4740/platform.c                  |   55 +++++--
- drivers/usb/musb/Kconfig                     |    8 +-
- drivers/usb/musb/Makefile                    |    1 +
- drivers/usb/musb/jz4740.c                    |  229 ++++++++++++++++++++++++++
- drivers/usb/musb/musb_core.c                 |   14 ++
- 7 files changed, 292 insertions(+), 17 deletions(-)
- create mode 100644 drivers/usb/musb/jz4740.c
+ arch/mips/configs/qi_lb60_defconfig |  188 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 188 insertions(+)
+ create mode 100644 arch/mips/configs/qi_lb60_defconfig
 
-diff --git a/arch/mips/include/asm/mach-jz4740/platform.h b/arch/mips/include/asm/mach-jz4740/platform.h
-index 05988c2..069b43a 100644
---- a/arch/mips/include/asm/mach-jz4740/platform.h
-+++ b/arch/mips/include/asm/mach-jz4740/platform.h
-@@ -21,6 +21,7 @@
- 
- extern struct platform_device jz4740_usb_ohci_device;
- extern struct platform_device jz4740_udc_device;
-+extern struct platform_device jz4740_udc_xceiv_device;
- extern struct platform_device jz4740_mmc_device;
- extern struct platform_device jz4740_rtc_device;
- extern struct platform_device jz4740_i2c_device;
-diff --git a/arch/mips/jz4740/board-qi_lb60.c b/arch/mips/jz4740/board-qi_lb60.c
-index 8a5ec0e..c01900e 100644
---- a/arch/mips/jz4740/board-qi_lb60.c
-+++ b/arch/mips/jz4740/board-qi_lb60.c
-@@ -427,6 +427,7 @@ static struct platform_device qi_lb60_audio_device = {
- 
- static struct platform_device *jz_platform_devices[] __initdata = {
- 	&jz4740_udc_device,
-+	&jz4740_udc_xceiv_device,
- 	&jz4740_mmc_device,
- 	&jz4740_nand_device,
- 	&qi_lb60_keypad,
-diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
-index df65677..c55ff0a 100644
---- a/arch/mips/jz4740/platform.c
-+++ b/arch/mips/jz4740/platform.c
-@@ -21,6 +21,8 @@
- 
- #include <linux/dma-mapping.h>
- 
-+#include <linux/usb/musb.h>
-+
- #include <asm/mach-jz4740/platform.h>
- #include <asm/mach-jz4740/base.h>
- #include <asm/mach-jz4740/irq.h>
-@@ -56,29 +58,50 @@ struct platform_device jz4740_usb_ohci_device = {
- 	.resource	= jz4740_usb_ohci_resources,
- };
- 
--/* UDC (USB gadget controller) */
--static struct resource jz4740_usb_gdt_resources[] = {
--	{
--		.start	= JZ4740_UDC_BASE_ADDR,
--		.end	= JZ4740_UDC_BASE_ADDR + 0x1000 - 1,
--		.flags	= IORESOURCE_MEM,
-+/* USB Device Controller */
-+struct platform_device jz4740_udc_xceiv_device = {
-+	.name = "usb_phy_gen_xceiv",
-+	.id   = 0,
-+};
-+
-+static struct musb_hdrc_config jz4740_udc_config = {
-+	/* Silicon does not implement USB OTG. */
-+	.multipoint = 0,
-+	/* Max EPs scanned, driver will decide which EP can be used. */
-+	.num_eps    = 4,
-+	/* RAMbits needed to configure EPs from table */
-+	.ram_bits   = 9,
-+};
-+
-+static struct musb_hdrc_platform_data jz4740_udc_platform_data = {
-+	.mode   = MUSB_PERIPHERAL,
-+	.config = &jz4740_udc_config,
-+};
-+
-+static struct resource jz4740_udc_resources[] = {
-+	[0] = {
-+		.start = JZ4740_UDC_BASE_ADDR,
-+		.end   = JZ4740_UDC_BASE_ADDR + 0x10000 - 1,
-+		.flags = IORESOURCE_MEM,
- 	},
--	{
--		.start	= JZ4740_IRQ_UDC,
--		.end	= JZ4740_IRQ_UDC,
--		.flags	= IORESOURCE_IRQ,
-+	[1] = {
-+		.start = JZ4740_IRQ_UDC,
-+		.end   = JZ4740_IRQ_UDC,
-+		.flags = IORESOURCE_IRQ,
-+		.name  = "mc",
- 	},
- };
- 
- struct platform_device jz4740_udc_device = {
--	.name		= "jz-udc",
--	.id		= -1,
--	.dev = {
--		.dma_mask = &jz4740_udc_device.dev.coherent_dma_mask,
-+	.name = "musb-jz4740",
-+	.id   = -1,
-+	.dev  = {
-+		.dma_mask          = &jz4740_udc_device.dev.coherent_dma_mask,
- 		.coherent_dma_mask = DMA_BIT_MASK(32),
-+		.platform_data     = &jz4740_udc_platform_data,
- 	},
--	.num_resources	= ARRAY_SIZE(jz4740_usb_gdt_resources),
--	.resource	= jz4740_usb_gdt_resources,
-+	.num_resources = ARRAY_SIZE(jz4740_udc_resources),
-+	.resource      = jz4740_udc_resources,
- };
- 
- /* MMC/SD controller */
-diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
-index 57dfc0c..a45ed15 100644
---- a/drivers/usb/musb/Kconfig
-+++ b/drivers/usb/musb/Kconfig
-@@ -93,6 +93,12 @@ config USB_MUSB_BLACKFIN
- config USB_MUSB_UX500
- 	tristate "Ux500 platforms"
- 
-+config USB_MUSB_JZ4740
-+	tristate "JZ4740"
-+	depends on MACH_JZ4740
-+	depends on USB_MUSB_GADGET
-+	depends on USB_OTG_BLACKLIST_HUB
-+
- endchoice
- 
- config USB_MUSB_AM335X_CHILD
-@@ -100,7 +106,7 @@ config USB_MUSB_AM335X_CHILD
- 
- choice
- 	prompt 'MUSB DMA mode'
--	default MUSB_PIO_ONLY if ARCH_MULTIPLATFORM
-+	default MUSB_PIO_ONLY if ARCH_MULTIPLATFORM || USB_MUSB_JZ4740
- 	default USB_UX500_DMA if USB_MUSB_UX500
- 	default USB_INVENTRA_DMA if USB_MUSB_OMAP2PLUS || USB_MUSB_BLACKFIN
- 	default USB_TI_CPPI_DMA if USB_MUSB_DAVINCI
-diff --git a/drivers/usb/musb/Makefile b/drivers/usb/musb/Makefile
-index c5ea5c6..ba49501 100644
---- a/drivers/usb/musb/Makefile
-+++ b/drivers/usb/musb/Makefile
-@@ -19,6 +19,7 @@ obj-$(CONFIG_USB_MUSB_DAVINCI)			+= davinci.o
- obj-$(CONFIG_USB_MUSB_DA8XX)			+= da8xx.o
- obj-$(CONFIG_USB_MUSB_BLACKFIN)			+= blackfin.o
- obj-$(CONFIG_USB_MUSB_UX500)			+= ux500.o
-+obj-$(CONFIG_USB_MUSB_JZ4740)			+= jz4740.o
- 
- 
- obj-$(CONFIG_USB_MUSB_AM335X_CHILD)		+= musb_am335x.o
-diff --git a/drivers/usb/musb/jz4740.c b/drivers/usb/musb/jz4740.c
+diff --git a/arch/mips/configs/qi_lb60_defconfig b/arch/mips/configs/qi_lb60_defconfig
 new file mode 100644
-index 0000000..49539a8
+index 0000000..2b96547
 --- /dev/null
-+++ b/drivers/usb/musb/jz4740.c
-@@ -0,0 +1,229 @@
-+/*
-+ * Ingenic JZ4740 "glue layer"
-+ *
-+ * Copyright (C) 2013, Apelete Seketeli <apelete@seketeli.net>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/errno.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+
-+#include "musb_core.h"
-+
-+struct jz4740_glue {
-+	struct device           *dev;
-+	struct platform_device  *musb;
-+	struct clk		*clk;
-+};
-+
-+static void jz4740_musb_set_vbus(struct musb *musb, int is_on)
-+{
-+	u8 devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
-+
-+	/* HDRC controls CPEN, but beware current surges during device
-+	 * connect.  They can trigger transient overcurrent conditions
-+	 * that must be ignored.
-+	 */
-+
-+	if (is_on) {
-+		musb->is_active = 1;
-+		musb->xceiv->otg->default_a = 1;
-+		musb->xceiv->state = OTG_STATE_A_WAIT_VRISE;
-+		devctl |= MUSB_DEVCTL_SESSION;
-+
-+		MUSB_HST_MODE(musb);
-+	} else {
-+		musb->is_active = 0;
-+
-+		/* NOTE:  we're skipping A_WAIT_VFALL -> A_IDLE and
-+		 * jumping right to B_IDLE...
-+		 */
-+
-+		musb->xceiv->otg->default_a = 0;
-+		musb->xceiv->state = OTG_STATE_B_IDLE;
-+		devctl &= ~MUSB_DEVCTL_SESSION;
-+
-+		MUSB_DEV_MODE(musb);
-+	}
-+	musb_writeb(musb->mregs, MUSB_DEVCTL, devctl);
-+
-+	dev_dbg(musb->xceiv->dev, "VBUS %s, devctl %02x "
-+		/* otg %3x conf %08x prcm %08x */ "\n",
-+		usb_otg_state_string(musb->xceiv->state),
-+		musb_readb(musb->mregs, MUSB_DEVCTL));
-+}
-+
-+static irqreturn_t jz4740_musb_interrupt(int irq, void *__hci)
-+{
-+	unsigned long   flags;
-+	irqreturn_t     retval = IRQ_NONE;
-+	struct musb     *musb = __hci;
-+
-+	spin_lock_irqsave(&musb->lock, flags);
-+
-+	musb->int_usb = musb_readb(musb->mregs, MUSB_INTRUSB);
-+	musb->int_tx = musb_readw(musb->mregs, MUSB_INTRTX);
-+	musb->int_rx = musb_readw(musb->mregs, MUSB_INTRRX);
-+
-+	if (musb->int_usb || musb->int_tx || musb->int_rx)
-+		retval = musb_interrupt(musb);
-+
-+	spin_unlock_irqrestore(&musb->lock, flags);
-+
-+	return retval;
-+}
-+
-+static int jz4740_musb_init(struct musb *musb)
-+{
-+	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
-+	if (!musb->xceiv) {
-+		pr_err("HS UDC: no transceiver configured\n");
-+		return -ENODEV;
-+	}
-+
-+	/* Silicon does not implement ConfigData register.
-+	 * Set dyn_fifo to avoid reading EP config from hardware.
-+	 */
-+	musb->dyn_fifo = true;
-+
-+	musb->isr = jz4740_musb_interrupt;
-+
-+	return 0;
-+}
-+
-+static int jz4740_musb_exit(struct musb *musb)
-+{
-+	usb_put_phy(musb->xceiv);
-+
-+	return 0;
-+}
-+
-+static const struct musb_platform_ops jz4740_musb_ops = {
-+	.init		= jz4740_musb_init,
-+	.exit		= jz4740_musb_exit,
-+
-+	.set_vbus       = jz4740_musb_set_vbus,
-+};
-+
-+static int jz4740_probe(struct platform_device *pdev)
-+{
-+	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
-+	struct platform_device		*musb;
-+	struct jz4740_glue		*glue;
-+	struct clk                      *clk;
-+
-+	int				ret = -ENOMEM;
-+
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "failed to allocate platform data\n");
-+		goto err0;
-+	}
-+
-+	glue = devm_kzalloc(&pdev->dev, sizeof(*glue), GFP_KERNEL);
-+	if (!glue) {
-+		dev_err(&pdev->dev, "failed to allocate glue context\n");
-+		goto err0;
-+	}
-+
-+	musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
-+	if (!musb) {
-+		dev_err(&pdev->dev, "failed to allocate musb device\n");
-+		goto err1;
-+	}
-+
-+	clk = devm_clk_get(&pdev->dev, "udc");
-+	if (IS_ERR(clk)) {
-+		dev_err(&pdev->dev, "failed to get clock\n");
-+		ret = PTR_ERR(clk);
-+		goto err2;
-+	}
-+
-+	ret = clk_prepare_enable(clk);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to enable clock\n");
-+		goto err3;
-+	}
-+
-+	musb->dev.parent		= &pdev->dev;
-+
-+	glue->dev			= &pdev->dev;
-+	glue->musb			= musb;
-+	glue->clk			= clk;
-+
-+	pdata->platform_ops		= &jz4740_musb_ops;
-+
-+	platform_set_drvdata(pdev, glue);
-+
-+	ret = platform_device_add_resources(musb, pdev->resource,
-+					    pdev->num_resources);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to add resources\n");
-+		goto err4;
-+	}
-+
-+	ret = platform_device_add_data(musb, pdata, sizeof(*pdata));
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to add platform_data\n");
-+		goto err4;
-+	}
-+
-+	ret = platform_device_add(musb);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to register musb device\n");
-+		goto err4;
-+	}
-+
-+	return 0;
-+
-+err4:
-+	clk_disable_unprepare(clk);
-+
-+err3:
-+	devm_clk_put(&pdev->dev, clk);
-+
-+err2:
-+	platform_device_put(musb);
-+
-+err1:
-+	devm_kfree(&pdev->dev, glue);
-+
-+err0:
-+	return ret;
-+}
-+
-+static int jz4740_remove(struct platform_device *pdev)
-+{
-+	struct jz4740_glue	*glue = platform_get_drvdata(pdev);
-+
-+	platform_device_unregister(glue->musb);
-+	clk_disable_unprepare(glue->clk);
-+	clk_put(glue->clk);
-+	devm_kfree(&pdev->dev, glue);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver jz4740_driver = {
-+	.probe		= jz4740_probe,
-+	.remove		= jz4740_remove,
-+	.driver		= {
-+		.name	= "musb-jz4740",
-+	},
-+};
-+
-+MODULE_DESCRIPTION("JZ4740 MUSB Glue Layer");
-+MODULE_AUTHOR("Apelete Seketeli <apelete@seketeli.net>");
-+MODULE_LICENSE("GPL v2");
-+module_platform_driver(jz4740_driver);
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index 1ecdb94..ec4d0f4 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1038,6 +1038,9 @@ static ushort fifo_mode = 4;
- #elif defined(CONFIG_USB_MUSB_UX500)			\
- 	|| defined(CONFIG_USB_MUSB_UX500_MODULE)
- static ushort fifo_mode = 5;
-+#elif defined(CONFIG_USB_MUSB_JZ4740)			\
-+	|| defined(CONFIG_USB_MUSB_JZ4740_MODULE)
-+static ushort fifo_mode = 6;
- #else
- static ushort fifo_mode = 2;
- #endif
-@@ -1151,6 +1154,13 @@ static struct musb_fifo_cfg mode_5_cfg[] = {
- { .hw_ep_num = 15, .style = FIFO_RXTX, .maxpacket = 1024, },
- };
- 
-+/* mode 6 - fits in 2KB */
-+static struct musb_fifo_cfg mode_6_cfg[] = {
-+{ .hw_ep_num = 1, .style = FIFO_TX, .maxpacket = 512, },
-+{ .hw_ep_num = 1, .style = FIFO_RX, .maxpacket = 512, },
-+{ .hw_ep_num = 2, .style = FIFO_TX, .maxpacket = 64, },
-+};
-+
- /*
-  * configure a fifo; for non-shared endpoints, this may be called
-  * once for a tx fifo and once for an rx fifo.
-@@ -1273,6 +1283,10 @@ static int ep_config_from_table(struct musb *musb)
- 		cfg = mode_5_cfg;
- 		n = ARRAY_SIZE(mode_5_cfg);
- 		break;
-+	case 6:
-+		cfg = mode_6_cfg;
-+		n = ARRAY_SIZE(mode_6_cfg);
-+		break;
- 	}
- 
- 	printk(KERN_DEBUG "%s: setup fifo_mode %d\n",
++++ b/arch/mips/configs/qi_lb60_defconfig
+@@ -0,0 +1,188 @@
++CONFIG_MACH_JZ4740=y
++# CONFIG_COMPACTION is not set
++# CONFIG_CROSS_MEMORY_ATTACH is not set
++CONFIG_HZ_100=y
++CONFIG_PREEMPT=y
++# CONFIG_SECCOMP is not set
++# CONFIG_LOCALVERSION_AUTO is not set
++CONFIG_SYSVIPC=y
++CONFIG_LOG_BUF_SHIFT=14
++CONFIG_SYSCTL_SYSCALL=y
++CONFIG_KALLSYMS_ALL=y
++CONFIG_EMBEDDED=y
++# CONFIG_VM_EVENT_COUNTERS is not set
++# CONFIG_COMPAT_BRK is not set
++CONFIG_SLAB=y
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++# CONFIG_BLK_DEV_BSG is not set
++CONFIG_PARTITION_ADVANCED=y
++# CONFIG_EFI_PARTITION is not set
++# CONFIG_IOSCHED_CFQ is not set
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++CONFIG_IP_MULTICAST=y
++CONFIG_IP_ADVANCED_ROUTER=y
++CONFIG_IP_MULTIPLE_TABLES=y
++CONFIG_IP_ROUTE_MULTIPATH=y
++CONFIG_IP_ROUTE_VERBOSE=y
++CONFIG_IP_MROUTE=y
++CONFIG_IP_MROUTE_MULTIPLE_TABLES=y
++# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
++# CONFIG_INET_XFRM_MODE_TUNNEL is not set
++# CONFIG_INET_XFRM_MODE_BEET is not set
++# CONFIG_INET_LRO is not set
++# CONFIG_INET_DIAG is not set
++CONFIG_TCP_CONG_ADVANCED=y
++# CONFIG_TCP_CONG_BIC is not set
++# CONFIG_TCP_CONG_CUBIC is not set
++CONFIG_TCP_CONG_WESTWOOD=y
++# CONFIG_TCP_CONG_HTCP is not set
++# CONFIG_IPV6 is not set
++CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++# CONFIG_FIRMWARE_IN_KERNEL is not set
++CONFIG_MTD=y
++CONFIG_MTD_BLOCK=y
++CONFIG_MTD_NAND=y
++CONFIG_MTD_NAND_JZ4740=y
++CONFIG_MTD_UBI=y
++CONFIG_NETDEVICES=y
++# CONFIG_WLAN is not set
++# CONFIG_INPUT_MOUSEDEV is not set
++CONFIG_INPUT_EVDEV=y
++# CONFIG_KEYBOARD_ATKBD is not set
++CONFIG_KEYBOARD_GPIO=y
++CONFIG_KEYBOARD_MATRIX=y
++# CONFIG_INPUT_MOUSE is not set
++CONFIG_INPUT_MISC=y
++# CONFIG_SERIO is not set
++CONFIG_LEGACY_PTY_COUNT=2
++# CONFIG_DEVKMEM is not set
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++# CONFIG_SERIAL_8250_DMA is not set
++CONFIG_SERIAL_8250_NR_UARTS=2
++CONFIG_SERIAL_8250_RUNTIME_UARTS=2
++# CONFIG_HW_RANDOM is not set
++CONFIG_SPI=y
++CONFIG_SPI_GPIO=y
++CONFIG_POWER_SUPPLY=y
++CONFIG_BATTERY_JZ4740=y
++CONFIG_CHARGER_GPIO=y
++# CONFIG_HWMON is not set
++CONFIG_MFD_JZ4740_ADC=y
++CONFIG_REGULATOR=y
++CONFIG_REGULATOR_FIXED_VOLTAGE=y
++CONFIG_FB=y
++CONFIG_FB_JZ4740=y
++CONFIG_BACKLIGHT_LCD_SUPPORT=y
++CONFIG_LCD_CLASS_DEVICE=y
++# CONFIG_BACKLIGHT_CLASS_DEVICE is not set
++# CONFIG_VGA_CONSOLE is not set
++CONFIG_FRAMEBUFFER_CONSOLE=y
++CONFIG_LOGO=y
++# CONFIG_LOGO_LINUX_MONO is not set
++# CONFIG_LOGO_LINUX_VGA16 is not set
++# CONFIG_LOGO_LINUX_CLUT224 is not set
++CONFIG_SOUND=y
++CONFIG_SND=y
++# CONFIG_SND_SUPPORT_OLD_API is not set
++# CONFIG_SND_VERBOSE_PROCFS is not set
++# CONFIG_SND_DRIVERS is not set
++# CONFIG_SND_SPI is not set
++# CONFIG_SND_MIPS is not set
++CONFIG_SND_SOC=y
++CONFIG_SND_JZ4740_SOC=y
++CONFIG_SND_JZ4740_SOC_QI_LB60=y
++CONFIG_USB=y
++CONFIG_USB_OTG_BLACKLIST_HUB=y
++CONFIG_USB_MUSB_HDRC=y
++CONFIG_USB_MUSB_GADGET=y
++CONFIG_USB_MUSB_JZ4740=y
++CONFIG_NOP_USB_XCEIV=y
++CONFIG_USB_GADGET=y
++CONFIG_USB_GADGET_DEBUG=y
++CONFIG_USB_ETH=y
++# CONFIG_USB_ETH_RNDIS is not set
++CONFIG_MMC=y
++CONFIG_MMC_UNSAFE_RESUME=y
++# CONFIG_MMC_BLOCK_BOUNCE is not set
++CONFIG_MMC_JZ4740=y
++CONFIG_RTC_CLASS=y
++CONFIG_RTC_DRV_JZ4740=y
++CONFIG_DMADEVICES=y
++CONFIG_DMA_JZ4740=y
++CONFIG_PWM=y
++CONFIG_PWM_JZ4740=y
++CONFIG_EXT2_FS=y
++CONFIG_EXT3_FS=y
++# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
++# CONFIG_EXT3_FS_XATTR is not set
++# CONFIG_DNOTIFY is not set
++CONFIG_VFAT_FS=y
++CONFIG_PROC_KCORE=y
++# CONFIG_PROC_PAGE_MONITOR is not set
++CONFIG_TMPFS=y
++CONFIG_JFFS2_FS=y
++CONFIG_JFFS2_SUMMARY=y
++CONFIG_JFFS2_COMPRESSION_OPTIONS=y
++# CONFIG_JFFS2_ZLIB is not set
++CONFIG_UBIFS_FS=y
++CONFIG_UBIFS_FS_ADVANCED_COMPR=y
++# CONFIG_NETWORK_FILESYSTEMS is not set
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_CODEPAGE_737=y
++CONFIG_NLS_CODEPAGE_775=y
++CONFIG_NLS_CODEPAGE_850=y
++CONFIG_NLS_CODEPAGE_852=y
++CONFIG_NLS_CODEPAGE_855=y
++CONFIG_NLS_CODEPAGE_857=y
++CONFIG_NLS_CODEPAGE_860=y
++CONFIG_NLS_CODEPAGE_861=y
++CONFIG_NLS_CODEPAGE_862=y
++CONFIG_NLS_CODEPAGE_863=y
++CONFIG_NLS_CODEPAGE_864=y
++CONFIG_NLS_CODEPAGE_865=y
++CONFIG_NLS_CODEPAGE_866=y
++CONFIG_NLS_CODEPAGE_869=y
++CONFIG_NLS_CODEPAGE_936=y
++CONFIG_NLS_CODEPAGE_950=y
++CONFIG_NLS_CODEPAGE_932=y
++CONFIG_NLS_CODEPAGE_949=y
++CONFIG_NLS_CODEPAGE_874=y
++CONFIG_NLS_ISO8859_8=y
++CONFIG_NLS_CODEPAGE_1250=y
++CONFIG_NLS_CODEPAGE_1251=y
++CONFIG_NLS_ASCII=y
++CONFIG_NLS_ISO8859_1=y
++CONFIG_NLS_ISO8859_2=y
++CONFIG_NLS_ISO8859_3=y
++CONFIG_NLS_ISO8859_4=y
++CONFIG_NLS_ISO8859_5=y
++CONFIG_NLS_ISO8859_6=y
++CONFIG_NLS_ISO8859_7=y
++CONFIG_NLS_ISO8859_9=y
++CONFIG_NLS_ISO8859_13=y
++CONFIG_NLS_ISO8859_14=y
++CONFIG_NLS_ISO8859_15=y
++CONFIG_NLS_KOI8_R=y
++CONFIG_NLS_KOI8_U=y
++CONFIG_NLS_UTF8=y
++CONFIG_PRINTK_TIME=y
++CONFIG_DEBUG_INFO=y
++CONFIG_STRIP_ASM_SYMS=y
++CONFIG_READABLE_ASM=y
++CONFIG_DEBUG_KMEMLEAK=y
++CONFIG_DEBUG_MEMORY_INIT=y
++CONFIG_DEBUG_STACKOVERFLOW=y
++CONFIG_PANIC_ON_OOPS=y
++# CONFIG_FTRACE is not set
++CONFIG_KGDB=y
++CONFIG_RUNTIME_DEBUG=y
++CONFIG_CRYPTO_ZLIB=y
++# CONFIG_CRYPTO_ANSI_CPRNG is not set
++CONFIG_FONTS=y
++CONFIG_FONT_SUN8x16=y
 -- 
 1.7.10.4
 
