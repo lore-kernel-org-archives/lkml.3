@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068Ab3LOQmX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 11:42:23 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:34122 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872Ab3LOQmU (ORCPT
+	id S1752099Ab3LOQmq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 11:42:46 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:61601 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab3LOQmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 11:42:20 -0500
+	Sun, 15 Dec 2013 11:42:44 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        linux-kernel@vger.kernel.org
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        David Daney <david.daney@cavium.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-am33-list@redhat.com, linux-kernel@vger.kernel.org
 Cc: Jiang Liu <liuj97@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
         Wang YanQing <udknight@gmail.com>, linux-arch@vger.kernel.org
-Subject: [PATCH v3 [resend] 08/18] smp, m32r: kill SMP single function call interrupt
-Date: Mon, 16 Dec 2013 00:36:30 +0800
-Message-Id: <1387125400-28849-9-git-send-email-liuj97@gmail.com>
+Subject: [PATCH v3 [resend] 09/18] smp, mn10300: kill SMP single function call interrupt
+Date: Mon, 16 Dec 2013 00:36:31 +0800
+Message-Id: <1387125400-28849-10-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1387125400-28849-1-git-send-email-liuj97@gmail.com>
 References: <1387125400-28849-1-git-send-email-liuj97@gmail.com>
@@ -30,11 +31,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
-similar to smp_call_function_single()" has unified the way to handle
-single and multiple cross-CPU function calls. Now only one interrupt
-is needed for architecture specific code to support generic SMP function
-call interfaces, so kill the redundant single function call interrupt.
+Rename CALL_FUNC_SINGLE_IPI as CALL_FUNC_IPI to prepare for
+killing generic_smp_call_function_single_interrupt().
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Shaohua Li <shli@kernel.org>
@@ -42,76 +40,77 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Jiri Kosina <trivial@kernel.org>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Cc: linux-m32r@ml.linux-m32r.org
-Cc: linux-m32r-ja@ml.linux-m32r.org
+Cc: David Howells <dhowells@redhat.com>
+Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Cc: linux-am33-list@redhat.com
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- arch/m32r/include/asm/smp.h | 1 -
- arch/m32r/kernel/smp.c      | 9 +--------
- arch/m32r/kernel/traps.c    | 3 +--
- 3 files changed, 2 insertions(+), 11 deletions(-)
+ arch/mn10300/include/asm/smp.h |  2 +-
+ arch/mn10300/kernel/smp.c      | 16 ++++++++--------
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/arch/m32r/include/asm/smp.h b/arch/m32r/include/asm/smp.h
-index c689b82..3a502d4 100644
---- a/arch/m32r/include/asm/smp.h
-+++ b/arch/m32r/include/asm/smp.h
-@@ -98,7 +98,6 @@ extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
- #define LOCAL_TIMER_IPI		(M32R_IRQ_IPI3-M32R_IRQ_IPI0)
- #define INVALIDATE_CACHE_IPI	(M32R_IRQ_IPI4-M32R_IRQ_IPI0)
- #define CPU_BOOT_IPI		(M32R_IRQ_IPI5-M32R_IRQ_IPI0)
--#define CALL_FUNC_SINGLE_IPI	(M32R_IRQ_IPI6-M32R_IRQ_IPI0)
+diff --git a/arch/mn10300/include/asm/smp.h b/arch/mn10300/include/asm/smp.h
+index 56c4241..8e689d1 100644
+--- a/arch/mn10300/include/asm/smp.h
++++ b/arch/mn10300/include/asm/smp.h
+@@ -31,7 +31,7 @@
+ #include <proc/smp-regs.h>
  
- #define IPI_SHIFT	(0)
- #define NR_IPIS		(8)
-diff --git a/arch/m32r/kernel/smp.c b/arch/m32r/kernel/smp.c
-index ce7aea3..c6d0bb9 100644
---- a/arch/m32r/kernel/smp.c
-+++ b/arch/m32r/kernel/smp.c
-@@ -542,7 +542,7 @@ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+ #define RESCHEDULE_IPI		63
+-#define CALL_FUNC_SINGLE_IPI	192
++#define CALL_FUNC_IPI		192
+ #define LOCAL_TIMER_IPI		193
+ #define FLUSH_CACHE_IPI		194
+ #define CALL_FUNCTION_NMI_IPI	195
+diff --git a/arch/mn10300/kernel/smp.c b/arch/mn10300/kernel/smp.c
+index a17f9c9..7ae353d 100644
+--- a/arch/mn10300/kernel/smp.c
++++ b/arch/mn10300/kernel/smp.c
+@@ -164,11 +164,11 @@ static void init_ipi(void)
+ 	mn10300_ipi_enable(RESCHEDULE_IPI);
+ 
+ 	/* set up the call function IPI */
+-	irq_set_chip_and_handler(CALL_FUNC_SINGLE_IPI, &mn10300_ipi_type,
++	irq_set_chip_and_handler(CALL_FUNC_IPI, &mn10300_ipi_type,
+ 				 handle_percpu_irq);
+-	setup_irq(CALL_FUNC_SINGLE_IPI, &call_function_ipi);
+-	set_intr_level(CALL_FUNC_SINGLE_IPI, CALL_FUNCTION_GxICR_LV);
+-	mn10300_ipi_enable(CALL_FUNC_SINGLE_IPI);
++	setup_irq(CALL_FUNC_IPI, &call_function_ipi);
++	set_intr_level(CALL_FUNC_IPI, CALL_FUNCTION_GxICR_LV);
++	mn10300_ipi_enable(CALL_FUNC_IPI);
+ 
+ 	/* set up the local timer IPI */
+ #if !defined(CONFIG_GENERIC_CLOCKEVENTS) || \
+@@ -362,7 +362,7 @@ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
  
  void arch_send_call_function_single_ipi(int cpu)
  {
--	send_IPI_mask(cpumask_of(cpu), CALL_FUNC_SINGLE_IPI, 0);
-+	send_IPI_mask(cpumask_of(cpu), CALL_FUNCTION_IPI, 0);
+-	send_IPI_mask(cpumask_of(cpu), CALL_FUNC_SINGLE_IPI);
++	send_IPI_mask(cpumask_of(cpu), CALL_FUNC_IPI);
  }
  
- /*==========================================================================*
-@@ -569,13 +569,6 @@ void smp_call_function_interrupt(void)
- 	irq_exit();
- }
- 
--void smp_call_function_single_interrupt(void)
--{
--	irq_enter();
+ /**
+@@ -519,7 +519,7 @@ static irqreturn_t smp_reschedule_interrupt(int irq, void *dev_id)
+ static irqreturn_t smp_call_function_interrupt(int irq, void *dev_id)
+ {
+ 	/* generic_smp_call_function_interrupt(); */
 -	generic_smp_call_function_single_interrupt();
--	irq_exit();
--}
--
- /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
- /* Timer Routines                                                            */
- /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
-diff --git a/arch/m32r/kernel/traps.c b/arch/m32r/kernel/traps.c
-index a7a424f..f5d911d 100644
---- a/arch/m32r/kernel/traps.c
-+++ b/arch/m32r/kernel/traps.c
-@@ -39,7 +39,6 @@ extern void smp_invalidate_interrupt(void);
- extern void smp_call_function_interrupt(void);
- extern void smp_ipi_timer_interrupt(void);
- extern void smp_flush_cache_all_interrupt(void);
--extern void smp_call_function_single_interrupt(void);
++	generic_smp_call_function_interrupt();
+ 	return IRQ_HANDLED;
+ }
  
- /*
-  * for Boot AP function
-@@ -104,7 +103,7 @@ static void set_eit_vector_entries(void)
- 	eit_vector[187] = (unsigned long)smp_ipi_timer_interrupt;
- 	eit_vector[188] = (unsigned long)smp_flush_cache_all_interrupt;
- 	eit_vector[189] = 0;	/* CPU_BOOT_IPI */
--	eit_vector[190] = (unsigned long)smp_call_function_single_interrupt;
-+	eit_vector[190] = 0;
- 	eit_vector[191] = 0;
- #endif
- 	_flush_cache_copyback_all();
+@@ -598,8 +598,8 @@ static void __init smp_cpu_init(void)
+ 	/* Force FPU initialization */
+ 	clear_using_fpu(current);
+ 
+-	GxICR(CALL_FUNC_SINGLE_IPI) = CALL_FUNCTION_GxICR_LV | GxICR_DETECT;
+-	mn10300_ipi_enable(CALL_FUNC_SINGLE_IPI);
++	GxICR(CALL_FUNC_IPI) = CALL_FUNCTION_GxICR_LV | GxICR_DETECT;
++	mn10300_ipi_enable(CALL_FUNC_IPI);
+ 
+ 	GxICR(LOCAL_TIMER_IPI) = LOCAL_TIMER_GxICR_LV | GxICR_DETECT;
+ 	mn10300_ipi_enable(LOCAL_TIMER_IPI);
 -- 
 1.8.1.2
 
