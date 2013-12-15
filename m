@@ -1,186 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693Ab3LOHye (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 02:54:34 -0500
-Received: from mga09.intel.com ([134.134.136.24]:46996 "EHLO mga09.intel.com"
+	id S1752588Ab3LOHzE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 02:55:04 -0500
+Received: from mga03.intel.com ([143.182.124.21]:33663 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751106Ab3LOHy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 02:54:27 -0500
+	id S1751106Ab3LOHyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 02:54:37 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,488,1384329600"; 
-   d="log'?scan'208";a="444507861"
-Date: Sun, 15 Dec 2013 14:39:25 +0800
+   d="log'?scan'208";a="444507924"
+Date: Sun, 15 Dec 2013 14:31:23 +0800
 From: Fengguang Wu <fengguang.wu@intel.com>
-To: Eric Dumazet <edumazet@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: __udp4_lib_rcv: inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
-Message-ID: <20131215063925.GC26348@localhost>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: BUG: key ffff8800192a6ad0 not in .data!
+Message-ID: <20131215063123.GB26396@localhost>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="PEIAKu/WMn1b1Hv9"
+Content-Type: multipart/mixed; boundary="h31gzZEtNLTqOjlF"
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 User-Agent: Heirloom mailx 12.5 6/20/10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---PEIAKu/WMn1b1Hv9
-Content-Type: text/plain; charset=us-ascii
+--h31gzZEtNLTqOjlF
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 
 Greetings,
 
 I got the below dmesg and the first bad commit is
 
-commit 975022310233fb0f0193873d79a7b8438070fa82
-Author:     Eric Dumazet <edumazet@google.com>
-AuthorDate: Wed Dec 11 14:46:51 2013 -0800
-Commit:     David S. Miller <davem@davemloft.net>
-CommitDate: Wed Dec 11 20:21:10 2013 -0500
+commit 6229dddfed2f129a6e002daaafd8c6b5d7f4f982
+Author:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+AuthorDate: Sat Dec 7 11:44:16 2013 -0700
+Commit:     Bjorn Helgaas <bhelgaas@google.com>
+CommitDate: Sat Dec 7 11:44:16 2013 -0700
 
-    udp: ipv4: must add synchronization in udp_sk_rx_dst_set()
+    PCI: Export MSI mode in sysfs using attributes, not kobjects
     
-    Unlike TCP, UDP input path does not hold the socket lock.
+    The PCI MSI sysfs code is a mess with kobjects for things that don't
+    really need to be kobjects.  This patch creates attributes dynamically
+    for the MSI interrupts instead of using kobjects.
     
-    Before messing with sk->sk_rx_dst, we must use a spinlock, otherwise
-    multiple cpus could leak a refcount.
+    [bhelgaas: This also fixes a problem reported by Veaceslav (see link
+    below): calling pci_enable_msi() too soon after pci_disable_msi() can fail
+    with "sysfs: cannot create duplicate filename '.../msi_irqs' because the
+    msi_irqs kset was still active.  This can happen with various module
+    unload/reload and bonding scenarios.]
     
-    This patch also takes care of renewing a stale dst entry.
-    (When the sk->sk_rx_dst would not be used by IP early demux)
+    Note, this removes a directory from the current MSI interrupt sysfs
+    code:
     
-    Fixes: 421b3885bf6d ("udp: ipv4: Add udp early demux")
-    Signed-off-by: Eric Dumazet <edumazet@google.com>
-    Cc: Shawn Bohrer <sbohrer@rgmadvisors.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
+      old MSI kobjects:
+        pci_device
+           └── msi_irqs
+               └── 40
+                   └── mode
+    
+      new MSI attributes:
+        pci_device
+           └── msi_irqs
+               └── 40
+    
+    As there was only one file "mode" with the kobject model, the interrupt
+    number is now a file that returns the "mode" of the interrupt (msi vs.
+    msix).
+    
+    [bhelgaas: Neil confirmed that this sysfs change doesn't affect irqbalance
+    because it only cares about the *names* of the entries in msi_irqs/; it
+    doesn't care whether those entries are files or directories.  It may break
+    other programs that depend on sysfs layout.]
+    
+    Link: http://lkml.kernel.org/r/1379382464-7920-1-git-send-email-vfalico@redhat.com
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+    Reviewed-by: Veaceslav Falico <vfalico@redhat.com>
+    Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-+----------------------------------------------+----+
-|                                              |    |
-+----------------------------------------------+----+
-| boot_successes                               | 0  |
-| boot_failures                                | 19 |
-| inconsistent_SOFTIRQ-ON-W-IN-SOFTIRQ-W_usage | 19 |
-+----------------------------------------------+----+
++----------------------------------------------------------------+----+
+|                                                                |    |
++----------------------------------------------------------------+----+
+| boot_successes                                                 | 0  |
+| boot_failures                                                  | 19 |
+| BUG:key_not_in.data                                            | 17 |
+| WARNING:CPU:PID:at_kernel/locking/lockdep.c:lockdep_init_map() | 17 |
+| inconsistent_SOFTIRQ-ON-W-IN-SOFTIRQ-W_usage                   | 2  |
++----------------------------------------------------------------+----+
 
-[   23.564204] [ INFO: inconsistent lock state ]
-[   23.564204] 3.13.0-rc3-00689-gb1daf37 #892 Not tainted
-[   23.564204] ---------------------------------
-[   23.564204] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
-[   23.564204] swapper/0/0 [HC0[0]:SC1[1]:HE1:SE0] takes:
-[   23.564204]  (&(&sk->sk_dst_lock)->rlock){+.?...}, at: [<ffffffff81a27fe2>] __udp4_lib_rcv+0x569/0x79d
-[   23.564204] {SOFTIRQ-ON-W} state was registered at:
-[   23.564204]   [<ffffffff810b16b7>] __lock_acquire+0x96c/0x185f
-[   23.564204]   [<ffffffff810b2c97>] lock_acquire+0xab/0x12e
-[   23.564204]   [<ffffffff81af12d3>] _raw_spin_lock+0x3b/0x6d
-[   23.564204]   [<ffffffff81a2f13d>] inet_bind+0x18d/0x1dc
-[   23.564204]   [<ffffffff8199d62c>] kernel_bind+0x10/0x12
-[   23.564204]   [<ffffffff81aae764>] xs_bind+0xa0/0x11e
-[   23.564204]   [<ffffffff81ab0271>] xs_create_sock.isra.14+0x20b/0x230
-[   23.564204]   [<ffffffff81ab047f>] xs_tcp_setup_socket+0x5f/0x3e5
-[   23.564204]   [<ffffffff8108a0d7>] process_one_work+0x247/0x443
-[   23.564204]   [<ffffffff8108aeac>] worker_thread+0x1d2/0x2bc
-[   23.564204]   [<ffffffff81090228>] kthread+0xf9/0x101
-[   23.564204]   [<ffffffff81af92fc>] ret_from_fork+0x7c/0xb0
-[   23.564204] irq event stamp: 514170
-[   23.564204] hardirqs last  enabled at (514170): [<ffffffff810766af>] local_bh_enable+0xab/0xb5
-[   23.564204] hardirqs last disabled at (514169): [<ffffffff8107665a>] local_bh_enable+0x56/0xb5
-[   23.564204] softirqs last  enabled at (514148): [<ffffffff81076106>] _local_bh_enable+0x43/0x45
-[   23.564204] softirqs last disabled at (514149): [<ffffffff81076779>] irq_exit+0x59/0xa0
-[   23.564204] 
-[   23.564204] other info that might help us debug this:
-[   23.564204]  Possible unsafe locking scenario:
-[   23.564204] 
-[   23.564204]        CPU0
-[   23.564204]        ----
-[   23.564204]   lock(&(&sk->sk_dst_lock)->rlock);
-[   23.564204]   <Interrupt>
-[   23.564204]     lock(&(&sk->sk_dst_lock)->rlock);
-[   23.564204] 
-[   23.564204]  *** DEADLOCK ***
-[   23.564204] 
-[   23.564204] 2 locks held by swapper/0/0:
-[   23.564204]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff819b258a>] __netif_receive_skb_core+0x168/0x58e
-[   23.564204]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff81a0086a>] ip_local_deliver_finish+0x2f/0x2a0
-[   23.564204] 
-[   23.564204] stack backtrace:
-[   23.564204] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.13.0-rc3-00689-gb1daf37 #892
-[   23.564204] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[   23.564204]  0000000000000002 ffff88001ea039a0 ffffffff81ae56fd ffffffff82097490
-[   23.564204]  ffff88001ea039f0 ffffffff81addae7 0000000000000001 ffff880000000001
-[   23.564204]  ffff880000000000 ffffffff82097c08 0000000000000004 0000000000000006
-[   23.564204] Call Trace:
-[   23.564204]  <IRQ>  [<ffffffff81ae56fd>] dump_stack+0x4d/0x66
-[   23.564204]  [<ffffffff81addae7>] print_usage_bug+0x2a8/0x2b9
-[   23.564204]  [<ffffffff810af93a>] ? print_shortest_lock_dependencies+0x193/0x193
-[   23.564204]  [<ffffffff810b05b5>] mark_lock+0x33c/0x57c
-[   23.564204]  [<ffffffff810b1645>] __lock_acquire+0x8fa/0x185f
-[   23.564204]  [<ffffffff8109fd9c>] ? sched_clock_local+0x12/0x72
-[   23.564204]  [<ffffffff810addfa>] ? trace_hardirqs_off_caller+0x1f/0xb2
-[   23.564204]  [<ffffffff810b2c97>] lock_acquire+0xab/0x12e
-[   23.564204]  [<ffffffff81a27fe2>] ? __udp4_lib_rcv+0x569/0x79d
-[   23.564204]  [<ffffffff810addfa>] ? trace_hardirqs_off_caller+0x1f/0xb2
-[   23.564204]  [<ffffffff81af12d3>] _raw_spin_lock+0x3b/0x6d
-[   23.564204]  [<ffffffff81a27fe2>] ? __udp4_lib_rcv+0x569/0x79d
-[   23.564204]  [<ffffffff81a27fe2>] __udp4_lib_rcv+0x569/0x79d
-[   23.564204]  [<ffffffff81a286ae>] udp_rcv+0x1a/0x1c
-[   23.564204]  [<ffffffff81a0098c>] ip_local_deliver_finish+0x151/0x2a0
-[   23.564204]  [<ffffffff81a0086a>] ? ip_local_deliver_finish+0x2f/0x2a0
-[   23.564204]  [<ffffffff81a0109e>] ip_local_deliver+0x7a/0x7f
-[   23.564204]  [<ffffffff81a00e75>] ip_rcv_finish+0x39a/0x461
-[   23.564204]  [<ffffffff81a01326>] ip_rcv+0x283/0x2e0
-[   23.564204]  [<ffffffff819b28ef>] __netif_receive_skb_core+0x4cd/0x58e
-[   23.564204]  [<ffffffff819b258a>] ? __netif_receive_skb_core+0x168/0x58e
-[   23.564204]  [<ffffffff819b2dd6>] __netif_receive_skb+0x1d/0x5f
-[   23.564204]  [<ffffffff819b2e80>] netif_receive_skb+0x68/0xf4
-[   23.564204]  [<ffffffff819b35da>] napi_gro_receive+0x3e/0x80
-[   23.564204]  [<ffffffff817be870>] e1000_clean_rx_irq+0x393/0x415
-[   23.564204]  [<ffffffff817bcd48>] e1000_clean+0x59d/0x71f
-[   23.564204]  [<ffffffff810634d1>] ? kvm_clock_read+0x27/0x31
-[   23.564204]  [<ffffffff8103edd0>] ? sched_clock+0x9/0xd
-[   23.564204]  [<ffffffff819b3ed0>] net_rx_action+0xf6/0x210
-[   23.564204]  [<ffffffff810762fc>] __do_softirq+0xf3/0x27a
-[   23.564204]  [<ffffffff81076779>] irq_exit+0x59/0xa0
-[   23.564204]  [<ffffffff81afb44d>] do_IRQ+0x9d/0xb4
-[   23.564204]  [<ffffffff81af21f2>] common_interrupt+0x72/0x72
-[   23.564204]  <EOI>  [<ffffffff81af5ab5>] ? __atomic_notifier_call_chain+0x5/0x9c
-[   23.564204]  [<ffffffff810636c8>] ? native_safe_halt+0x6/0x8
-[   23.564204]  [<ffffffff8103f9d1>] default_idle+0x38/0xc1
-[   23.564204]  [<ffffffff81040154>] arch_cpu_idle+0x18/0x28
-[   23.564204]  [<ffffffff810c0ac5>] cpu_startup_entry+0x15c/0x24d
-[   23.564204]  [<ffffffff81ad1f25>] rest_init+0xc9/0xcd
-[   23.564204]  [<ffffffff81ad1e61>] ? rest_init+0x5/0xcd
-[   23.564204]  [<ffffffff823aed77>] start_kernel+0x3d4/0x3e0
-[   23.564204]  [<ffffffff823ae7b1>] ? repair_env_string+0x58/0x58
-[   23.564204]  [<ffffffff823ae120>] ? early_idt_handlers+0x120/0x120
-[   23.564204]  [<ffffffff823ae467>] x86_64_start_reservations+0x2a/0x2c
-[   23.564204]  [<ffffffff823ae5a9>] x86_64_start_kernel+0x140/0x14d
-[   66.435785] NFSD: Using /var/lib/nfs/v4recovery as the NFSv4 state recovery directory
-[   66.440815] NFSD: starting 90-second grace period (net ffffffff82196a80)
-Kernel tests: Boot OK!
+[    2.212293] virtio-pci 0000:00:04.0: irq 40 for MSI/MSI-X
+[    2.213913] virtio-pci 0000:00:04.0: irq 41 for MSI/MSI-X
+[    2.215595] BUG: key ffff8800192a6ad0 not in .data!
+[    2.217058] ------------[ cut here ]------------
+[    2.218474] WARNING: CPU: 0 PID: 1 at kernel/locking/lockdep.c:2987 lockdep_init_map+0x127/0x462()
+[    2.221519] DEBUG_LOCKS_WARN_ON(1)
+[    2.222162] Modules linked in:
+[    2.224095] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-rc3-00182-g31e0787 #882
+[    2.226345] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011                       
+[    2.227632]  0000000000000002 ffff88001e6d5968 ffffffff81ae4fad ffff88001e6d59b0
+[    2.229933]  ffff88001e6d59a0 ffffffff81071e22 ffffffff810ae405 ffff8800192a6ad0
+[    2.232245]  ffff8800192dd8d0 0000000000000000 0000000000000000 ffff88001e6d5a00
+[    2.234549] Call Trace:
+[    2.235418]  [<ffffffff81ae4fad>] dump_stack+0x4d/0x66
+[    2.236638]  [<ffffffff81071e22>] warn_slowpath_common+0x7f/0x98
+[    2.237962]  [<ffffffff810ae405>] ? lockdep_init_map+0x127/0x462
+[    2.239292]  [<ffffffff81071e87>] warn_slowpath_fmt+0x4c/0x4e   
+[    2.240585]  [<ffffffff810ae405>] lockdep_init_map+0x127/0x462
+[    2.241894]  [<ffffffff811d19a2>] ? sysfs_new_dirent+0x8f/0x111
+[    2.243216]  [<ffffffff811d0d5a>] sysfs_add_file_mode_ns+0x66/0xb4
+[    2.244570]  [<ffffffff811d2b97>] internal_create_group+0x153/0x1de
+[    2.245942]  [<ffffffff811d2c35>] sysfs_create_group+0x13/0x15     
+[    2.247259]  [<ffffffff811d2df9>] sysfs_create_groups+0x27/0x64
+[    2.248577]  [<ffffffff814ac79e>] populate_msi_sysfs+0x165/0x17d
+[    2.249906]  [<ffffffff814ad8bd>] pci_enable_msix+0x2de/0x36b   
+[    2.251205]  [<ffffffff81519bd1>] vp_request_msix_vectors+0xc6/0x217
+[    2.252585]  [<ffffffff81519dca>] vp_try_to_find_vqs+0xa8/0x41f
+[    2.253913]  [<ffffffff815f83c0>] ? virtblk_probe+0x9a/0x572
+[    2.255198]  [<ffffffff8151a290>] vp_find_vqs+0x35/0x8d     
+[    2.256443]  [<ffffffff815f78d8>] init_vq+0x3f/0x61
+[    2.257618]  [<ffffffff815f793d>] ? virtblk_restore+0x43/0x43
+[    2.258913]  [<ffffffff815f844c>] virtblk_probe+0x126/0x572  
+[    2.260183]  [<ffffffff81517acf>] virtio_dev_probe+0xbc/0xfa
+[    2.261477]  [<ffffffff815db6b6>] driver_probe_device+0x9d/0x1b8
+[    2.262804]  [<ffffffff815db86f>] __driver_attach+0x61/0x83
+[    2.264078]  [<ffffffff815db80e>] ? __device_attach+0x3d/0x3d
+[    2.265379]  [<ffffffff815d9cb6>] bus_for_each_dev+0x80/0x8a
+[    2.266664]  [<ffffffff815db1fd>] driver_attach+0x1e/0x20
+[    2.267914]  [<ffffffff815dae9c>] bus_add_driver+0x10e/0x1d8
+[    2.269197]  [<ffffffff815dbe11>] driver_register+0x8e/0xca
+[    2.270473]  [<ffffffff81517db2>] register_virtio_driver+0x2b/0x2d
+[    2.271829]  [<ffffffff823f75c3>] init+0x53/0x85
+[    2.272972]  [<ffffffff823f7570>] ? init_cryptoloop+0x2a/0x2a
+[    2.274270]  [<ffffffff8100029a>] do_one_initcall+0x84/0x11a
+[    2.275556]  [<ffffffff8108e91e>] ? parse_args+0x189/0x249
+[    2.276820]  [<ffffffff823aaf5c>] kernel_init_freeable+0x1d9/0x25f
+[    2.278162]  [<ffffffff823aa759>] ? do_early_param+0x88/0x88
+[    2.279446]  [<ffffffff81ad17d9>] ? rest_init+0xcd/0xcd     
+[    2.280668]  [<ffffffff81ad17e7>] kernel_init+0xe/0x104
+[    2.281896]  [<ffffffff81af8b7c>] ret_from_fork+0x7c/0xb0
+[    2.283147]  [<ffffffff81ad17d9>] ? rest_init+0xcd/0xcd
+[    2.284374] ---[ end trace bd4d220a7a045ff3 ]---
+[    2.285538] BUG: key ffff8800192a7278 not in .data!
 
-git bisect start b1daf37ff52cf2ff39b2db2399e052ad7965c6aa 374b105797c3d4f29c685f3be535c35f5689b30e --
-git bisect  bad c2f84f5177293270c0203fabfd600e11e211fd73  # 12:07      0-      1  Merge 'net/master' into devel-xian-x86_64-201312131052
-git bisect good 2481b0b9a5f7af0f748a18a9710371a9cb22c986  # 12:41     20+      1  Merge 'arm-soc/to-build' into devel-xian-x86_64-201312131052
-git bisect good c8781cf4a309ae4d1393f5878d4e51987665898c  # 13:08     20+      0  bnx2x: avoid null pointer dereference when enabling SR-IOV
-git bisect good fffc15a5012e9052d3b236efc56840841a125416  # 13:36     20+      0  vxlan: release rt when found circular route
-git bisect good 4bd7b5127bd02c12c1cc837a7a0b6ce295eb2505  # 13:50     20+      0  micrel: add support for KSZ8041RNLI
-git bisect good 9508fdde4d53f0d9e583e841ed08796d2f310be1  # 14:14     20+      1  Revert "8390 : Replace ei_debug with msg_enable/NETIF_MSG_* feature"
-git bisect  bad 10574059ce0451c6572c85329c772aa15085f8eb  # 14:28      0-      1  xen-netback: napi: fix abuse of budget
-git bisect  bad 975022310233fb0f0193873d79a7b8438070fa82  # 14:28      0-      8  udp: ipv4: must add synchronization in udp_sk_rx_dst_set()
-git bisect good a1bf1750871a6f242b0fdb174cc55d2c57e7ed66  # 14:34     25+      0  net:fec: remove duplicate lines in comment about errata ERR006358
-# first bad commit: [975022310233fb0f0193873d79a7b8438070fa82] udp: ipv4: must add synchronization in udp_sk_rx_dst_set()
-git bisect good a1bf1750871a6f242b0fdb174cc55d2c57e7ed66  # 14:46     75+      0  net:fec: remove duplicate lines in comment about errata ERR006358
-git bisect  bad b1daf37ff52cf2ff39b2db2399e052ad7965c6aa  # 14:46      0-     19  Merge 'security/for-linus' into devel-xian-x86_64-201312131052
-git bisect good 2cd6a37a65f578f7e23e67986107422ad3c012ba  # 15:23     75+      0  Revert "udp: ipv4: must add synchronization in udp_sk_rx_dst_set()"
-git bisect good 8ae516aa8b8161254d3e402b3348b2a9b8d1efd0  # 15:54     75+      1  Merge tag 'trace-fixes-v3.13-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace
-git bisect  bad 1a63d5777d237952bb06f1a2481c3acc366aeb8d  # 15:57      0-      9  Add linux-next specific files for 20131213
+git bisect start 31e078736811963afecfe7305a51541cbed8e6a6 374b105797c3d4f29c685f3be535c35f5689b30e --
+git bisect  bad 77380abb5fc9d79b8158698e52a9abb3de00057c  # 11:58      0-      1  Merge 'pci/pci/misc' into devel-xian-x86_64-201312130852
+git bisect good ef7aa32df0138c4022db9fdccb6a193f54389330  # 12:44     22+      1  Merge 'pci/pci/deletion' into devel-xian-x86_64-201312130852
+git bisect good b2267e7c13a843935d3688f93bd197b82b871568  # 13:05     22+      0  Merge 'pci/pci/host-imx6' into devel-xian-x86_64-201312130852
+git bisect  bad 13de796cf8665bed3dcbf7ac1dc03a17ba479633  # 13:27      0-      2  PCI/portdrv: Remove superfluous name cast
+git bisect  bad 6229dddfed2f129a6e002daaafd8c6b5d7f4f982  # 13:29      0-      4  PCI: Export MSI mode in sysfs using attributes, not kobjects
+git bisect good 045cc22e53a1a0caaa9a0b6b64246d2690049906  # 13:50     22+      0  PCI: Clear NumVFs when disabling SR-IOV in sriov_init()
+# first bad commit: [6229dddfed2f129a6e002daaafd8c6b5d7f4f982] PCI: Export MSI mode in sysfs using attributes, not kobjects
+git bisect good 045cc22e53a1a0caaa9a0b6b64246d2690049906  # 14:33     66+      0  PCI: Clear NumVFs when disabling SR-IOV in sriov_init()
+git bisect  bad 31e078736811963afecfe7305a51541cbed8e6a6  # 14:33      0-     19  Merge 'net/master' into devel-xian-x86_64-201312130852
+git bisect good b81f81f9d450c0e92bfd746df2364d110784c97c  # 14:54     66+     66  Revert "PCI: Export MSI mode in sysfs using attributes, not kobjects"
+git bisect good 8d2763770c34e8ed771f0be86760eb4485febc05  # 15:19     66+      0  Merge branch 'akpm' (fixes from Andrew)
+git bisect  bad 1a63d5777d237952bb06f1a2481c3acc366aeb8d  # 15:20      0-      9  Add linux-next specific files for 20131213
 
 Thanks,
 Fengguang
 
---PEIAKu/WMn1b1Hv9
+--h31gzZEtNLTqOjlF
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="dmesg-nfsroot-cairo-7:20131213110650:x86_64-nfsroot:3.13.0-rc3-00689-gb1daf37:892"
+Content-Disposition: attachment; filename="dmesg-nfsroot-xian-25:20131213090159:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882"
 Content-Transfer-Encoding: quoted-printable
 
 early console in setup code
@@ -190,17 +175,17 @@ Decompressing Linux... Parsing ELF... done.
 Booting the kernel.
 [    0.000000] Initializing cgroup subsys cpuset
 [    0.000000] Initializing cgroup subsys cpu
-[    0.000000] Linux version 3.13.0-rc3-00689-gb1daf37 (kbuild@xian) (gcc v=
-ersion 4.8.1 (Debian 4.8.1-8) ) #892 SMP Fri Dec 13 10:57:18 CST 2013
+[    0.000000] Linux version 3.13.0-rc3-00182-g31e0787 (kbuild@xian) (gcc v=
+ersion 4.8.1 (Debian 4.8.1-8) ) #882 SMP Fri Dec 13 08:57:56 CST 2013
 [    0.000000] Command line: hung_task_panic=3D1 earlyprintk=3DttyS0,115200=
  debug apic=3Ddebug sysrq_always_enabled panic=3D10 load_ramdisk=3D2 prompt=
 _ramdisk=3D0 console=3DttyS0,115200 console=3Dtty0 vga=3Dnormal ip=3D::::nf=
-sroot-cairo-7::dhcp nfsroot=3D192.168.1.1:/nfsroot/wfg,tcp,v3,nocto,actimeo=
+sroot-xian-25::dhcp nfsroot=3D192.168.1.1:/nfsroot/wfg,tcp,v3,nocto,actimeo=
 =3D600,nolock,rsize=3D524288,wsize=3D524288 rw link=3D/kernel-tests/run-que=
-ue/kvm/x86_64-nfsroot/devel-xian-x86_64-201312131052/.vmlinuz-b1daf37ff52cf=
-2ff39b2db2399e052ad7965c6aa-20131213105809-3-cairo branch=3Dlinux-devel/dev=
-el-xian-x86_64-201312131052 BOOT_IMAGE=3D/kernel/x86_64-nfsroot/b1daf37ff52=
-cf2ff39b2db2399e052ad7965c6aa/vmlinuz-3.13.0-rc3-00689-gb1daf37
+ue/kvm/x86_64-nfsroot/devel-xian-x86_64-201312130852/.vmlinuz-31e0787368119=
+63afecfe7305a51541cbed8e6a6-20131213085833-4-xian branch=3Dlinux-devel/deve=
+l-xian-x86_64-201312130852 BOOT_IMAGE=3D/kernel/x86_64-nfsroot/31e078736811=
+963afecfe7305a51541cbed8e6a6/vmlinuz-3.13.0-rc3-00182-g31e0787
 [    0.000000] KERNEL supported cpus:
 [    0.000000]   Intel GenuineIntel
 [    0.000000]   Centaur CentaurHauls
@@ -251,9 +236,9 @@ rved
 [    0.000000] Base memory trampoline at [ffff880000099000] 99000 size 24576
 [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
 [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
-[    0.000000] BRK [0x0305d000, 0x0305dfff] PGTABLE
-[    0.000000] BRK [0x0305e000, 0x0305efff] PGTABLE
-[    0.000000] BRK [0x0305f000, 0x0305ffff] PGTABLE
+[    0.000000] BRK [0x03059000, 0x03059fff] PGTABLE
+[    0.000000] BRK [0x0305a000, 0x0305afff] PGTABLE
+[    0.000000] BRK [0x0305b000, 0x0305bfff] PGTABLE
 [    0.000000] init_memory_mapping: [mem 0x1fc00000-0x1fdfffff]
 [    0.000000]  [mem 0x1fc00000-0x1fdfffff] page 2M
 [    0.000000] init_memory_mapping: [mem 0x1c000000-0x1fbfffff]
@@ -263,7 +248,7 @@ rved
 [    0.000000]  [mem 0x00200000-0x1bffffff] page 2M
 [    0.000000] init_memory_mapping: [mem 0x1fe00000-0x1fffdfff]
 [    0.000000]  [mem 0x1fe00000-0x1fffdfff] page 4k
-[    0.000000] BRK [0x03060000, 0x03060fff] PGTABLE
+[    0.000000] BRK [0x0305c000, 0x0305cfff] PGTABLE
 [    0.000000] ACPI: RSDP 00000000000fd930 000014 (v00 BOCHS )
 [    0.000000] ACPI: RSDT 000000001fffe450 000034 (v01 BOCHS  BXPCRSDT 0000=
 0001 BXPC 00000001)
@@ -377,16 +362,16 @@ l pages: 128903
 [    0.000000] Kernel command line: hung_task_panic=3D1 earlyprintk=3DttyS0=
 ,115200 debug apic=3Ddebug sysrq_always_enabled panic=3D10 load_ramdisk=3D2=
  prompt_ramdisk=3D0 console=3DttyS0,115200 console=3Dtty0 vga=3Dnormal ip=
-=3D::::nfsroot-cairo-7::dhcp nfsroot=3D192.168.1.1:/nfsroot/wfg,tcp,v3,noct=
+=3D::::nfsroot-xian-25::dhcp nfsroot=3D192.168.1.1:/nfsroot/wfg,tcp,v3,noct=
 o,actimeo=3D600,nolock,rsize=3D524288,wsize=3D524288 rw link=3D/kernel-test=
-s/run-queue/kvm/x86_64-nfsroot/devel-xian-x86_64-201312131052/.vmlinuz-b1da=
-f37ff52cf2ff39b2db2399e052ad7965c6aa-20131213105809-3-cairo branch=3Dlinux-=
-devel/devel-xian-x86_64-201312131052 BOOT_IMAGE=3D/kernel/x86_64-nfsroot/b1=
-daf37ff52cf2ff39b2db2399e052ad7965c6aa/vmlinuz-3.13.0-rc3-00689-gb1daf37
+s/run-queue/kvm/x86_64-nfsroot/devel-xian-x86_64-201312130852/.vmlinuz-31e0=
+78736811963afecfe7305a51541cbed8e6a6-20131213085833-4-xian branch=3Dlinux-d=
+evel/devel-xian-x86_64-201312130852 BOOT_IMAGE=3D/kernel/x86_64-nfsroot/31e=
+078736811963afecfe7305a51541cbed8e6a6/vmlinuz-3.13.0-rc3-00182-g31e0787
 [    0.000000] sysrq: sysrq always enabled.
 [    0.000000] PID hash table entries: 2048 (order: 2, 16384 bytes)
-[    0.000000] Memory: 477864K/523888K available (11260K kernel code, 1354K=
- rwdata, 5644K rodata, 3328K init, 11488K bss, 46024K reserved)
+[    0.000000] Memory: 477880K/523888K available (11258K kernel code, 1353K=
+ rwdata, 5628K rodata, 3328K init, 11488K bss, 46008K reserved)
 [    0.000000] SLUB: HWalign=3D64, Order=3D0-3, MinObjects=3D0, CPUs=3D2, N=
 odes=3D1
 [    0.000000] Hierarchical RCU implementation.
@@ -399,17 +384,17 @@ odes=3D1
 [    0.000000] bootconsole [earlyser0] disabled
 [    0.000000] Initializing cgroup subsys cpuset
 [    0.000000] Initializing cgroup subsys cpu
-[    0.000000] Linux version 3.13.0-rc3-00689-gb1daf37 (kbuild@xian) (gcc v=
-ersion 4.8.1 (Debian 4.8.1-8) ) #892 SMP Fri Dec 13 10:57:18 CST 2013
+[    0.000000] Linux version 3.13.0-rc3-00182-g31e0787 (kbuild@xian) (gcc v=
+ersion 4.8.1 (Debian 4.8.1-8) ) #882 SMP Fri Dec 13 08:57:56 CST 2013
 [    0.000000] Command line: hung_task_panic=3D1 earlyprintk=3DttyS0,115200=
  debug apic=3Ddebug sysrq_always_enabled panic=3D10 load_ramdisk=3D2 prompt=
 _ramdisk=3D0 console=3DttyS0,115200 console=3Dtty0 vga=3Dnormal ip=3D::::nf=
-sroot-cairo-7::dhcp nfsroot=3D192.168.1.1:/nfsroot/wfg,tcp,v3,nocto,actimeo=
+sroot-xian-25::dhcp nfsroot=3D192.168.1.1:/nfsroot/wfg,tcp,v3,nocto,actimeo=
 =3D600,nolock,rsize=3D524288,wsize=3D524288 rw link=3D/kernel-tests/run-que=
-ue/kvm/x86_64-nfsroot/devel-xian-x86_64-201312131052/.vmlinuz-b1daf37ff52cf=
-2ff39b2db2399e052ad7965c6aa-20131213105809-3-cairo branch=3Dlinux-devel/dev=
-el-xian-x86_64-201312131052 BOOT_IMAGE=3D/kernel/x86_64-nfsroot/b1daf37ff52=
-cf2ff39b2db2399e052ad7965c6aa/vmlinuz-3.13.0-rc3-00689-gb1daf37
+ue/kvm/x86_64-nfsroot/devel-xian-x86_64-201312130852/.vmlinuz-31e0787368119=
+63afecfe7305a51541cbed8e6a6-20131213085833-4-xian branch=3Dlinux-devel/deve=
+l-xian-x86_64-201312130852 BOOT_IMAGE=3D/kernel/x86_64-nfsroot/31e078736811=
+963afecfe7305a51541cbed8e6a6/vmlinuz-3.13.0-rc3-00182-g31e0787
 [    0.000000] KERNEL supported cpus:
 [    0.000000]   Intel GenuineIntel
 [    0.000000]   Centaur CentaurHauls
@@ -460,9 +445,9 @@ rved
 [    0.000000] Base memory trampoline at [ffff880000099000] 99000 size 24576
 [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
 [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
-[    0.000000] BRK [0x0305d000, 0x0305dfff] PGTABLE
-[    0.000000] BRK [0x0305e000, 0x0305efff] PGTABLE
-[    0.000000] BRK [0x0305f000, 0x0305ffff] PGTABLE
+[    0.000000] BRK [0x03059000, 0x03059fff] PGTABLE
+[    0.000000] BRK [0x0305a000, 0x0305afff] PGTABLE
+[    0.000000] BRK [0x0305b000, 0x0305bfff] PGTABLE
 [    0.000000] init_memory_mapping: [mem 0x1fc00000-0x1fdfffff]
 [    0.000000]  [mem 0x1fc00000-0x1fdfffff] page 2M
 [    0.000000] init_memory_mapping: [mem 0x1c000000-0x1fbfffff]
@@ -472,7 +457,7 @@ rved
 [    0.000000]  [mem 0x00200000-0x1bffffff] page 2M
 [    0.000000] init_memory_mapping: [mem 0x1fe00000-0x1fffdfff]
 [    0.000000]  [mem 0x1fe00000-0x1fffdfff] page 4k
-[    0.000000] BRK [0x03060000, 0x03060fff] PGTABLE
+[    0.000000] BRK [0x0305c000, 0x0305cfff] PGTABLE
 [    0.000000] ACPI: RSDP 00000000000fd930 000014 (v00 BOCHS )
 [    0.000000] ACPI: RSDT 000000001fffe450 000034 (v01 BOCHS  BXPCRSDT 0000=
 0001 BXPC 00000001)
@@ -586,16 +571,16 @@ l pages: 128903
 [    0.000000] Kernel command line: hung_task_panic=3D1 earlyprintk=3DttyS0=
 ,115200 debug apic=3Ddebug sysrq_always_enabled panic=3D10 load_ramdisk=3D2=
  prompt_ramdisk=3D0 console=3DttyS0,115200 console=3Dtty0 vga=3Dnormal ip=
-=3D::::nfsroot-cairo-7::dhcp nfsroot=3D192.168.1.1:/nfsroot/wfg,tcp,v3,noct=
+=3D::::nfsroot-xian-25::dhcp nfsroot=3D192.168.1.1:/nfsroot/wfg,tcp,v3,noct=
 o,actimeo=3D600,nolock,rsize=3D524288,wsize=3D524288 rw link=3D/kernel-test=
-s/run-queue/kvm/x86_64-nfsroot/devel-xian-x86_64-201312131052/.vmlinuz-b1da=
-f37ff52cf2ff39b2db2399e052ad7965c6aa-20131213105809-3-cairo branch=3Dlinux-=
-devel/devel-xian-x86_64-201312131052 BOOT_IMAGE=3D/kernel/x86_64-nfsroot/b1=
-daf37ff52cf2ff39b2db2399e052ad7965c6aa/vmlinuz-3.13.0-rc3-00689-gb1daf37
+s/run-queue/kvm/x86_64-nfsroot/devel-xian-x86_64-201312130852/.vmlinuz-31e0=
+78736811963afecfe7305a51541cbed8e6a6-20131213085833-4-xian branch=3Dlinux-d=
+evel/devel-xian-x86_64-201312130852 BOOT_IMAGE=3D/kernel/x86_64-nfsroot/31e=
+078736811963afecfe7305a51541cbed8e6a6/vmlinuz-3.13.0-rc3-00182-g31e0787
 [    0.000000] sysrq: sysrq always enabled.
 [    0.000000] PID hash table entries: 2048 (order: 2, 16384 bytes)
-[    0.000000] Memory: 477864K/523888K available (11260K kernel code, 1354K=
- rwdata, 5644K rodata, 3328K init, 11488K bss, 46024K reserved)
+[    0.000000] Memory: 477880K/523888K available (11258K kernel code, 1353K=
+ rwdata, 5628K rodata, 3328K init, 11488K bss, 46008K reserved)
 [    0.000000] SLUB: HWalign=3D64, Order=3D0-3, MinObjects=3D0, CPUs=3D2, N=
 odes=3D1
 [    0.000000] Hierarchical RCU implementation.
@@ -740,1659 +725,1092 @@ odes=3D1
 [    0.000000] ---------------------------------
 [    0.000000] ODEBUG: 0 of 0 active objects replaced
 [    0.000000] hpet clockevent registered
-[    0.000000] tsc: Detected 2893.018 MHz processor
-[    0.003000] Calibrating delay loop (skipped) preset value.. 5786.03 Bogo=
-MIPS (lpj=3D2893018)
-[    0.004020] pid_max: default: 32768 minimum: 301
-[    0.006565] Dentry cache hash table entries: 65536 (order: 7, 524288 byt=
+[    0.000000] tsc: Detected 2893.006 MHz processor
+[    0.003000] Calibrating delay loop (skipped) preset value.. 5786.01 Bogo=
+MIPS (lpj=3D2893006)
+[    0.004006] pid_max: default: 32768 minimum: 301
+[    0.006567] Dentry cache hash table entries: 65536 (order: 7, 524288 byt=
 es)
-[    0.007412] Inode-cache hash table entries: 32768 (order: 6, 262144 byte=
+[    0.007238] Inode-cache hash table entries: 32768 (order: 6, 262144 byte=
 s)
-[    0.009074] Mount-cache hash table entries: 256
-[    0.013269] Initializing cgroup subsys debug
-[    0.014039] Initializing cgroup subsys devices
-[    0.015073] Initializing cgroup subsys freezer
-[    0.016058] Initializing cgroup subsys blkio
-[    0.017357] mce: CPU supports 10 MCE banks
-[    0.018091] numa_add_cpu cpu 0 node 0: mask now 0
-[    0.019021] Last level iTLB entries: 4KB 0, 2MB 0, 4MB 0
-[    0.019021] Last level dTLB entries: 4KB 0, 2MB 0, 4MB 0
-[    0.019021] tlb_flushall_shift: 6
-[    0.021147] Freeing SMP alternatives memory: 40K (ffffffff82519000 - fff=
-fffff82523000)
-[    0.030868] ACPI: Core revision 20131115
-[    0.082488] ACPI: All ACPI Tables successfully acquired
-[    0.085071] ftrace: allocating 44626 entries in 175 pages
-[    0.101681] Getting VERSION: 50014
-[    0.102026] Getting VERSION: 50014
-[    0.103020] Getting ID: 0
-[    0.104025] Getting ID: ff000000
-[    0.105024] Getting LVT0: 8700
-[    0.106016] Getting LVT1: 8400
-[    0.107104] enabled ExtINT on CPU#0
-[    0.110515] ENABLING IO-APIC IRQs
-[    0.111017] init IO_APIC IRQs
-[    0.112013]  apic 0 pin 0 not connected
-[    0.114051] IOAPIC[0]: Set routing entry (0-1 -> 0x31 -> IRQ 1 Mode:0 Ac=
+[    0.009094] Mount-cache hash table entries: 256
+[    0.012731] Initializing cgroup subsys debug
+[    0.013022] Initializing cgroup subsys devices
+[    0.014038] Initializing cgroup subsys freezer
+[    0.015036] Initializing cgroup subsys blkio
+[    0.016205] mce: CPU supports 10 MCE banks
+[    0.017060] numa_add_cpu cpu 0 node 0: mask now 0
+[    0.018011] Last level iTLB entries: 4KB 0, 2MB 0, 4MB 0
+[    0.018011] Last level dTLB entries: 4KB 0, 2MB 0, 4MB 0
+[    0.018011] tlb_flushall_shift: 6
+[    0.019242] Freeing SMP alternatives memory: 40K (ffffffff82515000 - fff=
+fffff8251f000)
+[    0.026691] ACPI: Core revision 20131115
+[    0.061332] ACPI: All ACPI Tables successfully acquired
+[    0.062598] ftrace: allocating 44620 entries in 175 pages
+[    0.071503] Getting VERSION: 50014
+[    0.072012] Getting VERSION: 50014
+[    0.073012] Getting ID: 0
+[    0.074015] Getting ID: ff000000
+[    0.075014] Getting LVT0: 8700
+[    0.076009] Getting LVT1: 8400
+[    0.077067] enabled ExtINT on CPU#0
+[    0.079197] ENABLING IO-APIC IRQs
+[    0.080009] init IO_APIC IRQs
+[    0.081007]  apic 0 pin 0 not connected
+[    0.082029] IOAPIC[0]: Set routing entry (0-1 -> 0x31 -> IRQ 1 Mode:0 Ac=
 tive:0 Dest:1)
-[    0.115077] IOAPIC[0]: Set routing entry (0-2 -> 0x30 -> IRQ 0 Mode:0 Ac=
+[    0.083032] IOAPIC[0]: Set routing entry (0-2 -> 0x30 -> IRQ 0 Mode:0 Ac=
 tive:0 Dest:1)
-[    0.116071] IOAPIC[0]: Set routing entry (0-3 -> 0x33 -> IRQ 3 Mode:0 Ac=
+[    0.084030] IOAPIC[0]: Set routing entry (0-3 -> 0x33 -> IRQ 3 Mode:0 Ac=
 tive:0 Dest:1)
-[    0.117068] IOAPIC[0]: Set routing entry (0-4 -> 0x34 -> IRQ 4 Mode:0 Ac=
+[    0.085028] IOAPIC[0]: Set routing entry (0-4 -> 0x34 -> IRQ 4 Mode:0 Ac=
 tive:0 Dest:1)
-[    0.118063] IOAPIC[0]: Set routing entry (0-5 -> 0x35 -> IRQ 5 Mode:1 Ac=
+[    0.086028] IOAPIC[0]: Set routing entry (0-5 -> 0x35 -> IRQ 5 Mode:1 Ac=
 tive:0 Dest:1)
-[    0.119062] IOAPIC[0]: Set routing entry (0-6 -> 0x36 -> IRQ 6 Mode:0 Ac=
+[    0.087028] IOAPIC[0]: Set routing entry (0-6 -> 0x36 -> IRQ 6 Mode:0 Ac=
 tive:0 Dest:1)
-[    0.120057] IOAPIC[0]: Set routing entry (0-7 -> 0x37 -> IRQ 7 Mode:0 Ac=
+[    0.088028] IOAPIC[0]: Set routing entry (0-7 -> 0x37 -> IRQ 7 Mode:0 Ac=
 tive:0 Dest:1)
-[    0.121059] IOAPIC[0]: Set routing entry (0-8 -> 0x38 -> IRQ 8 Mode:0 Ac=
+[    0.089028] IOAPIC[0]: Set routing entry (0-8 -> 0x38 -> IRQ 8 Mode:0 Ac=
 tive:0 Dest:1)
-[    0.122068] IOAPIC[0]: Set routing entry (0-9 -> 0x39 -> IRQ 9 Mode:1 Ac=
+[    0.090028] IOAPIC[0]: Set routing entry (0-9 -> 0x39 -> IRQ 9 Mode:1 Ac=
 tive:0 Dest:1)
-[    0.123062] IOAPIC[0]: Set routing entry (0-10 -> 0x3a -> IRQ 10 Mode:1 =
+[    0.091029] IOAPIC[0]: Set routing entry (0-10 -> 0x3a -> IRQ 10 Mode:1 =
 Active:0 Dest:1)
-[    0.124059] IOAPIC[0]: Set routing entry (0-11 -> 0x3b -> IRQ 11 Mode:1 =
+[    0.092028] IOAPIC[0]: Set routing entry (0-11 -> 0x3b -> IRQ 11 Mode:1 =
 Active:0 Dest:1)
-[    0.125070] IOAPIC[0]: Set routing entry (0-12 -> 0x3c -> IRQ 12 Mode:0 =
+[    0.093028] IOAPIC[0]: Set routing entry (0-12 -> 0x3c -> IRQ 12 Mode:0 =
 Active:0 Dest:1)
-[    0.126063] IOAPIC[0]: Set routing entry (0-13 -> 0x3d -> IRQ 13 Mode:0 =
+[    0.094028] IOAPIC[0]: Set routing entry (0-13 -> 0x3d -> IRQ 13 Mode:0 =
 Active:0 Dest:1)
-[    0.127103] IOAPIC[0]: Set routing entry (0-14 -> 0x3e -> IRQ 14 Mode:0 =
+[    0.095038] IOAPIC[0]: Set routing entry (0-14 -> 0x3e -> IRQ 14 Mode:0 =
 Active:0 Dest:1)
-[    0.128061] IOAPIC[0]: Set routing entry (0-15 -> 0x3f -> IRQ 15 Mode:0 =
+[    0.096029] IOAPIC[0]: Set routing entry (0-15 -> 0x3f -> IRQ 15 Mode:0 =
 Active:0 Dest:1)
-[    0.129047]  apic 0 pin 16 not connected
-[    0.130008]  apic 0 pin 17 not connected
-[    0.131008]  apic 0 pin 18 not connected
-[    0.132007]  apic 0 pin 19 not connected
-[    0.133008]  apic 0 pin 20 not connected
-[    0.134008]  apic 0 pin 21 not connected
-[    0.135008]  apic 0 pin 22 not connected
-[    0.136008]  apic 0 pin 23 not connected
-[    0.137179] ..TIMER: vector=3D0x30 apic1=3D0 pin1=3D2 apic2=3D-1 pin2=3D=
+[    0.097022]  apic 0 pin 16 not connected
+[    0.098004]  apic 0 pin 17 not connected
+[    0.099004]  apic 0 pin 18 not connected
+[    0.100004]  apic 0 pin 19 not connected
+[    0.101004]  apic 0 pin 20 not connected
+[    0.102004]  apic 0 pin 21 not connected
+[    0.103004]  apic 0 pin 22 not connected
+[    0.104004]  apic 0 pin 23 not connected
+[    0.105147] ..TIMER: vector=3D0x30 apic1=3D0 pin1=3D2 apic2=3D-1 pin2=3D=
 -1
-[    0.138010] smpboot: CPU0: Intel Common KVM processor (fam: 0f, model: 0=
+[    0.106004] smpboot: CPU0: Intel Common KVM processor (fam: 0f, model: 0=
 6, stepping: 01)
-[    0.142008] Using local APIC timer interrupts.
-[    0.142008] calibrating APIC timer ...
-[    0.144000] ... lapic delta =3D 6249927
-[    0.144000] ... PM-Timer delta =3D 357983
-[    0.144000] ... PM-Timer result ok
-[    0.144000] ..... delta 6249927
-[    0.144000] ..... mult: 268432320
-[    0.144000] ..... calibration result: 999988
-[    0.144000] ..... CPU clock speed is 2893.0228 MHz.
-[    0.144000] ..... host bus clock speed is 999.0988 MHz.
-[    0.144136] Performance Events: unsupported Netburst CPU model 6 no PMU =
+[    0.108005] Using local APIC timer interrupts.
+[    0.108005] calibrating APIC timer ...
+[    0.110000] ... lapic delta =3D 6249317
+[    0.110000] ... PM-Timer delta =3D 357871
+[    0.110000] ... PM-Timer result ok
+[    0.110000] ..... delta 6249317
+[    0.110000] ..... mult: 268406121
+[    0.110000] ..... calibration result: 999890
+[    0.110000] ..... CPU clock speed is 2892.0313 MHz.
+[    0.110000] ..... host bus clock speed is 999.0890 MHz.
+[    0.110083] Performance Events: unsupported Netburst CPU model 6 no PMU =
 driver, software events only.
-[    0.151764] x86: Booting SMP configuration:
-[    0.152010] .... node  #0, CPUs:      #1
+[    0.115327] x86: Booting SMP configuration:
+[    0.116004] .... node  #0, CPUs:      #1
 [    0.003000] kvm-clock: cpu 1, msr 0:1fff8041, secondary cpu clock
 [    0.003000] masked ExtINT on CPU#1
 [    0.003000] numa_add_cpu cpu 1 node 0: mask now 0-1
 
-[    0.169182] x86: Booted up 1 node, 2 CPUs
-[    0.169120] KVM setup async PF for cpu 1
-[    0.169120] kvm-stealtime: cpu 1, msr 1ec0d200
-[    0.170035] ----------------
-[    0.171005] | NMI testsuite:
-[    0.172007] --------------------
-[    0.173007]   remote IPI:  ok  |
-[    0.178006]    local IPI:  ok  |
-[    0.186014] --------------------
-[    0.187007] Good, all   2 testcases passed! |
-[    0.188006] ---------------------------------
-[    0.189009] smpboot: Total of 2 processors activated (11572.07 BogoMIPS)
-[    0.195172] devtmpfs: initialized
-[    0.206319] kworker/u4:0 (17) used greatest stack depth: 5488 bytes left
-[    0.220416] xor: measuring software checksum speed
-[    0.231011]    prefetch64-sse:  9192.000 MB/sec
-[    0.242013]    generic_sse:  8440.000 MB/sec
-[    0.243008] xor: using function: prefetch64-sse (9192.000 MB/sec)
-[    0.244021] atomic64 test passed for x86-64 platform with CX8 and with S=
+[    0.131101] x86: Booted up 1 node, 2 CPUs
+[    0.131072] KVM setup async PF for cpu 1
+[    0.131072] kvm-stealtime: cpu 1, msr 1ec0d200
+[    0.132010] ----------------
+[    0.133003] | NMI testsuite:
+[    0.134003] --------------------
+[    0.135003]   remote IPI:  ok  |
+[    0.139742]    local IPI:  ok  |
+[    0.146011] --------------------
+[    0.146985] Good, all   2 testcases passed! |
+[    0.147004] ---------------------------------
+[    0.148004] smpboot: Total of 2 processors activated (11572.02 BogoMIPS)
+[    0.152604] devtmpfs: initialized
+[    0.160003] kworker/u4:0 (17) used greatest stack depth: 5488 bytes left
+[    0.168774] xor: measuring software checksum speed
+[    0.179003]    prefetch64-sse: 11796.000 MB/sec
+[    0.190003]    generic_sse: 11020.000 MB/sec
+[    0.191004] xor: using function: prefetch64-sse (11796.000 MB/sec)
+[    0.192008] atomic64 test passed for x86-64 platform with CX8 and with S=
 SE
-[    0.246238] RTC time: 11:03:41, date: 12/13/13
-[    0.249222] NET: Registered protocol family 16
-[    0.254133] kworker/u4:0 (21) used greatest stack depth: 5264 bytes left
-[    0.261367] cpuidle: using governor ladder
-[    0.263221] cpuidle: using governor menu
-[    0.265661] ACPI: bus type PCI registered
-[    0.270227] dca service started, version 1.12.1
-[    0.272384] PCI: Using configuration type 1 for base access
-[    0.282251] kworker/u4:0 (48) used greatest stack depth: 5152 bytes left
-[    0.510385] bio: create slab <bio-0> at 0
-[    0.531018] raid6: sse2x1    3726 MB/s
-[    0.549019] raid6: sse2x2    5765 MB/s
-[    0.567013] raid6: sse2x4    6312 MB/s
-[    0.568010] raid6: using algorithm sse2x4 (6312 MB/s)
-[    0.569007] raid6: using intx1 recovery algorithm
-[    0.572254] ACPI: Added _OSI(Module Device)
-[    0.573010] ACPI: Added _OSI(Processor Device)
-[    0.574009] ACPI: Added _OSI(3.0 _SCP Extensions)
-[    0.575010] ACPI: Added _OSI(Processor Aggregator Device)
-[    0.656537] ACPI: Interpreter enabled
-[    0.657039] ACPI Exception: AE_NOT_FOUND, While evaluating Sleep State [=
+[    0.194253] RTC time:  9:01:51, date: 12/13/13
+[    0.195398] NET: Registered protocol family 16
+[    0.199012] kworker/u4:0 (21) used greatest stack depth: 5264 bytes left
+[    0.203274] cpuidle: using governor ladder
+[    0.205001] cpuidle: using governor menu
+[    0.206372] ACPI: bus type PCI registered
+[    0.209152] dca service started, version 1.12.1
+[    0.210384] PCI: Using configuration type 1 for base access
+[    0.216257] kworker/u4:0 (47) used greatest stack depth: 5152 bytes left
+[    0.389180] bio: create slab <bio-0> at 0
+[    0.407286] raid6: sse2x1    5988 MB/s
+[    0.425287] raid6: sse2x2    8437 MB/s
+[    0.443287] raid6: sse2x4    9847 MB/s
+[    0.445004] raid6: using algorithm sse2x4 (9847 MB/s)
+[    0.446004] raid6: using intx1 recovery algorithm
+[    0.447568] ACPI: Added _OSI(Module Device)
+[    0.449002] ACPI: Added _OSI(Processor Device)
+[    0.450006] ACPI: Added _OSI(3.0 _SCP Extensions)
+[    0.451019] ACPI: Added _OSI(Processor Aggregator Device)
+[    0.506420] ACPI: Interpreter enabled
+[    0.507022] ACPI Exception: AE_NOT_FOUND, While evaluating Sleep State [=
 \_S1_] (20131115/hwxface-580)
-[    0.661062] ACPI Exception: AE_NOT_FOUND, While evaluating Sleep State [=
+[    0.509833] ACPI Exception: AE_NOT_FOUND, While evaluating Sleep State [=
 \_S2_] (20131115/hwxface-580)
-[    0.664227] ACPI: (supports S0 S3 S4 S5)
-[    0.665007] ACPI: Using IOAPIC for interrupt routing
-[    0.668148] PCI: Using host bridge windows from ACPI; if necessary, use =
+[    0.512118] ACPI: (supports S0 S3 S4 S5)
+[    0.513004] ACPI: Using IOAPIC for interrupt routing
+[    0.515169] PCI: Using host bridge windows from ACPI; if necessary, use =
 "pci=3Dnocrs" and report a bug
-[    0.690444] ACPI: No dock devices found.
-[    0.866288] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
-[    0.867052] acpi PNP0A03:00: _OSC: OS supports [Segments MSI]
-[    0.869125] acpi PNP0A03:00: _OSC failed (AE_NOT_FOUND); disabling ASPM
-[    0.878336] acpi PNP0A03:00: fail to add MMCONFIG information, can't acc=
+[    0.539782] ACPI: No dock devices found.
+[    0.663143] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+[    0.664032] acpi PNP0A03:00: _OSC: OS supports [Segments MSI]
+[    0.666010] acpi PNP0A03:00: _OSC failed (AE_NOT_FOUND); disabling ASPM
+[    0.672301] acpi PNP0A03:00: fail to add MMCONFIG information, can't acc=
 ess extended PCI configuration space under this bridge.
-[    0.891412] PCI host bridge to bus 0000:00
-[    0.892031] pci_bus 0000:00: root bus resource [bus 00-ff]
-[    0.893022] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7]
-[    0.894022] pci_bus 0000:00: root bus resource [io  0x0d00-0xffff]
-[    0.895024] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bfff=
+[    0.680453] PCI host bridge to bus 0000:00
+[    0.681013] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.682012] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7]
+[    0.683013] pci_bus 0000:00: root bus resource [io  0x0d00-0xffff]
+[    0.684012] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bfff=
 f]
-[    0.896022] pci_bus 0000:00: root bus resource [mem 0x80000000-0xfebffff=
+[    0.685011] pci_bus 0000:00: root bus resource [mem 0x80000000-0xfebffff=
 f]
-[    0.897169] pci 0000:00:00.0: [8086:1237] type 00 class 0x060000
-[    0.902383] pci 0000:00:01.0: [8086:7000] type 00 class 0x060100
-[    0.907182] pci 0000:00:01.1: [8086:7010] type 00 class 0x010180
-[    0.909000] pci 0000:00:01.1: reg 0x20: [io  0xc1c0-0xc1cf]
-[    0.914345] pci 0000:00:01.3: [8086:7113] type 00 class 0x068000
-[    0.915679] pci 0000:00:01.3: quirk: [io  0xb000-0xb03f] claimed by PIIX=
+[    0.686085] pci 0000:00:00.0: [8086:1237] type 00 class 0x060000
+[    0.690476] pci 0000:00:01.0: [8086:7000] type 00 class 0x060100
+[    0.694698] pci 0000:00:01.1: [8086:7010] type 00 class 0x010180
+[    0.699327] pci 0000:00:01.1: reg 0x20: [io  0xc1c0-0xc1cf]
+[    0.704249] pci 0000:00:01.3: [8086:7113] type 00 class 0x068000
+[    0.706154] pci 0000:00:01.3: quirk: [io  0xb000-0xb03f] claimed by PIIX=
 4 ACPI
-[    0.916033] pci 0000:00:01.3: quirk: [io  0xb100-0xb10f] claimed by PIIX=
+[    0.708004] pci 0000:00:01.3: quirk: [io  0xb100-0xb10f] claimed by PIIX=
 4 SMB
-[    0.922235] pci 0000:00:02.0: [1013:00b8] type 00 class 0x030000
-[    0.925017] pci 0000:00:02.0: reg 0x10: [mem 0xfc000000-0xfdffffff pref]
-[    0.928018] pci 0000:00:02.0: reg 0x14: [mem 0xfebf0000-0xfebf0fff]
-[    0.938021] pci 0000:00:02.0: reg 0x30: [mem 0xfebe0000-0xfebeffff pref]
-[    0.944167] pci 0000:00:03.0: [8086:100e] type 00 class 0x020000
-[    0.948011] pci 0000:00:03.0: reg 0x10: [mem 0xfeba0000-0xfebbffff]
-[    0.950000] pci 0000:00:03.0: reg 0x14: [io  0xc000-0xc03f]
-[    0.951000] pci 0000:00:03.0: reg 0x30: [mem 0xfebc0000-0xfebdffff pref]
-[    0.955322] pci 0000:00:04.0: [1af4:1001] type 00 class 0x010000
-[    0.957000] pci 0000:00:04.0: reg 0x10: [io  0xc040-0xc07f]
-[    0.958000] pci 0000:00:04.0: reg 0x14: [mem 0xfebf1000-0xfebf1fff]
-[    0.962222] pci 0000:00:05.0: [1af4:1001] type 00 class 0x010000
-[    0.964000] pci 0000:00:05.0: reg 0x10: [io  0xc080-0xc0bf]
-[    0.965000] pci 0000:00:05.0: reg 0x14: [mem 0xfebf2000-0xfebf2fff]
-[    0.976218] pci 0000:00:06.0: [1af4:1001] type 00 class 0x010000
-[    0.978000] pci 0000:00:06.0: reg 0x10: [io  0xc0c0-0xc0ff]
-[    0.979000] pci 0000:00:06.0: reg 0x14: [mem 0xfebf3000-0xfebf3fff]
-[    0.982722] pci 0000:00:07.0: [1af4:1001] type 00 class 0x010000
-[    0.984000] pci 0000:00:07.0: reg 0x10: [io  0xc100-0xc13f]
-[    0.985000] pci 0000:00:07.0: reg 0x14: [mem 0xfebf4000-0xfebf4fff]
-[    0.990156] pci 0000:00:08.0: [1af4:1001] type 00 class 0x010000
-[    0.994014] pci 0000:00:08.0: reg 0x10: [io  0xc140-0xc17f]
-[    0.996000] pci 0000:00:08.0: reg 0x14: [mem 0xfebf5000-0xfebf5fff]
-[    1.000218] pci 0000:00:09.0: [1af4:1001] type 00 class 0x010000
-[    1.002000] pci 0000:00:09.0: reg 0x10: [io  0xc180-0xc1bf]
-[    1.003000] pci 0000:00:09.0: reg 0x14: [mem 0xfebf6000-0xfebf6fff]
-[    1.008418] pci 0000:00:0a.0: [8086:25ab] type 00 class 0x088000
-[    1.012012] pci 0000:00:0a.0: reg 0x10: [mem 0xfebf7000-0xfebf700f]
-[    1.031361] ACPI: PCI Interrupt Link [LNKA] (IRQs 5 *10 11)
-[    1.037230] ACPI: PCI Interrupt Link [LNKB] (IRQs 5 *10 11)
-[    1.043141] ACPI: PCI Interrupt Link [LNKC] (IRQs 5 10 *11)
-[    1.049075] ACPI: PCI Interrupt Link [LNKD] (IRQs 5 10 *11)
-[    1.053146] ACPI: PCI Interrupt Link [LNKS] (IRQs *9)
-[    1.064564] ACPI: Enabled 16 GPEs in block 00 to 0F
-[    1.066061] ACPI: \_SB_.PCI0: notify handler is installed
-[    1.067254] Found 1 acpi root devices
-[    1.073108] vgaarb: device added: PCI:0000:00:02.0,decodes=3Dio+mem,owns=
+[    0.712077] pci 0000:00:02.0: [1013:00b8] type 00 class 0x030000
+[    0.714687] pci 0000:00:02.0: reg 0x10: [mem 0xfc000000-0xfdffffff pref]
+[    0.716680] pci 0000:00:02.0: reg 0x14: [mem 0xfebf0000-0xfebf0fff]
+[    0.724670] pci 0000:00:02.0: reg 0x30: [mem 0xfebe0000-0xfebeffff pref]
+[    0.728663] pci 0000:00:03.0: [8086:100e] type 00 class 0x020000
+[    0.731007] pci 0000:00:03.0: reg 0x10: [mem 0xfeba0000-0xfebbffff]
+[    0.733599] pci 0000:00:03.0: reg 0x14: [io  0xc000-0xc03f]
+[    0.735005] pci 0000:00:03.0: reg 0x30: [mem 0xfebc0000-0xfebdffff pref]
+[    0.738833] pci 0000:00:04.0: [1af4:1001] type 00 class 0x010000
+[    0.741606] pci 0000:00:04.0: reg 0x10: [io  0xc040-0xc07f]
+[    0.744006] pci 0000:00:04.0: reg 0x14: [mem 0xfebf1000-0xfebf1fff]
+[    0.754336] pci 0000:00:05.0: [1af4:1001] type 00 class 0x010000
+[    0.757005] pci 0000:00:05.0: reg 0x10: [io  0xc080-0xc0bf]
+[    0.759610] pci 0000:00:05.0: reg 0x14: [mem 0xfebf2000-0xfebf2fff]
+[    0.762389] pci 0000:00:06.0: [1af4:1001] type 00 class 0x010000
+[    0.765005] pci 0000:00:06.0: reg 0x10: [io  0xc0c0-0xc0ff]
+[    0.767612] pci 0000:00:06.0: reg 0x14: [mem 0xfebf3000-0xfebf3fff]
+[    0.771414] pci 0000:00:07.0: [1af4:1001] type 00 class 0x010000
+[    0.774005] pci 0000:00:07.0: reg 0x10: [io  0xc100-0xc13f]
+[    0.776610] pci 0000:00:07.0: reg 0x14: [mem 0xfebf4000-0xfebf4fff]
+[    0.779370] pci 0000:00:08.0: [1af4:1001] type 00 class 0x010000
+[    0.782005] pci 0000:00:08.0: reg 0x10: [io  0xc140-0xc17f]
+[    0.784610] pci 0000:00:08.0: reg 0x14: [mem 0xfebf5000-0xfebf5fff]
+[    0.794509] pci 0000:00:09.0: [1af4:1001] type 00 class 0x010000
+[    0.797006] pci 0000:00:09.0: reg 0x10: [io  0xc180-0xc1bf]
+[    0.799604] pci 0000:00:09.0: reg 0x14: [mem 0xfebf6000-0xfebf6fff]
+[    0.802463] pci 0000:00:0a.0: [8086:25ab] type 00 class 0x088000
+[    0.804327] pci 0000:00:0a.0: reg 0x10: [mem 0xfebf7000-0xfebf700f]
+[    0.818855] ACPI: PCI Interrupt Link [LNKA] (IRQs 5 *10 11)
+[    0.822457] ACPI: PCI Interrupt Link [LNKB] (IRQs 5 *10 11)
+[    0.826026] ACPI: PCI Interrupt Link [LNKC] (IRQs 5 10 *11)
+[    0.829604] ACPI: PCI Interrupt Link [LNKD] (IRQs 5 10 *11)
+[    0.832056] ACPI: PCI Interrupt Link [LNKS] (IRQs *9)
+[    0.839381] ACPI: Enabled 16 GPEs in block 00 to 0F
+[    0.840035] ACPI: \_SB_.PCI0: notify handler is installed
+[    0.841139] Found 1 acpi root devices
+[    0.845290] vgaarb: device added: PCI:0000:00:02.0,decodes=3Dio+mem,owns=
 =3Dio+mem,locks=3Dnone
-[    1.074026] vgaarb: loaded
-[    1.075006] vgaarb: bridge control possible 0000:00:02.0
-[    1.080347] SCSI subsystem initialized
-[    1.083363] libata version 3.00 loaded.
-[    1.086499] ACPI: bus type USB registered
-[    1.089595] usbcore: registered new interface driver usbfs
-[    1.092368] usbcore: registered new interface driver hub
-[    1.095096] usbcore: registered new device driver usb
-[    1.099427] pps_core: LinuxPPS API ver. 1 registered
-[    1.100008] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo =
+[    0.849032] vgaarb: loaded
+[    0.851012] vgaarb: bridge control possible 0000:00:02.0
+[    0.857296] SCSI subsystem initialized
+[    0.860170] libata version 3.00 loaded.
+[    0.862457] ACPI: bus type USB registered
+[    0.865077] usbcore: registered new interface driver usbfs
+[    0.867308] usbcore: registered new interface driver hub
+[    0.869280] usbcore: registered new device driver usb
+[    0.873243] pps_core: LinuxPPS API ver. 1 registered
+[    0.874023] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo =
 Giometti <giometti@linux.it>
-[    1.103053] PTP clock support registered
-[    1.107425] wmi: Mapper loaded
-[    1.110024] Advanced Linux Sound Architecture Driver Initialized.
-[    1.111007] PCI: Using ACPI for IRQ routing
-[    1.112009] PCI: pci_cache_line_size set to 64 bytes
-[    1.113400] e820: reserve RAM buffer [mem 0x0009fc00-0x0009ffff]
-[    1.114047] e820: reserve RAM buffer [mem 0x1fffe000-0x1fffffff]
-[    1.120498] HPET: 3 timers in total, 0 timers will be used for per-cpu t=
+[    0.877347] PTP clock support registered
+[    0.882274] wmi: Mapper loaded
+[    0.884238] Advanced Linux Sound Architecture Driver Initialized.
+[    0.885174] PCI: Using ACPI for IRQ routing
+[    0.887008] PCI: pci_cache_line_size set to 64 bytes
+[    0.888297] e820: reserve RAM buffer [mem 0x0009fc00-0x0009ffff]
+[    0.890023] e820: reserve RAM buffer [mem 0x1fffe000-0x1fffffff]
+[    0.895674] HPET: 3 timers in total, 0 timers will be used for per-cpu t=
 imer
-[    1.121054] hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0
-[    1.124007] hpet0: 3 comparators, 64-bit 100.000000 MHz counter
-[    1.132027] Switched to clocksource kvm-clock
-[    1.370377] pnp: PnP ACPI init
-[    1.372215] ACPI: bus type PNP registered
-[    1.374443] IOAPIC[0]: Set routing entry (0-8 -> 0x38 -> IRQ 8 Mode:0 Ac=
+[    0.898104] hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0
+[    0.900005] hpet0: 3 comparators, 64-bit 100.000000 MHz counter
+[    0.909281] Switched to clocksource kvm-clock
+[    1.063000] pnp: PnP ACPI init
+[    1.064137] ACPI: bus type PNP registered
+[    1.065502] IOAPIC[0]: Set routing entry (0-8 -> 0x38 -> IRQ 8 Mode:0 Ac=
 tive:0 Dest:3)
-[    1.378640] pnp 00:00: Plug and Play ACPI device, IDs PNP0b00 (active)
-[    1.381404] IOAPIC[0]: Set routing entry (0-1 -> 0x31 -> IRQ 1 Mode:0 Ac=
+[    1.068287] pnp 00:00: Plug and Play ACPI device, IDs PNP0b00 (active)
+[    1.069996] IOAPIC[0]: Set routing entry (0-1 -> 0x31 -> IRQ 1 Mode:0 Ac=
 tive:0 Dest:3)
-[    1.385573] pnp 00:01: Plug and Play ACPI device, IDs PNP0303 (active)
-[    1.388281] IOAPIC[0]: Set routing entry (0-12 -> 0x3c -> IRQ 12 Mode:0 =
+[    1.072710] pnp 00:01: Plug and Play ACPI device, IDs PNP0303 (active)
+[    1.074401] IOAPIC[0]: Set routing entry (0-12 -> 0x3c -> IRQ 12 Mode:0 =
 Active:0 Dest:3)
-[    1.392440] pnp 00:02: Plug and Play ACPI device, IDs PNP0f13 (active)
-[    1.395635] IOAPIC[0]: Set routing entry (0-6 -> 0x36 -> IRQ 6 Mode:0 Ac=
+[    1.077121] pnp 00:02: Plug and Play ACPI device, IDs PNP0f13 (active)
+[    1.079132] IOAPIC[0]: Set routing entry (0-6 -> 0x36 -> IRQ 6 Mode:0 Ac=
 tive:0 Dest:3)
-[    1.398981] pnp 00:03: [dma 2]
-[    1.401341] pnp 00:03: Plug and Play ACPI device, IDs PNP0700 (active)
-[    1.404587] IOAPIC[0]: Set routing entry (0-7 -> 0x37 -> IRQ 7 Mode:0 Ac=
+[    1.081196] pnp 00:03: [dma 2]
+[    1.082753] pnp 00:03: Plug and Play ACPI device, IDs PNP0700 (active)
+[    1.084751] IOAPIC[0]: Set routing entry (0-7 -> 0x37 -> IRQ 7 Mode:0 Ac=
 tive:0 Dest:3)
-[    1.408753] pnp 00:04: Plug and Play ACPI device, IDs PNP0400 (active)
-[    1.411967] IOAPIC[0]: Set routing entry (0-4 -> 0x34 -> IRQ 4 Mode:0 Ac=
+[    1.087404] pnp 00:04: Plug and Play ACPI device, IDs PNP0400 (active)
+[    1.089426] IOAPIC[0]: Set routing entry (0-4 -> 0x34 -> IRQ 4 Mode:0 Ac=
 tive:0 Dest:3)
-[    1.416214] pnp 00:05: Plug and Play ACPI device, IDs PNP0501 (active)
-[    1.424457] pnp 00:06: Plug and Play ACPI device, IDs PNP0103 (active)
-[    1.430167] pnp: PnP ACPI: found 7 devices
-[    1.431945] ACPI: bus type PNP unregistered
-[    1.514136] pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7]
-[    1.517056] pci_bus 0000:00: resource 5 [io  0x0d00-0xffff]
-[    1.519030] pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff]
-[    1.521081] pci_bus 0000:00: resource 7 [mem 0x80000000-0xfebfffff]
-[    1.523743] NET: Registered protocol family 2
-[    1.527320] TCP established hash table entries: 4096 (order: 3, 32768 by=
+[    1.092043] pnp 00:05: Plug and Play ACPI device, IDs PNP0501 (active)
+[    1.096615] pnp 00:06: Plug and Play ACPI device, IDs PNP0103 (active)
+[    1.100226] pnp: PnP ACPI: found 7 devices
+[    1.101324] ACPI: bus type PNP unregistered
+[    1.189512] pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7]
+[    1.192499] pci_bus 0000:00: resource 5 [io  0x0d00-0xffff]
+[    1.195419] pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff]
+[    1.196789] pci_bus 0000:00: resource 7 [mem 0x80000000-0xfebfffff]
+[    1.198371] NET: Registered protocol family 2
+[    1.200589] TCP established hash table entries: 4096 (order: 3, 32768 by=
 tes)
-[    1.530407] TCP bind hash table entries: 4096 (order: 6, 327680 bytes)
-[    1.533156] TCP: Hash tables configured (established 4096 bind 4096)
-[    1.535452] TCP: reno registered
-[    1.537055] UDP hash table entries: 256 (order: 3, 49152 bytes)
-[    1.539178] UDP-Lite hash table entries: 256 (order: 3, 49152 bytes)
-[    1.542520] NET: Registered protocol family 1
-[    1.546274] RPC: Registered named UNIX socket transport module.
-[    1.548174] RPC: Registered udp transport module.
-[    1.550038] RPC: Registered tcp transport module.
-[    1.551978] RPC: Registered tcp NFSv4.1 backchannel transport module.
-[    1.554243] pci 0000:00:00.0: Limiting direct PCI/PCI transfers
-[    1.556408] pci 0000:00:01.0: PIIX3: Enabling Passive Release
-[    1.558542] pci 0000:00:01.0: Activating ISA DMA hang workarounds
-[    1.560773] pci 0000:00:02.0: Boot video device
-[    1.562817] PCI: CLS 0 bytes, default 64
-[    1.953953] DMA-API: preallocated 65536 debug entries
-[    1.956041] DMA-API: debugging enabled by kernel config
-[    1.958712] kvm: no hardware support
-[    1.961474] Machine check injector initialized
-[    1.970173] microcode: CPU0 sig=3D0xf61, pf=3D0x1, revision=3D0x1
-[    1.972470] microcode: CPU1 sig=3D0xf61, pf=3D0x1, revision=3D0x1
-[    1.975551] microcode: Microcode Update Driver: v2.00 <tigran@aivazian.f=
+[    1.202298] TCP bind hash table entries: 4096 (order: 6, 327680 bytes)
+[    1.204068] TCP: Hash tables configured (established 4096 bind 4096)
+[    1.205995] TCP: reno registered
+[    1.207024] UDP hash table entries: 256 (order: 3, 49152 bytes)
+[    1.208449] UDP-Lite hash table entries: 256 (order: 3, 49152 bytes)
+[    1.210309] NET: Registered protocol family 1
+[    1.212276] RPC: Registered named UNIX socket transport module.
+[    1.213607] RPC: Registered udp transport module.
+[    1.214772] RPC: Registered tcp transport module.
+[    1.215943] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[    1.217387] pci 0000:00:00.0: Limiting direct PCI/PCI transfers
+[    1.218728] pci 0000:00:01.0: PIIX3: Enabling Passive Release
+[    1.220058] pci 0000:00:01.0: Activating ISA DMA hang workarounds
+[    1.221443] pci 0000:00:02.0: Boot video device
+[    1.222675] PCI: CLS 0 bytes, default 64
+[    1.473482] DMA-API: preallocated 65536 debug entries
+[    1.474726] DMA-API: debugging enabled by kernel config
+[    1.476417] kvm: no hardware support
+[    1.478130] Machine check injector initialized
+[    1.483509] microcode: CPU0 sig=3D0xf61, pf=3D0x1, revision=3D0x1
+[    1.484822] microcode: CPU1 sig=3D0xf61, pf=3D0x1, revision=3D0x1
+[    1.486748] microcode: Microcode Update Driver: v2.00 <tigran@aivazian.f=
 snet.co.uk>, Peter Oruba
-[    1.979169] Scanning for low memory corruption every 60 seconds
-[    1.989577] Initializing RT-Tester: OK
-[    1.997622] audit: initializing netlink socket (disabled)
-[    1.999913] type=3D2000 audit(1386903822.352:1): initialized
-[    2.054490] Kprobe smoke test started
-[    2.146215] Kprobe smoke test passed successfully
-[    2.151835] bounce pool size: 64 pages
-[    2.153651] HugeTLB registered 2 MB page size, pre-allocated 0 pages
-[    2.303826] NFS: Registering the id_resolver key type
-[    2.306063] Key type id_resolver registered
-[    2.307802] Key type id_legacy registered
-[    2.309589] Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
-[    2.323759] fuse init (API version 7.22)
-[    2.330557] JFS: nTxBlock =3D 3733, nTxLock =3D 29869
-[    2.337238] SGI XFS with ACLs, security attributes, large block/inode nu=
+[    1.488965] Scanning for low memory corruption every 60 seconds
+[    1.496360] Initializing RT-Tester: OK
+[    1.502144] audit: initializing netlink socket (disabled)
+[    1.503509] type=3D2000 audit(1386896513.325:1): initialized
+[    1.543280] Kprobe smoke test started
+[    1.621143] Kprobe smoke test passed successfully
+[    1.625244] bounce pool size: 64 pages
+[    1.626345] HugeTLB registered 2 MB page size, pre-allocated 0 pages
+[    1.731374] NFS: Registering the id_resolver key type
+[    1.732750] Key type id_resolver registered
+[    1.733867] Key type id_legacy registered
+[    1.734961] Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
+[    1.743816] fuse init (API version 7.22)
+[    1.748088] JFS: nTxBlock =3D 3733, nTxLock =3D 29870
+[    1.752614] SGI XFS with ACLs, security attributes, large block/inode nu=
 mbers, no debug enabled
-[    2.358614] 9p: Installing v9fs 9p2000 file system support
-[    2.365304] NILFS version 2 loaded
-[    2.375806] bio: create slab <bio-1> at 1
-[    2.387379] Btrfs loaded
-[    2.388886] msgmni has been set to 933
-[    2.398946] async_tx: api initialized (async)
-[    2.402234] Block layer SCSI generic (bsg) driver version 0.4 loaded (ma=
+[    1.767547] 9p: Installing v9fs 9p2000 file system support
+[    1.772442] NILFS version 2 loaded
+[    1.779597] bio: create slab <bio-1> at 1
+[    1.787672] Btrfs loaded
+[    1.788807] msgmni has been set to 933
+[    1.794279] async_tx: api initialized (async)
+[    1.796425] Block layer SCSI generic (bsg) driver version 0.4 loaded (ma=
 jor 250)
-[    2.405793] io scheduler noop registered
-[    2.407530] io scheduler deadline registered
-[    2.411360] io scheduler cfq registered (default)
-[    2.415609] list_sort_test: start testing list_sort()
-[    2.427731] pci_hotplug: PCI Hot Plug PCI Core version: 0.5
-[    2.432602] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/inpu=
+[    1.798904] io scheduler noop registered
+[    1.799999] io scheduler deadline registered
+[    1.802553] io scheduler cfq registered (default)
+[    1.805595] list_sort_test: start testing list_sort()
+[    1.813611] pci_hotplug: PCI Hot Plug PCI Core version: 0.5
+[    1.817103] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/inpu=
 t/input0
-[    2.436101] ACPI: Power Button [PWRF]
-[    2.443802] ioatdma: Intel(R) QuickData Technology Driver 4.00
-[    2.464555] ACPI: PCI Interrupt Link [LNKD] enabled at IRQ 11
-[    2.466758] IOAPIC[0]: Set routing entry (0-11 -> 0x3b -> IRQ 11 Mode:1 =
+[    1.819159] ACPI: Power Button [PWRF]
+[    1.824314] ioatdma: Intel(R) QuickData Technology Driver 4.00
+[    1.837171] ACPI: PCI Interrupt Link [LNKD] enabled at IRQ 11
+[    1.838520] IOAPIC[0]: Set routing entry (0-11 -> 0x3b -> IRQ 11 Mode:1 =
 Active:0 Dest:3)
-[    2.486980] ACPI: PCI Interrupt Link [LNKA] enabled at IRQ 10
-[    2.489132] IOAPIC[0]: Set routing entry (0-10 -> 0x3a -> IRQ 10 Mode:1 =
+[    1.851708] ACPI: PCI Interrupt Link [LNKA] enabled at IRQ 10
+[    1.853035] IOAPIC[0]: Set routing entry (0-10 -> 0x3a -> IRQ 10 Mode:1 =
 Active:0 Dest:3)
-[    2.509744] ACPI: PCI Interrupt Link [LNKB] enabled at IRQ 10
-[    2.530509] ACPI: PCI Interrupt Link [LNKC] enabled at IRQ 11
-[    2.962175] tsc: Refined TSC clocksource calibration: 2892.983 MHz
-[    2.975694] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
-[    3.001478] 00:05: ttyS0 at I/O 0x3f8 (irq =3D 4, base_baud =3D 115200) =
+[    1.866195] ACPI: PCI Interrupt Link [LNKB] enabled at IRQ 10
+[    1.878816] ACPI: PCI Interrupt Link [LNKC] enabled at IRQ 11
+[    2.119527] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+[    2.143082] 00:05: ttyS0 at I/O 0x3f8 (irq =3D 4, base_baud =3D 115200) =
 is a 16550A
-[    3.012820] Initializing Nozomi driver 2.1d
-[    3.019413] Non-volatile memory driver v1.3
-[    3.021991] Linux agpgart interface v0.103
-[    3.024776] Hangcheck: starting hangcheck timer 0.9.1 (tick is 180 secon=
+[    2.149368] Initializing Nozomi driver 2.1d
+[    2.153068] Non-volatile memory driver v1.3
+[    2.154627] Linux agpgart interface v0.103
+[    2.156302] Hangcheck: starting hangcheck timer 0.9.1 (tick is 180 secon=
 ds, margin is 60 seconds).
-[    3.028475] Hangcheck: Using getrawmonotonic().
-[    3.030964] [drm] Initialized drm 1.1.0 20060810
-[    3.037745] Floppy drive(s): fd0 is 1.44M
-[    3.052387] FDC 0 is a S82078B
-[    3.075301] brd: module loaded
-[    3.095496] loop: module loaded
-[    3.099611] virtio-pci 0000:00:04.0: irq 40 for MSI/MSI-X
-[    3.101825] virtio-pci 0000:00:04.0: irq 41 for MSI/MSI-X
-[    3.105266] blk-mq: CPU -> queue map
-[    3.107037]   CPU 0 -> Queue 0
-[    3.108630]   CPU 1 -> Queue 0
-[    3.113576]  vda: unknown partition table
-[    3.119946] virtio-pci 0000:00:05.0: irq 42 for MSI/MSI-X
-[    3.122127] virtio-pci 0000:00:05.0: irq 43 for MSI/MSI-X
-[    3.125473] blk-mq: CPU -> queue map
-[    3.127249]   CPU 0 -> Queue 0
-[    3.129090]   CPU 1 -> Queue 0
-[    3.134439]  vdb: unknown partition table
-[    3.141131] virtio-pci 0000:00:06.0: irq 44 for MSI/MSI-X
-[    3.143469] virtio-pci 0000:00:06.0: irq 45 for MSI/MSI-X
-[    3.146788] blk-mq: CPU -> queue map
-[    3.148573]   CPU 0 -> Queue 0
-[    3.150318]   CPU 1 -> Queue 0
-[    3.159140]  vdc: unknown partition table
-[    3.165081] virtio-pci 0000:00:07.0: irq 46 for MSI/MSI-X
-[    3.167290] virtio-pci 0000:00:07.0: irq 47 for MSI/MSI-X
-[    3.170553] blk-mq: CPU -> queue map
-[    3.172330]   CPU 0 -> Queue 0
-[    3.174110]   CPU 1 -> Queue 0
-[    3.178293]  vdd: unknown partition table
-[    3.184344] virtio-pci 0000:00:08.0: irq 48 for MSI/MSI-X
-[    3.186580] virtio-pci 0000:00:08.0: irq 49 for MSI/MSI-X
-[    3.189793] blk-mq: CPU -> queue map
-[    3.191583]   CPU 0 -> Queue 0
-[    3.193365]   CPU 1 -> Queue 0
-[    3.197574]  vde: unknown partition table
-[    3.203494] virtio-pci 0000:00:09.0: irq 50 for MSI/MSI-X
-[    3.205678] virtio-pci 0000:00:09.0: irq 51 for MSI/MSI-X
-[    3.208943] blk-mq: CPU -> queue map
-[    3.210752]   CPU 0 -> Queue 0
-[    3.212548]   CPU 1 -> Queue 0
-[    3.217177]  vdf: unknown partition table
-[    3.223554] lkdtm: No crash points registered, enable through debugfs
-[    3.226661] Uniform Multi-Platform E-IDE driver
-[    3.229697] piix 0000:00:01.1: IDE controller (0x8086:0x7010 rev 0x00)
-[    3.232520] piix 0000:00:01.1: not 100% native mode: will probe irqs lat=
+[    2.158480] Hangcheck: Using getrawmonotonic().
+[    2.159913] [drm] Initialized drm 1.1.0 20060810
+[    2.163684] Floppy drive(s): fd0 is 1.44M
+[    2.176894] FDC 0 is a S82078B
+[    2.192733] brd: module loaded
+[    2.208598] loop: module loaded
+[    2.212293] virtio-pci 0000:00:04.0: irq 40 for MSI/MSI-X
+[    2.213913] virtio-pci 0000:00:04.0: irq 41 for MSI/MSI-X
+[    2.215595] BUG: key ffff8800192a6ad0 not in .data!
+[    2.217058] ------------[ cut here ]------------
+[    2.218474] WARNING: CPU: 0 PID: 1 at kernel/locking/lockdep.c:2987 lock=
+dep_init_map+0x127/0x462()
+[    2.221519] DEBUG_LOCKS_WARN_ON(1)
+[    2.222162] Modules linked in:
+[    2.224095] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-rc3-00182-g=
+31e0787 #882
+[    2.226345] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[    2.227632]  0000000000000002 ffff88001e6d5968 ffffffff81ae4fad ffff8800=
+1e6d59b0
+[    2.229933]  ffff88001e6d59a0 ffffffff81071e22 ffffffff810ae405 ffff8800=
+192a6ad0
+[    2.232245]  ffff8800192dd8d0 0000000000000000 0000000000000000 ffff8800=
+1e6d5a00
+[    2.234549] Call Trace:
+[    2.235418]  [<ffffffff81ae4fad>] dump_stack+0x4d/0x66
+[    2.236638]  [<ffffffff81071e22>] warn_slowpath_common+0x7f/0x98
+[    2.237962]  [<ffffffff810ae405>] ? lockdep_init_map+0x127/0x462
+[    2.239292]  [<ffffffff81071e87>] warn_slowpath_fmt+0x4c/0x4e
+[    2.240585]  [<ffffffff810ae405>] lockdep_init_map+0x127/0x462
+[    2.241894]  [<ffffffff811d19a2>] ? sysfs_new_dirent+0x8f/0x111
+[    2.243216]  [<ffffffff811d0d5a>] sysfs_add_file_mode_ns+0x66/0xb4
+[    2.244570]  [<ffffffff811d2b97>] internal_create_group+0x153/0x1de
+[    2.245942]  [<ffffffff811d2c35>] sysfs_create_group+0x13/0x15
+[    2.247259]  [<ffffffff811d2df9>] sysfs_create_groups+0x27/0x64
+[    2.248577]  [<ffffffff814ac79e>] populate_msi_sysfs+0x165/0x17d
+[    2.249906]  [<ffffffff814ad8bd>] pci_enable_msix+0x2de/0x36b
+[    2.251205]  [<ffffffff81519bd1>] vp_request_msix_vectors+0xc6/0x217
+[    2.252585]  [<ffffffff81519dca>] vp_try_to_find_vqs+0xa8/0x41f
+[    2.253913]  [<ffffffff815f83c0>] ? virtblk_probe+0x9a/0x572
+[    2.255198]  [<ffffffff8151a290>] vp_find_vqs+0x35/0x8d
+[    2.256443]  [<ffffffff815f78d8>] init_vq+0x3f/0x61
+[    2.257618]  [<ffffffff815f793d>] ? virtblk_restore+0x43/0x43
+[    2.258913]  [<ffffffff815f844c>] virtblk_probe+0x126/0x572
+[    2.260183]  [<ffffffff81517acf>] virtio_dev_probe+0xbc/0xfa
+[    2.261477]  [<ffffffff815db6b6>] driver_probe_device+0x9d/0x1b8
+[    2.262804]  [<ffffffff815db86f>] __driver_attach+0x61/0x83
+[    2.264078]  [<ffffffff815db80e>] ? __device_attach+0x3d/0x3d
+[    2.265379]  [<ffffffff815d9cb6>] bus_for_each_dev+0x80/0x8a
+[    2.266664]  [<ffffffff815db1fd>] driver_attach+0x1e/0x20
+[    2.267914]  [<ffffffff815dae9c>] bus_add_driver+0x10e/0x1d8
+[    2.269197]  [<ffffffff815dbe11>] driver_register+0x8e/0xca
+[    2.270473]  [<ffffffff81517db2>] register_virtio_driver+0x2b/0x2d
+[    2.271829]  [<ffffffff823f75c3>] init+0x53/0x85
+[    2.272972]  [<ffffffff823f7570>] ? init_cryptoloop+0x2a/0x2a
+[    2.274270]  [<ffffffff8100029a>] do_one_initcall+0x84/0x11a
+[    2.275556]  [<ffffffff8108e91e>] ? parse_args+0x189/0x249
+[    2.276820]  [<ffffffff823aaf5c>] kernel_init_freeable+0x1d9/0x25f
+[    2.278162]  [<ffffffff823aa759>] ? do_early_param+0x88/0x88
+[    2.279446]  [<ffffffff81ad17d9>] ? rest_init+0xcd/0xcd
+[    2.280668]  [<ffffffff81ad17e7>] kernel_init+0xe/0x104
+[    2.281896]  [<ffffffff81af8b7c>] ret_from_fork+0x7c/0xb0
+[    2.283147]  [<ffffffff81ad17d9>] ? rest_init+0xcd/0xcd
+[    2.284374] ---[ end trace bd4d220a7a045ff3 ]---
+[    2.285538] BUG: key ffff8800192a7278 not in .data!
+[    2.287210] blk-mq: CPU -> queue map
+[    2.288239]   CPU 0 -> Queue 0
+[    2.289173]   CPU 1 -> Queue 0
+[    2.291666]  vda: unknown partition table
+[    2.299547] virtio-pci 0000:00:05.0: irq 42 for MSI/MSI-X
+[    2.302445] virtio-pci 0000:00:05.0: irq 43 for MSI/MSI-X
+[    2.305383] BUG: key ffff88001934e328 not in .data!
+[    2.306571] BUG: key ffff88001934fba8 not in .data!
+[    2.308227] blk-mq: CPU -> queue map
+[    2.309243]   CPU 0 -> Queue 0
+[    2.310317]   CPU 1 -> Queue 0
+[    2.312480]  vdb: unknown partition table
+[    2.315919] virtio-pci 0000:00:06.0: irq 44 for MSI/MSI-X
+[    2.317222] virtio-pci 0000:00:06.0: irq 45 for MSI/MSI-X
+[    2.318564] BUG: key ffff88001934ead0 not in .data!
+[    2.319750] BUG: key ffff88001934f588 not in .data!
+[    2.321415] blk-mq: CPU -> queue map
+[    2.322440]   CPU 0 -> Queue 0
+[    2.323459]   CPU 1 -> Queue 0
+[    2.326192]  vdc: unknown partition table
+[    2.329902] virtio-pci 0000:00:07.0: irq 46 for MSI/MSI-X
+[    2.331202] virtio-pci 0000:00:07.0: irq 47 for MSI/MSI-X
+[    2.332539] BUG: key ffff880018c621a0 not in .data!
+[    2.333724] BUG: key ffff880018c63ba8 not in .data!
+[    2.335387] blk-mq: CPU -> queue map
+[    2.336412]   CPU 0 -> Queue 0
+[    2.337424]   CPU 1 -> Queue 0
+[    2.339626]  vdd: unknown partition table
+[    2.343389] virtio-pci 0000:00:08.0: irq 48 for MSI/MSI-X
+[    2.344779] virtio-pci 0000:00:08.0: irq 49 for MSI/MSI-X
+[    2.346123] BUG: key ffff880018c62948 not in .data!
+[    2.347311] BUG: key ffff880018c63588 not in .data!
+[    2.348946] blk-mq: CPU -> queue map
+[    2.349972]   CPU 0 -> Queue 0
+[    2.350988]   CPU 1 -> Queue 0
+[    2.353274]  vde: unknown partition table
+[    2.356848] virtio-pci 0000:00:09.0: irq 50 for MSI/MSI-X
+[    2.358146] virtio-pci 0000:00:09.0: irq 51 for MSI/MSI-X
+[    2.366739] BUG: key ffff88001934f0f0 not in .data!
+[    2.367926] BUG: key ffff880018d54018 not in .data!
+[    2.369579] blk-mq: CPU -> queue map
+[    2.370597]   CPU 0 -> Queue 0
+[    2.371619]   CPU 1 -> Queue 0
+[    2.373827]  vdf: unknown partition table
+[    2.380628] lkdtm: No crash points registered, enable through debugfs
+[    2.383521] Uniform Multi-Platform E-IDE driver
+[    2.386770] piix 0000:00:01.1: IDE controller (0x8086:0x7010 rev 0x00)
+[    2.388338] piix 0000:00:01.1: not 100% native mode: will probe irqs lat=
 er
-[    3.237554]     ide0: BM-DMA at 0xc1c0-0xc1c7
-[    3.239564]     ide1: BM-DMA at 0xc1c8-0xc1cf
-[    3.241467] Probing IDE interface ide0...
-[    3.763322] Probing IDE interface ide1...
-[    4.437230] hdc: QEMU DVD-ROM, ATAPI CD/DVD-ROM drive
-[    5.052331] hdc: host max PIO4 wanted PIO255(auto-tune) selected PIO0
-[    5.054951] hdc: MWDMA2 mode selected
-[    5.057095] ide0 at 0x1f0-0x1f7,0x3f6 on irq 14
-[    5.059370] ide1 at 0x170-0x177,0x376 on irq 15
-[    5.064112] ide_generic: please use "probe_mask=3D0x3f" module parameter=
+[    2.391597]     ide0: BM-DMA at 0xc1c0-0xc1c7
+[    2.392739]     ide1: BM-DMA at 0xc1c8-0xc1cf
+[    2.393857] Probing IDE interface ide0...
+[    2.480134] tsc: Refined TSC clocksource calibration: 2892.989 MHz
+[    2.914582] Probing IDE interface ide1...
+[    3.589138] hdc: QEMU DVD-ROM, ATAPI CD/DVD-ROM drive
+[    4.202811] hdc: host max PIO4 wanted PIO255(auto-tune) selected PIO0
+[    4.204307] hdc: MWDMA2 mode selected
+[    4.205543] ide0 at 0x1f0-0x1f7,0x3f6 on irq 14
+[    4.206843] ide1 at 0x170-0x177,0x376 on irq 15
+[    4.209375] ide_generic: please use "probe_mask=3D0x3f" module parameter=
  for probing all legacy ISA IDE ports
-[    5.067998] ide-gd driver 1.18
-[    5.072727] Loading iSCSI transport class v2.0-870.
-[    5.082303] Loading Adaptec I2O RAID: Version 2.4 Build 5go
-[    5.084520] Detecting Adaptec I2O RAID controllers...
-[    5.087764] Adaptec aacraid driver 1.2-0[30200]-ms
-[    5.090661] aic94xx: Adaptec aic94xx SAS/SATA driver version 1.0.3 loaded
-[    5.095521] isci: Intel(R) C600 SAS Controller Driver - version 1.1.0
-[    5.100092] qla2xxx [0000:00:00.0]-0005: : QLogic Fibre Channel HBA Driv=
+[    4.211955] ide-gd driver 1.18
+[    4.215398] Loading iSCSI transport class v2.0-870.
+[    4.220156] Loading Adaptec I2O RAID: Version 2.4 Build 5go
+[    4.221465] Detecting Adaptec I2O RAID controllers...
+[    4.223229] Adaptec aacraid driver 1.2-0[30200]-ms
+[    4.224768] aic94xx: Adaptec aic94xx SAS/SATA driver version 1.0.3 loaded
+[    4.227557] isci: Intel(R) C600 SAS Controller Driver - version 1.1.0
+[    4.230039] qla2xxx [0000:00:00.0]-0005: : QLogic Fibre Channel HBA Driv=
 er: 8.06.00.08-k.
-[    5.105771] iscsi: registered transport (qla4xxx)
-[    5.108333] QLogic iSCSI HBA Driver
-[    5.110610] megaraid cmm: 2.20.2.7 (Release Date: Sun Jul 16 00:01:03 ES=
+[    4.233332] iscsi: registered transport (qla4xxx)
+[    4.234780] QLogic iSCSI HBA Driver
+[    4.236314] megaraid cmm: 2.20.2.7 (Release Date: Sun Jul 16 00:01:03 ES=
 T 2006)
-[    5.114540] megaraid: 2.20.5.1 (Release Date: Thu Nov 16 15:32:35 EST 20=
+[    4.238773] megaraid: 2.20.5.1 (Release Date: Thu Nov 16 15:32:35 EST 20=
 06)
-[    5.117481] megasas: 06.700.06.00-rc1 Sat. Aug. 31 17:00:00 PDT 2013
-[    5.120321] mpt2sas version 16.100.00.00 loaded
-[    5.123746] GDT-HA: Storage RAID Controller Driver. Version: 3.05
-[    5.154766] tun: Universal TUN/TAP device driver, 1.6
-[    5.156776] tun: (C) 1999-2004 Max Krasnyansky <maxk@qualcomm.com>
-[    5.160705] Atheros(R) L2 Ethernet Driver - version 2.2.3
-[    5.162764] Copyright (c) 2007 Atheros Corporation.
-[    5.166995] cnic: Broadcom NetXtreme II CNIC Driver cnic v2.5.18 (Sept 0=
+[    4.240557] megasas: 06.700.06.00-rc1 Sat. Aug. 31 17:00:00 PDT 2013
+[    4.242289] mpt2sas version 16.100.00.00 loaded
+[    4.244261] GDT-HA: Storage RAID Controller Driver. Version: 3.05
+[    4.261577] tun: Universal TUN/TAP device driver, 1.6
+[    4.262925] tun: (C) 1999-2004 Max Krasnyansky <maxk@qualcomm.com>
+[    4.265480] Atheros(R) L2 Ethernet Driver - version 2.2.3
+[    4.266825] Copyright (c) 2007 Atheros Corporation.
+[    4.269317] cnic: Broadcom NetXtreme II CNIC Driver cnic v2.5.18 (Sept 0=
 1, 2013)
-[    5.171083] e100: Intel(R) PRO/100 Network Driver, 3.5.24-k2-NAPI
-[    5.173278] e100: Copyright(c) 1999-2006 Intel Corporation
-[    5.175860] e1000: Intel(R) PRO/1000 Network Driver - version 7.3.21-k8-=
+[    4.271906] e100: Intel(R) PRO/100 Network Driver, 3.5.24-k2-NAPI
+[    4.273449] e100: Copyright(c) 1999-2006 Intel Corporation
+[    4.275185] e1000: Intel(R) PRO/1000 Network Driver - version 7.3.21-k8-=
 NAPI
-[    5.178265] e1000: Copyright (c) 1999-2006 Intel Corporation.
-[    5.563442] e1000 0000:00:03.0 eth0: (PCI:33MHz:32-bit) 52:54:00:12:34:56
-[    5.565760] e1000 0000:00:03.0 eth0: Intel(R) PRO/1000 Network Connection
-[    5.568635] e1000e: Intel(R) PRO/1000 Network Driver - 2.3.2-k
-[    5.570763] e1000e: Copyright(c) 1999 - 2013 Intel Corporation.
-[    5.573530] igb: Intel(R) Gigabit Ethernet Network Driver - version 5.0.=
+[    4.276805] e1000: Copyright (c) 1999-2006 Intel Corporation.
+[    4.613735] e1000 0000:00:03.0 eth0: (PCI:33MHz:32-bit) 52:54:00:12:34:56
+[    4.615229] e1000 0000:00:03.0 eth0: Intel(R) PRO/1000 Network Connection
+[    4.617147] e1000e: Intel(R) PRO/1000 Network Driver - 2.3.2-k
+[    4.618501] e1000e: Copyright(c) 1999 - 2013 Intel Corporation.
+[    4.620179] igb: Intel(R) Gigabit Ethernet Network Driver - version 5.0.=
 5-k
-[    5.575887] igb: Copyright (c) 2007-2013 Intel Corporation.
-[    5.578536] igbvf: Intel(R) Gigabit Virtual Function Network Driver - ve=
+[    4.621671] igb: Copyright (c) 2007-2013 Intel Corporation.
+[    4.623428] igbvf: Intel(R) Gigabit Virtual Function Network Driver - ve=
 rsion 2.0.2-k
-[    5.581528] igbvf: Copyright (c) 2009 - 2012 Intel Corporation.
-[    5.584216] ixgbe: Intel(R) 10 Gigabit PCI Express Network Driver - vers=
+[    4.626507] igbvf: Copyright (c) 2009 - 2012 Intel Corporation.
+[    4.628227] ixgbe: Intel(R) 10 Gigabit PCI Express Network Driver - vers=
 ion 3.15.1-k
-[    5.587479] ixgbe: Copyright (c) 1999-2013 Intel Corporation.
-[    5.590242] ixgb: Intel(R) PRO/10GbE Network Driver - version 1.0.135-k2=
+[    4.630253] ixgbe: Copyright (c) 1999-2013 Intel Corporation.
+[    4.631921] ixgb: Intel(R) PRO/10GbE Network Driver - version 1.0.135-k2=
 -NAPI
-[    5.592668] ixgb: Copyright (c) 1999-2008 Intel Corporation.
-[    5.595803] jme: JMicron JMC2XX ethernet driver version 1.0.8
-[    5.598935] sky2: driver version 1.30
-[    5.601261] pch_gbe: EG20T PCH Gigabit Ethernet Driver - version 1.01
-[    5.619879] usbcore: registered new interface driver catc
-[    5.623490] usbcore: registered new interface driver kaweth
-[    5.625557] pegasus: v0.9.3 (2013/04/25), Pegasus/Pegasus II USB Etherne=
+[    4.633444] ixgb: Copyright (c) 1999-2008 Intel Corporation.
+[    4.635582] jme: JMicron JMC2XX ethernet driver version 1.0.8
+[    4.637725] sky2: driver version 1.30
+[    4.639431] pch_gbe: EG20T PCH Gigabit Ethernet Driver - version 1.01
+[    4.643349] usbcore: registered new interface driver catc
+[    4.644940] usbcore: registered new interface driver kaweth
+[    4.646387] pegasus: v0.9.3 (2013/04/25), Pegasus/Pegasus II USB Etherne=
 t driver
-[    5.629246] usbcore: registered new interface driver pegasus
-[    5.631926] usbcore: registered new interface driver rtl8150
-[    5.634548] usbcore: registered new interface driver asix
-[    5.637086] usbcore: registered new interface driver ax88179_178a
-[    5.639724] usbcore: registered new interface driver cdc_ether
-[    5.642405] usbcore: registered new interface driver r815x
-[    5.645052] usbcore: registered new interface driver cdc_eem
-[    5.647580] usbcore: registered new interface driver dm9601
-[    5.650293] usbcore: registered new interface driver smsc75xx
-[    5.652937] usbcore: registered new interface driver smsc95xx
-[    5.655470] usbcore: registered new interface driver gl620a
-[    5.657935] usbcore: registered new interface driver net1080
-[    5.660495] usbcore: registered new interface driver plusb
-[    5.663065] usbcore: registered new interface driver rndis_host
-[    5.665621] usbcore: registered new interface driver cdc_subset
-[    5.668387] usbcore: registered new interface driver zaurus
-[    5.670909] usbcore: registered new interface driver MOSCHIP usb-etherne=
+[    4.649038] usbcore: registered new interface driver pegasus
+[    4.650893] usbcore: registered new interface driver rtl8150
+[    4.652779] usbcore: registered new interface driver asix
+[    4.654632] usbcore: registered new interface driver ax88179_178a
+[    4.656588] usbcore: registered new interface driver cdc_ether
+[    4.658409] usbcore: registered new interface driver r815x
+[    4.660430] usbcore: registered new interface driver cdc_eem
+[    4.662194] usbcore: registered new interface driver dm9601
+[    4.664046] usbcore: registered new interface driver smsc75xx
+[    4.665943] usbcore: registered new interface driver smsc95xx
+[    4.667624] usbcore: registered new interface driver gl620a
+[    4.669329] usbcore: registered new interface driver net1080
+[    4.670907] usbcore: registered new interface driver plusb
+[    4.672739] usbcore: registered new interface driver rndis_host
+[    4.674612] usbcore: registered new interface driver cdc_subset
+[    4.676414] usbcore: registered new interface driver zaurus
+[    4.678074] usbcore: registered new interface driver MOSCHIP usb-etherne=
 t driver
-[    5.674516] usbcore: registered new interface driver int51x1
-[    5.677097] usbcore: registered new interface driver cdc_ncm
-[    5.679183] Fusion MPT base driver 3.04.20
-[    5.680912] Copyright (c) 1999-2008 LSI Corporation
-[    5.682971] Fusion MPT SPI Host driver 3.04.20
-[    5.685510] Fusion MPT FC Host driver 3.04.20
-[    5.687897] Fusion MPT SAS Host driver 3.04.20
-[    5.690342] Fusion MPT misc device (ioctl) driver 3.04.20
-[    5.693313] mptctl: Registered with Fusion MPT base driver
-[    5.695339] mptctl: /dev/mptctl @ (major,minor=3D10,220)
-[    5.697787] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-[    5.700053] ehci-pci: EHCI PCI platform driver
-[    5.702451] uhci_hcd: USB Universal Host Controller Interface driver
-[    5.706812] usbcore: registered new interface driver usb-storage
-[    5.709472] usbcore: registered new interface driver ums-alauda
-[    5.712079] usbcore: registered new interface driver ums-cypress
-[    5.714615] usbcore: registered new interface driver ums-datafab
-[    5.717426] usbcore: registered new interface driver ums-freecom
-[    5.719965] usbcore: registered new interface driver ums-isd200
-[    5.722501] usbcore: registered new interface driver ums-jumpshot
-[    5.725273] usbcore: registered new interface driver ums-karma
-[    5.727841] usbcore: registered new interface driver ums-onetouch
-[    5.730449] usbcore: registered new interface driver ums-sddr09
-[    5.732989] usbcore: registered new interface driver ums-sddr55
-[    5.735545] usbcore: registered new interface driver ums-usbat
-[    5.738611] usbcore: registered new interface driver usbserial
-[    5.741378] usbcore: registered new interface driver usbserial_generic
-[    5.744436] usbserial: USB Serial support registered for generic
-[    5.747059] usbcore: registered new interface driver belkin_sa
-[    5.749649] usbserial: USB Serial support registered for Belkin / Peraco=
+[    4.680416] usbcore: registered new interface driver int51x1
+[    4.682133] usbcore: registered new interface driver cdc_ncm
+[    4.683444] Fusion MPT base driver 3.04.20
+[    4.684517] Copyright (c) 1999-2008 LSI Corporation
+[    4.685761] Fusion MPT SPI Host driver 3.04.20
+[    4.687304] Fusion MPT FC Host driver 3.04.20
+[    4.688784] Fusion MPT SAS Host driver 3.04.20
+[    4.690307] Fusion MPT misc device (ioctl) driver 3.04.20
+[    4.692713] mptctl: Registered with Fusion MPT base driver
+[    4.695433] mptctl: /dev/mptctl @ (major,minor=3D10,220)
+[    4.697908] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[    4.700277] ehci-pci: EHCI PCI platform driver
+[    4.702907] uhci_hcd: USB Universal Host Controller Interface driver
+[    4.706748] usbcore: registered new interface driver usb-storage
+[    4.708588] usbcore: registered new interface driver ums-alauda
+[    4.710204] usbcore: registered new interface driver ums-cypress
+[    4.711991] usbcore: registered new interface driver ums-datafab
+[    4.713882] usbcore: registered new interface driver ums-freecom
+[    4.715463] usbcore: registered new interface driver ums-isd200
+[    4.717054] usbcore: registered new interface driver ums-jumpshot
+[    4.718674] usbcore: registered new interface driver ums-karma
+[    4.720407] usbcore: registered new interface driver ums-onetouch
+[    4.722086] usbcore: registered new interface driver ums-sddr09
+[    4.723673] usbcore: registered new interface driver ums-sddr55
+[    4.725276] usbcore: registered new interface driver ums-usbat
+[    4.727389] usbcore: registered new interface driver usbserial
+[    4.728964] usbcore: registered new interface driver usbserial_generic
+[    4.730760] usbserial: USB Serial support registered for generic
+[    4.732351] usbcore: registered new interface driver belkin_sa
+[    4.734075] usbserial: USB Serial support registered for Belkin / Peraco=
 m / GoHubs USB Serial Adapter
-[    5.753646] usbcore: registered new interface driver mct_u232
-[    5.756298] usbserial: USB Serial support registered for MCT U232
-[    5.758954] usbcore: registered new interface driver usbtest
-[    5.761951] i8042: PNP: PS/2 Controller [PNP0303:KBD,PNP0f13:MOU] at 0x6=
+[    4.736775] usbcore: registered new interface driver mct_u232
+[    4.738423] usbserial: USB Serial support registered for MCT U232
+[    4.740177] usbcore: registered new interface driver usbtest
+[    4.742245] i8042: PNP: PS/2 Controller [PNP0303:KBD,PNP0f13:MOU] at 0x6=
 0,0x64 irq 1,12
-[    5.767735] serio: i8042 KBD port at 0x60,0x64 irq 1
-[    5.769899] serio: i8042 AUX port at 0x60,0x64 irq 12
-[    5.775372] mousedev: PS/2 mouse device common for all mice
-[    5.781768] input: AT Translated Set 2 keyboard as /devices/platform/i80=
+[    4.745508] serio: i8042 KBD port at 0x60,0x64 irq 1
+[    4.746732] serio: i8042 AUX port at 0x60,0x64 irq 12
+[    4.749500] mousedev: PS/2 mouse device common for all mice
+[    4.752801] input: AT Translated Set 2 keyboard as /devices/platform/i80=
 42/serio0/input/input1
-[    5.790355] rtc_cmos 00:00: RTC can wake from S4
-[    5.794407] rtc_cmos 00:00: rtc core: registered rtc_cmos as rtc0
-[    5.797134] rtc_cmos 00:00: alarms up to one day, 114 bytes nvram, hpet =
+[    4.758418] rtc_cmos 00:00: RTC can wake from S4
+[    4.760621] rtc_cmos 00:00: rtc core: registered rtc_cmos as rtc0
+[    4.762177] rtc_cmos 00:00: alarms up to one day, 114 bytes nvram, hpet =
 irqs
-[    5.800776] i6300esb: Intel 6300ESB WatchDog Timer Driver v0.05
-[    5.804350] i6300esb: initialized (0xffffc90000488000). heartbeat=3D30 s=
+[    4.764550] i6300esb: Intel 6300ESB WatchDog Timer Driver v0.05
+[    4.766617] i6300esb: initialized (0xffffc90000488000). heartbeat=3D30 s=
 ec (nowayout=3D0)
-[    5.808213] iTCO_wdt: Intel TCO WatchDog Timer Driver v1.10
-[    5.810768] iTCO_vendor_support: vendor-support=3D0
-[    5.813180] watchdog: Software Watchdog: cannot register miscdev on mino=
+[    4.768974] iTCO_wdt: Intel TCO WatchDog Timer Driver v1.10
+[    4.770712] iTCO_vendor_support: vendor-support=3D0
+[    4.771926] watchdog: Software Watchdog: cannot register miscdev on mino=
 r=3D130 (err=3D-16).
-[    5.816652] watchdog: Software Watchdog: a legacy watchdog module is pro=
+[    4.774099] watchdog: Software Watchdog: a legacy watchdog module is pro=
 bably present.
-[    5.821102] softdog: Software Watchdog Timer: 0.08 initialized. soft_nob=
+[    4.776515] softdog: Software Watchdog Timer: 0.08 initialized. soft_nob=
 oot=3D0 soft_margin=3D60 sec soft_panic=3D0 (nowayout=3D0)
-[    5.825368] md: linear personality registered for level -1
-[    5.827497] md: raid0 personality registered for level 0
-[    5.829628] md: raid1 personality registered for level 1
-[    5.833051] md: raid10 personality registered for level 10
-[    5.835884] md: raid6 personality registered for level 6
-[    5.837997] md: raid5 personality registered for level 5
-[    5.840124] md: raid4 personality registered for level 4
-[    5.842280] md: multipath personality registered for level -4
-[    5.844485] md: faulty personality registered for level -5
-[    5.850175] device-mapper: uevent: version 1.0.3
-[    5.855191] device-mapper: ioctl: 4.27.0-ioctl (2013-10-30) initialised:=
+[    4.779080] md: linear personality registered for level -1
+[    4.780427] md: raid0 personality registered for level 0
+[    4.781671] md: raid1 personality registered for level 1
+[    4.782909] md: raid10 personality registered for level 10
+[    4.784455] md: raid6 personality registered for level 6
+[    4.785729] md: raid5 personality registered for level 5
+[    4.787057] md: raid4 personality registered for level 4
+[    4.788296] md: multipath personality registered for level -4
+[    4.789583] md: faulty personality registered for level -5
+[    4.792900] device-mapper: uevent: version 1.0.3
+[    4.796535] device-mapper: ioctl: 4.27.0-ioctl (2013-10-30) initialised:=
  dm-devel@redhat.com
-[    5.862705] device-mapper: multipath: version 1.6.0 loaded
-[    5.864948] device-mapper: multipath round-robin: version 1.0.0 loaded
-[    5.867314] device-mapper: multipath queue-length: version 0.1.0 loaded
-[    5.869698] device-mapper: multipath service-time: version 0.2.0 loaded
-[    5.874957] device-mapper: dm-log-userspace: version 1.1.0 loaded
-[    5.878738] usbcore: registered new interface driver usbhid
-[    5.880895] usbhid: USB HID core driver
-[    5.885325] dell_wmi: No known WMI GUID found
-[    5.887227] acer_wmi: Acer Laptop ACPI-WMI Extras
-[    5.889204] acer_wmi: No or unsupported WMI interface, unable to load
-[    5.894950] oprofile: using NMI interrupt.
-[    5.898107] netem: version 1.3
-[    5.899722] Netfilter messages via NETLINK v0.30.
-[    5.901944] nf_conntrack version 0.5.0 (3733 buckets, 14932 max)
-[    5.907133] ctnetlink v0.93: registering with nfnetlink.
-[    5.911702] xt_time: kernel timezone is -0000
-[    5.914241] ip_tables: (C) 2000-2006 Netfilter Core Team
-[    5.916670] ipt_CLUSTERIP: ClusterIP Version 0.8 loaded successfully
-[    5.919218] arp_tables: (C) 2002 David S. Miller
-[    5.922544] TCP: bic registered
-[    5.924194] TCP: cubic registered
-[    5.925872] TCP: westwood registered
-[    5.927609] TCP: highspeed registered
-[    5.929329] TCP: hybla registered
-[    5.930983] TCP: htcp registered
-[    5.932683] TCP: vegas registered
-[    5.934341] TCP: veno registered
-[    5.935993] TCP: scalable registered
-[    5.937701] TCP: lp registered
-[    5.939248] TCP: yeah registered
-[    5.940843] TCP: illinois registered
-[    5.942529] Initializing XFRM netlink socket
-[    5.951539] NET: Registered protocol family 10
-[    5.958129] sit: IPv6 over IPv4 tunneling driver
-[    5.962686] NET: Registered protocol family 17
-[    5.964779] NET: Registered protocol family 15
-[    5.967913] Bridge firewalling registered
-[    5.969844] Ebtables v2.0 registered
-[    5.975473] 9pnet: Installing 9P2000 support
-[    5.977978] Key type dns_resolver registered
-[    5.983278]=20
-[    5.983278] printing PIC contents
-[    5.986084] ... PIC  IMR: ffff
-[    5.987056] ... PIC  IRR: 1153
-[    5.989219] ... PIC  ISR: 0000
-[    5.991111] ... PIC ELCR: 0c00
-[    5.992855] printing local APIC contents on CPU#0/0:
-[    5.993833] ... APIC ID:      00000000 (0)
-[    5.993833] ... APIC VERSION: 00050014
-[    5.993833] ... APIC TASKPRI: 00000000 (00)
-[    5.993833] ... APIC PROCPRI: 00000000
-[    5.993833] ... APIC LDR: 01000000
-[    5.993833] ... APIC DFR: ffffffff
-[    5.993833] ... APIC SPIV: 000001ff
-[    5.993833] ... APIC ISR field:
-[    5.993833] 000000000000000000000000000000000000000000000000000000000000=
+[    4.801485] device-mapper: multipath: version 1.6.0 loaded
+[    4.802906] device-mapper: multipath round-robin: version 1.0.0 loaded
+[    4.804318] device-mapper: multipath queue-length: version 0.1.0 loaded
+[    4.805737] device-mapper: multipath service-time: version 0.2.0 loaded
+[    4.808579] device-mapper: dm-log-userspace: version 1.1.0 loaded
+[    4.810992] usbcore: registered new interface driver usbhid
+[    4.812310] usbhid: USB HID core driver
+[    4.814931] dell_wmi: No known WMI GUID found
+[    4.816227] acer_wmi: Acer Laptop ACPI-WMI Extras
+[    4.817400] acer_wmi: No or unsupported WMI interface, unable to load
+[    4.820473] oprofile: using NMI interrupt.
+[    4.822213] netem: version 1.3
+[    4.823281] Netfilter messages via NETLINK v0.30.
+[    4.824520] nf_conntrack version 0.5.0 (3733 buckets, 14932 max)
+[    4.827224] ctnetlink v0.93: registering with nfnetlink.
+[    4.829803] xt_time: kernel timezone is -0000
+[    4.831173] ip_tables: (C) 2000-2006 Netfilter Core Team
+[    4.832661] ipt_CLUSTERIP: ClusterIP Version 0.8 loaded successfully
+[    4.834123] arp_tables: (C) 2002 David S. Miller
+[    4.835342] TCP: bic registered
+[    4.836293] TCP: cubic registered
+[    4.837259] TCP: westwood registered
+[    4.838256] TCP: highspeed registered
+[    4.839269] TCP: hybla registered
+[    4.840237] TCP: htcp registered
+[    4.848396] TCP: vegas registered
+[    4.849362] TCP: veno registered
+[    4.850318] TCP: scalable registered
+[    4.851317] TCP: lp registered
+[    4.852247] TCP: yeah registered
+[    4.853201] TCP: illinois registered
+[    4.854205] Initializing XFRM netlink socket
+[    4.859424] NET: Registered protocol family 10
+[    4.862719] sit: IPv6 over IPv4 tunneling driver
+[    4.865374] NET: Registered protocol family 17
+[    4.866650] NET: Registered protocol family 15
+[    4.868315] Bridge firewalling registered
+[    4.869412] Ebtables v2.0 registered
+[    4.878197] 9pnet: Installing 9P2000 support
+[    4.879667] Key type dns_resolver registered
+[    4.882973]=20
+[    4.882973] printing PIC contents
+[    4.884622] ... PIC  IMR: ffff
+[    4.885570] ... PIC  IRR: 1153
+[    4.886531] ... PIC  ISR: 0000
+[    4.887478] ... PIC ELCR: 0c00
+[    4.888466] printing local APIC contents on CPU#0/0:
+[    4.889456] ... APIC ID:      00000000 (0)
+[    4.889456] ... APIC VERSION: 00050014
+[    4.889456] ... APIC TASKPRI: 00000000 (00)
+[    4.889456] ... APIC PROCPRI: 00000000
+[    4.889456] ... APIC LDR: 01000000
+[    4.889456] ... APIC DFR: ffffffff
+[    4.889456] ... APIC SPIV: 000001ff
+[    4.889456] ... APIC ISR field:
+[    4.889456] 000000000000000000000000000000000000000000000000000000000000=
 0000
-[    5.993833] ... APIC TMR field:
-[    5.993833] 000000000200000000000000000000000000000000000000000000000000=
+[    4.889456] ... APIC TMR field:
+[    4.889456] 000000000200000000000000000000000000000000000000000000000000=
 0000
-[    5.993833] ... APIC IRR field:
-[    5.993833] 000000000000000000000000000000000000000000000000000000000000=
+[    4.889456] ... APIC IRR field:
+[    4.889456] 000000000000000000000000000000000000000000000000000000000000=
 8000
-[    5.993833] ... APIC ESR: 00000000
-[    5.993833] ... APIC ICR: 000008fd
-[    5.993833] ... APIC ICR2: 02000000
-[    5.993833] ... APIC LVTT: 000000ef
-[    5.993833] ... APIC LVTPC: 00010000
-[    5.993833] ... APIC LVT0: 00010700
-[    5.993833] ... APIC LVT1: 00000400
-[    5.993833] ... APIC LVTERR: 000000fe
-[    5.993833] ... APIC TMICT: 000027ad
-[    5.993833] ... APIC TMCCT: 00000000
-[    5.993833] ... APIC TDCR: 00000003
-[    5.993833]=20
-[    6.041510] number of MP IRQ sources: 15.
-[    6.043290] number of IO-APIC #0 registers: 24.
-[    6.045199] testing the IO APIC.......................
-[    6.047268] IO APIC #0......
-[    6.048873] .... register #00: 00000000
-[    6.050711] .......    : physical APIC id: 00
-[    6.052618] .......    : Delivery Type: 0
-[    6.054424] .......    : LTS          : 0
-[    6.056213] .... register #01: 00170011
-[    6.057981] .......     : max redirection entries: 17
-[    6.060070] .......     : PRQ implemented: 0
-[    6.061928] .......     : IO APIC version: 11
-[    6.063830] .... register #02: 00000000
-[    6.065598] .......     : arbitration: 00
-[    6.067379] .... IRQ redirection table:
-[    6.069117] 1    0    0   0   0    0    0    00
-[    6.071049] 0    0    0   0   0    1    1    31
-[    6.072955] 0    0    0   0   0    1    1    30
-[    6.074895] 0    0    0   0   0    1    1    33
-[    6.090209] 1    0    0   0   0    1    1    34
-[    6.092217] 1    1    0   0   0    1    1    35
-[    6.094151] 0    0    0   0   0    1    1    36
-[    6.096087] 0    0    0   0   0    1    1    37
-[    6.097989] 0    0    0   0   0    1    1    38
-[    6.099931] 0    1    0   0   0    1    1    39
-[    6.101909] 1    1    0   0   0    1    1    3A
-[    6.103841] 1    1    0   0   0    1    1    3B
-[    6.105792] 0    0    0   0   0    1    1    3C
-[    6.107741] 0    0    0   0   0    1    1    3D
-[    6.109682] 0    0    0   0   0    1    1    3E
-[    6.111649] 0    0    0   0   0    1    1    3F
-[    6.113607] 1    0    0   0   0    0    0    00
-[    6.115585] 1    0    0   0   0    0    0    00
-[    6.117550] 1    0    0   0   0    0    0    00
-[    6.119517] 1    0    0   0   0    0    0    00
-[    6.121538] 1    0    0   0   0    0    0    00
-[    6.123467] 1    0    0   0   0    0    0    00
-[    6.125402] 1    0    0   0   0    0    0    00
-[    6.127356] 1    0    0   0   0    0    0    00
-[    6.129281] IRQ to pin mappings:
-[    6.130883] IRQ0 -> 0:2
-[    6.132711] IRQ1 -> 0:1
-[    6.134467] IRQ3 -> 0:3
-[    6.136212] IRQ4 -> 0:4
-[    6.137944] IRQ5 -> 0:5
-[    6.139710] IRQ6 -> 0:6
-[    6.141512] IRQ7 -> 0:7
-[    6.143256] IRQ8 -> 0:8
-[    6.144999] IRQ9 -> 0:9
-[    6.146762] IRQ10 -> 0:10
-[    6.148558] IRQ11 -> 0:11
-[    6.150380] IRQ12 -> 0:12
-[    6.152200] IRQ13 -> 0:13
-[    6.153972] IRQ14 -> 0:14
-[    6.155807] IRQ15 -> 0:15
-[    6.157625] .................................... done.
-[    6.162928] registered taskstats version 1
-[    6.168126]   Magic number: 9:691:74
-[    6.170725] console [netcon0] enabled
-[    6.172450] netconsole: network logging started
-[    6.174565] rtc_cmos 00:00: setting system clock to 2013-12-13 11:03:47 =
-UTC (1386932627)
-[    6.191560] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-[    6.395352] input: ImExPS/2 Generic Explorer Mouse as /devices/platform/=
+[    4.889456] ... APIC ESR: 00000000
+[    4.889456] ... APIC ICR: 000008fd
+[    4.889456] ... APIC ICR2: 02000000
+[    4.889456] ... APIC LVTT: 000000ef
+[    4.889456] ... APIC LVTPC: 00010000
+[    4.889456] ... APIC LVT0: 00010700
+[    4.889456] ... APIC LVT1: 00000400
+[    4.889456] ... APIC LVTERR: 000000fe
+[    4.889456] ... APIC TMICT: 00024e02
+[    4.889456] ... APIC TMCCT: 00000000
+[    4.889456] ... APIC TDCR: 00000003
+[    4.889456]=20
+[    4.917945] number of MP IRQ sources: 15.
+[    4.919077] number of IO-APIC #0 registers: 24.
+[    4.920220] testing the IO APIC.......................
+[    4.921458] IO APIC #0......
+[    4.922376] .... register #00: 00000000
+[    4.923427] .......    : physical APIC id: 00
+[    4.924537] .......    : Delivery Type: 0
+[    4.925610] .......    : LTS          : 0
+[    4.926679] .... register #01: 00170011
+[    4.927719] .......     : max redirection entries: 17
+[    4.928927] .......     : PRQ implemented: 0
+[    4.930033] .......     : IO APIC version: 11
+[    4.931138] .... register #02: 00000000
+[    4.932170] .......     : arbitration: 00
+[    4.933227] .... IRQ redirection table:
+[    4.934281] 1    0    0   0   0    0    0    00
+[    4.935430] 0    0    0   0   0    1    1    31
+[    4.936567] 0    0    0   0   0    1    1    30
+[    4.937714] 0    0    0   0   0    1    1    33
+[    4.938858] 1    0    0   0   0    1    1    34
+[    4.939998] 1    1    0   0   0    1    1    35
+[    4.941140] 0    0    0   0   0    1    1    36
+[    4.942286] 0    0    0   0   0    1    1    37
+[    4.943426] 0    0    0   0   0    1    1    38
+[    4.944567] 0    1    0   0   0    1    1    39
+[    4.945726] 1    1    0   0   0    1    1    3A
+[    4.946877] 1    1    0   0   0    1    1    3B
+[    4.948025] 0    0    0   0   0    1    1    3C
+[    4.949164] 0    0    0   0   0    1    1    3D
+[    4.950316] 0    0    0   0   0    1    1    3E
+[    4.951464] 0    0    0   0   0    1    1    3F
+[    4.952606] 1    0    0   0   0    0    0    00
+[    4.953753] 1    0    0   0   0    0    0    00
+[    4.954902] 1    0    0   0   0    0    0    00
+[    4.956057] 1    0    0   0   0    0    0    00
+[    4.957199] 1    0    0   0   0    0    0    00
+[    4.958361] 1    0    0   0   0    0    0    00
+[    4.959513] 1    0    0   0   0    0    0    00
+[    4.960669] 1    0    0   0   0    0    0    00
+[    4.961818] IRQ to pin mappings:
+[    4.962797] IRQ0 -> 0:2
+[    4.963837] IRQ1 -> 0:1
+[    4.964869] IRQ3 -> 0:3
+[    4.965918] IRQ4 -> 0:4
+[    4.966953] IRQ5 -> 0:5
+[    4.967990] IRQ6 -> 0:6
+[    4.969051] IRQ7 -> 0:7
+[    4.970110] IRQ8 -> 0:8
+[    4.971143] IRQ9 -> 0:9
+[    4.972177] IRQ10 -> 0:10
+[    4.973239] IRQ11 -> 0:11
+[    4.974303] IRQ12 -> 0:12
+[    4.975373] IRQ13 -> 0:13
+[    4.976431] IRQ14 -> 0:14
+[    4.977486] IRQ15 -> 0:15
+[    4.978544] .................................... done.
+[    4.981324] registered taskstats version 1
+[    4.984278]   Magic number: 9:926:19
+[    4.985672] console [netcon0] enabled
+[    4.986710] netconsole: network logging started
+[    4.987987] rtc_cmos 00:00: setting system clock to 2013-12-13 09:01:56 =
+UTC (1386925316)
+[    4.997351] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+[    5.381725] input: ImExPS/2 Generic Explorer Mouse as /devices/platform/=
 i8042/serio1/input/input3
-[    8.192673] e1000: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Contr=
+[    7.000532] e1000: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Contr=
 ol: RX
-[    8.196701] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-[    8.206097] Sending DHCP requests ., OK
-[    8.214065] IP-Config: Got DHCP answer from 10.0.2.2, my address is 10.0=
+[    7.002944] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+[    7.013029] Sending DHCP requests ., OK
+[    7.020024] IP-Config: Got DHCP answer from 10.0.2.2, my address is 10.0=
 =2E2.15
-[    8.218606] IP-Config: Complete:
-[    8.220222]      device=3Deth0, hwaddr=3D52:54:00:12:34:56, ipaddr=3D10.=
+[    7.022481] IP-Config: Complete:
+[    7.023467]      device=3Deth0, hwaddr=3D52:54:00:12:34:56, ipaddr=3D10.=
 0.2.15, mask=3D255.255.255.0, gw=3D10.0.2.2
-[    8.223891]      host=3Dnfsroot-cairo-7, domain=3D, nis-domain=3D(none)
-[    8.226099]      bootserver=3D10.0.2.2, rootserver=3D192.168.1.1, rootpa=
+[    7.025756]      host=3Dnfsroot-xian-25, domain=3D, nis-domain=3D(none)
+[    7.027120]      bootserver=3D10.0.2.2, rootserver=3D192.168.1.1, rootpa=
 th=3D
-[    8.227612]      nameserver0=3D10.0.2.3
-[    8.230650] PM: Hibernation image not present or could not be loaded.
-[    8.232923] ALSA device list:
-[    8.234465]   No soundcards found.
-[    8.236792] md: Waiting for all devices to be available before autodetect
-[    8.239162] md: If you don't use raid, use raid=3Dnoautodetect
-[    8.245809] md: Autodetecting RAID arrays.
-[    8.247594] md: Scanned 0 and added 0 devices.
-[    8.249355] md: autorun ...
-[    8.250898] md: ... autorun DONE.
-[   11.274286] VFS: Mounted root (nfs filesystem) on device 0:15.
-[   11.277815] devtmpfs: mounted
-[   11.284784] Freeing unused kernel memory: 3328K (ffffffff821d9000 - ffff=
-ffff82519000)
-[   11.634713] modprobe (1953) used greatest stack depth: 3896 bytes left
-[   11.972695] echo (1965) used greatest stack depth: 3872 bytes left
-[   13.143111] udevd[2087]: starting version 175
-[   13.941058] pci-db (2123) used greatest stack depth: 3632 bytes left
-[   14.781830] hwclock (2226) used greatest stack depth: 3552 bytes left
-[   17.763814] random: vgscan urandom read with 102 bits of entropy availab=
-le
-[   22.409442] random: nonblocking pool is initialized
-[   23.563370]=20
-[   23.564204] =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-[   23.564204] [ INFO: inconsistent lock state ]
-[   23.564204] 3.13.0-rc3-00689-gb1daf37 #892 Not tainted
-[   23.564204] ---------------------------------
-[   23.564204] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
-[   23.564204] swapper/0/0 [HC0[0]:SC1[1]:HE1:SE0] takes:
-[   23.564204]  (&(&sk->sk_dst_lock)->rlock){+.?...}, at: [<ffffffff81a27fe=
-2>] __udp4_lib_rcv+0x569/0x79d
-[   23.564204] {SOFTIRQ-ON-W} state was registered at:
-[   23.564204]   [<ffffffff810b16b7>] __lock_acquire+0x96c/0x185f
-[   23.564204]   [<ffffffff810b2c97>] lock_acquire+0xab/0x12e
-[   23.564204]   [<ffffffff81af12d3>] _raw_spin_lock+0x3b/0x6d
-[   23.564204]   [<ffffffff81a2f13d>] inet_bind+0x18d/0x1dc
-[   23.564204]   [<ffffffff8199d62c>] kernel_bind+0x10/0x12
-[   23.564204]   [<ffffffff81aae764>] xs_bind+0xa0/0x11e
-[   23.564204]   [<ffffffff81ab0271>] xs_create_sock.isra.14+0x20b/0x230
-[   23.564204]   [<ffffffff81ab047f>] xs_tcp_setup_socket+0x5f/0x3e5
-[   23.564204]   [<ffffffff8108a0d7>] process_one_work+0x247/0x443
-[   23.564204]   [<ffffffff8108aeac>] worker_thread+0x1d2/0x2bc
-[   23.564204]   [<ffffffff81090228>] kthread+0xf9/0x101
-[   23.564204]   [<ffffffff81af92fc>] ret_from_fork+0x7c/0xb0
-[   23.564204] irq event stamp: 514170
-[   23.564204] hardirqs last  enabled at (514170): [<ffffffff810766af>] loc=
-al_bh_enable+0xab/0xb5
-[   23.564204] hardirqs last disabled at (514169): [<ffffffff8107665a>] loc=
-al_bh_enable+0x56/0xb5
-[   23.564204] softirqs last  enabled at (514148): [<ffffffff81076106>] _lo=
-cal_bh_enable+0x43/0x45
-[   23.564204] softirqs last disabled at (514149): [<ffffffff81076779>] irq=
-_exit+0x59/0xa0
-[   23.564204]=20
-[   23.564204] other info that might help us debug this:
-[   23.564204]  Possible unsafe locking scenario:
-[   23.564204]=20
-[   23.564204]        CPU0
-[   23.564204]        ----
-[   23.564204]   lock(&(&sk->sk_dst_lock)->rlock);
-[   23.564204]   <Interrupt>
-[   23.564204]     lock(&(&sk->sk_dst_lock)->rlock);
-[   23.564204]=20
-[   23.564204]  *** DEADLOCK ***
-[   23.564204]=20
-[   23.564204] 2 locks held by swapper/0/0:
-[   23.564204]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff819b258a>] __ne=
-tif_receive_skb_core+0x168/0x58e
-[   23.564204]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff81a0086a>] ip_l=
-ocal_deliver_finish+0x2f/0x2a0
-[   23.564204]=20
-[   23.564204] stack backtrace:
-[   23.564204] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.13.0-rc3-00689-g=
-b1daf37 #892
-[   23.564204] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[   23.564204]  0000000000000002 ffff88001ea039a0 ffffffff81ae56fd ffffffff=
-82097490
-[   23.564204]  ffff88001ea039f0 ffffffff81addae7 0000000000000001 ffff8800=
-00000001
-[   23.564204]  ffff880000000000 ffffffff82097c08 0000000000000004 00000000=
-00000006
-[   23.564204] Call Trace:
-[   23.564204]  <IRQ>  [<ffffffff81ae56fd>] dump_stack+0x4d/0x66
-[   23.564204]  [<ffffffff81addae7>] print_usage_bug+0x2a8/0x2b9
-[   23.564204]  [<ffffffff810af93a>] ? print_shortest_lock_dependencies+0x1=
-93/0x193
-[   23.564204]  [<ffffffff810b05b5>] mark_lock+0x33c/0x57c
-[   23.564204]  [<ffffffff810b1645>] __lock_acquire+0x8fa/0x185f
-[   23.564204]  [<ffffffff8109fd9c>] ? sched_clock_local+0x12/0x72
-[   23.564204]  [<ffffffff810addfa>] ? trace_hardirqs_off_caller+0x1f/0xb2
-[   23.564204]  [<ffffffff810b2c97>] lock_acquire+0xab/0x12e
-[   23.564204]  [<ffffffff81a27fe2>] ? __udp4_lib_rcv+0x569/0x79d
-[   23.564204]  [<ffffffff810addfa>] ? trace_hardirqs_off_caller+0x1f/0xb2
-[   23.564204]  [<ffffffff81af12d3>] _raw_spin_lock+0x3b/0x6d
-[   23.564204]  [<ffffffff81a27fe2>] ? __udp4_lib_rcv+0x569/0x79d
-[   23.564204]  [<ffffffff81a27fe2>] __udp4_lib_rcv+0x569/0x79d
-[   23.564204]  [<ffffffff81a286ae>] udp_rcv+0x1a/0x1c
-[   23.564204]  [<ffffffff81a0098c>] ip_local_deliver_finish+0x151/0x2a0
-[   23.564204]  [<ffffffff81a0086a>] ? ip_local_deliver_finish+0x2f/0x2a0
-[   23.564204]  [<ffffffff81a0109e>] ip_local_deliver+0x7a/0x7f
-[   23.564204]  [<ffffffff81a00e75>] ip_rcv_finish+0x39a/0x461
-[   23.564204]  [<ffffffff81a01326>] ip_rcv+0x283/0x2e0
-[   23.564204]  [<ffffffff819b28ef>] __netif_receive_skb_core+0x4cd/0x58e
-[   23.564204]  [<ffffffff819b258a>] ? __netif_receive_skb_core+0x168/0x58e
-[   23.564204]  [<ffffffff819b2dd6>] __netif_receive_skb+0x1d/0x5f
-[   23.564204]  [<ffffffff819b2e80>] netif_receive_skb+0x68/0xf4
-[   23.564204]  [<ffffffff819b35da>] napi_gro_receive+0x3e/0x80
-[   23.564204]  [<ffffffff817be870>] e1000_clean_rx_irq+0x393/0x415
-[   23.564204]  [<ffffffff817bcd48>] e1000_clean+0x59d/0x71f
-[   23.564204]  [<ffffffff810634d1>] ? kvm_clock_read+0x27/0x31
-[   23.564204]  [<ffffffff8103edd0>] ? sched_clock+0x9/0xd
-[   23.564204]  [<ffffffff819b3ed0>] net_rx_action+0xf6/0x210
-[   23.564204]  [<ffffffff810762fc>] __do_softirq+0xf3/0x27a
-[   23.564204]  [<ffffffff81076779>] irq_exit+0x59/0xa0
-[   23.564204]  [<ffffffff81afb44d>] do_IRQ+0x9d/0xb4
-[   23.564204]  [<ffffffff81af21f2>] common_interrupt+0x72/0x72
-[   23.564204]  <EOI>  [<ffffffff81af5ab5>] ? __atomic_notifier_call_chain+=
-0x5/0x9c
-[   23.564204]  [<ffffffff810636c8>] ? native_safe_halt+0x6/0x8
-[   23.564204]  [<ffffffff8103f9d1>] default_idle+0x38/0xc1
-[   23.564204]  [<ffffffff81040154>] arch_cpu_idle+0x18/0x28
-[   23.564204]  [<ffffffff810c0ac5>] cpu_startup_entry+0x15c/0x24d
-[   23.564204]  [<ffffffff81ad1f25>] rest_init+0xc9/0xcd
-[   23.564204]  [<ffffffff81ad1e61>] ? rest_init+0x5/0xcd
-[   23.564204]  [<ffffffff823aed77>] start_kernel+0x3d4/0x3e0
-[   23.564204]  [<ffffffff823ae7b1>] ? repair_env_string+0x58/0x58
-[   23.564204]  [<ffffffff823ae120>] ? early_idt_handlers+0x120/0x120
-[   23.564204]  [<ffffffff823ae467>] x86_64_start_reservations+0x2a/0x2c
-[   23.564204]  [<ffffffff823ae5a9>] x86_64_start_kernel+0x140/0x14d
-[   66.435785] NFSD: Using /var/lib/nfs/v4recovery as the NFSv4 state recov=
-ery directory
-[   66.440815] NFSD: starting 90-second grace period (net ffffffff82196a80)
-Kernel tests: Boot OK!
-[   67.934595] Unregister pv shared memory for cpu 1
-[   67.942329] numa_remove_cpu cpu 1 node 0: mask now 0
-[   67.945771] smpboot: CPU 1 is now offline
-[   67.954077] blk-mq: CPU -> queue map
-[   67.955848]   CPU 0 -> Queue 0
-[   67.957456] blk-mq: CPU -> queue map
-[   67.959170]   CPU 0 -> Queue 0
-[   67.960760] blk-mq: CPU -> queue map
-[   67.962448]   CPU 0 -> Queue 0
-[   67.964039] blk-mq: CPU -> queue map
-[   67.965619]   CPU 0 -> Queue 0
-[   67.966980] blk-mq: CPU -> queue map
-[   67.968653]   CPU 0 -> Queue 0
-[   67.970277] blk-mq: CPU -> queue map
-[   67.972049]   CPU 0 -> Queue 0
-[   68.093292] x86: Booting SMP configuration:
-[   68.095201] smpboot: Booting Node 0 Processor 1 APIC 0x1
-[   67.943021] kvm-clock: cpu 1, msr 0:1fff8041, secondary cpu clock
-[   67.943021] masked ExtINT on CPU#1
-[   67.943021] numa_add_cpu cpu 1 node 0: mask now 0-1
-[   68.131676] KVM setup async PF for cpu 1
-[   68.132619] kvm-stealtime: cpu 1, msr 1ec0d200
-[   68.138066] blk-mq: CPU -> queue map
-[   68.139922]   CPU 0 -> Queue 0
-[   68.141462]   CPU 1 -> Queue 0
-[   68.143017] blk-mq: CPU -> queue map
-[   68.144618]   CPU 0 -> Queue 0
-[   68.146128]   CPU 1 -> Queue 0
-[   68.147674] blk-mq: CPU -> queue map
-[   68.149269]   CPU 0 -> Queue 0
-[   68.150812]   CPU 1 -> Queue 0
-[   68.152338] blk-mq: CPU -> queue map
-[   68.153913]   CPU 0 -> Queue 0
-[   68.155409]   CPU 1 -> Queue 0
-[   68.156963] blk-mq: CPU -> queue map
-[   68.158589]   CPU 0 -> Queue 0
-[   68.160158]   CPU 1 -> Queue 0
-[   68.161720] blk-mq: CPU -> queue map
-[   68.163327]   CPU 0 -> Queue 0
-[   68.164857]   CPU 1 -> Queue 0
-[   69.174690] Unregister pv shared memory for cpu 1
-[   69.182263] numa_remove_cpu cpu 1 node 0: mask now 0
-[   69.185679] smpboot: CPU 1 is now offline
-[   69.192472] blk-mq: CPU -> queue map
-[   69.194224]   CPU 0 -> Queue 0
-[   69.195823] blk-mq: CPU -> queue map
-[   69.197525]   CPU 0 -> Queue 0
-[   69.199157] blk-mq: CPU -> queue map
-[   69.200834]   CPU 0 -> Queue 0
-[   69.202470] blk-mq: CPU -> queue map
-[   69.204199]   CPU 0 -> Queue 0
-[   69.205810] blk-mq: CPU -> queue map
-[   69.207501]   CPU 0 -> Queue 0
-[   69.209135] blk-mq: CPU -> queue map
-[   69.210826]   CPU 0 -> Queue 0
-Trinity v1.0  Dave Jones <davej@redhat.com> 2012
-[3807] Marking 64-bit syscall 274 (get_robust_list) as AVOID
-[3807] Marking 32-bit syscall 312 (get_robust_list) as AVOID
-[   79.231373] x86: Booting SMP configuration:
-[   79.233120] smpboot: Booting Node 0 Processor 1 APIC 0x1
-[   69.183028] kvm-clock: cpu 1, msr 0:1fff8041, secondary cpu clock
-[   69.183028] masked ExtINT on CPU#1
-[   69.183028] numa_add_cpu cpu 1 node 0: mask now 0-1
-[   79.289704] KVM setup async PF for cpu 1
-[   79.290632] kvm-stealtime: cpu 1, msr 1ec0d200
-[   79.297426] blk-mq: CPU -> queue map
-[   79.299164]   CPU 0 -> Queue 0
-[   79.300744]   CPU 1 -> Queue 0
-[   79.302324] blk-mq: CPU -> queue map
-[   79.304065]   CPU 0 -> Queue 0
-[   79.305642]   CPU 1 -> Queue 0
-[   79.306934] blk-mq: CPU -> queue map
-[   79.308392]   CPU 0 -> Queue 0
-[   79.309745]   CPU 1 -> Queue 0
-[   79.311392] blk-mq: CPU -> queue map
-[   79.313022]   CPU 0 -> Queue 0
-[   79.315563]   CPU 1 -> Queue 0
-[   79.317186] blk-mq: CPU -> queue map
-[   79.318843]   CPU 0 -> Queue 0
-[   79.320075]   CPU 1 -> Queue 0
-[   79.321618] blk-mq: CPU -> queue map
-[   79.323284]   CPU 0 -> Queue 0
-[   79.324960]   CPU 1 -> Queue 0
-Couldn't open /dev/ptyw5 : Input/output error
-[   79.920082] Bits 55-60 of /proc/PID/pagemap entries are about to stop be=
-ing page-shift some time soon. See the linux/Documentation/vm/pagemap.txt f=
-or details.
-Couldn't open /dev/ptyxc : Input/output error
-Couldn't open /dev/ptyx4 : Input/output error
-Couldn't open /dev/ptyu1 : Input/output error
-[3814] Watchdog is alive
-[3807] Started watchdog thread 3814
-537 iterations.
-895 iterations.
-[   96.511800] warning: process `trinity-child0' used the deprecated sysctl=
- system call with=20
-1118 iterations.
-1556 iterations.
-1916 iterations.
-2331 iterations.
-2353 iterations.
-2375 iterations.
-2953 iterations.
-2959 iterations.
-4347 iterations.
-5523 iterations.
-6527 iterations.
-8122 iterations.
-8183 iterations.
-8223 iterations.
-8831 iterations.
-8917 iterations.
-9014 iterations.
-9059 iterations.
-9271 iterations.
-9297 iterations.
-9343 iterations.
-9630 iterations.
-10705 iterations.
-11079 iterations.
-11139 iterations.
-/etc/kernel-tests/99-trinity: line 18:  3807 Killed                  chroot=
- --userspec nobody:nogroup $mnt /usr/local/bin/trinity -q -x get_robust_lis=
-t -N 99999
-umount: /fs/trinity/sys: device is busy.
-        (In some cases useful info about processes that use
-         the device is found by lsof(8) or fuser(1))
-/etc/kernel-tests/99-trinity: line 20: kill: (3807) - No such process
-run-parts: /etc/kernel-tests/99-trinity exited with return code 1
-[  178.459861] nfsd: last server has exited, flushing export cache
-[  188.107339] Unregister pv shared memory for cpu 0
-[  188.109268] Unregister pv shared memory for cpu 1
-[  188.135978] reboot: Restarting system
-[  188.137748] reboot: machine restart
-Elapsed time: 190
-qemu-system-x86_64 -cpu kvm64 -enable-kvm -kernel /kernel/x86_64-nfsroot/b1=
-daf37ff52cf2ff39b2db2399e052ad7965c6aa/vmlinuz-3.13.0-rc3-00689-gb1daf37 -a=
+[    7.028079]      nameserver0=3D10.0.2.3
+[    7.029744] PM: Hibernation image not present or could not be loaded.
+[    7.031198] ALSA device list:
+[    7.032130]   No soundcards found.
+[    7.033311] md: Waiting for all devices to be available before autodetect
+[    7.034757] md: If you don't use raid, use raid=3Dnoautodetect
+[    7.037741] md: Autodetecting RAID arrays.
+[    7.038937] md: Scanned 0 and added 0 devices.
+[    7.040071] md: autorun ...
+[    7.040956] md: ... autorun DONE.
+
+Elapsed time: 5
+qemu-system-x86_64 -cpu kvm64 -enable-kvm -kernel /kernel/x86_64-nfsroot/31=
+e078736811963afecfe7305a51541cbed8e6a6/vmlinuz-3.13.0-rc3-00182-g31e0787 -a=
 ppend 'hung_task_panic=3D1 earlyprintk=3DttyS0,115200 debug apic=3Ddebug sy=
 srq_always_enabled panic=3D10 load_ramdisk=3D2 prompt_ramdisk=3D0 console=
-=3DttyS0,115200 console=3Dtty0 vga=3Dnormal ip=3D::::nfsroot-cairo-7::dhcp =
+=3DttyS0,115200 console=3Dtty0 vga=3Dnormal ip=3D::::nfsroot-xian-25::dhcp =
 nfsroot=3D192.168.1.1:/nfsroot/wfg,tcp,v3,nocto,actimeo=3D600,nolock,rsize=
 =3D524288,wsize=3D524288 rw link=3D/kernel-tests/run-queue/kvm/x86_64-nfsro=
-ot/devel-xian-x86_64-201312131052/.vmlinuz-b1daf37ff52cf2ff39b2db2399e052ad=
-7965c6aa-20131213105809-3-cairo branch=3Dlinux-devel/devel-xian-x86_64-2013=
-12131052 BOOT_IMAGE=3D/kernel/x86_64-nfsroot/b1daf37ff52cf2ff39b2db2399e052=
-ad7965c6aa/vmlinuz-3.13.0-rc3-00689-gb1daf37'  -m 512M -smp 2 -net nic,vlan=
-=3D1,model=3De1000 -net user,vlan=3D1,hostfwd=3Dtcp::33209-:22 -boot order=
+ot/devel-xian-x86_64-201312130852/.vmlinuz-31e078736811963afecfe7305a51541c=
+bed8e6a6-20131213085833-4-xian branch=3Dlinux-devel/devel-xian-x86_64-20131=
+2130852 BOOT_IMAGE=3D/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541=
+cbed8e6a6/vmlinuz-3.13.0-rc3-00182-g31e0787'  -m 512M -smp 2 -net nic,vlan=
+=3D1,model=3De1000 -net user,vlan=3D1,hostfwd=3Dtcp::33416-:22 -boot order=
 =3Dnc -no-reboot -watchdog i6300esb -rtc base=3Dlocaltime -drive file=3D/fs=
-/LABEL=3DKVM/disk0-nfsroot-cairo-7,media=3Ddisk,if=3Dvirtio -drive file=3D/=
-fs/LABEL=3DKVM/disk1-nfsroot-cairo-7,media=3Ddisk,if=3Dvirtio -drive file=
-=3D/fs/LABEL=3DKVM/disk2-nfsroot-cairo-7,media=3Ddisk,if=3Dvirtio -drive fi=
-le=3D/fs/LABEL=3DKVM/disk3-nfsroot-cairo-7,media=3Ddisk,if=3Dvirtio -drive =
-file=3D/fs/LABEL=3DKVM/disk4-nfsroot-cairo-7,media=3Ddisk,if=3Dvirtio -driv=
-e file=3D/fs/LABEL=3DKVM/disk5-nfsroot-cairo-7,media=3Ddisk,if=3Dvirtio -pi=
-dfile /dev/shm/kboot/pid-nfsroot-cairo-7 -serial file:/dev/shm/kboot/serial=
--nfsroot-cairo-7 -daemonize -display none -monitor null=20
+/LABEL=3DKVM/disk0-nfsroot-xian-25,media=3Ddisk,if=3Dvirtio -drive file=3D/=
+fs/LABEL=3DKVM/disk1-nfsroot-xian-25,media=3Ddisk,if=3Dvirtio -drive file=
+=3D/fs/LABEL=3DKVM/disk2-nfsroot-xian-25,media=3Ddisk,if=3Dvirtio -drive fi=
+le=3D/fs/LABEL=3DKVM/disk3-nfsroot-xian-25,media=3Ddisk,if=3Dvirtio -drive =
+file=3D/fs/LABEL=3DKVM/disk4-nfsroot-xian-25,media=3Ddisk,if=3Dvirtio -driv=
+e file=3D/fs/LABEL=3DKVM/disk5-nfsroot-xian-25,media=3Ddisk,if=3Dvirtio -pi=
+dfile /dev/shm/kboot/pid-nfsroot-xian-25 -serial file:/dev/shm/kboot/serial=
+-nfsroot-xian-25 -daemonize -display none -monitor null=20
 
---PEIAKu/WMn1b1Hv9
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename="x86_64-nfsroot-b1daf37ff52cf2ff39b2db2399e052ad7965c6aa-inconsistent--130714.log"
-Content-Transfer-Encoding: base64
+--h31gzZEtNLTqOjlF
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: attachment; filename="x86_64-nfsroot-31e078736811963afecfe7305a51541cbed8e6a6-WARNING:-CPU:-26829.log"
+Content-Transfer-Encoding: quoted-printable
 
-Z2l0IGNoZWNrb3V0IDM3NGIxMDU3OTdjM2Q0ZjI5YzY4NWYzYmU1MzVjMzVmNTY4OWIzMGUK
-UHJldmlvdXMgSEVBRCBwb3NpdGlvbiB3YXMgYjFkYWYzNy4uLiBNZXJnZSAnc2VjdXJpdHkv
-Zm9yLWxpbnVzJyBpbnRvIGRldmVsLXhpYW4teDg2XzY0LTIwMTMxMjEzMTA1MgpIRUFEIGlz
-IG5vdyBhdCAzNzRiMTA1Li4uIExpbnV4IDMuMTMtcmMzCmxzIC1hIC9rZXJuZWwtdGVzdHMv
-cnVuLXF1ZXVlL2t2bS94ODZfNjQtbmZzcm9vdC9saW51eC1kZXZlbDpkZXZlbC14aWFuLXg4
-Nl82NC0yMDEzMTIxMzEwNTI6Mzc0YjEwNTc5N2MzZDRmMjljNjg1ZjNiZTUzNWMzNWY1Njg5
-YjMwZTpiaXNlY3QtbW0KIFNVQ0NFU1MKCmJpc2VjdDogZ29vZCBjb21taXQgMzc0YjEwNTc5
-N2MzZDRmMjljNjg1ZjNiZTUzNWMzNWY1Njg5YjMwZQpnaXQgYmlzZWN0IHN0YXJ0IGIxZGFm
-MzdmZjUyY2YyZmYzOWIyZGIyMzk5ZTA1MmFkNzk2NWM2YWEgMzc0YjEwNTc5N2MzZDRmMjlj
-Njg1ZjNiZTUzNWMzNWY1Njg5YjMwZSAtLQpQcmV2aW91cyBIRUFEIHBvc2l0aW9uIHdhcyAz
-NzRiMTA1Li4uIExpbnV4IDMuMTMtcmMzCkhFQUQgaXMgbm93IGF0IGMyZjg0ZjUuLi4gTWVy
-Z2UgJ25ldC9tYXN0ZXInIGludG8gZGV2ZWwteGlhbi14ODZfNjQtMjAxMzEyMTMxMDUyCmxz
-IC1hIC9rZXJuZWwtdGVzdHMvcnVuLXF1ZXVlL2t2bS94ODZfNjQtbmZzcm9vdC9saW51eC1k
-ZXZlbDpkZXZlbC14aWFuLXg4Nl82NC0yMDEzMTIxMzEwNTI6YzJmODRmNTE3NzI5MzI3MGMw
-MjAzZmFiZmQ2MDBlMTFlMjExZmQ3MzpiaXNlY3QtbW0KCjIwMTMtMTItMTMtMTE6MzI6MzMg
-YzJmODRmNTE3NzI5MzI3MGMwMjAzZmFiZmQ2MDBlMTFlMjExZmQ3MyBjb21waWxpbmcKOTQ1
-IHJlYWwgIDE2NTMgdXNlciAgMTQzIHN5cyAgMTkwLjA5JSBjcHUgCXg4Nl82NC1uZnNyb290
-CgoyMDEzLTEyLTEzLTExOjU2OjI1IGRldGVjdGluZyBib290IHN0YXRlIDMuMTMuMC1yYzMt
-MDEwMTQtZ2MyZjg0ZjUuLi4uLi4uLi4uLi4uLi4uLi4uLi4gVEVTVCBGQUlMVVJFClsgICAx
-OC40MDA2MzVdIFsgSU5GTzogaW5jb25zaXN0ZW50IGxvY2sgc3RhdGUgXQpbICAgMTguNDAw
-NjM1XSAzLjEzLjAtcmMzLTAxMDE0LWdjMmY4NGY1ICM1NjAgTm90IHRhaW50ZWQKWyAgIDE4
-LjQwMDYzNV0gLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tClsgICAxOC40MDA2
-MzVdIGluY29uc2lzdGVudCB7U09GVElSUS1PTi1XfSAtPiB7SU4tU09GVElSUS1XfSB1c2Fn
-ZS4KWyAgIDE4LjQwMDYzNV0gc3dhcHBlci8xLzAgW0hDMFswXTpTQzFbMV06SEUxOlNFMF0g
-dGFrZXM6ClsgICAxOC40MDA2MzVdICAoJigmc2stPnNrX2RzdF9sb2NrKS0+cmxvY2speysu
-Py4uLn0sIGF0OiBbPGZmZmZmZmZmODFhMjQyMmI+XSBfX3VkcDRfbGliX3JjdisweDU2OS8w
-eDc5ZApbICAgMTguNDAwNjM1XSB7U09GVElSUS1PTi1XfSBzdGF0ZSB3YXMgcmVnaXN0ZXJl
-ZCBhdDoKWyAgIDE4LjQwMDYzNV0gICBbPGZmZmZmZmZmODEwYjE2Y2M+XSBfX2xvY2tfYWNx
-dWlyZSsweDk3NS8weDE4NjgKWyAgIDE4LjQwMDYzNV0gICBbPGZmZmZmZmZmODEwYjJjYWM+
-XSBsb2NrX2FjcXVpcmUrMHhhYi8weDEyZQpbICAgMTguNDAwNjM1XSAgIFs8ZmZmZmZmZmY4
-MWFlZDZmMz5dIF9yYXdfc3Bpbl9sb2NrKzB4M2IvMHg2ZApbICAgMTguNDAwNjM1XSAgIFs8
-ZmZmZmZmZmY4MWEyYjNhYj5dIGluZXRfYmluZCsweDE4ZC8weDFkYwpbICAgMTguNDAwNjM1
-XSAgIFs8ZmZmZmZmZmY4MTk5OTZhYz5dIGtlcm5lbF9iaW5kKzB4MTAvMHgxMgpbICAgMTgu
-NDAwNjM1XSAgIFs8ZmZmZmZmZmY4MWFhYWI0ND5dIHhzX2JpbmQrMHhhMC8weDExZQpbICAg
-MTguNDAwNjM1XSAgIFs8ZmZmZmZmZmY4MWFhYzY1MT5dIHhzX2NyZWF0ZV9zb2NrLmlzcmEu
-MTQrMHgyMGIvMHgyMzAKWyAgIDE4LjQwMDYzNV0gICBbPGZmZmZmZmZmODFhYWM4NWY+XSB4
-c190Y3Bfc2V0dXBfc29ja2V0KzB4NWYvMHgzZTUKWyAgIDE4LjQwMDYzNV0gICBbPGZmZmZm
-ZmZmODEwOGEwZDc+XSBwcm9jZXNzX29uZV93b3JrKzB4MjQ3LzB4NDQzClsgICAxOC40MDA2
-MzVdICAgWzxmZmZmZmZmZjgxMDhhZWFjPl0gd29ya2VyX3RocmVhZCsweDFkMi8weDJiYwpb
-ICAgMTguNDAwNjM1XSAgIFs8ZmZmZmZmZmY4MTA5MDIyOD5dIGt0aHJlYWQrMHhmOS8weDEw
-MQpbICAgMTguNDAwNjM1XSAgIFs8ZmZmZmZmZmY4MWFmNTZmYz5dIHJldF9mcm9tX2Zvcmsr
-MHg3Yy8weGIwClsgICAxOC40MDA2MzVdIGlycSBldmVudCBzdGFtcDogMzg0NDc4ClsgICAx
-OC40MDA2MzVdIGhhcmRpcnFzIGxhc3QgIGVuYWJsZWQgYXQgKDM4NDQ3OCk6IFs8ZmZmZmZm
-ZmY4MTA3NjZhZj5dIGxvY2FsX2JoX2VuYWJsZSsweGFiLzB4YjUKWyAgIDE4LjQwMDYzNV0g
-aGFyZGlycXMgbGFzdCBkaXNhYmxlZCBhdCAoMzg0NDc3KTogWzxmZmZmZmZmZjgxMDc2NjVh
-Pl0gbG9jYWxfYmhfZW5hYmxlKzB4NTYvMHhiNQpbICAgMTguNDAwNjM1XSBzb2Z0aXJxcyBs
-YXN0ICBlbmFibGVkIGF0ICgzODQ0NTYpOiBbPGZmZmZmZmZmODEwNzYxMDY+XSBfbG9jYWxf
-YmhfZW5hYmxlKzB4NDMvMHg0NQpbICAgMTguNDAwNjM1XSBzb2Z0aXJxcyBsYXN0IGRpc2Fi
-bGVkIGF0ICgzODQ0NTcpOiBbPGZmZmZmZmZmODEwNzY3Nzk+XSBpcnFfZXhpdCsweDU5LzB4
-YTAKWyAgIDE4LjQwMDYzNV0gClsgICAxOC40MDA2MzVdIG90aGVyIGluZm8gdGhhdCBtaWdo
-dCBoZWxwIHVzIGRlYnVnIHRoaXM6ClsgICAxOC40MDA2MzVdICBQb3NzaWJsZSB1bnNhZmUg
-bG9ja2luZyBzY2VuYXJpbzoKWyAgIDE4LjQwMDYzNV0gClsgICAxOC40MDA2MzVdICAgICAg
-ICBDUFUwClsgICAxOC40MDA2MzVdICAgICAgICAtLS0tClsgICAxOC40MDA2MzVdICAgbG9j
-aygmKCZzay0+c2tfZHN0X2xvY2spLT5ybG9jayk7ClsgICAxOC40MDA2MzVdICAgPEludGVy
-cnVwdD4KWyAgIDE4LjQwMDYzNV0gICAgIGxvY2soJigmc2stPnNrX2RzdF9sb2NrKS0+cmxv
-Y2spOwpbICAgMTguNDAwNjM1XSAKWyAgIDE4LjQwMDYzNV0gICoqKiBERUFETE9DSyAqKioK
-WyAgIDE4LjQwMDYzNV0gClsgICAxOC40MDA2MzVdIDIgbG9ja3MgaGVsZCBieSBzd2FwcGVy
-LzEvMDoKWyAgIDE4LjQwMDYzNV0gICMwOiAgKHJjdV9yZWFkX2xvY2spey4rLisuLn0sIGF0
-OiBbPGZmZmZmZmZmODE5YWU2NWY+XSBfX25ldGlmX3JlY2VpdmVfc2tiX2NvcmUrMHgxNjgv
-MHg1OGUKWyAgIDE4LjQwMDYzNV0gICMxOiAgKHJjdV9yZWFkX2xvY2spey4rLisuLn0sIGF0
-OiBbPGZmZmZmZmZmODE5ZmM5YzQ+XSBpcF9sb2NhbF9kZWxpdmVyX2ZpbmlzaCsweDJmLzB4
-MmEwClsgICAxOC40MDA2MzVdIApbICAgMTguNDAwNjM1XSBzdGFjayBiYWNrdHJhY2U6Clsg
-ICAxOC40MDA2MzVdIENQVTogMSBQSUQ6IDAgQ29tbTogc3dhcHBlci8xIE5vdCB0YWludGVk
-IDMuMTMuMC1yYzMtMDEwMTQtZ2MyZjg0ZjUgIzU2MApbICAgMTguNDAwNjM1XSBIYXJkd2Fy
-ZSBuYW1lOiBCb2NocyBCb2NocywgQklPUyBCb2NocyAwMS8wMS8yMDExClsgICAxOC40MDA2
-MzVdICAwMDAwMDAwMDAwMDAwMDAyIGZmZmY4ODAwMWVjMDM5OTAgZmZmZmZmZmY4MWFlMWIy
-NiBmZmZmODgwMDFlN2M4MDAwClsgICAxOC40MDA2MzVdICBmZmZmODgwMDFlYzAzOWUwIGZm
-ZmZmZmZmODFhZDllZGQgMDAwMDAwMDAwMDAwMDAwMSBmZmZmODgwMDAwMDAwMDAxClsgICAx
-OC40MDA2MzVdICBmZmZmODgwMDAwMDAwMDAwIGZmZmY4ODAwMWU3Yzg3NzggMDAwMDAwMDAw
-MDAwMDAwNCAwMDAwMDAwMDAwMDAwMDA2ClsgICAxOC40MDA2MzVdIENhbGwgVHJhY2U6Clsg
-ICAxOC40MDA2MzVdICA8SVJRPiAgWzxmZmZmZmZmZjgxYWUxYjI2Pl0gZHVtcF9zdGFjaysw
-eDRkLzB4NjYKWyAgIDE4LjQwMDYzNV0gIFs8ZmZmZmZmZmY4MWFkOWVkZD5dIHByaW50X3Vz
-YWdlX2J1ZysweDJhOC8weDJiOQpbICAgMTguNDAwNjM1XSAgWzxmZmZmZmZmZjgxMGFmOTQ2
-Pl0gPyBwcmludF9zaG9ydGVzdF9sb2NrX2RlcGVuZGVuY2llcysweDE5My8weDE5MwpbICAg
-MTguNDAwNjM1XSAgWzxmZmZmZmZmZjgxMGIwNWMxPl0gbWFya19sb2NrKzB4MzNjLzB4NTdj
-ClsgICAxOC40MDA2MzVdICBbPGZmZmZmZmZmODEwYjE2NWE+XSBfX2xvY2tfYWNxdWlyZSsw
-eDkwMy8weDE4NjgKWyAgIDE4LjQwMDYzNV0gIFs8ZmZmZmZmZmY4MTA5MjAxOT5dID8gcnVu
-X3Bvc2l4X2NwdV90aW1lcnMrMHgzZS8weDQ4OApbICAgMTguNDAwNjM1XSAgWzxmZmZmZmZm
-ZjgxMGFkZTA2Pl0gPyB0cmFjZV9oYXJkaXJxc19vZmZfY2FsbGVyKzB4MWYvMHhiMgpbICAg
-MTguNDAwNjM1XSAgWzxmZmZmZmZmZjgxMGIyY2FjPl0gbG9ja19hY3F1aXJlKzB4YWIvMHgx
-MmUKWyAgIDE4LjQwMDYzNV0gIFs8ZmZmZmZmZmY4MWEyNDIyYj5dID8gX191ZHA0X2xpYl9y
-Y3YrMHg1NjkvMHg3OWQKWyAgIDE4LjQwMDYzNV0gIFs8ZmZmZmZmZmY4MTBhZGUwNj5dID8g
-dHJhY2VfaGFyZGlycXNfb2ZmX2NhbGxlcisweDFmLzB4YjIKWyAgIDE4LjQwMDYzNV0gIFs8
-ZmZmZmZmZmY4MWFlZDZmMz5dIF9yYXdfc3Bpbl9sb2NrKzB4M2IvMHg2ZApbICAgMTguNDAw
-NjM1XSAgWzxmZmZmZmZmZjgxYTI0MjJiPl0gPyBfX3VkcDRfbGliX3JjdisweDU2OS8weDc5
-ZApbICAgMTguNDAwNjM1XSAgWzxmZmZmZmZmZjgxYTI0MjJiPl0gX191ZHA0X2xpYl9yY3Yr
-MHg1NjkvMHg3OWQKWyAgIDE4LjQwMDYzNV0gIFs8ZmZmZmZmZmY4MWEyNDhmNz5dIHVkcF9y
-Y3YrMHgxYS8weDFjClsgICAxOC40MDA2MzVdICBbPGZmZmZmZmZmODE5ZmNhZTY+XSBpcF9s
-b2NhbF9kZWxpdmVyX2ZpbmlzaCsweDE1MS8weDJhMApbICAgMTguNDAwNjM1XSAgWzxmZmZm
-ZmZmZjgxOWZjOWM0Pl0gPyBpcF9sb2NhbF9kZWxpdmVyX2ZpbmlzaCsweDJmLzB4MmEwClsg
-ICAxOC40MDA2MzVdICBbPGZmZmZmZmZmODE5ZmQxZjg+XSBpcF9sb2NhbF9kZWxpdmVyKzB4
-N2EvMHg3ZgpbICAgMTguNDAwNjM1XSAgWzxmZmZmZmZmZjgxOWZjZmNmPl0gaXBfcmN2X2Zp
-bmlzaCsweDM5YS8weDQ2MQpbICAgMTguNDAwNjM1XSAgWzxmZmZmZmZmZjgxOWZkNDk1Pl0g
-aXBfcmN2KzB4Mjk4LzB4MmY3ClsgICAxOC40MDA2MzVdICBbPGZmZmZmZmZmODE5YWU5YzQ+
-XSBfX25ldGlmX3JlY2VpdmVfc2tiX2NvcmUrMHg0Y2QvMHg1OGUKWyAgIDE4LjQwMDYzNV0g
-IFs8ZmZmZmZmZmY4MTlhZTY1Zj5dID8gX19uZXRpZl9yZWNlaXZlX3NrYl9jb3JlKzB4MTY4
-LzB4NThlClsgICAxOC40MDA2MzVdICBbPGZmZmZmZmZmODE5YWVlYWI+XSBfX25ldGlmX3Jl
-Y2VpdmVfc2tiKzB4MWQvMHg1ZgpbICAgMTguNDAwNjM1XSAgWzxmZmZmZmZmZjgxOWFlZjU1
-Pl0gbmV0aWZfcmVjZWl2ZV9za2IrMHg2OC8weGY0ClsgICAxOC40MDA2MzVdICBbPGZmZmZm
-ZmZmODE5YWY2YWY+XSBuYXBpX2dyb19yZWNlaXZlKzB4M2UvMHg4MApbICAgMTguNDAwNjM1
-XSAgWzxmZmZmZmZmZjgxN2JhYTc0Pl0gZTEwMDBfY2xlYW5fcnhfaXJxKzB4MzkzLzB4NDE1
-ClsgICAxOC40MDA2MzVdICBbPGZmZmZmZmZmODE3YjhmNGM+XSBlMTAwMF9jbGVhbisweDU5
-ZC8weDcxZgpbICAgMTguNDAwNjM1XSAgWzxmZmZmZmZmZjgxMDYzNGQxPl0gPyBrdm1fY2xv
-Y2tfcmVhZCsweDI3LzB4MzEKWyAgIDE4LjQwMDYzNV0gIFs8ZmZmZmZmZmY4MTAzZWRkMD5d
-ID8gc2NoZWRfY2xvY2srMHg5LzB4ZApbICAgMTguNDAwNjM1XSAgWzxmZmZmZmZmZjgxOWFm
-ZmE1Pl0gbmV0X3J4X2FjdGlvbisweGY2LzB4MjEwClsgICAxOC40MDA2MzVdICBbPGZmZmZm
-ZmZmODEwNzYyZmM+XSBfX2RvX3NvZnRpcnErMHhmMy8weDI3YQpbICAgMTguNDAwNjM1XSAg
-WzxmZmZmZmZmZjgxMDc2Nzc5Pl0gaXJxX2V4aXQrMHg1OS8weGEwClsgICAxOC40MDA2MzVd
-ICBbPGZmZmZmZmZmODFhZjc4NGQ+XSBkb19JUlErMHg5ZC8weGI0ClsgICAxOC40MDA2MzVd
-ICBbPGZmZmZmZmZmODFhZWU1ZjI+XSBjb21tb25faW50ZXJydXB0KzB4NzIvMHg3MgpbICAg
-MTguNDAwNjM1XSAgPEVPST4gIFs8ZmZmZmZmZmY4MWFmMWViNT5dID8gX19hdG9taWNfbm90
-aWZpZXJfY2FsbF9jaGFpbisweDUvMHg5YwpbICAgMTguNDAwNjM1XSAgWzxmZmZmZmZmZjgx
-YWYxZWI1Pl0gPyBfX2F0b21pY19ub3RpZmllcl9jYWxsX2NoYWluKzB4NS8weDljClsgICAx
-OC40MDA2MzVdICBbPGZmZmZmZmZmODEwNjM2Yzg+XSA/IG5hdGl2ZV9zYWZlX2hhbHQrMHg2
-LzB4OApbICAgMTguNDAwNjM1XSAgWzxmZmZmZmZmZjgxMGIwYTk1Pl0gPyB0cmFjZV9oYXJk
-aXJxc19vbisweGQvMHhmClsgICAxOC40MDA2MzVdICBbPGZmZmZmZmZmODEwM2Y5ZDE+XSBk
-ZWZhdWx0X2lkbGUrMHgzOC8weGMxClsgICAxOC40MDA2MzVdICBbPGZmZmZmZmZmODEwNDAx
-NTQ+XSBhcmNoX2NwdV9pZGxlKzB4MTgvMHgyOApbICAgMTguNDAwNjM1XSAgWzxmZmZmZmZm
-ZjgxMGMwYWUwPl0gY3B1X3N0YXJ0dXBfZW50cnkrMHgxNWMvMHgyNGQKWyAgIDE4LjQwMDYz
-NV0gIFs8ZmZmZmZmZmY4MTA1YTE4Zj5dIHN0YXJ0X3NlY29uZGFyeSsweDI0Ny8weDI1MApb
-ICAgNDIuMTU1Mzg5XSByYW5kb206IG5vbmJsb2NraW5nIHBvb2wgaXMgaW5pdGlhbGl6ZWQK
-WyAgIDU4LjMwMTIxM10gTkZTRDogVXNpbmcgL3Zhci9saWIvbmZzL3Y0cmVjb3ZlcnkgYXMg
-dGhlIE5GU3Y0IHN0YXRlIHJlY292ZXJ5IGRpcmVjdG9yeQpbICAgNTguMzA1MjAxXSBORlNE
-OiBzdGFydGluZyA5MC1zZWNvbmQgZ3JhY2UgcGVyaW9kIChuZXQgZmZmZmZmZmY4MjE4Njlj
-MCkKL2tlcm5lbC94ODZfNjQtbmZzcm9vdC9jMmY4NGY1MTc3MjkzMjcwYzAyMDNmYWJmZDYw
-MGUxMWUyMTFmZDczL2RtZXNnLW5mc3Jvb3QtaW5uLTE0OjIwMTMxMjEzMTIwNzAyOng4Nl82
-NC1uZnNyb290OjMuMTMuMC1yYzMtMDEwMTQtZ2MyZjg0ZjU6NTYwCjA6MToxIGFsbF9nb29k
-OmJhZDphbGxfYmFkIGJvb3RzChtbMTszNW1SRVBFQVQgQ09VTlQ6IDIwICAjIC9jYy93Zmcv
-bW0tYmlzZWN0Ly5yZXBlYXQbWzBtCgpQcmV2aW91cyBIRUFEIHBvc2l0aW9uIHdhcyBjMmY4
-NGY1Li4uIE1lcmdlICduZXQvbWFzdGVyJyBpbnRvIGRldmVsLXhpYW4teDg2XzY0LTIwMTMx
-MjEzMTA1MgpIRUFEIGlzIG5vdyBhdCAyNDgxYjBiLi4uIE1lcmdlICdhcm0tc29jL3RvLWJ1
-aWxkJyBpbnRvIGRldmVsLXhpYW4teDg2XzY0LTIwMTMxMjEzMTA1MgpscyAtYSAva2VybmVs
-LXRlc3RzL3J1bi1xdWV1ZS9rdm0veDg2XzY0LW5mc3Jvb3QvbGludXgtZGV2ZWw6ZGV2ZWwt
-eGlhbi14ODZfNjQtMjAxMzEyMTMxMDUyOjI0ODFiMGI5YTVmN2FmMGY3NDhhMThhOTcxMDM3
-MWE5Y2IyMmM5ODY6YmlzZWN0LW1tCgoyMDEzLTEyLTEzLTEyOjA3OjE3IDI0ODFiMGI5YTVm
-N2FmMGY3NDhhMThhOTcxMDM3MWE5Y2IyMmM5ODYgY29tcGlsaW5nCjM4MCByZWFsICA4MzMg
-dXNlciAgNjkgc3lzICAyMzcuNTIlIGNwdSAJeDg2XzY0LW5mc3Jvb3QKCjIwMTMtMTItMTMt
-MTI6MjE6MjggZGV0ZWN0aW5nIGJvb3Qgc3RhdGUgMy4xMy4wLXJjMy0wMDg3MC1nMjQ4MWIw
-Yi4uLi4uLi4uLi4uCTEJMgkzCTQuCTYJOC4uLi4uCTkuCTEwLi4uCTExLi4uCTEyLi4uCTE3
-CTIwIFNVQ0NFU1MKClByZXZpb3VzIEhFQUQgcG9zaXRpb24gd2FzIDI0ODFiMGIuLi4gTWVy
-Z2UgJ2FybS1zb2MvdG8tYnVpbGQnIGludG8gZGV2ZWwteGlhbi14ODZfNjQtMjAxMzEyMTMx
-MDUyCkhFQUQgaXMgbm93IGF0IDNjMGVlZTMuLi4gTGludXggMi42LjM3CkJpc2VjdGluZzog
-NzEgcmV2aXNpb25zIGxlZnQgdG8gdGVzdCBhZnRlciB0aGlzIChyb3VnaGx5IDYgc3RlcHMp
-CltjODc4MWNmNGEzMDlhZTRkMTM5M2Y1ODc4ZDRlNTE5ODc2NjU4OThjXSBibngyeDogYXZv
-aWQgbnVsbCBwb2ludGVyIGRlcmVmZXJlbmNlIHdoZW4gZW5hYmxpbmcgU1ItSU9WCnJ1bm5p
-bmcgL2Mva2VybmVsLXRlc3RzL2Jpc2VjdC10ZXN0LWJvb3QtZmFpbHVyZS5zaCAvaG9tZS93
-ZmcvbW0vb2JqLWJpc2VjdApscyAtYSAva2VybmVsLXRlc3RzL3J1bi1xdWV1ZS9rdm0veDg2
-XzY0LW5mc3Jvb3QvbGludXgtZGV2ZWw6ZGV2ZWwteGlhbi14ODZfNjQtMjAxMzEyMTMxMDUy
-OmM4NzgxY2Y0YTMwOWFlNGQxMzkzZjU4NzhkNGU1MTk4NzY2NTg5OGM6YmlzZWN0LW1tCgoy
-MDEzLTEyLTEzLTEyOjQyOjEzIGM4NzgxY2Y0YTMwOWFlNGQxMzkzZjU4NzhkNGU1MTk4NzY2
-NTg5OGMgY29tcGlsaW5nCjc0NCByZWFsICAxNjc4IHVzZXIgIDE0MiBzeXMgIDI0NC41NSUg
-Y3B1IAl4ODZfNjQtbmZzcm9vdAoKMjAxMy0xMi0xMy0xMzowMjozMyBkZXRlY3RpbmcgYm9v
-dCBzdGF0ZSAzLjEzLjAtcmMyLTAwNTAwLWdjODc4MWNmLi4uLi4uLgk2CTExCTEzCTE4CTIw
-IFNVQ0NFU1MKCkJpc2VjdGluZzogMzUgcmV2aXNpb25zIGxlZnQgdG8gdGVzdCBhZnRlciB0
-aGlzIChyb3VnaGx5IDUgc3RlcHMpCltmZmZjMTVhNTAxMmU5MDUyZDNiMjM2ZWZjNTY4NDA4
-NDFhMTI1NDE2XSB2eGxhbjogcmVsZWFzZSBydCB3aGVuIGZvdW5kIGNpcmN1bGFyIHJvdXRl
-CnJ1bm5pbmcgL2Mva2VybmVsLXRlc3RzL2Jpc2VjdC10ZXN0LWJvb3QtZmFpbHVyZS5zaCAv
-aG9tZS93ZmcvbW0vb2JqLWJpc2VjdApscyAtYSAva2VybmVsLXRlc3RzL3J1bi1xdWV1ZS9r
-dm0veDg2XzY0LW5mc3Jvb3QvbGludXgtZGV2ZWw6ZGV2ZWwteGlhbi14ODZfNjQtMjAxMzEy
-MTMxMDUyOmZmZmMxNWE1MDEyZTkwNTJkM2IyMzZlZmM1Njg0MDg0MWExMjU0MTY6YmlzZWN0
-LW1tCgoyMDEzLTEyLTEzLTEzOjA4OjM3IGZmZmMxNWE1MDEyZTkwNTJkM2IyMzZlZmM1Njg0
-MDg0MWExMjU0MTYgY29tcGlsaW5nCjUyMCByZWFsICA1NzUgdXNlciAgNTAgc3lzICAxMjAu
-MzMlIGNwdSAJeDg2XzY0LW5mc3Jvb3QKCjIwMTMtMTItMTMtMTM6Mjc6MjMgZGV0ZWN0aW5n
-IGJvb3Qgc3RhdGUgMy4xMy4wLXJjMi0wMDUzNi1nZmZmYzE1YS4uLi4uLgkyCTQJMTEuCTE4
-LgkxOS4uLi4JMjAgU1VDQ0VTUwoKQmlzZWN0aW5nOiAxNyByZXZpc2lvbnMgbGVmdCB0byB0
-ZXN0IGFmdGVyIHRoaXMgKHJvdWdobHkgNCBzdGVwcykKWzRiZDdiNTEyN2JkMDJjMTJjMWNj
-ODM3YTdhMGI2Y2UyOTVlYjI1MDVdIG1pY3JlbDogYWRkIHN1cHBvcnQgZm9yIEtTWjgwNDFS
-TkxJCnJ1bm5pbmcgL2Mva2VybmVsLXRlc3RzL2Jpc2VjdC10ZXN0LWJvb3QtZmFpbHVyZS5z
-aCAvaG9tZS93ZmcvbW0vb2JqLWJpc2VjdApscyAtYSAva2VybmVsLXRlc3RzL3J1bi1xdWV1
-ZS9rdm0veDg2XzY0LW5mc3Jvb3QvbGludXgtZGV2ZWw6ZGV2ZWwteGlhbi14ODZfNjQtMjAx
-MzEyMTMxMDUyOjRiZDdiNTEyN2JkMDJjMTJjMWNjODM3YTdhMGI2Y2UyOTVlYjI1MDU6Ymlz
-ZWN0LW1tCgoyMDEzLTEyLTEzLTEzOjM2OjMwIDRiZDdiNTEyN2JkMDJjMTJjMWNjODM3YTdh
-MGI2Y2UyOTVlYjI1MDUgY29tcGlsaW5nCjExMCByZWFsICA1MiB1c2VyICA5IHN5cyAgNTUu
-MTklIGNwdSAJeDg2XzY0LW5mc3Jvb3QKCjIwMTMtMTItMTMtMTM6NDU6NDMgZGV0ZWN0aW5n
-IGJvb3Qgc3RhdGUgMy4xMy4wLXJjMi0wMDU1NC1nNGJkN2I1MS4uLi4uLgk1CTEyCTE4CTIw
-IFNVQ0NFU1MKCkJpc2VjdGluZzogOCByZXZpc2lvbnMgbGVmdCB0byB0ZXN0IGFmdGVyIHRo
-aXMgKHJvdWdobHkgMyBzdGVwcykKWzk1MDhmZGRlNGQ1M2YwZDllNTgzZTg0MWVkMDg3OTZk
-MmYzMTBiZTFdIFJldmVydCAiODM5MCA6IFJlcGxhY2UgZWlfZGVidWcgd2l0aCBtc2dfZW5h
-YmxlL05FVElGX01TR18qIGZlYXR1cmUiCnJ1bm5pbmcgL2Mva2VybmVsLXRlc3RzL2Jpc2Vj
-dC10ZXN0LWJvb3QtZmFpbHVyZS5zaCAvaG9tZS93ZmcvbW0vb2JqLWJpc2VjdApscyAtYSAv
-a2VybmVsLXRlc3RzL3J1bi1xdWV1ZS9rdm0veDg2XzY0LW5mc3Jvb3QvbGludXgtZGV2ZWw6
-ZGV2ZWwteGlhbi14ODZfNjQtMjAxMzEyMTMxMDUyOjk1MDhmZGRlNGQ1M2YwZDllNTgzZTg0
-MWVkMDg3OTZkMmYzMTBiZTE6YmlzZWN0LW1tCgoyMDEzLTEyLTEzLTEzOjUwOjUwIDk1MDhm
-ZGRlNGQ1M2YwZDllNTgzZTg0MWVkMDg3OTZkMmYzMTBiZTEgcmV1c2UgL2tlcm5lbC94ODZf
-NjQtbmZzcm9vdC85NTA4ZmRkZTRkNTNmMGQ5ZTU4M2U4NDFlZDA4Nzk2ZDJmMzEwYmUxL3Zt
-bGludXotMy4xMy4wLXJjMi0wMDI1NC1nOTUwOGZkZAoKMjAxMy0xMi0xMy0xMzo1MDo1MCBk
-ZXRlY3RpbmcgYm9vdCBzdGF0ZSAuLi4uLi4uLgkxCTIuCTMuLi4JNQk2Li4uCTcJOC4JMTAu
-LgkxMS4uLi4uCTEzLi4JMTQuLi4JMTYuLi4JMTcJMTguCTIwIFNVQ0NFU1MKCkJpc2VjdGlu
-ZzogNCByZXZpc2lvbnMgbGVmdCB0byB0ZXN0IGFmdGVyIHRoaXMgKHJvdWdobHkgMiBzdGVw
-cykKWzEwNTc0MDU5Y2UwNDUxYzY1NzJjODUzMjljNzcyYWExNTA4NWY4ZWJdIHhlbi1uZXRi
-YWNrOiBuYXBpOiBmaXggYWJ1c2Ugb2YgYnVkZ2V0CnJ1bm5pbmcgL2Mva2VybmVsLXRlc3Rz
-L2Jpc2VjdC10ZXN0LWJvb3QtZmFpbHVyZS5zaCAvaG9tZS93ZmcvbW0vb2JqLWJpc2VjdAps
-cyAtYSAva2VybmVsLXRlc3RzL3J1bi1xdWV1ZS9rdm0veDg2XzY0LW5mc3Jvb3QvbGludXgt
-ZGV2ZWw6ZGV2ZWwteGlhbi14ODZfNjQtMjAxMzEyMTMxMDUyOjEwNTc0MDU5Y2UwNDUxYzY1
-NzJjODUzMjljNzcyYWExNTA4NWY4ZWI6YmlzZWN0LW1tCgoyMDEzLTEyLTEzLTE0OjE0OjM0
-IDEwNTc0MDU5Y2UwNDUxYzY1NzJjODUzMjljNzcyYWExNTA4NWY4ZWIgY29tcGlsaW5nCjM3
-IHJlYWwgIDQ3IHVzZXIgIDggc3lzICAxNDcuMDQlIGNwdSAJeDg2XzY0LW5mc3Jvb3QKCjIw
-MTMtMTItMTMtMTQ6MTk6MjggZGV0ZWN0aW5nIGJvb3Qgc3RhdGUgMy4xMy4wLXJjMi0wMDU2
-Ny1nMTA1NzQwNS4uLi4uLi4uLi4uLi4uLi4uIFRFU1QgRkFJTFVSRQpbICAgMjEuMjkyMzA5
-XSBbIElORk86IGluY29uc2lzdGVudCBsb2NrIHN0YXRlIF0KWyAgIDIxLjI5MjMwOV0gMy4x
-My4wLXJjMi0wMDU2Ny1nMTA1NzQwNSAjNTY1IE5vdCB0YWludGVkClsgICAyMS4yOTIzMDld
-IC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQpbICAgMjEuMjkyMzA5XSBpbmNv
-bnNpc3RlbnQge1NPRlRJUlEtT04tV30gLT4ge0lOLVNPRlRJUlEtV30gdXNhZ2UuClsgICAy
-MS4yOTIzMDldIHN3YXBwZXIvMC8wIFtIQzBbMF06U0MxWzFdOkhFMTpTRTBdIHRha2VzOgpb
-ICAgMjEuMjkyMzA5XSAgKCYoJnNrLT5za19kc3RfbG9jayktPnJsb2NrKXsrLj8uLi59LCBh
-dDogWzxmZmZmZmZmZjgxYTI0MzNiPl0gX191ZHA0X2xpYl9yY3YrMHg1NjkvMHg3OWQKWyAg
-IDIxLjI5MjMwOV0ge1NPRlRJUlEtT04tV30gc3RhdGUgd2FzIHJlZ2lzdGVyZWQgYXQ6Clsg
-ICAyMS4yOTIzMDldICAgWzxmZmZmZmZmZjgxMGIxNmNjPl0gX19sb2NrX2FjcXVpcmUrMHg5
-NzUvMHgxODY4ClsgICAyMS4yOTIzMDldICAgWzxmZmZmZmZmZjgxMGIyY2FjPl0gbG9ja19h
-Y3F1aXJlKzB4YWIvMHgxMmUKWyAgIDIxLjI5MjMwOV0gICBbPGZmZmZmZmZmODFhZWQ4MDM+
-XSBfcmF3X3NwaW5fbG9jaysweDNiLzB4NmQKWyAgIDIxLjI5MjMwOV0gICBbPGZmZmZmZmZm
-ODFhMmI0YmI+XSBpbmV0X2JpbmQrMHgxOGQvMHgxZGMKWyAgIDIxLjI5MjMwOV0gICBbPGZm
-ZmZmZmZmODE5OTk3YmM+XSBrZXJuZWxfYmluZCsweDEwLzB4MTIKWyAgIDIxLjI5MjMwOV0g
-ICBbPGZmZmZmZmZmODFhYWFjNTQ+XSB4c19iaW5kKzB4YTAvMHgxMWUKWyAgIDIxLjI5MjMw
-OV0gICBbPGZmZmZmZmZmODFhYWM3NjE+XSB4c19jcmVhdGVfc29jay5pc3JhLjE0KzB4MjBi
-LzB4MjMwClsgICAyMS4yOTIzMDldICAgWzxmZmZmZmZmZjgxYWFjOTZmPl0geHNfdGNwX3Nl
-dHVwX3NvY2tldCsweDVmLzB4M2U1ClsgICAyMS4yOTIzMDldICAgWzxmZmZmZmZmZjgxMDhh
-MGQ3Pl0gcHJvY2Vzc19vbmVfd29yaysweDI0Ny8weDQ0MwpbICAgMjEuMjkyMzA5XSAgIFs8
-ZmZmZmZmZmY4MTA4YWVhYz5dIHdvcmtlcl90aHJlYWQrMHgxZDIvMHgyYmMKWyAgIDIxLjI5
-MjMwOV0gICBbPGZmZmZmZmZmODEwOTAyMjg+XSBrdGhyZWFkKzB4ZjkvMHgxMDEKWyAgIDIx
-LjI5MjMwOV0gICBbPGZmZmZmZmZmODFhZjU4M2M+XSByZXRfZnJvbV9mb3JrKzB4N2MvMHhi
-MApbICAgMjEuMjkyMzA5XSBpcnEgZXZlbnQgc3RhbXA6IDUxNjUxNgpbICAgMjEuMjkyMzA5
-XSBoYXJkaXJxcyBsYXN0ICBlbmFibGVkIGF0ICg1MTY1MTYpOiBbPGZmZmZmZmZmODEwNzY2
-YWY+XSBsb2NhbF9iaF9lbmFibGUrMHhhYi8weGI1ClsgICAyMS4yOTIzMDldIGhhcmRpcnFz
-IGxhc3QgZGlzYWJsZWQgYXQgKDUxNjUxNSk6IFs8ZmZmZmZmZmY4MTA3NjY1YT5dIGxvY2Fs
-X2JoX2VuYWJsZSsweDU2LzB4YjUKWyAgIDIxLjI5MjMwOV0gc29mdGlycXMgbGFzdCAgZW5h
-YmxlZCBhdCAoNTE2NDk0KTogWzxmZmZmZmZmZjgxMDc2MTA2Pl0gX2xvY2FsX2JoX2VuYWJs
-ZSsweDQzLzB4NDUKWyAgIDIxLjI5MjMwOV0gc29mdGlycXMgbGFzdCBkaXNhYmxlZCBhdCAo
-NTE2NDk1KTogWzxmZmZmZmZmZjgxMDc2Nzc5Pl0gaXJxX2V4aXQrMHg1OS8weGEwClsgICAy
-MS4yOTIzMDldIApbICAgMjEuMjkyMzA5XSBvdGhlciBpbmZvIHRoYXQgbWlnaHQgaGVscCB1
-cyBkZWJ1ZyB0aGlzOgpbICAgMjEuMjkyMzA5XSAgUG9zc2libGUgdW5zYWZlIGxvY2tpbmcg
-c2NlbmFyaW86ClsgICAyMS4yOTIzMDldIApbICAgMjEuMjkyMzA5XSAgICAgICAgQ1BVMApb
-ICAgMjEuMjkyMzA5XSAgICAgICAgLS0tLQpbICAgMjEuMjkyMzA5XSAgIGxvY2soJigmc2st
-PnNrX2RzdF9sb2NrKS0+cmxvY2spOwpbICAgMjEuMjkyMzA5XSAgIDxJbnRlcnJ1cHQ+Clsg
-ICAyMS4yOTIzMDldICAgICBsb2NrKCYoJnNrLT5za19kc3RfbG9jayktPnJsb2NrKTsKWyAg
-IDIxLjI5MjMwOV0gClsgICAyMS4yOTIzMDldICAqKiogREVBRExPQ0sgKioqClsgICAyMS4y
-OTIzMDldIApbICAgMjEuMjkyMzA5XSAyIGxvY2tzIGhlbGQgYnkgc3dhcHBlci8wLzA6Clsg
-ICAyMS4yOTIzMDldICAjMDogIChyY3VfcmVhZF9sb2NrKXsuKy4rLi59LCBhdDogWzxmZmZm
-ZmZmZjgxOWFlNzZmPl0gX19uZXRpZl9yZWNlaXZlX3NrYl9jb3JlKzB4MTY4LzB4NThlClsg
-ICAyMS4yOTIzMDldICAjMTogIChyY3VfcmVhZF9sb2NrKXsuKy4rLi59LCBhdDogWzxmZmZm
-ZmZmZjgxOWZjYWQ0Pl0gaXBfbG9jYWxfZGVsaXZlcl9maW5pc2grMHgyZi8weDJhMApbICAg
-MjEuMjkyMzA5XSAKWyAgIDIxLjI5MjMwOV0gc3RhY2sgYmFja3RyYWNlOgpbICAgMjEuMjky
-MzA5XSBDUFU6IDAgUElEOiAwIENvbW06IHN3YXBwZXIvMCBOb3QgdGFpbnRlZCAzLjEzLjAt
-cmMyLTAwNTY3LWcxMDU3NDA1ICM1NjUKWyAgIDIxLjI5MjMwOV0gSGFyZHdhcmUgbmFtZTog
-Qm9jaHMgQm9jaHMsIEJJT1MgQm9jaHMgMDEvMDEvMjAxMQpbICAgMjEuMjkyMzA5XSAgMDAw
-MDAwMDAwMDAwMDAwMiBmZmZmODgwMDFlYTAzOTkwIGZmZmZmZmZmODFhZTFjMzYgZmZmZmZm
-ZmY4MjA4OTQ5MApbICAgMjEuMjkyMzA5XSAgZmZmZjg4MDAxZWEwMzllMCBmZmZmZmZmZjgx
-YWQ5ZmVkIDAwMDAwMDAwMDAwMDAwMDEgZmZmZjg4MDAwMDAwMDAwMQpbICAgMjEuMjkyMzA5
-XSAgZmZmZjg4MDAwMDAwMDAwMCBmZmZmZmZmZjgyMDg5YzA4IDAwMDAwMDAwMDAwMDAwMDQg
-MDAwMDAwMDAwMDAwMDAwNgpbICAgMjEuMjkyMzA5XSBDYWxsIFRyYWNlOgpbICAgMjEuMjky
-MzA5XSAgPElSUT4gIFs8ZmZmZmZmZmY4MWFlMWMzNj5dIGR1bXBfc3RhY2srMHg0ZC8weDY2
-ClsgICAyMS4yOTIzMDldICBbPGZmZmZmZmZmODFhZDlmZWQ+XSBwcmludF91c2FnZV9idWcr
-MHgyYTgvMHgyYjkKWyAgIDIxLjI5MjMwOV0gIFs8ZmZmZmZmZmY4MTBhZjk0Nj5dID8gcHJp
-bnRfc2hvcnRlc3RfbG9ja19kZXBlbmRlbmNpZXMrMHgxOTMvMHgxOTMKWyAgIDIxLjI5MjMw
-OV0gIFs8ZmZmZmZmZmY4MTBiMDVjMT5dIG1hcmtfbG9jaysweDMzYy8weDU3YwpbICAgMjEu
-MjkyMzA5XSAgWzxmZmZmZmZmZjgxMGIxNjVhPl0gX19sb2NrX2FjcXVpcmUrMHg5MDMvMHgx
-ODY4ClsgICAyMS4yOTIzMDldICBbPGZmZmZmZmZmODEwOTIwMTk+XSA/IHJ1bl9wb3NpeF9j
-cHVfdGltZXJzKzB4M2UvMHg0ODgKWyAgIDIxLjI5MjMwOV0gIFs8ZmZmZmZmZmY4MTBhZGUw
-Nj5dID8gdHJhY2VfaGFyZGlycXNfb2ZmX2NhbGxlcisweDFmLzB4YjIKWyAgIDIxLjI5MjMw
-OV0gIFs8ZmZmZmZmZmY4MTBiMmNhYz5dIGxvY2tfYWNxdWlyZSsweGFiLzB4MTJlClsgICAy
-MS4yOTIzMDldICBbPGZmZmZmZmZmODFhMjQzM2I+XSA/IF9fdWRwNF9saWJfcmN2KzB4NTY5
-LzB4NzlkClsgICAyMS4yOTIzMDldICBbPGZmZmZmZmZmODEwYWRlMDY+XSA/IHRyYWNlX2hh
-cmRpcnFzX29mZl9jYWxsZXIrMHgxZi8weGIyClsgICAyMS4yOTIzMDldICBbPGZmZmZmZmZm
-ODFhZWQ4MDM+XSBfcmF3X3NwaW5fbG9jaysweDNiLzB4NmQKWyAgIDIxLjI5MjMwOV0gIFs8
-ZmZmZmZmZmY4MWEyNDMzYj5dID8gX191ZHA0X2xpYl9yY3YrMHg1NjkvMHg3OWQKWyAgIDIx
-LjI5MjMwOV0gIFs8ZmZmZmZmZmY4MWEyNDMzYj5dIF9fdWRwNF9saWJfcmN2KzB4NTY5LzB4
-NzlkClsgICAyMS4yOTIzMDldICBbPGZmZmZmZmZmODFhMjRhMDc+XSB1ZHBfcmN2KzB4MWEv
-MHgxYwpbICAgMjEuMjkyMzA5XSAgWzxmZmZmZmZmZjgxOWZjYmY2Pl0gaXBfbG9jYWxfZGVs
-aXZlcl9maW5pc2grMHgxNTEvMHgyYTAKWyAgIDIxLjI5MjMwOV0gIFs8ZmZmZmZmZmY4MTlm
-Y2FkND5dID8gaXBfbG9jYWxfZGVsaXZlcl9maW5pc2grMHgyZi8weDJhMApbICAgMjEuMjky
-MzA5XSAgWzxmZmZmZmZmZjgxOWZkMzA4Pl0gaXBfbG9jYWxfZGVsaXZlcisweDdhLzB4N2YK
-WyAgIDIxLjI5MjMwOV0gIFs8ZmZmZmZmZmY4MTlmZDBkZj5dIGlwX3Jjdl9maW5pc2grMHgz
-OWEvMHg0NjEKWyAgIDIxLjI5MjMwOV0gIFs8ZmZmZmZmZmY4MTlmZDVhNT5dIGlwX3Jjdisw
-eDI5OC8weDJmNwpbICAgMjEuMjkyMzA5XSAgWzxmZmZmZmZmZjgxOWFlYWQ0Pl0gX19uZXRp
-Zl9yZWNlaXZlX3NrYl9jb3JlKzB4NGNkLzB4NThlClsgICAyMS4yOTIzMDldICBbPGZmZmZm
-ZmZmODE5YWU3NmY+XSA/IF9fbmV0aWZfcmVjZWl2ZV9za2JfY29yZSsweDE2OC8weDU4ZQpb
-ICAgMjEuMjkyMzA5XSAgWzxmZmZmZmZmZjgxOWFlZmJiPl0gX19uZXRpZl9yZWNlaXZlX3Nr
-YisweDFkLzB4NWYKWyAgIDIxLjI5MjMwOV0gIFs8ZmZmZmZmZmY4MTlhZjA2NT5dIG5ldGlm
-X3JlY2VpdmVfc2tiKzB4NjgvMHhmNApbICAgMjEuMjkyMzA5XSAgWzxmZmZmZmZmZjgxOWFm
-N2JmPl0gbmFwaV9ncm9fcmVjZWl2ZSsweDNlLzB4ODAKWyAgIDIxLjI5MjMwOV0gIFs8ZmZm
-ZmZmZmY4MTdiYWNhYj5dIGUxMDAwX2NsZWFuX3J4X2lycSsweDM5My8weDQxNQpbICAgMjEu
-MjkyMzA5XSAgWzxmZmZmZmZmZjgxN2I5MTgzPl0gZTEwMDBfY2xlYW4rMHg1OWQvMHg3MWYK
-WyAgIDIxLjI5MjMwOV0gIFs8ZmZmZmZmZmY4MTA2MzRkMT5dID8ga3ZtX2Nsb2NrX3JlYWQr
-MHgyNy8weDMxClsgICAyMS4yOTIzMDldICBbPGZmZmZmZmZmODEwM2VkZDA+XSA/IHNjaGVk
-X2Nsb2NrKzB4OS8weGQKWyAgIDIxLjI5MjMwOV0gIFs8ZmZmZmZmZmY4MTliMDBiNT5dIG5l
-dF9yeF9hY3Rpb24rMHhmNi8weDIxMApbICAgMjEuMjkyMzA5XSAgWzxmZmZmZmZmZjgxMDc2
-MmZjPl0gX19kb19zb2Z0aXJxKzB4ZjMvMHgyN2EKWyAgIDIxLjI5MjMwOV0gIFs8ZmZmZmZm
-ZmY4MTA3Njc3OT5dIGlycV9leGl0KzB4NTkvMHhhMApbICAgMjEuMjkyMzA5XSAgWzxmZmZm
-ZmZmZjgxYWY3OThkPl0gZG9fSVJRKzB4OWQvMHhiNApbICAgMjEuMjkyMzA5XSAgWzxmZmZm
-ZmZmZjgxYWVlNzMyPl0gY29tbW9uX2ludGVycnVwdCsweDcyLzB4NzIKWyAgIDIxLjI5MjMw
-OV0gIDxFT0k+ICBbPGZmZmZmZmZmODFhZjFmZjU+XSA/IF9fYXRvbWljX25vdGlmaWVyX2Nh
-bGxfY2hhaW4rMHg1LzB4OWMKWyAgIDIxLjI5MjMwOV0gIFs8ZmZmZmZmZmY4MTA2MzZjOD5d
-ID8gbmF0aXZlX3NhZmVfaGFsdCsweDYvMHg4ClsgICAyMS4yOTIzMDldICBbPGZmZmZmZmZm
-ODEwM2Y5ZDE+XSBkZWZhdWx0X2lkbGUrMHgzOC8weGMxClsgICAyMS4yOTIzMDldICBbPGZm
-ZmZmZmZmODEwNDAxNTQ+XSBhcmNoX2NwdV9pZGxlKzB4MTgvMHgyOApbICAgMjEuMjkyMzA5
-XSAgWzxmZmZmZmZmZjgxMGMwYWUwPl0gY3B1X3N0YXJ0dXBfZW50cnkrMHgxNWMvMHgyNGQK
-WyAgIDIxLjI5MjMwOV0gIFs8ZmZmZmZmZmY4MWFjZTQyNT5dIHJlc3RfaW5pdCsweGM5LzB4
-Y2QKWyAgIDIxLjI5MjMwOV0gIFs8ZmZmZmZmZmY4MWFjZTM2MT5dID8gcmVzdF9pbml0KzB4
-NS8weGNkClsgICAyMS4yOTIzMDldICBbPGZmZmZmZmZmODIzOWVkNzc+XSBzdGFydF9rZXJu
-ZWwrMHgzZDQvMHgzZTAKWyAgIDIxLjI5MjMwOV0gIFs8ZmZmZmZmZmY4MjM5ZTdiMT5dID8g
-cmVwYWlyX2Vudl9zdHJpbmcrMHg1OC8weDU4ClsgICAyMS4yOTIzMDldICBbPGZmZmZmZmZm
-ODIzOWUxMjA+XSA/IGVhcmx5X2lkdF9oYW5kbGVycysweDEyMC8weDEyMApbICAgMjEuMjky
-MzA5XSAgWzxmZmZmZmZmZjgyMzllNDY3Pl0geDg2XzY0X3N0YXJ0X3Jlc2VydmF0aW9ucysw
-eDJhLzB4MmMKWyAgIDIxLjI5MjMwOV0gIFs8ZmZmZmZmZmY4MjM5ZTVhOT5dIHg4Nl82NF9z
-dGFydF9rZXJuZWwrMHgxNDAvMHgxNGQKWyAgIDU5LjU4MDE4Ml0gcmMgKDE5NDkpIHVzZWQg
-Z3JlYXRlc3Qgc3RhY2sgZGVwdGg6IDM2NzIgYnl0ZXMgbGVmdApbICAgNjMuMjQ2NTM5XSBO
-RlNEOiBVc2luZyAvdmFyL2xpYi9uZnMvdjRyZWNvdmVyeSBhcyB0aGUgTkZTdjQgc3RhdGUg
-cmVjb3ZlcnkgZGlyZWN0b3J5ClsgICA2My4yNTA3MzRdIE5GU0Q6IHN0YXJ0aW5nIDkwLXNl
-Y29uZCBncmFjZSBwZXJpb2QgKG5ldCBmZmZmZmZmZjgyMTg2OWMwKQova2VybmVsL3g4Nl82
-NC1uZnNyb290LzEwNTc0MDU5Y2UwNDUxYzY1NzJjODUzMjljNzcyYWExNTA4NWY4ZWIvZG1l
-c2ctbmZzcm9vdC1jYWlyby0xODoyMDEzMTIxMzE0Mjc1MTp4ODZfNjQtbmZzcm9vdDozLjEz
-LjAtcmMyLTAwNTY3LWcxMDU3NDA1OjU2NQowOjE6MSBhbGxfZ29vZDpiYWQ6YWxsX2JhZCBi
-b290cwobWzE7MzVtUkVQRUFUIENPVU5UOiAyMCAgIyAvY2Mvd2ZnL21tLWJpc2VjdC8ucmVw
-ZWF0G1swbQoKQmlzZWN0aW5nOiAxIHJldmlzaW9uIGxlZnQgdG8gdGVzdCBhZnRlciB0aGlz
-IChyb3VnaGx5IDEgc3RlcCkKWzk3NTAyMjMxMDIzM2ZiMGYwMTkzODczZDc5YTdiODQzODA3
-MGZhODJdIHVkcDogaXB2NDogbXVzdCBhZGQgc3luY2hyb25pemF0aW9uIGluIHVkcF9za19y
-eF9kc3Rfc2V0KCkKcnVubmluZyAvYy9rZXJuZWwtdGVzdHMvYmlzZWN0LXRlc3QtYm9vdC1m
-YWlsdXJlLnNoIC9ob21lL3dmZy9tbS9vYmotYmlzZWN0CmxzIC1hIC9rZXJuZWwtdGVzdHMv
-cnVuLXF1ZXVlL2t2bS94ODZfNjQtbmZzcm9vdC9saW51eC1kZXZlbDpkZXZlbC14aWFuLXg4
-Nl82NC0yMDEzMTIxMzEwNTI6OTc1MDIyMzEwMjMzZmIwZjAxOTM4NzNkNzlhN2I4NDM4MDcw
-ZmE4MjpiaXNlY3QtbW0KIFRFU1QgRkFJTFVSRQpbICAgMTkuODg4OTM4XSBbIElORk86IGlu
-Y29uc2lzdGVudCBsb2NrIHN0YXRlIF0KWyAgIDE5Ljg4ODkzOF0gMy4xMy4wLXJjMi0wMDI1
-Ni1nOTc1MDIyMyAjNzk0IE5vdCB0YWludGVkClsgICAxOS44ODg5MzhdIC0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLQpbICAgMTkuODg4OTM4XSBpbmNvbnNpc3RlbnQge1NP
-RlRJUlEtT04tV30gLT4ge0lOLVNPRlRJUlEtV30gdXNhZ2UuClsgICAxOS44ODg5MzhdIHN3
-YXBwZXIvMC8wIFtIQzBbMF06U0MxWzFdOkhFMTpTRTBdIHRha2VzOgpbICAgMTkuODg4OTM4
-XSAgKCYoJnNrLT5za19kc3RfbG9jayktPnJsb2NrKXsrLj8uLi59LCBhdDogWzxmZmZmZmZm
-ZjgxYTI3ODEyPl0gX191ZHA0X2xpYl9yY3YrMHg1NjkvMHg3OWQKWyAgIDE5Ljg4ODkzOF0g
-e1NPRlRJUlEtT04tV30gc3RhdGUgd2FzIHJlZ2lzdGVyZWQgYXQ6ClsgICAxOS44ODg5Mzhd
-ICAgWzxmZmZmZmZmZjgxMGIxNmI3Pl0gX19sb2NrX2FjcXVpcmUrMHg5NmMvMHgxODVmClsg
-ICAxOS44ODg5MzhdICAgWzxmZmZmZmZmZjgxMGIyYzk3Pl0gbG9ja19hY3F1aXJlKzB4YWIv
-MHgxMmUKWyAgIDE5Ljg4ODkzOF0gICBbPGZmZmZmZmZmODFhZjBhZmI+XSBfcmF3X3NwaW5f
-bG9jaysweDNiLzB4NmQKWyAgIDE5Ljg4ODkzOF0gICBbPGZmZmZmZmZmODFhMmU5NmQ+XSBp
-bmV0X2JpbmQrMHgxOGQvMHgxZGMKWyAgIDE5Ljg4ODkzOF0gICBbPGZmZmZmZmZmODE5OWNl
-NWM+XSBrZXJuZWxfYmluZCsweDEwLzB4MTIKWyAgIDE5Ljg4ODkzOF0gICBbPGZmZmZmZmZm
-ODFhYWRmOTQ+XSB4c19iaW5kKzB4YTAvMHgxMWUKWyAgIDE5Ljg4ODkzOF0gICBbPGZmZmZm
-ZmZmODFhYWZhYTE+XSB4c19jcmVhdGVfc29jay5pc3JhLjE0KzB4MjBiLzB4MjMwClsgICAx
-OS44ODg5MzhdICAgWzxmZmZmZmZmZjgxYWFmY2FmPl0geHNfdGNwX3NldHVwX3NvY2tldCsw
-eDVmLzB4M2U1ClsgICAxOS44ODg5MzhdICAgWzxmZmZmZmZmZjgxMDhhMGQ3Pl0gcHJvY2Vz
-c19vbmVfd29yaysweDI0Ny8weDQ0MwpbICAgMTkuODg4OTM4XSAgIFs8ZmZmZmZmZmY4MTA4
-YWVhYz5dIHdvcmtlcl90aHJlYWQrMHgxZDIvMHgyYmMKWyAgIDE5Ljg4ODkzOF0gICBbPGZm
-ZmZmZmZmODEwOTAyMjg+XSBrdGhyZWFkKzB4ZjkvMHgxMDEKWyAgIDE5Ljg4ODkzOF0gICBb
-PGZmZmZmZmZmODFhZjhhZmM+XSByZXRfZnJvbV9mb3JrKzB4N2MvMHhiMApbICAgMTkuODg4
-OTM4XSBpcnEgZXZlbnQgc3RhbXA6IDU0NjM2OApbICAgMTkuODg4OTM4XSBoYXJkaXJxcyBs
-YXN0ICBlbmFibGVkIGF0ICg1NDYzNjgpOiBbPGZmZmZmZmZmODEwNzY2YWY+XSBsb2NhbF9i
-aF9lbmFibGUrMHhhYi8weGI1ClsgICAxOS44ODg5MzhdIGhhcmRpcnFzIGxhc3QgZGlzYWJs
-ZWQgYXQgKDU0NjM2Nyk6IFs8ZmZmZmZmZmY4MTA3NjY1YT5dIGxvY2FsX2JoX2VuYWJsZSsw
-eDU2LzB4YjUKWyAgIDE5Ljg4ODkzOF0gc29mdGlycXMgbGFzdCAgZW5hYmxlZCBhdCAoNTQ2
-MzQ2KTogWzxmZmZmZmZmZjgxMDc2MTA2Pl0gX2xvY2FsX2JoX2VuYWJsZSsweDQzLzB4NDUK
-WyAgIDE5Ljg4ODkzOF0gc29mdGlycXMgbGFzdCBkaXNhYmxlZCBhdCAoNTQ2MzQ3KTogWzxm
-ZmZmZmZmZjgxMDc2Nzc5Pl0gaXJxX2V4aXQrMHg1OS8weGEwClsgICAxOS44ODg5MzhdIApb
-ICAgMTkuODg4OTM4XSBvdGhlciBpbmZvIHRoYXQgbWlnaHQgaGVscCB1cyBkZWJ1ZyB0aGlz
-OgpbICAgMTkuODg4OTM4XSAgUG9zc2libGUgdW5zYWZlIGxvY2tpbmcgc2NlbmFyaW86Clsg
-ICAxOS44ODg5MzhdIApbICAgMTkuODg4OTM4XSAgICAgICAgQ1BVMApbICAgMTkuODg4OTM4
-XSAgICAgICAgLS0tLQpbICAgMTkuODg4OTM4XSAgIGxvY2soJigmc2stPnNrX2RzdF9sb2Nr
-KS0+cmxvY2spOwpbICAgMTkuODg4OTM4XSAgIDxJbnRlcnJ1cHQ+ClsgICAxOS44ODg5Mzhd
-ICAgICBsb2NrKCYoJnNrLT5za19kc3RfbG9jayktPnJsb2NrKTsKWyAgIDE5Ljg4ODkzOF0g
-ClsgICAxOS44ODg5MzhdICAqKiogREVBRExPQ0sgKioqClsgICAxOS44ODg5MzhdIApbICAg
-MTkuODg4OTM4XSAyIGxvY2tzIGhlbGQgYnkgc3dhcHBlci8wLzA6ClsgICAxOS44ODg5Mzhd
-ICAjMDogIChyY3VfcmVhZF9sb2NrKXsuKy4rLi59LCBhdDogWzxmZmZmZmZmZjgxOWIxZGJh
-Pl0gX19uZXRpZl9yZWNlaXZlX3NrYl9jb3JlKzB4MTY4LzB4NThlClsgICAxOS44ODg5Mzhd
-ICAjMTogIChyY3VfcmVhZF9sb2NrKXsuKy4rLi59LCBhdDogWzxmZmZmZmZmZjgxYTAwMDlh
-Pl0gaXBfbG9jYWxfZGVsaXZlcl9maW5pc2grMHgyZi8weDJhMApbICAgMTkuODg4OTM4XSAK
-WyAgIDE5Ljg4ODkzOF0gc3RhY2sgYmFja3RyYWNlOgpbICAgMTkuODg4OTM4XSBDUFU6IDAg
-UElEOiAwIENvbW06IHN3YXBwZXIvMCBOb3QgdGFpbnRlZCAzLjEzLjAtcmMyLTAwMjU2LWc5
-NzUwMjIzICM3OTQKWyAgIDE5Ljg4ODkzOF0gSGFyZHdhcmUgbmFtZTogQm9jaHMgQm9jaHMs
-IEJJT1MgQm9jaHMgMDEvMDEvMjAxMQpbICAgMTkuODg4OTM4XSAgMDAwMDAwMDAwMDAwMDAw
-MiBmZmZmODgwMDFlYTAzOWEwIGZmZmZmZmZmODFhZTRmMmQgZmZmZmZmZmY4MjA5NzQ5MApb
-ICAgMTkuODg4OTM4XSAgZmZmZjg4MDAxZWEwMzlmMCBmZmZmZmZmZjgxYWRkMzE3IDAwMDAw
-MDAwMDAwMDAwMDEgZmZmZjg4MDAwMDAwMDAwMQpbICAgMTkuODg4OTM4XSAgZmZmZjg4MDAw
-MDAwMDAwMCBmZmZmZmZmZjgyMDk3YzA4IDAwMDAwMDAwMDAwMDAwMDQgMDAwMDAwMDAwMDAw
-MDAwNgpbICAgMTkuODg4OTM4XSBDYWxsIFRyYWNlOgpbICAgMTkuODg4OTM4XSAgPElSUT4g
-IFs8ZmZmZmZmZmY4MWFlNGYyZD5dIGR1bXBfc3RhY2srMHg0ZC8weDY2ClsgICAxOS44ODg5
-MzhdICBbPGZmZmZmZmZmODFhZGQzMTc+XSBwcmludF91c2FnZV9idWcrMHgyYTgvMHgyYjkK
-WyAgIDE5Ljg4ODkzOF0gIFs8ZmZmZmZmZmY4MTBhZjkzYT5dID8gcHJpbnRfc2hvcnRlc3Rf
-bG9ja19kZXBlbmRlbmNpZXMrMHgxOTMvMHgxOTMKWyAgIDE5Ljg4ODkzOF0gIFs8ZmZmZmZm
-ZmY4MTBiMDViNT5dIG1hcmtfbG9jaysweDMzYy8weDU3YwpbICAgMTkuODg4OTM4XSAgWzxm
-ZmZmZmZmZjgxMGIxNjQ1Pl0gX19sb2NrX2FjcXVpcmUrMHg4ZmEvMHgxODVmClsgICAxOS44
-ODg5MzhdICBbPGZmZmZmZmZmODEwOWZkOWM+XSA/IHNjaGVkX2Nsb2NrX2xvY2FsKzB4MTIv
-MHg3MgpbICAgMTkuODg4OTM4XSAgWzxmZmZmZmZmZjgxMGFkZGZhPl0gPyB0cmFjZV9oYXJk
-aXJxc19vZmZfY2FsbGVyKzB4MWYvMHhiMgpbICAgMTkuODg4OTM4XSAgWzxmZmZmZmZmZjgx
-MGIyYzk3Pl0gbG9ja19hY3F1aXJlKzB4YWIvMHgxMmUKWyAgIDE5Ljg4ODkzOF0gIFs8ZmZm
-ZmZmZmY4MWEyNzgxMj5dID8gX191ZHA0X2xpYl9yY3YrMHg1NjkvMHg3OWQKWyAgIDE5Ljg4
-ODkzOF0gIFs8ZmZmZmZmZmY4MTBhZGRmYT5dID8gdHJhY2VfaGFyZGlycXNfb2ZmX2NhbGxl
-cisweDFmLzB4YjIKWyAgIDE5Ljg4ODkzOF0gIFs8ZmZmZmZmZmY4MWFmMGFmYj5dIF9yYXdf
-c3Bpbl9sb2NrKzB4M2IvMHg2ZApbICAgMTkuODg4OTM4XSAgWzxmZmZmZmZmZjgxYTI3ODEy
-Pl0gPyBfX3VkcDRfbGliX3JjdisweDU2OS8weDc5ZApbICAgMTkuODg4OTM4XSAgWzxmZmZm
-ZmZmZjgxYTI3ODEyPl0gX191ZHA0X2xpYl9yY3YrMHg1NjkvMHg3OWQKWyAgIDE5Ljg4ODkz
-OF0gIFs8ZmZmZmZmZmY4MWEyN2VkZT5dIHVkcF9yY3YrMHgxYS8weDFjClsgICAxOS44ODg5
-MzhdICBbPGZmZmZmZmZmODFhMDAxYmM+XSBpcF9sb2NhbF9kZWxpdmVyX2ZpbmlzaCsweDE1
-MS8weDJhMApbICAgMTkuODg4OTM4XSAgWzxmZmZmZmZmZjgxYTAwMDlhPl0gPyBpcF9sb2Nh
-bF9kZWxpdmVyX2ZpbmlzaCsweDJmLzB4MmEwClsgICAxOS44ODg5MzhdICBbPGZmZmZmZmZm
-ODFhMDA4Y2U+XSBpcF9sb2NhbF9kZWxpdmVyKzB4N2EvMHg3ZgpbICAgMTkuODg4OTM4XSAg
-WzxmZmZmZmZmZjgxYTAwNmE1Pl0gaXBfcmN2X2ZpbmlzaCsweDM5YS8weDQ2MQpbICAgMTku
-ODg4OTM4XSAgWzxmZmZmZmZmZjgxYTAwYjU2Pl0gaXBfcmN2KzB4MjgzLzB4MmUwClsgICAx
-OS44ODg5MzhdICBbPGZmZmZmZmZmODE5YjIxMWY+XSBfX25ldGlmX3JlY2VpdmVfc2tiX2Nv
-cmUrMHg0Y2QvMHg1OGUKWyAgIDE5Ljg4ODkzOF0gIFs8ZmZmZmZmZmY4MTliMWRiYT5dID8g
-X19uZXRpZl9yZWNlaXZlX3NrYl9jb3JlKzB4MTY4LzB4NThlClsgICAxOS44ODg5MzhdICBb
-PGZmZmZmZmZmODE5YjI2MDY+XSBfX25ldGlmX3JlY2VpdmVfc2tiKzB4MWQvMHg1ZgpbICAg
-MTkuODg4OTM4XSAgWzxmZmZmZmZmZjgxOWIyNmIwPl0gbmV0aWZfcmVjZWl2ZV9za2IrMHg2
-OC8weGY0ClsgICAxOS44ODg5MzhdICBbPGZmZmZmZmZmODE5YjJlMGE+XSBuYXBpX2dyb19y
-ZWNlaXZlKzB4M2UvMHg4MApbICAgMTkuODg4OTM4XSAgWzxmZmZmZmZmZjgxN2JlODI2Pl0g
-ZTEwMDBfY2xlYW5fcnhfaXJxKzB4MzkzLzB4NDE1ClsgICAxOS44ODg5MzhdICBbPGZmZmZm
-ZmZmODE3YmNjZmU+XSBlMTAwMF9jbGVhbisweDU5ZC8weDcxZgpbICAgMTkuODg4OTM4XSAg
-WzxmZmZmZmZmZjgxMDYzNGQxPl0gPyBrdm1fY2xvY2tfcmVhZCsweDI3LzB4MzEKWyAgIDE5
-Ljg4ODkzOF0gIFs8ZmZmZmZmZmY4MTAzZWRkMD5dID8gc2NoZWRfY2xvY2srMHg5LzB4ZApb
-ICAgMTkuODg4OTM4XSAgWzxmZmZmZmZmZjgxOWIzNzAwPl0gbmV0X3J4X2FjdGlvbisweGY2
-LzB4MjEwClsgICAxOS44ODg5MzhdICBbPGZmZmZmZmZmODEwNzYyZmM+XSBfX2RvX3NvZnRp
-cnErMHhmMy8weDI3YQpbICAgMTkuODg4OTM4XSAgWzxmZmZmZmZmZjgxMDc2Nzc5Pl0gaXJx
-X2V4aXQrMHg1OS8weGEwClsgICAxOS44ODg5MzhdICBbPGZmZmZmZmZmODFhZmFjNGQ+XSBk
-b19JUlErMHg5ZC8weGI0ClsgICAxOS44ODg5MzhdICBbPGZmZmZmZmZmODFhZjE5ZjI+XSBj
-b21tb25faW50ZXJydXB0KzB4NzIvMHg3MgpbICAgMTkuODg4OTM4XSAgPEVPST4gIFs8ZmZm
-ZmZmZmY4MWFmNTJiNT5dID8gX19hdG9taWNfbm90aWZpZXJfY2FsbF9jaGFpbisweDUvMHg5
-YwpbICAgMTkuODg4OTM4XSAgWzxmZmZmZmZmZjgxMDYzNmM4Pl0gPyBuYXRpdmVfc2FmZV9o
-YWx0KzB4Ni8weDgKWyAgIDE5Ljg4ODkzOF0gIFs8ZmZmZmZmZmY4MTAzZjlkMT5dIGRlZmF1
-bHRfaWRsZSsweDM4LzB4YzEKWyAgIDE5Ljg4ODkzOF0gIFs8ZmZmZmZmZmY4MTA0MDE1ND5d
-IGFyY2hfY3B1X2lkbGUrMHgxOC8weDI4ClsgICAxOS44ODg5MzhdICBbPGZmZmZmZmZmODEw
-YzBhYzU+XSBjcHVfc3RhcnR1cF9lbnRyeSsweDE1Yy8weDI0ZApbICAgMTkuODg4OTM4XSAg
-WzxmZmZmZmZmZjgxYWQxNzU1Pl0gcmVzdF9pbml0KzB4YzkvMHhjZApbICAgMTkuODg4OTM4
-XSAgWzxmZmZmZmZmZjgxYWQxNjkxPl0gPyByZXN0X2luaXQrMHg1LzB4Y2QKWyAgIDE5Ljg4
-ODkzOF0gIFs8ZmZmZmZmZmY4MjNhZWQ3Nz5dIHN0YXJ0X2tlcm5lbCsweDNkNC8weDNlMApb
-ICAgMTkuODg4OTM4XSAgWzxmZmZmZmZmZjgyM2FlN2IxPl0gPyByZXBhaXJfZW52X3N0cmlu
-ZysweDU4LzB4NTgKWyAgIDE5Ljg4ODkzOF0gIFs8ZmZmZmZmZmY4MjNhZTEyMD5dID8gZWFy
-bHlfaWR0X2hhbmRsZXJzKzB4MTIwLzB4MTIwClsgICAxOS44ODg5MzhdICBbPGZmZmZmZmZm
-ODIzYWU0Njc+XSB4ODZfNjRfc3RhcnRfcmVzZXJ2YXRpb25zKzB4MmEvMHgyYwpbICAgMTku
-ODg4OTM4XSAgWzxmZmZmZmZmZjgyM2FlNWE5Pl0geDg2XzY0X3N0YXJ0X2tlcm5lbCsweDE0
-MC8weDE0ZApbICAgNzYuNDE1NDQ5XSBORlNEOiBVc2luZyAvdmFyL2xpYi9uZnMvdjRyZWNv
-dmVyeSBhcyB0aGUgTkZTdjQgc3RhdGUgcmVjb3ZlcnkgZGlyZWN0b3J5ClsgICA3Ni40MTg5
-NzVdIE5GU0Q6IHN0YXJ0aW5nIDkwLXNlY29uZCBncmFjZSBwZXJpb2QgKG5ldCBmZmZmZmZm
-ZjgyMTk2YTAwKQpLZXJuZWwgdGVzdHM6IEJvb3QgT0shCi9rZXJuZWwveDg2XzY0LW5mc3Jv
-b3QvOTc1MDIyMzEwMjMzZmIwZjAxOTM4NzNkNzlhN2I4NDM4MDcwZmE4Mi9kbWVzZy1uZnNy
-b290LWNhaXJvLTExOjIwMTMxMjEyMjAwNzQ2Ong4Nl82NC1uZnNyb290OjMuMTMuMC1yYzIt
-MDAyNTYtZzk3NTAyMjM6Nzk0Ci9rZXJuZWwveDg2XzY0LW5mc3Jvb3QvOTc1MDIyMzEwMjMz
-ZmIwZjAxOTM4NzNkNzlhN2I4NDM4MDcwZmE4Mi9kbWVzZy1uZnNyb290LWNhaXJvLTEzOjIw
-MTMxMjEyMjAwOTE2Ong4Nl82NC1uZnNyb290OjMuMTMuMC1yYzItMDAyNTYtZzk3NTAyMjM6
-Nzk0Ci9rZXJuZWwveDg2XzY0LW5mc3Jvb3QvOTc1MDIyMzEwMjMzZmIwZjAxOTM4NzNkNzlh
-N2I4NDM4MDcwZmE4Mi9kbWVzZy1uZnNyb290LWlubi03OjIwMTMxMjEyMjAwOTE3Ong4Nl82
-NC1uZnNyb290OjMuMTMuMC1yYzItMDAyNTYtZzk3NTAyMjM6Nzk0Ci9rZXJuZWwveDg2XzY0
-LW5mc3Jvb3QvOTc1MDIyMzEwMjMzZmIwZjAxOTM4NzNkNzlhN2I4NDM4MDcwZmE4Mi9kbWVz
-Zy1uZnNyb290LXhpYW4tMTE6MjAxMzEyMTIyMDA3NDY6eDg2XzY0LW5mc3Jvb3Q6My4xMy4w
-LXJjMi0wMDI1Ni1nOTc1MDIyMzo3OTQKL2tlcm5lbC94ODZfNjQtbmZzcm9vdC85NzUwMjIz
-MTAyMzNmYjBmMDE5Mzg3M2Q3OWE3Yjg0MzgwNzBmYTgyL2RtZXNnLW5mc3Jvb3QtaW5uLTE2
-OjIwMTMxMjEyMjAxMTAzOng4Nl82NC1uZnNyb290OjMuMTMuMC1yYzItMDAyNTYtZzk3NTAy
-MjM6Nzk0Ci9rZXJuZWwveDg2XzY0LW5mc3Jvb3QvOTc1MDIyMzEwMjMzZmIwZjAxOTM4NzNk
-NzlhN2I4NDM4MDcwZmE4Mi9kbWVzZy1uZnNyb290LWNhaXJvLTM6MjAxMzEyMTIyMDA5MDI6
-eDg2XzY0LW5mc3Jvb3Q6My4xMy4wLXJjMi0wMDI1Ni1nOTc1MDIyMzo3OTQKMTo2OjggYWxs
-X2dvb2Q6YmFkOmFsbF9iYWQgYm9vdHMKG1sxOzM1bVJFUEVBVCBDT1VOVDogMjUgICMgL2Nj
-L3dmZy9tbS1iaXNlY3QvLnJlcGVhdBtbMG0KCkJpc2VjdGluZzogMCByZXZpc2lvbnMgbGVm
-dCB0byB0ZXN0IGFmdGVyIHRoaXMgKHJvdWdobHkgMCBzdGVwcykKW2ExYmYxNzUwODcxYTZm
-MjQyYjBmZGIxNzRjYzU1ZDJjNTdlN2VkNjZdIG5ldDpmZWM6IHJlbW92ZSBkdXBsaWNhdGUg
-bGluZXMgaW4gY29tbWVudCBhYm91dCBlcnJhdGEgRVJSMDA2MzU4CnJ1bm5pbmcgL2Mva2Vy
-bmVsLXRlc3RzL2Jpc2VjdC10ZXN0LWJvb3QtZmFpbHVyZS5zaCAvaG9tZS93ZmcvbW0vb2Jq
-LWJpc2VjdApscyAtYSAva2VybmVsLXRlc3RzL3J1bi1xdWV1ZS9rdm0veDg2XzY0LW5mc3Jv
-b3QvbGludXgtZGV2ZWw6ZGV2ZWwteGlhbi14ODZfNjQtMjAxMzEyMTMxMDUyOmExYmYxNzUw
-ODcxYTZmMjQyYjBmZGIxNzRjYzU1ZDJjNTdlN2VkNjY6YmlzZWN0LW1tCgoyMDEzLTEyLTEz
-LTE0OjI4OjI1IGExYmYxNzUwODcxYTZmMjQyYjBmZGIxNzRjYzU1ZDJjNTdlN2VkNjYgcmV1
-c2UgL2tlcm5lbC94ODZfNjQtbmZzcm9vdC9hMWJmMTc1MDg3MWE2ZjI0MmIwZmRiMTc0Y2M1
-NWQyYzU3ZTdlZDY2L3ZtbGludXotMy4xMy4wLXJjMi0wMDI1NS1nYTFiZjE3NQoKMjAxMy0x
-Mi0xMy0xNDoyODoyNSBkZXRlY3RpbmcgYm9vdCBzdGF0ZSAuLi4uLi4uLi4JMTEJMjAJMjUg
-U1VDQ0VTUwoKOTc1MDIyMzEwMjMzZmIwZjAxOTM4NzNkNzlhN2I4NDM4MDcwZmE4MiBpcyB0
-aGUgZmlyc3QgYmFkIGNvbW1pdApjb21taXQgOTc1MDIyMzEwMjMzZmIwZjAxOTM4NzNkNzlh
-N2I4NDM4MDcwZmE4MgpBdXRob3I6IEVyaWMgRHVtYXpldCA8ZWR1bWF6ZXRAZ29vZ2xlLmNv
-bT4KRGF0ZTogICBXZWQgRGVjIDExIDE0OjQ2OjUxIDIwMTMgLTA4MDAKCiAgICB1ZHA6IGlw
-djQ6IG11c3QgYWRkIHN5bmNocm9uaXphdGlvbiBpbiB1ZHBfc2tfcnhfZHN0X3NldCgpCiAg
-ICAKICAgIFVubGlrZSBUQ1AsIFVEUCBpbnB1dCBwYXRoIGRvZXMgbm90IGhvbGQgdGhlIHNv
-Y2tldCBsb2NrLgogICAgCiAgICBCZWZvcmUgbWVzc2luZyB3aXRoIHNrLT5za19yeF9kc3Qs
-IHdlIG11c3QgdXNlIGEgc3BpbmxvY2ssIG90aGVyd2lzZQogICAgbXVsdGlwbGUgY3B1cyBj
-b3VsZCBsZWFrIGEgcmVmY291bnQuCiAgICAKICAgIFRoaXMgcGF0Y2ggYWxzbyB0YWtlcyBj
-YXJlIG9mIHJlbmV3aW5nIGEgc3RhbGUgZHN0IGVudHJ5LgogICAgKFdoZW4gdGhlIHNrLT5z
-a19yeF9kc3Qgd291bGQgbm90IGJlIHVzZWQgYnkgSVAgZWFybHkgZGVtdXgpCiAgICAKICAg
-IEZpeGVzOiA0MjFiMzg4NWJmNmQgKCJ1ZHA6IGlwdjQ6IEFkZCB1ZHAgZWFybHkgZGVtdXgi
-KQogICAgU2lnbmVkLW9mZi1ieTogRXJpYyBEdW1hemV0IDxlZHVtYXpldEBnb29nbGUuY29t
-PgogICAgQ2M6IFNoYXduIEJvaHJlciA8c2JvaHJlckByZ21hZHZpc29ycy5jb20+CiAgICBT
-aWduZWQtb2ZmLWJ5OiBEYXZpZCBTLiBNaWxsZXIgPGRhdmVtQGRhdmVtbG9mdC5uZXQ+Cgo6
-MDQwMDAwIDA0MDAwMCBlY2QzYjIwMTIxYzZlNGE4NDQ2MTFhNzg4ZTIyYzViMTRkYmEyNTBk
-IDZlYmMxMjc4NjIxYjczOWEwMTc3OWUyMzAyMWJjNWJkNTM1M2Q2YTMgTQluZXQKYmlzZWN0
-IHJ1biBzdWNjZXNzCmxzIC1hIC9rZXJuZWwtdGVzdHMvcnVuLXF1ZXVlL2t2bS94ODZfNjQt
-bmZzcm9vdC9saW51eC1kZXZlbDpkZXZlbC14aWFuLXg4Nl82NC0yMDEzMTIxMzEwNTI6YTFi
-ZjE3NTA4NzFhNmYyNDJiMGZkYjE3NGNjNTVkMmM1N2U3ZWQ2NjpiaXNlY3QtbW0KCjIwMTMt
-MTItMTMtMTQ6MzQ6MzEgYTFiZjE3NTA4NzFhNmYyNDJiMGZkYjE3NGNjNTVkMmM1N2U3ZWQ2
-NiByZXVzZSAva2VybmVsL3g4Nl82NC1uZnNyb290L2ExYmYxNzUwODcxYTZmMjQyYjBmZGIx
-NzRjYzU1ZDJjNTdlN2VkNjYvdm1saW51ei0zLjEzLjAtcmMyLTAwMjU1LWdhMWJmMTc1Cgoy
-MDEzLTEyLTEzLTE0OjM0OjMxIGRldGVjdGluZyBib290IHN0YXRlIC4uLi4uLi4JMjgJMzIJ
-MzYJMzkJNDQJNDkJNTUJNjEJNjUJNjcuCTY4Lgk3MQk3Mwk3NSBTVUNDRVNTCgpscyAtYSAv
-a2VybmVsLXRlc3RzL3J1bi1xdWV1ZS9rdm0veDg2XzY0LW5mc3Jvb3QvbGludXgtZGV2ZWw6
-ZGV2ZWwteGlhbi14ODZfNjQtMjAxMzEyMTMxMDUyOmIxZGFmMzdmZjUyY2YyZmYzOWIyZGIy
-Mzk5ZTA1MmFkNzk2NWM2YWE6YmlzZWN0LW1tCiBURVNUIEZBSUxVUkUKWyAgIDI0LjEyNjI0
-NF0gWyBJTkZPOiBpbmNvbnNpc3RlbnQgbG9jayBzdGF0ZSBdClsgICAyNC4xMjYyNDRdIDMu
-MTMuMC1yYzMtMDA2ODktZ2IxZGFmMzcgIzg5MiBOb3QgdGFpbnRlZApbICAgMjQuMTI2MjQ0
-XSAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KWyAgIDI0LjEyNjI0NF0gaW5j
-b25zaXN0ZW50IHtTT0ZUSVJRLU9OLVd9IC0+IHtJTi1TT0ZUSVJRLVd9IHVzYWdlLgpbICAg
-MjQuMTI2MjQ0XSBzd2FwcGVyLzEvMCBbSEMwWzBdOlNDMVsxXTpIRTE6U0UwXSB0YWtlczoK
-WyAgIDI0LjEyNjI0NF0gICgmKCZzay0+c2tfZHN0X2xvY2spLT5ybG9jayl7Ky4/Li4ufSwg
-YXQ6IFs8ZmZmZmZmZmY4MWEyN2ZlMj5dIF9fdWRwNF9saWJfcmN2KzB4NTY5LzB4NzlkClsg
-ICAyNC4xMjYyNDRdIHtTT0ZUSVJRLU9OLVd9IHN0YXRlIHdhcyByZWdpc3RlcmVkIGF0Ogpb
-ICAgMjQuMTI2MjQ0XSAgIFs8ZmZmZmZmZmY4MTBiMTZiNz5dIF9fbG9ja19hY3F1aXJlKzB4
-OTZjLzB4MTg1ZgpbICAgMjQuMTI2MjQ0XSAgIFs8ZmZmZmZmZmY4MTBiMmM5Nz5dIGxvY2tf
-YWNxdWlyZSsweGFiLzB4MTJlClsgICAyNC4xMjYyNDRdICAgWzxmZmZmZmZmZjgxYWYxMmQz
-Pl0gX3Jhd19zcGluX2xvY2srMHgzYi8weDZkClsgICAyNC4xMjYyNDRdICAgWzxmZmZmZmZm
-ZjgxYTJmMTNkPl0gaW5ldF9iaW5kKzB4MThkLzB4MWRjClsgICAyNC4xMjYyNDRdICAgWzxm
-ZmZmZmZmZjgxOTlkNjJjPl0ga2VybmVsX2JpbmQrMHgxMC8weDEyClsgICAyNC4xMjYyNDRd
-ICAgWzxmZmZmZmZmZjgxYWFlNzY0Pl0geHNfYmluZCsweGEwLzB4MTFlClsgICAyNC4xMjYy
-NDRdICAgWzxmZmZmZmZmZjgxYWIwMjcxPl0geHNfY3JlYXRlX3NvY2suaXNyYS4xNCsweDIw
-Yi8weDIzMApbICAgMjQuMTI2MjQ0XSAgIFs8ZmZmZmZmZmY4MWFiMDQ3Zj5dIHhzX3RjcF9z
-ZXR1cF9zb2NrZXQrMHg1Zi8weDNlNQpbICAgMjQuMTI2MjQ0XSAgIFs8ZmZmZmZmZmY4MTA4
-YTBkNz5dIHByb2Nlc3Nfb25lX3dvcmsrMHgyNDcvMHg0NDMKWyAgIDI0LjEyNjI0NF0gICBb
-PGZmZmZmZmZmODEwOGFlYWM+XSB3b3JrZXJfdGhyZWFkKzB4MWQyLzB4MmJjClsgICAyNC4x
-MjYyNDRdICAgWzxmZmZmZmZmZjgxMDkwMjI4Pl0ga3RocmVhZCsweGY5LzB4MTAxClsgICAy
-NC4xMjYyNDRdICAgWzxmZmZmZmZmZjgxYWY5MmZjPl0gcmV0X2Zyb21fZm9yaysweDdjLzB4
-YjAKWyAgIDI0LjEyNjI0NF0gaXJxIGV2ZW50IHN0YW1wOiAzNjQ4NTYKWyAgIDI0LjEyNjI0
-NF0gaGFyZGlycXMgbGFzdCAgZW5hYmxlZCBhdCAoMzY0ODU2KTogWzxmZmZmZmZmZjgxMDc2
-NmFmPl0gbG9jYWxfYmhfZW5hYmxlKzB4YWIvMHhiNQpbICAgMjQuMTI2MjQ0XSBoYXJkaXJx
-cyBsYXN0IGRpc2FibGVkIGF0ICgzNjQ4NTUpOiBbPGZmZmZmZmZmODEwNzY2NWE+XSBsb2Nh
-bF9iaF9lbmFibGUrMHg1Ni8weGI1ClsgICAyNC4xMjYyNDRdIHNvZnRpcnFzIGxhc3QgIGVu
-YWJsZWQgYXQgKDM2NDgzNCk6IFs8ZmZmZmZmZmY4MTA3NjEwNj5dIF9sb2NhbF9iaF9lbmFi
-bGUrMHg0My8weDQ1ClsgICAyNC4xMjYyNDRdIHNvZnRpcnFzIGxhc3QgZGlzYWJsZWQgYXQg
-KDM2NDgzNSk6IFs8ZmZmZmZmZmY4MTA3Njc3OT5dIGlycV9leGl0KzB4NTkvMHhhMApbICAg
-MjQuMTI2MjQ0XSAKWyAgIDI0LjEyNjI0NF0gb3RoZXIgaW5mbyB0aGF0IG1pZ2h0IGhlbHAg
-dXMgZGVidWcgdGhpczoKWyAgIDI0LjEyNjI0NF0gIFBvc3NpYmxlIHVuc2FmZSBsb2NraW5n
-IHNjZW5hcmlvOgpbICAgMjQuMTI2MjQ0XSAKWyAgIDI0LjEyNjI0NF0gICAgICAgIENQVTAK
-WyAgIDI0LjEyNjI0NF0gICAgICAgIC0tLS0KWyAgIDI0LjEyNjI0NF0gICBsb2NrKCYoJnNr
-LT5za19kc3RfbG9jayktPnJsb2NrKTsKWyAgIDI0LjEyNjI0NF0gICA8SW50ZXJydXB0Pgpb
-ICAgMjQuMTI2MjQ0XSAgICAgbG9jaygmKCZzay0+c2tfZHN0X2xvY2spLT5ybG9jayk7Clsg
-ICAyNC4xMjYyNDRdIApbICAgMjQuMTI2MjQ0XSAgKioqIERFQURMT0NLICoqKgpbICAgMjQu
-MTI2MjQ0XSAKWyAgIDI0LjEyNjI0NF0gMiBsb2NrcyBoZWxkIGJ5IHN3YXBwZXIvMS8wOgpb
-ICAgMjQuMTI2MjQ0XSAgIzA6ICAocmN1X3JlYWRfbG9jayl7LisuKy4ufSwgYXQ6IFs8ZmZm
-ZmZmZmY4MTliMjU4YT5dIF9fbmV0aWZfcmVjZWl2ZV9za2JfY29yZSsweDE2OC8weDU4ZQpb
-ICAgMjQuMTI2MjQ0XSAgIzE6ICAocmN1X3JlYWRfbG9jayl7LisuKy4ufSwgYXQ6IFs8ZmZm
-ZmZmZmY4MWEwMDg2YT5dIGlwX2xvY2FsX2RlbGl2ZXJfZmluaXNoKzB4MmYvMHgyYTAKWyAg
-IDI0LjEyNjI0NF0gClsgICAyNC4xMjYyNDRdIHN0YWNrIGJhY2t0cmFjZToKWyAgIDI0LjEy
-NjI0NF0gQ1BVOiAxIFBJRDogMCBDb21tOiBzd2FwcGVyLzEgTm90IHRhaW50ZWQgMy4xMy4w
-LXJjMy0wMDY4OS1nYjFkYWYzNyAjODkyClsgICAyNC4xMjYyNDRdIEhhcmR3YXJlIG5hbWU6
-IEJvY2hzIEJvY2hzLCBCSU9TIEJvY2hzIDAxLzAxLzIwMTEKWyAgIDI0LjEyNjI0NF0gIDAw
-MDAwMDAwMDAwMDAwMDIgZmZmZjg4MDAxZWMwMzlhMCBmZmZmZmZmZjgxYWU1NmZkIGZmZmY4
-ODAwMWU3YzgwMDAKWyAgIDI0LjEyNjI0NF0gIGZmZmY4ODAwMWVjMDM5ZjAgZmZmZmZmZmY4
-MWFkZGFlNyAwMDAwMDAwMDAwMDAwMDAxIGZmZmY4ODAwMDAwMDAwMDEKWyAgIDI0LjEyNjI0
-NF0gIGZmZmY4ODAwMDAwMDAwMDAgZmZmZjg4MDAxZTdjODc3OCAwMDAwMDAwMDAwMDAwMDA0
-IDAwMDAwMDAwMDAwMDAwMDYKWyAgIDI0LjEyNjI0NF0gQ2FsbCBUcmFjZToKWyAgIDI0LjEy
-NjI0NF0gIDxJUlE+ICBbPGZmZmZmZmZmODFhZTU2ZmQ+XSBkdW1wX3N0YWNrKzB4NGQvMHg2
-NgpbICAgMjQuMTI2MjQ0XSAgWzxmZmZmZmZmZjgxYWRkYWU3Pl0gcHJpbnRfdXNhZ2VfYnVn
-KzB4MmE4LzB4MmI5ClsgICAyNC4xMjYyNDRdICBbPGZmZmZmZmZmODEwYWY5M2E+XSA/IHBy
-aW50X3Nob3J0ZXN0X2xvY2tfZGVwZW5kZW5jaWVzKzB4MTkzLzB4MTkzClsgICAyNC4xMjYy
-NDRdICBbPGZmZmZmZmZmODEwYjA1YjU+XSBtYXJrX2xvY2srMHgzM2MvMHg1N2MKWyAgIDI0
-LjEyNjI0NF0gIFs8ZmZmZmZmZmY4MTBiMTY0NT5dIF9fbG9ja19hY3F1aXJlKzB4OGZhLzB4
-MTg1ZgpbICAgMjQuMTI2MjQ0XSAgWzxmZmZmZmZmZjgxMDlmZDljPl0gPyBzY2hlZF9jbG9j
-a19sb2NhbCsweDEyLzB4NzIKWyAgIDI0LjEyNjI0NF0gIFs8ZmZmZmZmZmY4MTBhZGRmYT5d
-ID8gdHJhY2VfaGFyZGlycXNfb2ZmX2NhbGxlcisweDFmLzB4YjIKWyAgIDI0LjEyNjI0NF0g
-IFs8ZmZmZmZmZmY4MTBiMmM5Nz5dIGxvY2tfYWNxdWlyZSsweGFiLzB4MTJlClsgICAyNC4x
-MjYyNDRdICBbPGZmZmZmZmZmODFhMjdmZTI+XSA/IF9fdWRwNF9saWJfcmN2KzB4NTY5LzB4
-NzlkClsgICAyNC4xMjYyNDRdICBbPGZmZmZmZmZmODEwYWRkZmE+XSA/IHRyYWNlX2hhcmRp
-cnFzX29mZl9jYWxsZXIrMHgxZi8weGIyClsgICAyNC4xMjYyNDRdICBbPGZmZmZmZmZmODFh
-ZjEyZDM+XSBfcmF3X3NwaW5fbG9jaysweDNiLzB4NmQKWyAgIDI0LjEyNjI0NF0gIFs8ZmZm
-ZmZmZmY4MWEyN2ZlMj5dID8gX191ZHA0X2xpYl9yY3YrMHg1NjkvMHg3OWQKWyAgIDI0LjEy
-NjI0NF0gIFs8ZmZmZmZmZmY4MWEyN2ZlMj5dIF9fdWRwNF9saWJfcmN2KzB4NTY5LzB4Nzlk
-ClsgICAyNC4xMjYyNDRdICBbPGZmZmZmZmZmODFhMjg2YWU+XSB1ZHBfcmN2KzB4MWEvMHgx
-YwpbICAgMjQuMTI2MjQ0XSAgWzxmZmZmZmZmZjgxYTAwOThjPl0gaXBfbG9jYWxfZGVsaXZl
-cl9maW5pc2grMHgxNTEvMHgyYTAKWyAgIDI0LjEyNjI0NF0gIFs8ZmZmZmZmZmY4MWEwMDg2
-YT5dID8gaXBfbG9jYWxfZGVsaXZlcl9maW5pc2grMHgyZi8weDJhMApbICAgMjQuMTI2MjQ0
-XSAgWzxmZmZmZmZmZjgxYTAxMDllPl0gaXBfbG9jYWxfZGVsaXZlcisweDdhLzB4N2YKWyAg
-IDI0LjEyNjI0NF0gIFs8ZmZmZmZmZmY4MWEwMGU3NT5dIGlwX3Jjdl9maW5pc2grMHgzOWEv
-MHg0NjEKWyAgIDI0LjEyNjI0NF0gIFs8ZmZmZmZmZmY4MWEwMTMyNj5dIGlwX3JjdisweDI4
-My8weDJlMApbICAgMjQuMTI2MjQ0XSAgWzxmZmZmZmZmZjgxOWIyOGVmPl0gX19uZXRpZl9y
-ZWNlaXZlX3NrYl9jb3JlKzB4NGNkLzB4NThlClsgICAyNC4xMjYyNDRdICBbPGZmZmZmZmZm
-ODE5YjI1OGE+XSA/IF9fbmV0aWZfcmVjZWl2ZV9za2JfY29yZSsweDE2OC8weDU4ZQpbICAg
-MjQuMTI2MjQ0XSAgWzxmZmZmZmZmZjgxOWIyZGQ2Pl0gX19uZXRpZl9yZWNlaXZlX3NrYisw
-eDFkLzB4NWYKWyAgIDI0LjEyNjI0NF0gIFs8ZmZmZmZmZmY4MTliMmU4MD5dIG5ldGlmX3Jl
-Y2VpdmVfc2tiKzB4NjgvMHhmNApbICAgMjQuMTI2MjQ0XSAgWzxmZmZmZmZmZjgxOWIzNWRh
-Pl0gbmFwaV9ncm9fcmVjZWl2ZSsweDNlLzB4ODAKWyAgIDI0LjEyNjI0NF0gIFs8ZmZmZmZm
-ZmY4MTdiZTg3MD5dIGUxMDAwX2NsZWFuX3J4X2lycSsweDM5My8weDQxNQpbICAgMjQuMTI2
-MjQ0XSAgWzxmZmZmZmZmZjgxN2JjZDQ4Pl0gZTEwMDBfY2xlYW4rMHg1OWQvMHg3MWYKWyAg
-IDI0LjEyNjI0NF0gIFs8ZmZmZmZmZmY4MTA2MzRkMT5dID8ga3ZtX2Nsb2NrX3JlYWQrMHgy
-Ny8weDMxClsgICAyNC4xMjYyNDRdICBbPGZmZmZmZmZmODEwM2VkZDA+XSA/IHNjaGVkX2Ns
-b2NrKzB4OS8weGQKWyAgIDI0LjEyNjI0NF0gIFs8ZmZmZmZmZmY4MTliM2VkMD5dIG5ldF9y
-eF9hY3Rpb24rMHhmNi8weDIxMApbICAgMjQuMTI2MjQ0XSAgWzxmZmZmZmZmZjgxMDc2MmZj
-Pl0gX19kb19zb2Z0aXJxKzB4ZjMvMHgyN2EKWyAgIDI0LjEyNjI0NF0gIFs8ZmZmZmZmZmY4
-MTA3Njc3OT5dIGlycV9leGl0KzB4NTkvMHhhMApbICAgMjQuMTI2MjQ0XSAgWzxmZmZmZmZm
-ZjgxYWZiNDRkPl0gZG9fSVJRKzB4OWQvMHhiNApbICAgMjQuMTI2MjQ0XSAgWzxmZmZmZmZm
-ZjgxYWYyMWYyPl0gY29tbW9uX2ludGVycnVwdCsweDcyLzB4NzIKWyAgIDI0LjEyNjI0NF0g
-IDxFT0k+ICBbPGZmZmZmZmZmODFhZjVhYjU+XSA/IF9fYXRvbWljX25vdGlmaWVyX2NhbGxf
-Y2hhaW4rMHg1LzB4OWMKWyAgIDI0LjEyNjI0NF0gIFs8ZmZmZmZmZmY4MWFmNWFiNT5dID8g
-X19hdG9taWNfbm90aWZpZXJfY2FsbF9jaGFpbisweDUvMHg5YwpbICAgMjQuMTI2MjQ0XSAg
-WzxmZmZmZmZmZjgxMDYzNmM4Pl0gPyBuYXRpdmVfc2FmZV9oYWx0KzB4Ni8weDgKWyAgIDI0
-LjEyNjI0NF0gIFs8ZmZmZmZmZmY4MTBiMGE4OT5dID8gdHJhY2VfaGFyZGlycXNfb24rMHhk
-LzB4ZgpbICAgMjQuMTI2MjQ0XSAgWzxmZmZmZmZmZjgxMDNmOWQxPl0gZGVmYXVsdF9pZGxl
-KzB4MzgvMHhjMQpbICAgMjQuMTI2MjQ0XSAgWzxmZmZmZmZmZjgxMDQwMTU0Pl0gYXJjaF9j
-cHVfaWRsZSsweDE4LzB4MjgKWyAgIDI0LjEyNjI0NF0gIFs8ZmZmZmZmZmY4MTBjMGFjNT5d
-IGNwdV9zdGFydHVwX2VudHJ5KzB4MTVjLzB4MjRkClsgICAyNC4xMjYyNDRdICBbPGZmZmZm
-ZmZmODEwNWExMWY+XSBzdGFydF9zZWNvbmRhcnkrMHgyNDcvMHgyNTAKWyAgIDU4LjgwMDc1
-Nl0gcmFuZG9tOiBub25ibG9ja2luZyBwb29sIGlzIGluaXRpYWxpemVkClsgICA2NS4zNzYx
-NzJdIE5GU0Q6IFVzaW5nIC92YXIvbGliL25mcy92NHJlY292ZXJ5IGFzIHRoZSBORlN2NCBz
-dGF0ZSByZWNvdmVyeSBkaXJlY3RvcnkKWyAgIDY1LjM4MDE4OV0gTkZTRDogc3RhcnRpbmcg
-OTAtc2Vjb25kIGdyYWNlIHBlcmlvZCAobmV0IGZmZmZmZmZmODIxOTZhODApCi9rZXJuZWwv
-eDg2XzY0LW5mc3Jvb3QvYjFkYWYzN2ZmNTJjZjJmZjM5YjJkYjIzOTllMDUyYWQ3OTY1YzZh
-YS9kbWVzZy1uZnNyb290LWF0aGVucy0xNjoyMDEzMTIxMzExMzIxMTp4ODZfNjQtbmZzcm9v
-dDozLjEzLjAtcmMzLTAwNjg5LWdiMWRhZjM3Ojg5Mgova2VybmVsL3g4Nl82NC1uZnNyb290
-L2IxZGFmMzdmZjUyY2YyZmYzOWIyZGIyMzk5ZTA1MmFkNzk2NWM2YWEvZG1lc2ctbmZzcm9v
-dC1qYWtldG93bi0yNzoyMDEzMTIxMzExMzIwMzp4ODZfNjQtbmZzcm9vdDozLjEzLjAtcmMz
-LTAwNjg5LWdiMWRhZjM3Ojg5Mgova2VybmVsL3g4Nl82NC1uZnNyb290L2IxZGFmMzdmZjUy
-Y2YyZmYzOWIyZGIyMzk5ZTA1MmFkNzk2NWM2YWEvZG1lc2ctbmZzcm9vdC14aWFuLTI5OjIw
-MTMxMjEzMTEzMTEzOng4Nl82NC1uZnNyb290OjMuMTMuMC1yYzMtMDA2ODktZ2IxZGFmMzc6
-ODkyCi9rZXJuZWwveDg2XzY0LW5mc3Jvb3QvYjFkYWYzN2ZmNTJjZjJmZjM5YjJkYjIzOTll
-MDUyYWQ3OTY1YzZhYS9kbWVzZy1uZnNyb290LWNhaXJvLTc6MjAxMzEyMTMxMTA2NTA6eDg2
-XzY0LW5mc3Jvb3Q6My4xMy4wLXJjMy0wMDY4OS1nYjFkYWYzNzo4OTIKL2tlcm5lbC94ODZf
-NjQtbmZzcm9vdC9iMWRhZjM3ZmY1MmNmMmZmMzliMmRiMjM5OWUwNTJhZDc5NjVjNmFhL2Rt
-ZXNnLW5mc3Jvb3QtaW5uLTEyOjIwMTMxMjEzMTEwMjM5Ong4Nl82NC1uZnNyb290OjMuMTMu
-MC1yYzMtMDA2ODktZ2IxZGFmMzc6ODkyCi9rZXJuZWwveDg2XzY0LW5mc3Jvb3QvYjFkYWYz
-N2ZmNTJjZjJmZjM5YjJkYjIzOTllMDUyYWQ3OTY1YzZhYS9kbWVzZy1uZnNyb290LWF0aGVu
-cy0zMToyMDEzMTIxMzExMzEzMTp4ODZfNjQtbmZzcm9vdDozLjEzLjAtcmMzLTAwNjg5LWdi
-MWRhZjM3Ojg5Mgova2VybmVsL3g4Nl82NC1uZnNyb290L2IxZGFmMzdmZjUyY2YyZmYzOWIy
-ZGIyMzk5ZTA1MmFkNzk2NWM2YWEvZG1lc2ctbmZzcm9vdC1zbmItMzA6MjAxMzEyMTMxMTE0
-MTE6eDg2XzY0LW5mc3Jvb3Q6My4xMy4wLXJjMy0wMDY4OS1nYjFkYWYzNzo4OTIKL2tlcm5l
-bC94ODZfNjQtbmZzcm9vdC9iMWRhZjM3ZmY1MmNmMmZmMzliMmRiMjM5OWUwNTJhZDc5NjVj
-NmFhL2RtZXNnLW5mc3Jvb3QteGlhbi0yODoyMDEzMTIxMzExMzExNzp4ODZfNjQtbmZzcm9v
-dDozLjEzLjAtcmMzLTAwNjg5LWdiMWRhZjM3Ojg5Mgova2VybmVsL3g4Nl82NC1uZnNyb290
-L2IxZGFmMzdmZjUyY2YyZmYzOWIyZGIyMzk5ZTA1MmFkNzk2NWM2YWEvZG1lc2ctbmZzcm9v
-dC1hdGhlbnMtNToyMDEzMTIxMzExMzEyMDp4ODZfNjQtbmZzcm9vdDozLjEzLjAtcmMzLTAw
-Njg5LWdiMWRhZjM3Ojg5Mgova2VybmVsL3g4Nl82NC1uZnNyb290L2IxZGFmMzdmZjUyY2Yy
-ZmYzOWIyZGIyMzk5ZTA1MmFkNzk2NWM2YWEvZG1lc2ctbmZzcm9vdC1zbmItMTY6MjAxMzEy
-MTMxMTA3NDc6eDg2XzY0LW5mc3Jvb3Q6My4xMy4wLXJjMy0wMDY4OS1nYjFkYWYzNzo4OTIK
-L2tlcm5lbC94ODZfNjQtbmZzcm9vdC9iMWRhZjM3ZmY1MmNmMmZmMzliMmRiMjM5OWUwNTJh
-ZDc5NjVjNmFhL2RtZXNnLW5mc3Jvb3QtYXRoZW5zLTMwOjIwMTMxMjEzMTEzMTIyOng4Nl82
-NC1uZnNyb290OjMuMTMuMC1yYzMtMDA2ODktZ2IxZGFmMzc6ODkyCi9rZXJuZWwveDg2XzY0
-LW5mc3Jvb3QvYjFkYWYzN2ZmNTJjZjJmZjM5YjJkYjIzOTllMDUyYWQ3OTY1YzZhYS9kbWVz
-Zy1uZnNyb290LXhpYW4tMjQ6MjAxMzEyMTMxMTExMzQ6eDg2XzY0LW5mc3Jvb3Q6My4xMy4w
-LXJjMy0wMDY4OS1nYjFkYWYzNzo4OTIKL2tlcm5lbC94ODZfNjQtbmZzcm9vdC9iMWRhZjM3
-ZmY1MmNmMmZmMzliMmRiMjM5OWUwNTJhZDc5NjVjNmFhL2RtZXNnLW5mc3Jvb3QteGlhbi00
-OjIwMTMxMjEzMTExMTI1Ong4Nl82NC1uZnNyb290OjMuMTMuMC1yYzMtMDA2ODktZ2IxZGFm
-Mzc6ODkyCi9rZXJuZWwveDg2XzY0LW5mc3Jvb3QvYjFkYWYzN2ZmNTJjZjJmZjM5YjJkYjIz
-OTllMDUyYWQ3OTY1YzZhYS9kbWVzZy1uZnNyb290LWF0aGVucy0zOjIwMTMxMjEzMTEzMTE0
-Ong4Nl82NC1uZnNyb290OjMuMTMuMC1yYzMtMDA2ODktZ2IxZGFmMzc6ODkyCi9rZXJuZWwv
-eDg2XzY0LW5mc3Jvb3QvYjFkYWYzN2ZmNTJjZjJmZjM5YjJkYjIzOTllMDUyYWQ3OTY1YzZh
-YS9kbWVzZy1uZnNyb290LWpha2V0b3duLTE3OjIwMTMxMjEzMTExMDQ5Ong4Nl82NC1uZnNy
-b290OjMuMTMuMC1yYzMtMDA2ODktZ2IxZGFmMzc6ODkyCi9rZXJuZWwveDg2XzY0LW5mc3Jv
-b3QvYjFkYWYzN2ZmNTJjZjJmZjM5YjJkYjIzOTllMDUyYWQ3OTY1YzZhYS9kbWVzZy1uZnNy
-b290LWNhaXJvLTc6MjAxMzEyMTMxMTMxMDU6eDg2XzY0LW5mc3Jvb3Q6My4xMy4wLXJjMy0w
-MDY4OS1nYjFkYWYzNzo4OTIKL2tlcm5lbC94ODZfNjQtbmZzcm9vdC9iMWRhZjM3ZmY1MmNm
-MmZmMzliMmRiMjM5OWUwNTJhZDc5NjVjNmFhL2RtZXNnLW5mc3Jvb3QtamFrZXRvd24tMTE6
-MjAxMzEyMTMxMTEzNTE6eDg2XzY0LW5mc3Jvb3Q6My4xMy4wLXJjMy0wMDY4OS1nYjFkYWYz
-Nzo4OTIKL2tlcm5lbC94ODZfNjQtbmZzcm9vdC9iMWRhZjM3ZmY1MmNmMmZmMzliMmRiMjM5
-OWUwNTJhZDc5NjVjNmFhL2RtZXNnLW5mc3Jvb3QtYXRoZW5zLTE3OjIwMTMxMjEzMTEzMjA3
-Ong4Nl82NC1uZnNyb290OjMuMTMuMC1yYzMtMDA2ODktZ2IxZGFmMzc6ODkyCi9rZXJuZWwv
-eDg2XzY0LW5mc3Jvb3QvYjFkYWYzN2ZmNTJjZjJmZjM5YjJkYjIzOTllMDUyYWQ3OTY1YzZh
-YS9kbWVzZy1uZnNyb290LWlubi0yODoyMDEzMTIxMzExMDMxMDp4ODZfNjQtbmZzcm9vdDoz
-LjEzLjAtcmMzLTAwNjg5LWdiMWRhZjM3Ojg5MgowOjE5OjE5IGFsbF9nb29kOmJhZDphbGxf
-YmFkIGJvb3RzCgpbZGV0YWNoZWQgSEVBRCAyY2Q2YTM3XSBSZXZlcnQgInVkcDogaXB2NDog
-bXVzdCBhZGQgc3luY2hyb25pemF0aW9uIGluIHVkcF9za19yeF9kc3Rfc2V0KCkiCiAxIGZp
-bGUgY2hhbmdlZCwgNiBpbnNlcnRpb25zKCspLCAxNiBkZWxldGlvbnMoLSkKbHMgLWEgL2tl
-cm5lbC10ZXN0cy9ydW4tcXVldWUva3ZtL3g4Nl82NC1uZnNyb290L2xpbnV4LWRldmVsOmRl
-dmVsLXhpYW4teDg2XzY0LTIwMTMxMjEzMTA1MjoyY2Q2YTM3YTY1ZjU3OGY3ZTIzZTY3OTg2
-MTA3NDIyYWQzYzAxMmJhOmJpc2VjdC1tbQoKMjAxMy0xMi0xMy0xNDo0NjoyNiAyY2Q2YTM3
-YTY1ZjU3OGY3ZTIzZTY3OTg2MTA3NDIyYWQzYzAxMmJhIGNvbXBpbGluZwoKMjAxMy0xMi0x
-My0xNTowMDozMSBkZXRlY3RpbmcgYm9vdCBzdGF0ZSAzLjEzLjAtcmMzLTAxMzI2LWcyY2Q2
-YTM3Li4uLi4uLi4uLi4JMi4uLi4JMwk0Li4JNgk3LgkxMAkxNQkyMAkyMgkyNC4JMjcJMjgJ
-MjkJMzMJMzUJMzcuLgkzOAk0MC4uLi4JNzIJNzUgU1VDQ0VTUwoKCj09PT09PT09PSB1cHN0
-cmVhbSA9PT09PT09PT0KRmV0Y2hpbmcgbGludXMKRmV0Y2hpbmcgbGludXMKbHMgLWEgL2tl
-cm5lbC10ZXN0cy9ydW4tcXVldWUva3ZtL3g4Nl82NC1uZnNyb290L2xpbnV4LWRldmVsOmRl
-dmVsLXhpYW4teDg2XzY0LTIwMTMxMjEzMTA1Mjo4YWU1MTZhYThiODE2MTI1NGQzZTQwMmIz
-MzQ4YjJhOWI4ZDFlZmQwOmJpc2VjdC1tbQoKMjAxMy0xMi0xMy0xNToyMzo1MiA4YWU1MTZh
-YThiODE2MTI1NGQzZTQwMmIzMzQ4YjJhOWI4ZDFlZmQwIGNvbXBpbGluZwoKMjAxMy0xMi0x
-My0xNTozNzo0OSBkZXRlY3RpbmcgYm9vdCBzdGF0ZSAzLjEzLjAtcmMxLTAwMTQxLWc4YWU1
-MTZhLi4uLi4uCTEJNC4JNgkxMQkxMgkxNAkxNgkxOC4JMjAuLgkyNQkyOQkzMC4JMzIJMzQu
-CTM5CTQ3CTU0CTU5CTY4CTcxCTc0CTc1IFNVQ0NFU1MKCgo9PT09PT09PT0gbGludXgtbmV4
-dCA9PT09PT09PT0KRmV0Y2hpbmcgbmV4dApscyAtYSAva2VybmVsLXRlc3RzL3J1bi1xdWV1
-ZS9rdm0veDg2XzY0LW5mc3Jvb3QvbGludXgtZGV2ZWw6ZGV2ZWwteGlhbi14ODZfNjQtMjAx
-MzEyMTMxMDUyOjFhNjNkNTc3N2QyMzc5NTJiYjA2ZjFhMjQ4MWMzYWNjMzY2YWViOGQ6Ymlz
-ZWN0LW1tCiBURVNUIEZBSUxVUkUKWyAgICAyLjQ0NzI5M10gdHNjOiBSZWZpbmVkIFRTQyBj
-bG9ja3NvdXJjZSBjYWxpYnJhdGlvbjogMjg5Mi45ODIgTUh6ClsgICAgMi40NTAzMjFdIHZp
-cnRpby1wY2kgMDAwMDowMDowNC4wOiBpcnEgNDAgZm9yIE1TSS9NU0ktWApbICAgIDIuNDUx
-NjQ5XSB2aXJ0aW8tcGNpIDAwMDA6MDA6MDQuMDogaXJxIDQxIGZvciBNU0kvTVNJLVgKWyAg
-ICAyLjQ1MzA0OF0gQlVHOiBrZXkgZmZmZjg4MDAxOTJlNmFkMCBub3QgaW4gLmRhdGEhClsg
-ICAgMi40NTQyMjNdIC0tLS0tLS0tLS0tLVsgY3V0IGhlcmUgXS0tLS0tLS0tLS0tLQova2Vy
-bmVsL3g4Nl82NC1uZnNyb290LzFhNjNkNTc3N2QyMzc5NTJiYjA2ZjFhMjQ4MWMzYWNjMzY2
-YWViOGQvZG1lc2ctbmZzcm9vdC1sa3AtdHQwMi0xNjoyMDEzMTIxMzE0Mjk0NTp4ODZfNjQt
-bmZzcm9vdDozLjEzLjAtcmMzLW5leHQtMjAxMzEyMTMtMDQ0OTktZzFhNjNkNTc6MwowOjE6
-OSBhbGxfZ29vZDpiYWQ6YWxsX2JhZCBib290cwobWzE7MzVtUkVQRUFUIENPVU5UOiAxMDAg
-ICMgL2NjL3dmZy9tbS1iaXNlY3QvLnJlcGVhdBtbMG0KCg==
+git checkout 374b105797c3d4f29c685f3be535c35f5689b30e
+Previous HEAD position was 31e0787... Merge 'net/master' into devel-xian-x8=
+6_64-201312130852
+HEAD is now at 374b105... Linux 3.13-rc3
+ls -a /kernel-tests/run-queue/kvm/x86_64-nfsroot/linux-devel:devel-xian-x86=
+_64-201312130852:374b105797c3d4f29c685f3be535c35f5689b30e:bisect-mmotm
+ SUCCESS
 
---PEIAKu/WMn1b1Hv9
+bisect: good commit 374b105797c3d4f29c685f3be535c35f5689b30e
+git bisect start 31e078736811963afecfe7305a51541cbed8e6a6 374b105797c3d4f29=
+c685f3be535c35f5689b30e --
+Previous HEAD position was 374b105... Linux 3.13-rc3
+HEAD is now at 77380ab... Merge 'pci/pci/misc' into devel-xian-x86_64-20131=
+2130852
+ls -a /kernel-tests/run-queue/kvm/x86_64-nfsroot/linux-devel:devel-xian-x86=
+_64-201312130852:77380abb5fc9d79b8158698e52a9abb3de00057c:bisect-mmotm
+
+2013-12-13-11:32:35 77380abb5fc9d79b8158698e52a9abb3de00057c compiling
+949 real  1646 user  144 sys  188.68% cpu 	x86_64-nfsroot
+
+2013-12-13-11:56:46 detecting boot state 3.13.0-rc3-00021-g77380ab... TEST =
+FAILURE
+[    3.098718] loop: module loaded
+[    3.103185] virtio-pci 0000:00:04.0: irq 40 for MSI/MSI-X
+[    3.105445] virtio-pci 0000:00:04.0: irq 41 for MSI/MSI-X
+[    3.107752] BUG: key ffff880019280ad0 not in .data!
+[    3.109824] ------------[ cut here ]------------
+/kernel/x86_64-nfsroot/77380abb5fc9d79b8158698e52a9abb3de00057c/dmesg-nfsro=
+ot-roam-3:20131213115758:x86_64-nfsroot:3.13.0-rc3-00021-g77380ab:335
+0:1:1 all_good:bad:all_bad boots
+
+Previous HEAD position was 77380ab... Merge 'pci/pci/misc' into devel-xian-=
+x86_64-201312130852
+HEAD is now at ef7aa32... Merge 'pci/pci/deletion' into devel-xian-x86_64-2=
+01312130852
+ls -a /kernel-tests/run-queue/kvm/x86_64-nfsroot/linux-devel:devel-xian-x86=
+_64-201312130852:ef7aa32df0138c4022db9fdccb6a193f54389330:bisect-mmotm
+
+2013-12-13-11:58:22 ef7aa32df0138c4022db9fdccb6a193f54389330 compiling
+582 real  1673 user  138 sys  311.10% cpu 	x86_64-nfsroot
+
+2013-12-13-12:08:34 detecting boot state 3.13.0-rc3-00011-gef7aa32.........=
+=2E..............	1....	3...........	5	6	7..	8..	9.	10.........	12	13	15.	1=
+6	17	18.	19	22 SUCCESS
+
+Previous HEAD position was ef7aa32... Merge 'pci/pci/deletion' into devel-x=
+ian-x86_64-201312130852
+HEAD is now at b2267e7... Merge 'pci/pci/host-imx6' into devel-xian-x86_64-=
+201312130852
+ls -a /kernel-tests/run-queue/kvm/x86_64-nfsroot/linux-devel:devel-xian-x86=
+_64-201312130852:b2267e7c13a843935d3688f93bd197b82b871568:bisect-mmotm
+
+2013-12-13-12:44:51 b2267e7c13a843935d3688f93bd197b82b871568 compiling
+399 real  42 user  8 sys  12.92% cpu 	x86_64-nfsroot
+
+2013-12-13-13:00:50 detecting boot state 3.13.0-rc3-00014-gb2267e7.......	3=
+	12	22 SUCCESS
+
+Previous HEAD position was b2267e7... Merge 'pci/pci/host-imx6' into devel-=
+xian-x86_64-201312130852
+HEAD is now at 805a6af... Linux 3.2
+Bisecting: 3 revisions left to test after this (roughly 2 steps)
+[13de796cf8665bed3dcbf7ac1dc03a17ba479633] PCI/portdrv: Remove superfluous =
+name cast
+running /c/kernel-tests/bisect-test-boot-failure.sh /home/wfg/mmotm/obj-bis=
+ect
+ls -a /kernel-tests/run-queue/kvm/x86_64-nfsroot/linux-devel:devel-xian-x86=
+_64-201312130852:13de796cf8665bed3dcbf7ac1dc03a17ba479633:bisect-mmotm
+
+2013-12-13-13:06:44 13de796cf8665bed3dcbf7ac1dc03a17ba479633 compiling
+747 real  1655 user  138 sys  239.95% cpu 	x86_64-nfsroot
+
+2013-12-13-13:27:27 detecting boot state 3.13.0-rc1-00003-g13de796. TEST FA=
+ILURE
+[    2.158259] loop: module loaded
+[    2.160883] virtio-pci 0000:00:04.0: irq 40 for MSI/MSI-X
+[    2.162197] virtio-pci 0000:00:04.0: irq 41 for MSI/MSI-X
+[    2.163679] BUG: key ffff8800192b6ad0 not in .data!
+[    2.164860] ------------[ cut here ]------------
+/kernel/x86_64-nfsroot/13de796cf8665bed3dcbf7ac1dc03a17ba479633/dmesg-nfsro=
+ot-xian-29:20131213132738:x86_64-nfsroot:3.13.0-rc1-00003-g13de796:338
+/kernel/x86_64-nfsroot/13de796cf8665bed3dcbf7ac1dc03a17ba479633/dmesg-nfsro=
+ot-roam-14:20131213132747:x86_64-nfsroot:3.13.0-rc1-00003-g13de796:338
+0:2:2 all_good:bad:all_bad boots
+
+Bisecting: 0 revisions left to test after this (roughly 1 step)
+[6229dddfed2f129a6e002daaafd8c6b5d7f4f982] PCI: Export MSI mode in sysfs us=
+ing attributes, not kobjects
+running /c/kernel-tests/bisect-test-boot-failure.sh /home/wfg/mmotm/obj-bis=
+ect
+ls -a /kernel-tests/run-queue/kvm/x86_64-nfsroot/linux-devel:devel-xian-x86=
+_64-201312130852:6229dddfed2f129a6e002daaafd8c6b5d7f4f982:bisect-mmotm
+
+2013-12-13-13:28:00 6229dddfed2f129a6e002daaafd8c6b5d7f4f982 compiling
+23 real  45 user  8 sys  232.13% cpu 	x86_64-nfsroot
+
+2013-12-13-13:28:37 detecting boot state 3.13.0-rc1-00002-g6229ddd. TEST FA=
+ILURE
+[    2.616534] loop: module loaded
+[    2.620371] virtio-pci 0000:00:04.0: irq 40 for MSI/MSI-X
+[    2.621796] virtio-pci 0000:00:04.0: irq 41 for MSI/MSI-X
+[    2.623135] BUG: key ffff8800192bcad0 not in .data!
+[    2.624334] ------------[ cut here ]------------
+/kernel/x86_64-nfsroot/6229dddfed2f129a6e002daaafd8c6b5d7f4f982/dmesg-nfsro=
+ot-roam-16:20131213132848:x86_64-nfsroot:3.13.0-rc1-00002-g6229ddd:339
+/kernel/x86_64-nfsroot/6229dddfed2f129a6e002daaafd8c6b5d7f4f982/dmesg-nfsro=
+ot-roam-23:20131213132854:x86_64-nfsroot:3.13.0-rc1-00002-g6229ddd:339
+/kernel/x86_64-nfsroot/6229dddfed2f129a6e002daaafd8c6b5d7f4f982/dmesg-nfsro=
+ot-roam-26:20131213132852:x86_64-nfsroot:3.13.0-rc1-00002-g6229ddd:339
+/kernel/x86_64-nfsroot/6229dddfed2f129a6e002daaafd8c6b5d7f4f982/dmesg-nfsro=
+ot-roam-26:20131213132903:x86_64-nfsroot:3.13.0-rc1-00002-g6229ddd:339
+0:4:4 all_good:bad:all_bad boots
+
+Bisecting: 0 revisions left to test after this (roughly 0 steps)
+[045cc22e53a1a0caaa9a0b6b64246d2690049906] PCI: Clear NumVFs when disabling=
+ SR-IOV in sriov_init()
+running /c/kernel-tests/bisect-test-boot-failure.sh /home/wfg/mmotm/obj-bis=
+ect
+ls -a /kernel-tests/run-queue/kvm/x86_64-nfsroot/linux-devel:devel-xian-x86=
+_64-201312130852:045cc22e53a1a0caaa9a0b6b64246d2690049906:bisect-mmotm
+
+2013-12-13-13:29:13 045cc22e53a1a0caaa9a0b6b64246d2690049906 compiling
+238 real  430 user  35 sys  195.02% cpu 	x86_64-nfsroot
+
+2013-12-13-13:39:10 detecting boot state 3.13.0-rc1-00001-g045cc22.........=
+=2E.......	1	4	11	17	19	22 SUCCESS
+
+6229dddfed2f129a6e002daaafd8c6b5d7f4f982 is the first bad commit
+commit 6229dddfed2f129a6e002daaafd8c6b5d7f4f982
+Author: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date:   Sat Dec 7 11:44:16 2013 -0700
+
+    PCI: Export MSI mode in sysfs using attributes, not kobjects
+   =20
+    The PCI MSI sysfs code is a mess with kobjects for things that don't
+    really need to be kobjects.  This patch creates attributes dynamically
+    for the MSI interrupts instead of using kobjects.
+   =20
+    [bhelgaas: This also fixes a problem reported by Veaceslav (see link
+    below): calling pci_enable_msi() too soon after pci_disable_msi() can f=
+ail
+    with "sysfs: cannot create duplicate filename '.../msi_irqs' because the
+    msi_irqs kset was still active.  This can happen with various module
+    unload/reload and bonding scenarios.]
+   =20
+    Note, this removes a directory from the current MSI interrupt sysfs
+    code:
+   =20
+      old MSI kobjects:
+        pci_device
+           =E2=94=94=E2=94=80=E2=94=80 msi_irqs
+            =C2=A0=C2=A0 =E2=94=94=E2=94=80=E2=94=80 40
+            =C2=A0=C2=A0     =E2=94=94=E2=94=80=E2=94=80 mode
+   =20
+      new MSI attributes:
+        pci_device
+           =E2=94=94=E2=94=80=E2=94=80 msi_irqs
+            =C2=A0=C2=A0 =E2=94=94=E2=94=80=E2=94=80 40
+   =20
+    As there was only one file "mode" with the kobject model, the interrupt
+    number is now a file that returns the "mode" of the interrupt (msi vs.
+    msix).
+   =20
+    [bhelgaas: Neil confirmed that this sysfs change doesn't affect irqbala=
+nce
+    because it only cares about the *names* of the entries in msi_irqs/; it
+    doesn't care whether those entries are files or directories.  It may br=
+eak
+    other programs that depend on sysfs layout.]
+   =20
+    Link: http://lkml.kernel.org/r/1379382464-7920-1-git-send-email-vfalico=
+@redhat.com
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+    Reviewed-by: Veaceslav Falico <vfalico@redhat.com>
+    Acked-by: Neil Horman <nhorman@tuxdriver.com>
+
+:040000 040000 35dbf7e48aefa948423794c493735c1f53888ca7 ace2b01a501febb3329=
+2a99437e8ffbee3c53ce7 M	Documentation
+:040000 040000 caaa8478e741002ba7f9055f74d830bb54b353a7 787f1b37bf5246afc82=
+4b75534d1f31c0fc32d5e M	drivers
+:040000 040000 3f1b99123d287813d1cad373a62f3a39c3427b97 3ea9b5e5d35915a3d76=
+9379544babb9167418d48 M	include
+bisect run success
+ls -a /kernel-tests/run-queue/kvm/x86_64-nfsroot/linux-devel:devel-xian-x86=
+_64-201312130852:045cc22e53a1a0caaa9a0b6b64246d2690049906:bisect-mmotm
+
+2013-12-13-13:50:53 045cc22e53a1a0caaa9a0b6b64246d2690049906 reuse /kernel/=
+x86_64-nfsroot/045cc22e53a1a0caaa9a0b6b64246d2690049906/vmlinuz-3.13.0-rc1-=
+00001-g045cc22
+
+2013-12-13-13:50:57 detecting boot state .......	23	26.	27	29...	31.	32.	33=
+	35..	36........	37.....	39..	40...	41.	42	43	45.	46....	49..........	50..	=
+51.	52.....	56	62.	64.	66 SUCCESS
+
+ls -a /kernel-tests/run-queue/kvm/x86_64-nfsroot/linux-devel:devel-xian-x86=
+_64-201312130852:31e078736811963afecfe7305a51541cbed8e6a6:bisect-mmotm
+ TEST FAILURE
+[    3.122098] loop: module loaded
+[    3.126250] virtio-pci 0000:00:04.0: irq 40 for MSI/MSI-X
+[    3.128435] virtio-pci 0000:00:04.0: irq 41 for MSI/MSI-X
+[    3.130698] BUG: key ffff8800192d4ad0 not in .data!
+[    3.132699] ------------[ cut here ]------------
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-xian-29:20131213113130:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-xian-25:20131213090159:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-snb-24:20131213113120:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-roam-17:20131213090111:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-cairo-11:20131213113119:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-xian-29:20131213113146:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-xian-28:20131213113135:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-xian-16:20131213090205:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-xian-13:20131213113139:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-roam-32:20131213113110:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-cairo-8:20131213113146:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-xian-26:20131213090210:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-xian-13:20131213113127:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-xian-25:20131213090147:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-xian-25:20131213090210:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-xian-16:20131213090221:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+/kernel/x86_64-nfsroot/31e078736811963afecfe7305a51541cbed8e6a6/dmesg-nfsro=
+ot-snb-14:20131213113128:x86_64-nfsroot:3.13.0-rc3-00182-g31e0787:882
+0:17:19 all_good:bad:all_bad boots
+
+[detached HEAD b81f81f] Revert "PCI: Export MSI mode in sysfs using attribu=
+tes, not kobjects"
+ 3 files changed, 85 insertions(+), 80 deletions(-)
+ls -a /kernel-tests/run-queue/kvm/x86_64-nfsroot/linux-devel:devel-xian-x86=
+_64-201312130852:b81f81f9d450c0e92bfd746df2364d110784c97c:bisect-mmotm
+
+2013-12-13-14:33:43 b81f81f9d450c0e92bfd746df2364d110784c97c compiling
+
+2013-12-13-14:38:28 detecting boot state 3.13.0-rc3-00183-gb81f81f......	4.=
+=2E	5	6	8	10	14	18	19	22	24	25	30	35	38	42	45	46	51	54	56	62	65	66 SUCCESS
+
+
+=3D=3D=3D=3D=3D=3D=3D=3D=3D upstream =3D=3D=3D=3D=3D=3D=3D=3D=3D
+ls -a /kernel-tests/run-queue/kvm/x86_64-nfsroot/linux-devel:devel-xian-x86=
+_64-201312130852:8d2763770c34e8ed771f0be86760eb4485febc05:bisect-mmotm
+
+2013-12-13-14:54:23 8d2763770c34e8ed771f0be86760eb4485febc05 reuse /kernel/=
+x86_64-nfsroot/8d2763770c34e8ed771f0be86760eb4485febc05/vmlinuz-3.13.0-rc3-=
+00302-g8d27637
+
+2013-12-13-14:54:23 detecting boot state ......	13	14	15	20..	21..	22	24	25=
+=2E.	26....	27..	28..	32	34	37.	39	41	42	43	46.	49	53	54.	55	57	58	63	66 SU=
+CCESS
+
+
+=3D=3D=3D=3D=3D=3D=3D=3D=3D linux-next =3D=3D=3D=3D=3D=3D=3D=3D=3D
+Fetching next
+ls -a /kernel-tests/run-queue/kvm/x86_64-nfsroot/linux-devel:devel-xian-x86=
+_64-201312130852:1a63d5777d237952bb06f1a2481c3acc366aeb8d:bisect-mmotm
+ TEST FAILURE
+[    2.447293] tsc: Refined TSC clocksource calibration: 2892.982 MHz
+[    2.450321] virtio-pci 0000:00:04.0: irq 40 for MSI/MSI-X
+[    2.451649] virtio-pci 0000:00:04.0: irq 41 for MSI/MSI-X
+[    2.453048] BUG: key ffff8800192e6ad0 not in .data!
+[    2.454223] ------------[ cut here ]------------
+/kernel/x86_64-nfsroot/1a63d5777d237952bb06f1a2481c3acc366aeb8d/dmesg-nfsro=
+ot-inn-6:20131213142510:x86_64-nfsroot:3.13.0-rc3-next-20131213-04499-g1a63=
+d57:3
+/kernel/x86_64-nfsroot/1a63d5777d237952bb06f1a2481c3acc366aeb8d/dmesg-nfsro=
+ot-cairo-29:20131213142609:x86_64-nfsroot:3.13.0-rc3-next-20131213-04499-g1=
+a63d57:3
+/kernel/x86_64-nfsroot/1a63d5777d237952bb06f1a2481c3acc366aeb8d/dmesg-nfsro=
+ot-cairo-29:20131213142621:x86_64-nfsroot:3.13.0-rc3-next-20131213-04499-g1=
+a63d57:3
+/kernel/x86_64-nfsroot/1a63d5777d237952bb06f1a2481c3acc366aeb8d/dmesg-nfsro=
+ot-inn-5:20131213142434:x86_64-nfsroot:3.13.0-rc3-next-20131213-04499-g1a63=
+d57:3
+/kernel/x86_64-nfsroot/1a63d5777d237952bb06f1a2481c3acc366aeb8d/dmesg-nfsro=
+ot-cairo-20:20131213142438:x86_64-nfsroot:3.13.0-rc3-next-20131213-04499-g1=
+a63d57:3
+/kernel/x86_64-nfsroot/1a63d5777d237952bb06f1a2481c3acc366aeb8d/dmesg-nfsro=
+ot-cairo-4:20131213142631:x86_64-nfsroot:3.13.0-rc3-next-20131213-04499-g1a=
+63d57:3
+/kernel/x86_64-nfsroot/1a63d5777d237952bb06f1a2481c3acc366aeb8d/dmesg-nfsro=
+ot-cairo-2:20131213142625:x86_64-nfsroot:3.13.0-rc3-next-20131213-04499-g1a=
+63d57:3
+/kernel/x86_64-nfsroot/1a63d5777d237952bb06f1a2481c3acc366aeb8d/dmesg-nfsro=
+ot-cairo-4:20131213142642:x86_64-nfsroot:3.13.0-rc3-next-20131213-04499-g1a=
+63d57:3
+0:8:9 all_good:bad:all_bad boots
+
+
+--h31gzZEtNLTqOjlF
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="config-3.13.0-rc3-00689-gb1daf37"
+Content-Disposition: attachment; filename="config-3.13.0-rc3-00182-g31e0787"
 
 #
 # Automatically generated file; DO NOT EDIT.
@@ -6101,7 +5519,7 @@ CONFIG_FONT_SUPPORT=y
 CONFIG_FONT_8x8=y
 CONFIG_FONT_8x16=y
 
---PEIAKu/WMn1b1Hv9
+--h31gzZEtNLTqOjlF
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
@@ -6109,4 +5527,4 @@ _______________________________________________
 LKP mailing list
 LKP@linux.intel.com
 
---PEIAKu/WMn1b1Hv9--
+--h31gzZEtNLTqOjlF--
