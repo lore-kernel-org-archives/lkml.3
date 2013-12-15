@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab3LOMfu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 07:35:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61286 "EHLO mx1.redhat.com"
+	id S1754498Ab3LOMhw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 07:37:52 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38207 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754171Ab3LOMfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 07:35:48 -0500
-Date: Sun, 15 Dec 2013 13:35:44 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH v5 1/3] perf diff: color the Delta column
-Message-ID: <20131215123543.GA9458@krava.brq.redhat.com>
-References: <1386679742-13357-1-git-send-email-artagnon@gmail.com>
- <1386679742-13357-2-git-send-email-artagnon@gmail.com>
+	id S1754439Ab3LOMht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 07:37:49 -0500
+Message-ID: <52ADA231.4080603@ti.com>
+Date: Sun, 15 Dec 2013 18:06:01 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386679742-13357-2-git-send-email-artagnon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        <linux-gpio@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v6 2/6] This patch converts the davinci gpio driver to
+ use irqdomain support.
+References: <1385057731-4348-1-git-send-email-prabhakar.csengg@gmail.com> <1385057731-4348-3-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1385057731-4348-3-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 06:19:00PM +0530, Ramkumar Ramachandra wrote:
-
-SNIP
-
-> +	return scnprintf(hpp->buf, hpp->size, "%*s",
-> +			dfmt->header_width, pfmt);
-> +}
-> +
-> +static int hpp__color_delta(struct perf_hpp_fmt *fmt,
-> +			struct perf_hpp *hpp, struct hist_entry *he)
-> +{
-> +	return __hpp__color_compare(fmt, hpp, he, COMPUTE_DELTA);
-> +}
-> +
->  static void
->  hpp__entry_unpair(struct hist_entry *he, int idx, char *buf, size_t size)
->  {
-> @@ -940,8 +979,16 @@ static void data__hpp_register(struct data__file *d, int idx)
->  	fmt->entry  = hpp__entry_global;
->  
->  	/* TODO more colors */
-> -	if (idx == PERF_HPP_DIFF__BASELINE)
-> +	switch (idx) {
-> +	case PERF_HPP_DIFF__BASELINE:
->  		fmt->color = hpp__color_baseline;
-> +		break;
-> +	case PERF_HPP_DIFF__DELTA:
-> +		fmt->color = hpp__color_delta;
-> +		break;
-> +	default:
-> +		break;
-> +	}
-
-please put changes below into separated patch
-
->  
->  	init_header(d, dfmt);
->  	perf_hpp__column_register(fmt);
-> diff --git a/tools/perf/util/color.c b/tools/perf/util/color.c
-> index 66e44a5..ec5c756 100644
-> --- a/tools/perf/util/color.c
-> +++ b/tools/perf/util/color.c
-> @@ -2,6 +2,8 @@
->  #include "cache.h"
->  #include "color.h"
->  
-> +#include <math.h>
-> +
-
-nit: extra empty line
-
->  int perf_use_color_default = -1;
->  
->  static int parse_color(const char *name, int len)
-> @@ -298,10 +300,10 @@ const char *get_percent_color(double percent)
->  	 * entries in green - and keep the low overhead places
->  	 * normal:
->  	 */
-> -	if (percent >= MIN_RED)
-> +	if (fabs(percent) >= MIN_RED)
->  		color = PERF_COLOR_RED;
->  	else {
-> -		if (percent > MIN_GREEN)
-> +		if (fabs(percent) > MIN_GREEN)
->  			color = PERF_COLOR_GREEN;
->  	}
->  	return color;
-> -- 
-> 1.8.5.rc0.5.g70ebc73.dirty
+On Thursday 21 November 2013 11:45 PM, Prabhakar Lad wrote:
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 > 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> [grygorii.strashko@ti.com:
+>  - switch to use one irq-domain per  all GPIO banks
+>  - keep irq_create_mapping() call in gpio_to_irq_banked() as it
+>    simply transformed to irq_find_mapping() if IRQ mapping exist
+>    already]
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+
+A proper subject line is missing. I added the following as the subject:
+
+gpio: davinci: convert to use irqdomain
+
+and moved your current subject line to become the commit text.
+
+> @@ -396,6 +411,20 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
+>  	}
+>  	clk_prepare_enable(clk);
+>  
+> +	irq = irq_alloc_descs(-1, 0, ngpio, 0);
+> +	if (irq < 0) {
+> +		dev_err(dev, "Couldn't allocate IRQ numbers\n");
+> +		return -ENODEV;
+
+modified this to:
+
+		return irq;
+
+since your have already received a more relevant error code. With these
+modifications and Linus's ack, queuing for v3.14.
+
+Thanks,
+Sekhar
