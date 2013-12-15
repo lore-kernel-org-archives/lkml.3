@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461Ab3LON0a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 08:26:30 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:50112 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754402Ab3LON02 (ORCPT
+	id S1754376Ab3LONiK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 08:38:10 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:46483 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754085Ab3LONiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 08:26:28 -0500
-Message-ID: <52ADADC0.9060906@ti.com>
-Date: Sun, 15 Dec 2013 18:55:20 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 15 Dec 2013 08:38:07 -0500
 MIME-Version: 1.0
-To: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <linux-gpio@vger.kernel.org>
-CC: <prabhakar.csengg@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [RFC v1 3/9] gpio: davinci: use chained_irq_enter/chained_irq_exit
- API
-References: <1385494815-15740-1-git-send-email-grygorii.strashko@ti.com> <1385494815-15740-4-git-send-email-grygorii.strashko@ti.com>
-In-Reply-To: <1385494815-15740-4-git-send-email-grygorii.strashko@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAM4voam5GS5HORbb_r57C_61cMafKjQnBnR0dxD7x-9iTBps8Q@mail.gmail.com>
+References: <1384515691-26299-1-git-send-email-sachin.kamat@linaro.org>
+	<1384515691-26299-2-git-send-email-sachin.kamat@linaro.org>
+	<CAM4voam5GS5HORbb_r57C_61cMafKjQnBnR0dxD7x-9iTBps8Q@mail.gmail.com>
+Date: Sun, 15 Dec 2013 22:38:07 +0900
+Message-ID: <CAKew6eVieLHyzQ38-Dm-dRh_P0e9wv+kEu5xCsBWgSq_-gQNBg@mail.gmail.com>
+Subject: Re: [RFC v2 1/4] power: asv: Add common ASV support for Samsung SoCs
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: Abhilash Kesavan <kesavan.abhilash@gmail.com>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "myungjoo.ham" <myungjoo.ham@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Andrew Bresticker <abrestic@google.com>,
+        Doug Anderson <dianders@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 November 2013 01:10 AM, Grygorii Strashko wrote:
-> It's unsafe to call IRQ chip callbacks (.irq_mask/irq_unmask/irq_ack)
-> from chained IRQ handler directly. Because, Davinci GPIO block is used
-> by different SoCs, which, in turn, have different Main IRQ controllers
-> (Davinci - aintc, cp-intc; Keystone - arm-gic) which may introduce
-> diffrent set of IRQ chip callbacks. As result, call of
-> gpio_irq_handler() on Keysone will simply cause crash the system,
-> because ARM-GIC implements .irq_eoi() instead of .irq_ack().
-> 
-> Hence, fix it by using Kernel chained_irq_enter/chained_irq_exit APIs as
-> they are intended to handle exact such cases.
-> 
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Hi Abhilash,
 
-Queued with Linus's and Santosh's acks.
+[ ... ]
+>> + * @nr_dvfs_level: Number of dvfs levels supported by member.
+>> + * @dvfs_table: Table containing supported ASV freqs and corresponding volts.
+>> + * @asv_grp: ASV group of member.
+>> + * @flags: ASV flags
+> What are the ASV flags you had in mind ?
 
-Thanks,
-Sekhar
+Right now we don't have any, some thing like delayed
+init of asv table depending upon dev_node/user(instance)
+was coming in my mind.
+Actually I missed to remove it for the time being.
+
+Thanks for your review and other suggestions.
+
+Regards,
+Yadwinder
