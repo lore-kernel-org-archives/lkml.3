@@ -1,50 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab3LORD1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 12:03:27 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:52605 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751856Ab3LORDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 12:03:25 -0500
-Date: Sun, 15 Dec 2013 18:03:23 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org
-Subject: Re: [PATCH 3/3] drivers: edac: Mark the function
- get_mci_for_node_id() as static in sb_edac.c
-Message-ID: <20131215170323.GE4282@pd.tnic>
-References: <7cddbd4c69ed493f183383e98853181aaf75b26b.1387029387.git.rashika.kheria@gmail.com>
- <0441f508186fc4eeabc8e9c3e4dde013d99405d4.1387029387.git.rashika.kheria@gmail.com>
- <20131214202857.GE17601@leaf>
+	id S1751828Ab3LOR32 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 12:29:28 -0500
+Received: from mailp.voltaire.com ([193.47.165.129]:43895 "EHLO mellanox.co.il"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751608Ab3LOR31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 12:29:27 -0500
+From: Doron Tsur <doront@mellanox.com>
+To: linux-kernel@vger.kernel.org
+Cc: itaib@mellanox.com, Doron Tsur <doront@mellanox.com>
+Subject: [PATCH] include/uapi/linux/netlink.h -Wall -Wextra -Werror support fix
+Date: Sun, 15 Dec 2013 19:29:22 +0200
+Message-Id: <1387128562-12370-1-git-send-email-doront@mellanox.com>
+X-Mailer: git-send-email 1.7.8.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131214202857.GE17601@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 14, 2013 at 12:28:58PM -0800, Josh Triplett wrote:
-> On Sat, Dec 14, 2013 at 07:32:09PM +0530, Rashika Kheria wrote:
-> > This patch marks the function get_mci_for_node_id() as static in
-> > sb_edac.c because it is not used outside this file.
-> > 
-> > Thus, it also eliminates the following warning in sb_edac.c:
-> > drivers/edac/sb_edac.c:918:22: warning: no previous prototype for ‘get_mci_for_node_id’ [-Wmissing-prototypes]
-> > 
-> > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> 
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+For code using:
+    #include <linux/netlink.h>
+    NLMSG_OK
+    -I<INSTALL_HDR_PATH>/include
 
-Applied, thanks.
+Issue:
+(nlh)->nlmsg_len is of type __u32, while len is of type int,
+according to (len) >= (int)sizeof(struct nlmsghdr).
+Hence (nlh)->nlmsg_len <= (len) sign-compare warning when using NLMSG_OK
 
+Fix:
+Add (int) casting:
+-			   (nlh)->nlmsg_len <= (len))
++			   (int)(nlh)->nlmsg_len <= (len))
+
+Test log:
+Compilation environments:
+Ubuntu 13.10, x86_64, gcc (Ubuntu/Linaro 4.8.1-10ubuntu9) 4.8.1
+Ubuntu 13.04, x86_64, gcc (Ubuntu/Linaro 4.7.3-1ubuntu1) 4.7.3
+[ -ftrack-macro-expansion=2 issue submitted:
+  gcc.gnu.org/bugzilla/show_bug.cgi?id=59495 ]
+
+Kernel headers installed at:
+make -C .../linux-stable headers_install \
+    INSTALL_HDR_PATH=/builds/kernel_tests_user_headers/
+
+Pre-patch compilation:
+gcc -Wall -Wextra -Werror
+-I/builds/kernel_tests_pre_patch_user_headers/include
+include-uapi-linux-netlink.h.test.c
+In file included from include-uapi-linux-netlink.h.test.c:2:0:
+include-uapi-linux-netlink.h.test.c: In function ‘main’:
+/builds/kernel_tests_pre_patch_user_headers/include/linux/netlink.h:89:24:
+error: comparison between signed and unsigned integer expressions
+[-Werror=sign-compare]
+       (nlh)->nlmsg_len <= (len))
+                        ^
+include-uapi-linux-netlink.h.test.c:26:5: note: in expansion of macro ‘NLMSG_OK’
+     NLMSG_OK(&auxiliary_netlink_header, active_len));
+     ^
+cc1: all warnings being treated as errors
+
+Post-patch:
+$ gcc  -Wall -Wextra -Werror
+-I/builds/kernel_tests_user_headers/include/
+include-uapi-linux-netlink.h.test.c
+
+$ ./a.out
+nlmsg_len= 1, len = 1 NLMSG_OK(nlh,len) test result: 0
+nlmsg_len= 1, len = 3000 NLMSG_OK(nlh,len) test result: 0
+nlmsg_len= 3000, len = 1 NLMSG_OK(nlh,len) test result: 0
+nlmsg_len= 3000, len = 3000 NLMSG_OK(nlh,len) test result: 1
+
+Tested-by: Doron Tsur <doront@mellanox.com>
+Signed-off-by: Doron Tsur <doront@mellanox.com>
+---
+ include/uapi/linux/netlink.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/uapi/linux/netlink.h b/include/uapi/linux/netlink.h
+index 1a85940..1884d4e 100644
+--- a/include/uapi/linux/netlink.h
++++ b/include/uapi/linux/netlink.h
+@@ -86,7 +86,7 @@ struct nlmsghdr {
+ 				  (struct nlmsghdr*)(((char*)(nlh)) + NLMSG_ALIGN((nlh)->nlmsg_len)))
+ #define NLMSG_OK(nlh,len) ((len) >= (int)sizeof(struct nlmsghdr) && \
+ 			   (nlh)->nlmsg_len >= sizeof(struct nlmsghdr) && \
+-			   (nlh)->nlmsg_len <= (len))
++			   (int)(nlh)->nlmsg_len <= (len))
+ #define NLMSG_PAYLOAD(nlh,len) ((nlh)->nlmsg_len - NLMSG_SPACE((len)))
+ 
+ #define NLMSG_NOOP		0x1	/* Nothing.		*/
 -- 
-Regards/Gruss,
-    Boris.
+1.7.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
