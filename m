@@ -1,110 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161Ab3LOWYj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 17:24:39 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:50945 "EHLO
-	vsp-authed-04-02.binero.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752016Ab3LOWYh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 17:24:37 -0500
-Message-ID: <52AE2C0C.80401@gaisler.com>
-Date: Sun, 15 Dec 2013 23:24:12 +0100
-From: Andreas Larsson <andreas@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752199Ab3LOWZS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 17:25:18 -0500
+Received: from [207.46.163.26] ([207.46.163.26]:8274 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752163Ab3LOWZO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 17:25:14 -0500
+X-Forefront-Antispam-Report: CIP:157.56.240.101;KIP:(null);UIP:(null);IPV:NLI;H:BL2PRD0510HT004.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VPS-7(z579ehz98dI9371I1b0bIc3f2I542I1432I4015I1447I1521Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz8275ch1de098h8275bh8275dh1de097hz2fh109h2a8h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah224fh1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1fe8h1ff5h2216h22d0h2336h9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(10009001)(189002)(199002)(164054003)(377454003)(54094003)(24454002)(51914003)(13464003)(501624003)(51704005)(69234005)(83322001)(19580405001)(19580395003)(56816005)(90146001)(47446002)(74502001)(31966008)(80976001)(74662001)(47976001)(87936001)(53806001)(85306002)(56776001)(81342001)(76786001)(65816001)(83072002)(81542001)(50986001)(49866001)(47736001)(74876001)(74316001)(81816001)(81686001)(74706001)(69226001)(76576001)(74366001)(76482001)(76796001)(54356001)(63696002)(33646001)(2656002)(54316002)(85852003)(87266001)(79102001)(46102001)(77982001)(59766001)(80022001)(51856001)(66066001)(4396001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR05MB528;H:DM2PR05MB671.namprd05.prod.outlook.com;CLIP:66.129.239.12;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+From: Rajat Jain <rajatjain@juniper.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Rajat Jain <rajatjain.linux@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, Paul Bolle <pebolle@tiscali.nl>,
+        Rajat Jain <rajatxjain@gmail.com>, Guenter Roeck <groeck@juniper.net>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: RE: [PATCH v2 2/4] pciehp: Use link change notifications for
+ hot-plug and removal
+Thread-Topic: [PATCH v2 2/4] pciehp: Use link change notifications for
+ hot-plug and removal
+Thread-Index: AQHO+AZNeZYiFnTkJEGITKvOmmnWr5pScb8QgAAuvACAAzMTwA==
+Date: Sun, 15 Dec 2013 22:23:45 +0000
+Message-ID: <50d381066c864b5c93e88eda308084e4@DM2PR05MB671.namprd05.prod.outlook.com>
+References: <529E5C0E.80903@gmail.com> <20131212224407.GL4699@google.com>
+ <CAE9FiQX8XXkwbhhuNhCF-pHdc_3or_dMEH-VN5NBSEV_eXE-Pg@mail.gmail.com>
+ <CAErSpo5BsaLNrny3T1sYknz3wo4hN0SKJk0_u6eNyEd6qq5o=g@mail.gmail.com>
+ <428d664592c2466c9e5e6b393df9d690@DM2PR05MB671.namprd05.prod.outlook.com>
+ <CAErSpo5NjOCqkao03Ea=98gunVEaUUitq8mGLarpKW_DQoDF8g@mail.gmail.com>
+In-Reply-To: <CAErSpo5NjOCqkao03Ea=98gunVEaUUitq8mGLarpKW_DQoDF8g@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [66.129.239.12]
+x-forefront-prvs: 0061C35778
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        software@gaisler.com
-Subject: Re: [PATCH v3] usb: gadget: Add UDC driver for Aeroflex Gaisler GRUSBDC
-References: <1386144838-16403-1-git-send-email-andreas@gaisler.com> <20131212180106.GF1939@saruman.home> <52AABBCE.8000709@gaisler.com> <20131213195234.GE5292@saruman.home>
-In-Reply-To: <20131213195234.GE5292@saruman.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: juniper.net
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2013 08:52 PM, Felipe Balbi wrote:
-> Hi,
->
-> On Fri, Dec 13, 2013 at 08:48:30AM +0100, Andreas Larsson wrote:
->>> On Wed, Dec 04, 2013 at 09:13:58AM +0100, Andreas Larsson wrote:
->>>> +static void gr_finish_request(struct gr_ep *ep, struct gr_request *req,
->>>> +			      int status)
->>>> +{
->>>> +	struct gr_udc *dev;
->>>> +
->>>> +	list_del_init(&req->queue);
->>>> +
->>>> +	if (likely(req->req.status == -EINPROGRESS))
->>>> +		req->req.status = status;
->>>> +	else
->>>> +		status = req->req.status;
->>>> +
->>>> +	dev = ep->dev;
->>>> +	usb_gadget_unmap_request(&dev->gadget, &req->req, ep->is_in);
->>>> +	gr_free_dma_desc_chain(dev, req);
->>>> +
->>>> +	if (ep->is_in) /* For OUT, actual gets updated bit by bit */
->>>> +		req->req.actual = req->req.length;
->>>> +
->>>> +	if (!status) {
->>>> +		if (ep->is_in)
->>>> +			gr_dbgprint_request("SENT", ep, req);
->>>> +		else
->>>> +			gr_dbgprint_request("RECV", ep, req);
->>>> +	}
->>>> +
->>>> +	/* Prevent changes to ep->queue during callback */
->>>> +	ep->callback = 1;
->>>> +	if (req == dev->ep0reqo && !status) {
->>>> +		if (req->setup)
->>>> +			gr_ep0_setup(dev, req);
->>>> +		else
->>>> +			dev_err(dev->dev,
->>>> +				"Unexpected non setup packet on ep0in\n");
->>>> +	} else if (req->req.complete) {
->>>> +		unsigned long flags;
->>>> +
->>>> +		/*
->>>> +		 * Complete should be called with interrupts disabled according
->>>> +		 * to the contract of struct usb_request
->>>> +		 */
->>>> +		local_irq_save(flags);
->>>
->>> sorry but this driver isn't ready for inclusion. local_irq_save() is a
->>> pretty good hint that there's something wrong in the driver. Consider
->>> the fact that local_irq_save() will disable preemption even when
->>> CONFIG_PREEMPT_FULL is enabled and you have a bit a problem.
->>
->> This connection between local_irq_save and CONFIG_PREEMPT_RT_FULL was
->> unknown to me. Sure, I can disable interrupts right at spin lock
->> time.
->
-> that's better.
-
-Alright, I'll put this in v4.
+Hello,
 
 
->>> Also, the way you're using thread IRQs is quite wrong. I can't let that
->>> pass and get merged upstream, sorry.
->>
->> What is quite wrong? What is it that I need to fix?
->
-> Ideally the hardirq handler should be usually to actually check if
-> $this_device generated the IRQ, that should involve reading a IRQSTATUS
-> register of some sort.
->
-> Sure, check that IRQs are actually enabled, but you also need to read
-> STATUS register before waking the thread up.
+> -----Original Message-----
+> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> 
+> On Fri, Dec 13, 2013 at 12:04 PM, Rajat Jain <rajatjain@juniper.net>
+> wrote:
+> >> On Thu, Dec 12, 2013 at 11:26 PM, Yinghai Lu <yinghai@kernel.org>
+> wrote:
+> >> > On Thu, Dec 12, 2013 at 2:44 PM, Bjorn Helgaas
+> >> > <bhelgaas@google.com>
+> 
+> > Also, I think the device removal should _always_ be initiated (if not
+> done already) whenever the Link goes down for any reason (irrespective
+> of whether the attention button is implemented or not, or whether the
+> surprise events are supported or not). I think this is logical as it
+> makes no sense for the software to think the device is accessible when
+> in reality it is not. In fact I think we should also remove the checks
+> in pciehp_disable_slot() that ensure that the adapter should be
+> populated and latch should be closed.
+> 
+> I agree.
+> 
+> >> What does the "other OS" do about this repeater?  Did you verify that
+> >> it disables the link when powering off the slot?  If we were smarter
+> >> about presence detect, I wonder if that would be enough.
+> >>
+> >> > Also we can get rid of annoying aer during power off slot.
+> >>
+> >> I don't know the details of this issue.  It may be possible to avoid
+> >> the AER in some way other than turning off the link.
+> >
+> > Sorry, I could not understand what we are talking about here. I'd
+> appreciate if you could elaborate if you see this as a problem related
+> to the patch?
+> 
+> I assume Yinghai means that when we power off the slot, if AER is still
+> enabled, it may report errors caused by the link going down.
+> PCIe r3.0 sec. 3.2.1 says some of these cases must not be considered
+> errors if the link is disabled, the port is associated with a hot-
+> pluggable slot, etc.  Maybe his platform doesn't follow those rules, or
+> maybe there's some other AER error that's not covered by them.
+> 
+> It's related to your patch because you are removing the link disable,
+> and Yinghai says that if we leave the link enabled, he gets unwanted AER
+> errors when powering off the slot.  Sorry if this was all obvious to
+> you.  I don't know any more details.  It'd be nice to know the exact AER
+> errors and the PCIe capability info.  Then we might be able to figure
+> out a way to leave the link enabled while still suppressing the AER
+> errors.
 
-I agree that that would be preferable. Unfortunately, the hardware lacks 
-status register bits that indicates whether interrupts has been 
-generated or not. That is why the only check is if interrupts are 
-disabled, because that is the only sure way to know that the softirq 
-handler does not need to go through everything.
+Thanks for the explanation. I understand now.
 
-Best regards,
-Andreas Larsson
+Yinghai: would you be able to give any details on what AER errors were seen, and a dump of all of the capabilities? 
+
+> 
+> > Once again: the way I interpret this is:
+> > * Always enable Link events.
+> > * Disable presence events if attention button is present.
+> 
+> That sounds like a good plan to me.
+
+
+Of course, this'll be done only if the link state change notification capability is present, otherwise I'll leave it to the current default state :-) 
+
+Just FYI: Today, I once again used a truth table to convince myself that all possible combinations of (attention button support, surprise event support, power controller support) will work fine and if there is going to be a difference in behavior before and after this change. It looks the user experience is going to be exactly the same except for the following 2 which also seem to be fine: 
+
+a) If a port has none of them: Attention button, Surprise event support, power controller. Then the current behavior is that it can only be added by doing "echo 1 > /sys/...../power". After this change, no need to do this. The device will be automatically added as soon as the link comes up (which would come up as soon as it is plugged in, since there is no power controller).
+
+b) If a port has all of them: Attention button, Surprise event support, power controller. Then the current behavior is that it shall be enabled as soon as it is plugged in. But with this change the user has to push the attention button to enable it. Which may be fine, because we just seem to have said that the attention button presence indicates that it takes priority over everything (including the surprise bit).
+
+> 
+> I'm also dubious about this use of presence detect:
+> 
+>     pciehp_power_thread
+>       pciehp_enable_slot
+>         pciehp_get_adapter_status
+>           pciehp_readw(ctrl, PCI_EXP_SLTSTA, &slot_status)
+>           *status = !!(slot_status & PCI_EXP_SLTSTA_PDS)
+>         board_added
+>           pciehp_power_on_slot
+> 
+> because we apparently look at PCI_EXP_SLTSTA_PDS when the slot is
+> powered off.  Only in-band presence detection is required by spec, and
+> in-band detection only works when power is applied.  So I think this
+> pciehp_get_adapter_status() call should probably just be removed.
+
+Hummm, right, understood. However, then I think we also need cobbling in pciehp_probe(), pciehp_resume() because there also I see the same problem:
+
+        /* Check if slot is occupied */
+        slot = ctrl->slot;
+        pciehp_get_adapter_status(slot, &occupied);
+        pciehp_get_power_status(slot, &poweron);
+        if (occupied && pciehp_force) {
+                mutex_lock(&slot->hotplug_lock);
+                pciehp_enable_slot(slot);
+                mutex_unlock(&slot->hotplug_lock);
+        }
+
+I think 1 way to overcome this may be to always turn the power on to the slot (if not powered on) in pciehp_get_adapter_status()?
+
+In fact going by the logic of the spec, I'd think we should actually NEVER turn off the power to the slot, since present detect depends on it? And if power is Off, in-band presence detection will fail (needed for surprise hotplug). 
+
+Nevertheless, I think this needs a separate discussion thread (did not want to tie it to this patch) since the changes shall be more, and not directly related to this link state change?
+
+Thanks,
+
+Rajat
+
+> 
+> Bjorn
+> 
+
 
