@@ -1,62 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab3LONHm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 08:07:42 -0500
-Received: from www.prifuk.cz ([31.31.77.241]:41178 "EHLO prifuk.cz"
+	id S1754362Ab3LONPg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 08:15:36 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:37449 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754464Ab3LONHj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 08:07:39 -0500
-From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@prifuk.cz>
-To: Joe Perches <joe@perches.com>
-Cc: dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, elias.vds@gmail.com, anssi.hannula@iki.fi
-Subject: Re: [RFC] Add ff-memless-next driver
-Date: Sun, 15 Dec 2013 14:07:34 +0100
-Message-ID: <5807033.13lmKIeEg9@geidi-prime>
-User-Agent: KMail/4.11.4 (Linux/3.13.0-1-ARCHMOD; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <1387073042.2276.21.camel@joe-AO722>
-References: <20107437.IkYg87uJMY@geidi-prime> <1387073042.2276.21.camel@joe-AO722>
+	id S1754085Ab3LONPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 08:15:34 -0500
+Message-ID: <52ADAB0E.4020800@ti.com>
+Date: Sun, 15 Dec 2013 18:43:50 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        <linux-gpio@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v6 6/6] ARM: davinci: da850 evm: add GPIO pinumux entries
+ DT node
+References: <1385057731-4348-1-git-send-email-prabhakar.csengg@gmail.com> <1385057731-4348-7-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1385057731-4348-7-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 14 of December 2013 18:04:02 Joe Perches wrote:
-> On Sun, 2013-12-15 at 01:19 +0100, Michal Malý wrote:
-> > diff --git a/drivers/input/ff-memless-next.c
-> > b/drivers/input/ff-memless-next.c
-> []
+On Thursday 21 November 2013 11:45 PM, Prabhakar Lad wrote:
+> From: KV Sujith <sujithkv@ti.com>
 > 
-> > +static inline s32 mlnx_clamp_level(const s32 level)
-> > +{
-> > +	return (level > 0x7fff) ? 0x7fff : ((level < -0x7fff) ? -0x7fff :
-> > level);
+> Add GPIO DT node and pinmux entries for DA850 EVM. GPIO is
+> configurable differently on different boards. So add GPIO
+> pinmuxing in dts file.
 > 
-> 	clamp(level, -0x7fff, 0x7fff);
-> []
+> Signed-off-by: KV Sujith <sujithkv@ti.com>
+> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>  arch/arm/boot/dts/da850-evm.dts |   20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
 > 
-> > +static inline int mlnx_is_conditional(const struct ff_effect *effect)
-> > +{
-> > +	return (effect->type == FF_DAMPER) || (effect->type == FF_FRICTION) ||
-> > (effect->type == FF_INERTIA) || (effect->type == FF_SPRING); +}
-> 
-> Maybe try to run your patch through scripts/checkpatch.pl
-> 
-> bool?
-> 80 char line max? (true for the file, not just here)
-> switch?
-> 	switch (effect->type) {
-> 	case FF_DAMPER:
-> 	case FF_FRICTION:
-> 	case FF_INERTIA:
-> 	case FF_SPRING:
-> 		return true;
-> 	}
-> 	return false;
+> diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+> index 588ce58..f82c129 100644
+> --- a/arch/arm/boot/dts/da850-evm.dts
+> +++ b/arch/arm/boot/dts/da850-evm.dts
+> @@ -17,6 +17,21 @@
+>  	soc {
+>  		pmx_core: pinmux@1c14120 {
+>  			status = "okay";
+> +
+> +			gpio_pins: pinmux_gpio_pins {
+> +				pinctrl-single,bits = <
+> +					/* GPIO2_4 GPIO2_6 */
+> +					0x18 0x00008080 0x0000f0f0
+> +					/* GPIO2_8 GPIO2_15 */
+> +					0x14 0x80000008 0xf000000f
+> +					/* GPIO3_12 GPIO3_13 */
+> +					0x1C 0x00008800 0x0000ff00
+> +					/* GPIO4_0 GPIO4_1 */
+> +					0x28 0x88000000 0xff000000
+> +					/* GPIO6_9 GPIO6_10 GPIO6_13 */
+> +					0x34 0x08800800 0x0ff00f00
+> +				>;
+> +			};
+>  		};
 
-Okay, thanks for the input. I found a problem regarding effect updating in the code anyway. I'll submit a corrected version of the patch once I'm sure it's fixed.
+Shouldn't these pinmux entries be part of actual device
+node which needs them to be muxed this way? For now, I
+have committed the attached reduced patch.
 
-Michal
+Thanks,
+Sekhar
+
+---8<---
+>From 3a9574f2aa4ffd9b867321a1f298893410bd3718 Mon Sep 17 00:00:00 2001
+From: KV Sujith <sujithkv@ti.com>
+Date: Thu, 21 Nov 2013 23:45:31 +0530
+Subject: [PATCH 1/1] ARM: davinci: da850 evm: add GPIO pinumux entries DT node
+
+Add GPIO DT node and pinmux entries for DA850 EVM. GPIO is
+configurable differently on different boards. So add GPIO
+pinmuxing in dts file.
+
+Signed-off-by: KV Sujith <sujithkv@ti.com>
+Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+---
+ arch/arm/boot/dts/da850-evm.dts |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+index 588ce58..1e11e5a 100644
+--- a/arch/arm/boot/dts/da850-evm.dts
++++ b/arch/arm/boot/dts/da850-evm.dts
+@@ -101,6 +101,9 @@
+ 			pinctrl-names = "default";
+ 			pinctrl-0 = <&mii_pins>;
+ 		};
++		gpio: gpio@1e26000 {
++			status = "okay";
++		};
+ 	};
+ 	nand_cs3@62000000 {
+ 		status = "okay";
+-- 
+1.7.10.1
+
+
+
