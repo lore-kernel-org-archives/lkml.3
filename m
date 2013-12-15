@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab3LNX7F (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 18:59:05 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:33173 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979Ab3LNX7D (ORCPT
+	id S1754369Ab3LOAV7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 19:21:59 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:51946 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754178Ab3LOAV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 18:59:03 -0500
-Message-ID: <52ACF0E7.1070106@gmail.com>
-Date: Sun, 15 Dec 2013 10:59:35 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Sat, 14 Dec 2013 19:21:58 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH v4 1/2] ARM: mach-moxart: add MOXA ART SoC platform files
+Date: Sun, 15 Dec 2013 01:21:24 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Jonas Jensen <jonas.jensen@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>
+References: <1386945188-8316-1-git-send-email-jonas.jensen@gmail.com> <201312141950.09447.arnd@arndb.de> <52ACBC18.6020301@roeck-us.net>
+In-Reply-To: <52ACBC18.6020301@roeck-us.net>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, vegard.nossum@oracle.com,
-        linux-kernel@vger.kernel.org, Tommi Rantala <tt.rantala@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Kees Cook <keescook@chromium.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: Re: [PATCH 1/9] Known exploit detection
-References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com> <20131212190659.GG13547@thunk.org>
-In-Reply-To: <20131212190659.GG13547@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201312150121.24414.arnd@arndb.de>
+X-Provags-ID: V02:K0:w/s4AxdbODg88qgEJ/VfJgM/kLErIDnCzKLJ0H9Tn2m
+ NluUw9YRvLkj1uYdio32qriTTcG/FRJrRxSyacyITqS7paQnGa
+ YcJorW8wKgVXHnuy1EO363jC64R5RvP9efYWACYK9rxL343bqg
+ /tsIi5XNyJZWPb2I1+E9sMUUvoDSVOcH1UlzZr3gXjA8IEQOtJ
+ YmvwYh7ddicJyQcxiFx0UNGYXOREo0wcgk1pbL+nSMiwrjtTvD
+ Vn2K1Jv3WVgJXaMEbxyOUvuJWSdrlJIMnF8FL2MIaQqsqW6QHm
+ UhQNaodoe0J0s6hwyAFN3k5Gq++1G4vPlk/QGu5rbXTmQDenZG
+ 7YzlZe/CnQvLlXkTCmIM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/12/13 06:06, Theodore Ts'o wrote:
-
-> On Thu, Dec 12, 2013 at 05:52:24PM +0100, vegard.nossum@oracle.com wrote:
->> From: Vegard Nossum <vegard.nossum@oracle.com>
->>
->> The idea is simple -- since different kernel versions are vulnerable to
->> different root exploits, hackers most likely try multiple exploits before
->> they actually succeed.
+On Saturday 14 December 2013, Guenter Roeck wrote:
+> Hmm ... not sure I agree. I don't see a problem with something like "arm,moxart-reboot".
+> There are already vexpress-reboot and xgene-reboot properties which do pretty much
+> the same.
 > 
-> Suppose we put put this into the mainstream kernel.  Wouldn't writers
-> of root kit adapt by checking for the kernel version to avoid checking
-> for exploits that are known not work?  So the question is whether the
-> additional complexity in the kernel is going to be worth it, since
-> once the attackers adapt, the benefits of trying to detect attacks for
-> mitigated exploits will be minimal.
+> Actually, you don't even need that; the reset driver could simply re-use the
+> "moxa,moxart-watchdog" property. After all, all that specifies is that there
+> is a compatible driver. Look for "samsung,s3c2410-wdt" for an example of another
+> reset handler doing just that.
+> 
+> Attaching it to the watchdog device seems to be more problematic given the
+> (currently) optional nature of the watchdog driver and its different scope.
 
+As far as I'm concerned a watchdog driver is just as optional as a reboot
+driver. The vexpress and xgene reset drivers are different because those
+are actually dedicated devices that are there only to do rebooting.
 
-Doesn't the fact that the exploits are already mitigated make it of
-limited value anyway? In order for this detection to be effective, a
-system must be fully patched with all the latest CVE tags (and also,
-obviously all the associated security patches), otherwise the system
-will be vulnerable to the most recent security bugs, and will be 
-unable to warn about them.
+The "samsung,s3c2410-wdt" device is exactly the same category as the moxart
+one, but the code to use it performs the same hack by scanning the
+device tree ad hoc from the platform initialization. I think it should
+be integrated into watchdog the same way, and if we have more drivers
+in that category, we'd probably want a generic watchdog reboot callback
+function that wdt drivers can hook up to the architecture reset handler.
 
-If the system is fully patched, and an attacker is only using known
-attacks, then they aren't getting in anyway. The logging might be of
-some use in identifying users who are potentially malicious, but then
-those users are low threat anyway since all the attacks they are
-trying are fixed. Is it worth all the instrumentation of the kernel
-for this?
+The main difference I see between plat-samsung and mach-moxart here is that
+the samsung platforms still need a lot of code in arch/arm to get things
+to work (this will have to change as soon as we get an arm64 exynos, which
+would have everything in proper drivers), while for moxart this is the only
+non-driver code.
 
-So I think for the most serious cases of attack, where the attacker
-has some knowledge of the system version/patch level (for a system
-which is not fully patched), or has zero-day vulnerabilities, this
-protection will do nothing. 
+Reusing the moxa,moxart-watchdog device from a separate reboot driver is
+a violation of the driver model, since we can't really bind two platform
+drivers to one platform device, unless you add another device in drivers/mfd
+to create two children for wdt and reboot, but that would be really silly.
+You could use the same code that samsung has at the moment in a loadable
+module, which effectively implements a linux-2.4 style driver that probes
+the device in the module_init function rather than registering a struct
+device_driver with a probe callback.
 
-This doesn't really work as a protection mechanism, the idea that
-"hackers most likely try multiple exploits before they actually
-succeed." seems a bit flawed. If they are eventually succeeding
-using a known vulnerability against an unpatched system, this this
-patchset is of limited protection. If the attacker is smart about
-the order of the attacks (e.g. try the new ones first) then they
-can probably still get in without triggering warnings. Sophisticated
-attackers who are have unpatched, unknown vulnerabilities, but
-still want to use known ones where possible are probably
-smart enough to evade any sort of protection mechanism like this. 
-
-~Ryan
-
+	Arnd
