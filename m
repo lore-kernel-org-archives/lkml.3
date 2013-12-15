@@ -1,187 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab3LONvO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 08:51:14 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:62784 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754085Ab3LONvM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 08:51:12 -0500
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-Cc: Tomasz Figa <t.figa@samsung.com>, Sachin Kamat <sachin.kamat@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Andrew Bresticker <abrestic@google.com>,
-        Doug Anderson <dianders@google.com>
-Subject: Re: [RFC v2 1/4] power: asv: Add common ASV support for Samsung SoCs
-Date: Sun, 15 Dec 2013 14:51:03 +0100
-Message-ID: <11098201.47kElN2vGm@flatron>
-User-Agent: KMail/4.11.4 (Linux/3.12.2-gentoo; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <CAKew6eVSOQaHjYj3JRhJKnozY26OkeUGhvC2usadfUqW9hyu2Q@mail.gmail.com>
-References: <1384515691-26299-1-git-send-email-sachin.kamat@linaro.org> <4229773.U5JovcREjb@amdc1227> <CAKew6eVSOQaHjYj3JRhJKnozY26OkeUGhvC2usadfUqW9hyu2Q@mail.gmail.com>
+	id S1754517Ab3LONwZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 08:52:25 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40602 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754085Ab3LONwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 08:52:23 -0500
+Message-ID: <52ADB3BC.3080605@ti.com>
+Date: Sun, 15 Dec 2013 19:20:52 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, <prabhakar.csengg@gmail.com>,
+        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/2] gpio: davinci: reuse for keystone arch
+References: <1386871973-26762-1-git-send-email-grygorii.strashko@ti.com> <52ACAD50.6060003@ti.com>
+In-Reply-To: <52ACAD50.6060003@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 15 of December 2013 22:30:13 Yadwinder Singh Brar wrote:
-[snip]
-> >> +
-> >> +     return NULL;
-> >> +}
-> >> +
-> >> +unsigned int asv_get_volt(enum asv_type_id target_type,
-> >> +                                             unsigned int target_freq)
-> >
-> > Do you need this function at all? I believe this is all about populating
-> > device's OPP array with frequencies and voltages according to its ASV
-> > level. Users will be able to query for required voltage using standard OPP
-> > calls then, without a need for ASV specific functions like this one.
-> >
+On Sunday 15 December 2013 12:41 AM, Santosh Shilimkar wrote:
+> Linus, Sekhar,
 > 
-> Yes, I had put a comment in initial version after commit message :
-> "Hopefully asv_get_volt() can go out in future, once all users start using OPP
-> library." , which seems to be missed in this version.
-> I had kept it for the time being in initial version, to keep it
-> usable(for testing) with
-> existing cpufreq drivers, which need to reworked and may take time.
+> On Thursday 12 December 2013 01:12 PM, Grygorii Strashko wrote:
+>> This series is intended to update Davinci GPIO driver and reuse
+>> it for Keystone SoCs, because Keystone uses the similar GPIO IP like Davinci.
+>> Keystone GPIO IP: supports:
+>> - up to 32 GPIO lines;
+>> - only unbanked irqs;
+>>
+>> See Documentation:
+>> Keystone - http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
+>>
+>> This series depends on:
+>> [1] "[PATCH 1/2] gpio: davinci: Fix a check for unbanked gpio"
+>> https://lkml.org/lkml/2013/11/8/22
+>> [2] "[PATCH v6 0/6] gpio: daVinci: cleanup and feature enhancement"
+>> https://www.mail-archive.com/devicetree@vger.kernel.org/msg05970.html
+>> [3] "gpio: davinci: get rid of DAVINCI_N_GPIO"
+>> https://lkml.org/lkml/2013/11/26/405
+>> [4] "gpio: introduce GPIO_DAVINCI kconfig option"
+>> https://lkml.org/lkml/2013/11/26/435
+>> [5] "gpio: davinci: use chained_irq_enter/chained_irq_exit API"
+>> https://lkml.org/lkml/2013/11/26/428
+>>
+>> To handle all dependencies, I've created a branch where I collected all 
+>> "ready to merge" patches (all acks added in patches) and this series:
+>> - https://github.com/grygoriyS/linux.git
+>> - branch: keystone-master-gpio-for-next
+>>
+> Can one of you pull all these patches ?
 
-Hmm, at the moment none of cpufreq drivers use ASV, so they need to be
-reworked anyway to use it either by the means of a private get_volt
-function or OPP framework. I agree that OPP may require more work,
-though.
+So I went through my backlog and queued all that I think is ready. Here
+is the branch. Let me know if there is anything else missing.
 
-If we decide to keep this function in final version, a comment should be
-added saying that its usage is deprecated in favor of generic OPP helpers.
+https://git.kernel.org/cgit/linux/kernel/git/nsekhar/linux-davinci.git/log/?h=v3.14/gpio
 
-> 
-> [snip]
-> >> +
-> >> +     for (i = 0; i < asv_info->nr_dvfs_level; i++) {
-> >> +             if (dev_pm_opp_add(dev, dvfs_table[i].freq * 1000,
-> >> +                     dvfs_table[i].volt)) {
-> >> +                     dev_warn(dev, "Failed to add OPP %d\n",
-> >> +                              dvfs_table[i].freq);
-> >
-> > Hmm, shouldn't it be considered a failure instead?
-> >
-> 
-> hmm, not really always. Theoretically system with some less(failed to add)
-> levels can work. Moreover I had prefered to keep it only warning, just to
-> keep the behaviour of  asv_init_opp_table() similar to that of its
-> counter part of_init_opp_table().
-
-I'm not quite convinced about it. If dev_pm_opp_add() fails, doesn't it mean
-that something broke seriously in upper layer and we should propagate the
-error down? Especially when looking at opp_add(), the only failure
-conditions I can find are memory allocation errors which mean that the
-system is unlikely to operate correctly anyway.
-
-> 
-> >> +                     continue;
-> >> +             }
-> >> +     }
-> >> +
-> >> +     return 0;
-> >> +}
-> >> +
-> >> +static struct asv_member *asv_init_member(struct asv_info *asv_info)
-> >> +{
-> >> +     struct asv_member *asv_mem;
-> >> +     int ret = 0;
-> >> +
-> >> +     if (!asv_info) {
-> >> +             pr_err("No ASV info provided\n");
-> >> +             return NULL;
-> >
-> > I'd suggest adopting the ERR_PTR() convention, which allows returning more
-> > information about the error.
-> >
-> 
-> Will it be really usefull here?, as we are not checking return value
-> of any function.
-
-Why not? Here you have ERR_PTR(-EINVAL), then...
-
-> Bur for some cases below, i will also like to get it used.
-> 
-> >> +     }
-> >> +
-> >> +     asv_mem = kzalloc(sizeof(*asv_mem), GFP_KERNEL);
-> >> +     if (!asv_mem) {
-> >> +             pr_err("Allocation failed for member: %s\n", asv_info->name);
-> >> +             return NULL;
-
-ERR_PTR(-ENOMEM) here.
-
-These are two completely different error cases.
-
-> >> +     }
-> 
-> [snip]
-> >
-> > Hmm, I don't see a point of these three separate callbacks above.
-> >
-> > In general, I'd suggest a different architecture. I'd see this more as:
-> >
-> > 1) Platform code registers static platform device to instantiate SoC ASV
-> >    driver.
-> > 2) SoC specific ASV driver probes, reads group ID from hardware register,
-> >    calls register_asv_member() with appropriate DVFS table for detected
-> >    group.
-> > 3) Driver using ASV calls asv_init_opp_table() with its struct device and
-> >    ASV member name, which causes the ASV code to fill device's operating
-> >    point using OPP calls.
-> >
-> > Now client driver has all the information it needs and the work of ASV
-> > subsystem is done. The control flow between drivers would be much simpler
-> > and no callbacks would have to be called.
-> >
-> 
-> Architecture stated above seems to be a subset(one possible way of use),
-> of the proposed architecture. If someone really have nothing much to do,
-> he can adopt the above stated approach using this framework also,
-> callbacks are not mandatory.
-
-I believe that kernel design principles are to first start with something
-simple and then if a real need for an extension shows up then extend
-existing code base with missing features.
-
-> 
-> Since we usually have more things to do other than only reading
-> fused group value and simply parsing a table index, so in drivers we have to
-> implement functions to segregate stuff and different people do it in
-> different way. Its an attempt to provide a way to keep structure(functions)
-> similar for easy understanding and factoring out of common code.
-
-I fail to see those more things. Could you elaborate a bit about them?
-
->From what I see, all the potential ASV users need is a set of operating
-points (frequency:voltage pairs) appropriate for the SoC we are running
-on (i.e. matching our ASV group index). Is there anything more we need to
-do for ASV support?
-
-> 
-> Moreover, I feels need of callbacks if we have to do something depending
-> upon(specific) the user/instance of  ASV member. One thing came
-> in my mind was dev_node may be required if we may think of parsing
-> ASV table from DT and may be more things in future.
-
-We can always add such things later, if real need shows up. As I said
-above, we should rather start with something simple, to avoid
-overdesigning things without knowing real use cases that may show
-up later.
-
-Best regards,
-Tomasz
-
+Thanks,
+Sekhar
