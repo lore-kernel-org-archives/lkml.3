@@ -1,92 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577Ab3LOOw7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 09:52:59 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:65338 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab3LOOw6 (ORCPT
+	id S1751502Ab3LOPKD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 10:10:03 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:11774 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750834Ab3LOPKB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 09:52:58 -0500
-Message-ID: <52ADC23F.3040302@linux.com>
-Date: Sun, 15 Dec 2013 15:52:47 +0100
-From: Levente Kurusa <levex@linux.com>
-Reply-To: Levente Kurusa <levex@linux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Sun, 15 Dec 2013 10:10:01 -0500
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: [RFC PATCH v3] powerpc: Loading kernels over 8Mbytes without CONFIG_PIN_TLB
+Message-Id: <20131215150957.1F5C143E5B@localhost.localdomain>
+Date: Sun, 15 Dec 2013 16:09:57 +0100 (CET)
 MIME-Version: 1.0
-To: Doron Tsur <doront@mellanox.com>, linux-kernel@vger.kernel.org
-CC: itaib@mellanox.com
-Subject: Re: [PATCH] include/uapi/linux/netlink.h -Wall -Wextra -Werror support
- fix
-References: <1387118409-30636-1-git-send-email-doront@mellanox.com>
-In-Reply-To: <1387118409-30636-1-git-send-email-doront@mellanox.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+X-Antivirus: avast! (VPS 131215-0, 15/12/2013), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2013 03:40 PM, Doron Tsur wrote:
-> For code using:
->     #include <linux/netlink.h>
->     NLMSG_OK
->     -I<INSTALL_HDR_PATH>/include
-> 
-> Tested-by: Doron Tsur <doront@mellanox.com>
-This should go where your Signed-off-by line is.
+Hereunder is a try to implement the sizing of the initial memory size based on
+initial-mapped-area size given by uboot in r7.
+As this has an impact on all powerpc platforms due to the need to provide the
+info up to function setup_initial_memory_limit(), I'm not completly sure of the
+proper implementation.
+Thanks to provide comments.
 
-[insert newlines here]
-> Test log:
-> Compilation environments:
-> Ubuntu 13.10, x86_64, gcc (Ubuntu/Linaro 4.8.1-10ubuntu9) 4.8.1
-> Ubuntu 13.04, x86_64, gcc (Ubuntu/Linaro 4.7.3-1ubuntu1) 4.7.3
-> [ -ftrack-macro-expansion=2 issue submitted:
->   gcc.gnu.org/bugzilla/show_bug.cgi?id=59495 ]
+Today on the 8xx, the only way to load kernels whose size is greater than
+8Mbytes is to activate CONFIG_PIN_TLB. Otherwise, the physical memory initially
+mapped is limited to 8Mbytes. This patch uses the size of initial memory mapped
+by the bootloader and given to the kernel through register r7.
+This is done regardless of whether CONFIG_PIN_TLB is active or not. It allows to
+load "big" kernels (for instance when activating CONFIG_LOCKDEP_SUPPORT) without
+having to activate CONFIG_PIN_TLB.
 
+Not-yet-signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-[insert newlines here]
-> Kernel headers installed at:
-> make -C .../linux-stable headers_install \
->     INSTALL_HDR_PATH=/builds/kernel_tests_user_headers/
+Index: linux/arch/powerpc/include/asm/mmu.h
+===================================================================
+--- linux/arch/powerpc/include/asm/mmu.h	(revision 5484)
++++ linux/arch/powerpc/include/asm/mmu.h	(copie de travail)
+@@ -138,7 +138,8 @@
+ extern void early_init_mmu_secondary(void);
+ 
+ extern void setup_initial_memory_limit(phys_addr_t first_memblock_base,
+-				       phys_addr_t first_memblock_size);
++				       phys_addr_t first_memblock_size,
++				       u64 init_mem_size);
+ 
+ #ifdef CONFIG_PPC64
+ /* This is our real memory area size on ppc64 server, on embedded, we
+Index: linux/arch/powerpc/kernel/head_8xx.S
+===================================================================
+--- linux/arch/powerpc/kernel/head_8xx.S	(revision 5484)
++++ linux/arch/powerpc/kernel/head_8xx.S	(copie de travail)
+@@ -31,6 +31,8 @@
+ #include <asm/asm-offsets.h>
+ #include <asm/ptrace.h>
+ 
++#define EPAPR_MAGIC	0x65504150
++
+ /* Macro to make the code more readable. */
+ #ifdef CONFIG_8xx_CPU6
+ #define DO_8xx_CPU6(val, reg)	\
+@@ -77,10 +79,19 @@
+ 	.globl	__start
+ __start:
+ 	mr	r31,r3			/* save device tree ptr */
++	li	r30,0
+ 
++	lis	r8,EPAPR_MAGIC@h
++	ori	r8,r8, EPAPR_MAGIC@l
++	cmpw	cr0,r8, r6
++	bne	1f
++
++	mr	r30,r7			/* save initial ram size */
++
+ 	/* We have to turn on the MMU right away so we get cache modes
+ 	 * set correctly.
+ 	 */
++1:
+ 	bl	initial_mmu
+ 
+ /* We now have the lower 8 Meg mapped into TLB entries, and the caches
+@@ -717,6 +728,8 @@
+  */
+ 	li	r3,0
+ 	mr	r4,r31
++	li	r5,0
++	mr	r6,r30
+ 	bl	machine_init
+ 	bl	MMU_init
+ 
+@@ -841,11 +854,17 @@
+ 	ori	r8, r8, MI_BOOTINIT|0x2 /* Inhibit cache -- Cort */
+ 	mtspr	SPRN_MD_RPN, r8
+ 
++	/* Map two more 8M kernel data pages if needed
++	 * We check how much memory is mapped by the bootloader
++	*/
++	lis	r8, 0x0100
++	cmplw	cr0, r8, r30
++	blt	2f
++
+ #ifdef CONFIG_PIN_TLB
+-	/* Map two more 8M kernel data pages.
+-	*/
+ 	addi	r10, r10, 0x0100
+ 	mtspr	SPRN_MD_CTR, r10
++#endif
+ 
+ 	lis	r8, KERNELBASE@h	/* Create vaddr for TLB */
+ 	addis	r8, r8, 0x0080		/* Add 8M */
+@@ -858,20 +877,26 @@
+ 	addis	r11, r11, 0x0080	/* Add 8M */
+ 	mtspr	SPRN_MD_RPN, r11
+ 
++	lis	r8, 0x0180
++	cmplw	cr0, r8, r30
++	blt	2f
++
++#ifdef CONFIG_PIN_TLB
+ 	addi	r10, r10, 0x0100
+ 	mtspr	SPRN_MD_CTR, r10
++#endif
+ 
+ 	addis	r8, r8, 0x0080		/* Add 8M */
+ 	mtspr	SPRN_MD_EPN, r8
+ 	mtspr	SPRN_MD_TWC, r9
+ 	addis	r11, r11, 0x0080	/* Add 8M */
+ 	mtspr	SPRN_MD_RPN, r11
+-#endif
+ 
+ 	/* Since the cache is enabled according to the information we
+ 	 * just loaded into the TLB, invalidate and enable the caches here.
+ 	 * We should probably check/set other modes....later.
+ 	 */
++2:
+ 	lis	r8, IDC_INVALL@h
+ 	mtspr	SPRN_IC_CST, r8
+ 	mtspr	SPRN_DC_CST, r8
+Index: linux/arch/powerpc/kernel/prom.c
+===================================================================
+--- linux/arch/powerpc/kernel/prom.c	(revision 5484)
++++ linux/arch/powerpc/kernel/prom.c	(copie de travail)
+@@ -649,7 +649,7 @@
+ 	}
+ }
+ 
+-void __init early_init_devtree(void *params)
++void __init early_init_devtree(void *params, u64 init_mem_size)
+ {
+ 	phys_addr_t limit;
+ 
+@@ -697,7 +697,7 @@
+ 	/* make sure we've parsed cmdline for mem= before this */
+ 	if (memory_limit)
+ 		first_memblock_size = min_t(u64, first_memblock_size, memory_limit);
+-	setup_initial_memory_limit(memstart_addr, first_memblock_size);
++	setup_initial_memory_limit(memstart_addr, first_memblock_size, init_mem_size);
+ 	/* Reserve MEMBLOCK regions used by kernel, initrd, dt, etc... */
+ 	memblock_reserve(PHYSICAL_START, __pa(klimit) - PHYSICAL_START);
+ 	/* If relocatable, reserve first 32k for interrupt vectors etc. */
+Index: linux/arch/powerpc/kernel/setup_32.c
+===================================================================
+--- linux/arch/powerpc/kernel/setup_32.c	(revision 5484)
++++ linux/arch/powerpc/kernel/setup_32.c	(copie de travail)
+@@ -119,7 +119,7 @@
+  * This is called very early on the boot process, after a minimal
+  * MMU environment has been set up but before MMU_init is called.
+  */
+-notrace void __init machine_init(u64 dt_ptr)
++notrace void __init machine_init(u64 dt_ptr, u64 init_mem_size)
+ {
+ 	lockdep_init();
+ 
+@@ -127,7 +127,7 @@
+ 	udbg_early_init();
+ 
+ 	/* Do some early initialization based on the flat device tree */
+-	early_init_devtree(__va(dt_ptr));
++	early_init_devtree(__va(dt_ptr), init_mem_size);
+ 
+ 	epapr_paravirt_early_init();
+ 
+Index: linux/arch/powerpc/kernel/setup_64.c
+===================================================================
+--- linux/arch/powerpc/kernel/setup_64.c	(revision 5484)
++++ linux/arch/powerpc/kernel/setup_64.c	(copie de travail)
+@@ -185,7 +185,7 @@
+  * device-tree is not accessible via normal means at this point.
+  */
+ 
+-void __init early_setup(unsigned long dt_ptr)
++void __init early_setup(unsigned long dt_ptr, u64 init_mem_size)
+ {
+ 	static __initdata struct paca_struct boot_paca;
+ 
+@@ -214,7 +214,7 @@
+ 	 * tree, such as retrieving the physical memory map or
+ 	 * calculating/retrieving the hash table size.
+ 	 */
+-	early_init_devtree(__va(dt_ptr));
++	early_init_devtree(__va(dt_ptr), init_mem_size);
+ 
+ 	epapr_paravirt_early_init();
+ 
+Index: linux/arch/powerpc/mm/40x_mmu.c
+===================================================================
+--- linux/arch/powerpc/mm/40x_mmu.c	(revision 5484)
++++ linux/arch/powerpc/mm/40x_mmu.c	(copie de travail)
+@@ -147,7 +147,8 @@
+ }
+ 
+ void setup_initial_memory_limit(phys_addr_t first_memblock_base,
+-				phys_addr_t first_memblock_size)
++				phys_addr_t first_memblock_size,
++				u64 init_mem_size)
+ {
+ 	/* We don't currently support the first MEMBLOCK not mapping 0
+ 	 * physical on those processors
+Index: linux/arch/powerpc/mm/44x_mmu.c
+===================================================================
+--- linux/arch/powerpc/mm/44x_mmu.c	(revision 5484)
++++ linux/arch/powerpc/mm/44x_mmu.c	(copie de travail)
+@@ -212,7 +212,8 @@
+ }
+ 
+ void setup_initial_memory_limit(phys_addr_t first_memblock_base,
+-				phys_addr_t first_memblock_size)
++				phys_addr_t first_memblock_size,
++				u64 init_mem_size)
+ {
+ 	u64 size;
+ 
+Index: linux/arch/powerpc/mm/fsl_booke_mmu.c
+===================================================================
+--- linux/arch/powerpc/mm/fsl_booke_mmu.c	(revision 5484)
++++ linux/arch/powerpc/mm/fsl_booke_mmu.c	(copie de travail)
+@@ -234,7 +234,8 @@
+ }
+ 
+ void setup_initial_memory_limit(phys_addr_t first_memblock_base,
+-				phys_addr_t first_memblock_size)
++				phys_addr_t first_memblock_size,
++				u64 init_mem_size)
+ {
+ 	phys_addr_t limit = first_memblock_base + first_memblock_size;
+ 
+Index: linux/arch/powerpc/mm/hash_utils_64.c
+===================================================================
+--- linux/arch/powerpc/mm/hash_utils_64.c	(revision 5484)
++++ linux/arch/powerpc/mm/hash_utils_64.c	(copie de travail)
+@@ -1416,7 +1416,8 @@
+ #endif /* CONFIG_DEBUG_PAGEALLOC */
+ 
+ void setup_initial_memory_limit(phys_addr_t first_memblock_base,
+-				phys_addr_t first_memblock_size)
++				phys_addr_t first_memblock_size,
++				u64 init_mem_size)
+ {
+ 	/* We don't currently support the first MEMBLOCK not mapping 0
+ 	 * physical on those processors
+Index: linux/arch/powerpc/mm/init_32.c
+===================================================================
+--- linux/arch/powerpc/mm/init_32.c	(revision 5484)
++++ linux/arch/powerpc/mm/init_32.c	(copie de travail)
+@@ -206,19 +206,16 @@
+ 
+ #ifdef CONFIG_8xx /* No 8xx specific .c file to put that in ... */
+ void setup_initial_memory_limit(phys_addr_t first_memblock_base,
+-				phys_addr_t first_memblock_size)
++				phys_addr_t first_memblock_size,
++				u64 init_mem_size)
+ {
+ 	/* We don't currently support the first MEMBLOCK not mapping 0
+ 	 * physical on those processors
+ 	 */
+ 	BUG_ON(first_memblock_base != 0);
+ 
+-#ifdef CONFIG_PIN_TLB
+-	/* 8xx can only access 24MB at the moment */
+-	memblock_set_current_limit(min_t(u64, first_memblock_size, 0x01800000));
+-#else
+-	/* 8xx can only access 8MB at the moment */
+-	memblock_set_current_limit(min_t(u64, first_memblock_size, 0x00800000));
+-#endif
++	if (!init_mem_size)
++		init_mem_size = 0x00800000;
++	memblock_set_current_limit(min_t(u64, first_memblock_size, init_mem_size));
+ }
+ #endif /* CONFIG_8xx */
+Index: linux/arch/powerpc/mm/ppc_mmu_32.c
+===================================================================
+--- linux/arch/powerpc/mm/ppc_mmu_32.c	(revision 5484)
++++ linux/arch/powerpc/mm/ppc_mmu_32.c	(copie de travail)
+@@ -273,7 +273,8 @@
+ }
+ 
+ void setup_initial_memory_limit(phys_addr_t first_memblock_base,
+-				phys_addr_t first_memblock_size)
++				phys_addr_t first_memblock_size,
++				u64 init_mem_size)
+ {
+ 	/* We don't currently support the first MEMBLOCK not mapping 0
+ 	 * physical on those processors
+Index: linux/arch/powerpc/mm/tlb_nohash.c
+===================================================================
+--- linux/arch/powerpc/mm/tlb_nohash.c	(revision 5484)
++++ linux/arch/powerpc/mm/tlb_nohash.c	(copie de travail)
+@@ -654,7 +654,8 @@
+ }
+ 
+ void setup_initial_memory_limit(phys_addr_t first_memblock_base,
+-				phys_addr_t first_memblock_size)
++				phys_addr_t first_memblock_size,
++				u64 init_mem_size)
+ {
+ 	/* On non-FSL Embedded 64-bit, we adjust the RMA size to match
+ 	 * the bolted TLB entry. We know for now that only 1G
 
+---
+Ce courrier électronique ne contient aucun virus ou logiciel malveillant parce que la protection avast! Antivirus est active.
+http://www.avast.com
 
-[insert newlines here]
-> Pre-patch compilation:
-> gcc -Wall -Wextra -Werror
-> -I/builds/kernel_tests_pre_patch_user_headers/include
-> include-uapi-linux-netlink.h.test.c
-> In file included from include-uapi-linux-netlink.h.test.c:2:0:
-> include-uapi-linux-netlink.h.test.c: In function ‘main’:
-> /builds/kernel_tests_pre_patch_user_headers/include/linux/netlink.h:89:24:
-> error: comparison between signed and unsigned integer expressions
-> [-Werror=sign-compare]
->        (nlh)->nlmsg_len <= (len))
->                         ^
-> include-uapi-linux-netlink.h.test.c:26:5: note: in expansion of macro ‘NLMSG_OK’
->      NLMSG_OK(&auxiliary_netlink_header, active_len));
->      ^
-> cc1: all warnings being treated as errors
-
-
-[insert newlines here]
-> Post-patch:
-> $ gcc  -Wall -Wextra -Werror
-> -I/builds/kernel_tests_user_headers/include/
-> include-uapi-linux-netlink.h.test.c
-
-
-[insert newlines here]
-> $ ./a.out
-> nlmsg_len= 1, len = 1 NLMSG_OK(nlh,len) test result: 0
-> nlmsg_len= 1, len = 3000 NLMSG_OK(nlh,len) test result: 0
-> nlmsg_len= 3000, len = 1 NLMSG_OK(nlh,len) test result: 0
-> nlmsg_len= 3000, len = 3000 NLMSG_OK(nlh,len) test result: 1
-> 
-> Signed-off-by: Doron Tsur <doront@mellanox.com>
-
-Please make your commit message understandable by adding newlines and such.
-Also it doesn't say what did you change and why. All it says, that there
-was a warning and post-patch there is no warning.
-
--- 
-Regards,
-Levente Kurusa
