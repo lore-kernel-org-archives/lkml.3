@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab3LOLg6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 06:36:58 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:34588 "EHLO bear.ext.ti.com"
+	id S1754182Ab3LOL6R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 06:58:17 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:38486 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753943Ab3LOLg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 06:36:56 -0500
-Message-ID: <52AD9412.1010508@ti.com>
-Date: Sun, 15 Dec 2013 17:05:46 +0530
+	id S1753297Ab3LOL6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 06:58:16 -0500
+Message-ID: <52AD9917.1050901@ti.com>
+Date: Sun, 15 Dec 2013 17:27:11 +0530
 From: Sekhar Nori <nsekhar@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Subject: Re: [PATCH v7] gpio: davinci: use {readl|writel}_relaxed() instead
- of __raw_*
-References: <1386784327-22164-1-git-send-email-prabhakar.csengg@gmail.com> <CACRpkdZSyiA1zF3VcGrT+2yu3X5=eoon=0rqr7UejY4kjf7jNw@mail.gmail.com> <CA+V-a8sFpMJce19o9USBFzG2qnxtUrfdLVKPi8em6RnYA5Tfuw@mail.gmail.com>
-In-Reply-To: <CA+V-a8sFpMJce19o9USBFzG2qnxtUrfdLVKPi8em6RnYA5Tfuw@mail.gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] gpio: davinci: get rid of DAVINCI_N_GPIO
+References: <1385048076-7875-1-git-send-email-grygorii.strashko@ti.com>	<1385048076-7875-2-git-send-email-grygorii.strashko@ti.com> <CACRpkdYpza8A27Ypz7absfhtauB7KXvKNvHVP3UjUJ1_hEpApg@mail.gmail.com>
+In-Reply-To: <CACRpkdYpza8A27Ypz7absfhtauB7KXvKNvHVP3UjUJ1_hEpApg@mail.gmail.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 13 December 2013 09:34 AM, Prabhakar Lad wrote:
-> Hi Linus,
+On Friday 29 November 2013 02:03 PM, Linus Walleij wrote:
+> On Thu, Nov 21, 2013 at 4:34 PM, Grygorii Strashko
+> <grygorii.strashko@ti.com> wrote:
 > 
-> On Fri, Dec 13, 2013 at 2:01 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Wed, Dec 11, 2013 at 6:52 PM, Prabhakar Lad
->> <prabhakar.csengg@gmail.com> wrote:
+>> Since Davinci GPIO driver is moved to support gpiolib it has to use
+>> ARCH_NR_GPIOS (can be configured using CONFIG_ARCH_NR_GPIO Kconfig
+>> option) configuration instead of any mach/platform specific options.
 >>
->>> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
->>>
->>> This patch replaces the __raw_readl/writel with
->>> {readl|writel}_relaxed(), Altough the code runs on ARMv5
->>> based SOCs, changing this will help copying the code
-
-s/copying/using
-
->>> for other uses.
-
-Call out usability on big-endian machines specifically here.
-
->>>
->>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->>> ---
->>>  This patch is part of series [1] rest of the patches
->>>  are Acked/reviewed so posting this patch independently
->>>  and marking it as v7.
->>>
->>>  [1] http://www.spinics.net/lists/devicetree/msg13037.html
->>>
->>>  drivers/gpio/gpio-davinci.c |   36 ++++++++++++++++++------------------
+>> Hence, replace private DAVINCI_N_GPIO with common ARCH_NR_GPIOS. This is
+>> safe because default value for ARCH_NR_GPIOS=256 and maximum number of
+>> supported GPIOs for Davinci is DAVINCI_N_GPIO=144.
 >>
->> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>> More over, this is one of steps to re-use Davinci GPIO driver by other
+>> mach/platform.
 >>
-> Thanks for the Ack.
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 > 
->> Should I take this into the GPIO tree, or should it go
->> in through the DaVinci tree?
->>
-> To avoid dependencies its better it goes via DaVinci tree.
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-I added this to v3.14/gpio branch of my tree (with modifications I
-mentioned above).
+Added to v3.14/gpio of my k.org tree with Prabhakar's, Santosh's and
+your acks.
 
-I dont think there are dependencies for this particular patch though
-(applies and builds nicely on latest Linus  T's tree). Even then, there
-are too many GPIO patches floating around and I think it is better for
-me to collect them for a while and if there really are no platform code
-dependencies overall, I can probably hand that branch off to Linus W. We
-will see.
+> 
+> Now we have a handful of people patching DaVinci GPIOs...
+> 
+> Sekhar: can you coordinate the different DaVinci patches? If you want me
+> to take a complete set of stuff at the end of the day you can give me a
+> pull request for inclusion into the GPIO tree.
+
+Will do.
 
 Thanks,
 Sekhar
