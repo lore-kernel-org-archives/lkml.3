@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab3LOORl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 09:17:41 -0500
-Received: from mailp.voltaire.com ([193.47.165.129]:42525 "EHLO mellanox.co.il"
+	id S1751388Ab3LOOka (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 09:40:30 -0500
+Received: from mailp.voltaire.com ([193.47.165.129]:55965 "EHLO mellanox.co.il"
 	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752487Ab3LOORk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 09:17:40 -0500
+	id S1750825Ab3LOOk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 09:40:29 -0500
 From: Doron Tsur <doront@mellanox.com>
 To: linux-kernel@vger.kernel.org
 Cc: itaib@mellanox.com, Doron Tsur <doront@mellanox.com>
-Subject: [PATCH] User level kernel headers -Wall -Wextra -Werror support fix For code using: #include <linux/netlink.h> NLMSG_OK -I<INSTALL_HDR_PATH>/include
-Date: Sun, 15 Dec 2013 16:17:35 +0200
-Message-Id: <1387117055-19881-1-git-send-email-doront@mellanox.com>
+Subject: [PATCH] include/uapi/linux/netlink.h -Wall -Wextra -Werror support fix
+Date: Sun, 15 Dec 2013 16:40:09 +0200
+Message-Id: <1387118409-30636-1-git-send-email-doront@mellanox.com>
 X-Mailer: git-send-email 1.7.8.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -20,13 +20,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+For code using:
+    #include <linux/netlink.h>
+    NLMSG_OK
+    -I<INSTALL_HDR_PATH>/include
+
 Tested-by: Doron Tsur <doront@mellanox.com>
 Test log:
 Compilation environments:
 Ubuntu 13.10, x86_64, gcc (Ubuntu/Linaro 4.8.1-10ubuntu9) 4.8.1
 Ubuntu 13.04, x86_64, gcc (Ubuntu/Linaro 4.7.3-1ubuntu1) 4.7.3
 [ -ftrack-macro-expansion=2 issue submitted:
-  http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59495 ]
+  gcc.gnu.org/bugzilla/show_bug.cgi?id=59495 ]
 Kernel headers installed at:
 make -C .../linux-stable headers_install \
     INSTALL_HDR_PATH=/builds/kernel_tests_user_headers/
