@@ -1,90 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab3LOCB2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 21:01:28 -0500
-Received: from dmz-mailsec-scanner-3.mit.edu ([18.9.25.14]:53609 "EHLO
-	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754270Ab3LOCBY (ORCPT
+	id S1754425Ab3LOCBn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 21:01:43 -0500
+Received: from dmz-mailsec-scanner-5.mit.edu ([18.7.68.34]:43553 "EHLO
+	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754392Ab3LOCBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 21:01:24 -0500
-X-AuditID: 1209190e-b7efb6d000000bb9-56-52ad0d7312d2
-Date: Sat, 14 Dec 2013 21:01:21 -0500
+	Sat, 14 Dec 2013 21:01:41 -0500
+X-AuditID: 12074422-b7f9d6d000000bc0-59-52ad0d84eae4
+Date: Sat, 14 Dec 2013 21:01:38 -0500
 From: Greg Price <price@MIT.EDU>
 To: "Theodore Ts'o" <tytso@MIT.EDU>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 07/14] random: exploit any extra entropy too when reseeding
-Message-ID: <20131215020121.GG27191@athena.dialup.mit.edu>
+Subject: [PATCH 09/14] random: reserve entropy for nonblocking pool early on
+Message-ID: <20131215020138.GI27191@athena.dialup.mit.edu>
 References: <cover.1387067223.git.price@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <cover.1387067223.git.price@mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsUixG6nrlvMuzbIYNIzTYvLu+awOTB6fN4k
-	F8AYxWWTkpqTWZZapG+XwJXRMnUuW8EhgYoLr06wNjDO5O1i5OSQEDCR2DjtNBOELSZx4d56
-	ti5GLg4hgdlMEi/eLWADSQgJbGSUmPlJEyLxC8j+c4URJMEioCpx8eJKMJtNQEHix/x1zCC2
-	iICyxKqZm8CmMgPFf93bxApiCwt4S6ybPBGshlfASmLGqVnsEAsMJNpnNjBBxAUlTs58wgLR
-	qyVx499LoDgHkC0tsfwfB0iYU8BQ4t3Cq2BrRQVUJKac3MY2gVFwFpLuWUi6ZyF0L2BkXsUo
-	m5JbpZubmJlTnJqsW5ycmJeXWqRrrJebWaKXmlK6iREUppySfDsYvx5UOsQowMGoxMN7gHlt
-	kBBrYllxZe4hRkkOJiVRXilOoBBfUn5KZUZicUZ8UWlOavEhRgkOZiUR3h3n1wQJ8aYkVlal
-	FuXDpKQ5WJTEeW9y2AcJCaQnlqRmp6YWpBbBZGU4OJQkeDN5gIYKFqWmp1akZeaUIKSZODhB
-	hvMADe8HqeEtLkjMLc5Mh8ifYlSUEuf1B0kIgCQySvPgemFp5BWjONArwrw9IFU8wBQE1/0K
-	aDAT0GDvPatABpckIqSkGhi9Iks6Zir4Kf1wPniJefGhowaCDsJZNtt4NWp3tso4tSttUeNd
-	wn/n4df7VxKdPn4wUj+q8+xJ9t+i3U4vCjhTr1kxOisU/+3YdyFCYdFDlYDQnMeLNTd/dEgI
-	WaJfrN+xxj1qz+aXTx2/59jtLW9rzphXyyK9jt97S8QczadL3ltYnTRy8lBiKc5INNRiLipO
-	BAAVFGjK/gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsUixG6notvCuzbI4P5CS4vLu+awOTB6fN4k
+	F8AYxWWTkpqTWZZapG+XwJWx7v1xxoLrEhWbzk5kbmCcIdLFyMEhIWAisedSfBcjJ5ApJnHh
+	3nq2LkYuDiGB2UwSO65cZoFwNjJKvLx0hBHC+cUo8WLVfUaQFhYBVYlp1y+D2WwCChI/5q9j
+	BrFFBJQlVs3cxARiMwPFf93bxApiCwv4SDze0MYGYvMKWEmcOv8SzBYSMJBon9nABBEXlDg5
+	8wkLRK+WxI1/L5lALmUWkJZY/o8DJMwpYCjxbuFVsLWiAioSU05uY5vAKDgLSfcsJN2zELoX
+	MDKvYpRNya3SzU3MzClOTdYtTk7My0st0jXVy80s0UtNKd3ECA5TF6UdjD8PKh1iFOBgVOLh
+	lWBbGyTEmlhWXJl7iFGSg0lJlFeKEyjEl5SfUpmRWJwRX1Sak1p8iFGCg1lJhHfH+TVBQrwp
+	iZVVqUX5MClpDhYlcd5bHPZBQgLpiSWp2ampBalFMFkZDg4lCd5FPEBDBYtS01Mr0jJzShDS
+	TBycIMN5gIafA6nhLS5IzC3OTIfIn2LU5ehZ9+EboxBLXn5eqpQ4rz9IkQBIUUZpHtwcWHp5
+	xSgO9JYw7ymQKh5gaoKb9ApoCRPQEu89q0CWlCQipKQaGP0nhV/fJlah+Tnbtahtn7f9d7m/
+	i5+lLNBhkPfNmHYs4fqso+tSUgLvzbVY9mTmhrPp7zeKWhm8jvFdu2GFK2sc51IOiWvMn18t
+	mR94uSHok21G1TJbC8UbW1j+6vPba5zaPu3Kb2WbB2fePjl7zpr1oseM0rvx5zxShQSOG28x
+	CHl74JXCz11KLMUZiYZazEXFiQCuNZcdCgMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When extracting from the input pool to feed one of the output
-pools, extracting more bytes can't hurt the reseed, and it can
-help if there happens to be more entropy than we estimated.  We
-deliberately try to be conservative in our estimates -- for
-example, mixing in the cycle counter on each event but estimating
-based on the low-resolution clock -- so this situation is likely.
+While booting, our priority is to get the nonblocking pool (which
+supplies /dev/urandom and the kernel's internal randomness
+consumption) initialized soon.  If someone reads from /dev/random,
+let them wait until we've either done that, or have enough entropy
+to serve them and also do that.
 
-For example, the authors of http://eprint.iacr.org/2012/251.pdf
-found in a multi-week run on a desktop that the actual entropy
-from add_input_randomness was much higher than our estimates,
-at 9.69 bits min-entropy per event from the cycle counters alone
-vs. 1.85 bits estimated.
+This adds a wrinkle to determining when we're ready for someone to
+read from /dev/random, so factor that out.
 
-The only reason to hold back is that we have to debit the input
-pool's entropy estimate for every byte we extract, which may delay
-us the next time we want to extract from the input pool.  But if
-we're already leaving the pool practically empty, this isn't much
-of a cost.  So go ahead and suck up two full extractions, 160 bits.
-If we have even more than that and didn't know it, this should
-still be a good solid seed.
-
-We just have to make sure not to give ourselves credit for more
-entropy than our sober estimates allow.  The credit_bits output
-parameter takes care of that.
+At present most input goes directly to the nonblocking pool early
+on anyway, but this puts us in a position to change that.
 
 Signed-off-by: Greg Price <price@mit.edu>
 ---
- drivers/char/random.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/char/random.c | 25 +++++++++++++++++++------
+ 1 file changed, 19 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index c11281551..c2428ecb2 100644
+index f55365696..58e3e81d4 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -1001,6 +1001,13 @@ retry:
- 		ibytes = 0;
- 	if (credit_bits != NULL)
- 		*credit_bits = ibytes * 8;
-+	if (dest != NULL && ibytes && ibytes == have_bytes) {
-+		/* When a reseed drains the pool, we might as well
-+		 * suck up any underestimated entropy as well as what
-+		 * we estimate is there. */
-+		WARN_ON(credit_bits == NULL);
-+		ibytes = max_t(size_t, ibytes, 2*EXTRACT_SIZE);
-+	}
- 	entropy_count = max_t(int, 0,
- 			      entropy_count - (ibytes << (ENTROPY_SHIFT + 3)));
- 	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
+@@ -586,6 +586,17 @@ static void fast_mix(struct fast_pool *f, __u32 input[4])
+ 	f->count++;
+ }
+ 
++static int
++random_readable(int input_entropy_bits)
++{
++	/* We need enough bits to wake up for ... */
++	int thresh = random_read_wakeup_bits;
++	if (!nonblocking_pool.initialized)
++		/* ... that aren't reserved for the nonblocking pool. */
++		thresh += random_read_wakeup_bits;
++	return input_entropy_bits >= thresh;
++}
++
+ /*
+  * Credit (or debit) the entropy store with n bits of entropy.
+  * Use credit_entropy_bits_safe() if the value comes from userspace
+@@ -669,7 +680,7 @@ retry:
+ 		int entropy_bits = entropy_count >> ENTROPY_SHIFT;
+ 
+ 		/* should we wake readers? */
+-		if (entropy_bits >= random_read_wakeup_bits) {
++		if (random_readable(entropy_bits)) {
+ 			wake_up_interruptible(&random_read_wait);
+ 			kill_fasync(&fasync, SIGIO, POLL_IN);
+ 		}
+@@ -936,9 +947,12 @@ static void account_xfer(struct entropy_store *dest, int nbytes,
+ 				 (dest->entropy_total+7) / 8);
+ 	}
+ 
+-	/* Reserve some for /dev/random's pool, unless we really need it. */
++	/* Reserve a reseed's worth for the nonblocking pool early on
++	 * when we really need it; later, reserve some for /dev/random */
+ 	*reserved_bytes = 0;
+-	if (!dest->limit && dest->initialized)
++	if (dest == &blocking_pool && !nonblocking_pool.initialized)
++		*reserved_bytes = random_read_wakeup_bits / 8;
++	else if (dest == &nonblocking_pool && dest->initialized)
+ 		*reserved_bytes = 2 * (random_read_wakeup_bits / 8);
+ }
+ 
+@@ -1329,8 +1343,7 @@ random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
+ 			return -EAGAIN;
+ 
+ 		wait_event_interruptible(random_read_wait,
+-			ENTROPY_BITS(&input_pool) >=
+-			random_read_wakeup_bits);
++			random_readable(ENTROPY_BITS(&input_pool)));
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
+ 	}
+@@ -1361,7 +1374,7 @@ random_poll(struct file *file, poll_table * wait)
+ 	poll_wait(file, &random_read_wait, wait);
+ 	poll_wait(file, &random_write_wait, wait);
+ 	mask = 0;
+-	if (ENTROPY_BITS(&input_pool) >= random_read_wakeup_bits)
++	if (random_readable(ENTROPY_BITS(&input_pool)))
+ 		mask |= POLLIN | POLLRDNORM;
+ 	if (ENTROPY_BITS(&input_pool) < random_write_wakeup_bits)
+ 		mask |= POLLOUT | POLLWRNORM;
 -- 
 1.8.3.2
 
