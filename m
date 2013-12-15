@@ -1,102 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab3LOKlB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 05:41:01 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:64383 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138Ab3LOKk7 (ORCPT
+	id S1754249Ab3LOKmu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 05:42:50 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:62548 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275Ab3LOKms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 05:40:59 -0500
-Date: Sun, 15 Dec 2013 02:40:54 -0800
+	Sun, 15 Dec 2013 05:42:48 -0500
+Date: Sun, 15 Dec 2013 02:42:42 -0800
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Felipe F. Tonello" <eu@felipetonello.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Heiko Abraham <abrahamh@web.de>
-Subject: Re: [PATCH] input: egalax: Send touch end event when is about to
- suspend
-Message-ID: <20131215104053.GC20197@core.coreip.homeip.net>
-References: <1386720196-5821-1-git-send-email-eu@felipetonello.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH 5/7] genirq: Add devm_request_any_context_irq()
+Message-ID: <20131215104242.GD20197@core.coreip.homeip.net>
+References: <1386718996-3733-1-git-send-email-sboyd@codeaurora.org>
+ <1386718996-3733-6-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386720196-5821-1-git-send-email-eu@felipetonello.com>
+In-Reply-To: <1386718996-3733-6-git-send-email-sboyd@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+On Tue, Dec 10, 2013 at 03:43:14PM -0800, Stephen Boyd wrote:
+> Some drivers use request_any_context_irq() but there isn't a
+> devm_* function for it. Add one so that these drivers don't need
+> to explicitly free the irq on driver detach.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
 
-On Tue, Dec 10, 2013 at 04:03:16PM -0800, Felipe F. Tonello wrote:
-> From: "Felipe F. Tonello" <eu@felipetonello.com>
-> 
-> This is useful to report for users of this device that don't know anything
-> about the suspension of the device. So users will receive a touch end event
-> when the device is about to suspend, making it more user friendly.
-> 
-> One example of users is the X Server with the evdev input driver. This patch
-> make sure that the X server will propagate a touch end event to its windows.
-> 
-
-Hmm, I would argue we need to do this in input core, similarly to what
-we do for the keys, so that all drivers would benefit from the change.
+Thomas, would it be OK with me picking this patch through my tree if you
+do not have issues with it?
 
 Thanks.
 
-> Signed-off-by: Felipe F. Tonello <eu@felipetonello.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 > ---
->  drivers/input/touchscreen/egalax_ts.c | 18 +++++++++++++++++-
->  1 file changed, 17 insertions(+), 1 deletion(-)
+>  include/linux/interrupt.h |  5 +++++
+>  kernel/irq/devres.c       | 45 +++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 50 insertions(+)
 > 
-> diff --git a/drivers/input/touchscreen/egalax_ts.c b/drivers/input/touchscreen/egalax_ts.c
-> index 054d225..1f21f0d 100644
-> --- a/drivers/input/touchscreen/egalax_ts.c
-> +++ b/drivers/input/touchscreen/egalax_ts.c
-> @@ -63,6 +63,7 @@
->  struct egalax_ts {
->  	struct i2c_client		*client;
->  	struct input_dev		*input_dev;
-> +	bool					ids_in_use[MAX_SUPPORT_POINTS];
->  };
->  
->  static irqreturn_t egalax_ts_interrupt(int irq, void *dev_id)
-> @@ -117,6 +118,8 @@ static irqreturn_t egalax_ts_interrupt(int irq, void *dev_id)
->  	input_mt_report_pointer_emulation(input_dev, true);
->  	input_sync(input_dev);
->  
-> +	ts->ids_in_use[id] = down;
-> +
->  	return IRQ_HANDLED;
+> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+> index c9e831d..8334f9b 100644
+> --- a/include/linux/interrupt.h
+> +++ b/include/linux/interrupt.h
+> @@ -160,6 +160,11 @@ devm_request_irq(struct device *dev, unsigned int irq, irq_handler_t handler,
+>  					 devname, dev_id);
 >  }
 >  
-> @@ -247,9 +250,22 @@ static int egalax_ts_suspend(struct device *dev)
->  		0x3, 0x6, 0xa, 0x3, 0x36, 0x3f, 0x2, 0, 0, 0
->  	};
->  	struct i2c_client *client = to_i2c_client(dev);
-> -	int ret;
-> +	struct egalax_ts *ts = i2c_get_clientdata(client);
-> +	int ret, id;
->  
->  	ret = i2c_master_send(client, suspend_cmd, MAX_I2C_DATA_LEN);
+> +extern int __must_check
+> +devm_request_any_context_irq(struct device *dev, unsigned int irq,
+> +		 irq_handler_t handler, unsigned long irqflags,
+> +		 const char *devname, void *dev_id);
 > +
-> +	/* We send a touch end event (for the ids in use) if the egalax module is
-> +	   about to be turned off. */
-> +	for (id = 0; id < MAX_SUPPORT_POINTS; ++id) {
-> +		if (ts->ids_in_use[id]) {
-> +			input_mt_slot(ts->input_dev, id);
-> +			input_mt_report_slot_state(ts->input_dev, MT_TOOL_FINGER, false);
-> +			input_mt_report_pointer_emulation(ts->input_dev, true);
-> +			input_sync(ts->input_dev);
-> +		}
+>  extern void devm_free_irq(struct device *dev, unsigned int irq, void *dev_id);
+>  
+>  /*
+> diff --git a/kernel/irq/devres.c b/kernel/irq/devres.c
+> index bd8e788..f71e9ff 100644
+> --- a/kernel/irq/devres.c
+> +++ b/kernel/irq/devres.c
+> @@ -73,6 +73,51 @@ int devm_request_threaded_irq(struct device *dev, unsigned int irq,
+>  EXPORT_SYMBOL(devm_request_threaded_irq);
+>  
+>  /**
+> + *	devm_request_any_context_irq - allocate an interrupt line for a managed device
+> + *	@dev: device to request interrupt for
+> + *	@irq: Interrupt line to allocate
+> + *	@handler: Function to be called when the IRQ occurs
+> + *	@thread_fn: function to be called in a threaded interrupt context. NULL
+> + *		    for devices which handle everything in @handler
+> + *	@irqflags: Interrupt type flags
+> + *	@devname: An ascii name for the claiming device
+> + *	@dev_id: A cookie passed back to the handler function
+> + *
+> + *	Except for the extra @dev argument, this function takes the
+> + *	same arguments and performs the same function as
+> + *	request_any_context_irq().  IRQs requested with this function will be
+> + *	automatically freed on driver detach.
+> + *
+> + *	If an IRQ allocated with this function needs to be freed
+> + *	separately, devm_free_irq() must be used.
+> + */
+> +int devm_request_any_context_irq(struct device *dev, unsigned int irq,
+> +			      irq_handler_t handler, unsigned long irqflags,
+> +			      const char *devname, void *dev_id)
+> +{
+> +	struct irq_devres *dr;
+> +	int rc;
+> +
+> +	dr = devres_alloc(devm_irq_release, sizeof(struct irq_devres),
+> +			  GFP_KERNEL);
+> +	if (!dr)
+> +		return -ENOMEM;
+> +
+> +	rc = request_any_context_irq(irq, handler, irqflags, devname, dev_id);
+> +	if (rc) {
+> +		devres_free(dr);
+> +		return rc;
 > +	}
 > +
->  	return ret > 0 ? 0 : ret;
->  }
->  
+> +	dr->irq = irq;
+> +	dr->dev_id = dev_id;
+> +	devres_add(dev, dr);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(devm_request_any_context_irq);
+> +
+> +/**
+>   *	devm_free_irq - free an interrupt
+>   *	@dev: device to free interrupt for
+>   *	@irq: Interrupt line to free
 > -- 
-> 1.8.3.1
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
 > 
 
 -- 
