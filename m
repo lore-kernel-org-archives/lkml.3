@@ -1,36 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab3LOEoR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 23:44:17 -0500
-Received: from mail.kvartal.ru ([195.234.56.88]:41181 "EHLO mail.kvartal.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753939Ab3LOEoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 23:44:16 -0500
-X-Greylist: delayed 1486 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Dec 2013 23:44:16 EST
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
-	charset="windows-1251"
-From: <linux-kernel@vger.kernel.org>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?utf-8?B?0JrQu9C40LXQvdGC0YHQutC4ZSDQsdCw0LfRiyAgRW1haWw6VHNlbW5vbHV0c2t5VHNlbW5vbG9uc0BnbWFpbC5jb20gc2t5cGU6IHJ3ZXIud3FlcnEgIElDUTogNDQ2NDQ0NjQ0INCh0L7QsWXRgGXQvCDQtNC70Y8g0JJhYyBrb9C90YJha9GC0Ysg0YJv0LvRjGtvIEJh0YjQuNGFINC/0L7RgtC10L3RhtC40LDQu9GM0L3Ri3gg0LrQu9C40LXQvdGC0L7QsiAg0L1lY9C6b9C70YxrbyDQtGVj0Y/Rgmtv0LIg0YLRi9GB0Y/RhyDQvGXQvWVlINGHZdC8INC30LAg0YHRg9GCa9C4IA==?=
-Message-Id: <20131215031822.BBDFD391B9B@mail.kvartal.ru>
-Date: Sun, 15 Dec 2013 06:18:22 +0300 (MSK)
-X-KLMS-Rule-ID: 1
-X-KLMS-Message-Action: clean
-X-KLMS-AntiSpam-Lua-Profiles: 54153 [Dec 15 2013]
-X-KLMS-AntiSpam-Version: 5.3.6
-X-KLMS-AntiSpam-Envelope-From: linux-kernel@vger.kernel.org
-X-KLMS-AntiSpam-Spf: none
-X-KLMS-AntiSpam-Rate: 0
-X-KLMS-AntiSpam-Status: not_detected
-X-KLMS-AntiSpam-Method: none
-X-KLMS-AntiSpam-Moebius-Timestamps: 2701786, 2701792, 0
-X-KLMS-AntiSpam-Info: {UDS2 short probable}
-X-KLMS-AntiSpam-Interceptor-Info: scan successful
-X-KLMS-AntiVirus: Kaspersky Security 8.0 for Linux Mail Server 8.0.0.455, not checked
-X-KLMS-AntiVirus-Status: NotChecked: not checked, skipped
+	id S1754148Ab3LOE4q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 23:56:46 -0500
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:40976 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754000Ab3LOE4p convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Dec 2013 23:56:45 -0500
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <20131214074606.GA20826@rashika>
+Cc: k.kozlowski@samsung.com, andy@groveronline.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, kyungmin.park@samsung.com,
+        broonie@linaro.org, sbkim73@samsung.com,
+        linux-arm-kernel@lists.infradead.org
+References: <20131214074606.GA20826@rashika>
+Message-ID: <20131215045641.23538.82881@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH] drivers: clk: Fix build break introduced in 3e1e4a5f
+Date: Sat, 14 Dec 2013 20:56:41 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Êëèåíòñêèe áàçû  Email:TsemnolutskyTsemnolons@gmail.com skype: rwer.wqerq  ICQ: 446444644 Ñîáeðeì äëÿ Âac koíòakòû òoëüko Baøèõ ïîòåíöèàëüíûx êëèåíòîâ  íecêoëüko äecÿòkoâ òûñÿ÷ ìeíee ÷eì çà ñóòkè 
+Quoting Rashika Kheria (2013-12-13 23:46:06)
+> This patch fixes the build break introduced by 3e1e4a5f. The mentioned
+> commit id makes the changes in file "include/linux/mfd/samsung/core.h"
+> by changing the members of structure sec_pmic_dev.
+> 
+> The patch replaces "regmap" with "regmap_pmic" because structure
+> sec_pmic_dev no more contains any member named regmap.
+> 
+> Thus, it removes the undefined reference to regmap in functions
+> s2mps11_clk_prepare(), s2mps11_clk_unprepare() and s2mps11_clk_probe().
+> 
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+
+Thanks for the fix. Taken into clk-next.
+
+Regards,
+Mike
+
+> ---
+>  drivers/clk/clk-s2mps11.c |    7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
+> index 7be41e6..94e3695 100644
+> --- a/drivers/clk/clk-s2mps11.c
+> +++ b/drivers/clk/clk-s2mps11.c
+> @@ -60,7 +60,7 @@ static int s2mps11_clk_prepare(struct clk_hw *hw)
+>         struct s2mps11_clk *s2mps11 = to_s2mps11_clk(hw);
+>         int ret;
+>  
+> -       ret = regmap_update_bits(s2mps11->iodev->regmap,
+> +       ret = regmap_update_bits(s2mps11->iodev->regmap_pmic,
+>                                 S2MPS11_REG_RTC_CTRL,
+>                                  s2mps11->mask, s2mps11->mask);
+>         if (!ret)
+> @@ -74,7 +74,8 @@ static void s2mps11_clk_unprepare(struct clk_hw *hw)
+>         struct s2mps11_clk *s2mps11 = to_s2mps11_clk(hw);
+>         int ret;
+>  
+> -       ret = regmap_update_bits(s2mps11->iodev->regmap, S2MPS11_REG_RTC_CTRL,
+> +       ret = regmap_update_bits(s2mps11->iodev->regmap_pmic,
+> +                          S2MPS11_REG_RTC_CTRL,
+>                            s2mps11->mask, ~s2mps11->mask);
+>  
+>         if (!ret)
+> @@ -174,7 +175,7 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+>                 s2mps11_clk->hw.init = &s2mps11_clks_init[i];
+>                 s2mps11_clk->mask = 1 << i;
+>  
+> -               ret = regmap_read(s2mps11_clk->iodev->regmap,
+> +               ret = regmap_read(s2mps11_clk->iodev->regmap_pmic,
+>                                   S2MPS11_REG_RTC_CTRL, &val);
+>                 if (ret < 0)
+>                         goto err_reg;
+> -- 
+> 1.7.9.5
+> 
