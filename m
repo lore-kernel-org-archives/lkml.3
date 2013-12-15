@@ -1,96 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab3LOCi1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 21:38:27 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:44066 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753596Ab3LOCiZ (ORCPT
+	id S1753962Ab3LOCzf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 21:55:35 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:60501 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753575Ab3LOCze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 21:38:25 -0500
+	Sat, 14 Dec 2013 21:55:34 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sergei Ianovich <ynvich@gmail.com>
+Subject: Re: [PATCH v2 00/16] ARM: support for ICP DAS LP-8x4x (with dts)
+Date: Sun, 15 Dec 2013 03:55:27 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Daniel Mack <zonque@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+References: <1386543229-1542-1-git-send-email-ynvich@gmail.com> <201312150153.54044.arnd@arndb.de> <1387073571.13062.102.camel@host5.omatika.ru>
+In-Reply-To: <1387073571.13062.102.camel@host5.omatika.ru>
 MIME-Version: 1.0
-In-Reply-To: <23915888.rvPOtSbknd@flatron>
-References: <1384520969-2450-1-git-send-email-kasimling@gmail.com> <23915888.rvPOtSbknd@flatron>
-From: Alex Ling <kasimling@gmail.com>
-Date: Sun, 15 Dec 2013 10:38:04 +0800
-Message-ID: <CAHaF_khsrAkaepHX8yObxKQx6aq9oagzRgAx=J6G6R2fCUN7wg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: add board dts file for EXYNOS4412 based
- TINY4412 board
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Mark Rutland <mark.rutland@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>, ijc+devicetree@hellion.org.uk,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312150355.27755.arnd@arndb.de>
+X-Provags-ID: V02:K0:AYs+m9imSY1H9eYXnzQ4i3Jb9RNpWBocsDRddScLlSd
+ ZZIT6P3bttJkcWTV2D1cTKXYjM29fIy9KcGrDJoD+F+c9L2vgr
+ PvmgMcZ2Jnx9d2vUY25Fbuvdd+qMl7HjNo5jLbhOHHA06nHWvF
+ 2mwoO3GyjJuJwdE7+lSqa4iCMfL4JbXYR/BpPLd6TUTKIIh3wp
+ cPlEu7uHQf8dHcDHRVr9SY3xgn/SGTme6TFT7vcfjgQl//tPRl
+ RfP04TlTnU0Hi2/Kaz9UG4UFNuUoc3LDeOULEGQ7o8T2d7JhDj
+ 4B7/pnw9XjSj9z8w4XTNajlEeTpbejuMMxyupt2kF/Zl8KbOEj
+ MP5EFMQl9SKU2UABtPyo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tomasz,
-Thanks for reviewing. I'll fix the patch description and style problems.
+On Sunday 15 December 2013, Sergei Ianovich wrote:
+> On Sun, 2013-12-15 at 01:53 +0100, Arnd Bergmann wrote:
+> > On Saturday 14 December 2013, Sergei Ianovich wrote:
+> > Unfortunately I don't have a good way to judge the tradeoffs without
+> > understanding more about the design of the hardware. Did I understand
+> > you right that you expect future versions of the FPGA bitstream
+> > to implement additional features or have a different set of endpoint
+> > devices?
+> 
+> I am trying to reduce time you spend on review as much as possible.
+> Please feel free to say if I do something to the opposite.
+> 
+> I could write a lengthy description of the machine as I understand it,
+> if need be. I am not related to its vendor in any way, so it may or may
+> not be correct.
+> 
+> I've made to work 100% of features my client needs in the machine. It is
+> ~80% of the devices on the frame and ~10% of possible slot modules.
+> There are chances someone else will work on the rest, eg. the device
+> vendor.
+> 
+> This page contains a photo, if there is any interest to see how it looks
+> like:
+> http://www.icpdas.com/root/product/solutions/pac/linpac/lp-8x4x_hardware.html
 
+I see, thanks for the clarification.
 
-Regards,
-Alex
+> > If so, I would argue that anything that you consider an optional
+> > sub-device should have its own device node in the device tree.
+> > 
+> > Also, do you have to model hardware that is connected to the FPGA
+> > rather than being part of it?
+> 
+> Anything that can be plugged into the device is discoverable, so doesn't
+> require to be in the device tree.
 
-On Sun, Dec 15, 2013 at 2:57 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> Hi Alex,
->
-> On Friday 15 of November 2013 21:09:29 Alex Ling wrote:
->> Add a minimal board dts file for EXYNOS4412 based FriendlyARM's
->> TINY4412 board. This patch including adds the node to support
->> peripherals like UART, SD card on SDMMC2 port, and this patch
->> adds GPIO connected LEDS and configure its properties like
->> following:
->> LED1: use 'heartbeat' trigger, blinking while the board is running.
->> LED4: use 'mmc0' trigger, on when mmc0 is accessing.
->> LED2 and LED3 can be controlled from userspace.
->
-> Well, all the LEDs can be controlled from userspace. The default trigger
-> is just the initial setting, which can be changed later by userspace.
-> It's just a general comment, not an issue with the patch, though.
->
-> Anyway, you don't need such detailed patch description, as you can see
-> most of the things directly from the code. In case of this patch, just the
-> list of supported peripherals is fine, without going into minor details,
-> such as LED triggers.
->
-> Also, please see my comments inline.
->
-> [snip]
->> diff --git a/arch/arm/boot/dts/exynos4412-tiny4412.dts b/arch/arm/boot/dts/exynos4412-tiny4412.dts
->> new file mode 100644
->> index 0000000..78ace14
->> --- /dev/null
->> +++ b/arch/arm/boot/dts/exynos4412-tiny4412.dts
-> [snip]
->> +     leds {
->> +             compatible = "gpio-leds";
->
-> style: A blank line should be separating properties from nodes.
->
->> +             led1 {
->> +                     label = "led1:heart";
->
-> Are the labels for this and the LEDs below related to the hardware?
-> I mean, the label should preferrably come from the board documentation,
-> or a label on the PCB next to the LED. Also they shouldn't represent
-> any particular use case, so you should remove the ":heart" suffix.
->
->> +                     gpios = <&gpm4 0 1>;
->> +                     default-state = "off";
->> +                     linux,default-trigger = "heartbeat";
->> +             };
->
-> style: Subnodes should be separated with blank lines.
->
-> Otherwise the patch looks fine.
->
-> Best regards,
-> Tomasz
->
+Ah, good.
+
+> > I suspect that you may have a different understanding of the term
+> > MFD than what I was suggesting: A typical MFD driver in Linux is
+> > basically a container device that has some registers on its own
+> > like a version detection or the irqchip but mainly is there to
+> > create sub-devices that each have a subset of the available
+> > registers. The sub-devices may or may not be describe in DT in this
+> > case.
+> 
+> I may be missing something. My general understanding seems to be as
+> follows. MFD will have probe/remove functionality of drivers for SRAM,
+> RTC, serial modules in the patch series. MFD will be to FPGA what C
+> language machine file was to machine: lots of hardcoded constants and
+> functions which implement non-standard behavior (like set_termios in
+> 8250_lp8x4x.c). This seems to be wrong to me, as device tree is
+> specifically designed to handle platform device initialization.
+> 
+> The tree you drafted in the previous mail was 100% correct. I though
+> about doing something like that. I decided not to, since all devices
+> behind the FPGA are transparently accessed by CPU. I like the idea. I
+> haven't resent a series with FPGA bus only because you wrote in the same
+> mail that we need an MFD.
+> 
+> If you say so, we will have an MFD.
+
+I think I was confused by the fact that the FPGA both has multiple
+integrated devices and multiple pluggable devices. Given your explanations,
+I think the way you have structured your code is good, and an MFD would
+not help. Please just restructure the DT representation to contain the
+external-bus and/or the fpga connected to it. You probably don't need both,
+but it doesn't hurt to show them as different device-nodes either.
+Your choice.
+
+	Arnd
