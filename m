@@ -1,180 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab3LOCCG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 21:02:06 -0500
+	id S1754575Ab3LOCCM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 21:02:12 -0500
 Received: from dmz-mailsec-scanner-3.mit.edu ([18.9.25.14]:53624 "EHLO
 	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754440Ab3LOCCB (ORCPT
+	by vger.kernel.org with ESMTP id S1754533Ab3LOCCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 21:02:01 -0500
-X-AuditID: 1209190e-b7efb6d000000bb9-bd-52ad0d986f98
-Date: Sat, 14 Dec 2013 21:01:58 -0500
+	Sat, 14 Dec 2013 21:02:06 -0500
+X-AuditID: 1209190e-b7efb6d000000bb9-ca-52ad0d9db7ca
+Date: Sat, 14 Dec 2013 21:02:03 -0500
 From: Greg Price <price@MIT.EDU>
 To: "Theodore Ts'o" <tytso@MIT.EDU>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 13/14] random: count only catastrophic reseeds for
- initialization
-Message-ID: <20131215020158.GM27191@athena.dialup.mit.edu>
+Subject: [PATCH 14/14] random: target giant reseeds, to be conservative
+Message-ID: <20131215020202.GN27191@athena.dialup.mit.edu>
 References: <cover.1387067223.git.price@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <cover.1387067223.git.price@mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsUixG6nojuDd22QwcJf8haXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugSvjR+s8toKXWhXPJis2MF5Q6mLk5JAQMJF4c/YxI4QtJnHh3no2
-	EFtIYDaTxOmNSRD2RkaJ2905XYxcQPYvRont09ezgiRYBFQlut4vZAGx2QQUJH7MX8cMYosI
-	KEusmrmJCcRmBor/urcJrF5YIFhi8d+VYDW8AlYS/w6+YIRYYCDRPrOBCSIuKHFy5hMWiF4t
-	iRv/XgLFOYBsaYnl/zhAwpwChhLvFl4FaxUVUJGYcnIb2wRGwVlIumch6Z6F0L2AkXkVo2xK
-	bpVubmJmTnFqsm5xcmJeXmqRrrFebmaJXmpK6SZGUIhySvLtYPx6UOkQowAHoxIP7wHmtUFC
-	rIllxZW5hxglOZiURHmlOIFCfEn5KZUZicUZ8UWlOanFhxglOJiVRHh3nF8TJMSbklhZlVqU
-	D5OS5mBREue9yWEfJCSQnliSmp2aWpBaBJOV4eBQkuDN5AEaKliUmp5akZaZU4KQZuLgBBnO
-	AzS8H6SGt7ggMbc4Mx0if4pRUUqc1x8kIQCSyCjNg+uFpZBXjOJArwjz9oBU8QDTD1z3K6DB
-	TECDvfesAhlckoiQkmpgtGiVs49c59xVcDI1VURMq2zfbZWAHRdPLA3I/K+4heHlInV+Tqkj
-	nPE528o1HncbBMR4p7Z9+1/VzuEaumBepfnxy9Vcl9bWsLtantV+y6rYa5B9pPmJe8XkSXJZ
-	onydSwS9+s71rN0dKr1LftnknPNy7zbNP9712Irjw89Uf4dz4QY1xReUWIozEg21mIuKEwF7
-	q8dq/AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsUixCmqrTuXd22QwZo9shaXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugStj/p1lzAULVSs2NzxnbWB8L9vFyMkhIWAi0XjqCTuELSZx4d56
+	ti5GLg4hgdlMEpMbV7NAOBsZJZp7dzJBOL8YJf5v+c4C0sIioCrx8cgqVhCbTUBB4sf8dcwg
+	toiAssSqmZuYQGxmoPive5vAaoQF3CWmdp1hA7F5BawkFj9ZDhYXEjCQaJ/ZwAQRF5Q4OfMJ
+	C0SvlsSNfy+B4hxAtrTE8n8cIGFOAUOJdwuvMoLYogIqElNObmObwCg4C0n3LCTdsxC6FzAy
+	r2KUTcmt0s1NzMwpTk3WLU5OzMtLLdI11svNLNFLTSndxAgOVEm+HYxfDyodYhTgYFTi4T3A
+	vDZIiDWxrLgy9xCjJAeTkiivFCdQiC8pP6UyI7E4I76oNCe1+BCjBAezkgjvjvNrgoR4UxIr
+	q1KL8mFS0hwsSuK8Nznsg4QE0hNLUrNTUwtSi2CyMhwcShK8mTxAQwWLUtNTK9Iyc0oQ0kwc
+	nCDDeYCG94PU8BYXJOYWZ6ZD5E8xKkqJ8/qDJARAEhmleXC9sETyilEc6BVh3h6QKh5gEoLr
+	fgU0mAlosPeeVSCDSxIRUlINjLXpHybnyJW3v7+xPU7o75T99nt/FeZ+ezc781b4cr9qYduV
+	7m1mORIs371OJs1Qs++rY5t4dMF3x/Ipb0ocuuc7iiny2p5X/hNknKGtZ/Fyr4ts08OJpq8f
+	RL8xvD3lx7xli3Jc9RqVrl67F2L7uSyg46ZE9m3myGc10/cdnnDcJWWJcObKh0osxRmJhlrM
+	RcWJAFgYRIj/AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the earlier commit "random: direct all routine input via input pool",
-we made sure that input comes in large reseeds which should be big
-enough to prevent an attacker from brute-forcing any one of them.
-This is important because a succession of small reseeds, if
-interspersed with output an attacker sees, could be brute-forced one
-by one.  Now update our accounting accordingly so that we track the
-largest single reseed, rather than the total of potentially small
-reseeds, and call ourselves initialized only with one large reseed.
+A 128-bit seed provides reasonable security.  We don't consider
+ourselves initialized until we get a seed which we estimate has
+entropy min_reseed_bits, by default 128.  Our entropy estimates
+are generally conservative (see e.g. the empirical analysis in
+http://eprint.iacr.org/2012/251.pdf), but entropy estimation is
+unavoidably heuristic and there may be circumstances where they
+are too optimistic.
 
-This shouldn't make much difference with the current code, as we
-don't make repeated small reseeds anyway, but it's best to be clear.
+To hedge against this risk, even after getting a seed of minimum
+size we continue taking bigger reseeds until we reach by default
+512 bits of estimated entropy per reseed.  Hopefully it should be
+difficult to make our entropy estimates a factor of 4 too high.
+As a bonus, when the estimates are good, this gives us seeds which
+can't be brute-forced within the universe under the known laws of
+physics, which ought to really be enough for anybody.
 
-Rename entropy_total to seed_entropy_bits to reflect its new function.
+This hedging addresses the same issue that motivates systems like
+Fortuna.  Our change doesn't go as far in that direction as Fortuna,
+but it's much simpler.
 
-While touching the not-yet-initialized warnings, checkpatch complains
-about printk(KERN_NOTICE, ...), so switch to pr_notice etc.
+The cost is that reseeds will happen about four times (by default)
+less often.  This is not really a critical issue, as frequent reseeds
+mainly help us "recover" if someone glimpses the internal state --
+which is largely an academic question, given what an attacker who can
+read kernel memory is usually able to do.  We still take a
+regular-sized seed up front so as not to delay getting initialized.
 
 Signed-off-by: Greg Price <price@mit.edu>
 ---
- drivers/char/random.c         | 24 ++++++++++++------------
- include/trace/events/random.h | 13 +++++++------
- 2 files changed, 19 insertions(+), 18 deletions(-)
+ drivers/char/random.c | 38 ++++++++++++++++++++++++++++----------
+ 1 file changed, 28 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index b354fd15f..855e401e5 100644
+index 855e401e5..79aee65fe 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -432,7 +432,7 @@ struct entropy_store {
- 	unsigned short input_rotate;
- 	int entropy_count;
- 	int entropy_since_push;
--	int entropy_total;
-+	int seed_entropy_bits;
- 	unsigned int initialized:1;
- 	unsigned int limit:1;
- 	unsigned int last_data_init:1;
-@@ -670,8 +670,9 @@ retry:
- 		goto retry;
+@@ -293,11 +293,20 @@
  
- 	if (r == &nonblocking_pool) {
--		r->entropy_total += nbits;
--		if (!r->initialized && r->entropy_total >= min_reseed_bits) {
-+		r->seed_entropy_bits = max(nbits, r->seed_entropy_bits);
-+		if (!r->initialized &&
-+		    r->seed_entropy_bits >= min_reseed_bits) {
- 			r->initialized = 1;
- 			prandom_reseed_late();
- 			pr_notice("random: %s pool is initialized\n", r->name);
-@@ -681,7 +682,7 @@ retry:
- 	trace_credit_entropy_bits(r->name, nbits,
- 				  entropy_count >> ENTROPY_SHIFT,
- 				  r->entropy_since_push,
--				  r->entropy_total, _RET_IP_);
-+				  r->seed_entropy_bits, _RET_IP_);
+ /*
+  * The minimum number of bits of estimated entropy to use in a reseed
+- * of the main output pool.
++ * of the main output pool (for /dev/urandom and the kernel's internal
++ * use) before considering it secure.
+  */
+ static int min_reseed_bits = 128;
  
- 	if (r == &input_pool) {
- 		int entropy_bits = entropy_count >> ENTROPY_SHIFT;
-@@ -944,7 +945,7 @@ static void account_xfer(struct entropy_store *dest, int nbytes,
- 		 * pool, except if we're hardly seeded at all, we'll
- 		 * settle for enough to double what we have. */
- 		*min_bytes = min(min_reseed_bits / 8,
--				 (dest->entropy_total+7) / 8);
-+				 (2*dest->seed_entropy_bits + 7) / 8);
+ /*
++ * The number of bits of estimated entropy to use in a reseed of the
++ * main output pool in the steady state.  If this is larger than
++ * min_reseed_bits, then it serves as a hedge against situations where
++ * our entropy estimates are for whatever reason too optimistic.
++ */
++static int target_reseed_bits = 512;
++
++/*
+  * The minimum number of bits of entropy before we wake up a read on
+  * /dev/random.
+  */
+@@ -699,7 +708,7 @@ retry:
+ 		 */
+ 		r->entropy_since_push += nbits;
+ 		if (entropy_bits > random_write_wakeup_bits &&
+-		    r->entropy_since_push >= min_reseed_bits) {
++		    r->entropy_since_push >= target_reseed_bits) {
+ 			static struct entropy_store *last = &blocking_pool;
+ 			struct entropy_store *other = &blocking_pool;
+ 
+@@ -942,9 +951,9 @@ static void account_xfer(struct entropy_store *dest, int nbytes,
+ 		*min_bytes = random_read_wakeup_bits / 8;
+ 	} else {
+ 		/* ... or a full reseed's worth for the nonblocking
+-		 * pool, except if we're hardly seeded at all, we'll
+-		 * settle for enough to double what we have. */
+-		*min_bytes = min(min_reseed_bits / 8,
++		 * pool, except early on we'll settle for enough to
++		 * double what we have. */
++		*min_bytes = min(target_reseed_bits / 8,
+ 				 (2*dest->seed_entropy_bits + 7) / 8);
  	}
  
- 	/* Reserve a reseed's worth for the nonblocking pool early on
-@@ -1215,10 +1216,9 @@ void get_random_bytes(void *buf, int nbytes)
- {
- #if DEBUG_RANDOM_BOOT > 0
- 	if (unlikely(nonblocking_pool.initialized == 0))
--		printk(KERN_NOTICE "random: %pF get_random_bytes called "
--		       "with %d bits of entropy available\n",
--		       (void *) _RET_IP_,
--		       nonblocking_pool.entropy_total);
-+		pr_notice(
-+		    "random: %pF get_random_bytes called with only %d bits of seed entropy available\n",
-+		    (void *) _RET_IP_, nonblocking_pool.seed_entropy_bits);
- #endif
- 	trace_get_random_bytes(nbytes, _RET_IP_);
- 	extract_entropy(&nonblocking_pool, buf, nbytes, NULL, NULL);
-@@ -1355,9 +1355,9 @@ urandom_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
- 	int ret;
+@@ -981,7 +990,7 @@ static void push_to_pool(struct work_struct *work)
+ 	struct entropy_store *r = container_of(work, struct entropy_store,
+ 					      push_work);
+ 	BUG_ON(!r);
+-	_xfer_secondary_pool(r, min_reseed_bits/8);
++	_xfer_secondary_pool(r, target_reseed_bits/8);
+ 	trace_push_to_pool(r->name, r->entropy_count >> ENTROPY_SHIFT,
+ 			   r->pull->entropy_count >> ENTROPY_SHIFT);
+ }
+@@ -1522,8 +1531,8 @@ EXPORT_SYMBOL(generate_random_uuid);
  
- 	if (unlikely(nonblocking_pool.initialized == 0))
--		printk_once(KERN_NOTICE "random: %s urandom read "
--			    "with %d bits of entropy available\n",
--			    current->comm, nonblocking_pool.entropy_total);
-+		pr_notice_once(
-+		    "random: %s urandom read with only %d bits of seed entropy available\n",
-+		    current->comm, nonblocking_pool.seed_entropy_bits);
+ #include <linux/sysctl.h>
  
- 	ret = extract_entropy_user(&nonblocking_pool, buf, nbytes);
- 
-diff --git a/include/trace/events/random.h b/include/trace/events/random.h
-index 4edf5ceb5..d07a80146 100644
---- a/include/trace/events/random.h
-+++ b/include/trace/events/random.h
-@@ -61,17 +61,18 @@ DEFINE_EVENT(random__mix_pool_bytes, mix_pool_bytes_nolock,
- 
- TRACE_EVENT(credit_entropy_bits,
- 	TP_PROTO(const char *pool_name, int bits, int entropy_count,
--		 int entropy_since_push, int entropy_total, unsigned long IP),
-+		 int entropy_since_push, int seed_entropy_bits,
-+		 unsigned long IP),
- 
- 	TP_ARGS(pool_name, bits, entropy_count, entropy_since_push,
--		entropy_total, IP),
-+		seed_entropy_bits, IP),
- 
- 	TP_STRUCT__entry(
- 		__field( const char *,	pool_name		)
- 		__field(	  int,	bits			)
- 		__field(	  int,	entropy_count		)
- 		__field(	  int,	entropy_since_push	)
--		__field(	  int,	entropy_total		)
-+		__field(	  int,	seed_entropy_bits	)
- 		__field(unsigned long,	IP			)
- 	),
- 
-@@ -80,14 +81,14 @@ TRACE_EVENT(credit_entropy_bits,
- 		__entry->bits			= bits;
- 		__entry->entropy_count		= entropy_count;
- 		__entry->entropy_since_push	= entropy_since_push;
--		__entry->entropy_total		= entropy_total;
-+		__entry->seed_entropy_bits	= seed_entropy_bits;
- 		__entry->IP			= IP;
- 	),
- 
- 	TP_printk("%s pool: bits %d entropy_count %d entropy_since_push %d "
--		  "entropy_total %d caller %pF", __entry->pool_name,
-+		  "seed_entropy_bits %d caller %pF", __entry->pool_name,
- 		  __entry->bits, __entry->entropy_count,
--		  __entry->entropy_since_push, __entry->entropy_total,
-+		  __entry->entropy_since_push, __entry->seed_entropy_bits,
- 		  (void *)__entry->IP)
- );
- 
+-static int min_min_reseed_bits = 32;
+-static int max_min_reseed_bits = OUTPUT_POOL_WORDS * 32;
++static int hard_min_reseed_bits = 32;
++static int max_reseed_bits = OUTPUT_POOL_WORDS * 32;
+ static int min_read_thresh = 8;
+ static int max_read_thresh = OUTPUT_POOL_WORDS * 32;
+ static int min_write_thresh;
+@@ -1606,8 +1615,17 @@ struct ctl_table random_table[] = {
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec_minmax,
+-		.extra1		= &min_min_reseed_bits,
+-		.extra2		= &max_min_reseed_bits,
++		.extra1		= &hard_min_reseed_bits,
++		.extra2		= &target_reseed_bits,
++	},
++	{
++		.procname	= "target_reseed_bits",
++		.data		= &target_reseed_bits,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &min_reseed_bits,
++		.extra2		= &max_reseed_bits,
+ 	},
+ 	{
+ 		.procname	= "read_wakeup_threshold",
 -- 
 1.8.3.2
-
