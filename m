@@ -1,107 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab3LOCzf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 21:55:35 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:60501 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753575Ab3LOCze (ORCPT
+	id S1754034Ab3LOD1B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 22:27:01 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:53208 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753575Ab3LOD1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 21:55:34 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sergei Ianovich <ynvich@gmail.com>
-Subject: Re: [PATCH v2 00/16] ARM: support for ICP DAS LP-8x4x (with dts)
-Date: Sun, 15 Dec 2013 03:55:27 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Daniel Mack <zonque@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-References: <1386543229-1542-1-git-send-email-ynvich@gmail.com> <201312150153.54044.arnd@arndb.de> <1387073571.13062.102.camel@host5.omatika.ru>
-In-Reply-To: <1387073571.13062.102.camel@host5.omatika.ru>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312150355.27755.arnd@arndb.de>
-X-Provags-ID: V02:K0:AYs+m9imSY1H9eYXnzQ4i3Jb9RNpWBocsDRddScLlSd
- ZZIT6P3bttJkcWTV2D1cTKXYjM29fIy9KcGrDJoD+F+c9L2vgr
- PvmgMcZ2Jnx9d2vUY25Fbuvdd+qMl7HjNo5jLbhOHHA06nHWvF
- 2mwoO3GyjJuJwdE7+lSqa4iCMfL4JbXYR/BpPLd6TUTKIIh3wp
- cPlEu7uHQf8dHcDHRVr9SY3xgn/SGTme6TFT7vcfjgQl//tPRl
- RfP04TlTnU0Hi2/Kaz9UG4UFNuUoc3LDeOULEGQ7o8T2d7JhDj
- 4B7/pnw9XjSj9z8w4XTNajlEeTpbejuMMxyupt2kF/Zl8KbOEj
- MP5EFMQl9SKU2UABtPyo=
+	Sat, 14 Dec 2013 22:27:00 -0500
+Date: Sat, 14 Dec 2013 22:26:58 -0500 (EST)
+Message-Id: <20131214.222658.766340465002992773.davem@davemloft.net>
+To: rashika.kheria@gmail.com
+Cc: linux-kernel@vger.kernel.org, sebastian@breakpoint.cc,
+        sachin.kamat@linaro.org, netdev@vger.kernel.org, josh@joshtriplett.org
+Subject: Re: [PATCH v2 5/9] drivers: net: Put prototype declaration for
+ function sbni_probe() in sbni.c
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <dd984c99d43214c39b23f95e9a58f3a675147e69.1386911124.git.rashika.kheria@gmail.com>
+References: <a610f6ee6bb992b91e43bdc851f3db62fc3decd5.1386911123.git.rashika.kheria@gmail.com>
+	<dd984c99d43214c39b23f95e9a58f3a675147e69.1386911124.git.rashika.kheria@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sat, 14 Dec 2013 19:27:00 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBF3R6Hn018412
 
-On Sunday 15 December 2013, Sergei Ianovich wrote:
-> On Sun, 2013-12-15 at 01:53 +0100, Arnd Bergmann wrote:
-> > On Saturday 14 December 2013, Sergei Ianovich wrote:
-> > Unfortunately I don't have a good way to judge the tradeoffs without
-> > understanding more about the design of the hardware. Did I understand
-> > you right that you expect future versions of the FPGA bitstream
-> > to implement additional features or have a different set of endpoint
-> > devices?
-> 
-> I am trying to reduce time you spend on review as much as possible.
-> Please feel free to say if I do something to the opposite.
-> 
-> I could write a lengthy description of the machine as I understand it,
-> if need be. I am not related to its vendor in any way, so it may or may
-> not be correct.
-> 
-> I've made to work 100% of features my client needs in the machine. It is
-> ~80% of the devices on the frame and ~10% of possible slot modules.
-> There are chances someone else will work on the rest, eg. the device
-> vendor.
-> 
-> This page contains a photo, if there is any interest to see how it looks
-> like:
-> http://www.icpdas.com/root/product/solutions/pac/linpac/lp-8x4x_hardware.html
+From: Rashika Kheria <rashika.kheria@gmail.com>
+Date: Sat, 14 Dec 2013 17:55:42 +0530
 
-I see, thanks for the clarification.
-
-> > If so, I would argue that anything that you consider an optional
-> > sub-device should have its own device node in the device tree.
-> > 
-> > Also, do you have to model hardware that is connected to the FPGA
-> > rather than being part of it?
+> This patch declares the prototype for the function sbni_probe() in file sbni.c.
 > 
-> Anything that can be plugged into the device is discoverable, so doesn't
-> require to be in the device tree.
-
-Ah, good.
-
-> > I suspect that you may have a different understanding of the term
-> > MFD than what I was suggesting: A typical MFD driver in Linux is
-> > basically a container device that has some registers on its own
-> > like a version detection or the irqchip but mainly is there to
-> > create sub-devices that each have a subset of the available
-> > registers. The sub-devices may or may not be describe in DT in this
-> > case.
+> Thus, it also removes the following warning in wan/sbni.c:
+> drivers/net/wan/sbni.c:224:12: warning: no previous prototype for ¡sbni_probe¢ [-Wmissing-prototypes]
 > 
-> I may be missing something. My general understanding seems to be as
-> follows. MFD will have probe/remove functionality of drivers for SRAM,
-> RTC, serial modules in the patch series. MFD will be to FPGA what C
-> language machine file was to machine: lots of hardcoded constants and
-> functions which implement non-standard behavior (like set_termios in
-> 8250_lp8x4x.c). This seems to be wrong to me, as device tree is
-> specifically designed to handle platform device initialization.
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> ---
 > 
-> The tree you drafted in the previous mail was 100% correct. I though
-> about doing something like that. I decided not to, since all devices
-> behind the FPGA are transparently accessed by CPU. I like the idea. I
-> haven't resent a series with FPGA bus only because you wrote in the same
-> mail that we need an MFD.
+> This revision fixes the following issues of the previous revision:
+> Incorrect fix
 > 
-> If you say so, we will have an MFD.
+>  drivers/net/wan/sbni.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/net/wan/sbni.c b/drivers/net/wan/sbni.c
+> index 388ddf6..5061ffd 100644
+> --- a/drivers/net/wan/sbni.c
+> +++ b/drivers/net/wan/sbni.c
+> @@ -221,6 +221,7 @@ static void __init sbni_devsetup(struct net_device *dev)
+>  	dev->netdev_ops = &sbni_netdev_ops;
+>  }
+>  
+> +int __init sbni_probe(int unit);
+>  int __init sbni_probe(int unit)
 
-I think I was confused by the fact that the FPGA both has multiple
-integrated devices and multiple pluggable devices. Given your explanations,
-I think the way you have structured your code is good, and an MFD would
-not help. Please just restructure the DT representation to contain the
-external-bus and/or the fpga connected to it. You probably don't need both,
-but it doesn't hurt to show them as different device-nodes either.
-Your choice.
-
-	Arnd
+This is not the correct way to fix this kind of warning, an exported
+function needs to appear in a header file so that both the definition
+and any callers of this function will see the same declaration in that
+header file.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
