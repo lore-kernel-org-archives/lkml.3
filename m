@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751982Ab3LOVId (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 16:08:33 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:17828 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750821Ab3LOVIc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 16:08:32 -0500
-Date: Sun, 15 Dec 2013 16:08:25 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Corey Minyard <cminyard@mvista.com>, linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: [PATCH RT 2/5] a few open coded completions
-Message-ID: <20131215160825.196fcc1e@gandalf.local.home>
-In-Reply-To: <20131215152839.GJ31090@linutronix.de>
-References: <20131211003732.351606520@goodmis.org>
-	<20131211003801.836995968@goodmis.org>
-	<52A875D9.6090609@mvista.com>
-	<20131211103420.291aa61c@gandalf.local.home>
-	<20131215152839.GJ31090@linutronix.de>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	id S1752044Ab3LOVOd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 16:14:33 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:47042 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751914Ab3LOVOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 16:14:32 -0500
+Date: Sun, 15 Dec 2013 22:14:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 1/3] SubmittingPatches: Add style recommendation to use
+ imperative descriptions
+Message-ID: <20131215211429.GA32667@pd.tnic>
+References: <20131215205925.GA11106@leaf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131215205925.GA11106@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 Dec 2013 16:28:39 +0100
-Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
+On Sun, Dec 15, 2013 at 12:59:26PM -0800, Josh Triplett wrote:
+> Most commit messages use this style, and the recommendation frequently
+> comes up in discussions (especially in response to patches that don't
+> use it), but that recommendation doesn't actually appear anywhere in
+> Documentation.  Add this style guideline to SubmittingPatches, using the
+> description from git's SubmittingPatches.
+> 
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 
+Acked-by: Borislav Petkov <bp@suse.de>
 
-> Thank you for the fixups. I just did the same thing in the v3.12 tree.
-> The chunk you nuked is now in Dave's net tree as a0a9663dd214 ("net: make
-> neigh_priv_len in struct net_device 16bit instead of 8bit"). As it
-> describes it is buggy on -RT but not mainline therefore it has no stable
-> tag for mainline and I would add one for RT.
+We should probably also document the wished-for structure of a commit
+message:
 
-Yeah, I realized that too. I'll be adding it to the stable release.
-That's why I didn't do the releases on Friday. I'll do them on Monday
-after one final test with re-adding that change.
+The current situation is A. The shortcoming is B. Change/fix it by doing
+C.
 
-Thanks!
+This helps very much in explaining to the unenlightened onlooker what
+a patch is trying to fix without having to ask the author a bunch of
+questions first.
 
--- Steve
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
