@@ -1,45 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab3LOWJP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 17:09:15 -0500
-Received: from science.horizon.com ([71.41.210.146]:27935 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752011Ab3LOWJO (ORCPT
+	id S1752148Ab3LOWMZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 17:12:25 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:51102 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011Ab3LOWMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 17:09:14 -0500
-Date: 15 Dec 2013 17:09:10 -0500
-Message-ID: <20131215220910.24012.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, price@MIT.EDU, tytso@MIT.EDU
-Subject: Re: Replace /dev/random input mix polynomial with Brent's xorgen?
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <20131215200312.GO27191@athena.dialup.mit.edu>
+	Sun, 15 Dec 2013 17:12:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131215170417.GB28799@kroah.com>
+References: <20131215063123.GB26396@localhost> <20131215170417.GB28799@kroah.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sun, 15 Dec 2013 15:12:03 -0700
+Message-ID: <CAErSpo4Usujp5zJT83-88T71J8tObJgZ03i-wORqLputxQbdXg@mail.gmail.com>
+Subject: Re: BUG: key ffff8800192a6ad0 not in .data!
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> My draft patch series uses Skein/Threefish.  The authors conveniently
-> specified a way to use it as a PRNG, and it's very fast without
-> special hardware support (consequently, for all kinds of hardware.)
-> On my laptop, reading from /dev/urandom becomes about 25 times faster
-> for large reads, and about 40% faster for small reads where the
-> syscall overhead is more important.
+On Sun, Dec 15, 2013 at 10:04 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Sun, Dec 15, 2013 at 02:31:23PM +0800, Fengguang Wu wrote:
+>> Greetings,
+>>
+>> I got the below dmesg and the first bad commit is
+>
+> I thought this was already fixed in Bjorn's tree, but perhaps he hasn't
+> merged in the one-liner for it...
 
-Well, /dev/urandom is documented as being *deliberately* slow.  It's meant
-only to produce 128 to 256 bits of seed material for CPRNG.  I don't
-know if Ted considers speeding it up to be goal or an antigoal. :-)
+Yes, this is fixed.  I actually dropped that MSI change temporarily
+until we can fold in the memory leak fixes, so it is not currently in
+linux-next.
 
-One thing i've thought about is adding a /dev/frandom, which is seeded
-once at open time and then produces a "reasonably strong" large block of
-cryptographic output, very quickly.  (Key size between 128 and 192 bits.)
-
-I understand why Ted didn't do this in the first place, but the number
-of people I see doing something like "cat /dev/urandom > /dev/sdx"
-to test incompressible data is remarkable.
-
-If the additional code is small, perhaps it's worth doing.
-
-
-BTW, if it helps on 32-bit platforms I can get you rotate constats for
-a 32-bit version of threefish.  I haven't generated a key scheduling
-constant, though.
+Bjorn
