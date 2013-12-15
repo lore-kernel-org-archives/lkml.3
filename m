@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab3LOCBK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 21:01:10 -0500
-Received: from dmz-mailsec-scanner-2.mit.edu ([18.9.25.13]:63280 "EHLO
-	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753596Ab3LOCBG (ORCPT
+	id S1754176Ab3LOCBP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 21:01:15 -0500
+Received: from dmz-mailsec-scanner-3.mit.edu ([18.9.25.14]:53606 "EHLO
+	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753596Ab3LOCBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 21:01:06 -0500
-X-AuditID: 1209190d-b7ef66d000000c40-69-52ad0d6100b7
-Date: Sat, 14 Dec 2013 21:01:03 -0500
+	Sat, 14 Dec 2013 21:01:11 -0500
+X-AuditID: 1209190e-b7efb6d000000bb9-24-52ad0d661f0e
+Date: Sat, 14 Dec 2013 21:01:08 -0500
 From: Greg Price <price@MIT.EDU>
 To: "Theodore Ts'o" <tytso@MIT.EDU>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 03/14] random: reserve for /dev/random only once /dev/urandom
- seeded
-Message-ID: <20131215020103.GC27191@athena.dialup.mit.edu>
+Subject: [PATCH 04/14] random: accept small seeds early on
+Message-ID: <20131215020108.GD27191@athena.dialup.mit.edu>
 References: <cover.1387067223.git.price@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <cover.1387067223.git.price@mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsUixCmqrJvIuzbIoOumqsXlXXPYHBg9Pm+S
-	C2CM4rJJSc3JLEst0rdL4Mron/CUtWAPf8WJ97cZGxhv83QxcnJICJhI3Hh1lhnCFpO4cG89
-	WxcjF4eQwGwmicMPZrFCOBsZJZ6v38sKUiUk8ItRYvGJOBCbRUBVYsHC52BxNgEFiR/z14FN
-	EhFQllg1cxMTiM0MFP91bxNYjbBAmETzyVksIDavgJXEq0frmSFmGki0z2xggogLSpyc+YQF
-	oldL4sa/l0BxDiBbWmL5Pw6QMKeAocS7hVcZQWxRARWJKSe3sU1gFJyFpHsWku5ZCN0LGJlX
-	Mcqm5Fbp5iZm5hSnJusWJyfm5aUW6Rrp5WaW6KWmlG5iBIepJO8OxncHlQ4xCnAwKvHwSrCt
-	DRJiTSwrrsw9xCjJwaQkyivFCRTiS8pPqcxILM6ILyrNSS0+xCjBwawkwrvj/JogId6UxMqq
-	1KJ8mJQ0B4uSOO9NDvsgIYH0xJLU7NTUgtQimKwMB4eSBK82D9BQwaLU9NSKtMycEoQ0Ewcn
-	yHAeoOFiIDW8xQWJucWZ6RD5U4yKUuK8/iAJAZBERmkeXC8sjbxiFAd6RZhXAqSKB5iC4Lpf
-	AQ1mAhrsvWcVyOCSRISUVAPjdI4Vqiw/rgt3pJ7n7rG+nBQ1T1vrvqzGnBlLokwm55u5m28/
-	Wrt2sn7zFo/2Q/9Xa29t4LiV7nI87I1D3ePFW9ZWLdudpdB1yGetn9aPL9KZpzR65pc8mJ/U
-	+zwmp6Os6MBv9QnmVyxCes9Irptt8979t/azX8mip5We+u82zMxue/u5ZWmxEktxRqKhFnNR
-	cSIAPXlFA/4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsUixCmqrZvGuzbIYOIleYvLu+awOTB6fN4k
+	F8AYxWWTkpqTWZZapG+XwJVx9m1twQX+irPPpjI1MJ7k6WLk5JAQMJG4tGw1M4QtJnHh3nq2
+	LkYuDiGB2UwSG07tYgdJCAlsZJSYek8SIvGLUaLty2NWkASLgKrE1s0zwIrYBBQkfsxfBzZJ
+	REBZYtXMTUwgNjNQ/Ne9TWD1wgJWEjcurQer4QWyOw+/YYVYYCDRPrOBCSIuKHFy5hMWiF4t
+	iRv/XgLFOYBsaYnl/zhAwpwChhLvFl5lBLFFBVQkppzcxjaBUXAWku5ZSLpnIXQvYGRexSib
+	klulm5uYmVOcmqxbnJyYl5dapGusl5tZopeaUrqJERykknw7GL8eVDrEKMDBqMTDe4B5bZAQ
+	a2JZcWXuIUZJDiYlUV4pTqAQX1J+SmVGYnFGfFFpTmrxIUYJDmYlEd4d59cECfGmJFZWpRbl
+	w6SkOViUxHlvctgHCQmkJ5akZqemFqQWwWRlODiUJHgzeYCGChalpqdWpGXmlCCkmTg4QYbz
+	AA0XA6nhLS5IzC3OTIfIn2LU5ehZ9+EboxBLXn5eqpQ4rz9IkQBIUUZpHtwcWHJ5xSgO9JYw
+	byBIFQ8wMcFNegW0hAloifeeVSBLShIRUlINjPJNpQxO36brCTLsfLE0cGLcW9Oq77FJLbUx
+	yRfivqpeC9KLkM8S8kvdsLmo+krq/haVixn88xQeZsQof5obfm/hYvPnKt+sUoN6mpZylZX6
+	KV7Tljt1bd5Skw0lDdarrrb9bFxgrvTM4G7DmfTgGMaF17UXTMs3LZBYHvzE/fKi6wpcpvXH
+	lViKMxINtZiLihMB4uSFoQkDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Early in boot, we really want to make sure the nonblocking pool (for
-/dev/urandom and the kernel's own use) gets an adequate amount of
-entropy ASAP.  Anyone reading /dev/random is prepared to wait
-potentially a long time anyway, so delaying them a little bit more at
-boot until /dev/urandom is seeded is no big deal.  This logic still
-ensures that /dev/random readers won't starve indefinitely.
+Early in boot, we want to get /dev/urandom (and the kernel's
+internal randomness source) adequately seeded ASAP.  If we're
+desperately short of entropy and are asked to produce output,
+we're better off getting, say, 16 bits now and 32 bits next time
+rather than holding out for a whole 64-bit reseed while producing
+output from virtually no entropy.
 
 At present most input goes directly to the nonblocking pool early on
 anyway, but this helps put us in a position to change that.
 
 Signed-off-by: Greg Price <price@mit.edu>
 ---
- drivers/char/random.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/char/random.c | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 92d9f6862..bf7fedadd 100644
+index bf7fedadd..9f24f6468 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -923,19 +923,21 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- static void _xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- {
+@@ -925,12 +925,21 @@ static void _xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
  	__u32 tmp[OUTPUT_POOL_WORDS];
--	int bytes, min_bytes;
--
--	/* For /dev/random's pool, always leave two wakeups' worth */
--	int rsvd_bytes = r->limit ? 0 : random_read_wakeup_bits / 4;
-+	int bytes, min_bytes, reserved_bytes;
+ 	int bytes, min_bytes, reserved_bytes;
  
- 	/* pull at least as much as a wakeup */
- 	min_bytes = random_read_wakeup_bits / 8;
- 	/* but never more than the buffer size */
+-	/* pull at least as much as a wakeup */
+-	min_bytes = random_read_wakeup_bits / 8;
+-	/* but never more than the buffer size */
++	/* Try to pull a full wakeup's worth if we might have just woken up
++	 * for it, and a full reseed's worth (which is controlled by the same
++	 * parameter) for the nonblocking pool... */
++	if (r == &blocking_pool || r->initialized) {
++		min_bytes = random_read_wakeup_bits / 8;
++	} else {
++		/* ... except if we're hardly seeded at all, we'll settle for
++		 * enough to double what we have ... */
++		min_bytes = min(random_read_wakeup_bits / 8,
++				(r->entropy_total+7) / 8);
++	}
++	/* ... and in any event no more than our (giant) buffer holds. */
  	bytes = min(sizeof(tmp), max_t(size_t, min_bytes, nbytes));
  
-+	/* reserve some for /dev/random's pool, unless we really need it */
-+	reserved_bytes = 0;
-+	if (!r->limit && r->initialized)
-+		reserved_bytes = 2 * (random_read_wakeup_bits / 8);
-+
- 	trace_xfer_secondary_pool(r->name, bytes * 8, nbytes * 8,
- 				  ENTROPY_BITS(r), ENTROPY_BITS(r->pull));
--	bytes = extract_entropy(r->pull, tmp, bytes, min_bytes, rsvd_bytes);
-+	bytes = extract_entropy(r->pull, tmp, bytes, min_bytes, reserved_bytes);
- 	mix_pool_bytes(r, tmp, bytes, NULL);
- 	credit_entropy_bits(r, bytes*8);
- }
+-	/* reserve some for /dev/random's pool, unless we really need it */
++	/* Reserve some for /dev/random's pool, unless we really need it. */
+ 	reserved_bytes = 0;
+ 	if (!r->limit && r->initialized)
+ 		reserved_bytes = 2 * (random_read_wakeup_bits / 8);
 -- 
 1.8.3.2
 
