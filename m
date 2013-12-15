@@ -1,70 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391Ab3LOAkV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 19:40:21 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:43065 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754178Ab3LOAkU (ORCPT
+	id S1754431Ab3LOAyD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 19:54:03 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:56351 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754298Ab3LOAyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 19:40:20 -0500
-X-Sasl-enc: r2T4h+9R4UY5lf7+oma4GBW15eTyp9GlwCcUG4Ae0Z4F 1387068018
-Date: Sat, 14 Dec 2013 22:40:16 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86, microcode: Add option to allow downgrading of
- microcode
-Message-ID: <20131215004016.GB3049@khazad-dum.debian.net>
-References: <1386363843-32530-1-git-send-email-andi@firstfloor.org>
- <1386363843-32530-2-git-send-email-andi@firstfloor.org>
- <20131213210015.GA26925@khazad-dum.debian.net>
+	Sat, 14 Dec 2013 19:54:01 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sergei Ianovich <ynvich@gmail.com>
+Subject: Re: [PATCH v2 00/16] ARM: support for ICP DAS LP-8x4x (with dts)
+Date: Sun, 15 Dec 2013 01:53:53 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Daniel Mack <zonque@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+References: <1386543229-1542-1-git-send-email-ynvich@gmail.com> <201312142203.45740.arnd@arndb.de> <1387058146.13062.24.camel@host5.omatika.ru>
+In-Reply-To: <1387058146.13062.24.camel@host5.omatika.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131213210015.GA26925@khazad-dum.debian.net>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312150153.54044.arnd@arndb.de>
+X-Provags-ID: V02:K0:I+8dTQvueZo9NxV/MacCDqYftRjcQLf0cpgKT+XEsfQ
+ x6RdxfjCi5CxVjXUvQnfReBvtQMqp560xj1xCAy3EWh8eMTjt1
+ prqhCfiUHv03cIqFemKHalHgZQeq0hDmJshUPWS2AxOlVHFIpL
+ 696MAZDyY5VOmfGHYbwMBPgRnAcnX6mGuG1nEptpAiI86WoRfz
+ CPoj7ymVBxO11fpSzcwaHoGsaQTNuld4o6NyAI56JxPBDNCvnC
+ dQdHccqKHmOE5y9qFdO3G0NMAqEPY3FU63mJOnS2Spe39HoX7r
+ UlBoRKgrz5aejgDEKxn+SIWt0QTs17f9KnwERGNg45lQrGaJHt
+ c4EzNEmp/dRJWtImLB3A=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Dec 2013, Henrique de Moraes Holschuh wrote:
-> 2. This change has unintended side-effects that ought to be at least
-> documented:
+On Saturday 14 December 2013, Sergei Ianovich wrote:
+> On Sat, 2013-12-14 at 22:03 +0100, Arnd Bergmann wrote:
+> > On Friday 13 December 2013, Sergei Ianovich wrote:
+> > > I've also decided not to create a single mfd device for
+> > > machine-specific devices. Instead each type is supported by a separate
+> > > driver in respective subsystem. It was tempting to hardcode all the
+> > > constants in one source file, but that requires ugly initialization.
+> > > The taken way produces much cleaner code.
+> > 
+> > I think you should at least change the DT representation for the FPGA
+> > to show one device as the actual FPGA and attach children to that,
+> > multiple indirection levels if necessary.
+> > 
+> > I suspect that the fpga is on some external-bus port with a specific
+> > chip-select, so I would model this as
+> > 
+> >         extbus {
+> >                 compatible = "simple-bus";
+> >                 #address-cells = <1>;
+> >                 #size-cells = <1>;
+> >                 /* bus addresses 0-0xfffff mapped to 0x17000000 */
+> >                 ranges = <0 0x17000000 0x100000>;
+> >                 interrupt-parent = <&fpga-irq>;
+> > 
+> >                 fpga-irq: irq@6 {
+> >                         regs = <6 16>; /* translated addresses
+> >                         ...
+> >                 };
+> > 
+> >                 fgpa-bus {
+> >                         #address-cells = <1>;
+> >                         #size-cells = <1>;
+> >                         ranges;
+> > 
+> >                         serial@9050 {
+> >                                 ...
+> >                         };
+> >                 };
+> >         };
+> > 
+> > I also think you don't need to make the devices quite as fine-grained
+> > here but instead group things together more. I would probably indeed
+> > put everything that is not on one of the slots into a common device,
+> > including the irqchip.
 > 
-> In "allow downgrade" mode, should you send a microcode pack with several
-> microcodes to the kernel, and more than one of them might apply to the
-> running processor (when the pf_flags of two or more of the microcodes are
-> not disjoint), either the first or the last (I didn't check) will be the
-> one chosen.
+> There are basically 2 options: one-for-all mfd device and one-for-one
+> device drivers.
 > 
-> I've seen in the wild microcodes where both rev X and Y (when Y > X) could
-> be applied to a specific processor, but rev X was intended to more
-> processors (more bits set in pf_mask) than rev. Y.  I don't think they were
-> in the same Intel microcode update datafile, but it can happen.  In normal
-> upgrade-only mode this works correctly, while in your proposed downgrade
-> mode, it won't.
+> MFD
+> pros:
+> * easy to add into the tree (one file)
+> * easy config (one option)
+> 
+> Separate devices
+> * easy to support devices as respective subsystems evolve
+> * easy to add new feature without breaking existing ones. Eg. it may
+> make sense to provide industrial IO interface on analog IO devices
+> * possible to have fine-grained configuration (eg. SRAM in kernel,
+> serial and slot as modules)
+> * proper device tree serves as a datasheet for the machine, so anyone
+> who needs to work on it will have a decent view of the internals
+> 
+> I believe long-term benefits of separate devices outweigh immediate
+> effects of an MFD. However, I certainly don't see the big picture and
+> will accept your decision. Please make one.
 
-Well, tracked it down to:
+Unfortunately I don't have a good way to judge the tradeoffs without
+understanding more about the design of the hardware. Did I understand
+you right that you expect future versions of the FPGA bitstream
+to implement additional features or have a different set of endpoint
+devices?
 
-/lib/firmware/intel-ucode/0f-04-0a
-  001: sig 0x00000f4a, pf mask 0x5c, 2005-12-14, rev 0x0004, size 2048
-  002: sig 0x00000f4a, pf mask 0x5d, 2005-06-10, rev 0x0002, size 2048
+If so, I would argue that anything that you consider an optional
+sub-device should have its own device node in the device tree.
 
-/lib/firmware/intel-ucode/0f-04-08
-  001: sig 0x00000f48, pf mask 0x5f, 2005-06-30, rev 0x0007, size 3072
-  002: sig 0x00000f48, pf mask 0x01, 2006-05-08, rev 0x000c, size 3072
-  003: sig 0x00000f48, pf mask 0x02, 2008-01-15, rev 0x000e, size 3072
+Also, do you have to model hardware that is connected to the FPGA
+rather than being part of it?
 
-And these are microcodes still being distributed in the latest Intel
-microcode bundle (2013-09-06).  They're for old processors, but still...  if
-it happened once and it is still being distributed like that, it can happen
-again.
+I suspect that you may have a different understanding of the term
+MFD than what I was suggesting: A typical MFD driver in Linux is
+basically a container device that has some registers on its own
+like a version detection or the irqchip but mainly is there to
+create sub-devices that each have a subset of the available
+registers. The sub-devices may or may not be describe in DT in this
+case.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+	Arnd
