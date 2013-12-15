@@ -1,102 +1,541 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab3LOEK3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 23:10:29 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:39418 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753882Ab3LOEK2 (ORCPT
+	id S1754138Ab3LOEPA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 23:15:00 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:53415 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753882Ab3LOEO4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 23:10:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAMxnaaVEzSuEXRyX5KKKvUJFKTGikP_hfQddT6Ke7Dx6boOuKQ@mail.gmail.com>
-References: <CAMxnaaWgUPRb3L2aKpUu62F73GR2iXOfd6LUnTkU0O=Gq-E_sQ@mail.gmail.com>
-	<CAE9FiQUtqtBLx3_pdhs=CjgqViGrDL9xdCjLKgs66jA-apHdQA@mail.gmail.com>
-	<CAMxnaaVEzSuEXRyX5KKKvUJFKTGikP_hfQddT6Ke7Dx6boOuKQ@mail.gmail.com>
-Date: Sat, 14 Dec 2013 20:10:27 -0800
-X-Google-Sender-Auth: 7P55c-yl8yNMSzU_goMh90T8PMQ
-Message-ID: <CAE9FiQU-77q0CaCEkbH1sbMbnRWKpp3iNRNt-+qgQteOQ_mVhg@mail.gmail.com>
-Subject: Re: How to reserve pci bus numbers for hotplug?
-From: Yinghai Lu <yinghai@kernel.org>
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=485b397dd20b1126b404ed8ae018
+	Sat, 14 Dec 2013 23:14:56 -0500
+Date: Sat, 14 Dec 2013 23:14:54 -0500 (EST)
+Message-Id: <20131214.231454.1031392747120140219.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sat, 14 Dec 2013 20:14:56 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---485b397dd20b1126b404ed8ae018
-Content-Type: text/plain; charset=ISO-8859-1
 
-On Thu, Dec 12, 2013 at 11:56 AM, Andreas Noever
-<andreas.noever@gmail.com> wrote:
-> On Thu, Dec 12, 2013 at 1:21 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Wed, Dec 11, 2013 at 3:37 PM, Andreas Noever
->> <andreas.noever@gmail.com> wrote:
->>
->>> If I could get Linux to assign enough resources (bus numbers for now)
->>> then I could drop the acpi_osi parameter and make thunderbolt work
->>> after suspend... So, is there an easy way to fix this? (Quirks,
->>> reconfiguring bus number assignments from a platform driver, ...?)
->>
->> please check if busn_alloc at
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
->> for-pci-busn-alloc-3.14
->>
->> could help.
->
-> It seems to help. The initial assignment looks good:
->            +-01.1-[05-9b]----00.0-[06-27]--+-00.0-[07]----00.0  Intel
-> Corporation DSL3510 Thunderbolt Port [Cactus Ridge]
->            |                               +-03.0-[08-0f]--
->            |                               +-04.0-[10-17]--
->            |                               +-05.0-[18-1f]--
->            |                               \-06.0-[20-27]--
-> After hotplug it looks like this:
->            +-01.1-[05-9b]----00.0-[06-29]--+-00.0-[07]----00.0  Intel
-> Corporation DSL3510 Thunderbolt Port [Cactus Ridge]
->            |
-> +-03.0-[08-11]----00.0-[09-11]----00.0-[0a-11]----00.0  Broadcom
-> Corporation NetXtreme BCM57762 Gigabit Ethernet PCIe
->            |                               +-04.0-[10-17]--
->            |                               +-05.0-[18-1f]--
->            |                               \-06.0-[20-27]--
-> (Note that the bridge numbers are not disjoint)
+1) Revert CHECKSUM_COMPLETE optimization in pskb_trim_rcsum(), I can't figure
+   out why it breaks things.
 
-it should not extend to [08-11] or [06-29]
+2) Fix comparison in netfilter ipset's hash_netnet4_data_equal(), it was
+   basically doing "x == x", from Dave Jones.
 
-Please check attached patch that should address bus number wrong extending.
---- missed checking before going up one level ...wrong assumption ...
+3) Freescale FEC driver was DMA mapping the wrong number of bytes, from	
+   Sebastian Siewior.
 
-Thanks
+4) Blackhole and prohibit routes in ipv6 were not doing the right thing
+   because their ->input and ->output methods were not being assigned
+   correctly.  Now they behave properly like their ipv4 counterparts.
+   From Kamala R.
 
-Yinghai
+5) Several drivers advertise the NETIF_F_FRAGLIST capability, but really
+   do not support this feature and will send garbage packets if fed
+   fraglist SKBs.  From Eric Dumazet.
 
---485b397dd20b1126b404ed8ae018
-Content-Type: text/x-patch; charset=US-ASCII; name="fix_probe_resource_assumption.patch"
-Content-Disposition: attachment; 
-	filename="fix_probe_resource_assumption.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hp7rxszc1
+6) Fix long standing user triggerable BUG_ON over loopback in RDS
+   protocol stack, from Venkat Venkatsubra.
 
-LS0tCiBrZXJuZWwvcmVzb3VyY2UuYyB8ICAgMTAgKysrKysrKystLQogMSBmaWxlIGNoYW5nZWQs
-IDggaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYva2VybmVs
-L3Jlc291cmNlLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcva2VybmVsL3Jlc291cmNl
-LmMKKysrIGxpbnV4LTIuNi9rZXJuZWwvcmVzb3VyY2UuYwpAQCAtMTEzMCw3ICsxMTMwLDkgQEAg
-aW50IHByb2JlX3Jlc291cmNlKHN0cnVjdCByZXNvdXJjZSAqYl9yZQogCS8qIFByb2JlIGV4dGVu
-ZGVkIHJhbmdlIGFib3ZlIHRvcCAqLwogCW1lbXNldChidXNuX3JlcywgMCwgc2l6ZW9mKHN0cnVj
-dCByZXNvdXJjZSkpOwogCXBhcmVudF9yZXMgPSBiX3JlczsKLQl3aGlsZSAocGFyZW50X3JlcyAm
-JiAhKHBhcmVudF9yZXMtPmZsYWdzICYgc3RvcF9mbGFncykpIHsKKwl3aGlsZSAoIShwYXJlbnRf
-cmVzLT5mbGFncyAmIHN0b3BfZmxhZ3MpKSB7CisJCXN0cnVjdCByZXNvdXJjZSAqdXBfcGFyZW50
-X3JlczsKKwogCQlyZXQgPSBfX2FkanVzdF9yZXNvdXJjZShwYXJlbnRfcmVzLCBwYXJlbnRfcmVz
-LT5zdGFydCwKIAkJCXJlc291cmNlX3NpemUocGFyZW50X3JlcykgKyAobmVlZGVkX3NpemUgLSBu
-X3NpemUpKTsKIAkJaWYgKCFyZXQpIHsKQEAgLTExNTEsNyArMTE1MywxMSBAQCBpbnQgcHJvYmVf
-cmVzb3VyY2Uoc3RydWN0IHJlc291cmNlICpiX3JlCiAJCQkvKiByZXQgbXVzdCBiZSAwIGhlcmUq
-LwogCQkJZ290byBvdXQ7CiAJCX0KLQkJcGFyZW50X3JlcyA9IHBhcmVudF9yZXMtPnBhcmVudDsK
-KwkJLyogYmVmb3JlIGdvIHVwLCBuZWVkIHRvIG1ha2Ugc3VyZSBhdCB0aGUgc2FtZSBlbmQgKi8K
-KwkJdXBfcGFyZW50X3JlcyA9IHBhcmVudF9yZXMtPnBhcmVudDsKKwkJaWYgKCF1cF9wYXJlbnRf
-cmVzIHx8IHVwX3BhcmVudF9yZXMtPmVuZCAhPSBwYXJlbnRfcmVzLT5lbmQpCisJCQlnb3RvIG91
-dDsKKwkJcGFyZW50X3JlcyA9IHVwX3BhcmVudF9yZXM7CiAJfQogCiBvdXQ6Cg==
---485b397dd20b1126b404ed8ae018--
+7) Several not so common code paths can potentially try to invoke packet
+   scheduler actions that might be NULL without checking.  Shore things
+   up by either 1) defining a method as mandatory and erroring on
+   registration if that method is NULL 2) defininig a method as optional
+   and the registration function hooks up a default implementation when
+   NULL is seen.  From Jamal Hadi Salim.
+
+8) Fix fragment detection in xen-natback driver, from Paul Durrant.
+
+9) Kill dangling enter_memory_pressure method in cg_proto ops, from
+   Eric W. Biederman.
+
+10) SKBs that traverse namespaces should have their local_df cleared,
+    from Hannes Frederic Sowa.
+
+11) IOCB file position is not being updated by macvtap_aio_read() and
+    tun_chr_aio_read().  From Zhi Yong Wu.
+
+12) Don't free virtio_net netdev before releasing all of the NAPI
+    instances.  From Andrey Vagin.
+
+13) Procfs entry leak in xt_hashlimit, from Sergey Popovich.
+
+14) IPv6 routes that are no cached routes should not count against the
+    garbage collection limits.  We had this almost right, but were
+    missing handling addrconf generated routes properly.  From Hannes
+    Frederic Sowa.
+
+15) fib{4,6}_rule_suppress() have to consider potentially seeing NULL
+    route info when they are called, from Stefan Tomanek.
+
+16) TUN and MACVTAP have had truncated packet signalling for some time,
+    fix from Jason Wang.
+
+17) Fix use after frrr in __udp4_lib_rcv(), from Eric Dumazet.
+
+18) xen-netback does not interpret the NAPI budget properly for TX work,
+    fix from Paul Durrant.
+
+Please pull, thanks a lot!
+
+The following changes since commit a45299e72737c528975546a0680cace5d7364d27:
+
+  Merge branch 'irq-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2013-12-02 10:15:39 -0800)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to df29df92adda751ac04ca5149d30014b5199db81:
+
+  igb: Fix for issue where values could be too high for udelay function. (2013-12-14 22:59:42 -0500)
+
+----------------------------------------------------------------
+Alexander Bondar (1):
+      iwlwifi: pcie: stop sending commands to dead firmware
+
+Alexandre Rames (1):
+      sfc: Stop/re-start PTP when stopping/starting the datapath.
+
+Andrew Rybchenko (1):
+      sfc: RX buffer allocation takes prefix size into account in IP header alignment
+
+Andrey Vagin (2):
+      virtio-net: determine type of bufs correctly
+      virtio: delete napi structures from netdev before releasing memory
+
+Arend van Spriel (1):
+      brcmfmac: fix uninitialized warning
+
+Ben Hutchings (3):
+      sfc: Add length checks to efx_xmit_with_hwtstamp() and efx_ptp_is_ptp_tx()
+      sfc: Rate-limit log message for PTP packets without a matching timestamp event
+      sfc: Maintain current frequency adjustment when applying a time offset
+
+Bob Copeland (1):
+      Revert "mac80211: allow disable power save in mesh"
+
+Borislav Petkov (1):
+      brcmsmac: Fix build dep on LEDS_CLASS
+
+Carolyn Wyborny (1):
+      igb: Fix for issue where values could be too high for udelay function.
+
+Changli Gao (1):
+      net: drop_monitor: fix the value of maxattr
+
+Chun-Yeow Yeoh (1):
+      mac80211: fix the mesh channel switch support
+
+Daniel Borkmann (1):
+      packet: fix send path when running with proto == 0
+
+Dave Jones (1):
+      netfilter: ipset: fix incorret comparison in hash_netnet4_data_equal()
+
+David S. Miller (11):
+      Revert "net: Handle CHECKSUM_COMPLETE more adequately in pskb_trim_rcsum()."
+      Merge branch 'cxgb4'
+      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
+      Merge branch 'net_sched_actions'
+      Merge branch 'master' of git://git.kernel.org/.../pablo/nf
+      Merge branch 'sfc-3.13' of git://git.kernel.org/.../bwh/sfc
+      net: Revert macvtap/tun truncation signalling changes.
+      Merge branch 'tipc'
+      Merge branch 'sctp'
+      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
+      Revert "8390 : Replace ei_debug with msg_enable/NETIF_MSG_* feature"
+
+Duan Jiong (1):
+      ipv6: judge the accept_ra_defrtr before calling rt6_route_rcv
+
+Eliad Peller (1):
+      mac80211: fix connection polling
+
+Emmanuel Grumbach (5):
+      iwlwifi: pcie: fix interrupt coalescing for 7260 / 3160
+      iwlwifi: mvm: BT Coex - don't enable MULTI_PRIO_LUT
+      iwlwifi: mvm: BT Coex fix another NULL pointer dereference
+      iwlwifi: mvm: don't WARN about unsuccessful time event
+      iwlwifi: bump required firmware API version for 3160/7260
+
+Eric Dumazet (4):
+      net: do not pretend FRAGLIST support
+      udp: ipv4: fix an use after free in __udp4_lib_rcv()
+      udp: ipv4: fix potential use after free in udp_v4_early_demux()
+      udp: ipv4: must add synchronization in udp_sk_rx_dst_set()
+
+Eric W. Biederman (1):
+      tcp_memcontrol: Cleanup/fix cg_proto->memory_pressure handling.
+
+Ezequiel Garcia (1):
+      net: mvneta: Fix incorrect DMA unmapping size
+
+Fan Du (1):
+      vxlan: release rt when found circular route
+
+Felix Fietkau (3):
+      mac80211: fix crash when using AP VLAN interfaces
+      cfg80211: ignore supported rates for nonexistant bands on scan
+      ath9k: fix duration calculation for non-aggregated packets
+
+Florent Fourcot (1):
+      ipv6: do not erase dst address with flow label destination
+
+François-Xavier Le Bail (1):
+      ipv6: fix third arg of anycast_dst_alloc(), must be bool.
+
+Hannes Frederic Sowa (2):
+      net: clear local_df when passing skb between namespaces
+      ipv6: don't count addrconf generated routes against gc limit
+
+Hariprasad Shenai (3):
+      cxgb4: Much cleaner implementation of is_t4()/is_t5()
+      cxgb4vf: added much cleaner implementation of is_t4()
+      cxgb4: Add new scheme to update T4/T5 firmware
+
+Ivan Vecera (1):
+      forcedeth: run loopback test only on chipsets that support it
+
+Jamal Hadi Salim (5):
+      net_sched: Fail if missing mandatory action operation methods
+      net_sched: Default action lookup method for actions
+      net_sched: Use default action lookup functions
+      net_sched: Provide default walker function for actions
+      net_sched: Use default action walker methods
+
+Janusz Dziedzic (1):
+      mac80211: DFS setup chandef for radar_event correctly
+
+Jason Wang (4):
+      tun: unbreak truncated packet signalling
+      macvtap: signal truncated packets
+      tun: unbreak truncated packet signalling
+      macvtap: signal truncated packets
+
+Javier Lopez (1):
+      mac80211: fix for mesh beacon update on powersave
+
+Jeff Kirsher (1):
+      MAINTAINERS: Update Intel Wired Ethernet LAN Maintainers
+
+Jesse Brandeburg (1):
+      i40e: fix null dereference
+
+Jiri Pirko (1):
+      br: fix use of ->rx_handler_data in code executed on non-rx_handler path
+
+Jitendra Kalsaria (3):
+      qlge: Fix ethtool statistics
+      qlge: Allow enable/disable rx/tx vlan acceleration independently
+      qlge: Update version to 1.00.00.34
+
+Johannes Berg (7):
+      mac80211: fix scheduled scan rtnl deadlock
+      nl80211: check nla_put_* return values
+      nl80211: fix error path in nl80211_get_key()
+      nl80211: check nla_nest_start() return value
+      cfg80211: disable 5/10 MHz support for all drivers
+      mac80211: don't attempt to reorder multicast frames
+      iwlwifi: mvm: check sta_id/drain values in debugfs
+
+John W. Linville (5):
+      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
+      Merge branch 'master' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
+      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Jon Paul Maloy (1):
+      tipc: correct the order of stopping services at rmmod
+
+Jouni Malinen (2):
+      mac80211_hwsim: Fix radiotap header for ACK frames
+      mac80211_hwsim: Fix bcn_en_iter to use atomic iteration
+
+Kamala R (1):
+      IPv6: Fixed support for blackhole and prohibit routes
+
+Karl Beldan (3):
+      mac80211: minstrel_ht: fix rates selection
+      mac80211: use capped prob when computing throughputs
+      mac80211: set hw initial idle state
+
+Laurence Evans (1):
+      sfc: PTP: Moderate log message on event queue overflow
+
+Luciano Coelho (2):
+      iwlwifi: mvm: set seqno also when no keys are set
+      iwlwifi: mvm: use a cast to calculate the last seqno from the next one
+
+Matthew Whitehead (1):
+      8390 : Replace ei_debug with msg_enable/NETIF_MSG_* feature
+
+Maxime Ripard (1):
+      net: allwinner: emac: Add missing free_irq
+
+Michael Dalton (1):
+      virtio-net: free bufs correctly on invalid packet length
+
+Michal Kalderon (1):
+      bnx2x: avoid null pointer dereference when enabling SR-IOV
+
+Michal Nazarewicz (2):
+      net: wireless: ath9k: avoid possible NULL pointer dereference
+      net: wireless: wcn36xx: fix potential NULL pointer dereference
+
+Mugunthan V N (2):
+      drivers: net: cpsw: fix dt probe for one port ethernet
+      drivers: net: cpsw: fix for cpsw crash when build as modules
+
+Nat Gurumoorthy (1):
+      tg3: Initialize REG_BASE_ADDR at PCI config offset 120 to 0
+
+Neil Horman (1):
+      sctp: properly latch and use autoclose value from sock to association
+
+Nikolay Aleksandrov (1):
+      bonding: fix packets_per_slave showing
+
+Oren Givon (1):
+      iwlwifi: add new HW - 7265 series
+
+Pablo Neira Ayuso (1):
+      netfilter: nf_tables: fix missing rules flushing per table
+
+Paul Durrant (6):
+      xen-netback: clear vif->task on disconnect
+      xen-netback: fix fragment detection in checksum setup
+      xen-netback: make sure skb linear area covers checksum field
+      xen-netback: napi: fix abuse of budget
+      xen-netback: napi: don't prematurely request a tx event
+      xen-netback: fix gso_prefix check
+
+Philippe De Muyter (1):
+      net:fec: remove duplicate lines in comment about errata ERR006358
+
+Rafael J. Wysocki (1):
+      PCI / tg3: Give up chip reset and carrier loss handling if PCI device is not present
+
+Robert Stonehouse (2):
+      sfc: Refactor efx_mcdi_poll() by introducing efx_mcdi_poll_once()
+      sfc: Poll for MCDI completion once before timeout occurs
+
+Sasha Levin (1):
+      net: unix: allow set_peek_off to fail
+
+Sebastian Siewior (2):
+      net: fec_main: dma_map() only the length of the skb
+      net: make neigh_priv_len in struct net_device 16bit instead of 8bit
+
+Sergei Shtylyov (1):
+      micrel: add support for KSZ8041RNLI
+
+Sergey Popovich (1):
+      netfilter: xt_hashlimit: fix proc entry leak in netns destroy path
+
+Simon Wunderlich (3):
+      cfg80211: fix ibss wext chandef creation
+      cfg80211: disable CSA for all drivers
+      mac80211: check csa wiphy flag in ibss before switching
+
+Somnath Kotur (2):
+      be2net: Fix Lancer error recovery to distinguish FW download
+      be2net: Free/delete pmacs (in be_clear()) only if they exist
+
+Srikanth Thokala (2):
+      net: emaclite: Remove unnecessary code that enables/disables interrupts on PONG buffers
+      net: emaclite: add barriers to support Xilinx Zynq platform
+
+Stefan Tomanek (1):
+      inet: fix NULL pointer Oops in fib(6)_rule_suppress
+
+Sujith Manoharan (2):
+      ath9k: Fix QuickDrop usage
+      ath9k: Fix XLNA bias strength
+
+Tony Lindgren (2):
+      net: davinci_emac: Fix platform data handling and make usable for am3517
+      net: smc91x: Fix device tree based configuration so it's usable
+
+Ujjal Roy (1):
+      mwifiex: fix memory leak issue for ibss join
+
+Venkat Venkatsubra (1):
+      rds: prevent BUG_ON triggered on congestion update to loopback
+
+Wei Yang (1):
+      net/mlx4_core: destroy workqueue when driver fails to register
+
+Yang Yingliang (3):
+      net: sched: tbf: fix the calculation of max_size
+      net: sched: htb: fix the calculation of quantum
+      sch_tbf: use do_div() for 64-bit divide
+
+Ying Xue (1):
+      tipc: protect handler_enabled variable with qitem_lock spin lock
+
+Zhi Yong Wu (2):
+      macvtap: update file current position
+      tun: update file current position
+
+dingtianhong (1):
+      bonding: add arp_ip_target checks when install the module
+
+wangweidong (4):
+      sctp: disable max_burst when the max_burst is 0
+      sctp: check the rto_min and rto_max in setsockopt
+      sctp: add check rto_min and rto_max in sysctl
+      sctp: fix up a spacing
+
+ Documentation/devicetree/bindings/net/davinci_emac.txt   |   2 +-
+ Documentation/devicetree/bindings/net/smsc-lan91c111.txt |   4 +
+ Documentation/networking/packet_mmap.txt                 |  10 ++
+ MAINTAINERS                                              |   2 -
+ drivers/net/bonding/bond_main.c                          |   6 +-
+ drivers/net/bonding/bond_sysfs.c                         |   4 +-
+ drivers/net/ethernet/allwinner/sun4i-emac.c              |   5 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c        |   5 +
+ drivers/net/ethernet/broadcom/tg3.c                      |  29 ++++--
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4.h               |  82 +++++++++------
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c          | 278 ++++++++++++++++++++++++++-------------------------
+ drivers/net/ethernet/chelsio/cxgb4/sge.c                 |  12 +--
+ drivers/net/ethernet/chelsio/cxgb4/t4_hw.c               | 230 ++++++++++++++++++++++++++----------------
+ drivers/net/ethernet/chelsio/cxgb4/t4_regs.h             |  14 +++
+ drivers/net/ethernet/chelsio/cxgb4/t4fw_api.h            |   7 +-
+ drivers/net/ethernet/chelsio/cxgb4vf/adapter.h           |   1 -
+ drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c      |  15 ++-
+ drivers/net/ethernet/chelsio/cxgb4vf/sge.c               |   2 +-
+ drivers/net/ethernet/chelsio/cxgb4vf/t4vf_common.h       |  24 +++--
+ drivers/net/ethernet/chelsio/cxgb4vf/t4vf_hw.c           |   4 +-
+ drivers/net/ethernet/emulex/benet/be_hw.h                |   3 +
+ drivers/net/ethernet/emulex/benet/be_main.c              |  41 +++++---
+ drivers/net/ethernet/freescale/fec_main.c                |  13 +--
+ drivers/net/ethernet/ibm/ehea/ehea_main.c                |   2 +-
+ drivers/net/ethernet/intel/i40e/i40e_main.c              |   3 +
+ drivers/net/ethernet/intel/igb/e1000_phy.c               |   5 +-
+ drivers/net/ethernet/marvell/mvneta.c                    |   4 +-
+ drivers/net/ethernet/mellanox/mlx4/main.c                |   2 +
+ drivers/net/ethernet/nvidia/forcedeth.c                  |   8 +-
+ drivers/net/ethernet/qlogic/qlge/qlge.h                  |   2 +-
+ drivers/net/ethernet/qlogic/qlge/qlge_ethtool.c          |   4 +
+ drivers/net/ethernet/qlogic/qlge/qlge_main.c             |   8 --
+ drivers/net/ethernet/sfc/efx.c                           |   8 +-
+ drivers/net/ethernet/sfc/mcdi.c                          |  39 ++++++--
+ drivers/net/ethernet/sfc/net_driver.h                    |   3 +
+ drivers/net/ethernet/sfc/nic.h                           |   2 +
+ drivers/net/ethernet/sfc/ptp.c                           |  66 ++++++++++--
+ drivers/net/ethernet/sfc/rx.c                            |   6 +-
+ drivers/net/ethernet/smsc/smc91x.c                       |  45 +++++++--
+ drivers/net/ethernet/tehuti/tehuti.c                     |   1 -
+ drivers/net/ethernet/ti/cpsw.c                           |  19 +++-
+ drivers/net/ethernet/ti/davinci_emac.c                   |  26 ++++-
+ drivers/net/ethernet/xilinx/ll_temac_main.c              |   2 +-
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c        |   2 +-
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c            |  51 +++-------
+ drivers/net/macvtap.c                                    |  13 ++-
+ drivers/net/phy/micrel.c                                 |  15 +++
+ drivers/net/tun.c                                        |  18 ++--
+ drivers/net/virtio_net.c                                 |  17 ++--
+ drivers/net/vxlan.c                                      |   2 +-
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c           |  22 ++--
+ drivers/net/wireless/ath/ath9k/hw.c                      |   7 +-
+ drivers/net/wireless/ath/ath9k/xmit.c                    |   4 +
+ drivers/net/wireless/ath/wcn36xx/smd.c                   |  19 ++--
+ drivers/net/wireless/brcm80211/Kconfig                   |   2 +
+ drivers/net/wireless/brcm80211/brcmfmac/bcmsdh_sdmmc.c   |   2 +
+ drivers/net/wireless/iwlwifi/iwl-7000.c                  |  29 +++++-
+ drivers/net/wireless/iwlwifi/iwl-config.h                |   5 +
+ drivers/net/wireless/iwlwifi/iwl-csr.h                   |   5 +-
+ drivers/net/wireless/iwlwifi/mvm/bt-coex.c               |   6 +-
+ drivers/net/wireless/iwlwifi/mvm/d3.c                    |   5 +-
+ drivers/net/wireless/iwlwifi/mvm/debugfs.c               |   4 +
+ drivers/net/wireless/iwlwifi/mvm/time-event.c            |   7 +-
+ drivers/net/wireless/iwlwifi/pcie/drv.c                  |  21 ++++
+ drivers/net/wireless/iwlwifi/pcie/internal.h             |   8 ++
+ drivers/net/wireless/iwlwifi/pcie/rx.c                   |   7 +-
+ drivers/net/wireless/iwlwifi/pcie/trans.c                |   3 -
+ drivers/net/wireless/iwlwifi/pcie/tx.c                   |   6 +-
+ drivers/net/wireless/mac80211_hwsim.c                    |  16 ++-
+ drivers/net/wireless/mwifiex/sta_ioctl.c                 |   4 +-
+ drivers/net/xen-netback/interface.c                      |  20 ++--
+ drivers/net/xen-netback/netback.c                        | 266 +++++++++++++++++++++++++++---------------------
+ drivers/pci/pci.c                                        |   8 ++
+ include/linux/ipv6.h                                     |   1 +
+ include/linux/micrel_phy.h                               |   2 +
+ include/linux/net.h                                      |   2 +-
+ include/linux/netdevice.h                                |   2 +-
+ include/linux/pci.h                                      |   1 +
+ include/linux/skbuff.h                                   |  39 ++++----
+ include/net/ipv6.h                                       |   3 +-
+ include/net/sctp/structs.h                               |   6 --
+ include/net/sock.h                                       |   6 +-
+ net/bridge/br_private.h                                  |  10 ++
+ net/bridge/br_stp_bpdu.c                                 |   2 +-
+ net/core/drop_monitor.c                                  |   1 -
+ net/core/skbuff.c                                        |   1 +
+ net/core/sock.c                                          |   2 +-
+ net/dccp/ipv6.c                                          |   1 -
+ net/ipv4/fib_rules.c                                     |   5 +-
+ net/ipv4/tcp_memcontrol.c                                |   7 --
+ net/ipv4/udp.c                                           |  47 +++++----
+ net/ipv6/addrconf.c                                      |   2 +-
+ net/ipv6/datagram.c                                      |   1 -
+ net/ipv6/fib6_rules.c                                    |   6 +-
+ net/ipv6/ndisc.c                                         |   3 +
+ net/ipv6/raw.c                                           |   1 -
+ net/ipv6/route.c                                         |  30 +++---
+ net/ipv6/tcp_ipv6.c                                      |   1 -
+ net/ipv6/udp.c                                           |   1 -
+ net/l2tp/l2tp_ip6.c                                      |   1 -
+ net/mac80211/cfg.c                                       |  15 ++-
+ net/mac80211/ibss.c                                      |   4 +
+ net/mac80211/ieee80211_i.h                               |   1 +
+ net/mac80211/iface.c                                     |   1 -
+ net/mac80211/main.c                                      |   3 +
+ net/mac80211/mesh.c                                      |  20 ++--
+ net/mac80211/mlme.c                                      |   2 +
+ net/mac80211/rc80211_minstrel_ht.c                       |   7 +-
+ net/mac80211/rx.c                                        |   3 +-
+ net/mac80211/scan.c                                      |   2 +-
+ net/mac80211/spectmgmt.c                                 |   2 +
+ net/mac80211/util.c                                      |  11 +-
+ net/netfilter/ipset/ip_set_hash_netnet.c                 |   2 +-
+ net/netfilter/nf_tables_api.c                            |  46 ++++++---
+ net/netfilter/xt_hashlimit.c                             |  25 ++---
+ net/packet/af_packet.c                                   |  65 +++++++-----
+ net/rds/ib_send.c                                        |   5 +-
+ net/sched/act_api.c                                      |  26 ++---
+ net/sched/act_csum.c                                     |   2 -
+ net/sched/act_gact.c                                     |   2 -
+ net/sched/act_ipt.c                                      |   4 -
+ net/sched/act_mirred.c                                   |   2 -
+ net/sched/act_nat.c                                      |   2 -
+ net/sched/act_pedit.c                                    |   2 -
+ net/sched/act_police.c                                   |   1 -
+ net/sched/act_simple.c                                   |   1 -
+ net/sched/act_skbedit.c                                  |   1 -
+ net/sched/sch_htb.c                                      |  20 ++--
+ net/sched/sch_tbf.c                                      | 117 +++++++++++++---------
+ net/sctp/associola.c                                     |   5 +-
+ net/sctp/output.c                                        |   3 +-
+ net/sctp/sm_statefuns.c                                  |  12 +--
+ net/sctp/socket.c                                        |  36 +++++--
+ net/sctp/sysctl.c                                        |  76 ++++++++++++--
+ net/sctp/transport.c                                     |   2 +-
+ net/tipc/core.c                                          |   7 +-
+ net/tipc/handler.c                                       |  11 +-
+ net/unix/af_unix.c                                       |   8 +-
+ net/wireless/core.c                                      |   9 ++
+ net/wireless/ibss.c                                      |  18 ++--
+ net/wireless/nl80211.c                                   |  60 ++++++-----
+ 141 files changed, 1551 insertions(+), 916 deletions(-)
