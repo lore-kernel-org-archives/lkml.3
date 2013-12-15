@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373Ab3LOX2u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 18:28:50 -0500
-Received: from ring0.de ([91.143.88.219]:40097 "EHLO smtp.ring0.de"
+	id S1752630Ab3LOXaY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 18:30:24 -0500
+Received: from ring0.de ([91.143.88.219]:40113 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752291Ab3LOX2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 18:28:45 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
+	id S1752362Ab3LOX2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 18:28:50 -0500
+X-Spam-Report: *  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
 	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
 	*      for more information.
 	*      [URIs: nokia.com]
+	* -0.0 NO_RELAYS Informational: message was not relayed via SMTP
 	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
 	*      [score: 0.0000]
 	* -0.0 NO_RECEIVED Informational: message has no Received headers
@@ -33,9 +33,9 @@ Cc: Tony Lindgren <tony@atomide.com>, Grant Likely <grant.likely@linaro.org>,
         Joni Lapilainen <joni.lapilainen@gmail.com>,
         Aaro Koskinen <aaro.koskinen@iki.fi>,
         Sebastian Reichel <sre@debian.org>
-Subject: [RFCv4 06/11] misc: Introduce Nokia CMT driver
-Date: Mon, 16 Dec 2013 00:27:59 +0100
-Message-Id: <1387150085-23173-7-git-send-email-sre@debian.org>
+Subject: [RFCv4 08/11] HSI: Introduce driver for SSI Protocol
+Date: Mon, 16 Dec 2013 00:28:01 +0100
+Message-Id: <1387150085-23173-9-git-send-email-sre@debian.org>
 X-Mailer: git-send-email 1.8.5.1
 In-Reply-To: <1387150085-23173-1-git-send-email-sre@debian.org>
 References: <1387150085-23173-1-git-send-email-sre@debian.org>
@@ -43,57 +43,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add driver handling GPIO pins of Nokia modems. The
-driver provides reset notifications, so that SSI
-clients can subscribe to them easily.
+This adds a driver for the SSI McSAAB protocol as used in
+the Nokia N900.
 
 Signed-off-by: Sebastian Reichel <sre@debian.org>
 ---
- drivers/misc/Kconfig      |   7 ++
- drivers/misc/Makefile     |   1 +
- drivers/misc/nokia-cmt.c  | 298 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/nokia-cmt.h |  46 +++++++
- 4 files changed, 352 insertions(+)
- create mode 100644 drivers/misc/nokia-cmt.c
- create mode 100644 include/linux/nokia-cmt.h
+ drivers/hsi/clients/Kconfig        |    8 +
+ drivers/hsi/clients/Makefile       |    3 +-
+ drivers/hsi/clients/ssi_protocol.c | 1201 ++++++++++++++++++++++++++++++++++++
+ include/linux/hsi/ssi_protocol.h   |   41 ++
+ 4 files changed, 1252 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/hsi/clients/ssi_protocol.c
+ create mode 100644 include/linux/hsi/ssi_protocol.h
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index a3e291d..74e96cc 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -515,6 +515,13 @@ config SRAM
- 	  the genalloc API. It is supposed to be used for small on-chip SRAM
- 	  areas found on many SoCs.
+diff --git a/drivers/hsi/clients/Kconfig b/drivers/hsi/clients/Kconfig
+index 3bacd27..7103ffc 100644
+--- a/drivers/hsi/clients/Kconfig
++++ b/drivers/hsi/clients/Kconfig
+@@ -4,6 +4,14 @@
  
-+config NOKIA_CMT
-+	tristate "Enable CMT support"
+ comment "HSI clients"
+ 
++config SSI_PROTOCOL
++	tristate "SSI protocol"
++	depends on HSI && OMAP_SSI && NOKIA_CMT && PHONET
 +	help
-+	If you say Y here, you will enable CMT support.
++	If you say Y here, you will enable the SSI protocol aka McSAAB.
 +
-+	If unsure, say Y, or else you will not be able to use the CMT.
++	If unsure, say N.
 +
- source "drivers/misc/c2port/Kconfig"
- source "drivers/misc/eeprom/Kconfig"
- source "drivers/misc/cb710/Kconfig"
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index f45473e..b109e84 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -53,3 +53,4 @@ obj-$(CONFIG_VMWARE_VMCI)	+= vmw_vmci/
- obj-$(CONFIG_LATTICE_ECP3_CONFIG)	+= lattice-ecp3-config.o
- obj-$(CONFIG_SRAM)		+= sram.o
- obj-y				+= mic/
-+obj-$(CONFIG_NOKIA_CMT)		+= nokia-cmt.o
-diff --git a/drivers/misc/nokia-cmt.c b/drivers/misc/nokia-cmt.c
+ config HSI_CHAR
+ 	tristate "HSI/SSI character driver"
+ 	depends on HSI
+diff --git a/drivers/hsi/clients/Makefile b/drivers/hsi/clients/Makefile
+index 327c0e2..ccbf768 100644
+--- a/drivers/hsi/clients/Makefile
++++ b/drivers/hsi/clients/Makefile
+@@ -2,4 +2,5 @@
+ # Makefile for HSI clients
+ #
+ 
+-obj-$(CONFIG_HSI_CHAR)	+= hsi_char.o
++obj-$(CONFIG_SSI_PROTOCOL)	+= ssi_protocol.o
++obj-$(CONFIG_HSI_CHAR)		+= hsi_char.o
+diff --git a/drivers/hsi/clients/ssi_protocol.c b/drivers/hsi/clients/ssi_protocol.c
 new file mode 100644
-index 0000000..9c40cf6
+index 0000000..5b23ab8
 --- /dev/null
-+++ b/drivers/misc/nokia-cmt.c
-@@ -0,0 +1,298 @@
++++ b/drivers/hsi/clients/ssi_protocol.c
+@@ -0,0 +1,1201 @@
 +/*
-+ * CMT support.
++ * ssi_protocol.c
 + *
-+ * Copyright (C) 2009 Nokia Corporation. All rights reserved.
++ * Implementation of the SSI McSAAB improved protocol.
++ *
++ * Copyright (C) 2010 Nokia Corporation. All rights reserved.
 + * Copyright (C) 2013 Sebastian Reichel <sre@kernel.org>
 + *
 + * Contact: Carlos Chinea <carlos.chinea@nokia.com>
@@ -114,290 +118,1193 @@ index 0000000..9c40cf6
 + */
 +
 +#include <asm/atomic.h>
++#include <linux/clk.h>
 +#include <linux/nokia-cmt.h>
++#include <linux/device.h>
 +#include <linux/err.h>
 +#include <linux/gpio.h>
++#include <linux/if_ether.h>
++#include <linux/if_arp.h>
++#include <linux/if_phonet.h>
 +#include <linux/init.h>
-+#include <linux/interrupt.h>
 +#include <linux/irq.h>
 +#include <linux/list.h>
 +#include <linux/module.h>
++#include <linux/netdevice.h>
 +#include <linux/notifier.h>
-+#include <linux/platform_device.h>
++#include <linux/scatterlist.h>
++#include <linux/skbuff.h>
 +#include <linux/slab.h>
-+#include <linux/string.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
++#include <linux/spinlock.h>
++#include <linux/timer.h>
++#include <linux/hsi/hsi.h>
++#include <linux/hsi/ssi_protocol.h>
++#include <linux/of_device.h>
 +
-+/**
-+ * struct cmt_gpio - GPIO with name
-+ * @gpio: GPIO number
-+ * @name: name for the GPIO
++void ssi_waketest(struct hsi_client *cl, unsigned int enable);
++
++#define SSIP_TXQUEUE_LEN	100
++#define SSIP_MAX_MTU		65535
++#define SSIP_DEFAULT_MTU	4000
++#define PN_MEDIA_SOS		21
++#define SSIP_MIN_PN_HDR		6	/* FIXME: Revisit */
++#define SSIP_WDTOUT		2000	/* FIXME: has to be 500 msecs */
++#define SSIP_KATOUT		15	/* 15 msecs */
++#define SSIP_MAX_CMDS		5 /* Number of pre-allocated commands buffers */
++#define SSIP_BYTES_TO_FRAMES(x) ((((x) - 1) >> 2) + 1)
++#define SSIP_CMT_LOADER_SYNC	0x11223344
++/*
++ * SSI protocol command definitions
 + */
-+struct cmt_gpio {
-+	int				gpio;
-+	const char			*name;
++#define SSIP_COMMAND(data)	((data) >> 28)
++#define SSIP_PAYLOAD(data)	((data) & 0xfffffff)
++/* Commands */
++#define SSIP_SW_BREAK		0
++#define SSIP_BOOTINFO_REQ	1
++#define SSIP_BOOTINFO_RESP	2
++#define SSIP_WAKETEST_RESULT	3
++#define SSIP_START_TRANS	4
++#define SSIP_READY		5
++/* Payloads */
++#define SSIP_DATA_VERSION(data)	((data) & 0xff)
++#define SSIP_LOCAL_VERID	1
++#define SSIP_WAKETEST_OK	0
++#define SSIP_WAKETEST_FAILED	1
++#define SSIP_PDU_LENGTH(data)	(((data) >> 8) & 0xffff)
++#define SSIP_MSG_ID(data)	((data) & 0xff)
++/* Generic Command */
++#define SSIP_CMD(cmd, payload)	(((cmd) << 28) | ((payload) & 0xfffffff))
++/* Commands for the control channel */
++#define SSIP_BOOTINFO_REQ_CMD(ver) \
++		SSIP_CMD(SSIP_BOOTINFO_REQ, SSIP_DATA_VERSION(ver))
++#define SSIP_BOOTINFO_RESP_CMD(ver) \
++		SSIP_CMD(SSIP_BOOTINFO_RESP, SSIP_DATA_VERSION(ver))
++#define SSIP_START_TRANS_CMD(pdulen, id) \
++		SSIP_CMD(SSIP_START_TRANS, (((pdulen) << 8) | SSIP_MSG_ID(id)))
++#define SSIP_READY_CMD		SSIP_CMD(SSIP_READY, 0)
++#define SSIP_SWBREAK_CMD	SSIP_CMD(SSIP_SW_BREAK, 0)
++
++/* Main state machine states */
++enum {
++	INIT,
++	HANDSHAKE,
++	ACTIVE,
++};
++
++/* Send state machine states */
++enum {
++	SEND_IDLE,
++	WAIT4READY,
++	SEND_READY,
++	SENDING,
++	SENDING_SWBREAK,
++};
++
++/* Receive state machine states */
++enum {
++	RECV_IDLE,
++	RECV_READY,
++	RECEIVING,
 +};
 +
 +/**
-+ * struct cmt_device - CMT device data
-+ * @cmt_rst_ind_tasklet: Bottom half for CMT reset line events
-+ * @cmt_rst_ind_irq: IRQ number of the CMT reset line
-+ * @n_head: List of notifiers registered to get CMT events
-+ * @node: Link on the list of available CMTs
-+ * @device: Reference to the CMT platform device
++ * struct ssi_protocol - SSI protocol (McSAAB) data
++ * @main_state: Main state machine
++ * @send_state: TX state machine
++ * @recv_state: RX state machine
++ * @waketest: Flag to follow wake line test
++ * @rxid: RX data id
++ * @txid: TX data id
++ * @txqueue_len: TX queue length
++ * @tx_wd: TX watchdog
++ * @rx_wd: RX watchdog
++ * @keep_alive: Workaround for SSI HW bug
++ * @lock: To serialize access to this struct
++ * @netdev: Phonet network device
++ * @nb: CMT reset notification block
++ * @cmt: Reference to the CMT device
++ * @txqueue: TX data queue
++ * @cmdqueue: Queue of free commands
++ * @cl: HSI client own reference
++ * @link: Link for ssip_list
++ * @tx_usecount: Refcount to keep track the slaves that use the wake line
 + */
-+struct cmt_device {
-+	struct tasklet_struct		cmt_rst_ind_tasklet;
-+	unsigned int			cmt_rst_ind_irq;
-+	struct atomic_notifier_head	n_head;
-+	struct list_head		node;
-+	struct device			*device;
-+	struct cmt_gpio			*gpios;
-+	int				gpio_amount;
++struct ssi_protocol {
++	unsigned int		main_state;
++	unsigned int		send_state;
++	unsigned int		recv_state;
++	unsigned int		waketest:1;
++	u8			rxid;
++	u8			txid;
++	unsigned int		txqueue_len;
++	struct timer_list	tx_wd;
++	struct timer_list	rx_wd;
++	struct timer_list	keep_alive; /* wake-up workaround */
++	spinlock_t		lock;
++	struct net_device	*netdev;
++	struct notifier_block	nb;
++	struct cmt_device	*cmt;
++	struct list_head	txqueue;
++	struct list_head	cmdqueue;
++	struct hsi_client	*cl;
++	struct list_head	link;
++	atomic_t		tx_usecnt;
 +};
 +
-+static LIST_HEAD(cmt_list);	/* List of CMT devices */
++/* List of ssi protocol instances */
++static LIST_HEAD(ssip_list);
 +
-+int cmt_notifier_register(struct cmt_device *cmtdev, struct notifier_block *nb)
++static void ssip_rxcmd_complete(struct hsi_msg *msg);
++
++static inline void ssip_set_cmd(struct hsi_msg *msg, u32 cmd)
 +{
-+	struct cmt_device *cmt;
-+	int err = -ENODEV;
++	u32 *data;
 +
-+	if ((!cmtdev) || (!nb))
-+		return -EINVAL;
-+
-+	list_for_each_entry(cmt, &cmt_list, node)
-+		if (cmt == cmtdev) {
-+			err = atomic_notifier_chain_register(&cmt->n_head, nb);
-+			break;
-+		}
-+
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(cmt_notifier_register);
-+
-+int cmt_notifier_unregister(struct cmt_device *cmtdev,
-+						struct notifier_block *nb)
-+{
-+	struct cmt_device *cmt;
-+	int err = -ENODEV;
-+
-+	if ((!cmtdev) || (!nb))
-+		return -EINVAL;
-+
-+	list_for_each_entry(cmt, &cmt_list, node)
-+		if (cmt == cmtdev) {
-+			err = atomic_notifier_chain_unregister(&cmt->n_head,
-+									nb);
-+			break;
-+		}
-+
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(cmt_notifier_unregister);
-+
-+struct cmt_device *cmt_get(const char *name)
-+{
-+	struct cmt_device *p, *cmt = ERR_PTR(-ENODEV);
-+
-+	list_for_each_entry(p, &cmt_list, node)
-+		if (strcmp(name, dev_name(p->device)) == 0) {
-+			cmt = p;
-+			break;
-+		}
-+
-+	return cmt;
-+}
-+EXPORT_SYMBOL_GPL(cmt_get);
-+
-+struct cmt_device *cmt_get_by_phandle(struct device_node *np,
-+							const char *propname)
-+{
-+	struct cmt_device *p, *cmt = ERR_PTR(-EPROBE_DEFER);
-+	struct device_node *cmt_np = of_parse_phandle(np, propname, 0);
-+
-+	if (!cmt_np)
-+		return ERR_PTR(-ENOENT);
-+
-+	list_for_each_entry(p, &cmt_list, node)
-+		if (p->device->of_node == cmt_np) {
-+			cmt = p;
-+			break;
-+		}
-+
-+	of_node_put(cmt_np);
-+
-+	return cmt;
-+}
-+EXPORT_SYMBOL_GPL(cmt_get_by_phandle);
-+
-+void cmt_put(struct cmt_device *cmtdev)
-+{
-+}
-+EXPORT_SYMBOL_GPL(cmt_put);
-+
-+static void do_cmt_rst_ind_tasklet(unsigned long cmtdev)
-+{
-+	struct cmt_device *cmt = (struct cmt_device *)cmtdev;
-+
-+	dev_dbg(cmt->device, "*** CMT rst line change detected ***\n");
-+	atomic_notifier_call_chain(&cmt->n_head, CMT_RESET, NULL);
++	data = sg_virt(msg->sgt.sgl);
++	*data = cmd;
 +}
 +
-+static irqreturn_t cmt_rst_ind_isr(int irq, void *cmtdev)
++static inline u32 ssip_get_cmd(struct hsi_msg *msg)
 +{
-+	struct cmt_device *cmt = (struct cmt_device *)cmtdev;
++	u32 *data;
 +
-+	tasklet_schedule(&cmt->cmt_rst_ind_tasklet);
++	data = sg_virt(msg->sgt.sgl);
 +
-+	return IRQ_HANDLED;
++	return *data;
 +}
 +
-+static int cmt_probe(struct platform_device *pd)
++static void ssip_skb_to_msg(struct sk_buff *skb, struct hsi_msg *msg)
 +{
-+	struct device_node *np = pd->dev.of_node;
-+	struct cmt_device *cmt;
-+	int irq, pflags, err, gpio_count, gpio_name_count, i;
-+
-+	if (!np) {
-+		dev_err(&pd->dev, "device tree node not found\n");
-+		return -ENXIO;
-+	}
-+
-+	cmt = devm_kzalloc(&pd->dev, sizeof(*cmt), GFP_KERNEL);
-+	if (!cmt) {
-+		dev_err(&pd->dev, "Could not allocate memory for cmtdev\n");
-+		return -ENOMEM;
-+	}
-+
-+	cmt->device = &pd->dev;
-+
-+	irq = platform_get_irq(pd, 0);
-+	if (irq < 0) {
-+		dev_err(&pd->dev, "Invalid cmt_rst_ind interrupt\n");
-+		return irq;
-+	}
-+
-+	pflags = irq_get_trigger_type(irq);
-+
-+	tasklet_init(&cmt->cmt_rst_ind_tasklet, do_cmt_rst_ind_tasklet,
-+							(unsigned long)cmt);
-+	err = devm_request_irq(&pd->dev, irq, cmt_rst_ind_isr,
-+		IRQF_DISABLED | pflags, "cmt_rst_ind", cmt);
-+	if (err < 0) {
-+		dev_err(&pd->dev, "Request cmt_rst_ind irq(%d) failed (flags %d)\n",
-+			irq, pflags);
-+		return err;
-+	}
-+	enable_irq_wake(irq);
-+
-+	ATOMIC_INIT_NOTIFIER_HEAD(&cmt->n_head);
-+	list_add(&cmt->node, &cmt_list);
-+
-+	cmt->cmt_rst_ind_irq = irq;
-+	platform_set_drvdata(pd, cmt);
-+
-+	gpio_count = of_gpio_count(np);
-+	gpio_name_count = of_property_count_strings(np, "gpio-names");
-+
-+	if(gpio_count != gpio_name_count) {
-+		dev_err(&pd->dev, "number of gpios does not equal number of gpio names\n");
-+		return -EINVAL;
-+	}
-+
-+	cmt->gpios = devm_kzalloc(&pd->dev, gpio_count*sizeof(struct cmt_gpio),
-+								GFP_KERNEL);
-+	if (cmt->gpios == NULL) {
-+		dev_err(&pd->dev, "Could not allocate memory for gpios\n");
-+		return -ENOMEM;
-+	}
-+
-+	cmt->gpio_amount = gpio_count;
-+
-+	for (i = 0; i < gpio_count; i++) {
-+		cmt->gpios[i].gpio = of_get_gpio(np, i);
-+
-+		if (cmt->gpios[i].gpio < 0)
-+			return cmt->gpios[i].gpio;
-+
-+		err = of_property_read_string_index(np, "gpio-names", i,
-+							&(cmt->gpios[i].name));
-+		if (err)
-+			return err;
-+
-+		err = devm_gpio_request_one(&pd->dev, cmt->gpios[i].gpio,
-+							GPIOF_OUT_INIT_LOW,
-+							cmt->gpios[i].name);
-+		if (err)
-+			return err;
-+
-+		err = gpio_export(cmt->gpios[i].gpio, 0);
-+		if (err)
-+			return err;
-+
-+		err = gpio_export_link(&pd->dev, cmt->gpios[i].name,
-+							cmt->gpios[i].gpio);
-+		if (err)
-+			return err;
-+	}
-+
-+	dev_info(&pd->dev, "loaded sucessfully\n");
-+
-+	return 0;
-+}
-+
-+static int cmt_remove(struct platform_device *pd)
-+{
-+	struct cmt_device *cmt = platform_get_drvdata(pd);
++	skb_frag_t *frag;
++	struct scatterlist *sg;
 +	int i;
 +
-+	if (!cmt)
-+		return 0;
-+	platform_set_drvdata(pd, NULL);
-+	list_del(&cmt->node);
-+	disable_irq_wake(cmt->cmt_rst_ind_irq);
-+	tasklet_kill(&cmt->cmt_rst_ind_tasklet);
++	BUG_ON(msg->sgt.nents != (unsigned int)(skb_shinfo(skb)->nr_frags + 1));
 +
-+	for (i=0; i < cmt->gpio_amount; i++)
-+		sysfs_remove_link(&pd->dev.kobj, cmt->gpios[i].name);
++	sg = msg->sgt.sgl;
++	sg_set_buf(sg, skb->data, skb_headlen(skb));
++	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
++		sg = sg_next(sg);
++		BUG_ON(!sg);
++		frag = &skb_shinfo(skb)->frags[i];
++		sg_set_page(sg, frag->page.p, frag->size, frag->page_offset);
++	}
++}
++
++static void ssip_free_data(struct hsi_msg *msg)
++{
++	struct sk_buff *skb;
++
++	skb = msg->context;
++	pr_debug("free data: msg %p context %p skb %p\n", msg, msg->context,
++								skb);
++	msg->destructor = NULL;
++	dev_kfree_skb(skb);
++	hsi_free_msg(msg);
++}
++
++static struct hsi_msg *ssip_alloc_data(struct sk_buff *skb, gfp_t flags)
++{
++	struct hsi_msg *msg;
++
++	msg = hsi_alloc_msg(skb_shinfo(skb)->nr_frags + 1, flags);
++	if (!msg)
++		return NULL;
++	ssip_skb_to_msg(skb, msg);
++	msg->destructor = ssip_free_data;
++	msg->channel = 3;
++	msg->context = skb;
++
++	return msg;
++}
++
++static inline void ssip_release_cmd(struct hsi_msg *msg)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(msg->cl);
++
++	dev_dbg(&msg->cl->device, "Release cmd 0x%08x\n", ssip_get_cmd(msg));
++	spin_lock_bh(&ssi->lock);
++	list_add_tail(&msg->link, &ssi->cmdqueue);
++	spin_unlock_bh(&ssi->lock);
++}
++
++static struct hsi_msg *ssip_claim_cmd(struct ssi_protocol *ssi)
++{
++	struct hsi_msg *msg;
++
++	BUG_ON(list_empty(&ssi->cmdqueue));
++
++	spin_lock_bh(&ssi->lock);
++	msg = list_first_entry(&ssi->cmdqueue, struct hsi_msg, link);
++	list_del(&msg->link);
++	spin_unlock_bh(&ssi->lock);
++	msg->destructor = ssip_release_cmd;
++
++	return msg;
++}
++
++static void ssip_free_cmds(struct ssi_protocol *ssi)
++{
++	struct hsi_msg *msg, *tmp;
++
++	list_for_each_entry_safe(msg, tmp, &ssi->cmdqueue, link) {
++		list_del(&msg->link);
++		msg->destructor = NULL;
++		kfree(sg_virt(msg->sgt.sgl));
++		hsi_free_msg(msg);
++	}
++}
++
++static int ssip_alloc_cmds(struct ssi_protocol *ssi)
++{
++	struct hsi_msg *msg;
++	u32 *buf;
++	unsigned int i;
++
++	for (i = 0; i < SSIP_MAX_CMDS; i++) {
++		msg = hsi_alloc_msg(1, GFP_KERNEL);
++		if (!msg)
++			goto out;
++		buf = kmalloc(sizeof(*buf), GFP_KERNEL);
++		if (!buf) {
++			hsi_free_msg(msg);
++			goto out;
++		}
++		sg_init_one(msg->sgt.sgl, buf, sizeof(*buf));
++		msg->channel = 0;
++		list_add_tail(&msg->link, &ssi->cmdqueue);
++	}
++
++	return 0;
++out:
++	ssip_free_cmds(ssi);
++
++	return -ENOMEM;
++}
++
++static void ssip_set_rxstate(struct ssi_protocol *ssi, unsigned int state)
++{
++	ssi->recv_state = state;
++	switch (state) {
++	case RECV_IDLE:
++		del_timer(&ssi->rx_wd);
++		if (ssi->send_state == SEND_IDLE)
++			del_timer(&ssi->keep_alive);
++		break;
++	case RECV_READY:
++		/* CMT speech workaround */
++		if (atomic_read(&ssi->tx_usecnt))
++			break;
++		/* Otherwise fall through */
++	case RECEIVING:
++		mod_timer(&ssi->keep_alive, jiffies +
++						msecs_to_jiffies(SSIP_KATOUT));
++		mod_timer(&ssi->rx_wd, jiffies + msecs_to_jiffies(SSIP_WDTOUT));
++		break;
++	default:
++		break;
++	}
++}
++
++static void ssip_set_txstate(struct ssi_protocol *ssi, unsigned int state)
++{
++	ssi->send_state = state;
++	switch (state) {
++	case SEND_IDLE:
++	case SEND_READY:
++		del_timer(&ssi->tx_wd);
++		if (ssi->recv_state == RECV_IDLE)
++			del_timer(&ssi->keep_alive);
++		break;
++	case WAIT4READY:
++	case SENDING:
++	case SENDING_SWBREAK:
++		mod_timer(&ssi->keep_alive,
++				jiffies + msecs_to_jiffies(SSIP_KATOUT));
++		mod_timer(&ssi->tx_wd, jiffies + msecs_to_jiffies(SSIP_WDTOUT));
++		break;
++	default:
++		break;
++	}
++}
++
++struct hsi_client *ssip_slave_get_master(struct hsi_client *slave)
++{
++	struct hsi_client *master = ERR_PTR(-ENODEV);
++	struct ssi_protocol *ssi;
++
++	list_for_each_entry(ssi, &ssip_list, link)
++		if (slave->device.parent == ssi->cl->device.parent) {
++			master = ssi->cl;
++			break;
++		}
++
++	return master;
++}
++EXPORT_SYMBOL_GPL(ssip_slave_get_master);
++
++int ssip_slave_start_tx(struct hsi_client *master)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(master);
++
++	dev_dbg(&master->device, "start TX %d\n", atomic_read(&ssi->tx_usecnt));
++	spin_lock_bh(&ssi->lock);
++	if (ssi->send_state == SEND_IDLE) {
++		ssip_set_txstate(ssi, WAIT4READY);
++		hsi_start_tx(master);
++	}
++	spin_unlock_bh(&ssi->lock);
++	atomic_inc(&ssi->tx_usecnt);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(ssip_slave_start_tx);
++
++int ssip_slave_stop_tx(struct hsi_client *master)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(master);
++
++	WARN_ON_ONCE(atomic_read(&ssi->tx_usecnt) == 0);
++
++	if (atomic_dec_and_test(&ssi->tx_usecnt)) {
++		spin_lock_bh(&ssi->lock);
++		if ((ssi->send_state == SEND_READY) ||
++			(ssi->send_state == WAIT4READY)) {
++			ssip_set_txstate(ssi, SEND_IDLE);
++			hsi_stop_tx(master);
++		}
++		spin_unlock_bh(&ssi->lock);
++	}
++	dev_dbg(&master->device, "stop TX %d\n", atomic_read(&ssi->tx_usecnt));
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(ssip_slave_stop_tx);
++
++int ssip_slave_running(struct hsi_client *master)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(master);
++	return netif_running(ssi->netdev);
++}
++EXPORT_SYMBOL_GPL(ssip_slave_running);
++
++static void ssip_reset(struct hsi_client *cl)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++	struct list_head *head, *tmp;
++	struct hsi_msg *msg;
++
++	if (netif_running(ssi->netdev))
++		netif_carrier_off(ssi->netdev);
++	hsi_flush(cl);
++	spin_lock_bh(&ssi->lock);
++	if (ssi->send_state != SEND_IDLE)
++		hsi_stop_tx(cl);
++	if (ssi->waketest)
++		ssi_waketest(cl, 0);
++	del_timer(&ssi->rx_wd);
++	del_timer(&ssi->tx_wd);
++	del_timer(&ssi->keep_alive);
++	ssi->main_state = 0;
++	ssi->send_state = 0;
++	ssi->recv_state = 0;
++	ssi->waketest = 0;
++	ssi->rxid = 0;
++	ssi->txid = 0;
++	list_for_each_safe(head, tmp, &ssi->txqueue) {
++		msg = list_entry(head, struct hsi_msg, link);
++		dev_dbg(&cl->device, "Pending TX data\n");
++		list_del(head);
++		ssip_free_data(msg);
++	}
++	ssi->txqueue_len = 0;
++	spin_unlock_bh(&ssi->lock);
++}
++
++static void ssip_dump_state(struct hsi_client *cl)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++	struct hsi_msg *msg;
++
++	spin_lock_bh(&ssi->lock);
++	dev_err(&cl->device, "Main state: %d\n", ssi->main_state);
++	dev_err(&cl->device, "Recv state: %d\n", ssi->recv_state);
++	dev_err(&cl->device, "Send state: %d\n", ssi->send_state);
++	dev_err(&cl->device, "CMT %s\n", (ssi->main_state == ACTIVE) ?
++							"Online" : "Offline");
++	dev_err(&cl->device, "Wake test %d\n", ssi->waketest);
++	dev_err(&cl->device, "Data RX id: %d\n", ssi->rxid);
++	dev_err(&cl->device, "Data TX id: %d\n", ssi->txid);
++
++	list_for_each_entry(msg, &ssi->txqueue, link)
++		dev_err(&cl->device, "pending TX data (%p)\n", msg);
++	spin_unlock_bh(&ssi->lock);
++}
++
++static void ssip_error(struct hsi_client *cl)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++	struct hsi_msg *msg;
++
++	ssip_dump_state(cl);
++	ssip_reset(cl);
++	msg = ssip_claim_cmd(ssi);
++	msg->complete = ssip_rxcmd_complete;
++	hsi_async_read(cl, msg);
++}
++
++static void ssip_keep_alive(unsigned long data)
++{
++	struct hsi_client *cl = (struct hsi_client *)data;
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++
++	dev_dbg(&cl->device, "Keep alive kick in: m(%d) r(%d) s(%d)\n",
++		ssi->main_state, ssi->recv_state, ssi->send_state);
++
++	spin_lock(&ssi->lock);
++	if (ssi->recv_state == RECV_IDLE)
++		switch (ssi->send_state) {
++		case SEND_READY:
++			if (atomic_read(&ssi->tx_usecnt) == 0)
++				break;
++			/*
++			 * Fall through. Workaround for cmt-speech
++			 * in that case we relay on audio timers.
++			 */
++		case SEND_IDLE:
++			spin_unlock(&ssi->lock);
++			return;
++		}
++	mod_timer(&ssi->keep_alive, jiffies + msecs_to_jiffies(SSIP_KATOUT));
++	spin_unlock(&ssi->lock);
++}
++
++static void ssip_wd(unsigned long data)
++{
++	struct hsi_client *cl = (struct hsi_client *)data;
++
++	dev_err(&cl->device, "Watchdog trigerred\n");
++	ssip_error(cl);
++}
++
++static void ssip_send_bootinfo_req_cmd(struct hsi_client *cl)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++	struct hsi_msg *msg;
++
++	dev_dbg(&cl->device, "Issuing BOOT INFO REQ command\n");
++	msg = ssip_claim_cmd(ssi);
++	ssip_set_cmd(msg, SSIP_BOOTINFO_REQ_CMD(SSIP_LOCAL_VERID));
++	msg->complete = ssip_release_cmd;
++	hsi_async_write(cl, msg);
++	dev_dbg(&cl->device, "Issuing RX command\n");
++	msg = ssip_claim_cmd(ssi);
++	msg->complete = ssip_rxcmd_complete;
++	hsi_async_read(cl, msg);
++}
++
++static void ssip_start_rx(struct hsi_client *cl)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++	struct hsi_msg *msg;
++
++	dev_dbg(&cl->device, "RX start M(%d) R(%d)\n", ssi->main_state,
++						ssi->recv_state);
++	spin_lock(&ssi->lock);
++	/*
++	 * We can have two UP events in a row due to a short low
++	 * high transition. Therefore we need to ignore the sencond UP event.
++	 */
++	if ((ssi->main_state != ACTIVE) || (ssi->recv_state == RECV_READY)) {
++		if(ssi->main_state == INIT)
++		{
++			ssi->main_state = HANDSHAKE;
++			spin_unlock(&ssi->lock);
++			ssip_send_bootinfo_req_cmd(cl);
++		}
++		else
++			spin_unlock(&ssi->lock);
++		return;
++	}
++	ssip_set_rxstate(ssi, RECV_READY);
++	spin_unlock(&ssi->lock);
++
++	msg = ssip_claim_cmd(ssi);
++	ssip_set_cmd(msg, SSIP_READY_CMD);
++	msg->complete = ssip_release_cmd;
++	dev_dbg(&cl->device, "Send READY\n");
++	hsi_async_write(cl, msg);
++}
++
++static void ssip_stop_rx(struct hsi_client *cl)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++
++	dev_dbg(&cl->device, "RX stop M(%d)\n", ssi->main_state);
++	spin_lock(&ssi->lock);
++	if (likely(ssi->main_state == ACTIVE))
++		ssip_set_rxstate(ssi, RECV_IDLE);
++	spin_unlock(&ssi->lock);
++}
++
++static void ssip_free_strans(struct hsi_msg *msg)
++{
++	ssip_free_data(msg->context);
++	ssip_release_cmd(msg);
++}
++
++static void ssip_strans_complete(struct hsi_msg *msg)
++{
++	struct hsi_client *cl = msg->cl;
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++	struct hsi_msg *data;
++
++	data = msg->context;
++	ssip_release_cmd(msg);
++	spin_lock(&ssi->lock);
++	ssip_set_txstate(ssi, SENDING);
++	spin_unlock(&ssi->lock);
++	hsi_async_write(cl, data);
++}
++
++static int ssip_xmit(struct hsi_client *cl)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++	struct hsi_msg *msg, *dmsg;
++	struct sk_buff *skb;
++
++	spin_lock_bh(&ssi->lock);
++	if (list_empty(&ssi->txqueue)) {
++		spin_unlock_bh(&ssi->lock);
++		return 0;
++	}
++	dmsg = list_first_entry(&ssi->txqueue, struct hsi_msg, link);
++	list_del(&dmsg->link);
++	ssi->txqueue_len--;
++	spin_unlock_bh(&ssi->lock);
++
++	msg = ssip_claim_cmd(ssi);
++	skb = dmsg->context;
++	msg->context = dmsg;
++	msg->complete = ssip_strans_complete;
++	msg->destructor = ssip_free_strans;
++
++	spin_lock_bh(&ssi->lock);
++	ssip_set_cmd(msg, SSIP_START_TRANS_CMD(SSIP_BYTES_TO_FRAMES(skb->len),
++								ssi->txid));
++	ssi->txid++;
++	ssip_set_txstate(ssi, SENDING);
++	spin_unlock_bh(&ssi->lock);
++
++	dev_dbg(&cl->device, "Send STRANS (%d frames)\n",
++						SSIP_BYTES_TO_FRAMES(skb->len));
++
++	return hsi_async_write(cl, msg);
++}
++
++/* In soft IRQ context */
++static void ssip_pn_rx(struct sk_buff *skb)
++{
++	struct net_device *dev = skb->dev;
++
++	if (unlikely(!netif_running(dev))) {
++		dev_dbg(&dev->dev, "Drop RX packet\n");
++		dev->stats.rx_dropped++;
++		dev_kfree_skb(skb);
++		return;
++	}
++	if (unlikely(!pskb_may_pull(skb, SSIP_MIN_PN_HDR))) {
++		dev_dbg(&dev->dev, "Error drop RX packet\n");
++		dev->stats.rx_errors++;
++		dev->stats.rx_length_errors++;
++		dev_kfree_skb(skb);
++		return;
++	}
++	dev->stats.rx_packets++;
++	dev->stats.rx_bytes += skb->len;
++#ifdef __LITTLE_ENDIAN
++	((u16 *)skb->data)[2] = swab16(((u16 *)skb->data)[2]);
++	dev_dbg(&dev->dev, "RX length fixed (%04x -> %u)\n",
++			((u16 *)skb->data)[2], ntohs(((u16 *)skb->data)[2]));
++#endif
++	skb->protocol = htons(ETH_P_PHONET);
++	skb_reset_mac_header(skb);
++	__skb_pull(skb, 1);
++	netif_rx(skb);
++}
++
++static void ssip_rx_data_complete(struct hsi_msg *msg)
++{
++	struct hsi_client *cl = msg->cl;
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++	struct sk_buff *skb;
++
++	if (msg->status == HSI_STATUS_ERROR) {
++		dev_err(&cl->device, "RX data error\n");
++		ssip_free_data(msg);
++		ssip_error(cl);
++		return;
++	}
++	del_timer(&ssi->rx_wd); /* FIXME: Revisit */
++	skb = msg->context;
++	ssip_pn_rx(skb);
++	hsi_free_msg(msg);
++}
++
++static void ssip_rx_bootinforeq(struct hsi_client *cl, u32 cmd)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++	struct hsi_msg *msg;
++
++	/* Workaroud: Ignore CMT Loader message leftover */
++	if (cmd == SSIP_CMT_LOADER_SYNC)
++		return;
++
++	switch (ssi->main_state) {
++	case ACTIVE:
++		dev_err(&cl->device, "Boot info req on active state\n");
++		ssip_error(cl);
++		/* Fall through */
++	case INIT:
++		spin_lock(&ssi->lock);
++		ssi->main_state = HANDSHAKE;
++		if (!ssi->waketest) {
++			ssi->waketest = 1;
++			ssi_waketest(cl, 1); /* FIXME: To be removed */
++		}
++		/* Start boot handshake watchdog */
++		mod_timer(&ssi->tx_wd, jiffies + msecs_to_jiffies(SSIP_WDTOUT));
++		spin_unlock(&ssi->lock);
++		dev_dbg(&cl->device, "Send BOOTINFO_RESP\n");
++		if (SSIP_DATA_VERSION(cmd) != SSIP_LOCAL_VERID)
++			dev_warn(&cl->device, "boot info req verid mismatch\n");
++		msg = ssip_claim_cmd(ssi);
++		ssip_set_cmd(msg, SSIP_BOOTINFO_RESP_CMD(SSIP_LOCAL_VERID));
++		msg->complete = ssip_release_cmd;
++		hsi_async_write(cl, msg);
++		break;
++	case HANDSHAKE:
++		/* Ignore */
++		break;
++	default:
++		dev_dbg(&cl->device, "Wrong state M(%d)\n", ssi->main_state);
++		break;
++	}
++}
++
++static void ssip_rx_bootinforesp(struct hsi_client *cl, u32 cmd)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++
++	if (SSIP_DATA_VERSION(cmd) != SSIP_LOCAL_VERID)
++		dev_warn(&cl->device, "boot info resp verid mismatch\n");
++
++	spin_lock(&ssi->lock);
++	if (ssi->main_state != ACTIVE)
++		/* Use tx_wd as a boot watchdog in non ACTIVE state */
++		mod_timer(&ssi->tx_wd, jiffies + msecs_to_jiffies(SSIP_WDTOUT));
++	else
++		dev_dbg(&cl->device, "boot info resp ignored M(%d)\n",
++							ssi->main_state);
++	spin_unlock(&ssi->lock);
++}
++
++static void ssip_rx_waketest(struct hsi_client *cl, u32 cmd)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++	unsigned int wkres = SSIP_PAYLOAD(cmd);
++
++	spin_lock(&ssi->lock);
++	if (ssi->main_state != HANDSHAKE) {
++		dev_dbg(&cl->device, "wake lines test ignored M(%d)\n",
++							ssi->main_state);
++		spin_unlock(&ssi->lock);
++		return;
++	}
++	if (ssi->waketest) {
++		ssi->waketest = 0;
++		ssi_waketest(cl, 0); /* FIXME: To be removed */
++	}
++	ssi->main_state = ACTIVE;
++	del_timer(&ssi->tx_wd); /* Stop boot handshake timer */
++	spin_unlock(&ssi->lock);
++
++	dev_notice(&cl->device, "WAKELINES TEST %s\n",
++				wkres & SSIP_WAKETEST_FAILED ? "FAILED" : "OK");
++	if (wkres & SSIP_WAKETEST_FAILED) {
++		ssip_error(cl);
++		return;
++	}
++	dev_dbg(&cl->device, "CMT is ONLINE\n");
++	netif_wake_queue(ssi->netdev);
++	netif_carrier_on(ssi->netdev);
++}
++
++static void ssip_rx_ready(struct hsi_client *cl)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++
++	spin_lock(&ssi->lock);
++	if (unlikely(ssi->main_state != ACTIVE)) {
++		dev_dbg(&cl->device, "READY on wrong state: S(%d) M(%d)\n",
++					ssi->send_state, ssi->main_state);
++		spin_unlock(&ssi->lock);
++		return;
++	}
++	if (ssi->send_state != WAIT4READY) {
++		dev_dbg(&cl->device, "Ignore spurious READY command\n");
++		spin_unlock(&ssi->lock);
++		return;
++	}
++	ssip_set_txstate(ssi, SEND_READY);
++	spin_unlock(&ssi->lock);
++	ssip_xmit(cl);
++}
++
++static void ssip_rx_strans(struct hsi_client *cl, u32 cmd)
++{
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++	struct sk_buff *skb;
++	struct hsi_msg *msg;
++	int len = SSIP_PDU_LENGTH(cmd);
++
++	dev_dbg(&cl->device, "RX strans: %d frames\n", len);
++	spin_lock(&ssi->lock);
++	if (unlikely(ssi->main_state != ACTIVE)) {
++		dev_err(&cl->device, "START TRANS wrong state: S(%d) M(%d)\n",
++					ssi->send_state, ssi->main_state);
++		spin_unlock(&ssi->lock);
++		return;
++	}
++	ssip_set_rxstate(ssi, RECEIVING);
++	if (unlikely(SSIP_MSG_ID(cmd) != ssi->rxid)) {
++		dev_err(&cl->device, "START TRANS id %d expeceted %d\n",
++					SSIP_MSG_ID(cmd), ssi->rxid);
++		spin_unlock(&ssi->lock);
++		goto out1;
++	}
++	ssi->rxid++;
++	spin_unlock(&ssi->lock);
++	skb = netdev_alloc_skb(ssi->netdev, len * 4);
++	if (unlikely(!skb)) {
++		dev_err(&cl->device, "No memory for rx skb\n");
++		goto out1;
++	}
++	skb->dev = ssi->netdev;
++	skb_put(skb, len * 4);
++	msg = ssip_alloc_data(skb, GFP_ATOMIC);
++	if (unlikely(!msg)) {
++		dev_err(&cl->device, "No memory for RX data msg\n");
++		goto out2;
++	}
++	msg->complete = ssip_rx_data_complete;
++	hsi_async_read(cl, msg);
++
++	return;
++out2:
++	dev_kfree_skb(skb);
++out1:
++	ssip_error(cl);
++}
++
++static void ssip_rxcmd_complete(struct hsi_msg *msg)
++{
++	struct hsi_client *cl = msg->cl;
++	u32 cmd = ssip_get_cmd(msg);
++	unsigned int cmdid = SSIP_COMMAND(cmd);
++
++	if (msg->status == HSI_STATUS_ERROR) {
++		dev_err(&cl->device, "RX error detected\n");
++		ssip_release_cmd(msg);
++		ssip_error(cl);
++		return;
++	}
++	hsi_async_read(cl, msg);
++	dev_dbg(&cl->device, "RX cmd: 0x%08x\n", cmd);
++	switch (cmdid) {
++	case SSIP_SW_BREAK:
++		/* Ignored */
++		break;
++	case SSIP_BOOTINFO_REQ:
++		ssip_rx_bootinforeq(cl, cmd);
++		break;
++	case SSIP_BOOTINFO_RESP:
++		ssip_rx_bootinforesp(cl, cmd);
++		break;
++	case SSIP_WAKETEST_RESULT:
++		ssip_rx_waketest(cl, cmd);
++		break;
++	case SSIP_START_TRANS:
++		ssip_rx_strans(cl, cmd);
++		break;
++	case SSIP_READY:
++		ssip_rx_ready(cl);
++		break;
++	default:
++		dev_warn(&cl->device, "command 0x%08x not supported\n", cmd);
++		break;
++	}
++}
++
++static void ssip_swbreak_complete(struct hsi_msg *msg)
++{
++	struct hsi_client *cl = msg->cl;
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++
++	ssip_release_cmd(msg);
++	spin_lock(&ssi->lock);
++	if (list_empty(&ssi->txqueue)) {
++		if (atomic_read(&ssi->tx_usecnt)) {
++			ssip_set_txstate(ssi, SEND_READY);
++		} else {
++			ssip_set_txstate(ssi, SEND_IDLE);
++			hsi_stop_tx(cl);
++		}
++		spin_unlock(&ssi->lock);
++	} else {
++		spin_unlock(&ssi->lock);
++		ssip_xmit(cl);
++	}
++	netif_wake_queue(ssi->netdev);
++}
++
++static void ssip_tx_data_complete(struct hsi_msg *msg)
++{
++	struct hsi_client *cl = msg->cl;
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++	struct hsi_msg *cmsg;
++
++	if (msg->status == HSI_STATUS_ERROR) {
++		dev_err(&cl->device, "TX data error\n");
++		ssip_error(cl);
++		goto out;
++	}
++	spin_lock(&ssi->lock);
++	if (list_empty(&ssi->txqueue)) {
++		ssip_set_txstate(ssi, SENDING_SWBREAK);
++		spin_unlock(&ssi->lock);
++		cmsg = ssip_claim_cmd(ssi);
++		ssip_set_cmd(cmsg, SSIP_SWBREAK_CMD);
++		cmsg->complete = ssip_swbreak_complete;
++		dev_dbg(&cl->device, "Send SWBREAK\n");
++		hsi_async_write(cl, cmsg);
++	} else {
++		spin_unlock(&ssi->lock);
++		ssip_xmit(cl);
++	}
++out:
++	ssip_free_data(msg);
++}
++
++void ssip_port_event(struct hsi_client *cl, unsigned long event)
++{
++	switch (event) {
++	case HSI_EVENT_START_RX:
++		ssip_start_rx(cl);
++		break;
++	case HSI_EVENT_STOP_RX:
++		ssip_stop_rx(cl);
++		break;
++	default:
++		return;
++	}
++}
++
++static int ssip_pn_open(struct net_device *dev)
++{
++	struct hsi_client *cl = to_hsi_client(dev->dev.parent);
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++	int err;
++
++	err = hsi_claim_port(cl, 1);
++	if (err < 0) {
++		dev_err(&cl->device, "SSI port already claimed\n");
++		return err;
++	}
++	err = hsi_register_port_event(cl, ssip_port_event);
++	if (err < 0) {
++		dev_err(&cl->device, "Register HSI port event failed (%d)\n", err);
++		return err;
++	}
++	dev_dbg(&cl->device, "Configuring SSI port\n");
++	hsi_setup(cl);
++	spin_lock_bh(&ssi->lock);
++	if (!ssi->waketest) {
++		ssi->waketest = 1;
++		ssi_waketest(cl, 1); /* FIXME: To be removed */
++	}
++	ssi->main_state = INIT;
++	spin_unlock_bh(&ssi->lock);
 +
 +	return 0;
 +}
 +
-+#if defined(CONFIG_OF)
-+static const struct of_device_id cmt_of_match[] = {
-+	{ .compatible = "nokia,cmt", },
-+	{},
++static int ssip_pn_stop(struct net_device *dev)
++{
++	struct hsi_client *cl = to_hsi_client(dev->dev.parent);
++
++	ssip_reset(cl);
++	hsi_unregister_port_event(cl);
++	hsi_release_port(cl);
++
++	return 0;
++}
++
++static int ssip_pn_set_mtu(struct net_device *dev, int new_mtu)
++{
++	if (new_mtu > SSIP_MAX_MTU || new_mtu < PHONET_MIN_MTU)
++		return -EINVAL;
++	dev->mtu = new_mtu;
++
++	return 0;
++}
++
++static int ssip_pn_xmit(struct sk_buff *skb, struct net_device *dev)
++{
++	struct hsi_client *cl = to_hsi_client(dev->dev.parent);
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++	struct hsi_msg *msg;
++
++	if ((skb->protocol != htons(ETH_P_PHONET)) ||
++					(skb->len < SSIP_MIN_PN_HDR))
++		goto drop;
++	/* Pad to 32-bits - FIXME: Revisit*/
++	if ((skb->len & 3) && skb_pad(skb, 4 - (skb->len & 3)))
++		goto drop;
++
++	/*
++	 * Modem sends Phonet messages over SSI with its own endianess...
++	 * Assume that modem has the same endianess as we do.
++	 */
++	if (skb_cow_head(skb, 0))
++		goto drop;
++#ifdef __LITTLE_ENDIAN
++	((u16 *)skb->data)[2] = swab16(((u16 *)skb->data)[2]);
++#endif
++	msg = ssip_alloc_data(skb, GFP_ATOMIC);
++	if (!msg) {
++		dev_dbg(&cl->device, "Dropping tx data: No memory\n");
++		goto drop;
++	}
++	msg->complete = ssip_tx_data_complete;
++
++	spin_lock_bh(&ssi->lock);
++	if (unlikely(ssi->main_state != ACTIVE)) {
++		spin_unlock_bh(&ssi->lock);
++		dev_dbg(&cl->device, "Dropping tx data: CMT is OFFLINE\n");
++		goto drop2;
++	}
++	list_add_tail(&msg->link, &ssi->txqueue);
++	ssi->txqueue_len++;
++	if (dev->tx_queue_len < ssi->txqueue_len) {
++		dev_info(&cl->device, "TX queue full %d\n", ssi->txqueue_len);
++		netif_stop_queue(dev);
++	}
++	if (ssi->send_state == SEND_IDLE) {
++		ssip_set_txstate(ssi, WAIT4READY);
++		spin_unlock_bh(&ssi->lock);
++		dev_dbg(&cl->device, "Start TX qlen %d\n", ssi->txqueue_len);
++		hsi_start_tx(cl);
++	} else if (ssi->send_state == SEND_READY) {
++		/* Needed for cmt-speech workaround */
++		dev_dbg(&cl->device, "Start TX on SEND READY qlen %d\n",
++							ssi->txqueue_len);
++		spin_unlock_bh(&ssi->lock);
++		ssip_xmit(cl);
++	} else {
++		spin_unlock_bh(&ssi->lock);
++	}
++	dev->stats.tx_packets++;
++	dev->stats.tx_bytes += skb->len;
++
++	return 0;
++drop2:
++	hsi_free_msg(msg);
++drop:
++	dev->stats.tx_dropped++;
++	dev_kfree_skb(skb);
++
++	return 0;
++}
++
++/* CMT reset support */
++static int ssip_cmt_event(struct notifier_block *nb, unsigned long event,
++								void *data)
++{
++	struct ssi_protocol *ssi = container_of(nb, struct ssi_protocol, nb);
++
++	if (event != CMT_RESET)
++		return NOTIFY_DONE;
++
++	dev_err(&ssi->cl->device, "CMT reset detected !\n");
++	ssip_error(ssi->cl);
++
++	return NOTIFY_DONE;
++}
++
++static const struct net_device_ops ssip_pn_ops = {
++	.ndo_open	= ssip_pn_open,
++	.ndo_stop	= ssip_pn_stop,
++	.ndo_start_xmit	= ssip_pn_xmit,
++	.ndo_change_mtu	= ssip_pn_set_mtu,
 +};
-+MODULE_DEVICE_TABLE(of, cmt_of_match);
++
++static void ssip_pn_setup(struct net_device *dev)
++{
++	dev->features		= 0;
++	dev->netdev_ops		= &ssip_pn_ops;
++	dev->type		= ARPHRD_PHONET;
++	dev->flags		= IFF_POINTOPOINT | IFF_NOARP;
++	dev->mtu		= SSIP_DEFAULT_MTU;
++	dev->hard_header_len	= 1;
++	dev->dev_addr[0]	= PN_MEDIA_SOS;
++	dev->addr_len		= 1;
++	dev->tx_queue_len	= SSIP_TXQUEUE_LEN;
++
++	dev->destructor		= free_netdev;
++	dev->header_ops		= &phonet_header_ops;
++}
++
++static int ssi_protocol_probe(struct device *dev)
++{
++	static const char ifname[] = "phonet%d";
++	struct hsi_client *cl = to_hsi_client(dev);
++	struct ssi_protocol *ssi;
++	int err;
++
++	ssi = kzalloc(sizeof(*ssi), GFP_KERNEL);
++	if (!ssi) {
++		dev_err(dev, "No memory for ssi protocol\n");
++		return -ENOMEM;
++	}
++	spin_lock_init(&ssi->lock);
++	init_timer_deferrable(&ssi->rx_wd);
++	init_timer_deferrable(&ssi->tx_wd);
++	init_timer(&ssi->keep_alive);
++	ssi->rx_wd.data = (unsigned long)cl;
++	ssi->rx_wd.function = ssip_wd;
++	ssi->tx_wd.data = (unsigned long)cl;
++	ssi->tx_wd.function = ssip_wd;
++	ssi->keep_alive.data = (unsigned long)cl;
++	ssi->keep_alive.function = ssip_keep_alive;
++	INIT_LIST_HEAD(&ssi->txqueue);
++	INIT_LIST_HEAD(&ssi->cmdqueue);
++	ssi->nb.notifier_call = ssip_cmt_event;
++	ssi->nb.priority = INT_MAX;
++	atomic_set(&ssi->tx_usecnt, 0);
++	hsi_client_set_drvdata(cl, ssi);
++	ssi->cl = cl;
++	err = ssip_alloc_cmds(ssi);
++	if (err < 0) {
++		dev_err(dev, "No memory for commands\n");
++		goto out;
++	}
++	ssi->netdev = alloc_netdev(0, ifname, ssip_pn_setup);
++	if (!ssi->netdev) {
++		dev_err(dev, "No memory for netdev\n");
++		err = -ENOMEM;
++		goto out1;
++	}
++	SET_NETDEV_DEV(ssi->netdev, dev);
++	netif_carrier_off(ssi->netdev);
++	err = register_netdev(ssi->netdev);
++	if (err < 0) {
++		dev_err(dev, "Register netdev failed (%d)\n", err);
++		free_netdev(ssi->netdev);
++		goto out1;
++	}
++	ssi->cmt = cmt_get_by_phandle(dev->of_node, "nokia,cmt");
++	if (IS_ERR(ssi->cmt)) {
++		err = PTR_ERR(ssi->cmt);
++		dev_err(dev, "Could not get CMT (%d)\n", err);
++		goto out2;
++	}
++	err = cmt_notifier_register(ssi->cmt, &ssi->nb);
++	if (err < 0) {
++		dev_err(dev, "Register CMT notifier failed (%d)\n", err);
++		goto out3;
++	}
++	list_add(&ssi->link, &ssip_list);
++
++	return 0;
++out3:
++	cmt_put(ssi->cmt);
++out2:
++	unregister_netdev(ssi->netdev);
++out1:
++	ssip_free_cmds(ssi);
++out:
++	kfree(ssi);
++
++	return err;
++}
++
++static int ssi_protocol_remove(struct device *dev)
++{
++	struct hsi_client *cl = to_hsi_client(dev);
++	struct ssi_protocol *ssi = hsi_client_drvdata(cl);
++
++	list_del(&ssi->link);
++	cmt_notifier_unregister(ssi->cmt, &ssi->nb);
++	cmt_put(ssi->cmt);
++	unregister_netdev(ssi->netdev);
++	ssip_free_cmds(ssi);
++	hsi_client_set_drvdata(cl, NULL);
++	kfree(ssi);
++
++	return 0;
++}
++
++#ifdef CONFIG_OF
++static const struct of_device_id ssi_protocol_of_match[] = {
++       { .compatible = "ssi-protocol", },
++       {},
++};
++MODULE_DEVICE_TABLE(of, ssi_protocol_of_match);
 +#endif
 +
-+static struct platform_driver cmt_driver = {
++static struct hsi_client_driver ssip_driver = {
 +	.driver = {
-+		.name	= "nokia-cmt",
++		.name	= "ssi_protocol",
 +		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(cmt_of_match),
++		.probe	= ssi_protocol_probe,
++		.remove	= ssi_protocol_remove,
++		.of_match_table = of_match_ptr(ssi_protocol_of_match),
 +	},
-+	.probe = cmt_probe,
-+	.remove = cmt_remove,
 +};
 +
-+module_platform_driver(cmt_driver);
-+MODULE_AUTHOR("Carlos Chinea, Nokia");
-+MODULE_DESCRIPTION("CMT related support");
++static int __init ssip_init(void)
++{
++	pr_info("SSI protocol aka McSAAB added\n");
++
++	return hsi_register_client_driver(&ssip_driver);
++}
++module_init(ssip_init);
++
++static void __exit ssip_exit(void)
++{
++	hsi_unregister_client_driver(&ssip_driver);
++	pr_info("SSI protocol driver removed\n");
++}
++module_exit(ssip_exit);
++
++MODULE_ALIAS("hsi:ssi_protocol");
++MODULE_AUTHOR("Carlos Chinea <carlos.chinea@nokia.com>,"
++		"Remi Denis-Courmont <remi.denis-courmont@nokia.com>");
++MODULE_DESCRIPTION("SSI protocol improved aka McSAAB");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:nokia-cmt");
-diff --git a/include/linux/nokia-cmt.h b/include/linux/nokia-cmt.h
+diff --git a/include/linux/hsi/ssi_protocol.h b/include/linux/hsi/ssi_protocol.h
 new file mode 100644
-index 0000000..2f19a8b
+index 0000000..e434cc4
 --- /dev/null
-+++ b/include/linux/nokia-cmt.h
-@@ -0,0 +1,46 @@
++++ b/include/linux/hsi/ssi_protocol.h
+@@ -0,0 +1,41 @@
 +/*
-+ * CMT support header
++ * ssip_slave.h
 + *
-+ * Copyright (C) 2009 Nokia Corporation. All rights reserved.
++ * SSIP slave support header file
++ *
++ * Copyright (C) 2010 Nokia Corporation. All rights reserved.
 + *
 + * Contact: Carlos Chinea <carlos.chinea@nokia.com>
 + *
@@ -416,30 +1323,23 @@ index 0000000..2f19a8b
 + * 02110-1301 USA
 + */
 +
-+#ifndef __NOKIA_CMT_H__
-+#define __NOKIA_CMT_H__
++#ifndef __LINUX_SSIP_SLAVE_H__
++#define __LINUX_SSIP_SLAVE_H__
 +
-+#include <linux/notifier.h>
-+#include <linux/of.h>
++#include <linux/hsi/hsi.h>
 +
-+/*
-+ * NOKIA CMT notifier events
-+ */
-+enum {
-+	CMT_RESET,
-+};
++static inline void ssip_slave_put_master(struct hsi_client *master)
++{
++}
 +
-+struct cmt_device;
++struct hsi_client *ssip_slave_get_master(struct hsi_client *slave);
++int ssip_slave_start_tx(struct hsi_client *master);
++int ssip_slave_stop_tx(struct hsi_client *master);
 +
-+struct cmt_device *cmt_get(const char *name);
-+struct cmt_device *cmt_get_by_phandle(struct device_node *np,
-+							const char *propname);
-+void cmt_put(struct cmt_device *cmt);
-+int cmt_notifier_register(struct cmt_device *cmtdev,
-+						struct notifier_block *nb);
-+int cmt_notifier_unregister(struct cmt_device *cmtdev,
-+						struct notifier_block *nb);
-+#endif /* __NOKIA_CMT_H__ */
++int ssip_slave_running(struct hsi_client *master);
++
++#endif /* __LINUX_SSIP_SLAVE_H__ */
++
 -- 
 1.8.5.1
 
