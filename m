@@ -1,118 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362Ab3LONPg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 08:15:36 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:37449 "EHLO bear.ext.ti.com"
+	id S1754314Ab3LONXd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 08:23:33 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:59448 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754085Ab3LONPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 08:15:34 -0500
-Message-ID: <52ADAB0E.4020800@ti.com>
-Date: Sun, 15 Dec 2013 18:43:50 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754085Ab3LONXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 08:23:32 -0500
+Date: Sun, 15 Dec 2013 14:23:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: John <da_audiophile@yahoo.com>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "david.heidelberger@ixit.cz" <david.heidelberger@ixit.cz>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] expand micro-optimizations in kernel to newer model CPUs
+Message-ID: <20131215132329.GC4361@pd.tnic>
+References: <1386518000.90452.YahooMailNeo@web140004.mail.bf1.yahoo.com>
+ <864985fbeb1d8148439e25ec01f47a67@ixit.cz>
+ <52AAFF89.5080509@gmail.com>
+ <1387051250.86178.YahooMailNeo@web140005.mail.bf1.yahoo.com>
+ <ce679ca5-bf83-4c2a-9234-859cc7a4206b@email.android.com>
+ <1387057337.97000.YahooMailNeo@web140004.mail.bf1.yahoo.com>
+ <52ACECC4.208@zytor.com>
+ <1387108841.76039.YahooMailNeo@web140006.mail.bf1.yahoo.com>
+ <CAFLxGvxakZS5FFQcZ_ogTd9aUENT3ECj2Lxs+FCbZAiGqgOJ7g@mail.gmail.com>
+ <1387111370.81380.YahooMailNeo@web140001.mail.bf1.yahoo.com>
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        <linux-gpio@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v6 6/6] ARM: davinci: da850 evm: add GPIO pinumux entries
- DT node
-References: <1385057731-4348-1-git-send-email-prabhakar.csengg@gmail.com> <1385057731-4348-7-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1385057731-4348-7-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1387111370.81380.YahooMailNeo@web140001.mail.bf1.yahoo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 November 2013 11:45 PM, Prabhakar Lad wrote:
-> From: KV Sujith <sujithkv@ti.com>
-> 
-> Add GPIO DT node and pinmux entries for DA850 EVM. GPIO is
-> configurable differently on different boards. So add GPIO
-> pinmuxing in dts file.
-> 
-> Signed-off-by: KV Sujith <sujithkv@ti.com>
-> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> ---
->  arch/arm/boot/dts/da850-evm.dts |   20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
-> index 588ce58..f82c129 100644
-> --- a/arch/arm/boot/dts/da850-evm.dts
-> +++ b/arch/arm/boot/dts/da850-evm.dts
-> @@ -17,6 +17,21 @@
->  	soc {
->  		pmx_core: pinmux@1c14120 {
->  			status = "okay";
-> +
-> +			gpio_pins: pinmux_gpio_pins {
-> +				pinctrl-single,bits = <
-> +					/* GPIO2_4 GPIO2_6 */
-> +					0x18 0x00008080 0x0000f0f0
-> +					/* GPIO2_8 GPIO2_15 */
-> +					0x14 0x80000008 0xf000000f
-> +					/* GPIO3_12 GPIO3_13 */
-> +					0x1C 0x00008800 0x0000ff00
-> +					/* GPIO4_0 GPIO4_1 */
-> +					0x28 0x88000000 0xff000000
-> +					/* GPIO6_9 GPIO6_10 GPIO6_13 */
-> +					0x34 0x08800800 0x0ff00f00
-> +				>;
-> +			};
->  		};
+On Sun, Dec 15, 2013 at 04:42:50AM -0800, John wrote:
+> I am using ANOVA to establish that the generic group differs from the
+> optimized group.
 
-Shouldn't these pinmux entries be part of actual device
-node which needs them to be muxed this way? For now, I
-have committed the attached reduced patch.
+You probably should run a couple other benchmarks, in addition, for
+greater confidence that this optimization actually brings any palpable
+improvement and is not just causing code bloat.
 
-Thanks,
-Sekhar
+For example, last time I did a perf profile of a kernel build on AMD
+F15h, the PILERDRIVER "optimization" was actually even a bit worse than
+the standard MK8 one.
 
----8<---
->From 3a9574f2aa4ffd9b867321a1f298893410bd3718 Mon Sep 17 00:00:00 2001
-From: KV Sujith <sujithkv@ti.com>
-Date: Thu, 21 Nov 2013 23:45:31 +0530
-Subject: [PATCH 1/1] ARM: davinci: da850 evm: add GPIO pinumux entries DT node
+http://marc.info/?l=linux-kernel&m=138081947417204
 
-Add GPIO DT node and pinmux entries for DA850 EVM. GPIO is
-configurable differently on different boards. So add GPIO
-pinmuxing in dts file.
-
-Signed-off-by: KV Sujith <sujithkv@ti.com>
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Signed-off-by: Sekhar Nori <nsekhar@ti.com>
----
- arch/arm/boot/dts/da850-evm.dts |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
-index 588ce58..1e11e5a 100644
---- a/arch/arm/boot/dts/da850-evm.dts
-+++ b/arch/arm/boot/dts/da850-evm.dts
-@@ -101,6 +101,9 @@
- 			pinctrl-names = "default";
- 			pinctrl-0 = <&mii_pins>;
- 		};
-+		gpio: gpio@1e26000 {
-+			status = "okay";
-+		};
- 	};
- 	nand_cs3@62000000 {
- 		status = "okay";
 -- 
-1.7.10.1
+Regards/Gruss,
+    Boris.
 
-
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
