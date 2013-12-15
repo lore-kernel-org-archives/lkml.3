@@ -1,61 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab3LOEcZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 23:32:25 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:8650 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753903Ab3LOEcW (ORCPT
+	id S1754194Ab3LOEc0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 23:32:26 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:39956 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026Ab3LOEcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 23:32:22 -0500
+	Sat, 14 Dec 2013 23:32:24 -0500
 From: Davidlohr Bueso <davidlohr@hp.com>
 To: linux-kernel@vger.kernel.org
 Cc: acme@ghostprotocols.net, mingo@redhat.com, dvhart@linux.intel.com,
         peterz@infradead.org, tglx@linutronix.de, jason.low2@hp.com,
         Waiman.Long@hp.com, scott.norton@hp.com, aswin@hp.com,
         davidlohr@hp.com
-Subject: [PATCH 0/3] perf-bench: introduce futex microbenchmarks
-Date: Sat, 14 Dec 2013 20:31:54 -0800
-Message-Id: <1387081917-9102-1-git-send-email-davidlohr@hp.com>
+Subject: [PATCH 3/3] perf-bench: add futex-requeue microbenchmark
+Date: Sat, 14 Dec 2013 20:31:57 -0800
+Message-Id: <1387081917-9102-4-git-send-email-davidlohr@hp.com>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1387081917-9102-1-git-send-email-davidlohr@hp.com>
+References: <1387081917-9102-1-git-send-email-davidlohr@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds three programs that stress and measure different futex
-operations: (i) uaddr hashing, (ii) wakeups and (iii) requeuing/waiting.
+Block a bunch of threads on a futex and requeue them on another, N at a time.
 
-More details and usage examples in each individual patch, along with parameter
-descriptions in the code.
+This program is particularly useful to measure the latency of nthread requeues
+without waking up any tasks -- thus mimicking a regular futex_wait.
+An example run:
 
-While the previous effort (https://lkml.org/lkml/2012/5/17/207) to add futex 
-benchmarks to perf-bench failed, I strongly believe that perf is an ideal place 
-for these kinds of programs. This patchset is different from Hitoshi's because
-it does not try to take over Darren's futextest suite, and only deals with 
-finer grained aspects of the kernel's implementation, and thus mostly useful
-for kernel hacking. Furthermore, by being part of the kernel tree, it can get
-more attention and naturally evolve with time.
+$ perf bench futex requeue -r 100 -t 64
+Run summary [PID 151011]: Requeuing 64 threads (from 0x7d15c4 to 0x7d15c8), 1 at a time.
 
-Thanks!
+[Run 1]: Requeued 64 of 64 threads in 0.0400 ms
+[Run 2]: Requeued 64 of 64 threads in 0.0390 ms
+[Run 3]: Requeued 64 of 64 threads in 0.0400 ms
+...
+[Run 100]: Requeued 64 of 64 threads in 0.0390 ms
+Requeued 64 of 64 threads in 0.0399 ms (+-0.37%)
 
-Davidlohr Bueso (3):
-  perf-bench: add futex-hash microbenchmark
-  perf-bench: add futex-wake microbenchmark
-  perf-bench: add futex-requeue microbenchmark
-
- tools/perf/Makefile.perf         |   3 +
- tools/perf/bench/bench.h         |   3 +
- tools/perf/bench/futex-hash.c    | 212 +++++++++++++++++++++++++++++++++++++++
- tools/perf/bench/futex-requeue.c | 211 ++++++++++++++++++++++++++++++++++++++
- tools/perf/bench/futex-wake.c    | 201 +++++++++++++++++++++++++++++++++++++
- tools/perf/bench/futex.h         |  71 +++++++++++++
- tools/perf/builtin-bench.c       |  12 ++-
- tools/perf/perf.h                |   6 ++
- 8 files changed, 718 insertions(+), 1 deletion(-)
- create mode 100644 tools/perf/bench/futex-hash.c
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ tools/perf/Makefile.perf         |   1 +
+ tools/perf/bench/bench.h         |   1 +
+ tools/perf/bench/futex-requeue.c | 211 +++++++++++++++++++++++++++++++++++++++
+ tools/perf/bench/futex.h         |  13 +++
+ tools/perf/builtin-bench.c       |   1 +
+ 5 files changed, 227 insertions(+)
  create mode 100644 tools/perf/bench/futex-requeue.c
- create mode 100644 tools/perf/bench/futex-wake.c
- create mode 100644 tools/perf/bench/futex.h
 
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index f2e3536..9dd2c19 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -418,6 +418,7 @@ BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memset.o
+ BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
+ BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
++BUILTIN_OBJS += $(OUTPUT)bench/futex-requeue.o
+ 
+ BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-evlist.o
+diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
+index 6ac3f1d..eba4670 100644
+--- a/tools/perf/bench/bench.h
++++ b/tools/perf/bench/bench.h
+@@ -33,6 +33,7 @@ extern int bench_mem_memcpy(int argc, const char **argv,
+ extern int bench_mem_memset(int argc, const char **argv, const char *prefix);
+ extern int bench_futex_hash(int argc, const char **argv, const char *prefix);
+ extern int bench_futex_wake(int argc, const char **argv, const char *prefix);
++extern int bench_futex_requeue(int argc, const char **argv, const char *prefix);
+ 
+ #define BENCH_FORMAT_DEFAULT_STR	"default"
+ #define BENCH_FORMAT_DEFAULT		0
+diff --git a/tools/perf/bench/futex-requeue.c b/tools/perf/bench/futex-requeue.c
+new file mode 100644
+index 0000000..a1625587
+--- /dev/null
++++ b/tools/perf/bench/futex-requeue.c
+@@ -0,0 +1,211 @@
++/*
++ * Copyright (C) 2013  Davidlohr Bueso <davidlohr@hp.com>
++ *
++ * futex-requeue: Block a bunch of threads on futex1 and requeue them
++ *                on futex2, N at a time.
++ *
++ * This program is particularly useful to measure the latency of nthread
++ * requeues without waking up any tasks -- thus mimicking a regular futex_wait.
++ */
++
++#include "../perf.h"
++#include "../util/util.h"
++#include "../util/stat.h"
++#include "../util/parse-options.h"
++#include "../util/header.h"
++#include "bench.h"
++#include "futex.h"
++
++#include <err.h>
++#include <stdlib.h>
++#include <sys/time.h>
++#include <pthread.h>
++
++static u_int32_t futex1 = 0, futex2 = 0;
++
++/*
++ * How many tasks to requeue at a time.
++ * Default to 1 in order to make the kernel work more.
++ */
++static unsigned int nrequeue = 1;
++
++/*
++ * There can be significant variance from run to run,
++ * the more repeats, the more exact the overall avg and
++ * the better idea of the futex latency.
++ */
++static unsigned int repeat = 10;
++
++static pthread_t *worker;
++static bool done = 0, silent = 0;
++static pthread_mutex_t thread_lock;
++static pthread_cond_t thread_parent, thread_worker;
++static struct stats requeuetime_stats, requeued_stats;
++static unsigned int ncpus, threads_starting, nthreads = 0;
++
++static const struct option options[] = {
++	OPT_UINTEGER('t', "threads",  &nthreads, "Specify amount of threads"),
++	OPT_UINTEGER('q', "nrequeue", &nrequeue, "Specify amount of threads to requeue at once"),
++	OPT_UINTEGER('r', "repeat",   &repeat,   "Specify amount of times to repeat the run"),
++	OPT_BOOLEAN( 's', "silent",   &silent,   "Silent mode: do not display data/details"),
++	OPT_END()
++};
++
++static const char * const bench_futex_requeue_usage[] = {
++	"perf bench futex requeue <options>",
++	NULL
++};
++
++static void print_summary(void)
++{
++	double requeuetime_avg = avg_stats(&requeuetime_stats);
++	double requeuetime_stddev = stddev_stats(&requeuetime_stats);
++	unsigned int requeued_avg = avg_stats(&requeued_stats);
++
++	printf("Requeued %d of %d threads in %.4f ms (+-%.2f%%)\n",
++	       requeued_avg,
++	       nthreads,
++	       requeuetime_avg/1e3,
++	       rel_stddev_stats(requeuetime_stddev, requeuetime_avg));
++}
++
++static void *workerfn(void *arg __maybe_unused)
++{
++	pthread_mutex_lock(&thread_lock);
++	threads_starting--;
++	if (!threads_starting)
++		pthread_cond_signal(&thread_parent);
++	pthread_cond_wait(&thread_worker, &thread_lock);
++	pthread_mutex_unlock(&thread_lock);
++
++	futex_wait(&futex1, 0, NULL, FUTEX_PRIVATE_FLAG);
++	return NULL;
++}
++
++static void block_threads(pthread_t *w,
++			  pthread_attr_t thread_attr)
++{
++	cpu_set_t cpu;
++	unsigned int i;
++
++	threads_starting = nthreads;
++
++	/* create and block all threads */
++	for (i = 0; i < nthreads; i++) {
++		CPU_ZERO(&cpu);
++		CPU_SET(i % ncpus, &cpu);
++
++		if (pthread_attr_setaffinity_np(&thread_attr, sizeof(cpu_set_t), &cpu))
++			err(EXIT_FAILURE, "pthread_attr_setaffinity_np");
++
++		if (pthread_create(&w[i], &thread_attr, workerfn, NULL))
++			err(EXIT_FAILURE, "pthread_create");
++	}
++}
++
++static void toggle_done(int sig __maybe_unused,
++			siginfo_t *info __maybe_unused,
++			void *uc __maybe_unused)
++{
++	done = true;
++}
++
++int bench_futex_requeue(int argc, const char **argv,
++			const char *prefix __maybe_unused)
++{
++	int ret = 0;
++	unsigned int i, j;
++	struct sigaction act;
++	pthread_attr_t thread_attr;
++
++	argc = parse_options(argc, argv, options, bench_futex_requeue_usage, 0);
++	if (argc)
++		goto err;
++
++	ncpus = sysconf(_SC_NPROCESSORS_ONLN);
++
++	sigfillset(&act.sa_mask);
++	act.sa_sigaction = toggle_done;
++	sigaction(SIGINT, &act, NULL);
++
++	if (!nthreads)
++		nthreads = ncpus;
++
++	worker = calloc(nthreads, sizeof(*worker));
++	if (!worker)
++		err(EXIT_FAILURE, "calloc");
++
++	printf("Run summary [PID %d]: Requeuing %d threads (from %p to %p), "
++	       "%d at a time.\n\n",
++	       getpid(), nthreads, &futex1, &futex2, nrequeue);
++
++	init_stats(&requeued_stats);
++	init_stats(&requeuetime_stats);
++	pthread_attr_init(&thread_attr);
++	pthread_mutex_init(&thread_lock, NULL);
++	pthread_cond_init(&thread_parent, NULL);
++	pthread_cond_init(&thread_worker, NULL);
++
++	for (j = 0; j < repeat && !done; j++) {
++		unsigned int nrequeued = 0;
++		struct timeval start, end, runtime;
++
++		/* create, launch & block all threads */
++		block_threads(worker, thread_attr);
++
++		/* make sure all threads are already blocked */
++		pthread_mutex_lock(&thread_lock);
++		while (threads_starting)
++			pthread_cond_wait(&thread_parent, &thread_lock);
++		pthread_cond_broadcast(&thread_worker);
++		pthread_mutex_unlock(&thread_lock);
++
++		usleep(100000);
++
++		/* Ok, all threads are patiently blocked, start requeueing */
++		gettimeofday(&start, NULL);
++		for (nrequeued = 0; nrequeued < nthreads; nrequeued += nrequeue)
++			/*
++			 * Do not wakeup any tasks blocked on futex1, allowing
++			 * us to really measure futex_wait functionality.
++			 */
++			futex_cmp_requeue(&futex1, 0, &futex2, 0, nrequeue,
++					  FUTEX_PRIVATE_FLAG);
++		gettimeofday(&end, NULL);
++		timersub(&end, &start, &runtime);
++
++		update_stats(&requeued_stats, nrequeued);
++		update_stats(&requeuetime_stats, runtime.tv_usec);
++
++		if (!silent) {
++			printf("[Run %d]: Requeued %d of %d threads in %.4f ms\n",
++			       j + 1, nrequeued, nthreads, runtime.tv_usec/1e3);
++		}
++
++		/* everybody should be blocked on futex2, wake'em up */
++		nrequeued = futex_wake(&futex2, nthreads, FUTEX_PRIVATE_FLAG);
++		if (nthreads != nrequeued)
++			warnx("couldn't wakeup all tasks (%d/%d)", nrequeued, nthreads);
++
++		for (i = 0; i < nthreads; i++) {
++			ret = pthread_join(worker[i], NULL);
++			if (ret)
++				err(EXIT_FAILURE, "pthread_join");
++		}
++
++	}
++
++	/* cleanup & report results */
++	pthread_cond_destroy(&thread_parent);
++	pthread_cond_destroy(&thread_worker);
++	pthread_mutex_destroy(&thread_lock);
++	pthread_attr_destroy(&thread_attr);
++
++	print_summary();
++
++	free(worker);
++	return ret;
++err:
++	usage_with_options(bench_futex_requeue_usage, options);
++	exit(EXIT_FAILURE);
++}
+diff --git a/tools/perf/bench/futex.h b/tools/perf/bench/futex.h
+index 6ac4509..71f2844 100644
+--- a/tools/perf/bench/futex.h
++++ b/tools/perf/bench/futex.h
+@@ -55,4 +55,17 @@ futex_wake(u_int32_t *uaddr, int nr_wake, int opflags)
+ 	return futex(uaddr, FUTEX_WAKE, nr_wake, NULL, NULL, 0, opflags);
+ }
+ 
++/**
++* futex_cmp_requeue() - requeue tasks from uaddr to uaddr2
++* @nr_wake:        wake up to this many tasks
++* @nr_requeue:        requeue up to this many tasks
++*/
++static inline int
++futex_cmp_requeue(u_int32_t *uaddr, u_int32_t val, u_int32_t *uaddr2, int nr_wake,
++		 int nr_requeue, int opflags)
++{
++	return futex(uaddr, FUTEX_CMP_REQUEUE, nr_wake, nr_requeue, uaddr2,
++		 val, opflags);
++}
++
+ #endif /* _FUTEX_H */
+diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+index 743a30a..f600b74 100644
+--- a/tools/perf/builtin-bench.c
++++ b/tools/perf/builtin-bench.c
+@@ -58,6 +58,7 @@ static struct bench mem_benchmarks[] = {
+ static struct bench futex_benchmarks[] = {
+ 	{ "hash",	"Benchmark for futex hash table",               bench_futex_hash	},
+ 	{ "wake",	"Benchmark for futex wake calls",               bench_futex_wake	},
++	{ "requeue",	"Benchmark for futex requeue calls",            bench_futex_requeue	},
+ 	{ "all",	"Test all futex benchmarks",			NULL			},
+ 	{ NULL,		NULL,						NULL			}
+ };
 -- 
 1.8.1.4
 
