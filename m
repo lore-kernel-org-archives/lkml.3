@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828Ab3LOR32 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 12:29:28 -0500
-Received: from mailp.voltaire.com ([193.47.165.129]:43895 "EHLO mellanox.co.il"
+	id S1751889Ab3LORbl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 12:31:41 -0500
+Received: from mailp.voltaire.com ([193.47.165.129]:58440 "EHLO mellanox.co.il"
 	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751608Ab3LOR31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 12:29:27 -0500
+	id S1751798Ab3LORbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 12:31:40 -0500
 From: Doron Tsur <doront@mellanox.com>
-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org, levex@linux.com
 Cc: itaib@mellanox.com, Doron Tsur <doront@mellanox.com>
 Subject: [PATCH] include/uapi/linux/netlink.h -Wall -Wextra -Werror support fix
-Date: Sun, 15 Dec 2013 19:29:22 +0200
-Message-Id: <1387128562-12370-1-git-send-email-doront@mellanox.com>
+Date: Sun, 15 Dec 2013 19:31:34 +0200
+Message-Id: <1387128694-14470-1-git-send-email-doront@mellanox.com>
 X-Mailer: git-send-email 1.7.8.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
