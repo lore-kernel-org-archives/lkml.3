@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab3LOJtr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 04:49:47 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:56975 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752520Ab3LOJtp (ORCPT
+	id S1754220Ab3LOJwJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 04:52:09 -0500
+Received: from fallback4.mail.ru ([94.100.176.42]:58306 "EHLO
+	fallback4.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752520Ab3LOJwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 04:49:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <mj+md-20131215.091609.28546.nikam@ucw.cz>
-References: <1378302428-19758-1-git-send-email-teg@jklm.no>
- <mj+md-20130904.134928.12262.nikam@ucw.cz> <CAG-2HqWcnZ-z7EbDd0aAj6y_Ho6szfRZUiK0psEnmoz17Kw-xA@mail.gmail.com>
- <mj+md-20131110.114139.9646.albireo@ucw.cz> <CAG-2HqXsEBB_nxUF4gza-eTsUjmysYR7iPEjJPUFyR1rC2KGMg@mail.gmail.com>
- <CAPXgP12MLL_Z5gyrCndQLRT6SR_TJi9xHp1HkHMX1ahwnxx3yw@mail.gmail.com> <mj+md-20131215.091609.28546.nikam@ucw.cz>
-From: Kay Sievers <kay@vrfy.org>
-Date: Sun, 15 Dec 2013 10:49:24 +0100
-Message-ID: <CAPXgP10+1WtX8_xN+QSHvKws01hbKhP3FN95sXk9EtezdSPtqg@mail.gmail.com>
-Subject: Re: [PATCH RESEND][pciutils] libpci: pci_id_lookup - add udev/hwdb support
-To: Martin Mares <mj@ucw.cz>
-Cc: Tom Gundersen <teg@jklm.no>, LKML <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 15 Dec 2013 04:52:07 -0500
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?TGV2ZW50ZSBLdXJ1c2E=?= <levex@linux.com>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?B?TWFyayBCcm93bg==?= <broonie@kernel.org>,
+        =?UTF-8?B?R3JlZyBLcm9haC1IYXJ0bWFu?= <gregkh@linuxfoundation.org>
+Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gcmVnbWFwOiBpcnE6IEFsbG93IHVzaW5nIHplcm8gdmFs?=
+ =?UTF-8?B?dWUgZm9yIGFja19iYXNl?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [188.134.40.128]
+Date: Sun, 15 Dec 2013 13:51:38 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1387101098.569230728@f386.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <52AD7AE7.7070301@linux.com>
+References: <1387100211-19101-1-git-send-email-shc_work@mail.ru>
+ <52AD7AE7.7070301@linux.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBF9qFMA019346
 
-On Sun, Dec 15, 2013 at 10:18 AM, Martin Mares <mj@ucw.cz> wrote:
-> Hello Kay,
->
->> Libpci and its linear search through megabytes of text files for evey
->> new query is too inefficient, that we cannot afford to use it during
->> early bootup. It was the largest hit left in bootup profiling on
->> machines booting userspace in the sub-1-second range on common
->> machines. It was probably never meant to provide efficient queries,
->> but it's the reason we can never use it during early boot.
->
-> I do not know what you are speaking about -- libpci definitely does
-> not perform linear scans on pci.ids. It builds a hash table from pci.ids
-> on the first query and and all subsequent queries are O(1) on average.
+> On 12/15/2013 10:36 AM, Alexander Shiyan wrote:
+> > In some cases, clear interrupt register may be at address 0.
+> > This patch allows to use such configurations by adding additional
+> > configuration bit to indicate this.
+> > 
+> > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> > ---
+> >  drivers/base/regmap/regmap-irq.c | 6 +++---
+> >  include/linux/regmap.h           | 5 ++++-
+> >  2 files changed, 7 insertions(+), 4 deletions(-)
+...
+> > diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+> > index e559078..3a36f61 100644
+> > --- a/include/linux/regmap.h
+> > +++ b/include/linux/regmap.h
+...
+> > @@ -520,6 +522,7 @@ struct regmap_irq_chip {
+> >  	unsigned int irq_reg_stride;
+> >  	bool init_ack_masked:1;
+> >  	bool mask_invert:1;
+> > +	bool use_ack:1;
+> I think this will break something. Better use 0 as default value.
+> Reason I think so, is because in the above code you effectively add a new
+> possibility for most code to run.
 
-It does that per process doing that, and that's the problem for how
-udev works/worked. The binary hwdb is on-disk and can be mmaped, and
-there is no difference between initialization, first, or subsequent
-queries.
+This is not a default value but bit-size of this field.
 
-Kay
+---
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
