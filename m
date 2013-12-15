@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204Ab3LOLdf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 06:33:35 -0500
-Received: from nikam.ms.mff.cuni.cz ([195.113.20.16]:57777 "EHLO
-	nikam.ms.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753903Ab3LOLde (ORCPT
+	id S1754298Ab3LOLdq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 06:33:46 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:48603 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753903Ab3LOLdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 06:33:34 -0500
-Date: Sun, 15 Dec 2013 12:33:32 +0100
-From: Martin Mares <mj@ucw.cz>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Tom Gundersen <teg@jklm.no>, LKML <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH RESEND][pciutils] libpci: pci_id_lookup - add udev/hwdb
- support
-Message-ID: <mj+md-20131215.110132.29802.nikam@ucw.cz>
-References: <1378302428-19758-1-git-send-email-teg@jklm.no>
- <mj+md-20130904.134928.12262.nikam@ucw.cz>
- <CAG-2HqWcnZ-z7EbDd0aAj6y_Ho6szfRZUiK0psEnmoz17Kw-xA@mail.gmail.com>
- <mj+md-20131110.114139.9646.albireo@ucw.cz>
- <CAG-2HqXsEBB_nxUF4gza-eTsUjmysYR7iPEjJPUFyR1rC2KGMg@mail.gmail.com>
- <CAPXgP12MLL_Z5gyrCndQLRT6SR_TJi9xHp1HkHMX1ahwnxx3yw@mail.gmail.com>
- <mj+md-20131215.091609.28546.nikam@ucw.cz>
- <CAPXgP10+1WtX8_xN+QSHvKws01hbKhP3FN95sXk9EtezdSPtqg@mail.gmail.com>
+	Sun, 15 Dec 2013 06:33:43 -0500
+Date: Sun, 15 Dec 2013 03:33:37 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 2/7] Input: pmic8xxx-pwrkey - Migrate to regmap APIs
+Message-ID: <20131215113337.GB14818@core.coreip.homeip.net>
+References: <1386718996-3733-1-git-send-email-sboyd@codeaurora.org>
+ <1386718996-3733-3-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPXgP10+1WtX8_xN+QSHvKws01hbKhP3FN95sXk9EtezdSPtqg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1386718996-3733-3-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On Tue, Dec 10, 2013 at 03:43:11PM -0800, Stephen Boyd wrote:
+> Use the regmap APIs for this driver instead of custom pm8xxx
+> APIs. This breaks this driver's dependency on the pm8xxx APIs and
+> allows us to easily port it to other bus protocols in the future.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/input/misc/pmic8xxx-pwrkey.c | 13 +++++++++----
+>  1 file changed, 9 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
+> index 233b216..a4de105 100644
+> --- a/drivers/input/misc/pmic8xxx-pwrkey.c
+> +++ b/drivers/input/misc/pmic8xxx-pwrkey.c
+> @@ -18,9 +18,9 @@
+>  #include <linux/input.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/regmap.h>
+>  #include <linux/log2.h>
+>  
+> -#include <linux/mfd/pm8xxx/core.h>
+>  #include <linux/input/pmic8xxx-pwrkey.h>
+>  
+>  #define PON_CNTL_1 0x1C
+> @@ -83,7 +83,8 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+>  	int key_press_irq = platform_get_irq(pdev, 1);
+>  	int err;
+>  	unsigned int delay;
+> -	u8 pon_cntl;
+> +	unsigned int pon_cntl;
+> +	struct regmap *regmap;
+>  	struct pmic8xxx_pwrkey *pwrkey;
+>  	const struct pm8xxx_pwrkey_platform_data *pdata =
+>  					dev_get_platdata(&pdev->dev);
+> @@ -108,6 +109,10 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+>  		err = -ENOMEM;
+>  	}
+>  
+> +	regmap = dev_get_regmap(pdev->dev.parent, NULL);
+> +	if (!regmap)
+> +		return -ENODEV;
 
-> It does that per process doing that, and that's the problem for how
-> udev works/worked. The binary hwdb is on-disk and can be mmaped, and
-> there is no difference between initialization, first, or subsequent
-> queries.
+And you are leaking memory here...
 
-OK, point taken.
+> +
+>  	input_set_capability(pwr, EV_KEY, KEY_POWER);
+>  
+>  	pwr->name = "pmic8xxx_pwrkey";
+> @@ -116,7 +121,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+>  	delay = (pdata->kpd_trigger_delay_us << 10) / USEC_PER_SEC;
+>  	delay = 1 + ilog2(delay);
+>  
+> -	err = pm8xxx_readb(pdev->dev.parent, PON_CNTL_1, &pon_cntl);
+> +	err = regmap_read(regmap, PON_CNTL_1, &pon_cntl);
+>  	if (err < 0) {
+>  		dev_err(&pdev->dev, "failed reading PON_CNTL_1 err=%d\n", err);
+>  		return err;
+> @@ -129,7 +134,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+>  	else
+>  		pon_cntl &= ~PON_CNTL_PULL_UP;
+>  
+> -	err = pm8xxx_writeb(pdev->dev.parent, PON_CNTL_1, pon_cntl);
+> +	err = regmap_write(regmap, PON_CNTL_1, pon_cntl);
+>  	if (err < 0) {
+>  		dev_err(&pdev->dev, "failed writing PON_CNTL_1 err=%d\n", err);
+>  		return err;
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
 
-I see that a mechanism for fast lookup of hardware identification data
-is needed. However, why should such a mechanism depend on udev, systemd,
-or Linux in general?
-
-What I would really like to have is a universal library for HW lookup,
-independent of anything else and widely portable. All the hardware data
-would be provided by other packages -- pci.ids, usb.ids, kernel modules,
-etc. -- and compiled to a binary format available for instant queries.
-
-Do I miss anything?
-
-				Have a nice fortnight
 -- 
-Martin `MJ' Mares                          <mj@ucw.cz>   http://mj.ucw.cz/
-Faculty of Math and Physics, Charles University, Prague, Czech Rep., Earth
-A half-joke: What is the difference between a cat?
+Dmitry
