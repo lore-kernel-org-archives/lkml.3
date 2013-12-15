@@ -1,78 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921Ab3LORcE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 12:32:04 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751798Ab3LORcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 12:32:02 -0500
-From: Richard Weinberger <richard@nod.at>
-To: John <da_audiophile@yahoo.com>
-Cc: Richard Weinberger <richard.weinberger@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "david.heidelberger@ixit.cz" <david.heidelberger@ixit.cz>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] expand micro-optimizations in kernel to newer model CPUs
-Date: Sun, 15 Dec 2013 18:31:51 +0100
-Message-ID: <4564841.2xY9pPqtcq@sandpuppy>
-User-Agent: KMail/4.11.2 (Linux/3.12.0-34.ge8fa6b4-desktop; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <1387111370.81380.YahooMailNeo@web140001.mail.bf1.yahoo.com>
-References: <1386518000.90452.YahooMailNeo@web140004.mail.bf1.yahoo.com> <CAFLxGvxakZS5FFQcZ_ogTd9aUENT3ECj2Lxs+FCbZAiGqgOJ7g@mail.gmail.com> <1387111370.81380.YahooMailNeo@web140001.mail.bf1.yahoo.com>
+	id S1751856Ab3LORql (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 12:46:41 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:52534 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679Ab3LORqj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 12:46:39 -0500
+Message-ID: <52ADE93B.3070907@linaro.org>
+Date: Sun, 15 Dec 2013 11:39:07 -0600
+From: Alex Elder <alex.elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Mike Turquette <mturquette@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>
+CC: "bcm-kernel-feedback-list@broadcom.com" 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] clk: bcm281xx: add initial clock framework support
+References: <529F4B0F.2020801@linaro.org> <529F4B4F.4020405@linaro.org> <20131214235731.26321.53050@quantum>
+In-Reply-To: <20131214235731.26321.53050@quantum>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 15. Dezember 2013, 04:42:50 schrieb John:
-> ----- Original Message -----
+On 12/14/2013 05:57 PM, Mike Turquette wrote:
+> Quoting Alex Elder (2013-12-04 07:33:35)
+>> +       return true;
+>> +}
+>> +
+>> +/* A bit position must be less than the number of bits in a 32-bit
+>> register. */
 > 
-> > From: Richard Weinberger <>
-> > 
-> > A *very* small speedup.
-> > 
-> > And I really doubt your numbers.
-> > Why are you using ANOVA? You're comparing *two* groups not more than two.
-> > I had a quick look at your raw numbers, they don't seem to be normally
-> > distributed at all.
-> > Did you remove some peaks?
+> Hi Alex,
 > 
-> Hi Richard.  Thank you for your interest.  Yes, a small speedup as I
-> mentioned but  I'll note that the current kernel code includes the MCORE2
-> option.  I tested this against some of the newer ones and they are all on
-> par with each other.  For example, here are differences in median values:
+> The patch is corrupt at line 634 and several other places below.  Did
+> you edit it manually? I'm happy with the series after reviewing it but
+> it cannot be applied. Can you fix the issue and send me a pull request?
 > 
-> CPUDifference in median value
-> core2        +87.5 ms
-> core7-avx+79.7 ms
-> core-avx-i+257.2 ms
+> Thanks,
+> Mike
 > 
-> I am using ANOVA to establish that the generic group differs from the
-> optimized group.  I have always used ANOVA for this sort of comparison
-> whether using two or more groups.  In fact, thumb through any medical or
-> scientific journal, you'll see others in pier reviewed article doing the
-> same.  
 
-Only because others so does not make it valid.
-Why not a plain T-test?
+First, yes I sent it manually (copy from the git-generated patch
+and paste into a mail message, and I'm sorry about that.  I have
+yet to set up my Linaro settings for "git-send-email" and I'll
+do that this week.
 
-> I did not remove any datapoints; I do not understand why you don't think the
-> sets are normally distributed.  Did you see the normal quantile plots?
->  Additionally, the population variances are fairly equal (Levene and
-> Barlett tests). 
+I have a v3 that has been updated to apply to v3.13-rc3 (there
+is no -rc4 yet).
 
-Just perform a simple Kolmogorow-Smirnow test like on 
-http://jumk.de/statistic-calculator or http://www.physics.csbsju.edu/stats/KS-test.n.plot_form.html and you'll find out.
-IIRC from my statistics 101 you'd have to perform a two-sided ANOVA test
-if your data points are not normally distributed.
+I'm not sure how this works with the series of 8 patches from Tim
+Kryger that it depends on.  But here is a pull request for the
+version (including the prerequisites) based on 3.13-rc3.  (It is
+done manually again, so there are some line wraps...)
 
-That said, we should not waste time with statistics games.
-What we need are reliable and reproducible results.
-As Boris requested many times before...
+Thanks a lot for the review Mike.  I know you're a busy guy.
 
-Thanks,
-//richard
+					-Alex
+
+The following changes since commit 374b105797c3d4f29c685f3be535c35f5689b30e:
+
+  Linux 3.13-rc3 (2013-12-06 09:34:04 -0800)
+
+are available in the git repository at:
+
+  ssh://git@git.linaro.org/people/alex.elder/linux.git
+review/bcm-kona-clocks-v3
+
+for you to fetch changes up to cf62c29babf6068abf91588411704566812b7900:
+
+  ARM: dts: bcm281xx: define real clocks (2013-12-13 10:40:21 -0600)
+
+----------------------------------------------------------------
+Alex Elder (3):
+      clk: bcm281xx: define kona clock binding
+      clk: bcm281xx: add initial clock framework support
+      ARM: dts: bcm281xx: define real clocks
+
+Tim Kryger (8):
+      ARM: dts: Declare clocks as fixed on bcm11351
+      ARM: dts: Specify clocks for UARTs on bcm11351
+      Documentation: dt: kona-sdhci: Add clocks property
+      ARM: dts: Specify clocks for SDHCIs on bcm11351
+      mmc: sdhci-bcm-kona: Add basic use of clocks
+      Documentation: dt: kona-timer: Add clocks property
+      clocksource: kona: Add basic use of external clock
+      ARM: dts: Specify clocks for timer on bcm11351
+
+ .../devicetree/bindings/arm/bcm/kona-timer.txt     |    7 +-
+ .../devicetree/bindings/clock/bcm-kona-clock.txt   |   93 ++
+ .../devicetree/bindings/mmc/kona-sdhci.txt         |    4 +
+ arch/arm/boot/dts/bcm11351.dtsi                    |  199 +++-
+ drivers/clk/Kconfig                                |    1 +
+ drivers/clk/Makefile                               |    1 +
+ drivers/clk/bcm/Kconfig                            |    8 +
+ drivers/clk/bcm/Makefile                           |    3 +
+ drivers/clk/bcm/clk-bcm281xx.c                     |  416 ++++++++
+ drivers/clk/bcm/clk-kona-setup.c                   |  769 +++++++++++++++
+ drivers/clk/bcm/clk-kona.c                         | 1033
+++++++++++++++++++++
+ drivers/clk/bcm/clk-kona.h                         |  414 ++++++++
+ drivers/clocksource/bcm_kona_timer.c               |   14 +-
+ drivers/mmc/host/sdhci-bcm-kona.c                  |   37 +-
+ include/dt-bindings/clock/bcm281xx.h               |   65 ++
+ 15 files changed, 3053 insertions(+), 11 deletions(-)
+ create mode 100644
+Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+ create mode 100644 drivers/clk/bcm/Kconfig
+ create mode 100644 drivers/clk/bcm/Makefile
+ create mode 100644 drivers/clk/bcm/clk-bcm281xx.c
+ create mode 100644 drivers/clk/bcm/clk-kona-setup.c
+ create mode 100644 drivers/clk/bcm/clk-kona.c
+ create mode 100644 drivers/clk/bcm/clk-kona.h
+ create mode 100644 include/dt-bindings/clock/bcm281xx.h
+
