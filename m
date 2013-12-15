@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab3LONzm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 08:55:42 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40760 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754384Ab3LONzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 08:55:40 -0500
-Message-ID: <52ADB47E.1080505@ti.com>
-Date: Sun, 15 Dec 2013 19:24:06 +0530
-From: Sekhar Nori <nsekhar@ti.com>
+	id S1754520Ab3LOODp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 09:03:45 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:45394 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754154Ab3LOODn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 09:03:43 -0500
+Message-ID: <52ADB6B7.5010503@hurleysoftware.com>
+Date: Sun, 15 Dec 2013 09:03:35 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
-        <linux-gpio@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 0/2] gpio: davinci: reuse for keystone arch
-References: <1386871973-26762-1-git-send-email-grygorii.strashko@ti.com>	<52ACAD50.6060003@ti.com> <52ADB3BC.3080605@ti.com>
-In-Reply-To: <52ADB3BC.3080605@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Gianluca Anzolin <gianluca@sottospazio.it>,
+        Alexander Holler <holler@ahsoftware.de>, marcel@holtmann.org
+CC: Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
+        gregkh@linuxfoundation.org, jslaby@suse.cz,
+        linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] rfcomm (userland) broken by commit 29cd718b
+References: <1377620926-23370-1-git-send-email-gianluca@sottospazio.it> <20130919162413.GG4006@joana> <52AA1854.500@ahsoftware.de> <52AA1E62.1030109@hurleysoftware.com> <52AA483E.4080706@ahsoftware.de> <20131215112413.GA8980@sottospazio.it>
+In-Reply-To: <20131215112413.GA8980@sottospazio.it>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 15 December 2013 07:20 PM, Sekhar Nori wrote:
-> On Sunday 15 December 2013 12:41 AM, Santosh Shilimkar wrote:
->> Linus, Sekhar,
+On 12/15/2013 06:24 AM, Gianluca Anzolin wrote:
+> On Fri, Dec 13, 2013 at 12:35:26AM +0100, Alexander Holler wrote:
+>> Am 12.12.2013 21:36, schrieb Peter Hurley:
 >>
->> On Thursday 12 December 2013 01:12 PM, Grygorii Strashko wrote:
->>> This series is intended to update Davinci GPIO driver and reuse
->>> it for Keystone SoCs, because Keystone uses the similar GPIO IP like Davinci.
->>> Keystone GPIO IP: supports:
->>> - up to 32 GPIO lines;
->>> - only unbanked irqs;
+>>>> What currently happens is that when one kills rfcomm (and any other
+>>>> terminal which might use that tty), the entry in /dev doesn't
+>>>> disappear. That means the same call to refcomm with the same device
+>>>> (e.g. [/dev/]rfcomm1 doesn't work.
 >>>
->>> See Documentation:
->>> Keystone - http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
+>>> Thanks for the report, Alexander.
 >>>
->>> This series depends on:
->>> [1] "[PATCH 1/2] gpio: davinci: Fix a check for unbanked gpio"
->>> https://lkml.org/lkml/2013/11/8/22
->>> [2] "[PATCH v6 0/6] gpio: daVinci: cleanup and feature enhancement"
->>> https://www.mail-archive.com/devicetree@vger.kernel.org/msg05970.html
->>> [3] "gpio: davinci: get rid of DAVINCI_N_GPIO"
->>> https://lkml.org/lkml/2013/11/26/405
->>> [4] "gpio: introduce GPIO_DAVINCI kconfig option"
->>> https://lkml.org/lkml/2013/11/26/435
->>> [5] "gpio: davinci: use chained_irq_enter/chained_irq_exit API"
->>> https://lkml.org/lkml/2013/11/26/428
+>>> Point 4 above details a different situation; something else is
+>>> happening.
 >>>
->>> To handle all dependencies, I've created a branch where I collected all 
->>> "ready to merge" patches (all acks added in patches) and this series:
->>> - https://github.com/grygoriyS/linux.git
->>> - branch: keystone-master-gpio-for-next
->>>
->> Can one of you pull all these patches ?
-> 
-> So I went through my backlog and queued all that I think is ready. Here
-> is the branch. Let me know if there is anything else missing.
+>>> Would you please detail the necessary steps to reproduce this regression?
+>>> (How do you 'kill' rfcomm? etc.  Shell command lines would be best.)
+>>
+>> Just call
+>>
+>> rfcomm connect rfcomm9 01:23:45:67:89:ab
+>>
+>> wait until the connection happened  (a message will appear) and then
+>> press ctrl-c. This still terminates the bluetooth connection, but the
+>> device in /dev is now left.
+>
+> Yes I'm able to reproduce the regression which is indeed caused by that
+> commit.
+>
+> However I'm puzzled. Surely there is a fifth case I didn't cover because
+> when rfcomm_dev_state_change() is called, the tty_port is there but the tty is
+> not, and therefore I cannot get a reference to it and send the HUP.
 
-Forgot to mention that I have not been able to test them today though.
-They will hit linux-next only after I have been able to test them and I
-send a pull request to arm-soc or Linus W.
+There is a fifth case, but it's crazy.
 
-Thanks,
-Sekhar
+The tty has been properly shutdown and destroyed because the tty file handle
+was closed, not hungup. The rfcomm device reference was properly put
+when the tty was released.
+
+But when the remote hangs up (and sends disc), then rfcomm_dev_state_change()
+is called -- to kill the port reference (thus the rfcomm device) that was
+instantiated locally! Ridiculous. Doubly ridiculous because it's the local
+port shutdown that closes the dlc locally that sends the disconnect (and sets
+the local dlc state) that triggers the received rfcomm_dev_state_change()!
+
+If this behavior is desirable (or necessary because it's been exposed to
+userspace), then why was the design ever reference-counted to begin with?
+
+Regards,
+Peter Hurley
