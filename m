@@ -1,111 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab3LOLVM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 06:21:12 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:33565 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753903Ab3LOLVK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 06:21:10 -0500
-Date: Sun, 15 Dec 2013 03:21:04 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 1/7] Input: pmic8xxx-pwrkey - Pass input device directly
- to interrupt
-Message-ID: <20131215112103.GA14818@core.coreip.homeip.net>
-References: <1386718996-3733-1-git-send-email-sboyd@codeaurora.org>
- <1386718996-3733-2-git-send-email-sboyd@codeaurora.org>
+	id S1754311Ab3LOLYa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 06:24:30 -0500
+Received: from smtp205.alice.it ([82.57.200.101]:37802 "EHLO smtp205.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753854Ab3LOLY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 06:24:28 -0500
+Date: Sun, 15 Dec 2013 12:24:13 +0100
+From: Gianluca Anzolin <gianluca@sottospazio.it>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Gustavo Padovan <gustavo@padovan.org>, marcel@holtmann.org,
+        linux-bluetooth@vger.kernel.org, gregkh@linuxfoundation.org,
+        jslaby@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] rfcomm (userland) broken by commit 29cd718b
+Message-ID: <20131215112413.GA8980@sottospazio.it>
+References: <1377620926-23370-1-git-send-email-gianluca@sottospazio.it>
+ <20130919162413.GG4006@joana>
+ <52AA1854.500@ahsoftware.de>
+ <52AA1E62.1030109@hurleysoftware.com>
+ <52AA483E.4080706@ahsoftware.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386718996-3733-2-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <52AA483E.4080706@ahsoftware.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-
-On Tue, Dec 10, 2013 at 03:43:10PM -0800, Stephen Boyd wrote:
-> Instead of passing the pointer to the container structure just
-> pass the input device here. This saves a dereference in the fast
-> path.
+On Fri, Dec 13, 2013 at 12:35:26AM +0100, Alexander Holler wrote:
+> Am 12.12.2013 21:36, schrieb Peter Hurley:
 > 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/input/misc/pmic8xxx-pwrkey.c | 22 ++++++++--------------
->  1 file changed, 8 insertions(+), 14 deletions(-)
+> >> What currently happens is that when one kills rfcomm (and any other
+> >> terminal which might use that tty), the entry in /dev doesn't
+> >> disappear. That means the same call to refcomm with the same device
+> >> (e.g. [/dev/]rfcomm1 doesn't work.
+> > 
+> > Thanks for the report, Alexander.
+> > 
+> > Point 4 above details a different situation; something else is
+> > happening.
+> > 
+> > Would you please detail the necessary steps to reproduce this regression?
+> > (How do you 'kill' rfcomm? etc.  Shell command lines would be best.)
 > 
-> diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
-> index ce3c426..233b216 100644
-> --- a/drivers/input/misc/pmic8xxx-pwrkey.c
-> +++ b/drivers/input/misc/pmic8xxx-pwrkey.c
-> @@ -32,26 +32,21 @@
->   * @key_press_irq: key press irq number
->   */
->  struct pmic8xxx_pwrkey {
-> -	struct input_dev *pwr;
-
-This causes compile errors as you need pwrkey->pwr in remove() to
-unregister input device. I'll fix it up.
-
->  	int key_press_irq;
->  };
->  
-> -static irqreturn_t pwrkey_press_irq(int irq, void *_pwrkey)
-> +static irqreturn_t pwrkey_press_irq(int irq, void *pwr)
->  {
-> -	struct pmic8xxx_pwrkey *pwrkey = _pwrkey;
-> -
-> -	input_report_key(pwrkey->pwr, KEY_POWER, 1);
-> -	input_sync(pwrkey->pwr);
-> +	input_report_key(pwr, KEY_POWER, 1);
-> +	input_sync(pwr);
->  
->  	return IRQ_HANDLED;
->  }
->  
-> -static irqreturn_t pwrkey_release_irq(int irq, void *_pwrkey)
-> +static irqreturn_t pwrkey_release_irq(int irq, void *pwr)
->  {
-> -	struct pmic8xxx_pwrkey *pwrkey = _pwrkey;
-> -
-> -	input_report_key(pwrkey->pwr, KEY_POWER, 0);
-> -	input_sync(pwrkey->pwr);
-> +	input_report_key(pwr, KEY_POWER, 0);
-> +	input_sync(pwr);
->  
->  	return IRQ_HANDLED;
->  }
-> @@ -147,12 +142,11 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
->  	}
->  
->  	pwrkey->key_press_irq = key_press_irq;
-> -	pwrkey->pwr = pwr;
->  
->  	platform_set_drvdata(pdev, pwrkey);
->  
->  	err = devm_request_irq(&pdev->dev, key_press_irq, pwrkey_press_irq,
-> -		IRQF_TRIGGER_RISING, "pmic8xxx_pwrkey_press", pwrkey);
-> +		IRQF_TRIGGER_RISING, "pmic8xxx_pwrkey_press", pwr);
->  	if (err < 0) {
->  		dev_dbg(&pdev->dev, "Can't get %d IRQ for pwrkey: %d\n",
->  				 key_press_irq, err);
-> @@ -160,7 +154,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
->  	}
->  
->  	err = devm_request_irq(&pdev->dev, key_release_irq, pwrkey_release_irq,
-> -		 IRQF_TRIGGER_RISING, "pmic8xxx_pwrkey_release", pwrkey);
-> +		 IRQF_TRIGGER_RISING, "pmic8xxx_pwrkey_release", pwr);
->  	if (err < 0) {
->  		dev_dbg(&pdev->dev, "Can't get %d IRQ for pwrkey: %d\n",
->  				 key_release_irq, err);
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
+> Just call
 > 
+> rfcomm connect rfcomm9 01:23:45:67:89:ab
+> 
+> wait until the connection happened  (a message will appear) and then
+> press ctrl-c. This still terminates the bluetooth connection, but the
+> device in /dev is now left.
 
--- 
-Dmitry
+Yes I'm able to reproduce the regression which is indeed caused by that
+commit.
+
+However I'm puzzled. Surely there is a fifth case I didn't cover because
+when rfcomm_dev_state_change() is called, the tty_port is there but the tty is
+not, and therefore I cannot get a reference to it and send the HUP.
+
+I'll let you know when I have something working.
+
+> 
+> Regards,
+> 
+> Alexander Holler
