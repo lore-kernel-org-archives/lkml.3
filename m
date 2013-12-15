@@ -1,125 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab3LOKmu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 05:42:50 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:62548 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab3LOKms (ORCPT
+	id S1754145Ab3LOLHq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 06:07:46 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:35333 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275Ab3LOLHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 05:42:48 -0500
-Date: Sun, 15 Dec 2013 02:42:42 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH 5/7] genirq: Add devm_request_any_context_irq()
-Message-ID: <20131215104242.GD20197@core.coreip.homeip.net>
-References: <1386718996-3733-1-git-send-email-sboyd@codeaurora.org>
- <1386718996-3733-6-git-send-email-sboyd@codeaurora.org>
+	Sun, 15 Dec 2013 06:07:44 -0500
+Message-ID: <52AD8D6D.6090303@gmail.com>
+Date: Sun, 15 Dec 2013 19:07:25 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386718996-3733-6-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 6/7] arm64, jump label: optimize jump label implementation
+References: <1386691433-6827-1-git-send-email-liuj97@gmail.com>	<1386691433-6827-7-git-send-email-liuj97@gmail.com>	<20131213154104.GG19177@mudshark.cambridge.arm.com>	<20131213105023.67e45640@gandalf.local.home> <20131213105223.664f960b@gandalf.local.home>
+In-Reply-To: <20131213105223.664f960b@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 03:43:14PM -0800, Stephen Boyd wrote:
-> Some drivers use request_any_context_irq() but there isn't a
-> devm_* function for it. Add one so that these drivers don't need
-> to explicitly free the irq on driver detach.
+On 12/13/2013 11:52 PM, Steven Rostedt wrote:
+> On Fri, 13 Dec 2013 10:50:23 -0500
+> Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-
-Thomas, would it be OK with me picking this patch through my tree if you
-do not have issues with it?
-
-Thanks.
-
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  include/linux/interrupt.h |  5 +++++
->  kernel/irq/devres.c       | 45 +++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 50 insertions(+)
+>> On Fri, 13 Dec 2013 15:41:04 +0000
+>> Will Deacon <will.deacon@arm.com> wrote:
+>>
+>>>> +#include <linux/kernel.h>
+>>>> +#include <linux/jump_label.h>
+>>>> +#include <asm/jump_label.h>
+>>>> +#include <asm/insn.h>
+>>>> +
+>>>> +#ifdef HAVE_JUMP_LABEL
+>>>
+>>> Slightly worrying... this should be CONFIG_HAVE_JUMP_LABEL, right? How did
+>>> you manage to test this code?
+>>
+>> In <linux/jump_label.h> we have:
+>>
+>> #if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
+>>
+>> [...]
+>>
+>> # include <asm/jump_label.h>
 > 
-> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-> index c9e831d..8334f9b 100644
-> --- a/include/linux/interrupt.h
-> +++ b/include/linux/interrupt.h
-> @@ -160,6 +160,11 @@ devm_request_irq(struct device *dev, unsigned int irq, irq_handler_t handler,
->  					 devname, dev_id);
->  }
->  
-> +extern int __must_check
-> +devm_request_any_context_irq(struct device *dev, unsigned int irq,
-> +		 irq_handler_t handler, unsigned long irqflags,
-> +		 const char *devname, void *dev_id);
-> +
->  extern void devm_free_irq(struct device *dev, unsigned int irq, void *dev_id);
->  
->  /*
-> diff --git a/kernel/irq/devres.c b/kernel/irq/devres.c
-> index bd8e788..f71e9ff 100644
-> --- a/kernel/irq/devres.c
-> +++ b/kernel/irq/devres.c
-> @@ -73,6 +73,51 @@ int devm_request_threaded_irq(struct device *dev, unsigned int irq,
->  EXPORT_SYMBOL(devm_request_threaded_irq);
->  
->  /**
-> + *	devm_request_any_context_irq - allocate an interrupt line for a managed device
-> + *	@dev: device to request interrupt for
-> + *	@irq: Interrupt line to allocate
-> + *	@handler: Function to be called when the IRQ occurs
-> + *	@thread_fn: function to be called in a threaded interrupt context. NULL
-> + *		    for devices which handle everything in @handler
-> + *	@irqflags: Interrupt type flags
-> + *	@devname: An ascii name for the claiming device
-> + *	@dev_id: A cookie passed back to the handler function
-> + *
-> + *	Except for the extra @dev argument, this function takes the
-> + *	same arguments and performs the same function as
-> + *	request_any_context_irq().  IRQs requested with this function will be
-> + *	automatically freed on driver detach.
-> + *
-> + *	If an IRQ allocated with this function needs to be freed
-> + *	separately, devm_free_irq() must be used.
-> + */
-> +int devm_request_any_context_irq(struct device *dev, unsigned int irq,
-> +			      irq_handler_t handler, unsigned long irqflags,
-> +			      const char *devname, void *dev_id)
-> +{
-> +	struct irq_devres *dr;
-> +	int rc;
-> +
-> +	dr = devres_alloc(devm_irq_release, sizeof(struct irq_devres),
-> +			  GFP_KERNEL);
-> +	if (!dr)
-> +		return -ENOMEM;
-> +
-> +	rc = request_any_context_irq(irq, handler, irqflags, devname, dev_id);
-> +	if (rc) {
-> +		devres_free(dr);
-> +		return rc;
-> +	}
-> +
-> +	dr->irq = irq;
-> +	dr->dev_id = dev_id;
-> +	devres_add(dev, dr);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(devm_request_any_context_irq);
-> +
-> +/**
->   *	devm_free_irq - free an interrupt
->   *	@dev: device to free interrupt for
->   *	@irq: Interrupt line to free
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
+> This also makes the include of <asm/jump_label.h> in the C file
+> redundant.
+> 
+> -- Steve
+Thanks, Steve.
+Will remove the redundant include header file.
+
+> 
+>> # define HAVE_JUMP_LABEL
+>> #endif	/* CC_HAVE_ASM_GOTO && CONFIG_JUMP_LABEL */
+>>
+>>
+>> -- Steve
 > 
 
--- 
-Dmitry
