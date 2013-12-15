@@ -1,74 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab3LOOqo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 09:46:44 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55695 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869Ab3LOOqm (ORCPT
+	id S1751577Ab3LOOw7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 09:52:59 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:65338 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab3LOOw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 09:46:42 -0500
-Date: Sun, 15 Dec 2013 15:46:39 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Nicholas Mc Guire <der.herr@hofr.at>, linux-rt-users@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andreas Platschek <platschek@ict.tuwien.ac.at>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] make migrate disable/enable conditioned on
- softirq_nestcnt transition
-Message-ID: <20131215144639.GG31090@linutronix.de>
-References: <20131205234222.GE15603@opentech.at>
- <20131205194530.1c086844@gandalf.local.home>
+	Sun, 15 Dec 2013 09:52:58 -0500
+Message-ID: <52ADC23F.3040302@linux.com>
+Date: Sun, 15 Dec 2013 15:52:47 +0100
+From: Levente Kurusa <levex@linux.com>
+Reply-To: Levente Kurusa <levex@linux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131205194530.1c086844@gandalf.local.home>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Doron Tsur <doront@mellanox.com>, linux-kernel@vger.kernel.org
+CC: itaib@mellanox.com
+Subject: Re: [PATCH] include/uapi/linux/netlink.h -Wall -Wextra -Werror support
+ fix
+References: <1387118409-30636-1-git-send-email-doront@mellanox.com>
+In-Reply-To: <1387118409-30636-1-git-send-email-doront@mellanox.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt | 2013-12-05 19:45:30 [-0500]:
+On 12/15/2013 03:40 PM, Doron Tsur wrote:
+> For code using:
+>     #include <linux/netlink.h>
+>     NLMSG_OK
+>     -I<INSTALL_HDR_PATH>/include
+> 
+> Tested-by: Doron Tsur <doront@mellanox.com>
+This should go where your Signed-off-by line is.
 
->On Fri, 6 Dec 2013 00:42:22 +0100
->Nicholas Mc Guire <der.herr@hofr.at> wrote:
->> --- a/kernel/softirq.c
->> +++ b/kernel/softirq.c
->> @@ -569,8 +569,8 @@ static void do_current_softirqs(int need_rcu_bh_qs)
->>  
->>  void local_bh_disable(void)
->>  {
->> -	migrate_disable();
->> -	current->softirq_nestcnt++;
->> +	if (++current->softirq_nestcnt == 1)
->> +		migrate_disable();
->>  }
->>  EXPORT_SYMBOL(local_bh_disable);
->>  
->> @@ -584,8 +584,8 @@ void local_bh_enable(void)
->>  		do_current_softirqs(1);
->>  	local_irq_enable();
->>  
->> -	current->softirq_nestcnt--;
->> -	migrate_enable();
->> +	if (--current->softirq_nestcnt == 0)
->> +		migrate_enable();
->
->I wonder if we should add a:
->
->	BUG_ON(current->softirq_nestcnt < 0);
+[insert newlines here]
+> Test log:
+> Compilation environments:
+> Ubuntu 13.10, x86_64, gcc (Ubuntu/Linaro 4.8.1-10ubuntu9) 4.8.1
+> Ubuntu 13.04, x86_64, gcc (Ubuntu/Linaro 4.7.3-1ubuntu1) 4.7.3
+> [ -ftrack-macro-expansion=2 issue submitted:
+>   gcc.gnu.org/bugzilla/show_bug.cgi?id=59495 ]
 
-We have a WARN_ON() in each enable path. That one in local_bh_enable()
-isn't part of the context here. If you want to s/WARN_/BUG_/ then I
-would prefer not to since there are a few people with no UART and this
-could break the system while the current sollution keeps the system
-running.
 
->As for the patch, I haven't found anything wrong with it.
->
->Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Thanks.
+[insert newlines here]
+> Kernel headers installed at:
+> make -C .../linux-stable headers_install \
+>     INSTALL_HDR_PATH=/builds/kernel_tests_user_headers/
 
-Sebastian
+
+[insert newlines here]
+> Pre-patch compilation:
+> gcc -Wall -Wextra -Werror
+> -I/builds/kernel_tests_pre_patch_user_headers/include
+> include-uapi-linux-netlink.h.test.c
+> In file included from include-uapi-linux-netlink.h.test.c:2:0:
+> include-uapi-linux-netlink.h.test.c: In function ‘main’:
+> /builds/kernel_tests_pre_patch_user_headers/include/linux/netlink.h:89:24:
+> error: comparison between signed and unsigned integer expressions
+> [-Werror=sign-compare]
+>        (nlh)->nlmsg_len <= (len))
+>                         ^
+> include-uapi-linux-netlink.h.test.c:26:5: note: in expansion of macro ‘NLMSG_OK’
+>      NLMSG_OK(&auxiliary_netlink_header, active_len));
+>      ^
+> cc1: all warnings being treated as errors
+
+
+[insert newlines here]
+> Post-patch:
+> $ gcc  -Wall -Wextra -Werror
+> -I/builds/kernel_tests_user_headers/include/
+> include-uapi-linux-netlink.h.test.c
+
+
+[insert newlines here]
+> $ ./a.out
+> nlmsg_len= 1, len = 1 NLMSG_OK(nlh,len) test result: 0
+> nlmsg_len= 1, len = 3000 NLMSG_OK(nlh,len) test result: 0
+> nlmsg_len= 3000, len = 1 NLMSG_OK(nlh,len) test result: 0
+> nlmsg_len= 3000, len = 3000 NLMSG_OK(nlh,len) test result: 1
+> 
+> Signed-off-by: Doron Tsur <doront@mellanox.com>
+
+Please make your commit message understandable by adding newlines and such.
+Also it doesn't say what did you change and why. All it says, that there
+was a warning and post-patch there is no warning.
+
+-- 
+Regards,
+Levente Kurusa
