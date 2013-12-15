@@ -1,67 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab3LOWTx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 17:19:53 -0500
-Received: from imap.thunk.org ([74.207.234.97]:40258 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752048Ab3LOWTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 17:19:52 -0500
-Date: Sun, 15 Dec 2013 17:19:48 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: George Spelvin <linux@horizon.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Replace /dev/random input mix polynomial with Brent's xorgen?
-Message-ID: <20131215221948.GA6773@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org
-References: <20131215022147.GA24124@thunk.org>
- <20131215083459.22068.qmail@science.horizon.com>
+	id S1752161Ab3LOWYj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 17:24:39 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:50945 "EHLO
+	vsp-authed-04-02.binero.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752016Ab3LOWYh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 17:24:37 -0500
+Message-ID: <52AE2C0C.80401@gaisler.com>
+Date: Sun, 15 Dec 2013 23:24:12 +0100
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131215083459.22068.qmail@science.horizon.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: balbi@ti.com
+CC: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        software@gaisler.com
+Subject: Re: [PATCH v3] usb: gadget: Add UDC driver for Aeroflex Gaisler GRUSBDC
+References: <1386144838-16403-1-git-send-email-andreas@gaisler.com> <20131212180106.GF1939@saruman.home> <52AABBCE.8000709@gaisler.com> <20131213195234.GE5292@saruman.home>
+In-Reply-To: <20131213195234.GE5292@saruman.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 15, 2013 at 03:34:59AM -0500, George Spelvin wrote:
-> > I'm not convinced we need to worry about cache timing attacks, since
-> > they typically involve a chosen plaintext attack and a fixed key ---
-> > and the attacker isn't going to know what we are going to be
-> > encrypting, let alone be able to chose the plaintext.
-> 
-> You're describing standard key-recovery attacks.  For /dev/random,
-> just knowing the *ciphertext* constitutes a successful attack.
+On 12/13/2013 08:52 PM, Felipe Balbi wrote:
+> Hi,
+>
+> On Fri, Dec 13, 2013 at 08:48:30AM +0100, Andreas Larsson wrote:
+>>> On Wed, Dec 04, 2013 at 09:13:58AM +0100, Andreas Larsson wrote:
+>>>> +static void gr_finish_request(struct gr_ep *ep, struct gr_request *req,
+>>>> +			      int status)
+>>>> +{
+>>>> +	struct gr_udc *dev;
+>>>> +
+>>>> +	list_del_init(&req->queue);
+>>>> +
+>>>> +	if (likely(req->req.status == -EINPROGRESS))
+>>>> +		req->req.status = status;
+>>>> +	else
+>>>> +		status = req->req.status;
+>>>> +
+>>>> +	dev = ep->dev;
+>>>> +	usb_gadget_unmap_request(&dev->gadget, &req->req, ep->is_in);
+>>>> +	gr_free_dma_desc_chain(dev, req);
+>>>> +
+>>>> +	if (ep->is_in) /* For OUT, actual gets updated bit by bit */
+>>>> +		req->req.actual = req->req.length;
+>>>> +
+>>>> +	if (!status) {
+>>>> +		if (ep->is_in)
+>>>> +			gr_dbgprint_request("SENT", ep, req);
+>>>> +		else
+>>>> +			gr_dbgprint_request("RECV", ep, req);
+>>>> +	}
+>>>> +
+>>>> +	/* Prevent changes to ep->queue during callback */
+>>>> +	ep->callback = 1;
+>>>> +	if (req == dev->ep0reqo && !status) {
+>>>> +		if (req->setup)
+>>>> +			gr_ep0_setup(dev, req);
+>>>> +		else
+>>>> +			dev_err(dev->dev,
+>>>> +				"Unexpected non setup packet on ep0in\n");
+>>>> +	} else if (req->req.complete) {
+>>>> +		unsigned long flags;
+>>>> +
+>>>> +		/*
+>>>> +		 * Complete should be called with interrupts disabled according
+>>>> +		 * to the contract of struct usb_request
+>>>> +		 */
+>>>> +		local_irq_save(flags);
+>>>
+>>> sorry but this driver isn't ready for inclusion. local_irq_save() is a
+>>> pretty good hint that there's something wrong in the driver. Consider
+>>> the fact that local_irq_save() will disable preemption even when
+>>> CONFIG_PREEMPT_FULL is enabled and you have a bit a problem.
+>>
+>> This connection between local_irq_save and CONFIG_PREEMPT_RT_FULL was
+>> unknown to me. Sure, I can disable interrupts right at spin lock
+>> time.
+>
+> that's better.
 
-Um, no.  The *ciphertext* is the output.  The attacker can get all of
-the ciphertext he or she wants by reading /dev/random (although we'd
-probably do some folding as we currently do so the attacker won't even
-get all of the ciphertext).  What the attacker has to be able to do is
-given some of the ciphertext bits, be able to predict future
-ciphertext bits given some construction which uses AES as the basis.
+Alright, I'll put this in v4.
 
-For example, using something simple (we'd probably using something
-more complicated, such as Davies-Meyer), show me a cache timing attack
-where the attacker can get to see arbitrary values of:
 
-      R_X = AES(KEY, I+X)
+>>> Also, the way you're using thread IRQs is quite wrong. I can't let that
+>>> pass and get merged upstream, sorry.
+>>
+>> What is quite wrong? What is it that I need to fix?
+>
+> Ideally the hardirq handler should be usually to actually check if
+> $this_device generated the IRQ, that should involve reading a IRQSTATUS
+> register of some sort.
+>
+> Sure, check that IRQs are actually enabled, but you also need to read
+> STATUS register before waking the thread up.
 
-But where the attacker does not know KEY, *or* I, but can get to see
-R_X for values 0 < X < N.  The attacker has to be able to predict
-R_(N+1).
+I agree that that would be preferable. Unfortunately, the hardware lacks 
+status register bits that indicates whether interrupts has been 
+generated or not. That is why the only check is if interrupts are 
+disabled, because that is the only sure way to know that the softirq 
+handler does not need to go through everything.
 
-Show me a cache timing attack given this scenario, and I'll be
-convinced.  I believe this is **harder** than a standard key-recovery
-attack, since the attacker doesn't get to choose the plaintext.  And
-if you can't choose the plaintext in order try to recover the key,
-please tell me how use can use cache timings in order to predict
-R_(N+1), or even some bits of R_(N+1)?  Especially given that any good
-crypto algorithm is designed so that even one or two bits change in
-the key or the plaintext will result in massive changes in the
-ciphertext....
+Best regards,
+Andreas Larsson
 
-					- Ted
