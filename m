@@ -1,101 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab3LOLdq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 06:33:46 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:48603 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753903Ab3LOLdn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 06:33:43 -0500
-Date: Sun, 15 Dec 2013 03:33:37 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 2/7] Input: pmic8xxx-pwrkey - Migrate to regmap APIs
-Message-ID: <20131215113337.GB14818@core.coreip.homeip.net>
-References: <1386718996-3733-1-git-send-email-sboyd@codeaurora.org>
- <1386718996-3733-3-git-send-email-sboyd@codeaurora.org>
+	id S1754385Ab3LOLg6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 06:36:58 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:34588 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753943Ab3LOLg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 06:36:56 -0500
+Message-ID: <52AD9412.1010508@ti.com>
+Date: Sun, 15 Dec 2013 17:05:46 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386718996-3733-3-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>
+Subject: Re: [PATCH v7] gpio: davinci: use {readl|writel}_relaxed() instead
+ of __raw_*
+References: <1386784327-22164-1-git-send-email-prabhakar.csengg@gmail.com> <CACRpkdZSyiA1zF3VcGrT+2yu3X5=eoon=0rqr7UejY4kjf7jNw@mail.gmail.com> <CA+V-a8sFpMJce19o9USBFzG2qnxtUrfdLVKPi8em6RnYA5Tfuw@mail.gmail.com>
+In-Reply-To: <CA+V-a8sFpMJce19o9USBFzG2qnxtUrfdLVKPi8em6RnYA5Tfuw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 03:43:11PM -0800, Stephen Boyd wrote:
-> Use the regmap APIs for this driver instead of custom pm8xxx
-> APIs. This breaks this driver's dependency on the pm8xxx APIs and
-> allows us to easily port it to other bus protocols in the future.
+On Friday 13 December 2013 09:34 AM, Prabhakar Lad wrote:
+> Hi Linus,
 > 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/input/misc/pmic8xxx-pwrkey.c | 13 +++++++++----
->  1 file changed, 9 insertions(+), 4 deletions(-)
+> On Fri, Dec 13, 2013 at 2:01 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Wed, Dec 11, 2013 at 6:52 PM, Prabhakar Lad
+>> <prabhakar.csengg@gmail.com> wrote:
+>>
+>>> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>>>
+>>> This patch replaces the __raw_readl/writel with
+>>> {readl|writel}_relaxed(), Altough the code runs on ARMv5
+>>> based SOCs, changing this will help copying the code
+
+s/copying/using
+
+>>> for other uses.
+
+Call out usability on big-endian machines specifically here.
+
+>>>
+>>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>> ---
+>>>  This patch is part of series [1] rest of the patches
+>>>  are Acked/reviewed so posting this patch independently
+>>>  and marking it as v7.
+>>>
+>>>  [1] http://www.spinics.net/lists/devicetree/msg13037.html
+>>>
+>>>  drivers/gpio/gpio-davinci.c |   36 ++++++++++++++++++------------------
+>>
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>>
+> Thanks for the Ack.
 > 
-> diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
-> index 233b216..a4de105 100644
-> --- a/drivers/input/misc/pmic8xxx-pwrkey.c
-> +++ b/drivers/input/misc/pmic8xxx-pwrkey.c
-> @@ -18,9 +18,9 @@
->  #include <linux/input.h>
->  #include <linux/interrupt.h>
->  #include <linux/platform_device.h>
-> +#include <linux/regmap.h>
->  #include <linux/log2.h>
->  
-> -#include <linux/mfd/pm8xxx/core.h>
->  #include <linux/input/pmic8xxx-pwrkey.h>
->  
->  #define PON_CNTL_1 0x1C
-> @@ -83,7 +83,8 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
->  	int key_press_irq = platform_get_irq(pdev, 1);
->  	int err;
->  	unsigned int delay;
-> -	u8 pon_cntl;
-> +	unsigned int pon_cntl;
-> +	struct regmap *regmap;
->  	struct pmic8xxx_pwrkey *pwrkey;
->  	const struct pm8xxx_pwrkey_platform_data *pdata =
->  					dev_get_platdata(&pdev->dev);
-> @@ -108,6 +109,10 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
->  		err = -ENOMEM;
->  	}
->  
-> +	regmap = dev_get_regmap(pdev->dev.parent, NULL);
-> +	if (!regmap)
-> +		return -ENODEV;
+>> Should I take this into the GPIO tree, or should it go
+>> in through the DaVinci tree?
+>>
+> To avoid dependencies its better it goes via DaVinci tree.
 
-And you are leaking memory here...
+I added this to v3.14/gpio branch of my tree (with modifications I
+mentioned above).
 
-> +
->  	input_set_capability(pwr, EV_KEY, KEY_POWER);
->  
->  	pwr->name = "pmic8xxx_pwrkey";
-> @@ -116,7 +121,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
->  	delay = (pdata->kpd_trigger_delay_us << 10) / USEC_PER_SEC;
->  	delay = 1 + ilog2(delay);
->  
-> -	err = pm8xxx_readb(pdev->dev.parent, PON_CNTL_1, &pon_cntl);
-> +	err = regmap_read(regmap, PON_CNTL_1, &pon_cntl);
->  	if (err < 0) {
->  		dev_err(&pdev->dev, "failed reading PON_CNTL_1 err=%d\n", err);
->  		return err;
-> @@ -129,7 +134,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
->  	else
->  		pon_cntl &= ~PON_CNTL_PULL_UP;
->  
-> -	err = pm8xxx_writeb(pdev->dev.parent, PON_CNTL_1, pon_cntl);
-> +	err = regmap_write(regmap, PON_CNTL_1, pon_cntl);
->  	if (err < 0) {
->  		dev_err(&pdev->dev, "failed writing PON_CNTL_1 err=%d\n", err);
->  		return err;
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
+I dont think there are dependencies for this particular patch though
+(applies and builds nicely on latest Linus  T's tree). Even then, there
+are too many GPIO patches floating around and I think it is better for
+me to collect them for a while and if there really are no platform code
+dependencies overall, I can probably hand that branch off to Linus W. We
+will see.
 
--- 
-Dmitry
+Thanks,
+Sekhar
