@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab3LOQkd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 11:40:33 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:56733 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab3LOQka (ORCPT
+	id S1751959Ab3LOQk4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 11:40:56 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:44158 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940Ab3LOQky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 11:40:30 -0500
+	Sun, 15 Dec 2013 11:40:54 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Chen Gang <gang.chen@asianux.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>, Nicolas Pitre <nico@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Jiang Liu <liuj97@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
-        Wang YanQing <udknight@gmail.com>, linux-arch@vger.kernel.org
-Subject: [PATCH v3 [resend] 03/18] smp, alpha: kill SMP single function call interrupt
-Date: Mon, 16 Dec 2013 00:36:25 +0800
-Message-Id: <1387125400-28849-4-git-send-email-liuj97@gmail.com>
+        Wang YanQing <udknight@gmail.com>, linux-arch@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v3 [resend] 04/18] smp, ARM: kill SMP single function call interrupt
+Date: Mon, 16 Dec 2013 00:36:26 +0800
+Message-Id: <1387125400-28849-5-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1387125400-28849-1-git-send-email-liuj97@gmail.com>
 References: <1387125400-28849-1-git-send-email-liuj97@gmail.com>
@@ -41,55 +42,74 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Jiri Kosina <trivial@kernel.org>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
-Cc: linux-alpha@vger.kernel.org
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- arch/alpha/kernel/smp.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ arch/arm/include/asm/hardirq.h |  2 +-
+ arch/arm/kernel/smp.c          | 10 +---------
+ 2 files changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/arch/alpha/kernel/smp.c b/arch/alpha/kernel/smp.c
-index 99ac36d..2f24447 100644
---- a/arch/alpha/kernel/smp.c
-+++ b/arch/alpha/kernel/smp.c
-@@ -63,7 +63,6 @@ static struct {
- enum ipi_message_type {
+diff --git a/arch/arm/include/asm/hardirq.h b/arch/arm/include/asm/hardirq.h
+index fe3ea77..3d7351c 100644
+--- a/arch/arm/include/asm/hardirq.h
++++ b/arch/arm/include/asm/hardirq.h
+@@ -5,7 +5,7 @@
+ #include <linux/threads.h>
+ #include <asm/irq.h>
+ 
+-#define NR_IPI	8
++#define NR_IPI	7
+ 
+ typedef struct {
+ 	unsigned int __softirq_pending;
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index dc894ab..e24a23d 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -65,7 +65,6 @@ enum ipi_msg_type {
+ 	IPI_TIMER,
  	IPI_RESCHEDULE,
  	IPI_CALL_FUNC,
 -	IPI_CALL_FUNC_SINGLE,
  	IPI_CPU_STOP,
- };
- 
-@@ -506,7 +505,6 @@ setup_profiling_timer(unsigned int multiplier)
- 	return -EINVAL;
- }
- 
--
- static void
- send_ipi_message(const struct cpumask *to_whom, enum ipi_message_type operation)
- {
-@@ -552,10 +550,6 @@ handle_ipi(struct pt_regs *regs)
- 			generic_smp_call_function_interrupt();
- 			break;
- 
--		case IPI_CALL_FUNC_SINGLE:
--			generic_smp_call_function_single_interrupt();
--			break;
--
- 		case IPI_CPU_STOP:
- 			halt();
- 
-@@ -606,7 +600,7 @@ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+ 	IPI_IRQ_WORK,
+ 	IPI_COMPLETION,
+@@ -448,7 +447,7 @@ void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
  
  void arch_send_call_function_single_ipi(int cpu)
  {
--	send_ipi_message(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-+	send_ipi_message(cpumask_of(cpu), IPI_CALL_FUNC);
+-	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
++	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC);
  }
  
- static void
+ #ifdef CONFIG_IRQ_WORK
+@@ -465,7 +464,6 @@ static const char *ipi_types[NR_IPI] = {
+ 	S(IPI_TIMER, "Timer broadcast interrupts"),
+ 	S(IPI_RESCHEDULE, "Rescheduling interrupts"),
+ 	S(IPI_CALL_FUNC, "Function call interrupts"),
+-	S(IPI_CALL_FUNC_SINGLE, "Single function call interrupts"),
+ 	S(IPI_CPU_STOP, "CPU stop interrupts"),
+ 	S(IPI_IRQ_WORK, "IRQ work interrupts"),
+ 	S(IPI_COMPLETION, "completion interrupts"),
+@@ -579,12 +577,6 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+ 		irq_exit();
+ 		break;
+ 
+-	case IPI_CALL_FUNC_SINGLE:
+-		irq_enter();
+-		generic_smp_call_function_single_interrupt();
+-		irq_exit();
+-		break;
+-
+ 	case IPI_CPU_STOP:
+ 		irq_enter();
+ 		ipi_cpu_stop(cpu);
 -- 
 1.8.1.2
 
