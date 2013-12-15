@@ -1,541 +1,342 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab3LOEPA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 23:15:00 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:53415 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753882Ab3LOEO4 convert rfc822-to-8bit (ORCPT
+	id S1754073Ab3LOE1w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 23:27:52 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:40220 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753882Ab3LOE1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 23:14:56 -0500
-Date: Sat, 14 Dec 2013 23:14:54 -0500 (EST)
-Message-Id: <20131214.231454.1031392747120140219.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sat, 14 Dec 2013 20:14:56 -0800 (PST)
+	Sat, 14 Dec 2013 23:27:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <1386945188-8316-3-git-send-email-jonas.jensen@gmail.com>
+References: <1386945188-8316-1-git-send-email-jonas.jensen@gmail.com>
+	<1386945188-8316-3-git-send-email-jonas.jensen@gmail.com>
+Date: Sun, 15 Dec 2013 14:27:49 +1000
+X-Google-Sender-Auth: UJPOGfK10vrXPX_yNqMkuOmDAr0
+Message-ID: <CAEgOgz7=xZ8N+vGuaQ6L3n5SYpS3bS+xN88WXDH+A7m7JNLrcw@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] ARM: mach-moxart: add MOXA ART SoC device tree files
+From: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, arm@kernel.org,
+        linux@arm.linux.org.uk, Arnd Bergmann <arnd@arndb.de>, olof@lixom.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-1) Revert CHECKSUM_COMPLETE optimization in pskb_trim_rcsum(), I can't figure
-   out why it breaks things.
-
-2) Fix comparison in netfilter ipset's hash_netnet4_data_equal(), it was
-   basically doing "x == x", from Dave Jones.
-
-3) Freescale FEC driver was DMA mapping the wrong number of bytes, from	
-   Sebastian Siewior.
-
-4) Blackhole and prohibit routes in ipv6 were not doing the right thing
-   because their ->input and ->output methods were not being assigned
-   correctly.  Now they behave properly like their ipv4 counterparts.
-   From Kamala R.
-
-5) Several drivers advertise the NETIF_F_FRAGLIST capability, but really
-   do not support this feature and will send garbage packets if fed
-   fraglist SKBs.  From Eric Dumazet.
-
-6) Fix long standing user triggerable BUG_ON over loopback in RDS
-   protocol stack, from Venkat Venkatsubra.
-
-7) Several not so common code paths can potentially try to invoke packet
-   scheduler actions that might be NULL without checking.  Shore things
-   up by either 1) defining a method as mandatory and erroring on
-   registration if that method is NULL 2) defininig a method as optional
-   and the registration function hooks up a default implementation when
-   NULL is seen.  From Jamal Hadi Salim.
-
-8) Fix fragment detection in xen-natback driver, from Paul Durrant.
-
-9) Kill dangling enter_memory_pressure method in cg_proto ops, from
-   Eric W. Biederman.
-
-10) SKBs that traverse namespaces should have their local_df cleared,
-    from Hannes Frederic Sowa.
-
-11) IOCB file position is not being updated by macvtap_aio_read() and
-    tun_chr_aio_read().  From Zhi Yong Wu.
-
-12) Don't free virtio_net netdev before releasing all of the NAPI
-    instances.  From Andrey Vagin.
-
-13) Procfs entry leak in xt_hashlimit, from Sergey Popovich.
-
-14) IPv6 routes that are no cached routes should not count against the
-    garbage collection limits.  We had this almost right, but were
-    missing handling addrconf generated routes properly.  From Hannes
-    Frederic Sowa.
-
-15) fib{4,6}_rule_suppress() have to consider potentially seeing NULL
-    route info when they are called, from Stefan Tomanek.
-
-16) TUN and MACVTAP have had truncated packet signalling for some time,
-    fix from Jason Wang.
-
-17) Fix use after frrr in __udp4_lib_rcv(), from Eric Dumazet.
-
-18) xen-netback does not interpret the NAPI budget properly for TX work,
-    fix from Paul Durrant.
-
-Please pull, thanks a lot!
-
-The following changes since commit a45299e72737c528975546a0680cace5d7364d27:
-
-  Merge branch 'irq-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2013-12-02 10:15:39 -0800)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to df29df92adda751ac04ca5149d30014b5199db81:
-
-  igb: Fix for issue where values could be too high for udelay function. (2013-12-14 22:59:42 -0500)
-
-----------------------------------------------------------------
-Alexander Bondar (1):
-      iwlwifi: pcie: stop sending commands to dead firmware
-
-Alexandre Rames (1):
-      sfc: Stop/re-start PTP when stopping/starting the datapath.
-
-Andrew Rybchenko (1):
-      sfc: RX buffer allocation takes prefix size into account in IP header alignment
-
-Andrey Vagin (2):
-      virtio-net: determine type of bufs correctly
-      virtio: delete napi structures from netdev before releasing memory
-
-Arend van Spriel (1):
-      brcmfmac: fix uninitialized warning
-
-Ben Hutchings (3):
-      sfc: Add length checks to efx_xmit_with_hwtstamp() and efx_ptp_is_ptp_tx()
-      sfc: Rate-limit log message for PTP packets without a matching timestamp event
-      sfc: Maintain current frequency adjustment when applying a time offset
-
-Bob Copeland (1):
-      Revert "mac80211: allow disable power save in mesh"
-
-Borislav Petkov (1):
-      brcmsmac: Fix build dep on LEDS_CLASS
-
-Carolyn Wyborny (1):
-      igb: Fix for issue where values could be too high for udelay function.
-
-Changli Gao (1):
-      net: drop_monitor: fix the value of maxattr
-
-Chun-Yeow Yeoh (1):
-      mac80211: fix the mesh channel switch support
-
-Daniel Borkmann (1):
-      packet: fix send path when running with proto == 0
-
-Dave Jones (1):
-      netfilter: ipset: fix incorret comparison in hash_netnet4_data_equal()
-
-David S. Miller (11):
-      Revert "net: Handle CHECKSUM_COMPLETE more adequately in pskb_trim_rcsum()."
-      Merge branch 'cxgb4'
-      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
-      Merge branch 'net_sched_actions'
-      Merge branch 'master' of git://git.kernel.org/.../pablo/nf
-      Merge branch 'sfc-3.13' of git://git.kernel.org/.../bwh/sfc
-      net: Revert macvtap/tun truncation signalling changes.
-      Merge branch 'tipc'
-      Merge branch 'sctp'
-      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
-      Revert "8390 : Replace ei_debug with msg_enable/NETIF_MSG_* feature"
-
-Duan Jiong (1):
-      ipv6: judge the accept_ra_defrtr before calling rt6_route_rcv
-
-Eliad Peller (1):
-      mac80211: fix connection polling
-
-Emmanuel Grumbach (5):
-      iwlwifi: pcie: fix interrupt coalescing for 7260 / 3160
-      iwlwifi: mvm: BT Coex - don't enable MULTI_PRIO_LUT
-      iwlwifi: mvm: BT Coex fix another NULL pointer dereference
-      iwlwifi: mvm: don't WARN about unsuccessful time event
-      iwlwifi: bump required firmware API version for 3160/7260
-
-Eric Dumazet (4):
-      net: do not pretend FRAGLIST support
-      udp: ipv4: fix an use after free in __udp4_lib_rcv()
-      udp: ipv4: fix potential use after free in udp_v4_early_demux()
-      udp: ipv4: must add synchronization in udp_sk_rx_dst_set()
-
-Eric W. Biederman (1):
-      tcp_memcontrol: Cleanup/fix cg_proto->memory_pressure handling.
-
-Ezequiel Garcia (1):
-      net: mvneta: Fix incorrect DMA unmapping size
-
-Fan Du (1):
-      vxlan: release rt when found circular route
-
-Felix Fietkau (3):
-      mac80211: fix crash when using AP VLAN interfaces
-      cfg80211: ignore supported rates for nonexistant bands on scan
-      ath9k: fix duration calculation for non-aggregated packets
-
-Florent Fourcot (1):
-      ipv6: do not erase dst address with flow label destination
-
-François-Xavier Le Bail (1):
-      ipv6: fix third arg of anycast_dst_alloc(), must be bool.
-
-Hannes Frederic Sowa (2):
-      net: clear local_df when passing skb between namespaces
-      ipv6: don't count addrconf generated routes against gc limit
-
-Hariprasad Shenai (3):
-      cxgb4: Much cleaner implementation of is_t4()/is_t5()
-      cxgb4vf: added much cleaner implementation of is_t4()
-      cxgb4: Add new scheme to update T4/T5 firmware
-
-Ivan Vecera (1):
-      forcedeth: run loopback test only on chipsets that support it
-
-Jamal Hadi Salim (5):
-      net_sched: Fail if missing mandatory action operation methods
-      net_sched: Default action lookup method for actions
-      net_sched: Use default action lookup functions
-      net_sched: Provide default walker function for actions
-      net_sched: Use default action walker methods
-
-Janusz Dziedzic (1):
-      mac80211: DFS setup chandef for radar_event correctly
-
-Jason Wang (4):
-      tun: unbreak truncated packet signalling
-      macvtap: signal truncated packets
-      tun: unbreak truncated packet signalling
-      macvtap: signal truncated packets
-
-Javier Lopez (1):
-      mac80211: fix for mesh beacon update on powersave
-
-Jeff Kirsher (1):
-      MAINTAINERS: Update Intel Wired Ethernet LAN Maintainers
-
-Jesse Brandeburg (1):
-      i40e: fix null dereference
-
-Jiri Pirko (1):
-      br: fix use of ->rx_handler_data in code executed on non-rx_handler path
-
-Jitendra Kalsaria (3):
-      qlge: Fix ethtool statistics
-      qlge: Allow enable/disable rx/tx vlan acceleration independently
-      qlge: Update version to 1.00.00.34
-
-Johannes Berg (7):
-      mac80211: fix scheduled scan rtnl deadlock
-      nl80211: check nla_put_* return values
-      nl80211: fix error path in nl80211_get_key()
-      nl80211: check nla_nest_start() return value
-      cfg80211: disable 5/10 MHz support for all drivers
-      mac80211: don't attempt to reorder multicast frames
-      iwlwifi: mvm: check sta_id/drain values in debugfs
-
-John W. Linville (5):
-      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
-      Merge branch 'master' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
-      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-
-Jon Paul Maloy (1):
-      tipc: correct the order of stopping services at rmmod
-
-Jouni Malinen (2):
-      mac80211_hwsim: Fix radiotap header for ACK frames
-      mac80211_hwsim: Fix bcn_en_iter to use atomic iteration
-
-Kamala R (1):
-      IPv6: Fixed support for blackhole and prohibit routes
-
-Karl Beldan (3):
-      mac80211: minstrel_ht: fix rates selection
-      mac80211: use capped prob when computing throughputs
-      mac80211: set hw initial idle state
-
-Laurence Evans (1):
-      sfc: PTP: Moderate log message on event queue overflow
-
-Luciano Coelho (2):
-      iwlwifi: mvm: set seqno also when no keys are set
-      iwlwifi: mvm: use a cast to calculate the last seqno from the next one
-
-Matthew Whitehead (1):
-      8390 : Replace ei_debug with msg_enable/NETIF_MSG_* feature
-
-Maxime Ripard (1):
-      net: allwinner: emac: Add missing free_irq
-
-Michael Dalton (1):
-      virtio-net: free bufs correctly on invalid packet length
-
-Michal Kalderon (1):
-      bnx2x: avoid null pointer dereference when enabling SR-IOV
-
-Michal Nazarewicz (2):
-      net: wireless: ath9k: avoid possible NULL pointer dereference
-      net: wireless: wcn36xx: fix potential NULL pointer dereference
-
-Mugunthan V N (2):
-      drivers: net: cpsw: fix dt probe for one port ethernet
-      drivers: net: cpsw: fix for cpsw crash when build as modules
-
-Nat Gurumoorthy (1):
-      tg3: Initialize REG_BASE_ADDR at PCI config offset 120 to 0
-
-Neil Horman (1):
-      sctp: properly latch and use autoclose value from sock to association
-
-Nikolay Aleksandrov (1):
-      bonding: fix packets_per_slave showing
-
-Oren Givon (1):
-      iwlwifi: add new HW - 7265 series
-
-Pablo Neira Ayuso (1):
-      netfilter: nf_tables: fix missing rules flushing per table
-
-Paul Durrant (6):
-      xen-netback: clear vif->task on disconnect
-      xen-netback: fix fragment detection in checksum setup
-      xen-netback: make sure skb linear area covers checksum field
-      xen-netback: napi: fix abuse of budget
-      xen-netback: napi: don't prematurely request a tx event
-      xen-netback: fix gso_prefix check
-
-Philippe De Muyter (1):
-      net:fec: remove duplicate lines in comment about errata ERR006358
-
-Rafael J. Wysocki (1):
-      PCI / tg3: Give up chip reset and carrier loss handling if PCI device is not present
-
-Robert Stonehouse (2):
-      sfc: Refactor efx_mcdi_poll() by introducing efx_mcdi_poll_once()
-      sfc: Poll for MCDI completion once before timeout occurs
-
-Sasha Levin (1):
-      net: unix: allow set_peek_off to fail
-
-Sebastian Siewior (2):
-      net: fec_main: dma_map() only the length of the skb
-      net: make neigh_priv_len in struct net_device 16bit instead of 8bit
-
-Sergei Shtylyov (1):
-      micrel: add support for KSZ8041RNLI
-
-Sergey Popovich (1):
-      netfilter: xt_hashlimit: fix proc entry leak in netns destroy path
-
-Simon Wunderlich (3):
-      cfg80211: fix ibss wext chandef creation
-      cfg80211: disable CSA for all drivers
-      mac80211: check csa wiphy flag in ibss before switching
-
-Somnath Kotur (2):
-      be2net: Fix Lancer error recovery to distinguish FW download
-      be2net: Free/delete pmacs (in be_clear()) only if they exist
-
-Srikanth Thokala (2):
-      net: emaclite: Remove unnecessary code that enables/disables interrupts on PONG buffers
-      net: emaclite: add barriers to support Xilinx Zynq platform
-
-Stefan Tomanek (1):
-      inet: fix NULL pointer Oops in fib(6)_rule_suppress
-
-Sujith Manoharan (2):
-      ath9k: Fix QuickDrop usage
-      ath9k: Fix XLNA bias strength
-
-Tony Lindgren (2):
-      net: davinci_emac: Fix platform data handling and make usable for am3517
-      net: smc91x: Fix device tree based configuration so it's usable
-
-Ujjal Roy (1):
-      mwifiex: fix memory leak issue for ibss join
-
-Venkat Venkatsubra (1):
-      rds: prevent BUG_ON triggered on congestion update to loopback
-
-Wei Yang (1):
-      net/mlx4_core: destroy workqueue when driver fails to register
-
-Yang Yingliang (3):
-      net: sched: tbf: fix the calculation of max_size
-      net: sched: htb: fix the calculation of quantum
-      sch_tbf: use do_div() for 64-bit divide
-
-Ying Xue (1):
-      tipc: protect handler_enabled variable with qitem_lock spin lock
-
-Zhi Yong Wu (2):
-      macvtap: update file current position
-      tun: update file current position
-
-dingtianhong (1):
-      bonding: add arp_ip_target checks when install the module
-
-wangweidong (4):
-      sctp: disable max_burst when the max_burst is 0
-      sctp: check the rto_min and rto_max in setsockopt
-      sctp: add check rto_min and rto_max in sysctl
-      sctp: fix up a spacing
-
- Documentation/devicetree/bindings/net/davinci_emac.txt   |   2 +-
- Documentation/devicetree/bindings/net/smsc-lan91c111.txt |   4 +
- Documentation/networking/packet_mmap.txt                 |  10 ++
- MAINTAINERS                                              |   2 -
- drivers/net/bonding/bond_main.c                          |   6 +-
- drivers/net/bonding/bond_sysfs.c                         |   4 +-
- drivers/net/ethernet/allwinner/sun4i-emac.c              |   5 +-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c        |   5 +
- drivers/net/ethernet/broadcom/tg3.c                      |  29 ++++--
- drivers/net/ethernet/chelsio/cxgb4/cxgb4.h               |  82 +++++++++------
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c          | 278 ++++++++++++++++++++++++++-------------------------
- drivers/net/ethernet/chelsio/cxgb4/sge.c                 |  12 +--
- drivers/net/ethernet/chelsio/cxgb4/t4_hw.c               | 230 ++++++++++++++++++++++++++----------------
- drivers/net/ethernet/chelsio/cxgb4/t4_regs.h             |  14 +++
- drivers/net/ethernet/chelsio/cxgb4/t4fw_api.h            |   7 +-
- drivers/net/ethernet/chelsio/cxgb4vf/adapter.h           |   1 -
- drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c      |  15 ++-
- drivers/net/ethernet/chelsio/cxgb4vf/sge.c               |   2 +-
- drivers/net/ethernet/chelsio/cxgb4vf/t4vf_common.h       |  24 +++--
- drivers/net/ethernet/chelsio/cxgb4vf/t4vf_hw.c           |   4 +-
- drivers/net/ethernet/emulex/benet/be_hw.h                |   3 +
- drivers/net/ethernet/emulex/benet/be_main.c              |  41 +++++---
- drivers/net/ethernet/freescale/fec_main.c                |  13 +--
- drivers/net/ethernet/ibm/ehea/ehea_main.c                |   2 +-
- drivers/net/ethernet/intel/i40e/i40e_main.c              |   3 +
- drivers/net/ethernet/intel/igb/e1000_phy.c               |   5 +-
- drivers/net/ethernet/marvell/mvneta.c                    |   4 +-
- drivers/net/ethernet/mellanox/mlx4/main.c                |   2 +
- drivers/net/ethernet/nvidia/forcedeth.c                  |   8 +-
- drivers/net/ethernet/qlogic/qlge/qlge.h                  |   2 +-
- drivers/net/ethernet/qlogic/qlge/qlge_ethtool.c          |   4 +
- drivers/net/ethernet/qlogic/qlge/qlge_main.c             |   8 --
- drivers/net/ethernet/sfc/efx.c                           |   8 +-
- drivers/net/ethernet/sfc/mcdi.c                          |  39 ++++++--
- drivers/net/ethernet/sfc/net_driver.h                    |   3 +
- drivers/net/ethernet/sfc/nic.h                           |   2 +
- drivers/net/ethernet/sfc/ptp.c                           |  66 ++++++++++--
- drivers/net/ethernet/sfc/rx.c                            |   6 +-
- drivers/net/ethernet/smsc/smc91x.c                       |  45 +++++++--
- drivers/net/ethernet/tehuti/tehuti.c                     |   1 -
- drivers/net/ethernet/ti/cpsw.c                           |  19 +++-
- drivers/net/ethernet/ti/davinci_emac.c                   |  26 ++++-
- drivers/net/ethernet/xilinx/ll_temac_main.c              |   2 +-
- drivers/net/ethernet/xilinx/xilinx_axienet_main.c        |   2 +-
- drivers/net/ethernet/xilinx/xilinx_emaclite.c            |  51 +++-------
- drivers/net/macvtap.c                                    |  13 ++-
- drivers/net/phy/micrel.c                                 |  15 +++
- drivers/net/tun.c                                        |  18 ++--
- drivers/net/virtio_net.c                                 |  17 ++--
- drivers/net/vxlan.c                                      |   2 +-
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.c           |  22 ++--
- drivers/net/wireless/ath/ath9k/hw.c                      |   7 +-
- drivers/net/wireless/ath/ath9k/xmit.c                    |   4 +
- drivers/net/wireless/ath/wcn36xx/smd.c                   |  19 ++--
- drivers/net/wireless/brcm80211/Kconfig                   |   2 +
- drivers/net/wireless/brcm80211/brcmfmac/bcmsdh_sdmmc.c   |   2 +
- drivers/net/wireless/iwlwifi/iwl-7000.c                  |  29 +++++-
- drivers/net/wireless/iwlwifi/iwl-config.h                |   5 +
- drivers/net/wireless/iwlwifi/iwl-csr.h                   |   5 +-
- drivers/net/wireless/iwlwifi/mvm/bt-coex.c               |   6 +-
- drivers/net/wireless/iwlwifi/mvm/d3.c                    |   5 +-
- drivers/net/wireless/iwlwifi/mvm/debugfs.c               |   4 +
- drivers/net/wireless/iwlwifi/mvm/time-event.c            |   7 +-
- drivers/net/wireless/iwlwifi/pcie/drv.c                  |  21 ++++
- drivers/net/wireless/iwlwifi/pcie/internal.h             |   8 ++
- drivers/net/wireless/iwlwifi/pcie/rx.c                   |   7 +-
- drivers/net/wireless/iwlwifi/pcie/trans.c                |   3 -
- drivers/net/wireless/iwlwifi/pcie/tx.c                   |   6 +-
- drivers/net/wireless/mac80211_hwsim.c                    |  16 ++-
- drivers/net/wireless/mwifiex/sta_ioctl.c                 |   4 +-
- drivers/net/xen-netback/interface.c                      |  20 ++--
- drivers/net/xen-netback/netback.c                        | 266 +++++++++++++++++++++++++++---------------------
- drivers/pci/pci.c                                        |   8 ++
- include/linux/ipv6.h                                     |   1 +
- include/linux/micrel_phy.h                               |   2 +
- include/linux/net.h                                      |   2 +-
- include/linux/netdevice.h                                |   2 +-
- include/linux/pci.h                                      |   1 +
- include/linux/skbuff.h                                   |  39 ++++----
- include/net/ipv6.h                                       |   3 +-
- include/net/sctp/structs.h                               |   6 --
- include/net/sock.h                                       |   6 +-
- net/bridge/br_private.h                                  |  10 ++
- net/bridge/br_stp_bpdu.c                                 |   2 +-
- net/core/drop_monitor.c                                  |   1 -
- net/core/skbuff.c                                        |   1 +
- net/core/sock.c                                          |   2 +-
- net/dccp/ipv6.c                                          |   1 -
- net/ipv4/fib_rules.c                                     |   5 +-
- net/ipv4/tcp_memcontrol.c                                |   7 --
- net/ipv4/udp.c                                           |  47 +++++----
- net/ipv6/addrconf.c                                      |   2 +-
- net/ipv6/datagram.c                                      |   1 -
- net/ipv6/fib6_rules.c                                    |   6 +-
- net/ipv6/ndisc.c                                         |   3 +
- net/ipv6/raw.c                                           |   1 -
- net/ipv6/route.c                                         |  30 +++---
- net/ipv6/tcp_ipv6.c                                      |   1 -
- net/ipv6/udp.c                                           |   1 -
- net/l2tp/l2tp_ip6.c                                      |   1 -
- net/mac80211/cfg.c                                       |  15 ++-
- net/mac80211/ibss.c                                      |   4 +
- net/mac80211/ieee80211_i.h                               |   1 +
- net/mac80211/iface.c                                     |   1 -
- net/mac80211/main.c                                      |   3 +
- net/mac80211/mesh.c                                      |  20 ++--
- net/mac80211/mlme.c                                      |   2 +
- net/mac80211/rc80211_minstrel_ht.c                       |   7 +-
- net/mac80211/rx.c                                        |   3 +-
- net/mac80211/scan.c                                      |   2 +-
- net/mac80211/spectmgmt.c                                 |   2 +
- net/mac80211/util.c                                      |  11 +-
- net/netfilter/ipset/ip_set_hash_netnet.c                 |   2 +-
- net/netfilter/nf_tables_api.c                            |  46 ++++++---
- net/netfilter/xt_hashlimit.c                             |  25 ++---
- net/packet/af_packet.c                                   |  65 +++++++-----
- net/rds/ib_send.c                                        |   5 +-
- net/sched/act_api.c                                      |  26 ++---
- net/sched/act_csum.c                                     |   2 -
- net/sched/act_gact.c                                     |   2 -
- net/sched/act_ipt.c                                      |   4 -
- net/sched/act_mirred.c                                   |   2 -
- net/sched/act_nat.c                                      |   2 -
- net/sched/act_pedit.c                                    |   2 -
- net/sched/act_police.c                                   |   1 -
- net/sched/act_simple.c                                   |   1 -
- net/sched/act_skbedit.c                                  |   1 -
- net/sched/sch_htb.c                                      |  20 ++--
- net/sched/sch_tbf.c                                      | 117 +++++++++++++---------
- net/sctp/associola.c                                     |   5 +-
- net/sctp/output.c                                        |   3 +-
- net/sctp/sm_statefuns.c                                  |  12 +--
- net/sctp/socket.c                                        |  36 +++++--
- net/sctp/sysctl.c                                        |  76 ++++++++++++--
- net/sctp/transport.c                                     |   2 +-
- net/tipc/core.c                                          |   7 +-
- net/tipc/handler.c                                       |  11 +-
- net/unix/af_unix.c                                       |   8 +-
- net/wireless/core.c                                      |   9 ++
- net/wireless/ibss.c                                      |  18 ++--
- net/wireless/nl80211.c                                   |  60 ++++++-----
- 141 files changed, 1551 insertions(+), 916 deletions(-)
+On Sat, Dec 14, 2013 at 12:33 AM, Jonas Jensen <jonas.jensen@gmail.com> wrote:
+> Add a generic (dtsi) include file for MOXA ART SoCs.
+>
+> Also add a file for UC-7112-LX.
+>
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+> ---
+>  Documentation/devicetree/bindings/arm/moxart.txt |  12 +++
+>  arch/arm/boot/dts/Makefile                       |   1 +
+>  arch/arm/boot/dts/moxart-uc7112lx.dts            | 131 +++++++++++++++++++++++
+>  arch/arm/boot/dts/moxart.dtsi                    | 100 +++++++++++++++++
+>  4 files changed, 244 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/moxart.txt
+>  create mode 100644 arch/arm/boot/dts/moxart-uc7112lx.dts
+>  create mode 100644 arch/arm/boot/dts/moxart.dtsi
+>
+> diff --git a/Documentation/devicetree/bindings/arm/moxart.txt b/Documentation/devicetree/bindings/arm/moxart.txt
+> new file mode 100644
+> index 0000000..11087ed
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/moxart.txt
+> @@ -0,0 +1,12 @@
+> +MOXA ART device tree bindings
+> +
+> +Boards with the MOXA ART SoC shall have the following properties:
+> +
+> +Required root node property:
+> +
+> +compatible = "moxa,moxart";
+> +
+> +Boards:
+> +
+> +- UC-7112-LX: embedded computer
+> +  compatible = "moxa,moxart-uc-7112-lx", "moxa,moxart"
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 9fe33e7..f331b22 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -318,6 +318,7 @@ dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
+>  dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb \
+>         zynq-zc706.dtb \
+>         zynq-zed.dtb
+> +dtb-$(CONFIG_ARCH_MOXART) += moxart-uc7112lx.dtb
+>
+>  targets += dtbs
+>  targets += $(dtb-y)
+> diff --git a/arch/arm/boot/dts/moxart-uc7112lx.dts b/arch/arm/boot/dts/moxart-uc7112lx.dts
+> new file mode 100644
+> index 0000000..c63d013
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/moxart-uc7112lx.dts
+> @@ -0,0 +1,131 @@
+> +/* moxart-uc7112lx.dts - Device Tree file for MOXA UC-7112-LX
+> + *
+> + * Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
+> + *
+> + * Licensed under GPLv2 or later.
+> + */
+> +
+> +/dts-v1/;
+> +/include/ "moxart.dtsi"
+> +
+> +/ {
+> +       model = "MOXA UC-7112-LX";
+> +       compatible = "moxa,moxart-uc-7112-lx", "moxa,moxart";
+> +
+> +       memory {
+> +               device_type = "memory";
+> +               reg = <0x0 0x2000000>;
+> +       };
+> +
+> +       flash@80000000,0 {
+> +               compatible = "numonyx,js28f128", "cfi-flash";
+> +               reg = <0x80000000 0x1000000>;
+> +               bank-width = <2>;
+> +               #address-cells = <1>;
+> +               #size-cells = <1>;
+> +               partition@0 {
+> +                       label = "bootloader";
+> +                       reg = <0x0 0x40000>;
+> +               };
+> +               partition@40000 {
+> +                       label = "linux kernel";
+> +                       reg = <0x40000 0x1C0000>;
+> +               };
+> +               partition@200000 {
+> +                       label = "root filesystem";
+> +                       reg = <0x200000 0x800000>;
+> +               };
+> +               partition@a00000 {
+> +                       label = "user filesystem";
+> +                       reg = <0xa00000 0x600000>;
+> +               };
+> +       };
+> +
+> +       sdhci: sdhci@98e00000 {
+> +               compatible = "moxa,moxart-sdhci";
+> +               reg = <0x98e00000 0x5C>;
+> +               interrupts = <5 0>;
+> +               clocks = <&clk_apb>;
+> +               dmas =  <&dma 5>,
+> +                       <&dma 5>;
+> +               dma-names = "tx", "rx";
+> +       };
+
+Is your SDHCI really implemented on the board level? The fact that its
+reg property is within the same as the SoC range (for your dtsi)
+suggests the SDHCI is part of the SoC and should perhaps be in the
+dtsi?
+
+> +
+> +       mdio0: mdio@90900090 {
+> +               compatible = "moxa,moxart-mdio";
+> +               reg = <0x90900090 0x8>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +
+> +               ethphy0: ethernet-phy@1 {
+> +                       device_type = "ethernet-phy";
+> +                       compatible = "moxa,moxart-rtl8201cp", "ethernet-phy-ieee802.3-c22";
+> +                       reg = <1>;
+> +               };
+> +       };
+> +
+> +       mdio1: mdio@92000090 {
+> +               compatible = "moxa,moxart-mdio";
+> +               reg = <0x92000090 0x8>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +
+> +               ethphy1: ethernet-phy@1 {
+> +                       device_type = "ethernet-phy";
+> +                       compatible = "moxa,moxart-rtl8201cp", "ethernet-phy-ieee802.3-c22";
+> +                       reg = <1>;
+> +               };
+> +       };
+> +
+> +       mac0: mac@90900000 {
+> +               compatible = "moxa,moxart-mac";
+> +               reg = <0x90900000 0x90>;
+> +               interrupts = <25 0>;
+> +               phy-handle = <&ethphy0>;
+> +               phy-mode = "mii";
+> +       };
+> +
+> +       mac1: mac@92000000 {
+> +               compatible = "moxa,moxart-mac";
+> +               reg = <0x92000000 0x90>;
+> +               interrupts = <27 0>;
+> +               phy-handle = <&ethphy1>;
+> +               phy-mode = "mii";
+> +       };
+
+Same for MACs.
+
+> +
+> +       uart0: uart@98200000 {
+> +               compatible = "ns16550a";
+> +               reg = <0x98200000 0x20>;
+> +               interrupts = <31 8>;
+> +               reg-shift = <2>;
+> +               reg-io-width = <4>;
+> +               clock-frequency = <14745600>;
+> +               status = "okay";
+> +       };
+> +
+
+And UARTs.
+
+Let me know if i'm misunderstanding dts/dtsi split but looking at some
+of the other SoCs this seems inconsistent to me.
+
+Regards,
+Peter
+
+> +       leds {
+> +               compatible = "gpio-leds";
+> +               user-led {
+> +                       label = "ready-led";
+> +                       gpios = <&gpio 27 0x1>;
+> +                       default-state = "on";
+> +                       linux,default-trigger = "default-on";
+> +               };
+> +       };
+> +
+> +       gpio_keys_polled {
+> +               compatible = "gpio-keys-polled";
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               poll-interval = <500>;
+> +               button@25 {
+> +                       label = "GPIO Reset";
+> +                       linux,code = <116>;
+> +                       gpios = <&gpio 25 1>;
+> +               };
+> +       };
+> +
+> +       chosen {
+> +               bootargs = "console=ttyS0,115200n8 earlyprintk root=/dev/mmcblk0p1 rw rootwait";
+> +       };
+> +};
+> diff --git a/arch/arm/boot/dts/moxart.dtsi b/arch/arm/boot/dts/moxart.dtsi
+> new file mode 100644
+> index 0000000..0ea51ed
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/moxart.dtsi
+> @@ -0,0 +1,100 @@
+> +/* moxart.dtsi - Device Tree Include file for MOXA ART family SoC
+> + *
+> + * Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
+> + *
+> + * Licensed under GPLv2 or later.
+> + */
+> +
+> +/include/ "skeleton.dtsi"
+> +
+> +/ {
+> +       compatible = "moxa,moxart";
+> +       model = "MOXART";
+> +       interrupt-parent = <&intc>;
+> +
+> +       cpus {
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +
+> +               cpu@0 {
+> +                       device_type = "cpu";
+> +                       compatible = "faraday,fa526";
+> +                       reg = <0>;
+> +               };
+> +       };
+> +
+> +       clocks {
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +
+> +               ref12: ref12M {
+> +                       compatible = "fixed-clock";
+> +                       #clock-cells = <0>;
+> +                       clock-frequency = <12000000>;
+> +               };
+> +       };
+> +
+> +       soc {
+> +               compatible = "simple-bus";
+> +               #address-cells = <1>;
+> +               #size-cells = <1>;
+> +               reg = <0x90000000 0x10000000>;
+> +               ranges;
+> +
+> +               intc: interrupt-controller@98800000 {
+> +                       compatible = "moxa,moxart-ic";
+> +                       reg = <0x98800000 0x38>;
+> +                       interrupt-controller;
+> +                       #interrupt-cells = <2>;
+> +                       interrupt-mask = <0x00080000>;
+> +               };
+> +
+> +               clk_pll: clk_pll@98100000 {
+> +                       compatible = "moxa,moxart-pll-clock";
+> +                       #clock-cells = <0>;
+> +                       reg = <0x98100000 0x34>;
+> +                       clocks = <&ref12>;
+> +               };
+> +
+> +               clk_apb: clk_apb@98100000 {
+> +                       compatible = "moxa,moxart-apb-clock";
+> +                       #clock-cells = <0>;
+> +                       reg = <0x98100000 0x34>;
+> +                       clocks = <&clk_pll>;
+> +               };
+> +
+> +               timer: timer@98400000 {
+> +                       compatible = "moxa,moxart-timer";
+> +                       reg = <0x98400000 0x42>;
+> +                       interrupts = <19 1>;
+> +                       clocks = <&clk_apb>;
+> +               };
+> +
+> +               gpio: gpio@98700000 {
+> +                       gpio-controller;
+> +                       #gpio-cells = <2>;
+> +                       compatible = "moxa,moxart-gpio";
+> +                       reg = <0x98700000 0xC>;
+> +               };
+> +
+> +               rtc: rtc {
+> +                       compatible = "moxa,moxart-rtc";
+> +                       gpio-rtc-sclk = <&gpio 5 0>;
+> +                       gpio-rtc-data = <&gpio 6 0>;
+> +                       gpio-rtc-reset = <&gpio 7 0>;
+> +               };
+> +
+> +               dma: dma@90500000 {
+> +                       compatible = "moxa,moxart-dma";
+> +                       reg = <0x90500080 0x40>;
+> +                       interrupts = <24 0>;
+> +                       #dma-cells = <1>;
+> +               };
+> +
+> +               watchdog: watchdog@98500000 {
+> +                       compatible = "moxa,moxart-watchdog";
+> +                       reg = <0x98500000 0x10>;
+> +                       clocks = <&clk_apb>;
+> +               };
+> +       };
+> +};
+> --
+> 1.8.2.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
