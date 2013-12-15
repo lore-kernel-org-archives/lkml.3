@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921Ab3LORuE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 12:50:04 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:44816 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab3LORuB (ORCPT
+	id S1751948Ab3LORvT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 12:51:19 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55989 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806Ab3LORvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 12:50:01 -0500
-Message-ID: <1387129799.19078.197.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: __udp4_lib_rcv: inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W}
- usage.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 15 Dec 2013 09:49:59 -0800
-In-Reply-To: <20131215063925.GC26348@localhost>
-References: <20131215063925.GC26348@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 15 Dec 2013 12:51:17 -0500
+Date: Sun, 15 Dec 2013 18:51:12 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: rjw@rjwysocki.net, len.brown@intel.com, sarah.a.sharp@linux.intel.com,
+        gregkh@linuxfoundation.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        santosh.shilimkar@ti.com
+Subject: Re: [RFC/PATCH 1/3] pm: make PM macros more smart
+Message-ID: <20131215175112.GA23298@Nokia-N900>
+References: <1386911905-2366-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1386911905-2366-2-git-send-email-david.a.cohen@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386911905-2366-2-git-send-email-david.a.cohen@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-12-15 at 14:39 +0800, Fengguang Wu wrote:
-> Greetings,
+On Thu 2013-12-12 21:18:23, David Cohen wrote:
+> This patch makes SET_SYSTEM_SLEEP_PM_OPS() and SET_RUNTIME_PM_OPS() more
+> smart.
 > 
-> I got the below dmesg and the first bad commit is
+> Despite those macros check for '#ifdef CONFIG_PM_SLEEP/RUNTIME' to avoid
+> setting the callbacks when such #ifdef's aren't defined, they don't
+> handle compiler to avoid messages like that:
 > 
-> commit 975022310233fb0f0193873d79a7b8438070fa82
-> Author:     Eric Dumazet <edumazet@google.com>
-> AuthorDate: Wed Dec 11 14:46:51 2013 -0800
-> Commit:     David S. Miller <davem@davemloft.net>
-> CommitDate: Wed Dec 11 20:21:10 2013 -0500
+> drivers/usb/host/xhci-plat.c:200:12: warning: ???xhci_plat_suspend??? defined but not used [-Wunused-function]
+> drivers/usb/host/xhci-plat.c:208:12: warning: ???xhci_plat_resume??? defined but not used [-Wunused-function]
 > 
->     udp: ipv4: must add synchronization in udp_sk_rx_dst_set()
->     
->     Unlike TCP, UDP input path does not hold the socket lock.
->     
->     Before messing with sk->sk_rx_dst, we must use a spinlock, otherwise
->     multiple cpus could leak a refcount.
->     
->     This patch also takes care of renewing a stale dst entry.
->     (When the sk->sk_rx_dst would not be used by IP early demux)
->     
->     Fixes: 421b3885bf6d ("udp: ipv4: Add udp early demux")
->     Signed-off-by: Eric Dumazet <edumazet@google.com>
->     Cc: Shawn Bohrer <sbohrer@rgmadvisors.com>
->     Signed-off-by: David S. Miller <davem@davemloft.net>
+> As result, those macros get rid of #ifdef's when setting callbacks but
+> not when implementing them.
 > 
-> +----------------------------------------------+----+
-> |                                              |    |
-> +----------------------------------------------+----+
-> | boot_successes                               | 0  |
-> | boot_failures                                | 19 |
-> | inconsistent_SOFTIRQ-ON-W-IN-SOFTIRQ-W_usage | 19 |
-> +----------------------------------------------+----+
-> 
-> [   23.564204] [ INFO: inconsistent lock state ]
-> [   23.564204] 3.13.0-rc3-00689-gb1daf37 #892 Not tainted
-> [   23.564204] ---------------------------------
-> [   23.564204] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
-> [   23.564204] swapper/0/0 [HC0[0]:SC1[1]:HE1:SE0] takes:
-> [   23.564204]  (&(&sk->sk_dst_lock)->rlock){+.?...}, at: [<ffffffff81a27fe2>] __udp4_lib_rcv+0x569/0x79d
-> [   23.564204] {SOFTIRQ-ON-W} state was registered at:
-> [   23.564204]   [<ffffffff810b16b7>] __lock_acquire+0x96c/0x185f
-> [   23.564204]   [<ffffffff810b2c97>] lock_acquire+0xab/0x12e
-> [   23.564204]   [<ffffffff81af12d3>] _raw_spin_lock+0x3b/0x6d
-> [   23.564204]   [<ffffffff81a2f13d>] inet_bind+0x18d/0x1dc
-> [   23.564204]   [<ffffffff8199d62c>] kernel_bind+0x10/0x12
-> [   23.564204]   [<ffffffff81aae764>] xs_bind+0xa0/0x11e
-> [   23.564204]   [<ffffffff81ab0271>] xs_create_sock.isra.14+0x20b/0x230
-> [   23.564204]   [<ffffffff81ab047f>] xs_tcp_setup_socket+0x5f/0x3e5
-> [   23.564204]   [<ffffffff8108a0d7>] process_one_work+0x247/0x443
-> [   23.564204]   [<ffffffff8108aeac>] worker_thread+0x1d2/0x2bc
-> [   23.564204]   [<ffffffff81090228>] kthread+0xf9/0x101
-> [   23.564204]   [<ffffffff81af92fc>] ret_from_fork+0x7c/0xb0
+> With this patch, drivers using SET_*_PM_OPS() macros don't need to #ifdef
+> the callbacks implementation as well.
 
-Oh well, I'll post a fix, thanks !
+Well... Interesting trickery, but it means that resulting kernel
+will be bigge due to the dead functions no?
 
-As David suggested, we can use xchg() here anyway, instead of trying to
-share the spinlock for the two inet dst.
-
-
-
-
+That may be acceptable tradeoff, but I guess its worth discussing...
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
