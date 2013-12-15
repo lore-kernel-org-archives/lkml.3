@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785Ab3LOQ45 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 11:56:57 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48258 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab3LOQ4z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 11:56:55 -0500
-Date: Sun, 15 Dec 2013 17:56:43 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v8 1/4] sched/numa: drop
- sysctl_numa_balancing_settle_count sysctl
-Message-ID: <20131215165643.GC16438@laptop.programming.kicks-ass.net>
-References: <1386833006-6600-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <20131213180933.GS21999@twins.programming.kicks-ass.net>
- <20131215084110.GA4316@hacker.(null)>
+	id S1751883Ab3LOQ6G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 11:58:06 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:56802 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751836Ab3LOQ6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 11:58:04 -0500
+Date: Sun, 15 Dec 2013 17:58:02 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
+        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org
+Subject: Re: [PATCH 1/3] drivers: edac: Mark the function
+ amd64_decode_bus_error() as static in amd64_edac.c
+Message-ID: <20131215165802.GC4282@pd.tnic>
+References: <7cddbd4c69ed493f183383e98853181aaf75b26b.1387029387.git.rashika.kheria@gmail.com>
+ <20131214202812.GC17601@leaf>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131215084110.GA4316@hacker.(null)>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131214202812.GC17601@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 15, 2013 at 04:41:10PM +0800, Wanpeng Li wrote:
-> Do you mean something like: 
+On Sat, Dec 14, 2013 at 12:28:12PM -0800, Josh Triplett wrote:
+> On Sat, Dec 14, 2013 at 07:28:24PM +0530, Rashika Kheria wrote:
+> > This patch marks the function amd64_decode_bus_error() as static in
+> > amd64_edac.c because it is not used outside this file.
+> > 
+> > Thus, it also eliminates the following warning in amd64_edac.c:
+> > drivers/edac/amd64_edac.c:2038:6: warning: no previous prototype for ‘amd64_decode_bus_error’ [-Wmissing-prototypes]
+> > 
+> > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 > 
-> commit 887c290e (sched/numa: Decide whether to favour task or group
-> weights
-> based on swap candidate relationships) drop the check against
-> sysctl_numa_balancing_settle_count, this patch remove the sysctl.
-> 
-> Acked-by: Mel Gorman <mgorman@suse.de>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
-> Acked-by: David Rientjes <rientjes@google.com>
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
-> Changelog:
->  v7 -> v8:
->    * remove references to it in Documentation/sysctl/kernel.txt
-> ---
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-No need to insert another --- line, just the one below the SoB,
+Applied, thanks.
 
-> Documentation/sysctl/kernel.txt |    5 -----
-> include/linux/sched/sysctl.h    |    1 -
-> kernel/sched/fair.c             |    9 ---------
-> kernel/sysctl.c                 |    7 -------
-> 4 files changed, 0 insertions(+), 22 deletions(-)
+-- 
+Regards/Gruss,
+    Boris.
 
-Everything between --- and the patch proper (usually started with an
-Index line or other diff syntax thingy), including this diffstat you
-have, will be made to disappear.
-
-But yes indeed. The Changelog should describe the patch as is, and the
-differences between this and the previous version are relevant only to
-the reviewer who saw the previous version too. But once we commit the
-patch, the previous version ceases to exist (in the commit history) and
-therefore such comments loose their intrinsic meaning and should go away
-too.
+Sent from a fat crate under my desk. Formatting is fine.
+--
