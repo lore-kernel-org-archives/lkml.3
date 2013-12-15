@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab3LOWGC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 17:06:02 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:38467 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752011Ab3LOWGA (ORCPT
+	id S1752140Ab3LOWJP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 17:09:15 -0500
+Received: from science.horizon.com ([71.41.210.146]:27935 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752011Ab3LOWJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 17:06:00 -0500
-X-Originating-IP: 50.43.14.201
-Date: Sun, 15 Dec 2013 14:05:52 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 1/3] SubmittingPatches: Add style recommendation to use
- imperative descriptions
-Message-ID: <20131215220551.GA13370@leaf>
-References: <20131215205925.GA11106@leaf>
- <20131215211429.GA32667@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131215211429.GA32667@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 15 Dec 2013 17:09:14 -0500
+Date: 15 Dec 2013 17:09:10 -0500
+Message-ID: <20131215220910.24012.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, price@MIT.EDU, tytso@MIT.EDU
+Subject: Re: Replace /dev/random input mix polynomial with Brent's xorgen?
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20131215200312.GO27191@athena.dialup.mit.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 15, 2013 at 10:14:29PM +0100, Borislav Petkov wrote:
-> On Sun, Dec 15, 2013 at 12:59:26PM -0800, Josh Triplett wrote:
-> > Most commit messages use this style, and the recommendation frequently
-> > comes up in discussions (especially in response to patches that don't
-> > use it), but that recommendation doesn't actually appear anywhere in
-> > Documentation.  Add this style guideline to SubmittingPatches, using the
-> > description from git's SubmittingPatches.
-> > 
-> > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> 
-> Acked-by: Borislav Petkov <bp@suse.de>
-> 
-> We should probably also document the wished-for structure of a commit
-> message:
-> 
-> The current situation is A. The shortcoming is B. Change/fix it by doing
-> C.
-> 
-> This helps very much in explaining to the unenlightened onlooker what
-> a patch is trying to fix without having to ask the author a bunch of
-> questions first.
+> My draft patch series uses Skein/Threefish.  The authors conveniently
+> specified a way to use it as a PRNG, and it's very fast without
+> special hardware support (consequently, for all kinds of hardware.)
+> On my laptop, reading from /dev/urandom becomes about 25 times faster
+> for large reads, and about 40% faster for small reads where the
+> syscall overhead is more important.
 
-git's SubmittingPatches has some bits that could help there.  I wouldn't
-recommend writing the structure quite so rigidly (A and B aren't always
-needed, depending on the nature of the problem and the fix), but some
-guidance would help.
+Well, /dev/urandom is documented as being *deliberately* slow.  It's meant
+only to produce 128 to 256 bits of seed material for CPRNG.  I don't
+know if Ted considers speeding it up to be goal or an antigoal. :-)
 
-- Josh Triplett
+One thing i've thought about is adding a /dev/frandom, which is seeded
+once at open time and then produces a "reasonably strong" large block of
+cryptographic output, very quickly.  (Key size between 128 and 192 bits.)
+
+I understand why Ted didn't do this in the first place, but the number
+of people I see doing something like "cat /dev/urandom > /dev/sdx"
+to test incompressible data is remarkable.
+
+If the additional code is small, perhaps it's worth doing.
+
+
+BTW, if it helps on 32-bit platforms I can get you rotate constats for
+a 32-bit version of threefish.  I haven't generated a key scheduling
+constant, though.
