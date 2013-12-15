@@ -1,75 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608Ab3LOQR7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 11:17:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39553 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751474Ab3LOQR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 11:17:58 -0500
-Date: Sun, 15 Dec 2013 16:17:54 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alex Shi <alex.shi@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
-        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
- range flush v2
-Message-ID: <20131215161754.GN11295@suse.de>
-References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
- <CA+55aFyNAigQqBk07xLpf0nkhZ_x-QkBYG8otRzsqg_8A2eg-Q@mail.gmail.com>
- <20131215155539.GM11295@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20131215155539.GM11295@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751717Ab3LOQjc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 11:39:32 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:63615 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524Ab3LOQja (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 11:39:30 -0500
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>
+Cc: Jiang Liu <liuj97@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
+        Wang YanQing <udknight@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: [PATCH v3 [resend] 00/18] simplify generic cross CPU function call implementation
+Date: Mon, 16 Dec 2013 00:36:22 +0800
+Message-Id: <1387125400-28849-1-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 15, 2013 at 03:55:39PM +0000, Mel Gorman wrote:
-> <SNIP>
-> tlbflush micro benchmark
->                     3.13.0-rc3            3.13.0-rc3                3.4.69
->                        vanilla           nowalk-v2r7               vanilla
-> Min    1        7.00 (  0.00%)        6.00 ( 14.29%)        5.00 ( 28.57%)
-> Min    2        8.00 (  0.00%)        6.00 ( 25.00%)        4.00 ( 50.00%)
-> Min    3       13.00 (  0.00%)       11.00 ( 15.38%)        9.00 ( 30.77%)
-> Min    4       17.00 (  0.00%)       19.00 (-11.76%)       15.00 ( 11.76%)
-> Mean   1       11.28 (  0.00%)       10.66 (  5.48%)        5.17 ( 54.13%)
-> Mean   2       11.42 (  0.00%)       11.52 ( -0.85%)        9.04 ( 20.82%)
-> Mean   3       23.43 (  0.00%)       21.64 (  7.64%)       10.92 ( 53.39%)
-> Mean   4       35.33 (  0.00%)       34.17 (  3.28%)       19.55 ( 44.67%)
-> Range  1        6.00 (  0.00%)        7.00 (-16.67%)        4.00 ( 33.33%)
-> Range  2       23.00 (  0.00%)       36.00 (-56.52%)       19.00 ( 17.39%)
-> Range  3       15.00 (  0.00%)       17.00 (-13.33%)       10.00 ( 33.33%)
-> Range  4       29.00 (  0.00%)       26.00 ( 10.34%)        9.00 ( 68.97%)
-> Stddev 1        1.01 (  0.00%)        1.12 ( 10.53%)        0.57 (-43.70%)
-> Stddev 2        1.83 (  0.00%)        3.03 ( 66.06%)        6.83 (274.00%)
-> Stddev 3        2.82 (  0.00%)        3.28 ( 16.44%)        1.21 (-57.14%)
-> Stddev 4        6.65 (  0.00%)        6.32 ( -5.00%)        1.58 (-76.24%)
-> Max    1       13.00 (  0.00%)       13.00 (  0.00%)        9.00 ( 30.77%)
-> Max    2       31.00 (  0.00%)       42.00 (-35.48%)       23.00 ( 25.81%)
-> Max    3       28.00 (  0.00%)       28.00 (  0.00%)       19.00 ( 32.14%)
-> Max    4       46.00 (  0.00%)       45.00 (  2.17%)       24.00 ( 47.83%)
-> 
-> <SNIP>
-> 
->           3.13.0-rc3  3.13.0-rc3      3.4.69
->              vanilla nowalk-v2r7     vanilla
-> User          179.36      165.25       97.29
-> System        153.59      155.07      128.32
-> Elapsed      1439.52     1437.69     2802.01
-> 
+Resend for collecting more Acks targetting v3.14 merge window.
+Patch for ARC, MIPS and PARISC has been merged into v3.13.
+Gained Acks for Metag, Hexagon, Tile and S390.
 
-After I ran the test, I looked closer at the elapsed times and it was
-due to a bug in the test setup itself. The tlbflush tests will need to
-be rerun but ebizzy still has the problem where threads see very
-different performance.
+Since commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use
+logic similar to smp_call_function_single()", single and multiple
+(mask version) cross CPU function calls are handled in the same way,
+and generic_smp_call_function_interrupt() becomes an aliases of
+generic_smp_call_function_single_interrupt(), so only one interrupt
+is needed for arch code to support generic SMP function call interfaces.
+This patch series simplifies arch code by killing the redundant
+interrupt for cross CPU function calls.
+
+We choose to keep generic_smp_call_function_interrupt() instead of
+generic_smp_call_function_single_interrupt() because the former is
+more generic.
+
+Jiang Liu (18):
+  Revert "kernel/smp.c: free related resources when failure occurs in
+    hotplug_cfd()"
+  Revert "smp: Fix SMP function call empty cpu mask race"
+  smp, alpha: kill SMP single function call interrupt
+  smp, ARM: kill SMP single function call interrupt
+  smp, ARM64: kill SMP single function call interrupt
+  smp, blackfin: kill SMP single function call interrupt
+  smp, IA64: kill SMP single function call interrupt
+  smp, m32r: kill SMP single function call interrupt
+  smp, mn10300: kill SMP single function call interrupt
+  smp, mn10300: enable arch_send_call_function_ipi_mask()
+  smp, sh: kill SMP single function call interrupt
+  smp, sparc64: kill SMP single function call interrupt
+  smp, sparc: kill SMP single function call interrupt
+  smp, x86, xen: kill SMP single function call interrupt
+  smp, x86: kill SMP single function call interrupt
+  smp: cleanup unsued generic_smp_call_function_single_interrupt()
+  smp: rename call_single_queue as call_function_queue
+  SMP, trivial: remove unused code from smp_boot.h
+
+ arch/alpha/kernel/smp.c                  |  8 +------
+ arch/arm/include/asm/hardirq.h           |  2 +-
+ arch/arm/kernel/smp.c                    | 10 +-------
+ arch/arm64/include/asm/hardirq.h         |  2 +-
+ arch/arm64/kernel/smp.c                  | 10 +-------
+ arch/blackfin/mach-common/smp.c          |  6 +----
+ arch/ia64/kernel/smp.c                   |  8 ++-----
+ arch/m32r/include/asm/smp.h              |  1 -
+ arch/m32r/kernel/smp.c                   |  9 +-------
+ arch/m32r/kernel/traps.c                 |  3 +--
+ arch/mn10300/include/asm/smp.h           |  2 +-
+ arch/mn10300/kernel/smp.c                | 19 ++++++++--------
+ arch/sh/include/asm/smp.h                |  1 -
+ arch/sh/kernel/smp.c                     |  5 +---
+ arch/sparc/include/asm/pil.h             |  5 ++--
+ arch/sparc/include/asm/smp_32.h          |  4 +---
+ arch/sparc/kernel/entry.S                | 10 ++------
+ arch/sparc/kernel/leon_smp.c             | 31 ++++++-------------------
+ arch/sparc/kernel/smp_32.c               | 14 ++----------
+ arch/sparc/kernel/smp_64.c               | 11 +--------
+ arch/sparc/kernel/sun4d_smp.c            | 31 ++++++-------------------
+ arch/sparc/kernel/sun4m_smp.c            | 11 ++-------
+ arch/sparc/kernel/ttable_64.S            | 12 ++++------
+ arch/sparc/mm/ultra.S                    |  5 ----
+ arch/x86/include/asm/entry_arch.h        |  1 -
+ arch/x86/include/asm/hw_irq.h            |  3 ---
+ arch/x86/include/asm/irq_vectors.h       |  7 +++---
+ arch/x86/include/asm/trace/irq_vectors.h |  6 -----
+ arch/x86/include/asm/xen/events.h        |  1 -
+ arch/x86/kernel/entry_64.S               |  2 --
+ arch/x86/kernel/irqinit.c                |  4 ----
+ arch/x86/kernel/smp.c                    | 24 +-------------------
+ arch/x86/xen/smp.c                       | 37 +-----------------------------
+ include/linux/smp.h                      |  7 +++---
+ include/linux/smpboot.h                  |  1 -
+ kernel/smp.c                             | 39 ++++++++++----------------------
+ 36 files changed, 70 insertions(+), 282 deletions(-)
 
 -- 
-Mel Gorman
-SUSE Labs
+1.8.1.2
+
