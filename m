@@ -1,133 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955Ab3LOTth (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 14:49:37 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:39727 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631Ab3LOTtg (ORCPT
+	id S1751968Ab3LOUDS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 15:03:18 -0500
+Received: from dmz-mailsec-scanner-7.mit.edu ([18.7.68.36]:56726 "EHLO
+	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751631Ab3LOUDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 14:49:36 -0500
-Message-ID: <52AE07B4.4020203@oracle.com>
-Date: Sun, 15 Dec 2013 14:49:08 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Sun, 15 Dec 2013 15:03:16 -0500
+X-AuditID: 12074424-b7fa56d000000be4-28-52ae0b031bc2
+Date: Sun, 15 Dec 2013 15:03:12 -0500
+From: Greg Price <price@MIT.EDU>
+To: "Theodore Ts'o" <tytso@MIT.EDU>, George Spelvin <linux@horizon.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Replace /dev/random input mix polynomial with Brent's xorgen?
+Message-ID: <20131215200312.GO27191@athena.dialup.mit.edu>
 MIME-Version: 1.0
-To: Vlastimil Babka <vbabka@suse.cz>, Bob Liu <bob.liu@oracle.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, joern@logfs.org,
-        mgorman@suse.de, Michel Lespinasse <walken@google.com>,
-        riel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: kernel BUG in munlock_vma_pages_range
-References: <52A3D0C3.1080504@oracle.com> <52A58E8A.3050401@suse.cz> <52A5F83F.4000207@oracle.com> <52A5F9EE.4010605@suse.cz> <52A6275F.4040007@oracle.com> <52A8EE38.2060004@suse.cz> <52A92A8D.20603@oracle.com> <52A943BC.2090001@oracle.com> <52A9AEF2.2030600@suse.cz> <52AA2510.8080908@oracle.com> <52AACA0B.6080602@oracle.com> <52AACE79.20804@suse.cz>
-In-Reply-To: <52AACE79.20804@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131214215559.10128.qmail@science.horizon.com>
+ <20131214192307.GA10457@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOIsWRmVeSWpSXmKPExsUixCmqrMvMvS7IYNIyA4vLu+awWZxaM4/R
+	gclj+9z5zB6fN8kFMEVx2aSk5mSWpRbp2yVwZZydeoGpYKNQxZedR5kbGN/xdTFyckgImEj8
+	XD6FCcIWk7hwbz1bFyMXh5DAbCaJ7VumMoMkhAQ2MkrsnVoDkfjFKPHo6S1GkASLgKrEs3mT
+	wLrZBBQkfsxfB9TAwSEi4C6x+00sSJgZKPzr3iZWEFtYwEviyr5VbCAlvAJWEpunKYOEeQUE
+	JU7OfMICUa4lcePfSyaQEmYBaYnl/zhAwpwCSRJ7554GWyQqoCIx5eQ2tgmMArOQdM9C0j0L
+	oXsBI/MqRtmU3Crd3MTMnOLUZN3i5MS8vNQiXXO93MwSvdSU0k2MoPBkd1HZwdh8SOkQowAH
+	oxIPrwTb2iAh1sSy4srcQ4ySHExKorzK7OuChPiS8lMqMxKLM+KLSnNSiw8xSnAwK4nwxlwF
+	KudNSaysSi3Kh0lJc7AoifPe4rAPEhJITyxJzU5NLUgtgsnKcHAoSfBacgENFSxKTU+tSMvM
+	KUFIM3FwggznARruC1LDW1yQmFucmQ6RP8WoKCXOu54TKCEAksgozYPrhaWPV4ziQK8I88aB
+	VPEAUw9c9yugwUxAg733rAIZXJKIkJJqYNwuvedY0WPP8jWzzLj4Lud5mB+ar2R7sHGBJUOr
+	3m61e1tLNmSJnC0sb5cWvCR/MK5s69kn5V/1ZNU5rXZ8aZf7mnc5RHBhe2Ob6/1Dfiz3NzpY
+	G1ncnv/zVck5RYHk5KiV9peLX1Yk/v/Nu/PCnfca0y7MnhrlOePqz+/be2vyrjW8MpZf+VqJ
+	pTgj0VCLuag4EQB0PyKo+gIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2013 04:08 AM, Vlastimil Babka wrote:
-> On 12/13/2013 09:49 AM, Bob Liu wrote:
->> On 12/13/2013 05:05 AM, Sasha Levin wrote:
->>> On 12/12/2013 07:41 AM, Vlastimil Babka wrote:
->>>> On 12/12/2013 06:03 AM, Bob Liu wrote:
->>>>>
->>>>> On 12/12/2013 11:16 AM, Sasha Levin wrote:
->>>>>> On 12/11/2013 05:59 PM, Vlastimil Babka wrote:
->>>>>>> On 12/09/2013 09:26 PM, Sasha Levin wrote:
->>>>>>>> On 12/09/2013 12:12 PM, Vlastimil Babka wrote:
->>>>>>>>> On 12/09/2013 06:05 PM, Sasha Levin wrote:
->>>>>>>>>> On 12/09/2013 04:34 AM, Vlastimil Babka wrote:
->>>>>>>>>>> Hello, I will look at it, thanks.
->>>>>>>>>>> Do you have specific reproduction instructions?
->>>>>>>>>>
->>>>>>>>>> Not really, the fuzzer hit it once and I've been unable to trigger
->>>>>>>>>> it again. Looking at
->>>>>>>>>> the piece of code involved it might have had something to do with
->>>>>>>>>> hugetlbfs, so I'll crank
->>>>>>>>>> up testing on that part.
->>>>>>>>>
->>>>>>>>> Thanks. Do you have trinity log and the .config file? I'm currently
->>>>>>>>> unable to even boot linux-next
->>>>>>>>> with my config/setup due to a GPF.
->>>>>>>>> Looking at code I wouldn't expect that it could encounter a tail
->>>>>>>>> page, without first encountering a
->>>>>>>>> head page and skipping the whole huge page. At least in THP case, as
->>>>>>>>> TLB pages should be split when
->>>>>>>>> a vma is split. As for hugetlbfs, it should be skipped for
->>>>>>>>> mlock/munlock operations completely. One
->>>>>>>>> of these assumptions is probably failing here...
->>>>>>>>
->>>>>>>> If it helps, I've added a dump_page() in case we hit a tail page
->>>>>>>> there and got:
->>>>>>>>
->>>>>>>> [  980.172299] page:ffffea003e5e8040 count:0 mapcount:1
->>>>>>>> mapping:          (null) index:0
->>>>>>>> x0
->>>>>>>> [  980.173412] page flags: 0x2fffff80008000(tail)
->>>>>>>>
->>>>>>>> I can also add anything else in there to get other debug output if
->>>>>>>> you think of something else useful.
->>>>>>>
->>>>>>> Please try the following. Thanks in advance.
->>>>>>
->>>>>> [  428.499889] page:ffffea003e5c0040 count:0 mapcount:4
->>>>>> mapping:          (null) index:0x0
->>>>>> [  428.499889] page flags: 0x2fffff80008000(tail)
->>>>>> [  428.499889] start=140117131923456 pfn=16347137
->>>>>> orig_start=140117130543104 page_increm
->>>>>> =1 vm_start=140117130543104 vm_end=140117134688256 vm_flags=135266419
->>>>>> [  428.499889] first_page pfn=16347136
->>>>>> [  428.499889] page:ffffea003e5c0000 count:204 mapcount:44
->>>>>> mapping:ffff880fb5c466c1 inde
->>>>>> x:0x7f6f8fe00
->>>>>> [  428.499889] page flags:
->>>>>> 0x2fffff80084068(uptodate|lru|active|head|swapbacked)
->>>>>
->>>>>     From this print, it looks like the page is still a huge page.
->>>>> One situation I guess is a huge page which isn't PageMlocked and passed
->>>>> to munlock_vma_page(). I'm not sure whether this will happen.
->>>>
->>>> Yes that's quite likely the case. It's not illegal to happen I would say.
->>>>
->>>>> Please take a try this patch.
->>>>
->>>> I've made a simpler version that does away with the ugly page_mask
->>>> thing completely.
->>>> Please try that as well. Thanks.
->>>>
->>>> Also when working on this I think I found another potential but much
->>>> rare problem
->>>> when munlock_vma_page races with a THP split. That would however
->>>> manifest such that
->>>> part of the former tail pages would stay PageMlocked. But that still
->>>> needs more thought.
->>>> The bug at hand should however be fixed by this patch.
->>>
->>> Yup, this patch seems to fix the issue previously reported.
->>>
->>> However, I'll piggyback another thing that popped up now that the vm
->>> could run for a while which
->>> also seems to be caused by the original patch. It looks like a pretty
->>> straightforward deadlock, but
->
-> Sigh, put one down, patch it around... :)
->
->> Looks like put_page() in __munlock_pagevec() need to get the
->> zone->lru_lock which is already held when entering __munlock_pagevec().
->
-> I've come to the same conclusion, however:
->
->> How about fix like this?
->
-> That unfortunately removes most of the purpose of this function which was to avoid repeated locking.
->
-> Please try this patch.
+On Sat, Dec 14, 2013 at 02:23:07PM -0500, Theodore Ts'o wrote:
+> I'm much more inclined to think about changing how we generate random
+> numbers from the output pool by switching from using SHA to AES in
+> some one-way random function mode (i.e., such as the Davies-Meyer
+> construction), since that is where we are spending most of our CPU
+> time in the random driver at the moment.
 
-All seems to work, thanks!
+I have a draft of a patch series to do something like this.  There's a
+good bit of refactoring to make the output pools have a different type
+from input_pool.  Then a new cryptographic engine can be swapped in
+for the output pools, in place of the current SHA-1-based algorithm.
+
+The refactoring should be basically the same for any change of
+algorithm, if the new algorithm is to be used for the output pools and
+not the input pool.  Which I think is the right approach -- generally
+the state-of-the-art PRNG algorithms aren't optimized for taking input
+quickly, as we want to do in an interrupt, so we'll want the current
+mix_pool_bytes or something similar for the input pool.  Perhaps the
+Brent-Marsaglia algorithms George mentioned, which I haven't yet read
+about in detail.
+
+A side benefit of the reseeding rework I sent yesterday is that it
+lays the groundwork for that refactoring, by directing all routine
+input through the input pool.
 
 
-Thanks,
-Sasha
+On Sat, Dec 14, 2013 at 04:55:59PM -0500, George Spelvin wrote:
+> The SHA-3 competition has given us lots of random permutations and
+> random functions.  Keccak, Salsa20/ChaCha, Skein/Threefish and SipHash
+> are all interesting looking.  AES/Rijndael is actually less so, unless
+> you're planning on using hardware support, because of cache timing
+> attacks on the lookup tables it needs for software implementation.
 
+My draft patch series uses Skein/Threefish.  The authors conveniently
+specified a way to use it as a PRNG, and it's very fast without
+special hardware support (consequently, for all kinds of hardware.)
+On my laptop, reading from /dev/urandom becomes about 25 times faster
+for large reads, and about 40% faster for small reads where the
+syscall overhead is more important.
+
+ChaCha or Salsa20 would be a good choice too.  The author didn't
+specify a PRNG mode, but they can be plugged into standard
+constructions, and they're also very fast.
+
+
+Regards,
+Greg
