@@ -1,63 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751954Ab3LOSbP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 13:31:15 -0500
-Received: from 10.mo1.mail-out.ovh.net ([178.32.96.102]:54068 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751853Ab3LOSa6 (ORCPT
+	id S1752012Ab3LOSe2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 13:34:28 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:51963 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab3LOSe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 13:30:58 -0500
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [PATCH 2/2] pinctrl: at91: replace clk_prepare + clk_enable by clk_prepare_enable
-Date: Sun, 15 Dec 2013 19:30:52 +0100
-Message-Id: <1387132252-2584-3-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1387132252-2584-1-git-send-email-b.brezillon@overkiz.com>
-References: <1387132252-2584-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 17700272435941374126
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrleehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrleehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Sun, 15 Dec 2013 13:34:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131215155539.GM11295@suse.de>
+References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
+	<CA+55aFyNAigQqBk07xLpf0nkhZ_x-QkBYG8otRzsqg_8A2eg-Q@mail.gmail.com>
+	<20131215155539.GM11295@suse.de>
+Date: Sun, 15 Dec 2013 10:34:25 -0800
+X-Google-Sender-Auth: 0g9fCO4OLravB-rWdRnf4tDsres
+Message-ID: <CA+55aFz5ZTEiEELhPaQd97TorAKjqrKCmJc9O0NE1Nyri65Pzw@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
+ range flush v2
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Alex Shi <alex.shi@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
+        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the clk_prepare and clk_enable calls by a single
-clk_prepare_enable call.
+On Sun, Dec 15, 2013 at 7:55 AM, Mel Gorman <mgorman@suse.de> wrote:
+>
+> Short answer -- There appears to be a second bug where 3.13-rc3 is less
+> fair to threads getting time on the CPU.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/pinctrl/pinctrl-at91.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+Hmm.  Can you point me at the (fixed) microbenchmark you mention?
 
-diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-index 82f6301..4deb9cb 100644
---- a/drivers/pinctrl/pinctrl-at91.c
-+++ b/drivers/pinctrl/pinctrl-at91.c
-@@ -1359,10 +1359,8 @@ void at91_pinctrl_gpio_resume(void)
- 
- 		pio = gpio_chips[i]->regbase;
- 
--		if (!wakeups[i]) {
--			if (clk_prepare(gpio_chips[i]->clock) == 0)
--				clk_enable(gpio_chips[i]->clock);
--		}
-+		if (!wakeups[i])
-+			clk_prepare_enable(gpio_chips[i]->clock);
- 
- 		__raw_writel(wakeups[i], pio + PIO_IDR);
- 		__raw_writel(backups[i], pio + PIO_IER);
--- 
-1.7.9.5
-
+              Linus
