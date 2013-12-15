@@ -1,330 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502Ab3LOPKD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 10:10:03 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:11774 "EHLO mailhub1.si.c-s.fr"
+	id S1751574Ab3LOPOw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 10:14:52 -0500
+Received: from smtp206.alice.it ([82.57.200.102]:32585 "EHLO smtp206.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834Ab3LOPKB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 10:10:01 -0500
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: [RFC PATCH v3] powerpc: Loading kernels over 8Mbytes without CONFIG_PIN_TLB
-Message-Id: <20131215150957.1F5C143E5B@localhost.localdomain>
-Date: Sun, 15 Dec 2013 16:09:57 +0100 (CET)
+	id S1750869Ab3LOPOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 10:14:51 -0500
+X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Dec 2013 10:14:50 EST
+Date: Sun, 15 Dec 2013 16:08:47 +0100
+From: Gianluca Anzolin <gianluca@sottospazio.it>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Alexander Holler <holler@ahsoftware.de>, marcel@holtmann.org,
+        Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
+        gregkh@linuxfoundation.org, jslaby@suse.cz,
+        linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] rfcomm (userland) broken by commit 29cd718b
+Message-ID: <20131215150847.GA10288@sottospazio.it>
+References: <1377620926-23370-1-git-send-email-gianluca@sottospazio.it>
+ <20130919162413.GG4006@joana>
+ <52AA1854.500@ahsoftware.de>
+ <52AA1E62.1030109@hurleysoftware.com>
+ <52AA483E.4080706@ahsoftware.de>
+ <20131215112413.GA8980@sottospazio.it>
+ <52ADB6B7.5010503@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Antivirus: avast! (VPS 131215-0, 15/12/2013), Outbound message
-X-Antivirus-Status: Clean
+Content-Type: multipart/mixed; boundary="azLHFNyN32YCQGCU"
+Content-Disposition: inline
+In-Reply-To: <52ADB6B7.5010503@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hereunder is a try to implement the sizing of the initial memory size based on
-initial-mapped-area size given by uboot in r7.
-As this has an impact on all powerpc platforms due to the need to provide the
-info up to function setup_initial_memory_limit(), I'm not completly sure of the
-proper implementation.
-Thanks to provide comments.
 
-Today on the 8xx, the only way to load kernels whose size is greater than
-8Mbytes is to activate CONFIG_PIN_TLB. Otherwise, the physical memory initially
-mapped is limited to 8Mbytes. This patch uses the size of initial memory mapped
-by the bootloader and given to the kernel through register r7.
-This is done regardless of whether CONFIG_PIN_TLB is active or not. It allows to
-load "big" kernels (for instance when activating CONFIG_LOCKDEP_SUPPORT) without
-having to activate CONFIG_PIN_TLB.
+--azLHFNyN32YCQGCU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Not-yet-signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+On Sun, Dec 15, 2013 at 09:03:35AM -0500, Peter Hurley wrote:
+> On 12/15/2013 06:24 AM, Gianluca Anzolin wrote:
+> >On Fri, Dec 13, 2013 at 12:35:26AM +0100, Alexander Holler wrote:
+> >>Am 12.12.2013 21:36, schrieb Peter Hurley:
+> >>
+> >>>>What currently happens is that when one kills rfcomm (and any other
+> >>>>terminal which might use that tty), the entry in /dev doesn't
+> >>>>disappear. That means the same call to refcomm with the same device
+> >>>>(e.g. [/dev/]rfcomm1 doesn't work.
+> >>>
+> >>>Thanks for the report, Alexander.
+> >>>
+> >>>Point 4 above details a different situation; something else is
+> >>>happening.
+> >>>
+> >>>Would you please detail the necessary steps to reproduce this regression?
+> >>>(How do you 'kill' rfcomm? etc.  Shell command lines would be best.)
+> >>
+> >>Just call
+> >>
+> >>rfcomm connect rfcomm9 01:23:45:67:89:ab
+> >>
+> >>wait until the connection happened  (a message will appear) and then
+> >>press ctrl-c. This still terminates the bluetooth connection, but the
+> >>device in /dev is now left.
+> >
+> >Yes I'm able to reproduce the regression which is indeed caused by that
+> >commit.
+> >
+> >However I'm puzzled. Surely there is a fifth case I didn't cover because
+> >when rfcomm_dev_state_change() is called, the tty_port is there but the tty is
+> >not, and therefore I cannot get a reference to it and send the HUP.
+> 
+> There is a fifth case, but it's crazy.
+> 
+> The tty has been properly shutdown and destroyed because the tty file handle
+> was closed, not hungup. The rfcomm device reference was properly put
+> when the tty was released.
+> 
+> But when the remote hangs up (and sends disc), then rfcomm_dev_state_change()
+> is called -- to kill the port reference (thus the rfcomm device) that was
+> instantiated locally! Ridiculous. Doubly ridiculous because it's the local
+> port shutdown that closes the dlc locally that sends the disconnect (and sets
+> the local dlc state) that triggers the received rfcomm_dev_state_change()!
+> 
+> If this behavior is desirable (or necessary because it's been exposed to
+> userspace), then why was the design ever reference-counted to begin with?
+> 
+> Regards,
+> Peter Hurley
 
-Index: linux/arch/powerpc/include/asm/mmu.h
-===================================================================
---- linux/arch/powerpc/include/asm/mmu.h	(revision 5484)
-+++ linux/arch/powerpc/include/asm/mmu.h	(copie de travail)
-@@ -138,7 +138,8 @@
- extern void early_init_mmu_secondary(void);
- 
- extern void setup_initial_memory_limit(phys_addr_t first_memblock_base,
--				       phys_addr_t first_memblock_size);
-+				       phys_addr_t first_memblock_size,
-+				       u64 init_mem_size);
- 
- #ifdef CONFIG_PPC64
- /* This is our real memory area size on ppc64 server, on embedded, we
-Index: linux/arch/powerpc/kernel/head_8xx.S
-===================================================================
---- linux/arch/powerpc/kernel/head_8xx.S	(revision 5484)
-+++ linux/arch/powerpc/kernel/head_8xx.S	(copie de travail)
-@@ -31,6 +31,8 @@
- #include <asm/asm-offsets.h>
- #include <asm/ptrace.h>
- 
-+#define EPAPR_MAGIC	0x65504150
-+
- /* Macro to make the code more readable. */
- #ifdef CONFIG_8xx_CPU6
- #define DO_8xx_CPU6(val, reg)	\
-@@ -77,10 +79,19 @@
- 	.globl	__start
- __start:
- 	mr	r31,r3			/* save device tree ptr */
-+	li	r30,0
- 
-+	lis	r8,EPAPR_MAGIC@h
-+	ori	r8,r8, EPAPR_MAGIC@l
-+	cmpw	cr0,r8, r6
-+	bne	1f
-+
-+	mr	r30,r7			/* save initial ram size */
-+
- 	/* We have to turn on the MMU right away so we get cache modes
- 	 * set correctly.
- 	 */
-+1:
- 	bl	initial_mmu
- 
- /* We now have the lower 8 Meg mapped into TLB entries, and the caches
-@@ -717,6 +728,8 @@
-  */
- 	li	r3,0
- 	mr	r4,r31
-+	li	r5,0
-+	mr	r6,r30
- 	bl	machine_init
- 	bl	MMU_init
- 
-@@ -841,11 +854,17 @@
- 	ori	r8, r8, MI_BOOTINIT|0x2 /* Inhibit cache -- Cort */
- 	mtspr	SPRN_MD_RPN, r8
- 
-+	/* Map two more 8M kernel data pages if needed
-+	 * We check how much memory is mapped by the bootloader
-+	*/
-+	lis	r8, 0x0100
-+	cmplw	cr0, r8, r30
-+	blt	2f
-+
- #ifdef CONFIG_PIN_TLB
--	/* Map two more 8M kernel data pages.
--	*/
- 	addi	r10, r10, 0x0100
- 	mtspr	SPRN_MD_CTR, r10
-+#endif
- 
- 	lis	r8, KERNELBASE@h	/* Create vaddr for TLB */
- 	addis	r8, r8, 0x0080		/* Add 8M */
-@@ -858,20 +877,26 @@
- 	addis	r11, r11, 0x0080	/* Add 8M */
- 	mtspr	SPRN_MD_RPN, r11
- 
-+	lis	r8, 0x0180
-+	cmplw	cr0, r8, r30
-+	blt	2f
-+
-+#ifdef CONFIG_PIN_TLB
- 	addi	r10, r10, 0x0100
- 	mtspr	SPRN_MD_CTR, r10
-+#endif
- 
- 	addis	r8, r8, 0x0080		/* Add 8M */
- 	mtspr	SPRN_MD_EPN, r8
- 	mtspr	SPRN_MD_TWC, r9
- 	addis	r11, r11, 0x0080	/* Add 8M */
- 	mtspr	SPRN_MD_RPN, r11
--#endif
- 
- 	/* Since the cache is enabled according to the information we
- 	 * just loaded into the TLB, invalidate and enable the caches here.
- 	 * We should probably check/set other modes....later.
- 	 */
-+2:
- 	lis	r8, IDC_INVALL@h
- 	mtspr	SPRN_IC_CST, r8
- 	mtspr	SPRN_DC_CST, r8
-Index: linux/arch/powerpc/kernel/prom.c
-===================================================================
---- linux/arch/powerpc/kernel/prom.c	(revision 5484)
-+++ linux/arch/powerpc/kernel/prom.c	(copie de travail)
-@@ -649,7 +649,7 @@
- 	}
- }
- 
--void __init early_init_devtree(void *params)
-+void __init early_init_devtree(void *params, u64 init_mem_size)
- {
- 	phys_addr_t limit;
- 
-@@ -697,7 +697,7 @@
- 	/* make sure we've parsed cmdline for mem= before this */
- 	if (memory_limit)
- 		first_memblock_size = min_t(u64, first_memblock_size, memory_limit);
--	setup_initial_memory_limit(memstart_addr, first_memblock_size);
-+	setup_initial_memory_limit(memstart_addr, first_memblock_size, init_mem_size);
- 	/* Reserve MEMBLOCK regions used by kernel, initrd, dt, etc... */
- 	memblock_reserve(PHYSICAL_START, __pa(klimit) - PHYSICAL_START);
- 	/* If relocatable, reserve first 32k for interrupt vectors etc. */
-Index: linux/arch/powerpc/kernel/setup_32.c
-===================================================================
---- linux/arch/powerpc/kernel/setup_32.c	(revision 5484)
-+++ linux/arch/powerpc/kernel/setup_32.c	(copie de travail)
-@@ -119,7 +119,7 @@
-  * This is called very early on the boot process, after a minimal
-  * MMU environment has been set up but before MMU_init is called.
-  */
--notrace void __init machine_init(u64 dt_ptr)
-+notrace void __init machine_init(u64 dt_ptr, u64 init_mem_size)
- {
- 	lockdep_init();
- 
-@@ -127,7 +127,7 @@
- 	udbg_early_init();
- 
- 	/* Do some early initialization based on the flat device tree */
--	early_init_devtree(__va(dt_ptr));
-+	early_init_devtree(__va(dt_ptr), init_mem_size);
- 
- 	epapr_paravirt_early_init();
- 
-Index: linux/arch/powerpc/kernel/setup_64.c
-===================================================================
---- linux/arch/powerpc/kernel/setup_64.c	(revision 5484)
-+++ linux/arch/powerpc/kernel/setup_64.c	(copie de travail)
-@@ -185,7 +185,7 @@
-  * device-tree is not accessible via normal means at this point.
-  */
- 
--void __init early_setup(unsigned long dt_ptr)
-+void __init early_setup(unsigned long dt_ptr, u64 init_mem_size)
- {
- 	static __initdata struct paca_struct boot_paca;
- 
-@@ -214,7 +214,7 @@
- 	 * tree, such as retrieving the physical memory map or
- 	 * calculating/retrieving the hash table size.
- 	 */
--	early_init_devtree(__va(dt_ptr));
-+	early_init_devtree(__va(dt_ptr), init_mem_size);
- 
- 	epapr_paravirt_early_init();
- 
-Index: linux/arch/powerpc/mm/40x_mmu.c
-===================================================================
---- linux/arch/powerpc/mm/40x_mmu.c	(revision 5484)
-+++ linux/arch/powerpc/mm/40x_mmu.c	(copie de travail)
-@@ -147,7 +147,8 @@
- }
- 
- void setup_initial_memory_limit(phys_addr_t first_memblock_base,
--				phys_addr_t first_memblock_size)
-+				phys_addr_t first_memblock_size,
-+				u64 init_mem_size)
- {
- 	/* We don't currently support the first MEMBLOCK not mapping 0
- 	 * physical on those processors
-Index: linux/arch/powerpc/mm/44x_mmu.c
-===================================================================
---- linux/arch/powerpc/mm/44x_mmu.c	(revision 5484)
-+++ linux/arch/powerpc/mm/44x_mmu.c	(copie de travail)
-@@ -212,7 +212,8 @@
- }
- 
- void setup_initial_memory_limit(phys_addr_t first_memblock_base,
--				phys_addr_t first_memblock_size)
-+				phys_addr_t first_memblock_size,
-+				u64 init_mem_size)
- {
- 	u64 size;
- 
-Index: linux/arch/powerpc/mm/fsl_booke_mmu.c
-===================================================================
---- linux/arch/powerpc/mm/fsl_booke_mmu.c	(revision 5484)
-+++ linux/arch/powerpc/mm/fsl_booke_mmu.c	(copie de travail)
-@@ -234,7 +234,8 @@
- }
- 
- void setup_initial_memory_limit(phys_addr_t first_memblock_base,
--				phys_addr_t first_memblock_size)
-+				phys_addr_t first_memblock_size,
-+				u64 init_mem_size)
- {
- 	phys_addr_t limit = first_memblock_base + first_memblock_size;
- 
-Index: linux/arch/powerpc/mm/hash_utils_64.c
-===================================================================
---- linux/arch/powerpc/mm/hash_utils_64.c	(revision 5484)
-+++ linux/arch/powerpc/mm/hash_utils_64.c	(copie de travail)
-@@ -1416,7 +1416,8 @@
- #endif /* CONFIG_DEBUG_PAGEALLOC */
- 
- void setup_initial_memory_limit(phys_addr_t first_memblock_base,
--				phys_addr_t first_memblock_size)
-+				phys_addr_t first_memblock_size,
-+				u64 init_mem_size)
- {
- 	/* We don't currently support the first MEMBLOCK not mapping 0
- 	 * physical on those processors
-Index: linux/arch/powerpc/mm/init_32.c
-===================================================================
---- linux/arch/powerpc/mm/init_32.c	(revision 5484)
-+++ linux/arch/powerpc/mm/init_32.c	(copie de travail)
-@@ -206,19 +206,16 @@
- 
- #ifdef CONFIG_8xx /* No 8xx specific .c file to put that in ... */
- void setup_initial_memory_limit(phys_addr_t first_memblock_base,
--				phys_addr_t first_memblock_size)
-+				phys_addr_t first_memblock_size,
-+				u64 init_mem_size)
- {
- 	/* We don't currently support the first MEMBLOCK not mapping 0
- 	 * physical on those processors
- 	 */
- 	BUG_ON(first_memblock_base != 0);
- 
--#ifdef CONFIG_PIN_TLB
--	/* 8xx can only access 24MB at the moment */
--	memblock_set_current_limit(min_t(u64, first_memblock_size, 0x01800000));
--#else
--	/* 8xx can only access 8MB at the moment */
--	memblock_set_current_limit(min_t(u64, first_memblock_size, 0x00800000));
--#endif
-+	if (!init_mem_size)
-+		init_mem_size = 0x00800000;
-+	memblock_set_current_limit(min_t(u64, first_memblock_size, init_mem_size));
- }
- #endif /* CONFIG_8xx */
-Index: linux/arch/powerpc/mm/ppc_mmu_32.c
-===================================================================
---- linux/arch/powerpc/mm/ppc_mmu_32.c	(revision 5484)
-+++ linux/arch/powerpc/mm/ppc_mmu_32.c	(copie de travail)
-@@ -273,7 +273,8 @@
- }
- 
- void setup_initial_memory_limit(phys_addr_t first_memblock_base,
--				phys_addr_t first_memblock_size)
-+				phys_addr_t first_memblock_size,
-+				u64 init_mem_size)
- {
- 	/* We don't currently support the first MEMBLOCK not mapping 0
- 	 * physical on those processors
-Index: linux/arch/powerpc/mm/tlb_nohash.c
-===================================================================
---- linux/arch/powerpc/mm/tlb_nohash.c	(revision 5484)
-+++ linux/arch/powerpc/mm/tlb_nohash.c	(copie de travail)
-@@ -654,7 +654,8 @@
- }
- 
- void setup_initial_memory_limit(phys_addr_t first_memblock_base,
--				phys_addr_t first_memblock_size)
-+				phys_addr_t first_memblock_size,
-+				u64 init_mem_size)
- {
- 	/* On non-FSL Embedded 64-bit, we adjust the RMA size to match
- 	 * the bolted TLB entry. We know for now that only 1G
+The attached patch fixes the regression by releasing the tty_port in the
+shutdown method(). This way we can avoid strange games in the dlc callback
+where we are constrained by the dlc lock.
 
----
-Ce courrier électronique ne contient aucun virus ou logiciel malveillant parce que la protection avast! Antivirus est active.
-http://www.avast.com
+If this kind of approach is acceptable I will submit the patch for inclusion in
+a separate email.
 
+Thanks,
+Gianluca
+
+--azLHFNyN32YCQGCU
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="rfc.patch"
+
+diff --git a/net/bluetooth/rfcomm/tty.c b/net/bluetooth/rfcomm/tty.c
+index 84fcf9f..917b441 100644
+--- a/net/bluetooth/rfcomm/tty.c
++++ b/net/bluetooth/rfcomm/tty.c
+@@ -129,6 +129,11 @@ static void rfcomm_dev_shutdown(struct tty_port *port)
+ 
+ 	/* close the dlc */
+ 	rfcomm_dlc_close(dev->dlc, 0);
++
++	/* release the port if it was created with the flag RELEASE_ONHUP */
++	if (test_bit(RFCOMM_RELEASE_ONHUP, &dev->flags) &&
++	    !test_and_set_bit(RFCOMM_TTY_RELEASED, &dev->flags))
++		tty_port_put(&dev->port);
+ }
+ 
+ static const struct tty_port_operations rfcomm_port_ops = {
+
+--azLHFNyN32YCQGCU--
