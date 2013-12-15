@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab3LODmA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 22:42:00 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:46154 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753810Ab3LODl6 convert rfc822-to-8bit (ORCPT
+	id S1754118Ab3LODqA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 22:46:00 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:57686 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753596Ab3LODp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 22:41:58 -0500
-X-Originating-IP: 50.43.14.201
-Date: Sat, 14 Dec 2013 19:41:49 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: David Miller <davem@davemloft.net>
-Cc: rashika.kheria@gmail.com, linux-kernel@vger.kernel.org,
-        sebastian@breakpoint.cc, sachin.kamat@linaro.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2 5/9] drivers: net: Put prototype declaration for
- function sbni_probe() in sbni.c
-Message-ID: <20131215034148.GA1573@leaf>
-References: <a610f6ee6bb992b91e43bdc851f3db62fc3decd5.1386911123.git.rashika.kheria@gmail.com>
- <dd984c99d43214c39b23f95e9a58f3a675147e69.1386911124.git.rashika.kheria@gmail.com>
- <20131214.222658.766340465002992773.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131214.222658.766340465002992773.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+	Sat, 14 Dec 2013 22:45:58 -0500
+From: Luming Yu <luming.yu@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Luming Yu <luming.yu@gmail.com>
+Subject: [PATCH 2/2] Add RTM C intrinsics head file For new instruction
+Date: Sun, 15 Dec 2013 11:45:48 +0800
+Message-Id: <1387079148-4236-1-git-send-email-luming.yu@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 14, 2013 at 10:26:58PM -0500, David Miller wrote:
-> From: Rashika Kheria <rashika.kheria@gmail.com>
-> Date: Sat, 14 Dec 2013 17:55:42 +0530
-> 
-> > This patch declares the prototype for the function sbni_probe() in file sbni.c.
-> > 
-> > Thus, it also removes the following warning in wan/sbni.c:
-> > drivers/net/wan/sbni.c:224:12: warning: no previous prototype for ‘sbni_probe’ [-Wmissing-prototypes]
-> > 
-> > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> > ---
-> > 
-> > This revision fixes the following issues of the previous revision:
-> > Incorrect fix
-> > 
-> >  drivers/net/wan/sbni.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/drivers/net/wan/sbni.c b/drivers/net/wan/sbni.c
-> > index 388ddf6..5061ffd 100644
-> > --- a/drivers/net/wan/sbni.c
-> > +++ b/drivers/net/wan/sbni.c
-> > @@ -221,6 +221,7 @@ static void __init sbni_devsetup(struct net_device *dev)
-> >  	dev->netdev_ops = &sbni_netdev_ops;
-> >  }
-> >  
-> > +int __init sbni_probe(int unit);
-> >  int __init sbni_probe(int unit)
-> 
-> This is not the correct way to fix this kind of warning, an exported
-> function needs to appear in a header file so that both the definition
-> and any callers of this function will see the same declaration in that
-> header file.
+XBEGIN, XEND, XABORT, XTEST to enable kernel to explore the value of
+Restricted Transactional Memory that can be found on your haswell laptop and
+following up offerings see Chapter 12.3.3 Using HLE or RTM for lock Elision
+of 64-ia-32-architectures-optimization-manual.pdf July 2013
 
-It should, yes; however, in this case, the function is one of several
-dozen that are directly prototyped and used by drivers/net/Space.c, and
-there's no header file prototyping any of those functions.
+Tested-by: Luming Yu <luming.yu@intel.com>
+Signed-off-by: Luming Yu <luming.yu@intel.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com
+---
+ arch/x86/include/asm/rtm.h | 58 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 58 insertions(+)
+ create mode 100644 arch/x86/include/asm/rtm.h
 
-Do you have a suggestion for what header file should contain a prototype
-for this probe function?
+diff --git a/arch/x86/include/asm/rtm.h b/arch/x86/include/asm/rtm.h
+new file mode 100644
+index 0000000..5841914
+--- /dev/null
++++ b/arch/x86/include/asm/rtm.h
+@@ -0,0 +1,58 @@
++#ifndef _RTM_H
++#define _RTM_H 1
++
++/*
++ * Copyright (c) 2012,2013 Intel Corporation
++ * Author: Andi Kleen
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that: (1) source code distributions
++ * retain the above copyright notice and this paragraph in its entirety, (2)
++ * distributions including binary code include the above copyright notice and
++ * this paragraph in its entirety in the documentation or other materials
++ * provided with the distribution
++ *
++ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++/* Official RTM intrinsics interface matching gcc/icc, but works
++   on older gcc compatible compilers and binutils. */
++
++#define _XBEGIN_STARTED		(~0u)
++#define _XABORT_EXPLICIT	(1 << 0)
++#define _XABORT_RETRY		(1 << 1)
++#define _XABORT_CONFLICT	(1 << 2)
++#define _XABORT_CAPACITY	(1 << 3)
++#define _XABORT_DEBUG		(1 << 4)
++#define _XABORT_NESTED		(1 << 5)
++#define _XABORT_CODE(x)		(((x) >> 24) & 0xff)
++
++#define __rtm_force_inline __attribute__((__always_inline__)) inline
++
++static __rtm_force_inline int _xbegin(void)
++{
++	int ret = _XBEGIN_STARTED;
++	asm volatile(".byte 0xc7,0xf8 ; .long 0" : "+a" (ret) :: "memory");
++	return ret;
++}
++
++static __rtm_force_inline void _xend(void)
++{
++	 asm volatile(".byte 0x0f,0x01,0xd5" ::: "memory");
++}
++
++static __rtm_force_inline void _xabort(const unsigned int status)
++{
++	asm volatile(".byte 0xc6,0xf8,%P0" :: "i" (status) : "memory");
++}
++
++static __rtm_force_inline int _xtest(void)
++{
++	unsigned char out;
++	asm volatile(".byte 0x0f,0x01,0xd6 ; setnz %0" : "=r" (out) :: "memory");
++	return out;
++}
++
++#endif
+-- 
+1.8.1.4
 
-- Josh Triplett
