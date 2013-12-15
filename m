@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab3LOMlN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 07:41:13 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:36274 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752487Ab3LOMlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 07:41:11 -0500
-Message-ID: <52ADA301.2080209@ti.com>
-Date: Sun, 15 Dec 2013 18:09:29 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754284Ab3LOMsx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 07:48:53 -0500
+Received: from nm45-vm8.bullet.mail.bf1.yahoo.com ([216.109.115.79]:28208 "HELO
+	nm45-vm8.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753982Ab3LOMsv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 07:48:51 -0500
+X-Greylist: delayed 360 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Dec 2013 07:48:51 EST
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 53223.33270.bm@omp1049.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=PusQv5gflnEBTlY5XiYK4p6rtfXMHSJS9FvDzCbDE7yfkzhjI/nuIuC9gr2YMGHp7rxdQIcxwHHN0S1uDdAZcOpvWOUeWN1aUf3AS9Mg0GdBfhsvA+cup79/wTzWivFEpLq79OcmbbL0mMSnN41VxJ2mqBrgZMoE8rus0JKXAWc=;
+X-YMail-OSG: p4ggC1MVM1lq7PKqVPrg4KuT_6BtpxVPDm0Wq2Cvo7mrRB6
+ 9nqZ5iTWiN4Gg7n5PSedzqwJRN5pY.N4EkoMN53f4JP9ZiCoj9mSn0d14OIy
+ VBPDYJEjuPHt6M2OvHkief2PbfczVUoeJkeUrHZSFzLKTgfBJj1N5ffSMjwi
+ SX8zRuYKWhe9u.oBOIJ8jZqpryjkcc6X6xAXvfm3pxHP1XLQzOS19R1Gu1Ks
+ 0RbmJ1zE_w7KhzzHWAGmAVV94E5X0Td5PEpkUStKYBW4GYNUtvS_UBBKjDFd
+ q24WfE8Gh6nDTYhB6gwFOu_E04RsfEiKHjFckugD18mmFt6ve81WXnsW.KQy
+ Dqlpx6TzXsKkPetrYWkN_lX0yNv2McY5IX_gEH88cBDC2z_bFxOCXkh4_gS9
+ 5deVxL9hKaWFVU7ML.XjQmC.s58__JQm6hnYSRdDYFStF__HJbO8I0ezCU2W
+ EqxDPThItSYVbRxObQbMhEWwrfY0y9ZYr4caoKBLLeFgQP533zH2PslHvh.m
+ P_idu.nxb1WG5sKF_6uzwOarvaOzRuuhEGIVLXr9l3f76svt3l0WL6RfbZY0
+ iA5zuHnKq7v.jtyo.lHA-
+X-Rocket-MIMEInfo: 002.001,CgoKCi0tLS0tIE9yaWdpbmFsIE1lc3NhZ2UgLS0tLS0KPiBGcm9tOiBSaWNoYXJkIFdlaW5iZXJnZXIgPD4KPgo.IEEgKnZlcnkqIHNtYWxsIHNwZWVkdXAuCj4gCj4gQW5kIEkgcmVhbGx5IGRvdWJ0IHlvdXIgbnVtYmVycy4KPiBXaHkgYXJlIHlvdSB1c2luZyBBTk9WQT8gWW91J3JlIGNvbXBhcmluZyAqdHdvKiBncm91cHMgbm90IG1vcmUgdGhhbiB0d28uCj4gSSBoYWQgYSBxdWljayBsb29rIGF0IHlvdXIgcmF3IG51bWJlcnMsIHRoZXkgZG9uJ3Qgc2VlbSB0byBiZSBub3JtYWxseQo.IGRpc3RyaWJ1dGUBMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.169.609
+References: <1386518000.90452.YahooMailNeo@web140004.mail.bf1.yahoo.com>	<864985fbeb1d8148439e25ec01f47a67@ixit.cz>	<52AAFF89.5080509@gmail.com>	<1387051250.86178.YahooMailNeo@web140005.mail.bf1.yahoo.com>	<ce679ca5-bf83-4c2a-9234-859cc7a4206b@email.android.com>	<1387057337.97000.YahooMailNeo@web140004.mail.bf1.yahoo.com>	<52ACECC4.208@zytor.com>	<1387108841.76039.YahooMailNeo@web140006.mail.bf1.yahoo.com> <CAFLxGvxakZS5FFQcZ_ogTd9aUENT3ECj2Lxs+FCbZAiGqgOJ7g@mail.gmail.com>
+Message-ID: <1387111370.81380.YahooMailNeo@web140001.mail.bf1.yahoo.com>
+Date: Sun, 15 Dec 2013 04:42:50 -0800 (PST)
+From: John <da_audiophile@yahoo.com>
+Reply-To: John <da_audiophile@yahoo.com>
+Subject: Re: [PATCH] expand micro-optimizations in kernel to newer model CPUs
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "david.heidelberger@ixit.cz" <david.heidelberger@ixit.cz>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAFLxGvxakZS5FFQcZ_ogTd9aUENT3ECj2Lxs+FCbZAiGqgOJ7g@mail.gmail.com>
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        <linux-gpio@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v6 3/6] gpio: davinci: remove unused variable intc_irq_num
-References: <1385057731-4348-1-git-send-email-prabhakar.csengg@gmail.com> <1385057731-4348-4-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1385057731-4348-4-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 November 2013 11:45 PM, Prabhakar Lad wrote:
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-> 
-> As the davinci-gpio driver is migrated to use irqdomain
-> there is no need to pass the irq base for the gpio driver.
-> This patch removes this variable from davinci_gpio_platform_data
-> and also the refrences from the machine file.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Queuing for v3.14 along with Linus's ack.
 
-Thanks,
-Sekhar
+
+
+----- Original Message -----
+> From: Richard Weinberger <>
+>
+> A *very* small speedup.
+> 
+> And I really doubt your numbers.
+> Why are you using ANOVA? You're comparing *two* groups not more than two.
+> I had a quick look at your raw numbers, they don't seem to be normally
+> distributed at all.
+> Did you remove some peaks?
+> 
+
+
+Hi Richard.  Thank you for your interest.  Yes, a small speedup as I mentioned but  I'll note that the current kernel code includes the MCORE2 option.  I tested this against some of the newer ones and they are all on par with each other.  For example, here are differences in median values:
+
+CPUDifference in median value
+core2        +87.5 ms
+core7-avx+79.7 ms
+core-avx-i+257.2 ms
+
+I am using ANOVA to establish that the generic group differs from the optimized group.  I have always used ANOVA for this sort of comparison whether using two or more groups.  In fact, thumb through any medical or scientific journal, you'll see others in pier reviewed article doing the same.  
+
+I did not remove any datapoints; I do not understand why you don't think the sets are normally distributed.  Did you see the normal quantile plots?  Additionally, the population variances are fairly equal (Levene and Barlett tests). 
