@@ -1,136 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab3LOCBu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Dec 2013 21:01:50 -0500
-Received: from dmz-mailsec-scanner-8.mit.edu ([18.7.68.37]:59257 "EHLO
-	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754433Ab3LOCBr (ORCPT
+	id S1754502Ab3LOCBy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Dec 2013 21:01:54 -0500
+Received: from dmz-mailsec-scanner-5.mit.edu ([18.7.68.34]:43555 "EHLO
+	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754440Ab3LOCBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Dec 2013 21:01:47 -0500
-X-AuditID: 12074425-b7fd96d000000c39-db-52ad0d8aae08
-Date: Sat, 14 Dec 2013 21:01:44 -0500
+	Sat, 14 Dec 2013 21:01:52 -0500
+X-AuditID: 12074422-b7f9d6d000000bc0-77-52ad0d8f817d
+Date: Sat, 14 Dec 2013 21:01:49 -0500
 From: Greg Price <price@MIT.EDU>
 To: "Theodore Ts'o" <tytso@MIT.EDU>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 10/14] random: direct all routine input via input pool
-Message-ID: <20131215020144.GJ27191@athena.dialup.mit.edu>
+Subject: [PATCH 11/14] random: separate entropy since auto-push from
+ entropy_total
+Message-ID: <20131215020149.GK27191@athena.dialup.mit.edu>
 References: <cover.1387067223.git.price@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <cover.1387067223.git.price@mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsUixG6notvFuzbIYPdPIYvLu+awOTB6fN4k
-	F8AYxWWTkpqTWZZapG+XwJXxet0ixoITchU751xmaWDcKNnFyMkhIWAisW/CRGYIW0ziwr31
-	bF2MXBxCArOZJP4+PAXlbGSUeDmtG8r5xSjx/MhCNpAWFgFViYXXlzKB2GwCChI/5q8DGyUi
-	oCyxauYmsDgzUPzXvU2sILawgJvEn7P97CA2r4CVxM03a8DmCAkYSLTPbGCCiAtKnJz5hAWi
-	V0vixr+XQHEOIFtaYvk/DpAwp4ChxLuFVxlBbFEBFYkpJ7exTWAUnIWkexaS7lkI3QsYmVcx
-	yqbkVunmJmbmFKcm6xYnJ+blpRbpWujlZpbopaaUbmIEB6qL6g7GCYeUDjEKcDAq8fBKsK0N
-	EmJNLCuuzD3EKMnBpCTKK8UJFOJLyk+pzEgszogvKs1JLT7EKMHBrCTCu+P8miAh3pTEyqrU
-	onyYlDQHi5I47y0O+yAhgfTEktTs1NSC1CKYrAwHh5IEbyYP0FDBotT01Iq0zJwShDQTByfI
-	cB6g4f0gNbzFBYm5xZnpEPlTjIpS4rz+IAkBkERGaR5cLyyRvGIUB3pFmDcQpIoHmITgul8B
-	DWYCGuy9ZxXI4JJEhJRUA6M6q1IA75p5byIYEsqZuE3l5zDK9hdm67EWFL+sr358py+e4UPu
-	FKdtvNZztl57lu9v2v25gLdKTCzyyVuhfTNXlF19oWDcbCnEf2SqksxHidqW5N+6EXPPtc2b
-	esdiJfPy3cWHJ5zeIqq1cMkBJz9FtV+ryqflFM/NbDdvz5jF1J/4cV67qRJLcUaioRZzUXEi
-	AO+9pHn/AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsUixG6nrtvPuzbIoPOvhMXlXXPYHBg9Pm+S
+	C2CM4rJJSc3JLEst0rdL4Mr4fnc+e8FkxYrlvUkNjGekuhg5OSQETCQWv1zOCmGLSVy4t54N
+	xBYSmM0k8WeqdhcjF5C9kVHi+oLH7BCJX4wSM08ZgNgsAqoS3Rt2soDYbAIKEj/mr2MGsUUE
+	lCVWzdzEBGIzA8V/3dsEtkBYIETi0fRVYPW8AlYSextnsUDMNJBon9nABBEXlDg58wkLRK+W
+	xI1/L4HiHEC2tMTyfxwgYU4BQ4l3C68ygtiiAioSU05uY5vAKDgLSfcsJN2zELoXMDKvYpRN
+	ya3SzU3MzClOTdYtTk7My0st0jXVy80s0UtNKd3ECA5RF6UdjD8PKh1iFOBgVOLhlWBbGyTE
+	mlhWXJl7iFGSg0lJlFeKEyjEl5SfUpmRWJwRX1Sak1p8iFGCg1lJhHfH+TVBQrwpiZVVqUX5
+	MClpDhYlcd5bHPZBQgLpiSWp2ampBalFMFkZDg4lCd5FPEBDBYtS01Mr0jJzShDSTBycIMN5
+	gIafA6nhLS5IzC3OTIfIn2JUlBLn9QdJCIAkMkrz4HphKeQVozjQK8K8p0CqeIDpB677FdBg
+	JqDB3ntWgQwuSURISTUwtp9ftUc83vbn72ivd4cOLVcV/ON8Sl4wZqa30UIXl2M97/XVtDde
+	7jTJTGHecCp0soM8U4JjkPqEXV3VO1bNbBLfvo89Za93IC/ruslbC1Ii0lgbIlh7/x8oj3ZN
+	9D1Y9mi6Dvsk4/lvA3n4HjrV9QlXn2w7db44dVXElKBvR097lApu2rFAiaU4I9FQi7moOBEA
+	zWQDKPwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This lets us control when the nonblocking pool is reseeded from
-input, even early in boot.  Our normal reseed mechanisms then
-ensure that the input is used in "catastrophic reseeds",
-high-entropy blobs added all at once with no possibility of output
-between one part of the input and another.  If we alternate
-reseed, output, reseed, output, etc., and an attacker sees the
-output, then they can brute-force one reseed at a time, so that
-our randomness is only slightly better than the single best reseed.
+We're using and updating the entropy_total field for different
+purposes on input_pool and nonblocking_pool, only one of which
+matches the name.  This makes it hard to understand what the field
+means.
 
-The preceding commits should ensure that until we're initialized,
-we get entropy into the nonblocking pool ASAP without rate-limiting,
-or sending any to the blocking pool, or losing any extra entropy
-beyond our estimates, limited only by the need to batch it up into
-large reseeds.  This should accomplish the important job of
-getting us quickly seeded that was previously accomplished by
-sending the input straight to the nonblocking pool early on.
+Separate the computation on input_pool, which is of entropy since
+the last auto-push, from the computation on nonblocking_pool.
+Also compute 'initialized' only for nonblocking_pool, which is the
+only place where the concept really makes sense.
 
 Signed-off-by: Greg Price <price@mit.edu>
 ---
- drivers/char/random.c | 19 ++++++-------------
- 1 file changed, 6 insertions(+), 13 deletions(-)
+ drivers/char/random.c         | 17 +++++++++--------
+ include/trace/events/random.h | 24 ++++++++++++++----------
+ 2 files changed, 23 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 58e3e81d4..ea389723f 100644
+index ea389723f..1f9c69662 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -753,11 +753,6 @@ void add_device_randomness(const void *buf, unsigned int size)
- 	_mix_pool_bytes(&input_pool, buf, size, NULL);
- 	_mix_pool_bytes(&input_pool, &time, sizeof(time), NULL);
- 	spin_unlock_irqrestore(&input_pool.lock, flags);
--
--	spin_lock_irqsave(&nonblocking_pool.lock, flags);
--	_mix_pool_bytes(&nonblocking_pool, buf, size, NULL);
--	_mix_pool_bytes(&nonblocking_pool, &time, sizeof(time), NULL);
--	spin_unlock_irqrestore(&nonblocking_pool.lock, flags);
- }
- EXPORT_SYMBOL(add_device_randomness);
+@@ -425,6 +425,7 @@ struct entropy_store {
+ 	unsigned short add_ptr;
+ 	unsigned short input_rotate;
+ 	int entropy_count;
++	int entropy_since_push;
+ 	int entropy_total;
+ 	unsigned int initialized:1;
+ 	unsigned int limit:1;
+@@ -662,11 +663,10 @@ retry:
+ 	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
+ 		goto retry;
  
-@@ -775,7 +770,6 @@ static struct timer_rand_state input_timer_state = INIT_TIMER_RAND_STATE;
-  */
- static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- {
--	struct entropy_store	*r;
- 	struct {
- 		long jiffies;
- 		unsigned cycles;
-@@ -788,8 +782,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- 	sample.jiffies = jiffies;
- 	sample.cycles = random_get_entropy();
- 	sample.num = num;
--	r = nonblocking_pool.initialized ? &input_pool : &nonblocking_pool;
--	mix_pool_bytes(r, &sample, sizeof(sample), NULL);
-+	mix_pool_bytes(&input_pool, &sample, sizeof(sample), NULL);
+-	r->entropy_total += nbits;
+-	if (!r->initialized && r->entropy_total > 128) {
+-		r->initialized = 1;
+-		r->entropy_total = 0;
+-		if (r == &nonblocking_pool) {
++	if (r == &nonblocking_pool) {
++		r->entropy_total += nbits;
++		if (!r->initialized && r->entropy_total > 128) {
++			r->initialized = 1;
+ 			prandom_reseed_late();
+ 			pr_notice("random: %s pool is initialized\n", r->name);
+ 		}
+@@ -674,6 +674,7 @@ retry:
  
- 	/*
- 	 * Calculate number of bits of randomness we probably added.
-@@ -823,7 +816,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- 		 * Round down by 1 bit on general principles,
- 		 * and limit entropy entimate to 12 bits.
+ 	trace_credit_entropy_bits(r->name, nbits,
+ 				  entropy_count >> ENTROPY_SHIFT,
++				  r->entropy_since_push,
+ 				  r->entropy_total, _RET_IP_);
+ 
+ 	if (r == &input_pool) {
+@@ -689,9 +690,9 @@ retry:
+ 		 * forth between them, until the output pools are 75%
+ 		 * full.
  		 */
--		credit_entropy_bits(r, min_t(int, fls(delta>>1), 11));
-+		credit_entropy_bits(&input_pool, min_t(int, fls(delta>>1), 11));
++		r->entropy_since_push += nbits;
+ 		if (entropy_bits > random_write_wakeup_bits &&
+-		    r->initialized &&
+-		    r->entropy_total >= 2*random_read_wakeup_bits) {
++		    r->entropy_since_push >= 2*random_read_wakeup_bits) {
+ 			static struct entropy_store *last = &blocking_pool;
+ 			struct entropy_store *other = &blocking_pool;
+ 
+@@ -703,7 +704,7 @@ retry:
+ 			if (last->entropy_count <=
+ 			    3 * last->poolinfo->poolfracbits / 4) {
+ 				schedule_work(&last->push_work);
+-				r->entropy_total = 0;
++				r->entropy_since_push = 0;
+ 			}
+ 		}
  	}
- 	preempt_enable();
- }
-@@ -848,7 +841,6 @@ static DEFINE_PER_CPU(struct fast_pool, irq_randomness);
+diff --git a/include/trace/events/random.h b/include/trace/events/random.h
+index 805af6db4..4edf5ceb5 100644
+--- a/include/trace/events/random.h
++++ b/include/trace/events/random.h
+@@ -61,29 +61,33 @@ DEFINE_EVENT(random__mix_pool_bytes, mix_pool_bytes_nolock,
  
- void add_interrupt_randomness(int irq, int irq_flags)
- {
--	struct entropy_store	*r;
- 	struct fast_pool	*fast_pool = &__get_cpu_var(irq_randomness);
- 	struct pt_regs		*regs = get_irq_regs();
- 	unsigned long		now = jiffies;
-@@ -871,8 +863,9 @@ void add_interrupt_randomness(int irq, int irq_flags)
+ TRACE_EVENT(credit_entropy_bits,
+ 	TP_PROTO(const char *pool_name, int bits, int entropy_count,
+-		 int entropy_total, unsigned long IP),
++		 int entropy_since_push, int entropy_total, unsigned long IP),
  
- 	fast_pool->last = now;
+-	TP_ARGS(pool_name, bits, entropy_count, entropy_total, IP),
++	TP_ARGS(pool_name, bits, entropy_count, entropy_since_push,
++		entropy_total, IP),
  
--	r = nonblocking_pool.initialized ? &input_pool : &nonblocking_pool;
--	__mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool), NULL);
-+	__mix_pool_bytes(&input_pool,
-+			 &fast_pool->pool, sizeof(fast_pool->pool),
-+			 NULL);
- 	/*
- 	 * If we don't have a valid cycle counter, and we see
- 	 * back-to-back timer interrupts, then skip giving credit for
-@@ -886,7 +879,7 @@ void add_interrupt_randomness(int irq, int irq_flags)
- 		} else
- 			fast_pool->last_timer_intr = 0;
- 	}
--	credit_entropy_bits(r, 1);
-+	credit_entropy_bits(&input_pool, 1);
- }
+ 	TP_STRUCT__entry(
+ 		__field( const char *,	pool_name		)
+ 		__field(	  int,	bits			)
+ 		__field(	  int,	entropy_count		)
++		__field(	  int,	entropy_since_push	)
+ 		__field(	  int,	entropy_total		)
+ 		__field(unsigned long,	IP			)
+ 	),
  
- #ifdef CONFIG_BLOCK
+ 	TP_fast_assign(
+-		__entry->pool_name	= pool_name;
+-		__entry->bits		= bits;
+-		__entry->entropy_count	= entropy_count;
+-		__entry->entropy_total	= entropy_total;
+-		__entry->IP		= IP;
++		__entry->pool_name		= pool_name;
++		__entry->bits			= bits;
++		__entry->entropy_count		= entropy_count;
++		__entry->entropy_since_push	= entropy_since_push;
++		__entry->entropy_total		= entropy_total;
++		__entry->IP			= IP;
+ 	),
+ 
+-	TP_printk("%s pool: bits %d entropy_count %d entropy_total %d "
+-		  "caller %pF", __entry->pool_name, __entry->bits,
+-		  __entry->entropy_count, __entry->entropy_total,
++	TP_printk("%s pool: bits %d entropy_count %d entropy_since_push %d "
++		  "entropy_total %d caller %pF", __entry->pool_name,
++		  __entry->bits, __entry->entropy_count,
++		  __entry->entropy_since_push, __entry->entropy_total,
+ 		  (void *)__entry->IP)
+ );
+ 
 -- 
 1.8.3.2
 
