@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab3LPVFT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 16:05:19 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:19987 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752039Ab3LPVFR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 16:05:17 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 64.17.244.34
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+QIcqRTVJ0pR0vvFxWO9uN
-Date: Mon, 16 Dec 2013 13:05:13 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Tomasz Figa <t.figa@samsung.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] regulator: Start using standard gpios property and
- deprecate some custom properties
-Message-ID: <20131216210512.GF26293@atomide.com>
-References: <1386965234-26461-1-git-send-email-tony@atomide.com>
- <20131216183615.GK3185@sirena.org.uk>
- <20131216194023.GE26293@atomide.com>
- <20131216201102.GP3185@sirena.org.uk>
+	id S1752637Ab3LPVFe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 16:05:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12520 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750846Ab3LPVFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 16:05:32 -0500
+Date: Mon, 16 Dec 2013 22:05:58 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Eric Paris <eparis@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH 11/12] pid: rewrite task helper functions avoiding
+	task->pid and task->tgid
+Message-ID: <20131216210558.GA8565@redhat.com>
+References: <cover.1377032086.git.rgb@redhat.com> <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com> <20130822190848.GA25053@redhat.com> <20130826220711.GA21098@madcap2.tricolour.ca> <20131216173547.GA21582@madcap2.tricolour.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131216201102.GP3185@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131216173547.GA21582@madcap2.tricolour.ca>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mark Brown <broonie@kernel.org> [131216 12:12]:
-> On Mon, Dec 16, 2013 at 11:40:23AM -0800, Tony Lindgren wrote:
-> > * Mark Brown <broonie@kernel.org> [131216 10:37]:
-> 
-> > > If the issue is typos then I'm not convinced that for singular GPIOs
-> > > it's going to be helpful, either way is prone to typos.  If the problem
-> > > is error reporting then that seems like a more important thing to fix.
-> 
-> > Are you serious? A typo here in the binding leads to silent errors where
-> > nothing happens with the GPIO. That's just totally messed up considering
-> > we use "gpios" instead of "gpio" everywhere else. So both "gpio" and
-> > "gpios" should be parsed for sure.
-> 
-> This is the first time anyone's mentioned this so it probably isn't that
-> serious an issue and bear in mind that the patch was also handling all
-> the named GPIO specifiers too.
+Hi Richard,
 
-I've certainly debugged this same exact issue twice already and that
-probably means that same issue has been debugged tens or hundreds
-of times by other people.
+Sorry, I already forgot the context, not sure I understand your email
+correctly.
 
-For the other random named GPIO properties, I don't frankly care, that's
-really not my problem.
+On 12/16, Richard Guy Briggs wrote:
+> On 13/08/26, Richard Guy Briggs wrote:
+> > On Thu, Aug 22, 2013 at 09:08:48PM +0200, Oleg Nesterov wrote:
+> > > On 08/20, Richard Guy Briggs wrote:
+> > > >
+> > > >  static inline int is_global_init(struct task_struct *tsk)
+> > > >  {
+> > > > -	return tsk->pid == 1;
+> > > > +	return task_pid_nr(tsk) == 1;
+> > > >  }
+> > >
+> > > Probably it would be better to simply kill it. Almost every usage is
+> > > wrong.
+> >
+> > Can you be more clear?  I don't follow.  It should instead return a
+> > boolean.  Usage of is_global_init() or task_pid_nr()?
+> >
+> > If is_global_init(), is that because they could be unaware of pid
+> > namespaces?
+> >
+> > If task_pid_nr(), is that for the same reason?
+>
+> Oleg,  I still don't understand your comment above.  Kill what,
+> "is_global_init()"?  If so, how is almost every usage of it wrong?
 
-Personally I don't see any value for a regulator describing the names of
-the GPIOs in the binding, it's really up to the driver to make sense of
-them. Especially if there are one or more similar GPIOs. We're not
-naming interrupts either.
+Because is_global_init() is only true for the main thread of /sbin/init.
 
-> In any case, the thing is that there's a difference between parsing both
-> and deprecation - deprecation implies an intention to remove the old one
-> which would just reintroduce the problem the other way around since
-> people are likely to drop or forget the plural, use old DTs and so on.
-> Adding a gpios property in parallel with plain gpio is fine and what I
-> was mostly suggesting.
+Just look at oom_unkillable_task(). It tries to not kill init. But, say,
+select_bad_process() can happily find a sub-thread of is_global_init()
+and still kill it.
 
-Deprecation _may_ imply that it will get removed, but not always.
-Naturally we're going to have to keep the old bindings in place since
-they were merged. I can changed that to obsoleted if that's any better.
- 
-> > > To be honest I'm also struggling to summon up the enthusiasm for the
-> > > churn in the bindings, especially without going through and updating all
-> > > the boards (and all the other GPIO properties in various DTs).  It seems
-> > > like there's stuff missing in the helpers here, if we really wanted to
-> > > force the properties to have -gpios on the end of their names then we
-> > > should've had that being added by the helpers.
-> 
-> > Sounds like exposing an infinite number of random *-gpio and *-gpios
-> > bindings is a topic for another discussion. Anyways it's already totally
-> > out of control so what do I care.
-> 
-> Exactly, I think it's way more trouble than it's worth to try to change
-> for named single element lists.  The standard property makes more sense.
+> There are a number of functions that call is_global_init().  Might any
+> of them be called from inside the namespace context of a container and
+> hence should return true?
 
-I don't think there should be any named GPIOs. If we want names, then
-the GPIO usage should be possible to group quite easily rather than create
-a new property for everything. Something like "enable-gpio" comes to mind.
- 
-> The root of the issue is that the GPIO binding originally said that
-> everything should use a single gpios property for everything but that's
-> got usability issues.  The attempt to require a -gpios suffix was a
-> later addition but it was just put into the binding with no real effort
-> to propagate it through integration with the helpers or whatever.
+Not sure I understand, but certainly some callers should check ->child_reaper
+or SIGNAL_UNKILLABLE instead. Say, unhandled_signal().
 
-There may still be a case for naming of some of the GPIOs, but usually
-the order of GPIOs should be enough for the driver to know the meaning
-of the GPIO.
+> > > >  static inline bool is_idle_task(const struct task_struct *p)
+> > > >  {
+> > > > -	return p->pid == 0;
+> > > > +	return task_pid(p) == &init_struct_pid;
+> > > >  }
+> > >
+> > > hmm. there should be a simpler check for this...
+> >
+> > Other than the original, this one is pretty simple.  What did you have
+> > in mind?
+>
+> I vaguely remember a clarification to this, but don't remember and can't
+> find it.  What sort of simplification did you have in mind?
 
-Regards,
+I do not remember ;) Most probably, I meant "it would be nice to find a
+simpler check".
 
-Tony
+Oleg.
+
