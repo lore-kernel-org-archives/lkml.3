@@ -1,109 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab3LPNhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 08:37:47 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:64462 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab3LPNhp (ORCPT
+	id S1754067Ab3LPNo4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 08:44:56 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:42905 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753781Ab3LPNoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 08:37:45 -0500
-Date: Mon, 16 Dec 2013 10:37:35 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Pekka Enberg <penberg@kernel.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 2/2] perf: Move fs.* to lib/api/fs/
-Message-ID: <20131216133735.GB3598@ghostprotocols.net>
-References: <1386605664-24041-1-git-send-email-bp@alien8.de>
- <1386605664-24041-3-git-send-email-bp@alien8.de>
+	Mon, 16 Dec 2013 08:44:55 -0500
+Date: Mon, 16 Dec 2013 14:44:49 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alex Shi <alex.shi@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
+        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
+ range flush v2
+Message-ID: <20131216134449.GA3034@gmail.com>
+References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
+ <CA+55aFyNAigQqBk07xLpf0nkhZ_x-QkBYG8otRzsqg_8A2eg-Q@mail.gmail.com>
+ <20131215155539.GM11295@suse.de>
+ <20131216102439.GA21624@gmail.com>
+ <20131216125923.GS11295@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386605664-24041-3-git-send-email-bp@alien8.de>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <20131216125923.GS11295@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Dec 09, 2013 at 05:14:24PM +0100, Borislav Petkov escreveu:
-> From: Borislav Petkov <bp@suse.de>
+
+* Mel Gorman <mgorman@suse.de> wrote:
+
+> > Whatever we did right in v3.4 we want to do in v3.13 as well - or 
+> > at least understand it.
 > 
-> Move to generic library and kill magic.h as it is needed only in fs.h.
-> 
-> Signed-off-by: Borislav Petkov <bp@suse.de>
+> Also agreed. I started a bisection before answering this mail. It 
+> would be cooler and potentially faster to figure it out from direct 
+> analysis but bisection is reliable and less guesswork.
 
-Investigating...
+Trying to guess can potentially last a _lot_ longer than a generic, 
+no-assumptions bisection ...
 
-[acme@ssdandy linux]$ am /wb/1
-Applying: perf: Move fs.* to lib/api/fs/
-[perf/core 5da46742cf76] perf tools: Move fs.* to lib/api/fs/
- Author: Borislav Petkov <bp@suse.de>
- 10 files changed, 20 insertions(+), 25 deletions(-)
- rename tools/{perf/util => lib/api/fs}/fs.c (91%)
- rename tools/{perf/util/include/linux/magic.h => lib/api/fs/fs.h} (50%)
- delete mode 100644 tools/perf/util/fs.h
-[acme@ssdandy linux]$ fg
-bash: fg: current: no such job
-[acme@ssdandy linux]$ time make O=/tmp/build/perf -C tools/perf/ install-bin
-make: Entering directory `/home/acme/git/linux/tools/perf'
-  BUILD:   Doing 'make -j8' parallel build
-  GEN      perf-archive
-  CC       /tmp/build/perf/util/pmu.o
-  CC       /tmp/build/perf/util/cpumap.o
-  CC       /tmp/build/perf/util/record.o
-  CC       /tmp/build/perf/tests/parse-events.o
-  GEN      /tmp/build/perf/python/perf.so
-  AR       /tmp/build/perf/libperf.a
-  LINK     /tmp/build/perf/libperf-gtk.so
-  LINK     /tmp/build/perf/perf
-  INSTALL  GTK UI
-/tmp/build/perf/libperf.a(pmu.o): In function `pmu_type':
-/home/acme/git/linux/tools/perf/util/pmu.c:314: undefined reference to `sysfs__mountpoint'
-/tmp/build/perf/libperf.a(pmu.o): In function `pmu_cpumask':
-/home/acme/git/linux/tools/perf/util/pmu.c:370: undefined reference to `sysfs__mountpoint'
-/tmp/build/perf/libperf.a(pmu.o): In function `pmu_aliases':
-/home/acme/git/linux/tools/perf/util/pmu.c:267: undefined reference to `sysfs__mountpoint'
-/tmp/build/perf/libperf.a(pmu.o): In function `pmu_format':
-/home/acme/git/linux/tools/perf/util/pmu.c:84: undefined reference to `sysfs__mountpoint'
-/tmp/build/perf/libperf.a(pmu.o): In function `pmu_read_sysfs':
-/home/acme/git/linux/tools/perf/util/pmu.c:342: undefined reference to `sysfs__mountpoint'
-/tmp/build/perf/libperf.a(util.o): In function `perf_event_paranoid':
-/home/acme/git/linux/tools/perf/util/util.c:506: undefined reference to `procfs__mountpoint'
-/tmp/build/perf/libperf.a(cpumap.o): In function `cpu_map__get_socket':
-/home/acme/git/linux/tools/perf/util/cpumap.c:219: undefined reference to `sysfs__mountpoint'
-/tmp/build/perf/libperf.a(cpumap.o): In function `cpu_map__get_core':
-/home/acme/git/linux/tools/perf/util/cpumap.c:282: undefined reference to `sysfs__mountpoint'
-/tmp/build/perf/libperf.a(cpumap.o): In function `cpu_map__get_socket':
-/home/acme/git/linux/tools/perf/util/cpumap.c:219: undefined reference to `sysfs__mountpoint'
-/tmp/build/perf/libperf.a(record.o): In function `get_max_rate':
-/home/acme/git/linux/tools/perf/util/record.c:115: undefined reference to `procfs__mountpoint'
-/tmp/build/perf/libperf.a(parse-events.o): In function `test_pmu':
-/home/acme/git/linux/tools/perf/tests/parse-events.c:1457: undefined reference to `sysfs__mountpoint'
-/tmp/build/perf/libperf.a(parse-events.o): In function `test_pmu_events':
-/home/acme/git/linux/tools/perf/tests/parse-events.c:1474: undefined reference to `sysfs__mountpoint'
-collect2: error: ld returned 1 exit status
-make[1]: *** [/tmp/build/perf/perf] Error 1
-make[1]: *** Waiting for unfinished jobs....
-util/util.c:3:16: fatal error: fs.h: No such file or directory
-compilation terminated.
-error: command 'gcc' failed with exit status 1
-make: *** [install-bin] Error 2
-make: Leaving directory `/home/acme/git/linux/tools/perf'
+The symptoms could point to anything: scheduler, locking details, some 
+stupid little change in a wakeup sequence somewhere, etc.
 
-real	0m2.891s
-user	0m5.030s
-sys	0m0.668s
-[acme@ssdandy linux]$ 
+It might even be a non-deterministic effect of some timing change 
+causing the workload 'just' to avoid a common point of preemption and 
+not scheduling as much - and become more unfair and thus certain 
+threads lasting longer to finish.
 
+Does the benchmark execute a fixed amount of transactions per thread? 
+
+That might artificially increase the numeric regression: with more 
+threads it 'magnifies' any unfairness effects because slower threads 
+will become slower, faster threads will become faster, as the thread 
+count increases.
+
+[ That in itself is somewhat artificial, because real workloads tend 
+  to balance between threads dynamically and don't insist on keeping 
+  the fastest threads idle near the end of a run. It does not
+  invalidate the complaint about the unfairness itself, obviously. ]
+
+	Ingo
