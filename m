@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab3LPOVx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 09:21:53 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:64815 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab3LPOVv (ORCPT
+	id S1754418Ab3LPOXs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 09:23:48 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:47896 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754384Ab3LPOXr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 09:21:51 -0500
-From: xqx12 <s2exqx@gmail.com>
-To: gregkh@linuxfoundation.org, jslaby@suse.cz
-Cc: linux-kernel@vger.kernel.org, chyyuu@gmail.com, xuyongjiande@gmail.com,
-        xqx12 <xiaoqixue_1@163.com>
-Subject: [PATCH] tty: an overflow of multiplication in drivers/tty/cyclades.c
-Date: Mon, 16 Dec 2013 22:21:36 +0800
-Message-Id: <1387203696-10759-1-git-send-email-xiaoqixue_1@163.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 16 Dec 2013 09:23:47 -0500
+X-Originating-IP: 50.43.14.201
+Date: Mon, 16 Dec 2013 06:23:38 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] drivers: virtio: Mark function virtballoon_migratepage()
+ as static in virtio_balloon.c
+Message-ID: <20131216142338.GA24172@leaf>
+References: <20131216112408.GA4896@rashika>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131216112408.GA4896@rashika>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-there is an overflow in the code :
-cyz_polling_cycle = (arg * HZ) / 1000,
-the multiplicator arg comes from user, so it may be an overflow if
-arg is a big number. And the value of cyc_polling_cycle will be
-wrong when it is used next time.
+On Mon, Dec 16, 2013 at 04:54:08PM +0530, Rashika Kheria wrote:
+> Mark the function virtballoon_migratepage() as static in
+> virtio_balloon.c because it is not used outside this file.
+> 
+> This eliminates the following warning in virtio_balloon.c:
+> drivers/virtio/virtio_balloon.c:372:5: warning: no previous prototype for ‘virtballoon_migratepage’ [-Wmissing-prototypes]
+> 
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 
-Reported-by: Qixue Xiao <xiaoqixue_1@163.com>
-Suggested-by: Yongjian Xu <xuyongjiande@gmail.com>
-Suggested-by: Yu Chen <chyyuu@gmail.com>
-Signed-off-by: Qixue Xiao <xiaoqixue_1@163.com>
----
- drivers/tty/cyclades.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-diff --git a/drivers/tty/cyclades.c b/drivers/tty/cyclades.c
-index cfeec97..7eec1c5 100644
---- a/drivers/tty/cyclades.c
-+++ b/drivers/tty/cyclades.c
-@@ -2728,7 +2728,8 @@ cy_ioctl(struct tty_struct *tty,
- 		break;
- #ifndef CONFIG_CYZ_INTR
- 	case CYZSETPOLLCYCLE:
-+		if (arg > LONG_MAX / HZ)
-+			return -ENODEV;
- 		cyz_polling_cycle = (arg * HZ) / 1000;
- 		break;
- 	case CYZGETPOLLCYCLE:
--- 
-1.7.9.5
-
+>  drivers/virtio/virtio_balloon.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+> index c444654..8c5943d 100644
+> --- a/drivers/virtio/virtio_balloon.c
+> +++ b/drivers/virtio/virtio_balloon.c
+> @@ -369,7 +369,7 @@ static const struct address_space_operations virtio_balloon_aops;
+>   * This function preforms the balloon page migration task.
+>   * Called through balloon_mapping->a_ops->migratepage
+>   */
+> -int virtballoon_migratepage(struct address_space *mapping,
+> +static int virtballoon_migratepage(struct address_space *mapping,
+>  		struct page *newpage, struct page *page, enum migrate_mode mode)
+>  {
+>  	struct balloon_dev_info *vb_dev_info = balloon_page_device(page);
+> -- 
+> 1.7.9.5
+> 
