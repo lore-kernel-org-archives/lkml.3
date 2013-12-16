@@ -1,123 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713Ab3LPVNz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 16:13:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50990 "EHLO mx1.redhat.com"
+	id S1752726Ab3LPVPx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 16:15:53 -0500
+Received: from smtp205.alice.it ([82.57.200.101]:52036 "EHLO smtp205.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750741Ab3LPVNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 16:13:54 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH] pid: change task_struct::pid to read-only
-Date: Mon, 16 Dec 2013 16:03:38 -0500
-Message-Id: <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com>
-In-Reply-To: <8aa73d2b884439496f87d5f34c12ba9b4b40f7e5.1377032086.git.rgb@redhat.com>
-References: <8aa73d2b884439496f87d5f34c12ba9b4b40f7e5.1377032086.git.rgb@redhat.com>
+	id S1751332Ab3LPVPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 16:15:52 -0500
+Date: Mon, 16 Dec 2013 22:15:42 +0100
+From: Gianluca Anzolin <gianluca@sottospazio.it>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Alexander Holler <holler@ahsoftware.de>, marcel@holtmann.org,
+        Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
+        gregkh@linuxfoundation.org, jslaby@suse.cz,
+        linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] rfcomm (userland) broken by commit 29cd718b
+Message-ID: <20131216211542.GA20419@sottospazio.it>
+References: <52AA1854.500@ahsoftware.de>
+ <52AA1E62.1030109@hurleysoftware.com>
+ <52AA483E.4080706@ahsoftware.de>
+ <20131215112413.GA8980@sottospazio.it>
+ <52ADB6B7.5010503@hurleysoftware.com>
+ <20131215150847.GA10288@sottospazio.it>
+ <52AF55B4.6000303@hurleysoftware.com>
+ <20131216202044.GA19746@sottospazio.it>
+ <20131216202720.GB19746@sottospazio.it>
+ <20131216205858.GA20119@sottospazio.it>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="6c2NcOVqGQ03X4Wi"
+Content-Disposition: inline
+In-Reply-To: <20131216205858.GA20119@sottospazio.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task->pid is only ever assigned once (well ok, twice).  For system health and
-secure logging confidence, make it const to make it much more intentional when
-it is being changed.
----
 
-Peter, as you had suggested, does this approach work for you in terms of making
-task_struct::pid a lot more difficult to accidentally change to try to preserve
-its integrity?
+--6c2NcOVqGQ03X4Wi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Is the use of memcpy() significantly different from *p = *q ?
+On Mon, Dec 16, 2013 at 09:58:58PM +0100, Gianluca Anzolin wrote:
+> On Mon, Dec 16, 2013 at 09:27:20PM +0100, Gianluca Anzolin wrote:
+> > On Mon, Dec 16, 2013 at 09:20:44PM +0100, Gianluca Anzolin wrote:
+> > > On Mon, Dec 16, 2013 at 02:34:12PM -0500, Peter Hurley wrote:
+> > > > 
+> > > > This solution is acceptable to me, but I think the comment should briefly
+> > > > explain why this fix is necessary, and the changelog should explain why in detail.
+> > > > 
+> > > > Perhaps with a fixme comment that rfcomm_tty_install() should just take over
+> > > > the port reference (instead of adding one) and rfcomm_tty_cleanup() should
+> > > > conditionally release on RFCOMM_RELEASE_ONHUP.
+> > > > 
+> > > > Because then:
+> > > > 1) this fix would not be necessary.
+> > > > 2) the release in rfcomm_tty_hangup() would not be necessary
+> > > > 3) the second release in rfcomm_release_dev would not be necessary
+> > > > 4) the RFCOMM_TTY_RELEASED bit could be removed
+> > > > 
+> > > > 
+> > > > Regards,
+> > > > Peter Hurley
+> > > 
+> > > Taking over the refcount in the install method would certainly look better. I'm
+> > > going to test it ASAP :D
+> > > 
+> > > But why getting rid of the release in in rfcomm_tty_hangup()?
+> > > We could lose the bluetooth connection at any time and the dlc callback
+> > > would have to hangup the tty (and release the port if necessary).
+> > > 
+> > > Also the RFCOMM_TTY_RELEASED bit should still be necessary if the port is
+> > > created without the RFCOMM_RELEASE_ONHUP flag.
+> > > 
+> > > Besides any process could release the port behind us (with the command rfcomm
+> > > release rfcomm1 for example).
+> > > 
+> > > Gianluca
+> > 
+> > Nevermind I figured it out the reason...
+> 
+> I'm testing the attached patch ATM, which does what you described. It works
+> very well.
+> 
+> It doesn't remove the RFCOMM_TTY_RELEASE flag yet, another patch should remove
+> that bit.
 
+ok, replying to myself again (sorry for that). RFCOMM_TTY_RELEASE cannot go
+away. We have still to manage the case where the port is opened without
+RFCOMM_RELEASE_ONHUP.
 
- arch/x86/kernel/process.c |    2 +-
- fs/exec.c                 |    4 +++-
- include/linux/sched.h     |    2 +-
- kernel/fork.c             |    8 ++++++--
- 4 files changed, 11 insertions(+), 5 deletions(-)
+This last patch does release the port in that situation.
 
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index c83516b..4170026 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -66,7 +66,7 @@ int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src)
- {
- 	int ret;
+Tested with:
+# rfcomm bind 1 <addr>
+# rfcomm release 1
+
+and with
+# rfcomm connect 1 <addr>
+
+Thanks,
+Gianluca
+
+--6c2NcOVqGQ03X4Wi
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="rfc3.patch"
+
+diff --git a/net/bluetooth/rfcomm/tty.c b/net/bluetooth/rfcomm/tty.c
+index 84fcf9f..0357dcf 100644
+--- a/net/bluetooth/rfcomm/tty.c
++++ b/net/bluetooth/rfcomm/tty.c
+@@ -437,7 +437,8 @@ static int rfcomm_release_dev(void __user *arg)
+ 		tty_kref_put(tty);
+ 	}
  
--	*dst = *src;
-+	memcpy(dst, src, sizeof(struct task_struct));
- 	if (fpu_allocated(&src->thread.fpu)) {
- 		memset(&dst->thread.fpu, 0, sizeof(dst->thread.fpu));
- 		ret = fpu_alloc(&dst->thread.fpu);
-diff --git a/fs/exec.c b/fs/exec.c
-index 47d7edb..c8d0159 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -908,6 +908,8 @@ static int de_thread(struct task_struct *tsk)
- 	 */
- 	if (!thread_group_leader(tsk)) {
- 		struct task_struct *leader = tsk->group_leader;
-+		/* tast_struct::pid is const pid_t, hence the ugly cast */
-+		pid_t *pid_p = (pid_t*)&(tsk->pid);
+-	if (!test_and_set_bit(RFCOMM_TTY_RELEASED, &dev->flags))
++	if (!test_bit(RFCOMM_RELEASE_ONHUP, &dev->flags) &&
++	    !test_and_set_bit(RFCOMM_TTY_RELEASED, &dev->flags))
+ 		tty_port_put(&dev->port);
  
- 		sig->notify_count = -1;	/* for exit_notify() */
- 		for (;;) {
-@@ -950,7 +952,7 @@ static int de_thread(struct task_struct *tsk)
- 		 * Note: The old leader also uses this pid until release_task
- 		 *       is called.  Odd but simple and correct.
- 		 */
--		tsk->pid = leader->pid;
-+		*pid_p = leader->pid;
- 		change_pid(tsk, PIDTYPE_PID, task_pid(leader));
- 		transfer_pid(leader, tsk, PIDTYPE_PGID);
- 		transfer_pid(leader, tsk, PIDTYPE_SID);
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d9ada71..45069c0 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1112,7 +1112,7 @@ struct task_struct {
- 	unsigned sched_reset_on_fork:1;
- 	unsigned sched_contributes_to_load:1;
+ 	tty_port_put(&dev->port);
+@@ -673,6 +674,14 @@ static int rfcomm_tty_install(struct tty_driver *driver, struct tty_struct *tty)
+ 	if (err)
+ 		rfcomm_tty_cleanup(tty);
  
--	pid_t pid;
-+	const pid_t pid;
- 	pid_t tgid;
- 
- #ifdef CONFIG_CC_STACKPROTECTOR
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 086fe73..ec0683d 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -286,7 +286,7 @@ void __init fork_init(unsigned long mempages)
- int __attribute__((weak)) arch_dup_task_struct(struct task_struct *dst,
- 					       struct task_struct *src)
- {
--	*dst = *src;
-+	memcpy(dst, src, sizeof(struct task_struct));
- 	return 0;
++	/* take over the tty_port reference if it was created with the
++	 * flag RFCOMM_RELEASE_ONHUP. This will force the release of the port
++	 * when the last process closes the tty. This behaviour is expected by
++	 * userspace.
++	 */
++	if (test_bit(RFCOMM_RELEASE_ONHUP, &dev->flags))
++		tty_port_put(&dev->port);
++
+ 	return err;
  }
  
-@@ -1137,6 +1137,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- {
- 	int retval;
- 	struct task_struct *p;
-+	pid_t *pid_p;
+@@ -1010,10 +1019,6 @@ static void rfcomm_tty_hangup(struct tty_struct *tty)
+ 	BT_DBG("tty %p dev %p", tty, dev);
  
- 	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
- 		return ERR_PTR(-EINVAL);
-@@ -1392,7 +1393,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	clear_all_latency_tracing(p);
+ 	tty_port_hangup(&dev->port);
+-
+-	if (test_bit(RFCOMM_RELEASE_ONHUP, &dev->flags) &&
+-	    !test_and_set_bit(RFCOMM_TTY_RELEASED, &dev->flags))
+-		tty_port_put(&dev->port);
+ }
  
- 	/* ok, now we should be set up.. */
--	p->pid = pid_nr(pid);
-+
-+	/* tast_struct::pid is const pid_t, hence the ugly cast */
-+	pid_p = (pid_t*)&(p->pid);
-+	*pid_p = pid_nr(pid);
- 	if (clone_flags & CLONE_THREAD) {
- 		p->exit_signal = -1;
- 		p->group_leader = current->group_leader;
--- 
-1.7.1
+ static int rfcomm_tty_tiocmget(struct tty_struct *tty)
 
+--6c2NcOVqGQ03X4Wi--
