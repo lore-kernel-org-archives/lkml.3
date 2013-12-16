@@ -1,72 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab3LPDgA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 22:36:00 -0500
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:30903 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752179Ab3LPDf6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 22:35:58 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kzzz2dh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1155h)
-Date: Mon, 16 Dec 2013 11:06:51 +0800
-From: Huang Shijie <b32955@freescale.com>
-To: Caizhiyong <caizhiyong@hisilicon.com>
-CC: Huang Shijie <shijie8@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Quyaxin <quyaxin@hisilicon.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] mtd: increase max page/OOB size to support 16K
- pagesize NAND
-Message-ID: <20131216030649.GA27109@shlinux2.ap.freescale.net>
-References: <C3050A4DBA34F345975765E43127F10F25E47455@SZXEMA512-MBX.china.huawei.com>
- <20131213080118.GC24650@norris-Latitude-E6410>
- <C3050A4DBA34F345975765E43127F10F25E47537@SZXEMA512-MBX.china.huawei.com>
- <20131213151138.GA1316@gmail.com>
- <C3050A4DBA34F345975765E43127F10F25E47627@SZXEMA512-MBX.china.huawei.com>
+	id S1752467Ab3LPDiK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 22:38:10 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:4607 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752157Ab3LPDiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 22:38:08 -0500
+X-IronPort-AV: E=Sophos;i="4.95,492,1384272000"; 
+   d="scan'208";a="9265967"
+Message-ID: <52AE75D7.4020604@cn.fujitsu.com>
+Date: Mon, 16 Dec 2013 11:39:03 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <C3050A4DBA34F345975765E43127F10F25E47627@SZXEMA512-MBX.china.huawei.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: "Serge E. Hallyn" <serge@hallyn.com>, Eric Paris <eparis@redhat.com>
+CC: Richard Guy Briggs <rgb@redhat.com>, containers@lists.linux-foundation.org,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, ebiederm@xmission.com
+Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
+References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>	<529EE877.7030701@cn.fujitsu.com>	<20131206221241.GD22445@mail.hallyn.com>	<52A52599.3070502@cn.fujitsu.com> <20131209182619.GD6849@sergelap>	<52A6CDE1.8090404@cn.fujitsu.com> <20131210165152.GA6028@sergelap>	<1386705056.23829.13.camel@flatline.rdu.redhat.com> <20131210203648.GA5835@mail.hallyn.com>
+In-Reply-To: <20131210203648.GA5835@mail.hallyn.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/16 11:37:40,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/16 11:37:41,
+	Serialize complete at 2013/12/16 11:37:41
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 02:03:54AM +0000, Caizhiyong wrote:
-> > >
-> > > There are a lot of 16K page size NAND, they are used in android system.
-> > >
-> > > Many NAND need read retry and data randomization, kernel does not support this
-> > feature.
-> > Brian is adding the read-retry feature.
-> > 
-> > I think the data randomization should be done by the hardware.
-> > If we do it by software, it costs lot of the cpu cycles.
-> >
-> > 
-> > > Kernel also does not support synchronous NAND.
-> > 
-> > The synchronous NAND should be supported by the nand controller driver,
-> > not the kernel.
+On 12/11/2013 04:36 AM, Serge E. Hallyn wrote:
+> Quoting Eric Paris (eparis@redhat.com):
+>> On Tue, 2013-12-10 at 10:51 -0600, Serge Hallyn wrote:
+>>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
+>>>> On 12/10/2013 02:26 AM, Serge Hallyn wrote:
+>>>>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
+>>>>>> On 12/07/2013 06:12 AM, Serge E. Hallyn wrote:
+>>>>>>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
+>>>>>>>> Hi
+>>>>>>>>
+>>>>>>>> On 10/24/2013 03:31 PM, Gao feng wrote:
+>>>>>>>>> Here is the v1 patchset: http://lwn.net/Articles/549546/
+>>>>>>>>>
+>>>>>>>>> The main target of this patchset is allowing user in audit
+>>>>>>>>> namespace to generate the USER_MSG type of audit message,
+>>>>>>>>> some userspace tools need to generate audit message, or
+>>>>>>>>> these tools will broken.
+>>>>>>>>>
+>>>>>>>>
+>>>>>>>> I really need this feature, right now,some process such as
+>>>>>>>> logind are broken in container becase we leak of this feature.
+>>>>>>>
+>>>>>>> Your set doesn't address loginuid though right?  How exactly do you
+>>>>>>> expect to do that?  If user violates MAC policy and audit msg is
+>>>>>>> sent to init user ns by mac subsys, you need the loginuid from
+>>>>>>> init_audit_ns.  where will that be stored if you allow updates
+>>>>>>> of loginuid in auditns?
+>>>>>>>
+>>>>>> This patchset doesn't include the loginuid part.
+>>>>>>
+>>>>>> the loginuid is stored in task as before.
+>>>>>> In my opinion, when task creates a new audit namespace, this task's
+>>>>>> loginuid will be reset to zero, so the children tasks can set their
+>>>>>> loginuid. Does this change break the MAC?
+>>>>>
+>>>>> I think so, yes.  In an LSPP selinux environment, if the task
+>>>>> manages to trigger an selinux deny rule which is audited, then
+>>>>> the loginuid must make sense on the host.  Now presumably it
+>>>>> will get translated to the mapped host uid, and we can figure
+>>>>> out the host uid owning it through /etc/subuid.  But that adds
+>>>>> /etc/subuid as a new part of the TCB without any warning <shrug>
+>>>>> So in that sense, for LSPP, it breaks it.
+>>>>>
+>>>>
+>>>> Looks like my opinion is incorrect.
+>>>>
+>>>> In the audit-next tree, Eric added a new audit feature to allow privileged
+>>>> user to disable AUDIT_LOGINUID_IMMUTABLE. after AUDIT_LOGINUID_IMMUTABLE
+>>>> is disabled, the privileged user can reset/set the loginuid of task. I
+>>>> think this way is safe since only privileged user can do the change.
+>>>>
+>>>> So I will not change the loginuid part.
+>>>>
+>>>> Thanks for your information Serge :)
+>>>
+>>> Unfortunately this makes the patchset much less compelling :)  The
+>>> problem I was looking into is that a container running in a user
+>>> namespace cannot (bc he has ns_capable(CAP_AUDIT_*) but not
+>>> capable(CAP_AUDIT_*)) set loginuids at all.
+>>>
+>>> Which from an LSPP pov is correct;  which is why I was hoping you were
+>>> going to have the audit namespaces be hierarchical, with a task in a
+>>> level 2 audit ns having two loginuids - one in his own auditns, and
+>>> one in the initial one.
+>>
+>> Right now user namespace + audit is just total crud.  We all know
+>> this...  (I'm not sure pid is must better, but I digress)   All thoughts
+>> around loginuid in the kernel right this very moment only make sense in
+>> the initial user namespace and all permission checks are in the initial
+>> user namespace as well.
+>>
+>> I think I'm a proponent of the hierarchical approach to audit
+>> namespaces.  An audit namespace would hold a reference to the
+>> pid/user/whatever namespace it was created in/with.  Each audit
+>> namespace should have it's own set of filter rules, etc.  Instead of
+>> just storing 'loginuid' we store 'loginuid+user namespace'.   When the
 > 
-> Yes. Those feature should be support by NAND controller hardware and driver.
-> But the driver does not know what NAND should use those feature.
-> Perhaps, the NAND id table, should add something.
-We can get the synchronous info from the ONFI nand.
+> So long as the kernel stores the kuid_t (which the only sane thing to
+> do) that is a non-issue.
+> 
+>> kernel creates a record it should translate the loginuid to the
+>> namespace of the audit namespace and send the record.
+> 
+> Yup, that should go without saying.  Use kuid_t in kernel and translate
+> at the kernel-user boundary.
+> 
 
-In actually, if you do not add this patch, i will change it too.
-I have several 16K nand chips on my hands now. :)
+I can implement audit namespace as a hierarchy, give per auditns a level value
+and a pointer which point to parent auditns.
 
-thanks
-Huang Shijie
+but for the loginuid part, I think we can implement it after we push the audit
+ns into the upstream.
 
+Is this ok?
+>> It's a pretty major rewrite, but at least it makes sense.  Things like
+>> AVC's might show up in multiple audit logs, but in every log they would
+>> make sense to the admin of that namespace...
+>>
+>> But what the hell do I know...
+> 
+> Exactly how it would all affect selinux.  I'm happy it seems we agree.
 
+This idea looks good to me, I will Investigate this. :)
+
+Thanks.
