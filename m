@@ -1,208 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab3LPM46 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 07:56:58 -0500
-Received: from vserver.eikelenboom.it ([84.200.39.61]:57143 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753699Ab3LPM44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 07:56:56 -0500
-Date: Mon, 16 Dec 2013 13:56:44 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <19210260274.20131216135644@eikelenboom.it>
-To: Arend van Spriel <arend@broadcom.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Berg, Johannes" <johannes.berg@intel.com>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Avinash Patil <avinashapatil@gmail.com>
-Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
-In-Reply-To: <52AEE60B.6030509@broadcom.com>
-References: <1507831110.20131018194349@eikelenboom.it> <792757788.20131023142849@eikelenboom.it> <1819533168.20131211161710@eikelenboom.it> <CAB=NE6V-RSnqbAC-0tfYK=WGJLp1aPC2UpFDurs49h+wXr9UfQ@mail.gmail.com> <1818324675.20131211175350@eikelenboom.it> <CAB=NE6Wf=T0bGLSYPDyb=-fMAVnGcbGkeaBiNrzwV-Lpxr6VZg@mail.gmail.com> <1342235583.20131211182804@eikelenboom.it> <CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com> <871324710.20131211191104@eikelenboom.it> <CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com> <1937118387.20131216122200@eikelenboom.it> <52AEE60B.6030509@broadcom.com>
+	id S1753745Ab3LPM73 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 07:59:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55286 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753456Ab3LPM72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 07:59:28 -0500
+Date: Mon, 16 Dec 2013 12:59:23 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alex Shi <alex.shi@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
+        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
+ range flush v2
+Message-ID: <20131216125923.GS11295@suse.de>
+References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
+ <CA+55aFyNAigQqBk07xLpf0nkhZ_x-QkBYG8otRzsqg_8A2eg-Q@mail.gmail.com>
+ <20131215155539.GM11295@suse.de>
+ <20131216102439.GA21624@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131216102439.GA21624@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 16, 2013 at 11:24:39AM +0100, Ingo Molnar wrote:
+> 
+> * Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > I had hacked ebizzy to report on the performance of each thread, not 
+> > just the overall result and worked out the difference in performance 
+> > of each thread. In a complete fair test you would expect the 
+> > performance of each thread to be identical and so the spread would 
+> > be 0
+> > 
+> > ebizzy thread spread
+> >                     3.13.0-rc3            3.13.0-rc3                3.4.69
+> >                        vanilla           nowalk-v2r7               vanilla
+> > Mean   1        0.00 (  0.00%)        0.00 (  0.00%)        0.00 (  0.00%)
+> > Mean   2        0.34 (  0.00%)        0.30 (-11.76%)        0.07 (-79.41%)
+> > Mean   3        1.29 (  0.00%)        0.92 (-28.68%)        0.29 (-77.52%)
+> > Mean   4        7.08 (  0.00%)       42.38 (498.59%)        0.22 (-96.89%)
+> > Mean   5      193.54 (  0.00%)      483.41 (149.77%)        0.41 (-99.79%)
+> > Mean   6      151.12 (  0.00%)      198.22 ( 31.17%)        0.42 (-99.72%)
+> > Mean   7      115.38 (  0.00%)      160.29 ( 38.92%)        0.58 (-99.50%)
+> > Mean   8      108.65 (  0.00%)      138.96 ( 27.90%)        0.44 (-99.60%)
+> > Range  1        0.00 (  0.00%)        0.00 (  0.00%)        0.00 (  0.00%)
+> > Range  2        5.00 (  0.00%)        6.00 ( 20.00%)        2.00 (-60.00%)
+> > Range  3       10.00 (  0.00%)       17.00 ( 70.00%)        9.00 (-10.00%)
+> > Range  4      256.00 (  0.00%)     1001.00 (291.02%)        5.00 (-98.05%)
+> > Range  5      456.00 (  0.00%)     1226.00 (168.86%)        6.00 (-98.68%)
+> > Range  6      298.00 (  0.00%)      294.00 ( -1.34%)        8.00 (-97.32%)
+> > Range  7      192.00 (  0.00%)      220.00 ( 14.58%)        7.00 (-96.35%)
+> > Range  8      171.00 (  0.00%)      163.00 ( -4.68%)        8.00 (-95.32%)
+> > Stddev 1        0.00 (  0.00%)        0.00 (  0.00%)        0.00 (  0.00%)
+> > Stddev 2        0.72 (  0.00%)        0.85 (-17.99%)        0.29 ( 59.72%)
+> > Stddev 3        1.42 (  0.00%)        1.90 (-34.22%)        1.12 ( 21.19%)
+> > Stddev 4       33.83 (  0.00%)      127.26 (-276.15%)        0.79 ( 97.65%)
+> > Stddev 5       92.08 (  0.00%)      225.01 (-144.35%)        1.06 ( 98.85%)
+> > Stddev 6       64.82 (  0.00%)       69.43 ( -7.11%)        1.28 ( 98.02%)
+> > Stddev 7       36.66 (  0.00%)       49.19 (-34.20%)        1.18 ( 96.79%)
+> > Stddev 8       30.79 (  0.00%)       36.23 (-17.64%)        1.06 ( 96.55%)
+> > 
+> > For example, this is saying that with 8 threads on 3.13-rc3 that the 
+> > difference between the slowest and fastest thread was 171 
+> > records/second.
+> 
+> We aren't blind fairness fetishists, but the noise difference between 
+> v3.4 and v3.13 appears to be staggering, it's a serious anomaly in 
+> itself.
+> 
 
-Monday, December 16, 2013, 12:37:47 PM, you wrote:
+Agreed.
 
-> On 12/16/2013 12:22 PM, Sander Eikelenboom wrote:
->> 
->> Wednesday, December 11, 2013, 7:38:50 PM, you wrote:
->> 
->>> On Wed, Dec 11, 2013 at 7:11 PM, Sander Eikelenboom
->>> <linux@eikelenboom.it> wrote:
->>>>
->>>> Wednesday, December 11, 2013, 6:53:07 PM, you wrote:
->>>>
->>>>> The best way to address all this is by automatic region awareness and
->>>>> doing the right thing on devices, this however requires good
->>>>> architecture / calibration data  / etc and all that needs to be
->>>>> verified by the system integrators, and finally they need to be
->>>>> certified. If you want to hack your firmware and software go at it,
->>>>> just be aware there are reasons for things.
->>>>
->>>> Well the general problem seems to be "we don't trust the user" so we FORCE him to the lowest
->>>> common denominator (without a way to overrule that) so he is forced to operate *well* within the law.
->> 
->>> Its simply stupid to have the user be involved, period, the fact that
->>> a user would be involved should only be for testing or helping
->>> compliance for a busted device, development, research and obviously
->>> hacking. Linux allows all these but by default a device with firmware
->>> and a custom regdomain that will barf if you try to use a channel that
->>> is not allowed is a restriction in firmware. Feel free to reverse
->>> engineer that if you don't like it but it just won't be supported or
->>> go upstream. Now, the common denominator is generally optimized for
->>> best performance as well so you shouldn't have to do anything, and for
->>> APs -- this is typically carefully crafted for a region, also highly
->>> optimized.
->> 
->>>>>>> It doesn't seem like you are getting your original requests getting
->>>>>>> processed, so I don't think CRDA is passing it. Can you verify running
->>>>>>> from CRDA code:
->>>>>>
->>>>>> They don't get processed unless i remove the return from the code as i indicated.
->>>>>> If i remove that return it processes the request.
->>>>>>
->>>>>>> ./regdbdump /usr/lib/crda/regulatory.bin
->>>>>>
->>>>>> Although it's in a different location on Debian, /lib/crda/regulatory.bin
->>>>>> the dump seems fine.
->>>>
->>>>> OK thanks. Can you send a patch of what exact change you made, it was
->>>>> unclear from the paste you made.
->>>>
->>>>> diff -u file.c.orig file.c
->>>>
->>>> Well i just did a pull from wireless-next, to try Avinash Patil's patch.
->>>> net/wireless/reg.c had already changed much so i couldn't apply his patch without.
->>>>
->>>> With his patch it sets the regulatory domain, although as now expected i still can not use channels 12 and 13 yet,
->>>> probably due to those firmware restrictions.
->> 
->>> Its unclear what results you got, and yeah if the device is restricted
->>> then its just the fw telling the driver its channels and you can't use
->>> them. That's it. You won't be able to override information then unless
->>> you hack the firmware
->> 
->> Ping ?
->> 
->> Is there anymore information you need to *fix* the problem ?
+> Whatever we did right in v3.4 we want to do in v3.13 as well - or at 
+> least understand it.
+> 
 
-> Maybe you did not get the essence of the response from Luis: There is
-> *no* problem to be fixed.
+Also agreed. I started a bisection before answering this mail. It would
+be cooler and potentially faster to figure it out from direct analysis
+but bisection is reliable and less guesswork.
 
-*sigh* ..
+> I agree that the absolute numbers would probably only be interesting 
+> once v3.13 is fixed to not spread thread performance that wildly 
+> again.
+> 
+> > [...] Because of this bug, I'd be wary about drawing too many 
+> > conclusions about ebizzy performance when the number of threads 
+> > exceed the number of CPUs.
+> 
+> Yes.
+> 
+> Could it be that the v3.13 workload context switches a lot more than 
+> v3.4 workload?
 
-Let's start from scratch then ...
+The opposite. 3.13 context switches and interrupts less.
 
+> That would magnify any TLB range flushing costs and 
+> would make it essentially a secondary symptom, not a primary cause of 
+> the regression. (I'm only guessing blindly here though.)
+> 
 
-a) Isn't the point of the whole regulatory domain system that i can select (and restrict) the channels/frequencies my devices transmits on, so i can abide the law ?
-b) If so, does it set a regulatory domain from firmware  ?
-c) If so, should it let me *restrict* the available channels even more by setting the regulatory domain to the region in which de device is currently being used ?
-d) If so, why am i not  able to do so with my intel driver for a long time (for over a month now).
-# iw reg get
-country 00:
-        (2402 - 2472 @ 40), (6, 20)
-        (2457 - 2482 @ 40), (6, 20), PASSIVE-SCAN
-        (2474 - 2494 @ 20), (6, 20), NO-OFDM, PASSIVE-SCAN
-        (5170 - 5250 @ 160), (6, 20), PASSIVE-SCAN
-        (5250 - 5330 @ 160), (6, 20), DFS, PASSIVE-SCAN
-        (5490 - 5730 @ 160), (6, 20), DFS, PASSIVE-SCAN
-# iw reg set US
-# iw reg get
-country 00:
-        (2402 - 2472 @ 40), (6, 20)
-        (2457 - 2482 @ 40), (6, 20), PASSIVE-SCAN
-        (2474 - 2494 @ 20), (6, 20), NO-OFDM, PASSIVE-SCAN
-        (5170 - 5250 @ 160), (6, 20), PASSIVE-SCAN
-        (5250 - 5330 @ 160), (6, 20), DFS, PASSIVE-SCAN
-        (5490 - 5730 @ 160), (6, 20), DFS, PASSIVE-SCAN
+Fortunately, I had collected data on context switches
 
-Dmesg only spits out:
-[  383.849977] cfg80211: Pending regulatory request, waiting for it to be processed...
+4 core machine: http://www.csn.ul.ie/~mel/postings/spread-20131216/global-ebizzy/ivor/report.html
+8 core machine: http://www.csn.ul.ie/~mel/postings/spread-20131216/global-ebizzy/ivy/report.html
 
-e) So why doesn't this whole regulatory mumbojumbo and the Linux implementation in particular let me abide the law ?!? Wasn't that it's *sole* point of existence ?
-f) Why doesn't seem anyone to be seriously looking at it (for over a month now, while everyone from wireless/80211 to intel driver maintainers were CC'ed) ?
-g) Saying it has got to do with reg db's not being found or all kinds of other arguments while
-   the report clearly stated the way it can be circumvented by 2 simple patches that don't seem to involve any changes to
-   how it finds the reg db (apart from that i tested that a few times on request and indicated it didn't matter)
-   in current 3.13 code (and 3.12 and perhaps even earlier) (case 1)
-   or
-   with current wireless-next pulled (which has quite some changes to reg.c but none fixes this) onto 3.13 (case 2)
-   Neither of these patches might be correct codewise, but at least it let's me set the regulatory domain, and the current state the code is in is neither correct.
-h) Added Linus to the CC, you never know if that automagically kicks things in gear ... (hopefully not in reverse :-p)
+The ebizzy results are at the end. One of the graphs are for context
+switches as measured by vmstat running during the test.
 
-Case 1 - patch that makes it possible to set the regulatory domain without silently ignoring it - applies to 3.13-rc4
+In both cases you can see that context switches are higher for 3.4 as
+are interrupts. The difference in context switches are why I thought this
+might be scheduler related but the difference in interrupts was harder to
+explain. I'm guessing they're IPIs but did not record /proc/interrupts
+to answer that. I lack familiarity with scheduler changes between 3.4
+and 3.13-rc4 and have no intuitive feeling for when this might have been
+introduced. I'm also not sure if we used to do anything like send IPIs
+to reschedule tasks or balance tasks between idle cores that changed
+recently. There was also a truckload of nohz changes in that window that
+I'm not familiar with that are potentially responsible. Should have
+answers soon enough.
 
-diff --git a/net/wireless/reg.c b/net/wireless/reg.c
-
-index 7da67fd..e8ab82e 100644
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -1579,7 +1579,7 @@ static void reg_process_pending_hints(void)
-        /* When last_request->processed becomes true this will be rescheduled */
-        if (lr && !lr->processed) {
-                REG_DBG_PRINT("Pending regulatory request, waiting for it to be processed...\n");
--               return;
-+               /* return; */
-        }
-
-        spin_lock(&reg_requests_lock);
-
-
-
-
-
-Case 2 - RFC patch by Avinash Patil that makes it possible to set the regulatory domain without silently ignoring it - applies to 3.13-rc4 + wireless-next pulled onto it
-
----------- Forwarded message ----------
-From: "Avinash Patil" <patila@marvell.com>
-Date: Dec 6, 2013 8:31 PM
-Subject: [RFC] cfg80211: set regulatory request processed for initiator core
-To: <johannes@sipsolutions.net>, <linux-wireless@vger.kernel.org>
-Cc:
-
-During cfg80211 init, cfg80211 initializes regulatory to set to
-world domain. Here we dont set last request processed flag.
-This results into further request set to pending indefinitely.
-
-This patch fixes this by setting last request to processed.
-
-Signed-off-by: Avinash Patil <patila@marvell.com>
----
- net/wireless/reg.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/net/wireless/reg.c b/net/wireless/reg.c
-index ec54e1a..70a8f0a 100644
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -1670,6 +1670,8 @@ static void reg_process_hint(struct
-regulatory_request *reg_request)
-        switch (reg_request->initiator) {
-        case NL80211_REGDOM_SET_BY_CORE:
-                reg_process_hint_core(reg_request);
-+               nl80211_send_reg_change_event(reg_request);
-+               reg_set_request_processed();
-                return;
-        case NL80211_REGDOM_SET_BY_USER:
-                treatment = reg_process_hint_user(reg_request);
---
-1.7.3.4
-
-
-
-> Gr. AvS
-
-
+-- 
+Mel Gorman
+SUSE Labs
