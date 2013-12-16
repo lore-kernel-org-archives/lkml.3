@@ -1,52 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab3LPSme (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 13:42:34 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33644 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754939Ab3LPSmd (ORCPT
+	id S1755327Ab3LPSmj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 13:42:39 -0500
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:28503 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754939Ab3LPSmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 13:42:33 -0500
-Message-ID: <52AF4993.80406@wwwdotorg.org>
-Date: Mon, 16 Dec 2013 11:42:27 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>, swarren@nvidia.com, will.deacon@arm.com,
-        grant.likely@linaro.org, thierry.reding@gmail.com,
-        robherring2@gmail.com, joro@8bytes.org
-CC: mark.rutland@arm.com, devicetree@vger.kernel.org,
-        lorenzo.pieralisi@arm.com, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, galak@codeaurora.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv7 05/12] iommu/core: add ops->{bound,unbind}_driver()
-References: <1386835033-4701-1-git-send-email-hdoyu@nvidia.com> <1386835033-4701-6-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1386835033-4701-6-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 16 Dec 2013 13:42:36 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
+        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
+Subject: [PATCH v4 5/9] PCI/MSI: Make pci_enable_msi/msix() 'nvec' argument type as int
+Date: Mon, 16 Dec 2013 09:34:58 +0100
+Message-Id: <e06648adc93d616db3e4a3541bdff0078e28d4a6.1387140921.git.agordeev@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1387140921.git.agordeev@redhat.com>
+References: <cover.1387140921.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2013 12:57 AM, Hiroshi Doyu wrote:
-> ops->{bound,unbind}_driver() functions are called at
-> BUS_NOTIFY_{BOUND,UNBIND}_DRIVER respectively.
+Make pci_enable_msi_block(), pci_enable_msi_block_auto() and
+pci_enable_msix() consistent with regard to the type of 'nvec'
+argument.
 
-Some explanation re: why the existing {add,remove}_device hooks aren't
-enough would be useful. I didn't really get that from the current commit
-description. What actions would an IOMMU driver take in these new
-callbacks that could not be taken in {add,remove}_device? Surely the
-IOMMU could set up any internal data structures, AS, or page tables,
-etc. within add_device, rather than deferring to bound_driver, which
-presumably happens after the device's probe(), yet the driver might want
-to make the HW do bus-master accesses within probe(), or at least map
-stuff into the page table...
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+---
+ Documentation/PCI/MSI-HOWTO.txt |    2 +-
+ drivers/pci/msi.c               |    4 ++--
+ include/linux/pci.h             |    8 ++++----
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-> This is necessary to control the device population order. IOMMU master
-> devices depend on an IOMMU device instanciation. IOMMU master devices
+diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
+index a091780..a4d174e 100644
+--- a/Documentation/PCI/MSI-HOWTO.txt
++++ b/Documentation/PCI/MSI-HOWTO.txt
+@@ -129,7 +129,7 @@ call to succeed.
+ 
+ 4.2.3 pci_enable_msi_block_auto
+ 
+-int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *count)
++int pci_enable_msi_block_auto(struct pci_dev *dev, int *count)
+ 
+ This variation on pci_enable_msi() call allows a device driver to request
+ the maximum possible number of MSIs.  The MSI specification only allows
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 623322d..c0e2259 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -846,7 +846,7 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
+  * updates the @dev's irq member to the lowest new interrupt number; the
+  * other interrupt numbers allocated to this device are consecutive.
+  */
+-int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
++int pci_enable_msi_block(struct pci_dev *dev, int nvec)
+ {
+ 	int status, maxvec;
+ 	u16 msgctl;
+@@ -877,7 +877,7 @@ int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
+ }
+ EXPORT_SYMBOL(pci_enable_msi_block);
+ 
+-int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec)
++int pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec)
+ {
+ 	int ret, nvec;
+ 	u16 msgctl;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 39493b7..8cf7b15 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1154,13 +1154,13 @@ struct msix_entry {
+ 
+ 
+ #ifndef CONFIG_PCI_MSI
+-static inline int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
++static inline int pci_enable_msi_block(struct pci_dev *dev, int nvec)
+ {
+ 	return -ENOSYS;
+ }
+ 
+ static inline int
+-pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec)
++pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec)
+ {
+ 	return -ENOSYS;
+ }
+@@ -1195,8 +1195,8 @@ static inline int pci_msi_enabled(void)
+ 	return 0;
+ }
+ #else
+-int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec);
+-int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec);
++int pci_enable_msi_block(struct pci_dev *dev, int nvec);
++int pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec);
+ void pci_msi_shutdown(struct pci_dev *dev);
+ void pci_disable_msi(struct pci_dev *dev);
+ int pci_msix_table_size(struct pci_dev *dev);
+-- 
+1.7.7.6
 
-Is an "IOMMU master device" the device that issues transactions on the
-bus, which are affected by the IOMMU? The more common term for this is
-"bus master"; "IOMMU master device" sounds too similar to the "IOMMU"
-itself.
