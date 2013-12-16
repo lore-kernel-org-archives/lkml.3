@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab3LPIk1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 03:40:27 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60478 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751751Ab3LPIk0 (ORCPT
+	id S1752815Ab3LPInT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 03:43:19 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:41736 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab3LPInS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 03:40:26 -0500
-X-AuditID: 9c93016f-b7cc5ae000007121-19-52aebc777720
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 10/17] tracing/probes: Move 'symbol' fetch method to kprobes
-References: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
-	<1387168336-13213-11-git-send-email-namhyung@kernel.org>
-	<52AEB87D.6020507@hitachi.com>
-Date: Mon, 16 Dec 2013 17:40:23 +0900
-In-Reply-To: <52AEB87D.6020507@hitachi.com> (Masami Hiramatsu's message of
-	"Mon, 16 Dec 2013 17:23:25 +0900")
-Message-ID: <87fvptgpe0.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 16 Dec 2013 03:43:18 -0500
+Date: Mon, 16 Dec 2013 08:43:13 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 3/3] mfd: mc13xxx: Simplify "probe" & "remove"
+Message-ID: <20131216084313.GF18769@lee--X1>
+References: <1387026192-21234-1-git-send-email-shc_work@mail.ru>
+ <1387026192-21234-3-git-send-email-shc_work@mail.ru>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1387026192-21234-3-git-send-email-shc_work@mail.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
+> This patch simplifies "probe" and "remove" functions by moving
+> some initialization code in the driver core.
+> 
+> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> ---
+>  drivers/mfd/mc13xxx-core.c | 36 +++++++++++++++++-------------------
+>  drivers/mfd/mc13xxx-i2c.c  | 18 ++++--------------
+>  drivers/mfd/mc13xxx-spi.c  | 19 ++++++-------------
+>  drivers/mfd/mc13xxx.h      |  6 ++----
+>  4 files changed, 29 insertions(+), 50 deletions(-)
+> 
+> diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
+> index b0c7cb0..06e64b6 100644
+> --- a/drivers/mfd/mc13xxx-core.c
+> +++ b/drivers/mfd/mc13xxx-core.c
 
-On Mon, 16 Dec 2013 17:23:25 +0900, Masami Hiramatsu wrote:
-> (2013/12/16 13:32), Namhyung Kim wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> Move existing functions to trace_kprobe.c and add NULL entries to the
->> uprobes fetch type table.  I don't make them static since some generic
->> routines like update/free_XXX_fetch_param() require pointers to the
->> functions.
->> 
->> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
->> Cc: Oleg Nesterov <oleg@redhat.com>
->> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
->> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->
-> This looks good for me :)
->
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->
-> And now all of this series has been reviewed/acked by me!
+<snip>
 
-Thank you so much for your review! :)
+> -	ret = request_threaded_irq(irq, NULL, mc13xxx_irq_thread,
+> +	ret = request_threaded_irq(mc13xxx->irq, NULL, mc13xxx_irq_thread,
+>  			IRQF_ONESHOT | IRQF_TRIGGER_HIGH, "mc13xxx", mc13xxx);
 
-Thanks,
-Namhyung
+Please use devm_* managed resources, then you can remove the free_irq().
+
+<snip>
+
+> -void mc13xxx_common_cleanup(struct mc13xxx *mc13xxx)
+> +int mc13xxx_common_exit(struct device *dev)
+>  {
+> +	struct mc13xxx *mc13xxx = dev_get_drvdata(dev);
+> +
+>  	free_irq(mc13xxx->irq, mc13xxx);
+
+Here.
+
+
+> -	spi_set_drvdata(spi, mc13xxx);
+> +	dev_set_drvdata(&spi->dev, mc13xxx);
+> +
+
+What's the point of this? It does the same thing?
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
