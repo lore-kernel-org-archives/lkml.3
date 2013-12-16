@@ -1,305 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab3LPMVB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 07:21:01 -0500
-Received: from relay.parallels.com ([195.214.232.42]:56313 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab3LPMRT (ORCPT
+	id S1754193Ab3LPMVf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 07:21:35 -0500
+Received: from mga02.intel.com ([134.134.136.20]:59210 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753797Ab3LPMVd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 07:17:19 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <dchinner@redhat.com>, <mhocko@suse.cz>, <hannes@cmpxchg.org>,
-        <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <glommer@gmail.com>, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v14 06/18] memcg: rework memcg_update_kmem_limit synchronization
-Date: Mon, 16 Dec 2013 16:16:55 +0400
-Message-ID: <f35d6d667b6380dbabdac539c89390401c8071e7.1387193771.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1387193771.git.vdavydov@parallels.com>
-References: <cover.1387193771.git.vdavydov@parallels.com>
+	Mon, 16 Dec 2013 07:21:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,494,1384329600"; 
+   d="scan'208";a="425327086"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+CC: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/2] x86: add user_atomic_cmpxchg_inatomic at uaccess.h
+Thread-Topic: [PATCH 1/2] x86: add user_atomic_cmpxchg_inatomic at uaccess.h
+Thread-Index: AQHO+FiKo8EtukZqDk2x7yIAJB80AZpWwSMw
+Date: Mon, 16 Dec 2013 12:21:27 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE014B2C09@SHSMSX102.ccr.corp.intel.com>
+References: <1387002303-6620-1-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1387002303-6620-1-git-send-email-qiaowei.ren@intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we take both the memcg_create_mutex and the set_limit_mutex
-when we enable kmem accounting for a memory cgroup, which makes kmem
-activation events serialize with both memcg creations and other memcg
-limit updates (memory.limit, memory.memsw.limit). However, there is no
-point keeping both of these mutexes during the whole kmem initialization
-process.
+Qiaowei Ren wrote: 
+> This patch adds user_atomic_cmpxchg_inatomic() to use CMPXCHG instruction
+> against a user space address.
+> 
+> This generalizes the already existing futex_atomic_cmpxchg_inatomic() so it
+> can be used in other contexts.  This will be used in the upcoming support for
+> Intel MPX (Memory Protection Extensions.)
+> 
+Peter, do you have any other comments for this version?
 
-First, the set_limit_mutex was introduced to keep the memory.limit and
-memory.memsw.limit values in sync. Since memory.kmem.limit can be set
-independently of them, it is better to introduce a separate mutex to
-synchronize against concurrent kmem limit updates.
-
-Second, we take the memcg_create_mutex in order to make sure all
-children of this memcg will be kmem-active as well. For achieving that,
-it is enough to take this mutex only around the call to
-memcg_has_children(). This guarantees that if a child is added after we
-check that the memcg has no children, the newly added cgroup will see
-its parent kmem-active (of course if the latter succeeded), and call
-kmem activation for itself.
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |  180 +++++++++++++++++++++++++++++--------------------------
- 1 file changed, 94 insertions(+), 86 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9bf11bf..f2372b0 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3063,32 +3063,6 @@ void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
- 	mutex_unlock(&memcg->slab_caches_mutex);
- }
- 
--/*
-- * This ends up being protected by the set_limit mutex, during normal
-- * operation, because that is its main call site.
-- *
-- * But when we create a new cache, we can call this as well if its parent
-- * is kmem-limited. That will have to hold set_limit_mutex as well.
-- */
--int memcg_update_cache_sizes(struct mem_cgroup *memcg)
--{
--	int num, ret;
--
--	num = ida_simple_get(&kmem_limited_groups,
--				0, MEMCG_CACHES_MAX_SIZE, GFP_KERNEL);
--	if (num < 0)
--		return num;
--
--	ret = memcg_update_all_caches(num+1);
--	if (ret) {
--		ida_simple_remove(&kmem_limited_groups, num);
--		return ret;
--	}
--
--	memcg->kmemcg_id = num;
--	return 0;
--}
--
- static size_t memcg_caches_array_size(int num_groups)
- {
- 	ssize_t size;
-@@ -5119,11 +5093,28 @@ static ssize_t mem_cgroup_read(struct cgroup_subsys_state *css,
- 	return simple_read_from_buffer(buf, nbytes, ppos, str, len);
- }
- 
--static int memcg_update_kmem_limit(struct cgroup_subsys_state *css, u64 val)
--{
--	int ret = -EINVAL;
- #ifdef CONFIG_MEMCG_KMEM
--	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-+static DEFINE_MUTEX(activate_kmem_mutex);
-+
-+/* should be called with activate_kmem_mutex held */
-+static int __memcg_activate_kmem(struct mem_cgroup *memcg,
-+				 unsigned long long limit)
-+{
-+	int err = 0;
-+	int memcg_id;
-+
-+	if (memcg_kmem_is_active(memcg))
-+		return 0;
-+
-+	/*
-+	 * We are going to allocate memory for data shared by all memory
-+	 * cgroups so let's stop accounting here.
-+	 */
-+	memcg_stop_kmem_account();
-+
-+	err = res_counter_set_limit(&memcg->kmem, limit);
-+	VM_BUG_ON(err);
-+
- 	/*
- 	 * For simplicity, we won't allow this to be disabled.  It also can't
- 	 * be changed if the cgroup has children already, or if tasks had
-@@ -5137,72 +5128,91 @@ static int memcg_update_kmem_limit(struct cgroup_subsys_state *css, u64 val)
- 	 * of course permitted.
- 	 */
- 	mutex_lock(&memcg_create_mutex);
--	mutex_lock(&set_limit_mutex);
--	if (!memcg->kmem_account_flags && val != RES_COUNTER_MAX) {
--		if (cgroup_task_count(css->cgroup) || memcg_has_children(memcg)) {
--			ret = -EBUSY;
--			goto out;
--		}
--		ret = res_counter_set_limit(&memcg->kmem, val);
--		VM_BUG_ON(ret);
-+	if (cgroup_task_count(memcg->css.cgroup) || memcg_has_children(memcg))
-+		err = -EBUSY;
-+	mutex_unlock(&memcg_create_mutex);
-+	if (err)
-+		goto out_reset_limit;
-+
-+	memcg_id = ida_simple_get(&kmem_limited_groups,
-+				  0, MEMCG_CACHES_MAX_SIZE, GFP_KERNEL);
-+	if (memcg_id < 0) {
-+		err = memcg_id;
-+		goto out_reset_limit;
-+	}
- 
--		ret = memcg_update_cache_sizes(memcg);
--		if (ret) {
--			res_counter_set_limit(&memcg->kmem, RES_COUNTER_MAX);
--			goto out;
--		}
--		static_key_slow_inc(&memcg_kmem_enabled_key);
--		/*
--		 * setting the active bit after the inc will guarantee no one
--		 * starts accounting before all call sites are patched
--		 */
--		memcg_kmem_set_active(memcg);
--	} else
--		ret = res_counter_set_limit(&memcg->kmem, val);
-+	/*
-+	 * Make sure we have enough space for this cgroup in each kmem_cache's
-+	 * memcg_params array.
-+	 */
-+	err = memcg_update_all_caches(memcg_id + 1);
-+	if (err)
-+		goto out_rmid;
-+
-+	memcg->kmemcg_id = memcg_id;
-+
-+	static_key_slow_inc(&memcg_kmem_enabled_key);
-+	/*
-+	 * Setting the active bit after enabling static branching will
-+	 * guarantee no one starts accounting before all call sites are
-+	 * patched.
-+	 */
-+	memcg_kmem_set_active(memcg);
- out:
--	mutex_unlock(&set_limit_mutex);
--	mutex_unlock(&memcg_create_mutex);
--#endif
-+	memcg_resume_kmem_account();
-+	return err;
-+
-+out_rmid:
-+	ida_simple_remove(&kmem_limited_groups, memcg_id);
-+out_reset_limit:
-+	res_counter_set_limit(&memcg->kmem, RES_COUNTER_MAX);
-+	goto out;
-+}
-+
-+static int memcg_activate_kmem(struct mem_cgroup *memcg,
-+			       unsigned long long limit)
-+{
-+	int ret;
-+
-+	mutex_lock(&activate_kmem_mutex);
-+	ret = __memcg_activate_kmem(memcg, limit);
-+	mutex_unlock(&activate_kmem_mutex);
-+	return ret;
-+}
-+
-+static int memcg_update_kmem_limit(struct mem_cgroup *memcg,
-+				   unsigned long long val)
-+{
-+	int ret;
-+
-+	if (!memcg_kmem_is_active(memcg))
-+		ret = memcg_activate_kmem(memcg, val);
-+	else
-+		ret = res_counter_set_limit(&memcg->kmem, val);
- 	return ret;
- }
- 
--#ifdef CONFIG_MEMCG_KMEM
- static int memcg_propagate_kmem(struct mem_cgroup *memcg)
- {
- 	int ret = 0;
- 	struct mem_cgroup *parent = parent_mem_cgroup(memcg);
--	if (!parent)
--		goto out;
- 
--	memcg->kmem_account_flags = parent->kmem_account_flags;
--	/*
--	 * When that happen, we need to disable the static branch only on those
--	 * memcgs that enabled it. To achieve this, we would be forced to
--	 * complicate the code by keeping track of which memcgs were the ones
--	 * that actually enabled limits, and which ones got it from its
--	 * parents.
--	 *
--	 * It is a lot simpler just to do static_key_slow_inc() on every child
--	 * that is accounted.
--	 */
--	if (!memcg_kmem_is_active(memcg))
-+	if (!parent)
- 		goto out;
- 
--	/*
--	 * __mem_cgroup_free() will issue static_key_slow_dec() because this
--	 * memcg is active already. If the later initialization fails then the
--	 * cgroup core triggers the cleanup so we do not have to do it here.
--	 */
--	static_key_slow_inc(&memcg_kmem_enabled_key);
--
--	mutex_lock(&set_limit_mutex);
--	memcg_stop_kmem_account();
--	ret = memcg_update_cache_sizes(memcg);
--	memcg_resume_kmem_account();
--	mutex_unlock(&set_limit_mutex);
-+	mutex_lock(&activate_kmem_mutex);
-+	if (memcg_kmem_is_active(parent))
-+		ret = __memcg_activate_kmem(memcg, RES_COUNTER_MAX);
-+	mutex_unlock(&activate_kmem_mutex);
- out:
- 	return ret;
- }
-+#else
-+static inline int memcg_update_kmem_limit(struct mem_cgroup *memcg,
-+					  unsigned long long val)
-+{
-+	return -EINVAL;
-+}
- #endif /* CONFIG_MEMCG_KMEM */
- 
- /*
-@@ -5236,7 +5246,7 @@ static int mem_cgroup_write(struct cgroup_subsys_state *css, struct cftype *cft,
- 		else if (type == _MEMSWAP)
- 			ret = mem_cgroup_resize_memsw_limit(memcg, val);
- 		else if (type == _KMEM)
--			ret = memcg_update_kmem_limit(css, val);
-+			ret = memcg_update_kmem_limit(memcg, val);
- 		else
- 			return -EINVAL;
- 		break;
-@@ -6253,7 +6263,6 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
- 	struct mem_cgroup *parent = mem_cgroup_from_css(css_parent(css));
--	int error = 0;
- 
- 	if (css->cgroup->id > MEM_CGROUP_ID_MAX)
- 		return -ENOSPC;
-@@ -6288,10 +6297,9 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
- 		if (parent != root_mem_cgroup)
- 			mem_cgroup_subsys.broken_hierarchy = true;
- 	}
--
--	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
- 	mutex_unlock(&memcg_create_mutex);
--	return error;
-+
-+	return memcg_init_kmem(memcg, &mem_cgroup_subsys);
- }
- 
- /*
--- 
-1.7.10.4
-
+Thanks,
+Qiaowei
