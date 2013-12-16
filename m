@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab3LPUDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 15:03:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:26908 "EHLO mga09.intel.com"
+	id S1752111Ab3LPUDq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 15:03:46 -0500
+Received: from mga09.intel.com ([134.134.136.24]:26898 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751430Ab3LPUC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751332Ab3LPUC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Dec 2013 15:02:59 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,496,1384329600"; 
-   d="scan'208";a="453170493"
+   d="scan'208";a="453170459"
 From: David Cohen <david.a.cohen@linux.intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
 Cc: bhelgaas@google.com, david.a.cohen@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Kuppuswamy Sathyanarayanan 
-	<sathyanarayanan.kuppuswamy@linux.intel.com>,
-        Fei Yang <fei.yang@intel.com>
-Subject: [PATCH v2 2/4] x86: intel-mid: add Clovertrail platform support
-Date: Mon, 16 Dec 2013 12:07:37 -0800
-Message-Id: <1387224459-25746-3-git-send-email-david.a.cohen@linux.intel.com>
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [PATCH v2 4/4] x86: intel-mid: remove deprecated X86_MDFLD and X86_WANT_INTEL_MID configs
+Date: Mon, 16 Dec 2013 12:07:39 -0800
+Message-Id: <1387224459-25746-5-git-send-email-david.a.cohen@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1387224459-25746-1-git-send-email-david.a.cohen@linux.intel.com>
 References: <1387224459-25746-1-git-send-email-david.a.cohen@linux.intel.com>
@@ -26,231 +23,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
-
-This patch adds Clovertrail support on intel-mid and makes it more
-flexible to support other SoCs.
+We want to support all Intel Mid platforms with a single config
+selection. This patch removes deprecated CONFIG_X86_MDFLD and
+X86_WANT_INTEL_MID options in favor of having CONFIG_X86_INTEL_MID only.
 
 Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
-Signed-off-by: Fei Yang <fei.yang@intel.com>
 ---
- arch/x86/include/asm/intel-mid.h                   | 46 +++++++++++++++++++++-
- arch/x86/platform/intel-mid/intel-mid.c            | 39 ++++++++++++++++--
- arch/x86/platform/intel-mid/intel_mid_weak_decls.h |  7 +++-
- arch/x86/platform/intel-mid/mfld.c                 | 32 +++++++++++++--
- 4 files changed, 113 insertions(+), 11 deletions(-)
+ arch/x86/Kconfig | 29 +++++------------------------
+ 1 file changed, 5 insertions(+), 24 deletions(-)
 
-diff --git a/arch/x86/include/asm/intel-mid.h b/arch/x86/include/asm/intel-mid.h
-index 459769d39263..f8a831431fe0 100644
---- a/arch/x86/include/asm/intel-mid.h
-+++ b/arch/x86/include/asm/intel-mid.h
-@@ -51,10 +51,39 @@ struct devs_id {
- enum intel_mid_cpu_type {
- 	/* 1 was Moorestown */
- 	INTEL_MID_CPU_CHIP_PENWELL = 2,
-+	INTEL_MID_CPU_CHIP_CLOVERVIEW,
- };
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index e903c71f7e69..b6a344fb01ae 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -437,42 +437,23 @@ config X86_INTEL_CE
+ 	  This option compiles in support for the CE4100 SOC for settop
+ 	  boxes and media devices.
  
- extern enum intel_mid_cpu_type __intel_mid_cpu_chip;
+-config X86_WANT_INTEL_MID
++config X86_INTEL_MID
+ 	bool "Intel MID platform support"
+ 	depends on X86_32
+ 	depends on X86_EXTENDED_PLATFORM
+-	---help---
+-	  Select to build a kernel capable of supporting Intel MID platform
+-	  systems which do not have the PCI legacy interfaces (Moorestown,
+-	  Medfield). If you are building for a PC class system say N here.
+-
+-if X86_WANT_INTEL_MID
+-
+-config X86_INTEL_MID
+-	bool
+-
+-config X86_MDFLD
+-       bool "Medfield MID platform"
+ 	depends on PCI
+ 	depends on PCI_GOANY
+ 	depends on X86_IO_APIC
+-	select X86_INTEL_MID
+ 	select SFI
++	select I2C
+ 	select DW_APB_TIMER
+ 	select APB_TIMER
+-	select I2C
+-	select SPI
+ 	select INTEL_SCU_IPC
+-	select X86_PLATFORM_DEVICES
+ 	select MFD_INTEL_MSIC
+ 	---help---
+-	  Medfield is Intel's Low Power Intel Architecture (LPIA) based Moblin
+-	  Internet Device(MID) platform. 
+-	  Unlike standard x86 PCs, Medfield does not have many legacy devices
+-	  nor standard legacy replacement devices/features. e.g. Medfield does
+-	  not contain i8259, i8254, HPET, legacy BIOS, most of the io ports.
+-
+-endif
++	  Select to build a kernel capable of supporting Intel MID platform
++	  systems which do not have the PCI legacy interfaces (Moorestown,
++	  Medfield). If you are building for a PC class system say N here.
  
-+/**
-+ * struct intel_mid_ops - Interface between intel-mid & sub archs
-+ * @arch_setup: arch_setup function to re-initialize platform
-+ *             structures (x86_init, x86_platform_init)
-+ *
-+ * This structure can be extended if any new interface is required
-+ * between intel-mid & its sub arch files.
-+ */
-+struct intel_mid_ops {
-+	void (*arch_setup)(void);
-+};
-+
-+/* Helper API's for INTEL_MID_OPS_INIT */
-+#define DECLARE_INTEL_MID_OPS_INIT(cpuname, cpuid)	\
-+				[cpuid] = get_##cpuname##_ops
-+
-+/* Maximum number of CPU ops */
-+#define MAX_CPU_OPS(a) (sizeof(a)/sizeof(void *))
-+
-+/*
-+ * For every new cpu addition, a weak get_<cpuname>_ops() function needs be
-+ * declared in arch/x86/platform/intel_mid/intel_mid_weak_decls.h.
-+ */
-+#define INTEL_MID_OPS_INIT {\
-+	DECLARE_INTEL_MID_OPS_INIT(penwell, INTEL_MID_CPU_CHIP_PENWELL), \
-+	DECLARE_INTEL_MID_OPS_INIT(cloverview, INTEL_MID_CPU_CHIP_CLOVERVIEW), \
-+};
-+
- #ifdef CONFIG_X86_INTEL_MID
- 
- static inline enum intel_mid_cpu_type intel_mid_identify_cpu(void)
-@@ -86,8 +115,21 @@ extern enum intel_mid_timer_options intel_mid_timer_options;
-  * Penwell uses spread spectrum clock, so the freq number is not exactly
-  * the same as reported by MSR based on SDM.
-  */
--#define PENWELL_FSB_FREQ_83SKU         83200
--#define PENWELL_FSB_FREQ_100SKU        99840
-+#define FSB_FREQ_83SKU	83200
-+#define FSB_FREQ_100SKU	99840
-+#define FSB_FREQ_133SKU	133000
-+
-+#define FSB_FREQ_167SKU	167000
-+#define FSB_FREQ_200SKU	200000
-+#define FSB_FREQ_267SKU	267000
-+#define FSB_FREQ_333SKU	333000
-+#define FSB_FREQ_400SKU	400000
-+
-+/* Bus Select SoC Fuse value */
-+#define BSEL_SOC_FUSE_MASK	0x7
-+#define BSEL_SOC_FUSE_001	0x1 /* FSB 133MHz */
-+#define BSEL_SOC_FUSE_101	0x5 /* FSB 100MHz */
-+#define BSEL_SOC_FUSE_111	0x7 /* FSB 83MHz */
- 
- #define SFI_MTMR_MAX_NUM 8
- #define SFI_MRTC_MAX	8
-diff --git a/arch/x86/platform/intel-mid/intel-mid.c b/arch/x86/platform/intel-mid/intel-mid.c
-index 527d6d50643d..40955841bb32 100644
---- a/arch/x86/platform/intel-mid/intel-mid.c
-+++ b/arch/x86/platform/intel-mid/intel-mid.c
-@@ -60,14 +60,27 @@
- 
- enum intel_mid_timer_options intel_mid_timer_options;
- 
-+/* intel_mid_ops to store sub arch ops */
-+struct intel_mid_ops *intel_mid_ops;
-+/* getter function for sub arch ops*/
-+static void *(*get_intel_mid_ops[])(void) = INTEL_MID_OPS_INIT;
- enum intel_mid_cpu_type __intel_mid_cpu_chip;
- EXPORT_SYMBOL_GPL(__intel_mid_cpu_chip);
- 
-+static void intel_mid_power_off(void)
-+{
-+};
-+
- static void intel_mid_reboot(void)
- {
- 	intel_scu_ipc_simple_command(IPCMSG_COLD_BOOT, 0);
- }
- 
-+static unsigned long __init intel_mid_calibrate_tsc(void)
-+{
-+	return 0;
-+}
-+
- static void __init intel_mid_time_init(void)
- {
- 	sfi_table_parse(SFI_SIG_MTMR, NULL, NULL, sfi_parse_mtmr);
-@@ -92,13 +105,33 @@ static void __init intel_mid_time_init(void)
- 
- static void intel_mid_arch_setup(void)
- {
--	if (boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 0x27)
--		__intel_mid_cpu_chip = INTEL_MID_CPU_CHIP_PENWELL;
--	else {
-+	if (boot_cpu_data.x86 != 6) {
- 		pr_err("Unknown Intel MID CPU (%d:%d), default to Penwell\n",
- 			boot_cpu_data.x86, boot_cpu_data.x86_model);
- 		__intel_mid_cpu_chip = INTEL_MID_CPU_CHIP_PENWELL;
-+		goto out;
-+	}
-+
-+	switch (boot_cpu_data.x86_model) {
-+	case 0x35:
-+		__intel_mid_cpu_chip = INTEL_MID_CPU_CHIP_CLOVERVIEW;
-+		break;
-+	case 0x27:
-+	default:
-+		__intel_mid_cpu_chip = INTEL_MID_CPU_CHIP_PENWELL;
-+		break;
- 	}
-+
-+	if (__intel_mid_cpu_chip < MAX_CPU_OPS(get_intel_mid_ops))
-+		intel_mid_ops = get_intel_mid_ops[__intel_mid_cpu_chip]();
-+	else {
-+		intel_mid_ops = get_intel_mid_ops[INTEL_MID_CPU_CHIP_PENWELL]();
-+		pr_info("ARCH: Uknown SoC, assuming PENWELL!\n");
-+	}
-+
-+out:
-+	if (intel_mid_ops->arch_setup)
-+		intel_mid_ops->arch_setup();
- }
- 
- /* MID systems don't have i8042 controller */
-diff --git a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-index 519beb75ba4c..9ebce0447edf 100644
---- a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-+++ b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-@@ -11,5 +11,8 @@
- 
- 
- /* __attribute__((weak)) makes these declarations overridable */
--extern void intel_mid_power_off(void) __attribute__((weak));
--extern unsigned long __init intel_mid_calibrate_tsc(void) __attribute__((weak));
-+/* For every CPU addition a new get_<cpuname>_ops interface needs
-+ * to be added.
-+ */
-+extern void * __cpuinit get_penwell_ops(void) __attribute__((weak));
-+extern void * __cpuinit get_cloverview_ops(void) __attribute__((weak));
-diff --git a/arch/x86/platform/intel-mid/mfld.c b/arch/x86/platform/intel-mid/mfld.c
-index c7ff83c4576d..4f7884eebc14 100644
---- a/arch/x86/platform/intel-mid/mfld.c
-+++ b/arch/x86/platform/intel-mid/mfld.c
-@@ -15,11 +15,19 @@
- #include <asm/intel-mid.h>
- #include <asm/intel_mid_vrtc.h>
- 
--void intel_mid_power_off(void)
-+#include "intel_mid_weak_decls.h"
-+
-+static void penwell_arch_setup(void);
-+/* penwell arch ops */
-+static struct intel_mid_ops penwell_ops = {
-+	.arch_setup = penwell_arch_setup,
-+};
-+
-+static void mfld_power_off(void)
- {
- }
- 
--unsigned long __init intel_mid_calibrate_tsc(void)
-+static unsigned long __init mfld_calibrate_tsc(void)
- {
- 	unsigned long fast_calibrate;
- 	u32 lo, hi, ratio, fsb;
-@@ -35,9 +43,9 @@ unsigned long __init intel_mid_calibrate_tsc(void)
- 	}
- 	rdmsr(MSR_FSB_FREQ, lo, hi);
- 	if ((lo & 0x7) == 0x7)
--		fsb = PENWELL_FSB_FREQ_83SKU;
-+		fsb = FSB_FREQ_83SKU;
- 	else
--		fsb = PENWELL_FSB_FREQ_100SKU;
-+		fsb = FSB_FREQ_100SKU;
- 	fast_calibrate = ratio * fsb;
- 	pr_debug("read penwell tsc %lu khz\n", fast_calibrate);
- 	lapic_timer_frequency = fsb * 1000 / HZ;
-@@ -49,3 +57,19 @@ unsigned long __init intel_mid_calibrate_tsc(void)
- 
- 	return 0;
- }
-+
-+static void __init penwell_arch_setup()
-+{
-+	x86_platform.calibrate_tsc = mfld_calibrate_tsc;
-+	pm_power_off = mfld_power_off;
-+}
-+
-+void * __cpuinit get_penwell_ops()
-+{
-+	return &penwell_ops;
-+}
-+
-+void * __cpuinit get_cloverview_ops()
-+{
-+	return &penwell_ops;
-+}
+ config X86_INTEL_LPSS
+ 	bool "Intel Low Power Subsystem Support"
 -- 
 1.8.4.2
 
