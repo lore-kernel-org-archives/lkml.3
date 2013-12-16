@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab3LPPqZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:46:25 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:18161 "EHLO
-	highbank-bc01-b06.austin.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754101Ab3LPPqV (ORCPT
+	id S1754801Ab3LPPqm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:46:42 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:55336 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754753Ab3LPPqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:46:21 -0500
-Date: Mon, 16 Dec 2013 15:46:01 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        "roy.franz@linaro.org" <roy.franz@linaro.org>
-Subject: Re: [PATCH 1/3] arm64: add EFI stub
-Message-ID: <20131216154601.GH17713@arm.com>
-References: <1385762712-17043-1-git-send-email-msalter@redhat.com>
- <1385762712-17043-2-git-send-email-msalter@redhat.com>
- <20131205141853.GA974@darko.cambridge.arm.com>
- <1386341754.1861.188.camel@deneb.redhat.com>
+	Mon, 16 Dec 2013 10:46:23 -0500
+Date: Mon, 16 Dec 2013 10:46:11 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ahci: bail out on ICH6 before using AHCI BAR
+Message-ID: <20131216154611.GE32509@htj.dyndns.org>
+References: <1387190061.9255.30.camel@x41.thuisdomein>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386341754.1861.188.camel@deneb.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1387190061.9255.30.camel@x41.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 02:55:54PM +0000, Mark Salter wrote:
-> On Thu, 2013-12-05 at 14:18 +0000, Catalin Marinas wrote:
-> > On Fri, Nov 29, 2013 at 10:05:10PM +0000, Mark Salter wrote:
-> > > +       add     x2, sp, 16
-> > > +       str     x8, [x2]
-> > > +       bl      efi_entry
-> > > +       cmn     x0, #1
-> > > +       b.eq    efi_load_fail
-> > > +
-> > > +       /*
-> > > +        * efi_entry() will have relocated the kernel image if necessary
-> > > +        * and we return here with device tree address in x0 and the kernel
-> > > +        * entry point stored at *image_addr. Save those values in registers
-> > > +        * which are preserved by __flush_dcache_all.
-> > > +        */
-> > > +       ldr     x1, [sp, #16]
-> > > +       mov     x20, x0
-> > > +       mov     x21, x1
-> > > +
-> > > +       bl      __flush_dcache_all
-> > 
-> > Regarding __flush_dcache_all, I plan to remove it for all cases apart
-> > from power management with the MMU disabled. With MMU enabled, there is
-> > no guarantee that this function does the right thing. It's even worse in
-> > the guest context.
+On Mon, Dec 16, 2013 at 11:34:21AM +0100, Paul Bolle wrote:
+> The check for "combined mode" (which disables ahci support) on ICH6 is
+> done after the first use of AHCI BAR. But if ahci is not enabled AHCI
+> BAR is initialized to 0x00000000. (At least it is on the ICH6-M I tested
+> this on. If I understand the datasheet correctly it should also be on
+> ICH6R.) This apparently makes the call of
+> pcim_iomap_regions_request_all() return -EINVAL. And we end up with
+>     ahci: probe of 0000:00:1f.2 failed with error -22
 > 
-> According to booting.txt, the dcache needs to be invalidated. Is there
-> something existing I can use or do I need to write it?
+> (at warning level) in the logs.
+> 
+> So check for "combined mode" before calling
+> pcim_iomap_regions_request_all().
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-The function will stay for a few cases where needed. But here the
-D-cache and MMU are still on at this point and there is a slight chance
-of speculative loads after the flush (though only clean lines). You
-could move this after he MMU disabling (but still keep the I-cache on
-for performance).
+Applied to libata/for-3.13-fixes.
+
+Thanks.
 
 -- 
-Catalin
+tejun
