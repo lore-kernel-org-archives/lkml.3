@@ -1,91 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab3LPASs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 19:18:48 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:52512 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab3LPASq (ORCPT
+	id S1752104Ab3LPAW0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 19:22:26 -0500
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:51834 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab3LPAWY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 19:18:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <241775f7fb71476aa84bbb19fde4602f@DM2PR05MB671.namprd05.prod.outlook.com>
-References: <529E5C0E.80903@gmail.com> <20131212224407.GL4699@google.com>
- <CAE9FiQX8XXkwbhhuNhCF-pHdc_3or_dMEH-VN5NBSEV_eXE-Pg@mail.gmail.com>
- <CAErSpo5BsaLNrny3T1sYknz3wo4hN0SKJk0_u6eNyEd6qq5o=g@mail.gmail.com>
- <428d664592c2466c9e5e6b393df9d690@DM2PR05MB671.namprd05.prod.outlook.com>
- <CAErSpo5NjOCqkao03Ea=98gunVEaUUitq8mGLarpKW_DQoDF8g@mail.gmail.com>
- <CAE9FiQX-ZP0R-weuPoOJ6GkPxOLp5jk9thnjfPQ+Q5tCHugD4w@mail.gmail.com>
- <20131214033911.GA25115@roeck-us.net> <241775f7fb71476aa84bbb19fde4602f@DM2PR05MB671.namprd05.prod.outlook.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Sun, 15 Dec 2013 17:18:26 -0700
-Message-ID: <CAErSpo4grMgCBetm7DMmizWQS_peM5yYBwFS99K8jbXaEWGmEg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] pciehp: Use link change notifications for hot-plug
- and removal
-To: Rajat Jain <rajatjain@juniper.net>
-Cc: Guenter Roeck <linux@roeck-us.net>, Yinghai Lu <yinghai@kernel.org>,
-        Rajat Jain <rajatjain.linux@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, Paul Bolle <pebolle@tiscali.nl>,
-        Rajat Jain <rajatxjain@gmail.com>, Guenter Roeck <groeck@juniper.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 15 Dec 2013 19:22:24 -0500
+Content-Type: text/plain;
+	charset=us-ascii
+Mime-Version: 1.0 (1.0)
+Subject: Re: [PATCH v2 2/3] clk: bcm281xx: add initial clock framework support
+From: Alex Elder <alex.elder@linaro.org>
+X-Mailer: iPhone Mail (11B554a)
+In-Reply-To: <52ADE93B.3070907@linaro.org>
+Date: Sun, 15 Dec 2013 18:22:20 -0600
+Cc: "bcm-kernel-feedback-list@broadcom.com" 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E566434B-F630-4AD3-91EC-BD5599767F2E@linaro.org>
+References: <529F4B0F.2020801@linaro.org> <529F4B4F.4020405@linaro.org> <20131214235731.26321.53050@quantum> <52ADE93B.3070907@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tim Kryger <tim.kryger@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 15, 2013 at 4:24 PM, Rajat Jain <rajatjain@juniper.net> wrote:
->> > >
->> > >> Once again: the way I interpret this is:
->> > >> * Always enable Link events.
->> > >> * Disable presence events if attention button is present.
->> > >
->> > > That sounds like a good plan to me.
->> >
->> > How about Diag_Reset from MPT2SAS and others?
->> > link could up and down
->> >
->
-> I am assuming you are referring to
->
-> static int
-> _base_diag_reset(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
->
-> Which as far as I could understand would cause link to go down and come up
->  again without the kernel knowing anything about it?
-> ...
+I think I can prepare a series that puts my changes
+before Tim's. Unless I have trouble doing that
+I will send that out in a few hours.
 
-> In general, I guess the question is when a link goes down and back up, whether
-> or not we want to treat it as a hot unplug followed by a hotplug. I think there
-> may be cases such as AER (or the one Yinghai mentions) where we don't want to
-> treat it as a hotplug (see note below). And there may be cases that we
-> definitely want to treat it as hotplug (need link events!). Situation gets more
-> complex since there may be pciehp slots downstream of a link getting reset.
->
-> It seems to me that we are saying that a mechanism is needed so that a voluntary
-> Link flap is NOT treated like a hotplug temporarily?
-> ...
+                                        -Alex
 
-> Notes:
-> * it may not OK, if the kernel thinks the device is accessible when it is really not.
->   What if during this downtime, someone tries to access the device (say userspace)?
-> * How do we know after the link up, that the device is really the same.
->   If during this reset, the device changed its "character", say a different class?
->   I think a rescan should be mandated after every such event.
->  * Do we need to unload and reload the driver after the link reset, since it can be a different device?
-
-I am quite dubious about the idea of a voluntary link flap.  If the
-link goes down and comes back up, I don't see how we can make any
-assumptions about what device is there.
-
-I let Alex talk me into pciehp_reset_slot(), which disables presence
-detect interrupts while resetting a device, so we already have a bit
-of precedent for the idea.  But even in that case, the device could
-easily come out of reset as a different device, e.g., if the reset
-caused it to load updated firmware.
-
-I would feel much better if we treated link down as a remove and did a
-rescan on the link up.
-
-Bjorn
+> On Dec 15, 2013, at 11:39 AM, Alex Elder <alex.elder@linaro.org> wrote:
+> 
+>> On 12/14/2013 05:57 PM, Mike Turquette wrote:
+>> Quoting Alex Elder (2013-12-04 07:33:35)
+>>> +       return true;
+>>> +}
+>>> +
+>>> +/* A bit position must be less than the number of bits in a 32-bit
+>>> register. */
+>> 
+>> Hi Alex,
+>> 
+>> The patch is corrupt at line 634 and several other places below.  Did
+>> you edit it manually? I'm happy with the series after reviewing it but
+>> it cannot be applied. Can you fix the issue and send me a pull request?
+>> 
+>> Thanks,
+>> Mike
+> 
+> First, yes I sent it manually (copy from the git-generated patch
+> and paste into a mail message, and I'm sorry about that.  I have
+> yet to set up my Linaro settings for "git-send-email" and I'll
+> do that this week.
+> 
+> I have a v3 that has been updated to apply to v3.13-rc3 (there
+> is no -rc4 yet).
+> 
+> I'm not sure how this works with the series of 8 patches from Tim
+> Kryger that it depends on.  But here is a pull request for the
+> version (including the prerequisites) based on 3.13-rc3.  (It is
+> done manually again, so there are some line wraps...)
+> 
+> Thanks a lot for the review Mike.  I know you're a busy guy.
+> 
+>                    -Alex
+> 
+> The following changes since commit 374b105797c3d4f29c685f3be535c35f5689b30e:
+> 
+>  Linux 3.13-rc3 (2013-12-06 09:34:04 -0800)
+> 
+> are available in the git repository at:
+> 
+>  ssh://git@git.linaro.org/people/alex.elder/linux.git
+> review/bcm-kona-clocks-v3
+> 
+> for you to fetch changes up to cf62c29babf6068abf91588411704566812b7900:
+> 
+>  ARM: dts: bcm281xx: define real clocks (2013-12-13 10:40:21 -0600)
+> 
+> ----------------------------------------------------------------
+> Alex Elder (3):
+>      clk: bcm281xx: define kona clock binding
+>      clk: bcm281xx: add initial clock framework support
+>      ARM: dts: bcm281xx: define real clocks
+> 
+> Tim Kryger (8):
+>      ARM: dts: Declare clocks as fixed on bcm11351
+>      ARM: dts: Specify clocks for UARTs on bcm11351
+>      Documentation: dt: kona-sdhci: Add clocks property
+>      ARM: dts: Specify clocks for SDHCIs on bcm11351
+>      mmc: sdhci-bcm-kona: Add basic use of clocks
+>      Documentation: dt: kona-timer: Add clocks property
+>      clocksource: kona: Add basic use of external clock
+>      ARM: dts: Specify clocks for timer on bcm11351
+> 
+> .../devicetree/bindings/arm/bcm/kona-timer.txt     |    7 +-
+> .../devicetree/bindings/clock/bcm-kona-clock.txt   |   93 ++
+> .../devicetree/bindings/mmc/kona-sdhci.txt         |    4 +
+> arch/arm/boot/dts/bcm11351.dtsi                    |  199 +++-
+> drivers/clk/Kconfig                                |    1 +
+> drivers/clk/Makefile                               |    1 +
+> drivers/clk/bcm/Kconfig                            |    8 +
+> drivers/clk/bcm/Makefile                           |    3 +
+> drivers/clk/bcm/clk-bcm281xx.c                     |  416 ++++++++
+> drivers/clk/bcm/clk-kona-setup.c                   |  769 +++++++++++++++
+> drivers/clk/bcm/clk-kona.c                         | 1033
+> ++++++++++++++++++++
+> drivers/clk/bcm/clk-kona.h                         |  414 ++++++++
+> drivers/clocksource/bcm_kona_timer.c               |   14 +-
+> drivers/mmc/host/sdhci-bcm-kona.c                  |   37 +-
+> include/dt-bindings/clock/bcm281xx.h               |   65 ++
+> 15 files changed, 3053 insertions(+), 11 deletions(-)
+> create mode 100644
+> Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+> create mode 100644 drivers/clk/bcm/Kconfig
+> create mode 100644 drivers/clk/bcm/Makefile
+> create mode 100644 drivers/clk/bcm/clk-bcm281xx.c
+> create mode 100644 drivers/clk/bcm/clk-kona-setup.c
+> create mode 100644 drivers/clk/bcm/clk-kona.c
+> create mode 100644 drivers/clk/bcm/clk-kona.h
+> create mode 100644 include/dt-bindings/clock/bcm281xx.h
+> 
