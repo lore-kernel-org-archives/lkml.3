@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab3LPIj7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 03:39:59 -0500
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:49887
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752471Ab3LPIj6 (ORCPT
+	id S1752762Ab3LPIk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 03:40:27 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60478 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751Ab3LPIk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 03:39:58 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(z579ehz98dI9371I1432I1447Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hz8dhz1de098h8275bh8275dh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 16 Dec 2013 16:40:52 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Fabio Estevam <festevam@gmail.com>
-CC: Mark Brown <broonie@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] regulator: core: Use
- postcore_initcall(regulator_init_complete)
-Message-ID: <20131216084050.GA30671@S2101-09.ap.freescale.net>
-References: <1385416655-7859-1-git-send-email-festevam@gmail.com>
- <20131126004603.GU14725@sirena.org.uk>
- <20131127005520.GS14725@sirena.org.uk>
- <20131215130636.GA12686@S2101-09.ap.freescale.net>
- <CAOMZO5DHYgJY4dpB+znx9g3TChUNn3ujdtCf0OsmkbGtrE9R1A@mail.gmail.com>
+	Mon, 16 Dec 2013 03:40:26 -0500
+X-AuditID: 9c93016f-b7cc5ae000007121-19-52aebc777720
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 10/17] tracing/probes: Move 'symbol' fetch method to kprobes
+References: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
+	<1387168336-13213-11-git-send-email-namhyung@kernel.org>
+	<52AEB87D.6020507@hitachi.com>
+Date: Mon, 16 Dec 2013 17:40:23 +0900
+In-Reply-To: <52AEB87D.6020507@hitachi.com> (Masami Hiramatsu's message of
+	"Mon, 16 Dec 2013 17:23:25 +0900")
+Message-ID: <87fvptgpe0.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAOMZO5DHYgJY4dpB+znx9g3TChUNn3ujdtCf0OsmkbGtrE9R1A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 15, 2013 at 03:03:00PM -0200, Fabio Estevam wrote:
-> On Sun, Dec 15, 2013 at 11:06 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
-> 
-> > What is going on about that patch?
-> 
-> Mark fixed the problem with the following commits:
+Hi Masami,
 
-Thanks for the info, Fabio.
+On Mon, 16 Dec 2013 17:23:25 +0900, Masami Hiramatsu wrote:
+> (2013/12/16 13:32), Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> Move existing functions to trace_kprobe.c and add NULL entries to the
+>> uprobes fetch type table.  I don't make them static since some generic
+>> routines like update/free_XXX_fetch_param() require pointers to the
+>> functions.
+>> 
+>> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>> Cc: Oleg Nesterov <oleg@redhat.com>
+>> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+>> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>
+> This looks good for me :)
+>
+> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>
+> And now all of this series has been reviewed/acked by me!
 
-Shawn
+Thank you so much for your review! :)
 
-> 
-> commit 75bc9641cadd2a3f91f9c2e7f2fdfdeb8bd4b1d6
-> Author: Mark Brown <broonie@linaro.org>
-> Date:   Wed Nov 27 16:22:53 2013 +0000
-> 
->     regulator: core: Check for DT every time we check full constraints
-> 
->     Eliminate the gap between DT becoming available and this being used to say
->     we have full constraints by checking directly for DT every time we check
->     for full constraints. This improves interoperaton with optional regulator
->     support.
-> 
->     Signed-off-by: Mark Brown <broonie@linaro.org>
->     Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
-> 
-> commit 87b2841753e1694fc96fefb467f6aff9940b07af
-> Author: Mark Brown <broonie@linaro.org>
-> Date:   Wed Nov 27 16:13:10 2013 +0000
-> 
->     regulator: core: Replace checks of have_full_constraints with a function
-> 
->     Simple code reorganisation so we can change the logic for deciding what
->     full constraints are more easily.
-> 
->     Signed-off-by: Mark Brown <broonie@linaro.org>
-> 
-> Regards,
-> 
-> Fabio Estevam
-
+Thanks,
+Namhyung
