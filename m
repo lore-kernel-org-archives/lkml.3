@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab3LPLAN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 06:00:13 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23800 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327Ab3LPLAM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 06:00:12 -0500
-Message-ID: <52AEDD2F.8040704@oracle.com>
-Date: Mon, 16 Dec 2013 16:29:59 +0530
-From: Allen Pais <allen.pais@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1753518Ab3LPLAs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 06:00:48 -0500
+Received: from mga02.intel.com ([134.134.136.20]:9089 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753328Ab3LPLAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 06:00:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,494,1384329600"; 
+   d="scan'208";a="452915512"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 01/71] perf: Disable all pmus on unthrottling and rescheduling
+In-Reply-To: <20131213180638.GR21999@twins.programming.kicks-ass.net>
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-2-git-send-email-alexander.shishkin@linux.intel.com> <20131213180638.GR21999@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Mon, 16 Dec 2013 13:00:36 +0200
+Message-ID: <87eh5dt60b.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH 2/3] sparc64: convert spinlock_t to raw_spinlock_t in
- mmu_context_t
-References: <1387166853-10782-1-git-send-email-allen.pais@oracle.com> <1387166853-10782-3-git-send-email-allen.pais@oracle.com> <52AED5BB.1060002@linutronix.de>
-In-Reply-To: <52AED5BB.1060002@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Peter Zijlstra <peterz@infradead.org> writes:
 
->> Issue debugged by Thomas Gleixner <tglx@linutronix.de>
-The kernel crashed while I attempted preempt_rt support on log
-at:
+> On Wed, Dec 11, 2013 at 02:36:13PM +0200, Alexander Shishkin wrote:
+>> Currently, only one pmu in a context gets disabled during unthrottling
+>> and event_sched_{out,in}, however, events in one context may belong to
+>> different pmus, which results in pmus being reprogrammed while they are
+>> still enabled. This patch temporarily disables pmus that correspond to
+>> each event in the context while these events are being modified.
+>> 
+>> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+>> ---
+>>  kernel/events/core.c | 27 ++++++++++++++++++++++++---
+>>  1 file changed, 24 insertions(+), 3 deletions(-)
+>> 
+>> diff --git a/kernel/events/core.c b/kernel/events/core.c
+>> index 403b781..d656cd6 100644
+>> --- a/kernel/events/core.c
+>> +++ b/kernel/events/core.c
+>> @@ -1396,6 +1396,9 @@ event_sched_out(struct perf_event *event,
+>>  	if (event->state != PERF_EVENT_STATE_ACTIVE)
+>>  		return;
+>>  
+>> +	if (event->pmu != ctx->pmu)
+>> +		perf_pmu_disable(event->pmu);
+>> +
+>>  	event->state = PERF_EVENT_STATE_INACTIVE;
+>>  	if (event->pending_disable) {
+>>  		event->pending_disable = 0;
+>> @@ -1412,6 +1415,9 @@ event_sched_out(struct perf_event *event,
+>>  		ctx->nr_freq--;
+>>  	if (event->attr.exclusive || !cpuctx->active_oncpu)
+>>  		cpuctx->exclusive = 0;
+>> +
+>> +	if (event->pmu != ctx->pmu)
+>> +		perf_pmu_enable(event->pmu);
+>>  }
+>>  
+>>  static void
+>
+> Hmm, indeed. Does it make sense to drop the conditional?
+> perf_pmu_{en,dis}able() is recursive and the thinking is that if its the
+> same PMU the cacheline is hot because we touched it already recently
+> anyway, so the unconditional inc/dec might actually be faster.. dunno.
 
-[ 1487.027884] I7: <rt_mutex_setprio+0x3c/0x2c0>
-[ 1487.027885] Call Trace:
-[ 1487.027887]  [00000000004967dc] rt_mutex_setprio+0x3c/0x2c0
-[ 1487.027892]  [00000000004afe20] task_blocks_on_rt_mutex+0x180/0x200
-[ 1487.027895]  [0000000000819114] rt_spin_lock_slowlock+0x94/0x300
-[ 1487.027897]  [0000000000817ebc] __schedule+0x39c/0x53c
-[ 1487.027899]  [00000000008185fc] schedule+0x1c/0xc0
-[ 1487.027908]  [000000000048fff4] smpboot_thread_fn+0x154/0x2e0
-[ 1487.027913]  [000000000048753c] kthread+0x7c/0xa0
-[ 1487.027920]  [00000000004060c4] ret_from_syscall+0x1c/0x2c
-[ 1487.027922]  [0000000000000000]           (null)
+Well, given the disable_count check in perf_pmu_{en,dis}able, this one
+indeed looks redundant to me. Should I resend this one separately?
 
-Thomas debugged it and pointed me towards the fix.
-
-> 
-> I think davem would appreciate if you add a little here than this. The
-> same goes for 3/3.
-> 
-
-The same goes with 3/3
-
-[ 2317.606015]  [00000000008072f4] rt_spin_lock_slowlock+0x94/0x300
-[ 2317.606020]  [0000000000451d74] get_new_mmu_context+0x14/0x160
-[ 2317.606026]  [0000000000806394] switch_to_pc+0xd4/0x2a0
-[ 2317.606029]  [00000000008067dc] schedule+0x1c/0xc0
-[ 2317.606031]  [0000000000807364] rt_spin_lock_slowlock+0x104/0x300
-[ 2317.606033]  [0000000000450284] destroy_context+0x84/0x120
-[ 2317.606036]  [000000000045c788] __mmdrop+0x28/0xe0
-[ 2317.606045]  [00000000004bf290] rcu_process_callbacks+0x450/0x760
-[ 2317.606049]  [0000000000466d48] do_current_softirqs+0x208/0x3c0
-[ 2317.606051]  [0000000000466f14] run_ksoftirqd+0x14/0x40
-[ 2317.606057]  [000000000048c64c] smpboot_thread_fn+0x18c/0x2e0
-[ 2317.606061]  [0000000000483b5c] kthread+0x7c/0xa0
-[ 2317.606069]  [00000000004060c4] ret_from_syscall+0x1c/0x2c
-[ 2317.606070]  [0000000000000000]           (null)
-
-I am not sure if it'd be nice to put the call trace in the commit message.
-But if needed I can re-send them.
-
-- Allen
+Regards,
+--
+Alex
