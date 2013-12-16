@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407Ab3LPOnI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 09:43:08 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:39390 "EHLO
-	highbank-bc01-b06.austin.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753859Ab3LPOnH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 09:43:07 -0500
-Date: Mon, 16 Dec 2013 14:42:46 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Rob Landley <rob@landley.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 4/4] arm64: add early_ioremap support
-Message-ID: <20131216144246.GG17713@arm.com>
-References: <1385606679-30446-1-git-send-email-msalter@redhat.com>
- <1385606679-30446-5-git-send-email-msalter@redhat.com>
- <20131205162800.GB1495@darko.cambridge.arm.com>
- <1386350449.1861.196.camel@deneb.redhat.com>
+	id S1754442Ab3LPOni (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 09:43:38 -0500
+Received: from mga02.intel.com ([134.134.136.20]:13744 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753574Ab3LPOng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 09:43:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,495,1384329600"; 
+   d="scan'208";a="425386952"
+Date: Mon, 16 Dec 2013 16:43:14 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 4/5] arm: omap3: twl: use the new lookup method with usb
+ phy
+Message-ID: <20131216144314.GB22944@xps8300>
+References: <1386601737-8735-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1386601737-8735-5-git-send-email-heikki.krogerus@linux.intel.com>
+ <52AEDE43.8030005@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386350449.1861.196.camel@deneb.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52AEDE43.8030005@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 05:20:49PM +0000, Mark Salter wrote:
-> On Thu, 2013-12-05 at 16:28 +0000, Catalin Marinas wrote:
-> > On Thu, Nov 28, 2013 at 02:44:39AM +0000, Mark Salter wrote:
-> > > + * These 'compile-time allocated' memory buffers are
-> > > + * page-sized. Use set_fixmap(idx,phys) to associate
-> > > + * physical memory with fixmap indices.
-> > > + *
-> > > + */
-> > > +enum fixed_addresses {
-> > > +	FIX_EARLYCON,
-> > > +	__end_of_permanent_fixed_addresses,
-> > > +
-> > > +	/*
-> > > +	 * Temporary boot-time mappings, used by early_ioremap(),
-> > > +	 * before ioremap() is functional.
-> > > +	 */
-> > 
-> > How temporary are this mappings? The early console may not be disabled
-> > at run-time, so it still needs the mapping.
-> 
-> It varies by arch, but we have flexibility on arm64 because there is a
-> dedicated pmd which stays around forever. So, you see the FIX_EARLYCON
-> above is a "permanent" mapping which isn't really an early_ioremap
-> mapping. The earlyprintk code uses set_fixmap_io. I suppose this could
-> have been broken up into two patches, one fixmap, and one early_ioremap.
-> To answer your concern, the earlyprintk mapping doesn't go away. The
-> early_ioremap mappings should be temporary and there's a checker for
-> that which is run at late_initcall time.
+Hi,
 
-OK, thanks for clarification, I don't think it's worth splitting the
-patch.
+On Mon, Dec 16, 2013 at 04:34:35PM +0530, Kishon Vijay Abraham I wrote:
+> On Monday 09 December 2013 08:38 PM, Heikki Krogerus wrote:
+> > Provide a complete association for the phy and it's user
+> > (musb) with the new phy_lookup_table.
+> > 
+> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> > ---
+> >  arch/arm/mach-omap2/twl-common.c | 15 ++++++---------
+> >  1 file changed, 6 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-omap2/twl-common.c b/arch/arm/mach-omap2/twl-common.c
+> > index b0d54da..972430b 100644
+> > --- a/arch/arm/mach-omap2/twl-common.c
+> > +++ b/arch/arm/mach-omap2/twl-common.c
+> > @@ -91,18 +91,13 @@ void __init omap_pmic_late_init(void)
+> >  }
+> >  
+> >  #if defined(CONFIG_ARCH_OMAP3)
+> > -struct phy_consumer consumers[] = {
+> > -	PHY_CONSUMER("musb-hdrc.0", "usb"),
+> > -};
+> > -
+> > -struct phy_init_data init_data = {
+> > -	.consumers = consumers,
+> > -	.num_consumers = ARRAY_SIZE(consumers),
+> > +static struct phy_lookup_table twl4030_usb_lookup = {
+> > +	.dev_id = "musb-hdrc.0",
+> > +	.table = PHY_LOOKUP("phy-twl4030_usb.0", NULL),
+> >  };
+> 
+> had a similar approach during the initial version of phy framework [1] (see
+> phy_bind) but changed it later [2] . Here you should know the device names of
+> two devices and even if one of them started using DEVID_AUTO, it'll start
+> breaking. Such an approach needs to reviewed carefully.
+
+If somebody creates a regression by changing something like the
+platform device id without checking all the users, he deserves to get
+into big trouble. I don't see why an individual framework should
+provide protection against such cases.
+
+In any case, having two device names to deal with does not add any
+more risk. These associations should always be made in the place where
+the phy device is created so you will always know it's device name.
+Normally the platform code creates these associations in the same
+place it creates the platform devices, so you definitely know what the
+device names will be.
+
+In this case it's actually created in drivers/mfd/twl-core.c, so I do
+need to update this and move the lookup table there. We can still
+deliver the user name as platform data, though I believe it's always
+"musb". Maybe we could actually skip that and just hard code the name?
+The name of the phy we will of course know as the platform device is
+created there and then, so the two device names don't create any more
+risk even in this case.
+
+
+Thanks,
 
 -- 
-Catalin
+heikki
