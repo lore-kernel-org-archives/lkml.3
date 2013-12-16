@@ -1,93 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab3LPRML (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 12:12:11 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:51323 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754684Ab3LPRMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 12:12:09 -0500
-Date: Mon, 16 Dec 2013 11:12:15 -0600
-From: Alex Thorlton <athorlton@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [RFC PATCH 0/3] Change how we determine when to hand out THPs
-Message-ID: <20131216171214.GA15663@sgi.com>
-References: <20131212180037.GA134240@sgi.com>
- <20131213214437.6fdbf7f2.akpm@linux-foundation.org>
+	id S1754844Ab3LPROu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 12:14:50 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39032 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753536Ab3LPROs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 12:14:48 -0500
+Message-ID: <52AF3503.3010302@wwwdotorg.org>
+Date: Mon, 16 Dec 2013 10:14:43 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131213214437.6fdbf7f2.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hiroshi Doyu <hdoyu@nvidia.com>, Stephen Warren <swarren@nvidia.com>
+CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv6+ 01/13] of: introduce of_property_for_earch_phandle_with_args()
+References: <20131211.153338.2186623380643957232.hdoyu@nvidia.com><20131212113417.BDCD0C40637@trevor.secretlab.ca><20131212.141404.684884000513445038.hdoyu@nvidia.com> <20131214.175115.1251935659998248370.hdoyu@nvidia.com>
+In-Reply-To: <20131214.175115.1251935659998248370.hdoyu@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Please cc Andrea on this.
-
-I'm going to clean up a few small things for a v2 pretty soon, I'll be
-sure to cc Andrea there.
-
-> > My proposed solution to the problem is to allow users to set a
-> > threshold at which THPs will be handed out.  The idea here is that, when
-> > a user faults in a page in an area where they would usually be handed a
-> > THP, we pull 512 pages off the free list, as we would with a regular
-> > THP, but we only fault in single pages from that chunk, until the user
-> > has faulted in enough pages to pass the threshold we've set.  Once they
-> > pass the threshold, we do the necessary work to turn our 512 page chunk
-> > into a proper THP.  As it stands now, if the user tries to fault in
-> > pages from different nodes, we completely give up on ever turning a
-> > particular chunk into a THP, and just fault in the 4K pages as they're
-> > requested.  We may want to make this tunable in the future (i.e. allow
-> > them to fault in from only 2 different nodes).
+On 12/14/2013 08:51 AM, Hiroshi Doyu wrote:
+> Hiroshi Doyu <hdoyu@nvidia.com> wrote @ Thu, 12 Dec 2013 14:14:04 +0200 (EET):
 > 
-> OK.  But all 512 pages reside on the same node, yes?  Whereas with thp
-> disabled those 512 pages would have resided closer to the CPUs which
-> instantiated them.  
+>>>> From 8f7c0404aa68f0e8dbe0babc240590f6528ecc1f Mon Sep 17 00:00:00 2001
+>>>> From: Hiroshi Doyu <hdoyu@nvidia.com>
+>>>> Date: Fri, 15 Nov 2013 10:52:53 +0200
+>>>> Subject: [PATCH] of: introduce of_property_for_each_phandle_with_args()
+>>>>
+>>>> Iterating over a property containing a list of phandles with arguments
+>>>> is a common operation for device drivers. This patch adds a new
+>>>> of_property_for_each_phandle_with_args() macro to make the iteration
+>>>> simpler.
+>>>>
+>>>> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+>>>> Cc: Rob Herring <robherring2@gmail.com>
+> ....
+>>>> ---
+>>>>  drivers/of/base.c  | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+>>>>  include/linux/of.h | 32 ++++++++++++++++++++++++++++++++
+>>>>  2 files changed, 78 insertions(+)
+>>>>
+>>>> diff --git a/drivers/of/base.c b/drivers/of/base.c
+>>>> index f807d0e..cd4ab05 100644
+>>>> --- a/drivers/of/base.c
+>>>> +++ b/drivers/of/base.c
+>>>> @@ -1201,6 +1201,52 @@ void of_print_phandle_args(const char *msg, const struct of_phandle_args *args)
+>>>>       printk("\n");
+>>>>  }
+>>>>
+>>>> +const __be32 *of_phandle_iter_next(const char *cells_name, int cell_count,
+>>>> +                                const __be32 *cur, const __be32 *end,
+>>>> +                                struct of_phandle_args *out_args)
+>>>
+>>> Having to pass in cells_name, cell_count, cur and end each time seems a
+>>> little odd. Can a state structure be used instead?
+>>>
+>>> struct of_phandle_iter_state {
+>>>         const char *cells_name;
+>>>         int cells_count;
+>>>         const __be32 *cur;
+>>>         const __be32 *end;
+>>>         struct of_phandle_args out_args;
+>>> }
+>>>
+>>> Make the caller provide one of those and fill it in with the init
+>>> function.
+>>
+>> I rewrote this a few times and so now I have a few version of this
+>> implementations :-) The above proposal is similar to the version v6+++
+>> mentioned in the above patch note:
+>>
+>>>> v6+++:
+>>>> Introduced a new struct "of_phandle_iter" to keep the state when
+>>>> iterating over the list.
+>>
+>> which is:
+>>
+>>   [RFC][PATCHv6+++ 01/13] of: introduce of_property_for_earch_phandle_with_args()
+>>     http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007087.html
+>>
+>> Stephen seemed to prefer the version without state struct. I like the
+>> idea to not pass the same arguments repeatly. Instead, wrapping them
+>> in a struct with state may look better.
+>>
+>> So if Stephen agrees, I'll rewrite the version with state struct
+>> again.
+> 
+> Stephen, let me know what you think.
 
-As it stands right now, yes, since we're pulling a 512 page contiguous
-chunk off the free list, everything from that chunk will reside on the
-same node, but as I (stupidly) forgot to mention in my original e-mail,
-one piece I have yet to add is the functionality to put the remaining
-unfaulted pages from our chunk *back* on the free list after we give up
-on handing out a THP.  Once this is in there, things will behave more
-like they do when THP is turned completely off, i.e. pages will get
-faulted in closer to the CPU that first referenced them once we give up
-on handing out the THP.
+It's hard to follow there have been so many revisions. As long as the
+result is reasonable, I'll be OK with it. IIRC, I objected to using a
+state structure for values that weren't needed by both functions, but if
+both functions need the values, that's fine. I suppose even if they
+don't both need the values, putting them in a state structure is OK too
+if it means the patch gets finished!
 
-> So the expected result will be somewhere in between
-> the 93 secs and the 76 secs?
-
-Yes.  Due to the time it takes to search for the temporary THP, I'm sure
-we won't get down to 76 secs, but hopefully we'll get close.  I'm also
-considering switching the linked list that stores the temporary THPs
-over to an rbtree to make that search faster, just fyi.
-
-> That being said, I don't see a downside to the idea, apart from some
-> additional setup cost in kernel code.
-
-Good to hear.  I still need to address some of the issues that others
-have raised, and finish up the few pieces that aren't fully
-working/finished.  I'll get things polished up and get some more
-informative test results out soon.
-
-Thanks for looking at the patch!
-
-- Alex
