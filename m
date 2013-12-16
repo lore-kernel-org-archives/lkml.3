@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab3LPNeY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 08:34:24 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:59762 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803Ab3LPNeW (ORCPT
+	id S1754215Ab3LPNfJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 08:35:09 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:32845 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753882Ab3LPNfH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 08:34:22 -0500
-Date: Mon, 16 Dec 2013 14:34:17 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@suse.de>
-Cc: x86-ml <x86@kernel.org>, Tony Luck <tony.luck@intel.com>,
-        linux-edac <linux-edac@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] RAS for 3.14
-Message-ID: <20131216133417.GA2460@gmail.com>
-References: <20131214101144.GA21353@pd.tnic>
+	Mon, 16 Dec 2013 08:35:07 -0500
+From: Qais Yousef <Qais.Yousef@imgtec.com>
+To: Yang Yingliang <yangyingliang@huawei.com>
+CC: Eric Dumazet <edumazet@google.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: RE: [PATCH] net/sched/sch_tbf.c: fix linking error
+Thread-Topic: [PATCH] net/sched/sch_tbf.c: fix linking error
+Thread-Index: AQHO+mKET3d6+tCAN0Cy0Rcg6kuBEZpW0iYA
+Date: Mon, 16 Dec 2013 13:34:57 +0000
+Message-ID: <392C4BDEFF12D14FA57A3F30B283D7D13C994E@LEMAIL01.le.imgtec.org>
+References: <1386851356-1395-1-git-send-email-qais.yousef@imgtec.com>
+In-Reply-To: <1386851356-1395-1-git-send-email-qais.yousef@imgtec.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.154.35]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131214101144.GA21353@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SEF-Processed: 7_3_0_01192__2013_12_16_13_34_59
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sorry for the noise. I'm not sure how this got sent out again. I definitely didn't type any git send-email commands at all today :-/
 
-* Borislav Petkov <bp@suse.de> wrote:
+Qais
 
-> Hi guys,
+> -----Original Message-----
+> From: Qais Yousef [mailto:qais.yousef@imgtec.com]
+> Sent: 12 December 2013 12:29
+> To: Yang Yingliang
+> Cc: Qais Yousef; Eric Dumazet; Jamal Hadi Salim; David S. Miller;
+> netdev@vger.kernel.org; linux-kernel@vger.kernel.org; linux-
+> next@vger.kernel.org
+> Subject: [PATCH] net/sched/sch_tbf.c: fix linking error
 > 
-> please queue for 3.14.
+> ERROR: "__udivdi3" [net/sched/sch_tbf.ko] undefined!
 > 
-> Thanks.
+> introduced by: cc106e441a63 (net: sched: tbf: fix the calculation of max_size)
 > 
+> which adds a 64 by 32 bit division without using do_div().
+> Fix it by using do_div(len/ 53) instead of len/53.
+> 
+> Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Cc: Jamal Hadi Salim <jhs@mojatatu.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-next@vger.kernel.org
+> ---
+> We caught this error on linux-next today. This is my quick attemp of a fix.
+> If it's not appropriate or doesn't make sense my apologies and feel free to resend
+> a better fix :)
+> 
+>  net/sched/sch_tbf.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/net/sched/sch_tbf.c b/net/sched/sch_tbf.c index a44928c..771cbec
+> 100644
+> --- a/net/sched/sch_tbf.c
+> +++ b/net/sched/sch_tbf.c
+> @@ -131,8 +131,10 @@ static u64 psched_ns_t2l(const struct psched_ratecfg *r,
+> 
+>  	do_div(len, NSEC_PER_SEC);
+> 
+> -	if (unlikely(r->linklayer == TC_LINKLAYER_ATM))
+> -		len = (len / 53) * 48;
+> +	if (unlikely(r->linklayer == TC_LINKLAYER_ATM)) {
+> +		do_div(len, 53);
+> +		len *= 48;
+> +	}
+> 
+>  	if (len > r->overhead)
+>  		len -= r->overhead;
 > --
-> The following changes since commit dc1ccc48159d63eca5089e507c82c7d22ef60839:
-> 
->   Linux 3.13-rc2 (2013-11-29 12:57:14 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/ras_for_3.14
-> 
-> for you to fetch changes up to 42139eb356e3384759ca143ae04d82376346eb4c:
-> 
->   ACPI, eMCA: Combine eMCA/EDAC event reporting priority (2013-12-11 19:04:37 +0100)
-> 
-> ----------------------------------------------------------------
-> * Add the functionality to override error reporting agents as some
-> machines are sporting a new extended error logging capability which, if
-> done properly in the BIOS, makes a corresponding EDAC module redundant,
-> from Gong Chen.
-> 
-> * PCIe AER tracepoint severity levels fix, from Rui Wang.
-> 
-> * Error path correction for the mce device init, from Levente Kurusa.
-> 
-> ----------------------------------------------------------------
-> Chen, Gong (3):
->       EDAC: Add an edac_report parameter to EDAC
->       EDAC, sb_edac: Modify H/W event reporting policy
->       ACPI, eMCA: Combine eMCA/EDAC event reporting priority
-> 
-> Levente Kurusa (1):
->       x86, mce: Call put_device on device_register failure
-> 
-> Rui Wang (1):
->       PCI, AER: Fix severity usage in aer trace event
-> 
->  Documentation/kernel-parameters.txt |  8 ++++++++
->  arch/x86/kernel/cpu/mcheck/mce.c    |  4 +++-
->  drivers/acpi/acpi_extlog.c          | 18 ++++++++++++++++--
->  drivers/edac/edac_stub.c            | 19 +++++++++++++++++++
->  drivers/edac/sb_edac.c              |  6 +++++-
->  include/linux/edac.h                | 28 ++++++++++++++++++++++++++++
->  include/trace/events/ras.h          | 10 +++++-----
->  7 files changed, 84 insertions(+), 9 deletions(-)
+> 1.7.1
 
-Pulled into tip:x86/ras, thanks Boris!
 
-	Ingo
