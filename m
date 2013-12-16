@@ -1,155 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab3LPPc4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:32:56 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:60071 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab3LPPcx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:32:53 -0500
-Date: Mon, 16 Dec 2013 07:32:48 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
-        tglx@linutronix.de, davej@redhat.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/rcu] rcu: Break call_rcu() deadlock involving
- scheduler and perf
-Message-ID: <20131216153248.GA4200@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <tip-96d3fd0d315a949e30adc80f086031c5cdf070d1@git.kernel.org>
- <20131216152636.GX21999@twins.programming.kicks-ass.net>
+	id S1754665Ab3LPP1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:27:34 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:34661 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754092Ab3LPP1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 10:27:30 -0500
+Message-ID: <52AF1BBF.9010802@ti.com>
+Date: Mon, 16 Dec 2013 20:56:55 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131216152636.GX21999@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121615-3532-0000-0000-000003E5A16E
+To: Tony Lindgren <tony@atomide.com>, "balbi@ti.com" <balbi@ti.com>
+CC: Belisko Marek <marek.belisko@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Subject: Re: [PATCH] omap: twl-common: Fix musb-hdrc device name.
+References: <1386059589-4030-1-git-send-email-marek.belisko@open-nandra.com> <529D9D43.6040101@ti.com> <CAAfyv37Vie1vZK2XQ1cfVq6eVnSuaBLfykk6pU8fwEyqvPF4BA@mail.gmail.com> <CAAfyv35gVVNydrk8vifSyidpFjEXjGiT4-i2dgN5Un2=FuHaqQ@mail.gmail.com> <20131205184323.GF26766@atomide.com> <CAAfyv37e9+OLH-KegPCEhc0sbBS7UVnaSGU0mBw2AxAN9D7Akw@mail.gmail.com> <20131209175006.GD12527@atomide.com> <CAAfyv36P7DDcdaLWtXnZXPfQWPL20shE3kOHWtD0mSmH7aixdg@mail.gmail.com> <52AAF5E6.1050900@ti.com> <20131213173636.GG28184@atomide.com> <52AEBF36.9010400@ti.com>
+In-Reply-To: <52AEBF36.9010400@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 04:26:36PM +0100, Peter Zijlstra wrote:
-> On Mon, Dec 16, 2013 at 07:19:22AM -0800, tip-bot for Paul E. McKenney wrote:
-> > The underlying problem is that perf is invoking call_rcu() with the
-> > scheduler locks held, but in NOCB mode, call_rcu() will with high
-> > probability invoke the scheduler -- which just might want to use its
-> > locks.  The reason that call_rcu() needs to invoke the scheduler is
-> > to wake up the corresponding rcuo callback-offload kthread, which
-> > does the job of starting up a grace period and invoking the callbacks
-> > afterwards.
-> > 
-> > One solution (championed on a related problem by Lai Jiangshan) is to
-> > simply defer the wakeup to some point where scheduler locks are no longer
-> > held.  Since we don't want to unnecessarily incur the cost of such
-> > deferral, the task before us is threefold:
-> > 
-> > 1.	Determine when it is likely that a relevant scheduler lock is held.
-> > 
-> > 2.	Defer the wakeup in such cases.
-> > 
-> > 3.	Ensure that all deferred wakeups eventually happen, preferably
-> > 	sooner rather than later.
-> > 
-> > We use irqs_disabled_flags() as a proxy for relevant scheduler locks
-> > being held.  This works because the relevant locks are always acquired
-> > with interrupts disabled.  We may defer more often than needed, but that
-> > is at least safe.
+On Monday 16 December 2013 02:22 PM, Kishon Vijay Abraham I wrote:
+> Hi,
 > 
-> This would also allow us to do away with things like the below patch,
-> right?
+> On Friday 13 December 2013 11:06 PM, Tony Lindgren wrote:
+>> * Kishon Vijay Abraham I <kishon@ti.com> [131213 03:57]:
+>>> On Friday 13 December 2013 04:57 PM, Belisko Marek wrote:
+>>>> Kishon can you please comment on that? Would be possible to get your
+>>>> patch to 3.13 (I seen some comments from Felipe).
+>>>
+>>> I'm not sure as my patch modifies all the board files. There was initially some
+>>> confusion w.r.t when the board files will be dropped. But since board files
+>>> will still be there in 3.13, I'd recommend my patch  [1] to be taken. Anyways
+>>> if you have tested my patch (series), pls give your Tested-by.
+>>>
+>>> Tony, summary of the issue..
+>>> After the platform devices are created using PLATFORM_DEVID_AUTO, the
+>>> device names given in usb_bind_phy (in board file) does not match with
+>>> the actual device name causing the USB PHY library not to return the
+>>> PHY reference when the MUSB controller request for the PHY in the non-dt boot
+>>> case. So removed creating platform devices using PLATFORM_DEVID_AUTO in
+>>> omap2430.c. So had to make the corresponding changes in board files.
+>>
+>> OK. Can you please repost with a proper commit id for what caused the
+>> regression and summararize why it should be fixed this way. Something like:
+>>
+>> Commit abcd1234 (usb: blah foo bar) caused blah blah blah. Fix the issue
+>> with blah blah blah. Note that the board-*.c files will be removed soon,
+>> but for v3.13 we still support both legacy booting and device tree based
+>> booting and need to fix it.
+> 
+> huh.. I think we can have a much simpler fix. All this binding in board file
+> was introduced to support platforms that has multiple PHYs of the same type.
+> But musb/omap2430.c serves platforms that has only one PHY of a particular
+> type. We can just go back to usb_get_phy(enum usb_phy_type type) instead of
+> 'usb_get_phy_dev' in omap2430.c. Felipe, what do you think?
 
-It takes care of one problem, but there are others, including
-rcu_read_unlock() inovking the scheduler to deboost itself.  So for the
-moment, we still need the below patch.
+Never-mind, that doesn't work. I'll just re-send the patch the way you suggested.
 
-							Thanx, Paul
+Cheers
+Kishon
 
-> ---
-> commit 058ebd0eba3aff16b144eabf4510ed9510e1416e
-> Author: Peter Zijlstra <peterz@infradead.org>
-> Date:   Fri Jul 12 11:08:33 2013 +0200
 > 
->     perf: Fix perf_lock_task_context() vs RCU
->     
->     Jiri managed to trigger this warning:
->     
->      [] ======================================================
->      [] [ INFO: possible circular locking dependency detected ]
->      [] 3.10.0+ #228 Tainted: G        W
->      [] -------------------------------------------------------
->      [] p/6613 is trying to acquire lock:
->      []  (rcu_node_0){..-...}, at: [<ffffffff810ca797>] rcu_read_unlock_special+0xa7/0x250
->      []
->      [] but task is already holding lock:
->      []  (&ctx->lock){-.-...}, at: [<ffffffff810f2879>] perf_lock_task_context+0xd9/0x2c0
->      []
->      [] which lock already depends on the new lock.
->      []
->      [] the existing dependency chain (in reverse order) is:
->      []
->      [] -> #4 (&ctx->lock){-.-...}:
->      [] -> #3 (&rq->lock){-.-.-.}:
->      [] -> #2 (&p->pi_lock){-.-.-.}:
->      [] -> #1 (&rnp->nocb_gp_wq[1]){......}:
->      [] -> #0 (rcu_node_0){..-...}:
->     
->     Paul was quick to explain that due to preemptible RCU we cannot call
->     rcu_read_unlock() while holding scheduler (or nested) locks when part
->     of the read side critical section was preemptible.
->     
->     Therefore solve it by making the entire RCU read side non-preemptible.
->     
->     Also pull out the retry from under the non-preempt to play nice with RT.
->     
->     Reported-by: Jiri Olsa <jolsa@redhat.com>
->     Helped-out-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->     Cc: <stable@kernel.org>
->     Signed-off-by: Peter Zijlstra <peterz@infradead.org>
->     Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> Cheers
+> Kishon
 > 
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index ef5e7cc686e3..eba8fb5834ae 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -947,8 +947,18 @@ perf_lock_task_context(struct task_struct *task, int ctxn, unsigned long *flags)
->  {
->  	struct perf_event_context *ctx;
-> 
-> -	rcu_read_lock();
->  retry:
-> +	/*
-> +	 * One of the few rules of preemptible RCU is that one cannot do
-> +	 * rcu_read_unlock() while holding a scheduler (or nested) lock when
-> +	 * part of the read side critical section was preemptible -- see
-> +	 * rcu_read_unlock_special().
-> +	 *
-> +	 * Since ctx->lock nests under rq->lock we must ensure the entire read
-> +	 * side critical section is non-preemptible.
-> +	 */
-> +	preempt_disable();
-> +	rcu_read_lock();
->  	ctx = rcu_dereference(task->perf_event_ctxp[ctxn]);
->  	if (ctx) {
->  		/*
-> @@ -964,6 +974,8 @@ perf_lock_task_context(struct task_struct *task, int ctxn, unsigned long *flags)
->  		raw_spin_lock_irqsave(&ctx->lock, *flags);
->  		if (ctx != rcu_dereference(task->perf_event_ctxp[ctxn])) {
->  			raw_spin_unlock_irqrestore(&ctx->lock, *flags);
-> +			rcu_read_unlock();
-> +			preempt_enable();
->  			goto retry;
->  		}
-> 
-> @@ -973,6 +985,7 @@ perf_lock_task_context(struct task_struct *task, int ctxn, unsigned long *flags)
->  		}
->  	}
->  	rcu_read_unlock();
-> +	preempt_enable();
->  	return ctx;
->  }
-> 
+>>
+>> Regards,
+>>
+>> Tony
+>>  
+>>> [1] -> http://lists.scusting.com/index.php?t=msg&th=375579&start=0&S=Google
 > 
 
