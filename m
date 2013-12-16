@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab3LPVcz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 16:32:55 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:43070 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631Ab3LPVcx (ORCPT
+	id S1753168Ab3LPVdx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 16:33:53 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:51627 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864Ab3LPVcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 16:32:53 -0500
+	Mon, 16 Dec 2013 16:32:54 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
         Android Kernel Team <kernel-team@android.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [RFC][PATCH 0/3] ION fixups for staging-next
-Date: Mon, 16 Dec 2013 13:32:41 -0800
-Message-Id: <1387229564-19517-1-git-send-email-john.stultz@linaro.org>
+        Greg KH <gregkh@linuxfoundation.org>,
+        kbuild test robot <fengguang.wu@intel.com>
+Subject: [RFC][PATCH 1/3] staging: ion: Add HAVE_MEMBLOCK config dependency
+Date: Mon, 16 Dec 2013 13:32:42 -0800
+Message-Id: <1387229564-19517-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387229564-19517-1-git-send-email-john.stultz@linaro.org>
+References: <1387229564-19517-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the ION patchset landed in staging-next, there have
-been a few build issue reports, and this patchset tries
-to address them.
+The kbuild test robot reported a build issue w/ ION on m68k:
 
-I've marked these as RFC, as I'd really like to get acks
-from Colin or someone else on the Android team on these
-before merging them.
+drivers/staging/android/ion/ion.c: In function 'ion_reserve':
+drivers/staging/android/ion/ion.c:1526:4: error: implicit declaration of function 'memblock_alloc_base' [-Werror=implicit-function-declaration]
+drivers/staging/android/ion/ion.c:1528:11: error: 'MEMBLOCK_ALLOC_ANYWHERE' undeclared (first use in this function)
+drivers/staging/android/ion/ion.c:1528:11: note: each undeclared identifier is reported only once for each function it appears in
+drivers/staging/android/ion/ion.c:1537:4: error: implicit declaration of function 'memblock_reserve' [-Werror=implicit-function-declaration]
+   cc1: some warnings being treated as errors
 
-The first patch is the most trivial.
+This is caused by ION using memblock functionality which m68k doesn't support.
 
-The second, I not sure if it is better to free the buffer and
-continue looking for a smaller order, or if we should just free
-the buffer and return NULL.
-
-The last patch is the one I'm least confident of. We could simply
-add a depends on RT_MUTEXES to the ION option, but since so few
-drivers directly use rt_mutexes, and there's no documentation in
-the code that I've noticed as to why the ion_heap uses an rt_mutex,
-it probably is best to just convert it to a normal mutex. If this
-is wrong, we can instead add the dependency and hopefully some
-documentation.
-
-I'd appreciate any thoughts or comments!
-
-thanks
--john
-
+This patch adds a HAVE_MEMBLOCK dependency to the ION config.
 
 Cc: Colin Cross <ccross@android.com>
 Cc: Android Kernel Team <kernel-team@android.com>
 Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: kbuild test robot <fengguang.wu@intel.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/staging/android/ion/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-John Stultz (3):
-  staging: ion: Add HAVE_MEMBLOCK config dependency
-  staging: ion: Fix possible null pointer dereference
-  staging: ion: Avoid using rt_mutexes directly.
-
- drivers/staging/android/ion/Kconfig           |  1 +
- drivers/staging/android/ion/ion_heap.c        | 20 ++++++++++----------
- drivers/staging/android/ion/ion_system_heap.c |  5 +++++
- 3 files changed, 16 insertions(+), 10 deletions(-)
-
+diff --git a/drivers/staging/android/ion/Kconfig b/drivers/staging/android/ion/Kconfig
+index b95281e..a9a64ea 100644
+--- a/drivers/staging/android/ion/Kconfig
++++ b/drivers/staging/android/ion/Kconfig
+@@ -1,5 +1,6 @@
+ menuconfig ION
+ 	bool "Ion Memory Manager"
++	depends on HAVE_MEMBLOCK
+ 	select GENERIC_ALLOCATOR
+ 	select DMA_SHARED_BUFFER
+ 	---help---
 -- 
 1.8.3.2
 
