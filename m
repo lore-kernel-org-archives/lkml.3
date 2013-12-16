@@ -1,502 +1,393 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab3LPW1G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 17:27:06 -0500
-Received: from georges.telenet-ops.be ([195.130.137.68]:43148 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab3LPW1C (ORCPT
+	id S1751184Ab3LPWa2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 17:30:28 -0500
+Received: from mail-pd0-f201.google.com ([209.85.192.201]:33748 "EHLO
+	mail-pd0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab3LPWa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 17:27:02 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-kernel@vger.kernel.org
-Subject: Build regressions/improvements in v3.13-rc4
-Date: Mon, 16 Dec 2013 21:39:39 +0100
-Message-Id: <1387226379-25919-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 16 Dec 2013 17:30:26 -0500
+Subject: mmotm 2013-12-16-14-29 uploaded
+To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+From: akpm@linux-foundation.org
+Date: Mon, 16 Dec 2013 14:30:24 -0800
+Message-Id: <20131216223024.B358F5A41E9@corp2gmr1-2.hot.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below is the list of build error/warning regressions/improvements in
-v3.13-rc4[1] compared to v3.12[2].
+The mm-of-the-moment snapshot 2013-12-16-14-29 has been uploaded to
 
-Summarized:
-  - build errors: +4/-160
-  - build warnings: +79/-191
+   http://www.ozlabs.org/~akpm/mmotm/
 
-JFYI, when comparing v3.13-rc4[1]  to v3.13-rc3[3], the summaries are:
-  - build errors: +2/-8
-  - build warnings: +21/-61
+mmotm-readme.txt says
 
-Note that there may be false regressions, as some logs are incomplete.
-Still, they're build errors/warnings.
+README for mm-of-the-moment:
 
-As I haven't mastered kup yet, there's no verbose summary at
-http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.13-rc4.summary.gz
+http://www.ozlabs.org/~akpm/mmotm/
 
-Happy fixing! ;-)
+This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+more than once a week.
 
-Thanks to the linux-next team for providing the build service.
+You will need quilt to apply these patches to the latest Linus release (3.x
+or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
+http://ozlabs.org/~akpm/mmotm/series
 
-[1] http://kisskb.ellerman.id.au/kisskb/head/6993/ (118 out of 120 configs)
-[2] http://kisskb.ellerman.id.au/kisskb/head/6840/ (120 out of 120 configs)
-[3] http://kisskb.ellerman.id.au/kisskb/head/6964/ (119 out of 120 configs)
+The file broken-out.tar.gz contains two datestamp files: .DATE and
+.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
+followed by the base kernel version against which this patch series is to
+be applied.
 
+This tree is partially included in linux-next.  To see which patches are
+included in linux-next, consult the `series' file.  Only the patches
+within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
+linux-next.
 
-*** ERRORS ***
-
-4 regressions:
-  + /scratch/kisskb/src/arch/sparc/kernel/kgdb_64.c: error: implicit declaration of function 'exception_enter' [-Werror=implicit-function-declaration]:  => 162:7
-  + /scratch/kisskb/src/arch/sparc/kernel/kgdb_64.c: error: implicit declaration of function 'exception_exit' [-Werror=implicit-function-declaration]:  => 176:2
-  + /scratch/kisskb/src/drivers/regulator/s2mps11.c: error: 'struct sec_pmic_dev' has no member named 'regmap':  => 441:23
-  + /scratch/kisskb/src/drivers/tty/ehv_bytechan.c: error: type defaults to 'int' in declaration of 'console_initcall' [-Werror=implicit-int]:  => 363:1
-
-160 improvements:
-  - /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_HIGH_MASK' undeclared (first use in this function): 98:12 => 
-  - /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_HIGH_SHIFT' undeclared (first use in this function): 98:34, 145:10 => 
-  - /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_LOW_MASK' undeclared (first use in this function): 97:21 => 
-  - /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_LOW_SHIFT' undeclared (first use in this function): 97:42, 145:10 => 
-  - /scratch/kisskb/src/arch/sh/mm/cache-sh4.c: error: 'cached_to_uncached' undeclared (first use in this function): 99:17 => 
-  - /scratch/kisskb/src/arch/sh/mm/cache-sh4.c: error: implicit declaration of function 'cpu_context' [-Werror=implicit-function-declaration]: 192:2 => 
-  - /scratch/kisskb/src/drivers/ata/libata-core.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 6745:2 => 
-  - /scratch/kisskb/src/drivers/ata/libata-sff.c: error: implicit declaration of function 'ioread16' [-Werror=implicit-function-declaration]: 2172:3 => 
-  - /scratch/kisskb/src/drivers/ata/libata-sff.c: error: implicit declaration of function 'ioread16_rep' [-Werror=implicit-function-declaration]: 567:3 => 
-  - /scratch/kisskb/src/drivers/ata/libata-sff.c: error: implicit declaration of function 'ioread32_rep' [-Werror=implicit-function-declaration]: 626:3 => 
-  - /scratch/kisskb/src/drivers/ata/libata-sff.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 86:2 => 
-  - /scratch/kisskb/src/drivers/ata/libata-sff.c: error: implicit declaration of function 'iowrite16_rep' [-Werror=implicit-function-declaration]: 569:3 => 
-  - /scratch/kisskb/src/drivers/ata/libata-sff.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 3018:2 => 
-  - /scratch/kisskb/src/drivers/ata/libata-sff.c: error: implicit declaration of function 'iowrite32_rep' [-Werror=implicit-function-declaration]: 628:3 => 
-  - /scratch/kisskb/src/drivers/ata/libata-sff.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 301:3 => 
-  - /scratch/kisskb/src/drivers/ata/pata_arasan_cf.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 549:3 => 
-  - /scratch/kisskb/src/drivers/ata/sata_mv.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 1962:3 => 
-  - /scratch/kisskb/src/drivers/ata/sata_rcar.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 163:3 => 
-  - /scratch/kisskb/src/drivers/ata/sata_rcar.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 136:2 => 
-  - /scratch/kisskb/src/drivers/dma/timb_dma.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 130:2 => 
-  - /scratch/kisskb/src/drivers/dma/timb_dma.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 134:2 => 
-  - /scratch/kisskb/src/drivers/gpu/drm/drm_bufs.c: error: implicit declaration of function 'ioremap_wc' [-Werror=implicit-function-declaration]: 217:5 => 
-  - /scratch/kisskb/src/drivers/gpu/drm/drm_memory.c: error: implicit declaration of function 'ioremap_wc' [-Werror=implicit-function-declaration]: 127:3 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-ocores.c: error: implicit declaration of function 'ioread16' [-Werror=implicit-function-declaration]: 100:2 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-ocores.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 105:2 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-ocores.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 95:2 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-ocores.c: error: implicit declaration of function 'iowrite16' [-Werror=implicit-function-declaration]: 85:2 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-ocores.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 90:2 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-ocores.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 80:2 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-pca-platform.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 46:2 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-pca-platform.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 64:2 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-xiic.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 198:2 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-xiic.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 183:2 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-xiic.c: error: implicit declaration of function 'iowrite16' [-Werror=implicit-function-declaration]: 188:2 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-xiic.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 193:2 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-xiic.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 178:2 => 
-  - /scratch/kisskb/src/drivers/input/serio/arc_ps2.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 57:3 => 
-  - /scratch/kisskb/src/drivers/input/serio/arc_ps2.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 101:4 => 
-  - /scratch/kisskb/src/drivers/ipack/devices/ipoctal.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 134:3 => 
-  - /scratch/kisskb/src/drivers/ipack/devices/ipoctal.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 68:2 => 
-  - /scratch/kisskb/src/drivers/ipack/ipack.c: error: implicit declaration of function 'ioread16be' [-Werror=implicit-function-declaration]: 376:3 => 
-  - /scratch/kisskb/src/drivers/ipack/ipack.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 358:2 => 
-  - /scratch/kisskb/src/drivers/media/platform/sh_veu.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 228:2 => 
-  - /scratch/kisskb/src/drivers/media/platform/sh_veu.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 234:2 => 
-  - /scratch/kisskb/src/drivers/media/platform/soc_camera/rcar_vin.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 351:2 => 
-  - /scratch/kisskb/src/drivers/media/platform/soc_camera/rcar_vin.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 283:3 => 
-  - /scratch/kisskb/src/drivers/media/platform/vsp1/vsp1.h: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 66:2 => 
-  - /scratch/kisskb/src/drivers/media/platform/vsp1/vsp1.h: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 71:2 => 
-  - /scratch/kisskb/src/drivers/mfd/kempld-core.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 38:2 => 
-  - /scratch/kisskb/src/drivers/mfd/kempld-core.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 45:2 => 
-  - /scratch/kisskb/src/drivers/mtd/nand/denali.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 116:2 => 
-  - /scratch/kisskb/src/drivers/mtd/nand/denali.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 107:2 => 
-  - /scratch/kisskb/src/drivers/mtd/nand/nand_base.c: error: implicit declaration of function 'ioread16_rep' [-Werror=implicit-function-declaration]: 263:2 => 
-  - /scratch/kisskb/src/drivers/mtd/nand/nand_base.c: error: implicit declaration of function 'ioread8_rep' [-Werror=implicit-function-declaration]: 231:2 => 
-  - /scratch/kisskb/src/drivers/mtd/nand/nand_base.c: error: implicit declaration of function 'iowrite16_rep' [-Werror=implicit-function-declaration]: 247:2 => 
-  - /scratch/kisskb/src/drivers/mtd/nand/nand_base.c: error: implicit declaration of function 'iowrite8_rep' [-Werror=implicit-function-declaration]: 216:2 => 
-  - /scratch/kisskb/src/drivers/net/can/cc770/cc770_platform.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 69:2 => 
-  - /scratch/kisskb/src/drivers/net/can/cc770/cc770_platform.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 75:2 => 
-  - /scratch/kisskb/src/drivers/net/can/sja1000/sja1000_platform.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 42:2 => 
-  - /scratch/kisskb/src/drivers/net/can/sja1000/sja1000_platform.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 47:2 => 
-  - /scratch/kisskb/src/drivers/net/can/softing/softing_fw.c: error: implicit declaration of function 'ioread16' [-Werror=implicit-function-declaration]: 52:4 => 
-  - /scratch/kisskb/src/drivers/net/can/softing/softing_fw.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 369:2 => 
-  - /scratch/kisskb/src/drivers/net/can/softing/softing_fw.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 46:3 => 
-  - /scratch/kisskb/src/drivers/net/can/softing/softing_fw.c: error: implicit declaration of function 'iowrite16' [-Werror=implicit-function-declaration]: 37:2 => 
-  - /scratch/kisskb/src/drivers/net/can/softing/softing_fw.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 295:3 => 
-  - /scratch/kisskb/src/drivers/net/can/softing/softing_fw.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 38:2 => 
-  - /scratch/kisskb/src/drivers/net/can/softing/softing_main.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 47:3 => 
-  - /scratch/kisskb/src/drivers/net/can/softing/softing_main.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 47:3 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/ethoc.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 234:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/ethoc.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 239:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/micrel/ks8842.c: error: implicit declaration of function 'ioread16' [-Werror=implicit-function-declaration]: 207:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/micrel/ks8842.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 247:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/micrel/ks8842.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 233:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/micrel/ks8842.c: error: implicit declaration of function 'iowrite16' [-Werror=implicit-function-declaration]: 185:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/micrel/ks8842.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 180:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/micrel/ks8842.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 192:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/micrel/ks8851_mll.c: error: implicit declaration of function 'ioread16' [-Werror=implicit-function-declaration]: 491:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/micrel/ks8851_mll.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 760:3 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/micrel/ks8851_mll.c: error: implicit declaration of function 'iowrite16' [-Werror=implicit-function-declaration]: 490:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/renesas/sh_eth.h: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 558:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/renesas/sh_eth.h: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 550:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/wiznet/w5100.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 122:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/wiznet/w5100.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 128:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/wiznet/w5300.c: error: implicit declaration of function 'ioread16' [-Werror=implicit-function-declaration]: 118:2 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/wiznet/w5300.c: error: implicit declaration of function 'iowrite16' [-Werror=implicit-function-declaration]: 124:2 => 
-  - /scratch/kisskb/src/drivers/net/wireless/ath/ath9k/init.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 215:3 => 
-  - /scratch/kisskb/src/drivers/net/wireless/ath/ath9k/init.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 199:3 => 
-  - /scratch/kisskb/src/drivers/ptp/ptp_pch.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 153:2 => 
-  - /scratch/kisskb/src/drivers/ptp/ptp_pch.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 154:2 => 
-  - /scratch/kisskb/src/drivers/spi/spi-sh-hspi.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 68:2 => 
-  - /scratch/kisskb/src/drivers/spi/spi-sh-hspi.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 63:2 => 
-  - /scratch/kisskb/src/drivers/spi/spi-sh.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 112:3 => 
-  - /scratch/kisskb/src/drivers/spi/spi-sh.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 110:3 => 
-  - /scratch/kisskb/src/drivers/spi/spi-sh.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 104:3 => 
-  - /scratch/kisskb/src/drivers/spi/spi-sh.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 102:3 => 
-  - /scratch/kisskb/src/drivers/spi/spi-xilinx.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 104:2 => 
-  - /scratch/kisskb/src/drivers/spi/spi-xilinx.c: error: implicit declaration of function 'ioread32be' [-Werror=implicit-function-declaration]: 114:2 => 
-  - /scratch/kisskb/src/drivers/spi/spi-xilinx.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 99:2 => 
-  - /scratch/kisskb/src/drivers/spi/spi-xilinx.c: error: implicit declaration of function 'iowrite32be' [-Werror=implicit-function-declaration]: 109:2 => 
-  - /scratch/kisskb/src/drivers/tty/serial/timbuart.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 54:2 => 
-  - /scratch/kisskb/src/drivers/tty/serial/timbuart.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]: 84:3 => 
-  - /scratch/kisskb/src/drivers/tty/serial/timbuart.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 55:2 => 
-  - /scratch/kisskb/src/drivers/tty/serial/timbuart.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 87:3 => 
-  - /scratch/kisskb/src/drivers/usb/chipidea/ci.h: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 253:2 => 
-  - /scratch/kisskb/src/drivers/usb/chipidea/ci.h: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 269:2 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/fotg210-udc.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 33:2 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/fotg210-udc.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 39:2 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/fusb300_udc.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 42:2 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/fusb300_udc.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 45:2 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/m66592-udc.h: error: implicit declaration of function 'ioread16' [-Werror=implicit-function-declaration]: 526:2 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/m66592-udc.h: error: implicit declaration of function 'ioread16_rep' [-Werror=implicit-function-declaration]: 540:3 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/m66592-udc.h: error: implicit declaration of function 'ioread32_rep' [-Werror=implicit-function-declaration]: 537:3 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/m66592-udc.h: error: implicit declaration of function 'iowrite16' [-Werror=implicit-function-declaration]: 547:2 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/m66592-udc.h: error: implicit declaration of function 'iowrite16_rep' [-Werror=implicit-function-declaration]: 592:3 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/m66592-udc.h: error: implicit declaration of function 'iowrite32_rep' [-Werror=implicit-function-declaration]: 577:3 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/m66592-udc.h: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 583:6 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/mv_u3d_core.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 70:2 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/mv_u3d_core.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 72:2 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/r8a66597-udc.h: error: implicit declaration of function 'ioread16' [-Werror=implicit-function-declaration]: 127:2 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/r8a66597-udc.h: error: implicit declaration of function 'ioread16_rep' [-Werror=implicit-function-declaration]: 161:4 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/r8a66597-udc.h: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 152:5 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/r8a66597-udc.h: error: implicit declaration of function 'ioread32_rep' [-Werror=implicit-function-declaration]: 144:4 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/r8a66597-udc.h: error: implicit declaration of function 'iowrite16' [-Werror=implicit-function-declaration]: 179:2 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/r8a66597-udc.h: error: implicit declaration of function 'iowrite16_rep' [-Werror=implicit-function-declaration]: 216:4 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/r8a66597-udc.h: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 269:2 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/r8a66597-udc.h: error: implicit declaration of function 'iowrite32_rep' [-Werror=implicit-function-declaration]: 209:4 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/r8a66597-udc.h: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 233:3 => 
-  - /scratch/kisskb/src/drivers/usb/host/fotg210-hcd.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 5859:2 => 
-  - /scratch/kisskb/src/drivers/usb/host/fotg210-hcd.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 5856:2 => 
-  - /scratch/kisskb/src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'ioread16' [-Werror=implicit-function-declaration]: 168:2 => 
-  - /scratch/kisskb/src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'ioread16_rep' [-Werror=implicit-function-declaration]: 189:3 => 
-  - /scratch/kisskb/src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 183:4 => 
-  - /scratch/kisskb/src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'ioread32_rep' [-Werror=implicit-function-declaration]: 180:3 => 
-  - /scratch/kisskb/src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'iowrite16' [-Werror=implicit-function-declaration]: 196:2 => 
-  - /scratch/kisskb/src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'iowrite16_rep' [-Werror=implicit-function-declaration]: 240:3 => 
-  - /scratch/kisskb/src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'iowrite32_rep' [-Werror=implicit-function-declaration]: 225:3 => 
-  - /scratch/kisskb/src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 231:6 => 
-  - /scratch/kisskb/src/drivers/usb/musb/musb_core.c: error: implicit declaration of function 'ioread16_rep' [-Werror=implicit-function-declaration]: 305:5 => 
-  - /scratch/kisskb/src/drivers/usb/musb/musb_core.c: error: implicit declaration of function 'ioread32_rep' [-Werror=implicit-function-declaration]: 296:5 => 
-  - /scratch/kisskb/src/drivers/usb/musb/musb_core.c: error: implicit declaration of function 'ioread8_rep' [-Werror=implicit-function-declaration]: 313:3 => 
-  - /scratch/kisskb/src/drivers/usb/musb/musb_core.c: error: implicit declaration of function 'iowrite16_rep' [-Werror=implicit-function-declaration]: 262:5 => 
-  - /scratch/kisskb/src/drivers/usb/musb/musb_core.c: error: implicit declaration of function 'iowrite32_rep' [-Werror=implicit-function-declaration]: 253:5 => 
-  - /scratch/kisskb/src/drivers/usb/musb/musb_core.c: error: implicit declaration of function 'iowrite8_rep' [-Werror=implicit-function-declaration]: 270:3 => 
-  - /scratch/kisskb/src/drivers/usb/musb/tusb6010.c: error: implicit declaration of function 'ioread32_rep' [-Werror=implicit-function-declaration]: 249:5 => 
-  - /scratch/kisskb/src/drivers/usb/musb/tusb6010.c: error: implicit declaration of function 'iowrite32_rep' [-Werror=implicit-function-declaration]: 202:5 => 
-  - /scratch/kisskb/src/drivers/usb/phy/phy-rcar-usb.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 119:4 => 
-  - /scratch/kisskb/src/drivers/usb/phy/phy-rcar-usb.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]: 102:3 => 
-  - /scratch/kisskb/src/drivers/usb/renesas_usbhs/common.c: error: implicit declaration of function 'ioread16' [-Werror=implicit-function-declaration]: 73:2 => 
-  - /scratch/kisskb/src/drivers/usb/renesas_usbhs/common.c: error: implicit declaration of function 'iowrite16' [-Werror=implicit-function-declaration]: 78:2 => 
-  - /scratch/kisskb/src/drivers/usb/renesas_usbhs/fifo.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]: 674:4 => 
-  - /scratch/kisskb/src/drivers/usb/renesas_usbhs/fifo.c: error: implicit declaration of function 'ioread32_rep' [-Werror=implicit-function-declaration]: 666:3 => 
-  - /scratch/kisskb/src/drivers/usb/renesas_usbhs/fifo.c: error: implicit declaration of function 'iowrite32_rep' [-Werror=implicit-function-declaration]: 519:3 => 
-  - /scratch/kisskb/src/drivers/usb/renesas_usbhs/fifo.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]: 526:3 => 
-  - /scratch/kisskb/src/drivers/video/uvesafb.c: error: implicit declaration of function 'ioremap_wc' [-Werror=implicit-function-declaration]: 1563:2 => 
-  - error: relocation truncated to fit: R_PPC64_REL24 against symbol `.__kmalloc' defined in .text section in mm/built-in.o: (.text+0x1ffa1ac), (.text+0x1ffa13c) => 
-  - error: relocation truncated to fit: R_PPC64_REL24 against symbol `.ip_fast_csum' defined in .text section in arch/powerpc/lib/built-in.o: (.text+0x1ff9648) => 
-  - error: relocation truncated to fit: R_PPC64_REL24 against symbol `.memcmp' defined in .text section in arch/powerpc/lib/built-in.o: (.text+0x1ff99fc), (.text+0x1ff9a40) => 
-  - error: relocation truncated to fit: R_PPC64_REL24 against symbol `_restgpr0_24' defined in .text.save.restore section in arch/powerpc/lib/built-in.o: (.text+0x1ff9704) => 
-  - error: sungem_phy.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_restgpr0_27' defined in .text.save.restore section in arch/powerpc/lib/built-in.o: (.text+0x1ffb504), (.text+0x1ffae84) => 
-  - error: sungem_phy.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_restgpr0_29' defined in .text.save.restore section in arch/powerpc/lib/built-in.o: (.text+0x1ffb39c), (.text+0x1ffad20) => 
+A git tree which contains the memory management portion of this tree is
+maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+by Michal Hocko.  It contains the patches which are between the
+"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
+file, http://www.ozlabs.org/~akpm/mmotm/series.
 
 
-*** WARNINGS ***
+A full copy of the full kernel tree with the linux-next and mmotm patches
+already applied is available through git within an hour of the mmotm
+release.  Individual mmotm releases are tagged.  The master branch always
+points to the latest release, so it's constantly rebasing.
 
-79 regressions:
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_64_mmu.c: warning: 'slb' may be used uninitialized in this function [-Wuninitialized]:  => 604:6
-  + /scratch/kisskb/src/arch/s390/kvm/priv.c: warning: 'val' may be used uninitialized in this function [-Wuninitialized]:  => 54:13
-  + /scratch/kisskb/src/arch/sh/kernel/cpu/sh2a/../../entry-common.S: Warning: overflow in branch to __restore_all; converted into longer instruction sequence:  => 89
-  + /scratch/kisskb/src/arch/sh/kernel/cpu/sh2a/../../entry-common.S: Warning: overflow in branch to syscall_call; converted into longer instruction sequence:  => 208
-  + /scratch/kisskb/src/arch/sh/kernel/cpu/sh2a/../../entry-common.S: Warning: overflow in branch to syscall_trace_entry; converted into longer instruction sequence:  => 349, 347
-  + /scratch/kisskb/src/crypto/async_tx/async_pq.c: warning: 'async_gen_syndrome' uses dynamic stack allocation [enabled by default]:  => 254:1
-  + /scratch/kisskb/src/drivers/block/skd_main.c: warning: format '%llx' expects argument of type 'long long unsigned int', but argument 6 has type 'dma_addr_t' [-Wformat]:  => 2176:2
-  + /scratch/kisskb/src/drivers/block/skd_main.c: warning: format '%llx' expects argument of type 'long long unsigned int', but argument 8 has type 'dma_addr_t' [-Wformat]:  => 927:3, 1608:3
-  + /scratch/kisskb/src/drivers/block/skd_main.c: warning: format '%llx' expects argument of type 'long long unsigned int', but argument 9 has type 'dma_addr_t' [-Wformat]:  => 2241:3
-  + /scratch/kisskb/src/drivers/dma/dmatest.c: warning: passing argument 1 of 'virt_to_phys' makes pointer from integer without a cast [enabled by default]:  => 543:11, 563:11
-  + /scratch/kisskb/src/drivers/dma/fsldma.c: warning: unused variable 'dev' [-Wunused-variable]:  => 857:17
-  + /scratch/kisskb/src/drivers/dma/fsldma.c: warning: unused variable 'dst' [-Wunused-variable]:  => 859:13
-  + /scratch/kisskb/src/drivers/dma/fsldma.c: warning: unused variable 'len' [-Wunused-variable]:  => 860:6
-  + /scratch/kisskb/src/drivers/dma/fsldma.c: warning: unused variable 'src' [-Wunused-variable]:  => 858:13
-  + /scratch/kisskb/src/drivers/gpu/drm/i915/i915_debugfs.c: warning: 'val' may be used uninitialized in this function [-Wuninitialized]:  => 2393:2
-  + /scratch/kisskb/src/drivers/gpu/drm/nouveau/core/subdev/fb/ramnve0.c: warning: the frame size of 3008 bytes is larger than 2048 bytes [-Wframe-larger-than=]:  => 1253:1
-  + /scratch/kisskb/src/drivers/leds/leds-pwm.c: warning: unused variable 'node' [-Wunused-variable]:  => 88:22
-  + /scratch/kisskb/src/drivers/md/bcache/alloc.c: warning: 'r' may be used uninitialized in this function [-Wuninitialized]:  => 416:18
-  + /scratch/kisskb/src/drivers/md/dm-crypt.c: warning: 'crypt_iv_lmk_one.isra.9' uses dynamic stack allocation [enabled by default]:  => 593:1
-  + /scratch/kisskb/src/drivers/md/dm-crypt.c: warning: 'crypt_iv_tcw_whitening.isra.8' uses dynamic stack allocation [enabled by default]:  => 735:1
-  + /scratch/kisskb/src/drivers/message/fusion/mptbase.c: warning: 'seq_mpt_print_ioc_summary' defined but not used [-Wunused-function]:  => 6884:13
-  + /scratch/kisskb/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1392 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 975:1 => 975:1, 420:1
-  + /scratch/kisskb/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1712 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 975:1
-  + /scratch/kisskb/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 2172 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 654:1
-  + /scratch/kisskb/src/drivers/mtd/lpddr/lpddr_cmds.c: warning: 'r.x[0]' may be used uninitialized in this function [-Wuninitialized]:  => 422:15, 130:11
-  + /scratch/kisskb/src/drivers/mtd/lpddr/qinfo_probe.c: warning: 'r.x[0]' may be used uninitialized in this function [-Wuninitialized]:  => 147:15, 96:11, 102:2, 145:20
-  + /scratch/kisskb/src/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c: warning: unused variable 'current_flags' [-Wunused-variable]:  => 294:6
-  + /scratch/kisskb/src/drivers/net/ethernet/sfc/tx.c: warning: label 'finish_packet' defined but not used [-Wunused-label]:  => 432:1
-  + /scratch/kisskb/src/drivers/net/wireless/b43/phy_n.c: warning: 'val_addr' may be used uninitialized in this function [-Wuninitialized]:  => 178:21
-  + /scratch/kisskb/src/drivers/net/wireless/iwlwifi/mvm/nvm.c: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]:  => 448:6
-  + /scratch/kisskb/src/drivers/power/bq27x00_battery.c: warning: 'bq27x00_powersupply_init' defined but not used [-Wunused-function]:  => 693:12
-  + /scratch/kisskb/src/drivers/power/bq27x00_battery.c: warning: 'bq27x00_powersupply_unregister' defined but not used [-Wunused-function]:  => 724:13
-  + /scratch/kisskb/src/drivers/rtc/rtc-s5m.c: warning: 's5m_rtc_resume' defined but not used [-Wunused-function]:  => 642:12
-  + /scratch/kisskb/src/drivers/rtc/rtc-s5m.c: warning: 's5m_rtc_suspend' defined but not used [-Wunused-function]:  => 653:12
-  + /scratch/kisskb/src/drivers/tty/serial/sh-sci.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]:  => 560:23
-  + /scratch/kisskb/src/drivers/usb/musb/ux500.c: warning: 'ux500_resume' defined but not used [-Wunused-function]:  => 363:12
-  + /scratch/kisskb/src/drivers/usb/musb/ux500.c: warning: 'ux500_suspend' defined but not used [-Wunused-function]:  => 352:12
-  + /scratch/kisskb/src/fs/binfmt_elf_fdpic.c: warning: unused variable 'addr' [-Wunused-variable]:  => 1490:17
-  + /scratch/kisskb/src/fs/hfsplus/xattr.c: warning: comparison of distinct pointer types lacks a cast [enabled by default]:  => 159:2
-  + /scratch/kisskb/src/fs/sysfs/file.c: warning: unused variable 'kobj' [-Wunused-variable]:  => 610:18
-  + /scratch/kisskb/src/include/linux/mfd/da9052/da9052.h: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]:  => 173:6, 150:6
-  + /scratch/kisskb/src/include/linux/mtd/map.h: warning: 'r.x[0]' may be used uninitialized in this function [-Wuninitialized]: 279:4, 349:2, 324:17, 278:6, 367:14, 290:22, 414:2, 332:11, 397:11 => 424:3, 279:4, 349:2, 324:17, 278:6, 367:14, 290:22, 414:2, 332:11, 397:11
-  + /scratch/kisskb/src/ipc/msgutil.c: warning: comparison of distinct pointer types lacks a cast [enabled by default]:  => 54:9, 101:10, 162:10, 155:9, 94:9, 66:10
-  + /scratch/kisskb/src/lib/debugobjects.c: warning: 'obj_states' defined but not used [-Wunused-variable]:  => 73:20
-  + /scratch/kisskb/src/lib/debugobjects.c: warning: unused variable 'hint' [-Wunused-variable]:  => 254:9
-  + /scratch/kisskb/src/lib/lz4/lz4hc_compress.c: warning: the frame size of 1236 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 535:1
-  + /scratch/kisskb/src/mm/memcontrol.c: warning: 'thresholds' may be used uninitialized in this function [-Wuninitialized]: 5668:19, 5786:32, 5768:35 => 5683:19, 5801:32, 5680:16, 5783:35
-  + /scratch/kisskb/src/mm/zswap.c: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]:  => 537:6
-  + /scratch/kisskb/src/net/netfilter/ipvs/ip_vs_sync.c: warning: unused variable 'ret' [-Wunused-variable]:  => 1640:8
-  + /scratch/kisskb/src/net/netfilter/nfnetlink.c: warning: 'nfnetlink_rcv_batch' uses dynamic stack allocation [enabled by default]:  => 358:1
-  + /scratch/kisskb/src/net/netfilter/nft_payload.c: warning: 'offset' may be used uninitialized in this function [-Wuninitialized]:  => 44:9
-  + /scratch/kisskb/src/net/rds/iw_rdma.c: warning: the frame size of 1088 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 200:1
-  + /scratch/kisskb/src/security/integrity/ima/ima_api.c: warning: 'ima_audit_measurement' uses dynamic stack allocation [enabled by default]:  => 319:1
-  + /scratch/kisskb/src/security/integrity/ima/ima_crypto.c: warning: 'ima_calc_boot_aggregate_tfm' uses dynamic stack allocation [enabled by default]:  => 240:1
-  + /scratch/kisskb/src/security/integrity/ima/ima_crypto.c: warning: 'ima_calc_field_array_hash_tfm.isra.0' uses dynamic stack allocation [enabled by default]:  => 181:1
-  + /scratch/kisskb/src/security/integrity/ima/ima_crypto.c: warning: 'ima_calc_file_hash_tfm' uses dynamic stack allocation [enabled by default]:  => 121:1
-  + warning: (BRIDGE_NF_EBTABLES) selects NETFILTER_XTABLES which has unmet direct dependencies (NET && INET && NETFILTER):  => N/A
-  + warning: (DRM_RADEON && DRM_NOUVEAU && DRM_I915 && DRM_GMA500 && DRM_SHMOBILE && DRM_TILCDC && FB_BACKLIGHT && USB_APPLEDISPLAY && FB_OLPC_DCON && ASUS_LAPTOP && SONY_LAPTOP && THINKPAD_ACPI && EEEPC_LAPTOP && ACPI_CMPC && SAMSUNG_Q10) selects BACKLIGHT_CLASS_DEVICE which has unmet direct dependencies (HAS_IOMEM && BACKLIGHT_LCD_SUPPORT):  => N/A
-  + warning: (IMA) selects TCG_IBMVTPM which has unmet direct dependencies (TCG_TPM && PPC_PSERIES):  => N/A
-  + warning: (PPC_CELLEB) selects HAS_TXX9_SERIAL which has unmet direct dependencies (TTY && HAS_IOMEM):  => N/A
-  + warning: (REMOTEPROC && RPMSG) selects VIRTUALIZATION which has unmet direct dependencies (!CPU_LITTLE_ENDIAN):  => N/A
-  + warning: drivers/built-in.o(.data+0xa08): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe():  => N/A
-  + warning: drivers/built-in.o(.data+0xaa8): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe():  => N/A
-  + warning: drivers/built-in.o(.data+0xc04): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe():  => N/A
-  + warning: drivers/built-in.o(.data+0xd0c): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip():  => N/A
-  + warning: drivers/built-in.o(.data+0xd6c): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip():  => N/A
-  + warning: drivers/built-in.o(.data+0xdcc): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip():  => N/A
-  + warning: drivers/built-in.o(.data+0xe2c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe():  => N/A
-  + warning: drivers/built-in.o(.data+0xfd4): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe():  => N/A
-  + warning: drivers/net/built-in.o(.text+0x1d78): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
-  + warning: drivers/net/built-in.o(.text+0x3eb04): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
-  + warning: vmlinux.o(.data+0x404c8): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe():  => N/A
-  + warning: vmlinux.o(.data+0x40568): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe():  => N/A
-  + warning: vmlinux.o(.data+0x406c4): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe():  => N/A
-  + warning: vmlinux.o(.data+0x407cc): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip():  => N/A
-  + warning: vmlinux.o(.data+0x4082c): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip():  => N/A
-  + warning: vmlinux.o(.data+0x4088c): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip():  => N/A
-  + warning: vmlinux.o(.data+0x408ec): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe():  => N/A
-  + warning: vmlinux.o(.data+0x40a94): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe():  => N/A
+http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
 
-191 improvements:
-  - /scratch/kisskb/src/arch/cris/include/arch-v10/arch/swab.h: warning: 'csum' may be used uninitialized in this function [-Wuninitialized]: 24:2 => 
-  - /scratch/kisskb/src/arch/openrisc/kernel/module.c: warning: assignment from incompatible pointer type: 50:13, 54:13 => 
-  - /scratch/kisskb/src/arch/s390/kernel/crash_dump.c: warning: unused variable 'rc' [-Wunused-variable]: 48:6 => 
-  - /scratch/kisskb/src/arch/sh/include/uapi/asm/swab.h: warning: 'csum' may be used uninitialized in this function [-Wuninitialized]: 32:2 => 
-  - /scratch/kisskb/src/arch/sh/kernel/cpu/sh4/../sh3/../../entry-common.S: Warning: overflow in branch to __restore_all; converted into longer instruction sequence: 89 => 
-  - /scratch/kisskb/src/arch/sh/kernel/cpu/sh4/../sh3/../../entry-common.S: Warning: overflow in branch to syscall_call; converted into longer instruction sequence: 210 => 
-  - /scratch/kisskb/src/arch/sh/kernel/cpu/sh4/../sh3/../../entry-common.S: Warning: overflow in branch to syscall_exit_work; converted into longer instruction sequence: 375, 378 => 376
-  - /scratch/kisskb/src/arch/sh/kernel/cpu/sh4/../sh3/../../entry-common.S: Warning: overflow in branch to syscall_trace_entry; converted into longer instruction sequence: 349, 351 => 
-  - /scratch/kisskb/src/arch/x86/kernel/vsyscall_64.c: warning: 'syscall_nr' may be used uninitialized in this function [-Wuninitialized]: 261:16 => 
-  - /scratch/kisskb/src/block/blk-merge.c: warning: 'bbio' may be used uninitialized in this function [-Wuninitialized]: 65:2 => 
-  - /scratch/kisskb/src/crypto/async_tx/async_pq.c: warning: 'do_async_gen_syndrome.constprop.9' uses dynamic stack allocation [enabled by default]: 143:1 => 
-  - /scratch/kisskb/src/drivers/base/memory.c: warning: 'section_nr' may be used uninitialized in this function [-Wuninitialized]: 607:25 => 
-  - /scratch/kisskb/src/drivers/base/regmap/regmap.c: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]: 1936:2, 1617:6 => 
-  - /scratch/kisskb/src/drivers/block/mtip32xx/mtip32xx.c: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 2894:1, 2917:1 => 
-  - /scratch/kisskb/src/drivers/char/hw_random/via-rng.c: warning: 'via_rng_cpu_id' defined but not used [-Wunused-variable]: 224:26 => 
-  - /scratch/kisskb/src/drivers/char/random.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 5 has type 'int' [-Wformat]: 1176:3 => 
-  - /scratch/kisskb/src/drivers/char/random.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 6 has type 'size_t' [-Wformat]: 1176:3 => 
-  - /scratch/kisskb/src/drivers/char/random.c: warning: format '%zu' expects argument of type 'size_t', but argument 5 has type 'int' [-Wformat]: 1167:3 => 
-  - /scratch/kisskb/src/drivers/char/random.c: warning: format '%zu' expects argument of type 'size_t', but argument 5 has type 'unsigned int' [-Wformat]: 858:2, 886:2 => 
-  - /scratch/kisskb/src/drivers/char/random.c: warning: format '%zu' expects argument of type 'size_t', but argument 7 has type 'unsigned int' [-Wformat]: 825:3 => 
-  - /scratch/kisskb/src/drivers/gpu/drm/drm_bufs.c: warning: 'master' may be used uninitialized in this function [-Wuninitialized]: 474:4 => 
-  - /scratch/kisskb/src/drivers/gpu/drm/drm_bufs.c: warning: assignment makes pointer from integer without a cast [enabled by default]: 217:17 => 
-  - /scratch/kisskb/src/drivers/gpu/drm/drm_edid_load.c: warning: 'edid' may be used uninitialized in this function [-Wuninitialized]: 141:22 => 
-  - /scratch/kisskb/src/drivers/gpu/drm/drm_memory.c: warning: assignment makes pointer from integer without a cast [enabled by default]: 127:15 => 
-  - /scratch/kisskb/src/drivers/gpu/drm/drm_pci.c: warning: passing argument 1 of 'virt_to_phys' makes pointer from integer without a cast [enabled by default]: 83:3, 106:4 => 
-  - /scratch/kisskb/src/drivers/gpu/drm/drm_vm.c: warning: passing argument 1 of 'virt_to_phys' makes pointer from integer without a cast [enabled by default]: 304:2 => 
-  - /scratch/kisskb/src/drivers/gpu/drm/radeon/cypress_dpm.c: warning: unused variable 'eg_pi' [-Wunused-variable]: 302:31 => 
-  - /scratch/kisskb/src/drivers/gpu/drm/radeon/ni_dpm.c: warning: unused variable 'eg_pi' [-Wunused-variable]: 3448:31 => 
-  - /scratch/kisskb/src/drivers/gpu/drm/udl/udl_modeset.c: warning: 'reg' may be used uninitialized in this function [-Wuninitialized]: 28:9 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-diolan-u2c.c: warning: 'byte' may be used uninitialized in this function [-Wuninitialized]: 394:18 => 
-  - /scratch/kisskb/src/drivers/md/bcache/alloc.c: warning: 'bucket' may be used uninitialized in this function [-Wuninitialized]: 408:5 => 
-  - /scratch/kisskb/src/drivers/md/dm-crypt.c: warning: 'crypt_iv_lmk_one.isra.8' uses dynamic stack allocation [enabled by default]: 573:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/af9013.c: warning: 'af9013_wr_regs_i2c' uses dynamic stack allocation [enabled by default]: 77:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/af9033.c: warning: 'af9033_wr_reg_val_tab' uses dynamic stack allocation [enabled by default]: 188:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/af9033.c: warning: 'af9033_wr_regs' uses dynamic stack allocation [enabled by default]: 68:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/bcm3510.c: warning: 'bcm3510_do_hab_cmd' uses dynamic stack allocation [enabled by default]: 230:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/cxd2820r_core.c: warning: 'cxd2820r_rd_regs_i2c.isra.1' uses dynamic stack allocation [enabled by default]: 84:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/cxd2820r_core.c: warning: 'cxd2820r_wr_regs_i2c.isra.0' uses dynamic stack allocation [enabled by default]: 51:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/itd1000.c: warning: 'itd1000_write_regs.constprop.0' uses dynamic stack allocation [enabled by default]: 69:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/mt312.c: warning: 'mt312_write' uses dynamic stack allocation [enabled by default]: 126:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/nxt200x.c: warning: 'nxt200x_writebytes' uses dynamic stack allocation [enabled by default]: 111:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/rtl2830.c: warning: 'rtl2830_wr' uses dynamic stack allocation [enabled by default]: 56:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/rtl2832.c: warning: 'rtl2832_wr' uses dynamic stack allocation [enabled by default]: 187:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/s5h1420.c: warning: 's5h1420_tuner_i2c_tuner_xfer' uses dynamic stack allocation [enabled by default]: 851:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/stb0899_drv.c: warning: 'stb0899_write_regs' uses dynamic stack allocation [enabled by default]: 540:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/stb6100.c: warning: 'stb6100_write_reg_range.constprop.3' uses dynamic stack allocation [enabled by default]: 216:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/stv0367.c: warning: 'stv0367_writeregs.constprop.4' uses dynamic stack allocation [enabled by default]: 791:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/stv090x.c: warning: 'stv090x_write_regs.constprop.6' uses dynamic stack allocation [enabled by default]: 750:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/stv6110.c: warning: 'stv6110_write_regs' uses dynamic stack allocation [enabled by default]: 98:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/stv6110x.c: warning: 'stv6110x_write_regs' uses dynamic stack allocation [enabled by default]: 85:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/tda10071.c: warning: 'tda10071_rd_regs' uses dynamic stack allocation [enabled by default]: 84:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/tda10071.c: warning: 'tda10071_wr_regs' uses dynamic stack allocation [enabled by default]: 52:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/tda18271c2dd.c: warning: 'WriteRegs' uses dynamic stack allocation [enabled by default]: 147:1 => 
-  - /scratch/kisskb/src/drivers/media/dvb-frontends/zl10039.c: warning: 'zl10039_write' uses dynamic stack allocation [enabled by default]: 119:1 => 
-  - /scratch/kisskb/src/drivers/media/pci/cx23885/cimax2.c: warning: 'netup_write_i2c' uses dynamic stack allocation [enabled by default]: 149:1 => 
-  - /scratch/kisskb/src/drivers/media/pci/ttpci/av7110_hw.c: warning: 'av7110_fw_cmd' uses dynamic stack allocation [enabled by default]: 510:1 => 
-  - /scratch/kisskb/src/drivers/media/radio/radio-shark.c: warning: 'shark_resume_leds' defined but not used [-Wunused-function]: 274:13 => 
-  - /scratch/kisskb/src/drivers/media/radio/radio-shark2.c: warning: 'shark_resume_leds' defined but not used [-Wunused-function]: 240:13 => 
-  - /scratch/kisskb/src/drivers/media/radio/si470x/radio-si470x-i2c.c: warning: 'si470x_i2c_resume' defined but not used [-Wunused-function]: 487:12 => 
-  - /scratch/kisskb/src/drivers/media/radio/si470x/radio-si470x-i2c.c: warning: 'si470x_i2c_suspend' defined but not used [-Wunused-function]: 470:12 => 
-  - /scratch/kisskb/src/drivers/media/rc/fintek-cir.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]: 80:2, 54:2, 81:2, 55:8, 45:2, 87:2, 46:2 => 
-  - /scratch/kisskb/src/drivers/media/rc/nuvoton-cir.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]: 52:2, 91:2, 45:2, 81:2, 92:2, 74:2, 46:2, 53:9, 75:2 => 
-  - /scratch/kisskb/src/drivers/media/tuners/e4000.c: warning: 'e4000_rd_regs' uses dynamic stack allocation [enabled by default]: 84:1 => 
-  - /scratch/kisskb/src/drivers/media/tuners/e4000.c: warning: 'e4000_wr_regs' uses dynamic stack allocation [enabled by default]: 51:1 => 
-  - /scratch/kisskb/src/drivers/media/tuners/fc2580.c: warning: 'fc2580_rd_regs.constprop.0' uses dynamic stack allocation [enabled by default]: 98:1 => 
-  - /scratch/kisskb/src/drivers/media/tuners/fc2580.c: warning: 'fc2580_wr_regs.constprop.1' uses dynamic stack allocation [enabled by default]: 66:1 => 
-  - /scratch/kisskb/src/drivers/media/tuners/tda18212.c: warning: 'tda18212_rd_regs.constprop.0' uses dynamic stack allocation [enabled by default]: 90:1 => 
-  - /scratch/kisskb/src/drivers/media/tuners/tda18212.c: warning: 'tda18212_wr_regs' uses dynamic stack allocation [enabled by default]: 57:1 => 
-  - /scratch/kisskb/src/drivers/media/tuners/tda18218.c: warning: 'tda18218_rd_regs.constprop.0' uses dynamic stack allocation [enabled by default]: 92:1 => 
-  - /scratch/kisskb/src/drivers/media/tuners/tda18218.c: warning: 'tda18218_wr_regs' uses dynamic stack allocation [enabled by default]: 60:1 => 
-  - /scratch/kisskb/src/drivers/media/tuners/tuner-xc2028.c: warning: 'load_firmware' uses dynamic stack allocation [enabled by default]: 651:1 => 
-  - /scratch/kisskb/src/drivers/media/usb/dvb-usb-v2/af9015.c: warning: 'af9015_eeprom_hash' uses dynamic stack allocation [enabled by default]: 433:1 => 
-  - /scratch/kisskb/src/drivers/media/usb/dvb-usb-v2/af9035.c: warning: 'af9035_i2c_master_xfer' uses dynamic stack allocation [enabled by default]: 305:1 => 
-  - /scratch/kisskb/src/drivers/media/usb/dvb-usb-v2/af9035.c: warning: 'af9035_wr_regs' uses dynamic stack allocation [enabled by default]: 142:1 => 
-  - /scratch/kisskb/src/drivers/media/usb/dvb-usb-v2/mxl111sf.c: warning: 'mxl111sf_ctrl_msg' uses dynamic stack allocation [enabled by default]: 74:1 => 
-  - /scratch/kisskb/src/drivers/media/usb/dvb-usb/cxusb.c: warning: 'cxusb_ctrl_msg' uses dynamic stack allocation [enabled by default]: 69:1 => 
-  - /scratch/kisskb/src/drivers/media/usb/dvb-usb/cxusb.c: warning: 'cxusb_i2c_xfer' uses dynamic stack allocation [enabled by default]: 209:1 => 
-  - /scratch/kisskb/src/drivers/media/usb/dvb-usb/dibusb-common.c: warning: 'dibusb_i2c_msg' uses dynamic stack allocation [enabled by default]: 124:1 => 
-  - /scratch/kisskb/src/drivers/media/usb/dvb-usb/dw2102.c: warning: 'dw2102_earda_i2c_transfer' uses dynamic stack allocation [enabled by default]: 368:1 => 
-  - /scratch/kisskb/src/drivers/media/usb/dvb-usb/dw2102.c: warning: 'dw2104_i2c_transfer' uses dynamic stack allocation [enabled by default]: 449:1 => 
-  - /scratch/kisskb/src/drivers/media/usb/dvb-usb/dw2102.c: warning: 'dw3101_i2c_transfer' uses dynamic stack allocation [enabled by default]: 512:1 => 
-  - /scratch/kisskb/src/drivers/media/usb/dvb-usb/dw2102.c: warning: 's6x0_i2c_transfer' uses dynamic stack allocation [enabled by default]: 621:1 => 
-  - /scratch/kisskb/src/drivers/media/usb/gspca/cpia1.c: warning: unused variable 'sd' [-Wunused-variable]: 1627:13 => 
-  - /scratch/kisskb/src/drivers/media/usb/gspca/konica.c: warning: unused variable 'sd' [-Wunused-variable]: 246:13 => 
-  - /scratch/kisskb/src/drivers/media/usb/gspca/t613.c: warning: unused variable 'sd' [-Wunused-variable]: 840:13 => 
-  - /scratch/kisskb/src/drivers/media/usb/pwc/pwc-if.c: warning: label 'err_video_unreg' defined but not used [-Wunused-label]: 1106:1 => 
-  - /scratch/kisskb/src/drivers/media/usb/uvc/uvc_ctrl.c: warning: 'ctrl' may be used uninitialized in this function [-Wuninitialized]: 1972:6 => 
-  - /scratch/kisskb/src/drivers/media/usb/uvc/uvc_video.c: warning: format '%lu' expects argument of type 'long unsigned int', but argument 9 has type '__kernel_suseconds_t' [-Wformat]: 678:2 => 
-  - /scratch/kisskb/src/drivers/media/v4l2-core/v4l2-async.c: warning: 'v4l2_async_notifier_unregister' uses dynamic stack allocation [enabled by default]: 238:1 => 
-  - /scratch/kisskb/src/drivers/mfd/da903x.c: warning: 'reg_val' may be used uninitialized in this function [-Wuninitialized]: 185:2, 229:2, 207:2 => 
-  - /scratch/kisskb/src/drivers/misc/bmp085.c: warning: 'pressure' may be used uninitialized in this function [-Wuninitialized]: 344:17, 344:3 => 
-  - /scratch/kisskb/src/drivers/misc/lkdtm.c: warning: the frame size of 1028 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 293:1 => 
-  - /scratch/kisskb/src/drivers/misc/lkdtm.c: warning: the frame size of 1032 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 293:1 => 
-  - /scratch/kisskb/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1384 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 420:1 => 
-  - /scratch/kisskb/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1704 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 975:1 => 
-  - /scratch/kisskb/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 2164 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 654:1 => 
-  - /scratch/kisskb/src/drivers/net/ethernet/chelsio/cxgb3/sge.c: warning: passing argument 4 of 'make_sgl' makes integer from pointer without a cast [enabled by default]: 1603:9 => 
-  - /scratch/kisskb/src/drivers/net/wireless/ath/ath6kl/htc_pipe.c: warning: integer overflow in expression [-Woverflow]: 1293:26 => 
-  - /scratch/kisskb/src/drivers/nubus/proc.c: warning: #warning Need to set some I/O handlers here [-Wcpp]  CC      drivers/ide/ide-probe.o: 64:2 => 
-  - /scratch/kisskb/src/drivers/regulator/da9063-regulator.c: warning: 'da9063_reg_matches' may be used uninitialized in this function [-Wuninitialized]: 847:6 => 
-  - /scratch/kisskb/src/drivers/regulator/s5m8767.c: warning: 'mode' may be used uninitialized in this function [-Wuninitialized]: 211:29 => 
-  - /scratch/kisskb/src/drivers/scsi/scsi_debug.c: warning: 'csum' may be used uninitialized in this function [-Wuninitialized]: 1755:3 => 
-  - /scratch/kisskb/src/drivers/staging/comedi/drivers/dt2801.c: warning: 'hb' is used uninitialized in this function [-Wuninitialized]: 273:14 => 
-  - /scratch/kisskb/src/drivers/staging/comedi/drivers/dt2801.c: warning: 'lb' is used uninitialized in this function [-Wuninitialized]: 273:20 => 
-  - /scratch/kisskb/src/drivers/staging/lustre/lustre/llite/lproc_llite.c: warning: format '%lu' expects argument of type 'long unsigned int', but argument 4 has type '__kernel_suseconds_t' [-Wformat]: 1066:6, 1296:6, 1130:6 => 
-  - /scratch/kisskb/src/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c: warning: format '%lu' expects argument of type 'long unsigned int', but argument 5 has type '__kernel_suseconds_t' [-Wformat]: 1072:5 => 
-  - /scratch/kisskb/src/drivers/staging/lustre/lustre/osc/lproc_osc.c: warning: format '%lu' expects argument of type 'long unsigned int', but argument 4 has type '__kernel_suseconds_t' [-Wformat]: 574:6, 686:6 => 
-  - /scratch/kisskb/src/drivers/staging/media/lirc/lirc_serial.c: warning: format '%lx' expects argument of type 'long unsigned int', but argument 6 has type '__kernel_suseconds_t' [-Wformat]: 719:5, 728:6, 707:5 => 
-  - /scratch/kisskb/src/drivers/staging/media/lirc/lirc_serial.c: warning: format '%lx' expects argument of type 'long unsigned int', but argument 7 has type '__kernel_suseconds_t' [-Wformat]: 719:5, 728:6, 707:5 => 
-  - /scratch/kisskb/src/drivers/staging/media/lirc/lirc_zilog.c: warning: 'read' uses dynamic stack allocation [enabled by default]: 967:1 => 
-  - /scratch/kisskb/src/drivers/staging/rts5139/sd_cprm.c: warning: 'rsp_len' may be used uninitialized in this function [-Wuninitialized]: 260:7 => 
-  - /scratch/kisskb/src/drivers/staging/speakup/kobjects.c: warning: 'value' may be used uninitialized in this function [-Wuninitialized]: 667:39 => 
-  - /scratch/kisskb/src/drivers/target/target_core_alua.c: warning: 'alua_ascq' may be used uninitialized in this function [-Wuninitialized]: 615:18 => 
-  - /scratch/kisskb/src/drivers/tty/ehv_bytechan.c: warning: type defaults to 'int' in declaration of 'console_initcall' [-Wimplicit-int]: 362:1 => 
-  - /scratch/kisskb/src/drivers/uio/uio.c: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]: 269:6 => 
-  - /scratch/kisskb/src/drivers/uio/uio.c: warning: passing argument 1 of 'virt_to_phys' makes pointer from integer without a cast [enabled by default]: 616:3 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/f_ncm.c: warning: 'tmp' may be used uninitialized in this function [-Wuninitialized]: 1007:28, 1080:6, 1080:19, 1060:14, 1060:30, 993:5, 1039:4 => 1007:28, 1080:6, 1080:19, 993:5, 1039:4
-  - /scratch/kisskb/src/drivers/usb/gadget/g_ffs.c: warning: data definition has no type or storage class [enabled by default]: 79:1 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/g_ffs.c: warning: function declaration isn't a prototype [-Wstrict-prototypes]: 79:1 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/g_ffs.c: warning: type defaults to 'int' in declaration of 'USB_ETHERNET_MODULE_PARAMETERS' [-Wimplicit-int]: 79:1 => 
-  - /scratch/kisskb/src/drivers/video/aty/radeon_pm.c: warning: 'radeon_reinitialize_M10' defined but not used [-Wunused-function]: 1718:13 => 
-  - /scratch/kisskb/src/drivers/video/aty/radeon_pm.c: warning: 'radeon_reinitialize_M9P' defined but not used [-Wunused-function]: 1971:13 => 
-  - /scratch/kisskb/src/drivers/video/backlight/adp8860_bl.c: warning: 'reg_val' may be used uninitialized in this function [-Wuninitialized]: 598:32, 624:11, 568:10, 443:16 => 
-  - /scratch/kisskb/src/drivers/video/backlight/adp8870_bl.c: warning: 'reg_val' may be used uninitialized in this function [-Wuninitialized]: 809:11, 563:16, 783:32 => 
-  - /scratch/kisskb/src/drivers/video/uvesafb.c: warning: assignment makes pointer from integer without a cast [enabled by default]: 1563:20 => 
-  - /scratch/kisskb/src/fs/binfmt_flat.c: warning: unused variable 'persistent' [-Wunused-variable]: 745:17 => 
-  - /scratch/kisskb/src/fs/buffer.c: warning: format '%zu' expects argument of type 'size_t', but argument 3 has type 'unsigned int' [-Wformat]: 263:4 => 
-  - /scratch/kisskb/src/fs/f2fs/recovery.c: warning: 'sum.<U3660>.<U3600>.ofs_in_node' may be used uninitialized in this function [-Wuninitialized]: 271:51 => 
-  - /scratch/kisskb/src/fs/f2fs/recovery.c: warning: 'sum.nid' may be used uninitialized in this function [-Wuninitialized]: 243:2 => 
-  - /scratch/kisskb/src/fs/locks.c: warning: 'lock' may be used uninitialized in this function [-Wuninitialized]: 1782:17 => 
-  - /scratch/kisskb/src/fs/nilfs2/recovery.c: warning: 'sum' may be used uninitialized in this function [-Wuninitialized]: 909:21, 664:17 => 
-  - /scratch/kisskb/src/fs/omfs/file.c: warning: 'remain' may be used uninitialized in this function [-Wuninitialized]: 257:4 => 
-  - /scratch/kisskb/src/fs/sysfs/dir.c: warning: 'sysfs_pathname' defined but not used [-Wunused-function]: 483:14 => 
-  - /scratch/kisskb/src/fs/sysfs/file.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 3 has type 'size_t' [-Wformat]: 139:2 => 
-  - /scratch/kisskb/src/include/asm-generic/io.h: warning: passing argument 1 of 'zpci_read_u16' makes pointer from integer without a cast [enabled by default]/scratch/kisskb/src/arch/s390/include/asm/pci_io.h:59:1: note: expected 'const volatile void *' but argument is of type 'long unsigned int': 183:4 => 
-  - /scratch/kisskb/src/include/linux/err.h: warning: 'edid' may be used uninitialized in this function [-Wuninitialized]: 39:17 => 
-  - /scratch/kisskb/src/kernel/rcutiny.c: warning: unused variable 'idle' [-Wunused-variable]: 129:23, 68:23 => 
-  - /scratch/kisskb/src/kernel/rcutiny.c: warning: unused variable 'idle': 129, 68 => 
-  - /scratch/kisskb/src/kernel/trace/ring_buffer.c: warning: unused variable 'local_clock_stable' [-Wunused-variable]: 2559:8 => 
-  - /scratch/kisskb/src/lib/lz4/lz4hc_compress.c: warning: the frame size of 1052 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 535:1 => 
-  - /scratch/kisskb/src/lib/mpi/mpi-inline.h: warning: '______f' is static but declared in inline function 'mpihelp_add' which is not static [enabled by default]: 70:2, 73:2 => 
-  - /scratch/kisskb/src/lib/mpi/mpi-inline.h: warning: '______f' is static but declared in inline function 'mpihelp_add_1' which is not static [enabled by default]: 45:2, 49:4, 56:2 => 
-  - /scratch/kisskb/src/lib/mpi/mpi-inline.h: warning: '______f' is static but declared in inline function 'mpihelp_sub' which is not static [enabled by default]: 113:2, 116:2 => 
-  - /scratch/kisskb/src/lib/mpi/mpi-inline.h: warning: '______f' is static but declared in inline function 'mpihelp_sub_1' which is not static [enabled by default]: 92:4, 99:2, 88:2 => 
-  - /scratch/kisskb/src/lib/swiotlb.c: warning: 'dev_addr' may be used uninitialized in this function [-Wuninitialized]: 658:14 => 
-  - /scratch/kisskb/src/mm/memblock.c: warning: 'r' may be used uninitialized in this function [-Wuninitialized]: 735:15 => 
-  - /scratch/kisskb/src/mm/migrate.c: warning: statement with no effect [-Wunused-value]: 1172:4 => 
-  - /scratch/kisskb/src/mm/nommu.c: warning: format '%zx' expects argument of type 'size_t', but argument 4 has type 'unsigned int' [-Wformat]: 1650:2 => 
-  - /scratch/kisskb/src/net/rds/iw_rdma.c: warning: the frame size of 1056 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 200:1 => 
-  - /scratch/kisskb/src/security/integrity/ima/ima_crypto.c: warning: 'ima_calc_boot_aggregate' uses dynamic stack allocation [enabled by default]: 148:1 => 
-  - /scratch/kisskb/src/security/integrity/ima/ima_crypto.c: warning: 'ima_calc_buffer_hash' uses dynamic stack allocation [enabled by default]: 109:1 => 
-  - /scratch/kisskb/src/security/integrity/ima/ima_crypto.c: warning: 'ima_calc_file_hash' uses dynamic stack allocation [enabled by default]: 93:1 => 
-  - /scratch/kisskb/src/security/selinux/netnode.c: warning: 'idx' may be used uninitialized in this function [-Wuninitialized]: 174:27 => 
-  - /scratch/kisskb/src/sound/pci/lx6464es/lx6464es.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]: 456:3 => 
-  - /scratch/kisskb/src/sound/pci/lx6464es/lx_core.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]: 1194:2 => 
-  - /scratch/kisskb/src/sound/soc/atmel/atmel-pcm.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]: 52:2 => 
-  - /scratch/kisskb/src/sound/soc/kirkwood/kirkwood-dma.c: warning: large integer implicitly truncated to unsigned type [-Woverflow]: 164:3 => 
-  - /scratch/kisskb/src/sound/soc/soc-dapm.c: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]: 3330:6 => 
-  - /scratch/kisskb/src/sound/usb/mixer_quirks.c: warning: 'err' may be used uninitialized in this function [-Wuninitialized]  CC [M]  crypto/rmd128.o: 1514:6 => 
-  - /scratch/kisskb/src/sound/usb/mixer_quirks.c: warning: 'err' may be used uninitialized in this function [-Wuninitialized]: 1514:6 => 
-  - <stdin>: warning: #warning syscall fallocate not implemented [-Wcpp]: 1145:2 => 
-  - <stdin>: warning: #warning syscall utimensat not implemented [-Wcpp]: 1133:2 => 
-  - arch/powerpc/configs/ppc6xx_defconfig: warning: symbol value 'm' invalid for MCU_MPC8349EMITX: 74 => 
-  - warning: (DRM_RADEON && DRM_NOUVEAU && DRM_I915 && DRM_GMA500 && DRM_TILCDC && FB_BACKLIGHT && USB_APPLEDISPLAY && FB_OLPC_DCON && ASUS_LAPTOP && SONY_LAPTOP && THINKPAD_ACPI && EEEPC_LAPTOP && ACPI_CMPC && SAMSUNG_Q10) selects BACKLIGHT_CLASS_DEVICE which has unmet direct dependencies (HAS_IOMEM && BACKLIGHT_LCD_SUPPORT): N/A => 
-  - warning: 1 bad relocations: N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text.unlikely+0x21a): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text.unlikely+0x222): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text.unlikely+0x282): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text.unlikely+0x28e): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text.unlikely+0x2d2): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
-  - warning: drivers/built-in.o(.data+0x9e8): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
-  - warning: drivers/built-in.o(.data+0xa88): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
-  - warning: drivers/built-in.o(.data+0xbe4): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
-  - warning: drivers/built-in.o(.data+0xcec): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
-  - warning: drivers/built-in.o(.data+0xd4c): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
-  - warning: drivers/built-in.o(.data+0xdac): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
-  - warning: drivers/built-in.o(.data+0xe0c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
-  - warning: drivers/built-in.o(.data+0xfb4): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
-  - warning: vmlinux.o(.data+0x40428): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
-  - warning: vmlinux.o(.data+0x404c8): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
-  - warning: vmlinux.o(.data+0x40624): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
-  - warning: vmlinux.o(.data+0x4072c): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
-  - warning: vmlinux.o(.data+0x4078c): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
-  - warning: vmlinux.o(.data+0x407ec): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
-  - warning: vmlinux.o(.data+0x4084c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
-  - warning: vmlinux.o(.data+0x409f4): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
-  - warning: vmlinux.o(.text.unlikely+0x2ee): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
-  - warning: vmlinux.o(.text.unlikely+0x2f6): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
-  - warning: vmlinux.o(.text.unlikely+0x356): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
-  - warning: vmlinux.o(.text.unlikely+0x362): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
-  - warning: vmlinux.o(.text.unlikely+0x3a6): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
+To develop on top of mmotm git:
 
-Gr{oetje,eeting}s,
+  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+  $ git remote update mmotm
+  $ git checkout -b topic mmotm/master
+  <make changes, commit>
+  $ git send-email mmotm/master.. [...]
 
-						Geert
+To rebase a branch with older patches to a new mmotm release:
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+  $ git remote update mmotm
+  $ git rebase --onto mmotm/master <topic base> topic
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+
+
+
+The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
+contains daily snapshots of the -mm tree.  It is updated more frequently
+than mmotm, and is untested.
+
+A git copy of this tree is available at
+
+	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
+
+and use of this tree is similar to
+http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
+
+
+This mmotm tree contains the following patches against 3.13-rc4:
+(patches marked "*" will be included in linux-next)
+
+  arch-alpha-kernel-systblss-remove-debug-check.patch
+  i-need-old-gcc.patch
+* kexec-migrate-to-reboot-cpu.patch
+* mm-numa-serialise-parallel-get_user_page-against-thp-migration.patch
+* mm-numa-call-mmu-notifiers-on-thp-migration.patch
+* mm-clear-pmd_numa-before-invalidating.patch
+* mm-numa-do-not-clear-pmd-during-pte-update-scan.patch
+* mm-numa-do-not-clear-pte-for-pte_numa-update.patch
+* mm-numa-ensure-anon_vma-is-locked-to-prevent-parallel-thp-splits.patch
+* mm-numa-avoid-unnecessary-work-on-the-failure-path.patch
+* sched-numa-skip-inaccessible-vmas.patch
+* mm-numa-clear-numa-hinting-information-on-mprotect.patch
+* mm-numa-avoid-unnecessary-disruption-of-numa-hinting-during-migration.patch
+* mm-fix-tlb-flush-race-between-migration-and-change_protection_range.patch
+* mm-fix-tlb-flush-race-between-migration-and-change_protection_range-fix.patch
+* mm-numa-guarantee-that-tlb_flush_pending-updates-are-visible-before-page-table-updates.patch
+* mm-numa-defer-tlb-flush-for-thp-migration-as-long-as-possible.patch
+* mm-page_alloc-exclude-unreclaimable-allocations-from-zone-fairness-policy.patch
+* futex-switch-to-user_ds-for-futex-test.patch
+* sh-always-link-in-helper-functions-extracted-from-libgcc.patch
+* mm-add-missing-dependency-in-kconfig.patch
+* keys-fix-uninitialized-persistent_keyring_register_sem.patch
+* mm-mempolicy-correct-putback-method-for-isolate-pages-if-failed.patch
+* mm-compaction-respect-ignore_skip_hint-in-update_pageblock_skip.patch
+* mm-memory-failurec-recheck-pagehuge-after-hugetlb-page-migrate-successfully.patch
+* maintainers-add-myself-as-gpt-maintainer.patch
+* sh-add-export_symbolmin_low_pfn-and-export_symbolmax_low_pfn-to-sh_ksyms_32c.patch
+* arch-x86-mm-sratc-skip-numa_no_node-while-parsing-slit.patch
+* arch-x86-mm-sratc-skip-numa_no_node-while-parsing-slit-fix.patch
+* arm-move-arm_dma_limit-to-setup_dma_zone.patch
+* dma-debug-enhance-dma_debug_device_change-to-check-for-mapping-errors.patch
+* dma-debug-enhance-dma_debug_device_change-to-check-for-mapping-errors-fix.patch
+* inotify-provide-function-for-name-length-rounding.patch
+* fsnotify-do-not-share-events-between-notification-groups.patch
+* fsnotify-remove-should_send_event-callback.patch
+* fsnotify-remove-pointless-null-initializers.patch
+* drm-fb-helper-dont-sleep-for-screen-unblank-when-an-oopps-is-in-progress.patch
+* drm-cirrus-correct-register-values-for-16bpp.patch
+* drm-nouveau-make-vga_switcheroo-code-depend-on-vga_switcheroo.patch
+* drivers-gpu-drm-drm_edid_loadc-make-edid_load-return-a-void.patch
+* video-mmp-delete-a-stray-mutex_unlock.patch
+* video-mmp-using-plain-integer-as-null-pointer.patch
+* sched_clock-document-4mhz-vs-1mhz-decision.patch
+* kernel-time-timekeepingc-fix-comment-for-tk_setup_internals.patch
+* input-route-kbd-leds-through-the-generic-leds-layer.patch
+* input-route-kbd-leds-through-the-generic-leds-layer-fix.patch
+* drivers-net-irda-donauboe-convert-to-module_pci_driver.patch
+* ocfs2-fix-ocfs2_sync_file-if-filesystem-is-readonly.patch
+* ocfs2-remove-versioning-information.patch
+* ocfs2-free-allocated-clusters-if-error-occurs-after-ocfs2_claim_clusters.patch
+* ocfs2-o2net-incorrect-to-terminate-accepting-connections-loop-upon-rejecting-an-invalid-one.patch
+* ocfs2-add-clustername-to-cluster-connection.patch
+* ocfs2-add-dlm-recovery-callbacks.patch
+* ocfs2-shift-allocation-ocfs2_live_connection-to-user_connect.patch
+* ocfs2-pass-ocfs2_cluster_connection-to-ocfs2_this_node.patch
+* ocfs2-framework-for-version-lvb.patch
+* ocfs2-use-the-new-dlm-operation-callbacks-while-requesting-new-lockspace.patch
+* ocfs2-remove-redundant-ocfs2_alloc_dinode_update_counts-and-ocfs2_block_group_set_bits.patch
+* ocfs2-return-eopnotsupp-if-the-device-does-not-support-discard.patch
+* ocfs2-return-einval-if-the-given-range-to-discard-is-less-than-block-size.patch
+* ocfs2-adjust-minlen-with-discard_granularity-in-the-fitrim-ioctl.patch
+* ocfs2-fix-a-tiny-race-when-running-dirop_fileop_racer.patch
+* ocfs2-fix-sparse-non-static-symbol-warning.patch
+* ocfs2-should-call-ocfs2_journal_access_di-before-ocfs2_delete_entry-in-ocfs2_orphan_del.patch
+* ocfs2-llseek-requires-ocfs2-inode-lock-for-the-file-in-seek_end.patch
+* ocfs2-fix-issue-that-ocfs2_setattr-does-not-deal-with-new_i_size==i_size.patch
+* ocfs2-update-inode-size-after-zeronig-the-hole.patch
+* drivers-scsi-megaraid-megaraid_mmc-missing-bounds-check-in-mimd_to_kioc.patch
+* drivers-block-sx8c-use-module_pci_driver.patch
+* drivers-block-sx8c-remove-unnecessary-pci_set_drvdata.patch
+* drivers-block-paride-pgc-underflow-bug-in-pg_write.patch
+* drivers-block-ccissc-cciss_init_one-use-proper-errnos.patch
+* blk-mq-use-__smp_call_function_single-directly.patch
+* block-blk-mq-cpuc-use-hotcpu_notifier.patch
+* drivers-block-loopc-fix-comment-typo-in-loop_config_discard.patch
+* block-remove-unrelated-header-files-and-export-symbol.patch
+* block-restore-proc-partitions-to-not-display-non-partitionable-removable-devices.patch
+* posix_acl-uninlining.patch
+* fs-compat_ioctlc-fix-an-underflow-issue-harmless.patch
+* watchdog-trigger-all-cpu-backtrace-when-locked-up-and-going-to-panic.patch
+  mm.patch
+* mm-hugetlbfs-add-some-vm_bug_ons-to-catch-non-hugetlbfs-pages.patch
+* mm-memcg-avoid-oom-notification-when-current-needs-access-to-memory-reserves.patch
+* mm-hugetlb-use-get_page_foll-in-follow_hugetlb_page.patch
+* mm-hugetlbfs-move-the-put-get_page-slab-and-hugetlbfs-optimization-in-a-faster-path.patch
+* mm-thp-optimize-compound_trans_huge.patch
+* mm-tail-page-refcounting-optimization-for-slab-and-hugetlbfs.patch
+* mm-hugetlbfs-use-__compound_tail_refcounted-in-__get_page_tail-too.patch
+* mm-hugetlbc-simplify-pageheadhuge-and-pagehuge.patch
+* mm-swapc-reorganize-put_compound_page.patch
+* mm-hugetlbc-defer-pageheadhuge-symbol-export.patch
+* proc-meminfo-provide-estimated-available-memory.patch
+* mm-get-rid-of-unnecessary-pageblock-scanning-in-setup_zone_migrate_reserve.patch
+* mm-get-rid-of-unnecessary-pageblock-scanning-in-setup_zone_migrate_reserve-fix.patch
+* mm-create-a-separate-slab-for-page-ptl-allocation-try-two.patch
+* mm-memory-failure-fix-the-typo-in-me_pagecache_dirty.patch
+* mm-memory-failure-fix-the-typo-in-me_pagecache_dirty-fix.patch
+* mm-call-mmu-notifiers-when-copying-a-hugetlb-page-range.patch
+* mm-mempolicy-remove-unneeded-functions-for-uma-configs.patch
+* mm-vmalloc-interchage-the-implementation-of-vmalloc_to_pfnpage.patch
+* mm-vmalloc-interchage-the-implementation-of-vmalloc_to_pfnpage-fix.patch
+* mm-show_mem-remove-show_mem_filter_page_count.patch
+* mm-add-overcommit_kbytes-sysctl-variable.patch
+* mm-add-overcommit_kbytes-sysctl-variable-checkpatch-fixes.patch
+* mm-add-overcommit_kbytes-sysctl-variable-fix.patch
+* mm-mmapc-add-mlock_future_check-helper.patch
+* mm-mlock-prepare-params-outside-critical-region.patch
+* mm-memblock-debug-correct-displaying-of-upper-memory-boundary.patch
+* x86-get-pg_data_ts-memory-from-other-node.patch
+* memblock-numa-introduce-flags-field-into-memblock.patch
+* memblock-mem_hotplug-introduce-memblock_hotplug-flag-to-mark-hotpluggable-regions.patch
+* memblock-mem_hotplug-introduce-memblock_hotplug-flag-to-mark-hotpluggable-regions-checkpatch-fixes.patch
+* memblock-make-memblock_set_node-support-different-memblock_type.patch
+* acpi-numa-mem_hotplug-mark-hotpluggable-memory-in-memblock.patch
+* acpi-numa-mem_hotplug-mark-hotpluggable-memory-in-memblock-checkpatch-fixes.patch
+* acpi-numa-mem_hotplug-mark-all-nodes-the-kernel-resides-un-hotpluggable.patch
+* memblock-mem_hotplug-make-memblock-skip-hotpluggable-regions-if-needed.patch
+* memblock-mem_hotplug-make-memblock-skip-hotpluggable-regions-if-needed-checkpatch-fixes.patch
+* x86-numa-acpi-memory-hotplug-make-movable_node-have-higher-priority.patch
+* memcg-fix-kmem_account_flags-check-in-memcg_can_account_kmem.patch
+* memcg-make-memcg_update_cache_sizes-static.patch
+* mm-rmap-recompute-pgoff-for-huge-page.patch
+* mm-rmap-factor-nonlinear-handling-out-of-try_to_unmap_file.patch
+* mm-rmap-factor-lock-function-out-of-rmap_walk_anon.patch
+* mm-rmap-make-rmap_walk-to-get-the-rmap_walk_control-argument.patch
+* mm-rmap-extend-rmap_walk_xxx-to-cope-with-different-cases.patch
+* mm-rmap-use-rmap_walk-in-try_to_unmap.patch
+* mm-rmap-use-rmap_walk-in-try_to_munlock.patch
+* mm-rmap-use-rmap_walk-in-page_referenced.patch
+* mm-rmap-use-rmap_walk-in-page_mkclean.patch
+* introduce-for_each_thread-to-replace-the-buggy-while_each_thread.patch
+* oom_kill-change-oom_killc-to-use-for_each_thread.patch
+* oom_kill-has_intersects_mems_allowed-needs-rcu_read_lock.patch
+* oom_kill-add-rcu_read_lock-into-find_lock_task_mm.patch
+* mm-page_alloc-allow-__gfp_nofail-to-allocate-below-watermarks-after-reclaim.patch
+* mm-hwpoison-add-to-hwpoison_inject.patch
+* lib-show_memc-show-num_poisoned_pages-when-oom.patch
+* mm-numa-make-numa-migrate-related-functions-static.patch
+* mm-numa-limit-scope-of-lock-for-numa-migrate-rate-limiting.patch
+* mm-numa-trace-tasks-that-fail-migration-due-to-rate-limiting.patch
+* mm-numa-do-not-automatically-migrate-ksm-pages.patch
+* sched-add-tracepoints-related-to-numa-task-migration.patch
+* sched-add-tracepoints-related-to-numa-task-migration-fix.patch
+* memcg-oom-lock-mem_cgroup_print_oom_info.patch
+* mm-compaction-trace-compaction-begin-and-end.patch
+* mm-compaction-encapsulate-defer-reset-logic.patch
+* mm-compaction-reset-cached-scanner-pfns-before-reading-them.patch
+* mm-compaction-detect-when-scanners-meet-in-isolate_freepages.patch
+* mm-compaction-do-not-mark-unmovable-pageblocks-as-skipped-in-async-compaction.patch
+* mm-compaction-reset-scanner-positions-immediately-when-they-meet.patch
+* mm-page_alloc-warn-for-non-blockable-__gfp_nofail-allocation-failure.patch
+* mm-migrate-add-comment-about-permanent-failure-path.patch
+* mm-migrate-correct-failure-handling-if-hugepage_migration_support.patch
+* mm-migrate-remove-putback_lru_pages-fix-comment-on-putback_movable_pages.patch
+* mm-migrate-remove-unused-function-fail_migrate_page.patch
+* mm-documentation-remove-hopelessly-out-of-date-locking-doc.patch
+* mm-zswapc-change-params-from-hidden-to-ro.patch
+* swap-fix-setting-page_size-blocksize-during-swapoff-swapon-race.patch
+* swap-add-a-simple-detector-for-inappropriate-swapin-readahead.patch
+* swap-add-a-simple-detector-for-inappropriate-swapin-readahead-fix.patch
+* kernel-use-lockless-list-for-smp_call_function_single.patch
+* asm-typesh-remove-include-asm-generic-int-l64h.patch
+* drivers-mailbox-omap-make-mbox-irq-signed-for-error-handling.patch
+* drivers-block-kconfig-update-ram-block-device-module-name.patch
+* logfs-check-for-the-return-value-after-calling-find_or_create_page.patch
+* add-generic-fixmaph.patch
+* x86-use-generic-fixmaph.patch
+* arm-use-generic-fixmaph.patch
+* hexagon-use-generic-fixmaph.patch
+* metag-use-generic-fixmaph.patch
+* microblaze-use-generic-fixmaph.patch
+* mips-use-generic-fixmaph.patch
+* powerpc-use-generic-fixmaph.patch
+* sh-use-generic-fixmaph.patch
+* tile-use-generic-fixmaph.patch
+* um-use-generic-fixmaph.patch
+* drivers-misc-ti-st-st_corec-fix-null-dereference-on-protocol-type-check.patch
+* lib-parserc-add-match_wildcard-function.patch
+* lib-parserc-put-export_symbols-in-the-conventional-place.patch
+* dynamic_debug-add-wildcard-support-to-filter-files-functions-modules.patch
+* dynamic-debug-howtotxt-update-since-new-wildcard-support.patch
+* printk-cache-mark-printk_once-test-variable-__read_mostly.patch
+* printk-cache-mark-printk_once-test-variable-__read_mostly-fix.patch
+* vsprintf-add-%pad-extension-for-dma_addr_t-use.patch
+* get_maintainer-add-commit-author-information-to-rolestats.patch
+* maintainers-add-an-entry-for-the-macintosh-hfsplus-filesystem.patch
+* backlight-jornada720-use-devm_backlight_device_register.patch
+* backlight-hp680_bl-use-devm_backlight_device_register.patch
+* backlight-omap1-use-devm_backlight_device_register.patch
+* backlight-ot200_bl-use-devm_backlight_device_register.patch
+* backlight-tosa-use-devm_backlight_device_register.patch
+* backlight-jornada720-use-devm_lcd_device_register.patch
+* backlight-l4f00242t03-use-devm_lcd_device_register.patch
+* backlight-tosa-use-devm_lcd_device_register.patch
+* drivers-video-backlight-backlightc-remove-backlight-sysfs-uevent.patch
+* kstrtox-remove-redundant-cleanup.patch
+* cmdline-fix-style-issues.patch
+* lib-cmdlinec-declare-exported-symbols-immediately.patch
+* test-add-minimal-module-for-verification-testing.patch
+* test-check-copy_to-from_user-boundary-validation.patch
+* test-check-copy_to-from_user-boundary-validation-fix.patch
+* lib-add-crc64-ecma-module.patch
+* firmware-dmi_scan-generalize-for-use-by-other-archs.patch
+* checkpatchpl-check-for-function-declarations-without-arguments.patch
+* checkpatch-more-comprehensive-split-strings-warning.patch
+* checkpatch-warn-only-on-space-before-semicolon-at-end-of-line.patch
+* checkpatch-add-warning-of-future-__gfp_nofail-use.patch
+* checkpatch-attempt-to-find-missing-switch-case-break.patch
+* binfmt_elfc-use-get_random_int-to-fix-entropy-depleting.patch
+* fs-ramfs-file-nommuc-make-ramfs_nommu_get_unmapped_area-and-ramfs_nommu_mmap-static.patch
+* fs-ramfs-move-ramfs_aops-to-inodec.patch
+* init-mainc-remove-unused-declaration-of-tc_init.patch
+* autofs4-allow-autofs-to-work-outside-the-initial-pid-namespace.patch
+* autofs4-translate-pids-to-the-right-namespace-for-the-daemon.patch
+* autofs-fix-the-return-value-of-autofs4_fill_super.patch
+* autofs-use-is_root-to-replace-root-dentry-checks.patch
+* drivers-rtc-rtc-as3722-use-devm-for-rtc-and-irq-registration.patch
+* rtc-ds1305-remove-unnecessary-spi_set_drvdata.patch
+* drivers-rtc-rtc-mxcc-remove-unneeded-label.patch
+* drivers-rtc-rtc-mxcc-check-the-return-value-from-clk_prepare_enable.patch
+* drivers-rtc-rtc-ds1742c-add-devicetree-support.patch
+* rtc-rtc-twl-use-devm_-functions.patch
+* rtc-rtc-vr41xx-use-devm_-functions.patch
+* dt-bindings-add-hym8563-binding.patch
+* rtc-add-hym8563-rtc-driver.patch
+* rtc-rtc-cmos-remove-superfluous-name-cast.patch
+* rtc-disable-rtc_drv_cmos-on-atari.patch
+* drivers-rtc-rtc-pcf2127c-replace-is_err-and-ptr_err-with-ptr_err_or_zero.patch
+* fs-pipec-skip-file_update_time-on-frozen-fs.patch
+* fat-add-i_disksize-to-represent-uninitialized-size.patch
+* fat-add-fat_fallocate-operation.patch
+* fat-zero-out-seek-range-on-_fat_get_block.patch
+* fat-fallback-to-buffered-write-in-case-of-fallocatded-region-on-direct-io.patch
+* fat-permit-to-return-phy-block-number-by-fibmap-in-fallocated-region.patch
+* documentation-filesystems-sysfstxt-fix-device_attribute-declaration.patch
+* documentation-blockdev-ramdisktxt-updates.patch
+* doc-no-singing.patch
+* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2.patch
+* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2-fix.patch
+* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2-checkpatch-fixes.patch
+* coredump-set_dumpable-fix-the-theoretical-race-with-itself.patch
+* coredump-kill-mmf_dumpable-and-mmf_dump_securely.patch
+* coredump-make-__get_dumpable-get_dumpable-inline-kill-fs-coredumph.patch
+* proc-cleanup-simplify-get_task_state-task_state_array.patch
+* proc-fix-the-potential-use-after-free-in-first_tid.patch
+* proc-change-first_tid-to-use-while_each_thread-rather-than-next_thread.patch
+* proc-dont-abuse-group_leader-in-proc_task_readdir-paths.patch
+* proc-fix-f_pos-overflows-in-first_tid.patch
+* proc-set-attributes-of-pde-using-accessor-functions.patch
+* kernel-forkc-make-dup_mm-static.patch
+* kernel-forkc-fix-coding-style-issues.patch
+* kernel-forkc-remove-redundant-null-check-in-dup_mm.patch
+* exec-check_unsafe_exec-use-while_each_thread-rather-than-next_thread.patch
+* exec-check_unsafe_exec-kill-the-dead-eagain-and-clear_in_exec-logic.patch
+* exec-move-the-final-allow_write_access-fput-into-free_bprm.patch
+* exec-kill-task_struct-did_exec.patch
+* fs-proc-arrayc-change-do_task_stat-to-use-while_each_thread.patch
+* kernel-sysc-k_getrusage-can-use-while_each_thread.patch
+* kernel-signalc-change-do_signal_stop-do_sigaction-to-use-while_each_thread.patch
+* fs-execc-call-arch_pick_mmap_layout-only-once.patch
+* partitions-efi-complete-documentation-of-gpt-kernel-param-purpose.patch
+* rbtree-test-move-rb_node-to-the-middle-of-the-test-struct.patch
+* rbtree-test-test-rbtree_postorder_for_each_entry_safe.patch
+* net-netfilter-ipset-ip_set_hash_netifacec-use-rbtree-postorder-iteration-instead-of-opencoding.patch
+* fs-ubifs-use-rbtree-postorder-iteration-helper-instead-of-opencoding.patch
+* fs-ext4-use-rbtree-postorder-iteration-helper-instead-of-opencoding.patch
+* fs-jffs2-use-rbtree-postorder-iteration-helper-instead-of-opencoding.patch
+* fs-ext3-use-rbtree-postorder-iteration-helper-instead-of-opencoding.patch
+* fs-ext3-use-rbtree-postorder-iteration-helper-instead-of-opencoding-fix.patch
+* arch-sh-kernel-dwarfc-use-rbtree-postorder-iteration-helper-instead-of-solution-using-repeated-rb_erase.patch
+* afs-proc-cells-and-rootcell-are-writeable.patch
+* pps-add-non-blocking-option-to-pps_fetch-ioctl.patch
+* drivers-memstick-host-rtsx_pci_msc-fix-ms-card-data-transfer-bug.patch
+* drivers-w1-masters-w1-gpioc-add-strong-pullup-emulation.patch
+* romfs-fix-returm-err-while-getting-inode-in-fill_super.patch
+* lib-decompress_unlz4c-always-set-an-error-return-code-on-failures.patch
+* ipc-semc-avoid-overflow-of-semop-undo-semadj-value.patch
+* ipc-semc-avoid-overflow-of-semop-undo-semadj-value-fix.patch
+* ipc-semc-avoid-overflow-of-semop-undo-semadj-value-fix-2.patch
+  linux-next.patch
+* kernel-kexecc-use-vscnprintf-instead-of-vsnprintf-in-vmcoreinfo_append_str.patch
+* softirq-use-ffs-in-__do_softirq.patch
+* softirq-convert-printks-to-pr_level.patch
+* softirq-use-const-char-const-for-softirq_to_name-whitespace-neatening.patch
+* mm-migratec-fix-set-cpupid-on-page-migration-twice-against-thp.patch
+* mm-migratec-fix-setting-of-cpupid-on-page-migration-twice-against-normal-page.patch
+* zsmalloc-move-it-under-mm.patch
+* zram-promote-zram-from-staging.patch
+* mm-add-strictlimit-knob-v2.patch
+  debugging-keep-track-of-page-owners.patch
+  make-sure-nobodys-leaking-resources.patch
+  journal_add_journal_head-debug.patch
+  releasing-resources-with-children.patch
+  make-frame_pointer-default=y.patch
+  kernel-forkc-export-kernel_thread-to-modules.patch
+  mutex-subsystem-synchro-test-module.patch
+  slab-leaks3-default-y.patch
+  put_bh-debug.patch
+  add-debugging-aid-for-memory-initialisation-problems.patch
+  workaround-for-a-pci-restoring-bug.patch
+  single_open-seq_release-leak-diagnostics.patch
