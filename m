@@ -1,84 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505Ab3LPLHp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 06:07:45 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35572 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753384Ab3LPLHo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 06:07:44 -0500
-Date: Mon, 16 Dec 2013 12:07:28 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	id S1753523Ab3LPLIW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 06:08:22 -0500
+Received: from mga01.intel.com ([192.55.52.88]:40595 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753335Ab3LPLIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 06:08:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,494,1384329600"; 
+   d="scan'208";a="444932422"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 01/71] perf: Disable all pmus on unthrottling and
- rescheduling
-Message-ID: <20131216110728.GW21999@twins.programming.kicks-ass.net>
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1386765443-26966-2-git-send-email-alexander.shishkin@linux.intel.com>
- <20131213180638.GR21999@twins.programming.kicks-ass.net>
- <87eh5dt60b.fsf@ashishki-desk.ger.corp.intel.com>
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH v0 00/71] perf: Add support for Intel Processor Trace
+In-Reply-To: <20131211134724.GC3101@gmail.com>
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <20131211130448.GA2480@gmail.com> <87r49jttqr.fsf@ashishki-desk.ger.corp.intel.com> <20131211134724.GC3101@gmail.com>
+User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Mon, 16 Dec 2013 13:08:16 +0200
+Message-ID: <87bo0ht5nj.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87eh5dt60b.fsf@ashishki-desk.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 01:00:36PM +0200, Alexander Shishkin wrote:
-> Peter Zijlstra <peterz@infradead.org> writes:
-> 
-> > On Wed, Dec 11, 2013 at 02:36:13PM +0200, Alexander Shishkin wrote:
-> >> Currently, only one pmu in a context gets disabled during unthrottling
-> >> and event_sched_{out,in}, however, events in one context may belong to
-> >> different pmus, which results in pmus being reprogrammed while they are
-> >> still enabled. This patch temporarily disables pmus that correspond to
-> >> each event in the context while these events are being modified.
-> >> 
-> >> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-> >> ---
-> >>  kernel/events/core.c | 27 ++++++++++++++++++++++++---
-> >>  1 file changed, 24 insertions(+), 3 deletions(-)
-> >> 
-> >> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> >> index 403b781..d656cd6 100644
-> >> --- a/kernel/events/core.c
-> >> +++ b/kernel/events/core.c
-> >> @@ -1396,6 +1396,9 @@ event_sched_out(struct perf_event *event,
-> >>  	if (event->state != PERF_EVENT_STATE_ACTIVE)
-> >>  		return;
-> >>  
-> >> +	if (event->pmu != ctx->pmu)
-> >> +		perf_pmu_disable(event->pmu);
-> >> +
-> >>  	event->state = PERF_EVENT_STATE_INACTIVE;
-> >>  	if (event->pending_disable) {
-> >>  		event->pending_disable = 0;
-> >> @@ -1412,6 +1415,9 @@ event_sched_out(struct perf_event *event,
-> >>  		ctx->nr_freq--;
-> >>  	if (event->attr.exclusive || !cpuctx->active_oncpu)
-> >>  		cpuctx->exclusive = 0;
-> >> +
-> >> +	if (event->pmu != ctx->pmu)
-> >> +		perf_pmu_enable(event->pmu);
-> >>  }
-> >>  
-> >>  static void
-> >
-> > Hmm, indeed. Does it make sense to drop the conditional?
-> > perf_pmu_{en,dis}able() is recursive and the thinking is that if its the
-> > same PMU the cacheline is hot because we touched it already recently
-> > anyway, so the unconditional inc/dec might actually be faster.. dunno.
-> 
-> Well, given the disable_count check in perf_pmu_{en,dis}able, this one
-> indeed looks redundant to me. Should I resend this one separately?
+Ingo Molnar <mingo@kernel.org> writes:
 
-Yes, it seems an unrelated bugfix, like Andi said.
+> * Alexander Shishkin <alexander.shishkin@linux.intel.com> wrote:
+>
+>> Ingo Molnar <mingo@kernel.org> writes:
+>> 
+>> > * Alexander Shishkin <alexander.shishkin@linux.intel.com> wrote:
+>> >
+>> >> Hi,
+>> >> 
+>> >> This patchset adds support for Intel Processor Trace (PT) extension 
+>> >> [1] of Intel Architecture that allows the capture of information 
+>> >> about software execution flow, to the perf kernel and userspace 
+>> >> infrastructure. We provide an abstraction for it called "itrace" for 
+>> >> "instruction trace" ([2]).
+>> >
+>> > Ok, this feature looks rather interesting.
+>> >
+>> > On the hardware side this is essentially BTS (Branch Trace Store) 
+>> > on steroids (with many extensions), right?
+>> 
+>> Yes, you get timestamps and all sorts of other useful data in the 
+>> trace and the performance intrusion is much less than that of BTS.
+>
+> So the problem I see here right now that BTS is rarely used and AFAICS 
+> close to unmaintained. It has some very minimal support in 'perf 
+> script' but that's all I can see.
+>
+> So one necessary precondition to merging PT support would be to have a 
+> convincing case that this kind of stuff is generally useful.
+
+This is not unreasonable. We can have some of this functionality with
+BTS.
+
+> One good approach to do that would be to unify the BTS and PT tooling 
+> (the kernel side can be unified as well, to the extent it makes 
+> sense), and to prove it via actual functionality that this stuff 
+> matters. BTS is available widely, so the tooling can be tested by 
+> anyone who's interested.
+>
+> Allow people to record crashes in core dumps, allow them to look at 
+> histograms/spectrograms of BTS/PT traces, zoom in on actual traces, 
+> etc. - make it easier to handle this huge amount of data and visualize 
+> traces in other ways you find useful, etc.
+>
+> None of that is done right now via BTS so nobody uses it.
+
+So I can make BTS appear as an "itrace" pmu similarly to PT. One
+question that comes to mind is should we then dispose of the old
+interface that's used for accessing BTS functionality or make it coexist
+with the new one.
+
+Regards,
+--
+Alex
