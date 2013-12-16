@@ -1,218 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab3LPDDY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 22:03:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22292 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751998Ab3LPDDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 22:03:22 -0500
-Date: Mon, 16 Dec 2013 11:02:29 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, greg@kroah.com, toshi.kani@hp.com
-Subject: Re: [PATCH v5 08/14] efi: export efi runtime memory mapping to sysfs
-Message-ID: <20131216030229.GA7408@dhcp-16-126.nay.redhat.com>
-References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
- <1386582147-9802-9-git-send-email-dyoung@redhat.com>
- <20131211185520.GG23793@pd.tnic>
- <20131212023617.GF3751@dhcp-16-126.nay.redhat.com>
- <20131212205346.GA30162@pd.tnic>
- <20131213072600.GB11164@dhcp-16-126.nay.redhat.com>
- <20131213123028.GB18640@console-pimps.org>
- <20131216013319.GA3754@dhcp-16-126.nay.redhat.com>
+	id S1752369Ab3LPDFZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 22:05:25 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:57696 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752245Ab3LPDFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 22:05:24 -0500
+X-IronPort-AV: E=Sophos;i="4.95,492,1384272000"; 
+   d="scan'208";a="9265758"
+Message-ID: <52AE6C4A.9080203@cn.fujitsu.com>
+Date: Mon, 16 Dec 2013 10:58:18 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131216013319.GA3754@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kristian Nielsen <knielsen@knielsen-hq.org>
+CC: Dave Jones <davej@redhat.com>, Benjamin LaHaise <bcrl@kvack.org>,
+        Kent Overstreet <kmo@daterainc.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: GPF in aio_migratepage
+References: <20131126032645.GA32301@redhat.com> <20131126060132.GA6400@redhat.com> <20131126071953.GE9244@kmo-pixel> <20131126152337.GL15489@kvack.org> <87d2lh6h92.fsf@frigg.knielsen-hq.org> <529C5CA6.6090708@cn.fujitsu.com> <20131202174913.GA18853@redhat.com> <87ob4hu66n.fsf@frigg.knielsen-hq.org>
+In-Reply-To: <87ob4hu66n.fsf@frigg.knielsen-hq.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/16 11:04:53,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/16 11:04:56,
+	Serialize complete at 2013/12/16 11:04:56
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/13 at 09:33am, Dave Young wrote:
-> On 12/13/13 at 12:30pm, Matt Fleming wrote:
-> > On Fri, 13 Dec, at 03:26:00PM, Dave Young wrote:
-> > > On 12/12/13 at 09:53pm, Borislav Petkov wrote:
-> > > > On Thu, Dec 12, 2013 at 10:36:17AM +0800, Dave Young wrote:
-> > > > > Sorry that I forgot to explain this in changelog, should ask you before.
-> > > > > 
-> > > > > I did try moving it to efisubsys_init but it need add extern declaration
-> > > > 
-> > > > So what? Add it.
-> > > > 
-> > > > > for efi_runtime_map_init. Since link order will ensure it being called after
-> > > > > efisubsys_init I think it's fine with this static function.
-> > > > 
-> > > > This is actually exactly the reason why it shouldn't be another
-> > > > subsys_initcall() if it can be helped. People would need to go have a
-> > > > look at drivers/firmware/efi/Makefile to realize that the link order is
-> > > > ok.
-> > > > 
-> > > > And, this is prone to future breakage if people go and move code around
-> > > > and thereby change the link order.
-> > > > 
-> > > > Please call efi_runtime_map_init from efisubsys_init.
-> > > 
-> > > After moving to efisubsys_init, the code will looks like below, because
+Hi Kristian,
+On 12/16/2013 05:59 AM, Kristian Nielsen wrote:
+
+> What is the status of this?
 > 
-> Will call it in efi_subsys_init as what I replied previously.
+> If I understand correctly, the crash I saw is different from what Dave
+> saw.
+> 
+> There was one patched scheduled for inclusion that fixes Dave's crash. But
+> what about mine? I have been running 3.13-rc2 for a couple of weeks now with
+> your other patch, without seeing it again, which suggests it has helped. But
+> it seems that patch has a locking bug as described by Dave (sleeping under
+> spinlock)? So this appears unsolved as of yet...
+> 
+> So I just wanted to check that this was not forgotten. Is there something I
+> can do to help get this sorted out? Should I try to run with unpatched -rc4
+> for some time to check if it appears again? Anything else?
 
-Actually change a bit from your below suggestion.
+Thanks for your reminder. I really do not forget this issue.
+This issue seems like a problem that has been fixed yet:
+http://article.gmane.org/gmane.linux.kernel.aio.general/3741/match=potential+use+after+free+aio%5fmigratepage
+commit 5e9ae2e5da0beb93f8557fc92a8f4fbc05ea448f
+aio: fix use-after-free in aio_migratepage
+So I think maybe you can run with latest Linus' tree or 3.13-rc4 to
+check whether this issue still appears.
+Looking forward to your replay.
+
+Thanks,
+Gu
 
 > 
-> > > the funtion only is used in drivers/firmware/efi/efi.c thus I can not
-> > > add a blank function in #else section in the efi.h header file. Creating
-> > > another header file for this one function looks bad to me.
-> > 
-> > I agree with Borislav that this should be invoked from efisubsys_init().
-> > Also Dave, there's nothing inherently x86-specific about runtime-map.c -
-> > we've been trying not to dump arch-specific code in
-> > drivers/firmware/efi/.
-> > 
-> > How about something like this, just to give you an idea? This would
-> > allow the ARM/ia64 folks to enable this code if they want at some later
-> > date. But more than that, it makes the code more self-contained and uses
-> > some real interfaces instead of relying on global variables,
-> > 
-> > (not compile tested)
+>  - Kristian.
 > 
-> Thanks for the good idea, will tune and test the code.
+> Dave Jones <davej@redhat.com> writes:
 > 
-> > diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> > index 94a1cbcf6e2e..f45ea41deae0 100644
-> > --- a/arch/x86/platform/efi/efi.c
-> > +++ b/arch/x86/platform/efi/efi.c
-> > @@ -76,8 +76,8 @@ static __initdata efi_config_table_type_t arch_tables[] = {
-> >  	{NULL_GUID, NULL, NULL},
-> >  };
-> >  
-> > -void *efi_runtime_map;
-> > -int nr_efi_runtime_map;
-> > +static void *efi_runtime_map;
-> > +static int nr_efi_runtime_map;
-> >  static u64 efi_setup; /* efi setup_data physical address */
-> >  
-> >  /*
-> > @@ -1084,6 +1084,9 @@ void __init efi_enter_virtual_mode(void)
-> >  		}
-> >  	}
-> >  
-> > +	efi_runtime_map_setup(efi_runtime_map, nr_efi_runtime_map,
-> > +			      boot_params.efi_info.efi_memdesc_size);
-> > +
-> >  	BUG_ON(!efi.systab);
-> >  
-> >  	efi_setup_page_tables();
-> > diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
-> > index 0a288e306252..9870eb55d0e5 100644
-> > --- a/drivers/firmware/efi/efi.c
-> > +++ b/drivers/firmware/efi/efi.c
-> > @@ -38,8 +38,7 @@ struct efi __read_mostly efi = {
-> >  };
-> >  EXPORT_SYMBOL(efi);
-> >  
-> > -struct kobject *efi_kobj;
-> > -EXPORT_SYMBOL_GPL(efi_kobj);
-> > +static struct kobject *efi_kobj;
-> >  static struct kobject *efivars_kobj;
-> >  
-> >  /*
-> > @@ -176,6 +175,8 @@ static int __init efisubsys_init(void)
-> >  		goto err_remove_group;
-> >  	}
-> >  
-> > +	efi_runtime_map_init(efi_kobj);
+>> On Mon, Dec 02, 2013 at 06:10:46PM +0800, Gu Zheng wrote:
+>>  > Hi Kristian, Dave,
+>>  > 
+>>  > Could you please help to check whether the following patch can fix this issue?
+>>
+>> This introduces some locking bugs..
+>>
+>>
+>> [  222.327950] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:616
+>> [  222.328004] in_atomic(): 1, irqs_disabled(): 0, pid: 12794, name: trinity-child1
+>> [  222.328044] 1 lock held by trinity-child1/12794:
+>> [  222.328072]  #0:  (&(&mapping->private_lock)->rlock){+.+...}, at: [<ffffffff81210a64>] aio_free_ring+0x44/0x160
+>> [  222.328147] CPU: 1 PID: 12794 Comm: trinity-child1 Not tainted 3.13.0-rc2+ #12 
+>> [  222.328268]  0000000000000268 ffff880229517d68 ffffffff8173bc52 0000000000000000
+>> [  222.328320]  ffff880229517d90 ffffffff8108ad95 ffff880223b6acd0 0000000000000000
+>> [  222.328370]  0000000000000000 ffff880229517e08 ffffffff81741cf3 ffff880229517dc0
+>> [  222.328421] Call Trace:
+>> [  222.328443]  [<ffffffff8173bc52>] dump_stack+0x4e/0x7a
+>> [  222.328475]  [<ffffffff8108ad95>] __might_sleep+0x175/0x200
+>> [  222.328510]  [<ffffffff81741cf3>] mutex_lock_nested+0x33/0x400
+>> [  222.328545]  [<ffffffff81179e68>] unmap_mapping_range+0x68/0x170
+>> [  222.328582]  [<ffffffff81160a35>] truncate_pagecache+0x35/0x60
+>> [  222.328617]  [<ffffffff81160a72>] truncate_setsize+0x12/0x20
+>> [  222.328651]  [<ffffffff81210ab9>] aio_free_ring+0x99/0x160
+>> [  222.328684]  [<ffffffff81213071>] SyS_io_setup+0xef1/0xf00
+>> [  222.328717]  [<ffffffff8174eaa4>] tracesys+0xdd/0xe2
+>>
+>> [  222.328769] ======================================================
+>> [  222.328804] [ INFO: possible circular locking dependency detected ]
+>> [  222.328838] 3.13.0-rc2+ #12 Not tainted
+>> [  222.328862] -------------------------------------------------------
+>> [  222.328896] trinity-child1/12794 is trying to acquire lock:
+>> [  222.328928]  (&mapping->i_mmap_mutex){+.+...}, at: [<ffffffff81179e68>] unmap_mapping_range+0x68/0x170
+>> [  222.328987] 
+>> but task is already holding lock:
+>> [  222.329020]  (&(&mapping->private_lock)->rlock){+.+...}, at: [<ffffffff81210a64>] aio_free_ring+0x44/0x160
+>> [  222.329081] 
+>> which lock already depends on the new lock.
+>>
+>> [  222.329125] 
+>> the existing dependency chain (in reverse order) is:
+>> [  222.329166] 
+>> -> #2 (&(&mapping->private_lock)->rlock){+.+...}:
+>> [  222.329211]        [<ffffffff810af833>] lock_acquire+0x93/0x1c0
+>> [  222.329248]        [<ffffffff817454f0>] _raw_spin_lock+0x40/0x80
+>> [  222.329285]        [<ffffffff811f334d>] __set_page_dirty_buffers+0x2d/0xb0
+>> [  222.331243]        [<ffffffff8115aada>] set_page_dirty+0x3a/0x60
+>> [  222.334437]        [<ffffffff81179a7f>] unmap_single_vma+0x62f/0x830
+>> [  222.337633]        [<ffffffff8117ad19>] unmap_vmas+0x49/0x90
+>> [  222.340819]        [<ffffffff811804bd>] unmap_region+0x9d/0x110
+>> [  222.343968]        [<ffffffff811829f6>] do_munmap+0x226/0x3b0
+>> [  222.346689]        [<ffffffff81182bc4>] vm_munmap+0x44/0x60
+>> [  222.349741]        [<ffffffff81183b42>] SyS_munmap+0x22/0x30
+>> [  222.352758]        [<ffffffff8174eaa4>] tracesys+0xdd/0xe2
+>> [  222.355735] 
+>> -> #1 (&(ptlock_ptr(page))->rlock#2){+.+...}:
+>> [  222.361611]        [<ffffffff810af833>] lock_acquire+0x93/0x1c0
+>> [  222.364589]        [<ffffffff817454f0>] _raw_spin_lock+0x40/0x80
+>> [  222.367200]        [<ffffffff81186338>] __page_check_address+0x98/0x160
+>> [  222.370168]        [<ffffffff811864fe>] page_mkclean+0xfe/0x1c0
+>> [  222.373120]        [<ffffffff8115ad60>] clear_page_dirty_for_io+0x60/0x100
+>> [  222.376076]        [<ffffffff8124d207>] mpage_submit_page+0x47/0x80
+>> [  222.379015]        [<ffffffff8124d350>] mpage_process_page_bufs+0x110/0x130
+>> [  222.381955]        [<ffffffff8124d91b>] mpage_prepare_extent_to_map+0x22b/0x2f0
+>> [  222.384895]        [<ffffffff8125318f>] ext4_writepages+0x4ef/0x1050
+>> [  222.387839]        [<ffffffff8115cdf1>] do_writepages+0x21/0x50
+>> [  222.390786]        [<ffffffff81150959>] __filemap_fdatawrite_range+0x59/0x60
+>> [  222.393747]        [<ffffffff81150a5d>] filemap_write_and_wait_range+0x2d/0x70
+>> [  222.396729]        [<ffffffff812498ca>] ext4_sync_file+0xba/0x4d0
+>> [  222.399714]        [<ffffffff811f1691>] do_fsync+0x51/0x80
+>> [  222.402317]        [<ffffffff811f1980>] SyS_fsync+0x10/0x20
+>> [  222.405240]        [<ffffffff8174eaa4>] tracesys+0xdd/0xe2
+>> [  222.407760] 
+>> -> #0 (&mapping->i_mmap_mutex){+.+...}:
+>> [  222.413349]        [<ffffffff810aed16>] __lock_acquire+0x1786/0x1af0
+>> [  222.416127]        [<ffffffff810af833>] lock_acquire+0x93/0x1c0
+>> [  222.418826]        [<ffffffff81741d37>] mutex_lock_nested+0x77/0x400
+>> [  222.421456]        [<ffffffff81179e68>] unmap_mapping_range+0x68/0x170
+>> [  222.424085]        [<ffffffff81160a35>] truncate_pagecache+0x35/0x60
+>> [  222.426696]        [<ffffffff81160a72>] truncate_setsize+0x12/0x20
+>> [  222.428955]        [<ffffffff81210ab9>] aio_free_ring+0x99/0x160
+>> [  222.431509]        [<ffffffff81213071>] SyS_io_setup+0xef1/0xf00
+>> [  222.434069]        [<ffffffff8174eaa4>] tracesys+0xdd/0xe2
+>> [  222.436308] 
+>> other info that might help us debug this:
+>>
+>> [  222.443857] Chain exists of:
+>>   &mapping->i_mmap_mutex --> &(ptlock_ptr(page))->rlock#2 --> &(&mapping->private_lock)->rlock
+>>
+>> [  222.451618]  Possible unsafe locking scenario:
+>>
+>> [  222.456831]        CPU0                    CPU1
+>> [  222.459413]        ----                    ----
+>> [  222.461958]   lock(&(&mapping->private_lock)->rlock);
+>> [  222.464505]                                lock(&(ptlock_ptr(page))->rlock#2);
+>> [  222.467094]                                lock(&(&mapping->private_lock)->rlock);
+>> [  222.469625]   lock(&mapping->i_mmap_mutex);
+>> [  222.472111] 
+>>  *** DEADLOCK ***
+>>
+>> [  222.478392] 1 lock held by trinity-child1/12794:
+>> [  222.480744]  #0:  (&(&mapping->private_lock)->rlock){+.+...}, at: [<ffffffff81210a64>] aio_free_ring+0x44/0x160
+>> [  222.483240] 
+>> stack backtrace:
+>> [  222.488119] CPU: 1 PID: 12794 Comm: trinity-child1 Not tainted 3.13.0-rc2+ #12 
+>> [  222.493016]  ffffffff824cb110 ffff880229517c30 ffffffff8173bc52 ffffffff824a3f40
+>> [  222.495690]  ffff880229517c70 ffffffff81737fed ffff880229517cc0 ffff8800a1e49d10
+>> [  222.498379]  ffff8800a1e495d0 0000000000000001 0000000000000001 ffff8800a1e49d10
+>> [  222.501073] Call Trace:
+>> [  222.503394]  [<ffffffff8173bc52>] dump_stack+0x4e/0x7a
+>> [  222.506080]  [<ffffffff81737fed>] print_circular_bug+0x200/0x20f
+>> [  222.508781]  [<ffffffff810aed16>] __lock_acquire+0x1786/0x1af0
+>> [  222.511485]  [<ffffffff810af833>] lock_acquire+0x93/0x1c0
+>> [  222.514197]  [<ffffffff81179e68>] ? unmap_mapping_range+0x68/0x170
+>> [  222.516594]  [<ffffffff81179e68>] ? unmap_mapping_range+0x68/0x170
+>> [  222.519307]  [<ffffffff81741d37>] mutex_lock_nested+0x77/0x400
+>> [  222.522028]  [<ffffffff81179e68>] ? unmap_mapping_range+0x68/0x170
+>> [  222.524752]  [<ffffffff81179e68>] ? unmap_mapping_range+0x68/0x170
+>> [  222.527445]  [<ffffffff81179e68>] unmap_mapping_range+0x68/0x170
+>> [  222.530113]  [<ffffffff81160a35>] truncate_pagecache+0x35/0x60
+>> [  222.532785]  [<ffffffff81160a72>] truncate_setsize+0x12/0x20
+>> [  222.535439]  [<ffffffff81210ab9>] aio_free_ring+0x99/0x160
+>> [  222.538089]  [<ffffffff81213071>] SyS_io_setup+0xef1/0xf00
+>> [  222.540725]  [<ffffffff8174eaa4>] tracesys+0xdd/0xe2
+> 
 
-Will add #ifdef CONFIG_EFI_RUNTIME_MAP around above line and add
-error handling
 
-Also will update the usage of gloable efi_kobj, pass it via function
-parameter.
-
-> > +
-> >  	return 0;
-> >  
-> >  err_remove_group:
-> > diff --git a/drivers/firmware/efi/runtime-map.c b/drivers/firmware/efi/runtime-map.c
-> > index e5e998494d8a..ef9631e9c03e 100644
-> > --- a/drivers/firmware/efi/runtime-map.c
-> > +++ b/drivers/firmware/efi/runtime-map.c
-> > @@ -14,6 +14,10 @@
-> >  
-> >  #include <asm/setup.h>
-> >  
-> > +static void *efi_runtime_map;
-> > +static int nr_efi_runtime_map;
-> > +static u32 efi_memdesc_size;
-> > + 
-> >  struct efi_runtime_map_entry {
-> >  	efi_memory_desc_t md;
-> >  	struct kobject kobj;   /* kobject for each entry */
-> > @@ -105,7 +109,6 @@ static struct efi_runtime_map_entry *add_sysfs_runtime_map_entry(int nr)
-> >  {
-> >  	int ret;
-> >  	struct efi_runtime_map_entry *entry;
-> > -	struct efi_info *e = &boot_params.efi_info;
-> >  
-> >  	if (!map_kset) {
-> >  		map_kset = kset_create_and_add("runtime-map", NULL,
-> > @@ -120,7 +123,7 @@ static struct efi_runtime_map_entry *add_sysfs_runtime_map_entry(int nr)
-> >  		return entry;
-> >  	}
-> >  
-> > -	memcpy(&entry->md, efi_runtime_map + nr * e->efi_memdesc_size,
-> > +	memcpy(&entry->md, efi_runtime_map + nr * efi_memdesc_size,
-> >  	       sizeof(efi_memory_desc_t));
-> >  
-> >  	kobject_init(&entry->kobj, &map_ktype);
-> > @@ -135,7 +138,14 @@ static struct efi_runtime_map_entry *add_sysfs_runtime_map_entry(int nr)
-> >  	return entry;
-> >  }
-> >  
-> > -static int __init efi_runtime_map_init(void)
-> > +int efi_runtime_map_setup(void *map, int nr_entries, u32 desc_size)
-
-Will change it to void instead of return int 
-
-> > +{
-> > +	efi_runtime_map = map;
-> > +	nr_efi_runtime_map = nr_entries;
-> > +	efi_memdesc_size = desc_size;
-> > +}
-> > +
-> > +int __init efi_runtime_map_init(struct kobject *efi_kobj)
-> >  {
-> >  	int i, j, ret = 0;
-> >  	struct efi_runtime_map_entry *entry;
-> > @@ -172,5 +182,3 @@ out_add_entry:
-> >  out:
-> >  	return ret;
-> >  }
-> > -
-> > -subsys_initcall(efi_runtime_map_init);
-> > diff --git a/include/linux/efi.h b/include/linux/efi.h
-> > index 4f1651d303b8..47e067044054 100644
-> > --- a/include/linux/efi.h
-> > +++ b/include/linux/efi.h
-> > @@ -873,9 +873,8 @@ int efivars_sysfs_init(void);
-> >  #endif /* CONFIG_EFI_VARS */
-> >  
-> >  #ifdef CONFIG_EFI_RUNTIME_MAP
-> > -extern void *efi_runtime_map;
-> > -extern int nr_efi_runtime_map;
-> > -extern struct kobject *efi_kobj;
-> > +int efi_runtime_map_init(struct kobject *);
-> > +int efi_runtime_map_setup(void *, int, u32);
-
-Will change to void.
-
-> >  #endif
-> >  
-> >  #endif /* _LINUX_EFI_H */
-> > 
-> > -- 
-> > Matt Fleming, Intel Open Source Technology Center
