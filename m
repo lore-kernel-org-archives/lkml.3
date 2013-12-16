@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751309Ab3LPFZc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 00:25:32 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:62888 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813Ab3LPFZb (ORCPT
+	id S1751228Ab3LPFbI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 00:31:08 -0500
+Received: from cobra.newdream.net ([66.33.216.30]:57457 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802Ab3LPFbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 00:25:31 -0500
-X-AuditID: 9c93017d-b7c5eae000004296-6e-52ae8eca411c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, mingo@redhat.com,
-        dvhart@linux.intel.com, peterz@infradead.org, tglx@linutronix.de,
-        jason.low2@hp.com, Waiman.Long@hp.com, scott.norton@hp.com,
-        aswin@hp.com
-Subject: Re: [PATCH 2/3] perf-bench: add futex-wake microbenchmark
-References: <1387081917-9102-1-git-send-email-davidlohr@hp.com>
-	<1387081917-9102-3-git-send-email-davidlohr@hp.com>
-Date: Mon, 16 Dec 2013 14:25:30 +0900
-In-Reply-To: <1387081917-9102-3-git-send-email-davidlohr@hp.com> (Davidlohr
-	Bueso's message of "Sat, 14 Dec 2013 20:31:56 -0800")
-Message-ID: <87k3f5gyet.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 16 Dec 2013 00:31:06 -0500
+Date: Sun, 15 Dec 2013 21:31:05 -0800 (PST)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: torvalds@linux-foundation.org
+cc: ceph-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Ceph fixes for 3.13-rc5
+Message-ID: <alpine.DEB.2.00.1312130916510.14857@cobra.newdream.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Davidlohr,
+Hi Linus,
 
-On Sat, 14 Dec 2013 20:31:56 -0800, Davidlohr Bueso wrote:
-> Block a bunch of threads on a futex and wake them up, N at a time.
->
-> This program is particularly useful to measure the latency of nthread wakeups
-> in non-error situations:  all waiters are queued and all wake calls wakeup
-> one or more tasks. An example run:
->
-> $ perf bench futex -t 512 -r 100
+Please pull the following pair of Ceph fixes from
 
-Did you mean 'perf bench futex wake'?
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
-Thanks,
-Namhyung
+One of these is fixing a regression from the d_flags file type patch that 
+went into -rc1 that broke instantiation of inodes and dentries (we were 
+doing dentries first).  The other is just an off-by-one corner case.
+
+Thanks!
+sage
+
+----------------------------------------------------------------
+Li Wang (1):
+      ceph: Avoid data inconsistency due to d-cache aliasing in readpage()
+
+Yan, Zheng (1):
+      ceph: initialize inode before instantiating dentry
+
+ fs/ceph/addr.c  |   8 +++-
+ fs/ceph/inode.c | 136 ++++++++++++++++++++++++--------------------------------
+ 2 files changed, 64 insertions(+), 80 deletions(-)
