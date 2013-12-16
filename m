@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab3LPU2K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 15:28:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47897 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752582Ab3LPU2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 15:28:08 -0500
-Date: Mon, 16 Dec 2013 21:27:40 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH 0/2] mm: thp: get_huge_page_tail() cleanups
-Message-ID: <20131216202740.GF21218@redhat.com>
-References: <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
- <CA+55aFw_emAUOr5BYx0TfTCGEOrW6-ZRATWbm00DvCXsGD7=DQ@mail.gmail.com>
- <20131211170844.GA21700@redhat.com>
- <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de>
- <20131211175615.GA24546@redhat.com>
- <20131211191855.GA32485@redhat.com>
- <20131213151035.GE5408@redhat.com>
- <20131213162240.GA11762@redhat.com>
- <20131213173406.GG5408@redhat.com>
- <20131216201900.GA6616@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131216201900.GA6616@redhat.com>
+	id S1752754Ab3LPU2S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 15:28:18 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:50901 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751926Ab3LPU2P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 15:28:15 -0500
+Message-ID: <1387225692.14970.13.camel@x41.thuisdomein>
+Subject: Re: [PATCH 2/2] ahci: only attach ICH6-M if it's in SATA mode
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 16 Dec 2013 21:28:12 +0100
+In-Reply-To: <20131216155136.GF32509@htj.dyndns.org>
+References: <1387190097.9255.31.camel@x41.thuisdomein>
+	 <20131216155136.GF32509@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Dec 2013 20:28:12.0548 (UTC) FILETIME=[57853440:01CEFA9D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 09:19:00PM +0100, Oleg Nesterov wrote:
-> On top of
-> 
-> 	mm-tail-page-refcounting-optimization-for-slab-and-hugetlbfs.patch
-> 
-> should not be applied without the ack from Andrea.
-> 
-> On 12/13, Andrea Arcangeli wrote:
-> >
-> > The above diff looks a straightforward cleanup you could submit it as
-> > a separate patch in a v2 series.
-> 
-> OK, let me send this separately, because (afaics) put_compound_tail()
-> needs more thinking.
-> 
-> See also 2/2. Again, I won't argue if you dislike this change even if
-> it is correct, so please review and ack/nack. To me compound_head() in
-> get_huge_page_tail() looks confusing, as if get_huge_page_tail() can
-> accept a !PageTail page. But perhaps this is only because I am new to
-> this code.
+On Mon, 2013-12-16 at 10:51 -0500, Tejun Heo wrote:
+> I'm not quite sure about this one.  The patch seems correct on the
+> surface but given how old ich6 is at this point, the general
+> crappiness of BIOS on ahci front in that era, and that the existing
+> code has been working fine for all these years make me very reluctant
+> to change it.  e.g. I don't think CLASS_STORAGE_SATA was the only one.
+> They used different class for raid too.
 
-compound_head in get_huge_page_tail was just a more readable version
-of page->first_page in __get_page_tail_foll. But page->first_page is
-faster so it's better.
+Well, raid should only be relevant for ICH6R (which has its own device
+ID). The datasheet I've been staring at suggests that ICH6-M is
+hardwired to either use PCI_CLASS_STORAGE_SATA or PCI_CLASS_STORAGE_IDE.
 
-I reviewed all callers and there's no risk of the VM_BUG_ON triggering
-but I prefer it too.
+> It should be able to figure
+> out things given enough test cases but I don't think we have that
+> anymore and the benefit (avoding probe failure messages) doesn't seem
+> to justify the risk.
 
-Both patches Acked.
+That's your call, obviously. And I don't think that hardware like this
+is used widely to run release candidates, if at all, so we can't even
+consider a see-who-screams-when-their-setup-breaks approach.
 
-Acked-by: Andrea Arcangeli <aarcange@redhat.com>
+Thanks,
+
+
+Paul Bolle
+
