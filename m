@@ -1,101 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab3LPSnm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 13:43:42 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:2845 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754993Ab3LPSnk (ORCPT
+	id S1755360Ab3LPSo0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 13:44:26 -0500
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:28555 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754993Ab3LPSoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 13:43:40 -0500
-Date: Mon, 16 Dec 2013 11:43:33 -0700
-From: jerry.hoemann@hp.com
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, matt.fleming@intel.com, yinghai@kernel.org,
-        akpm@linux-foundation.org, bp@suse.de, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        penberg@kernel.org, mingo.kernel.org@gmail.com, vgoyal@redhat.com
-Subject: Re: [RFC v2 0/2] Early use of boot service memory
-Message-ID: <20131216184333.GA25634@anatevka.fc.hp.com>
-Reply-To: jerry.hoemann@hp.com
-References: <1385067686-73500-1-git-send-email-jerry.hoemann@hp.com>
- <20131121230744.GA31592@srcf.ucam.org>
- <20131121233104.GF1106@anatevka.fc.hp.com>
- <20131121233831.GB32121@srcf.ucam.org>
- <20131122010515.GG1106@anatevka.fc.hp.com>
- <20131122011613.GA1039@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131122011613.GA1039@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 16 Dec 2013 13:44:24 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
+        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
+Subject: [PATCH v4 0/9] PCI/MSI: Introduce pci_auto_enable_msi*() family helpers
+Date: Mon, 16 Dec 2013 09:34:53 +0100
+Message-Id: <cover.1387140921.git.agordeev@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 01:16:13AM +0000, Matthew Garrett wrote:
-> On Thu, Nov 21, 2013 at 06:05:15PM -0700, jerry.hoemann@hp.com wrote:
-> > On Thu, Nov 21, 2013 at 11:38:31PM +0000, Matthew Garrett wrote:
-> > > Hm. If the problem is fragmentation, then yeah, I can imagine this 
-> > > causing problems. In that case we could take a two-pass approach - find 
-> > > a gap that *will* be big enough, reserve everything that isn't currently 
-> > > reserved, and then reserve the rest after ExitBootServices()?
-> > 
-> > 
-> 
-> > Interesting questions, but as I don't have access to a system that has
-> > the firmware defects encountered when efi_reserve_boot_services, it makes
-> > it difficult to test that i don't break them.  Hence, the appealing nature
-> > of quirks.  Don't have to worry about breaking other platforms as they
-> > continue to operate same as before.
-> 
-> Yeah. The problem is that some users may want kdump while still having 
-> broken firmware, so a solution that works for them is much more 
-> appealing than one which involves manually maintaining a list of 
-> verified systems...
+This series is against "next" branch in Bjorn's repo:
+git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git
 
-Matthew, 
+Changes from v3 to v4:
+  - pcim_enable_msi* functions renamed to pci_auto_enable_msi* ones
+  - PowerPC patches dropped
+  - pci_get_msi_cap()     renamed to pci_get_msix_vec_count() and
+    pci_msix_table_size() renamed to pci_get_msix_vec_count()
 
-Sorry for the delay in replying.
+Changes from v2 to v3:
+  - new public interfaces commented in drivers/pci/msi.c;
+  - patch "Make quota traversing and requesting race-safe" explained;
+  - pci_enable_msi/msix() 'nvec' arg type changed from 'unsigned int' to 'int';
+  - pcim_enable_msi*() arg 'nvec' renamed to 'maxvec' when upper limit passed;
+  - pcim_enable_msi*(..., maxvec, minvec) arg order swapped to minvec, maxvec;
+  - "PCI: Fail MSI/MSI-X initialization if device is not in PCI_D0" commit
+    869a161 and "PCI/MSI: Factor out pci_get_msi_cap() interface" patch
+    conflicts resolved;
 
-We've worked with our firmware engineers who have made changes
-to move around where certain drivers are allocating from which
-has helped reduce some of the fragmentation issue we were having.
-Since we are taking firmware drops from outside sources, we are
-subject to regressions in this area, so i'm still interested in
-this topic.
+Currently many device drivers need contiguously call functions
+pci_enable_msix() for MSI-X or pci_enable_msi_block() for MSI
+in a loop until success or failure. This update generalizes
+this usage pattern and introduces pci_auto_enable_msi*() family
+helpers.
 
-To your point, kdump may still works for the platforms that
-have the broken firmware.  Much depends upon the memory and IO
-configuration on the system in question.
+As result, device drivers do not have to deal with tri-state
+return values from pci_enable_msix() and pci_enable_msi_block()
+functions directly and expected to have more clearer and straight
+code.
 
->From prior mailing, apparently Macs are subject to the problem
-that efi_reserve_boot_services was created to address.  Smaller
-systems w/ less IO don't require the larger crash kernel allocations
-and hence are more likely to be able to find a gap in low memory
-that works.
+So i.e. the request loop described in the documentation...
 
-Its the larger systems with lots of cpus, memory, and IO that
-need to allocate the large crash kernels.  These types of systems
-are more at risk.
+	int foo_driver_enable_msix(struct foo_adapter *adapter,
+				   int nvec)
+	{
+		while (nvec >= FOO_DRIVER_MINIMUM_NVEC) {
+			rc = pci_enable_msix(adapter->pdev,
+					     adapter->msix_entries,
+					     nvec);
+			if (rc > 0)
+				nvec = rc;
+			else
+				return rc;
+		}
 
-Again,  my main concern is finding something that can be back ported
-into legacy kernels/distros.  For distros based upon newer kernel and
-associated tools, we can avoid the problem by allocating memory high.
-But, we don't have that option with legacy kernels/distros.
+		return -ENOSPC;
+	}
 
-So, if you have other suggestions, I'm willing to explore them.
+...would turn into a single helper call....
+
+	rc = pci_auto_enable_msix_range(adapter->pdev,
+					adapter->msix_entries,
+					FOO_DRIVER_MINIMUM_NVEC,
+					nvec);
+
+Device drivers with more specific requirements (i.e. a number of
+MSI-Xs which is a multiple of a certain number within a specified
+range) would still need to implement the loop using the two old
+functions.
+
+The tree could be found in "pci-next-msi-v4" branch in repo:
+https://github.com/a-gordeev/linux.git
 
 
-Jerry
+Alexander Gordeev (9):
+  PCI/MSI/s390: Fix single MSI only check
+  PCI/MSI/s390: Remove superfluous check of MSI type
+  PCI/MSI: Fix return value when populate_msi_sysfs() failed
+  PCI/MSI: Return -ENOSYS for unimplemented interfaces, not -1
+  PCI/MSI: Make pci_enable_msi/msix() 'nvec' argument type as int
+  PCI/MSI: Factor out pci_get_msi_vec_count() interface
+  PCI/MSI: Get rid of pci_enable_msi_block_auto() interface
+  PCI/MSI: Introduce pci_get_msix_vec_count() interface
+  PCI/MSI: Introduce pci_auto_enable_msi*() family helpers
+
+ Documentation/PCI/MSI-HOWTO.txt |  175 +++++++++++++++++++++++++++++++++------
+ arch/s390/pci/pci.c             |    4 +-
+ drivers/ata/ahci.c              |   56 ++++++++-----
+ drivers/pci/msi.c               |  163 +++++++++++++++++++++++++++---------
+ drivers/pci/pcie/portdrv_core.c |    7 +-
+ include/linux/pci.h             |   78 +++++++++++++++---
+ 6 files changed, 380 insertions(+), 103 deletions(-)
 
 -- 
-
-----------------------------------------------------------------------------
-Jerry Hoemann            Software Engineer              Hewlett-Packard
-
-3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
-Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
-                                                email:  jerry.hoemann@hp.com
-----------------------------------------------------------------------------
+1.7.7.6
 
