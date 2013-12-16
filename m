@@ -1,38 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab3LPQw7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:52:59 -0500
-Received: from b232-35.smtp-out.amazonses.com ([199.127.232.35]:14053 "EHLO
-	b232-35.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754406Ab3LPQw6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:52:58 -0500
-Date: Mon, 16 Dec 2013 16:52:57 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Dave Hansen <dave@sr71.net>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Pravin B Shelar <pshelar@nicira.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [RFC][PATCH 1/7] mm: print more details for bad_page()
-In-Reply-To: <20131213235904.D69C09F7@viggo.jf.intel.com>
-Message-ID: <00000142fc5326bf-37eaf439-1c10-448f-9cd3-8137290680ca-000000@email.amazonses.com>
-References: <20131213235903.8236C539@viggo.jf.intel.com> <20131213235904.D69C09F7@viggo.jf.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754898Ab3LPQyA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:54:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34640 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753867Ab3LPQx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 11:53:58 -0500
+Date: Mon, 16 Dec 2013 17:53:56 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: glommer@gmail.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, devel@openvz.org,
+        Glauber Costa <glommer@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 2/2] memcg: do not use vmalloc for mem_cgroup allocations
+Message-ID: <20131216165356.GE26797@dhcp22.suse.cz>
+References: <965cbb70fb55fe50a77382537b9a1b7455deac86.1387007793.git.vdavydov@parallels.com>
+ <ce02d52baac3730d659c046a181c2784c6cee2c4.1387007793.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.127.232.35
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ce02d52baac3730d659c046a181c2784c6cee2c4.1387007793.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Dec 2013, Dave Hansen wrote:
+On Sat 14-12-13 12:15:34, Vladimir Davydov wrote:
+> The vmalloc was introduced by patch 333279 ("memcgroup: use vmalloc for
+> mem_cgroup allocation"), because at that time MAX_NUMNODES was used for
+> defining the per-node array in the mem_cgroup structure so that the
+> structure could be huge even if the system had the only NUMA node.
+> 
+> The situation was significantly improved by patch 45cf7e ("memcg: reduce
+> the size of struct memcg 244-fold"), which made the size of the
+> mem_cgroup structure calculated dynamically depending on the real number
+> of NUMA nodes installed on the system (nr_node_ids), so now there is no
+> point in using vmalloc here: the structure is allocated rarely and on
+> most systems its size is about 1K.
+> 
+> Personally I'd like to remove this vmalloc, because I'm considering
+> using wait_on_bit() on mem_cgroup::kmem_account_flags in the kmemcg
+> shrinkers implementation, which is impossible on vmalloc'd areas.
+> 
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Glauber Costa <glommer@openvz.org>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Balbir Singh <bsingharora@gmail.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-> This way, the messages will show specifically why the page was
-> bad, *specifically* which flags it is complaining about, if it
-> was a page flag combination which was the problem.
+yes this makes sense to me even without wait_on_bit part.
+Maybe I would just merge it with 1/2.
 
-Yes this would have been helpful in the past for me.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Reviewed-by: Christoph Lameter <cl@linux.com>
+Thanks!
+> ---
+>  mm/memcontrol.c |   28 ++++++----------------------
+>  1 file changed, 6 insertions(+), 22 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 7f1a356..205eb7b 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -48,7 +48,6 @@
+>  #include <linux/sort.h>
+>  #include <linux/fs.h>
+>  #include <linux/seq_file.h>
+> -#include <linux/vmalloc.h>
+>  #include <linux/vmpressure.h>
+>  #include <linux/mm_inline.h>
+>  #include <linux/page_cgroup.h>
+> @@ -335,12 +334,6 @@ struct mem_cgroup {
+>  	/* WARNING: nodeinfo must be the last member here */
+>  };
+>  
+> -static size_t memcg_size(void)
+> -{
+> -	return sizeof(struct mem_cgroup) +
+> -		nr_node_ids * sizeof(struct mem_cgroup_per_node *);
+> -}
+> -
+>  /* internal only representation about the status of kmem accounting. */
+>  enum {
+>  	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
+> @@ -6139,14 +6132,12 @@ static void free_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+>  static struct mem_cgroup *mem_cgroup_alloc(void)
+>  {
+>  	struct mem_cgroup *memcg;
+> -	size_t size = memcg_size();
+> +	size_t size;
+>  
+> -	/* Can be very big if nr_node_ids is very big */
+> -	if (size < PAGE_SIZE)
+> -		memcg = kzalloc(size, GFP_KERNEL);
+> -	else
+> -		memcg = vzalloc(size);
+> +	size = sizeof(struct mem_cgroup);
+> +	size += nr_node_ids * sizeof(struct mem_cgroup_per_node *);
+>  
+> +	memcg = kzalloc(size, GFP_KERNEL);
+>  	if (!memcg)
+>  		return NULL;
+>  
+> @@ -6157,10 +6148,7 @@ static struct mem_cgroup *mem_cgroup_alloc(void)
+>  	return memcg;
+>  
+>  out_free:
+> -	if (size < PAGE_SIZE)
+> -		kfree(memcg);
+> -	else
+> -		vfree(memcg);
+> +	kfree(memcg);
+>  	return NULL;
+>  }
+>  
+> @@ -6178,7 +6166,6 @@ out_free:
+>  static void __mem_cgroup_free(struct mem_cgroup *memcg)
+>  {
+>  	int node;
+> -	size_t size = memcg_size();
+>  
+>  	mem_cgroup_remove_from_trees(memcg);
+>  
+> @@ -6199,10 +6186,7 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
+>  	 * the cgroup_lock.
+>  	 */
+>  	disarm_static_keys(memcg);
+> -	if (size < PAGE_SIZE)
+> -		kfree(memcg);
+> -	else
+> -		vfree(memcg);
+> +	kfree(memcg);
+>  }
+>  
+>  /*
+> -- 
+> 1.7.10.4
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
