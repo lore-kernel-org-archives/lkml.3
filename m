@@ -1,129 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab3LPDiN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 22:38:13 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:4607 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752255Ab3LPDiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 22:38:10 -0500
-X-IronPort-AV: E=Sophos;i="4.95,492,1384272000"; 
-   d="scan'208";a="9265968"
-Message-ID: <52AF2C01.9020507@cn.fujitsu.com>
-Date: Mon, 16 Dec 2013 11:36:17 -0500
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1752390Ab3LPDso (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 22:48:44 -0500
+Received: from [207.46.163.155] ([207.46.163.155]:12059 "EHLO
+	na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752305Ab3LPDsn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 22:48:43 -0500
+X-Greylist: delayed 1024 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Dec 2013 22:48:43 EST
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>, Shawn Guo <shawn.guo@linaro.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
+        "LW@KARO-electronics.de" <LW@KARO-electronics.de>,
+        "oskar@scara.com" <oskar@scara.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] ASoC: SGTL5000: Fix kernel failed while trying to
+ get optional VDDD supply.
+Thread-Topic: [PATCH v2] ASoC: SGTL5000: Fix kernel failed while trying to
+ get optional VDDD supply.
+Thread-Index: AQHO7AxdZKvMm2ccHkqsJB91kAqIGJo8jGuAgAWYrhCAAEr2gIAT0M6A
+Date: Mon, 16 Dec 2013 03:31:36 +0000
+Message-ID: <1e493d42f11648428d1ce95883313f2a@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1385621219-20652-1-git-send-email-Li.Xiubo@freescale.com>
+ <20131129183855.GI27568@sirena.org.uk>
+ <1DD289F6464F0949A2FCA5AA6DC23F828E3D21@039-SN2MPN1-011.039d.mgd.msft.net>
+ <20131203123459.GS27568@sirena.org.uk>
+In-Reply-To: <20131203123459.GS27568@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0062BDD52C
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(189002)(199002)(51704005)(54356001)(53806001)(85306002)(81816001)(81686001)(76482001)(83322001)(63696002)(74662001)(51856001)(69226001)(2656002)(81542001)(50986001)(81342001)(87936001)(76796001)(76786001)(46102001)(74706001)(74366001)(74316001)(56816005)(74876001)(47976001)(76576001)(47736001)(4396001)(87266001)(83072002)(74502001)(31966008)(85852003)(47446002)(66066001)(80022001)(80976001)(65816001)(33646001)(49866001)(79102001)(54316002)(56776001)(59766001)(77982001)(90146001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB253;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-CC: dsahern@gmail.com, acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] perf tools: Fix bug for perf kvm report without guestmount.
-References: <52A7637E.8080007@cn.fujitsu.com> <1387211216-19794-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-In-Reply-To: <1387211216-19794-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/16 11:37:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/16 11:37:43,
-	Serialize complete at 2013/12/16 11:37:43
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
-     Could you please help to review this patch when you have a time ?
 
-     Thanx in advance
+> > 2, If the regulator dt node is exist but the optional VDDD is absent (i.e.
+> > The external VDDD is not used), a -EPROBE_DEFER will be returned, if
+> > just return the -EPROBE_DEFER to the probe(and then the probe deferral
+> > mechanism will do the probe again later, is that right ?), and then
+> > the
+> > regulator_get_optional() will be called later again, and the
+> > -EPROBE_DEFER will be returned again too, and now how should I handle
+> > -EPROBE_DEFER error twice ? Or should there be a counter about this ?
+> > That to say when the -EPROBE_DEFER error is the second time returned
+> > from regulator_get_optional() can we ensure that the optional VDDD is really
+> not in use.
+> 
+> The driver should just defer when it's told to defer, I don't understand why it
+> would want to count anything?
+>
 
-- Yang
+It's just one idea for the special handling of regulator_get_optional() in this
+case.
 
-On 12/16/2013 11:26 AM, Dongsheng Yang wrote:
-> Currently, if we use perf kvm --guestkallsyms --guestmodules report,
-> we can not get the perf information from perf data file. The all sample
-> are shown as unknown.
->
-> Reproducing steps:
-> 	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
-> 	[ perf record: Woken up 1 times to write data ]
-> 	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
-> 	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
-> 	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
->
-> This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
->
-> commit 207b5792696206663a38e525b9793644895bad3b
-> Author: David Ahern <dsahern@gmail.com>
-> Date:   Sun Jul 1 16:11:37 2012 -0600
->
->      perf kvm: Fix regression with guest machine creation
->
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index c3e399b..56142d0 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -926,7 +926,7 @@ static struct machine *
->                  else
->                          pid = event->ip.pid;
->
-> -               return perf_session__find_machine(session, pid);
-> +               return perf_session__findnew_machine(session, pid);
->          }
->
->          return perf_session__find_host_machine(session);
-> In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
-> which has the same pid, if no machine found, deliver it to *default* guest. But if we use
-> perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
-> and added. Then the default guest which with pid == 0 will never get a symbol.
->
-> And because the new machine initialized here has no kernel map created, the symbol delivered to
-> it will be marked as "unknown".
->
-> This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
->
-> Verification steps:
-> 	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
-> 	[ perf record: Woken up 1 times to write data ]
-> 	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
-> 	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
-> 	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
-> 	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
-> 	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
-> 	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
-> 	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
-> 	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
-> 	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
-> 	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
->
-> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> ---
->      Changelog since V1:
->          * More commit message.
->
->   tools/perf/util/session.c | 7 ++++++-
->   1 file changed, 6 insertions(+), 1 deletion(-)
->
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 989b2e3..a12dfdd 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -830,6 +830,7 @@ static struct machine *
->   					       struct perf_sample *sample)
->   {
->   	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-> +	struct machine *machine;
->   
->   	if (perf_guest &&
->   	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
-> @@ -842,7 +843,11 @@ static struct machine *
->   		else
->   			pid = sample->pid;
->   
-> -		return perf_session__findnew_machine(session, pid);
-> +		machine = perf_session__find_machine(session, pid);
-> +		if (!machine)
-> +			machine = perf_session__findnew_machine(session,
-> +						DEFAULT_GUEST_KERNEL_ID);
-> +		return machine;
->   	}
->   
->   	return &session->machines.host;
+--
+Xiubo
+
 
