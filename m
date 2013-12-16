@@ -1,109 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab3LPRQW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 12:16:22 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:58436 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753536Ab3LPRQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 12:16:20 -0500
-X-IronPort-AV: E=Sophos;i="4.95,496,1384300800"; 
-   d="scan'208";a="84996473"
-Message-ID: <52AF3561.9020904@citrix.com>
-Date: Mon, 16 Dec 2013 17:16:17 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755071Ab3LPRRj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 12:17:39 -0500
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:63359 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755023Ab3LPRRg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 12:17:36 -0500
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>
-CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v2 8/9] xen-netback: Timeout packets in RX path
-References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com> <1386892097-15502-9-git-send-email-zoltan.kiss@citrix.com> <20131213154406.GO21900@zion.uk.xensource.com>
-In-Reply-To: <20131213154406.GO21900@zion.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+In-Reply-To: <20131216103944.GO11295@suse.de>
+References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
+	<CA+55aFyNAigQqBk07xLpf0nkhZ_x-QkBYG8otRzsqg_8A2eg-Q@mail.gmail.com>
+	<52AB8C68.1040305@zytor.com>
+	<20131216103944.GO11295@suse.de>
+Date: Mon, 16 Dec 2013 09:17:35 -0800
+X-Google-Sender-Auth: Rk_sng5LDCaQe1QsfW9BIJ-6kxk
+Message-ID: <CA+55aFzgH0hG3-zOOzADvBOMXJCGo4=JXafiRiXqL8NRec5J4A@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
+ range flush v2
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Alex Shi <alex.shi@linaro.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Linux-X86 <x86@kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/12/13 15:44, Wei Liu wrote:
-> On Thu, Dec 12, 2013 at 11:48:16PM +0000, Zoltan Kiss wrote:
->> A malicious or buggy guest can leave its queue filled indefinitely, in which
->> case qdisc start to queue packets for that VIF. If those packets came from an
->> another guest, it can block its slots and prevent shutdown. To avoid that, we
->> make sure the queue is drained in every 10 seconds
->>
+On Mon, Dec 16, 2013 at 2:39 AM, Mel Gorman <mgorman@suse.de> wrote:
 >
-> Oh I see where the 10 second constraint in previous patch comes from.
->
-> Could you define a macro for this constant then use it everywhere.
-Well, they are not entirely the same thing, but worth making them the 
-same. How about using "unmap_timeout > (rx_drain_timeout_msecs/1000)" in 
-xenvif_free()? Then netback won't complain about a stucked page if an 
-another guest is permitted to hold on to it.
+> First was Alex's microbenchmark from https://lkml.org/lkml/2012/5/17/59
+> and ran it for a range of thread numbers, 320 iterations per thread with
+> random number of entires to flush. Results are from two machines
 
->
->> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
->> ---
-> [...]
->> +static void xenvif_wake_queue(unsigned long data)
->> +{
->> +	struct xenvif *vif = (struct xenvif *)data;
->> +
->> +	netdev_err(vif->dev, "timer fires\n");
->
-> What timer? This error message needs to be more specific.
-I forgot to remove this, I used it for debugging only. The other message 
-2 line below is more important
+There's something wrong with that benchmark, it sometimes gets stuck,
+and the profile numbers are just random (and mostly in user space).
 
->
->> +	if (netif_queue_stopped(vif->dev)) {
->> +		netdev_err(vif->dev, "draining TX queue\n");
->> +		netif_wake_queue(vif->dev);
->> +	}
->> +}
->> +
->>   static int xenvif_start_xmit(struct sk_buff *skb, struct net_device *dev)
->>   {
->>   	struct xenvif *vif = netdev_priv(dev);
->> @@ -141,8 +152,13 @@ static int xenvif_start_xmit(struct sk_buff *skb, struct net_device *dev)
->>   	 * then turn off the queue to give the ring a chance to
->>   	 * drain.
->>   	 */
->> -	if (!xenvif_rx_ring_slots_available(vif, min_slots_needed))
->> +	if (!xenvif_rx_ring_slots_available(vif, min_slots_needed)) {
->> +		vif->wake_queue.function = xenvif_wake_queue;
->> +		vif->wake_queue.data = (unsigned long)vif;
->>   		xenvif_stop_queue(vif);
->> +		mod_timer(&vif->wake_queue,
->> +			jiffies + rx_drain_timeout_jiffies);
->> +	}
->>
->
-> Do you need to use jiffies_64 instead of jiffies?
-Well, we don't use time_after_eq here, just set the timer. AFAIK that 
-should be OK.
+I think you mentioned fixing a bug in it, mind pointing at the fixed benchmark?
 
-> This timer is only armed when ring is full. So what happens when the
-> ring is not full and some other parts of the system holds on to the
-> packets forever? Can this happen?
-This timer is not to protect the receiving guest, but to protect the 
-sender. If the ring is not full, then netback will put the packet there 
-and release the skb back.
-This patch is to replace delayed copy from classic kernel times. There 
-we handled this problem on the sender side: after a timer expired we 
-made a local copy of the packet and released back the pages. It had 
-stronger guarantees that a guest will always get back its pages, but it 
-also caused more unnecessary copies when the system is already loaded 
-and we should really thrash the packet. Unfortunately we can't do that 
-as the sender is no longer in control.
-Instead I choose this more lightweight solution, because practice said 
-an another guest's queue is the only place where the packet can get 
-stucked, especially if that guest is malicious, buggy, or too slow.
-Other parts (e.g. a driver) can also hold on the packet if they are 
-buggy, but then we should fix that bug rather than feed it with more 
-guest pages.
+Looking at the kernel footprint, it seems to depend on what parameters
+you ran that benchmark with. Under certain loads, it seems to spend
+most of the time in clearing pages and in the page allocation ("-t 8
+-n 320"). And in other loads, it hits smp_call_function_many() and the
+TLB flushers ("-t 8 -n 8"). So exactly what parameters did you use?
 
-Zoli
+Because we've had things that change those two things (and they are
+totally independent).
+
+And does anything stand out in the profiles of ebizzy? For example, in
+between 3.4.x and 3.11, we've converted the anon_vma locking from a
+mutex to a rwsem, and we know that caused several issues, possibly
+causing unfairness. There are other potential sources of unfairness.
+It would be good to perhaps bisect things at least *somewhat*, because
+*so* much has changed in 3.4 to 3.11 that it's impossible to guess.
+
+                    Linus
