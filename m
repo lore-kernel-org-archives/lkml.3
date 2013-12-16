@@ -1,97 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab3LPHwF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 02:52:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39409 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329Ab3LPHwC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 02:52:02 -0500
-Date: Sun, 15 Dec 2013 23:53:36 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-fbdev@vger.kernel.org,
-        "'Kyungmin Park'" <kmpark@infradead.org>, kay@vrfy.org,
-        Jingoo Han <jg1.han@samsung.com>,
-        "'Henrique de Moraes Holschuh'" <ibm-acpi@hmh.eng.br>,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        ibm-acpi-devel@lists.sourceforge.net,
-        "'Richard Purdie'" <rpurdie@rpsys.net>
-Subject: Re: [ibm-acpi-devel] [PATCH] video: backlight: Remove backlight
- sysfs uevent
-Message-Id: <20131215235336.49d49a25.akpm@linux-foundation.org>
-In-Reply-To: <20131124035311.GC19499@khazad-dum.debian.net>
-References: <20131111235700.GA29987@july>
-	<002901cedf3c$a7e77a00$f7b66e00$%han@samsung.com>
-	<20131112005628.GA2914@khazad-dum.debian.net>
-	<1384990859.20536.4.camel@x230>
-	<20131121114332.GA23710@khazad-dum.debian.net>
-	<20131121143326.GA19773@srcf.ucam.org>
-	<20131122113601.GB27196@khazad-dum.debian.net>
-	<20131122171556.GA15680@srcf.ucam.org>
-	<20131124004015.GA19499@khazad-dum.debian.net>
-	<20131124010257.GA6376@srcf.ucam.org>
-	<20131124035311.GC19499@khazad-dum.debian.net>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752622Ab3LPHzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 02:55:46 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36580 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751121Ab3LPHzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 02:55:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,493,1384329600"; 
+   d="scan'208";a="425230493"
+Message-ID: <52AEB206.4080508@intel.com>
+Date: Mon, 16 Dec 2013 09:55:50 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: David Ahern <dsahern@gmail.com>
+CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 07/71] perf tools: Record whether a dso is 64-bit
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-8-git-send-email-alexander.shishkin@linux.intel.com> <52AE7086.2030708@gmail.com>
+In-Reply-To: <52AE7086.2030708@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Nov 2013 01:53:11 -0200 Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
-
-> On Sun, 24 Nov 2013, Matthew Garrett wrote:
-> > On Sat, Nov 23, 2013 at 10:40:15PM -0200, Henrique de Moraes Holschuh wrote:
-> > > On Fri, 22 Nov 2013, Matthew Garrett wrote:
-> > > > We have userspace that relies on uevents of type 
-> > > > BACKLIGHT_UPDATE_HOTKEY. I don't know that we have userspace that relies 
-> > > > on uevents of type BACKLIGHT_UPDATE_SYSFS.
-> > > 
-> > > Any OSD application would have to rely on both uevent types, or it is broken
-> > > (and to test that, just write a level to sysfs and watch the OSD app fail to
-> > > tell you about the backlight level change...)
-> > 
-> > Right, OSDs are supposed to respond to keypresses, not arbitrary changes 
-> > of backlight. If the user's just echoed 8 into brightness, they know 
-> > they set the brightness to 8 - they don't need an OSD to tell them that. 
+On 16/12/13 05:16, David Ahern wrote:
+> On 12/11/13, 5:36 AM, Alexander Shishkin wrote:
+>> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+>> index a0c7c59..80817ec 100644
+>> --- a/tools/perf/util/dso.c
+>> +++ b/tools/perf/util/dso.c
+>> @@ -446,6 +446,7 @@ struct dso *dso__new(const char *name)
+>>           dso->cache = RB_ROOT;
+>>           dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+>>           dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
+>> +        dso->is_64_bit = (sizeof(void *) == 8);
+>>           dso->loaded = 0;
+>>           dso->rel = 0;
+>>           dso->sorted_by_name = 0;
+>> diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+>> index 384f2d9..62680e1 100644
+>> --- a/tools/perf/util/dso.h
+>> +++ b/tools/perf/util/dso.h
+>> @@ -91,6 +91,7 @@ struct dso {
+>>       u8         annotate_warned:1;
+>>       u8         sname_alloc:1;
+>>       u8         lname_alloc:1;
+>> +    u8         is_64_bit:1;
+>>       u8         sorted_by_name;
+>>       u8         loaded;
+>>       u8         rel;
+>> diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+>> index eed0b96..a0fc81b 100644
+>> --- a/tools/perf/util/symbol-elf.c
+>> +++ b/tools/perf/util/symbol-elf.c
+>> @@ -595,6 +595,8 @@ int symsrc__init(struct symsrc *ss, struct dso *dso,
+>> const char *name,
+>>               goto out_elf_end;
+>>       }
+>>
+>> +    ss->is_64_bit = (gelf_getclass(elf) == ELFCLASS64);
+>> +
+>>       ss->symtab = elf_section_by_name(elf, &ehdr, &ss->symshdr, ".symtab",
+>>               NULL);
+>>       if (ss->symshdr.sh_type != SHT_SYMTAB)
+>> @@ -694,6 +696,7 @@ int dso__load_sym(struct dso *dso, struct map *map,
+>>       bool remap_kernel = false, adjust_kernel_syms = false;
+>>
+>>       dso->symtab_type = syms_ss->type;
+>> +    dso->is_64_bit = syms_ss->is_64_bit;
+>>       dso->rel = syms_ss->ehdr.e_type == ET_REL;
+>>
+>>       /*
+>> diff --git a/tools/perf/util/symbol-minimal.c
+>> b/tools/perf/util/symbol-minimal.c
+>> index ac7070a..b9d1119 100644
+>> --- a/tools/perf/util/symbol-minimal.c
+>> +++ b/tools/perf/util/symbol-minimal.c
+>> @@ -1,3 +1,4 @@
+>> +#include "util.h"
+>>   #include "symbol.h"
+>>
+>>   #include <stdio.h>
+>> @@ -287,6 +288,23 @@ int dso__synthesize_plt_symbols(struct dso *dso
+>> __maybe_unused,
+>>       return 0;
+>>   }
+>>
+>> +static int fd__is_64_bit(int fd)
+>> +{
+>> +    u8 e_ident[EI_NIDENT];
+>> +
+>> +    if (lseek(fd, 0, SEEK_SET))
+>> +        return -1;
+>> +
+>> +    if (readn(fd, e_ident, sizeof(e_ident)) != sizeof(e_ident))
+>> +        return -1;
+>> +
+>> +    if (memcmp(e_ident, ELFMAG, SELFMAG) ||
+>> +        e_ident[EI_VERSION] != EV_CURRENT)
+>> +        return -1;
+>> +
+>> +    return e_ident[EI_CLASS] == ELFCLASS64;
+>> +}
+>> +
+>>   int dso__load_sym(struct dso *dso, struct map *map __maybe_unused,
+>>             struct symsrc *ss,
+>>             struct symsrc *runtime_ss __maybe_unused,
+>> @@ -294,6 +312,11 @@ int dso__load_sym(struct dso *dso, struct map *map
+>> __maybe_unused,
+>>             int kmodule __maybe_unused)
+>>   {
+>>       unsigned char *build_id[BUILD_ID_SIZE];
+>> +    int ret;
+>> +
+>> +    ret = fd__is_64_bit(ss->fd);
+>> +    if (ret >= 0)
+>> +        dso->is_64_bit = ret;
+>>
+>>       if (filename__read_build_id(ss->name, build_id, BUILD_ID_SIZE) > 0) {
+>>           dso__set_build_id(dso, build_id);
 > 
-> It is not just the user that sets the brightness.
 > 
-> Still, if you're sure that all userspace users react only to the hotkey type
-> of event, removing the sysfs one won't break anything any further.
+> Here's what is wrong with this API: you are determining DSO bitness at
+> symbol load time, not when the DSO is created and added to the maps.
 > 
-> But it will be *really* annoying the day we revisit this because someone
-> started abusing the hotkey uevent and we have to deploy a proper fix (rate
-> limiting or switching to a proper event report interface that doesn't use
-> uevents).
-> 
-> > BACKLIGHT_UPDATE_HOTKEY is when the firmware itself has changed the 
-> > brightness in response to a keypress, and so reporting the keypress 
-> > would result in additional backlight changes.
-> 
-> Yeah, I know that bug quite well, thinkpads were the first victims of
-> idiotic feedback event loops caused by braindead userspace.
+> As I pointed out in a prior comment you are initializing dso->is_64_bit to
+> perf's bitness when the dso object is created (dso__new) but the value is
+> not correctly set until dso__load time. Some tools (perf-trace) never load
+> symbols, so that value is always wrong in the sense that its value has no
+> correlation to the dso object.
 
-I'm not seeing a lot of consensus here and afaict the v2 patch:
+That is a very good point.  I think Arnaldo has previously noted that symbol
+loading needs to be split from dso (map) loading.  I don't have the time to
+do that right now.
 
---- a/drivers/video/backlight/backlight.c~drivers-video-backlight-backlightc-remove-backlight-sysfs-uevent
-+++ a/drivers/video/backlight/backlight.c
-@@ -175,8 +175,6 @@ static ssize_t brightness_store(struct d
- 	}
- 	mutex_unlock(&bd->ops_lock);
- 
--	backlight_generate_event(bd, BACKLIGHT_UPDATE_SYSFS);
--
- 	return rc;
- }
- static DEVICE_ATTR_RW(brightness);
-
-will still break userspace which relies on BACKLIGHT_UPDATE_SYSFS
-uevents.  I see no way we can guarantee that there is no such userspace
-so the patch is worrying.
-
-Should we instead be looking for a way of avoiding this risk?  Say, add
-a new knob which people can set if they don't want to generate this
-event?  Ugly, but that's the price we pay for mucking it up originally.
