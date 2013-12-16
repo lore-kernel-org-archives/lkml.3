@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab3LPOni (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 09:43:38 -0500
-Received: from mga02.intel.com ([134.134.136.20]:13744 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753574Ab3LPOng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 09:43:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,495,1384329600"; 
-   d="scan'208";a="425386952"
-Date: Mon, 16 Dec 2013 16:43:14 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 4/5] arm: omap3: twl: use the new lookup method with usb
- phy
-Message-ID: <20131216144314.GB22944@xps8300>
-References: <1386601737-8735-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1386601737-8735-5-git-send-email-heikki.krogerus@linux.intel.com>
- <52AEDE43.8030005@ti.com>
+	id S1754482Ab3LPOnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 09:43:47 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:16791 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754384Ab3LPOnp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 09:43:45 -0500
+Date: Mon, 16 Dec 2013 15:43:43 +0100
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: possible regression on 3.13 when calling flush_dcache_page
+Message-ID: <20131216144343.GD9627@ldesroches-Latitude-E6320>
+Mail-Followup-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+	linux-arm-kernel@lists.infradead.org
+References: <20131212143149.GI12099@ldesroches-Latitude-E6320>
+ <20131212143618.GJ12099@ldesroches-Latitude-E6320>
+ <20131213015909.GA8845@lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <52AEDE43.8030005@ti.com>
+In-Reply-To: <20131213015909.GA8845@lge.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-On Mon, Dec 16, 2013 at 04:34:35PM +0530, Kishon Vijay Abraham I wrote:
-> On Monday 09 December 2013 08:38 PM, Heikki Krogerus wrote:
-> > Provide a complete association for the phy and it's user
-> > (musb) with the new phy_lookup_table.
+On Fri, Dec 13, 2013 at 10:59:09AM +0900, Joonsoo Kim wrote:
+> On Thu, Dec 12, 2013 at 03:36:19PM +0100, Ludovic Desroches wrote:
+> > fix mmc mailing list address error
 > > 
-> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> > ---
-> >  arch/arm/mach-omap2/twl-common.c | 15 ++++++---------
-> >  1 file changed, 6 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-omap2/twl-common.c b/arch/arm/mach-omap2/twl-common.c
-> > index b0d54da..972430b 100644
-> > --- a/arch/arm/mach-omap2/twl-common.c
-> > +++ b/arch/arm/mach-omap2/twl-common.c
-> > @@ -91,18 +91,13 @@ void __init omap_pmic_late_init(void)
-> >  }
-> >  
-> >  #if defined(CONFIG_ARCH_OMAP3)
-> > -struct phy_consumer consumers[] = {
-> > -	PHY_CONSUMER("musb-hdrc.0", "usb"),
-> > -};
-> > -
-> > -struct phy_init_data init_data = {
-> > -	.consumers = consumers,
-> > -	.num_consumers = ARRAY_SIZE(consumers),
-> > +static struct phy_lookup_table twl4030_usb_lookup = {
-> > +	.dev_id = "musb-hdrc.0",
-> > +	.table = PHY_LOOKUP("phy-twl4030_usb.0", NULL),
-> >  };
+> > On Thu, Dec 12, 2013 at 03:31:50PM +0100, Ludovic Desroches wrote:
+> > > Hi,
+> > > 
+> > > With v3.13-rc3 I have an error when the atmel-mci driver calls
+> > > flush_dcache_page (log at the end of the message).
+> > > 
+> > > Since I didn't have it before, I did a git bisect and the commit introducing
+> > > the error is the following one:
+> > > 
+> > > 106a74e slab: replace free and inuse in struct slab with newly introduced active
+> > > 
+> > > I don't know if this commit has introduced a bug or if it has revealed a bug
+> > > in the atmel-mci driver.
 > 
-> had a similar approach during the initial version of phy framework [1] (see
-> phy_bind) but changed it later [2] . Here you should know the device names of
-> two devices and even if one of them started using DEVID_AUTO, it'll start
-> breaking. Such an approach needs to reviewed carefully.
+> Hello,
+> 
+> I think that this commit may not introduce a bug. This patch remove one
+> variable on slab management structure and replace variable name. So there
+> is no functional change.
+> 
 
-If somebody creates a regression by changing something like the
-platform device id without checking all the users, he deserves to get
-into big trouble. I don't see why an individual framework should
-provide protection against such cases.
+If I have reverted this patch and other ones you did on top of it and
+the issue disappear.
 
-In any case, having two device names to deal with does not add any
-more risk. These associations should always be made in the place where
-the phy device is created so you will always know it's device name.
-Normally the platform code creates these associations in the same
-place it creates the platform devices, so you definitely know what the
-device names will be.
+> I doubt that side-effect of this patch reveals a bug in other place.
+> Side-effect is reduced memory usage for slab management structure. It would
+> makes some slabs have more objects with more density since slab management
+> structure is sometimes on the page for objects. So if it diminishes, more
+> objects can be in the page.
+> 
+> Anyway, I will look at it more. If you have any progress, please let me know.
 
-In this case it's actually created in drivers/mfd/twl-core.c, so I do
-need to update this and move the lookup table there. We can still
-deliver the user name as platform data, though I believe it's always
-"musb". Maybe we could actually skip that and just hard code the name?
-The name of the phy we will of course know as the platform device is
-created there and then, so the two device names don't create any more
-risk even in this case.
+No progress at the moment.
 
 
-Thanks,
+Regards
 
--- 
-heikki
+Ludovic
+
+> 
+> Thanks.
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
