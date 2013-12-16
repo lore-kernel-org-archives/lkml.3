@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab3LPKlL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:41:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44169 "EHLO
+	id S1753497Ab3LPKkv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:40:51 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44157 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753559Ab3LPKlG (ORCPT
+	with ESMTP id S1753461Ab3LPKkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:41:06 -0500
-Date: Mon, 16 Dec 2013 02:40:40 -0800
+	Mon, 16 Dec 2013 05:40:47 -0500
+Date: Mon, 16 Dec 2013 02:40:03 -0800
 From: "tip-bot for Paul E. McKenney" <tipbot@zytor.com>
-Message-ID: <tip-919fc6e34831d1c2b58bfb5ae261dc3facc9b269@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, torvalds@linux-foundation.org,
-        a.p.zijlstra@chello.nl, paulmck@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, akpm@linux-foundation.org,
-        tglx@linutronix.de, linux-arch@vger.kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, akpm@linux-foundation.org,
-        tglx@linutronix.de, linux-arch@vger.kernel.org
-In-Reply-To: <1386799151-2219-8-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <1386799151-2219-8-git-send-email-paulmck@linux.vnet.ibm.com>
+Message-ID: <tip-692118dac47e65f5131686b1103ebfebf0cbfa8e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, josh@joshtriplett.org,
+        linux-arch@vger.kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, tglx@linutronix.de,
+        linux-arch@vger.kernel.org
+In-Reply-To: <1386799151-2219-4-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <1386799151-2219-4-git-send-email-paulmck@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] powerpc:
-  Full barrier for smp_mb__after_unlock_lock()
-Git-Commit-ID: 919fc6e34831d1c2b58bfb5ae261dc3facc9b269
+Subject: [tip:core/locking] Documentation/memory-barriers.txt:
+  Document ACCESS_ONCE()
+Git-Commit-ID: 692118dac47e65f5131686b1103ebfebf0cbfa8e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,70 +34,368 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 16 Dec 2013 02:40:47 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 16 Dec 2013 02:40:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  919fc6e34831d1c2b58bfb5ae261dc3facc9b269
-Gitweb:     http://git.kernel.org/tip/919fc6e34831d1c2b58bfb5ae261dc3facc9b269
+Commit-ID:  692118dac47e65f5131686b1103ebfebf0cbfa8e
+Gitweb:     http://git.kernel.org/tip/692118dac47e65f5131686b1103ebfebf0cbfa8e
 Author:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-AuthorDate: Wed, 11 Dec 2013 13:59:11 -0800
+AuthorDate: Wed, 11 Dec 2013 13:59:07 -0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 16 Dec 2013 11:36:18 +0100
+CommitDate: Mon, 16 Dec 2013 11:36:12 +0100
 
-powerpc: Full barrier for smp_mb__after_unlock_lock()
+Documentation/memory-barriers.txt: Document ACCESS_ONCE()
 
-The powerpc lock acquisition sequence is as follows:
+The situations in which ACCESS_ONCE() is required are not well
+documented, so this commit adds some verbiage to
+memory-barriers.txt.
 
-	lwarx; cmpwi; bne; stwcx.; lwsync;
-
-Lock release is as follows:
-
-	lwsync; stw;
-
-If CPU 0 does a store (say, x=1) then a lock release, and CPU 1
-does a lock acquisition then a load (say, r1=y), then there is
-no guarantee of a full memory barrier between the store to 'x'
-and the load from 'y'. To see this, suppose that CPUs 0 and 1
-are hardware threads in the same core that share a store buffer,
-and that CPU 2 is in some other core, and that CPU 2 does the
-following:
-
-	y = 1; sync; r2 = x;
-
-If 'x' and 'y' are both initially zero, then the lock
-acquisition and release sequences above can result in r1 and r2
-both being equal to zero, which could not happen if unlock+lock
-was a full barrier.
-
-This commit therefore makes powerpc's
-smp_mb__after_unlock_lock() be a full barrier.
-
+Reported-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Reviewed-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org
 Cc: <linux-arch@vger.kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1386799151-2219-8-git-send-email-paulmck@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/1386799151-2219-4-git-send-email-paulmck@linux.vnet.ibm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/powerpc/include/asm/spinlock.h | 2 ++
- 1 file changed, 2 insertions(+)
+ Documentation/memory-barriers.txt | 306 +++++++++++++++++++++++++++++++++-----
+ 1 file changed, 271 insertions(+), 35 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/spinlock.h b/arch/powerpc/include/asm/spinlock.h
-index 5f54a74..f6e78d6 100644
---- a/arch/powerpc/include/asm/spinlock.h
-+++ b/arch/powerpc/include/asm/spinlock.h
-@@ -28,6 +28,8 @@
- #include <asm/synch.h>
- #include <asm/ppc-opcode.h>
+diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+index deafa36..919fd60 100644
+--- a/Documentation/memory-barriers.txt
++++ b/Documentation/memory-barriers.txt
+@@ -231,37 +231,8 @@ And there are a number of things that _must_ or _must_not_ be assumed:
+  (*) It _must_not_ be assumed that the compiler will do what you want with
+      memory references that are not protected by ACCESS_ONCE().  Without
+      ACCESS_ONCE(), the compiler is within its rights to do all sorts
+-     of "creative" transformations:
+-
+-     (-) Repeat the load, possibly getting a different value on the second
+-         and subsequent loads.  This is especially prone to happen when
+-	 register pressure is high.
+-
+-     (-) Merge adjacent loads and stores to the same location.  The most
+-         familiar example is the transformation from:
+-
+-		while (a)
+-			do_something();
+-
+-         to something like:
+-
+-		if (a)
+-			for (;;)
+-				do_something();
+-
+-         Using ACCESS_ONCE() as follows prevents this sort of optimization:
+-
+-		while (ACCESS_ONCE(a))
+-			do_something();
+-
+-     (-) "Store tearing", where a single store in the source code is split
+-         into smaller stores in the object code.  Note that gcc really
+-	 will do this on some architectures when storing certain constants.
+-	 It can be cheaper to do a series of immediate stores than to
+-	 form the constant in a register and then to store that register.
+-
+-     (-) "Load tearing", which splits loads in a manner analogous to
+-     	 store tearing.
++     of "creative" transformations, which are covered in the Compiler
++     Barrier section.
  
-+#define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
+  (*) It _must_not_ be assumed that independent loads and stores will be issued
+      in the order given.  This means that for:
+@@ -749,7 +720,8 @@ In summary:
+ 
+   (*) Control dependencies require that the compiler avoid reordering the
+       dependency into nonexistence.  Careful use of ACCESS_ONCE() or
+-      barrier() can help to preserve your control dependency.
++      barrier() can help to preserve your control dependency.  Please
++      see the Compiler Barrier section for more information.
+ 
+   (*) Control dependencies do -not- provide transitivity.  If you
+       need transitivity, use smp_mb().
+@@ -1248,12 +1220,276 @@ compiler from moving the memory accesses either side of it to the other side:
+ 	barrier();
+ 
+ This is a general barrier -- there are no read-read or write-write variants
+-of barrier().  Howevever, ACCESS_ONCE() can be thought of as a weak form
++of barrier().  However, ACCESS_ONCE() can be thought of as a weak form
+ for barrier() that affects only the specific accesses flagged by the
+ ACCESS_ONCE().
+ 
+-The compiler barrier has no direct effect on the CPU, which may then reorder
+-things however it wishes.
++The barrier() function has the following effects:
 +
- #define arch_spin_is_locked(x)		((x)->slock != 0)
++ (*) Prevents the compiler from reordering accesses following the
++     barrier() to precede any accesses preceding the barrier().
++     One example use for this property is to ease communication between
++     interrupt-handler code and the code that was interrupted.
++
++ (*) Within a loop, forces the compiler to load the variables used
++     in that loop's conditional on each pass through that loop.
++
++The ACCESS_ONCE() function can prevent any number of optimizations that,
++while perfectly safe in single-threaded code, can be fatal in concurrent
++code.  Here are some examples of these sorts of optimizations:
++
++ (*) The compiler is within its rights to merge successive loads from
++     the same variable.  Such merging can cause the compiler to "optimize"
++     the following code:
++
++	while (tmp = a)
++		do_something_with(tmp);
++
++     into the following code, which, although in some sense legitimate
++     for single-threaded code, is almost certainly not what the developer
++     intended:
++
++	if (tmp = a)
++		for (;;)
++			do_something_with(tmp);
++
++     Use ACCESS_ONCE() to prevent the compiler from doing this to you:
++
++	while (tmp = ACCESS_ONCE(a))
++		do_something_with(tmp);
++
++ (*) The compiler is within its rights to reload a variable, for example,
++     in cases where high register pressure prevents the compiler from
++     keeping all data of interest in registers.  The compiler might
++     therefore optimize the variable 'tmp' out of our previous example:
++
++	while (tmp = a)
++		do_something_with(tmp);
++
++     This could result in the following code, which is perfectly safe in
++     single-threaded code, but can be fatal in concurrent code:
++
++	while (a)
++		do_something_with(a);
++
++     For example, the optimized version of this code could result in
++     passing a zero to do_something_with() in the case where the variable
++     a was modified by some other CPU between the "while" statement and
++     the call to do_something_with().
++
++     Again, use ACCESS_ONCE() to prevent the compiler from doing this:
++
++	while (tmp = ACCESS_ONCE(a))
++		do_something_with(tmp);
++
++     Note that if the compiler runs short of registers, it might save
++     tmp onto the stack.  The overhead of this saving and later restoring
++     is why compilers reload variables.  Doing so is perfectly safe for
++     single-threaded code, so you need to tell the compiler about cases
++     where it is not safe.
++
++ (*) The compiler is within its rights to omit a load entirely if it knows
++     what the value will be.  For example, if the compiler can prove that
++     the value of variable 'a' is always zero, it can optimize this code:
++
++	while (tmp = a)
++		do_something_with(tmp);
++
++     Into this:
++
++	do { } while (0);
++
++     This transformation is a win for single-threaded code because it gets
++     rid of a load and a branch.  The problem is that the compiler will
++     carry out its proof assuming that the current CPU is the only one
++     updating variable 'a'.  If variable 'a' is shared, then the compiler's
++     proof will be erroneous.  Use ACCESS_ONCE() to tell the compiler
++     that it doesn't know as much as it thinks it does:
++
++	while (tmp = ACCESS_ONCE(a))
++		do_something_with(tmp);
++
++     But please note that the compiler is also closely watching what you
++     do with the value after the ACCESS_ONCE().  For example, suppose you
++     do the following and MAX is a preprocessor macro with the value 1:
++
++	while ((tmp = ACCESS_ONCE(a)) % MAX)
++		do_something_with(tmp);
++
++     Then the compiler knows that the result of the "%" operator applied
++     to MAX will always be zero, again allowing the compiler to optimize
++     the code into near-nonexistence.  (It will still load from the
++     variable 'a'.)
++
++ (*) Similarly, the compiler is within its rights to omit a store entirely
++     if it knows that the variable already has the value being stored.
++     Again, the compiler assumes that the current CPU is the only one
++     storing into the variable, which can cause the compiler to do the
++     wrong thing for shared variables.  For example, suppose you have
++     the following:
++
++	a = 0;
++	/* Code that does not store to variable a. */
++	a = 0;
++
++     The compiler sees that the value of variable 'a' is already zero, so
++     it might well omit the second store.  This would come as a fatal
++     surprise if some other CPU might have stored to variable 'a' in the
++     meantime.
++
++     Use ACCESS_ONCE() to prevent the compiler from making this sort of
++     wrong guess:
++
++	ACCESS_ONCE(a) = 0;
++	/* Code that does not store to variable a. */
++	ACCESS_ONCE(a) = 0;
++
++ (*) The compiler is within its rights to reorder memory accesses unless
++     you tell it not to.  For example, consider the following interaction
++     between process-level code and an interrupt handler:
++
++	void process_level(void)
++	{
++		msg = get_message();
++		flag = true;
++	}
++
++	void interrupt_handler(void)
++	{
++		if (flag)
++			process_message(msg);
++	}
++
++     There is nothing to prevent the the compiler from transforming
++     process_level() to the following, in fact, this might well be a
++     win for single-threaded code:
++
++	void process_level(void)
++	{
++		flag = true;
++		msg = get_message();
++	}
++
++     If the interrupt occurs between these two statement, then
++     interrupt_handler() might be passed a garbled msg.  Use ACCESS_ONCE()
++     to prevent this as follows:
++
++	void process_level(void)
++	{
++		ACCESS_ONCE(msg) = get_message();
++		ACCESS_ONCE(flag) = true;
++	}
++
++	void interrupt_handler(void)
++	{
++		if (ACCESS_ONCE(flag))
++			process_message(ACCESS_ONCE(msg));
++	}
++
++     Note that the ACCESS_ONCE() wrappers in interrupt_handler()
++     are needed if this interrupt handler can itself be interrupted
++     by something that also accesses 'flag' and 'msg', for example,
++     a nested interrupt or an NMI.  Otherwise, ACCESS_ONCE() is not
++     needed in interrupt_handler() other than for documentation purposes.
++     (Note also that nested interrupts do not typically occur in modern
++     Linux kernels, in fact, if an interrupt handler returns with
++     interrupts enabled, you will get a WARN_ONCE() splat.)
++
++     You should assume that the compiler can move ACCESS_ONCE() past
++     code not containing ACCESS_ONCE(), barrier(), or similar primitives.
++
++     This effect could also be achieved using barrier(), but ACCESS_ONCE()
++     is more selective:  With ACCESS_ONCE(), the compiler need only forget
++     the contents of the indicated memory locations, while with barrier()
++     the compiler must discard the value of all memory locations that
++     it has currented cached in any machine registers.  Of course,
++     the compiler must also respect the order in which the ACCESS_ONCE()s
++     occur, though the CPU of course need not do so.
++
++ (*) The compiler is within its rights to invent stores to a variable,
++     as in the following example:
++
++	if (a)
++		b = a;
++	else
++		b = 42;
++
++     The compiler might save a branch by optimizing this as follows:
++
++	b = 42;
++	if (a)
++		b = a;
++
++     In single-threaded code, this is not only safe, but also saves
++     a branch.  Unfortunately, in concurrent code, this optimization
++     could cause some other CPU to see a spurious value of 42 -- even
++     if variable 'a' was never zero -- when loading variable 'b'.
++     Use ACCESS_ONCE() to prevent this as follows:
++
++	if (a)
++		ACCESS_ONCE(b) = a;
++	else
++		ACCESS_ONCE(b) = 42;
++
++     The compiler can also invent loads.  These are usually less
++     damaging, but they can result in cache-line bouncing and thus in
++     poor performance and scalability.  Use ACCESS_ONCE() to prevent
++     invented loads.
++
++ (*) For aligned memory locations whose size allows them to be accessed
++     with a single memory-reference instruction, prevents "load tearing"
++     and "store tearing," in which a single large access is replaced by
++     multiple smaller accesses.  For example, given an architecture having
++     16-bit store instructions with 7-bit immediate fields, the compiler
++     might be tempted to use two 16-bit store-immediate instructions to
++     implement the following 32-bit store:
++
++	p = 0x00010002;
++
++     Please note that GCC really does use this sort of optimization,
++     which is not surprising given that it would likely take more
++     than two instructions to build the constant and then store it.
++     This optimization can therefore be a win in single-threaded code.
++     In fact, a recent bug (since fixed) caused GCC to incorrectly use
++     this optimization in a volatile store.  In the absence of such bugs,
++     use of ACCESS_ONCE() prevents store tearing in the following example:
++
++	ACCESS_ONCE(p) = 0x00010002;
++
++     Use of packed structures can also result in load and store tearing,
++     as in this example:
++
++	struct __attribute__((__packed__)) foo {
++		short a;
++		int b;
++		short c;
++	};
++	struct foo foo1, foo2;
++	...
++
++	foo2.a = foo1.a;
++	foo2.b = foo1.b;
++	foo2.c = foo1.c;
++
++     Because there are no ACCESS_ONCE() wrappers and no volatile markings,
++     the compiler would be well within its rights to implement these three
++     assignment statements as a pair of 32-bit loads followed by a pair
++     of 32-bit stores.  This would result in load tearing on 'foo1.b'
++     and store tearing on 'foo2.b'.  ACCESS_ONCE() again prevents tearing
++     in this example:
++
++	foo2.a = foo1.a;
++	ACCESS_ONCE(foo2.b) = ACCESS_ONCE(foo1.b);
++	foo2.c = foo1.c;
++
++All that aside, it is never necessary to use ACCESS_ONCE() on a variable
++that has been marked volatile.  For example, because 'jiffies' is marked
++volatile, it is never necessary to say ACCESS_ONCE(jiffies).  The reason
++for this is that ACCESS_ONCE() is implemented as a volatile cast, which
++has no effect when its argument is already marked volatile.
++
++Please note that these compiler barriers have no direct effect on the CPU,
++which may then reorder things however it wishes.
  
- #ifdef CONFIG_PPC64
+ 
+ CPU MEMORY BARRIERS
