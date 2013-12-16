@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab3LPPQF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:16:05 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:33275 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753762Ab3LPPQD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:16:03 -0500
-Message-ID: <1387206956.8071.14.camel@ejdallLaptop>
-Subject: Re: [PATCH] PCI AER: Handle non-AER HEST error sources in
- aer_hest_parse()
-From: Betty Dall <betty.dall@hp.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: lenb@kernel.org, rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Date: Mon, 16 Dec 2013 08:15:56 -0700
-In-Reply-To: <20131213230657.GD6746@google.com>
-References: <1386948196-9409-1-git-send-email-betty.dall@hp.com>
-	 <20131213221616.GC6746@google.com> <1386974853.10497.64.camel@ejdallLaptop>
-	 <20131213230657.GD6746@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754434Ab3LPPSz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:18:55 -0500
+Received: from mga14.intel.com ([143.182.124.37]:65136 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753859Ab3LPPSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 10:18:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,495,1384329600"; 
+   d="scan'208";a="445043491"
+Date: Mon, 16 Dec 2013 07:18:52 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH v0 00/71] perf: Add support for Intel Processor Trace
+Message-ID: <20131216151852.GW22695@tassilo.jf.intel.com>
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <20131211130448.GA2480@gmail.com>
+ <87r49jttqr.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131211134724.GC3101@gmail.com>
+ <87bo0ht5nj.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131216143751.GA7959@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131216143751.GA7959@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-12-13 at 16:06 -0700, Bjorn Helgaas wrote:
+> So we could make the old ABI a CONFIG_PERF_EVENTS_COMPAT_X86_BTS kind 
+> of legacy option, turned off by default. That allows us its eventual 
+> future phasing out.
+> 
+> It all depends on how useful the new tooling becomes: if interesting 
+> things can be done with it via an obvious, powerful interface then 
+> people might start using it.
 
-> I should have thought longer before hitting send.  I think it's worthwhile
-> to use the same helper in aer_hest_parse_aff(), and once I did that, it
-> became more obvious that aer_hest_parse() and aer_hest_parse_aff() are
-> essentially similar, so I wonder if it's worth consolidating them, as
-> below.  It doesn't reduce the number of lines of code, but maybe it's
-> simpler for the reader?
+The thing to keep in mind is that BTS is really really slow.
 
+It's unlikely it'll be ever all that useful no matter how the API
+looks like.
 
-Hi Bjorn,
-
-That is a nice cleanup. I tested it on my firmware first system. 
-
-Also, I double checked back through the ACPI spec, and there are
-FIRMWARE_FIRST flags in the IA-32 Architecture Machine Check Exception
-and IA-32 Architecture Corrected Machine Check error sources too. These
-functions we are changing are specifically looking just for the AER
-error sources. That is correct because AER firmware first is separate
-from MCE/CMC firmware first. So, this patch looks good. 
-
--Betty
-
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
