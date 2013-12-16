@@ -1,213 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab3LPKPl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:15:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50584 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753247Ab3LPKO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:14:29 -0500
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        joern@logfs.org, Michel Lespinasse <walken@google.com>,
-        Vlastimil Babka <vbabka@suse.cz>, stable@kernel.org
-Subject: [RFC PATCH 3/3] mm: munlock: fix potential race with THP page split
-Date: Mon, 16 Dec 2013 11:14:16 +0100
-Message-Id: <1387188856-21027-4-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1387188856-21027-1-git-send-email-vbabka@suse.cz>
-References: <52AE07B4.4020203@oracle.com>
- <1387188856-21027-1-git-send-email-vbabka@suse.cz>
+	id S1753147Ab3LPKVH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:21:07 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:60932 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191Ab3LPKVF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 05:21:05 -0500
+Message-ID: <52AEE177.1090802@ti.com>
+Date: Mon, 16 Dec 2013 13:18:15 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Sekhar Nori <nsekhar@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-gpio@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 0/2] gpio: davinci: reuse for keystone arch
+References: <1386871973-26762-1-git-send-email-grygorii.strashko@ti.com>	<52ACAD50.6060003@ti.com>	<52ADB3BC.3080605@ti.com> <52ADB47E.1080505@ti.com>
+In-Reply-To: <52ADB47E.1080505@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.75]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit ff6a6da60 ("mm: accelerate munlock() treatment of THP pages")
-munlock skips tail pages of a munlocked THP page. There is some attempt to
-prevent bad consequences of racing with a THP page split, but code inspection
-indicates that there are two problems that may lead to a non-fatal, yet wrong
-outcome.
+On 12/15/2013 03:54 PM, Sekhar Nori wrote:
+> On Sunday 15 December 2013 07:20 PM, Sekhar Nori wrote:
+>> On Sunday 15 December 2013 12:41 AM, Santosh Shilimkar wrote:
+>>> Linus, Sekhar,
+>>>
+>>> On Thursday 12 December 2013 01:12 PM, Grygorii Strashko wrote:
+>>>> This series is intended to update Davinci GPIO driver and reuse
+>>>> it for Keystone SoCs, because Keystone uses the similar GPIO IP like Davinci.
+>>>> Keystone GPIO IP: supports:
+>>>> - up to 32 GPIO lines;
+>>>> - only unbanked irqs;
+>>>>
+>>>> See Documentation:
+>>>> Keystone - http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
+>>>>
+>>>> This series depends on:
+>>>> [1] "[PATCH 1/2] gpio: davinci: Fix a check for unbanked gpio"
+>>>> https://lkml.org/lkml/2013/11/8/22
+>>>> [2] "[PATCH v6 0/6] gpio: daVinci: cleanup and feature enhancement"
+>>>> https://www.mail-archive.com/devicetree@vger.kernel.org/msg05970.html
+>>>> [3] "gpio: davinci: get rid of DAVINCI_N_GPIO"
+>>>> https://lkml.org/lkml/2013/11/26/405
+>>>> [4] "gpio: introduce GPIO_DAVINCI kconfig option"
+>>>> https://lkml.org/lkml/2013/11/26/435
+>>>> [5] "gpio: davinci: use chained_irq_enter/chained_irq_exit API"
+>>>> https://lkml.org/lkml/2013/11/26/428
+>>>>
+>>>> To handle all dependencies, I've created a branch where I collected all
+>>>> "ready to merge" patches (all acks added in patches) and this series:
+>>>> - https://github.com/grygoriyS/linux.git
+>>>> - branch: keystone-master-gpio-for-next
+>>>>
+>>> Can one of you pull all these patches ?
+>>
+>> So I went through my backlog and queued all that I think is ready. Here
+>> is the branch. Let me know if there is anything else missing.
 
-First, __split_huge_page_refcount() copies flags including PageMlocked from
-the head page to the tail pages. Clearing PageMlocked by munlock_vma_page()
-in the middle of this operation might result in part of tail pages left with
-PageMlocked flag. As the head page still appears to be a THP page until all
-tail pages are processed, munlock_vma_page() might think it munlocked the whole
-THP page and skip all the former tail pages. Before ff6a6da60, those pages
-would be cleared in further iterations of munlock_vma_pages_range(), but
-NR_MLOCK would still become undercounted (related the next point).
+Looks like everything are in place. Thanks.
 
-Second, NR_MLOCK accounting is based on call to hpage_nr_pages() after the
-PageMlocked is cleared. The accounting might also become inconsistent due to
-race with __split_huge_page_refcount()
- - undercount when HUGE_PMD_NR is subtracted, but some tail pages are left
-   with PageMlocked set and counted again (only possible before ff6a6da60)
- - overcount when hpage_nr_pages() sees a normal page (split has already
-   finished), but the parallel split has meanwhile cleared PageMlocked from
-   additional tail pages
+>
+> Forgot to mention that I have not been able to test them today though.
+> They will hit linux-next only after I have been able to test them and I
+> send a pull request to arm-soc or Linus W.
+>
 
-This patch prevents both problems via extending the scope of lru_lock in
-munlock_vma_page(). This is convenient because:
-- __split_huge_page_refcount() takes lru_lock for its whole operation
-- munlock_vma_page() typically takes lru_lock anyway for page isolation
-
-As this becomes a second function where page isolation is done with lru_lock
-already held, factor this out to a new __munlock_isolate_lru_page() function
-and clean up the code around.
-
-Cc: stable@kernel.org
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
----
- mm/mlock.c | 104 +++++++++++++++++++++++++++++++++++--------------------------
- 1 file changed, 60 insertions(+), 44 deletions(-)
-
-diff --git a/mm/mlock.c b/mm/mlock.c
-index 31383d5..ca597f3 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -91,6 +91,26 @@ void mlock_vma_page(struct page *page)
- }
- 
- /*
-+ * Isolate a page from LRU with optional get_page() pin.
-+ * Assumes lru_lock already held and page already pinned.
-+ */
-+static bool __munlock_isolate_lru_page(struct page *page, bool getpage)
-+{
-+	if (PageLRU(page)) {
-+		struct lruvec *lruvec = mem_cgroup_page_lruvec(page,
-+				page_zone(page));
-+
-+		if (getpage)
-+			get_page(page);
-+		ClearPageLRU(page);
-+		del_page_from_lru_list(page, lruvec, page_lru(page));
-+		return true;
-+	}
-+
-+	return false;
-+}
-+
-+/*
-  * Finish munlock after successful page isolation
-  *
-  * Page must be locked. This is a wrapper for try_to_munlock()
-@@ -126,9 +146,9 @@ static void __munlock_isolated_page(struct page *page)
- static void __munlock_isolation_failed(struct page *page)
- {
- 	if (PageUnevictable(page))
--		count_vm_event(UNEVICTABLE_PGSTRANDED);
-+		__count_vm_event(UNEVICTABLE_PGSTRANDED);
- 	else
--		count_vm_event(UNEVICTABLE_PGMUNLOCKED);
-+		__count_vm_event(UNEVICTABLE_PGMUNLOCKED);
- }
- 
- /**
-@@ -149,28 +169,34 @@ static void __munlock_isolation_failed(struct page *page)
- unsigned int munlock_vma_page(struct page *page)
- {
- 	unsigned int nr_pages;
-+	struct zone *zone = page_zone(page);
- 
- 	BUG_ON(!PageLocked(page));
- 
--	if (TestClearPageMlocked(page)) {
--		nr_pages = hpage_nr_pages(page);
--		mod_zone_page_state(page_zone(page), NR_MLOCK, -nr_pages);
--		if (!isolate_lru_page(page))
--			__munlock_isolated_page(page);
--		else
--			__munlock_isolation_failed(page);
--	} else {
--		nr_pages = hpage_nr_pages(page);
--	}
--
- 	/*
--	 * Regardless of the original PageMlocked flag, we determine nr_pages
--	 * after touching the flag. This leaves a possible race with a THP page
--	 * split, such that a whole THP page was munlocked, but nr_pages == 1.
--	 * Returning a smaller mask due to that is OK, the worst that can
--	 * happen is subsequent useless scanning of the former tail pages.
--	 * The NR_MLOCK accounting can however become broken.
-+	 * Serialize with any parallel __split_huge_page_refcount() which
-+	 * might otherwise copy PageMlocked to part of the tail pages before
-+	 * we clear it in the head page. It also stabilizes hpage_nr_pages().
- 	 */
-+	spin_lock_irq(&zone->lru_lock);
-+
-+	nr_pages = hpage_nr_pages(page);
-+	if (!TestClearPageMlocked(page))
-+		goto unlock_out;
-+
-+	__mod_zone_page_state(zone, NR_MLOCK, -nr_pages);
-+
-+	if (__munlock_isolate_lru_page(page, true)) {
-+		spin_unlock_irq(&zone->lru_lock);
-+		__munlock_isolated_page(page);
-+		goto out;
-+	}
-+	__munlock_isolation_failed(page);
-+
-+unlock_out:
-+	spin_unlock_irq(&zone->lru_lock);
-+
-+out:
- 	return nr_pages - 1;
- }
- 
-@@ -307,34 +333,24 @@ static void __munlock_pagevec(struct pagevec *pvec, struct zone *zone)
- 		struct page *page = pvec->pages[i];
- 
- 		if (TestClearPageMlocked(page)) {
--			struct lruvec *lruvec;
--			int lru;
--
--			if (PageLRU(page)) {
--				lruvec = mem_cgroup_page_lruvec(page, zone);
--				lru = page_lru(page);
--				/*
--				 * We already have pin from follow_page_mask()
--				 * so we can spare the get_page() here.
--				 */
--				ClearPageLRU(page);
--				del_page_from_lru_list(page, lruvec, lru);
--			} else {
--				__munlock_isolation_failed(page);
--				goto skip_munlock;
--			}
--
--		} else {
--skip_munlock:
- 			/*
--			 * We won't be munlocking this page in the next phase
--			 * but we still need to release the follow_page_mask()
--			 * pin. We cannot do it under lru_lock however. If it's
--			 * the last pin, __page_cache_release would deadlock.
-+			 * We already have pin from follow_page_mask()
-+			 * so we can spare the get_page() here.
- 			 */
--			pagevec_add(&pvec_putback, pvec->pages[i]);
--			pvec->pages[i] = NULL;
-+			if (__munlock_isolate_lru_page(page, false))
-+				continue;
-+			else
-+				__munlock_isolation_failed(page);
- 		}
-+
-+		/*
-+		 * We won't be munlocking this page in the next phase
-+		 * but we still need to release the follow_page_mask()
-+		 * pin. We cannot do it under lru_lock however. If it's
-+		 * the last pin, __page_cache_release() would deadlock.
-+		 */
-+		pagevec_add(&pvec_putback, pvec->pages[i]);
-+		pvec->pages[i] = NULL;
- 	}
- 	delta_munlocked = -nr + pagevec_count(&pvec_putback);
- 	__mod_zone_page_state(zone, NR_MLOCK, delta_munlocked);
--- 
-1.8.4
+Regards,
+-grygorii
 
