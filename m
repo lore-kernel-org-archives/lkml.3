@@ -1,247 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab3LPK7G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:59:06 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:39741 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753133Ab3LPK7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:59:04 -0500
-X-IronPort-AV: E=Sophos;i="4.95,494,1384300800"; 
-   d="scan'208";a="84857623"
-Message-ID: <52AEDCF5.8050701@citrix.com>
-Date: Mon, 16 Dec 2013 10:59:01 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1753476Ab3LPK7e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:59:34 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23486 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab3LPK7d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 05:59:33 -0500
+Message-ID: <52AEDCFD.9020402@oracle.com>
+Date: Mon, 16 Dec 2013 16:29:09 +0530
+From: Allen Pais <allen.pais@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        <gordan@bobich.net>
-Subject: Re: [Xen-devel] [RFC PATCH] Xen PCI back - do slot and bus reset
- (v0).
-References: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [PATCH 2/3] sparc64: convert spinlock_t to raw_spinlock_t in
+ mmu_context_t
+References: <1387166853-10782-1-git-send-email-allen.pais@oracle.com> <1387166853-10782-3-git-send-email-allen.pais@oracle.com> <52AED5BB.1060002@linutronix.de>
+In-Reply-To: <52AED5BB.1060002@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/12/13 16:09, Konrad Rzeszutek Wilk wrote:
-> Hey,
+
+>> Issue debugged by Thomas Gleixner <tglx@linutronix.de>
+The kernel crashed while I attempted preempt_rt support on log
+at:
+
+[ 1487.027884] I7: <rt_mutex_setprio+0x3c/0x2c0>
+[ 1487.027885] Call Trace:
+[ 1487.027887]  [00000000004967dc] rt_mutex_setprio+0x3c/0x2c0
+[ 1487.027892]  [00000000004afe20] task_blocks_on_rt_mutex+0x180/0x200
+[ 1487.027895]  [0000000000819114] rt_spin_lock_slowlock+0x94/0x300
+[ 1487.027897]  [0000000000817ebc] __schedule+0x39c/0x53c
+[ 1487.027899]  [00000000008185fc] schedule+0x1c/0xc0
+[ 1487.027908]  [000000000048fff4] smpboot_thread_fn+0x154/0x2e0
+[ 1487.027913]  [000000000048753c] kthread+0x7c/0xa0
+[ 1487.027920]  [00000000004060c4] ret_from_syscall+0x1c/0x2c
+[ 1487.027922]  [0000000000000000]           (null)
+
+Thomas debugged it and pointed me towards the fix.
+
 > 
-> While I was trying to narrow down the state of GPU passthrough
-> (still not finished) and figuring what needs to be done I realized
-> that Xen PCIback did not reset my GPU properly (when I crashed the
-> Windows guest by mistake). It does an FLR reset or Power one - if
-> the device supports it. But it seems that some of these GPUs
-> are liars and actually don't do the power part properly.
+> I think davem would appreciate if you add a little here than this. The
+> same goes for 3/3.
+> 
 
-In my experience the devices do not lie.  They correctly report that
-they do not perform a reset in D3hot.
+The same goes with 3/3
 
-Here's the patch I'm using to solve this.  It does something similar.
-i.e., a SBR if all devices on that bus are safe to be reset.
+[ 2317.606015]  [00000000008072f4] rt_spin_lock_slowlock+0x94/0x300
+[ 2317.606020]  [0000000000451d74] get_new_mmu_context+0x14/0x160
+[ 2317.606026]  [0000000000806394] switch_to_pc+0xd4/0x2a0
+[ 2317.606029]  [00000000008067dc] schedule+0x1c/0xc0
+[ 2317.606031]  [0000000000807364] rt_spin_lock_slowlock+0x104/0x300
+[ 2317.606033]  [0000000000450284] destroy_context+0x84/0x120
+[ 2317.606036]  [000000000045c788] __mmdrop+0x28/0xe0
+[ 2317.606045]  [00000000004bf290] rcu_process_callbacks+0x450/0x760
+[ 2317.606049]  [0000000000466d48] do_current_softirqs+0x208/0x3c0
+[ 2317.606051]  [0000000000466f14] run_ksoftirqd+0x14/0x40
+[ 2317.606057]  [000000000048c64c] smpboot_thread_fn+0x18c/0x2e0
+[ 2317.606061]  [0000000000483b5c] kthread+0x7c/0xa0
+[ 2317.606069]  [00000000004060c4] ret_from_syscall+0x1c/0x2c
+[ 2317.606070]  [0000000000000000]           (null)
 
-I prefer it because it provides the standard 'reset' sysfs file that the
-toolstack/userspace can use.
+I did not think it'd be nice to put the call trace in the commit message.
+But if needed I can re-send them.
 
-It does have some limitations:  a) It does not check whether a device is
-in use (only if it is bound to pciback); and b) it hand rolls
-pci_slot_reset() (because it didn't exist at the time).
-
-diff --git a/drivers/xen/xen-pciback/pci_stub.c
-b/drivers/xen/xen-pciback/pci_stub.c
-index 4e8ba38..5a03e63 100644
---- a/drivers/xen/xen-pciback/pci_stub.c
-+++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -14,6 +14,7 @@
- #include <linux/wait.h>
- #include <linux/sched.h>
- #include <linux/atomic.h>
-+#include <linux/delay.h>
- #include <xen/events.h>
- #include <asm/xen/pci.h>
- #include <asm/xen/hypervisor.h>
-@@ -43,6 +44,7 @@ struct pcistub_device {
- 	struct kref kref;
- 	struct list_head dev_list;
- 	spinlock_t lock;
-+	bool created_reset_file;
-
- 	struct pci_dev *dev;
- 	struct xen_pcibk_device *pdev;/* non-NULL if struct pci_dev is in use */
-@@ -60,6 +62,114 @@ static LIST_HEAD(pcistub_devices);
- static int initialize_devices;
- static LIST_HEAD(seized_devices);
-
-+/*
-+ * pci_reset_function() will only work if there is a mechanism to
-+ * reset that single function (e.g., FLR or a D-state transition).
-+ * For PCI hardware that has two or more functions but no per-function
-+ * reset, we can do a bus reset iff all the functions are co-assigned
-+ * to the same domain.
-+ *
-+ * If a function has no per-function reset mechanism the 'reset' sysfs
-+ * file that the toolstack uses to reset a function prior to assigning
-+ * the device will be missing.  In this case, pciback adds its own
-+ * which will try a bus reset.
-+ *
-+ * Note: pciback does not check for co-assigment before doing a bus
-+ * reset, only that the devices are bound to pciback.  The toolstack
-+ * is assumed to have done the right thing.
-+ */
-+static int __pcistub_reset_function(struct pci_dev *dev)
-+{
-+	struct pci_dev *pdev;
-+	u16 ctrl;
-+	int ret;
-+
-+	ret = __pci_reset_function_locked(dev);
-+	if (ret == 0)
-+		return 0;
-+
-+	if (pci_is_root_bus(dev->bus) || dev->subordinate || !dev->bus->self)
-+		return -ENOTTY;
-+
-+	list_for_each_entry(pdev, &dev->bus->devices, bus_list) {
-+		if (pdev != dev && (!pdev->driver
-+				    || strcmp(pdev->driver->name, "pciback")))
-+			return -ENOTTY;
-+		pci_save_state(pdev);
-+	}
-+
-+	pci_read_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, &ctrl);
-+	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
-+	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
-+	msleep(200);
-+
-+	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
-+	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
-+	msleep(200);
-+
-+	list_for_each_entry(pdev, &dev->bus->devices, bus_list)
-+		pci_restore_state(pdev);
-+
-+	return 0;
-+}
-+
-+static int pcistub_reset_function(struct pci_dev *dev)
-+{
-+	int ret;
-+
-+	device_lock(&dev->dev);
-+	ret = __pcistub_reset_function(dev);
-+	device_unlock(&dev->dev);
-+
-+	return ret;
-+}
-+
-+static ssize_t pcistub_reset_store(struct device *dev,
-+				   struct device_attribute *attr,
-+				   const char *buf, size_t count)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	unsigned long val;
-+	ssize_t result = strict_strtoul(buf, 0, &val);
-+
-+	if (result < 0)
-+		return result;
-+
-+	if (val != 1)
-+		return -EINVAL;
-+
-+	result = pcistub_reset_function(pdev);
-+	if (result < 0)
-+		return result;
-+	return count;
-+}
-+static DEVICE_ATTR(reset, 0200, NULL, pcistub_reset_store);
-+
-+static int pcistub_try_create_reset_file(struct pcistub_device *psdev)
-+{
-+	struct device *dev = &psdev->dev->dev;
-+	struct sysfs_dirent *reset_dirent;
-+	int ret;
-+
-+	reset_dirent = sysfs_get_dirent(dev->kobj.sd, NULL, "reset");
-+	if (reset_dirent) {
-+		sysfs_put(reset_dirent);
-+		return 0;
-+	}
-+
-+	ret = device_create_file(dev, &dev_attr_reset);
-+	if (ret < 0)
-+		return ret;
-+	psdev->created_reset_file = true;
-+	return 0;
-+}
-+
-+static void pcistub_remove_reset_file(struct pcistub_device *psdev)
-+{
-+	if (psdev && psdev->created_reset_file)
-+		device_remove_file(&psdev->dev->dev, &dev_attr_reset);
-+}
-+
- static struct pcistub_device *pcistub_device_alloc(struct pci_dev *dev)
- {
- 	struct pcistub_device *psdev;
-@@ -95,12 +205,15 @@ static void pcistub_device_release(struct kref *kref)
-
- 	dev_dbg(&dev->dev, "pcistub_device_release\n");
-
-+	pcistub_remove_reset_file(psdev);
-+
- 	xen_unregister_device_domain_owner(dev);
-
- 	/* Call the reset function which does not take lock as this
- 	 * is called from "unbind" which takes a device_lock mutex.
- 	 */
--	__pci_reset_function_locked(dev);
-+	__pcistub_reset_function(psdev->dev);
-+
- 	if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
- 		dev_dbg(&dev->dev, "Could not reload PCI state\n");
- 	else
-@@ -268,7 +381,7 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
- 	/* This is OK - we are running from workqueue context
- 	 * and want to inhibit the user from fiddling with 'reset'
- 	 */
--	pci_reset_function(dev);
-+	pcistub_reset_function(psdev->dev);
- 	pci_restore_state(psdev->dev);
-
- 	/* This disables the device. */
-@@ -392,7 +505,7 @@ static int pcistub_init_device(struct pci_dev *dev)
- 		dev_err(&dev->dev, "Could not store PCI conf saved state!\n");
- 	else {
- 		dev_dbg(&dev->dev, "resetting (FLR, D3, etc) the device\n");
--		__pci_reset_function_locked(dev);
-+		__pcistub_reset_function(dev);
- 		pci_restore_state(dev);
- 	}
- 	/* Now disable the device (this also ensures some private device
-@@ -467,6 +580,10 @@ static int pcistub_seize(struct pci_dev *dev)
- 	if (!psdev)
- 		return -ENOMEM;
-
-+	err = pcistub_try_create_reset_file(psdev);
-+	if (err < 0)
-+		goto out;
-+
- 	spin_lock_irqsave(&pcistub_devices_lock, flags);
-
- 	if (initialize_devices) {
-@@ -485,10 +602,9 @@ static int pcistub_seize(struct pci_dev *dev)
- 	}
-
- 	spin_unlock_irqrestore(&pcistub_devices_lock, flags);
--
-+out:
- 	if (err)
- 		pcistub_device_put(psdev);
--
- 	return err;
- }
-
+- Allen
