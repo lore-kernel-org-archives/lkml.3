@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab3LPXgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 18:36:48 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:44154 "EHLO mail.skyhub.de"
+	id S1752026Ab3LPXgt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 18:36:49 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44162 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750986Ab3LPXgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751019Ab3LPXgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Dec 2013 18:36:43 -0500
 From: Borislav Petkov <bp@alien8.de>
 To: Linux EFI <linux-efi@vger.kernel.org>, X86 ML <x86@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Cc: Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
+Cc: Borislav Petkov <bp@suse.de>, Arjan van de Ven <arjan@linux.intel.com>,
+        Matt Fleming <matt@console-pimps.org>,
         Matthew Garrett <mjg59@srcf.ucam.org>,
         "H. Peter Anvin" <hpa@zytor.com>, Dave Young <dyoung@redhat.com>,
         James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: [PATCH 3/3] efi: Make efi virtual runtime map passing more robust
-Date: Tue, 17 Dec 2013 00:36:37 +0100
-Message-Id: <1387236997-26975-4-git-send-email-bp@alien8.de>
+        Vivek Goyal <vgoyal@redhat.com>, Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH 1/3] x86, ptdump: Add the functionality to dump an arbitrary pagetable
+Date: Tue, 17 Dec 2013 00:36:35 +0100
+Message-Id: <1387236997-26975-2-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1387236997-26975-1-git-send-email-bp@alien8.de>
 References: <1387236997-26975-1-git-send-email-bp@alien8.de>
@@ -27,144 +27,210 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-Currently, running SetVirtualAddressMap() and passing the physical
-address of the virtual map array was working only by a lucky coincidence
-because the memory was present in the EFI page table too. Until Toshi
-went and booted this on a big HP box - the krealloc() manner of resizing
-the memmap we're doing did allocate from such physical addresses which
-were not mapped anymore and boom:
+With reusing the ->trampoline_pgd page table for mapping EFI regions in
+order to use them after having switched to EFI virtual mode, it is very
+useful to be able to dump aforementioned page table in dmesg. This adds
+that functionality through the walk_pgd_level() interface which can be
+called from somewhere else.
 
-http://lkml.kernel.org/r/1386806463.1791.295.camel@misato.fc.hp.com
+The original functionality of dumping to debugfs remains untouched.
 
-One way to take care of that issue is to reimplement the krealloc thing
-but with pages. We start with contiguous pages of order 1, i.e. 2 pages,
-and when we deplete that memory (shouldn't happen all that often but you
-know firmware) we realloc the next power-of-two pages.
-
-Having the pages, it is much more handy and easy to map them into the
-EFI page table with the already existing mapping code which we're using
-for building the virtual mappings.
-
-And, it doesn't matter all that much how much pages we've used as we're
-freeing them right after they've fulfilled their purpose at the end of
-the function anyway.
-
-Reported-by: Toshi Kani <toshi.kani@hp.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
 Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- arch/x86/platform/efi/efi.c | 57 ++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 48 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/pgtable.h |  3 +-
+ arch/x86/mm/dump_pagetables.c  | 77 ++++++++++++++++++++++++++++--------------
+ 2 files changed, 53 insertions(+), 27 deletions(-)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 51d6285701e9..39c52cc9b63a 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -112,7 +112,6 @@ static int __init setup_storage_paranoia(char *arg)
- }
- early_param("efi_no_storage_paranoia", setup_storage_paranoia);
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index 3d1999458709..595305f59da0 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -15,9 +15,10 @@
+ 	 : (prot))
  
+ #ifndef __ASSEMBLY__
 -
- static efi_status_t virt_efi_get_time(efi_time_t *tm, efi_time_cap_t *tc)
- {
- 	unsigned long flags;
-@@ -775,6 +774,27 @@ void __init old_map_region(efi_memory_desc_t *md)
- 		       (unsigned long long)md->phys_addr);
- }
+ #include <asm/x86_init.h>
  
-+static void *realloc_pages(void *old_memmap, int old_shift)
-+{
-+	void *ret;
-+
-+	ret = (void *)__get_free_pages(GFP_KERNEL, old_shift + 1);
-+	if (!ret)
-+		goto out;
-+
-+	/*
-+	 * A first-time allocation doesn't have anything to copy.
-+	 */
-+	if (!old_memmap)
-+		return ret;
-+
-+	memcpy(ret, old_memmap, PAGE_SIZE << old_shift);
-+
-+out:
-+	__free_pages(old_memmap, old_shift);
-+	return ret;
-+}
++void walk_pgd_level(struct seq_file *m, pgd_t *pgd);
 +
  /*
-  * This function will switch the EFI runtime services to virtual mode.
-  * Essentially, we look through the EFI memmap and map every region that
-@@ -794,12 +814,13 @@ void __init old_map_region(efi_memory_desc_t *md)
+  * ZERO_PAGE is a global shared page that is always zero: used
+  * for zero-mapped memory areas etc..
+diff --git a/arch/x86/mm/dump_pagetables.c b/arch/x86/mm/dump_pagetables.c
+index 0002a3a33081..f987ecff9226 100644
+--- a/arch/x86/mm/dump_pagetables.c
++++ b/arch/x86/mm/dump_pagetables.c
+@@ -19,6 +19,8 @@
+ 
+ #include <asm/pgtable.h>
+ 
++static bool dump_to_dmesg;
++
+ /*
+  * The dumper groups pagetable entries of the same type into one, and for
+  * that it needs to keep some state when walking, and flush this state
+@@ -88,6 +90,24 @@ static struct addr_marker address_markers[] = {
+ #define PUD_LEVEL_MULT (PTRS_PER_PMD * PMD_LEVEL_MULT)
+ #define PGD_LEVEL_MULT (PTRS_PER_PUD * PUD_LEVEL_MULT)
+ 
++#define pt_dump_seq_printf(m, fmt, args...)			\
++({								\
++	if (dump_to_dmesg)					\
++		printk(KERN_INFO fmt, ##args);			\
++	else							\
++		if (m)						\
++			seq_printf(m, fmt, ##args);		\
++})
++
++#define pt_dump_cont_printf(m, fmt, args...)			\
++({								\
++	if (dump_to_dmesg)					\
++		printk(KERN_CONT fmt, ##args);			\
++	else							\
++		if (m)						\
++			seq_printf(m, fmt, ##args);		\
++})
++
+ /*
+  * Print a readable form of a pgprot_t to the seq_file
   */
- void __init efi_enter_virtual_mode(void)
- {
-+	pgd_t *pgd = (pgd_t *)__va(real_mode_header->trampoline_pgd);
-+	unsigned long size, new_memmap_left = 0;
- 	efi_memory_desc_t *md, *prev_md = NULL;
-+	int count = 0, new_memmap_shift = 0;
- 	void *p, *new_memmap = NULL;
--	unsigned long size;
- 	efi_status_t status;
- 	u64 end, systab;
--	int count = 0;
+@@ -99,47 +119,47 @@ static void printk_prot(struct seq_file *m, pgprot_t prot, int level)
  
- 	efi.systab = NULL;
+ 	if (!pgprot_val(prot)) {
+ 		/* Not present */
+-		seq_printf(m, "                          ");
++		pt_dump_cont_printf(m, "                          ");
+ 	} else {
+ 		if (pr & _PAGE_USER)
+-			seq_printf(m, "USR ");
++			pt_dump_cont_printf(m, "USR ");
+ 		else
+-			seq_printf(m, "    ");
++			pt_dump_cont_printf(m, "    ");
+ 		if (pr & _PAGE_RW)
+-			seq_printf(m, "RW ");
++			pt_dump_cont_printf(m, "RW ");
+ 		else
+-			seq_printf(m, "ro ");
++			pt_dump_cont_printf(m, "ro ");
+ 		if (pr & _PAGE_PWT)
+-			seq_printf(m, "PWT ");
++			pt_dump_cont_printf(m, "PWT ");
+ 		else
+-			seq_printf(m, "    ");
++			pt_dump_cont_printf(m, "    ");
+ 		if (pr & _PAGE_PCD)
+-			seq_printf(m, "PCD ");
++			pt_dump_cont_printf(m, "PCD ");
+ 		else
+-			seq_printf(m, "    ");
++			pt_dump_cont_printf(m, "    ");
  
-@@ -862,14 +883,19 @@ void __init efi_enter_virtual_mode(void)
- 			efi.systab = (efi_system_table_t *) (unsigned long) systab;
+ 		/* Bit 9 has a different meaning on level 3 vs 4 */
+ 		if (level <= 3) {
+ 			if (pr & _PAGE_PSE)
+-				seq_printf(m, "PSE ");
++				pt_dump_cont_printf(m, "PSE ");
+ 			else
+-				seq_printf(m, "    ");
++				pt_dump_cont_printf(m, "    ");
+ 		} else {
+ 			if (pr & _PAGE_PAT)
+-				seq_printf(m, "pat ");
++				pt_dump_cont_printf(m, "pat ");
+ 			else
+-				seq_printf(m, "    ");
++				pt_dump_cont_printf(m, "    ");
+ 		}
+ 		if (pr & _PAGE_GLOBAL)
+-			seq_printf(m, "GLB ");
++			pt_dump_cont_printf(m, "GLB ");
+ 		else
+-			seq_printf(m, "    ");
++			pt_dump_cont_printf(m, "    ");
+ 		if (pr & _PAGE_NX)
+-			seq_printf(m, "NX ");
++			pt_dump_cont_printf(m, "NX ");
+ 		else
+-			seq_printf(m, "x  ");
++			pt_dump_cont_printf(m, "x  ");
+ 	}
+-	seq_printf(m, "%s\n", level_name[level]);
++	pt_dump_cont_printf(m, "%s\n", level_name[level]);
+ }
+ 
+ /*
+@@ -178,7 +198,7 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		st->current_prot = new_prot;
+ 		st->level = level;
+ 		st->marker = address_markers;
+-		seq_printf(m, "---[ %s ]---\n", st->marker->name);
++		pt_dump_seq_printf(m, "---[ %s ]---\n", st->marker->name);
+ 	} else if (prot != cur || level != st->level ||
+ 		   st->current_address >= st->marker[1].start_address) {
+ 		const char *unit = units;
+@@ -188,16 +208,16 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		/*
+ 		 * Now print the actual finished series
+ 		 */
+-		seq_printf(m, "0x%0*lx-0x%0*lx   ",
+-			   width, st->start_address,
+-			   width, st->current_address);
++		pt_dump_seq_printf(m, "0x%0*lx-0x%0*lx   ",
++				   width, st->start_address,
++				   width, st->current_address);
+ 
+ 		delta = (st->current_address - st->start_address) >> 10;
+ 		while (!(delta & 1023) && unit[1]) {
+ 			delta >>= 10;
+ 			unit++;
+ 		}
+-		seq_printf(m, "%9lu%c ", delta, *unit);
++		pt_dump_cont_printf(m, "%9lu%c ", delta, *unit);
+ 		printk_prot(m, st->current_prot, st->level);
+ 
+ 		/*
+@@ -207,7 +227,7 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		 */
+ 		if (st->current_address >= st->marker[1].start_address) {
+ 			st->marker++;
+-			seq_printf(m, "---[ %s ]---\n", st->marker->name);
++			pt_dump_seq_printf(m, "---[ %s ]---\n", st->marker->name);
  		}
  
--		new_memmap = krealloc(new_memmap,
--				      (count + 1) * memmap.desc_size,
--				      GFP_KERNEL);
--		if (!new_memmap)
--			goto err_out;
-+		if (new_memmap_left < memmap.desc_size) {
-+			new_memmap = realloc_pages(new_memmap, new_memmap_shift);
-+			if (!new_memmap)
-+				goto err_out;
-+
-+			new_memmap_shift++;
-+			new_memmap_left += PAGE_SIZE << new_memmap_shift;
-+		}
+ 		st->start_address = st->current_address;
+@@ -296,7 +316,7 @@ static void walk_pud_level(struct seq_file *m, struct pg_state *st, pgd_t addr,
+ #define pgd_none(a)  pud_none(__pud(pgd_val(a)))
+ #endif
  
- 		memcpy(new_memmap + (count * memmap.desc_size), md,
- 		       memmap.desc_size);
-+
-+		new_memmap_left -= memmap.desc_size;
- 		count++;
- 	}
+-static void walk_pgd_level(struct seq_file *m)
++void walk_pgd_level(struct seq_file *m, pgd_t *pgd)
+ {
+ #ifdef CONFIG_X86_64
+ 	pgd_t *start = (pgd_t *) &init_level4_pgt;
+@@ -306,6 +326,11 @@ static void walk_pgd_level(struct seq_file *m)
+ 	int i;
+ 	struct pg_state st;
  
-@@ -880,6 +906,19 @@ void __init efi_enter_virtual_mode(void)
- 
- 	efi_dump_pagetable();
- 
-+	/*
-+	 * It can happen that the physical address of new_memmap lands in memory
-+	 * which is not mapped in the EFI page table. Therefore we need to go
-+	 * and ident-map those pages containing the map before calling
-+	 * phys_efi_set_virtual_address_map().
-+	 */
-+	if (kernel_map_pages_in_pgd(pgd, __pa(new_memmap), __pa(new_memmap),
-+				    1 << new_memmap_shift, _PAGE_NX)) {
-+		pr_err("Error ident-mapping new memmap (0x%lx)!\n",
-+		       __pa(new_memmap));
-+		goto err_out;
++	if (pgd) {
++		start = pgd;
++		dump_to_dmesg = true;
 +	}
 +
- 	status = phys_efi_set_virtual_address_map(
- 		memmap.desc_size * count,
- 		memmap.desc_size,
-@@ -916,7 +955,7 @@ void __init efi_enter_virtual_mode(void)
- 	if (efi_enabled(EFI_OLD_MEMMAP) && (__supported_pte_mask & _PAGE_NX))
- 		runtime_code_page_mkexec();
+ 	memset(&st, 0, sizeof(st));
  
--	kfree(new_memmap);
-+	__free_pages(new_memmap, new_memmap_shift);
+ 	for (i = 0; i < PTRS_PER_PGD; i++) {
+@@ -331,7 +356,7 @@ static void walk_pgd_level(struct seq_file *m)
  
- 	/* clean DUMMY object */
- 	efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
+ static int ptdump_show(struct seq_file *m, void *v)
+ {
+-	walk_pgd_level(m);
++	walk_pgd_level(m, NULL);
+ 	return 0;
+ }
+ 
 -- 
 1.8.4
 
