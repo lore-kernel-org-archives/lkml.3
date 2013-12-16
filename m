@@ -1,122 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab3LPLeO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 06:34:14 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:48878 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753155Ab3LPLeM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 06:34:12 -0500
-X-AuditID: cbfee68e-b7fb46d00000186a-90-52aee5335133
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Eric Miao'" <eric.y.miao@gmail.com>
-Cc: "'Rashika Kheria'" <rashika.kheria@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        linux-fbdev@vger.kernel.org, "'Josh Triplett'" <josh@joshtriplett.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <20131216112110.GA4849@rashika>
-In-reply-to: <20131216112110.GA4849@rashika>
-Subject: Re: [PATCH] drivers: video: Remove unused function
- genericbl_limit_intensity() in generic_bl.c
-Date: Mon, 16 Dec 2013 20:34:10 +0900
-Message-id: <001201cefa52$bd3dcf90$37b96eb0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac76UQVjXCwZhVTiTFiyWQQxPWmR9gAAULgg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t8zI13jp+uCDGae5bfY0XaczeLywkus
-	Fv8X5Fuc6PvAanF51xw2i3UPXzBZLFr8m91i/fxbbA4cHjtn3WX3eHXhDovHrde2Hn1bVjF6
-	HL+xncnj8ya5ALYoLpuU1JzMstQifbsEroxZt9exF2zgr1jRvp2tgfEfTxcjJ4eEgIlE38Re
-	ZghbTOLCvfVsXYxcHEICyxgl5n1fxg5TdGXGD1aIxHRGiVPXpkI5vxglbvy9ygZSxSagJvHl
-	y2GwDhEBdYmb2yawgxQxCyxmkmi7e58FJCEkoC3x5F0/K4jNKaAjMX3VMrDdwgKZEq3dX8Bs
-	FgFViVetV8BqeAVsJa5sOswIYQtK/Jh8D2gOB9BQdYkpU3JBwsxgIy+wgoQlgMKP/upCnGAk
-	8W72fhaIEhGJfS/eMYKcIyHwlV3i8ZptLBCrBCS+TT7EAtErK7HpADQkJCUOrrjBMoFRYhaS
-	xbMQFs9CsngWkg0LGFlWMYqmFiQXFCelFxnpFSfmFpfmpesl5+duYoREc98OxpsHrA8xJgNt
-	n8gsJZqcD0wGeSXxhsZmRhamJqbGRuaWZqQJK4nzLnqYFCQkkJ5YkpqdmlqQWhRfVJqTWnyI
-	kYmDU6qBcW6Qk5TNWsfX/XbXvni0VeyfZnH1qeMj4U9xYWla8znTfacudtk5UczAzzH39QGz
-	Ri8Wi5AfW7LWyZfu//Wz1mZJe3v4+rmix0TtusWPik8LOrfDxmXz1PrjO89y5Pw1MIjNWtzI
-	ffvdVeHNK8zXm1xSLuriUlwV/VDhCdcui+VRS7Tt844HKrEUZyQaajEXFScCAHdm+Kz8AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGKsWRmVeSWpSXmKPExsVy+t9jQV3jp+uCDK5e4bLY0XaczeLywkus
-	Fv8X5Fuc6PvAanF51xw2i3UPXzBZLFr8m91i/fxbbA4cHjtn3WX3eHXhDovHrde2Hn1bVjF6
-	HL+xncnj8ya5ALaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFsl
-	F58AXbfMHKB7lBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZs26vYy/Y
-	wF+xon07WwPjP54uRk4OCQETiSszfrBC2GISF+6tZ+ti5OIQEpjOKHHq2lRWCOcXo8SNv1fZ
-	QKrYBNQkvnw5zA5iiwioS9zcNoEdpIhZYDGTRNvd+ywgCSEBbYkn7/rBxnIK6EhMX7WMGcQW
-	FsiUaO3+AmazCKhKvGq9AlbDK2ArcWXTYUYIW1Dix+R7QHM4gIaqS0yZkgsSZgYbeYEVJCwB
-	FH70VxfiBCOJd7P3s0CUiEjse/GOcQKj0Cwkg2YhDJqFZNAsJB0LGFlWMYqmFiQXFCel5xrp
-	FSfmFpfmpesl5+duYgSnimfSOxhXNVgcYhTgYFTi4VWwXBckxJpYVlyZe4hRgoNZSYS3/jhQ
-	iDclsbIqtSg/vqg0J7X4EGMy0JsTmaVEk/OBaSyvJN7Q2MTMyNLIzMLIxNycNGElcd6DrdaB
-	QgLpiSWp2ampBalFMFuYODilGhg9S592mRzksz/Xz6g+6dUZI+41brGvmIofaMsbeQo/Nu/q
-	U8vmOFYUc3j+hRd7yz06S9gnPeGzL0l0/nkjYPrSrtVJYlV9djovG3Y8bxU7EX6+dLNt4Z+/
-	ZlLtzlOyctc/yL53RyPC2+em+4miSrtMj8ZvwZl8fy22Svgfu183I/+Zh3JDhxJLcUaioRZz
-	UXEiADJ7zTFZAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753668Ab3LPLeg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 06:34:36 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:44781 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753647Ab3LPLee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 06:34:34 -0500
+X-IronPort-AV: E=Sophos;i="4.95,494,1384300800"; 
+   d="scan'208";a="84865667"
+Message-ID: <52AEE548.8010800@citrix.com>
+Date: Mon, 16 Dec 2013 11:34:32 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <gordan@bobich.net>
+Subject: Re: [Xen-devel] [RFC PATCH 5/5] xen/pciback: PCI reset slot or bus
+References: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com> <1386950978-8628-6-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1386950978-8628-6-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 16, 2013 8:21 PM, Rashika Kheria wrote:
+On 13/12/13 16:09, Konrad Rzeszutek Wilk wrote:
+> The life-cycle of a PCI device in Xen pciback is a bit complex.
 > 
-> Removes unused function genericbl_limit_intensity() in
-> backlight/generic_bl.c.
+> It starts with the device being binded to us - for which
+> we do a device function reset.
 > 
-> This eliminates the following warning in backlight/generic_bl.c:
-> drivers/video/backlight/generic_bl.c:59:6: warning: no previous prototype for
-> ‘genericbl_limit_intensity’ [-Wmissing-prototypes]
+> If the device is unbinded from us - we also do a function
+> reset.
 
-Hi Eric,
+Spelling: bound and unbound.
 
-Originally, genericbl_limit_intensity() was added by you.
-(commit: bfdcaa3 "lcd: add corgibl_limit_intensity() to corgi_lcd")
+> The reset is done when all of the functions of a device
+> are binded to Xen pciback. Or when a device is un-assigned
+> from a guest. We do this by having a 'completion' workqueue
+> on which the users of the PCI device wait. This workqueue
+> is started once the device has been 'binded' or de-assigned
+> from a guest.
 
-Currently, genericbl_limit_intensity() is not called anywhere
-in mainline kernel. Can we remove this genericbl_limit_intensity()?
+The use of a work item and a completion baffles me.  What problem does
+this solve?
 
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+[...]
+> +	/* We expect X amount of slots (this would also find out
+> +	 * if we do not have all of the slots assigned to us).
+> +	 */
+> +	list_for_each_entry(pci_dev, &dev->bus->devices, bus_list)
+> +		slots++;
+> +
+> +	spin_lock_irqsave(&pcistub_devices_lock, flags);
+> +	/* Iterate over the existing devices to ascertain whether
+> +	 * all of them are under the bridge and not in use. */
+> +	list_for_each_entry(psdev, &pcistub_devices, dev_list) {
+> +		if (!psdev->dev)
+> +			continue;
+> +
+> +		if (pci_domain_nr(psdev->dev->bus) == pci_domain_nr(dev->bus) &&
+> +		    psdev->dev->bus->number == dev->bus->number &&
+> +		    PCI_SLOT(psdev->dev->devfn) == PCI_SLOT(dev->devfn)) {
+> +			slots--;
+> +			/* Ignore ourselves in case hadn't cleaned up yet */
+> +			if (psdev->pdev && psdev->dev != dev)
+> +				inuse++;
+> +		}
+> +	}
 
-Best regards,
-Jingoo Han
+This check looks broken.  A device added to pciback but still bound to
+another driver will be considered as safe to reset.
 
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> ---
->  drivers/video/backlight/generic_bl.c |   18 ------------------
->  1 file changed, 18 deletions(-)
-> 
-> diff --git a/drivers/video/backlight/generic_bl.c b/drivers/video/backlight/generic_bl.c
-> index 5d8d652..67dfb93 100644
-> --- a/drivers/video/backlight/generic_bl.c
-> +++ b/drivers/video/backlight/generic_bl.c
-> @@ -52,24 +52,6 @@ static int genericbl_get_intensity(struct backlight_device *bd)
->  	return genericbl_intensity;
->  }
-> 
-> -/*
-> - * Called when the battery is low to limit the backlight intensity.
-> - * If limit==0 clear any limit, otherwise limit the intensity
-> - */
-> -void genericbl_limit_intensity(int limit)
-> -{
-> -	struct backlight_device *bd = generic_backlight_device;
-> -
-> -	mutex_lock(&bd->ops_lock);
-> -	if (limit)
-> -		bd->props.state |= GENERICBL_BATTLOW;
-> -	else
-> -		bd->props.state &= ~GENERICBL_BATTLOW;
-> -	backlight_update_status(generic_backlight_device);
-> -	mutex_unlock(&bd->ops_lock);
-> -}
-> -EXPORT_SYMBOL(genericbl_limit_intensity);
-> -
->  static const struct backlight_ops genericbl_ops = {
->  	.options = BL_CORE_SUSPENDRESUME,
->  	.get_brightness = genericbl_get_intensity,
-> --
-> 1.7.9.5
+I think you want something like:
 
+list_for_each_entry(pdev, &dev->bus->devices, bus_list)
+{
+    if (pdev != dev && pdev->driver
+        && pdev->driver != xen_pcibk_pci_driver))
+        return -ENOTTY;
+}
+
+It is safe to reset unbound devices (even if they're not (or intended)
+to be available to pciback).
+
+It is also possible in the above loop if slot reset is supported to
+ignore sibling devices that are on different slots.
+
+> +	spin_unlock_irqrestore(&pcistub_devices_lock, flags);
+> +	/* Slots should be zero (all slots under the bridge are
+> +	 * accounted for), and inuse should be zero (not assigned
+> +	 * to anybody). */
+> +	if (!slots && !inuse) {
+> +		int rc = 0, bus = 0;
+> +		list_for_each_entry(pci_dev, &dev->bus->devices, bus_list) {
+> +			dev_dbg(&pci_dev->dev, "resetting the slot device\n");
+> +			if (!pci_probe_reset_slot(pci_dev->slot))
+> +				rc = pci_reset_slot(pci_dev->slot);
+> +			else
+> +				bus = 1;
+> +			if (rc)
+> +				dev_info(&pci_dev->dev, "resetting slot failed with %d\n", rc);
+> +		}
+
+Why are you resetting every slot on the bus?  You only need to reset the
+slot that the device is on.
+
+Take a look at the vfio-pci driver.  It does this bus/slot reset choice
+in a much more straightforward way.
+
+David
