@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab3LPSmF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 13:42:05 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59482 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897Ab3LPSmC (ORCPT
+	id S1755307Ab3LPSme (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 13:42:34 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33644 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754939Ab3LPSmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 13:42:02 -0500
-Date: Mon, 16 Dec 2013 18:41:37 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20131216184137.GM3185@sirena.org.uk>
+	Mon, 16 Dec 2013 13:42:33 -0500
+Message-ID: <52AF4993.80406@wwwdotorg.org>
+Date: Mon, 16 Dec 2013 11:42:27 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Pz/qqzCPDfGwIFOg"
-Content-Disposition: inline
-X-Cookie: Yow!  I threw up on my window!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: regulator/clk fix for v3.13-rc4
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Hiroshi Doyu <hdoyu@nvidia.com>, swarren@nvidia.com, will.deacon@arm.com,
+        grant.likely@linaro.org, thierry.reding@gmail.com,
+        robherring2@gmail.com, joro@8bytes.org
+CC: mark.rutland@arm.com, devicetree@vger.kernel.org,
+        lorenzo.pieralisi@arm.com, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, galak@codeaurora.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv7 05/12] iommu/core: add ops->{bound,unbind}_driver()
+References: <1386835033-4701-1-git-send-email-hdoyu@nvidia.com> <1386835033-4701-6-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1386835033-4701-6-git-send-email-hdoyu@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/12/2013 12:57 AM, Hiroshi Doyu wrote:
+> ops->{bound,unbind}_driver() functions are called at
+> BUS_NOTIFY_{BOUND,UNBIND}_DRIVER respectively.
 
---Pz/qqzCPDfGwIFOg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Some explanation re: why the existing {add,remove}_device hooks aren't
+enough would be useful. I didn't really get that from the current commit
+description. What actions would an IOMMU driver take in these new
+callbacks that could not be taken in {add,remove}_device? Surely the
+IOMMU could set up any internal data structures, AS, or page tables,
+etc. within add_device, rather than deferring to bound_driver, which
+presumably happens after the device's probe(), yet the driver might want
+to make the HW do bus-master accesses within probe(), or at least map
+stuff into the page table...
 
-The following changes since commit 319e2e3f63c348a9b66db4667efa73178e18b17d:
+> This is necessary to control the device population order. IOMMU master
+> devices depend on an IOMMU device instanciation. IOMMU master devices
 
-  Linux 3.13-rc4 (2013-12-15 12:31:33 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/s2mps11-build
-
-for you to fetch changes up to 1b1ccee1e821e59c2a45c95b007aeb2c9dafd9be:
-
-  mfd: s2mps11: Fix build after regmap field rename in sec-core.c (2013-12-16 11:30:39 +0000)
-
-I verified this locally but it's not been in -next yet.
-
-----------------------------------------------------------------
-regulator/clk: Fix s2mps11 build
-
-This patch fixes a build failure that appeared in v3.13-rc4 due to an
-RTC/MFD update merged via -mm.
-
-----------------------------------------------------------------
-Krzysztof Kozlowski (1):
-      mfd: s2mps11: Fix build after regmap field rename in sec-core.c
-
- drivers/clk/clk-s2mps11.c   | 6 +++---
- drivers/regulator/s2mps11.c | 2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
-
---Pz/qqzCPDfGwIFOg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSr0leAAoJELSic+t+oim9Kz8P/itzDnH4O1mnbZ31igfYcDDt
-+tg9CBRxGNPQuNcRkIdbxbxOKWKtimk94nG+NqMUfy6UVb21y6JrSfTfvKQR3A1E
-6U0fcQMokXR+8MujJ6BqrtKZ9HK6P9jyjdrnEenoKfTsnXjVtbnJJcKWnDn0ZofZ
-DOneXKmkwdRI/q/31TW8ZLXiWUNQQJopuudJZ7Szj5kVFhusrGhZ1EZ5hKh78kXq
-aqnIuth2N+E7haJkcUgb8c8+c488acNxrua4EVswkP8FOYLDIVYHdUspnI9Q1maW
-2hZfz1v6qNfxrvhcAWxjfZLCOBY4MhEKo5U9F2l5r1dQZiBpcY4PmCZesv3H1D77
-ucVWSxH9HxAyfZs0Mv6oX3G/TDi3B1mNfDJI4H1ZMkCTlIroUpZEAhKtmVelHty+
-ZVggJrIX72Td89sSia5zU5lfTrKfXOsjNIEWoflP/AgV7sxnPgdMNdAhMj0ssB5z
-w70xyVDkJOQiwEDgmJfj0YFVjyPBBnMCY85frs/uU/5re19/bWQszh7R4pRxzco8
-CzDmCbPBvB2uV82ArYeeKd99XUDThO7NUFsmYjNrjsNCPudjWmCFtghNRsIXNSkw
-xSZQZIHQ6+tRlMyhItY0OD0ePiszEkrEFFYvfDKXN7/b6tVqCsCk7Jg5hgsXGpeP
-QB+v81hDiMWwiLCl6pS5
-=L3XX
------END PGP SIGNATURE-----
-
---Pz/qqzCPDfGwIFOg--
+Is an "IOMMU master device" the device that issues transactions on the
+bus, which are affected by the IOMMU? The more common term for this is
+"bus master"; "IOMMU master device" sounds too similar to the "IOMMU"
+itself.
