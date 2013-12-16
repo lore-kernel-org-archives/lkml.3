@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab3LPKkb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:40:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44116 "EHLO
+	id S1753447Ab3LPKkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:40:42 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44136 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287Ab3LPKk1 (ORCPT
+	with ESMTP id S1751848Ab3LPKki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:40:27 -0500
-Date: Mon, 16 Dec 2013 02:40:12 -0800
+	Mon, 16 Dec 2013 05:40:38 -0500
+Date: Mon, 16 Dec 2013 02:40:22 -0800
 From: "tip-bot for Paul E. McKenney" <tipbot@zytor.com>
-Message-ID: <tip-01352fb81658cbf78c55844de8e3d1d606bbf3f8@git.kernel.org>
+Message-ID: <tip-17eb88e068430014deb709e5af34197cdf2390c9@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
         paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
         paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
         tglx@linutronix.de, linux-arch@vger.kernel.org
-In-Reply-To: <1386799151-2219-5-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <1386799151-2219-5-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1386799151-2219-6-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <1386799151-2219-6-git-send-email-paulmck@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] locking: Add an smp_mb__after_unlock_lock()
-  for UNLOCK+BLOCK barrier
-Git-Commit-ID: 01352fb81658cbf78c55844de8e3d1d606bbf3f8
+Subject: [tip:core/locking] Documentation/memory-barriers.txt:
+  Downgrade UNLOCK+BLOCK
+Git-Commit-ID: 17eb88e068430014deb709e5af34197cdf2390c9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,64 +32,183 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 16 Dec 2013 02:40:18 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 16 Dec 2013 02:40:28 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  01352fb81658cbf78c55844de8e3d1d606bbf3f8
-Gitweb:     http://git.kernel.org/tip/01352fb81658cbf78c55844de8e3d1d606bbf3f8
+Commit-ID:  17eb88e068430014deb709e5af34197cdf2390c9
+Gitweb:     http://git.kernel.org/tip/17eb88e068430014deb709e5af34197cdf2390c9
 Author:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-AuthorDate: Wed, 11 Dec 2013 13:59:08 -0800
+AuthorDate: Wed, 11 Dec 2013 13:59:09 -0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 16 Dec 2013 11:36:13 +0100
+CommitDate: Mon, 16 Dec 2013 11:36:15 +0100
 
-locking: Add an smp_mb__after_unlock_lock() for UNLOCK+BLOCK barrier
+Documentation/memory-barriers.txt: Downgrade UNLOCK+BLOCK
 
-The Linux kernel has traditionally required that an UNLOCK+LOCK
-pair act as a full memory barrier when either (1) that
-UNLOCK+LOCK pair was executed by the same CPU or task, or (2)
-the same lock variable was used for the UNLOCK and LOCK.  It now
-seems likely that very few places in the kernel rely on this
-full-memory-barrier semantic, and with the advent of queued
-locks, providing this semantic either requires complex
-reasoning, or for some architectures, added overhead.
+Historically, an UNLOCK+LOCK pair executed by one CPU, by one
+task, or on a given lock variable has implied a full memory
+barrier.  In a recent LKML thread, the wisdom of this historical
+approach was called into question:
+http://www.spinics.net/lists/linux-mm/msg65653.html, in part due
+to the memory-order complexities of low-handoff-overhead queued
+locks on x86 systems.
 
-This commit therefore adds a smp_mb__after_unlock_lock(), which
-may be placed after a LOCK primitive to restore the
-full-memory-barrier semantic. All definitions are currently
-no-ops, but will be upgraded for some architectures when queued
-locks arrive.
+This patch therefore removes this guarantee from the
+documentation, and further documents how to restore it via a new
+smp_mb__after_unlock_lock() primitive.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Reviewed-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: <linux-arch@vger.kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1386799151-2219-5-git-send-email-paulmck@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/1386799151-2219-6-git-send-email-paulmck@linux.vnet.ibm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/spinlock.h | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ Documentation/memory-barriers.txt | 84 ++++++++++++++++++++++++++++++++-------
+ 1 file changed, 69 insertions(+), 15 deletions(-)
 
-diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
-index 75f3494..3f2867f 100644
---- a/include/linux/spinlock.h
-+++ b/include/linux/spinlock.h
-@@ -130,6 +130,16 @@ do {								\
- #define smp_mb__before_spinlock()	smp_wmb()
- #endif
+diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+index 919fd60..cb753c8 100644
+--- a/Documentation/memory-barriers.txt
++++ b/Documentation/memory-barriers.txt
+@@ -402,12 +402,18 @@ And a couple of implicit varieties:
+      Memory operations that occur after an UNLOCK operation may appear to
+      happen before it completes.
  
-+/*
-+ * Place this after a lock-acquisition primitive to guarantee that
-+ * an UNLOCK+LOCK pair act as a full barrier.  This guarantee applies
-+ * if the UNLOCK and LOCK are executed by the same CPU or if the
-+ * UNLOCK and LOCK operate on the same lock variable.
-+ */
-+#ifndef smp_mb__after_unlock_lock
-+#define smp_mb__after_unlock_lock()	do { } while (0)
-+#endif
+-     LOCK and UNLOCK operations are guaranteed to appear with respect to each
+-     other strictly in the order specified.
+-
+      The use of LOCK and UNLOCK operations generally precludes the need for
+      other sorts of memory barrier (but note the exceptions mentioned in the
+-     subsection "MMIO write barrier").
++     subsection "MMIO write barrier").  In addition, an UNLOCK+LOCK pair
++     is -not- guaranteed to act as a full memory barrier.  However,
++     after a LOCK on a given lock variable, all memory accesses preceding any
++     prior UNLOCK on that same variable are guaranteed to be visible.
++     In other words, within a given lock variable's critical section,
++     all accesses of all previous critical sections for that lock variable
++     are guaranteed to have completed.
 +
- /**
-  * raw_spin_unlock_wait - wait until the spinlock gets unlocked
-  * @lock: the spinlock in question.
++     This means that LOCK acts as a minimal "acquire" operation and
++     UNLOCK acts as a minimal "release" operation.
+ 
+ 
+ Memory barriers are only required where there's a possibility of interaction
+@@ -1633,8 +1639,12 @@ for each construct.  These operations all imply certain barriers:
+      Memory operations issued after the LOCK will be completed after the LOCK
+      operation has completed.
+ 
+-     Memory operations issued before the LOCK may be completed after the LOCK
+-     operation has completed.
++     Memory operations issued before the LOCK may be completed after the
++     LOCK operation has completed.  An smp_mb__before_spinlock(), combined
++     with a following LOCK, orders prior loads against subsequent stores
++     and stores and prior stores against subsequent stores.  Note that
++     this is weaker than smp_mb()!  The smp_mb__before_spinlock()
++     primitive is free on many architectures.
+ 
+  (2) UNLOCK operation implication:
+ 
+@@ -1654,9 +1664,6 @@ for each construct.  These operations all imply certain barriers:
+      All LOCK operations issued before an UNLOCK operation will be completed
+      before the UNLOCK operation.
+ 
+-     All UNLOCK operations issued before a LOCK operation will be completed
+-     before the LOCK operation.
+-
+  (5) Failed conditional LOCK implication:
+ 
+      Certain variants of the LOCK operation may fail, either due to being
+@@ -1664,9 +1671,6 @@ for each construct.  These operations all imply certain barriers:
+      signal whilst asleep waiting for the lock to become available.  Failed
+      locks do not imply any sort of barrier.
+ 
+-Therefore, from (1), (2) and (4) an UNLOCK followed by an unconditional LOCK is
+-equivalent to a full barrier, but a LOCK followed by an UNLOCK is not.
+-
+ [!] Note: one of the consequences of LOCKs and UNLOCKs being only one-way
+     barriers is that the effects of instructions outside of a critical section
+     may seep into the inside of the critical section.
+@@ -1677,13 +1681,57 @@ LOCK, and an access following the UNLOCK to happen before the UNLOCK, and the
+ two accesses can themselves then cross:
+ 
+ 	*A = a;
+-	LOCK
+-	UNLOCK
++	LOCK M
++	UNLOCK M
+ 	*B = b;
+ 
+ may occur as:
+ 
+-	LOCK, STORE *B, STORE *A, UNLOCK
++	LOCK M, STORE *B, STORE *A, UNLOCK M
++
++This same reordering can of course occur if the LOCK and UNLOCK are
++to the same lock variable, but only from the perspective of another
++CPU not holding that lock.
++
++In short, an UNLOCK followed by a LOCK may -not- be assumed to be a full
++memory barrier because it is possible for a preceding UNLOCK to pass a
++later LOCK from the viewpoint of the CPU, but not from the viewpoint
++of the compiler.  Note that deadlocks cannot be introduced by this
++interchange because if such a deadlock threatened, the UNLOCK would
++simply complete.
++
++If it is necessary for an UNLOCK-LOCK pair to produce a full barrier,
++the LOCK can be followed by an smp_mb__after_unlock_lock() invocation.
++This will produce a full barrier if either (a) the UNLOCK and the LOCK
++are executed by the same CPU or task, or (b) the UNLOCK and LOCK act
++on the same lock variable.  The smp_mb__after_unlock_lock() primitive
++is free on many architectures.  Without smp_mb__after_unlock_lock(),
++the critical sections corresponding to the UNLOCK and the LOCK can cross:
++
++	*A = a;
++	UNLOCK M
++	LOCK N
++	*B = b;
++
++could occur as:
++
++	LOCK N, STORE *B, STORE *A, UNLOCK M
++
++With smp_mb__after_unlock_lock(), they cannot, so that:
++
++	*A = a;
++	UNLOCK M
++	LOCK N
++	smp_mb__after_unlock_lock();
++	*B = b;
++
++will always occur as either of the following:
++
++	STORE *A, UNLOCK, LOCK, STORE *B
++	STORE *A, LOCK, UNLOCK, STORE *B
++
++If the UNLOCK and LOCK were instead both operating on the same lock
++variable, only the first of these two alternatives can occur.
+ 
+ Locks and semaphores may not provide any guarantee of ordering on UP compiled
+ systems, and so cannot be counted on in such a situation to actually achieve
+@@ -1911,6 +1959,7 @@ However, if the following occurs:
+ 	UNLOCK M	     [1]
+ 	ACCESS_ONCE(*D) = d;		ACCESS_ONCE(*E) = e;
+ 					LOCK M		     [2]
++					smp_mb__after_unlock_lock();
+ 					ACCESS_ONCE(*F) = f;
+ 					ACCESS_ONCE(*G) = g;
+ 					UNLOCK M	     [2]
+@@ -1928,6 +1977,11 @@ But assuming CPU 1 gets the lock first, CPU 3 won't see any of:
+ 	*F, *G or *H preceding LOCK M [2]
+ 	*A, *B, *C, *E, *F or *G following UNLOCK M [2]
+ 
++Note that the smp_mb__after_unlock_lock() is critically important
++here: Without it CPU 3 might see some of the above orderings.
++Without smp_mb__after_unlock_lock(), the accesses are not guaranteed
++to be seen in order unless CPU 3 holds lock M.
++
+ 
+ LOCKS VS I/O ACCESSES
+ ---------------------
