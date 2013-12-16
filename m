@@ -1,89 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab3LPDSm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 22:18:42 -0500
-Received: from ozlabs.org ([203.10.76.45]:57537 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751998Ab3LPDSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 22:18:40 -0500
-Date: Mon, 16 Dec 2013 14:18:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Borislav Petkov <bp@suse.de>, Matt Fleming <matt.fleming@intel.com>
-Subject: linux-next: manual merge of the tip tree with Linus' tree
-Message-Id: <20131216141835.0ded286276730efcf7fed52e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__16_Dec_2013_14_18_35_+1100_fPYZ=ppb6lN5jg_A"
+	id S1752288Ab3LPD2u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 22:28:50 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:24509 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752179Ab3LPD2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 22:28:49 -0500
+X-IronPort-AV: E=Sophos;i="4.95,492,1384272000"; 
+   d="scan'208";a="9265898"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: dsahern@gmail.com, acme@ghostprotocols.net
+Cc: linux-kernel@vger.kernel.org, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH V2] perf tools: Fix bug for perf kvm report without guestmount.
+Date: Mon, 16 Dec 2013 11:26:56 -0500
+Message-Id: <1387211216-19794-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <52A7637E.8080007@cn.fujitsu.com>
+References: <52A7637E.8080007@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/16 11:28:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/16 11:28:22,
+	Serialize complete at 2013/12/16 11:28:22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__16_Dec_2013_14_18_35_+1100_fPYZ=ppb6lN5jg_A
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Currently, if we use perf kvm --guestkallsyms --guestmodules report,
+we can not get the perf information from perf data file. The all sample
+are shown as unknown.
 
-Hi all,
+Reproducing steps:
+	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
+	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
+	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
 
-Today's linux-next merge of the tip tree got a conflict in
-arch/x86/platform/efi/efi.c between commit 04bf9ba720fc ("x86, efi: Don't
-use (U)EFI time services on 32 bit") from Linus' tree and commit
-f4fccac05f7f ("x86/efi: Simplify EFI_DEBUG") from the tip tree.
+This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+commit 207b5792696206663a38e525b9793644895bad3b
+Author: David Ahern <dsahern@gmail.com>
+Date:   Sun Jul 1 16:11:37 2012 -0600
 
---=20
-Cheers,
-Stephen Rothwell <sfr@canb.auug.org.au>
+    perf kvm: Fix regression with guest machine creation
 
-diff --cc arch/x86/platform/efi/efi.c
-index cceb813044ef,f8ec4dafc74e..000000000000
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@@ -690,9 -692,13 +692,7 @@@ void __init efi_init(void
- =20
-  	set_bit(EFI_MEMMAP, &x86_efi_facility);
- =20
-- #if EFI_DEBUG
- -#ifdef CONFIG_X86_32
- -	if (efi_is_native()) {
- -		x86_platform.get_wallclock =3D efi_get_time;
- -		x86_platform.set_wallclock =3D efi_set_rtc_mmss;
- -	}
- -#endif
-  	print_efi_memmap();
-- #endif
-  }
- =20
-  void __init efi_late_init(void)
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index c3e399b..56142d0 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -926,7 +926,7 @@ static struct machine *
+                else
+                        pid = event->ip.pid;
 
---Signature=_Mon__16_Dec_2013_14_18_35_+1100_fPYZ=ppb6lN5jg_A
-Content-Type: application/pgp-signature
+-               return perf_session__find_machine(session, pid);
++               return perf_session__findnew_machine(session, pid);
+        }
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+        return perf_session__find_host_machine(session);
+In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
+which has the same pid, if no machine found, deliver it to *default* guest. But if we use
+perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
+and added. Then the default guest which with pid == 0 will never get a symbol.
 
-iQIcBAEBCAAGBQJSrnEOAAoJEMDTa8Ir7ZwVgz8P/2U8vh5ZWOxB8oROWNdBIKSm
-SOJbP2Q/73nI3h0r5xLPmMT5f46MIlt8XN07bIJBBWqDk1yePGWbhIBuNtGB7xNv
-9dW02/bS2ar4e6pneOXqjEFManb++7bjALhxWvqPnROT/JZ/6qfMPn8Pss/1EkGN
-LRMmLFGJpogyEtqIeZdJt4Xq2Ype8bNc9uuCIobrzkEnEm0u+8rS7L31tbBdZ92w
-RXmOU3Y17pNGbHSwFQOcQAz4jjFocYqW8NKt32m4fqZPP9v+qKNO7GplC6vUwAQm
-vZHo9BmmjIi94gHfx/pjbB2RTCXHhA6bU6cEQrPNnsVwduJJYJ42Y0OslaKw4NH5
-nxo53pP7oN6bLy4/Yd07rIcArJWdWOtr9pvgtNzmI2tI9HrDQ0YI7+1CPNq5o9HF
-gDH6bSr4M39s+3ENIGeT3cg25NYoFqhnHllY6vQmU1W+/CD0xoL5+wJVQdAkCiQw
-UDmfjLfhQYXsPlbXRXC0GgP9ubYbpX63alUEI+e0PNBaA8t+cGBNgkHeqDAuyi5O
-bi7os/DUEgcQvQ9ZEHEAlTjUarcDg3rhEf35ykUy835Z7sFbD6ORjcGvTDV7usBu
-44D14nRYcogenv75FU8cqY6IEXNvTuSvnA/5FiT7la0YdGJWHud2w9nTCdGRr1LR
-UO+IOQvFaIZ9p+jdJu44
-=gFDG
------END PGP SIGNATURE-----
+And because the new machine initialized here has no kernel map created, the symbol delivered to
+it will be marked as "unknown".
 
---Signature=_Mon__16_Dec_2013_14_18_35_+1100_fPYZ=ppb6lN5jg_A--
+This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
+
+Verification steps:
+	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
+	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
+	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
+	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
+	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
+	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
+	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
+	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
+	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
+	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
+
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+    Changelog since V1:
+        * More commit message.
+
+ tools/perf/util/session.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 989b2e3..a12dfdd 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -830,6 +830,7 @@ static struct machine *
+ 					       struct perf_sample *sample)
+ {
+ 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
++	struct machine *machine;
+ 
+ 	if (perf_guest &&
+ 	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
+@@ -842,7 +843,11 @@ static struct machine *
+ 		else
+ 			pid = sample->pid;
+ 
+-		return perf_session__findnew_machine(session, pid);
++		machine = perf_session__find_machine(session, pid);
++		if (!machine)
++			machine = perf_session__findnew_machine(session,
++						DEFAULT_GUEST_KERNEL_ID);
++		return machine;
+ 	}
+ 
+ 	return &session->machines.host;
+-- 
+1.8.2.1
+
