@@ -1,52 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524Ab3LPEIb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 23:08:31 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47551 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752371Ab3LPEIE (ORCPT
+	id S1752448Ab3LPEWv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 23:22:51 -0500
+Received: from science.horizon.com ([71.41.210.146]:29709 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752240Ab3LPEWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 23:08:04 -0500
-From: Allen Pais <allen.pais@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: sparclinux@vger.kernel.org, bigeasy@linutronix.de,
-        Allen Pais <allen.pais@oracle.com>
-Subject: [PATCH 1/3] sparc64: use generic rwsem spinlocks rt
-Date: Mon, 16 Dec 2013 09:37:31 +0530
-Message-Id: <1387166853-10782-2-git-send-email-allen.pais@oracle.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1387166853-10782-1-git-send-email-allen.pais@oracle.com>
-References: <1387166853-10782-1-git-send-email-allen.pais@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Sun, 15 Dec 2013 23:22:50 -0500
+Date: 15 Dec 2013 23:22:47 -0500
+Message-ID: <20131216042247.9826.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tytso@mit.edu
+Subject: Re: Replace /dev/random input mix polynomial with Brent's xorgen?
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20131215221948.GA6773@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Signed-off-by: Allen Pais <allen.pais@oracle.com>
----
- arch/sparc/Kconfig |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+On Sun, Dec 15, 2013 at 03:34:59AM -0500, George Spelvin wrote:
+>> You're describing standard key-recovery attacks.  For /dev/random,
+>> just knowing the *ciphertext* constitutes a successful attack.
 
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 6787bd3..554995d 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -179,12 +179,10 @@ config NR_CPUS
- source kernel/Kconfig.hz
- 
- config RWSEM_GENERIC_SPINLOCK
--	bool
--	default y if SPARC32
-+	def_bool PREEMPT_RT_FULL
- 
- config RWSEM_XCHGADD_ALGORITHM
--	bool
--	default y if SPARC64
-+	def_bool !RWSEM_GENERIC_SPINLOCK && !PREEMPT_RT_FULL
- 
- config GENERIC_HWEIGHT
- 	bool
--- 
-1.7.10.4
+> Um, no.  The *ciphertext* is the output.  The attacker can get all of
+> the ciphertext he or she wants by reading /dev/random (although we'd
+> probably do some folding as we currently do so the attacker won't even
+> get all of the ciphertext).  What the attacker has to be able to do is
+> given some of the ciphertext bits, be able to predict future
+> ciphertext bits given some construction which uses AES as the basis.
 
+The attack I was thinking of was figuring out (without breaking root and
+using ptrace) what some *other* process on the same machine is reading
+from /dev/random.
+
+In other words, reading someone else's output.
