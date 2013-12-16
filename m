@@ -1,196 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab3LPDFZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 22:05:25 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:57696 "EHLO song.cn.fujitsu.com"
+	id S1752278Ab3LPDJR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 22:09:17 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:44388 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752245Ab3LPDFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 22:05:24 -0500
+	id S1751998Ab3LPDJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 22:09:15 -0500
 X-IronPort-AV: E=Sophos;i="4.95,492,1384272000"; 
-   d="scan'208";a="9265758"
-Message-ID: <52AE6C4A.9080203@cn.fujitsu.com>
-Date: Mon, 16 Dec 2013 10:58:18 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+   d="scan'208,223";a="9265791"
+Message-ID: <52AF2537.1030007@cn.fujitsu.com>
+Date: Mon, 16 Dec 2013 11:07:19 -0500
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Kristian Nielsen <knielsen@knielsen-hq.org>
-CC: Dave Jones <davej@redhat.com>, Benjamin LaHaise <bcrl@kvack.org>,
-        Kent Overstreet <kmo@daterainc.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: GPF in aio_migratepage
-References: <20131126032645.GA32301@redhat.com> <20131126060132.GA6400@redhat.com> <20131126071953.GE9244@kmo-pixel> <20131126152337.GL15489@kvack.org> <87d2lh6h92.fsf@frigg.knielsen-hq.org> <529C5CA6.6090708@cn.fujitsu.com> <20131202174913.GA18853@redhat.com> <87ob4hu66n.fsf@frigg.knielsen-hq.org>
-In-Reply-To: <87ob4hu66n.fsf@frigg.knielsen-hq.org>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+CC: David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] perf list: fix --raw-dump
+References: <1386756980-23121-1-git-send-email-artagnon@gmail.com> <52A8D2DA.7050409@gmail.com> <CALkWK0ksAB1xkaCR5jxaN-4n1KL3yQACp_62=ijmFZjj8KNuew@mail.gmail.com>
+In-Reply-To: <CALkWK0ksAB1xkaCR5jxaN-4n1KL3yQACp_62=ijmFZjj8KNuew@mail.gmail.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/16 11:04:53,
+ 2013/12/16 11:08:44,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/16 11:04:56,
-	Serialize complete at 2013/12/16 11:04:56
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+ 2013/12/16 11:08:48,
+	Serialize complete at 2013/12/16 11:08:48
+Content-Type: multipart/mixed;
+ boundary="------------040602070800020008040208"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kristian,
-On 12/16/2013 05:59 AM, Kristian Nielsen wrote:
+This is a multi-part message in MIME format.
+--------------040602070800020008040208
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 
-> What is the status of this?
-> 
-> If I understand correctly, the crash I saw is different from what Dave
-> saw.
-> 
-> There was one patched scheduled for inclusion that fixes Dave's crash. But
-> what about mine? I have been running 3.13-rc2 for a couple of weeks now with
-> your other patch, without seeing it again, which suggests it has helped. But
-> it seems that patch has a locking bug as described by Dave (sleeping under
-> spinlock)? So this appears unsolved as of yet...
-> 
-> So I just wanted to check that this was not forgotten. Is there something I
-> can do to help get this sorted out? Should I try to run with unpatched -rc4
-> for some time to check if it appears again? Anything else?
+On 12/12/2013 02:34 AM, Ramkumar Ramachandra wrote:
+> David Ahern wrote:
+>> Why not make raw_dump a proper argument?
+> Sure, that'd work too. I was thinking of a minimal way to fix the
+> problem myself.
 
-Thanks for your reminder. I really do not forget this issue.
-This issue seems like a problem that has been fixed yet:
-http://article.gmane.org/gmane.linux.kernel.aio.general/3741/match=potential+use+after+free+aio%5fmigratepage
-commit 5e9ae2e5da0beb93f8557fc92a8f4fbc05ea448f
-aio: fix use-after-free in aio_migratepage
-So I think maybe you can run with latest Linus' tree or 3.13-rc4 to
-check whether this issue still appears.
-Looking forward to your replay.
+Hi Ramkumar and David,
+     If this argument is only used for perf complement, how about make 
+it hidden to user? Please refer https://lkml.org/lkml/2013/12/12/52 and 
+https://lkml.org/lkml/2013/12/12/53 The two patches make --raw-dump used 
+internally but hidden in output of '-h'.
 
-Thanks,
-Gu
+     If you think we should expose it to user, I think we should make it 
+work as an option rather than an argument, and make the output of it 
+more readable,
+how about the patch attached in this mail?
 
-> 
->  - Kristian.
-> 
-> Dave Jones <davej@redhat.com> writes:
-> 
->> On Mon, Dec 02, 2013 at 06:10:46PM +0800, Gu Zheng wrote:
->>  > Hi Kristian, Dave,
->>  > 
->>  > Could you please help to check whether the following patch can fix this issue?
->>
->> This introduces some locking bugs..
->>
->>
->> [  222.327950] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:616
->> [  222.328004] in_atomic(): 1, irqs_disabled(): 0, pid: 12794, name: trinity-child1
->> [  222.328044] 1 lock held by trinity-child1/12794:
->> [  222.328072]  #0:  (&(&mapping->private_lock)->rlock){+.+...}, at: [<ffffffff81210a64>] aio_free_ring+0x44/0x160
->> [  222.328147] CPU: 1 PID: 12794 Comm: trinity-child1 Not tainted 3.13.0-rc2+ #12 
->> [  222.328268]  0000000000000268 ffff880229517d68 ffffffff8173bc52 0000000000000000
->> [  222.328320]  ffff880229517d90 ffffffff8108ad95 ffff880223b6acd0 0000000000000000
->> [  222.328370]  0000000000000000 ffff880229517e08 ffffffff81741cf3 ffff880229517dc0
->> [  222.328421] Call Trace:
->> [  222.328443]  [<ffffffff8173bc52>] dump_stack+0x4e/0x7a
->> [  222.328475]  [<ffffffff8108ad95>] __might_sleep+0x175/0x200
->> [  222.328510]  [<ffffffff81741cf3>] mutex_lock_nested+0x33/0x400
->> [  222.328545]  [<ffffffff81179e68>] unmap_mapping_range+0x68/0x170
->> [  222.328582]  [<ffffffff81160a35>] truncate_pagecache+0x35/0x60
->> [  222.328617]  [<ffffffff81160a72>] truncate_setsize+0x12/0x20
->> [  222.328651]  [<ffffffff81210ab9>] aio_free_ring+0x99/0x160
->> [  222.328684]  [<ffffffff81213071>] SyS_io_setup+0xef1/0xf00
->> [  222.328717]  [<ffffffff8174eaa4>] tracesys+0xdd/0xe2
->>
->> [  222.328769] ======================================================
->> [  222.328804] [ INFO: possible circular locking dependency detected ]
->> [  222.328838] 3.13.0-rc2+ #12 Not tainted
->> [  222.328862] -------------------------------------------------------
->> [  222.328896] trinity-child1/12794 is trying to acquire lock:
->> [  222.328928]  (&mapping->i_mmap_mutex){+.+...}, at: [<ffffffff81179e68>] unmap_mapping_range+0x68/0x170
->> [  222.328987] 
->> but task is already holding lock:
->> [  222.329020]  (&(&mapping->private_lock)->rlock){+.+...}, at: [<ffffffff81210a64>] aio_free_ring+0x44/0x160
->> [  222.329081] 
->> which lock already depends on the new lock.
->>
->> [  222.329125] 
->> the existing dependency chain (in reverse order) is:
->> [  222.329166] 
->> -> #2 (&(&mapping->private_lock)->rlock){+.+...}:
->> [  222.329211]        [<ffffffff810af833>] lock_acquire+0x93/0x1c0
->> [  222.329248]        [<ffffffff817454f0>] _raw_spin_lock+0x40/0x80
->> [  222.329285]        [<ffffffff811f334d>] __set_page_dirty_buffers+0x2d/0xb0
->> [  222.331243]        [<ffffffff8115aada>] set_page_dirty+0x3a/0x60
->> [  222.334437]        [<ffffffff81179a7f>] unmap_single_vma+0x62f/0x830
->> [  222.337633]        [<ffffffff8117ad19>] unmap_vmas+0x49/0x90
->> [  222.340819]        [<ffffffff811804bd>] unmap_region+0x9d/0x110
->> [  222.343968]        [<ffffffff811829f6>] do_munmap+0x226/0x3b0
->> [  222.346689]        [<ffffffff81182bc4>] vm_munmap+0x44/0x60
->> [  222.349741]        [<ffffffff81183b42>] SyS_munmap+0x22/0x30
->> [  222.352758]        [<ffffffff8174eaa4>] tracesys+0xdd/0xe2
->> [  222.355735] 
->> -> #1 (&(ptlock_ptr(page))->rlock#2){+.+...}:
->> [  222.361611]        [<ffffffff810af833>] lock_acquire+0x93/0x1c0
->> [  222.364589]        [<ffffffff817454f0>] _raw_spin_lock+0x40/0x80
->> [  222.367200]        [<ffffffff81186338>] __page_check_address+0x98/0x160
->> [  222.370168]        [<ffffffff811864fe>] page_mkclean+0xfe/0x1c0
->> [  222.373120]        [<ffffffff8115ad60>] clear_page_dirty_for_io+0x60/0x100
->> [  222.376076]        [<ffffffff8124d207>] mpage_submit_page+0x47/0x80
->> [  222.379015]        [<ffffffff8124d350>] mpage_process_page_bufs+0x110/0x130
->> [  222.381955]        [<ffffffff8124d91b>] mpage_prepare_extent_to_map+0x22b/0x2f0
->> [  222.384895]        [<ffffffff8125318f>] ext4_writepages+0x4ef/0x1050
->> [  222.387839]        [<ffffffff8115cdf1>] do_writepages+0x21/0x50
->> [  222.390786]        [<ffffffff81150959>] __filemap_fdatawrite_range+0x59/0x60
->> [  222.393747]        [<ffffffff81150a5d>] filemap_write_and_wait_range+0x2d/0x70
->> [  222.396729]        [<ffffffff812498ca>] ext4_sync_file+0xba/0x4d0
->> [  222.399714]        [<ffffffff811f1691>] do_fsync+0x51/0x80
->> [  222.402317]        [<ffffffff811f1980>] SyS_fsync+0x10/0x20
->> [  222.405240]        [<ffffffff8174eaa4>] tracesys+0xdd/0xe2
->> [  222.407760] 
->> -> #0 (&mapping->i_mmap_mutex){+.+...}:
->> [  222.413349]        [<ffffffff810aed16>] __lock_acquire+0x1786/0x1af0
->> [  222.416127]        [<ffffffff810af833>] lock_acquire+0x93/0x1c0
->> [  222.418826]        [<ffffffff81741d37>] mutex_lock_nested+0x77/0x400
->> [  222.421456]        [<ffffffff81179e68>] unmap_mapping_range+0x68/0x170
->> [  222.424085]        [<ffffffff81160a35>] truncate_pagecache+0x35/0x60
->> [  222.426696]        [<ffffffff81160a72>] truncate_setsize+0x12/0x20
->> [  222.428955]        [<ffffffff81210ab9>] aio_free_ring+0x99/0x160
->> [  222.431509]        [<ffffffff81213071>] SyS_io_setup+0xef1/0xf00
->> [  222.434069]        [<ffffffff8174eaa4>] tracesys+0xdd/0xe2
->> [  222.436308] 
->> other info that might help us debug this:
->>
->> [  222.443857] Chain exists of:
->>   &mapping->i_mmap_mutex --> &(ptlock_ptr(page))->rlock#2 --> &(&mapping->private_lock)->rlock
->>
->> [  222.451618]  Possible unsafe locking scenario:
->>
->> [  222.456831]        CPU0                    CPU1
->> [  222.459413]        ----                    ----
->> [  222.461958]   lock(&(&mapping->private_lock)->rlock);
->> [  222.464505]                                lock(&(ptlock_ptr(page))->rlock#2);
->> [  222.467094]                                lock(&(&mapping->private_lock)->rlock);
->> [  222.469625]   lock(&mapping->i_mmap_mutex);
->> [  222.472111] 
->>  *** DEADLOCK ***
->>
->> [  222.478392] 1 lock held by trinity-child1/12794:
->> [  222.480744]  #0:  (&(&mapping->private_lock)->rlock){+.+...}, at: [<ffffffff81210a64>] aio_free_ring+0x44/0x160
->> [  222.483240] 
->> stack backtrace:
->> [  222.488119] CPU: 1 PID: 12794 Comm: trinity-child1 Not tainted 3.13.0-rc2+ #12 
->> [  222.493016]  ffffffff824cb110 ffff880229517c30 ffffffff8173bc52 ffffffff824a3f40
->> [  222.495690]  ffff880229517c70 ffffffff81737fed ffff880229517cc0 ffff8800a1e49d10
->> [  222.498379]  ffff8800a1e495d0 0000000000000001 0000000000000001 ffff8800a1e49d10
->> [  222.501073] Call Trace:
->> [  222.503394]  [<ffffffff8173bc52>] dump_stack+0x4e/0x7a
->> [  222.506080]  [<ffffffff81737fed>] print_circular_bug+0x200/0x20f
->> [  222.508781]  [<ffffffff810aed16>] __lock_acquire+0x1786/0x1af0
->> [  222.511485]  [<ffffffff810af833>] lock_acquire+0x93/0x1c0
->> [  222.514197]  [<ffffffff81179e68>] ? unmap_mapping_range+0x68/0x170
->> [  222.516594]  [<ffffffff81179e68>] ? unmap_mapping_range+0x68/0x170
->> [  222.519307]  [<ffffffff81741d37>] mutex_lock_nested+0x77/0x400
->> [  222.522028]  [<ffffffff81179e68>] ? unmap_mapping_range+0x68/0x170
->> [  222.524752]  [<ffffffff81179e68>] ? unmap_mapping_range+0x68/0x170
->> [  222.527445]  [<ffffffff81179e68>] unmap_mapping_range+0x68/0x170
->> [  222.530113]  [<ffffffff81160a35>] truncate_pagecache+0x35/0x60
->> [  222.532785]  [<ffffffff81160a72>] truncate_setsize+0x12/0x20
->> [  222.535439]  [<ffffffff81210ab9>] aio_free_ring+0x99/0x160
->> [  222.538089]  [<ffffffff81213071>] SyS_io_setup+0xef1/0xf00
->> [  222.540725]  [<ffffffff8174eaa4>] tracesys+0xdd/0xe2
-> 
+Example:
+     # ./perf list cache --raw-dump
+     L1-dcache-loads
+     L1-dcache-load-misses
+     L1-dcache-stores
+     L1-dcache-store-misses
+     L1-dcache-prefetch-misses
+     L1-icache-load-misses
+     LLC-loads
+     LLC-stores
+     LLC-prefetches
+     dTLB-loads
+     dTLB-load-misses
+     dTLB-stores
+     dTLB-store-misses
+     iTLB-loads
+     iTLB-load-misses
+     branch-loads
+     branch-load-misses
 
 
+
+
+--------------040602070800020008040208
+Content-Transfer-Encoding: 7bit
+Content-Type: text/x-patch;
+ name="0001-perf-list-Fix-raw-dump-arg.patch"
+Content-Disposition: attachment;
+ filename="0001-perf-list-Fix-raw-dump-arg.patch"
+
+>From 7bd20eb147783e0c1e659b3bceeebb75aad8436c Mon Sep 17 00:00:00 2001
+From: David Ahern <dsahern@gmail.com>
+Date: Wed, 11 Dec 2013 14:00:20 -0700
+Subject: [PATCH] perf list: Fix raw-dump arg
+
+Ramkumar reported that perf list --raw-dump was broken by 44d742e.
+Fix by making raw-dump a proper option.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ramkumar Ramachandra <artagnon@gmail.com>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+---
+ tools/perf/builtin-list.c      | 23 +++++++++++------------
+ tools/perf/util/parse-events.c | 19 +++++++++++--------
+ tools/perf/util/parse-events.h |  2 +-
+ tools/perf/util/pmu.c          |  2 +-
+ 4 files changed, 24 insertions(+), 22 deletions(-)
+
+diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
+index 011195e..9cf12f2 100644
+--- a/tools/perf/builtin-list.c
++++ b/tools/perf/builtin-list.c
+@@ -19,7 +19,9 @@
+ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	int i;
++	bool raw_dump = false;
+ 	const struct option list_options[] = {
++		OPT_BOOLEAN(0, "raw-dump", &raw_dump, "raw dump for completion"),
+ 		OPT_END()
+ 	};
+ 	const char * const list_usage[] = {
+@@ -27,13 +29,12 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		NULL
+ 	};
+ 
+-	argc = parse_options(argc, argv, list_options, list_usage,
+-			     PARSE_OPT_STOP_AT_NON_OPTION);
++	argc = parse_options(argc, argv, list_options, list_usage, 0);
+ 
+ 	setup_pager();
+ 
+ 	if (argc == 0) {
+-		print_events(NULL, false);
++		print_events(NULL, raw_dump);
+ 		return 0;
+ 	}
+ 
+@@ -41,26 +42,24 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		if (i)
+ 			putchar('\n');
+ 		if (strncmp(argv[i], "tracepoint", 10) == 0)
+-			print_tracepoint_events(NULL, NULL, false);
++			print_tracepoint_events(NULL, NULL, raw_dump);
+ 		else if (strcmp(argv[i], "hw") == 0 ||
+ 			 strcmp(argv[i], "hardware") == 0)
+-			print_events_type(PERF_TYPE_HARDWARE);
++			print_events_type(PERF_TYPE_HARDWARE, raw_dump);
+ 		else if (strcmp(argv[i], "sw") == 0 ||
+ 			 strcmp(argv[i], "software") == 0)
+-			print_events_type(PERF_TYPE_SOFTWARE);
++			print_events_type(PERF_TYPE_SOFTWARE, raw_dump);
+ 		else if (strcmp(argv[i], "cache") == 0 ||
+ 			 strcmp(argv[i], "hwcache") == 0)
+-			print_hwcache_events(NULL, false);
++			print_hwcache_events(NULL, raw_dump);
+ 		else if (strcmp(argv[i], "pmu") == 0)
+-			print_pmu_events(NULL, false);
+-		else if (strcmp(argv[i], "--raw-dump") == 0)
+-			print_events(NULL, true);
++			print_pmu_events(NULL, raw_dump);
+ 		else {
+ 			char *sep = strchr(argv[i], ':'), *s;
+ 			int sep_idx;
+ 
+ 			if (sep == NULL) {
+-				print_events(argv[i], false);
++				print_events(argv[i], raw_dump);
+ 				continue;
+ 			}
+ 			sep_idx = sep - argv[i];
+@@ -69,7 +68,7 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 				return -1;
+ 
+ 			s[sep_idx] = '\0';
+-			print_tracepoint_events(s, s + sep_idx + 1, false);
++			print_tracepoint_events(s, s + sep_idx + 1, raw_dump);
+ 			free(s);
+ 		}
+ 	}
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 969cb8f..ded4a4e 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -1034,7 +1034,7 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
+ 				continue;
+ 
+ 			if (name_only) {
+-				printf("%s:%s ", sys_dirent.d_name, evt_dirent.d_name);
++				printf("%s:%s\n", sys_dirent.d_name, evt_dirent.d_name);
+ 				continue;
+ 			}
+ 
+@@ -1117,7 +1117,7 @@ static bool is_event_supported(u8 type, unsigned config)
+ }
+ 
+ static void __print_events_type(u8 type, struct event_symbol *syms,
+-				unsigned max)
++				unsigned max, bool name_only)
+ {
+ 	char name[64];
+ 	unsigned i;
+@@ -1132,16 +1132,19 @@ static void __print_events_type(u8 type, struct event_symbol *syms,
+ 		else
+ 			snprintf(name, sizeof(name), "%s", syms->symbol);
+ 
+-		printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
++		if (name_only)
++            printf("  %-50s\n", name);
++        else
++            printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
+ 	}
+ }
+ 
+-void print_events_type(u8 type)
++void print_events_type(u8 type, bool name_only)
+ {
+ 	if (type == PERF_TYPE_SOFTWARE)
+-		__print_events_type(type, event_symbols_sw, PERF_COUNT_SW_MAX);
++		__print_events_type(type, event_symbols_sw, PERF_COUNT_SW_MAX, name_only);
+ 	else
+-		__print_events_type(type, event_symbols_hw, PERF_COUNT_HW_MAX);
++		__print_events_type(type, event_symbols_hw, PERF_COUNT_HW_MAX, name_only);
+ }
+ 
+ int print_hwcache_events(const char *event_glob, bool name_only)
+@@ -1166,7 +1169,7 @@ int print_hwcache_events(const char *event_glob, bool name_only)
+ 					continue;
+ 
+ 				if (name_only)
+-					printf("%s ", name);
++					printf("%s\n", name);
+ 				else
+ 					printf("  %-50s [%s]\n", name,
+ 					       event_type_descriptors[PERF_TYPE_HW_CACHE]);
+@@ -1198,7 +1201,7 @@ static void print_symbol_events(const char *event_glob, unsigned type,
+ 			continue;
+ 
+ 		if (name_only) {
+-			printf("%s ", syms->symbol);
++			printf("%s\n", syms->symbol);
+ 			continue;
+ 		}
+ 
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index f1cb4c4..8f991e2 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -102,7 +102,7 @@ void parse_events_update_lists(struct list_head *list_event,
+ void parse_events_error(void *data, void *scanner, char const *msg);
+ 
+ void print_events(const char *event_glob, bool name_only);
+-void print_events_type(u8 type);
++void print_events_type(u8 type, bool name_only);
+ void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
+ 			     bool name_only);
+ int print_hwcache_events(const char *event_glob, bool name_only);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 56fc10a..1c57356 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -751,7 +751,7 @@ void print_pmu_events(const char *event_glob, bool name_only)
+ 	qsort(aliases, len, sizeof(char *), cmp_string);
+ 	for (j = 0; j < len; j++) {
+ 		if (name_only) {
+-			printf("%s ", aliases[j]);
++			printf("%s\n", aliases[j]);
+ 			continue;
+ 		}
+ 		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
+-- 
+1.8.2.1
+
+
+--------------040602070800020008040208--
