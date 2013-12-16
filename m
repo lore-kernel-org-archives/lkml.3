@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab3LPGN2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 01:13:28 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:45484 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571Ab3LPGN0 (ORCPT
+	id S1752691Ab3LPGO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 01:14:26 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:38842 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658Ab3LPGOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 01:13:26 -0500
+	Mon, 16 Dec 2013 01:14:23 -0500
 MIME-Version: 1.0
-Date: Mon, 16 Dec 2013 14:13:25 +0800
-Message-ID: <CAPgLHd-C925=6rEnQMMkPvHu6+w_BHcJ1-CG8PdK37XM9dzf_A@mail.gmail.com>
-Subject: [PATCH -next] drm/i915: fix return value check of debugfs_create_file()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: daniel.vetter@ffwll.ch, airlied@linux.ie
-Cc: yongjun_wei@trendmicro.com.cn, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+In-Reply-To: <52AE81B3.4010203@linaro.org>
+References: <529F4B0F.2020801@linaro.org> <529F4B4F.4020405@linaro.org>
+ <20131214235731.26321.53050@quantum> <52ADE93B.3070907@linaro.org>
+ <E566434B-F630-4AD3-91EC-BD5599767F2E@linaro.org> <52AE81B3.4010203@linaro.org>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Sun, 15 Dec 2013 22:14:02 -0800
+Message-ID: <CAPtuhTi08LO7XfZa=7xArA2m2989FkTo4v+WRH+d_JmeKhvjuw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] clk: bcm281xx: add initial clock framework support
+To: Alex Elder <alex.elder@linaro.org>
+Cc: Christian Daudt <bcm@fixthebug.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tim Kryger <tim.kryger@linaro.org>,
+        "bcm-kernel-feedback-list@broadcom.com" 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Sun, Dec 15, 2013 at 8:29 PM, Alex Elder <alex.elder@linaro.org> wrote:
+> In the mean time, I have created a new branch that
+> is based on v3.13-rc4 (and includes Tim's prerequisite
+> patches).  Pull request (still wrapped my my mailer)
+> is below.
 
-In case of error, the function debugfs_create_file() returns NULL
-pointer not ERR_PTR() if debugfs is enabled. The IS_ERR() test in
-the return value check should be replaced with NULL test.
+Hi Alex,
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/gpu/drm/i915/i915_debugfs.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+This isn't a mess but is pretty normal. Can you create a new branch
+with only your 2 clock patches applied on top of my clk-next branch?
+You should merge "ARM: dts: bcm281xx: define real clocks" through the
+arm-soc tree. Then you can send another pull request to me which has
+just the 2 bcm clock patches based on clk-next and everything will
+eventually end up linux-next all together.
 
-diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
-index 7008aac..856e18b 100644
---- a/drivers/gpu/drm/i915/i915_debugfs.c
-+++ b/drivers/gpu/drm/i915/i915_debugfs.c
-@@ -1920,8 +1920,8 @@ static int i915_pipe_crc_create(struct dentry *root, struct drm_minor *minor,
- 	info->dev = dev;
- 	ent = debugfs_create_file(info->name, S_IRUGO, root, info,
- 				  &i915_pipe_crc_fops);
--	if (IS_ERR(ent))
--		return PTR_ERR(ent);
-+	if (!ent)
-+		return -ENOMEM;
- 
- 	return drm_add_fake_info_node(minor, ent, info);
- }
-@@ -2931,8 +2931,8 @@ static int i915_forcewake_create(struct dentry *root, struct drm_minor *minor)
- 				  S_IRUSR,
- 				  root, dev,
- 				  &i915_forcewake_fops);
--	if (IS_ERR(ent))
--		return PTR_ERR(ent);
-+	if (!ent)
-+		return -ENOMEM;
- 
- 	return drm_add_fake_info_node(minor, ent, &i915_forcewake_fops);
- }
-@@ -2949,8 +2949,8 @@ static int i915_debugfs_create(struct dentry *root,
- 				  S_IRUGO | S_IWUSR,
- 				  root, dev,
- 				  fops);
--	if (IS_ERR(ent))
--		return PTR_ERR(ent);
-+	if (!ent)
-+		return -ENOMEM;
- 
- 	return drm_add_fake_info_node(minor, ent, fops);
- }
+Just FYI if I took your pull request as-is then the clk-next tree
+would become polluted with lots of extra bcm patches.
 
+Regards,
+Mike
