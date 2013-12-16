@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401Ab3LPKtb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:49:31 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:54384 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab3LPKt3 (ORCPT
+	id S1753421Ab3LPKuP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:50:15 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:44712 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab3LPKuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:49:29 -0500
-Date: Mon, 16 Dec 2013 11:49:27 +0100
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <iamjoonsoo.kim@lge.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: possible regression on 3.13 when calling flush_dcache_page
-Message-ID: <20131216104927.GA9627@ldesroches-Latitude-E6320>
-Mail-Followup-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-	linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-	linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	iamjoonsoo.kim@lge.com
-References: <20131212143149.GI12099@ldesroches-Latitude-E6320>
- <20131212171322.GT4360@n2100.arm.linux.org.uk>
+	Mon, 16 Dec 2013 05:50:13 -0500
+X-IronPort-AV: E=Sophos;i="4.95,494,1384300800"; 
+   d="scan'208";a="82576510"
+Message-ID: <1387191010.20076.66.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH v2 9/9] drivers: net: Mark function
+ xenvif_count_frag_slots() as static in netback.c
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, Wei Liu <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <josh@joshtriplett.org>
+Date: Mon, 16 Dec 2013 10:50:10 +0000
+In-Reply-To: <609db9fcc843525f9ca2f18673744cad2fb9fb8c.1386911124.git.rashika.kheria@gmail.com>
+References: <a610f6ee6bb992b91e43bdc851f3db62fc3decd5.1386911123.git.rashika.kheria@gmail.com>
+	 <609db9fcc843525f9ca2f18673744cad2fb9fb8c.1386911124.git.rashika.kheria@gmail.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20131212171322.GT4360@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 05:13:22PM +0000, Russell King - ARM Linux wrote:
-> On Thu, Dec 12, 2013 at 03:31:50PM +0100, Ludovic Desroches wrote:
-> > I'll investigate on atmel-mci driver side but if someone has also this
-> > issue or see what is wrong in the driver, please tell me all about it.
+On Sat, 2013-12-14 at 18:02 +0530, Rashika Kheria wrote:
+> This patch marks the function xenvif_count_frag_slots() in netback.c as
+> static because they are not used outside this file.
 > 
-> I'm not entirely sure what's causing this, but calling flush_dcache_page()
-> from an IRQ isn't the best idea, as one of its side effects will be to
-> unmask IRQs at the CPU.
+> Thus, it also removes the following warning in xen-netback/netback.c:
+> drivers/net/xen-netback/netback.c:218:14: warning: no previous prototype for ‘xenvif_count_frag_slots’ [-Wmissing-prototypes]
 > 
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-Thans for pointing this point. Having a look to other mmc drivers, it
-seems flush_dcache_page() is also called from an IRQ. Not sure that
-deferring it is the way to go.
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
 
-What should be the most proper solution?
+> ---
+> 
+> This revision fixes the following issues of the previous revision:
+> Change commit message subject
+> 
+>  drivers/net/xen-netback/netback.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> index 64f0e0d..9e4f399 100644
+> --- a/drivers/net/xen-netback/netback.c
+> +++ b/drivers/net/xen-netback/netback.c
+> @@ -215,7 +215,7 @@ struct xenvif_count_slot_state {
+>  	bool head;
+>  };
+>  
+> -unsigned int xenvif_count_frag_slots(struct xenvif *vif,
+> +static unsigned int xenvif_count_frag_slots(struct xenvif *vif,
+>  				     unsigned long offset, unsigned long size,
+>  				     struct xenvif_count_slot_state *state)
+>  {
 
-> BTW, the faulting function seems to have been removed in more recent
-> kernels.
 
-Same error with rc4 and linux-next.
