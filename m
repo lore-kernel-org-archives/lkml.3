@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab3LPNqk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 08:46:40 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:38316 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753543Ab3LPNqi (ORCPT
+	id S1754272Ab3LPNqv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 08:46:51 -0500
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:53354 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754242Ab3LPNqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 08:46:38 -0500
-Date: Mon, 16 Dec 2013 13:46:33 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: (max8997) Handle the potential error for
- mfd_add_devices
-Message-ID: <20131216134633.GI18769@lee--X1>
-References: <1387194424-2701-1-git-send-email-lpapp@kde.org>
+	Mon, 16 Dec 2013 08:46:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1387194424-2701-1-git-send-email-lpapp@kde.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1387078509-14156-3-git-send-email-dt.tangr@gmail.com>
+References: <1387078509-14156-1-git-send-email-dt.tangr@gmail.com>
+	<1387078509-14156-3-git-send-email-dt.tangr@gmail.com>
+Date: Mon, 16 Dec 2013 07:46:47 -0600
+Message-ID: <CAL_JsqJ1HTccZ0-QLAXnWOvMYHsO_GjzKtYbbqp7_0c_H3e_NA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] devicetree: bindings: document lsi,zevio-usb
+From: Rob Herring <robherring2@gmail.com>
+To: dt.tangr@gmail.com
+Cc: Linux USB List <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The $SUBJECT line is wrong. To see how a subsystem usually formats
-theirs you must do something like `git log --oneline -- <subsystem>`.
-And duplicate the format.
+On Sat, Dec 14, 2013 at 9:35 PM,  <dt.tangr@gmail.com> wrote:
+> From: Daniel Tang <dt.tangr@gmail.com>
+>
+>
+> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
 
-Commit message?
+A few minor things below. Otherwise:
 
-> Signed-off-by: Laszlo Papp <lpapp@kde.org>
+Acked-by: Rob Herring <rob.herring@calxeda.com>
+
 > ---
->  drivers/mfd/max8997.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
-> index 791aea3..c7cc235 100644
-> --- a/drivers/mfd/max8997.c
-> +++ b/drivers/mfd/max8997.c
-> @@ -227,19 +227,19 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
->  	pm_runtime_set_active(max8997->dev);
->  
->  	max8997_irq_init(max8997);
-> -
-> -	mfd_add_devices(max8997->dev, -1, max8997_devs,
-> +	ret = mfd_add_devices(max8997->dev, -1, max8997_devs,
->  			ARRAY_SIZE(max8997_devs),
->  			NULL, 0, NULL);
-> +	if (ret < 0) {
-> +		dev_err(dev, "cannot add mfd cells\n");
-> +		goto err_mfd;
-> +	}
+>  .../devicetree/bindings/usb/ci-hdrc-zevio.txt         |   17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/usb/ci-hdrc-zevio.txt
+>
+> diff --git a/Documentation/devicetree/bindings/usb/ci-hdrc-zevio.txt b/Documentation/devicetree/bindings/usb/ci-hdrc-zevio.txt
+> new file mode 100644
+> index 0000000..1a005eb
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/usb/ci-hdrc-zevio.txt
+> @@ -0,0 +1,17 @@
+> +* LSI Zevio USB OTG Controller
+> +
+> +Required properties:
+> +- compatible: Should be "lsi,zevio-usb"
+> +- reg: Should contain registers location and length
+> +- interrupts: Should contain controller interrupt
+> +
+> +Recommended properies:
 
-Have you tested this patch on h/w? Did you even compile it?
+To be consistent, should be "optional" rather than recommended.
 
->  	/*
->  	 * TODO: enable others (flash, muic, rtc, battery, ...) and
->  	 * check the return value
->  	 */
->  
-> -	if (ret < 0)
-> -		goto err_mfd;
-> -
->  	/* MAX8997 has a power button input. */
->  	device_init_wakeup(max8997->dev, pdata->wakeup);
->  
+s/properies/properties/
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> +- vbus-supply: regulator for vbus
+> +
+> +Examples:
+> +               usb0: usb@B0000000 {
+> +                       reg = <0xB0000000 0x1000>;
+
+lower case hex is preferred.
+
+> +                       compatible = "lsi,zevio-usb";
+> +                       interrupts = <8>;
+> +                       vbus-supply = <&vbus_reg>;
+> +               };
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
