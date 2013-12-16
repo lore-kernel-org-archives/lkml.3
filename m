@@ -1,176 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab3LPJbd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 04:31:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9766 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751747Ab3LPJbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 04:31:31 -0500
-From: Dave Young <dyoung@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
-        matt@console-pimps.org, toshi.kani@hp.com, akpm@linux-foundation.org,
-        mingo@kernel.org, msalter@redhat.com, leif.lindholm@linaro.org
-Subject: [PATCH v6 00/14] kexec kernel efi runtime support
-Date: Mon, 16 Dec 2013 17:30:21 +0800
-Message-Id: <1387186235-15972-1-git-send-email-dyoung@redhat.com>
+	id S1752926Ab3LPJiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 04:38:22 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:46642 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab3LPJiU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 04:38:20 -0500
+Message-ID: <52AEC989.4080509@huawei.com>
+Date: Mon, 16 Dec 2013 17:36:09 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: 3.13-rc breaks MEMCG_SWAP
+References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is the V6 patchset for supporting kexec kernel efi runtime.
-Per pervious discussion I pass the 1st kernel efi runtime mapping
-via setup_data to 2nd kernel. Besides of the runtime mapping
-info I also pass the fw_vendor, runtime, config table, smbios
-physical address in setup_data. EFI spec mentioned fw_vendor,
-runtime, config table addresses will be converted to virt address
-after entering virtual mode, but we will use it as physical address
-in efi_init. For smbios EFI spec did not mention about the address
-updating, but during my test on a HP workstation, the bios will
-convert it to Virt addr, thus pass it in setup_data as well.
+On 2013/12/16 16:36, Hugh Dickins wrote:
+> CONFIG_MEMCG_SWAP is broken in 3.13-rc.  Try something like this:
+> 
+> mkdir -p /tmp/tmpfs /tmp/memcg
+> mount -t tmpfs -o size=1G tmpfs /tmp/tmpfs
+> mount -t cgroup -o memory memcg /tmp/memcg
+> mkdir /tmp/memcg/old
+> echo 512M >/tmp/memcg/old/memory.limit_in_bytes
+> echo $$ >/tmp/memcg/old/tasks
+> cp /dev/zero /tmp/tmpfs/zero 2>/dev/null
+> echo $$ >/tmp/memcg/tasks
+> rmdir /tmp/memcg/old
+> sleep 1	# let rmdir work complete
+> mkdir /tmp/memcg/new
+> umount /tmp/tmpfs
+> dmesg | grep WARNING
+> rmdir /tmp/memcg/new
+> umount /tmp/memcg
+> 
+> Shows lots of WARNING: CPU: 1 PID: 1006 at kernel/res_counter.c:91
+>                            res_counter_uncharge_locked+0x1f/0x2f()
+> 
+> Breakage comes from 34c00c319ce7 ("memcg: convert to use cgroup id").
+> 
+> The lifetime of a cgroup id is different from the lifetime of the
+> css id it replaced: memsw's css_get()s do nothing to hold on to the
+> old cgroup id, it soon gets recycled to a new cgroup, which then
+> mysteriously inherits the old's swap, without any charge for it.
+> (I thought memsw's particular need had been discussed and was
+> well understood when 34c00c319ce7 went in, but apparently not.)
+> 
+> The right thing to do at this stage would be to revert that and its
+> associated commits; but I imagine to do so would be unwelcome to
+> the cgroup guys, going against their general direction; and I've
+> no idea how embedded that css_id removal has become by now.
+> 
+> Perhaps some creative refcounting can rescue memsw while still
+> using cgroup id?
+> 
 
-For fw_vendor, runtime, config table, I export them in /sys/firmware/
-efi/, smbios is already in /sys/firmware/efi/systab.
+Sorry for the broken.
 
-For efi runtime mapping I add a new directory /sys/firmware/efi/
-runtime-map/ like below
-[dave@darkstar ~]$ tree /sys/firmware/efi/runtime-map/
-/sys/firmware/efi/runtime-map/
-|__ 0
-|   |__ attribute
-|   |__ num_pages
-|   |__ phys_addr
-|   |__ type
-|   |__ virt_addr
-|__ 1
-[snip]
+I think we can keep the cgroup->id until the last css reference is
+dropped and the css is scheduled to be destroyed.
 
-kexec-tools will assemble them as setup_data and pass to 2nd kernel.
-I will send userspace patches as well.
-
-Limitation is I only write support for x86_64, test on below machines:
-Lenovo thinkpad t420
-Dell inspiron 14 - 3421
-HP Z420 workstation
-Qemu + OVMF
-
-The patches are based on linus tree + matt's efi master tree
-
-Changes from v1:
-add one flag in xloadflags, so kexec-tools can safely load old kernel
-without efi support.
-coding style fixes
-function name for map phys_addr to fixed virt_addr
-Add ABI documentation for sysfs files
-
-Changes from v2:
-01/09: a new patch to remove unused variables in __map_region function
-       catched by Toshi Kani
-09/09: a new patch to export x86 boot_params to sysfs instead of use
-       debugfs files
-Matt: reuse __map_region instead do same thing in another function.
-      add a wrapper function efi_map_region_fixed [02/09]
-      check return value of krealloc
-      sysfs dir name s/efi-runtime-map/runtime-map [06/09]
-      use desc_size in efi_runtime_map
-      for the xloadflags defination: +&& defined(CONFIG_KEXEC)
-Greg: sysfs : one file one value for fw_vendor, runtime, tables. [05/09]
-      Document them in ABI testing
-HPA:  Document the new xloadflag
-Also there's other function cleanup and improvement for error handling.
-
-Changes from v3:
-Greg: sysfs code move to use __ATTR_RO and attr_group
-Boris: comments and code alignment
-
-Added 3 new patches below
-10-print-efi-runtime-memmap.patch
-  - 10/12: print only runtime ranges in case EFI_DEBUG printing
-11-reserve-setup-data-late.patch
-  - fix a bug of kdump kernel, move function for reserving setup data
-    ranges late after parsing memmap= cmdline params because kdump kernel
-    will pass exact memmap late.
-12-x86-kdebugfs-use-ioremap.patch
-  - fix a bug of x86/kernel/kdebugfs.c, use ioremap instead of __va for
-    low mem because __va does not work for exact memmap=
-
-Changes from V4:
- - variable efi_setup in 09/14 is changed to the physical address instead of the virtual address
-because it will be not iounmapped until entering virtual mode, it's too long and could cause
-leak.
- - sparse warnings fixes (Matt):
-   Added 2 new patches to addressing sparse warnings:
-   01/14: x86-mm-sparse-warning-fix-for-early_memremap.patch
-   02/14: efi-use-early_memremap-and-early_memunmap.patch
- - krealloc fixes (Boris)
- - rebase on top of Linus tree + Matt's efi master tree (Boris)
- - a lot of documention/spelling fixes (Boris)
- - share function save_runtime_map in 1st/2nd kernel code (Matt)
- - style and other fixes detail see the patch changelog themselves.
-
-Changes from V5:
- - add efi_runtime_map_setup() and remove the extern variables thus other
-   arches can reuse the runtime_map exporting code. (Matt)
- - check efi_reuse_config return value. (Matt)
- - move parse_efi_setup to efi_$(BITS).c (Boris)
- - call efi_runtime_map_init in efisubsys_init (Boris)
- - save_runtime_map cleanup. (Boris)
-
-To Mark Salter:
-Mark, I still sent the 1/14 memremap patch here for integrity. But feel
-free to take it in your series.
-
-The patches stay in kexec-efi-testing branch of below repo for testing:
-https://github.com/daveyoung/linux.git
-
-Dave Young (14):
-  x86/mm: sparse warning fix for early_memremap
-  efi: Use early_memremap and early_memunmap to fix sparse warnings
-  efi: remove unused variables in __map_region
-  efi: add a wrapper function efi_map_region_fixed
-  efi: reserve boot service fix
-  efi: cleanup efi_enter_virtual_mode function
-  efi: export more efi table variable to sysfs
-  efi: export efi runtime memory mapping to sysfs
-  efi: passing kexec necessary efi data via setup_data
-  efi: only print saved efi runtime maps instead of all memmap ranges
-    for kexec
-  x86: add xloadflags bit for efi runtime support on kexec
-  x86: export x86 boot_params to sysfs
-  x86: reserve setup_data ranges late after parsing memmap cmdline
-  x86: kdebugfs do not use __va for getting setup_data virt addr
-
- Documentation/ABI/testing/sysfs-firmware-efi       |  20 ++
- .../ABI/testing/sysfs-firmware-efi-runtime-map     |  34 ++
- Documentation/ABI/testing/sysfs-kernel-boot_params |  38 ++
- Documentation/x86/boot.txt                         |   3 +
- arch/x86/boot/header.S                             |   9 +-
- arch/x86/include/asm/efi.h                         |  13 +
- arch/x86/include/asm/io.h                          |   3 +-
- arch/x86/include/uapi/asm/bootparam.h              |   2 +
- arch/x86/kernel/Makefile                           |   1 +
- arch/x86/kernel/kdebugfs.c                         |  35 +-
- arch/x86/kernel/ksysfs.c                           | 339 ++++++++++++++++++
- arch/x86/kernel/setup.c                            |   7 +-
- arch/x86/mm/ioremap.c                              |  10 +-
- arch/x86/platform/efi/efi.c                        | 381 ++++++++++++++++-----
- arch/x86/platform/efi/efi_32.c                     |   3 +
- arch/x86/platform/efi/efi_64.c                     |  21 +-
- drivers/firmware/efi/Kconfig                       |  11 +
- drivers/firmware/efi/Makefile                      |   1 +
- drivers/firmware/efi/efi.c                         |  51 ++-
- drivers/firmware/efi/runtime-map.c                 | 181 ++++++++++
- include/linux/efi.h                                |   8 +
- 21 files changed, 1048 insertions(+), 123 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-firmware-efi
- create mode 100644 Documentation/ABI/testing/sysfs-firmware-efi-runtime-map
- create mode 100644 Documentation/ABI/testing/sysfs-kernel-boot_params
- create mode 100644 arch/x86/kernel/ksysfs.c
- create mode 100644 drivers/firmware/efi/runtime-map.c
-
--- 
-1.8.3.1
+I'll cook a fix tomorrow.
 
