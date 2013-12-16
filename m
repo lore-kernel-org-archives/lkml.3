@@ -1,164 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab3LPKwO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:52:14 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:19369 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab3LPKwM (ORCPT
+	id S1753383Ab3LPKxt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:53:49 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:35285 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab3LPKxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:52:12 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 16 Dec 2013 02:54:30 -0800
-Message-ID: <52AEDB6A.2080501@nvidia.com>
-Date: Mon, 16 Dec 2013 18:52:26 +0800
-From: bilhuang <bilhuang@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 16 Dec 2013 05:53:48 -0500
+Message-ID: <52AEDBB4.5060502@hitachi.com>
+Date: Mon, 16 Dec 2013 19:53:40 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v4 1/1] cpufreq: tegra: Re-model Tegra20 cpufreq driver
-References: <1386840835-28751-1-git-send-email-bilhuang@nvidia.com> <52AB967F.9030900@wwwdotorg.org>
-In-Reply-To: <52AB967F.9030900@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: Re: Re: [PATCH -tip v4 0/6] kprobes: introduce NOKPROBE_SYMBOL()
+ and fixes crash bugs
+References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal> <20131204084551.GA31772@gmail.com> <529FBA71.6070107@hitachi.com> <20131205102127.GA19923@gmail.com> <52A137B6.6030307@hitachi.com> <20131210152811.GA1195@gmail.com> <52A7CA0A.9060009@hitachi.com> <20131211133423.GB3101@gmail.com> <52A9515E.5050505@hitachi.com> <20131212140347.GA17059@gmail.com> <52AA9C55.1000103@hitachi.com>
+In-Reply-To: <52AA9C55.1000103@hitachi.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2013 07:21 AM, Stephen Warren wrote:
-> On 12/12/2013 02:33 AM, Bill Huang wrote:
->> Re-model Tegra20 cpufreq driver as below.
+Hi Ingo,
+
+(2013/12/13 14:34), Masami Hiramatsu wrote:
+>>>>> And also, even if we can detect the recursion, we can't stop the 
+>>>>> kernel, we need to skip the probe. This means that we need to 
+>>>>> recover to the main execution path by doing single step. As you 
+>>>>> may know, since the single stepping involves the debug exception, 
+>>>>> we have to avoid proving on that path too. Or we'll have an 
+>>>>> infinite recursion again.
+>>>>
+>>>> I don't see why this is needed: if a "probing is disabled" 
+>>>> recursion flag is set the moment the first probe fires, and if 
+>>>> it's only cleared once all processing is finished, then any 
+>>>> intermediate probes should simply return early from int3 and not 
+>>>> fire.
+>>>
+>>> No, because the int3 already changes the original instruction.
+>>> This means that you cannot skip singlestep(or emulate) the
+>>> instruction which is copied to execution buffer (ainsn->insn),
+>>> even if you have such the flag.
+>>> So, kprobe requires the annotations on the singlestep path.
 >>
->> * Rename tegra-cpufreq.c to tegra20-cpufreq.c since this file supports
->>    only Tegra20.
->> * Add probe function so defer probe can be used when we're going to
->>    support DVFS.
->> * Create a fake cpufreq platform device with its name being
->>    "${root_compatible}-cpufreq" so SoC cpufreq driver can bind to it
->>    accordingly.
->
->> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
->
->> +config ARM_TEGRA20_CPUFREQ
->> +	bool "NVIDIA TEGRA20"
->> +	depends on ARM_TEGRA_CPUFREQ && ARCH_TEGRA_2x_SOC
->> +	default y
->> +	help
->> +	  This enables Tegra20 cpufreq functionality, it adds
->> +	  Tegra20 CPU frequency ladder and the call back functions
->> +	  to set CPU rate. All the non-SoC dependant codes are
->> +	  controlled by the config ARM_TEGRA20_CPUFREQ.
->
-> I think that last sentence is no longer true in this patch version. Or,
-> did you mean to write ARM_TEGRA_CPUFREQ rather than ARM_TEGRA20_CPUFREQ?
+>> I don't understand this reasoning.
+>>
+>> Lets assume we allow a probe to be inserted in the single-step path. 
+>> Such a probe will be an INT3 instruction and if it hits we get a 
+>> recursive INT3 invocation. In that case the INT3 handler should simply
+>> restore the original instruction and _leave it so_. There's no 
+>> single-stepping needed - the probe is confused and must be discarded.
+> 
+> But how can we restore the protected kernel text?
+> If we use text_poke, we also need to prohibit probing on the text_poke
+> and functions called in the text_poke too. That just shifts the annotated
+> area to the text_poke. :(
 
-Right, should be ARM_TEGRA_CPUFREQ, thanks for catching this.
->
->> diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
->
->> +static const char * const tegra_soc_compat[] = {
->> +	"nvidia,tegra124",
->> +	"nvidia,tegra114",
->> +	"nvidia,tegra30",
->> +	"nvidia,tegra20",
->> +	NULL
->>   };
->
-> That table will need editing for each chip. I wonder if you can do
-> something like always use the very last entry in /compatible. That would
-> assume a particular ordering of the compatible entries, but they should
-> be in the order $board, $soc anyway...
 
-How do we get subset of a string and making sure it is the last? There 
-must be some assumptions here (though they will possibly be true) I 
-guess, for example, they should be in the order $board, $soc... and the 
-last "nvidia" should be the start of the last compatible id we would 
-like to get.
->
->> +int __init tegra_cpufreq_init(void)
->> +	int i;
->> +
->> +	for (i = 0; i < ARRAY_SIZE(tegra_soc_compat); i++) {
->> +		if (of_machine_is_compatible(tegra_soc_compat[i])) {
->> +			struct platform_device_info devinfo;
->> +			char buf[40];
->> +
->> +			memset(&devinfo, 0, sizeof(devinfo));
->> +			strcpy(buf, tegra_soc_compat[i]);
->> +			strcat(buf, "-cpufreq");
->
-> kasprintf() might be simpler, and would avoid the arbitrary 39-character
-> string limit and possibility of overflow.
+OK, I've checked current text_poke() and thought how we can do that.
+The current text_poke() uses special fixmap to make alias pages for
+avoiding kernel-text readonly protection. For protecting the fixmap
+pages, we are currently using text_mutex and this is why we can't use
+it in exception path. There are other minor issues, but it seems to
+be fixed easily. :)
 
-Ah yeah, thanks.
->
->> +			devinfo.name = buf;
->> +			platform_device_register_full(&devinfo);
->
-> Does the devinfo struct need to stick around, i.e. does
-> platform_device_register_full keep the pointer, or take a copy of the
-> struct? If it keeps the pointer, it'd be best to make devinfo a static
-> global variable.
+Thus, for recovering original instruction in the int3 handler,
+I'd like to propose adding another text_poke like function, which
+requires another fixmap page and protects it by using raw_spinlock
+(to avoid tracing), and just support one-byte poke (this means it
+ never across the page boundary).
 
-devinfo is used to provide dev info to create platform device structure, 
-so I think it is OK here.
->
->> diff --git a/drivers/cpufreq/tegra20-cpufreq.c b/drivers/cpufreq/tegra20-cpufreq.c
->
-> Please pass the "-C" option to "git format-patch"; I assume that almost
-> all the code in this file is simply cut/paste verbatim from
-> tegra-cpufreq.c where it was deleted.
+Perhaps, it can be implemented inside kprobes, because it is not
+useful for other subsystems.
 
-OK, thanks.
->
->> + * Copyright (C) 2010 Google, Inc.
->
-> It's worth adding NV (c) here too.
+Thank you!
 
-OK.
->
->> +static int tegra20_cpufreq_remove(struct platform_device *pdev)
->> +{
->> +	cpufreq_unregister_driver(&tegra20_cpufreq_driver);
->> +	return 0;
->> +}
->
-> That leaks all the clk_get_sys() calls. Does building this as a module
-> work OK?
 
-I should add back those clk_put here.
->
->> +MODULE_LICENSE("GPL");
->
-> That should be "GPL v2".
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-OK.
->
->> diff --git a/include/linux/tegra-cpufreq.h b/include/linux/tegra-cpufreq.h
->
->> +#ifdef CONFIG_ARM_TEGRA_CPUFREQ
->> +int tegra_cpufreq_init(void);
->> +#else
->> +static inline int tegra_cpufreq_init(void)
->> +{ return; }
->> +#endif
->
-> If you're going to wrap the { } onto one line, then I think it'd be best
-> to wrap the whole thing (prototype and body) onto one line. Otherwise,
-> write:
->
-> {
-> 	return;
-> }
->
-> Oh, and you need "return 0" not just "return".
-
-Thanks for catching.
->
 
