@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab3LPEMN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 23:12:13 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:62161 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab3LPEJM (ORCPT
+	id S1752675Ab3LPEJK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 23:09:10 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:57596 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab3LPEJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 23:09:12 -0500
+	Sun, 15 Dec 2013 23:09:06 -0500
 From: David Long <dave.long@linaro.org>
 To: linux-arm-kernel@lists.infradead.org,
         Russell King <linux@arm.linux.org.uk>
@@ -21,9 +21,9 @@ Cc: Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
         Paul Mackerras <paulus@samba.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 10/16] ARM: Change more ARM kprobes symbol names to something more
-Date: Sun, 15 Dec 2013 23:08:44 -0500
-Message-Id: <1387166930-13182-11-git-send-email-dave.long@linaro.org>
+Subject: [PATCH v4 06/16] ARM: Disable jprobes test when built into thumb-mode kernel
+Date: Sun, 15 Dec 2013 23:08:40 -0500
+Message-Id: <1387166930-13182-7-git-send-email-dave.long@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1387166930-13182-1-git-send-email-dave.long@linaro.org>
 References: <1387166930-13182-1-git-send-email-dave.long@linaro.org>
@@ -31,164 +31,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "David A. Long" <dave.long@linaro.org>
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
 
-Change kprobe_emulate_none, kprobe_simulate_nop, and arm_kprobe_decode_init
-function names to something more appropriate for code being shared
-outside of the kprobes subsystem. Also, move the new arm_probes_decode_init
-declaration out of the kprobes.h include file and into the probes.h include file.
+For now the jprobes tests fail on ARM for when built into a kernel compiled
+in thumb mode. They work fine for ARM kernels, and when built as a loadable
+module.
 
+Signed-off-by: "Jon Medhurst (Tixy)" <tixy@linaro.org>
 Signed-off-by: David A. Long <dave.long@linaro.org>
 ---
- arch/arm/kernel/kprobes-arm.c   | 12 ++++++------
- arch/arm/kernel/kprobes-thumb.c | 10 +++++-----
- arch/arm/kernel/kprobes.c       |  2 +-
- arch/arm/kernel/kprobes.h       |  2 --
- arch/arm/kernel/probes.c        |  6 +++---
- arch/arm/kernel/probes.h        |  6 ++++--
- 6 files changed, 19 insertions(+), 19 deletions(-)
+ arch/arm/kernel/kprobes-test.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/arch/arm/kernel/kprobes-arm.c b/arch/arm/kernel/kprobes-arm.c
-index 1fe3a44..ccb10bc 100644
---- a/arch/arm/kernel/kprobes-arm.c
-+++ b/arch/arm/kernel/kprobes-arm.c
-@@ -302,10 +302,10 @@ emulate_rdlo12rdhi16rn0rm8_rwflags_nopc(probes_opcode_t insn,
- }
+diff --git a/arch/arm/kernel/kprobes-test.c b/arch/arm/kernel/kprobes-test.c
+index 0cd63d0..65230b2 100644
+--- a/arch/arm/kernel/kprobes-test.c
++++ b/arch/arm/kernel/kprobes-test.c
+@@ -221,6 +221,7 @@ static int pre_handler_called;
+ static int post_handler_called;
+ static int jprobe_func_called;
+ static int kretprobe_handler_called;
++static int tests_failed;
  
- const union decode_item kprobes_arm_actions[] = {
--	[PROBES_EMULATE_NONE] = {.handler = kprobe_emulate_none},
--	[PROBES_SIMULATE_NOP] = {.handler = kprobe_simulate_nop},
--	[PROBES_PRELOAD_IMM] = {.handler = kprobe_simulate_nop},
--	[PROBES_PRELOAD_REG] = {.handler = kprobe_simulate_nop},
-+	[PROBES_EMULATE_NONE] = {.handler = probes_emulate_none},
-+	[PROBES_SIMULATE_NOP] = {.handler = probes_simulate_nop},
-+	[PROBES_PRELOAD_IMM] = {.handler = probes_simulate_nop},
-+	[PROBES_PRELOAD_REG] = {.handler = probes_simulate_nop},
- 	[PROBES_BRANCH_IMM] = {.handler = simulate_blx1},
- 	[PROBES_MRS] = {.handler = simulate_mrs},
- 	[PROBES_BRANCH_REG] = {.handler = simulate_blx2bx},
-@@ -326,8 +326,8 @@ const union decode_item kprobes_arm_actions[] = {
- 	[PROBES_DATA_PROCESSING_IMM] = {
- 		.handler = emulate_rd12rn16rm0rs8_rwflags},
- 	[PROBES_MOV_HALFWORD] = {.handler = emulate_rd12rm0_noflags_nopc},
--	[PROBES_SEV] = {.handler = kprobe_emulate_none},
--	[PROBES_WFE] = {.handler = kprobe_simulate_nop},
-+	[PROBES_SEV] = {.handler = probes_emulate_none},
-+	[PROBES_WFE] = {.handler = probes_simulate_nop},
- 	[PROBES_SATURATE] = {.handler = emulate_rd12rn16rm0_rwflags_nopc},
- 	[PROBES_REV] = {.handler = emulate_rd12rm0_noflags_nopc},
- 	[PROBES_MMI] = {.handler = emulate_rd12rn16rm0_rwflags_nopc},
-diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/kernel/kprobes-thumb.c
-index da1e24b..9a78a72 100644
---- a/arch/arm/kernel/kprobes-thumb.c
-+++ b/arch/arm/kernel/kprobes-thumb.c
-@@ -612,8 +612,8 @@ const union decode_item kprobes_t16_actions[] = {
- 	[PROBES_T16_SIGN_EXTEND] = {.handler = t16_emulate_loregs_rwflags},
- 	[PROBES_T16_PUSH] = {.decoder = t16_decode_push},
- 	[PROBES_T16_POP] = {.decoder = t16_decode_pop},
--	[PROBES_T16_SEV] = {.handler = kprobe_emulate_none},
--	[PROBES_T16_WFE] = {.handler = kprobe_simulate_nop},
-+	[PROBES_T16_SEV] = {.handler = probes_emulate_none},
-+	[PROBES_T16_WFE] = {.handler = probes_simulate_nop},
- 	[PROBES_T16_IT] = {.decoder = t16_decode_it},
- 	[PROBES_T16_CMP] = {.handler = t16_emulate_loregs_rwflags},
- 	[PROBES_T16_ADDSUB] = {.handler = t16_emulate_loregs_noitrwflags},
-@@ -643,12 +643,12 @@ const union decode_item kprobes_t32_actions[] = {
- 	[PROBES_T32_MOVW] = {.handler = t32_emulate_rd8rn16_noflags},
- 	[PROBES_T32_SAT] = {.handler = t32_emulate_rd8rn16rm0_rwflags},
- 	[PROBES_T32_BITFIELD] = {.handler = t32_emulate_rd8rn16_noflags},
--	[PROBES_T32_SEV] = {.handler = kprobe_emulate_none},
--	[PROBES_T32_WFE] = {.handler = kprobe_simulate_nop},
-+	[PROBES_T32_SEV] = {.handler = probes_emulate_none},
-+	[PROBES_T32_WFE] = {.handler = probes_simulate_nop},
- 	[PROBES_T32_MRS] = {.handler = t32_simulate_mrs},
- 	[PROBES_T32_BRANCH_COND] = {.decoder = t32_decode_cond_branch},
- 	[PROBES_T32_BRANCH] = {.handler = t32_simulate_branch},
--	[PROBES_T32_PLDI] = {.handler = kprobe_simulate_nop},
-+	[PROBES_T32_PLDI] = {.handler = probes_simulate_nop},
- 	[PROBES_T32_LDR_LIT] = {.handler = t32_simulate_ldr_literal},
- 	[PROBES_T32_LDRSTR] = {.handler = t32_emulate_ldrstr},
- 	[PROBES_T32_SIGN_EXTEND] = {.handler = t32_emulate_rd8rn16rm0_rwflags},
-diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
-index 19c55aa..31bc9b7 100644
---- a/arch/arm/kernel/kprobes.c
-+++ b/arch/arm/kernel/kprobes.c
-@@ -613,7 +613,7 @@ static struct undef_hook kprobes_arm_break_hook = {
+ #define FUNC_ARG1 0x12345678
+ #define FUNC_ARG2 0xabcdef
+@@ -457,6 +458,13 @@ static int run_api_tests(long (*func)(long, long))
  
- int __init arch_init_kprobes()
- {
--	arm_kprobe_decode_init();
-+	arm_probes_decode_init();
- #ifdef CONFIG_THUMB2_KERNEL
- 	register_undef_hook(&kprobes_thumb16_break_hook);
- 	register_undef_hook(&kprobes_thumb32_break_hook);
-diff --git a/arch/arm/kernel/kprobes.h b/arch/arm/kernel/kprobes.h
-index c8a8413..eba5a2f 100644
---- a/arch/arm/kernel/kprobes.h
-+++ b/arch/arm/kernel/kprobes.h
-@@ -56,8 +56,6 @@ enum kprobe_insn arm_kprobe_decode_insn(probes_opcode_t,
+ 	pr_info("    jprobe\n");
+ 	ret = test_jprobe(func);
++#if defined(CONFIG_THUMB2_KERNEL) && !defined(MODULE)
++	if (ret == -EINVAL) {
++		pr_err("FAIL: Known longtime bug with jprobe on Thumb kernels");
++		tests_failed = ret;
++		ret = 0;
++	}
++#endif
+ 	if (ret < 0)
+ 		return ret;
  
- #endif
+@@ -1667,6 +1675,8 @@ static int __init run_all_tests(void)
  
--void __init arm_kprobe_decode_init(void);
--
- #include "probes.h"
- 
- #endif /* _ARM_KERNEL_KPROBES_H */
-diff --git a/arch/arm/kernel/probes.c b/arch/arm/kernel/probes.c
-index 36fafd2..c63b0f6 100644
---- a/arch/arm/kernel/probes.c
-+++ b/arch/arm/kernel/probes.c
-@@ -72,7 +72,7 @@ void __init test_alu_write_pc_interworking(void)
- #endif /* !test_alu_write_pc_interworking */
- 
- 
--void __init arm_kprobe_decode_init(void)
-+void __init arm_probes_decode_init(void)
- {
- 	find_str_pc_offset();
- 	test_load_write_pc_interworking();
-@@ -171,13 +171,13 @@ probes_check_cc * const probes_condition_checks[16] = {
- };
- 
- 
--void __kprobes kprobe_simulate_nop(probes_opcode_t opcode,
-+void __kprobes probes_simulate_nop(probes_opcode_t opcode,
- 	struct arch_specific_insn *asi,
- 	struct pt_regs *regs)
- {
- }
- 
--void __kprobes kprobe_emulate_none(probes_opcode_t opcode,
-+void __kprobes probes_emulate_none(probes_opcode_t opcode,
- 	struct arch_specific_insn *asi,
- 	struct pt_regs *regs)
- {
-diff --git a/arch/arm/kernel/probes.h b/arch/arm/kernel/probes.h
-index e7c7a92..48ccbcb 100644
---- a/arch/arm/kernel/probes.h
-+++ b/arch/arm/kernel/probes.h
-@@ -22,6 +22,8 @@
- #include <linux/kprobes.h>
- #include "kprobes.h"
- 
-+void __init arm_probes_decode_init(void);
-+
- #if __LINUX_ARM_ARCH__ >= 7
- 
- /* str_pc_offset is architecturally defined from ARMv7 onwards */
-@@ -129,9 +131,9 @@ static inline void __kprobes alu_write_pc(long pcv, struct pt_regs *regs)
- }
- 
- 
--void __kprobes kprobe_simulate_nop(probes_opcode_t, struct arch_specific_insn *,
-+void __kprobes probes_simulate_nop(probes_opcode_t, struct arch_specific_insn *,
- 		struct pt_regs *regs);
--void __kprobes kprobe_emulate_none(probes_opcode_t, struct arch_specific_insn *,
-+void __kprobes probes_emulate_none(probes_opcode_t, struct arch_specific_insn *,
- 		struct pt_regs *regs);
- 
- enum kprobe_insn __kprobes
+ out:
+ 	if (ret == 0)
++		ret = tests_failed;
++	if (ret == 0)
+ 		pr_info("Finished kprobe tests OK\n");
+ 	else
+ 		pr_err("kprobe tests failed\n");
 -- 
 1.8.1.2
 
