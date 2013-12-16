@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab3LPTdv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 14:33:51 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:50640 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754782Ab3LPTdu (ORCPT
+	id S1755413Ab3LPTeS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 14:34:18 -0500
+Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:10174 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755379Ab3LPTeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 14:33:50 -0500
-Date: Mon, 16 Dec 2013 11:33:46 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Stefan Beller <stefanbeller@googlemail.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-Subject: Re: 3.13-rc4 doesn't compile
-Message-ID: <20131216193346.GA5916@roeck-us.net>
-References: <52AF2103.60802@googlemail.com>
- <52AF2375.5060706@googlemail.com>
- <20131216161959.GB4931@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131216161959.GB4931@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 16 Dec 2013 14:34:17 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
+        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
+Subject: [PATCH v4 2/9] PCI/MSI/s390: Remove superfluous check of MSI type
+Date: Mon, 16 Dec 2013 09:34:55 +0100
+Message-Id: <f317583c5dda2b440ac2906b2cd04c97cae5ed1b.1387140921.git.agordeev@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1387140921.git.agordeev@redhat.com>
+References: <cover.1387140921.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 05:19:59PM +0100, Borislav Petkov wrote:
-> Add people to Cc.
-> 
-> On Mon, Dec 16, 2013 at 04:59:49PM +0100, Stefan Beller wrote:
-> > Forgot to add:
-> > 
-> > 	$ git describe
-> > v3.13-rc4
-> > 
-> > 	$ make deb-pkg
-> >   CHK     include/config/kernel.release
-> > make KBUILD_SRC=
-> > make[3]: Nothing to be done for `all'.
-> >   CHK     include/config/kernel.release
-> >   CHK     include/generated/uapi/linux/version.h
-> > make[3]: Nothing to be done for `relocs'.
-> >   CHK     include/generated/utsrelease.h
-> >   CALL    scripts/checksyscalls.sh
-> >   CHK     include/generated/compile.h
-> >   PASYMS  arch/x86/realmode/rm/pasyms.h
-> >   LDS     arch/x86/realmode/rm/realmode.lds
-> >   LD      arch/x86/realmode/rm/realmode.elf
-> >   RELOCS  arch/x86/realmode/rm/realmode.relocs
-> >   OBJCOPY arch/x86/realmode/rm/realmode.bin
-> >   AS      arch/x86/realmode/rmpiggy.o
-> >   LD      arch/x86/realmode/built-in.o
-> >   VDSOSYM arch/x86/vdso/vdso-syms.lds
-> >   VDSOSYM arch/x86/vdso/vdsox32-syms.lds
-> >   VDSOSYM arch/x86/vdso/vdso32-int80-syms.lds
-> >   VDSOSYM arch/x86/vdso/vdso32-syscall-syms.lds
-> >   VDSOSYM arch/x86/vdso/vdso32-sysenter-syms.lds
-> >   VDSOSYM arch/x86/vdso/vdso32-syms.lds
-> >   LD      arch/x86/vdso/built-in.o
-> >   LD      arch/x86/built-in.o
-> >   CC [M]  drivers/regulator/s2mps11.o
-> > drivers/regulator/s2mps11.c: In function ‘s2mps11_pmic_probe’:
-> > drivers/regulator/s2mps11.c:441:23: error: ‘struct sec_pmic_dev’ has no
-> > member named ‘regmap’
-> >   config.regmap = iodev->regmap;
-> >                        ^
-> > make[4]: *** [drivers/regulator/s2mps11.o] Error 1
-> > make[4]: Target `__build' not remade because of errors.
-> > make[3]: *** [drivers/regulator] Error 2
-> > make[3]: Target `__build' not remade because of errors.
-> > make[2]: *** [drivers] Error 2
-> > make[2]: Target `_all' not remade because of errors.
-> > make[1]: *** [deb-pkg] Error 2
-> > make: *** [deb-pkg] Error 2
-> > 
+arch_setup_msi_irqs() hook can only be called from the generic
+MSI code which ensures correct MSI type parameter.
 
-This problem is seen with 
-	arm:allmodconfig
-	i386:allmodconfig
-	i386:allyesconfig
-	x86_64:allyesconfig
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+---
+ arch/s390/pci/pci.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-Guenter
+diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+index 6f3788e..4859c40 100644
+--- a/arch/s390/pci/pci.c
++++ b/arch/s390/pci/pci.c
+@@ -407,8 +407,6 @@ int arch_setup_msi_irqs(struct pci_dev *pdev, int nvec, int type)
+ 	struct msi_msg msg;
+ 	int rc;
+ 
+-	if (type != PCI_CAP_ID_MSIX && type != PCI_CAP_ID_MSI)
+-		return -EINVAL;
+ 	if (type == PCI_CAP_ID_MSI && nvec > 1)
+ 		return 1;
+ 	msi_vecs = min(nvec, ZPCI_MSI_VEC_MAX);
+-- 
+1.7.7.6
+
