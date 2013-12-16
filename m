@@ -1,107 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab3LPQf5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:35:57 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:38727 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754675Ab3LPQfw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:35:52 -0500
-Date: Mon, 16 Dec 2013 16:35:46 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: (max8997) Handle the potential error for
- mfd_add_devices
-Message-ID: <20131216163546.GR18769@lee--X1>
-References: <1387194424-2701-1-git-send-email-lpapp@kde.org>
- <20131216134633.GI18769@lee--X1>
- <CAOMwXhOnHNrzEvf0+QRn6dGb42xR9a33joZcou3ancwSYe36Ug@mail.gmail.com>
- <20131216150937.GO18769@lee--X1>
- <CAOMwXhNJFGiRNB4jnTrzzpSGL8XvaR1Ph_pFrdU+x+guy7Tamg@mail.gmail.com>
+	id S1754741Ab3LPQjD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:39:03 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:59980 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754466Ab3LPQjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 11:39:00 -0500
+Message-ID: <52AF2C87.1060700@ti.com>
+Date: Mon, 16 Dec 2013 11:38:31 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMwXhNJFGiRNB4jnTrzzpSGL8XvaR1Ph_pFrdU+x+guy7Tamg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, Sekhar Nori <nsekhar@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, <prabhakar.csengg@gmail.com>,
+        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/2] gpio: davinci: reuse for Keystone SoC
+References: <1386871973-26762-1-git-send-email-grygorii.strashko@ti.com> <1386871973-26762-3-git-send-email-grygorii.strashko@ti.com>
+In-Reply-To: <1386871973-26762-3-git-send-email-grygorii.strashko@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is not a good introduction to the Kernel Community.
-
-Please adapt your attitude or people will stop helping you.
-
-> >> I think you commented on the wrong patch. There has been a newer submitted.
-> >
-> > No top posting please.
+On Thursday 12 December 2013 01:12 PM, Grygorii Strashko wrote:
+> The similar GPIO HW block is used by keystone SoCs as
+> in Davinci SoCs.
+> Hence, reuse Davinci GPIO driver for Keystone taking into
+> account that Keystone contains ARM GIC IRQ controller which
+> is implemented using IRQ Chip.
 > 
-> Tell that to the client I need to use. IMO, making these inline posts
-> mandatorily when the reply is a single line makes not much sense.
-> Anyway, I will follow the inconvenient way.
-
-If you are not replying to a particular comment, then there is no need
-to quote it.
-
-Please read and inwardly digest:
-  Documentation/email-clients.txt
-
-> >> > The $SUBJECT line is wrong. To see how a subsystem usually formats
-> >> > theirs you must do something like `git log --oneline -- <subsystem>`.
-> >> > And duplicate the format.
-> >> >
-> >> > Commit message?
-> >
-> > These comments are still relevant, please re-post your patch with the
-> > points rectified.
+> Documentation:
+> 	http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
 > 
-> I really do not understand how they relevant. "Commit message?" ->
-> What about it?
-
-The issue is that there isn't one.
-
-> It has a pretty clear commit message.
-
-If you are referencing my comments about the $SUBJECT line, then I
-have to disagree with you there. It's actually pretty vague, does not
-describe either the issue or what steps you've taken to rectify it.
-
-> Are you now just
-> picking nits about "foo:" vs "(foo)" in the short line?
-
-That is also an issue. Did you issue the command I sent you:
-
-  `git log --oneline -- drivers/mfd`
-
-Issue it now and see if _anyone_ has _ever_ used your formatting.
-
-> >> >> +     if (ret < 0) {
-> >> >> +             dev_err(dev, "cannot add mfd cells\n");
-> >> >> +             goto err_mfd;
-> >> >> +     }
-> >> >
-> >> > Have you tested this patch on h/w? Did you even compile it?
-> >
-> > You must ensure to test your patches before sending to the MLs, it's
-> > the very least we expect.
+> CC: Linus Walleij <linus.walleij@linaro.org>
+> CC: Sekhar Nori <nsekhar@ti.com>
+> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> CC: devicetree@vger.kernel.org
 > 
-> I am not sure what point you are trying to make. Feel free to reject
-> the patch for this error handling.
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> ---
+>  .../devicetree/bindings/gpio/gpio-davinci.txt      |    4 +-
+>  drivers/gpio/gpio-davinci.c                        |   49 +++++++++++++++-----
+>  2 files changed, 40 insertions(+), 13 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+> index a2e839d..4ce9862 100644
+> --- a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+> +++ b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+> @@ -1,7 +1,7 @@
+> -Davinci GPIO controller bindings
+> +Davinci/Keystone GPIO controller bindings
+>  
+>  Required Properties:
+> -- compatible: should be "ti,dm6441-gpio"
+> +- compatible: should be "ti,dm6441-gpio", "ti,keystone-gpio"
+>  
+>  - reg: Physical base address of the controller and the size of memory mapped
+>         registers.
+> diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
+> index 73f65ca..3e44e0c 100644
+> --- a/drivers/gpio/gpio-davinci.c
+> +++ b/drivers/gpio/gpio-davinci.c
+> @@ -413,6 +413,27 @@ static const struct irq_domain_ops davinci_gpio_irq_ops = {
+>  	.xlate = irq_domain_xlate_onetwocell,
+>  };
+>  
+> +static struct irq_chip *davinci_gpio_get_irq_chip(unsigned int irq)
+> +{
+> +	static struct irq_chip_type gpio_unbanked;
+> +
+> +	gpio_unbanked = *container_of(irq_get_chip(irq),
+> +				      struct irq_chip_type, chip);
+> +
+> +	return &gpio_unbanked.chip;
+> +};
+> +
+> +static struct irq_chip *keystone_gpio_get_irq_chip(unsigned int irq)
+> +{
+> +	static struct irq_chip gpio_unbanked;
+> +
+> +	gpio_unbanked = *irq_get_chip(irq);
+> +	pr_err("keystone_gpio_get_irq_chip\n");
+> +	return &gpio_unbanked;
+> +};
+> +
+> +static const struct of_device_id davinci_gpio_ids[];
+> +
+>  /*
+>   * NOTE:  for suspend/resume, probably best to make a platform_device with
+>   * suspend_late/resume_resume calls hooking into results of the set_wake()
+> @@ -433,6 +454,15 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
+>  	struct davinci_gpio_platform_data *pdata = dev->platform_data;
+>  	struct davinci_gpio_regs __iomem *g;
+>  	struct irq_domain	*irq_domain = NULL;
+> +	const struct of_device_id *match;
+> +	struct irq_chip *irq_chip;
+> +	struct irq_chip *(*gpio_get_irq_chip)(unsigned int irq);
+> +
+> +	gpio_get_irq_chip = davinci_gpio_get_irq_chip;
+> +	match = of_match_device(of_match_ptr(davinci_gpio_ids),
+> +				dev);
+> +	if (match)
+> +		gpio_get_irq_chip = match->data;
+and if the DT node is not populated ?
+>  
+>  	ngpio = pdata->ngpio;
+>  	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> @@ -442,7 +472,6 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
+>  	}
+>  
+>  	bank_irq = res->start;
+> -
+stray change..
 
-I'm not rejecting it because of the error handling, I'm rejecting it
-because it hasn't been tested and it doesn't even compile.
+>  	if (!bank_irq) {
+>  		dev_err(dev, "Invalid IRQ resource\n");
+>  		return -ENODEV;
+> @@ -484,25 +513,22 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
+>  	}
+>  
+>  	/*
+> -	 * AINTC can handle direct/unbanked IRQs for GPIOs, with the GPIO
+> +	 * INTC can handle direct/unbanked IRQs for GPIOs, with the GPIO
+So you want to have a generic name here. If you are changing it, change it
+across the driver in a separate patch or leave it as is...
+I don't think it matters much..
 
-> Clearly, the patch has been updated
-> due to a previous mistake. I would not make a fuss about an issue
-> which had been fixed before getting any comment.
+With those comments addressed, you can add my ack.
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-How was this 'clear'? Our inboxes are date/time sequential.
-
-This patch was read _before_ the one you posted _subsequently_.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
