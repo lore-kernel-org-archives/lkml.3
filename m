@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533Ab3LPOpe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 09:45:34 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:21624 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754148Ab3LPOpc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 09:45:32 -0500
-Message-ID: <1387205130.2797.4.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 2/3] perf-bench: add futex-wake microbenchmark
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, mingo@redhat.com,
-        dvhart@linux.intel.com, peterz@infradead.org, tglx@linutronix.de,
-        jason.low2@hp.com, Waiman.Long@hp.com, scott.norton@hp.com,
-        aswin@hp.com
-Date: Mon, 16 Dec 2013 06:45:30 -0800
-In-Reply-To: <87k3f5gyet.fsf@sejong.aot.lge.com>
-References: <1387081917-9102-1-git-send-email-davidlohr@hp.com>
-	 <1387081917-9102-3-git-send-email-davidlohr@hp.com>
-	 <87k3f5gyet.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1754597Ab3LPO7H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 09:59:07 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:54805 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754573Ab3LPO7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 09:59:01 -0500
+Message-ID: <52AF1532.6030904@ti.com>
+Date: Mon, 16 Dec 2013 09:58:58 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Paul Walmsley <pwalmsley@nvidia.com>
+CC: Viresh Kumar <viresh.kumar@linaro.org>, <linux-omap@vger.kernel.org>,
+        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: omap: clk_round_rate() can return a zero upon
+ error
+References: <alpine.DEB.2.02.1312091812440.4127@tamien>
+In-Reply-To: <alpine.DEB.2.02.1312091812440.4127@tamien>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-16 at 14:25 +0900, Namhyung Kim wrote:
-> Hi Davidlohr,
+On Monday 09 December 2013 09:18 PM, Paul Walmsley wrote:
 > 
-> On Sat, 14 Dec 2013 20:31:56 -0800, Davidlohr Bueso wrote:
-> > Block a bunch of threads on a futex and wake them up, N at a time.
-> >
-> > This program is particularly useful to measure the latency of nthread wakeups
-> > in non-error situations:  all waiters are queued and all wake calls wakeup
-> > one or more tasks. An example run:
-> >
-> > $ perf bench futex -t 512 -r 100
+> Treat both negative and zero return values from clk_round_rate() as errors.  This is needed since subsequent patches will convert clk_round_rate()'s return value to be an unsigned type, rather than a signed type, since some clock sources can generate rates higher than (2^31)-1 Hz.
 > 
-> Did you mean 'perf bench futex wake'?
+> Eventually, when calling clk_round_rate(), only a return value of
+> zero will be considered a error.  All other values will be
+> considered valid rates.  The comparison against values less than
+> 0 is kept to preserve the correct behavior in the meantime.
+> 
+> This patch also removes a bogus usage of IS_ERR_VALUE(), which is intended to be used only on combination pointer/error code return values; a side-benefit.
+> 
+> Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-Yes I did.
-
-Thanks,
-Davidlohr
 
