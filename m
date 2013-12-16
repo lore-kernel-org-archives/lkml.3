@@ -1,138 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467Ab3LPDiK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 22:38:10 -0500
+	id S1752518Ab3LPDiN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 22:38:13 -0500
 Received: from cn.fujitsu.com ([222.73.24.84]:4607 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752157Ab3LPDiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 22:38:08 -0500
+	id S1752255Ab3LPDiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 22:38:10 -0500
 X-IronPort-AV: E=Sophos;i="4.95,492,1384272000"; 
-   d="scan'208";a="9265967"
-Message-ID: <52AE75D7.4020604@cn.fujitsu.com>
-Date: Mon, 16 Dec 2013 11:39:03 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+   d="scan'208";a="9265968"
+Message-ID: <52AF2C01.9020507@cn.fujitsu.com>
+Date: Mon, 16 Dec 2013 11:36:17 -0500
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: "Serge E. Hallyn" <serge@hallyn.com>, Eric Paris <eparis@redhat.com>
-CC: Richard Guy Briggs <rgb@redhat.com>, containers@lists.linux-foundation.org,
-        Serge Hallyn <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com, ebiederm@xmission.com
-Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
-References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>	<529EE877.7030701@cn.fujitsu.com>	<20131206221241.GD22445@mail.hallyn.com>	<52A52599.3070502@cn.fujitsu.com> <20131209182619.GD6849@sergelap>	<52A6CDE1.8090404@cn.fujitsu.com> <20131210165152.GA6028@sergelap>	<1386705056.23829.13.camel@flatline.rdu.redhat.com> <20131210203648.GA5835@mail.hallyn.com>
-In-Reply-To: <20131210203648.GA5835@mail.hallyn.com>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+CC: dsahern@gmail.com, acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] perf tools: Fix bug for perf kvm report without guestmount.
+References: <52A7637E.8080007@cn.fujitsu.com> <1387211216-19794-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+In-Reply-To: <1387211216-19794-1-git-send-email-yangds.fnst@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/16 11:37:40,
+ 2013/12/16 11:37:42,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/16 11:37:41,
-	Serialize complete at 2013/12/16 11:37:41
+ 2013/12/16 11:37:43,
+	Serialize complete at 2013/12/16 11:37:43
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2013 04:36 AM, Serge E. Hallyn wrote:
-> Quoting Eric Paris (eparis@redhat.com):
->> On Tue, 2013-12-10 at 10:51 -0600, Serge Hallyn wrote:
->>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
->>>> On 12/10/2013 02:26 AM, Serge Hallyn wrote:
->>>>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
->>>>>> On 12/07/2013 06:12 AM, Serge E. Hallyn wrote:
->>>>>>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
->>>>>>>> Hi
->>>>>>>>
->>>>>>>> On 10/24/2013 03:31 PM, Gao feng wrote:
->>>>>>>>> Here is the v1 patchset: http://lwn.net/Articles/549546/
->>>>>>>>>
->>>>>>>>> The main target of this patchset is allowing user in audit
->>>>>>>>> namespace to generate the USER_MSG type of audit message,
->>>>>>>>> some userspace tools need to generate audit message, or
->>>>>>>>> these tools will broken.
->>>>>>>>>
->>>>>>>>
->>>>>>>> I really need this feature, right now,some process such as
->>>>>>>> logind are broken in container becase we leak of this feature.
->>>>>>>
->>>>>>> Your set doesn't address loginuid though right?  How exactly do you
->>>>>>> expect to do that?  If user violates MAC policy and audit msg is
->>>>>>> sent to init user ns by mac subsys, you need the loginuid from
->>>>>>> init_audit_ns.  where will that be stored if you allow updates
->>>>>>> of loginuid in auditns?
->>>>>>>
->>>>>> This patchset doesn't include the loginuid part.
->>>>>>
->>>>>> the loginuid is stored in task as before.
->>>>>> In my opinion, when task creates a new audit namespace, this task's
->>>>>> loginuid will be reset to zero, so the children tasks can set their
->>>>>> loginuid. Does this change break the MAC?
->>>>>
->>>>> I think so, yes.  In an LSPP selinux environment, if the task
->>>>> manages to trigger an selinux deny rule which is audited, then
->>>>> the loginuid must make sense on the host.  Now presumably it
->>>>> will get translated to the mapped host uid, and we can figure
->>>>> out the host uid owning it through /etc/subuid.  But that adds
->>>>> /etc/subuid as a new part of the TCB without any warning <shrug>
->>>>> So in that sense, for LSPP, it breaks it.
->>>>>
->>>>
->>>> Looks like my opinion is incorrect.
->>>>
->>>> In the audit-next tree, Eric added a new audit feature to allow privileged
->>>> user to disable AUDIT_LOGINUID_IMMUTABLE. after AUDIT_LOGINUID_IMMUTABLE
->>>> is disabled, the privileged user can reset/set the loginuid of task. I
->>>> think this way is safe since only privileged user can do the change.
->>>>
->>>> So I will not change the loginuid part.
->>>>
->>>> Thanks for your information Serge :)
->>>
->>> Unfortunately this makes the patchset much less compelling :)  The
->>> problem I was looking into is that a container running in a user
->>> namespace cannot (bc he has ns_capable(CAP_AUDIT_*) but not
->>> capable(CAP_AUDIT_*)) set loginuids at all.
->>>
->>> Which from an LSPP pov is correct;  which is why I was hoping you were
->>> going to have the audit namespaces be hierarchical, with a task in a
->>> level 2 audit ns having two loginuids - one in his own auditns, and
->>> one in the initial one.
->>
->> Right now user namespace + audit is just total crud.  We all know
->> this...  (I'm not sure pid is must better, but I digress)   All thoughts
->> around loginuid in the kernel right this very moment only make sense in
->> the initial user namespace and all permission checks are in the initial
->> user namespace as well.
->>
->> I think I'm a proponent of the hierarchical approach to audit
->> namespaces.  An audit namespace would hold a reference to the
->> pid/user/whatever namespace it was created in/with.  Each audit
->> namespace should have it's own set of filter rules, etc.  Instead of
->> just storing 'loginuid' we store 'loginuid+user namespace'.   When the
-> 
-> So long as the kernel stores the kuid_t (which the only sane thing to
-> do) that is a non-issue.
-> 
->> kernel creates a record it should translate the loginuid to the
->> namespace of the audit namespace and send the record.
-> 
-> Yup, that should go without saying.  Use kuid_t in kernel and translate
-> at the kernel-user boundary.
-> 
+David,
+     Could you please help to review this patch when you have a time ?
 
-I can implement audit namespace as a hierarchy, give per auditns a level value
-and a pointer which point to parent auditns.
+     Thanx in advance
 
-but for the loginuid part, I think we can implement it after we push the audit
-ns into the upstream.
+- Yang
 
-Is this ok?
->> It's a pretty major rewrite, but at least it makes sense.  Things like
->> AVC's might show up in multiple audit logs, but in every log they would
->> make sense to the admin of that namespace...
->>
->> But what the hell do I know...
-> 
-> Exactly how it would all affect selinux.  I'm happy it seems we agree.
+On 12/16/2013 11:26 AM, Dongsheng Yang wrote:
+> Currently, if we use perf kvm --guestkallsyms --guestmodules report,
+> we can not get the perf information from perf data file. The all sample
+> are shown as unknown.
+>
+> Reproducing steps:
+> 	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
+> 	[ perf record: Woken up 1 times to write data ]
+> 	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
+> 	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
+> 	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
+>
+> This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
+>
+> commit 207b5792696206663a38e525b9793644895bad3b
+> Author: David Ahern <dsahern@gmail.com>
+> Date:   Sun Jul 1 16:11:37 2012 -0600
+>
+>      perf kvm: Fix regression with guest machine creation
+>
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index c3e399b..56142d0 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -926,7 +926,7 @@ static struct machine *
+>                  else
+>                          pid = event->ip.pid;
+>
+> -               return perf_session__find_machine(session, pid);
+> +               return perf_session__findnew_machine(session, pid);
+>          }
+>
+>          return perf_session__find_host_machine(session);
+> In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
+> which has the same pid, if no machine found, deliver it to *default* guest. But if we use
+> perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
+> and added. Then the default guest which with pid == 0 will never get a symbol.
+>
+> And because the new machine initialized here has no kernel map created, the symbol delivered to
+> it will be marked as "unknown".
+>
+> This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
+>
+> Verification steps:
+> 	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
+> 	[ perf record: Woken up 1 times to write data ]
+> 	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
+> 	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
+> 	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
+> 	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
+> 	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
+> 	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
+> 	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
+> 	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
+> 	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
+> 	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
+>
+> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+> ---
+>      Changelog since V1:
+>          * More commit message.
+>
+>   tools/perf/util/session.c | 7 ++++++-
+>   1 file changed, 6 insertions(+), 1 deletion(-)
+>
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 989b2e3..a12dfdd 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -830,6 +830,7 @@ static struct machine *
+>   					       struct perf_sample *sample)
+>   {
+>   	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+> +	struct machine *machine;
+>   
+>   	if (perf_guest &&
+>   	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
+> @@ -842,7 +843,11 @@ static struct machine *
+>   		else
+>   			pid = sample->pid;
+>   
+> -		return perf_session__findnew_machine(session, pid);
+> +		machine = perf_session__find_machine(session, pid);
+> +		if (!machine)
+> +			machine = perf_session__findnew_machine(session,
+> +						DEFAULT_GUEST_KERNEL_ID);
+> +		return machine;
+>   	}
+>   
+>   	return &session->machines.host;
 
-This idea looks good to me, I will Investigate this. :)
-
-Thanks.
