@@ -1,121 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab3LPO2V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 09:28:21 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:52938 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753755Ab3LPO2U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 09:28:20 -0500
-Date: Mon, 16 Dec 2013 15:28:16 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: John <da_audiophile@yahoo.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "david.heidelberger@ixit.cz" <david.heidelberger@ixit.cz>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] expand micro-optimizations in kernel to newer model CPUs
-Message-ID: <20131216142816.GA6350@gmail.com>
-References: <1386518000.90452.YahooMailNeo@web140004.mail.bf1.yahoo.com>
- <864985fbeb1d8148439e25ec01f47a67@ixit.cz>
- <52AAFF89.5080509@gmail.com>
- <1387051250.86178.YahooMailNeo@web140005.mail.bf1.yahoo.com>
- <ce679ca5-bf83-4c2a-9234-859cc7a4206b@email.android.com>
- <1387057337.97000.YahooMailNeo@web140004.mail.bf1.yahoo.com>
- <52ACECC4.208@zytor.com>
- <1387108841.76039.YahooMailNeo@web140006.mail.bf1.yahoo.com>
+	id S1754254Ab3LPOci (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 09:32:38 -0500
+Received: from mga11.intel.com ([192.55.52.93]:52698 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753685Ab3LPOcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 09:32:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,495,1384329600"; 
+   d="scan'208";a="445018046"
+Date: Mon, 16 Dec 2013 16:32:27 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH 2/5] phy: add support for indexed lookup
+Message-ID: <20131216143227.GA22944@xps8300>
+References: <1386601737-8735-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1386601737-8735-3-git-send-email-heikki.krogerus@linux.intel.com>
+ <52AEDDE2.8060406@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1387108841.76039.YahooMailNeo@web140006.mail.bf1.yahoo.com>
+In-Reply-To: <52AEDDE2.8060406@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Kishon,
 
-* John <da_audiophile@yahoo.com> wrote:
+On Mon, Dec 16, 2013 at 04:32:58PM +0530, Kishon Vijay Abraham I wrote:
+> On Monday 09 December 2013 08:38 PM, Heikki Krogerus wrote:
+> > Removes the need for the consumer drivers requesting the
+> > phys to provide name for the phy. This should ease the use
+> > of the framework considerable when using only one phy, which
+> > is usually the case when except with USB, but it can also
+> > be useful with multiple phys.
+> 
+> If index has to be used with multiple PHYs, the controller should be aware of
+> the order in which it is populated in dt data. That's not good.
 
-> This patch has been tested on and known to work with kernel versions 
-> from 3.2 up to the latest git version (pulled on 12/14/2013).
->
-> This patch will expand the number of microarchitectures to include 
-> new processors including: AMD K10-family, AMD Family 10h 
-> (Barcelona), AMD Family 14h (Bobcat), AMD Family 15h (Bulldozer), 
-> AMD Family 15h (Piledriver), AMD Family 16h (Jaguar), Intel 1st Gen 
-> Core i3/i5/i7 (Nehalem), Intel 2nd Gen Core i3/i5/i7 (Sandybridge), 
-> Intel 3rd Gen Core i3/i5/i7 (Ivybridge), and Intel 4th Gen Core 
-> i3/i5/i7 (Haswell). It also offers the compiler the 'native' flag.
+The Idea is not to replace the name based lookup. Just to provide
+possibility for index based lookup.
 
-So let me (again) follow Linus's general advice to say 'no' to patches 
-more forcefully, so that people don't go down potential dead ends for 
-too long time without strong negative feedback from upstream. :-)
+With ACPI, if we get the device entries for PHYs, the order will be
+fixed and we will not have any other reference to the phys. In case
+of USB, the first one should always be USB2 PHY and the second the
+USB3 PHY.
 
-This series does not look convincing enough to me. My complaints:
+> > This will also reduce noise from the framework when there is
+> > no phy by changing warnings to debug messages.
+> > 
+> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> > ---
+> >  drivers/phy/phy-core.c  | 106 ++++++++++++++++++++++++++++++++++--------------
+> >  include/linux/phy/phy.h |  14 +++++++
+> >  2 files changed, 89 insertions(+), 31 deletions(-)
+> > 
+> > diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+> > index 1102aef..99dc046 100644
+> > --- a/drivers/phy/phy-core.c
+> > +++ b/drivers/phy/phy-core.c
+> > @@ -53,7 +53,8 @@ static int devm_phy_match(struct device *dev, void *res, void *match_data)
+> >  	return res == match_data;
+> >  }
+> >  
+> > -static struct phy *phy_lookup(struct device *device, const char *con_id)
+> > +static struct phy *phy_lookup(struct device *device, const char *con_id,
+> > +			      unsigned int idx)
+> >  {
+> >  	unsigned int count;
+> >  	struct phy *phy;
+> > @@ -67,6 +68,10 @@ static struct phy *phy_lookup(struct device *device, const char *con_id)
+> >  		count = phy->init_data->num_consumers;
+> >  		consumers = phy->init_data->consumers;
+> >  		while (count--) {
+> > +			/* index must always match exactly */
+> > +			if (!con_id)
+> > +				if (idx != count)
+> > +					continue;
+> >  			if (!strcmp(consumers->dev_name, dev_name(device)) &&
+> >  					!strcmp(consumers->port, con_id)) {
+> >  				class_dev_iter_exit(&iter);
+> > @@ -242,7 +247,8 @@ EXPORT_SYMBOL_GPL(phy_power_off);
+> >  /**
+> >   * of_phy_get() - lookup and obtain a reference to a phy by phandle
+> >   * @dev: device that requests this phy
+> > - * @index: the index of the phy
+> > + * @con_id: name of the phy from device's point of view
+> > + * @idx: the index of the phy if name is not used
+> >   *
+> >   * Returns the phy associated with the given phandle value,
+> >   * after getting a refcount to it or -ENODEV if there is no such phy or
+> > @@ -250,12 +256,20 @@ EXPORT_SYMBOL_GPL(phy_power_off);
+> >   * not yet loaded. This function uses of_xlate call back function provided
+> >   * while registering the phy_provider to find the phy instance.
+> >   */
+> > -static struct phy *of_phy_get(struct device *dev, int index)
+> > +static struct phy *of_phy_get(struct device *dev, const char *con_id,
+> > +			      unsigned int idx)
+> >  {
+> >  	int ret;
+> >  	struct phy_provider *phy_provider;
+> >  	struct phy *phy = NULL;
+> >  	struct of_phandle_args args;
+> > +	int index;
+> > +
+> > +	if (!con_id)
+> > +		index = idx;
+> > +	else
+> > +		index = of_property_match_string(dev->of_node, "phy-names",
+> > +						 con_id);
+> >  
+> >  	ret = of_parse_phandle_with_args(dev->of_node, "phys", "#phy-cells",
+> >  		index, &args);
+> > @@ -348,38 +362,36 @@ struct phy *of_phy_simple_xlate(struct device *dev, struct of_phandle_args
+> >  EXPORT_SYMBOL_GPL(of_phy_simple_xlate);
+> >  
+> >  /**
+> > - * phy_get() - lookup and obtain a reference to a phy.
+> > + * phy_get_index() - obtain a phy based on index
+> 
+> NAK. It still takes a 'char' argument and the name is misleading.
+> Btw are you replacing phy_get() or adding a new API in addition to phy_get()?
 
- - I'm not convinced the numbers are right. Rarely are such tiny
-   compiler optimizations measureable in integer-only kernel code ...
-   Too noisy benchmarks were used. More precise measurements done by
-   Boris showed no statistically significant improvements:
+Additional API. The phy_get() would in practice act as a wrapper after
+this. It could actually be just a #define macro in the include file.
+The function naming I just copied straight from gpiolib.c. I did not
+have the imagination for anything fancier.
 
-      http://marc.info/?l=linux-kernel&m=138081947417204
+I would like to be able to use some function like phy_get_index() and
+be able to deliver it both the name and the index. With DT you guys
+will always be able to use the name (and the string will always
+supersede the index if we do it like this), but with ACPI, and possibly
+the platform lookup tables, the index can be used...
 
- - Modern CPUs have inherently high noise: boot-to-boot variance is 
-   often higher on modern systems with large caches than the speedup 
-   claimed by optimization options ...
+phy2 = phy_get_index(dev, "usb2-phy", 0);
+phy3 = phy_get_index(dev, "usb3-phy", 1);
 
- - I'm not convinced the whole concept is long term maintainable to 
-   begin with. When Linux on x86 began we used to have just 2-3 major 
-   CPU models to care about, so it made sense. That count grew rapidly 
-   and today we havedozens (if not hundreds) of models, families and
-   variants and our 'optimization' options are just one big 
-   fragmented, rarely tested mess with essentially random compiler 
-   flags thrown at it.
+> >   * @dev: device that requests this phy
+> >   * @con_id: name of the phy from device's point of view
+> > + * @idx: index of the phy to obtain in the consumer
+> >   *
+> > - * Returns the phy driver, after getting a refcount to it; or
+> > - * -ENODEV if there is no such phy.  The caller is responsible for
+> > - * calling phy_put() to release that count.
+> > + * This variant of phy_get() allows to access PHYs other than the first
+> > + * defined one for functions that define several PHYs.
+> >   */
+> > -struct phy *phy_get(struct device *dev, const char *con_id)
+> > +struct phy *phy_get_index(struct device *dev, const char *con_id,
+> > +			  unsigned int idx)
+> >  {
+> > -	int index = 0;
+> >  	struct phy *phy = NULL;
+> >  
+> > -	if (con_id == NULL) {
+> > -		dev_WARN(dev, "missing string\n");
+> > -		return ERR_PTR(-EINVAL);
+> > +	if (dev->of_node) {
+> > +		dev_dbg(dev, "using device tree for PHY lookup\n");
+> > +		phy = of_phy_get(dev, con_id, idx);
+> >  	}
+> >  
+> > -	if (dev->of_node) {
+> > -		index = of_property_match_string(dev->of_node, "phy-names",
+> > -						 con_id);
+> > -		phy = of_phy_get(dev, index);
+> > -		if (IS_ERR(phy)) {
+> > -			dev_err(dev, "unable to find phy\n");
+> > -			return phy;
+> > -		}
+> > -	} else {
+> > -		phy = phy_lookup(dev, con_id);
+> > -		if (IS_ERR(phy)) {
+> > -			dev_err(dev, "unable to find phy\n");
+> > -			return phy;
+> > -		}
+> > +	/**
+> > +	 * Either we are not using DT, or their lookup did not return
+> > +	 * a result. In that case, use platform lookup as a fallback.
+> > +	 */
+> 
+> In a dt boot, if it has not returned a result how will platform lookup help
+> since there wouldn't be be any board file in the case of dt boot (to populate
+> PHY consumers). Maybe your later patch will handle that.
 
- - The cost of getting optimizations wrong by going away from sane 
-   defaults is probably high as well: see the case where Boris
-   measured a regression from an 'optimization' option.
+This is something that I copy pasted from gpiolib.c. It felt like a
+good idea to have possibility to create lookup tables even when the
+device has of_node. I don't have strong feelings about this, so we can
+drop it if you like.
 
- - GCC itself changes as well, so a seemingly good but rarely used
-   optimization flag could get out of sync and hurt performance on 
-   rarer, rarely tested CPU models. It's sometimes safer to go with 
-   the herd and use good, sensible defaults in most situations.
+> > +	if (!phy || IS_ERR(phy)) {
+> > +		dev_dbg(dev, "using lookup tables for PHY lookup");
+> > +		phy = phy_lookup(dev, con_id, idx);
+> > +	}
+> > +
+> > +	if (IS_ERR(phy)) {
+> > +		dev_dbg(dev, "unable to find phy\n");
+> > +		return phy;
+> >  	}
+> >  
+> >  	if (!try_module_get(phy->ops->owner))
+> > @@ -389,18 +401,20 @@ struct phy *phy_get(struct device *dev, const char *con_id)
+> >  
+> >  	return phy;
+> >  }
+> > -EXPORT_SYMBOL_GPL(phy_get);
+> > +EXPORT_SYMBOL_GPL(phy_get_index);
+> >  
+> >  /**
+> > - * devm_phy_get() - lookup and obtain a reference to a phy.
+> > + * devm_phy_get_index() - obtain a phy based on index
+> 
+> I don't see the need of these 2 APIs.
 
-For those reasons I think we should just strip out all the current 
-outdated micro-management of models/ and go to more logical, much 
-broader optimization categories such as:
-
-   "Optimize for modern Intel CPUs"
-   "Optimize for modern AMD CPUs"
-
-because most of the day to day measurement and testing work is 
-concentrated on modern CPUs.
-
-We might not even want to make a vendor differentiation there and just 
-do a generic:
-
-   "Optimize for modern x86 CPUs"
-   
-With perhaps a "workarounds" sub-option opening up:
-
-   "Optimization workarounds" [x]
-      "Intel Atom CPUs" [x]
-
-Because occasionally there will be oddball yet common CPUs that need 
-starkly different optimizations/workarounds. Naming it a 'workaround' 
-creates an incentive to return such platforms to the common options.
-
-I.e. handle and document the exceptions, and try to minimize them - 
-instead of trying to enumerate every CPU model which is IMHO a losing 
-game ...
-
-[ If that is done then we also need much more statistically convincing
-  methods to test how well a kernel's compiler options perform.
+My goal is really just to prepare for ACPI with this one. I don't know
+if my commit message was not clear enough.
 
 Thanks,
 
-        Ingo
+-- 
+heikki
