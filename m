@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab3LPNCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 08:02:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55328 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753914Ab3LPNCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 08:02:01 -0500
-Date: Mon, 16 Dec 2013 14:01:57 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-cc: Dan Carpenter <dan.carpenter@oracle.com>, thomas@m3y3r.de, list@osuosl.org,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
-        HID CORE LAYER <linux-input@vger.kernel.org>,
-        devel@linuxdriverproject.org
-Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to
- memdup
-In-Reply-To: <52459942.3020600@canonical.com>
-Message-ID: <alpine.LNX.2.00.1312161401100.12882@pobox.suse.cz>
-References: <5237430B.5040009@canonical.com> <20130916203824.GP25896@mwanda> <52376ED9.5080208@canonical.com> <20130916210503.GQ25896@mwanda> <5237A5D5.8010006@canonical.com> <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz> <52432152.3030100@canonical.com>
- <alpine.LNX.2.00.1309271250130.18703@pobox.suse.cz> <52459942.3020600@canonical.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754031Ab3LPNDS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 08:03:18 -0500
+Received: from mxout7.netvision.net.il ([194.90.6.2]:62331 "EHLO
+	mxout7.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097Ab3LPNDR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 08:03:17 -0500
+X-Greylist: delayed 900 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Dec 2013 08:03:17 EST
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII; format=flowed
+Message-id: <52AEF670.6060108@gmail.com>
+Date: Mon, 16 Dec 2013 14:47:44 +0200
+From: Eli Billauer <eli.billauer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12)
+ Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Wei Yongjun'" <weiyj.lk@gmail.com>, gregkh@linuxfoundation.org,
+        yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] staging: xillybus: fix error return code in
+ xilly_probe()
+References: <CAPgLHd_jJ-gR0CWZKuWUVALXhE9c9a3b+-GspKE_AXKvFW6qPQ@mail.gmail.com>
+ <000601cefa46$780f81e0$682e85a0$%han@samsung.com>
+In-reply-to: <000601cefa46$780f81e0$682e85a0$%han@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Sep 2013, Joseph Salisbury wrote:
+Thanks for reporting this bug. The same bug exists in the driver for OF 
+(xillybus_of.c).
 
-> >> commit b1a1442a23776756b254b69786848a94d92445ba
-> >> Author: Jiri Kosina <jkosina@suse.cz>
-> >> Date: Mon Jun 3 11:27:48 2013 +0200
-> >>
-> >>     HID: core: fix reporting of raw events
-> >>
-> >> Reverting this commit in v3.12-rc2 prevents the system from locking up, 
-> >> which happens when connecting a bluetooth trackpad.
-> >>
-> >> Jiri, do you think we should revert this patch, or is there some further 
-> >> debugging/data collecting you would like to do?
-> > Hi Joseph,
-> >
-> > in this mail:
-> >
-> > 	Message-ID: <5241992E.3090805@canonical.com>
-> > 	Date: Tue, 24 Sep 2013 09:52:46 -0400
-> >
-> > you said that reverting this commit doesn't prevent the lockups, so I am 
-> > rather confused ... ?
-> >
-> > Thanks,
-> >
-> The testing was invalid.  Reverting commit b1a1442 does resolve the bug
-> and stop the lockups.
+As for the choice of -EIO, I've surveyed several drivers calling 
+of_iomap() and pci_iomap(), and it turns out that some fail on -ENOMEM, 
+some on -EIO and some on -EBUSY.
 
-Okay, I finally got some sense of this, sorry for the delay.
+Personally, I'm inclined towards -ENOMEM, since the problem is a memory 
+mapping failure.
 
-Could you please test with the patch below, instead of reverting 
-b1a1442a23? Thanks a lot.
+I'll submit a patch fixing both files soon.
+
+Thanks again,
+    Eli
+
+On 16/12/13 12:06, Jingoo Han wrote:
+> On Monday, December 16, 2013 2:51 PM, Wei Yongjun wrote:
+>    
+>> From: Wei Yongjun<yongjun_wei@trendmicro.com.cn>
+>>
+>> Fix to return negative error code -EIO from the error handling
+>> case instead of 0.
+>>
+>> Signed-off-by: Wei Yongjun<yongjun_wei@trendmicro.com.cn>
+>> ---
+>>   drivers/staging/xillybus/xillybus_pcie.c | 2 +-
+>>      
+> It looks good.
+> Reviewed-by: Jingoo Han<jg1.han@samsung.com>
+>
+> Best regards,
+> Jingoo Han
+>
+>    
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/staging/xillybus/xillybus_pcie.c b/drivers/staging/xillybus/xillybus_pcie.c
+>> index 0564f97..51426d8 100644
+>> --- a/drivers/staging/xillybus/xillybus_pcie.c
+>> +++ b/drivers/staging/xillybus/xillybus_pcie.c
+>> @@ -168,9 +168,9 @@ static int xilly_probe(struct pci_dev *pdev,
+>>   	}
+>>
+>>   	endpoint->registers = pci_iomap(pdev, 0, 128);
+>> -
+>>   	if (!endpoint->registers) {
+>>   		dev_err(endpoint->dev, "Failed to map BAR 0. Aborting.\n");
+>> +		rc = -EIO;
+>>   		goto failed_iomap0;
+>>   	}
+>>
+>>      
+>    
 
 
-
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 253fe23..81eacd3 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1334,7 +1334,7 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
- 		csize--;
- 	}
- 
--	rsize = ((report->size - 1) >> 3) + 1;
-+	rsize = ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
- 
- 	if (rsize > HID_MAX_BUFFER_SIZE)
- 		rsize = HID_MAX_BUFFER_SIZE;
-
--- 
-Jiri Kosina
-SUSE Labs
