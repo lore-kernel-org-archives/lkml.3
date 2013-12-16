@@ -1,53 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab3LPTeS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 14:34:18 -0500
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:10174 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755379Ab3LPTeR (ORCPT
+	id S1755437Ab3LPTeX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 14:34:23 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53969 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755379Ab3LPTeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 14:34:17 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
-        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: [PATCH v4 2/9] PCI/MSI/s390: Remove superfluous check of MSI type
-Date: Mon, 16 Dec 2013 09:34:55 +0100
-Message-Id: <f317583c5dda2b440ac2906b2cd04c97cae5ed1b.1387140921.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1387140921.git.agordeev@redhat.com>
-References: <cover.1387140921.git.agordeev@redhat.com>
+	Mon, 16 Dec 2013 14:34:21 -0500
+Message-ID: <52AF55B4.6000303@hurleysoftware.com>
+Date: Mon, 16 Dec 2013 14:34:12 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Gianluca Anzolin <gianluca@sottospazio.it>
+CC: Alexander Holler <holler@ahsoftware.de>, marcel@holtmann.org,
+        Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
+        gregkh@linuxfoundation.org, jslaby@suse.cz,
+        linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] rfcomm (userland) broken by commit 29cd718b
+References: <1377620926-23370-1-git-send-email-gianluca@sottospazio.it> <20130919162413.GG4006@joana> <52AA1854.500@ahsoftware.de> <52AA1E62.1030109@hurleysoftware.com> <52AA483E.4080706@ahsoftware.de> <20131215112413.GA8980@sottospazio.it> <52ADB6B7.5010503@hurleysoftware.com> <20131215150847.GA10288@sottospazio.it>
+In-Reply-To: <20131215150847.GA10288@sottospazio.it>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arch_setup_msi_irqs() hook can only be called from the generic
-MSI code which ensures correct MSI type parameter.
+On 12/15/2013 10:08 AM, Gianluca Anzolin wrote:
+> On Sun, Dec 15, 2013 at 09:03:35AM -0500, Peter Hurley wrote:
+>> On 12/15/2013 06:24 AM, Gianluca Anzolin wrote:
+>>> On Fri, Dec 13, 2013 at 12:35:26AM +0100, Alexander Holler wrote:
+>>>> Am 12.12.2013 21:36, schrieb Peter Hurley:
+>>>>
+>>>>>> What currently happens is that when one kills rfcomm (and any other
+>>>>>> terminal which might use that tty), the entry in /dev doesn't
+>>>>>> disappear. That means the same call to refcomm with the same device
+>>>>>> (e.g. [/dev/]rfcomm1 doesn't work.
+>>>>>
+>>>>> Thanks for the report, Alexander.
+>>>>>
+>>>>> Point 4 above details a different situation; something else is
+>>>>> happening.
+>>>>>
+>>>>> Would you please detail the necessary steps to reproduce this regression?
+>>>>> (How do you 'kill' rfcomm? etc.  Shell command lines would be best.)
+>>>>
+>>>> Just call
+>>>>
+>>>> rfcomm connect rfcomm9 01:23:45:67:89:ab
+>>>>
+>>>> wait until the connection happened  (a message will appear) and then
+>>>> press ctrl-c. This still terminates the bluetooth connection, but the
+>>>> device in /dev is now left.
+>>>
+>>> Yes I'm able to reproduce the regression which is indeed caused by that
+>>> commit.
+>>>
+>>> However I'm puzzled. Surely there is a fifth case I didn't cover because
+>>> when rfcomm_dev_state_change() is called, the tty_port is there but the tty is
+>>> not, and therefore I cannot get a reference to it and send the HUP.
+>>
+>> There is a fifth case, but it's crazy.
+>>
+>> The tty has been properly shutdown and destroyed because the tty file handle
+>> was closed, not hungup. The rfcomm device reference was properly put
+>> when the tty was released.
+>>
+>> But when the remote hangs up (and sends disc), then rfcomm_dev_state_change()
+>> is called -- to kill the port reference (thus the rfcomm device) that was
+>> instantiated locally! Ridiculous. Doubly ridiculous because it's the local
+>> port shutdown that closes the dlc locally that sends the disconnect (and sets
+>> the local dlc state) that triggers the received rfcomm_dev_state_change()!
+>>
+>> If this behavior is desirable (or necessary because it's been exposed to
+>> userspace), then why was the design ever reference-counted to begin with?
+>>
+>> Regards,
+>> Peter Hurley
+>
+> The attached patch fixes the regression by releasing the tty_port in the
+> shutdown method(). This way we can avoid strange games in the dlc callback
+> where we are constrained by the dlc lock.
+>
+> If this kind of approach is acceptable I will submit the patch for inclusion in
+> a separate email.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
----
- arch/s390/pci/pci.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+This solution is acceptable to me, but I think the comment should briefly
+explain why this fix is necessary, and the changelog should explain why in detail.
 
-diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
-index 6f3788e..4859c40 100644
---- a/arch/s390/pci/pci.c
-+++ b/arch/s390/pci/pci.c
-@@ -407,8 +407,6 @@ int arch_setup_msi_irqs(struct pci_dev *pdev, int nvec, int type)
- 	struct msi_msg msg;
- 	int rc;
- 
--	if (type != PCI_CAP_ID_MSIX && type != PCI_CAP_ID_MSI)
--		return -EINVAL;
- 	if (type == PCI_CAP_ID_MSI && nvec > 1)
- 		return 1;
- 	msi_vecs = min(nvec, ZPCI_MSI_VEC_MAX);
--- 
-1.7.7.6
+Perhaps with a fixme comment that rfcomm_tty_install() should just take over
+the port reference (instead of adding one) and rfcomm_tty_cleanup() should
+conditionally release on RFCOMM_RELEASE_ONHUP.
+
+Because then:
+1) this fix would not be necessary.
+2) the release in rfcomm_tty_hangup() would not be necessary
+3) the second release in rfcomm_release_dev would not be necessary
+4) the RFCOMM_TTY_RELEASED bit could be removed
+
+
+Regards,
+Peter Hurley
+
 
