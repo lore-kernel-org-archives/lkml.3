@@ -1,220 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab3LPEIe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 23:08:34 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47578 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440Ab3LPEIL (ORCPT
+	id S1752607Ab3LPEI6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 23:08:58 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:46817 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab3LPEIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 23:08:11 -0500
-From: Allen Pais <allen.pais@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: sparclinux@vger.kernel.org, bigeasy@linutronix.de,
-        Allen Pais <allen.pais@oracle.com>
-Subject: [PATCH 2/3] sparc64: convert spinlock_t to raw_spinlock_t in mmu_context_t
-Date: Mon, 16 Dec 2013 09:37:32 +0530
-Message-Id: <1387166853-10782-3-git-send-email-allen.pais@oracle.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1387166853-10782-1-git-send-email-allen.pais@oracle.com>
-References: <1387166853-10782-1-git-send-email-allen.pais@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Sun, 15 Dec 2013 23:08:55 -0500
+From: David Long <dave.long@linaro.org>
+To: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        <davem@davemloft.net>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 00/16] uprobes: Add uprobes support for ARM
+Date: Sun, 15 Dec 2013 23:08:34 -0500
+Message-Id: <1387166930-13182-1-git-send-email-dave.long@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Issue debugged by Thomas Gleixner <tglx@linutronix.de>
+From: "David A. Long" <dave.long@linaro.org>
 
-Signed-off-by: Allen Pais <allen.pais@oracle.com>
----
- arch/sparc/Kconfig                      |    1 +
- arch/sparc/include/asm/mmu_64.h         |    2 +-
- arch/sparc/include/asm/mmu_context_64.h |    8 ++++----
- arch/sparc/kernel/smp_64.c              |    4 ++--
- arch/sparc/mm/init_64.c                 |    4 ++--
- arch/sparc/mm/tsb.c                     |   16 ++++++++--------
- 6 files changed, 18 insertions(+), 17 deletions(-)
+This patch series adds basic uprobes support to ARM. It is based on patches
+developed earlier by Rabin Vincent. That approach of adding hooks into
+the kprobes instruction parsing code was not well received. This approach
+separates the ARM instruction parsing code in kprobes out into a separate set
+of functions which can be used by both kprobes and uprobes. Both kprobes and
+uprobes then provide their own semantic action tables to process the results of
+the parsing.
 
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 554995d..aae5aa9 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -27,6 +27,7 @@ config SPARC
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_ARCH_JUMP_LABEL
- 	select HAVE_GENERIC_HARDIRQS
-+	select IRQ_FORCED_THREADING
- 	select GENERIC_IRQ_SHOW
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select USE_GENERIC_SMP_HELPERS if SMP
-diff --git a/arch/sparc/include/asm/mmu_64.h b/arch/sparc/include/asm/mmu_64.h
-index 76092c4..e945ddb 100644
---- a/arch/sparc/include/asm/mmu_64.h
-+++ b/arch/sparc/include/asm/mmu_64.h
-@@ -90,7 +90,7 @@ struct tsb_config {
- #endif
- 
- typedef struct {
--	spinlock_t		lock;
-+	raw_spinlock_t		lock;
- 	unsigned long		sparc64_ctx_val;
- 	unsigned long		huge_pte_count;
- 	struct page		*pgtable_page;
-diff --git a/arch/sparc/include/asm/mmu_context_64.h b/arch/sparc/include/asm/mmu_context_64.h
-index 3d528f0..3a85624 100644
---- a/arch/sparc/include/asm/mmu_context_64.h
-+++ b/arch/sparc/include/asm/mmu_context_64.h
-@@ -77,7 +77,7 @@ static inline void switch_mm(struct mm_struct *old_mm, struct mm_struct *mm, str
- 	if (unlikely(mm == &init_mm))
- 		return;
- 
--	spin_lock_irqsave(&mm->context.lock, flags);
-+	raw_spin_lock_irqsave(&mm->context.lock, flags);
- 	ctx_valid = CTX_VALID(mm->context);
- 	if (!ctx_valid)
- 		get_new_mmu_context(mm);
-@@ -125,7 +125,7 @@ static inline void switch_mm(struct mm_struct *old_mm, struct mm_struct *mm, str
- 		__flush_tlb_mm(CTX_HWBITS(mm->context),
- 			       SECONDARY_CONTEXT);
- 	}
--	spin_unlock_irqrestore(&mm->context.lock, flags);
-+	raw_spin_unlock_irqrestore(&mm->context.lock, flags);
- }
- 
- #define deactivate_mm(tsk,mm)	do { } while (0)
-@@ -136,7 +136,7 @@ static inline void activate_mm(struct mm_struct *active_mm, struct mm_struct *mm
- 	unsigned long flags;
- 	int cpu;
- 
--	spin_lock_irqsave(&mm->context.lock, flags);
-+	raw_spin_lock_irqsave(&mm->context.lock, flags);
- 	if (!CTX_VALID(mm->context))
- 		get_new_mmu_context(mm);
- 	cpu = smp_processor_id();
-@@ -146,7 +146,7 @@ static inline void activate_mm(struct mm_struct *active_mm, struct mm_struct *mm
- 	load_secondary_context(mm);
- 	__flush_tlb_mm(CTX_HWBITS(mm->context), SECONDARY_CONTEXT);
- 	tsb_context_switch(mm);
--	spin_unlock_irqrestore(&mm->context.lock, flags);
-+	raw_spin_unlock_irqrestore(&mm->context.lock, flags);
- }
- 
- #endif /* !(__ASSEMBLY__) */
-diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
-index 77539ed..f42e1a7 100644
---- a/arch/sparc/kernel/smp_64.c
-+++ b/arch/sparc/kernel/smp_64.c
-@@ -975,12 +975,12 @@ void __irq_entry smp_new_mmu_context_version_client(int irq, struct pt_regs *reg
- 	if (unlikely(!mm || (mm == &init_mm)))
- 		return;
- 
--	spin_lock_irqsave(&mm->context.lock, flags);
-+	raw_spin_lock_irqsave(&mm->context.lock, flags);
- 
- 	if (unlikely(!CTX_VALID(mm->context)))
- 		get_new_mmu_context(mm);
- 
--	spin_unlock_irqrestore(&mm->context.lock, flags);
-+	raw_spin_unlock_irqrestore(&mm->context.lock, flags);
- 
- 	load_secondary_context(mm);
- 	__flush_tlb_mm(CTX_HWBITS(mm->context),
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 04fd55a..bd5253d 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -350,7 +350,7 @@ void update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *
- 
- 	mm = vma->vm_mm;
- 
--	spin_lock_irqsave(&mm->context.lock, flags);
-+	raw_spin_lock_irqsave(&mm->context.lock, flags);
- 
- #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
- 	if (mm->context.huge_pte_count && is_hugetlb_pte(pte))
-@@ -361,7 +361,7 @@ void update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *
- 		__update_mmu_tsb_insert(mm, MM_TSB_BASE, PAGE_SHIFT,
- 					address, pte_val(pte));
- 
--	spin_unlock_irqrestore(&mm->context.lock, flags);
-+	raw_spin_unlock_irqrestore(&mm->context.lock, flags);
- }
- 
- void flush_dcache_page(struct page *page)
-diff --git a/arch/sparc/mm/tsb.c b/arch/sparc/mm/tsb.c
-index 2cc3bce..d84d4ea 100644
---- a/arch/sparc/mm/tsb.c
-+++ b/arch/sparc/mm/tsb.c
-@@ -73,7 +73,7 @@ void flush_tsb_user(struct tlb_batch *tb)
- 	struct mm_struct *mm = tb->mm;
- 	unsigned long nentries, base, flags;
- 
--	spin_lock_irqsave(&mm->context.lock, flags);
-+	raw_spin_lock_irqsave(&mm->context.lock, flags);
- 
- 	base = (unsigned long) mm->context.tsb_block[MM_TSB_BASE].tsb;
- 	nentries = mm->context.tsb_block[MM_TSB_BASE].tsb_nentries;
-@@ -90,14 +90,14 @@ void flush_tsb_user(struct tlb_batch *tb)
- 		__flush_tsb_one(tb, HPAGE_SHIFT, base, nentries);
- 	}
- #endif
--	spin_unlock_irqrestore(&mm->context.lock, flags);
-+	raw_spin_unlock_irqrestore(&mm->context.lock, flags);
- }
- 
- void flush_tsb_user_page(struct mm_struct *mm, unsigned long vaddr)
- {
- 	unsigned long nentries, base, flags;
- 
--	spin_lock_irqsave(&mm->context.lock, flags);
-+	raw_spin_lock_irqsave(&mm->context.lock, flags);
- 
- 	base = (unsigned long) mm->context.tsb_block[MM_TSB_BASE].tsb;
- 	nentries = mm->context.tsb_block[MM_TSB_BASE].tsb_nentries;
-@@ -114,7 +114,7 @@ void flush_tsb_user_page(struct mm_struct *mm, unsigned long vaddr)
- 		__flush_tsb_one_entry(base, vaddr, HPAGE_SHIFT, nentries);
- 	}
- #endif
--	spin_unlock_irqrestore(&mm->context.lock, flags);
-+	raw_spin_unlock_irqrestore(&mm->context.lock, flags);
- }
- 
- #define HV_PGSZ_IDX_BASE	HV_PGSZ_IDX_8K
-@@ -392,7 +392,7 @@ retry_tsb_alloc:
- 	 * the lock and ask all other cpus running this address space
- 	 * to run tsb_context_switch() to see the new TSB table.
- 	 */
--	spin_lock_irqsave(&mm->context.lock, flags);
-+	raw_spin_lock_irqsave(&mm->context.lock, flags);
- 
- 	old_tsb = mm->context.tsb_block[tsb_index].tsb;
- 	old_cache_index =
-@@ -407,7 +407,7 @@ retry_tsb_alloc:
- 	 */
- 	if (unlikely(old_tsb &&
- 		     (rss < mm->context.tsb_block[tsb_index].tsb_rss_limit))) {
--		spin_unlock_irqrestore(&mm->context.lock, flags);
-+		raw_spin_unlock_irqrestore(&mm->context.lock, flags);
- 
- 		kmem_cache_free(tsb_caches[new_cache_index], new_tsb);
- 		return;
-@@ -433,7 +433,7 @@ retry_tsb_alloc:
- 	mm->context.tsb_block[tsb_index].tsb = new_tsb;
- 	setup_tsb_params(mm, tsb_index, new_size);
- 
--	spin_unlock_irqrestore(&mm->context.lock, flags);
-+	raw_spin_unlock_irqrestore(&mm->context.lock, flags);
- 
- 	/* If old_tsb is NULL, we're being invoked for the first time
- 	 * from init_new_context().
-@@ -459,7 +459,7 @@ int init_new_context(struct task_struct *tsk, struct mm_struct *mm)
- #endif
- 	unsigned int i;
- 
--	spin_lock_init(&mm->context.lock);
-+	raw_spin_lock_init(&mm->context.lock);
- 
- 	mm->context.sparc64_ctx_val = 0UL;
- 
+The following are noteworthy changes made for v4:
+
+1) The dependency on kprobe.h is now correctly fixed.
+2) A few changes to correctly support bigendian.
+3) Remove the opcode address arg from the emulate and simulate functions
+   and just get the address from the pt_regs structure instead.
+
+This patchset is based on v3.13-rc4.
+
+David A. Long (15):
+  uprobes: allow ignoring of probe hits
+  ARM: move shared uprobe/kprobe definitions into new include file
+  ARM: Move generic arm instruction parsing code to new files for
+    sharing between features
+  ARM: move generic thumb instruction parsing code to new files for use
+    by other feature
+  ARM: use a function table for determining instruction interpreter
+    actions
+  ARM: Remove use of struct kprobe from generic probes code
+  ARM: Use new opcode type in ARM kprobes/uprobes code
+  ARM: Make the kprobes condition_check symbol names more generic
+  ARM: Change more ARM kprobes symbol names to something more
+  ARM: Rename the shared kprobes/uprobe return value enum
+  ARM: Change the remaining shared kprobes/uprobes symbols to something
+    generic
+  ARM: Add an emulate flag to the kprobes/uprobes instruction decode
+    functions
+  ARM: Make arch_specific_insn a define for new arch_probes_insn
+    structure
+  ARM: add uprobes support
+  ARM: Remove uprobes dependency on kprobes
+
+Jon Medhurst (Tixy) (1):
+  ARM: Disable jprobes test when built into thumb-mode kernel
+
+ arch/arm/Kconfig                                   |    3 +
+ arch/arm/include/asm/kprobes.h                     |   15 +-
+ arch/arm/include/asm/probes.h                      |   25 +
+ arch/arm/include/asm/ptrace.h                      |    6 +
+ arch/arm/include/asm/thread_info.h                 |    5 +-
+ arch/arm/include/asm/uprobes.h                     |   36 +
+ arch/arm/kernel/Makefile                           |    7 +-
+ arch/arm/kernel/kprobes-arm.c                      |  804 ++------------
+ arch/arm/kernel/kprobes-common.c                   |  468 +-------
+ arch/arm/kernel/kprobes-test.c                     |   18 +-
+ arch/arm/kernel/kprobes-thumb.c                    | 1142 +++-----------------
+ arch/arm/kernel/kprobes.c                          |   24 +-
+ arch/arm/kernel/kprobes.h                          |  399 +------
+ arch/arm/kernel/{kprobes-arm.c => probes-arm.c}    |  441 ++------
+ arch/arm/kernel/probes-arm.h                       |   72 ++
+ .../arm/kernel/{kprobes-thumb.c => probes-thumb.c} |  771 ++-----------
+ arch/arm/kernel/probes-thumb.h                     |   95 ++
+ arch/arm/kernel/{kprobes-common.c => probes.c}     |  215 +---
+ arch/arm/kernel/{kprobes.h => probes.h}            |   91 +-
+ arch/arm/kernel/signal.c                           |    4 +
+ arch/arm/kernel/uprobes-arm.c                      |  223 ++++
+ arch/arm/kernel/uprobes.c                          |  198 ++++
+ arch/arm/kernel/uprobes.h                          |   27 +
+ include/linux/uprobes.h                            |    1 +
+ kernel/events/uprobes.c                            |    9 +
+ 25 files changed, 1271 insertions(+), 3828 deletions(-)
+ create mode 100644 arch/arm/include/asm/probes.h
+ create mode 100644 arch/arm/include/asm/uprobes.h
+ copy arch/arm/kernel/{kprobes-arm.c => probes-arm.c} (64%)
+ create mode 100644 arch/arm/kernel/probes-arm.h
+ copy arch/arm/kernel/{kprobes-thumb.c => probes-thumb.c} (56%)
+ create mode 100644 arch/arm/kernel/probes-thumb.h
+ copy arch/arm/kernel/{kprobes-common.c => probes.c} (67%)
+ copy arch/arm/kernel/{kprobes.h => probes.h} (85%)
+ create mode 100644 arch/arm/kernel/uprobes-arm.c
+ create mode 100644 arch/arm/kernel/uprobes.c
+ create mode 100644 arch/arm/kernel/uprobes.h
+
 -- 
-1.7.10.4
+1.8.1.2
 
