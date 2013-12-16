@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab3LPQfJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:35:09 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:41450 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754327Ab3LPQfH (ORCPT
+	id S1754831Ab3LPQfq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:35:46 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:52368 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754675Ab3LPQfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:35:07 -0500
-Date: Mon, 16 Dec 2013 16:35:01 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com,
-        akpm@linux-foundation.org, mingo@kernel.org, msalter@redhat.com,
-        leif.lindholm@linaro.org
-Subject: Re: [PATCH v6 14/14] x86: kdebugfs do not use __va for getting
- setup_data virt addr
-Message-ID: <20131216163501.GB3873@console-pimps.org>
-References: <1387186235-15972-1-git-send-email-dyoung@redhat.com>
- <1387186235-15972-15-git-send-email-dyoung@redhat.com>
+	Mon, 16 Dec 2013 11:35:42 -0500
+Date: Mon, 16 Dec 2013 11:35:30 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Li Zefan <lizefan@huawei.com>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.13-rc breaks MEMCG_SWAP
+Message-ID: <20131216163530.GH32509@htj.dyndns.org>
+References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
+ <52AEC989.4080509@huawei.com>
+ <20131216095345.GB23582@dhcp22.suse.cz>
+ <20131216104042.GC23582@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1387186235-15972-15-git-send-email-dyoung@redhat.com>
+In-Reply-To: <20131216104042.GC23582@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Dec, at 05:30:35PM, Dave Young wrote:
-> kdump kernel will use memmap=exactmap kernel cmdline, but __va does not
-> work in case memmap=exactmap, so let's always use ioremap_cache.
+On Mon, Dec 16, 2013 at 11:40:42AM +0100, Michal Hocko wrote:
+> > How would this work? The task which pushed the memory to the swap is
+> > still alive (living in a different group) and the swap will be there
+> > after the last reference to css as well.
 > 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  arch/x86/kernel/kdebugfs.c | 35 +++++++++++------------------------
->  1 file changed, 11 insertions(+), 24 deletions(-)
+> Or did you mean to get css reference in swap_cgroup_record and release
+> it in __mem_cgroup_try_charge_swapin?
+> 
+> That would prevent the warning (assuming idr_remove would move to
+> css_free[1]) but I am not sure this is the right thing to do. memsw charges
+> will be accounted to the parent already (assuming there is one) without
+> anybody to uncharge them because all uncharges would fallback to the
+> root memcg after css_offline.
+> 
+> Hugh's approach seems much better.
 
-Dave, I've no idea why this change is necessary from the commit log. Is
-it required for kexec to function on EFI? Why does __va() not work in
-the memmap=exactmap case?
+Hmmm... I think it's reasonable for css's to expect cgrp->id to not be
+recycled before all css refs are gone.  If Hugh's patches are
+something desriable independent of cgrp->id issues, great, but, if
+not, let's first try to get it right from cgroup core.  Is it enough
+for css_from_id() to return NULL after offline until all refs are
+gone?  That should be an easy fix.
+
+Thanks.
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+tejun
