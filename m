@@ -1,147 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab3LPQyA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:54:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34640 "EHLO mx2.suse.de"
+	id S1754929Ab3LPQzy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:55:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48680 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753867Ab3LPQx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:53:58 -0500
-Date: Mon, 16 Dec 2013 17:53:56 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: glommer@gmail.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, devel@openvz.org,
-        Glauber Costa <glommer@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 2/2] memcg: do not use vmalloc for mem_cgroup allocations
-Message-ID: <20131216165356.GE26797@dhcp22.suse.cz>
-References: <965cbb70fb55fe50a77382537b9a1b7455deac86.1387007793.git.vdavydov@parallels.com>
- <ce02d52baac3730d659c046a181c2784c6cee2c4.1387007793.git.vdavydov@parallels.com>
+	id S1754658Ab3LPQzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 11:55:52 -0500
+Message-ID: <52AF3077.1060001@zytor.com>
+Date: Mon, 16 Dec 2013 08:55:19 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ce02d52baac3730d659c046a181c2784c6cee2c4.1387007793.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Qiaowei Ren <qiaowei.ren@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86: add user_atomic_cmpxchg_inatomic at uaccess.h
+References: <1387002303-6620-1-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1387002303-6620-1-git-send-email-qiaowei.ren@intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 14-12-13 12:15:34, Vladimir Davydov wrote:
-> The vmalloc was introduced by patch 333279 ("memcgroup: use vmalloc for
-> mem_cgroup allocation"), because at that time MAX_NUMNODES was used for
-> defining the per-node array in the mem_cgroup structure so that the
-> structure could be huge even if the system had the only NUMA node.
-> 
-> The situation was significantly improved by patch 45cf7e ("memcg: reduce
-> the size of struct memcg 244-fold"), which made the size of the
-> mem_cgroup structure calculated dynamically depending on the real number
-> of NUMA nodes installed on the system (nr_node_ids), so now there is no
-> point in using vmalloc here: the structure is allocated rarely and on
-> most systems its size is about 1K.
-> 
-> Personally I'd like to remove this vmalloc, because I'm considering
-> using wait_on_bit() on mem_cgroup::kmem_account_flags in the kmemcg
-> shrinkers implementation, which is impossible on vmalloc'd areas.
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Glauber Costa <glommer@openvz.org>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On 12/13/2013 10:25 PM, Qiaowei Ren wrote:
+> +#ifdef CONFIG_X86_64							\
+> +	case 8:								\
+> +	{								\
+> +		asm volatile("\t" ASM_STAC "\n"				\
+> +			"1:\t" LOCK_PREFIX "cmpxchgq %4, %2\n"		\
+> +			"2:\t" ASM_CLAC "\n"				\
+> +			"\t.section .fixup, \"ax\"\n"			\
+> +			"3:\tmov     %3, %0\n"				\
+> +			"\tjmp     2b\n"				\
+> +			"\t.previous\n"					\
+> +			_ASM_EXTABLE(1b, 3b)				\
+> +			: "+r" (__ret), "=a" (__old), "+m" (*(ptr))	\
+> +			: "i" (-EFAULT), "r" (__new), "1" (__old)	\
+> +			: "memory"					\
+> +		);							\
+> +		break;							\
+> +	}								\
+> +#endif								\
 
-yes this makes sense to me even without wait_on_bit part.
-Maybe I would just merge it with 1/2.
+This, of course, doesn't work because this is embedded in a macro.  I
+realize I requested it, but you should still have tested it.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Anyway, I'll fix it up.
 
-Thanks!
-> ---
->  mm/memcontrol.c |   28 ++++++----------------------
->  1 file changed, 6 insertions(+), 22 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 7f1a356..205eb7b 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -48,7 +48,6 @@
->  #include <linux/sort.h>
->  #include <linux/fs.h>
->  #include <linux/seq_file.h>
-> -#include <linux/vmalloc.h>
->  #include <linux/vmpressure.h>
->  #include <linux/mm_inline.h>
->  #include <linux/page_cgroup.h>
-> @@ -335,12 +334,6 @@ struct mem_cgroup {
->  	/* WARNING: nodeinfo must be the last member here */
->  };
->  
-> -static size_t memcg_size(void)
-> -{
-> -	return sizeof(struct mem_cgroup) +
-> -		nr_node_ids * sizeof(struct mem_cgroup_per_node *);
-> -}
-> -
->  /* internal only representation about the status of kmem accounting. */
->  enum {
->  	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
-> @@ -6139,14 +6132,12 @@ static void free_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
->  static struct mem_cgroup *mem_cgroup_alloc(void)
->  {
->  	struct mem_cgroup *memcg;
-> -	size_t size = memcg_size();
-> +	size_t size;
->  
-> -	/* Can be very big if nr_node_ids is very big */
-> -	if (size < PAGE_SIZE)
-> -		memcg = kzalloc(size, GFP_KERNEL);
-> -	else
-> -		memcg = vzalloc(size);
-> +	size = sizeof(struct mem_cgroup);
-> +	size += nr_node_ids * sizeof(struct mem_cgroup_per_node *);
->  
-> +	memcg = kzalloc(size, GFP_KERNEL);
->  	if (!memcg)
->  		return NULL;
->  
-> @@ -6157,10 +6148,7 @@ static struct mem_cgroup *mem_cgroup_alloc(void)
->  	return memcg;
->  
->  out_free:
-> -	if (size < PAGE_SIZE)
-> -		kfree(memcg);
-> -	else
-> -		vfree(memcg);
-> +	kfree(memcg);
->  	return NULL;
->  }
->  
-> @@ -6178,7 +6166,6 @@ out_free:
->  static void __mem_cgroup_free(struct mem_cgroup *memcg)
->  {
->  	int node;
-> -	size_t size = memcg_size();
->  
->  	mem_cgroup_remove_from_trees(memcg);
->  
-> @@ -6199,10 +6186,7 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
->  	 * the cgroup_lock.
->  	 */
->  	disarm_static_keys(memcg);
-> -	if (size < PAGE_SIZE)
-> -		kfree(memcg);
-> -	else
-> -		vfree(memcg);
-> +	kfree(memcg);
->  }
->  
->  /*
-> -- 
-> 1.7.10.4
-> 
+	-hpa
 
--- 
-Michal Hocko
-SUSE Labs
