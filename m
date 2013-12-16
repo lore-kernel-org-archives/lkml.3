@@ -1,133 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab3LPLLD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 06:11:03 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:57377 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab3LPLLB convert rfc822-to-8bit (ORCPT
+	id S1753551Ab3LPLLL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 06:11:11 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:51599 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188Ab3LPLLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 06:11:01 -0500
-X-Originating-IP: 50.43.14.201
-Date: Mon, 16 Dec 2013 03:10:53 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 1/2] drivers: tty: Mark the functions as static in n_gsm.c
-Message-ID: <20131216111052.GA23211@leaf>
-References: <0d40902c95942d272a70b1d85b4e311d0cc7afa4.1387191158.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <0d40902c95942d272a70b1d85b4e311d0cc7afa4.1387191158.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 Dec 2013 06:11:04 -0500
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Rhyland Klein <rklein@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v5 1/2] mfd: cros ec: spi: Add delay for raising CS
+Date: Mon, 16 Dec 2013 12:09:39 +0100
+Message-Id: <1387192180-15333-1-git-send-email-treding@nvidia.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 04:28:24PM +0530, Rashika Kheria wrote:
-> Marks the functions gsm_cleanup_mux(), gsm_activate_mux(),
-> gsm_free_mux(), gsm_alloc_mux() and gsm_change_mtu() as static in
-> n_gsm.c because they are not used outside this file.
-> 
-> Also, drop the EXPORT_SYMBOL_GPL for the above mentioned functions
-> because nothing else in the kernel calls them.
-> 
-> This eliminates the following warnings in n_gsm.c:
-> drivers/tty/n_gsm.c:2022:6: warning: no previous prototype for ‘gsm_cleanup_mux’ [-Wmissing-prototypes]
-> drivers/tty/n_gsm.c:2076:5: warning: no previous prototype for ‘gsm_activate_mux’ [-Wmissing-prototypes]
-> drivers/tty/n_gsm.c:2120:6: warning: no previous prototype for ‘gsm_free_mux’ [-Wmissing-prototypes]
-> drivers/tty/n_gsm.c:2156:17: warning: no previous prototype for ‘gsm_alloc_mux’ [-Wmissing-prototypes]
-> drivers/tty/n_gsm.c:2714:5: warning: no previous prototype for ‘gsm_change_mtu’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+From: Rhyland Klein <rklein@nvidia.com>
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+The EC has specific timing it requires. Add support for an optional delay
+after raising CS to fix timing issues. This is configurable based on
+a DT property "google,cros-ec-spi-msg-delay".
 
->  drivers/tty/n_gsm.c |   14 +++++---------
->  1 file changed, 5 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-> index c0f76da..6ca9fbb 100644
-> --- a/drivers/tty/n_gsm.c
-> +++ b/drivers/tty/n_gsm.c
-> @@ -2019,7 +2019,7 @@ static void gsm_error(struct gsm_mux *gsm,
->   *	and then shut down each device hanging up the channels as we go.
->   */
->  
-> -void gsm_cleanup_mux(struct gsm_mux *gsm)
-> +static void gsm_cleanup_mux(struct gsm_mux *gsm)
->  {
->  	int i;
->  	struct gsm_dlci *dlci = gsm->dlci[0];
-> @@ -2062,7 +2062,6 @@ void gsm_cleanup_mux(struct gsm_mux *gsm)
->  		kfree(txq);
->  	INIT_LIST_HEAD(&gsm->tx_list);
->  }
-> -EXPORT_SYMBOL_GPL(gsm_cleanup_mux);
->  
->  /**
->   *	gsm_activate_mux	-	generic GSM setup
-> @@ -2073,7 +2072,7 @@ EXPORT_SYMBOL_GPL(gsm_cleanup_mux);
->   *	finally kick off connecting to DLCI 0 on the modem.
->   */
->  
-> -int gsm_activate_mux(struct gsm_mux *gsm)
-> +static int gsm_activate_mux(struct gsm_mux *gsm)
->  {
->  	struct gsm_dlci *dlci;
->  	int i = 0;
-> @@ -2109,7 +2108,6 @@ int gsm_activate_mux(struct gsm_mux *gsm)
->  	gsm->dead = 0;		/* Tty opens are now permissible */
->  	return 0;
->  }
-> -EXPORT_SYMBOL_GPL(gsm_activate_mux);
->  
->  /**
->   *	gsm_free_mux		-	free up a mux
-> @@ -2117,13 +2115,12 @@ EXPORT_SYMBOL_GPL(gsm_activate_mux);
->   *
->   *	Dispose of allocated resources for a dead mux
->   */
-> -void gsm_free_mux(struct gsm_mux *gsm)
-> +static void gsm_free_mux(struct gsm_mux *gsm)
->  {
->  	kfree(gsm->txframe);
->  	kfree(gsm->buf);
->  	kfree(gsm);
->  }
-> -EXPORT_SYMBOL_GPL(gsm_free_mux);
->  
->  /**
->   *	gsm_free_muxr		-	free up a mux
-> @@ -2153,7 +2150,7 @@ static inline void mux_put(struct gsm_mux *gsm)
->   *	Creates a new mux ready for activation.
->   */
->  
-> -struct gsm_mux *gsm_alloc_mux(void)
-> +static struct gsm_mux *gsm_alloc_mux(void)
->  {
->  	struct gsm_mux *gsm = kzalloc(sizeof(struct gsm_mux), GFP_KERNEL);
->  	if (gsm == NULL)
-> @@ -2185,7 +2182,6 @@ struct gsm_mux *gsm_alloc_mux(void)
->  
->  	return gsm;
->  }
-> -EXPORT_SYMBOL_GPL(gsm_alloc_mux);
->  
->  /**
->   *	gsmld_output		-	write to link
-> @@ -2711,7 +2707,7 @@ static void gsm_mux_rx_netchar(struct gsm_dlci *dlci,
->  	return;
->  }
->  
-> -int gsm_change_mtu(struct net_device *net, int new_mtu)
-> +static int gsm_change_mtu(struct net_device *net, int new_mtu)
->  {
->  	struct gsm_mux_net *mux_net = (struct gsm_mux_net *)netdev_priv(net);
->  	if ((new_mtu < 8) || (new_mtu > mux_net->dlci->gsm->mtu))
-> -- 
-> 1.7.9.5
-> 
+If this property isn't set, then no delay will be added. However, if set
+it will cause a delay equal to the value passed to it to be inserted at
+the end of a transaction.
+
+Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+Reviewed-by: Bernie Thompson <bhthompson@chromium.org>
+Reviewed-by: Andrew Bresticker <abrestic@chromium.org>
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+Changes in v5:
+- modify correct hunk to use 0 instead of '\0'
+- add Mark's Acked-by
+
+Changes in v4:
+- unconditionally call cros_ec_spi_dt_probe() since the driver now
+  depends on OF
+
+Changes in v3:
+- rename cros_ec_probe_spi_dt() to cros_ec_spi_dt_probe()
+- use 0 instead of '\0'
+
+Changes in v2:
+- make property description more verbose
+
+ Documentation/devicetree/bindings/mfd/cros-ec.txt |  9 +++++++
+ drivers/mfd/cros_ec_spi.c                         | 29 +++++++++++++++++++++++
+ 2 files changed, 38 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/mfd/cros-ec.txt b/Documentation/devicetree/bindings/mfd/cros-ec.txt
+index 5f229c5f6da9..8009c3d87f33 100644
+--- a/Documentation/devicetree/bindings/mfd/cros-ec.txt
++++ b/Documentation/devicetree/bindings/mfd/cros-ec.txt
+@@ -17,6 +17,15 @@ Required properties (SPI):
+ - compatible: "google,cros-ec-spi"
+ - reg: SPI chip select
+ 
++Optional properties (SPI):
++- google,cros-ec-spi-msg-delay: Some implementations of the EC require some
++  additional processing time in order to accept new transactions. If the delay
++  between transactions is not long enough the EC may not be able to respond
++  properly to subsequent transactions and cause them to hang. This property
++  specifies the delay, in usecs, introduced between transactions to account
++  for the time required by the EC to get back into a state in which new data
++  can be accepted.
++
+ Required properties (LPC):
+ - compatible: "google,cros-ec-lpc"
+ - reg: List of (IO address, size) pairs defining the interface uses
+diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
+index d64d88a9e247..8e262bfb603e 100644
+--- a/drivers/mfd/cros_ec_spi.c
++++ b/drivers/mfd/cros_ec_spi.c
+@@ -18,6 +18,7 @@
+ #include <linux/module.h>
+ #include <linux/mfd/cros_ec.h>
+ #include <linux/mfd/cros_ec_commands.h>
++#include <linux/of.h>
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
+ #include <linux/spi/spi.h>
+@@ -62,10 +63,13 @@
+  * @spi: SPI device we are connected to
+  * @last_transfer_ns: time that we last finished a transfer, or 0 if there
+  *	if no record
++ * @end_of_msg_delay: used to set the delay_usecs on the spi_transfer that
++ *      is sent when we want to turn off CS at the end of a transaction.
+  */
+ struct cros_ec_spi {
+ 	struct spi_device *spi;
+ 	s64 last_transfer_ns;
++	unsigned int end_of_msg_delay;
+ };
+ 
+ static void debug_packet(struct device *dev, const char *name, u8 *ptr,
+@@ -238,6 +242,17 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
+ 
+ 	/* turn off CS */
+ 	spi_message_init(&msg);
++
++	if (ec_spi->end_of_msg_delay) {
++		/*
++		 * Add delay for last transaction, to ensure the rising edge
++		 * doesn't come too soon after the end of the data.
++		 */
++		memset(&trans, 0, sizeof(trans));
++		trans.delay_usecs = ec_spi->end_of_msg_delay;
++		spi_message_add_tail(&trans, &msg);
++	}
++
+ 	final_ret = spi_sync(ec_spi->spi, &msg);
+ 	ktime_get_ts(&ts);
+ 	ec_spi->last_transfer_ns = timespec_to_ns(&ts);
+@@ -284,6 +299,17 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
+ 	return 0;
+ }
+ 
++static void cros_ec_spi_dt_probe(struct cros_ec_spi *ec_spi, struct device *dev)
++{
++	struct device_node *np = dev->of_node;
++	u32 val;
++	int ret;
++
++	ret = of_property_read_u32(np, "google,cros-ec-spi-msg-delay", &val);
++	if (!ret)
++		ec_spi->end_of_msg_delay = val;
++}
++
+ static int cros_ec_spi_probe(struct spi_device *spi)
+ {
+ 	struct device *dev = &spi->dev;
+@@ -305,6 +331,9 @@ static int cros_ec_spi_probe(struct spi_device *spi)
+ 	if (!ec_dev)
+ 		return -ENOMEM;
+ 
++	/* Check for any DT properties */
++	cros_ec_spi_dt_probe(ec_spi, dev);
++
+ 	spi_set_drvdata(spi, ec_dev);
+ 	ec_dev->name = "SPI";
+ 	ec_dev->dev = dev;
+-- 
+1.8.4.2
+
