@@ -1,121 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab3LPEwU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 23:52:20 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:26527 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240Ab3LPEwS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 23:52:18 -0500
-X-AuditID: cbfee68f-b7fe36d0000016f8-cc-52ae87004874
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Levente Kurusa'" <levex@linux.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        linux-fbdev@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1386959996-7958-1-git-send-email-levex@linux.com>
- <1386959996-7958-4-git-send-email-levex@linux.com>
-In-reply-to: <1386959996-7958-4-git-send-email-levex@linux.com>
-Subject: Re: [PATCH 3/4] backlight: lcd: call put_device if device_register
- fails
-Date: Mon, 16 Dec 2013 13:52:16 +0900
-Message-id: <006f01cefa1a$97ea4710$c7bed530$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac74NRY3NiDn4atoQRqaMVlhgTIpMwB5IayA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGIsWRmVeSWpSXmKPExsVy+t8zA12G9nVBBjcO6VrMWb+GzeLywkus
-	Fks73rJbnOj7wGpxedccNot1D18wWayff4vNgd3j1YU7LB4nZvxm8XhyZTqTR9+WVYwex29s
-	Z/L4vEkugC2KyyYlNSezLLVI3y6BK+PSts3sBft5K8413WZsYHzF1cXIySEhYCKxZu9sVghb
-	TOLCvfVsXYxcHEICyxgl+vcdYO5i5AAr2rszFKRGSGA6o8Tx8zwQNb8YJQ7ceMYCkmATUJP4
-	8uUwO4gtIhAqcbl/GQtIEbPANUaJKWtnsEJ0F0vs+/6aGcTmFLCXmNM8gRHEFhYIlrixdAeY
-	zSKgKvHt4D+wobwCthJt5zcyQtiCEj8m3wOLMwtoSazfeZwJwpaX2LzmLdSh6hKP/upC3GAk
-	8W7zJXaIEhGJfS/eMYLcIyHwlV3i7tpP7BC7BCS+TT7EAtErK7HpADMkICQlDq64wTKBUWIW
-	ks2zkGyehWTzLCQrFjCyrGIUTS1ILihOSi8y1itOzC0uzUvXS87P3cQIieP+HYx3D1gfYkwG
-	Wj+RWUo0OR+YBvJK4g2NzYwsTE1MjY3MLc1IE1YS573/MClISCA9sSQ1OzW1ILUovqg0J7X4
-	ECMTB6dUA6PHRrn8hkLltKs6oqe6Q3TzbJfOTdnV/crkZ/EVF/ZbBw4VtKjwfcl6bNr/rtba
-	7JgY272f/XZTN3zY9CzmaLHIkYKO/wGn2JIzvSZt3OvEIy5susu+dcfVJ5F/Z/iJ/mLcI/Qj
-	7tLdmorr1cuYLDQr1mqvOx/tE6teOGHxZt4NpXsM76t88FZiKc5INNRiLipOBADWM/42+QIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMKsWRmVeSWpSXmKPExsVy+t9jQV2G9nVBBsdWa1rMWb+GzeLywkus
-	Fks73rJbnOj7wGpxedccNot1D18wWayff4vNgd3j1YU7LB4nZvxm8XhyZTqTR9+WVYwex29s
-	Z/L4vEkugC2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA
-	1y0zB+gYJYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhHWPGpW2b2Qv281ac
-	a7rN2MD4iquLkYNDQsBEYu/O0C5GTiBTTOLCvfVsILaQwHRGiePneboYuYDsX4wSB248YwFJ
-	sAmoSXz5cpgdxBYRCJW43L+MBaSIWeAao8SUtTNYIbqLJfZ9f80MYnMK2EvMaZ7ACGILCwRL
-	3Fi6A8xmEVCV+HbwH9hQXgFbibbzGxkhbEGJH5PvgcWZBbQk1u88zgRhy0tsXvOWGeJodYlH
-	f3UhbjCSeLf5EjtEiYjEvhfvGCcwCs1CMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FwjveLE
-	3OLSvHS95PzcTYzgJPFMegfjqgaLQ4wCHIxKPLwKluuChFgTy4orcw8xSnAwK4nwxlxdGyTE
-	m5JYWZValB9fVJqTWnyIMRno0YnMUqLJ+cAEllcSb2hsYmZkaWRmYWRibk6asJI478FW60Ah
-	gfTEktTs1NSC1CKYLUwcnFINjJqaXIni1zZvnGxbmOcc1fZhiaD3xsWVPxkt1HeeCtdtX7ZC
-	MFKsccns/3e3Ho84pynWdn3ZPrst6X4W88N0cqIeZDo/YX4zu3ElV/0NbkvhLs2IWY9Lq68r
-	fZ9kz2Lk4n1YWrg5Lj3kMJeo6a/Hq1RLFzOF7tJ816OvK/dO4UfWFeuPyp2eSizFGYmGWsxF
-	xYkACpyhL1YDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752600Ab3LPEy0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 23:54:26 -0500
+Received: from [218.249.94.241] ([218.249.94.241]:40829 "EHLO mail.cs2c.com.cn"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752371Ab3LPEyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 23:54:24 -0500
+X-ns-mid: postfix-52AE8197-63825620526
+BANMAU_FRONT_USER_AUTHED: 1
+BANMAU_FRONT_RESULT: 00
+BANMAU_FRONT_SUSPICION_REASON: 0
+X-Forward-For: 112.65.134.2
+Subject: [PATCH] alpha: Enable syscall audit function at alpha architecture
+From: =?gb2312?Q?=B2=CC=D5=FD=C1=FA?= <zhenglong.cai@cs2c.com.cn>
+Reply-To: zhenglong.cai@cs2c.com.cn
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-alpha <linux-alpha@vger.kernel.org>
+Cc: Matt Turner <mattst88@gmail.com>
+Content-Type: text/plain; charset="gb2312"
+Date: Mon, 16 Dec 2013 12:54:54 +0800
+Message-ID: <1387169694.2603.4.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, December 14, 2013 3:40 AM, Levente Kurusa wrote:
-> 
-> Currently we kfree the container of the device which failed to register.
-> This is wrong as the last reference is not given up with a put_device
-> call. Also, now that we have put_device() callen, we no longer need
-> the kfree as the new_ld->dev.release function will take care of kfreeing
-> the associated memory.
-> 
-> Signed-off-by: Levente Kurusa <levex@linux.com>
+Enable system-call auditing support at alpha architecture
 
-(+cc Andrew Morton)
+Signed-off-by: Zhenglong.cai <zhenglong.cai@cs2c.com.cn>
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
+ arch/alpha/Kconfig                   |    3 +++
+ arch/alpha/include/asm/ptrace.h      |    5 +++++
+ arch/alpha/include/asm/thread_info.h |    2 ++
+ arch/alpha/kernel/Makefile           |    1 +
+ arch/alpha/kernel/entry.S            |    6 +++++-
+ arch/alpha/kernel/ptrace.c           |    4 ++++
+ init/Kconfig                         |    2 +-
+ 7 files changed, 21 insertions(+), 2 deletions(-)
+diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
+index d39dc9b..f23ab8b 100644
+--- a/arch/alpha/Kconfig
++++ b/arch/alpha/Kconfig
+@@ -16,6 +16,7 @@ config ALPHA
+        select ARCH_WANT_IPC_PARSE_VERSION
+        select ARCH_HAVE_NMI_SAFE_CMPXCHG
+        select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
++       select AUDIT_ARCH
+        select GENERIC_CLOCKEVENTS
+        select GENERIC_SMP_IDLE_THREAD
+        select GENERIC_STRNCPY_FROM_USER
+@@ -76,6 +77,8 @@ config GENERIC_ISA_DMA
+ source "init/Kconfig"
+ source "kernel/Kconfig.freezer"
+ 
++config AUDIT_ARCH
++       bool
+ 
+ menu "System setup"
+ 
+diff --git a/arch/alpha/include/asm/ptrace.h
+b/arch/alpha/include/asm/ptrace.h
+index 2112850..9047c2f 100644
+--- a/arch/alpha/include/asm/ptrace.h
++++ b/arch/alpha/include/asm/ptrace.h
+@@ -19,4 +19,9 @@
+ 
+ #define force_successful_syscall_return() (current_pt_regs()->r0 = 0)
+ 
++static inline unsigned long regs_return_value(struct pt_regs *regs)
++{
++       return regs->r0;
++}
++
+ #endif
+diff --git a/arch/alpha/include/asm/thread_info.h
+b/arch/alpha/include/asm/thread_info.h
+index 453597b..3d6ce6d 100644
+--- a/arch/alpha/include/asm/thread_info.h
++++ b/arch/alpha/include/asm/thread_info.h
+@@ -70,6 +70,7 @@ register struct thread_info *__current_thread_info
+__asm__("$8");
+ #define TIF_NOTIFY_RESUME      1       /* callback before returning to
+user */
+ #define TIF_SIGPENDING         2       /* signal pending */
+ #define TIF_NEED_RESCHED       3       /* rescheduling necessary */
++#define TIF_SYSCALL_AUDIT      4       /* syscall audit active */
+ #define TIF_DIE_IF_KERNEL      9       /* dik recursion lock */
+ #define TIF_MEMDIE             13      /* is terminating due to OOM
+killer */
+ 
+@@ -77,6 +78,7 @@ register struct thread_info *__current_thread_info
+__asm__("$8");
+ #define _TIF_SIGPENDING                (1<<TIF_SIGPENDING)
+ #define _TIF_NEED_RESCHED      (1<<TIF_NEED_RESCHED)
+ #define _TIF_NOTIFY_RESUME     (1<<TIF_NOTIFY_RESUME)
++#define _TIF_SYSCALL_AUDIT     (1<<TIF_SYSCALL_AUDIT)
+ 
+ /* Work to do on interrupt/exception return.  */
+ #define _TIF_WORK_MASK         (_TIF_SIGPENDING | _TIF_NEED_RESCHED | \
+diff --git a/arch/alpha/kernel/Makefile b/arch/alpha/kernel/Makefile
+index 0d54650..3ecac01 100644
+--- a/arch/alpha/kernel/Makefile
++++ b/arch/alpha/kernel/Makefile
+@@ -17,6 +17,7 @@ obj-$(CONFIG_SRM_ENV) += srm_env.o
+ obj-$(CONFIG_MODULES)  += module.o
+ obj-$(CONFIG_PERF_EVENTS) += perf_event.o
+ obj-$(CONFIG_RTC_DRV_ALPHA) += rtc.o
++obj-$(CONFIG_AUDIT)    += audit.o
+ 
+ ifdef CONFIG_ALPHA_GENERIC
+ 
+diff --git a/arch/alpha/kernel/entry.S b/arch/alpha/kernel/entry.S
+index a969b95..98703d9 100644
+--- a/arch/alpha/kernel/entry.S
++++ b/arch/alpha/kernel/entry.S
+@@ -465,7 +465,11 @@ entSys:
+        .cfi_rel_offset $16, SP_OFF+24
+        .cfi_rel_offset $17, SP_OFF+32
+        .cfi_rel_offset $18, SP_OFF+40
+-       blbs    $3, strace
++#ifdef CONFIG_AUDITSYSCALL
++       lda     $6, _TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT
++       and     $3, $6, $3
++#endif
++       bne     $3, strace
+        beq     $4, 1f
+        ldq     $27, 0($5)
+ 1:     jsr     $26, ($27), alpha_ni_syscall
+diff --git a/arch/alpha/kernel/ptrace.c b/arch/alpha/kernel/ptrace.c
+index 2a4a80f..86d8351 100644
+--- a/arch/alpha/kernel/ptrace.c
++++ b/arch/alpha/kernel/ptrace.c
+@@ -14,6 +14,7 @@
+ #include <linux/security.h>
+ #include <linux/signal.h>
+ #include <linux/tracehook.h>
++#include <linux/audit.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+@@ -316,15 +317,18 @@ long arch_ptrace(struct task_struct *child, long
+request,
+ asmlinkage unsigned long syscall_trace_enter(void)
+ {
+        unsigned long ret = 0;
++       struct pt_regs *regs = current_pt_regs();
+        if (test_thread_flag(TIF_SYSCALL_TRACE) &&
+            tracehook_report_syscall_entry(current_pt_regs()))
+                ret = -1UL;
++       audit_syscall_entry(AUDIT_ARCH_ALPHA, regs->r0, regs->r16,
+regs->r17,
+regs->r18, regs->r19);
+        return ret ?: current_pt_regs()->r0;
+ }
+ 
+ asmlinkage void
+ syscall_trace_leave(void)
+ {
++       audit_syscall_exit(current_pt_regs());
+        if (test_thread_flag(TIF_SYSCALL_TRACE))
+                tracehook_report_syscall_exit(current_pt_regs(), 0);
+ }
+diff --git a/init/Kconfig b/init/Kconfig
+index 79383d3..e58a6d8 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -284,7 +284,7 @@ config AUDIT
+ 
+ config AUDITSYSCALL
+        bool "Enable system-call auditing support"
+-       depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML
+||
+SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
++       depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML
+||
+SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT) || ALPHA)
+        default y if SECURITY_SELINUX
+        help
+          Enable low-overhead system-call auditing infrastructure that
 
-It looks good.
-According to the comment of device_register, put_device()
-should be used, instead of directly freeing.
+-- 
+公司：中标软件有限公司 
+姓名：蔡正龙
+地址：上海市闸北区江场三路26、28号 12号楼 2楼
+电话：021－51060868-8120
+邮编：200436
+Email: zhenglong.cai@cs2c.com.cn
 
-./drivers/base/core.c
-
- * NOTE: _Never_ directly free @dev after calling this function, even
- * if it returned an error! Always use put_device() to give up the
- * reference initialized in this function instead.
- */
-int device_register(struct device *dev)
-{
-        device_initialize(dev);
-        return device_add(dev);
-}
-EXPORT_SYMBOL_GPL(device_register);
-
-Levente Kurusa,
-By the way, don't send the same mails three times, without any
-reason. It is the waste of traffic. :-(
-
-Best regards,
-Jingoo Han
-
-> ---
->  drivers/video/backlight/lcd.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/video/backlight/lcd.c b/drivers/video/backlight/lcd.c
-> index 93cf15e..7de847d 100644
-> --- a/drivers/video/backlight/lcd.c
-> +++ b/drivers/video/backlight/lcd.c
-> @@ -228,7 +228,7 @@ struct lcd_device *lcd_device_register(const char *name, struct device *parent,
-> 
->  	rc = device_register(&new_ld->dev);
->  	if (rc) {
-> -		kfree(new_ld);
-> +		put_device(&new_ld->dev);
->  		return ERR_PTR(rc);
->  	}
-> 
-> --
-> 1.8.3.1
 
