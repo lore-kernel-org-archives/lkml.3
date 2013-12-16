@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab3LPPJt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:09:49 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43471 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab3LPPJo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:09:44 -0500
-Date: Mon, 16 Dec 2013 15:09:37 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: (max8997) Handle the potential error for
- mfd_add_devices
-Message-ID: <20131216150937.GO18769@lee--X1>
-References: <1387194424-2701-1-git-send-email-lpapp@kde.org>
- <20131216134633.GI18769@lee--X1>
- <CAOMwXhOnHNrzEvf0+QRn6dGb42xR9a33joZcou3ancwSYe36Ug@mail.gmail.com>
+	id S1754600Ab3LPPJz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:09:55 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:55373 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754564Ab3LPPJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 10:09:53 -0500
+Message-ID: <52AF17A6.3060007@ti.com>
+Date: Mon, 16 Dec 2013 10:09:26 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMwXhOnHNrzEvf0+QRn6dGb42xR9a33joZcou3ancwSYe36Ug@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, <prabhakar.csengg@gmail.com>,
+        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/2] gpio: davinci: reuse for keystone arch
+References: <1386871973-26762-1-git-send-email-grygorii.strashko@ti.com> <52ACAD50.6060003@ti.com> <52ADB3BC.3080605@ti.com>
+In-Reply-To: <52ADB3BC.3080605@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I think you commented on the wrong patch. There has been a newer submitted.
+On Sunday 15 December 2013 08:50 AM, Sekhar Nori wrote:
+> On Sunday 15 December 2013 12:41 AM, Santosh Shilimkar wrote:
+>> Linus, Sekhar,
+>>
+>> On Thursday 12 December 2013 01:12 PM, Grygorii Strashko wrote:
+>>> This series is intended to update Davinci GPIO driver and reuse
+>>> it for Keystone SoCs, because Keystone uses the similar GPIO IP like Davinci.
+>>> Keystone GPIO IP: supports:
+>>> - up to 32 GPIO lines;
+>>> - only unbanked irqs;
+>>>
+>>> See Documentation:
+>>> Keystone - http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
+>>>
+>>> This series depends on:
+>>> [1] "[PATCH 1/2] gpio: davinci: Fix a check for unbanked gpio"
+>>> https://lkml.org/lkml/2013/11/8/22
+>>> [2] "[PATCH v6 0/6] gpio: daVinci: cleanup and feature enhancement"
+>>> https://www.mail-archive.com/devicetree@vger.kernel.org/msg05970.html
+>>> [3] "gpio: davinci: get rid of DAVINCI_N_GPIO"
+>>> https://lkml.org/lkml/2013/11/26/405
+>>> [4] "gpio: introduce GPIO_DAVINCI kconfig option"
+>>> https://lkml.org/lkml/2013/11/26/435
+>>> [5] "gpio: davinci: use chained_irq_enter/chained_irq_exit API"
+>>> https://lkml.org/lkml/2013/11/26/428
+>>>
+>>> To handle all dependencies, I've created a branch where I collected all 
+>>> "ready to merge" patches (all acks added in patches) and this series:
+>>> - https://github.com/grygoriyS/linux.git
+>>> - branch: keystone-master-gpio-for-next
+>>>
+>> Can one of you pull all these patches ?
+> 
+> So I went through my backlog and queued all that I think is ready. Here
+> is the branch. Let me know if there is anything else missing.
+>
+The $subject series (2 patches) don't seems to be on your branch.
 
-No top posting please.
+Regards,
+Santosh
+ 
 
-> > The $SUBJECT line is wrong. To see how a subsystem usually formats
-> > theirs you must do something like `git log --oneline -- <subsystem>`.
-> > And duplicate the format.
-> >
-> > Commit message?
 
-These comments are still relevant, please re-post your patch with the
-points rectified.
 
-> >> Signed-off-by: Laszlo Papp <lpapp@kde.org>
-> >> ---
-> >>  drivers/mfd/max8997.c | 10 +++++-----
-> >>  1 file changed, 5 insertions(+), 5 deletions(-)
-> >>
-> >> diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
-> >> index 791aea3..c7cc235 100644
-> >> --- a/drivers/mfd/max8997.c
-> >> +++ b/drivers/mfd/max8997.c
-> >> @@ -227,19 +227,19 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
-> >>       pm_runtime_set_active(max8997->dev);
-> >>
-> >>       max8997_irq_init(max8997);
-> >> -
-> >> -     mfd_add_devices(max8997->dev, -1, max8997_devs,
-> >> +     ret = mfd_add_devices(max8997->dev, -1, max8997_devs,
-> >>                       ARRAY_SIZE(max8997_devs),
-> >>                       NULL, 0, NULL);
-> >> +     if (ret < 0) {
-> >> +             dev_err(dev, "cannot add mfd cells\n");
-> >> +             goto err_mfd;
-> >> +     }
-> >
-> > Have you tested this patch on h/w? Did you even compile it?
-
-You must ensure to test your patches before sending to the MLs, it's
-the very least we expect.
-
-> >>       /*
-> >>        * TODO: enable others (flash, muic, rtc, battery, ...) and
-> >>        * check the return value
-> >>        */
-> >>
-> >> -     if (ret < 0)
-> >> -             goto err_mfd;
-> >> -
-> >>       /* MAX8997 has a power button input. */
-> >>       device_init_wakeup(max8997->dev, pdata->wakeup);
-> >>
-> >
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
