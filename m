@@ -1,150 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab3LPNQj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 08:16:39 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:55613 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753702Ab3LPNQh (ORCPT
+	id S1753992Ab3LPNRb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 08:17:31 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:49679 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753682Ab3LPNR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 08:16:37 -0500
-Date: Mon, 16 Dec 2013 11:16:28 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH] perf kvm: introduce --list-cmds for use by scripts
-Message-ID: <20131216131628.GA2368@infradead.org>
-References: <52A9E9F3.4090801@gmail.com>
- <1386869211-1971-1-git-send-email-artagnon@gmail.com>
+	Mon, 16 Dec 2013 08:17:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386869211-1971-1-git-send-email-artagnon@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <52ABB150.1030702@broadcom.com>
+References: <1381174108-25168-1-git-send-email-syin@broadcom.com>
+	<1386787041-6035-1-git-send-email-syin@broadcom.com>
+	<1386787041-6035-5-git-send-email-syin@broadcom.com>
+	<CACRpkdY7s+eUFkg0AsaN5B9-1y_mTJ29Y-D9CkRG2GQ3JshP+w@mail.gmail.com>
+	<52ABB150.1030702@broadcom.com>
+Date: Mon, 16 Dec 2013 14:17:29 +0100
+Message-ID: <CACRpkdZ5Cxii48CsVJzEaBhvZOs8JCcR_hJV=RczhHbW4aqG-w@mail.gmail.com>
+Subject: Re: [PATCH v3 4/6] pinctrl: Add pinctrl binding for Broadcom Capri SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sherman Yin <syin@broadcom.com>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Dec 12, 2013 at 10:56:51PM +0530, Ramkumar Ramachandra escreveu:
-> Introduce
-> 
->   $ perf kvm --list-cmds
-> 
-> to dump a raw list of commands for use by the completion script. While
-> at it, refactor kvm_usage so that there's only one copy of the command
-> listing.
-> 
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-> ---
->  David Ahern wrote:
->  > That would work -- perhaps a #define or string near
->  >
->  >    const char * const kvm_usage[] = {
->  >         "perf kvm [<options>] {top|record|report|diff|buildid-list|stat}",
->  >         NULL
->  >     };
->  >
->  > Building kvm_usage from the string would better - only 1 place listing the
->  > commands.
-> 
->  Something like this, perhaps? It's not too pretty though: do you have
->  suggestions to prettify it?
+On Sat, Dec 14, 2013 at 2:16 AM, Sherman Yin <syin@broadcom.com> wrote:
 
-Yes:
+>>> +- bias-pull-up:                        Integer. Pull up strength in Ohm:
+>>> +                                       1: 1.2 kOhm
+>>> +                                       2: 1.8 kOhm
+>>> +                                       3: 720 Ohm
+>>> +                                       4: 2.7 kOhm
+>>> +                                       5: 831 Ohm
+>>> +                                       6: 1.08 kOhm
+>>> +                                       7: 568 Ohm
+>>
+>>
+>> Please do not use these custom enumerators 1 thru 7.
+>> Instead say that the argument is given in ohms, so for
+>> example:
+>>
+>> bias-pull-up = <12000>;
+>>
+>> Then translate this into the proper enumerator in your
+>> driver instead.
+>
+> Ok.  The 3 bits in this enumeration correspond to enabling the 3 pull up Rs
+> (1.2k, 1.8k, 2.7k) in parallel, so the enum kind of make sense. But sure I
+> can change it to actual ohms and will error out in the driver if specified
+> value is not one of the 7.
 
-Don't do all those things open coded, introduce functions to print,
-concat, etc.
+Aha, that's how they do it :-)
 
-The best thing tho, since we have all those sub sub commands in things
-like 'perf kvm', 'perf bench', etc, we could have some
-parse_options_subcmd, and make the parse options machinery aware of
-this, so that it could receive an array of subcmds and when asked for
---list-cmds, would print that sublist, etc, i.e. make sub cmds a first
-class citizen.
+Please write this in a comment in the driver because it makes
+it a lot easier to understand what is going on, and e.g. how to
+fuzz an apropriate resistance.
 
-So I'd suggest that you first introduce functions for doing the concat
-to pass to the current infrastructure, so that we have what your patch
-provides, but prettified, then, as follow on patches, you could work on
-making the options parsing machinery aware of sub cmds.
+Can you tell me something about how such resistors are produced
+in silicon?
 
-Ah, and try not using fixed sized arrays, or at least verify that space
-is available, i.e. never use strcat, use strncat, better, take a look at
-tools/perf/util/strbuf.h, I guess you can use it to build the string for
-you in a safe way and expanding the buffer as needed, etc.
-
-- Arnaldo
- 
->  tools/perf/builtin-kvm.c      | 25 +++++++++++++++++++++----
->  tools/perf/perf-completion.sh |  2 +-
->  2 files changed, 22 insertions(+), 5 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-> index c6fa3cb..ce44a9b 100644
-> --- a/tools/perf/builtin-kvm.c
-> +++ b/tools/perf/builtin-kvm.c
-> @@ -1672,6 +1672,7 @@ __cmd_buildid_list(const char *file_name, int argc, const char **argv)
->  int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
->  {
->  	const char *file_name = NULL;
-> +	bool list_cmds = false;
->  	const struct option kvm_options[] = {
->  		OPT_STRING('i', "input", &file_name, "file",
->  			   "Input file name"),
-> @@ -1692,20 +1693,36 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
->  			   "file", "file saving guest os /proc/modules"),
->  		OPT_INCR('v', "verbose", &verbose,
->  			    "be more verbose (show counter open errors, etc)"),
-> +		OPT_BOOLEAN(0, "list-cmds", &list_cmds,
-> +			"list commands raw for use by scripts"),
->  		OPT_END()
->  	};
->  
-> +	const char *const commands[] = { "top", "record", "report", "diff",
-> +					 "buildid-list", "stat", NULL };
-> +	char kvm_usage_str[80];
-> +	const char *kvm_usage[] = { NULL, NULL };
->  
-> -	const char * const kvm_usage[] = {
-> -		"perf kvm [<options>] {top|record|report|diff|buildid-list|stat}",
-> -		NULL
-> -	};
-> +	sprintf(kvm_usage_str, "%s", "perf kvm [<options>] {");
-> +	for (int i = 0; commands[i]; i++) {
-> +		if (i)
-> +			strcat(kvm_usage_str, "|");
-> +		strcat(kvm_usage_str, commands[i]);
-> +	}
-> +	strcat(kvm_usage_str, "}");
-> +
-> +	kvm_usage[0] = kvm_usage_str;
->  
->  	perf_host  = 0;
->  	perf_guest = 1;
->  
->  	argc = parse_options(argc, argv, kvm_options, kvm_usage,
->  			PARSE_OPT_STOP_AT_NON_OPTION);
-> +	if (list_cmds) {
-> +		for (int i = 0; commands[i]; i++)
-> +			printf("%s ", commands[i]);
-> +		return 0;
-> +	}
->  	if (!argc)
->  		usage_with_options(kvm_usage, kvm_options);
->  
-> diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
-> index 496e2ab..d8bfa43 100644
-> --- a/tools/perf/perf-completion.sh
-> +++ b/tools/perf/perf-completion.sh
-> @@ -123,7 +123,7 @@ __perf_main ()
->  		__perfcomp_colon "$evts" "$cur"
->  	# List subcommands for 'perf kvm'
->  	elif [[ $prev == "kvm" ]]; then
-> -		subcmds="top record report diff buildid-list stat"
-> +		subcmds=$($cmd kvm --list-cmds)
->  		__perfcomp_colon "$subcmds" "$cur"
->  	# List long option names
->  	elif [[ $cur == --* ]];  then
-> -- 
-> 1.8.5.1.113.g8cb5bef.dirty
+Yours,
+Linus Walleij
