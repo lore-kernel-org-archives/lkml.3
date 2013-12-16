@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab3LPGNL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 01:13:11 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:45059 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab3LPGNK (ORCPT
+	id S1752643Ab3LPGN2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 01:13:28 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:45484 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752571Ab3LPGN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 01:13:10 -0500
-Message-ID: <52AE98FD.3060704@huawei.com>
-Date: Mon, 16 Dec 2013 14:09:01 +0800
-From: Xie XiuQi <xiexiuqi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Mon, 16 Dec 2013 01:13:26 -0500
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86, smp: fix misleading native_stop_other_cpus() description
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.18]
-X-CFilter-Loop: Reflected
+Date: Mon, 16 Dec 2013 14:13:25 +0800
+Message-ID: <CAPgLHd-C925=6rEnQMMkPvHu6+w_BHcJ1-CG8PdK37XM9dzf_A@mail.gmail.com>
+Subject: [PATCH -next] drm/i915: fix return value check of debugfs_create_file()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: daniel.vetter@ffwll.ch, airlied@linux.ie
+Cc: yongjun_wei@trendmicro.com.cn, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The description should be for native_stop_other_cpus() instead of
-smp_reboot_interrupt().
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
+In case of error, the function debugfs_create_file() returns NULL
+pointer not ERR_PTR() if debugfs is enabled. The IS_ERR() test in
+the return value check should be replaced with NULL test.
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- arch/x86/kernel/smp.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/i915_debugfs.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index 7c3a5a6..f295a18 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -164,10 +164,6 @@ static int smp_stop_nmi_callback(unsigned int val, struct pt_regs *regs)
- 	return NMI_HANDLED;
+diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
+index 7008aac..856e18b 100644
+--- a/drivers/gpu/drm/i915/i915_debugfs.c
++++ b/drivers/gpu/drm/i915/i915_debugfs.c
+@@ -1920,8 +1920,8 @@ static int i915_pipe_crc_create(struct dentry *root, struct drm_minor *minor,
+ 	info->dev = dev;
+ 	ent = debugfs_create_file(info->name, S_IRUGO, root, info,
+ 				  &i915_pipe_crc_fops);
+-	if (IS_ERR(ent))
+-		return PTR_ERR(ent);
++	if (!ent)
++		return -ENOMEM;
+ 
+ 	return drm_add_fake_info_node(minor, ent, info);
  }
-
--/*
-- * this function calls the 'stop' function on all other CPUs in the system.
-- */
--
- asmlinkage void smp_reboot_interrupt(void)
- {
- 	ack_APIC_irq();
-@@ -176,6 +172,9 @@ asmlinkage void smp_reboot_interrupt(void)
- 	irq_exit();
+@@ -2931,8 +2931,8 @@ static int i915_forcewake_create(struct dentry *root, struct drm_minor *minor)
+ 				  S_IRUSR,
+ 				  root, dev,
+ 				  &i915_forcewake_fops);
+-	if (IS_ERR(ent))
+-		return PTR_ERR(ent);
++	if (!ent)
++		return -ENOMEM;
+ 
+ 	return drm_add_fake_info_node(minor, ent, &i915_forcewake_fops);
  }
-
-+/*
-+ * this function calls the 'stop' function on all other CPUs in the system.
-+ */
- static void native_stop_other_cpus(int wait)
- {
- 	unsigned long flags;
--- 
-1.8.2.2
-
+@@ -2949,8 +2949,8 @@ static int i915_debugfs_create(struct dentry *root,
+ 				  S_IRUGO | S_IWUSR,
+ 				  root, dev,
+ 				  fops);
+-	if (IS_ERR(ent))
+-		return PTR_ERR(ent);
++	if (!ent)
++		return -ENOMEM;
+ 
+ 	return drm_add_fake_info_node(minor, ent, fops);
+ }
 
