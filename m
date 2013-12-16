@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab3LPNBg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 08:01:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24730 "EHLO mx1.redhat.com"
+	id S1754103Ab3LPNCF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 08:02:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55328 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753914Ab3LPNBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 08:01:33 -0500
-Message-ID: <52AEF997.906@redhat.com>
-Date: Mon, 16 Dec 2013 08:01:11 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1753914Ab3LPNCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 08:02:01 -0500
+Date: Mon, 16 Dec 2013 14:01:57 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+cc: Dan Carpenter <dan.carpenter@oracle.com>, thomas@m3y3r.de, list@osuosl.org,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
+        HID CORE LAYER <linux-input@vger.kernel.org>,
+        devel@linuxdriverproject.org
+Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to
+ memdup
+In-Reply-To: <52459942.3020600@canonical.com>
+Message-ID: <alpine.LNX.2.00.1312161401100.12882@pobox.suse.cz>
+References: <5237430B.5040009@canonical.com> <20130916203824.GP25896@mwanda> <52376ED9.5080208@canonical.com> <20130916210503.GQ25896@mwanda> <5237A5D5.8010006@canonical.com> <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz> <52432152.3030100@canonical.com>
+ <alpine.LNX.2.00.1309271250130.18703@pobox.suse.cz> <52459942.3020600@canonical.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: Joe Perches <joe@perches.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/3] Introduce FW_INFO* functions and messages
-References: <1385997579-22240-1-git-send-email-prarit@redhat.com> <1385997579-22240-2-git-send-email-prarit@redhat.com> <20131203132120.6a7ab2cd7cc99720712cbe6a@linux-foundation.org> <201312041922.59181.arnd@arndb.de> <20131205113016.GB3823@console-pimps.org> <1386258903.10003.8.camel@joe-AO722> <20131206123026.GB3597@console-pimps.org>
-In-Reply-To: <20131206123026.GB3597@console-pimps.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 27 Sep 2013, Joseph Salisbury wrote:
 
-Sorry everyone, I was out on PTO for the past few weeks.
+> >> commit b1a1442a23776756b254b69786848a94d92445ba
+> >> Author: Jiri Kosina <jkosina@suse.cz>
+> >> Date: Mon Jun 3 11:27:48 2013 +0200
+> >>
+> >>     HID: core: fix reporting of raw events
+> >>
+> >> Reverting this commit in v3.12-rc2 prevents the system from locking up, 
+> >> which happens when connecting a bluetooth trackpad.
+> >>
+> >> Jiri, do you think we should revert this patch, or is there some further 
+> >> debugging/data collecting you would like to do?
+> > Hi Joseph,
+> >
+> > in this mail:
+> >
+> > 	Message-ID: <5241992E.3090805@canonical.com>
+> > 	Date: Tue, 24 Sep 2013 09:52:46 -0400
+> >
+> > you said that reverting this commit doesn't prevent the lockups, so I am 
+> > rather confused ... ?
+> >
+> > Thanks,
+> >
+> The testing was invalid.  Reverting commit b1a1442 does resolve the bug
+> and stop the lockups.
+
+Okay, I finally got some sense of this, sorry for the delay.
+
+Could you please test with the patch below, instead of reverting 
+b1a1442a23? Thanks a lot.
 
 
-On 12/06/2013 07:30 AM, Matt Fleming wrote:
-> On Thu, 05 Dec, at 07:55:03AM, Joe Perches wrote:
->> On Thu, 2013-12-05 at 11:30 +0000, Matt Fleming wrote:
->>> On Wed, 04 Dec, at 07:22:57PM, Arnd Bergmann wrote:
->>>> The other part I noticed about this particular patchset is that it's
->>>> not really "firmware" as such, but specifically PC wiht ACPI that
->>>> gets covered here. So rather than generalizing the code, another
->>>> option would be to narrow down the scope and make it
->>>> acpi_{warn,info,dbg} instead.
->>>
->>> Making this specific to ACPI runs the risk of people introducing a
->>> multitude of new logging functions for every subsystem, e.g.
->>> efi_{warn,info,dbg}.
->>
->> There are many subsystem specific logging functions:
-> 
-> Surely that's further justification to not introduce any more.
 
-That's what I was thinking when I saw this discussion.
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 253fe23..81eacd3 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1334,7 +1334,7 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
+ 		csize--;
+ 	}
+ 
+-	rsize = ((report->size - 1) >> 3) + 1;
++	rsize = ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
+ 
+ 	if (rsize > HID_MAX_BUFFER_SIZE)
+ 		rsize = HID_MAX_BUFFER_SIZE;
 
-> 
->>> FWIW, I'd be interested in using something like this patch series to
->>> properly log EFI implementation bugs. The logging for EFI is currently
->>> done fairly haphazardly.
->>
->> I thought that was the point of embedding the existing
->> FW_INFO, FW_WARN and FW_BUG #defines in formats.
->>
->> Using logging message scraping to find faults is not
->> a great approach as message content is subject to change.
-> 
-> I wasn't planning on using them to scrape the kernel logs, just for more
-> informative messages.
-
-Exactly.  That's the whole point here -- the only mechanism that exists for
-tracking firwmare related issues, like it or not, is the kernel log/dmesg/boot
-log/whatever we're calling it these days.  It's been done this way since the
-beginning of time.
-
-The problem I'm trying to solve, and as Andrew commented on, is a *real*
-problem.  The information we currently dump out is not useful to anyone.
-
-Could this be expanded to other subsystems?  Yes, without question.  It's
-actually the ACPI and PCI subsystems that I want to target next, however, both
-of those will require a base change to FW_{INFO|WARN|BUG} to at least get us a
-starting point.
-
-P.
-
-> 
+-- 
+Jiri Kosina
+SUSE Labs
