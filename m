@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab3LPOKQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 09:10:16 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:45011 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab3LPOKN (ORCPT
+	id S1754293Ab3LPOVx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 09:21:53 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:64815 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab3LPOVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 09:10:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <1387140035-12234-1-git-send-email-olaf@aepfle.de>
-References: <1387140035-12234-1-git-send-email-olaf@aepfle.de>
-Date: Mon, 16 Dec 2013 15:10:11 +0100
-X-Google-Sender-Auth: jq4pmLh_vHVN_m-hTtRjOyKJt-s
-Message-ID: <CAMuHMdX1fLsmRmJfOB3+CzDomT67G+d-S23YGtvvJad3Kthz-Q@mail.gmail.com>
-Subject: Re: [PATCH] fbmem: really support wildcard video=options for all
- fbdev drivers
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 16 Dec 2013 09:21:51 -0500
+From: xqx12 <s2exqx@gmail.com>
+To: gregkh@linuxfoundation.org, jslaby@suse.cz
+Cc: linux-kernel@vger.kernel.org, chyyuu@gmail.com, xuyongjiande@gmail.com,
+        xqx12 <xiaoqixue_1@163.com>
+Subject: [PATCH] tty: an overflow of multiplication in drivers/tty/cyclades.c
+Date: Mon, 16 Dec 2013 22:21:36 +0800
+Message-Id: <1387203696-10759-1-git-send-email-xiaoqixue_1@163.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 15, 2013 at 9:40 PM, Olaf Hering <olaf@aepfle.de> wrote:
-> Documentation/fb/modedb.txt states that video=option should be
-> considered a global option. But video_setup and fb_get_options are not
-> coded that way. Instead its required to boot with video=driver:option to
-> set a given option in drvier.  This is cumbersome because it requires to
-> know in advance which driver will be active for a given board/kernel.
+there is an overflow in the code :
+cyz_polling_cycle = (arg * HZ) / 1000,
+the multiplicator arg comes from user, so it may be an overflow if
+arg is a big number. And the value of cyc_polling_cycle will be
+wrong when it is used next time.
 
-That's an interesting finding: this definitely was working fine a few years ago.
-Unfortunately I have no idea when I used it recently. I'm 100% sure I used it
-with ps3fb ca. 5 years ago.
+Reported-by: Qixue Xiao <xiaoqixue_1@163.com>
+Suggested-by: Yongjian Xu <xuyongjiande@gmail.com>
+Suggested-by: Yu Chen <chyyuu@gmail.com>
+Signed-off-by: Qixue Xiao <xiaoqixue_1@163.com>
+---
+ drivers/tty/cyclades.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Gr{oetje,eeting}s,
+diff --git a/drivers/tty/cyclades.c b/drivers/tty/cyclades.c
+index cfeec97..7eec1c5 100644
+--- a/drivers/tty/cyclades.c
++++ b/drivers/tty/cyclades.c
+@@ -2728,7 +2728,8 @@ cy_ioctl(struct tty_struct *tty,
+ 		break;
+ #ifndef CONFIG_CYZ_INTR
+ 	case CYZSETPOLLCYCLE:
++		if (arg > LONG_MAX / HZ)
++			return -ENODEV;
+ 		cyz_polling_cycle = (arg * HZ) / 1000;
+ 		break;
+ 	case CYZGETPOLLCYCLE:
+-- 
+1.7.9.5
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
