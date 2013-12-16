@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab3LPVGB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 16:06:01 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59351 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab3LPVGA (ORCPT
+	id S1752693Ab3LPVLI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 16:11:08 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:34895 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535Ab3LPVLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 16:06:00 -0500
-Date: Mon, 16 Dec 2013 21:05:57 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Message-ID: <20131216210557.GC3185@sirena.org.uk>
-References: <1387100211-19101-1-git-send-email-shc_work@mail.ru>
- <20131216205020.GY3185@sirena.org.uk>
- <1387227746.558174684@f210.i.mail.ru>
+	Mon, 16 Dec 2013 16:11:06 -0500
+From: Paul Moore <paul@paul-moore.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@parisplace.org>, Evan McNabb <emcnabb@redhat.com>,
+        Jan Stancek <jstancek@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] selinux: selinux_setprocattr()->ptrace_parent() needs rcu_read_lock()
+Date: Mon, 16 Dec 2013 16:11:01 -0500
+Message-ID: <8164425.ZmoIzv0qh9@sifl>
+User-Agent: KMail/4.11.4 (Linux/3.12.4-gentoo; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <20131214163256.GA21675@redhat.com>
+References: <20131205165953.GA24844@redhat.com> <CAHC9VhQPn-aZ79BcO=Ljvn2V2fW9QdQ964M_yppJWoaQ-9_GLg@mail.gmail.com> <20131214163256.GA21675@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y/KK5WT0dXhrzWcJ"
-Content-Disposition: inline
-In-Reply-To: <1387227746.558174684@f210.i.mail.ru>
-X-Cookie: Yow!  I threw up on my window!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: irq: Allow using zero value for ack_base
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday, December 14, 2013 05:32:56 PM Oleg Nesterov wrote:
+> On 12/14, Paul Moore wrote:
+> > ... I'm curious about the removal of the task lock; shouldn't we keep
+> > the task lock in place?
+> 
+> Why? It protects nothing in this case, afaics. Unless of course it
+> protects cred->security somehow, but it doesn't look as if.
+> 
+> Probably task_lock() is here because PTRACE_ATTACH used the same lock,
+> but this was changed by 4b105cbbaf7c0 in 2009 (ptrace_attach() still
+> takes it for __ptrace_may_access() but this is another story).
+> 
+> However (iirc) PTRACE_DETACH never took this lock, so this was always
+> racy and task_lock() is simply misleading and confusing, at least
+> currently.
 
---y/KK5WT0dXhrzWcJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Okay, you convinced me.
 
-On Tue, Dec 17, 2013 at 01:02:26AM +0400, Alexander Shiyan wrote:
+> So I think the patch is fine, but I decided to send v2 without pid_alive().
+> If we are going to keep ptrace_parent(), it would be better to add the
+> comment into ptrace_parent() to explain that ->ptrace != 0 guarantees that
+> this task is not unhashed.
+> 
+> IOW, I also changed my mind about this part
+> 
+> 	The patch also checks pid_alive(p) before ptrace_parent(p) to
+> 	ensure that this task can't be dead even before rcu_read_lock(),
+> 	in this case its ->parent points to nowhere. This is not really
+> 	needed "in practice", task->ptrace must be already cleared in
+> 	this case but we should not rely on this.
+> 
+> in the changelog.
 
-> > I guess this is for some driver you're upstreaming so a signed tag would
-> > be useful? =20
+Seems reasonable to me.  I'll let you work on the ptrace_parent() side of 
+things and I'll go ahead and merge your v2 patch; it looks fine to me and 
+regardless of what happens with ptrace_parent() we should dump the task_lock() 
+and add a RCU lock in its place.
 
-> I plan to use regmap-irq for migration mc13xxx MFD core to use IRQ domain=
-s.
-> It will not be so soon.
+Thanks for your help.
 
-OK, well let me know if you do need a signed tag and I'll do one.
+-- 
+paul moore
+www.paul-moore.com
 
---y/KK5WT0dXhrzWcJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSr2sxAAoJELSic+t+oim9Q0cP/iWTiy2wQJbFApABIKzQF+b6
-cdpOiCSE8wGxIh9HwTaYSQ60j2SmfeQDVcH7bXcct72HFUikbkKIlCCUeSY8rKNa
-xbPL2tf+mycgqXj6O9lbC3YQnDslSzjqznfG8ats2Vki/csBHPBZbh6+A5xbQhIR
-Q0ukt/h9lTwjqGr+4frruExrpcHSG9IBHPaZdikmZ6uetksHqtyJL+C3ZLrzzaQk
-XIeSxVruyKHWUQpM7Pe6FAUwzPjmHcpOTSzSnT//4Jk8WvDtyi/L7tQAcwQIl3lX
-c24+RiPeKVmc32+/34sGR+vvY0XMi/Il8wEQdU2Gg8BgLjVMy6V6mYrp2nryYD1w
-BJMSKd9YyAYkeG1e6wYJmQrC/FMxNdJ4Ix4JLIJ9rfVH6UI/yjc0oUmbf3zIo3qP
-cPaOl/jDBpXVHSQGZ1nzeeR/EoBXvB96I9BomuMhrfqA6tO6nj8oEkSsOPHzR8gv
-tFobw9X372kXYkADMAoDCiQv9CjkvgEOZsQrO2ReUUjuXvmwp8erw6PR+izj3Mlz
-NwKDvzFoc/m5Awr2nf3Ib2FURpV15Kdlgeazldn/Q45vV/UNhtFvuFmgtkL7FpNb
-Z+lkWaP9zAQhAluyjl8trhPNAW4Ynz4MGYgG1yDe5M5tA9N3D5LksP2zg7SNP1yW
-T3o+D8Q3D9vq7PTO78EF
-=MhEo
------END PGP SIGNATURE-----
-
---y/KK5WT0dXhrzWcJ--
