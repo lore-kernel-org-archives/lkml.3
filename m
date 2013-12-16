@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab3LPJdd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 04:33:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47050 "EHLO mx1.redhat.com"
+	id S1753304Ab3LPJdg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 04:33:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60359 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752435Ab3LPJd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 04:33:28 -0500
+	id S1752435Ab3LPJdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 04:33:33 -0500
 From: Dave Young <dyoung@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
@@ -14,451 +14,424 @@ Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
         kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
         matt@console-pimps.org, toshi.kani@hp.com, akpm@linux-foundation.org,
         mingo@kernel.org, msalter@redhat.com, leif.lindholm@linaro.org
-Subject: [PATCH v6 12/14] x86: export x86 boot_params to sysfs
-Date: Mon, 16 Dec 2013 17:30:33 +0800
-Message-Id: <1387186235-15972-13-git-send-email-dyoung@redhat.com>
+Subject: [PATCH v6 09/14] efi: passing kexec necessary efi data via setup_data
+Date: Mon, 16 Dec 2013 17:30:30 +0800
+Message-Id: <1387186235-15972-10-git-send-email-dyoung@redhat.com>
 In-Reply-To: <1387186235-15972-1-git-send-email-dyoung@redhat.com>
 References: <1387186235-15972-1-git-send-email-dyoung@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kexec-tools use boot_params for getting the 1st kernel hardware_subarch,
-the kexec kernel efi runtime support also need read the old efi_info from
-boot_params. Currently it exists in debugfs which is not a good place for
-such infomation. Per HPA, we should avoid of "sploit debugfs".
+Add a new setup_data type SETUP_EFI for kexec use.
+Passing the saved fw_vendor, runtime, config tables and efi runtime mappings.
 
-In this patch /sys/kernel/boot_params are exported, also the setup_data is
-exported as a subdirectory. kexec-tools is using debugfs for hardware_subarch
-for a long time now so we're not removing it yet.
+When entering virtual mode, directly mapping the efi runtime ragions which
+we passed in previously. And skip the step to call SetVirtualAddressMap.
 
-Structure is like below:
+Specially for HP z420 workstation we need save the smbios physical address.
+The kernel boot sequence proceeds in the following order.  Step 2
+requires efi.smbios to be the physical address.  However, I found that on
+HP z420 EFI system table has a virtual address of SMBIOS in step 1.  Hence,
+we need set it back to the physical address with the smbios in
+efi_setup_data.  (When it is still the physical address, it simply sets
+the same value.)
 
-/sys/kernel/boot_params
-|__ data                /* boot_params in binary*/
-|__ setup_data
-|   |__ 0               /* the first setup_data node */
-|   |   |__ data        /* setup_data node 0 in binary*/
-|   |   |__ type        /* setup_data type of setup_data node 0, hex string */
-[snip]
-|__ version             /* boot protocal version (in hex, "0x" prefixed)*/
+1. efi_init() - Set efi.smbios from EFI system table
+2. dmi_scan_machine() - Temporary map efi.smbios to access SMBIOS table
+3. efi_enter_virtual_mode() - Map EFI ranges
 
-Changelog:
-Greg: use __ATTR_RO() and group attr.
-Matt and Boris: Documentation improvement, code indentation.
-Documentation fix.
+Tested on ovmf+qemu, lenovo thinkpad, a dell laptop and an
+HP z420 workstation.
+
+v2: refresh based on previous patch changes, code cleanup.
+v3: use ioremap instead of phys_to_virt for efi_setup
+v5: improve some code structure per comments from Matt
+    Boris: improve code structure, spell fix, etc.
+    Improve changelog from Toshi.
+    change the variable efi_setup to the physical address of efi setup_data
+    instead of the ioremapped virt address
+v6: Boris: Documentation fixes
+           move parse_efi_setup to efi_$(BITS).c
+    Matt: check return value of efi_reuse_config
 
 Signed-off-by: Dave Young <dyoung@redhat.com>
-Acked-by: Borislav Petkov <bp@suse.de>
 ---
- Documentation/ABI/testing/sysfs-kernel-boot_params |  38 +++
- arch/x86/kernel/Makefile                           |   1 +
- arch/x86/kernel/ksysfs.c                           | 339 +++++++++++++++++++++
- 3 files changed, 378 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-kernel-boot_params
- create mode 100644 arch/x86/kernel/ksysfs.c
+ arch/x86/include/asm/efi.h            |  12 +++
+ arch/x86/include/uapi/asm/bootparam.h |   1 +
+ arch/x86/kernel/setup.c               |   3 +
+ arch/x86/platform/efi/efi.c           | 192 +++++++++++++++++++++++++++++-----
+ arch/x86/platform/efi/efi_32.c        |   1 +
+ arch/x86/platform/efi/efi_64.c        |   5 +
+ 6 files changed, 190 insertions(+), 24 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-kernel-boot_params b/Documentation/ABI/testing/sysfs-kernel-boot_params
-new file mode 100644
-index 0000000..eca38ce
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-kernel-boot_params
-@@ -0,0 +1,38 @@
-+What:		/sys/kernel/boot_params
-+Date:		December 2013
-+Contact:	Dave Young <dyoung@redhat.com>
-+Description:	The /sys/kernel/boot_params directory contains two
-+		files: "data" and "version" and one subdirectory "setup_data".
-+		It is used to export the kernel boot parameters of an x86
-+		platform to userspace for kexec and debugging purpose.
+diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+index 9fbaeb2..4f81328 100644
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -133,6 +133,18 @@ extern void efi_sync_low_kernel_mappings(void);
+ extern void efi_setup_page_tables(void);
+ extern void __init old_map_region(efi_memory_desc_t *md);
+ 
++struct efi_setup_data {
++	u64 fw_vendor;
++	u64 runtime;
++	u64 tables;
++	u64 smbios;
++	u64 reserved[8];
++	efi_memory_desc_t map[0];
++};
 +
-+		If there's no setup_data in boot_params the subdirectory will
-+		not be created.
++extern u64 efi_setup;
++extern void parse_efi_setup(u64 phys_addr);
 +
-+		"data" file is the binary representation of struct boot_params.
+ #ifdef CONFIG_EFI
+ 
+ static inline bool efi_is_native(void)
+diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
+index 9c3733c..64fe421 100644
+--- a/arch/x86/include/uapi/asm/bootparam.h
++++ b/arch/x86/include/uapi/asm/bootparam.h
+@@ -6,6 +6,7 @@
+ #define SETUP_E820_EXT			1
+ #define SETUP_DTB			2
+ #define SETUP_PCI			3
++#define SETUP_EFI			4
+ 
+ /* ram_size flags */
+ #define RAMDISK_IMAGE_START_MASK	0x07FF
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index cb233bc..b2b54cd 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -447,6 +447,9 @@ static void __init parse_setup_data(void)
+ 		case SETUP_DTB:
+ 			add_dtb(pa_data);
+ 			break;
++		case SETUP_EFI:
++			parse_efi_setup(pa_data);
++			break;
+ 		default:
+ 			break;
+ 		}
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 11b110f9..e8739aa 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -78,6 +78,7 @@ static __initdata efi_config_table_type_t arch_tables[] = {
+ 
+ static void *efi_runtime_map;
+ static int nr_efi_runtime_map;
++u64 efi_setup; /* efi setup_data physical address */
+ 
+ /*
+  * Returns 1 if 'facility' is enabled, 0 otherwise.
+@@ -115,7 +116,6 @@ static int __init setup_storage_paranoia(char *arg)
+ }
+ early_param("efi_no_storage_paranoia", setup_storage_paranoia);
+ 
+-
+ static efi_status_t virt_efi_get_time(efi_time_t *tm, efi_time_cap_t *tc)
+ {
+ 	unsigned long flags;
+@@ -494,18 +494,28 @@ static int __init efi_systab_init(void *phys)
+ {
+ 	if (efi_enabled(EFI_64BIT)) {
+ 		efi_system_table_64_t *systab64;
++		struct efi_setup_data *data = NULL;
+ 		u64 tmp = 0;
+ 
++		if (efi_setup) {
++			data = early_memremap(efi_setup, sizeof(*data));
++			if (!data)
++				return -ENOMEM;
++		}
+ 		systab64 = early_memremap((unsigned long)phys,
+ 					 sizeof(*systab64));
+ 		if (systab64 == NULL) {
+ 			pr_err("Couldn't map the system table!\n");
++			if (data)
++				early_memunmap(data, sizeof(*data));
+ 			return -ENOMEM;
+ 		}
+ 
+ 		efi_systab.hdr = systab64->hdr;
+-		efi_systab.fw_vendor = systab64->fw_vendor;
+-		tmp |= systab64->fw_vendor;
 +
-+		"version" file is the string representation of boot
-+		protocol version.
-+
-+		"setup_data" subdirectory contains the setup_data data
-+		structure in boot_params. setup_data is maintained in kernel
-+		as a link list. In "setup_data" subdirectory there's one
-+		subdirectory for each link list node named with the number
-+		of the list nodes. The list node subdirectory contains two
-+		files "type" and "data". "type" file is the string
-+		representation of setup_data type. "data" file is the binary
-+		representation of setup_data payload.
-+
-+		The whole boot_params directory structure is like below:
-+		/sys/kernel/boot_params
-+		|__ data
-+		|__ setup_data
-+		|   |__ 0
-+		|   |   |__ data
-+		|   |   |__ type
-+		|   |__ 1
-+		|       |__ data
-+		|       |__ type
-+		|__ version
-+
-+Users:		Kexec
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 9b0a34e..510cca5 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -29,6 +29,7 @@ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
- obj-y			+= syscall_$(BITS).o
- obj-$(CONFIG_X86_64)	+= vsyscall_64.o
- obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
-+obj-$(CONFIG_SYSFS)	+= ksysfs.o
- obj-y			+= bootflag.o e820.o
- obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
- obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
-diff --git a/arch/x86/kernel/ksysfs.c b/arch/x86/kernel/ksysfs.c
-new file mode 100644
-index 0000000..eb53d15
---- /dev/null
-+++ b/arch/x86/kernel/ksysfs.c
-@@ -0,0 +1,339 @@
++		efi_systab.fw_vendor = data ? (unsigned long)data->fw_vendor :
++					      systab64->fw_vendor;
++		tmp |= efi_systab.fw_vendor;
+ 		efi_systab.fw_revision = systab64->fw_revision;
+ 		efi_systab.con_in_handle = systab64->con_in_handle;
+ 		tmp |= systab64->con_in_handle;
+@@ -519,15 +529,20 @@ static int __init efi_systab_init(void *phys)
+ 		tmp |= systab64->stderr_handle;
+ 		efi_systab.stderr = systab64->stderr;
+ 		tmp |= systab64->stderr;
+-		efi_systab.runtime = (void *)(unsigned long)systab64->runtime;
+-		tmp |= systab64->runtime;
++		efi_systab.runtime = data ?
++				     (void *)(unsigned long)data->runtime :
++				     (void *)(unsigned long)systab64->runtime;
++		tmp |= (unsigned long)efi_systab.runtime;
+ 		efi_systab.boottime = (void *)(unsigned long)systab64->boottime;
+ 		tmp |= systab64->boottime;
+ 		efi_systab.nr_tables = systab64->nr_tables;
+-		efi_systab.tables = systab64->tables;
+-		tmp |= systab64->tables;
++		efi_systab.tables = data ? (unsigned long)data->tables :
++					   systab64->tables;
++		tmp |= efi_systab.tables;
+ 
+ 		early_memunmap(systab64, sizeof(*systab64));
++		if (data)
++			early_memunmap(data, sizeof(*data));
+ #ifdef CONFIG_X86_32
+ 		if (tmp >> 32) {
+ 			pr_err("EFI data located above 4GB, disabling EFI.\n");
+@@ -631,6 +646,81 @@ static int __init efi_memmap_init(void)
+ 	return 0;
+ }
+ 
 +/*
-+ * Architecture specific sysfs attributes in /sys/kernel
++ * A number of config table entries get remapped to virtual addresses
++ * after entering EFI virtual mode. However, the kexec kernel requires
++ * their physical addresses therefore we pass them via setup_data and
++ * correct those entries to their respective physical addresses here.
 + *
-+ * Copyright (C) 2007, Intel Corp.
-+ *      Huang Ying <ying.huang@intel.com>
-+ * Copyright (C) 2013, 2013 Red Hat, Inc.
-+ *      Dave Young <dyoung@redhat.com>
-+ *
-+ * This file is released under the GPLv2
++ * Currently only handles smbios which is necessary for some firmware
++ * implementation.
 + */
-+
-+#include <linux/kobject.h>
-+#include <linux/string.h>
-+#include <linux/sysfs.h>
-+#include <linux/init.h>
-+#include <linux/stat.h>
-+#include <linux/slab.h>
-+#include <linux/mm.h>
-+
-+#include <asm/setup.h>
-+
-+static ssize_t version_show(struct kobject *kobj,
-+			    struct kobj_attribute *attr, char *buf)
++static int __init efi_reuse_config(u64 tables, int nr_tables)
 +{
-+	return sprintf(buf, "0x%04x\n", boot_params.hdr.version);
-+}
++	int i, sz, ret = 0;
++	void *p, *tablep;
++	struct efi_setup_data *data;
 +
-+static struct kobj_attribute boot_params_version_attr = __ATTR_RO(version);
-+
-+static ssize_t boot_params_data_read(struct file *fp, struct kobject *kobj,
-+				     struct bin_attribute *bin_attr,
-+				     char *buf, loff_t off, size_t count)
-+{
-+	memcpy(buf, (void *)&boot_params + off, count);
-+	return count;
-+}
-+
-+static struct bin_attribute boot_params_data_attr = {
-+	.attr = {
-+		.name = "data",
-+		.mode = S_IRUGO,
-+	},
-+	.read = boot_params_data_read,
-+	.size = sizeof(boot_params),
-+};
-+
-+static struct attribute *boot_params_version_attrs[] = {
-+	&boot_params_version_attr.attr,
-+	NULL,
-+};
-+
-+static struct bin_attribute *boot_params_data_attrs[] = {
-+	&boot_params_data_attr,
-+	NULL,
-+};
-+
-+static struct attribute_group boot_params_attr_group = {
-+	.attrs = boot_params_version_attrs,
-+	.bin_attrs = boot_params_data_attrs,
-+};
-+
-+static int kobj_to_setup_data_nr(struct kobject *kobj, int *nr)
-+{
-+	const char *name;
-+
-+	name = kobject_name(kobj);
-+	return kstrtoint(name, 10, nr);
-+}
-+
-+static int get_setup_data_paddr(int nr, u64 *paddr)
-+{
-+	int i = 0;
-+	struct setup_data *data;
-+	u64 pa_data = boot_params.hdr.setup_data;
-+
-+	while (pa_data) {
-+		if (nr == i) {
-+			*paddr = pa_data;
-+			return 0;
-+		}
-+		data = ioremap_cache(pa_data, sizeof(*data));
-+		if (!data)
-+			return -ENOMEM;
-+
-+		pa_data = data->next;
-+		iounmap(data);
-+		i++;
-+	}
-+	return -EINVAL;
-+}
-+
-+static int __init get_setup_data_size(int nr, size_t *size)
-+{
-+	int i = 0;
-+	struct setup_data *data;
-+	u64 pa_data = boot_params.hdr.setup_data;
-+
-+	while (pa_data) {
-+		data = ioremap_cache(pa_data, sizeof(*data));
-+		if (!data)
-+			return -ENOMEM;
-+		if (nr == i) {
-+			*size = data->len;
-+			iounmap(data);
-+			return 0;
-+		}
-+
-+		pa_data = data->next;
-+		iounmap(data);
-+		i++;
-+	}
-+	return -EINVAL;
-+}
-+
-+static ssize_t type_show(struct kobject *kobj,
-+			 struct kobj_attribute *attr, char *buf)
-+{
-+	int nr, ret;
-+	u64 paddr;
-+	struct setup_data *data;
-+
-+	ret = kobj_to_setup_data_nr(kobj, &nr);
-+	if (ret)
-+		return ret;
-+
-+	ret = get_setup_data_paddr(nr, &paddr);
-+	if (ret)
-+		return ret;
-+	data = ioremap_cache(paddr, sizeof(*data));
-+	if (!data)
-+		return -ENOMEM;
-+
-+	ret = sprintf(buf, "0x%x\n", data->type);
-+	iounmap(data);
-+	return ret;
-+}
-+
-+static ssize_t setup_data_data_read(struct file *fp,
-+				    struct kobject *kobj,
-+				    struct bin_attribute *bin_attr,
-+				    char *buf,
-+				    loff_t off, size_t count)
-+{
-+	int nr, ret = 0;
-+	u64 paddr;
-+	struct setup_data *data;
-+	void *p;
-+
-+	ret = kobj_to_setup_data_nr(kobj, &nr);
-+	if (ret)
-+		return ret;
-+
-+	ret = get_setup_data_paddr(nr, &paddr);
-+	if (ret)
-+		return ret;
-+	data = ioremap_cache(paddr, sizeof(*data));
-+	if (!data)
-+		return -ENOMEM;
-+
-+	if (off > data->len) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (count > data->len - off)
-+		count = data->len - off;
-+
-+	if (!count)
-+		goto out;
-+
-+	ret = count;
-+	p = ioremap_cache(paddr + sizeof(*data), data->len);
-+	if (!p) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+	memcpy(buf, p + off, count);
-+	iounmap(p);
-+out:
-+	iounmap(data);
-+	return ret;
-+}
-+
-+static struct kobj_attribute type_attr = __ATTR_RO(type);
-+
-+static struct bin_attribute data_attr = {
-+	.attr = {
-+		.name = "data",
-+		.mode = S_IRUGO,
-+	},
-+	.read = setup_data_data_read,
-+};
-+
-+static struct attribute *setup_data_type_attrs[] = {
-+	&type_attr.attr,
-+	NULL,
-+};
-+
-+static struct bin_attribute *setup_data_data_attrs[] = {
-+	&data_attr,
-+	NULL,
-+};
-+
-+static struct attribute_group setup_data_attr_group = {
-+	.attrs = setup_data_type_attrs,
-+	.bin_attrs = setup_data_data_attrs,
-+};
-+
-+static int __init create_setup_data_node(struct kobject *parent,
-+					 struct kobject **kobjp, int nr)
-+{
-+	int ret = 0;
-+	size_t size;
-+	struct kobject *kobj;
-+	char name[16]; /* should be enough for setup_data nodes numbers */
-+	snprintf(name, 16, "%d", nr);
-+
-+	kobj = kobject_create_and_add(name, parent);
-+	if (!kobj)
-+		return -ENOMEM;
-+
-+	ret = get_setup_data_size(nr, &size);
-+	if (ret)
-+		goto out_kobj;
-+
-+	data_attr.size = size;
-+	ret = sysfs_create_group(kobj, &setup_data_attr_group);
-+	if (ret)
-+		goto out_kobj;
-+	*kobjp = kobj;
-+
-+	return 0;
-+out_kobj:
-+	kobject_put(kobj);
-+	return ret;
-+}
-+
-+static void __init cleanup_setup_data_node(struct kobject *kobj)
-+{
-+	sysfs_remove_group(kobj, &setup_data_attr_group);
-+	kobject_put(kobj);
-+}
-+
-+static int __init get_setup_data_total_num(u64 pa_data, int *nr)
-+{
-+	int ret = 0;
-+	struct setup_data *data;
-+
-+	*nr = 0;
-+	while (pa_data) {
-+		*nr += 1;
-+		data = ioremap_cache(pa_data, sizeof(*data));
-+		if (!data) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+		pa_data = data->next;
-+		iounmap(data);
-+	}
-+
-+out:
-+	return ret;
-+}
-+
-+static int __init create_setup_data_nodes(struct kobject *parent)
-+{
-+	struct kobject *setup_data_kobj, **kobjp;
-+	u64 pa_data;
-+	int i, j, nr, ret = 0;
-+
-+	pa_data = boot_params.hdr.setup_data;
-+	if (!pa_data)
++	if (!efi_setup)
 +		return 0;
 +
-+	setup_data_kobj = kobject_create_and_add("setup_data", parent);
-+	if (!setup_data_kobj) {
++	if (!efi_enabled(EFI_64BIT))
++		return 0;
++
++	data = early_memremap(efi_setup, sizeof(*data));
++	if (!data) {
 +		ret = -ENOMEM;
 +		goto out;
 +	}
 +
-+	ret = get_setup_data_total_num(pa_data, &nr);
-+	if (ret)
-+		goto out_setup_data_kobj;
++	if (!data->smbios)
++		goto out_memremap;
 +
-+	kobjp = kmalloc(sizeof(*kobjp) * nr, GFP_KERNEL);
-+	if (!kobjp) {
++	sz = sizeof(efi_config_table_64_t);
++
++	p = tablep = early_memremap(tables, nr_tables * sz);
++	if (!p) {
++		pr_err("Could not map Configuration table!\n");
 +		ret = -ENOMEM;
-+		goto out_setup_data_kobj;
++		goto out_memremap;
 +	}
 +
-+	for (i = 0; i < nr; i++) {
-+		ret = create_setup_data_node(setup_data_kobj, kobjp + i, i);
-+		if (ret)
-+			goto out_clean_nodes;
++	for (i = 0; i < efi.systab->nr_tables; i++) {
++		efi_guid_t guid;
++
++		guid = ((efi_config_table_64_t *)p)->guid;
++
++		if (!efi_guidcmp(guid, SMBIOS_TABLE_GUID))
++			((efi_config_table_64_t *)p)->table = data->smbios;
++		p += sz;
 +	}
++	early_memunmap(tablep, nr_tables * sz);
 +
-+	kfree(kobjp);
-+	return 0;
-+
-+out_clean_nodes:
-+	for (j = i - 1; j > 0; j--)
-+		cleanup_setup_data_node(*(kobjp + j));
-+	kfree(kobjp);
-+out_setup_data_kobj:
-+	kobject_put(setup_data_kobj);
++out_memremap:
++	early_memunmap(data, sizeof(*data));
 +out:
 +	return ret;
 +}
 +
-+static int __init boot_params_ksysfs_init(void)
++static void __init efi_setup_init(void)
 +{
-+	int ret;
-+	struct kobject *boot_params_kobj;
++	struct setup_data *sd;
 +
-+	boot_params_kobj = kobject_create_and_add("boot_params",
-+						  kernel_kobj);
-+	if (!boot_params_kobj) {
-+		ret = -ENOMEM;
-+		goto out;
++	if (!efi_setup)
++		return;
++
++	sd = early_memremap(efi_setup, sizeof(struct setup_data));
++	if (!sd) {
++		pr_warn("early_memremap setup_data failed\n");
++		efi_setup = 0;
++		return;
++	}
++	efi_setup += sizeof(struct setup_data);
++	nr_efi_runtime_map = (sd->len - sizeof(struct efi_setup_data)) /
++			     sizeof(efi_memory_desc_t);
++	early_memunmap(sd, sizeof(struct setup_data));
++}
++
+ void __init efi_init(void)
+ {
+ 	efi_char16_t *c16;
+@@ -638,6 +728,7 @@ void __init efi_init(void)
+ 	int i = 0;
+ 	void *tmp;
+ 
++	efi_setup_init();
+ #ifdef CONFIG_X86_32
+ 	if (boot_params.efi_info.efi_systab_hi ||
+ 	    boot_params.efi_info.efi_memmap_hi) {
+@@ -676,6 +767,9 @@ void __init efi_init(void)
+ 		efi.systab->hdr.revision >> 16,
+ 		efi.systab->hdr.revision & 0xffff, vendor);
+ 
++	if (efi_reuse_config(efi.systab->tables, efi.systab->nr_tables))
++		return;
++
+ 	if (efi_config_init(arch_tables))
+ 		return;
+ 
+@@ -887,6 +981,43 @@ out:
+ }
+ 
+ /*
++ * Map efi regions which were passed via setup_data. The virt_addr is a fixed
++ * addr which was used in first kernel of a kexec boot.
++ */
++static int __init map_regions_fixed(void)
++{
++	int i, s, ret = 0;
++	u64 end, systab;
++	unsigned long size;
++	efi_memory_desc_t *md;
++	struct efi_setup_data *data;
++
++	s = sizeof(*data) + nr_efi_runtime_map * sizeof(data->map[0]);
++	data = early_memremap(efi_setup, s);
++	if (!data)
++		return -ENOMEM;
++
++	for (i = 0, md = data->map; i < nr_efi_runtime_map; i++, md++) {
++		efi_map_region_fixed(md); /* FIXME: add error handling */
++		size = md->num_pages << PAGE_SHIFT;
++		end = md->phys_addr + size;
++
++		systab = (u64) (unsigned long) efi_phys.systab;
++		if (md->phys_addr <= systab && systab < end) {
++			systab += md->virt_addr - md->phys_addr;
++			efi.systab = (efi_system_table_t *)(unsigned long)systab;
++		}
++		ret = save_runtime_map(md, i);
++		if (ret)
++			goto out;
 +	}
 +
-+	ret = sysfs_create_group(boot_params_kobj, &boot_params_attr_group);
-+	if (ret)
-+		goto out_boot_params_kobj;
-+
-+	ret = create_setup_data_nodes(boot_params_kobj);
-+	if (ret)
-+		goto out_create_group;
-+
-+	return 0;
-+out_create_group:
-+	sysfs_remove_group(boot_params_kobj, &boot_params_attr_group);
-+out_boot_params_kobj:
-+	kobject_put(boot_params_kobj);
 +out:
++	early_memunmap(data, s);
 +	return ret;
 +}
 +
-+arch_initcall(boot_params_ksysfs_init);
++/*
+  * This function will switch the EFI runtime services to virtual mode.
+  * Essentially, we look through the EFI memmap and map every region that
+  * has the runtime attribute bit set in its memory descriptor into the
+@@ -902,12 +1033,16 @@ out:
+  * so that we're in a different address space when calling a runtime
+  * function. For function arguments passing we do copy the PGDs of the
+  * kernel page table into ->trampoline_pgd prior to each call.
++ *
++ * Specially for kexec boot, efi runtime maps in previous kernel should
++ * be passed in via setup_data. In that case runtime ranges will be mapped
++ * to the same virtual addresses as the first kernel.
+  */
+ void __init efi_enter_virtual_mode(void)
+ {
+ 	efi_status_t status;
+ 	void *new_memmap = NULL;
+-	int count = 0;
++	int err, count = 0;
+ 
+ 	efi.systab = NULL;
+ 
+@@ -920,12 +1055,19 @@ void __init efi_enter_virtual_mode(void)
+ 		return;
+ 	}
+ 
+-	efi_merge_regions();
+-
+-	new_memmap = efi_map_regions(&count);
+-	if (!new_memmap) {
+-		pr_err("Error reallocating memory, EFI runtime non-functional!\n");
+-		return;
++	if (efi_setup) {
++		err = map_regions_fixed();
++		if (err) {
++			pr_err("Error mapping runtime services, EFI runtime non-functional!\n");
++			return;
++		}
++	} else {
++		efi_merge_regions();
++		new_memmap = efi_map_regions(&count);
++		if (!new_memmap) {
++			pr_err("Error reallocating memory, EFI runtime non-functional!\n");
++			return;
++		}
+ 	}
+ 
+ #ifdef CONFIG_EFI_RUNTIME_MAP
+@@ -938,16 +1080,18 @@ void __init efi_enter_virtual_mode(void)
+ 	efi_setup_page_tables();
+ 	efi_sync_low_kernel_mappings();
+ 
+-	status = phys_efi_set_virtual_address_map(
+-		memmap.desc_size * count,
+-		memmap.desc_size,
+-		memmap.desc_version,
+-		(efi_memory_desc_t *)__pa(new_memmap));
+-
+-	if (status != EFI_SUCCESS) {
+-		pr_alert("Unable to switch EFI into virtual mode "
+-			 "(status=%lx)!\n", status);
+-		panic("EFI call to SetVirtualAddressMap() failed!");
++	if (!efi_setup) {
++		status = phys_efi_set_virtual_address_map(
++			memmap.desc_size * count,
++			memmap.desc_size,
++			memmap.desc_version,
++			(efi_memory_desc_t *)__pa(new_memmap));
++
++		if (status != EFI_SUCCESS) {
++			pr_alert("Unable to switch EFI into virtual mode (status=%lx)!\n",
++				 status);
++			panic("EFI call to SetVirtualAddressMap() failed!");
++		}
+ 	}
+ 
+ 	/*
+diff --git a/arch/x86/platform/efi/efi_32.c b/arch/x86/platform/efi/efi_32.c
+index 7b3ec6e..cb84fef 100644
+--- a/arch/x86/platform/efi/efi_32.c
++++ b/arch/x86/platform/efi/efi_32.c
+@@ -48,6 +48,7 @@ void __init efi_map_region(efi_memory_desc_t *md)
+ }
+ 
+ void __init efi_map_region_fixed(efi_memory_desc_t *md) {}
++void __init parse_efi_setup(u64 phys_addr) {}
+ 
+ void efi_call_phys_prelog(void)
+ {
+diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
+index ff08cb1..1d6835a 100644
+--- a/arch/x86/platform/efi/efi_64.c
++++ b/arch/x86/platform/efi/efi_64.c
+@@ -228,3 +228,8 @@ void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
+ 
+ 	return (void __iomem *)__va(phys_addr);
+ }
++
++void __init parse_efi_setup(u64 phys_addr)
++{
++	efi_setup = phys_addr;
++}
 -- 
 1.8.3.1
 
