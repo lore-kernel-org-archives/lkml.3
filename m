@@ -1,102 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab3LPUxZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 15:53:25 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:62983 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451Ab3LPUxT (ORCPT
+	id S1752463Ab3LPUyK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 15:54:10 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38937 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465Ab3LPUyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 15:53:19 -0500
-Date: Mon, 16 Dec 2013 20:51:33 +0000
-From: Graeme Gregory <graeme.gregory@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Mark Rutland <Mark.Rutland@arm.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Linaro-acpi] [RFC part1 PATCH 1/7] ACPI: Make ACPI core running
- without PCI on ARM64
-Message-ID: <20131216205133.GI5617@xora-haswell.xora.org.uk>
-References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
- <201312091735.05014.arnd@arndb.de>
- <20131209165548.GE19163@arm.com>
- <201312091820.23006.arnd@arndb.de>
- <20131209180155.GG19163@arm.com>
+	Mon, 16 Dec 2013 15:54:09 -0500
+Date: Mon, 16 Dec 2013 21:54:00 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Axel Lin <axel.lin@ingics.com>,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] clocksource: time-efm32: Select CLKSRC_MMIO
+Message-ID: <20131216205400.GD14866@pengutronix.de>
+References: <1384913711.13115.2.camel@phoenix>
+ <20131210132431.GB18888@pengutronix.de>
+ <52A71746.6080809@linaro.org>
+ <20131210160548.GC18888@pengutronix.de>
+ <52AF5DB5.8090302@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20131209180155.GG19163@arm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52AF5DB5.8090302@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 06:01:55PM +0000, Catalin Marinas wrote:
-> On Mon, Dec 09, 2013 at 05:20:22PM +0000, Arnd Bergmann wrote:
-> > On Monday 09 December 2013, Catalin Marinas wrote:
-> > > CONFIG_PCI does not exist on arm64 yet (we have some internal patches
-> > > but may not be ready to be posted before the holidays; they try to share
-> > > code with other archs, so more discussions before merging). We could add
-> > > CONFIG_PCI and some dummy functions on arm64 for development (not to be
-> > > upstreamed) or Hanjun could continue to use the current patch before we
-> > > get PCI working. In the order of priorities, we'll have to merge PCI
-> > > before ACPI anyway.
-> > 
-> > Well, lack of PCI support on ARM64 is a much better reason for accepting
-> > the patch than potential use on non-server platforms of course.
-> 
-> As I said above about priorities, we are not in a hurry to merge ACPI
-> for arm64 before PCI is supported.
-> 
-> > What is the status of the PCI work though? I suspect it won't be all
-> > that hard to add minimal PCI support for a simple mmconfig plus
-> > fixed I/O space based host of the kind that qemu can easily provide.
-> 
-> Liviu (ARM engineer) has been working on generalising the microblaze
-> code (which is very similar to powerpc) and enable it on arm64. The
-> patches will be posted soon (though may slip into the new year) but
-> there will be many discussions on how to do this best, so I don't expect
-> a quick merge.
-> 
-> In parallel, Will is looking at getting PCI to work with kvmtool and
-> that's something we could merge sooner (but again, in the new year).
-> 
-> > The hard part that we want to share code with other architectures is
-> > supporting pluggable host controllers, and I think we can defer that
-> > a bit.
-> 
-> Indeed, this would take time.
-> 
-Hi Catalin,
+Hello Daniel,
 
-So the real question now is how do we progress with these ACPI patches? After
-repeated incorrect accusations of developing behind closed doors I am loath
-to dissapear back into linaro with them for another few months.
+On Mon, Dec 16, 2013 at 09:08:21PM +0100, Daniel Lezcano wrote:
+> On 12/10/2013 05:05 PM, Uwe Kleine-König wrote:
+> >On Tue, Dec 10, 2013 at 02:29:42PM +0100, Daniel Lezcano wrote:
+> >>I sent the PR with this patch. If everything is ok, it should be in
+> >>the next -rc.
+> >ok. Thanks for your quick reply.
+It seems to have missed 3.13-rc4 btw :-(
 
-Also as Mark Brown has already pointed out the bigger the patchset gets
-while developed in Linaro trees the more strain it is going to put on
-maintainers for review.
+> >It would be great if your tree were included in linux-next. Don't you
+> >think this is feasible?
+> 
+> Well, yes it could be a good idea. But if you are suggesting to use
+> linux-next for the fixes, that should be already taken into account
+> with the #auto-latest branch of tip.
+I might be wrong, but it seems that the window when the patches are in
+your tree but not yet in tip is big. At least I hit that window I think
+three times already.
 
-We have worked to try and keep the patchset as self contained as possible
-and to affect arch/arm64 in a minimal way. It should not affect it at all
-in the !CONFIG_ACPI case.
+Best regards
+Uwe
 
-Currently Hanjun is busy preparing a v2 PATCH series which contains amendments
-for all the technical issues found in review so far. Should we continue with
-this process until all the neccessary Acks are in place?
-
-Graeme
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
