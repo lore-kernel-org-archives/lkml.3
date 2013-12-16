@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab3LPQNt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:13:49 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:58800 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754183Ab3LPQNs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:13:48 -0500
+	id S1754766Ab3LPQOC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:14:02 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:10543 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754736Ab3LPQOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 11:14:00 -0500
+X-IronPort-AV: E=Sophos;i="4.95,495,1384300800"; 
+   d="scan'208";a="84968640"
+Message-ID: <52AF26B8.2090409@citrix.com>
+Date: Mon, 16 Dec 2013 16:13:44 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvx3nvncXYsai_uVdWLp-jAuGWAQCNxGH9R3NvdD1cPFwA@mail.gmail.com>
-References: <1387194424-2701-1-git-send-email-lpapp@kde.org>
-	<20131216134633.GI18769@lee--X1>
-	<CAOMwXhOnHNrzEvf0+QRn6dGb42xR9a33joZcou3ancwSYe36Ug@mail.gmail.com>
-	<20131216150937.GO18769@lee--X1>
-	<CAOMwXhNJFGiRNB4jnTrzzpSGL8XvaR1Ph_pFrdU+x+guy7Tamg@mail.gmail.com>
-	<CAFLxGvx3nvncXYsai_uVdWLp-jAuGWAQCNxGH9R3NvdD1cPFwA@mail.gmail.com>
-Date: Mon, 16 Dec 2013 16:13:47 +0000
-X-Google-Sender-Auth: T5a4NODKOsoNQK6df_RC0LQ54Ek
-Message-ID: <CAOMwXhPLU_2MUkJXgz-ab062bBjtcOEsvwNCSj0vG0eg9sr=rQ@mail.gmail.com>
-Subject: Re: [PATCH] mfd: (max8997) Handle the potential error for mfd_add_devices
-From: Laszlo Papp <lpapp@kde.org>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Lee Jones <lee.jones@linaro.org>, sameo@linux.intel.com,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: annie li <annie.li@oracle.com>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [Xen-devel] [PATCH net-next v2 0/9] xen-netback: TX grant mapping
+ with SKBTX_DEV_ZEROCOPY instead of copy
+References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com> <52AE9E7E.7040502@oracle.com>
+In-Reply-To: <52AE9E7E.7040502@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 4:05 PM, Richard Weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Mon, Dec 16, 2013 at 4:51 PM, Laszlo Papp <lpapp@kde.org> wrote:
->>>> > The $SUBJECT line is wrong. To see how a subsystem usually formats
->>>> > theirs you must do something like `git log --oneline -- <subsystem>`.
->>>> > And duplicate the format.
->>>> >
->>>> > Commit message?
->>>
->>> These comments are still relevant, please re-post your patch with the
->>> points rectified.
->>
->> I really do not understand how they relevant. "Commit message?" ->
->> What about it? It has a pretty clear commit message. Are you now just
->> picking nits about "foo:" vs "(foo)" in the short line?
+On 16/12/13 06:32, annie li wrote:
 >
-> The commit message needs to have subject and a body.
+> On 2013/12/13 7:48, Zoltan Kiss wrote:
+>> A long known problem of the upstream netback implementation that on
+>> the TX
+>> path (from guest to Dom0) it copies the whole packet from guest memory
+>> into
+>> Dom0. That simply became a bottleneck with 10Gb NICs, and generally
+>> it's a
+>> huge perfomance penalty. The classic kernel version of netback used grant
+>> mapping, and to get notified when the page can be unmapped, it used page
+>> destructors. Unfortunately that destructor is not an upstreamable
+>> solution.
+>> Ian Campbell's skb fragment destructor patch series [1] tried to solve
+>> this
+>> problem, however it seems to be very invasive on the network stack's
+>> code,
+>> and therefore haven't progressed very well.
+>> This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it
+>> needs to
+>> know when the skb is freed up. That is the way KVM solved the same
+>> problem,
+>> and based on my initial tests it can do the same for us. Avoiding the
+>> extra
+>> copy boosted up TX throughput from 6.8 Gbps to 7.9 (I used a slower
+>> Interlagos box, both Dom0 and guest on upstream kernel, on the same
+>> NUMA node,
+>> running iperf 2.0.5, and the remote end was a bare metal box on the
+>> same 10Gb
+>> switch)
+> Sounds good.
+> Is the TX throughput gotten between one vm and one bare metal box? or
+> between multiple vms and bare metal? Do you have any test results with
+> netperf?
+One VM and a bare metal box. I've used only iperf.
 
-Why? What advantage does that have in very simple cases like this?
+Regards,
 
-> A good message body explains what the current situation is, why it is
-> broken/has problems
-> and how this patch fixes that.
+Zoli
 
-The current commit message explains that in my opinion. Please bring
-up real issues with it.
