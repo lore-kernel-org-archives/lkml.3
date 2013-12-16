@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab3LPRno (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 12:43:44 -0500
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:52280 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755122Ab3LPRnm (ORCPT
+	id S1755015Ab3LPRpY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 12:45:24 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:48778 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754143Ab3LPRpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 12:43:42 -0500
-Date: Mon, 16 Dec 2013 12:43:30 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Robin H. Johnson" <robbat2@gentoo.org>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH v2] libata: disable a disk via libata.force params
-Message-ID: <20131216174330.GL32509@htj.dyndns.org>
-References: <1386464187-6993-1-git-send-email-robbat2@gentoo.org>
- <1387215079-29897-1-git-send-email-robbat2@gentoo.org>
+	Mon, 16 Dec 2013 12:45:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387215079-29897-1-git-send-email-robbat2@gentoo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <cover.1387205337.git.liwang@ubuntukylin.com>
+References: <cover.1387205337.git.liwang@ubuntukylin.com>
+Date: Mon, 16 Dec 2013 09:45:22 -0800
+Message-ID: <CAM_iQpUSX1yX9SMvUnbwZ7UkaBMUheOEiZNaSb4m8gWBQzzGDQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] VFS: Directory level cache cleaning
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Li Wang <liwang@ubuntukylin.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Sage Weil <sage@inktank.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 09:31:19AM -0800, Robin H. Johnson wrote:
-> A user on StackExchange had a failing SSD that's soldered directly onto
-> the motherboard of his system. The BIOS does not give any option to
-> disable it at all, so he can't just hide it from the OS via the BIOS.
-> 
-> The old IDE layer had hdX=noprobe override for situations like this, but
-> that was never ported to the libata layer.
-> 
-> This patch implements a disable flag for libata.force.
-> Example use:
-> libata.force=2.0:disable
-> 
-> [v2 of the patch, removed the nodisable flag per Tejun Heo]
-> 
-> Signed-off-by: Robin H. Johnson <robbat2@gentoo.org>
-> X-URL: http://unix.stackexchange.com/questions/102648/how-to-tell-linux-kernel-3-0-to-completely-ignore-a-failing-disk
-> X-URL: http://askubuntu.com/questions/352836/how-can-i-tell-linux-kernel-to-completely-ignore-a-disk-as-if-it-was-not-even-co
-> X-URL: http://superuser.com/questions/599333/how-to-disable-kernel-probing-for-drive
+On Mon, Dec 16, 2013 at 7:00 AM, Li Wang <liwang@ubuntukylin.com> wrote:
+> This patch extend the 'drop_caches' interface to
+> support directory level cache cleaning and has a complete
+> backward compatibility. '{1,2,3}' keeps the same semantics
+> as before. Besides, "{1,2,3}:DIRECTORY_PATH_NAME" is allowed
+> to recursively clean the caches under DIRECTORY_PATH_NAME.
+> For example, 'echo 1:/home/foo/jpg > /proc/sys/vm/drop_caches'
+> will clean the page caches of the files inside 'home/foo/jpg'.
+>
 
-Applied to libata/for-3.13-fixes w/ stable cc'd and minor description
-edits.
+This interface is ugly...
 
-Thanks.
-
--- 
-tejun
+And we already have a file-level drop cache, that is,
+fadvise(DONTNEED). Can you extend it if it can't
+handle a directory fd?
