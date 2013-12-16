@@ -1,31 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab3LPQZF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:25:05 -0500
-Received: from eddie.linux-mips.org ([78.24.191.182]:51204 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754808Ab3LPQYq (ORCPT
+	id S1754632Ab3LPQaJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:30:09 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:13310 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754420Ab3LPQaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:24:46 -0500
-Date: Mon, 16 Dec 2013 17:24:43 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Mark Salter <msalter@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH 04/10] mips: select ARCH_MIGHT_HAVE_PC_SERIO
-Message-ID: <20131216162443.GB19285@linux-mips.org>
-References: <1387040376-26906-1-git-send-email-msalter@redhat.com>
- <1387040376-26906-5-git-send-email-msalter@redhat.com>
+	Mon, 16 Dec 2013 11:30:06 -0500
+X-IronPort-AV: E=Sophos;i="4.95,495,1384300800"; 
+   d="scan'208";a="82697902"
+Message-ID: <52AF2A8A.50404@citrix.com>
+Date: Mon, 16 Dec 2013 16:30:02 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387040376-26906-5-git-send-email-msalter@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wei Liu <wei.liu2@citrix.com>
+CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v2 9/9] xen-netback: Aggregate TX unmap operations
+References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com> <1386892097-15502-10-git-send-email-zoltan.kiss@citrix.com> <20131213154435.GP21900@zion.uk.xensource.com>
+In-Reply-To: <20131213154435.GP21900@zion.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Ralf Baechle <ralf@linux-mips.org>
+On 13/12/13 15:44, Wei Liu wrote:
+> On Thu, Dec 12, 2013 at 11:48:17PM +0000, Zoltan Kiss wrote:
+>> Unmapping causes TLB flushing, therefore we should make it in the largest
+>> possible batches. However we shouldn't starve the guest for too long. So if
+>> the guest has space for at least two big packets and we don't have at least a
+>> quarter ring to unmap, delay it for at most 1 milisec.
+>>
+>
+> Is this solution temporary or permanent? If it is permanent would it
+> make sense to make these parameter tunable?
 
-Thanks,
+Well, I'm not entirely sure yet this is the best way to do this, so in 
+this sense it's temporary. But generally we should do some sort of 
+batching, as TLB flush cannot be avoided every time. If we settle on 
+something we should make the tunable parameters tunable.
+The problem is that it is a thin red line we should find here. My first 
+approach was that I left the tx_dealloc_work_todo as it was, and after 
+the thread woke up but before anything were done I made it sleep for 50 
+ns and measured  how fast the guest is running out of free slots:
 
-  Ralf
+if (kthread_should_stop())
+	break;
+
++i=0;
++do {
++	++i;
++	prev_free_slots = nr_free_slots(&vif->tx);
++	__set_current_state(TASK_UNINTERRUPTIBLE);
++	rc = schedule_hrtimeout_range(&tx_dealloc_delay_ktime, 10, 
+HRTIMER_MODE_REL);
++	if (rc) trace_printk("%s sleep were interrupted! %d\n",vif->dev->name, 
+rc);
++	curr_free_slots = nr_free_slots(&vif->tx);
++} while ( (curr_free_slots < 4 * (prev_free_slots - curr_free_slots)) 
+&& i < 11);
++
+xenvif_tx_dealloc_action(vif);
+
+And worst case after 500 ns I let the thread to do the unmap anyway. But 
+I was a bit worried about this approach, so I choose a bit more 
+conservative one for this patch.
+
+There are also ideas to use some other instrument for unmapping instead 
+of the current separate thread approach. Putting it into the NAPI 
+instance was the original idea, which caused problems. Placing it into 
+the another thread where RX work happens also doesn't sound too good, 
+these things can and should happen in parallel.
+Other ideas were work queues and tasklets, I'll spend some more time to 
+check if they are feasible.
+
+Regards,
+
+Zoli
