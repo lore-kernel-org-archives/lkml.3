@@ -1,106 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab3LPTeX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 14:34:23 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53969 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755379Ab3LPTeV (ORCPT
+	id S1755449Ab3LPTfL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 14:35:11 -0500
+Received: from stargate.chelsio.com ([67.207.112.58]:4663 "EHLO
+	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755275Ab3LPTfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 14:34:21 -0500
-Message-ID: <52AF55B4.6000303@hurleysoftware.com>
-Date: Mon, 16 Dec 2013 14:34:12 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 16 Dec 2013 14:35:09 -0500
+Date: Tue, 17 Dec 2013 01:04:46 +0530
+From: Hariprasad S <hariprasad@chelsio.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: <dwmw2@infradead.org>, <linux-kernel@vger.kernel.org>, <felix@chelsio.com>
+Subject: Re: pull request: linux-firmware: update cxgb4 firmware
+Message-ID: <20131216193446.GA10431@hariprasad-pc>
+References: <20131215193220.GA7536@hariprasad-pc>
+ <1387152449.2803.3.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-To: Gianluca Anzolin <gianluca@sottospazio.it>
-CC: Alexander Holler <holler@ahsoftware.de>, marcel@holtmann.org,
-        Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
-        gregkh@linuxfoundation.org, jslaby@suse.cz,
-        linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION] rfcomm (userland) broken by commit 29cd718b
-References: <1377620926-23370-1-git-send-email-gianluca@sottospazio.it> <20130919162413.GG4006@joana> <52AA1854.500@ahsoftware.de> <52AA1E62.1030109@hurleysoftware.com> <52AA483E.4080706@ahsoftware.de> <20131215112413.GA8980@sottospazio.it> <52ADB6B7.5010503@hurleysoftware.com> <20131215150847.GA10288@sottospazio.it>
-In-Reply-To: <20131215150847.GA10288@sottospazio.it>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1387152449.2803.3.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.193.190.82]
+X-OriginalArrivalTime: 16 Dec 2013 19:34:31.0040 (UTC) FILETIME=[D75A1800:01CEFA95]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2013 10:08 AM, Gianluca Anzolin wrote:
-> On Sun, Dec 15, 2013 at 09:03:35AM -0500, Peter Hurley wrote:
->> On 12/15/2013 06:24 AM, Gianluca Anzolin wrote:
->>> On Fri, Dec 13, 2013 at 12:35:26AM +0100, Alexander Holler wrote:
->>>> Am 12.12.2013 21:36, schrieb Peter Hurley:
->>>>
->>>>>> What currently happens is that when one kills rfcomm (and any other
->>>>>> terminal which might use that tty), the entry in /dev doesn't
->>>>>> disappear. That means the same call to refcomm with the same device
->>>>>> (e.g. [/dev/]rfcomm1 doesn't work.
->>>>>
->>>>> Thanks for the report, Alexander.
->>>>>
->>>>> Point 4 above details a different situation; something else is
->>>>> happening.
->>>>>
->>>>> Would you please detail the necessary steps to reproduce this regression?
->>>>> (How do you 'kill' rfcomm? etc.  Shell command lines would be best.)
->>>>
->>>> Just call
->>>>
->>>> rfcomm connect rfcomm9 01:23:45:67:89:ab
->>>>
->>>> wait until the connection happened  (a message will appear) and then
->>>> press ctrl-c. This still terminates the bluetooth connection, but the
->>>> device in /dev is now left.
->>>
->>> Yes I'm able to reproduce the regression which is indeed caused by that
->>> commit.
->>>
->>> However I'm puzzled. Surely there is a fifth case I didn't cover because
->>> when rfcomm_dev_state_change() is called, the tty_port is there but the tty is
->>> not, and therefore I cannot get a reference to it and send the HUP.
->>
->> There is a fifth case, but it's crazy.
->>
->> The tty has been properly shutdown and destroyed because the tty file handle
->> was closed, not hungup. The rfcomm device reference was properly put
->> when the tty was released.
->>
->> But when the remote hangs up (and sends disc), then rfcomm_dev_state_change()
->> is called -- to kill the port reference (thus the rfcomm device) that was
->> instantiated locally! Ridiculous. Doubly ridiculous because it's the local
->> port shutdown that closes the dlc locally that sends the disconnect (and sets
->> the local dlc state) that triggers the received rfcomm_dev_state_change()!
->>
->> If this behavior is desirable (or necessary because it's been exposed to
->> userspace), then why was the design ever reference-counted to begin with?
->>
->> Regards,
->> Peter Hurley
->
-> The attached patch fixes the regression by releasing the tty_port in the
-> shutdown method(). This way we can avoid strange games in the dlc callback
-> where we are constrained by the dlc lock.
->
-> If this kind of approach is acceptable I will submit the patch for inclusion in
-> a separate email.
+On Mon, Dec 16, 2013 at 00:07:29 +0000, Ben Hutchings wrote:
+> On Mon, 2013-12-16 at 01:02 +0530, Hariprasad S wrote:
+> > Hi,
+> > 
+> > Can you please pull from the following URL?
+> >     git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
+> > 
+> > The following changes since commit 7d0c7a8cfd78388d90cc784a185b19dcbdbce824:
+> >   Ben Hutchings (1):
+> >           Merge branch 'wilink4' of git://git.kernel.org/pub/scm/linux/kernel/git/balbi/linux-firmware
+> > 
+> > are available in the git repository at:
+> > 
+> >   git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
+> 
+> I'm no longer able to pull from this repository.  Depending on whether I
+> use my cellular data or home DSL connection it fails with either:
+> 
+> $ git fetch git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
+> fatal: Could not read from remote repository.
+> 
+> Please make sure you have the correct access rights
+> and the repository exists.
+> 
+> or:
+> 
+> $ git fetch git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
+> fatal: unable to connect to git.chelsio.net:
+> git.chelsio.net[0: 67.207.112.37]: errno=Connection refused
+> 
+> Ben.
+> 
 
-This solution is acceptable to me, but I think the comment should briefly
-explain why this fix is necessary, and the changelog should explain why in detail.
+Hi Ben,
 
-Perhaps with a fixme comment that rfcomm_tty_install() should just take over
-the port reference (instead of adding one) and rfcomm_tty_cleanup() should
-conditionally release on RFCOMM_RELEASE_ONHUP.
+There was some internal issue. Now that it is fixed, Can you please try pulling it now.
 
-Because then:
-1) this fix would not be necessary.
-2) the release in rfcomm_tty_hangup() would not be necessary
-3) the second release in rfcomm_release_dev would not be necessary
-4) the RFCOMM_TTY_RELEASED bit could be removed
+Thanks,
+Hariprasad Shenai
 
-
-Regards,
-Peter Hurley
+> > Hariprasad Shenai (1):
+> >     cxgb4: Updated T4 firmware, add T5 firmware
+> > 
+> >  WHENCE                  |    8 +++++---
+> >  cxgb4/t4fw-1.6.2.0.bin  |  Bin 431616 -> 0 bytes
+> >  cxgb4/t4fw-1.9.23.0.bin |  Bin 0 -> 486912 bytes
+> >  cxgb4/t4fw.bin          |    2 +-
+> >  cxgb4/t5fw-1.9.23.0.bin |  Bin 0 -> 481280 bytes
+> >  cxgb4/t5fw.bin          |    1 +
+> >  6 files changed, 7 insertions(+), 4 deletions(-)
+> >  delete mode 100644 cxgb4/t4fw-1.6.2.0.bin
+> >  create mode 100644 cxgb4/t4fw-1.9.23.0.bin
+> >  create mode 100644 cxgb4/t5fw-1.9.23.0.bin
+> >  create mode 120000 cxgb4/t5fw.bin
+> > 
+> > Thanks,
+> > Hariprasad Shenai
+> 
+> -- 
+> Ben Hutchings
+> Lowery's Law:
+>              If it jams, force it. If it breaks, it needed replacing anyway.
 
 
