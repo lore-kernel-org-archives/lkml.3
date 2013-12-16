@@ -1,174 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247Ab3LPDBy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 22:01:54 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:33605 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab3LPDBw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 22:01:52 -0500
-Date: Sun, 15 Dec 2013 22:00:41 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
-        Wang YanQing <udknight@gmail.com>, linux-arch@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v3 [resend] 14/18] smp, x86, xen: kill SMP single
- function call interrupt
-Message-ID: <20131216030040.GB7180@pegasus.dumpdata.com>
-References: <1387125400-28849-1-git-send-email-liuj97@gmail.com>
- <1387125400-28849-15-git-send-email-liuj97@gmail.com>
+	id S1752316Ab3LPDDY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 22:03:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22292 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751998Ab3LPDDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 22:03:22 -0500
+Date: Mon, 16 Dec 2013 11:02:29 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, greg@kroah.com, toshi.kani@hp.com
+Subject: Re: [PATCH v5 08/14] efi: export efi runtime memory mapping to sysfs
+Message-ID: <20131216030229.GA7408@dhcp-16-126.nay.redhat.com>
+References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
+ <1386582147-9802-9-git-send-email-dyoung@redhat.com>
+ <20131211185520.GG23793@pd.tnic>
+ <20131212023617.GF3751@dhcp-16-126.nay.redhat.com>
+ <20131212205346.GA30162@pd.tnic>
+ <20131213072600.GB11164@dhcp-16-126.nay.redhat.com>
+ <20131213123028.GB18640@console-pimps.org>
+ <20131216013319.GA3754@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1387125400-28849-15-git-send-email-liuj97@gmail.com>
+In-Reply-To: <20131216013319.GA3754@dhcp-16-126.nay.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 12:36:36AM +0800, Jiang Liu wrote:
-> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
-> similar to smp_call_function_single()" has unified the way to handle
-> single and multiple cross-CPU function calls. Now only one interrupt
-> is needed for architecture specific code to support generic SMP function
-> call interfaces, so kill the redundant single function call interrupt.
+On 12/16/13 at 09:33am, Dave Young wrote:
+> On 12/13/13 at 12:30pm, Matt Fleming wrote:
+> > On Fri, 13 Dec, at 03:26:00PM, Dave Young wrote:
+> > > On 12/12/13 at 09:53pm, Borislav Petkov wrote:
+> > > > On Thu, Dec 12, 2013 at 10:36:17AM +0800, Dave Young wrote:
+> > > > > Sorry that I forgot to explain this in changelog, should ask you before.
+> > > > > 
+> > > > > I did try moving it to efisubsys_init but it need add extern declaration
+> > > > 
+> > > > So what? Add it.
+> > > > 
+> > > > > for efi_runtime_map_init. Since link order will ensure it being called after
+> > > > > efisubsys_init I think it's fine with this static function.
+> > > > 
+> > > > This is actually exactly the reason why it shouldn't be another
+> > > > subsys_initcall() if it can be helped. People would need to go have a
+> > > > look at drivers/firmware/efi/Makefile to realize that the link order is
+> > > > ok.
+> > > > 
+> > > > And, this is prone to future breakage if people go and move code around
+> > > > and thereby change the link order.
+> > > > 
+> > > > Please call efi_runtime_map_init from efisubsys_init.
+> > > 
+> > > After moving to efisubsys_init, the code will looks like below, because
 > 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Shaohua Li <shli@kernel.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Jiri Kosina <trivial@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Will call it in efi_subsys_init as what I replied previously.
 
-I presume this has been tested?
+Actually change a bit from your below suggestion.
 
-> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-> Cc: x86@kernel.org
-> Cc: xen-devel@lists.xensource.com
-> Cc: virtualization@lists.linux-foundation.org
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
-> ---
->  arch/x86/include/asm/xen/events.h |  1 -
->  arch/x86/xen/smp.c                | 38 ++------------------------------------
->  2 files changed, 2 insertions(+), 37 deletions(-)
 > 
-> diff --git a/arch/x86/include/asm/xen/events.h b/arch/x86/include/asm/xen/events.h
-> index 608a79d..a9e54dc 100644
-> --- a/arch/x86/include/asm/xen/events.h
-> +++ b/arch/x86/include/asm/xen/events.h
-> @@ -4,7 +4,6 @@
->  enum ipi_vector {
->  	XEN_RESCHEDULE_VECTOR,
->  	XEN_CALL_FUNCTION_VECTOR,
-> -	XEN_CALL_FUNCTION_SINGLE_VECTOR,
->  	XEN_SPIN_UNLOCK_VECTOR,
->  	XEN_IRQ_WORK_VECTOR,
->  	XEN_NMI_VECTOR,
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index c36b325..7cf1689 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -46,12 +46,10 @@ struct xen_common_irq {
->  };
->  static DEFINE_PER_CPU(struct xen_common_irq, xen_resched_irq) = { .irq = -1 };
->  static DEFINE_PER_CPU(struct xen_common_irq, xen_callfunc_irq) = { .irq = -1 };
-> -static DEFINE_PER_CPU(struct xen_common_irq, xen_callfuncsingle_irq) = { .irq = -1 };
->  static DEFINE_PER_CPU(struct xen_common_irq, xen_irq_work) = { .irq = -1 };
->  static DEFINE_PER_CPU(struct xen_common_irq, xen_debug_irq) = { .irq = -1 };
->  
->  static irqreturn_t xen_call_function_interrupt(int irq, void *dev_id);
-> -static irqreturn_t xen_call_function_single_interrupt(int irq, void *dev_id);
->  static irqreturn_t xen_irq_work_interrupt(int irq, void *dev_id);
->  
->  /*
-> @@ -123,13 +121,6 @@ static void xen_smp_intr_free(unsigned int cpu)
->  		kfree(per_cpu(xen_debug_irq, cpu).name);
->  		per_cpu(xen_debug_irq, cpu).name = NULL;
->  	}
-> -	if (per_cpu(xen_callfuncsingle_irq, cpu).irq >= 0) {
-> -		unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu).irq,
-> -				       NULL);
-> -		per_cpu(xen_callfuncsingle_irq, cpu).irq = -1;
-> -		kfree(per_cpu(xen_callfuncsingle_irq, cpu).name);
-> -		per_cpu(xen_callfuncsingle_irq, cpu).name = NULL;
-> -	}
->  	if (xen_hvm_domain())
->  		return;
->  
-> @@ -178,18 +169,6 @@ static int xen_smp_intr_init(unsigned int cpu)
->  	per_cpu(xen_debug_irq, cpu).irq = rc;
->  	per_cpu(xen_debug_irq, cpu).name = debug_name;
->  
-> -	callfunc_name = kasprintf(GFP_KERNEL, "callfuncsingle%d", cpu);
-> -	rc = bind_ipi_to_irqhandler(XEN_CALL_FUNCTION_SINGLE_VECTOR,
-> -				    cpu,
-> -				    xen_call_function_single_interrupt,
-> -				    IRQF_PERCPU|IRQF_NOBALANCING,
-> -				    callfunc_name,
-> -				    NULL);
-> -	if (rc < 0)
-> -		goto fail;
-> -	per_cpu(xen_callfuncsingle_irq, cpu).irq = rc;
-> -	per_cpu(xen_callfuncsingle_irq, cpu).name = callfunc_name;
-> -
->  	/*
->  	 * The IRQ worker on PVHVM goes through the native path and uses the
->  	 * IPI mechanism.
-> @@ -569,8 +548,7 @@ static void xen_smp_send_call_function_ipi(const struct cpumask *mask)
->  
->  static void xen_smp_send_call_function_single_ipi(int cpu)
->  {
-> -	__xen_send_IPI_mask(cpumask_of(cpu),
-> -			  XEN_CALL_FUNCTION_SINGLE_VECTOR);
-> +	__xen_send_IPI_mask(cpumask_of(cpu), XEN_CALL_FUNCTION_VECTOR);
->  }
->  
->  static inline int xen_map_vector(int vector)
-> @@ -582,10 +560,8 @@ static inline int xen_map_vector(int vector)
->  		xen_vector = XEN_RESCHEDULE_VECTOR;
->  		break;
->  	case CALL_FUNCTION_VECTOR:
-> -		xen_vector = XEN_CALL_FUNCTION_VECTOR;
-> -		break;
->  	case CALL_FUNCTION_SINGLE_VECTOR:
-> -		xen_vector = XEN_CALL_FUNCTION_SINGLE_VECTOR;
-> +		xen_vector = XEN_CALL_FUNCTION_VECTOR;
->  		break;
->  	case IRQ_WORK_VECTOR:
->  		xen_vector = XEN_IRQ_WORK_VECTOR;
-> @@ -663,16 +639,6 @@ static irqreturn_t xen_call_function_interrupt(int irq, void *dev_id)
->  	return IRQ_HANDLED;
->  }
->  
-> -static irqreturn_t xen_call_function_single_interrupt(int irq, void *dev_id)
-> -{
-> -	irq_enter();
-> -	generic_smp_call_function_single_interrupt();
-> -	inc_irq_stat(irq_call_count);
-> -	irq_exit();
-> -
-> -	return IRQ_HANDLED;
-> -}
-> -
->  static irqreturn_t xen_irq_work_interrupt(int irq, void *dev_id)
->  {
->  	irq_enter();
-> -- 
-> 1.8.1.2
+> > > the funtion only is used in drivers/firmware/efi/efi.c thus I can not
+> > > add a blank function in #else section in the efi.h header file. Creating
+> > > another header file for this one function looks bad to me.
+> > 
+> > I agree with Borislav that this should be invoked from efisubsys_init().
+> > Also Dave, there's nothing inherently x86-specific about runtime-map.c -
+> > we've been trying not to dump arch-specific code in
+> > drivers/firmware/efi/.
+> > 
+> > How about something like this, just to give you an idea? This would
+> > allow the ARM/ia64 folks to enable this code if they want at some later
+> > date. But more than that, it makes the code more self-contained and uses
+> > some real interfaces instead of relying on global variables,
+> > 
+> > (not compile tested)
 > 
+> Thanks for the good idea, will tune and test the code.
+> 
+> > diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+> > index 94a1cbcf6e2e..f45ea41deae0 100644
+> > --- a/arch/x86/platform/efi/efi.c
+> > +++ b/arch/x86/platform/efi/efi.c
+> > @@ -76,8 +76,8 @@ static __initdata efi_config_table_type_t arch_tables[] = {
+> >  	{NULL_GUID, NULL, NULL},
+> >  };
+> >  
+> > -void *efi_runtime_map;
+> > -int nr_efi_runtime_map;
+> > +static void *efi_runtime_map;
+> > +static int nr_efi_runtime_map;
+> >  static u64 efi_setup; /* efi setup_data physical address */
+> >  
+> >  /*
+> > @@ -1084,6 +1084,9 @@ void __init efi_enter_virtual_mode(void)
+> >  		}
+> >  	}
+> >  
+> > +	efi_runtime_map_setup(efi_runtime_map, nr_efi_runtime_map,
+> > +			      boot_params.efi_info.efi_memdesc_size);
+> > +
+> >  	BUG_ON(!efi.systab);
+> >  
+> >  	efi_setup_page_tables();
+> > diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
+> > index 0a288e306252..9870eb55d0e5 100644
+> > --- a/drivers/firmware/efi/efi.c
+> > +++ b/drivers/firmware/efi/efi.c
+> > @@ -38,8 +38,7 @@ struct efi __read_mostly efi = {
+> >  };
+> >  EXPORT_SYMBOL(efi);
+> >  
+> > -struct kobject *efi_kobj;
+> > -EXPORT_SYMBOL_GPL(efi_kobj);
+> > +static struct kobject *efi_kobj;
+> >  static struct kobject *efivars_kobj;
+> >  
+> >  /*
+> > @@ -176,6 +175,8 @@ static int __init efisubsys_init(void)
+> >  		goto err_remove_group;
+> >  	}
+> >  
+> > +	efi_runtime_map_init(efi_kobj);
+
+Will add #ifdef CONFIG_EFI_RUNTIME_MAP around above line and add
+error handling
+
+Also will update the usage of gloable efi_kobj, pass it via function
+parameter.
+
+> > +
+> >  	return 0;
+> >  
+> >  err_remove_group:
+> > diff --git a/drivers/firmware/efi/runtime-map.c b/drivers/firmware/efi/runtime-map.c
+> > index e5e998494d8a..ef9631e9c03e 100644
+> > --- a/drivers/firmware/efi/runtime-map.c
+> > +++ b/drivers/firmware/efi/runtime-map.c
+> > @@ -14,6 +14,10 @@
+> >  
+> >  #include <asm/setup.h>
+> >  
+> > +static void *efi_runtime_map;
+> > +static int nr_efi_runtime_map;
+> > +static u32 efi_memdesc_size;
+> > + 
+> >  struct efi_runtime_map_entry {
+> >  	efi_memory_desc_t md;
+> >  	struct kobject kobj;   /* kobject for each entry */
+> > @@ -105,7 +109,6 @@ static struct efi_runtime_map_entry *add_sysfs_runtime_map_entry(int nr)
+> >  {
+> >  	int ret;
+> >  	struct efi_runtime_map_entry *entry;
+> > -	struct efi_info *e = &boot_params.efi_info;
+> >  
+> >  	if (!map_kset) {
+> >  		map_kset = kset_create_and_add("runtime-map", NULL,
+> > @@ -120,7 +123,7 @@ static struct efi_runtime_map_entry *add_sysfs_runtime_map_entry(int nr)
+> >  		return entry;
+> >  	}
+> >  
+> > -	memcpy(&entry->md, efi_runtime_map + nr * e->efi_memdesc_size,
+> > +	memcpy(&entry->md, efi_runtime_map + nr * efi_memdesc_size,
+> >  	       sizeof(efi_memory_desc_t));
+> >  
+> >  	kobject_init(&entry->kobj, &map_ktype);
+> > @@ -135,7 +138,14 @@ static struct efi_runtime_map_entry *add_sysfs_runtime_map_entry(int nr)
+> >  	return entry;
+> >  }
+> >  
+> > -static int __init efi_runtime_map_init(void)
+> > +int efi_runtime_map_setup(void *map, int nr_entries, u32 desc_size)
+
+Will change it to void instead of return int 
+
+> > +{
+> > +	efi_runtime_map = map;
+> > +	nr_efi_runtime_map = nr_entries;
+> > +	efi_memdesc_size = desc_size;
+> > +}
+> > +
+> > +int __init efi_runtime_map_init(struct kobject *efi_kobj)
+> >  {
+> >  	int i, j, ret = 0;
+> >  	struct efi_runtime_map_entry *entry;
+> > @@ -172,5 +182,3 @@ out_add_entry:
+> >  out:
+> >  	return ret;
+> >  }
+> > -
+> > -subsys_initcall(efi_runtime_map_init);
+> > diff --git a/include/linux/efi.h b/include/linux/efi.h
+> > index 4f1651d303b8..47e067044054 100644
+> > --- a/include/linux/efi.h
+> > +++ b/include/linux/efi.h
+> > @@ -873,9 +873,8 @@ int efivars_sysfs_init(void);
+> >  #endif /* CONFIG_EFI_VARS */
+> >  
+> >  #ifdef CONFIG_EFI_RUNTIME_MAP
+> > -extern void *efi_runtime_map;
+> > -extern int nr_efi_runtime_map;
+> > -extern struct kobject *efi_kobj;
+> > +int efi_runtime_map_init(struct kobject *);
+> > +int efi_runtime_map_setup(void *, int, u32);
+
+Will change to void.
+
+> >  #endif
+> >  
+> >  #endif /* _LINUX_EFI_H */
+> > 
+> > -- 
+> > Matt Fleming, Intel Open Source Technology Center
