@@ -1,37 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab3LPG0G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 01:26:06 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:65398 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752336Ab3LPG0E (ORCPT
+	id S1752660Ab3LPGcm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 01:32:42 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:33647 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923Ab3LPGcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 01:26:04 -0500
+	Mon, 16 Dec 2013 01:32:41 -0500
+Message-ID: <52AE9E7E.7040502@oracle.com>
+Date: Mon, 16 Dec 2013 14:32:30 +0800
+From: annie li <annie.li@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-From: Sankha Narayan Guria <sankha93@gmail.com>
-Date: Mon, 16 Dec 2013 11:55:43 +0530
-Message-ID: <CALnup8CU6dSmJJiRzxmH35aQdjVPzsYrfKPqGmZhjLreKSxrTg@mail.gmail.com>
-Subject: [PATCH] Remove double initialization of msg_namelen variable
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: ian.campbell@citrix.com, wei.liu2@citrix.com,
+        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jonathan.davies@citrix.com
+Subject: Re: [Xen-devel] [PATCH net-next v2 0/9] xen-netback: TX grant mapping
+ with SKBTX_DEV_ZEROCOPY instead of copy
+References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
+In-Reply-To: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes the double initialization of the msg_namelen variable.
 
-Signed-off-by: Sankha Narayan Guria <sankha93@gmail.com>
+On 2013/12/13 7:48, Zoltan Kiss wrote:
+> A long known problem of the upstream netback implementation that on the TX
+> path (from guest to Dom0) it copies the whole packet from guest memory into
+> Dom0. That simply became a bottleneck with 10Gb NICs, and generally it's a
+> huge perfomance penalty. The classic kernel version of netback used grant
+> mapping, and to get notified when the page can be unmapped, it used page
+> destructors. Unfortunately that destructor is not an upstreamable solution.
+> Ian Campbell's skb fragment destructor patch series [1] tried to solve this
+> problem, however it seems to be very invasive on the network stack's code,
+> and therefore haven't progressed very well.
+> This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it needs to
+> know when the skb is freed up. That is the way KVM solved the same problem,
+> and based on my initial tests it can do the same for us. Avoiding the extra
+> copy boosted up TX throughput from 6.8 Gbps to 7.9 (I used a slower
+> Interlagos box, both Dom0 and guest on upstream kernel, on the same NUMA node,
+> running iperf 2.0.5, and the remote end was a bare metal box on the same 10Gb
+> switch)
+Sounds good.
+Is the TX throughput gotten between one vm and one bare metal box? or 
+between multiple vms and bare metal? Do you have any test results with 
+netperf?
 
---- linux/drivers/staging/usbip/usbip_common.c.orig 2013-12-16
-11:24:32.930512781 +0530
-+++ linux/drivers/staging/usbip/usbip_common.c 2013-12-16
-11:25:03.190513334 +0530
-@@ -366,7 +366,6 @@ int usbip_recv(struct socket *sock, void
-  msg.msg_namelen = 0;
-  msg.msg_control = NULL;
-  msg.msg_controllen = 0;
-- msg.msg_namelen    = 0;
-  msg.msg_flags      = MSG_NOSIGNAL;
+Thanks
+Annie
+> Based on my investigations the packet get only copied if it is delivered to
+> Dom0 stack, which is due to this [2] patch. That's a bit unfortunate, but
+> luckily it doesn't cause a major regression for this usecase. In the future
+> we should try to eliminate that copy somehow.
+> There are a few spinoff tasks which will be addressed in separate patches:
+> - grant copy the header directly instead of map and memcpy. This should help
+>    us avoiding TLB flushing
+> - use something else than ballooned pages
+> - fix grant map to use page->index properly
+> I will run some more extensive tests, but some basic XenRT tests were already
+> passed with good results.
+> I've tried to broke it down to smaller patches, with mixed results, so I
+> welcome suggestions on that part as well:
+> 1: Introduce TX grant map definitions
+> 2: Change TX path from grant copy to mapping
+> 3: Remove old TX grant copy definitons and fix indentations
+> 4: Change RX path for mapped SKB fragments
+> 5: Add stat counters for zerocopy
+> 6: Handle guests with too many frags
+> 7: Add stat counters for frag_list skbs
+> 8: Timeout packets in RX path
+> 9: Aggregate TX unmap operations
+>
+> v2: I've fixed some smaller things, see the individual patches. I've added a
+> few new stat counters, and handling the important use case when an older guest
+> sends lots of slots. Instead of delayed copy now we timeout packets on the RX
+> path, based on the assumption that otherwise packets should get stucked
+> anywhere else. Finally some unmap batching to avoid too much TLB flush
+>
+> [1] http://lwn.net/Articles/491522/
+> [2] https://lkml.org/lkml/2012/7/20/363
+>
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>
+>
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
 
-  result = kernel_recvmsg(sock, &msg, &iov, 1, size, MSG_WAITALL);
