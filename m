@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab3LPQmS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:42:18 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:50163 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754565Ab3LPQmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:42:14 -0500
-Date: Mon, 16 Dec 2013 11:41:54 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Li Zefan <lizefan@huawei.com>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.13-rc breaks MEMCG_SWAP
-Message-ID: <20131216164154.GX21724@cmpxchg.org>
-References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
- <52AEC989.4080509@huawei.com>
- <20131216095345.GB23582@dhcp22.suse.cz>
- <20131216104042.GC23582@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131216104042.GC23582@dhcp22.suse.cz>
+	id S1754822Ab3LPQnd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:43:33 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:45326 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754602Ab3LPQna (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 11:43:30 -0500
+From: Jean Pihet <jean.pihet@linaro.org>
+To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo <acme@ghostprotocols.net>
+Cc: patches@linaro.org, Will Deacon <will.deacon@arm.com>,
+        Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH] perf: unwind: use the dwarf info only if loaded
+Date: Mon, 16 Dec 2013 17:43:14 +0100
+Message-Id: <1387212194-8028-1-git-send-email-jean.pihet@linaro.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 11:40:42AM +0100, Michal Hocko wrote:
-> On Mon 16-12-13 10:53:45, Michal Hocko wrote:
-> > On Mon 16-12-13 17:36:09, Li Zefan wrote:
-> > > On 2013/12/16 16:36, Hugh Dickins wrote:
-> > > > CONFIG_MEMCG_SWAP is broken in 3.13-rc.  Try something like this:
-> > > > 
-> > > > mkdir -p /tmp/tmpfs /tmp/memcg
-> > > > mount -t tmpfs -o size=1G tmpfs /tmp/tmpfs
-> > > > mount -t cgroup -o memory memcg /tmp/memcg
-> > > > mkdir /tmp/memcg/old
-> > > > echo 512M >/tmp/memcg/old/memory.limit_in_bytes
-> > > > echo $$ >/tmp/memcg/old/tasks
-> > > > cp /dev/zero /tmp/tmpfs/zero 2>/dev/null
-> > > > echo $$ >/tmp/memcg/tasks
-> > > > rmdir /tmp/memcg/old
-> > > > sleep 1	# let rmdir work complete
-> > > > mkdir /tmp/memcg/new
-> > > > umount /tmp/tmpfs
-> > > > dmesg | grep WARNING
-> > > > rmdir /tmp/memcg/new
-> > > > umount /tmp/memcg
-> > > > 
-> > > > Shows lots of WARNING: CPU: 1 PID: 1006 at kernel/res_counter.c:91
-> > > >                            res_counter_uncharge_locked+0x1f/0x2f()
-> > > > 
-> > > > Breakage comes from 34c00c319ce7 ("memcg: convert to use cgroup id").
-> > > > 
-> > > > The lifetime of a cgroup id is different from the lifetime of the
-> > > > css id it replaced: memsw's css_get()s do nothing to hold on to the
-> > > > old cgroup id, it soon gets recycled to a new cgroup, which then
-> > > > mysteriously inherits the old's swap, without any charge for it.
-> > > > (I thought memsw's particular need had been discussed and was
-> > > > well understood when 34c00c319ce7 went in, but apparently not.)
-> > > > 
-> > > > The right thing to do at this stage would be to revert that and its
-> > > > associated commits; but I imagine to do so would be unwelcome to
-> > > > the cgroup guys, going against their general direction; and I've
-> > > > no idea how embedded that css_id removal has become by now.
-> > > > 
-> > > > Perhaps some creative refcounting can rescue memsw while still
-> > > > using cgroup id?
-> > > > 
-> > > 
-> > > Sorry for the broken.
-> > > 
-> > > I think we can keep the cgroup->id until the last css reference is
-> > > dropped and the css is scheduled to be destroyed.
-> > 
-> > How would this work? The task which pushed the memory to the swap is
-> > still alive (living in a different group) and the swap will be there
-> > after the last reference to css as well.
-> 
-> Or did you mean to get css reference in swap_cgroup_record and release
-> it in __mem_cgroup_try_charge_swapin?
+Use the info only if it has been found in the .debug_frame
+section of the ELF binary.
 
-We already do that, swap records hold a css reference.  We do the put
-in mem_cgroup_uncharge_swap().
+Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+---
+ tools/perf/util/unwind.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-It really strikes me as odd that we recycle the cgroup ID while there
-are still references to the cgroup in circulation.
+diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
+index 0efd539..416f22b 100644
+--- a/tools/perf/util/unwind.c
++++ b/tools/perf/util/unwind.c
+@@ -340,10 +340,10 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pi,
+ 	/* Check the .debug_frame section for unwinding info */
+ 	if (!read_unwind_spec_debug_frame(map->dso, ui->machine, &segbase)) {
+ 		memset(&di, 0, sizeof(di));
+-		dwarf_find_debug_frame(0, &di, ip, 0, map->dso->name,
+-				       map->start, map->end);
+-		return dwarf_search_unwind_table(as, ip, &di, pi,
+-						 need_unwind_info, arg);
++		if (dwarf_find_debug_frame(0, &di, ip, 0, map->dso->name,
++					   map->start, map->end))
++			return dwarf_search_unwind_table(as, ip, &di, pi,
++							 need_unwind_info, arg);
+ 	}
+ #endif
+ 
+-- 
+1.7.11.7
+
