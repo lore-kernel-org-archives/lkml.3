@@ -1,257 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab3LPSt5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 13:49:57 -0500
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:28866 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754897Ab3LPSt4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 13:49:56 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
-        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: [PATCH v4 7/9] PCI/MSI: Get rid of pci_enable_msi_block_auto() interface
-Date: Mon, 16 Dec 2013 09:35:00 +0100
-Message-Id: <d9037b2ab455abff30e9c2da0a98e5e01b0940d7.1387140921.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1387140921.git.agordeev@redhat.com>
-References: <cover.1387140921.git.agordeev@redhat.com>
+	id S1755220Ab3LPSvt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 13:51:49 -0500
+Received: from mga09.intel.com ([134.134.136.24]:44324 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754466Ab3LPSvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 13:51:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,496,1384329600"; 
+   d="scan'208";a="425519450"
+From: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>
+To: Josh Triplett <josh@joshtriplett.org>
+CC: Rashika Kheria <rashika.kheria@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Dave, Tushar N" <tushar.n.dave@intel.com>,
+        "Abodunrin, Akeem G" <akeem.g.abodunrin@intel.com>,
+        "Vick, Matthew" <matthew.vick@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: [PATCH v2 1/9] drivers: net: Remove unused function
+ igb_get_eee_status_i354() in e1000_82575.c
+Thread-Topic: [PATCH v2 1/9] drivers: net: Remove unused function
+ igb_get_eee_status_i354() in e1000_82575.c
+Thread-Index: AQHO+MYbfNUBHJm3XkuNGHmH7Uc9KJpXEIHAgACQowD//35VQIAAjI2A//+B8QA=
+Date: Mon, 16 Dec 2013 18:51:45 +0000
+Message-ID: <9BBC4E0CF881AA4299206E2E1412B6264FA14396@ORSMSX102.amr.corp.intel.com>
+References: <a610f6ee6bb992b91e43bdc851f3db62fc3decd5.1386911123.git.rashika.kheria@gmail.com>
+ <9BBC4E0CF881AA4299206E2E1412B6264FA1408B@ORSMSX102.amr.corp.intel.com>
+ <20131216174312.GA26982@jtriplet-mobl1>
+ <9BBC4E0CF881AA4299206E2E1412B6264FA142AA@ORSMSX102.amr.corp.intel.com>
+ <20131216182209.GB7464@jtriplet-mobl1>
+In-Reply-To: <20131216182209.GB7464@jtriplet-mobl1>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBGIptNl027570
 
-As result of introduction of pci_get_msi_vec_count()
-interface pci_enable_msi_block_auto() function became
-superflous.
 
-To enable maximum possible number of MSIs drivers will
-first obtain that number from pci_get_msi_vec_count()
-function and then call pci_enable_msi_block() interface.
 
-Function pci_enable_msi_block_auto() has been introduced
-recently and its only user is AHCI driver, which is also
-updated by this change.
+> -----Original Message-----
+> From: Josh Triplett [mailto:josh@joshtriplett.org]
+> Sent: Monday, December 16, 2013 10:22 AM
+> To: Wyborny, Carolyn
+> Cc: Rashika Kheria; linux-kernel@vger.kernel.org; Kirsher, Jeffrey T; Brandeburg,
+> Jesse; Allan, Bruce W; Skidmore, Donald C; Rose, Gregory V; Waskiewicz Jr,
+> Peter P; Duyck, Alexander H; Ronciak, John; Dave, Tushar N; Abodunrin, Akeem
+> G; Vick, Matthew; e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org
+> Subject: Re: [PATCH v2 1/9] drivers: net: Remove unused function
+> igb_get_eee_status_i354() in e1000_82575.c
+> 
+> On Mon, Dec 16, 2013 at 06:17:40PM +0000, Wyborny, Carolyn wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Josh Triplett [mailto:josh@joshtriplett.org]
+> > > Sent: Monday, December 16, 2013 9:43 AM
+> > > To: Wyborny, Carolyn
+> > > Cc: Rashika Kheria; linux-kernel@vger.kernel.org; Kirsher, Jeffrey
+> > > T; Brandeburg, Jesse; Allan, Bruce W; Skidmore, Donald C; Rose,
+> > > Gregory V; Waskiewicz Jr, Peter P; Duyck, Alexander H; Ronciak,
+> > > John; Dave, Tushar N; Abodunrin, Akeem G; Vick, Matthew;
+> > > e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org
+> > > Subject: Re: [PATCH v2 1/9] drivers: net: Remove unused function
+> > > igb_get_eee_status_i354() in e1000_82575.c
+> > >
+> > > On Mon, Dec 16, 2013 at 05:11:25PM +0000, Wyborny, Carolyn wrote:
+> > > > > -----Original Message-----
+> > > > > From: Rashika Kheria [mailto:rashika.kheria@gmail.com]
+> > > > > Sent: Saturday, December 14, 2013 4:15 AM
+> > > > > To: linux-kernel@vger.kernel.org
+> > > > > Cc: Kirsher, Jeffrey T; Brandeburg, Jesse; Allan, Bruce W;
+> > > > > Wyborny, Carolyn; Skidmore, Donald C; Rose, Gregory V;
+> > > > > Waskiewicz Jr, Peter P; Duyck, Alexander H; Ronciak, John; Dave,
+> > > > > Tushar N; Abodunrin, Akeem G; Vick, Matthew; e1000-
+> > > > > devel@lists.sourceforge.net; netdev@vger.kernel.org;
+> > > > > josh@joshtriplett.org
+> > > > > Subject: [PATCH v2 1/9] drivers: net: Remove unused function
+> > > > > igb_get_eee_status_i354() in e1000_82575.c
+> > > > >
+> > > > > This patch removes the function igb_get_eee_status_i354() in
+> > > > > e1000_82575.c because it is unused.
+> > > > >
+> > > > > It thus eliminates the following warning in
+> > > > > ethernet/intel/igb/e1000_82575.c:
+> > > > > drivers/net/ethernet/intel/igb/e1000_82575.c:2591:5: warning: no
+> > > > > previous prototype for â€˜igb_get_eee_status_i354â€™
+> > > > > [-Wmissing-prototypes]
+> > > > >
+> > > > > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> > > > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > > > > ---
+> > > > >  drivers/net/ethernet/intel/igb/e1000_82575.c |   32 ------------------------
+> --
+> > > > >  1 file changed, 32 deletions(-)
+> > > > >
+> > > > > diff --git a/drivers/net/ethernet/intel/igb/e1000_82575.c
+> > > > > b/drivers/net/ethernet/intel/igb/e1000_82575.c
+> > > > > index 47c2d10..18e5200 100644
+> > > > > --- a/drivers/net/ethernet/intel/igb/e1000_82575.c
+> > > > > +++ b/drivers/net/ethernet/intel/igb/e1000_82575.c
+> > > > > @@ -2580,38 +2580,6 @@ out:
+> > > > >  	return ret_val;
+> > > > >  }
+> > > > >
+> > > > > -/**
+> > > > > - *  igb_get_eee_status_i354 - Get EEE status
+> > > > > - *  @hw: pointer to the HW structure
+> > > > > - *  @status: EEE status
+> > > > > - *
+> > > > > - *  Get EEE status by guessing based on whether Tx or Rx LPI
+> > > > > indications have
+> > > > > - *  been received.
+> > > > > - **/
+> > > > > -s32 igb_get_eee_status_i354(struct e1000_hw *hw, bool *status) -{
+> > > > > -	struct e1000_phy_info *phy = &hw->phy;
+> > > > > -	s32 ret_val = 0;
+> > > > > -	u16 phy_data;
+> > > > > -
+> > > > > -	/* Check if EEE is supported on this device. */
+> > > > > -	if ((hw->phy.media_type != e1000_media_type_copper) ||
+> > > > > -	    (phy->id != M88E1543_E_PHY_ID))
+> > > > > -		goto out;
+> > > > > -
+> > > > > -	ret_val = igb_read_xmdio_reg(hw, E1000_PCS_STATUS_ADDR_I354,
+> > > > > -				     E1000_PCS_STATUS_DEV_I354,
+> > > > > -				     &phy_data);
+> > > > > -	if (ret_val)
+> > > > > -		goto out;
+> > > > > -
+> > > > > -	*status = phy_data & (E1000_PCS_STATUS_TX_LPI_RCVD |
+> > > > > -			      E1000_PCS_STATUS_RX_LPI_RCVD) ? true : false;
+> > > > > -
+> > > > > -out:
+> > > > > -	return ret_val;
+> > > > > -}
+> > > > > -
+> > > > >  static const u8 e1000_emc_temp_data[4] = {
+> > > > >  	E1000_EMC_INTERNAL_DATA,
+> > > > >  	E1000_EMC_DIODE1_DATA,
+> > > > > --
+> > > > > 1.7.9.5
+> > > >
+> > > > NACK.
+> > > >
+> > > > Thanks for the patch Rashika, but this is the incorrect fix for
+> > > > this warning  The function is called in the igb_probe function, so
+> > > > you cannot remove it and I see the prototype in the e1000_82575.h file.
+> > > > Can you double check your source pull?
+> > >
+> > > From top-of-tree linux.git:
+> > >
+> > > ~/src/linux$ git grep igb_get_eee_status_i354
+> > > drivers/net/ethernet/intel/igb/e1000_82575.c: *
+> > > igb_get_eee_status_i354 - Get EEE status
+> > > drivers/net/ethernet/intel/igb/e1000_82575.c:s32jjj
+> > > igb_get_eee_status_i354(struct e1000_hw *hw, bool *status)
+> > >
+> > > A comment and the function itself; no other references.  In what
+> > > tree are you seeing a reference to igb_get_eee_status_i354?
+> > >
+> > > - Josh Triplett
+> >
+> > Thanks Josh,
+> >
+> > My mistake.  I was looking at the "get" not "set" function.  However, this is still
+> not the right fix for the driver as the actual problem is the missing code that is
+> supposed to be calling that function in igb_get_eee in igb_ethtool.c.  The
+> function needs to stay.  I will submit the correct fix ASAP.
+> 
+> Ah, that makes sense.  Can you please Cc Rashika and myself on that patch, with
+> a Reported-by for Rashika?
+> 
+> - Josh Triplett
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
----
- Documentation/PCI/MSI-HOWTO.txt |   39 ++++-----------------------
- drivers/ata/ahci.c              |   56 ++++++++++++++++++++++++--------------
- drivers/pci/msi.c               |   25 -----------------
- include/linux/pci.h             |    7 -----
- 4 files changed, 41 insertions(+), 86 deletions(-)
+Of course.  I'll add a Reported-by for you as well.
 
-diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
-index c03b815..8d35d62 100644
---- a/Documentation/PCI/MSI-HOWTO.txt
-+++ b/Documentation/PCI/MSI-HOWTO.txt
-@@ -127,49 +127,22 @@ on the number of vectors that can be allocated; pci_enable_msi_block()
- returns as soon as it finds any constraint that doesn't allow the
- call to succeed.
- 
--4.2.3 pci_enable_msi_block_auto
--
--int pci_enable_msi_block_auto(struct pci_dev *dev, int *count)
--
--This variation on pci_enable_msi() call allows a device driver to request
--the maximum possible number of MSIs.  The MSI specification only allows
--interrupts to be allocated in powers of two, up to a maximum of 2^5 (32).
--
--If this function returns a positive number, it indicates that it has
--succeeded and the returned value is the number of allocated interrupts. In
--this case, the function enables MSI on this device and updates dev->irq to
--be the lowest of the new interrupts assigned to it.  The other interrupts
--assigned to the device are in the range dev->irq to dev->irq + returned
--value - 1.
--
--If this function returns a negative number, it indicates an error and
--the driver should not attempt to request any more MSI interrupts for
--this device.
--
--If the device driver needs to know the number of interrupts the device
--supports it can pass the pointer count where that number is stored. The
--device driver must decide what action to take if pci_enable_msi_block_auto()
--succeeds, but returns a value less than the number of interrupts supported.
--If the device driver does not need to know the number of interrupts
--supported, it can set the pointer count to NULL.
--
--4.2.4 pci_disable_msi
-+4.2.3 pci_disable_msi
- 
- void pci_disable_msi(struct pci_dev *dev)
- 
- This function should be used to undo the effect of pci_enable_msi() or
--pci_enable_msi_block() or pci_enable_msi_block_auto().  Calling it restores
--dev->irq to the pin-based interrupt number and frees the previously
--allocated message signaled interrupt(s).  The interrupt may subsequently be
--assigned to another device, so drivers should not cache the value of
--dev->irq.
-+pci_enable_msi_block().  Calling it restores dev->irq to the pin-based
-+interrupt number and frees the previously allocated message signaled
-+interrupt(s).  The interrupt may subsequently be assigned to another
-+device, so drivers should not cache the value of dev->irq.
- 
- Before calling this function, a device driver must always call free_irq()
- on any interrupt for which it previously called request_irq().
- Failure to do so results in a BUG_ON(), leaving the device with
- MSI enabled and thus leaking its vector.
- 
--4.2.5 pci_get_msi_vec_count
-+4.2.4 pci_get_msi_vec_count
- 
- int pci_get_msi_vec_count(struct pci_dev *dev)
- 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index e2903d0..e490d42 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1095,26 +1095,40 @@ static inline void ahci_gtf_filter_workaround(struct ata_host *host)
- {}
- #endif
- 
--int ahci_init_interrupts(struct pci_dev *pdev, struct ahci_host_priv *hpriv)
-+int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
-+			 struct ahci_host_priv *hpriv)
- {
--	int rc;
--	unsigned int maxvec;
-+	int rc, nvec;
- 
--	if (!(hpriv->flags & AHCI_HFLAG_NO_MSI)) {
--		rc = pci_enable_msi_block_auto(pdev, &maxvec);
--		if (rc > 0) {
--			if ((rc == maxvec) || (rc == 1))
--				return rc;
--			/*
--			 * Assume that advantage of multipe MSIs is negated,
--			 * so fallback to single MSI mode to save resources
--			 */
--			pci_disable_msi(pdev);
--			if (!pci_enable_msi(pdev))
--				return 1;
--		}
--	}
-+	if (hpriv->flags & AHCI_HFLAG_NO_MSI)
-+		goto intx;
-+
-+	rc = pci_get_msi_vec_count(pdev);
-+	if (rc < 0)
-+		goto intx;
-+
-+	/*
-+	 * If number of MSIs is less than number of ports then Sharing Last
-+	 * Message mode could be enforced. In this case assume that advantage
-+	 * of multipe MSIs is negated and use single MSI mode instead.
-+	 */
-+	if (rc < n_ports)
-+		goto single_msi;
-+
-+	nvec = rc;
-+	rc = pci_enable_msi_block(pdev, nvec);
-+	if (rc)
-+		goto intx;
- 
-+	return nvec;
-+
-+single_msi:
-+	rc = pci_enable_msi(pdev);
-+	if (rc)
-+		goto intx;
-+	return 1;
-+
-+intx:
- 	pci_intx(pdev, 1);
- 	return 0;
- }
-@@ -1281,10 +1295,6 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 
- 	hpriv->mmio = pcim_iomap_table(pdev)[ahci_pci_bar];
- 
--	n_msis = ahci_init_interrupts(pdev, hpriv);
--	if (n_msis > 1)
--		hpriv->flags |= AHCI_HFLAG_MULTI_MSI;
--
- 	/* save initial config */
- 	ahci_pci_save_initial_config(pdev, hpriv);
- 
-@@ -1339,6 +1349,10 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	 */
- 	n_ports = max(ahci_nr_ports(hpriv->cap), fls(hpriv->port_map));
- 
-+	n_msis = ahci_init_interrupts(pdev, n_ports, hpriv);
-+	if (n_msis > 1)
-+		hpriv->flags |= AHCI_HFLAG_MULTI_MSI;
-+
- 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, n_ports);
- 	if (!host)
- 		return -ENOMEM;
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 8915edb..de1acb9 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -902,31 +902,6 @@ int pci_enable_msi_block(struct pci_dev *dev, int nvec)
- }
- EXPORT_SYMBOL(pci_enable_msi_block);
- 
--int pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec)
--{
--	int ret, nvec;
--
--	if (dev->current_state != PCI_D0)
--		return -EINVAL;
--
--	ret = pci_get_msi_vec_count(dev);
--	if (ret < 0)
--		return ret;
--
--	if (maxvec)
--		*maxvec = ret;
--
--	do {
--		nvec = ret;
--		ret = pci_enable_msi_block(dev, nvec);
--	} while (ret > 0);
--
--	if (ret < 0)
--		return ret;
--	return nvec;
--}
--EXPORT_SYMBOL(pci_enable_msi_block_auto);
--
- void pci_msi_shutdown(struct pci_dev *dev)
- {
- 	struct msi_desc *desc;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 997751d..8d9eb6b 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1164,12 +1164,6 @@ static inline int pci_enable_msi_block(struct pci_dev *dev, int nvec)
- 	return -ENOSYS;
- }
- 
--static inline int
--pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec)
--{
--	return -ENOSYS;
--}
--
- static inline void pci_msi_shutdown(struct pci_dev *dev)
- { }
- static inline void pci_disable_msi(struct pci_dev *dev)
-@@ -1202,7 +1196,6 @@ static inline int pci_msi_enabled(void)
- #else
- int pci_get_msi_vec_count(struct pci_dev *dev);
- int pci_enable_msi_block(struct pci_dev *dev, int nvec);
--int pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec);
- void pci_msi_shutdown(struct pci_dev *dev);
- void pci_disable_msi(struct pci_dev *dev);
- int pci_msix_table_size(struct pci_dev *dev);
--- 
-1.7.7.6
+Thanks,
 
+Carolyn
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
