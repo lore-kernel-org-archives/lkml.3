@@ -1,135 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab3LPOjl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 09:39:41 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:34187 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753755Ab3LPOjk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 09:39:40 -0500
-Date: Mon, 16 Dec 2013 09:39:16 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        gordan@bobich.net
-Subject: Re: [Xen-devel] [RFC PATCH 5/5] xen/pciback: PCI reset slot or bus
-Message-ID: <20131216143916.GC12913@phenom.dumpdata.com>
-References: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
- <1386950978-8628-6-git-send-email-konrad.wilk@oracle.com>
- <52AEE548.8010800@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754364Ab3LPOjr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 09:39:47 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:57742 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753755Ab3LPOjp convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Mon, 16 Dec 2013 09:39:45 -0500
+Message-Id: <52AF1EBC020000780010DBF9@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Mon, 16 Dec 2013 14:39:40 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <tony.luck@intel.com>
+Cc: "Matt Fleming" <matt.fleming@intel.com>, <mingo@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] don't select EFI from certain special ACPI drivers
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <52AEE548.8010800@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 11:34:32AM +0000, David Vrabel wrote:
-> On 13/12/13 16:09, Konrad Rzeszutek Wilk wrote:
-> > The life-cycle of a PCI device in Xen pciback is a bit complex.
-> > 
-> > It starts with the device being binded to us - for which
-> > we do a device function reset.
-> > 
-> > If the device is unbinded from us - we also do a function
-> > reset.
-> 
-> Spelling: bound and unbound.
-> 
-> > The reset is done when all of the functions of a device
-> > are binded to Xen pciback. Or when a device is un-assigned
-> > from a guest. We do this by having a 'completion' workqueue
-> > on which the users of the PCI device wait. This workqueue
-> > is started once the device has been 'binded' or de-assigned
-> > from a guest.
-> 
-> The use of a work item and a completion baffles me.  What problem does
-> this solve?
+Commit 7ea6c6c1 ("Move cper.c from drivers/acpi/apei to
+drivers/firmware/efi") results in CONFIG_EFI being enabled even when
+the user doesn't want this. Since ACPI APEI used to build fine without
+UEFI (and as far as I know also has no functional depency on it), at
+least in that case using a reverse dependency is wrong (and a straight
+one isn't needed).
 
-Avoiding of deadlock. Whenever you do any SysFS operations on on PCI
-devices it ends up locking pci_dev and then we try to use it .. and
-end up dead-locking. I should have clarified that more.
+Whether the same is true for ACPI_EXTLOG I don't know - if there is a
+functional dependency, it should depend on EFI rather than selecting
+it. It certainly has (currently) no build dependency.
 
-I could add code to pci (Generic) to have an non-locking variant - but
-there is soo much of it I think doing it in a work item and completion
-would be much simpler.
+Adjust Kconfig and build logic so that the bad dependency gets avoided.
 
-> 
-> > --- a/drivers/xen/xen-pciback/pci_stub.c
-> > +++ b/drivers/xen/xen-pciback/pci_stub.c
-> [...]
-> > +	/* We expect X amount of slots (this would also find out
-> > +	 * if we do not have all of the slots assigned to us).
-> > +	 */
-> > +	list_for_each_entry(pci_dev, &dev->bus->devices, bus_list)
-> > +		slots++;
-> > +
-> > +	spin_lock_irqsave(&pcistub_devices_lock, flags);
-> > +	/* Iterate over the existing devices to ascertain whether
-> > +	 * all of them are under the bridge and not in use. */
-> > +	list_for_each_entry(psdev, &pcistub_devices, dev_list) {
-> > +		if (!psdev->dev)
-> > +			continue;
-> > +
-> > +		if (pci_domain_nr(psdev->dev->bus) == pci_domain_nr(dev->bus) &&
-> > +		    psdev->dev->bus->number == dev->bus->number &&
-> > +		    PCI_SLOT(psdev->dev->devfn) == PCI_SLOT(dev->devfn)) {
-> > +			slots--;
-> > +			/* Ignore ourselves in case hadn't cleaned up yet */
-> > +			if (psdev->pdev && psdev->dev != dev)
-> > +				inuse++;
-> > +		}
-> > +	}
-> 
-> This check looks broken.  A device added to pciback but still bound to
-> another driver will be considered as safe to reset.
-> 
-> I think you want something like:
-> 
-> list_for_each_entry(pdev, &dev->bus->devices, bus_list)
-> {
->     if (pdev != dev && pdev->driver
->         && pdev->driver != xen_pcibk_pci_driver))
->         return -ENOTTY;
-> }
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+---
+ drivers/acpi/Kconfig          |    1 -
+ drivers/acpi/apei/Kconfig     |    1 -
+ drivers/firmware/Makefile     |    1 +
+ drivers/firmware/efi/Kconfig  |    6 +++---
+ drivers/firmware/efi/Makefile |    2 +-
+ 5 files changed, 5 insertions(+), 6 deletions(-)
 
-Good catch!
-> 
-> It is safe to reset unbound devices (even if they're not (or intended)
-> to be available to pciback).
+--- 3.13-rc4/drivers/acpi/Kconfig
++++ 3.13-rc4-ACPI-CPER-no-EFI/drivers/acpi/Kconfig
+@@ -348,7 +348,6 @@ source "drivers/acpi/apei/Kconfig"
+ config ACPI_EXTLOG
+ 	tristate "Extended Error Log support"
+ 	depends on X86_MCE && X86_LOCAL_APIC
+-	select EFI
+ 	select UEFI_CPER
+ 	default n
+ 	help
+--- 3.13-rc4/drivers/acpi/apei/Kconfig
++++ 3.13-rc4-ACPI-CPER-no-EFI/drivers/acpi/apei/Kconfig
+@@ -2,7 +2,6 @@ config ACPI_APEI
+ 	bool "ACPI Platform Error Interface (APEI)"
+ 	select MISC_FILESYSTEMS
+ 	select PSTORE
+-	select EFI
+ 	select UEFI_CPER
+ 	depends on X86
+ 	help
+--- 3.13-rc4/drivers/firmware/Makefile
++++ 3.13-rc4-ACPI-CPER-no-EFI/drivers/firmware/Makefile
+@@ -14,3 +14,4 @@ obj-$(CONFIG_FIRMWARE_MEMMAP)	+= memmap.
+ 
+ obj-$(CONFIG_GOOGLE_FIRMWARE)	+= google/
+ obj-$(CONFIG_EFI)		+= efi/
++obj-$(CONFIG_UEFI_CPER)		+= efi/
+--- 3.13-rc4/drivers/firmware/efi/Kconfig
++++ 3.13-rc4-ACPI-CPER-no-EFI/drivers/firmware/efi/Kconfig
+@@ -36,7 +36,7 @@ config EFI_VARS_PSTORE_DEFAULT_DISABLE
+ 	  backend for pstore by default. This setting can be overridden
+ 	  using the efivars module's pstore_disable parameter.
+ 
+-config UEFI_CPER
+-	def_bool n
+-
+ endmenu
++
++config UEFI_CPER
++	bool
+--- 3.13-rc4/drivers/firmware/efi/Makefile
++++ 3.13-rc4-ACPI-CPER-no-EFI/drivers/firmware/efi/Makefile
+@@ -1,7 +1,7 @@
+ #
+ # Makefile for linux kernel
+ #
+-obj-y					+= efi.o vars.o
++obj-$(CONFIG_EFI)			+= efi.o vars.o
+ obj-$(CONFIG_EFI_VARS)			+= efivars.o
+ obj-$(CONFIG_EFI_VARS_PSTORE)		+= efi-pstore.o
+ obj-$(CONFIG_UEFI_CPER)			+= cper.o
 
-OK, we can check for that.
-> 
-> It is also possible in the above loop if slot reset is supported to
-> ignore sibling devices that are on different slots.
 
-Not sure what you mean?
-> 
-> > +	spin_unlock_irqrestore(&pcistub_devices_lock, flags);
-> > +	/* Slots should be zero (all slots under the bridge are
-> > +	 * accounted for), and inuse should be zero (not assigned
-> > +	 * to anybody). */
-> > +	if (!slots && !inuse) {
-> > +		int rc = 0, bus = 0;
-> > +		list_for_each_entry(pci_dev, &dev->bus->devices, bus_list) {
-> > +			dev_dbg(&pci_dev->dev, "resetting the slot device\n");
-> > +			if (!pci_probe_reset_slot(pci_dev->slot))
-> > +				rc = pci_reset_slot(pci_dev->slot);
-> > +			else
-> > +				bus = 1;
-> > +			if (rc)
-> > +				dev_info(&pci_dev->dev, "resetting slot failed with %d\n", rc);
-> > +		}
-> 
-> Why are you resetting every slot on the bus?  You only need to reset the
-> slot that the device is on.
 
-Bug.
-> 
-> Take a look at the vfio-pci driver.  It does this bus/slot reset choice
-> in a much more straightforward way.
-> 
-> David
