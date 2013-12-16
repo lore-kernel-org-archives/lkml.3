@@ -1,121 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab3LPUmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 15:42:22 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:50193 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751465Ab3LPUmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 15:42:21 -0500
-Date: Mon, 16 Dec 2013 15:42:15 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/7] mm: page_alloc: Make zone distribution page aging
- policy configurable
-Message-ID: <20131216204215.GA21724@cmpxchg.org>
-References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
- <1386943807-29601-6-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386943807-29601-6-git-send-email-mgorman@suse.de>
+	id S1752216Ab3LPUnt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 15:43:49 -0500
+Received: from 12.mo1.mail-out.ovh.net ([87.98.162.229]:55752 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751654Ab3LPUnr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 15:43:47 -0500
+X-Greylist: delayed 1035 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Dec 2013 15:43:47 EST
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Landley <rob@landley.net>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [RFC PATCH 05/10] ARM: at91: make use of the new AIC driver for dt enabled boards
+Date: Mon, 16 Dec 2013 21:24:16 +0100
+Message-Id: <1387225461-6201-6-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387225461-6201-1-git-send-email-b.brezillon@overkiz.com>
+References: <1387225461-6201-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 7065584867318593639
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrleeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrleeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 02:10:05PM +0000, Mel Gorman wrote:
-> Commit 81c0a2bb ("mm: page_alloc: fair zone allocator policy") solved a
-> bug whereby new pages could be reclaimed before old pages because of
-> how the page allocator and kswapd interacted on the per-zone LRU lists.
-> Unfortunately it was missed during review that a consequence is that
-> we also round-robin between NUMA nodes. This is bad for two reasons
-> 
-> 1. It alters the semantics of MPOL_LOCAL without telling anyone
-> 2. It incurs an immediate remote memory performance hit in exchange
->    for a potential performance gain when memory needs to be reclaimed
->    later
-> 
-> No cookies for the reviewers on this one.
-> 
-> This patch makes the behaviour of the fair zone allocator policy
-> configurable.  By default it will only distribute pages that are going
-> to exist on the LRU between zones local to the allocating process. This
-> preserves the historical semantics of MPOL_LOCAL.
-> 
-> By default, slab pages are not distributed between zones after this patch is
-> applied. It can be argued that they should get similar treatment but they
-> have different lifecycles to LRU pages, the shrinkers are not zone-aware
-> and the interaction between the page allocator and kswapd is different
-> for slabs. If it turns out to be an almost universal win, we can change
-> the default.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  Documentation/sysctl/vm.txt |  32 ++++++++++++++
->  include/linux/mmzone.h      |   2 +
->  include/linux/swap.h        |   2 +
->  kernel/sysctl.c             |   8 ++++
->  mm/page_alloc.c             | 102 ++++++++++++++++++++++++++++++++++++++------
->  5 files changed, 134 insertions(+), 12 deletions(-)
-> 
-> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-> index 1fbd4eb..8eaa562 100644
-> --- a/Documentation/sysctl/vm.txt
-> +++ b/Documentation/sysctl/vm.txt
-> @@ -56,6 +56,7 @@ Currently, these files are in /proc/sys/vm:
->  - swappiness
->  - user_reserve_kbytes
->  - vfs_cache_pressure
-> +- zone_distribute_mode
->  - zone_reclaim_mode
->  
->  ==============================================================
-> @@ -724,6 +725,37 @@ causes the kernel to prefer to reclaim dentries and inodes.
->  
->  ==============================================================
->  
-> +zone_distribute_mode
-> +
-> +Pages allocation and reclaim are managed on a per-zone basis. When the
-> +system needs to reclaim memory, candidate pages are selected from these
-> +per-zone lists.  Historically, a potential consequence was that recently
-> +allocated pages were considered reclaim candidates. From a zone-local
-> +perspective, page aging was preserved but from a system-wide perspective
-> +there was an age inversion problem.
-> +
-> +A similar problem occurs on a node level where young pages may be reclaimed
-> +from the local node instead of allocating remote memory. Unforuntately, the
-> +cost of accessing remote nodes is higher so the system must choose by default
-> +between favouring page aging or node locality. zone_distribute_mode controls
-> +how the system will distribute page ages between zones.
-> +
-> +0	= Never round-robin based on age
+Add a new Kconfig option for the new AIC driver
+(drivers/irqchip/irq-atmel-aic.c) and remove selection of OLD_IRQ_AT91
+when selecting dt boards.
 
-I think we should be very conservative with the userspace interface we
-export on a mechanism we are obviously just figuring out.
+Remove specific irq init code in all dt board files: this init procedure
+is automatically handled in of_irq_init which is called by the arm irq core
+code and is in charge of calling the appropriate aic init functions.
 
-> +Otherwise the values are ORed together
-> +
-> +1	= Distribute anon pages between zones local to the allocating node
-> +2	= Distribute file pages between zones local to the allocating node
-> +4	= Distribute slab pages between zones local to the allocating node
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ arch/arm/mach-at91/Kconfig           |   10 +++++++---
+ arch/arm/mach-at91/board-dt-rm9200.c |   13 -------------
+ arch/arm/mach-at91/board-dt-sam9.c   |   14 --------------
+ arch/arm/mach-at91/board-dt-sama5.c  |   13 -------------
+ 4 files changed, 7 insertions(+), 43 deletions(-)
 
-Zone fairness within a node does not affect mempolicy or remote
-reference costs.  Is there a reason to have this configurable?
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index e1e6ff4..80da78c 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -32,6 +32,13 @@ config OLD_IRQ_AT91
+ 	bool
+ 	default false
+ 
++config ATMEL_AIC_IRQ
++	bool
++	default USE_OF
++	select GENERIC_IRQ_CHIP
++	select IRQ_DOMAIN
++	select MULTI_IRQ_HANDLER
++
+ config AT91_SAM9_ALT_RESET
+ 	bool
+ 	default !ARCH_AT91X40
+@@ -194,7 +201,6 @@ config MACH_AT91RM9200_DT
+ 	bool "Atmel AT91RM9200 Evaluation Kits with device-tree support"
+ 	depends on SOC_AT91RM9200
+ 	select USE_OF
+-	select OLD_IRQ_AT91
+ 	help
+ 	  Select this if you want to experiment device-tree with
+ 	  an Atmel RM9200 Evaluation Kit.
+@@ -203,7 +209,6 @@ config MACH_AT91SAM9_DT
+ 	bool "Atmel AT91SAM Evaluation Kits with device-tree support"
+ 	depends on SOC_AT91SAM9
+ 	select USE_OF
+-	select OLD_IRQ_AT91
+ 	help
+ 	  Select this if you want to experiment device-tree with
+ 	  an Atmel Evaluation Kit.
+@@ -212,7 +217,6 @@ config MACH_SAMA5_DT
+ 	bool "Atmel SAMA5 Evaluation Kits with device-tree support"
+ 	depends on SOC_SAMA5
+ 	select USE_OF
+-	select OLD_IRQ_AT91
+ 	select PHYLIB if NETDEVICES
+ 	help
+ 	  Select this if you want to experiment device-tree with
+diff --git a/arch/arm/mach-at91/board-dt-rm9200.c b/arch/arm/mach-at91/board-dt-rm9200.c
+index 3a185fa..61ea214 100644
+--- a/arch/arm/mach-at91/board-dt-rm9200.c
++++ b/arch/arm/mach-at91/board-dt-rm9200.c
+@@ -24,17 +24,6 @@
+ #include "at91_aic.h"
+ #include "generic.h"
+ 
+-
+-static const struct of_device_id irq_of_match[] __initconst = {
+-	{ .compatible = "atmel,at91rm9200-aic", .data = at91_aic_of_init },
+-	{ /*sentinel*/ }
+-};
+-
+-static void __init at91rm9200_dt_init_irq(void)
+-{
+-	of_irq_init(irq_of_match);
+-}
+-
+ static const char *at91rm9200_dt_board_compat[] __initdata = {
+ 	"atmel,at91rm9200",
+ 	NULL
+@@ -43,8 +32,6 @@ static const char *at91rm9200_dt_board_compat[] __initdata = {
+ DT_MACHINE_START(at91rm9200_dt, "Atmel AT91RM9200 (Device Tree)")
+ 	.init_time      = at91rm9200_timer_init,
+ 	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+ 	.init_early	= at91rm9200_dt_initialize,
+-	.init_irq	= at91rm9200_dt_init_irq,
+ 	.dt_compat	= at91rm9200_dt_board_compat,
+ MACHINE_END
+diff --git a/arch/arm/mach-at91/board-dt-sam9.c b/arch/arm/mach-at91/board-dt-sam9.c
+index 3dab868..d4073c0 100644
+--- a/arch/arm/mach-at91/board-dt-sam9.c
++++ b/arch/arm/mach-at91/board-dt-sam9.c
+@@ -20,22 +20,10 @@
+ #include <asm/mach/map.h>
+ #include <asm/mach/irq.h>
+ 
+-#include "at91_aic.h"
+ #include "board.h"
+ #include "generic.h"
+ 
+ 
+-static const struct of_device_id irq_of_match[] __initconst = {
+-
+-	{ .compatible = "atmel,at91rm9200-aic", .data = at91_aic_of_init },
+-	{ /*sentinel*/ }
+-};
+-
+-static void __init at91_dt_init_irq(void)
+-{
+-	of_irq_init(irq_of_match);
+-}
+-
+ static const char *at91_dt_board_compat[] __initdata = {
+ 	"atmel,at91sam9",
+ 	NULL
+@@ -45,8 +33,6 @@ DT_MACHINE_START(at91sam_dt, "Atmel AT91SAM (Device Tree)")
+ 	/* Maintainer: Atmel */
+ 	.init_time	= at91sam926x_pit_init,
+ 	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+ 	.init_early	= at91_dt_initialize,
+-	.init_irq	= at91_dt_init_irq,
+ 	.dt_compat	= at91_dt_board_compat,
+ MACHINE_END
+diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
+index 075ec05..d6fe04b 100644
+--- a/arch/arm/mach-at91/board-dt-sama5.c
++++ b/arch/arm/mach-at91/board-dt-sama5.c
+@@ -35,17 +35,6 @@ static void __init sama5_dt_timer_init(void)
+ 	at91sam926x_pit_init();
+ }
+ 
+-static const struct of_device_id irq_of_match[] __initconst = {
+-
+-	{ .compatible = "atmel,sama5d3-aic", .data = at91_aic5_of_init },
+-	{ /*sentinel*/ }
+-};
+-
+-static void __init at91_dt_init_irq(void)
+-{
+-	of_irq_init(irq_of_match);
+-}
+-
+ static int ksz9021rn_phy_fixup(struct phy_device *phy)
+ {
+ 	int value;
+@@ -82,9 +71,7 @@ DT_MACHINE_START(sama5_dt, "Atmel SAMA5 (Device Tree)")
+ 	/* Maintainer: Atmel */
+ 	.init_time	= sama5_dt_timer_init,
+ 	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic5_handle_irq,
+ 	.init_early	= at91_dt_initialize,
+-	.init_irq	= at91_dt_init_irq,
+ 	.init_machine	= sama5_dt_device_init,
+ 	.dt_compat	= sama5_dt_board_compat,
+ MACHINE_END
+-- 
+1.7.9.5
 
-> +The following three flags effectively alter MPOL_DEFAULT, be careful.
-> +
-> +8	= Distribute anon pages between zones remote to the allocating node
-> +16	= Distribute file pages between zones remote to the allocating node
-> +32	= Distribute slab pages between zones remote to the allocating node
-
-Yes, it's conceivable that somebody might want to disable remote
-distribution because of the extra references.
-
-But at this point, I'd much rather back out anon and slab distribution
-entirely, it was a mistake to include them.
-
-That would leave us with a single knob to disable remote page cache
-placement.
