@@ -1,214 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab3LPKkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:40:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44136 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab3LPKki (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:40:38 -0500
-Date: Mon, 16 Dec 2013 02:40:22 -0800
-From: "tip-bot for Paul E. McKenney" <tipbot@zytor.com>
-Message-ID: <tip-17eb88e068430014deb709e5af34197cdf2390c9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, linux-arch@vger.kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, linux-arch@vger.kernel.org
-In-Reply-To: <1386799151-2219-6-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <1386799151-2219-6-git-send-email-paulmck@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] Documentation/memory-barriers.txt:
-  Downgrade UNLOCK+BLOCK
-Git-Commit-ID: 17eb88e068430014deb709e5af34197cdf2390c9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753471Ab3LPKkr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:40:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51232 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751848Ab3LPKkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 05:40:43 -0500
+Date: Mon, 16 Dec 2013 11:40:42 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.13-rc breaks MEMCG_SWAP
+Message-ID: <20131216104042.GC23582@dhcp22.suse.cz>
+References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
+ <52AEC989.4080509@huawei.com>
+ <20131216095345.GB23582@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 16 Dec 2013 02:40:28 -0800 (PST)
+In-Reply-To: <20131216095345.GB23582@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  17eb88e068430014deb709e5af34197cdf2390c9
-Gitweb:     http://git.kernel.org/tip/17eb88e068430014deb709e5af34197cdf2390c9
-Author:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-AuthorDate: Wed, 11 Dec 2013 13:59:09 -0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 16 Dec 2013 11:36:15 +0100
+On Mon 16-12-13 10:53:45, Michal Hocko wrote:
+> On Mon 16-12-13 17:36:09, Li Zefan wrote:
+> > On 2013/12/16 16:36, Hugh Dickins wrote:
+> > > CONFIG_MEMCG_SWAP is broken in 3.13-rc.  Try something like this:
+> > > 
+> > > mkdir -p /tmp/tmpfs /tmp/memcg
+> > > mount -t tmpfs -o size=1G tmpfs /tmp/tmpfs
+> > > mount -t cgroup -o memory memcg /tmp/memcg
+> > > mkdir /tmp/memcg/old
+> > > echo 512M >/tmp/memcg/old/memory.limit_in_bytes
+> > > echo $$ >/tmp/memcg/old/tasks
+> > > cp /dev/zero /tmp/tmpfs/zero 2>/dev/null
+> > > echo $$ >/tmp/memcg/tasks
+> > > rmdir /tmp/memcg/old
+> > > sleep 1	# let rmdir work complete
+> > > mkdir /tmp/memcg/new
+> > > umount /tmp/tmpfs
+> > > dmesg | grep WARNING
+> > > rmdir /tmp/memcg/new
+> > > umount /tmp/memcg
+> > > 
+> > > Shows lots of WARNING: CPU: 1 PID: 1006 at kernel/res_counter.c:91
+> > >                            res_counter_uncharge_locked+0x1f/0x2f()
+> > > 
+> > > Breakage comes from 34c00c319ce7 ("memcg: convert to use cgroup id").
+> > > 
+> > > The lifetime of a cgroup id is different from the lifetime of the
+> > > css id it replaced: memsw's css_get()s do nothing to hold on to the
+> > > old cgroup id, it soon gets recycled to a new cgroup, which then
+> > > mysteriously inherits the old's swap, without any charge for it.
+> > > (I thought memsw's particular need had been discussed and was
+> > > well understood when 34c00c319ce7 went in, but apparently not.)
+> > > 
+> > > The right thing to do at this stage would be to revert that and its
+> > > associated commits; but I imagine to do so would be unwelcome to
+> > > the cgroup guys, going against their general direction; and I've
+> > > no idea how embedded that css_id removal has become by now.
+> > > 
+> > > Perhaps some creative refcounting can rescue memsw while still
+> > > using cgroup id?
+> > > 
+> > 
+> > Sorry for the broken.
+> > 
+> > I think we can keep the cgroup->id until the last css reference is
+> > dropped and the css is scheduled to be destroyed.
+> 
+> How would this work? The task which pushed the memory to the swap is
+> still alive (living in a different group) and the swap will be there
+> after the last reference to css as well.
 
-Documentation/memory-barriers.txt: Downgrade UNLOCK+BLOCK
+Or did you mean to get css reference in swap_cgroup_record and release
+it in __mem_cgroup_try_charge_swapin?
 
-Historically, an UNLOCK+LOCK pair executed by one CPU, by one
-task, or on a given lock variable has implied a full memory
-barrier.  In a recent LKML thread, the wisdom of this historical
-approach was called into question:
-http://www.spinics.net/lists/linux-mm/msg65653.html, in part due
-to the memory-order complexities of low-handoff-overhead queued
-locks on x86 systems.
+That would prevent the warning (assuming idr_remove would move to
+css_free[1]) but I am not sure this is the right thing to do. memsw charges
+will be accounted to the parent already (assuming there is one) without
+anybody to uncharge them because all uncharges would fallback to the
+root memcg after css_offline.
 
-This patch therefore removes this guarantee from the
-documentation, and further documents how to restore it via a new
-smp_mb__after_unlock_lock() primitive.
+Hugh's approach seems much better.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: <linux-arch@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1386799151-2219-6-git-send-email-paulmck@linux.vnet.ibm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- Documentation/memory-barriers.txt | 84 ++++++++++++++++++++++++++++++++-------
- 1 file changed, 69 insertions(+), 15 deletions(-)
-
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index 919fd60..cb753c8 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -402,12 +402,18 @@ And a couple of implicit varieties:
-      Memory operations that occur after an UNLOCK operation may appear to
-      happen before it completes.
- 
--     LOCK and UNLOCK operations are guaranteed to appear with respect to each
--     other strictly in the order specified.
--
-      The use of LOCK and UNLOCK operations generally precludes the need for
-      other sorts of memory barrier (but note the exceptions mentioned in the
--     subsection "MMIO write barrier").
-+     subsection "MMIO write barrier").  In addition, an UNLOCK+LOCK pair
-+     is -not- guaranteed to act as a full memory barrier.  However,
-+     after a LOCK on a given lock variable, all memory accesses preceding any
-+     prior UNLOCK on that same variable are guaranteed to be visible.
-+     In other words, within a given lock variable's critical section,
-+     all accesses of all previous critical sections for that lock variable
-+     are guaranteed to have completed.
-+
-+     This means that LOCK acts as a minimal "acquire" operation and
-+     UNLOCK acts as a minimal "release" operation.
- 
- 
- Memory barriers are only required where there's a possibility of interaction
-@@ -1633,8 +1639,12 @@ for each construct.  These operations all imply certain barriers:
-      Memory operations issued after the LOCK will be completed after the LOCK
-      operation has completed.
- 
--     Memory operations issued before the LOCK may be completed after the LOCK
--     operation has completed.
-+     Memory operations issued before the LOCK may be completed after the
-+     LOCK operation has completed.  An smp_mb__before_spinlock(), combined
-+     with a following LOCK, orders prior loads against subsequent stores
-+     and stores and prior stores against subsequent stores.  Note that
-+     this is weaker than smp_mb()!  The smp_mb__before_spinlock()
-+     primitive is free on many architectures.
- 
-  (2) UNLOCK operation implication:
- 
-@@ -1654,9 +1664,6 @@ for each construct.  These operations all imply certain barriers:
-      All LOCK operations issued before an UNLOCK operation will be completed
-      before the UNLOCK operation.
- 
--     All UNLOCK operations issued before a LOCK operation will be completed
--     before the LOCK operation.
--
-  (5) Failed conditional LOCK implication:
- 
-      Certain variants of the LOCK operation may fail, either due to being
-@@ -1664,9 +1671,6 @@ for each construct.  These operations all imply certain barriers:
-      signal whilst asleep waiting for the lock to become available.  Failed
-      locks do not imply any sort of barrier.
- 
--Therefore, from (1), (2) and (4) an UNLOCK followed by an unconditional LOCK is
--equivalent to a full barrier, but a LOCK followed by an UNLOCK is not.
--
- [!] Note: one of the consequences of LOCKs and UNLOCKs being only one-way
-     barriers is that the effects of instructions outside of a critical section
-     may seep into the inside of the critical section.
-@@ -1677,13 +1681,57 @@ LOCK, and an access following the UNLOCK to happen before the UNLOCK, and the
- two accesses can themselves then cross:
- 
- 	*A = a;
--	LOCK
--	UNLOCK
-+	LOCK M
-+	UNLOCK M
- 	*B = b;
- 
- may occur as:
- 
--	LOCK, STORE *B, STORE *A, UNLOCK
-+	LOCK M, STORE *B, STORE *A, UNLOCK M
-+
-+This same reordering can of course occur if the LOCK and UNLOCK are
-+to the same lock variable, but only from the perspective of another
-+CPU not holding that lock.
-+
-+In short, an UNLOCK followed by a LOCK may -not- be assumed to be a full
-+memory barrier because it is possible for a preceding UNLOCK to pass a
-+later LOCK from the viewpoint of the CPU, but not from the viewpoint
-+of the compiler.  Note that deadlocks cannot be introduced by this
-+interchange because if such a deadlock threatened, the UNLOCK would
-+simply complete.
-+
-+If it is necessary for an UNLOCK-LOCK pair to produce a full barrier,
-+the LOCK can be followed by an smp_mb__after_unlock_lock() invocation.
-+This will produce a full barrier if either (a) the UNLOCK and the LOCK
-+are executed by the same CPU or task, or (b) the UNLOCK and LOCK act
-+on the same lock variable.  The smp_mb__after_unlock_lock() primitive
-+is free on many architectures.  Without smp_mb__after_unlock_lock(),
-+the critical sections corresponding to the UNLOCK and the LOCK can cross:
-+
-+	*A = a;
-+	UNLOCK M
-+	LOCK N
-+	*B = b;
-+
-+could occur as:
-+
-+	LOCK N, STORE *B, STORE *A, UNLOCK M
-+
-+With smp_mb__after_unlock_lock(), they cannot, so that:
-+
-+	*A = a;
-+	UNLOCK M
-+	LOCK N
-+	smp_mb__after_unlock_lock();
-+	*B = b;
-+
-+will always occur as either of the following:
-+
-+	STORE *A, UNLOCK, LOCK, STORE *B
-+	STORE *A, LOCK, UNLOCK, STORE *B
-+
-+If the UNLOCK and LOCK were instead both operating on the same lock
-+variable, only the first of these two alternatives can occur.
- 
- Locks and semaphores may not provide any guarantee of ordering on UP compiled
- systems, and so cannot be counted on in such a situation to actually achieve
-@@ -1911,6 +1959,7 @@ However, if the following occurs:
- 	UNLOCK M	     [1]
- 	ACCESS_ONCE(*D) = d;		ACCESS_ONCE(*E) = e;
- 					LOCK M		     [2]
-+					smp_mb__after_unlock_lock();
- 					ACCESS_ONCE(*F) = f;
- 					ACCESS_ONCE(*G) = g;
- 					UNLOCK M	     [2]
-@@ -1928,6 +1977,11 @@ But assuming CPU 1 gets the lock first, CPU 3 won't see any of:
- 	*F, *G or *H preceding LOCK M [2]
- 	*A, *B, *C, *E, *F or *G following UNLOCK M [2]
- 
-+Note that the smp_mb__after_unlock_lock() is critically important
-+here: Without it CPU 3 might see some of the above orderings.
-+Without smp_mb__after_unlock_lock(), the accesses are not guaranteed
-+to be seen in order unless CPU 3 holds lock M.
-+
- 
- LOCKS VS I/O ACCESSES
- ---------------------
+[1] Is this even possible? I cannot say I would understand the comment
+above idr_remove in cgroup_destroy_css_killed 100% but it suggests we
+cannot postpone it to later.
+-- 
+Michal Hocko
+SUSE Labs
