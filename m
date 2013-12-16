@@ -1,101 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab3LPVVX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 16:21:23 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:34414 "EHLO
+	id S1752693Ab3LPVVj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 16:21:39 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:34436 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab3LPVVV (ORCPT
+	with ESMTP id S1752629Ab3LPVVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 16:21:21 -0500
-Date: Mon, 16 Dec 2013 15:20:01 -0600
+	Mon, 16 Dec 2013 16:21:36 -0500
+Date: Mon, 16 Dec 2013 15:20:56 -0600
 From: Felipe Balbi <balbi@ti.com>
-To: Matt Porter <mporter@linaro.org>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>, Tomasz Figa <t.figa@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: Re: [PATCH v6 5/9] usb: gadget: s3c-hsotg: use generic
- phy_init()/phy_exit() support
-Message-ID: <20131216212001.GD12896@saruman.home>
+To: Apelete Seketeli <apelete@seketeli.net>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH 3/3] usb: musb: fix setting JZ4740 gadget periphal mode
+ on reset
+Message-ID: <20131216212056.GE12896@saruman.home>
 Reply-To: <balbi@ti.com>
-References: <1386953483-21631-1-git-send-email-mporter@linaro.org>
- <1386953483-21631-6-git-send-email-mporter@linaro.org>
+References: <1386992918-1531-1-git-send-email-apelete@seketeli.net>
+ <1386992918-1531-4-git-send-email-apelete@seketeli.net>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UoPmpPX/dBe4BELn"
+	protocol="application/pgp-signature"; boundary="Dzs2zDY0zgkG72+7"
 Content-Disposition: inline
-In-Reply-To: <1386953483-21631-6-git-send-email-mporter@linaro.org>
+In-Reply-To: <1386992918-1531-4-git-send-email-apelete@seketeli.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---UoPmpPX/dBe4BELn
+--Dzs2zDY0zgkG72+7
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Dec 13, 2013 at 11:51:19AM -0500, Matt Porter wrote:
-> If a generic phy is present, call phy_init()/phy_exit(). This supports
-> generic phys that must be soft reset before power on.
+On Sat, Dec 14, 2013 at 04:48:38AM +0100, Apelete Seketeli wrote:
+> JZ4740 USB Device Controller is not OTG compatible and does not have DEVC=
+TL
+> register in silicon.
 >=20
-> Signed-off-by: Matt Porter <mporter@linaro.org>
-> Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+> During ethernet-over-usb transactions, on reset, musb driver tries to
+> read from DEVCTL and consequently sets device as host (A-Device)
+> instead of peripheral (B-Device), which makes it a composite device to
+> the USB gadget driver.
+> This induces a kernel panic during power down where the USB gadget
+> driver does a null pointer dereference when trying to access the
+> composite device configuration.
+>=20
+> On reset, do not rely on DEVCTL value for setting gadget peripheral
+> mode: hardcode it instead to B-Device.
+>=20
+> Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
 > ---
->  drivers/usb/gadget/s3c-hsotg.c | 5 +++++
->  1 file changed, 5 insertions(+)
+>  drivers/usb/musb/musb_gadget.c |    9 +++++++++
+>  1 file changed, 9 insertions(+)
 >=20
-> diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsot=
-g.c
-> index 7c5d8bd..e9683c2 100644
-> --- a/drivers/usb/gadget/s3c-hsotg.c
-> +++ b/drivers/usb/gadget/s3c-hsotg.c
-> @@ -3621,6 +3621,9 @@ static int s3c_hsotg_probe(struct platform_device *=
-pdev)
->  		goto err_supplies;
->  	}
-> =20
-> +	if (hsotg->phy)
-> +		phy_init(hsotg->phy);
+> diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadge=
+t.c
+> index 32fb057..b4bea7a 100644
+> --- a/drivers/usb/musb/musb_gadget.c
+> +++ b/drivers/usb/musb/musb_gadget.c
+> @@ -2119,6 +2119,14 @@ __acquires(musb->lock)
+>  	/* Normal reset, as B-Device;
+>  	 * or else after HNP, as A-Device
+>  	 */
+> +#if defined(CONFIG_USB_MUSB_JZ4740) || defined(CONFIG_USB_MUSB_JZ4740_MO=
+DULE)
 
-doesn't build. you need to include <linux/phy/phy.h>
+NAK, no ifdefs in this driver. Pass a quirk flag through platform_data
+or something similar.
 
 --=20
 balbi
 
---UoPmpPX/dBe4BELn
+--Dzs2zDY0zgkG72+7
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSr26BAAoJEIaOsuA1yqRESYkP/1LrfZ2asiCFbfXVAgCu7uxS
-oGGJ8193TNJ1DForZ4MrtiJiWQd3HGP+qjs1oUwrKepEwVVJtWuibkXvw5yyELXy
-blDmS/sXmdI7WC84b2gkLlTJ2FpOiYF2wYpanh/Nla0OJptIFfosPlhA3pVwCa6l
-UdVBd0p4/fmj5w9Yr9ZwYEbLC87HGNrx8kksanT9yKwi2NMOC6t+Z1MQ2ZDc/UdP
-TBbe5FdS33c3HbpXI/F/c8pjLYBqzKCm/lR1qHNGJcQGd4kpe1vMsIUA/oz95g4v
-S5SKOoTVmC05qWyal/r5Lg5pgbMTIrnA2HgKYrHq8PmcTLOQtAX/sR7iz4Q/pE4E
-xqnyEE8Y9zMjieA40ZVq6c7Su0f2sdCFBEGNmEWfoi/ajKE2baVTq9PRqidXhVnz
-4F2o491FtBhdJACkw6OdCC27G8KCXqtVGpNqAfYlfFgSMIeuBsSuEyTE/vRonFC9
-eDtq8FrSaI/bhrFw+enoeQeaZuzCR0Xn9KORkXC8wzghRnuiTuFgKC2Sr1Ql0hwU
-iLDrOCI4fmWdZXjy8j1ySdWSD9kN2uGO5QBviinPPv171fJ9t+16TIf6F+MVI380
-57V+aOCRX9RlTxDZypQU73bV6HqWxMav1Jil5epzmA1qSAo610GhO80OErDmAKzq
-3ZvpJG8fNTWwL8lDyotX
-=6Zsf
+iQIcBAEBAgAGBQJSr264AAoJEIaOsuA1yqREkc8QAIWWmDSDNfFhszkkbb/i6hv7
+emxBd0TFKTVlH+wyuIcplYFl7IPOfPjxZevR87cMRh1zcLjtnEZL/uFGoc7kXi4Z
+DfO92eAzA+BndUzpdvNToHCvXEuiqZxqzuP8UgUBBaxstpwDBy9oc2pIRa2+nfNs
+sGtQkKIYIGY5CeiSHlC80zM8at2psfXUHNGP3Cj6Zz+NboFdNDDaSHPt/XtSKesB
+pTmg7JGpwI+CFi7xjEKwVhs4n5MRLlGkm/EHZVHZT0+cTdNgN/9lnDd6fDgFEGWi
+CGWNNiqiRPaR/cl1MnHQSZiiaTKzM2BelsyClDQ0x2jAQNHTLUtymsVW5PzAQ6K1
+RH2smXAJvjIyMtzHFUYWbqEGQmnMDyY/qDXJAw3WxN4deZBXY9/79qfkuaosxwmh
+L4wB9wxs3Bnk6PijHNCG/J0B2/6LJBl/tvQ4byaI38yuG6ibDYSx27Jeq/ru1giY
+Vzqnl4EgiRDRtb1xPwZuA11uOUL9u/S4gGX+2kEX8dCNjOQwrEhpCi4RbElKZ0h1
+L+VdplVRumJIpSQDAGQvJN3r7uWaYztYuYToA5/Rv56wdCnWhIm+PX0wE9+VPC1r
+2sfplUq06vO9B0Umh39yd5Y16cbxTQV3sjlVWEau0IMwzlQbgaDwMRzGK4UHPWiY
+8fh6sQ/9ZjZIkKgyHfV4
+=KUh6
 -----END PGP SIGNATURE-----
 
---UoPmpPX/dBe4BELn--
+--Dzs2zDY0zgkG72+7--
