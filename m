@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755015Ab3LPRpY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 12:45:24 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:48778 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143Ab3LPRpW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 12:45:22 -0500
+	id S1754884Ab3LPRtQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 12:49:16 -0500
+Received: from mga11.intel.com ([192.55.52.93]:65059 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754704Ab3LPRtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 12:49:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,496,1384329600"; 
+   d="scan'208";a="450861270"
+Message-ID: <52AF3CF0.3090502@linux.intel.com>
+Date: Mon, 16 Dec 2013 19:48:32 +0200
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <cover.1387205337.git.liwang@ubuntukylin.com>
-References: <cover.1387205337.git.liwang@ubuntukylin.com>
-Date: Mon, 16 Dec 2013 09:45:22 -0800
-Message-ID: <CAM_iQpUSX1yX9SMvUnbwZ7UkaBMUheOEiZNaSb4m8gWBQzzGDQ@mail.gmail.com>
-Subject: Re: [PATCH 0/5] VFS: Directory level cache cleaning
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Li Wang <liwang@ubuntukylin.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Sage Weil <sage@inktank.com>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/15] cleanups and optimizations
+References: <20131212140835.729222186@infradead.org> <52AAE61D.4060406@linux.intel.com> <20131213135626.GL21999@twins.programming.kicks-ass.net>
+In-Reply-To: <20131213135626.GL21999@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 7:00 AM, Li Wang <liwang@ubuntukylin.com> wrote:
-> This patch extend the 'drop_caches' interface to
-> support directory level cache cleaning and has a complete
-> backward compatibility. '{1,2,3}' keeps the same semantics
-> as before. Besides, "{1,2,3}:DIRECTORY_PATH_NAME" is allowed
-> to recursively clean the caches under DIRECTORY_PATH_NAME.
-> For example, 'echo 1:/home/foo/jpg > /proc/sys/vm/drop_caches'
-> will clean the page caches of the files inside 'home/foo/jpg'.
->
+On 13/12/2013 15:56, Peter Zijlstra wrote:
+> On Fri, Dec 13, 2013 at 12:49:01PM +0200, Eliezer Tamir wrote:
+>> On 12/12/2013 16:08, Peter Zijlstra wrote:
+>>> This series contains the preempt_enable_no_resched() cleanups that include
+>>> spin_lock_bh() optimizations and local_clock() optimizations.
+>>
+>> I'm trying to test this on tip/master.
+>> Patch 3 fails to apply on kenrel/softirq.c
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/peterz/queue.git/log/?h=preempt_clock
+> 
+> Applied just fine here.. stuffed it in a git tree.
 
-This interface is ugly...
+Thanks,
+That worked.
 
-And we already have a file-level drop cache, that is,
-fadvise(DONTNEED). Can you extend it if it can't
-handle a directory fd?
+My test is, netperf TCP_RR 1 byte, with busy polling enabled, 30s run.
+
+I see 92.0K RR with your patches, 91.8K RR with out them.
+This is barely above the noise level, but I'm pretty sure it's real.
+In any case I don't see any regression.
+
+Thanks,
+Eliezer
