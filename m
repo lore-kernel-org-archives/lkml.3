@@ -1,64 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab3LPQUf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:20:35 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:64287 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab3LPQUb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:20:31 -0500
+	id S1754771Ab3LPQUq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:20:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33805 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754325Ab3LPQUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 11:20:44 -0500
+Date: Mon, 16 Dec 2013 17:20:42 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.13-rc breaks MEMCG_SWAP
+Message-ID: <20131216162042.GC26797@dhcp22.suse.cz>
+References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
 MIME-Version: 1.0
-In-Reply-To: <CAOMwXhPLU_2MUkJXgz-ab062bBjtcOEsvwNCSj0vG0eg9sr=rQ@mail.gmail.com>
-References: <1387194424-2701-1-git-send-email-lpapp@kde.org>
-	<20131216134633.GI18769@lee--X1>
-	<CAOMwXhOnHNrzEvf0+QRn6dGb42xR9a33joZcou3ancwSYe36Ug@mail.gmail.com>
-	<20131216150937.GO18769@lee--X1>
-	<CAOMwXhNJFGiRNB4jnTrzzpSGL8XvaR1Ph_pFrdU+x+guy7Tamg@mail.gmail.com>
-	<CAFLxGvx3nvncXYsai_uVdWLp-jAuGWAQCNxGH9R3NvdD1cPFwA@mail.gmail.com>
-	<CAOMwXhPLU_2MUkJXgz-ab062bBjtcOEsvwNCSj0vG0eg9sr=rQ@mail.gmail.com>
-Date: Mon, 16 Dec 2013 17:20:30 +0100
-Message-ID: <CAFLxGvz2fXnO7r8zWk+4bb8gRR3r_oRBaz-c2HESLS2sXmqDeQ@mail.gmail.com>
-Subject: Re: [PATCH] mfd: (max8997) Handle the potential error for mfd_add_devices
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Lee Jones <lee.jones@linaro.org>, sameo@linux.intel.com,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 5:13 PM, Laszlo Papp <lpapp@kde.org> wrote:
-> On Mon, Dec 16, 2013 at 4:05 PM, Richard Weinberger
-> <richard.weinberger@gmail.com> wrote:
->> On Mon, Dec 16, 2013 at 4:51 PM, Laszlo Papp <lpapp@kde.org> wrote:
->>>>> > The $SUBJECT line is wrong. To see how a subsystem usually formats
->>>>> > theirs you must do something like `git log --oneline -- <subsystem>`.
->>>>> > And duplicate the format.
->>>>> >
->>>>> > Commit message?
->>>>
->>>> These comments are still relevant, please re-post your patch with the
->>>> points rectified.
->>>
->>> I really do not understand how they relevant. "Commit message?" ->
->>> What about it? It has a pretty clear commit message. Are you now just
->>> picking nits about "foo:" vs "(foo)" in the short line?
->>
->> The commit message needs to have subject and a body.
->
-> Why? What advantage does that have in very simple cases like this?
->
->> A good message body explains what the current situation is, why it is
->> broken/has problems
->> and how this patch fixes that.
->
-> The current commit message explains that in my opinion. Please bring
-> up real issues with it.
+On Mon 16-12-13 00:36:05, Hugh Dickins wrote:
+[...]
 
-Now as I read your arguments I remember your name from IRC.
-Time to stop the discussion.
+OK, I went through the patch and it looks good except for suspicious
+ctrl->lock handling in swap_cgroup_reassign (see below). I am just
+suggesting to split it into 4 parts
 
+* swap_cgroup_mutex -> swap_cgroup_lock
+* swapon cleanup
+* drop irqsave when taking ctrl->lock
+* mem_cgroup_reparent_swap
+
+but I will leave the split up to you. Just make sure that the fix is a
+separate patch, please.
+
+[...]
+> --- 3.13-rc4/mm/page_cgroup.c	2013-02-18 15:58:34.000000000 -0800
+> +++ linux/mm/page_cgroup.c	2013-12-15 14:34:36.312485960 -0800
+> @@ -322,7 +322,8 @@ void __meminit pgdat_page_cgroup_init(st
+>  
+>  #ifdef CONFIG_MEMCG_SWAP
+>  
+> -static DEFINE_MUTEX(swap_cgroup_mutex);
+> +static DEFINE_SPINLOCK(swap_cgroup_lock);
+> +
+
+This one is worth a separate patch IMO.
+
+>  struct swap_cgroup_ctrl {
+>  	struct page **map;
+>  	unsigned long length;
+> @@ -353,14 +354,11 @@ struct swap_cgroup {
+>  /*
+>   * allocate buffer for swap_cgroup.
+>   */
+> -static int swap_cgroup_prepare(int type)
+> +static int swap_cgroup_prepare(struct swap_cgroup_ctrl *ctrl)
+>  {
+>  	struct page *page;
+> -	struct swap_cgroup_ctrl *ctrl;
+>  	unsigned long idx, max;
+>  
+> -	ctrl = &swap_cgroup_ctrl[type];
+> -
+>  	for (idx = 0; idx < ctrl->length; idx++) {
+>  		page = alloc_page(GFP_KERNEL | __GFP_ZERO);
+>  		if (!page)
+
+This with swap_cgroup_swapon should be in a separate patch as a cleanup.
+
+> @@ -407,18 +405,17 @@ unsigned short swap_cgroup_cmpxchg(swp_e
+>  {
+>  	struct swap_cgroup_ctrl *ctrl;
+>  	struct swap_cgroup *sc;
+> -	unsigned long flags;
+>  	unsigned short retval;
+>  
+>  	sc = lookup_swap_cgroup(ent, &ctrl);
+>  
+> -	spin_lock_irqsave(&ctrl->lock, flags);
+> +	spin_lock(&ctrl->lock);
+>  	retval = sc->id;
+>  	if (retval == old)
+>  		sc->id = new;
+>  	else
+>  		retval = 0;
+> -	spin_unlock_irqrestore(&ctrl->lock, flags);
+> +	spin_unlock(&ctrl->lock);
+>  	return retval;
+>  }
+>  
+> @@ -435,14 +432,13 @@ unsigned short swap_cgroup_record(swp_en
+>  	struct swap_cgroup_ctrl *ctrl;
+>  	struct swap_cgroup *sc;
+>  	unsigned short old;
+> -	unsigned long flags;
+>  
+>  	sc = lookup_swap_cgroup(ent, &ctrl);
+>  
+> -	spin_lock_irqsave(&ctrl->lock, flags);
+> +	spin_lock(&ctrl->lock);
+>  	old = sc->id;
+>  	sc->id = id;
+> -	spin_unlock_irqrestore(&ctrl->lock, flags);
+> +	spin_unlock(&ctrl->lock);
+>  
+>  	return old;
+>  }
+
+I would prefer these two in a separate patch as well. I have no idea why
+these were IRQ aware as this was never needed AFAICS.
+e9e58a4ec3b10 is not very specific...
+
+> @@ -451,19 +447,60 @@ unsigned short swap_cgroup_record(swp_en
+>   * lookup_swap_cgroup_id - lookup mem_cgroup id tied to swap entry
+>   * @ent: swap entry to be looked up.
+>   *
+> - * Returns CSS ID of mem_cgroup at success. 0 at failure. (0 is invalid ID)
+> + * Returns ID of mem_cgroup at success. 0 at failure. (0 is invalid ID)
+>   */
+>  unsigned short lookup_swap_cgroup_id(swp_entry_t ent)
+>  {
+>  	return lookup_swap_cgroup(ent, NULL)->id;
+>  }
+>  
+> +/**
+> + * swap_cgroup_reassign - assign all old entries to new (before old is freed).
+> + * @old: id of emptied memcg whose entries are now to be reassigned
+> + * @new: id of parent memcg to which those entries are to be assigned
+> + *
+> + * Returns number of entries reassigned, for debugging or for statistics.
+> + */
+> +long swap_cgroup_reassign(unsigned short old, unsigned short new)
+> +{
+> +	long reassigned = 0;
+> +	int type;
+> +
+> +	for (type = 0; type < MAX_SWAPFILES; type++) {
+> +		struct swap_cgroup_ctrl *ctrl = &swap_cgroup_ctrl[type];
+> +		unsigned long idx;
+> +
+> +		for (idx = 0; idx < ACCESS_ONCE(ctrl->length); idx++) {
+> +			struct swap_cgroup *sc, *scend;
+> +
+> +			spin_lock(&swap_cgroup_lock);
+> +			if (idx >= ACCESS_ONCE(ctrl->length))
+> +				goto unlock;
+> +			sc = page_address(ctrl->map[idx]);
+> +			for (scend = sc + SC_PER_PAGE; sc < scend; sc++) {
+> +				if (sc->id != old)
+> +					continue;
+
+Is this safe? What prevents from race when id is set to old?
+
+> +				spin_lock(&ctrl->lock);
+> +				if (sc->id == old) {
+
+Also it seems that compiler is free to optimize this test away, no?
+You need ACCESS_ONCE here as well, I guess.
+
+> +					sc->id = new;
+> +					reassigned++;
+> +				}
+> +				spin_unlock(&ctrl->lock);
+> +			}
+> +unlock:
+> +			spin_unlock(&swap_cgroup_lock);
+> +			cond_resched();
+> +		}
+> +	}
+> +	return reassigned;
+> +}
+> +
+>  int swap_cgroup_swapon(int type, unsigned long max_pages)
+>  {
+>  	void *array;
+>  	unsigned long array_size;
+>  	unsigned long length;
+> -	struct swap_cgroup_ctrl *ctrl;
+> +	struct swap_cgroup_ctrl ctrl;
+>  
+>  	if (!do_swap_account)
+>  		return 0;
+[...]
 -- 
-Thanks,
-//richard
+Michal Hocko
+SUSE Labs
