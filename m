@@ -1,90 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab3LPLFF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 06:05:05 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:34349 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568Ab3LPLFC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 06:05:02 -0500
-Message-ID: <52AEDE43.8030005@ti.com>
-Date: Mon, 16 Dec 2013 16:34:35 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753408Ab3LPLG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 06:06:59 -0500
+Received: from mga01.intel.com ([192.55.52.88]:23006 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752663Ab3LPLG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 06:06:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,494,1384329600"; 
+   d="scan'208";a="450671290"
+Date: Mon, 16 Dec 2013 11:06:55 +0000
+From: Damien Lespiau <damien.lespiau@intel.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: daniel.vetter@ffwll.ch, airlied@linux.ie, yongjun_wei@trendmicro.com.cn,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Intel-gfx] [PATCH -next] drm/i915: fix return value check of
+ debugfs_create_file()
+Message-ID: <20131216110655.GB26921@strange.amr.corp.intel.com>
+References: <CAPgLHd-C925=6rEnQMMkPvHu6+w_BHcJ1-CG8PdK37XM9dzf_A@mail.gmail.com>
 MIME-Version: 1.0
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 4/5] arm: omap3: twl: use the new lookup method with usb
- phy
-References: <1386601737-8735-1-git-send-email-heikki.krogerus@linux.intel.com> <1386601737-8735-5-git-send-email-heikki.krogerus@linux.intel.com>
-In-Reply-To: <1386601737-8735-5-git-send-email-heikki.krogerus@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPgLHd-C925=6rEnQMMkPvHu6+w_BHcJ1-CG8PdK37XM9dzf_A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Monday 09 December 2013 08:38 PM, Heikki Krogerus wrote:
-> Provide a complete association for the phy and it's user
-> (musb) with the new phy_lookup_table.
+On Mon, Dec 16, 2013 at 02:13:25PM +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > 
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> In case of error, the function debugfs_create_file() returns NULL
+> pointer not ERR_PTR() if debugfs is enabled. The IS_ERR() test in
+> the return value check should be replaced with NULL test.
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+
+Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
+
+-- 
+Damien
+
 > ---
->  arch/arm/mach-omap2/twl-common.c | 15 ++++++---------
->  1 file changed, 6 insertions(+), 9 deletions(-)
+>  drivers/gpu/drm/i915/i915_debugfs.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
 > 
-> diff --git a/arch/arm/mach-omap2/twl-common.c b/arch/arm/mach-omap2/twl-common.c
-> index b0d54da..972430b 100644
-> --- a/arch/arm/mach-omap2/twl-common.c
-> +++ b/arch/arm/mach-omap2/twl-common.c
-> @@ -91,18 +91,13 @@ void __init omap_pmic_late_init(void)
+> diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
+> index 7008aac..856e18b 100644
+> --- a/drivers/gpu/drm/i915/i915_debugfs.c
+> +++ b/drivers/gpu/drm/i915/i915_debugfs.c
+> @@ -1920,8 +1920,8 @@ static int i915_pipe_crc_create(struct dentry *root, struct drm_minor *minor,
+>  	info->dev = dev;
+>  	ent = debugfs_create_file(info->name, S_IRUGO, root, info,
+>  				  &i915_pipe_crc_fops);
+> -	if (IS_ERR(ent))
+> -		return PTR_ERR(ent);
+> +	if (!ent)
+> +		return -ENOMEM;
+>  
+>  	return drm_add_fake_info_node(minor, ent, info);
 >  }
+> @@ -2931,8 +2931,8 @@ static int i915_forcewake_create(struct dentry *root, struct drm_minor *minor)
+>  				  S_IRUSR,
+>  				  root, dev,
+>  				  &i915_forcewake_fops);
+> -	if (IS_ERR(ent))
+> -		return PTR_ERR(ent);
+> +	if (!ent)
+> +		return -ENOMEM;
 >  
->  #if defined(CONFIG_ARCH_OMAP3)
-> -struct phy_consumer consumers[] = {
-> -	PHY_CONSUMER("musb-hdrc.0", "usb"),
-> -};
-> -
-> -struct phy_init_data init_data = {
-> -	.consumers = consumers,
-> -	.num_consumers = ARRAY_SIZE(consumers),
-> +static struct phy_lookup_table twl4030_usb_lookup = {
-> +	.dev_id = "musb-hdrc.0",
-> +	.table = PHY_LOOKUP("phy-twl4030_usb.0", NULL),
->  };
-
-had a similar approach during the initial version of phy framework [1] (see
-phy_bind) but changed it later [2] . Here you should know the device names of
-two devices and even if one of them started using DEVID_AUTO, it'll start
-breaking. Such an approach needs to reviewed carefully.
-
-[1] -> https://lkml.org/lkml/2013/4/3/258
-[2] -> http://www.spinics.net/lists/linux-usb/msg85299.html (removed phy_bind)
-
-Cheers
-Kishon
+>  	return drm_add_fake_info_node(minor, ent, &i915_forcewake_fops);
+>  }
+> @@ -2949,8 +2949,8 @@ static int i915_debugfs_create(struct dentry *root,
+>  				  S_IRUGO | S_IWUSR,
+>  				  root, dev,
+>  				  fops);
+> -	if (IS_ERR(ent))
+> -		return PTR_ERR(ent);
+> +	if (!ent)
+> +		return -ENOMEM;
 >  
->  static struct twl4030_usb_data omap3_usb_pdata = {
->  	.usb_mode	= T2_USB_MODE_ULPI,
-> -	.init_data	= &init_data,
->  };
->  
->  static int omap3_batt_table[] = {
-> @@ -225,8 +220,10 @@ void __init omap3_pmic_get_config(struct twl4030_platform_data *pmic_data,
->  	}
->  
->  	/* Common platform data configurations */
-> -	if (pdata_flags & TWL_COMMON_PDATA_USB && !pmic_data->usb)
-> +	if (pdata_flags & TWL_COMMON_PDATA_USB && !pmic_data->usb) {
-> +		phy_add_lookup_table(&twl4030_usb_lookup);
->  		pmic_data->usb = &omap3_usb_pdata;
-> +	}
->  
->  	if (pdata_flags & TWL_COMMON_PDATA_BCI && !pmic_data->bci)
->  		pmic_data->bci = &omap3_bci_pdata;
+>  	return drm_add_fake_info_node(minor, ent, fops);
+>  }
 > 
-
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
