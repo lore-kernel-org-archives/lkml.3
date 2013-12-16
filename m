@@ -1,70 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab3LPLLJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 06:11:09 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:63262 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab3LPLLF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 06:11:05 -0500
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 2/2] mfd: cros ec: spi: Use 0 instead of '\0' consistently
-Date: Mon, 16 Dec 2013 12:09:40 +0100
-Message-Id: <1387192180-15333-2-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1387192180-15333-1-git-send-email-treding@nvidia.com>
-References: <1387192180-15333-1-git-send-email-treding@nvidia.com>
+	id S1753335Ab3LPLQn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 06:16:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52323 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752188Ab3LPLQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 06:16:42 -0500
+Date: Mon, 16 Dec 2013 11:16:37 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alex Shi <alex.shi@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
+        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
+ range flush v2
+Message-ID: <20131216111637.GR11295@suse.de>
+References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
+ <CA+55aFyNAigQqBk07xLpf0nkhZ_x-QkBYG8otRzsqg_8A2eg-Q@mail.gmail.com>
+ <20131215155539.GM11295@suse.de>
+ <CA+55aFz5ZTEiEELhPaQd97TorAKjqrKCmJc9O0NE1Nyri65Pzw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz5ZTEiEELhPaQd97TorAKjqrKCmJc9O0NE1Nyri65Pzw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memset() was being called with the second parameter set to '\0', which
-is equivalent but longer than the more canonical 0. Update the code to
-use the latter variant consistently across the driver.
+On Sun, Dec 15, 2013 at 10:34:25AM -0800, Linus Torvalds wrote:
+> On Sun, Dec 15, 2013 at 7:55 AM, Mel Gorman <mgorman@suse.de> wrote:
+> >
+> > Short answer -- There appears to be a second bug where 3.13-rc3 is less
+> > fair to threads getting time on the CPU.
+> 
+> Hmm.  Can you point me at the (fixed) microbenchmark you mention?
+> 
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
-Changes in v5:
-- new patch
+ebizzy is what I was using to see the per-thread performance. It's at
+http://sourceforge.net/projects/ebizzy/. It's patched with the patch below
+to give per-thread stats.
 
- drivers/mfd/cros_ec_spi.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+You probably want to run it manually but FWIW, the results I posted were
+using mmtests (https://github.com/gormanm/mmtests) to build, patch,
+run ebizzy and generate the report. The configuration file I used was
+configs/config-global-dhp__tlbflush-performance. I have not tried a manual
+performance analysis yet as an automated bisection is in progress to see
+can the thread spread problem be found the easy way.
 
-diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
-index 8e262bfb603e..84af8d7a4295 100644
---- a/drivers/mfd/cros_ec_spi.c
-+++ b/drivers/mfd/cros_ec_spi.c
-@@ -112,7 +112,7 @@ static int cros_ec_spi_receive_response(struct cros_ec_device *ec_dev,
- 	/* Receive data until we see the header byte */
- 	deadline = jiffies + msecs_to_jiffies(EC_MSG_DEADLINE_MS);
- 	do {
--		memset(&trans, '\0', sizeof(trans));
-+		memset(&trans, 0, sizeof(trans));
- 		trans.cs_change = 1;
- 		trans.rx_buf = ptr = ec_dev->din;
- 		trans.len = EC_MSG_PREAMBLE_COUNT;
-@@ -164,7 +164,7 @@ static int cros_ec_spi_receive_response(struct cros_ec_device *ec_dev,
- 		dev_dbg(ec_dev->dev, "loop, todo=%d, need_len=%d, ptr=%zd\n",
- 			todo, need_len, ptr - ec_dev->din);
+diff --git a/ebizzy.c b/ebizzy.c
+index 76c7492..3e7644f 100644
+--- a/ebizzy.c
++++ b/ebizzy.c
+@@ -83,7 +83,7 @@ static char **hole_mem;
+ static unsigned int page_size;
+ static time_t start_time;
+ static volatile int threads_go;
+-static unsigned int records_read;
++static unsigned int *thread_records_read;
  
--		memset(&trans, '\0', sizeof(trans));
-+		memset(&trans, 0, sizeof(trans));
- 		trans.cs_change = 1;
- 		trans.rx_buf = ptr;
- 		trans.len = todo;
-@@ -224,7 +224,7 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
+ static void
+ usage(void)
+@@ -436,6 +436,7 @@ search_mem(void)
+ static void *
+ thread_run(void *arg)
+ {
++	unsigned int *records = (unsigned int *)arg;
  
- 	/* Transmit phase - send our message */
- 	debug_packet(ec_dev->dev, "out", ec_dev->dout, len);
--	memset(&trans, '\0', sizeof(trans));
-+	memset(&trans, 0, sizeof(trans));
- 	trans.tx_buf = ec_dev->dout;
- 	trans.len = len;
- 	trans.cs_change = 1;
--- 
-1.8.4.2
+ 	if (verbose > 1)
+ 		printf("Thread started\n");
+@@ -444,7 +445,7 @@ thread_run(void *arg)
+ 
+ 	while (threads_go == 0);
+ 
+-	records_read += search_mem();
++	*records = search_mem();
+ 
+ 	if (verbose > 1)
+ 		printf("Thread finished, %f seconds\n",
+@@ -471,12 +472,19 @@ start_threads(void)
+ 	struct rusage start_ru, end_ru;
+ 	struct timeval usr_time, sys_time;
+ 	int err;
++	unsigned int total_records = 0;
+ 
+ 	if (verbose)
+ 		printf("Threads starting\n");
+ 
++	thread_records_read = calloc(threads, sizeof(unsigned int));
++	if (!thread_records_read) {
++		fprintf(stderr, "Error allocating thread_records_read\n");
++		exit(1);
++	}
++
+ 	for (i = 0; i < threads; i++) {
+-		err = pthread_create(&thread_array[i], NULL, thread_run, NULL);
++		err = pthread_create(&thread_array[i], NULL, thread_run, &thread_records_read[i]);
+ 		if (err) {
+ 			fprintf(stderr, "Error creating thread %d\n", i);
+ 			exit(1);
+@@ -505,13 +513,21 @@ start_threads(void)
+ 			fprintf(stderr, "Error joining thread %d\n", i);
+ 			exit(1);
+ 		}
++		total_records += thread_records_read[i];
+ 	}
+ 
+ 	if (verbose)
+ 		printf("Threads finished\n");
+ 
+-	printf("%u records/s\n",
+-	       (unsigned int) (((double) records_read)/elapsed));
++	printf("%u records/s",
++	       (unsigned int) (((double) total_records)/elapsed));
++
++	for (i = 0; i < threads; i++) {
++		printf(" %u", (unsigned int) (((double) thread_records_read[i])/elapsed));
++	}
++	printf("\n");
++
++	free(thread_records_read);
+ 
+ 	usr_time = difftimeval(&end_ru.ru_utime, &start_ru.ru_utime);
+ 	sys_time = difftimeval(&end_ru.ru_stime, &start_ru.ru_stime);
 
