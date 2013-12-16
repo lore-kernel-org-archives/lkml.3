@@ -1,85 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab3LPS6S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 13:58:18 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46993 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754989Ab3LPS6Q (ORCPT
+	id S1755122Ab3LPTCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 14:02:50 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45307 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754435Ab3LPTCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 13:58:16 -0500
-Date: Mon, 16 Dec 2013 18:57:53 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Anson Huang <b20788@freescale.com>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org
-Message-ID: <20131216185753.GN3185@sirena.org.uk>
-References: <1387228827-933-1-git-send-email-b20788@freescale.com>
+	Mon, 16 Dec 2013 14:02:48 -0500
+Message-ID: <52AF4E52.9010000@wwwdotorg.org>
+Date: Mon, 16 Dec 2013 12:02:42 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nRwNdQxTdQ7rZk9A"
-Content-Disposition: inline
-In-Reply-To: <1387228827-933-1-git-send-email-b20788@freescale.com>
-X-Cookie: Yow!  I threw up on my window!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: anatop: add is_enabled interface
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Hiroshi Doyu <hdoyu@nvidia.com>, swarren@nvidia.com, will.deacon@arm.com,
+        grant.likely@linaro.org, thierry.reding@gmail.com,
+        robherring2@gmail.com, joro@8bytes.org
+CC: mark.rutland@arm.com, devicetree@vger.kernel.org,
+        lorenzo.pieralisi@arm.com, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, galak@codeaurora.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv7 08/12] iommu/tegra: smmu: calculate ASID register offset
+ by ID
+References: <1386835033-4701-1-git-send-email-hdoyu@nvidia.com> <1386835033-4701-9-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1386835033-4701-9-git-send-email-hdoyu@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/12/2013 12:57 AM, Hiroshi Doyu wrote:
+> ASID register offset is caclulated by SWGROUP ID so that we can get
+> rid of old SoC specific MACROs. This ID conversion is needed for the
+> unified SMMU driver over Tegra SoCs. We use dt-bindings MACRO instead
+> of SoC dependent MACROs. The formula is:
+> 
+>   MC_SMMU_<swgroup name>_ASID_0 = MC_SMMU_AFI_ASID_0 + ID * 4;
+> 
+> Now SWGROUP ID is the global HardWare Accelerator(HWA) identifier
+> among all Tegra SoC except Tegra2.
 
---nRwNdQxTdQ7rZk9A
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
 
-On Mon, Dec 16, 2013 at 04:20:27PM -0500, Anson Huang wrote:
+>  static int __smmu_client_set_hwgrp(struct smmu_client *c,
+> -				   unsigned long map, int on)
+> +				   unsigned long *map, int on)
+>  {
+>  	int i;
+>  	struct smmu_as *as = c->as;
+>  	u32 val, offs, mask = SMMU_ASID_ENABLE(as->asid);
+>  	struct smmu_device *smmu = as->smmu;
+>  
+>  	if (!on)
+> +		map = c->hwgrp;
+>  
+> +	for_each_set_bit(i, map, TEGRA_SWGROUP_MAX) {
+>  		offs = HWGRP_ASID_REG(i);
+>  		val = smmu_read(smmu, offs);
+>  		if (on) {
+>  			if (WARN_ON(val & mask))
+>  				goto err_hw_busy;
+>  			val |= mask;
+> +			memcpy(c->hwgrp, map, sizeof(u64));
+>  		} else {
+>  			WARN_ON((val & mask) == mask);
+>  			val &= ~mask;
+>  		}
+>  		smmu_write(smmu, val, offs);
+>  	}
 
-> +{
-> +	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-> +	u32 val;
-> +
-> +	if (!anatop_reg->control_reg)
-> +		return -ENOTSUPP;
+This function doesn't make a lot of sense to me. The registers it's
+manipulating aren't a bitmask, so I don't see why the code is performing
+bitmask AND/OR operations on the register. Instead, don't you want the
+following:
 
-In what situation would this happen and why would the operation be
-provided in those situations?
+#define SMMU_ASID_ENABLE	(1 << 31)
+#define SMMU_ASID_ENABLED(asid)	(SMMU_ASID_ENABLE | asid)
+#define SMMU_ASID_DISABLE	0
 
-> +	regmap_read(anatop_reg->anatop, anatop_reg->control_reg, &val);
-> +
-> +	return (val >> anatop_reg->vol_bit_shift) &
-> +		((1 << anatop_reg->vol_bit_width) - 1) ? 1 : 0;
-> +}
+static int __smmu_client_set_hwgrp(struct smmu_client *c,
+				   unsigned long *map, int on)
+{
+	int i;
+	struct smmu_as *as = c->as;
+	u32 val, offs, new_val;
+	struct smmu_device *smmu = as->smmu;
 
-This isn't terribly legible but it looks like it's trying to read to see
-if a non-zero voltage has been written.  If that's the case it looks
-like enable and disable operations should be supported since presumably
-the register can be written as well.
+	if (!on)
+		map = c->hwgrp;
 
-Please try to avoid the ternery operator, especially in cases like this
-where it's not adding anything.
+	for_each_set_bit(i, map, TEGRA_SWGROUP_MAX) {
+		offs = HWGRP_ASID_REG(i);
+		val = smmu_read(smmu, offs);
+		if (on)
+			new_val = SMMU_ASID_ENABLED(as->asid);
+		else
+			new_val = 0;
+		WARN_ON(val & SMMU_ASID_ENABLE ==
+			new_val & SMMU_ASID_ENABLE);
+		if (on) {
+			if (val & SMMU_ASID_ENABLE)
+				goto err_hw_busy;
+			memcpy(c->hwgrp, map, sizeof(u64));
+		}
+		smmu_write(smmu, val, offs);
+	}
 
---nRwNdQxTdQ7rZk9A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> @@ -804,7 +727,7 @@ static int smmu_iommu_attach_dev(struct iommu_domain *domain,
+>  		return -ENOMEM;
+>  	client->dev = dev;
+>  	client->as = as;
+> -	map = (unsigned long)dev->platform_data;
+> +	map = (unsigned long *)dev->platform_data;
+>  	if (!map)
+>  		return -EINVAL;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSr00tAAoJELSic+t+oim9CKcP/RJHX8FJfJrM7j40/kam9LMw
-AzT43gcVXk8CAWQTY/1nCC9FEafGCwPnKVNZpuyyrDLdOeFwKcHoirSlWgJj/g7Q
-1XsY7L686F7/14DajCrR6TvwVSs0K9rG4G0yyHaYgf/fh8Updc8UAXJ7cUc/hG5Y
-kirO3xG4YWXPrv2hFnBiBtU9bL0DHv6EXQIn+4HxynvqEjGSUv6RJugHyQnOp71i
-/OFeGsYP9AD8FchU5xczj8zL+n+rh4o0WrYaeRKGzDoV8HzkPpjNHpwaSFQJbilG
-kI0X/g2CmQOVXw/croxH8/vnBqQlmJdlvliuIljjN9mJheyTYD8HERD2fyrIQX0H
-4faN7vgx3Fmbov9EFccKsPmBgIuqIHJXOBhv1+VyVgucypJ9QbzZ5LctqqKJE8yD
-bmYJjb3u/V11IV0OSsm2gInripppVgrisufgTL4K3V8ZgO+dnhab30S5FJKGQnw/
-tfXEYQVlnHcKN7nXik2KEcokyR+ZX4mlL/c2bv85eKoSPLoRrUWWuU3EZ/o0UjA3
-WcpV6vAxNfa7KBn3O8BBCg5+g3Ko2We5GQFvOFwtLYvsOtZQCvpmIIV3LK2Tb/7W
-BzZj9/kTKkmAWs5JvsSmwCxzOqNTeiupM2A59+iJGI3Scyrnv0SMnGpRPaKaMG18
-UXV10qBqAYwBVXFpHys1
-=IRwD
------END PGP SIGNATURE-----
-
---nRwNdQxTdQ7rZk9A--
+Presumably we can simply delete that now since everything using this
+driver is on DT; we can't rely on the platform_data of client struct
+devices...
