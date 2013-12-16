@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab3LPPK5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:10:57 -0500
-Received: from m59-178.qiye.163.com ([123.58.178.59]:54723 "EHLO
+	id S1754686Ab3LPPLU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:11:20 -0500
+Received: from m59-178.qiye.163.com ([123.58.178.59]:54793 "EHLO
 	m59-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143Ab3LPPKy (ORCPT
+	with ESMTP id S1754627Ab3LPPK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:10:54 -0500
+	Mon, 16 Dec 2013 10:10:57 -0500
 From: Li Wang <liwang@ubuntukylin.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Sage Weil <sage@inktank.com>, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Li Wang <liwang@ubuntukylin.com>,
         Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-Subject: [PATCH 2/5] VFS: Convert sysctl_drop_caches to string
-Date: Mon, 16 Dec 2013 07:00:06 -0800
-Message-Id: <3640f727452d7a64671408b35875161a791ca24d.1387205337.git.liwang@ubuntukylin.com>
+Subject: [PATCH 3/5] VFS: Add the declaration of shrink_pagecache_parent
+Date: Mon, 16 Dec 2013 07:00:07 -0800
+Message-Id: <1e2c2695163198cc660ef7a8761edcdae9e01612.1387205337.git.liwang@ubuntukylin.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1387205337.git.liwang@ubuntukylin.com>
 References: <cover.1387205337.git.liwang@ubuntukylin.com>
@@ -30,8 +30,8 @@ X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUlMVU5PQkJCQklITEtNS05PTFdZCQ4XHghZQV
 	AyKyRKJDM0LikkODUvJEskSktLQUtVS0AyKyRISyQ2MjUuLz4kODUvJEskTktBS1VLQDU0LyQ9Oj
 	Y0LigkPzQ2OjI1JCgrPSQ9OjI3QUpLVUtAKC45JD5BSlVOTlkG
 X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSENM
-	SUtNS05OSUxJVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
-	QUlJSUw3V1kSC1lBWU1KVUpDTFVOT1VCWQY+
+	SUtNS05OTU5JVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
+	QUlKTUI3V1kSC1lBWU1KVUpDTFVOT1VCWQY+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -40,30 +40,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Li Wang <liwang@ubuntukylin.com>
 Signed-off-by: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
 ---
- include/linux/mm.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/linux/dcache.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 1cedd00..5e3cc5b 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -17,6 +17,7 @@
- #include <linux/pfn.h>
- #include <linux/bit_spinlock.h>
- #include <linux/shrinker.h>
-+#include <linux/fs.h>
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index 57e87e7..ce11098 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -247,6 +247,7 @@ extern struct dentry *d_find_any_alias(struct inode *inode);
+ extern struct dentry * d_obtain_alias(struct inode *);
+ extern void shrink_dcache_sb(struct super_block *);
+ extern void shrink_dcache_parent(struct dentry *);
++extern void shrink_pagecache_parent(struct dentry *);
+ extern void shrink_dcache_for_umount(struct super_block *);
+ extern int d_invalidate(struct dentry *);
  
- struct mempolicy;
- struct anon_vma;
-@@ -1920,7 +1921,7 @@ int in_gate_area_no_mm(unsigned long addr);
- #endif	/* __HAVE_ARCH_GATE_AREA */
- 
- #ifdef CONFIG_SYSCTL
--extern int sysctl_drop_caches;
-+extern char sysctl_drop_caches[PATH_MAX];
- int drop_caches_sysctl_handler(struct ctl_table *, int,
- 					void __user *, size_t *, loff_t *);
- #endif
 -- 
 1.7.9.5
 
