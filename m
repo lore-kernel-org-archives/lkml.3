@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab3LPL2G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 06:28:06 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:41513 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753196Ab3LPL2F convert rfc822-to-8bit (ORCPT
+	id S1753278Ab3LPLbD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 06:31:03 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44108 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab3LPLbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 06:28:05 -0500
+	Mon, 16 Dec 2013 06:31:01 -0500
+Date: Mon, 16 Dec 2013 11:30:56 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Mike Turquette <mturquette@linaro.org>, Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Message-ID: <20131216113056.GC3185@sirena.org.uk>
+References: <1386770863-32247-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <87iouprrcw.fsf@nemi.mork.no>
-References: <52A448F2.4010208@redhat.com>
-	<CAKohpomO+0q7bFWTnFRgqoRuU2WryfPpFv0WLOCKtHBrLzLRqw@mail.gmail.com>
-	<87iouprrcw.fsf@nemi.mork.no>
-Date: Mon, 16 Dec 2013 16:58:03 +0530
-Message-ID: <CAKohpok+EqA+ujCwzQvL2C7YAyfueGAd4XUXGqvdz2tm5_A0QQ@mail.gmail.com>
-Subject: Re: Regression with suspend resume 5a87182aa21d6d5d306840feab9321818dd3e2a3
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
-Cc: Zdenek Kabelac <zkabelac@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Lan Tianyu <tianyu.lan@intel.com>, jinchoi@broadcom.com,
-        Paul Bolle <pebolle@tiscali.nl>,
-        ziegler@email.mathematik.uni-freiburg.de,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        jbarnes@virtuousgeek.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rQ2U398070+RC21q"
+Content-Disposition: inline
+In-Reply-To: <1386770863-32247-1-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: Yow!  I threw up on my window!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] mfd: s2mps11: Fix build after regmap field rename in
+ sec-core.c
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Rafael, I though he was there on this mail :)
 
-On 16 December 2013 16:32, Bjørn Mork <bjorn@mork.no> wrote:
-> It's both patches in combination.  Interesting case, really :-)
+--rQ2U398070+RC21q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Completed my testing now and yes this happened after your patch
-came in. I read your chats somewhere else as well (there are so
-many mails, bug reports on this topic, can't give link now.. :))..
+On Wed, Dec 11, 2013 at 03:07:43PM +0100, Krzysztof Kozlowski wrote:
+> Fix building of s2mps11 regulator and clock drivers after renaming
+> regmap field in struct sec_pmic_dev in commit:
+>  - "mfd/rtc: s5m: Fix register updating by adding regmap for RTC"
 
-I think I know why we are facing issues with these two patches in
-at the same time.
+Applied, thanks.
 
-- My patch is actually disabling governors at suspend/resume or
-hibernation..
-- Which makes __cpufreq_governor() a nops routine, which simply
-returns zero
-- Now with your patch you are disabling the frozen feature which
-actually makes cpufreq core to free/allocate policies again on suspend
-resume. And so the calls like:
+--rQ2U398070+RC21q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-__cpufreq_governor(policy, CPUFREQ_GOV_POLICY_INIT)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-end up doing nothing at resume when CPUs start coming up. And so
-cpufreq_resume()'s calls to __cpufreq_governor(policy,
-CPUFREQ_GOV_START) would start behaving badly.. Which is quite
-obvious..
+iQIcBAEBAgAGBQJSruRsAAoJELSic+t+oim9NVYP/10VFBtM+X7q7qBQXBw8OdYH
+61H3N2l6BM7HVcoBuPfRhFgXPHo0MUpddo892psL1I8YfVh5+h9D+uBDsQsZy3o9
+MZIKPFXNjEAQRiCXTs0NvDAGgIxaKTDpHMQVy0JX4rxJeppvkMtDb9Yc/1430vo9
+6MQMMEqInTnOea80n7hToAfDY9dvqb0YmZPhCwxqArlpRENvUq6FdfKlgRUa0TGi
+0pbm3hlczzRhruTC91K4zZ0h9m4EMO87u80tH+XSgZbz8C6O4fjV5PHlOTjqqvhq
+4oPnGK+Fw+fPBpnVgaTlb7XBcET/by+hhk53zED8x/wzJ82rj/2YeFFS3hzvhKty
+xWfyZfI11Tap1nx3K6kkcUZrxbmKznAIsxN5c0q9X+DC8Rd08sfiql8pzrjTvojE
+RydYCIClaeLwK57OIY9hFkmwA4Ew3+P3UJBD388/81ksRNNBqDjBDRTu+PGORHSW
+UaX9YC16cqw4Qu/zk6DpqkJ8NTF3bgb9cn5i3ttRkvQfBjr9f2sF5E3iBeKrYvGd
+mE2TJn+mrQJd0iyEt48S2Hje/8Sc+HCk8OOcvP+T5ATy3uChtiUGzG2WPSLlunxy
+sT/hPbotXqQQNWMPQxXYspfG5CurgQdVYCK312w/6Lv1EMdQAtgf/veulK9o6v+Q
+YQYS2Na/yAC9Kz8cTNmX
+=Ghiu
+-----END PGP SIGNATURE-----
 
-As a summary, after my patch to suspend/resume governors we can't
-allow policies to be freed and allocated back.
-
-Its not really a war between my patch versus yours :), but I believe the
-right thing to do at this point is to get two patches in for 3.13 as well:
-
-5a87182 cpufreq: suspend governors on system suspend/hibernate
-and patch discussed here:
-http://www.spinics.net/lists/cpufreq/msg08720.html
-
-To finish this problem as early as possible I tested above two
-patches and didn't saw any regressions with suspend/resume or
-Hibernation.. And obviously this fixes your issues as well :)
-
-@Rafael: I understand that it would be difficult for you to take these
-now for 3.13 but they fix some serious problems reported earlier.
-Specially the first patch which everybody thought is the culprit :)
-
-Please see if we can manage to get them in :)
-
---
-viresh
+--rQ2U398070+RC21q--
