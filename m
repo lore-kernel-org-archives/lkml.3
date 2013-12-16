@@ -1,72 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab3LPQrd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:47:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34388 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753867Ab3LPQrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:47:32 -0500
-Date: Mon, 16 Dec 2013 17:47:30 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: glommer@gmail.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, devel@openvz.org,
-        Glauber Costa <glommer@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 1/2] memcg: fix memcg_size() calculation
-Message-ID: <20131216164730.GD26797@dhcp22.suse.cz>
-References: <965cbb70fb55fe50a77382537b9a1b7455deac86.1387007793.git.vdavydov@parallels.com>
+	id S1754795Ab3LPQr4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:47:56 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:55026 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab3LPQry (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 11:47:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <965cbb70fb55fe50a77382537b9a1b7455deac86.1387007793.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131216163546.GR18769@lee--X1>
+References: <1387194424-2701-1-git-send-email-lpapp@kde.org>
+	<20131216134633.GI18769@lee--X1>
+	<CAOMwXhOnHNrzEvf0+QRn6dGb42xR9a33joZcou3ancwSYe36Ug@mail.gmail.com>
+	<20131216150937.GO18769@lee--X1>
+	<CAOMwXhNJFGiRNB4jnTrzzpSGL8XvaR1Ph_pFrdU+x+guy7Tamg@mail.gmail.com>
+	<20131216163546.GR18769@lee--X1>
+Date: Mon, 16 Dec 2013 16:47:54 +0000
+X-Google-Sender-Auth: MW8_h4EpnAYqHlkdGY-PMWM1ZZc
+Message-ID: <CAOMwXhNXctcQWMU5vKKW52sQ-Ek3Mw3FZLTNJa4GD5qk4O79Gw@mail.gmail.com>
+Subject: Re: [PATCH] mfd: (max8997) Handle the potential error for mfd_add_devices
+From: Laszlo Papp <lpapp@kde.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: sameo@linux.intel.com, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 14-12-13 12:15:33, Vladimir Davydov wrote:
-> The mem_cgroup structure contains nr_node_ids pointers to
-> mem_cgroup_per_node objects, not the objects themselves.
+On Mon, Dec 16, 2013 at 4:35 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> This is not a good introduction to the Kernel Community.
+>
+> Please adapt your attitude or people will stop helping you.
 
-Ouch! This is 2k per node which is wasted. What a shame I haven't
-noticed this back then when reviewing 45cf7ebd5a033 (memcg: reduce the
-size of struct memcg 244-fold)
+(I would personally like to stay civil here...)
 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Glauber Costa <glommer@openvz.org>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> >> I think you commented on the wrong patch. There has been a newer submitted.
+>> >
+>> > No top posting please.
+>>
+>> Tell that to the client I need to use. IMO, making these inline posts
+>> mandatorily when the reply is a single line makes not much sense.
+>> Anyway, I will follow the inconvenient way.
+>
+> If you are not replying to a particular comment, then there is no need
+> to quote it.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+I did not actually quote anything above my reply.
 
-Thanks!
+>
+> Please read and inwardly digest:
+>   Documentation/email-clients.txt
 
-> ---
->  mm/memcontrol.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index bf5e894..7f1a356 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -338,7 +338,7 @@ struct mem_cgroup {
->  static size_t memcg_size(void)
->  {
->  	return sizeof(struct mem_cgroup) +
-> -		nr_node_ids * sizeof(struct mem_cgroup_per_node);
-> +		nr_node_ids * sizeof(struct mem_cgroup_per_node *);
->  }
->  
->  /* internal only representation about the status of kmem accounting. */
-> -- 
-> 1.7.10.4
-> 
+I have read that, however I still have certain restrictions here which
+are over the kernel community rules.  That should not block a useful
+contribution in my opinion.
 
--- 
-Michal Hocko
-SUSE Labs
+>> >> > The $SUBJECT line is wrong. To see how a subsystem usually formats
+>> >> > theirs you must do something like `git log --oneline -- <subsystem>`.
+>> >> > And duplicate the format.
+>> >> >
+>> >> > Commit message?
+>> >
+>> > These comments are still relevant, please re-post your patch with the
+>> > points rectified.
+>>
+>> I really do not understand how they relevant. "Commit message?" ->
+>> What about it?
+>
+> The issue is that there isn't one.
+
+I do not follow. Here is the commit message: "mfd: (max8997) Handle
+the potential error for mfd_add_devices". What is missing? It now
+handles an error for adding mfd devices which was not handled before.
+It mentions for which chip. What more needs to be written? I am
+currently lost.
+
+>> It has a pretty clear commit message.
+>
+> If you are referencing my comments about the $SUBJECT line, then I
+> have to disagree with you there. It's actually pretty vague, does not
+> describe either the issue or what steps you've taken to rectify it.
+>
+>> Are you now just
+>> picking nits about "foo:" vs "(foo)" in the short line?
+>
+> That is also an issue. Did you issue the command I sent you:
+>
+>   `git log --oneline -- drivers/mfd`
+>
+> Issue it now and see if _anyone_ has _ever_ used your formatting.
+
+Right, so nitpicking about a minor nuance over a somewhat important
+error handling. Is that blocking the error handling change or you can
+fix that up yourself? I currently do not have time, nor environment
+for satisfy this request. I can probably do it the upcoming days.
+
+>> >> >> +     if (ret < 0) {
+>> >> >> +             dev_err(dev, "cannot add mfd cells\n");
+>> >> >> +             goto err_mfd;
+>> >> >> +     }
+>> >> >
+>> >> > Have you tested this patch on h/w? Did you even compile it?
+>> >
+>> > You must ensure to test your patches before sending to the MLs, it's
+>> > the very least we expect.
+>>
+>> I am not sure what point you are trying to make. Feel free to reject
+>> the patch for this error handling.
+>
+> I'm not rejecting it because of the error handling, I'm rejecting it
+> because it hasn't been tested and it doesn't even compile.
+
+It *has* been tested, and it does compile here. I think you just got
+stuck with the old patch rather than taking any look at new version.
+May I ask you to do please so? That has been fixed in the new
+submission before your email.
+
+>> Clearly, the patch has been updated
+>> due to a previous mistake. I would not make a fuss about an issue
+>> which had been fixed before getting any comment.
+>
+> How was this 'clear'? Our inboxes are date/time sequential.
+>
+> This patch was read _before_ the one you posted _subsequently_.
+
+My personal suggestion is to read the latest as well before replying
+to a potentially obsolete email.
