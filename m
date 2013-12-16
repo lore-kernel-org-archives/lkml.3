@@ -1,80 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab3LPNqv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 08:46:51 -0500
-Received: from mail-vb0-f41.google.com ([209.85.212.41]:53354 "EHLO
-	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242Ab3LPNqs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 08:46:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <1387078509-14156-3-git-send-email-dt.tangr@gmail.com>
-References: <1387078509-14156-1-git-send-email-dt.tangr@gmail.com>
-	<1387078509-14156-3-git-send-email-dt.tangr@gmail.com>
-Date: Mon, 16 Dec 2013 07:46:47 -0600
-Message-ID: <CAL_JsqJ1HTccZ0-QLAXnWOvMYHsO_GjzKtYbbqp7_0c_H3e_NA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] devicetree: bindings: document lsi,zevio-usb
-From: Rob Herring <robherring2@gmail.com>
-To: dt.tangr@gmail.com
-Cc: Linux USB List <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754324Ab3LPNuL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 08:50:11 -0500
+Received: from mga02.intel.com ([134.134.136.20]:50166 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753655Ab3LPNuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 08:50:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,495,1384329600"; 
+   d="scan'208";a="452982982"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20131216100446.GT21999@twins.programming.kicks-ass.net>
+References: <alpine.LNX.2.00.1312160053530.3066@eggly.anvils>
+ <20131216100446.GT21999@twins.programming.kicks-ass.net>
+Subject: Re: mm: ptl is not bloated if it fits in pointer
+Content-Transfer-Encoding: 7bit
+Message-Id: <20131216135005.AC5FDE0090@blue.fi.intel.com>
+Date: Mon, 16 Dec 2013 15:50:05 +0200 (EET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 14, 2013 at 9:35 PM,  <dt.tangr@gmail.com> wrote:
-> From: Daniel Tang <dt.tangr@gmail.com>
->
->
-> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
+Peter Zijlstra wrote:
+> On Mon, Dec 16, 2013 at 01:04:13AM -0800, Hugh Dickins wrote:
+> > It's silly to force the 64-bit CONFIG_GENERIC_LOCKBREAK architectures
+> > to kmalloc eight bytes for an indirect page table lock: the lock needs
+> > to fit in the space that a pointer to it would occupy, not into an int.
+> 
+> Ah, no. A spinlock is very much assumed to be 32bit, any spinlock that's
+> bigger than that is bloated.
+> 
+> For the page-frame case we do indeed not care about the strict 32bit but
+> more about not being larger than a pointer, however there are already
+> other users.
+> 
+> See for instance include/linux/lockref.h and lib/lockref.c, they very
+> much require the spinlock to be 32bit and the below would break that.
 
-A few minor things below. Otherwise:
+What about this instead? Smoke-tested.
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+>From d0243ba6bf462a7c0ae4290e1c0dbdae22eaa2a6 Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Mon, 16 Dec 2013 15:36:31 +0200
+Subject: [PATCH] mm: do not allocate page->ptl dynamically, if spinlock_t fits
+ to long
 
-> ---
->  .../devicetree/bindings/usb/ci-hdrc-zevio.txt         |   17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/usb/ci-hdrc-zevio.txt
->
-> diff --git a/Documentation/devicetree/bindings/usb/ci-hdrc-zevio.txt b/Documentation/devicetree/bindings/usb/ci-hdrc-zevio.txt
-> new file mode 100644
-> index 0000000..1a005eb
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/usb/ci-hdrc-zevio.txt
-> @@ -0,0 +1,17 @@
-> +* LSI Zevio USB OTG Controller
-> +
-> +Required properties:
-> +- compatible: Should be "lsi,zevio-usb"
-> +- reg: Should contain registers location and length
-> +- interrupts: Should contain controller interrupt
-> +
-> +Recommended properies:
+In struct page we have enough space to fit long-size page->ptl
+there, but we use dynamically-allocated page->ptl if
+size(spinlock_t) > sizeof(int). It hurts 64-bit architectures with
+CONFIG_GENERIC_LOCKBREAK, where sizeof(spinlock_t) == 8, but it
+easily fits into struct page.
 
-To be consistent, should be "optional" rather than recommended.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ include/linux/lockref.h  | 2 +-
+ include/linux/mm.h       | 6 +++---
+ include/linux/mm_types.h | 3 ++-
+ kernel/bounds.c          | 2 +-
+ mm/memory.c              | 2 +-
+ 5 files changed, 8 insertions(+), 7 deletions(-)
 
-s/properies/properties/
-
-> +- vbus-supply: regulator for vbus
-> +
-> +Examples:
-> +               usb0: usb@B0000000 {
-> +                       reg = <0xB0000000 0x1000>;
-
-lower case hex is preferred.
-
-> +                       compatible = "lsi,zevio-usb";
-> +                       interrupts = <8>;
-> +                       vbus-supply = <&vbus_reg>;
-> +               };
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/include/linux/lockref.h b/include/linux/lockref.h
+index c8929c3832db..4bfde0e99ed5 100644
+--- a/include/linux/lockref.h
++++ b/include/linux/lockref.h
+@@ -19,7 +19,7 @@
+ 
+ #define USE_CMPXCHG_LOCKREF \
+ 	(IS_ENABLED(CONFIG_ARCH_USE_CMPXCHG_LOCKREF) && \
+-	 IS_ENABLED(CONFIG_SMP) && !BLOATED_SPINLOCKS)
++	 IS_ENABLED(CONFIG_SMP) && SPINLOCK_SIZE <= 4)
+ 
+ struct lockref {
+ 	union {
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 1cedd000cf29..35527173cf50 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1317,7 +1317,7 @@ static inline pmd_t *pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long a
+ #endif /* CONFIG_MMU && !__ARCH_HAS_4LEVEL_HACK */
+ 
+ #if USE_SPLIT_PTE_PTLOCKS
+-#if BLOATED_SPINLOCKS
++#if ALLOC_SPLIT_PTLOCKS
+ extern bool ptlock_alloc(struct page *page);
+ extern void ptlock_free(struct page *page);
+ 
+@@ -1325,7 +1325,7 @@ static inline spinlock_t *ptlock_ptr(struct page *page)
+ {
+ 	return page->ptl;
+ }
+-#else /* BLOATED_SPINLOCKS */
++#else /* ALLOC_SPLIT_PTLOCKS */
+ static inline bool ptlock_alloc(struct page *page)
+ {
+ 	return true;
+@@ -1339,7 +1339,7 @@ static inline spinlock_t *ptlock_ptr(struct page *page)
+ {
+ 	return &page->ptl;
+ }
+-#endif /* BLOATED_SPINLOCKS */
++#endif /* ALLOC_SPLIT_PTLOCKS */
+ 
+ static inline spinlock_t *pte_lockptr(struct mm_struct *mm, pmd_t *pmd)
+ {
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index bd299418a934..494b328c2a61 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -26,6 +26,7 @@ struct address_space;
+ #define USE_SPLIT_PTE_PTLOCKS	(NR_CPUS >= CONFIG_SPLIT_PTLOCK_CPUS)
+ #define USE_SPLIT_PMD_PTLOCKS	(USE_SPLIT_PTE_PTLOCKS && \
+ 		IS_ENABLED(CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK))
++#define ALLOC_SPLIT_PTLOCKS	(SPINLOCK_SIZE > BITS_PER_LONG/8)
+ 
+ /*
+  * Each physical page in the system has a struct page associated with
+@@ -155,7 +156,7 @@ struct page {
+ 						 * system if PG_buddy is set.
+ 						 */
+ #if USE_SPLIT_PTE_PTLOCKS
+-#if BLOATED_SPINLOCKS
++#if ALLOC_SPLIT_PTLOCKS
+ 		spinlock_t *ptl;
+ #else
+ 		spinlock_t ptl;
+diff --git a/kernel/bounds.c b/kernel/bounds.c
+index 5253204afdca..9fd4246b04b8 100644
+--- a/kernel/bounds.c
++++ b/kernel/bounds.c
+@@ -22,6 +22,6 @@ void foo(void)
+ #ifdef CONFIG_SMP
+ 	DEFINE(NR_CPUS_BITS, ilog2(CONFIG_NR_CPUS));
+ #endif
+-	DEFINE(BLOATED_SPINLOCKS, sizeof(spinlock_t) > sizeof(int));
++	DEFINE(SPINLOCK_SIZE, sizeof(spinlock_t));
+ 	/* End of constants */
+ }
+diff --git a/mm/memory.c b/mm/memory.c
+index 5d9025f3b3e1..b6e211b779d0 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -4271,7 +4271,7 @@ void copy_user_huge_page(struct page *dst, struct page *src,
+ }
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
+ 
+-#if USE_SPLIT_PTE_PTLOCKS && BLOATED_SPINLOCKS
++#if ALLOC_SPLIT_PTLOCKS
+ bool ptlock_alloc(struct page *page)
+ {
+ 	spinlock_t *ptl;
+-- 
+ Kirill A. Shutemov
