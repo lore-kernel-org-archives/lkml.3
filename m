@@ -1,177 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297Ab3LPMXV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 07:23:21 -0500
-Received: from relay.parallels.com ([195.214.232.42]:56266 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861Ab3LPMRQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 07:17:16 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <dchinner@redhat.com>, <mhocko@suse.cz>, <hannes@cmpxchg.org>,
-        <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <glommer@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Subject: [PATCH v14 10/18] vmscan: remove shrink_control arg from do_try_to_free_pages()
-Date: Mon, 16 Dec 2013 16:16:59 +0400
-Message-ID: <a3ffeeb63e044912bdc67c9eed2bf802c1063f0c.1387193771.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1387193771.git.vdavydov@parallels.com>
-References: <cover.1387193771.git.vdavydov@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+	id S1754332Ab3LPMXy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 07:23:54 -0500
+Received: from smtp206.alice.it ([82.57.200.102]:51944 "EHLO smtp206.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754368Ab3LPMXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 07:23:51 -0500
+X-Greylist: delayed 333 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Dec 2013 07:23:51 EST
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: linux-kernel@vger.kernel.org
+Cc: Antonio Ospite <ospite@studenti.unina.it>,
+        "J . R . Mauro" <jrm8005@gmail.com>
+Subject: [PATCH] scripts/Lindent: fix formatting primitive types
+Date: Mon, 16 Dec 2013 13:18:07 +0100
+Message-Id: <1387196287-25972-1-git-send-email-ospite@studenti.unina.it>
+X-Mailer: git-send-email 1.8.5.1
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need passing on a shrink_control struct from
-try_to_free_pages() and friends to do_try_to_free_pages() and then to
-shrink_zones(), because it is only used in shrink_zones() and the only
-field initialized on the top level is gfp_mask, which is always equal to
-scan_control.gfp_mask. So let's move shrink_control initialization to
-shrink_zones().
+Make Lindent recognize and format properly at least the commonly used
+primitive types.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
+Something like this has been suggested before by J.R. Mauro:
+https://lkml.org/lkml/2008/10/14/233
+
+Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
 ---
- mm/vmscan.c |   32 ++++++++++++--------------------
- 1 file changed, 12 insertions(+), 20 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 035ab3a..33b356e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2274,8 +2274,7 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
-  * further reclaim.
-  */
- static bool shrink_zones(struct zonelist *zonelist,
--			 struct scan_control *sc,
--			 struct shrink_control *shrink)
-+			 struct scan_control *sc)
- {
- 	struct zoneref *z;
- 	struct zone *zone;
-@@ -2284,6 +2283,9 @@ static bool shrink_zones(struct zonelist *zonelist,
- 	unsigned long lru_pages = 0;
- 	bool aborted_reclaim = false;
- 	struct reclaim_state *reclaim_state = current->reclaim_state;
-+	struct shrink_control shrink = {
-+		.gfp_mask = sc->gfp_mask,
-+	};
- 
- 	/*
- 	 * If the number of buffer_heads in the machine exceeds the maximum
-@@ -2293,7 +2295,7 @@ static bool shrink_zones(struct zonelist *zonelist,
- 	if (buffer_heads_over_limit)
- 		sc->gfp_mask |= __GFP_HIGHMEM;
- 
--	nodes_clear(shrink->nodes_to_scan);
-+	nodes_clear(shrink.nodes_to_scan);
- 
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 					gfp_zone(sc->gfp_mask), sc->nodemask) {
-@@ -2308,7 +2310,7 @@ static bool shrink_zones(struct zonelist *zonelist,
- 				continue;
- 
- 			lru_pages += zone_reclaimable_pages(zone);
--			node_set(zone_to_nid(zone), shrink->nodes_to_scan);
-+			node_set(zone_to_nid(zone), shrink.nodes_to_scan);
- 
- 			if (sc->priority != DEF_PRIORITY &&
- 			    !zone_reclaimable(zone))
-@@ -2353,7 +2355,7 @@ static bool shrink_zones(struct zonelist *zonelist,
- 	 * LRU pages over slab pages.
- 	 */
- 	if (global_reclaim(sc)) {
--		shrink_slab(shrink, sc->nr_scanned, lru_pages);
-+		shrink_slab(&shrink, sc->nr_scanned, lru_pages);
- 		if (reclaim_state) {
- 			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
- 			reclaim_state->reclaimed_slab = 0;
-@@ -2400,8 +2402,7 @@ static bool all_unreclaimable(struct zonelist *zonelist,
-  * 		else, the number of pages reclaimed
-  */
- static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
--					struct scan_control *sc,
--					struct shrink_control *shrink)
-+					  struct scan_control *sc)
- {
- 	unsigned long total_scanned = 0;
- 	unsigned long writeback_threshold;
-@@ -2416,7 +2417,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
- 				sc->priority);
- 		sc->nr_scanned = 0;
--		aborted_reclaim = shrink_zones(zonelist, sc, shrink);
-+		aborted_reclaim = shrink_zones(zonelist, sc);
- 
- 		total_scanned += sc->nr_scanned;
- 		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
-@@ -2579,9 +2580,6 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 		.target_mem_cgroup = NULL,
- 		.nodemask = nodemask,
- 	};
--	struct shrink_control shrink = {
--		.gfp_mask = sc.gfp_mask,
--	};
- 
- 	/*
- 	 * Do not enter reclaim if fatal signal was delivered while throttled.
-@@ -2595,7 +2593,7 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 				sc.may_writepage,
- 				gfp_mask);
- 
--	nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
-+	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
- 
- 	trace_mm_vmscan_direct_reclaim_end(nr_reclaimed);
- 
-@@ -2662,9 +2660,6 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
- 		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
- 				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
- 	};
--	struct shrink_control shrink = {
--		.gfp_mask = sc.gfp_mask,
--	};
- 
- 	/*
- 	 * Unlike direct reclaim via alloc_pages(), memcg's reclaim doesn't
-@@ -2679,7 +2674,7 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
- 					    sc.may_writepage,
- 					    sc.gfp_mask);
- 
--	nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
-+	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
- 
- 	trace_mm_vmscan_memcg_reclaim_end(nr_reclaimed);
- 
-@@ -3335,9 +3330,6 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
- 		.order = 0,
- 		.priority = DEF_PRIORITY,
- 	};
--	struct shrink_control shrink = {
--		.gfp_mask = sc.gfp_mask,
--	};
- 	struct zonelist *zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
- 	struct task_struct *p = current;
- 	unsigned long nr_reclaimed;
-@@ -3347,7 +3339,7 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
- 	reclaim_state.reclaimed_slab = 0;
- 	p->reclaim_state = &reclaim_state;
- 
--	nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
-+	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
- 
- 	p->reclaim_state = NULL;
- 	lockdep_clear_current_reclaim_state();
+Hi,
+
+I had this local change and I felt like sharing it.
+
+Another way of doing this kind of setup would be to put options into an
+indent.pro file and make the INDENT_PROFILE env variable point to it.
+
+BTW, I realize this kind of changes could easily go out of control, I was
+almost going to generate the list of types (and qualifier) by parsing header
+files, so I'll understand if you just drop it.
+
+Ciao,
+   Antonio
+
+ scripts/Lindent | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/scripts/Lindent b/scripts/Lindent
+index 9c4b3e2..7531d7c 100755
+--- a/scripts/Lindent
++++ b/scripts/Lindent
+@@ -1,5 +1,14 @@
+ #!/bin/sh
+ PARAM="-npro -kr -i8 -ts8 -sob -l80 -ss -ncs -cp1"
++TYPES="-T size_t \
++ -T s8 -T s16 -T s32 -T s64 \
++ -T __s8 -T __s16 -T __s32 -T __s64 \
++ -T u8 -T u16 -T u32 -T u64 \
++ -T __u8 -T __u16 -T __u32 -T __u64 \
++ -T __be16 -T __be32 -T __be64 \
++ -T __le16 -T __le32 -T __le64 \
++ -T int8_t -T int16_t -T int32_t -T int64_t \
++ -T u_int8_t -T u_int16_t -T u_int32_t -T u_int64_t"
+ RES=`indent --version`
+ V1=`echo $RES | cut -d' ' -f3 | cut -d'.' -f1`
+ V2=`echo $RES | cut -d' ' -f3 | cut -d'.' -f2`
+@@ -15,4 +24,4 @@ elif [ $V1 -eq 2 ]; then
+     fi
+   fi
+ fi
+-indent $PARAM "$@"
++indent $PARAM $TYPES "$@"
 -- 
-1.7.10.4
+1.8.5.1
 
