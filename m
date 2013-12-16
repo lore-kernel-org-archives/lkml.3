@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab3LPQbW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:31:22 -0500
-Received: from smtprelay0187.hostedemail.com ([216.40.44.187]:49900 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754291Ab3LPQbU (ORCPT
+	id S1754786Ab3LPQej (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:34:39 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:34760 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614Ab3LPQeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:31:20 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3871:3872:3874:4250:4321:5007:7652:8603:8700:9036:10004:10400:10848:11232:11658:11914:12043:12050:12266:12438:12517:12519:12555:12679:12740:13069:13311:13357:13870,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: war49_45881bb9bcc26
-X-Filterd-Recvd-Size: 2476
-Message-ID: <1387211476.18217.33.camel@joe-AO722>
-Subject: Re: [PATCH 1/3] Introduce FW_INFO* functions and messages
-From: Joe Perches <joe@perches.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: Matt Fleming <matt@console-pimps.org>, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Mon, 16 Dec 2013 08:31:16 -0800
-In-Reply-To: <52AEF997.906@redhat.com>
-References: <1385997579-22240-1-git-send-email-prarit@redhat.com>
-	 <1385997579-22240-2-git-send-email-prarit@redhat.com>
-	 <20131203132120.6a7ab2cd7cc99720712cbe6a@linux-foundation.org>
-	 <201312041922.59181.arnd@arndb.de>
-	 <20131205113016.GB3823@console-pimps.org>
-	 <1386258903.10003.8.camel@joe-AO722>
-	 <20131206123026.GB3597@console-pimps.org> <52AEF997.906@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 16 Dec 2013 11:34:36 -0500
+Date: Mon, 16 Dec 2013 11:33:34 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shli@kernel.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
+        Wang YanQing <udknight@gmail.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH v3 [resend] 14/18] smp, x86, xen: kill SMP single
+ function call interrupt
+Message-ID: <20131216163334.GC20165@phenom.dumpdata.com>
+References: <1387125400-28849-1-git-send-email-liuj97@gmail.com>
+ <1387125400-28849-15-git-send-email-liuj97@gmail.com>
+ <20131216030040.GB7180@pegasus.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923350142ABC2@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350142ABC2@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-16 at 08:01 -0500, Prarit Bhargava wrote:
-> Sorry everyone, I was out on PTO for the past few weeks.
-> 
-> 
-> On 12/06/2013 07:30 AM, Matt Fleming wrote:
-> > On Thu, 05 Dec, at 07:55:03AM, Joe Perches wrote:
-> >> On Thu, 2013-12-05 at 11:30 +0000, Matt Fleming wrote:
-> >>> On Wed, 04 Dec, at 07:22:57PM, Arnd Bergmann wrote:
-> >>>> The other part I noticed about this particular patchset is that it's
-> >>>> not really "firmware" as such, but specifically PC wiht ACPI that
-> >>>> gets covered here. So rather than generalizing the code, another
-> >>>> option would be to narrow down the scope and make it
-> >>>> acpi_{warn,info,dbg} instead.
-> >>>
-> >>> Making this specific to ACPI runs the risk of people introducing a
-> >>> multitude of new logging functions for every subsystem, e.g.
-> >>> efi_{warn,info,dbg}.
-> >>
-> >> There are many subsystem specific logging functions:
+On Mon, Dec 16, 2013 at 04:24:41AM +0000, Liu, Jinsong wrote:
+> Konrad Rzeszutek Wilk wrote:
+> > On Mon, Dec 16, 2013 at 12:36:36AM +0800, Jiang Liu wrote:
+> >> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
+> >> similar to smp_call_function_single()" has unified the way to handle
+> >> single and multiple cross-CPU function calls. Now only one interrupt
+> >> is needed for architecture specific code to support generic SMP
+> >> function 
+> >> call interfaces, so kill the redundant single function call
+> >> interrupt. 
+> >> 
+> >> Cc: Andrew Morton <akpm@linux-foundation.org>
+> >> Cc: Shaohua Li <shli@kernel.org>
+> >> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >> Cc: Ingo Molnar <mingo@elte.hu>
+> >> Cc: Steven Rostedt <rostedt@goodmis.org>
+> >> Cc: Jiri Kosina <trivial@kernel.org>
+> >> Cc: Thomas Gleixner <tglx@linutronix.de>
+> >> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> >> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > > 
-> > Surely that's further justification to not introduce any more.
+> > I presume this has been tested?
+> > 
 > 
-> That's what I was thinking when I saw this discussion.
+> I have just test Jiang's patch, it works fine for dom0 booting.
 
-I have no problem with introducing more <subsystem>_<kern_level>
-functions/macros.
+Excellent! Please add Acked-by from me.
 
-It can reduce overall object size quite a lot.
+Thanks!
 
-see commits like: 227842d1176019512d24236f7fb894f0fadd30d1
-
-
+> 
+> Thanks,
+> Jinsong
+> 
+> 
