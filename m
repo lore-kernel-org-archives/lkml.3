@@ -1,92 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab3LPTfL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 14:35:11 -0500
-Received: from stargate.chelsio.com ([67.207.112.58]:4663 "EHLO
-	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755275Ab3LPTfJ (ORCPT
+	id S1755464Ab3LPTfb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 14:35:31 -0500
+Received: from mail-pa0-f67.google.com ([209.85.220.67]:32870 "EHLO
+	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755283Ab3LPTfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 14:35:09 -0500
-Date: Tue, 17 Dec 2013 01:04:46 +0530
-From: Hariprasad S <hariprasad@chelsio.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: <dwmw2@infradead.org>, <linux-kernel@vger.kernel.org>, <felix@chelsio.com>
-Subject: Re: pull request: linux-firmware: update cxgb4 firmware
-Message-ID: <20131216193446.GA10431@hariprasad-pc>
-References: <20131215193220.GA7536@hariprasad-pc>
- <1387152449.2803.3.camel@deadeye.wl.decadent.org.uk>
+	Mon, 16 Dec 2013 14:35:10 -0500
+Date: Mon, 16 Dec 2013 11:35:08 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Stefan Beller <stefanbeller@googlemail.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+Subject: Re: 3.13-rc4 doesn't compile
+Message-ID: <20131216193508.GA6107@roeck-us.net>
+References: <52AF2103.60802@googlemail.com>
+ <52AF2375.5060706@googlemail.com>
+ <20131216161959.GB4931@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1387152449.2803.3.camel@deadeye.wl.decadent.org.uk>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131216161959.GB4931@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.193.190.82]
-X-OriginalArrivalTime: 16 Dec 2013 19:34:31.0040 (UTC) FILETIME=[D75A1800:01CEFA95]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 00:07:29 +0000, Ben Hutchings wrote:
-> On Mon, 2013-12-16 at 01:02 +0530, Hariprasad S wrote:
-> > Hi,
+On Mon, Dec 16, 2013 at 05:19:59PM +0100, Borislav Petkov wrote:
+> Add people to Cc.
+> 
+> On Mon, Dec 16, 2013 at 04:59:49PM +0100, Stefan Beller wrote:
+> > Forgot to add:
 > > 
-> > Can you please pull from the following URL?
-> >     git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
+> > 	$ git describe
+> > v3.13-rc4
 > > 
-> > The following changes since commit 7d0c7a8cfd78388d90cc784a185b19dcbdbce824:
-> >   Ben Hutchings (1):
-> >           Merge branch 'wilink4' of git://git.kernel.org/pub/scm/linux/kernel/git/balbi/linux-firmware
+> > 	$ make deb-pkg
+> >   CHK     include/config/kernel.release
+> > make KBUILD_SRC=
+> > make[3]: Nothing to be done for `all'.
+> >   CHK     include/config/kernel.release
+> >   CHK     include/generated/uapi/linux/version.h
+> > make[3]: Nothing to be done for `relocs'.
+> >   CHK     include/generated/utsrelease.h
+> >   CALL    scripts/checksyscalls.sh
+> >   CHK     include/generated/compile.h
+> >   PASYMS  arch/x86/realmode/rm/pasyms.h
+> >   LDS     arch/x86/realmode/rm/realmode.lds
+> >   LD      arch/x86/realmode/rm/realmode.elf
+> >   RELOCS  arch/x86/realmode/rm/realmode.relocs
+> >   OBJCOPY arch/x86/realmode/rm/realmode.bin
+> >   AS      arch/x86/realmode/rmpiggy.o
+> >   LD      arch/x86/realmode/built-in.o
+> >   VDSOSYM arch/x86/vdso/vdso-syms.lds
+> >   VDSOSYM arch/x86/vdso/vdsox32-syms.lds
+> >   VDSOSYM arch/x86/vdso/vdso32-int80-syms.lds
+> >   VDSOSYM arch/x86/vdso/vdso32-syscall-syms.lds
+> >   VDSOSYM arch/x86/vdso/vdso32-sysenter-syms.lds
+> >   VDSOSYM arch/x86/vdso/vdso32-syms.lds
+> >   LD      arch/x86/vdso/built-in.o
+> >   LD      arch/x86/built-in.o
+> >   CC [M]  drivers/regulator/s2mps11.o
+> > drivers/regulator/s2mps11.c: In function ‘s2mps11_pmic_probe’:
+> > drivers/regulator/s2mps11.c:441:23: error: ‘struct sec_pmic_dev’ has no
+> > member named ‘regmap’
+> >   config.regmap = iodev->regmap;
+> >                        ^
+> > make[4]: *** [drivers/regulator/s2mps11.o] Error 1
+> > make[4]: Target `__build' not remade because of errors.
+> > make[3]: *** [drivers/regulator] Error 2
+> > make[3]: Target `__build' not remade because of errors.
+> > make[2]: *** [drivers] Error 2
+> > make[2]: Target `_all' not remade because of errors.
+> > make[1]: *** [deb-pkg] Error 2
+> > make: *** [deb-pkg] Error 2
 > > 
-> > are available in the git repository at:
-> > 
-> >   git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
-> 
-> I'm no longer able to pull from this repository.  Depending on whether I
-> use my cellular data or home DSL connection it fails with either:
-> 
-> $ git fetch git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
-> fatal: Could not read from remote repository.
-> 
-> Please make sure you have the correct access rights
-> and the repository exists.
-> 
-> or:
-> 
-> $ git fetch git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
-> fatal: unable to connect to git.chelsio.net:
-> git.chelsio.net[0: 67.207.112.37]: errno=Connection refused
-> 
-> Ben.
-> 
 
-Hi Ben,
+Patch pending.
 
-There was some internal issue. Now that it is fixed, Can you please try pulling it now.
+See http://lkml.indiana.edu/hypermail/linux/kernel/1312.2/00459.html
 
-Thanks,
-Hariprasad Shenai
-
-> > Hariprasad Shenai (1):
-> >     cxgb4: Updated T4 firmware, add T5 firmware
-> > 
-> >  WHENCE                  |    8 +++++---
-> >  cxgb4/t4fw-1.6.2.0.bin  |  Bin 431616 -> 0 bytes
-> >  cxgb4/t4fw-1.9.23.0.bin |  Bin 0 -> 486912 bytes
-> >  cxgb4/t4fw.bin          |    2 +-
-> >  cxgb4/t5fw-1.9.23.0.bin |  Bin 0 -> 481280 bytes
-> >  cxgb4/t5fw.bin          |    1 +
-> >  6 files changed, 7 insertions(+), 4 deletions(-)
-> >  delete mode 100644 cxgb4/t4fw-1.6.2.0.bin
-> >  create mode 100644 cxgb4/t4fw-1.9.23.0.bin
-> >  create mode 100644 cxgb4/t5fw-1.9.23.0.bin
-> >  create mode 120000 cxgb4/t5fw.bin
-> > 
-> > Thanks,
-> > Hariprasad Shenai
-> 
-> -- 
-> Ben Hutchings
-> Lowery's Law:
->              If it jams, force it. If it breaks, it needed replacing anyway.
-
-
+Guenter
