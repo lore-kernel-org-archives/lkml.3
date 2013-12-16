@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab3LPEJK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 23:09:10 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:57596 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab3LPEJG (ORCPT
+	id S1753048Ab3LPEMh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 23:12:37 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:48281 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab3LPEJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 23:09:06 -0500
+	Sun, 15 Dec 2013 23:09:11 -0500
 From: David Long <dave.long@linaro.org>
 To: linux-arm-kernel@lists.infradead.org,
         Russell King <linux@arm.linux.org.uk>
@@ -21,9 +21,9 @@ Cc: Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
         Paul Mackerras <paulus@samba.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 06/16] ARM: Disable jprobes test when built into thumb-mode kernel
-Date: Sun, 15 Dec 2013 23:08:40 -0500
-Message-Id: <1387166930-13182-7-git-send-email-dave.long@linaro.org>
+Subject: [PATCH v4 09/16] ARM: Make the kprobes condition_check symbol names more generic
+Date: Sun, 15 Dec 2013 23:08:43 -0500
+Message-Id: <1387166930-13182-10-git-send-email-dave.long@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1387166930-13182-1-git-send-email-dave.long@linaro.org>
 References: <1387166930-13182-1-git-send-email-dave.long@linaro.org>
@@ -31,53 +31,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+From: "David A. Long" <dave.long@linaro.org>
 
-For now the jprobes tests fail on ARM for when built into a kernel compiled
-in thumb mode. They work fine for ARM kernels, and when built as a loadable
-module.
+In preparation for sharing the ARM kprobes instruction interpreting
+code with uprobes, make the symbols names less kprobes-specific.
 
-Signed-off-by: "Jon Medhurst (Tixy)" <tixy@linaro.org>
 Signed-off-by: David A. Long <dave.long@linaro.org>
 ---
- arch/arm/kernel/kprobes-test.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/arm/include/asm/probes.h   | 4 ++--
+ arch/arm/kernel/kprobes-thumb.c | 4 ++--
+ arch/arm/kernel/probes-arm.c    | 2 +-
+ arch/arm/kernel/probes-thumb.c  | 2 +-
+ arch/arm/kernel/probes.c        | 2 +-
+ arch/arm/kernel/probes.h        | 2 +-
+ 6 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/kernel/kprobes-test.c b/arch/arm/kernel/kprobes-test.c
-index 0cd63d0..65230b2 100644
---- a/arch/arm/kernel/kprobes-test.c
-+++ b/arch/arm/kernel/kprobes-test.c
-@@ -221,6 +221,7 @@ static int pre_handler_called;
- static int post_handler_called;
- static int jprobe_func_called;
- static int kretprobe_handler_called;
-+static int tests_failed;
+diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
+index 8032591..81b05b0 100644
+--- a/arch/arm/include/asm/probes.h
++++ b/arch/arm/include/asm/probes.h
+@@ -8,7 +8,7 @@ struct arch_specific_insn;
+ typedef void (kprobe_insn_handler_t)(probes_opcode_t,
+ 				     struct arch_specific_insn *,
+ 				     struct pt_regs *);
+-typedef unsigned long (kprobe_check_cc)(unsigned long);
++typedef unsigned long (probes_check_cc)(unsigned long);
+ typedef void (kprobe_insn_singlestep_t)(probes_opcode_t,
+ 					struct arch_specific_insn *,
+ 					struct pt_regs *);
+@@ -18,7 +18,7 @@ typedef void (kprobe_insn_fn_t)(void);
+ struct arch_specific_insn {
+ 	probes_opcode_t			*insn;
+ 	kprobe_insn_handler_t		*insn_handler;
+-	kprobe_check_cc			*insn_check_cc;
++	probes_check_cc			*insn_check_cc;
+ 	kprobe_insn_singlestep_t	*insn_singlestep;
+ 	kprobe_insn_fn_t		*insn_fn;
+ };
+diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/kernel/kprobes-thumb.c
+index c648c31..da1e24b 100644
+--- a/arch/arm/kernel/kprobes-thumb.c
++++ b/arch/arm/kernel/kprobes-thumb.c
+@@ -70,7 +70,7 @@ t32_decode_cond_branch(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		struct decode_header *d)
+ {
+ 	int cc = (insn >> 22) & 0xf;
+-	asi->insn_check_cc = kprobe_condition_checks[cc];
++	asi->insn_check_cc = probes_condition_checks[cc];
+ 	asi->insn_handler = t32_simulate_cond_branch;
+ 	return INSN_GOOD_NO_SLOT;
+ }
+@@ -424,7 +424,7 @@ t16_decode_cond_branch(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		struct decode_header *d)
+ {
+ 	int cc = (insn >> 8) & 0xf;
+-	asi->insn_check_cc = kprobe_condition_checks[cc];
++	asi->insn_check_cc = probes_condition_checks[cc];
+ 	asi->insn_handler = t16_simulate_cond_branch;
+ 	return INSN_GOOD_NO_SLOT;
+ }
+diff --git a/arch/arm/kernel/probes-arm.c b/arch/arm/kernel/probes-arm.c
+index e50fb03..95ef3e3 100644
+--- a/arch/arm/kernel/probes-arm.c
++++ b/arch/arm/kernel/probes-arm.c
+@@ -726,7 +726,7 @@ arm_kprobe_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+ 		       struct decode_header *actions)
+ {
+ 	asi->insn_singlestep = arm_singlestep;
+-	asi->insn_check_cc = kprobe_condition_checks[insn>>28];
++	asi->insn_check_cc = probes_condition_checks[insn>>28];
+ 	return kprobe_decode_insn(insn, asi, kprobe_decode_arm_table, false,
+ 				  (const union decode_item *) actions);
+ }
+diff --git a/arch/arm/kernel/probes-thumb.c b/arch/arm/kernel/probes-thumb.c
+index e6dbbc3..055faf0 100644
+--- a/arch/arm/kernel/probes-thumb.c
++++ b/arch/arm/kernel/probes-thumb.c
+@@ -837,7 +837,7 @@ EXPORT_SYMBOL_GPL(kprobe_decode_thumb16_table);
+ static unsigned long __kprobes thumb_check_cc(unsigned long cpsr)
+ {
+ 	if (unlikely(in_it_block(cpsr)))
+-		return kprobe_condition_checks[current_cond(cpsr)](cpsr);
++		return probes_condition_checks[current_cond(cpsr)](cpsr);
+ 	return true;
+ }
  
- #define FUNC_ARG1 0x12345678
- #define FUNC_ARG2 0xabcdef
-@@ -457,6 +458,13 @@ static int run_api_tests(long (*func)(long, long))
+diff --git a/arch/arm/kernel/probes.c b/arch/arm/kernel/probes.c
+index 7354448..36fafd2 100644
+--- a/arch/arm/kernel/probes.c
++++ b/arch/arm/kernel/probes.c
+@@ -163,7 +163,7 @@ static unsigned long __kprobes __check_al(unsigned long cpsr)
+ 	return true;
+ }
  
- 	pr_info("    jprobe\n");
- 	ret = test_jprobe(func);
-+#if defined(CONFIG_THUMB2_KERNEL) && !defined(MODULE)
-+	if (ret == -EINVAL) {
-+		pr_err("FAIL: Known longtime bug with jprobe on Thumb kernels");
-+		tests_failed = ret;
-+		ret = 0;
-+	}
-+#endif
- 	if (ret < 0)
- 		return ret;
+-kprobe_check_cc * const kprobe_condition_checks[16] = {
++probes_check_cc * const probes_condition_checks[16] = {
+ 	&__check_eq, &__check_ne, &__check_cs, &__check_cc,
+ 	&__check_mi, &__check_pl, &__check_vs, &__check_vc,
+ 	&__check_hi, &__check_ls, &__check_ge, &__check_lt,
+diff --git a/arch/arm/kernel/probes.h b/arch/arm/kernel/probes.h
+index c0536b1..e7c7a92 100644
+--- a/arch/arm/kernel/probes.h
++++ b/arch/arm/kernel/probes.h
+@@ -394,7 +394,7 @@ extern const union decode_item kprobe_decode_arm_table[];
+ extern const union decode_item kprobes_arm_actions[];
+ #endif
  
-@@ -1667,6 +1675,8 @@ static int __init run_all_tests(void)
+-extern kprobe_check_cc * const kprobe_condition_checks[16];
++extern probes_check_cc * const probes_condition_checks[16];
  
- out:
- 	if (ret == 0)
-+		ret = tests_failed;
-+	if (ret == 0)
- 		pr_info("Finished kprobe tests OK\n");
- 	else
- 		pr_err("kprobe tests failed\n");
+ 
+ int kprobe_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
 -- 
 1.8.1.2
 
