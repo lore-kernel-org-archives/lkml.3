@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab3LPKPm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:15:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50577 "EHLO mx2.suse.de"
+	id S1753379Ab3LPKPl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:15:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50584 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753133Ab3LPKO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753247Ab3LPKO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Dec 2013 05:14:29 -0500
 From: Vlastimil Babka <vbabka@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>,
@@ -13,9 +13,9 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
         joern@logfs.org, Michel Lespinasse <walken@google.com>,
         Vlastimil Babka <vbabka@suse.cz>, stable@kernel.org
-Subject: [PATCH 2/3] mm: munlock: fix deadlock in __munlock_pagevec()
-Date: Mon, 16 Dec 2013 11:14:15 +0100
-Message-Id: <1387188856-21027-3-git-send-email-vbabka@suse.cz>
+Subject: [RFC PATCH 3/3] mm: munlock: fix potential race with THP page split
+Date: Mon, 16 Dec 2013 11:14:16 +0100
+Message-Id: <1387188856-21027-4-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1387188856-21027-1-git-send-email-vbabka@suse.cz>
 References: <52AE07B4.4020203@oracle.com>
@@ -24,70 +24,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 7225522bb ("mm: munlock: batch non-THP page isolation and
-munlock+putback using pagevec" introduced __munlock_pagevec() to speed up
-munlock by holding lru_lock over multiple isolated pages. Pages that fail to
-be isolated are put_back() immediately, also within the lock.
+Since commit ff6a6da60 ("mm: accelerate munlock() treatment of THP pages")
+munlock skips tail pages of a munlocked THP page. There is some attempt to
+prevent bad consequences of racing with a THP page split, but code inspection
+indicates that there are two problems that may lead to a non-fatal, yet wrong
+outcome.
 
-This can lead to deadlock when __munlock_pagevec() becomes the holder of the
-last page pin and put_back() leads to __page_cache_release() which also locks
-lru_lock. The deadlock has been observed by Sasha Levin using trinity.
+First, __split_huge_page_refcount() copies flags including PageMlocked from
+the head page to the tail pages. Clearing PageMlocked by munlock_vma_page()
+in the middle of this operation might result in part of tail pages left with
+PageMlocked flag. As the head page still appears to be a THP page until all
+tail pages are processed, munlock_vma_page() might think it munlocked the whole
+THP page and skip all the former tail pages. Before ff6a6da60, those pages
+would be cleared in further iterations of munlock_vma_pages_range(), but
+NR_MLOCK would still become undercounted (related the next point).
 
-This patch avoids the deadlock by deferring put_back() operations until
-lru_lock is released. Another pagevec (which is also used by later phases
-of the function is reused to gather the pages for put_back() operation.
+Second, NR_MLOCK accounting is based on call to hpage_nr_pages() after the
+PageMlocked is cleared. The accounting might also become inconsistent due to
+race with __split_huge_page_refcount()
+ - undercount when HUGE_PMD_NR is subtracted, but some tail pages are left
+   with PageMlocked set and counted again (only possible before ff6a6da60)
+ - overcount when hpage_nr_pages() sees a normal page (split has already
+   finished), but the parallel split has meanwhile cleared PageMlocked from
+   additional tail pages
+
+This patch prevents both problems via extending the scope of lru_lock in
+munlock_vma_page(). This is convenient because:
+- __split_huge_page_refcount() takes lru_lock for its whole operation
+- munlock_vma_page() typically takes lru_lock anyway for page isolation
+
+As this becomes a second function where page isolation is done with lru_lock
+already held, factor this out to a new __munlock_isolate_lru_page() function
+and clean up the code around.
 
 Cc: stable@kernel.org
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 ---
- mm/mlock.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ mm/mlock.c | 104 +++++++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 60 insertions(+), 44 deletions(-)
 
 diff --git a/mm/mlock.c b/mm/mlock.c
-index 3847b13..31383d5 100644
+index 31383d5..ca597f3 100644
 --- a/mm/mlock.c
 +++ b/mm/mlock.c
-@@ -295,10 +295,12 @@ static void __munlock_pagevec(struct pagevec *pvec, struct zone *zone)
- {
- 	int i;
- 	int nr = pagevec_count(pvec);
--	int delta_munlocked = -nr;
-+	int delta_munlocked;
- 	struct pagevec pvec_putback;
- 	int pgrescued = 0;
+@@ -91,6 +91,26 @@ void mlock_vma_page(struct page *page)
+ }
  
-+	pagevec_init(&pvec_putback, 0);
+ /*
++ * Isolate a page from LRU with optional get_page() pin.
++ * Assumes lru_lock already held and page already pinned.
++ */
++static bool __munlock_isolate_lru_page(struct page *page, bool getpage)
++{
++	if (PageLRU(page)) {
++		struct lruvec *lruvec = mem_cgroup_page_lruvec(page,
++				page_zone(page));
 +
- 	/* Phase 1: page isolation */
- 	spin_lock_irq(&zone->lru_lock);
- 	for (i = 0; i < nr; i++) {
-@@ -327,16 +329,22 @@ skip_munlock:
- 			/*
- 			 * We won't be munlocking this page in the next phase
- 			 * but we still need to release the follow_page_mask()
--			 * pin.
-+			 * pin. We cannot do it under lru_lock however. If it's
-+			 * the last pin, __page_cache_release would deadlock.
- 			 */
-+			pagevec_add(&pvec_putback, pvec->pages[i]);
- 			pvec->pages[i] = NULL;
--			put_page(page);
--			delta_munlocked++;
- 		}
- 	}
-+	delta_munlocked = -nr + pagevec_count(&pvec_putback);
- 	__mod_zone_page_state(zone, NR_MLOCK, delta_munlocked);
- 	spin_unlock_irq(&zone->lru_lock);
- 
-+	/* Now we can release pins of pages that we are not munlocking */
-+	for (i = 0; i < pagevec_count(&pvec_putback); i++) {
-+		put_page(pvec_putback.pages[i]);
++		if (getpage)
++			get_page(page);
++		ClearPageLRU(page);
++		del_page_from_lru_list(page, lruvec, page_lru(page));
++		return true;
 +	}
 +
- 	/* Phase 2: page munlock */
- 	pagevec_init(&pvec_putback, 0);
- 	for (i = 0; i < nr; i++) {
++	return false;
++}
++
++/*
+  * Finish munlock after successful page isolation
+  *
+  * Page must be locked. This is a wrapper for try_to_munlock()
+@@ -126,9 +146,9 @@ static void __munlock_isolated_page(struct page *page)
+ static void __munlock_isolation_failed(struct page *page)
+ {
+ 	if (PageUnevictable(page))
+-		count_vm_event(UNEVICTABLE_PGSTRANDED);
++		__count_vm_event(UNEVICTABLE_PGSTRANDED);
+ 	else
+-		count_vm_event(UNEVICTABLE_PGMUNLOCKED);
++		__count_vm_event(UNEVICTABLE_PGMUNLOCKED);
+ }
+ 
+ /**
+@@ -149,28 +169,34 @@ static void __munlock_isolation_failed(struct page *page)
+ unsigned int munlock_vma_page(struct page *page)
+ {
+ 	unsigned int nr_pages;
++	struct zone *zone = page_zone(page);
+ 
+ 	BUG_ON(!PageLocked(page));
+ 
+-	if (TestClearPageMlocked(page)) {
+-		nr_pages = hpage_nr_pages(page);
+-		mod_zone_page_state(page_zone(page), NR_MLOCK, -nr_pages);
+-		if (!isolate_lru_page(page))
+-			__munlock_isolated_page(page);
+-		else
+-			__munlock_isolation_failed(page);
+-	} else {
+-		nr_pages = hpage_nr_pages(page);
+-	}
+-
+ 	/*
+-	 * Regardless of the original PageMlocked flag, we determine nr_pages
+-	 * after touching the flag. This leaves a possible race with a THP page
+-	 * split, such that a whole THP page was munlocked, but nr_pages == 1.
+-	 * Returning a smaller mask due to that is OK, the worst that can
+-	 * happen is subsequent useless scanning of the former tail pages.
+-	 * The NR_MLOCK accounting can however become broken.
++	 * Serialize with any parallel __split_huge_page_refcount() which
++	 * might otherwise copy PageMlocked to part of the tail pages before
++	 * we clear it in the head page. It also stabilizes hpage_nr_pages().
+ 	 */
++	spin_lock_irq(&zone->lru_lock);
++
++	nr_pages = hpage_nr_pages(page);
++	if (!TestClearPageMlocked(page))
++		goto unlock_out;
++
++	__mod_zone_page_state(zone, NR_MLOCK, -nr_pages);
++
++	if (__munlock_isolate_lru_page(page, true)) {
++		spin_unlock_irq(&zone->lru_lock);
++		__munlock_isolated_page(page);
++		goto out;
++	}
++	__munlock_isolation_failed(page);
++
++unlock_out:
++	spin_unlock_irq(&zone->lru_lock);
++
++out:
+ 	return nr_pages - 1;
+ }
+ 
+@@ -307,34 +333,24 @@ static void __munlock_pagevec(struct pagevec *pvec, struct zone *zone)
+ 		struct page *page = pvec->pages[i];
+ 
+ 		if (TestClearPageMlocked(page)) {
+-			struct lruvec *lruvec;
+-			int lru;
+-
+-			if (PageLRU(page)) {
+-				lruvec = mem_cgroup_page_lruvec(page, zone);
+-				lru = page_lru(page);
+-				/*
+-				 * We already have pin from follow_page_mask()
+-				 * so we can spare the get_page() here.
+-				 */
+-				ClearPageLRU(page);
+-				del_page_from_lru_list(page, lruvec, lru);
+-			} else {
+-				__munlock_isolation_failed(page);
+-				goto skip_munlock;
+-			}
+-
+-		} else {
+-skip_munlock:
+ 			/*
+-			 * We won't be munlocking this page in the next phase
+-			 * but we still need to release the follow_page_mask()
+-			 * pin. We cannot do it under lru_lock however. If it's
+-			 * the last pin, __page_cache_release would deadlock.
++			 * We already have pin from follow_page_mask()
++			 * so we can spare the get_page() here.
+ 			 */
+-			pagevec_add(&pvec_putback, pvec->pages[i]);
+-			pvec->pages[i] = NULL;
++			if (__munlock_isolate_lru_page(page, false))
++				continue;
++			else
++				__munlock_isolation_failed(page);
+ 		}
++
++		/*
++		 * We won't be munlocking this page in the next phase
++		 * but we still need to release the follow_page_mask()
++		 * pin. We cannot do it under lru_lock however. If it's
++		 * the last pin, __page_cache_release() would deadlock.
++		 */
++		pagevec_add(&pvec_putback, pvec->pages[i]);
++		pvec->pages[i] = NULL;
+ 	}
+ 	delta_munlocked = -nr + pagevec_count(&pvec_putback);
+ 	__mod_zone_page_state(zone, NR_MLOCK, delta_munlocked);
 -- 
 1.8.4
 
