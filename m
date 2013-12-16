@@ -1,29 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab3LPP1y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:27:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47629 "EHLO
+	id S1755076Ab3LPPck (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:32:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47608 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721Ab3LPP1u (ORCPT
+	with ESMTP id S1754676Ab3LPP1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:27:50 -0500
-Date: Mon, 16 Dec 2013 07:26:36 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-pfa8i5zpf4bf9rcccryi0lt3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@kernel.org, bp@alien8.de, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, bp@alien8.de, namhyung@kernel.org,
+	Mon, 16 Dec 2013 10:27:37 -0500
+Date: Mon, 16 Dec 2013 07:27:15 -0800
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-71db07b12eace6a3619335d03eaf3cbe2de131ed@git.kernel.org>
+Cc: acme@redhat.com, eranian@google.com, mingo@redhat.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, jolsa@redhat.com,
+        fweisbec@gmail.com, ak@linux.intel.com, dsahern@gmail.com,
+        tglx@linutronix.de, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, namhyung@gmail.com,
+        adrian.hunter@intel.com
+Reply-To: mingo@kernel.org, mingo@redhat.com, eranian@google.com,
+        acme@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
         jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        adrian.hunter@intel.com, tglx@linutronix.de
+        ak@linux.intel.com, tglx@linutronix.de, hpa@zytor.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, namhyung@gmail.com,
+        adrian.hunter@intel.com
+In-Reply-To: <1386765443-26966-21-git-send-email-alexander.shishkin@linux.intel.com>
+References: <1386765443-26966-21-git-send-email-alexander.shishkin@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib symbol:
-  Start carving out symbol parsing routines from perf
-Git-Commit-ID: c506c96b61fa96c9a52ad4d25e895e45c1692650
+Subject: [tip:perf/core] perf tools: Move mem_bswap32/64 to util.c
+Git-Commit-ID: 71db07b12eace6a3619335d03eaf3cbe2de131ed
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,331 +35,134 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 16 Dec 2013 07:26:43 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 16 Dec 2013 07:27:21 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c506c96b61fa96c9a52ad4d25e895e45c1692650
-Gitweb:     http://git.kernel.org/tip/c506c96b61fa96c9a52ad4d25e895e45c1692650
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 11 Dec 2013 09:15:00 -0300
+Commit-ID:  71db07b12eace6a3619335d03eaf3cbe2de131ed
+Gitweb:     http://git.kernel.org/tip/71db07b12eace6a3619335d03eaf3cbe2de131ed
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Wed, 11 Dec 2013 14:36:32 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 13 Dec 2013 10:30:20 -0300
+CommitDate: Fri, 13 Dec 2013 10:30:21 -0300
 
-tools lib symbol: Start carving out symbol parsing routines from perf
+perf tools: Move mem_bswap32/64 to util.c
 
-Eventually this should be useful to other tools/ living utilities.
+Move functions mem_bswap_32() and mem_bswap_64() so they can be reused.
 
-For now don't try to build any .a, just trying the minimal approach of
-separating existing code into multiple .c files that can then be
-included wherever they are needed, using whatever build machinery
-already in place.
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-pfa8i5zpf4bf9rcccryi0lt3@git.kernel.org
+Link: http://lkml.kernel.org/r/1386765443-26966-21-git-send-email-alexander.shishkin@linux.intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/symbol/kallsyms.c  | 58 +++++++++++++++++++++++++++++++++++++
- tools/lib/symbol/kallsyms.h  | 24 +++++++++++++++
- tools/perf/MANIFEST          |  2 ++
- tools/perf/Makefile.perf     |  5 ++++
- tools/perf/util/event.c      |  1 +
- tools/perf/util/machine.c    |  1 +
- tools/perf/util/symbol-elf.c |  1 +
- tools/perf/util/symbol.c     | 69 +-------------------------------------------
- tools/perf/util/symbol.h     |  3 --
- 9 files changed, 93 insertions(+), 71 deletions(-)
+ tools/perf/util/session.c | 21 ---------------------
+ tools/perf/util/session.h |  2 --
+ tools/perf/util/util.c    | 22 ++++++++++++++++++++++
+ tools/perf/util/util.h    |  3 +++
+ 4 files changed, 25 insertions(+), 23 deletions(-)
 
-diff --git a/tools/lib/symbol/kallsyms.c b/tools/lib/symbol/kallsyms.c
-new file mode 100644
-index 0000000..18bc271
---- /dev/null
-+++ b/tools/lib/symbol/kallsyms.c
-@@ -0,0 +1,58 @@
-+#include "symbol/kallsyms.h"
-+#include <stdio.h>
-+#include <stdlib.h>
-+
-+int kallsyms__parse(const char *filename, void *arg,
-+		    int (*process_symbol)(void *arg, const char *name,
-+					  char type, u64 start))
-+{
-+	char *line = NULL;
-+	size_t n;
-+	int err = -1;
-+	FILE *file = fopen(filename, "r");
-+
-+	if (file == NULL)
-+		goto out_failure;
-+
-+	err = 0;
-+
-+	while (!feof(file)) {
-+		u64 start;
-+		int line_len, len;
-+		char symbol_type;
-+		char *symbol_name;
-+
-+		line_len = getline(&line, &n, file);
-+		if (line_len < 0 || !line)
-+			break;
-+
-+		line[--line_len] = '\0'; /* \n */
-+
-+		len = hex2u64(line, &start);
-+
-+		len++;
-+		if (len + 2 >= line_len)
-+			continue;
-+
-+		symbol_type = line[len];
-+		len += 2;
-+		symbol_name = line + len;
-+		len = line_len - len;
-+
-+		if (len >= KSYM_NAME_LEN) {
-+			err = -1;
-+			break;
-+		}
-+
-+		err = process_symbol(arg, symbol_name, symbol_type, start);
-+		if (err)
-+			break;
-+	}
-+
-+	free(line);
-+	fclose(file);
-+	return err;
-+
-+out_failure:
-+	return -1;
-+}
-diff --git a/tools/lib/symbol/kallsyms.h b/tools/lib/symbol/kallsyms.h
-new file mode 100644
-index 0000000..6084f5e
---- /dev/null
-+++ b/tools/lib/symbol/kallsyms.h
-@@ -0,0 +1,24 @@
-+#ifndef __TOOLS_KALLSYMS_H_
-+#define __TOOLS_KALLSYMS_H_ 1
-+
-+#include <elf.h>
-+#include <linux/ctype.h>
-+#include <linux/types.h>
-+
-+#ifndef KSYM_NAME_LEN
-+#define KSYM_NAME_LEN 256
-+#endif
-+
-+static inline u8 kallsyms2elf_type(char type)
-+{
-+	if (type == 'W')
-+		return STB_WEAK;
-+
-+	return isupper(type) ? STB_GLOBAL : STB_LOCAL;
-+}
-+
-+int kallsyms__parse(const char *filename, void *arg,
-+		    int (*process_symbol)(void *arg, const char *name,
-+					  char type, u64 start));
-+
-+#endif /* __TOOLS_KALLSYMS_H_ */
-diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-index 025de79..3170a7f 100644
---- a/tools/perf/MANIFEST
-+++ b/tools/perf/MANIFEST
-@@ -2,6 +2,8 @@ tools/perf
- tools/scripts
- tools/lib/traceevent
- tools/lib/lk
-+tools/lib/symbol/kallsyms.c
-+tools/lib/symbol/kallsyms.h
- include/linux/const.h
- include/linux/perf_event.h
- include/linux/rbtree.h
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 9a8cf37..fad6107 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -202,6 +202,7 @@ $(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
- 
- LIB_FILE=$(OUTPUT)libperf.a
- 
-+LIB_H += ../lib/symbol/kallsyms.h
- LIB_H += ../../include/uapi/linux/perf_event.h
- LIB_H += ../../include/linux/rbtree.h
- LIB_H += ../../include/linux/list.h
-@@ -312,6 +313,7 @@ LIB_OBJS += $(OUTPUT)util/evlist.o
- LIB_OBJS += $(OUTPUT)util/evsel.o
- LIB_OBJS += $(OUTPUT)util/exec_cmd.o
- LIB_OBJS += $(OUTPUT)util/help.o
-+LIB_OBJS += $(OUTPUT)util/kallsyms.o
- LIB_OBJS += $(OUTPUT)util/levenshtein.o
- LIB_OBJS += $(OUTPUT)util/parse-options.o
- LIB_OBJS += $(OUTPUT)util/parse-events.o
-@@ -672,6 +674,9 @@ $(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
- $(OUTPUT)ui/browsers/scripts.o: ui/browsers/scripts.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
- 
-+$(OUTPUT)util/kallsyms.o: ../lib/symbol/kallsyms.c $(OUTPUT)PERF-CFLAGS
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $<
-+
- $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -Wno-unused-parameter -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
- 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index c77814b..6948768 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -7,6 +7,7 @@
- #include "strlist.h"
- #include "thread.h"
- #include "thread_map.h"
-+#include "symbol/kallsyms.h"
- 
- static const char *perf_event__names[] = {
- 	[0]					= "TOTAL",
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 751454b..c78cc84 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -9,6 +9,7 @@
- #include "strlist.h"
- #include "thread.h"
- #include <stdbool.h>
-+#include <symbol/kallsyms.h>
- #include "unwind.h"
- 
- int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index eed0b96..bf0ce29 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -6,6 +6,7 @@
- #include <inttypes.h>
- 
- #include "symbol.h"
-+#include <symbol/kallsyms.h>
- #include "debug.h"
- 
- #ifndef HAVE_ELF_GETPHDRNUM_SUPPORT
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index e377c2e..61eb1cd 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -18,12 +18,9 @@
- 
- #include <elf.h>
- #include <limits.h>
-+#include <symbol/kallsyms.h>
- #include <sys/utsname.h>
- 
--#ifndef KSYM_NAME_LEN
--#define KSYM_NAME_LEN 256
--#endif
--
- static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 				symbol_filter_t filter);
- static int dso__load_guest_kernel_sym(struct dso *dso, struct map *map,
-@@ -446,62 +443,6 @@ size_t dso__fprintf_symbols_by_name(struct dso *dso,
- 	return ret;
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index e748f29..989b2e3 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -247,27 +247,6 @@ void perf_tool__fill_defaults(struct perf_tool *tool)
+ 	}
  }
- 
--int kallsyms__parse(const char *filename, void *arg,
--		    int (*process_symbol)(void *arg, const char *name,
--					  char type, u64 start))
+  
+-void mem_bswap_32(void *src, int byte_size)
 -{
--	char *line = NULL;
--	size_t n;
--	int err = -1;
--	FILE *file = fopen(filename, "r");
--
--	if (file == NULL)
--		goto out_failure;
--
--	err = 0;
--
--	while (!feof(file)) {
--		u64 start;
--		int line_len, len;
--		char symbol_type;
--		char *symbol_name;
--
--		line_len = getline(&line, &n, file);
--		if (line_len < 0 || !line)
--			break;
--
--		line[--line_len] = '\0'; /* \n */
--
--		len = hex2u64(line, &start);
--
--		len++;
--		if (len + 2 >= line_len)
--			continue;
--
--		symbol_type = line[len];
--		len += 2;
--		symbol_name = line + len;
--		len = line_len - len;
--
--		if (len >= KSYM_NAME_LEN) {
--			err = -1;
--			break;
--		}
--
--		err = process_symbol(arg, symbol_name,
--				     symbol_type, start);
--		if (err)
--			break;
+-	u32 *m = src;
+-	while (byte_size > 0) {
+-		*m = bswap_32(*m);
+-		byte_size -= sizeof(u32);
+-		++m;
 -	}
--
--	free(line);
--	fclose(file);
--	return err;
--
--out_failure:
--	return -1;
 -}
 -
- int modules__parse(const char *filename, void *arg,
- 		   int (*process_module)(void *arg, const char *name,
- 					 u64 start))
-@@ -565,14 +506,6 @@ struct process_kallsyms_args {
- 	struct dso *dso;
- };
- 
--static u8 kallsyms2elf_type(char type)
+-void mem_bswap_64(void *src, int byte_size)
 -{
--	if (type == 'W')
--		return STB_WEAK;
+-	u64 *m = src;
 -
--	return isupper(type) ? STB_GLOBAL : STB_LOCAL;
+-	while (byte_size > 0) {
+-		*m = bswap_64(*m);
+-		byte_size -= sizeof(u64);
+-		++m;
+-	}
 -}
 -
- bool symbol__is_idle(struct symbol *sym)
+ static void swap_sample_id_all(union perf_event *event, void *data)
  {
- 	const char * const idle_symbols[] = {
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 6de9c2b..8a9d910 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -221,9 +221,6 @@ struct symbol *dso__first_symbol(struct dso *dso, enum map_type type);
+ 	void *end = (void *) event + event->header.size;
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 2a3955e..9c25d49 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -74,8 +74,6 @@ int perf_session__resolve_callchain(struct perf_session *session,
  
- int filename__read_build_id(const char *filename, void *bf, size_t size);
- int sysfs__read_build_id(const char *filename, void *bf, size_t size);
--int kallsyms__parse(const char *filename, void *arg,
--		    int (*process_symbol)(void *arg, const char *name,
--					  char type, u64 start));
- int modules__parse(const char *filename, void *arg,
- 		   int (*process_module)(void *arg, const char *name,
- 					 u64 start));
+ bool perf_session__has_traces(struct perf_session *session, const char *msg);
+ 
+-void mem_bswap_64(void *src, int byte_size);
+-void mem_bswap_32(void *src, int byte_size);
+ void perf_event__attr_swap(struct perf_event_attr *attr);
+ 
+ int perf_session__create_kernel_maps(struct perf_session *session);
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 8f63dba..42ad667 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -10,6 +10,7 @@
+ #include <string.h>
+ #include <errno.h>
+ #include <limits.h>
++#include <byteswap.h>
+ #include <linux/kernel.h>
+ 
+ /*
+@@ -515,3 +516,24 @@ int perf_event_paranoid(void)
+ 
+ 	return value;
+ }
++
++void mem_bswap_32(void *src, int byte_size)
++{
++	u32 *m = src;
++	while (byte_size > 0) {
++		*m = bswap_32(*m);
++		byte_size -= sizeof(u32);
++		++m;
++	}
++}
++
++void mem_bswap_64(void *src, int byte_size)
++{
++	u64 *m = src;
++
++	while (byte_size > 0) {
++		*m = bswap_64(*m);
++		byte_size -= sizeof(u64);
++		++m;
++	}
++}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 1e7d413..a1eea3e 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -323,5 +323,8 @@ int filename__read_int(const char *filename, int *value);
+ int filename__read_str(const char *filename, char **buf, size_t *sizep);
+ int perf_event_paranoid(void);
+ 
++void mem_bswap_64(void *src, int byte_size);
++void mem_bswap_32(void *src, int byte_size);
++
+ const char *get_filename_for_perf_kvm(void);
+ #endif /* GIT_COMPAT_UTIL_H */
