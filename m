@@ -1,58 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab3LPKOx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:14:53 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:56470 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab3LPKOt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:14:49 -0500
-Date: Mon, 16 Dec 2013 15:44:39 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        dmaengine@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 2/2] drivers: dma: Include appropriate header file in dca.c
-Message-ID: <855c6e216e86bed7b723c1a647491d9fab2ed77b.1387188138.git.rashika.kheria@gmail.com>
-References: <dba654dc34646dda2998dbf7b08d7ce3c160ff8c.1387188138.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <dba654dc34646dda2998dbf7b08d7ce3c160ff8c.1387188138.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753400Ab3LPKPm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:15:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50577 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753133Ab3LPKO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 05:14:29 -0500
+From: Vlastimil Babka <vbabka@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        joern@logfs.org, Michel Lespinasse <walken@google.com>,
+        Vlastimil Babka <vbabka@suse.cz>, stable@kernel.org
+Subject: [PATCH 2/3] mm: munlock: fix deadlock in __munlock_pagevec()
+Date: Mon, 16 Dec 2013 11:14:15 +0100
+Message-Id: <1387188856-21027-3-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1387188856-21027-1-git-send-email-vbabka@suse.cz>
+References: <52AE07B4.4020203@oracle.com>
+ <1387188856-21027-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Includes an appropriate header file dma_v2.h in ioat/dca.c because
-functions ioat2_dca_init() and ioat3_dca_init() have their function
-declarations in dma_v2.h.
+Commit 7225522bb ("mm: munlock: batch non-THP page isolation and
+munlock+putback using pagevec" introduced __munlock_pagevec() to speed up
+munlock by holding lru_lock over multiple isolated pages. Pages that fail to
+be isolated are put_back() immediately, also within the lock.
 
-This eliminates the following warning in ioat/dca.c:
-drivers/dma/ioat/dca.c:410:22: warning: no previous prototype for ‘ioat2_dca_init’ [-Wmissing-prototypes]
-drivers/dma/ioat/dca.c:624:22: warning: no previous prototype for ‘ioat3_dca_init’ [-Wmissing-prototypes]
+This can lead to deadlock when __munlock_pagevec() becomes the holder of the
+last page pin and put_back() leads to __page_cache_release() which also locks
+lru_lock. The deadlock has been observed by Sasha Levin using trinity.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+This patch avoids the deadlock by deferring put_back() operations until
+lru_lock is released. Another pagevec (which is also used by later phases
+of the function is reused to gather the pages for put_back() operation.
+
+Cc: stable@kernel.org
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 ---
- drivers/dma/ioat/dca.c |    1 +
- 1 file changed, 1 insertion(+)
+ mm/mlock.c | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/dma/ioat/dca.c b/drivers/dma/ioat/dca.c
-index 9e84d5b..b158bba 100644
---- a/drivers/dma/ioat/dca.c
-+++ b/drivers/dma/ioat/dca.c
-@@ -35,6 +35,7 @@
+diff --git a/mm/mlock.c b/mm/mlock.c
+index 3847b13..31383d5 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -295,10 +295,12 @@ static void __munlock_pagevec(struct pagevec *pvec, struct zone *zone)
+ {
+ 	int i;
+ 	int nr = pagevec_count(pvec);
+-	int delta_munlocked = -nr;
++	int delta_munlocked;
+ 	struct pagevec pvec_putback;
+ 	int pgrescued = 0;
  
- #include "dma.h"
- #include "registers.h"
-+#include "dma_v2.h"
++	pagevec_init(&pvec_putback, 0);
++
+ 	/* Phase 1: page isolation */
+ 	spin_lock_irq(&zone->lru_lock);
+ 	for (i = 0; i < nr; i++) {
+@@ -327,16 +329,22 @@ skip_munlock:
+ 			/*
+ 			 * We won't be munlocking this page in the next phase
+ 			 * but we still need to release the follow_page_mask()
+-			 * pin.
++			 * pin. We cannot do it under lru_lock however. If it's
++			 * the last pin, __page_cache_release would deadlock.
+ 			 */
++			pagevec_add(&pvec_putback, pvec->pages[i]);
+ 			pvec->pages[i] = NULL;
+-			put_page(page);
+-			delta_munlocked++;
+ 		}
+ 	}
++	delta_munlocked = -nr + pagevec_count(&pvec_putback);
+ 	__mod_zone_page_state(zone, NR_MLOCK, delta_munlocked);
+ 	spin_unlock_irq(&zone->lru_lock);
  
- /*
-  * Bit 7 of a tag map entry is the "valid" bit, if it is set then bits 0:6
++	/* Now we can release pins of pages that we are not munlocking */
++	for (i = 0; i < pagevec_count(&pvec_putback); i++) {
++		put_page(pvec_putback.pages[i]);
++	}
++
+ 	/* Phase 2: page munlock */
+ 	pagevec_init(&pvec_putback, 0);
+ 	for (i = 0; i < nr; i++) {
 -- 
-1.7.9.5
+1.8.4
 
