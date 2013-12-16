@@ -1,137 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab3LPAW0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 19:22:26 -0500
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:51834 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab3LPAWY convert rfc822-to-8bit (ORCPT
+	id S1751995Ab3LPAc6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 19:32:58 -0500
+Received: from dmz-mailsec-scanner-8.mit.edu ([18.7.68.37]:65342 "EHLO
+	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751632Ab3LPAc5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 19:22:24 -0500
-Content-Type: text/plain;
-	charset=us-ascii
-Mime-Version: 1.0 (1.0)
-Subject: Re: [PATCH v2 2/3] clk: bcm281xx: add initial clock framework support
-From: Alex Elder <alex.elder@linaro.org>
-X-Mailer: iPhone Mail (11B554a)
-In-Reply-To: <52ADE93B.3070907@linaro.org>
-Date: Sun, 15 Dec 2013 18:22:20 -0600
-Cc: "bcm-kernel-feedback-list@broadcom.com" 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E566434B-F630-4AD3-91EC-BD5599767F2E@linaro.org>
-References: <529F4B0F.2020801@linaro.org> <529F4B4F.4020405@linaro.org> <20131214235731.26321.53050@quantum> <52ADE93B.3070907@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tim Kryger <tim.kryger@linaro.org>
+	Sun, 15 Dec 2013 19:32:57 -0500
+X-AuditID: 12074425-b7fd96d000000c39-be-52ae4a38b491
+Date: Sun, 15 Dec 2013 19:32:53 -0500
+From: Greg Price <price@MIT.EDU>
+To: George Spelvin <linux@horizon.com>
+Cc: tytso@MIT.EDU, linux-kernel@vger.kernel.org
+Subject: Re: Replace /dev/random input mix polynomial with Brent's xorgen?
+Message-ID: <20131216003253.GC7790@athena.dialup.mit.edu>
+References: <20131215200312.GO27191@athena.dialup.mit.edu>
+ <20131215220910.24012.qmail@science.horizon.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131215220910.24012.qmail@science.horizon.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsUixG6nrmvhtS7IYHGnkMXlXXPYLE6tmcfo
+	wOSxfe58Zo/Pm+QCmKK4bFJSczLLUov07RK4Mnof3WIu2ChasWrnJbYGxmWCXYycHBICJhLH
+	248yQdhiEhfurWfrYuTiEBKYzSSxftMbRghnI6PE+yOt7BDOL0aJTS8+MIO0sAioStzf9J4d
+	xGYTUJD4MX8dWFxEQE3iev88FhCbWUBf4tS/2YwgtrCAl8SVfavYQGxeAUuJv+37wWwhgVyJ
+	lnN3WSDighInZz6B6tWSuPHvJdB5HEC2tMTyfxwgJqeArcSyvV4gFaICKhJTTm5jm8AoOAtJ
+	8ywkzbMQmhcwMq9ilE3JrdLNTczMKU5N1i1OTszLSy3StdDLzSzRS00p3cQIDl0X1R2MEw4p
+	HWIU4GBU4uFVtFwXJMSaWFZcmXuIUZKDSUmUt8kZKMSXlJ9SmZFYnBFfVJqTWnyIUYKDWUmE
+	N+bq2iAh3pTEyqrUonyYlDQHi5I47y0O+yAhgfTEktTs1NSC1CKYrAwHh5IEr7Yn0FDBotT0
+	1Iq0zJwShDQTByfIcB6g4dEgNbzFBYm5xZnpEPlTjIpS4rytHkAJAZBERmkeXC8stbxiFAd6
+	RZhXDqSdB5iW4LpfAQ1mAhrsvWcVyOCSRISUVAMjf3O5f4jFsYW9Zg28nOe4pE5N26z17dD7
+	aRbCdTW7rP+7i8X12j89zefWd5ovYbX8veZZX3ynhfhPWVX75f7OBNc9EXZ85Qq7WyKFNmjs
+	+rbvyJO2+s2Wnkb/zrWVKMzjmjBx0Z89ayYf/dt78AP/d25DHcnv7+4/Kfp/YnurCdOzoE2i
+	yquuKrEUZyQaajEXFScCAJ2iAikIAwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think I can prepare a series that puts my changes
-before Tim's. Unless I have trouble doing that
-I will send that out in a few hours.
+On Sun, Dec 15, 2013 at 05:09:10PM -0500, George Spelvin wrote:
+> Well, /dev/urandom is documented as being *deliberately* slow.  It's meant
+> only to produce 128 to 256 bits of seed material for CPRNG.  I don't
+> know if Ted considers speeding it up to be goal or an antigoal. :-)
 
-                                        -Alex
+Hmm, I don't think I've seen that documentation.  I don't see anything
+about that point in the comments of drivers/char/random.c.  The
+urandom(4) man page says /dev/urandom "is designed for security, not
+speed, and is poorly suited to generating large amounts of random
+data."  Which is quite different from being designed for slowness!
 
-> On Dec 15, 2013, at 11:39 AM, Alex Elder <alex.elder@linaro.org> wrote:
-> 
->> On 12/14/2013 05:57 PM, Mike Turquette wrote:
->> Quoting Alex Elder (2013-12-04 07:33:35)
->>> +       return true;
->>> +}
->>> +
->>> +/* A bit position must be less than the number of bits in a 32-bit
->>> register. */
->> 
->> Hi Alex,
->> 
->> The patch is corrupt at line 634 and several other places below.  Did
->> you edit it manually? I'm happy with the series after reviewing it but
->> it cannot be applied. Can you fix the issue and send me a pull request?
->> 
->> Thanks,
->> Mike
-> 
-> First, yes I sent it manually (copy from the git-generated patch
-> and paste into a mail message, and I'm sorry about that.  I have
-> yet to set up my Linaro settings for "git-send-email" and I'll
-> do that this week.
-> 
-> I have a v3 that has been updated to apply to v3.13-rc3 (there
-> is no -rc4 yet).
-> 
-> I'm not sure how this works with the series of 8 patches from Tim
-> Kryger that it depends on.  But here is a pull request for the
-> version (including the prerequisites) based on 3.13-rc3.  (It is
-> done manually again, so there are some line wraps...)
-> 
-> Thanks a lot for the review Mike.  I know you're a busy guy.
-> 
->                    -Alex
-> 
-> The following changes since commit 374b105797c3d4f29c685f3be535c35f5689b30e:
-> 
->  Linux 3.13-rc3 (2013-12-06 09:34:04 -0800)
-> 
-> are available in the git repository at:
-> 
->  ssh://git@git.linaro.org/people/alex.elder/linux.git
-> review/bcm-kona-clocks-v3
-> 
-> for you to fetch changes up to cf62c29babf6068abf91588411704566812b7900:
-> 
->  ARM: dts: bcm281xx: define real clocks (2013-12-13 10:40:21 -0600)
-> 
-> ----------------------------------------------------------------
-> Alex Elder (3):
->      clk: bcm281xx: define kona clock binding
->      clk: bcm281xx: add initial clock framework support
->      ARM: dts: bcm281xx: define real clocks
-> 
-> Tim Kryger (8):
->      ARM: dts: Declare clocks as fixed on bcm11351
->      ARM: dts: Specify clocks for UARTs on bcm11351
->      Documentation: dt: kona-sdhci: Add clocks property
->      ARM: dts: Specify clocks for SDHCIs on bcm11351
->      mmc: sdhci-bcm-kona: Add basic use of clocks
->      Documentation: dt: kona-timer: Add clocks property
->      clocksource: kona: Add basic use of external clock
->      ARM: dts: Specify clocks for timer on bcm11351
-> 
-> .../devicetree/bindings/arm/bcm/kona-timer.txt     |    7 +-
-> .../devicetree/bindings/clock/bcm-kona-clock.txt   |   93 ++
-> .../devicetree/bindings/mmc/kona-sdhci.txt         |    4 +
-> arch/arm/boot/dts/bcm11351.dtsi                    |  199 +++-
-> drivers/clk/Kconfig                                |    1 +
-> drivers/clk/Makefile                               |    1 +
-> drivers/clk/bcm/Kconfig                            |    8 +
-> drivers/clk/bcm/Makefile                           |    3 +
-> drivers/clk/bcm/clk-bcm281xx.c                     |  416 ++++++++
-> drivers/clk/bcm/clk-kona-setup.c                   |  769 +++++++++++++++
-> drivers/clk/bcm/clk-kona.c                         | 1033
-> ++++++++++++++++++++
-> drivers/clk/bcm/clk-kona.h                         |  414 ++++++++
-> drivers/clocksource/bcm_kona_timer.c               |   14 +-
-> drivers/mmc/host/sdhci-bcm-kona.c                  |   37 +-
-> include/dt-bindings/clock/bcm281xx.h               |   65 ++
-> 15 files changed, 3053 insertions(+), 11 deletions(-)
-> create mode 100644
-> Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-> create mode 100644 drivers/clk/bcm/Kconfig
-> create mode 100644 drivers/clk/bcm/Makefile
-> create mode 100644 drivers/clk/bcm/clk-bcm281xx.c
-> create mode 100644 drivers/clk/bcm/clk-kona-setup.c
-> create mode 100644 drivers/clk/bcm/clk-kona.c
-> create mode 100644 drivers/clk/bcm/clk-kona.h
-> create mode 100644 include/dt-bindings/clock/bcm281xx.h
-> 
+The great thing about the state of cryptography in 2013 is that we
+don't have the kind of tradeoff between speed and security that we had
+in the past.  Skein and Salsa20 and some other hashes and ciphers from
+within the past decade are all very fast, and they've also been
+attacked hard by cryptanalysts (motivated by competitions), and held
+up very well.  From my understanding of the literature, moving to
+either one from our current SHA-1-based scheme would only increase the
+level of confidence one should have in the security of the random driver.
+
+I think it would be great to be able to change the documentation to
+"is designed for security and is also very fast and well suited to
+generating large amounts of random data".  Users are always tempted by
+speed, and if we can reduce that temptation by making our CSPRNG
+faster (and still secure), it will be good for security.
+
+
+> BTW, if it helps on 32-bit platforms I can get you rotate constats for
+> a 32-bit version of threefish.  I haven't generated a key scheduling
+> constant, though.
+
+Interesting.  So, the generic Skein implementations in the SUPERCOP
+testing/benchmarking suite are about four times slower on x86_32 than
+x86_64.  Which means Skein should still be about 6x faster than the
+current /dev/urandom implementation, but it'd be nice to be faster
+still.  I imagine the same rough comparisons will hold on other 64-bit
+and 32-bit architectures, though the gap between x86_32 and x86_64 is
+probably wider because of the scarcity of registers on x86_32.
+
+I wouldn't want to compromise on security to do it, though.  My
+confidence in Skein/Threefish's security comes mostly from the SHA-3
+competition, where many expert cryptanalysts attacked it and didn't
+get very far except in understanding why it seems to be hard to break.
+To make, or even evaluate, a 32-bit variant of Threefish seems like
+it'd require much deeper understanding of the design of Threefish and
+its cryptanalysis than I've tried to develop.  How do you plan to
+evaluate the security of your 32-bit Threefish?
+
+Regards,
+Greg
