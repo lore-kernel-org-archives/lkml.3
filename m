@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab3LPEca (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 23:32:30 -0500
+	id S1752786Ab3LPEc2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 23:32:28 -0500
 Received: from lgeamrelo02.lge.com ([156.147.1.126]:47856 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309Ab3LPEcW (ORCPT
+	with ESMTP id S1752502Ab3LPEcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 23:32:22 -0500
-X-AuditID: 9c93017e-b7c17ae000003961-24-52ae82537dbc
+	Sun, 15 Dec 2013 23:32:23 -0500
+X-AuditID: 9c93017e-b7c17ae000003961-2f-52ae82535262
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
@@ -18,9 +18,9 @@ Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 07/17] tracing/probes: Move fetch function helpers to trace_probe.h
-Date: Mon, 16 Dec 2013 13:32:06 +0900
-Message-Id: <1387168336-13213-8-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 11/17] tracing/probes: Add fetch{,_size} member into deref fetch method
+Date: Mon, 16 Dec 2013 13:32:10 +0900
+Message-Id: <1387168336-13213-12-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
 References: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
@@ -29,287 +29,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Hyeoncheol Lee <cheol.lee@lge.com>
 
-Move fetch function helper macros/functions to the header file and
-make them external.  This is preparation of supporting uprobe fetch
-table in next patch.
+The deref fetch methods access a memory region but it assumes that
+it's a kernel memory since uprobes does not support them.
+
+Add ->fetch and ->fetch_size member in order to provide a proper
+access methods for supporting uprobes.
 
 Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Hyeoncheol Lee <cheol.lee@lge.com>
+[namhyung@kernel.org: Split original patch into pieces as requested]
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_probe.c | 74 ++++++++--------------------------------------
- kernel/trace/trace_probe.h | 65 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 78 insertions(+), 61 deletions(-)
+ kernel/trace/trace_probe.c | 22 ++++++++++++++++++++--
+ 1 file changed, 20 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index d8347b01ce89..c26bc9eaa2ac 100644
+index a31ad478b7f6..8d7231d436da 100644
 --- a/kernel/trace/trace_probe.c
 +++ b/kernel/trace/trace_probe.c
-@@ -35,19 +35,15 @@ const char *reserved_field_names[] = {
- 	FIELD_STRING_FUNC,
- };
- 
--/* Printing function type */
--#define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
--#define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
--
- /* Printing  in basic type function template */
- #define DEFINE_BASIC_PRINT_TYPE_FUNC(type, fmt)				\
--static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
-+__kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
- 						const char *name,	\
- 						void *data, void *ent)	\
- {									\
- 	return trace_seq_printf(s, " %s=" fmt, name, *(type *)data);	\
- }									\
--static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
-+const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
- 
- DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "0x%x")
- DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "0x%x")
-@@ -58,23 +54,12 @@ DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d")
- DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d")
- DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%Ld")
- 
--static inline void *get_rloc_data(u32 *dl)
--{
--	return (u8 *)dl + get_rloc_offs(*dl);
--}
--
--/* For data_loc conversion */
--static inline void *get_loc_data(u32 *dl, void *ent)
--{
--	return (u8 *)ent + get_rloc_offs(*dl);
--}
--
- /* For defining macros, define string/string_size types */
- typedef u32 string;
- typedef u32 string_size;
- 
- /* Print type function for string type */
--static __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
-+__kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
- 						  const char *name,
- 						  void *data, void *ent)
- {
-@@ -87,7 +72,7 @@ static __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
- 					(const char *)get_loc_data(data, ent));
- }
- 
--static const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
-+const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
- 
- #define FETCH_FUNC_NAME(method, type)	fetch_##method##_##type
- /*
-@@ -111,7 +96,7 @@ DEFINE_FETCH_##method(u64)
- 
- /* Data fetch function templates */
- #define DEFINE_FETCH_reg(type)						\
--static __kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,	\
-+__kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,		\
- 					void *offset, void *dest)	\
- {									\
- 	*(type *)dest = (type)regs_get_register(regs,			\
-@@ -123,7 +108,7 @@ DEFINE_BASIC_FETCH_FUNCS(reg)
- #define fetch_reg_string_size	NULL
- 
- #define DEFINE_FETCH_stack(type)					\
--static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
-+__kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,	\
- 					  void *offset, void *dest)	\
- {									\
- 	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
-@@ -135,7 +120,7 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
- #define fetch_stack_string_size	NULL
- 
- #define DEFINE_FETCH_retval(type)					\
--static __kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,\
-+__kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,	\
- 					  void *dummy, void *dest)	\
- {									\
- 	*(type *)dest = (type)regs_return_value(regs);			\
-@@ -146,7 +131,7 @@ DEFINE_BASIC_FETCH_FUNCS(retval)
- #define fetch_retval_string_size	NULL
- 
- #define DEFINE_FETCH_memory(type)					\
--static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
-+__kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,	\
- 					  void *addr, void *dest)	\
- {									\
- 	type retval;							\
-@@ -160,7 +145,7 @@ DEFINE_BASIC_FETCH_FUNCS(memory)
-  * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
-  * length and relative data location.
-  */
--static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
-+__kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
- 						      void *addr, void *dest)
- {
- 	long ret;
-@@ -197,7 +182,7 @@ static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
- }
- 
- /* Return the length of string -- including null terminal byte */
--static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
-+__kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
- 							void *addr, void *dest)
- {
- 	mm_segment_t old_fs;
-@@ -268,7 +253,7 @@ static struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
- }
- 
- #define DEFINE_FETCH_symbol(type)					\
--static __kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,\
-+__kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
- 					  void *data, void *dest)	\
- {									\
- 	struct symbol_cache *sc = data;					\
-@@ -288,7 +273,7 @@ struct deref_fetch_param {
+@@ -184,6 +184,8 @@ __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
+ struct deref_fetch_param {
+ 	struct fetch_param	orig;
+ 	long			offset;
++	fetch_func_t		fetch;
++	fetch_func_t		fetch_size;
  };
  
  #define DEFINE_FETCH_deref(type)					\
--static __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,\
-+__kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
- 					    void *data, void *dest)	\
- {									\
- 	struct deref_fetch_param *dprm = data;				\
-@@ -329,7 +314,7 @@ struct bitfield_fetch_param {
- };
- 
- #define DEFINE_FETCH_bitfield(type)					\
--static __kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,\
-+__kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,	\
- 					    void *data, void *dest)	\
- {									\
- 	struct bitfield_fetch_param *bprm = data;			\
-@@ -374,39 +359,6 @@ free_bitfield_fetch_param(struct bitfield_fetch_param *data)
- 	kfree(data);
+@@ -195,13 +197,26 @@ __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
+ 	call_fetch(&dprm->orig, regs, &addr);				\
+ 	if (addr) {							\
+ 		addr += dprm->offset;					\
+-		fetch_memory_##type(regs, (void *)addr, dest);		\
++		dprm->fetch(regs, (void *)addr, dest);			\
+ 	} else								\
+ 		*(type *)dest = 0;					\
  }
- 
--/* Default (unsigned long) fetch type */
--#define __DEFAULT_FETCH_TYPE(t) u##t
--#define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
--#define DEFAULT_FETCH_TYPE _DEFAULT_FETCH_TYPE(BITS_PER_LONG)
--#define DEFAULT_FETCH_TYPE_STR __stringify(DEFAULT_FETCH_TYPE)
--
--#define ASSIGN_FETCH_FUNC(method, type)	\
--	[FETCH_MTD_##method] = FETCH_FUNC_NAME(method, type)
--
--#define __ASSIGN_FETCH_TYPE(_name, ptype, ftype, _size, sign, _fmttype)	\
--	{.name = _name,				\
--	 .size = _size,					\
--	 .is_signed = sign,				\
--	 .print = PRINT_TYPE_FUNC_NAME(ptype),		\
--	 .fmt = PRINT_TYPE_FMT_NAME(ptype),		\
--	 .fmttype = _fmttype,				\
--	 .fetch = {					\
--ASSIGN_FETCH_FUNC(reg, ftype),				\
--ASSIGN_FETCH_FUNC(stack, ftype),			\
--ASSIGN_FETCH_FUNC(retval, ftype),			\
--ASSIGN_FETCH_FUNC(memory, ftype),			\
--ASSIGN_FETCH_FUNC(symbol, ftype),			\
--ASSIGN_FETCH_FUNC(deref, ftype),			\
--ASSIGN_FETCH_FUNC(bitfield, ftype),			\
--	  }						\
--	}
--
--#define ASSIGN_FETCH_TYPE(ptype, ftype, sign)			\
--	__ASSIGN_FETCH_TYPE(#ptype, ptype, ftype, sizeof(ftype), sign, #ptype)
--
--#define FETCH_TYPE_STRING	0
--#define FETCH_TYPE_STRSIZE	1
--
- /* Fetch type information table */
- static const struct fetch_type fetch_type_table[] = {
- 	/* Special types */
-diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index 2c979cb66367..bd621c08b6c6 100644
---- a/kernel/trace/trace_probe.h
-+++ b/kernel/trace/trace_probe.h
-@@ -81,6 +81,17 @@
-  */
- #define convert_rloc_to_loc(dl, offs)	((u32)(dl) + (offs))
- 
-+static inline void *get_rloc_data(u32 *dl)
+ DEFINE_BASIC_FETCH_FUNCS(deref)
+ DEFINE_FETCH_deref(string)
+-DEFINE_FETCH_deref(string_size)
++
++__kprobes void FETCH_FUNC_NAME(deref, string_size)(struct pt_regs *regs,
++						   void *data, void *dest)
 +{
-+	return (u8 *)dl + get_rloc_offs(*dl);
-+}
++	struct deref_fetch_param *dprm = data;
++	unsigned long addr;
 +
-+/* For data_loc conversion */
-+static inline void *get_loc_data(u32 *dl, void *ent)
-+{
-+	return (u8 *)ent + get_rloc_offs(*dl);
++	call_fetch(&dprm->orig, regs, &addr);
++	if (addr && dprm->fetch_size) {
++		addr += dprm->offset;
++		dprm->fetch_size(regs, (void *)addr, dest);
++	} else
++		*(string_size *)dest = 0;
 +}
-+
- /* Data fetch function type */
- typedef	void (*fetch_func_t)(struct pt_regs *, void *, void *);
- /* Printing function type */
-@@ -115,6 +126,60 @@ struct fetch_param {
- 	void 			*data;
- };
  
-+#define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
-+#define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
-+
-+/* Printing  in basic type function template */
-+#define DECLARE_BASIC_PRINT_TYPE_FUNC(type)				\
-+__kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,		\
-+					 const char *name,		\
-+					 void *data, void *ent);	\
-+extern const char PRINT_TYPE_FMT_NAME(type)[]
-+
-+DECLARE_BASIC_PRINT_TYPE_FUNC(u8);
-+DECLARE_BASIC_PRINT_TYPE_FUNC(u16);
-+DECLARE_BASIC_PRINT_TYPE_FUNC(u32);
-+DECLARE_BASIC_PRINT_TYPE_FUNC(u64);
-+DECLARE_BASIC_PRINT_TYPE_FUNC(s8);
-+DECLARE_BASIC_PRINT_TYPE_FUNC(s16);
-+DECLARE_BASIC_PRINT_TYPE_FUNC(s32);
-+DECLARE_BASIC_PRINT_TYPE_FUNC(s64);
-+DECLARE_BASIC_PRINT_TYPE_FUNC(string);
-+
-+/* Default (unsigned long) fetch type */
-+#define __DEFAULT_FETCH_TYPE(t) u##t
-+#define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
-+#define DEFAULT_FETCH_TYPE _DEFAULT_FETCH_TYPE(BITS_PER_LONG)
-+#define DEFAULT_FETCH_TYPE_STR __stringify(DEFAULT_FETCH_TYPE)
-+
-+#define ASSIGN_FETCH_FUNC(method, type)	\
-+	[FETCH_MTD_##method] = FETCH_FUNC_NAME(method, type)
-+
-+#define __ASSIGN_FETCH_TYPE(_name, ptype, ftype, _size, sign, _fmttype)	\
-+	{.name = _name,				\
-+	 .size = _size,					\
-+	 .is_signed = sign,				\
-+	 .print = PRINT_TYPE_FUNC_NAME(ptype),		\
-+	 .fmt = PRINT_TYPE_FMT_NAME(ptype),		\
-+	 .fmttype = _fmttype,				\
-+	 .fetch = {					\
-+ASSIGN_FETCH_FUNC(reg, ftype),				\
-+ASSIGN_FETCH_FUNC(stack, ftype),			\
-+ASSIGN_FETCH_FUNC(retval, ftype),			\
-+ASSIGN_FETCH_FUNC(memory, ftype),			\
-+ASSIGN_FETCH_FUNC(symbol, ftype),			\
-+ASSIGN_FETCH_FUNC(deref, ftype),			\
-+ASSIGN_FETCH_FUNC(bitfield, ftype),			\
-+	  }						\
-+	}
-+
-+#define ASSIGN_FETCH_TYPE(ptype, ftype, sign)			\
-+	__ASSIGN_FETCH_TYPE(#ptype, ptype, ftype, sizeof(ftype), sign, #ptype)
-+
-+#define FETCH_TYPE_STRING	0
-+#define FETCH_TYPE_STRSIZE	1
-+
-+
- struct probe_arg {
- 	struct fetch_param	fetch;
- 	struct fetch_param	fetch_size;
+ static __kprobes void update_deref_fetch_param(struct deref_fetch_param *data)
+ {
+@@ -477,6 +492,9 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 				return -ENOMEM;
+ 
+ 			dprm->offset = offset;
++			dprm->fetch = t->fetch[FETCH_MTD_memory];
++			dprm->fetch_size = get_fetch_size_function(t,
++							dprm->fetch, ftbl);
+ 			ret = parse_probe_arg(arg, t2, &dprm->orig, is_return,
+ 							is_kprobe);
+ 			if (ret)
 -- 
 1.7.11.7
 
