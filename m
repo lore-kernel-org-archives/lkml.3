@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab3LPJzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 04:55:35 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:46107 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab3LPJzc (ORCPT
+	id S1752905Ab3LPJ47 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 04:56:59 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:42595 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497Ab3LPJ46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 04:55:32 -0500
+	Mon, 16 Dec 2013 04:56:58 -0500
+Message-ID: <52AECE67.6050507@atmel.com>
+Date: Mon, 16 Dec 2013 10:56:55 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <1386787041-6035-3-git-send-email-syin@broadcom.com>
-References: <1381174108-25168-1-git-send-email-syin@broadcom.com>
-	<1386787041-6035-1-git-send-email-syin@broadcom.com>
-	<1386787041-6035-3-git-send-email-syin@broadcom.com>
-Date: Mon, 16 Dec 2013 10:55:32 +0100
-Message-ID: <CACRpkdb5FWvuT0ZNMwOmBJ=EGgZY3XsJ5wvcAQsLCjKHJO89mQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/6] pinctrl: Adds slew-rate, input-enable/disable
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sherman Yin <syin@broadcom.com>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Boris BREZILLON <b.brezillon@overkiz.com>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] pinctrl: at91: fix clk_unprepare and clk_disable
+ order
+References: <1387132252-2584-1-git-send-email-b.brezillon@overkiz.com> <1387132252-2584-2-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1387132252-2584-2-git-send-email-b.brezillon@overkiz.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 7:37 PM, Sherman Yin <syin@broadcom.com> wrote:
+On 15/12/2013 19:30, Boris BREZILLON :
+> clk_unprepare shall be called before clk_disable.
+> Fix the issue by replacing the clk_unprepare and clk_disable calls by a
+> single clk_disable_unprepare call.
+> 
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 
-> This commit adds slew-rate and input-enable/disable support for pinconf
-> -generic.
->
-> Signed-off-by: Sherman Yin <syin@broadcom.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+Thanks.
+
 > ---
-> v3: added to patchset
+>  drivers/pinctrl/pinctrl-at91.c |    8 +++-----
+>  1 file changed, 3 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+> index a7549c4..82f6301 100644
+> --- a/drivers/pinctrl/pinctrl-at91.c
+> +++ b/drivers/pinctrl/pinctrl-at91.c
+> @@ -1339,13 +1339,11 @@ void at91_pinctrl_gpio_suspend(void)
+>  		__raw_writel(backups[i], pio + PIO_IDR);
+>  		__raw_writel(wakeups[i], pio + PIO_IER);
+>  
+> -		if (!wakeups[i]) {
+> -			clk_unprepare(gpio_chips[i]->clock);
+> -			clk_disable(gpio_chips[i]->clock);
+> -		} else {
+> +		if (!wakeups[i])
+> +			clk_disable_unprepare(gpio_chips[i]->clock);
+> +		else
+>  			printk(KERN_DEBUG "GPIO-%c may wake for %08x\n",
+>  			       'A'+i, wakeups[i]);
+> -		}
+>  	}
+>  }
+>  
+> 
 
-Patch applied.
 
-Yours,
-Linus Walleij
+-- 
+Nicolas Ferre
