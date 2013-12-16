@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab3LPMRY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 07:17:24 -0500
-Received: from relay.parallels.com ([195.214.232.42]:56315 "EHLO
+	id S1754045Ab3LPMRg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 07:17:36 -0500
+Received: from relay.parallels.com ([195.214.232.42]:56450 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753889Ab3LPMRT (ORCPT
+	with ESMTP id S1753949Ab3LPMR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 07:17:19 -0500
+	Mon, 16 Dec 2013 07:17:28 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <dchinner@redhat.com>, <mhocko@suse.cz>, <hannes@cmpxchg.org>,
         <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <glommer@gmail.com>, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v14 04/18] memcg: make for_each_mem_cgroup macros public
-Date: Mon, 16 Dec 2013 16:16:53 +0400
-Message-ID: <935807f1cf90abb10423e049346c49ef7b6bcc2f.1387193771.git.vdavydov@parallels.com>
+        <glommer@gmail.com>, Anton Vorontsov <anton@enomsg.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH v14 17/18] memcg: reap dead memcgs upon global memory pressure
+Date: Mon, 16 Dec 2013 16:17:06 +0400
+Message-ID: <e291bf87716c3dd3c79800045d024293963ae9d5.1387193771.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1387193771.git.vdavydov@parallels.com>
 References: <cover.1387193771.git.vdavydov@parallels.com>
@@ -27,73 +28,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am going to use these macros in next patches, so let's move them to
-the header. These macros are very handy and they depend only on
-mem_cgroup_iter(), which is already public, so I guess it's worth it.
+From: Glauber Costa <glommer@openvz.org>
 
+When we delete kmem-enabled memcgs, they can still be zombieing around
+for a while. The reason is that the objects may still be alive, and we
+won't be able to delete them at destruction time.
+
+The only entry point for that, though, are the shrinkers. The shrinker
+interface, however, is not exactly tailored to our needs. It could be a
+little bit better by using the API Dave Chinner proposed, but it is
+still not ideal since we aren't really a count-and-scan event, but more
+a one-off flush-all-you-can event that would have to abuse that somehow.
+
+Signed-off-by: Glauber Costa <glommer@openvz.org>
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Glauber Costa <glommer@openvz.org>
+Cc: Anton Vorontsov <anton@enomsg.org>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- include/linux/memcontrol.h |   15 +++++++++++++++
- mm/memcontrol.c            |   15 ---------------
- 2 files changed, 15 insertions(+), 15 deletions(-)
+ mm/memcontrol.c |   80 ++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 77 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index b3e7a66..e3efab2 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -53,6 +53,21 @@ struct mem_cgroup_reclaim_cookie {
- 	unsigned int generation;
- };
- 
-+/*
-+ * Iteration constructs for visiting all cgroups (under a tree).  If
-+ * loops are exited prematurely (break), mem_cgroup_iter_break() must
-+ * be used for reference counting.
-+ */
-+#define for_each_mem_cgroup_tree(iter, root)		\
-+	for (iter = mem_cgroup_iter(root, NULL, NULL);	\
-+	     iter != NULL;				\
-+	     iter = mem_cgroup_iter(root, iter, NULL))
-+
-+#define for_each_mem_cgroup(iter)			\
-+	for (iter = mem_cgroup_iter(NULL, NULL, NULL);	\
-+	     iter != NULL;				\
-+	     iter = mem_cgroup_iter(NULL, iter, NULL))
-+
- #ifdef CONFIG_MEMCG
- /*
-  * All "charge" functions with gfp_mask should use GFP_KERNEL or
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8fdb239..b6ec029 100644
+index 5fec8aa..963285f 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -1261,21 +1261,6 @@ void mem_cgroup_iter_break(struct mem_cgroup *root,
- 		css_put(&prev->css);
+@@ -287,8 +287,16 @@ struct mem_cgroup {
+ 	/* thresholds for mem+swap usage. RCU-protected */
+ 	struct mem_cgroup_thresholds memsw_thresholds;
+ 
+-	/* For oom notifier event fd */
+-	struct list_head oom_notify;
++	union {
++		/* For oom notifier event fd */
++		struct list_head oom_notify;
++		/*
++		 * we can only trigger an oom event if the memcg is alive.
++		 * so we will reuse this field to hook the memcg in the list
++		 * of dead memcgs.
++		 */
++		struct list_head dead;
++	};
+ 
+ 	/*
+ 	 * Should we move charges of a task when a task is moved into this
+@@ -336,6 +344,29 @@ struct mem_cgroup {
+ 	/* WARNING: nodeinfo must be the last member here */
+ };
+ 
++#if defined(CONFIG_MEMCG_KMEM) || defined(CONFIG_MEMCG_SWAP)
++static LIST_HEAD(dangling_memcgs);
++static DEFINE_MUTEX(dangling_memcgs_mutex);
++
++static inline void memcg_dangling_del(struct mem_cgroup *memcg)
++{
++	mutex_lock(&dangling_memcgs_mutex);
++	list_del(&memcg->dead);
++	mutex_unlock(&dangling_memcgs_mutex);
++}
++
++static inline void memcg_dangling_add(struct mem_cgroup *memcg)
++{
++	INIT_LIST_HEAD(&memcg->dead);
++	mutex_lock(&dangling_memcgs_mutex);
++	list_add(&memcg->dead, &dangling_memcgs);
++	mutex_unlock(&dangling_memcgs_mutex);
++}
++#else
++static inline void memcg_dangling_del(struct mem_cgroup *memcg) {}
++static inline void memcg_dangling_add(struct mem_cgroup *memcg) {}
++#endif
++
+ static size_t memcg_size(void)
+ {
+ 	return sizeof(struct mem_cgroup) +
+@@ -6076,6 +6107,41 @@ static int mem_cgroup_oom_control_write(struct cgroup_subsys_state *css,
  }
  
--/*
-- * Iteration constructs for visiting all cgroups (under a tree).  If
-- * loops are exited prematurely (break), mem_cgroup_iter_break() must
-- * be used for reference counting.
-- */
--#define for_each_mem_cgroup_tree(iter, root)		\
--	for (iter = mem_cgroup_iter(root, NULL, NULL);	\
--	     iter != NULL;				\
--	     iter = mem_cgroup_iter(root, iter, NULL))
--
--#define for_each_mem_cgroup(iter)			\
--	for (iter = mem_cgroup_iter(NULL, NULL, NULL);	\
--	     iter != NULL;				\
--	     iter = mem_cgroup_iter(NULL, iter, NULL))
--
- void __mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
+ #ifdef CONFIG_MEMCG_KMEM
++static void memcg_vmpressure_shrink_dead(void)
++{
++	struct memcg_cache_params *params, *tmp;
++	struct kmem_cache *cachep;
++	struct mem_cgroup *memcg;
++
++	mutex_lock(&dangling_memcgs_mutex);
++	list_for_each_entry(memcg, &dangling_memcgs, dead) {
++		mutex_lock(&memcg->slab_caches_mutex);
++		/* The element may go away as an indirect result of shrink */
++		list_for_each_entry_safe(params, tmp,
++					 &memcg->memcg_slab_caches, list) {
++			cachep = memcg_params_to_cache(params);
++			/*
++			 * the cpu_hotplug lock is taken in kmem_cache_create
++			 * outside the slab_caches_mutex manipulation. It will
++			 * be taken by kmem_cache_shrink to flush the cache.
++			 * So we need to drop the lock. It is all right because
++			 * the lock only protects elements moving in and out the
++			 * list.
++			 */
++			mutex_unlock(&memcg->slab_caches_mutex);
++			kmem_cache_shrink(cachep);
++			mutex_lock(&memcg->slab_caches_mutex);
++		}
++		mutex_unlock(&memcg->slab_caches_mutex);
++	}
++	mutex_unlock(&dangling_memcgs_mutex);
++}
++
++static void memcg_register_kmem_events(struct cgroup_subsys_state *css)
++{
++	vmpressure_register_kernel_event(css, memcg_vmpressure_shrink_dead);
++}
++
+ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
  {
- 	struct mem_cgroup *memcg;
+ 	int ret;
+@@ -6130,6 +6196,10 @@ static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
+ 		css_put(&memcg->css);
+ }
+ #else
++static void memcg_register_kmem_events(struct cgroup_subsys_state *css)
++{
++}
++
+ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ {
+ 	return 0;
+@@ -6467,8 +6537,10 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+ 	if (css->cgroup->id > MEM_CGROUP_ID_MAX)
+ 		return -ENOSPC;
+ 
+-	if (!parent)
++	if (!parent) {
++		memcg_register_kmem_events(css);
+ 		return 0;
++	}
+ 
+ 	mutex_lock(&memcg_create_mutex);
+ 
+@@ -6529,6 +6601,7 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+ 	mem_cgroup_invalidate_reclaim_iterators(memcg);
+ 	mem_cgroup_reparent_charges(memcg);
+ 	mem_cgroup_destroy_all_caches(memcg);
++	memcg_dangling_add(memcg);
+ 	vmpressure_cleanup(&memcg->vmpressure);
+ }
+ 
+@@ -6573,6 +6646,7 @@ static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
+ 	mem_cgroup_reparent_charges(memcg);
+ 
+ 	memcg_destroy_kmem(memcg);
++	memcg_dangling_del(memcg);
+ 	__mem_cgroup_free(memcg);
+ }
+ 
 -- 
 1.7.10.4
 
