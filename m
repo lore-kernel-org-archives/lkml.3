@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab3LPMVf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 07:21:35 -0500
-Received: from mga02.intel.com ([134.134.136.20]:59210 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753797Ab3LPMVd convert rfc822-to-8bit (ORCPT
+	id S1754205Ab3LPMVs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 07:21:48 -0500
+Received: from relay.parallels.com ([195.214.232.42]:56309 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753879Ab3LPMRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 07:21:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,494,1384329600"; 
-   d="scan'208";a="425327086"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/2] x86: add user_atomic_cmpxchg_inatomic at uaccess.h
-Thread-Topic: [PATCH 1/2] x86: add user_atomic_cmpxchg_inatomic at uaccess.h
-Thread-Index: AQHO+FiKo8EtukZqDk2x7yIAJB80AZpWwSMw
-Date: Mon, 16 Dec 2013 12:21:27 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE014B2C09@SHSMSX102.ccr.corp.intel.com>
-References: <1387002303-6620-1-git-send-email-qiaowei.ren@intel.com>
-In-Reply-To: <1387002303-6620-1-git-send-email-qiaowei.ren@intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 Dec 2013 07:17:19 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <dchinner@redhat.com>, <mhocko@suse.cz>, <hannes@cmpxchg.org>,
+        <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
+        <glommer@gmail.com>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH v14 03/18] memcg: move initialization to memcg creation
+Date: Mon, 16 Dec 2013 16:16:52 +0400
+Message-ID: <b0197eb9f94de5b89936f6c1f37688212b88f1a9.1387193771.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1387193771.git.vdavydov@parallels.com>
+References: <cover.1387193771.git.vdavydov@parallels.com>
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Qiaowei Ren wrote: 
-> This patch adds user_atomic_cmpxchg_inatomic() to use CMPXCHG instruction
-> against a user space address.
-> 
-> This generalizes the already existing futex_atomic_cmpxchg_inatomic() so it
-> can be used in other contexts.  This will be used in the upcoming support for
-> Intel MPX (Memory Protection Extensions.)
-> 
-Peter, do you have any other comments for this version?
+From: Glauber Costa <glommer@openvz.org>
 
-Thanks,
-Qiaowei
+Those structures are only used for memcgs that are effectively using
+kmemcg. However, in a later patch I intend to use scan that list
+inconditionally (list empty meaning no kmem caches present), which
+simplifies the code a lot.
+
+So move the initialization to early kmem creation.
+
+Signed-off-by: Glauber Costa <glommer@openvz.org>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 35a367c..8fdb239 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3125,8 +3125,6 @@ int memcg_update_cache_sizes(struct mem_cgroup *memcg)
+ 	}
+ 
+ 	memcg->kmemcg_id = num;
+-	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
+-	mutex_init(&memcg->slab_caches_mutex);
+ 	return 0;
+ }
+ 
+@@ -5912,6 +5910,8 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ {
+ 	int ret;
+ 
++	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
++	mutex_init(&memcg->slab_caches_mutex);
+ 	memcg->kmemcg_id = -1;
+ 	ret = memcg_propagate_kmem(memcg);
+ 	if (ret)
+-- 
+1.7.10.4
+
