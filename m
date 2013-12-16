@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab3LPKmG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:42:06 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:13776 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753631Ab3LPKmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:42:04 -0500
-From: James Hogan <james.hogan@imgtec.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>,
-        Rajendra Nayak <rnayak@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <stable@vger.kernel.org>
-Subject: [PATCH] clk: clk-divider: fix divisor > 255 bug
-Date: Mon, 16 Dec 2013 10:41:38 +0000
-Message-ID: <1387190498-15392-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1753689Ab3LPKml (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:42:41 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:51604 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753668Ab3LPKmi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 05:42:38 -0500
+Date: Mon, 16 Dec 2013 13:42:22 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] pinctrl: off by one in msm_config_group_set()
+Message-ID: <20131216104222.GA19404@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_12_16_10_41_48
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 6d9252bd9a4bb (clk: Add support for power of two type dividers)
-merged in v3.6 added the _get_val function to convert a divisor value to
-a register field value depending on the flags. However it used the type
-u8 for the div field, causing divisors larger than 255 to be masked
-and the resultant clock rate to be too high.
+This should be ">= ARRAY_SIZE()" instead of "> ARRAY_SIZE()".
 
-E.g. in my case an 11bit divider was supposed to divide 24.576 MHz down
-to 32.768KHz. The divisor was correctly calculated as 750 (0x2ee). This
-was masked to 238 (0xee) resulting in a frequency of 103.26KHz.
+Fixes: f365be092572 ('pinctrl: Add Qualcomm TLMM driver')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Rajendra Nayak <rnayak@ti.com>
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: stable@vger.kernel.org
----
-Since this bug was introduced in 3.6, it probably should by applied to
-stable 3.10 and 3.12.
----
- drivers/clk/clk-divider.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-index 8d3009e44fba..5543b7df8e16 100644
---- a/drivers/clk/clk-divider.c
-+++ b/drivers/clk/clk-divider.c
-@@ -87,7 +87,7 @@ static unsigned int _get_table_val(const struct clk_div_table *table,
- 	return 0;
- }
- 
--static unsigned int _get_val(struct clk_divider *divider, u8 div)
-+static unsigned int _get_val(struct clk_divider *divider, unsigned int div)
- {
- 	if (divider->flags & CLK_DIVIDER_ONE_BASED)
- 		return div;
--- 
-1.8.1.2
-
-
+diff --git a/drivers/pinctrl/pinctrl-msm.c b/drivers/pinctrl/pinctrl-msm.c
+index 28b90aba708d..03c4e615ebb8 100644
+--- a/drivers/pinctrl/pinctrl-msm.c
++++ b/drivers/pinctrl/pinctrl-msm.c
+@@ -350,7 +350,7 @@ static int msm_config_group_set(struct pinctrl_dev *pctldev,
+ 			break;
+ 		case PIN_CONFIG_DRIVE_STRENGTH:
+ 			/* Check for invalid values */
+-			if (arg > ARRAY_SIZE(msm_drive_to_regval))
++			if (arg >= ARRAY_SIZE(msm_drive_to_regval))
+ 				arg = -1;
+ 			else
+ 				arg = msm_drive_to_regval[arg];
