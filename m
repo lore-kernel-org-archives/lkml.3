@@ -1,40 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab3LPRgy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 12:36:54 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:60587 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143Ab3LPRgx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 12:36:53 -0500
+	id S1755099Ab3LPRhH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 12:37:07 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:52289 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755041Ab3LPRhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 12:37:02 -0500
+Date: Mon, 16 Dec 2013 11:37:08 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 3/3] Change THP behavior
+Message-ID: <20131216173708.GB15663@sgi.com>
+References: <cover.1386790423.git.athorlton@sgi.com>
+ <20131212180057.GD134240@sgi.com>
+ <20131213131349.D8DE9E0090@blue.fi.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20131216113510.GA5211@cpaasch-mac>
-References: <20131216113510.GA5211@cpaasch-mac>
-Date: Mon, 16 Dec 2013 09:36:52 -0800
-Message-ID: <CAM_iQpUTTNbJLCNDem0xOCGW7XWctEyQ3H2w-1=y0HkhJ4uWhg@mail.gmail.com>
-Subject: Re: BUG: crashkernel does not boot upon crash from sysrq-trigger
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Christoph Paasch <christoph.paasch@uclouvain.be>
-Cc: LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Ian Fang <ianfang.cn@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131213131349.D8DE9E0090@blue.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 3:35 AM, Christoph Paasch
-<christoph.paasch@uclouvain.be> wrote:
-> Hello,
->
-> since 3.5, my crashkernel does not boot anymore when triggering an oops with
-> /proc/sysrq-trigger on my HP Elitebook 8540p.
->
-> I bisected it down to 722bc6b16771ed8 (x86/mm: Fix the size calculation of
-> mapping tables).
->
+> Hm. I think this part is not correct: you collapse temp thp page
+> into real one only for current procees. What will happen if a process with
+> temp thp pages was forked?
 
-It has been reverted in upstream.
+That's a scenario that I hadn't yet addressed, but definitely something
+I'll consider going forward.  I think we can come up with a way to
+appropriately handle that situation.
+
+> And I don't think this problem is an easy one. khugepaged can't collapse
+> pages with page->_count != 1 for the same reason: to make it properly you
+> need to take mmap_sem for all processes and collapse all pages at once.
+> And if a page is pinned, we also can't collapse.
+
+Again, a few things here that I hadn't taken into account.  I'll look
+for a way to address these concerns.
+
+> Sorry, I don't think the whole idea has much potential. :(
+
+I understand that there are some issues with this initial pass at the
+idea, but I think we can get things corrected and come up with a
+workable solution here.  When it comes down to it, there are relatively
+few options to correct the issue that I'm focusing on here, and this one
+seems to be the most appropriate one that we've tried so far.  We've
+looked at disabling THP on a per-cpuset/per-process basis, and that has
+been met with fairly strong resistance, for good reason.  I'll take
+another pass at this and hopefully be able to address some of your
+concerns with the idea.
+
+Thanks for taking the time to look the patch over!
+
+- Alex
