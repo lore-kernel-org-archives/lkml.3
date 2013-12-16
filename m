@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab3LPUZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 15:25:11 -0500
-Received: from 18.mo1.mail-out.ovh.net ([46.105.35.72]:34805 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752012Ab3LPUZJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 15:25:09 -0500
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Landley <rob@landley.net>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [RFC PATCH 01/10] genirq: generic chip: export irq_map_generic_chip function
-Date: Mon, 16 Dec 2013 21:24:12 +0100
-Message-Id: <1387225461-6201-2-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1387225461-6201-1-git-send-email-b.brezillon@overkiz.com>
-References: <1387225461-6201-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 7041659494298187875
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrleeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrleeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1752193Ab3LPUZR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 15:25:17 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:50187 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751484Ab3LPUZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 15:25:13 -0500
+Date: Mon, 16 Dec 2013 15:25:07 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7] mm: page_alloc: Use zone node IDs to approximate
+ locality
+Message-ID: <20131216202507.GZ21724@cmpxchg.org>
+References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
+ <1386943807-29601-4-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386943807-29601-4-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export the generic irq map function in order to provide irq_domain ops with
-generic mapping and specific of xlate function (needed by the new atmel
-AIC driver).
+On Fri, Dec 13, 2013 at 02:10:03PM +0000, Mel Gorman wrote:
+> zone_local is using node_distance which is a more expensive call than
+> necessary. On x86, it's another function call in the allocator fast path
+> and increases cache footprint. This patch makes the assumption zones on a
+> local node will share the same node ID. The necessary information should
+> already be cache hot.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/page_alloc.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 64020eb..fd9677e 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1816,7 +1816,7 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
+>  
+>  static bool zone_local(struct zone *local_zone, struct zone *zone)
+>  {
+> -	return node_distance(local_zone->node, zone->node) == LOCAL_DISTANCE;
+> +	return zone_to_nid(zone) == numa_node_id();
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- include/linux/irq.h       |    2 ++
- kernel/irq/generic-chip.c |    5 +++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
+Why numa_node_id()?  We pass in the preferred zone as @local_zone:
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 7dc1003..19b5e3b 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -765,6 +765,8 @@ void irq_gc_eoi(struct irq_data *d);
- int irq_gc_set_wake(struct irq_data *d, unsigned int on);
- 
- /* Setup functions for irq_chip_generic */
-+int irq_map_generic_chip(struct irq_domain *d, unsigned int virq,
-+			 irq_hw_number_t hw_irq);
- struct irq_chip_generic *
- irq_alloc_generic_chip(const char *name, int nr_ct, unsigned int irq_base,
- 		       void __iomem *reg_base, irq_flow_handler_t handler);
-diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
-index 452d6f2..cf80e7b 100644
---- a/kernel/irq/generic-chip.c
-+++ b/kernel/irq/generic-chip.c
-@@ -341,8 +341,8 @@ static struct lock_class_key irq_nested_lock_class;
- /*
-  * irq_map_generic_chip - Map a generic chip for an irq domain
-  */
--static int irq_map_generic_chip(struct irq_domain *d, unsigned int virq,
--				irq_hw_number_t hw_irq)
-+int irq_map_generic_chip(struct irq_domain *d, unsigned int virq,
-+			 irq_hw_number_t hw_irq)
- {
- 	struct irq_data *data = irq_get_irq_data(virq);
- 	struct irq_domain_chip_generic *dgc = d->gc;
-@@ -394,6 +394,7 @@ static int irq_map_generic_chip(struct irq_domain *d, unsigned int virq,
- 	irq_modify_status(virq, dgc->irq_flags_to_clear, dgc->irq_flags_to_set);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(irq_map_generic_chip);
- 
- struct irq_domain_ops irq_generic_chip_ops = {
- 	.map	= irq_map_generic_chip,
--- 
-1.7.9.5
+return zone_to_nid(local_zone) == zone_to_nid(zone)
 
+Or even just compare the ->zone_pgdat pointers?
