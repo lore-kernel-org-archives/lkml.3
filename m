@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160Ab3LPJXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 04:23:44 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:44738 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042Ab3LPJXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 04:23:41 -0500
-X-IronPort-AV: E=Sophos;i="4.95,493,1384272000"; 
-   d="scan'208";a="9268062"
-Message-ID: <52AF7CF9.6010808@cn.fujitsu.com>
-Date: Mon, 16 Dec 2013 17:21:45 -0500
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-CC: acme@ghostprotocols.net, dsahern@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf tools: Drop strdup in get_filename_for_perf_kvm().
-References: <1122029b8eed159852fe6669827b6dff12f81698.1386783950.git.yangds.fnst@cn.fujitsu.com>
-In-Reply-To: <1122029b8eed159852fe6669827b6dff12f81698.1386783950.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/16 17:23:08,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/16 17:23:09,
-	Serialize complete at 2013/12/16 17:23:09
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752279Ab3LPJ10 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 04:27:26 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:33630 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab3LPJ1Z convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Mon, 16 Dec 2013 04:27:25 -0500
+Message-Id: <52AED587020000780010D866@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Mon, 16 Dec 2013 09:27:19 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <gordan@bobich.net>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [RFC PATCH 3/5] xen-pciback: Document when we
+ FLR an PCI device.
+References: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
+ <1386950978-8628-4-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1386950978-8628-4-git-send-email-konrad.wilk@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo or David,
-     Could you help to review this patchset. Thanx.
-
-- Yang
-
-On 12/11/2013 12:47 PM, Dongsheng Yang wrote:
-> As we need a const char * as a result of get_filename_for_perf_kvm(),
-> There is no need to use strdup() for the return value.
->
-> This patch drop the strdup() to save memory in get_filename_for_perf_kvm().
->
-> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> ---
->   tools/perf/builtin-kvm.c | 8 +-------
->   tools/perf/util/util.c   | 6 +++---
->   2 files changed, 4 insertions(+), 10 deletions(-)
->
-> diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-> index c6fa3cb..03bd946 100644
-> --- a/tools/perf/builtin-kvm.c
-> +++ b/tools/perf/builtin-kvm.c
-> @@ -1712,15 +1712,9 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
->   	if (!perf_host)
->   		perf_guest = 1;
->   
-> -	if (!file_name) {
-> +	if (!file_name)
->   		file_name = get_filename_for_perf_kvm();
->   
-> -		if (!file_name) {
-> -			pr_err("Failed to allocate memory for filename\n");
-> -			return -ENOMEM;
-> -		}
-> -	}
+>>> On 13.12.13 at 17:09, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> When the toolstack wants us to drop or add an PCI device it
+> changes the XenBus state to Configuring - and as result of that
+> we find out which devices we should still be exporting out and
+> which ones not. For the ones we don't need anymore we need to
+> do an PCI reset so that it is ready for the next guest.
+> 
+> We are already doing it - but it was not clear _how_
+> it was done. This should make it more obvious.
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>...
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+> @@ -267,18 +267,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>  	/* Cleanup our device
+>  	 * (so it's ready for the next domain)
+>  	 */
+> +	pcistub_reset_pci_dev(dev);
+>  
+> -	/* This is OK - we are running from workqueue context
+> -	 * and want to inhibit the user from fiddling with 'reset'
+> -	 */
+> -	pci_reset_function(dev);
+> -	pci_restore_state(dev);
 > -
->   	if (!strncmp(argv[0], "rec", 3))
->   		return __cmd_record(file_name, argc, argv);
->   	else if (!strncmp(argv[0], "rep", 3))
-> diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-> index 4a57609..e9cb136 100644
-> --- a/tools/perf/util/util.c
-> +++ b/tools/perf/util/util.c
-> @@ -488,11 +488,11 @@ const char *get_filename_for_perf_kvm(void)
->   	const char *filename;
->   
->   	if (perf_host && !perf_guest)
-> -		filename = strdup("perf.data.host");
-> +		filename = "perf.data.host";
->   	else if (!perf_host && perf_guest)
-> -		filename = strdup("perf.data.guest");
-> +		filename = "perf.data.guest";
->   	else
-> -		filename = strdup("perf.data.kvm");
-> +		filename = "perf.data.kvm";
->   
->   	return filename;
->   }
+> -	/* This disables the device. */
+> -	xen_pcibk_reset_device(dev);
+> -
+> -	/* And cleanup up our emulated fields. */
+> -	xen_pcibk_config_reset_dev(dev);
+>  	xen_pcibk_config_free_dyn_fields(dev);
+>  
+>  	xen_unregister_device_domain_owner(dev);
+
+Does this really belong here? It's neither covered by the description,
+nor can I see where pcistub_reset_pci_dev() would be defined (i.e.
+afaict this ought to yield a build or load time error).
+
+Jan
 
