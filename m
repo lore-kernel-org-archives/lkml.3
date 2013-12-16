@@ -1,225 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab3LPOci (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 09:32:38 -0500
-Received: from mga11.intel.com ([192.55.52.93]:52698 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753685Ab3LPOcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 09:32:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,495,1384329600"; 
-   d="scan'208";a="445018046"
-Date: Mon, 16 Dec 2013 16:32:27 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH 2/5] phy: add support for indexed lookup
-Message-ID: <20131216143227.GA22944@xps8300>
-References: <1386601737-8735-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1386601737-8735-3-git-send-email-heikki.krogerus@linux.intel.com>
- <52AEDDE2.8060406@ti.com>
+	id S1754057Ab3LPOfc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 09:35:32 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:22209 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753796Ab3LPOfa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 09:35:30 -0500
+Date: Mon, 16 Dec 2013 09:35:15 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        gordan@bobich.net
+Subject: Re: [Xen-devel] [RFC PATCH] Xen PCI back - do slot and bus reset
+ (v0).
+Message-ID: <20131216143515.GB12913@phenom.dumpdata.com>
+References: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
+ <52AEDCF5.8050701@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52AEDDE2.8060406@ti.com>
+In-Reply-To: <52AEDCF5.8050701@citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
-
-On Mon, Dec 16, 2013 at 04:32:58PM +0530, Kishon Vijay Abraham I wrote:
-> On Monday 09 December 2013 08:38 PM, Heikki Krogerus wrote:
-> > Removes the need for the consumer drivers requesting the
-> > phys to provide name for the phy. This should ease the use
-> > of the framework considerable when using only one phy, which
-> > is usually the case when except with USB, but it can also
-> > be useful with multiple phys.
-> 
-> If index has to be used with multiple PHYs, the controller should be aware of
-> the order in which it is populated in dt data. That's not good.
-
-The Idea is not to replace the name based lookup. Just to provide
-possibility for index based lookup.
-
-With ACPI, if we get the device entries for PHYs, the order will be
-fixed and we will not have any other reference to the phys. In case
-of USB, the first one should always be USB2 PHY and the second the
-USB3 PHY.
-
-> > This will also reduce noise from the framework when there is
-> > no phy by changing warnings to debug messages.
+On Mon, Dec 16, 2013 at 10:59:01AM +0000, David Vrabel wrote:
+> On 13/12/13 16:09, Konrad Rzeszutek Wilk wrote:
+> > Hey,
 > > 
-> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> > ---
-> >  drivers/phy/phy-core.c  | 106 ++++++++++++++++++++++++++++++++++--------------
-> >  include/linux/phy/phy.h |  14 +++++++
-> >  2 files changed, 89 insertions(+), 31 deletions(-)
-> > 
-> > diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-> > index 1102aef..99dc046 100644
-> > --- a/drivers/phy/phy-core.c
-> > +++ b/drivers/phy/phy-core.c
-> > @@ -53,7 +53,8 @@ static int devm_phy_match(struct device *dev, void *res, void *match_data)
-> >  	return res == match_data;
-> >  }
-> >  
-> > -static struct phy *phy_lookup(struct device *device, const char *con_id)
-> > +static struct phy *phy_lookup(struct device *device, const char *con_id,
-> > +			      unsigned int idx)
-> >  {
-> >  	unsigned int count;
-> >  	struct phy *phy;
-> > @@ -67,6 +68,10 @@ static struct phy *phy_lookup(struct device *device, const char *con_id)
-> >  		count = phy->init_data->num_consumers;
-> >  		consumers = phy->init_data->consumers;
-> >  		while (count--) {
-> > +			/* index must always match exactly */
-> > +			if (!con_id)
-> > +				if (idx != count)
-> > +					continue;
-> >  			if (!strcmp(consumers->dev_name, dev_name(device)) &&
-> >  					!strcmp(consumers->port, con_id)) {
-> >  				class_dev_iter_exit(&iter);
-> > @@ -242,7 +247,8 @@ EXPORT_SYMBOL_GPL(phy_power_off);
-> >  /**
-> >   * of_phy_get() - lookup and obtain a reference to a phy by phandle
-> >   * @dev: device that requests this phy
-> > - * @index: the index of the phy
-> > + * @con_id: name of the phy from device's point of view
-> > + * @idx: the index of the phy if name is not used
-> >   *
-> >   * Returns the phy associated with the given phandle value,
-> >   * after getting a refcount to it or -ENODEV if there is no such phy or
-> > @@ -250,12 +256,20 @@ EXPORT_SYMBOL_GPL(phy_power_off);
-> >   * not yet loaded. This function uses of_xlate call back function provided
-> >   * while registering the phy_provider to find the phy instance.
-> >   */
-> > -static struct phy *of_phy_get(struct device *dev, int index)
-> > +static struct phy *of_phy_get(struct device *dev, const char *con_id,
-> > +			      unsigned int idx)
-> >  {
-> >  	int ret;
-> >  	struct phy_provider *phy_provider;
-> >  	struct phy *phy = NULL;
-> >  	struct of_phandle_args args;
-> > +	int index;
-> > +
-> > +	if (!con_id)
-> > +		index = idx;
-> > +	else
-> > +		index = of_property_match_string(dev->of_node, "phy-names",
-> > +						 con_id);
-> >  
-> >  	ret = of_parse_phandle_with_args(dev->of_node, "phys", "#phy-cells",
-> >  		index, &args);
-> > @@ -348,38 +362,36 @@ struct phy *of_phy_simple_xlate(struct device *dev, struct of_phandle_args
-> >  EXPORT_SYMBOL_GPL(of_phy_simple_xlate);
-> >  
-> >  /**
-> > - * phy_get() - lookup and obtain a reference to a phy.
-> > + * phy_get_index() - obtain a phy based on index
+> > While I was trying to narrow down the state of GPU passthrough
+> > (still not finished) and figuring what needs to be done I realized
+> > that Xen PCIback did not reset my GPU properly (when I crashed the
+> > Windows guest by mistake). It does an FLR reset or Power one - if
+> > the device supports it. But it seems that some of these GPUs
+> > are liars and actually don't do the power part properly.
 > 
-> NAK. It still takes a 'char' argument and the name is misleading.
-> Btw are you replacing phy_get() or adding a new API in addition to phy_get()?
-
-Additional API. The phy_get() would in practice act as a wrapper after
-this. It could actually be just a #define macro in the include file.
-The function naming I just copied straight from gpiolib.c. I did not
-have the imagination for anything fancier.
-
-I would like to be able to use some function like phy_get_index() and
-be able to deliver it both the name and the index. With DT you guys
-will always be able to use the name (and the string will always
-supersede the index if we do it like this), but with ACPI, and possibly
-the platform lookup tables, the index can be used...
-
-phy2 = phy_get_index(dev, "usb2-phy", 0);
-phy3 = phy_get_index(dev, "usb3-phy", 1);
-
-> >   * @dev: device that requests this phy
-> >   * @con_id: name of the phy from device's point of view
-> > + * @idx: index of the phy to obtain in the consumer
-> >   *
-> > - * Returns the phy driver, after getting a refcount to it; or
-> > - * -ENODEV if there is no such phy.  The caller is responsible for
-> > - * calling phy_put() to release that count.
-> > + * This variant of phy_get() allows to access PHYs other than the first
-> > + * defined one for functions that define several PHYs.
-> >   */
-> > -struct phy *phy_get(struct device *dev, const char *con_id)
-> > +struct phy *phy_get_index(struct device *dev, const char *con_id,
-> > +			  unsigned int idx)
-> >  {
-> > -	int index = 0;
-> >  	struct phy *phy = NULL;
-> >  
-> > -	if (con_id == NULL) {
-> > -		dev_WARN(dev, "missing string\n");
-> > -		return ERR_PTR(-EINVAL);
-> > +	if (dev->of_node) {
-> > +		dev_dbg(dev, "using device tree for PHY lookup\n");
-> > +		phy = of_phy_get(dev, con_id, idx);
-> >  	}
-> >  
-> > -	if (dev->of_node) {
-> > -		index = of_property_match_string(dev->of_node, "phy-names",
-> > -						 con_id);
-> > -		phy = of_phy_get(dev, index);
-> > -		if (IS_ERR(phy)) {
-> > -			dev_err(dev, "unable to find phy\n");
-> > -			return phy;
-> > -		}
-> > -	} else {
-> > -		phy = phy_lookup(dev, con_id);
-> > -		if (IS_ERR(phy)) {
-> > -			dev_err(dev, "unable to find phy\n");
-> > -			return phy;
-> > -		}
-> > +	/**
-> > +	 * Either we are not using DT, or their lookup did not return
-> > +	 * a result. In that case, use platform lookup as a fallback.
-> > +	 */
+> In my experience the devices do not lie.  They correctly report that
+> they do not perform a reset in D3hot.
 > 
-> In a dt boot, if it has not returned a result how will platform lookup help
-> since there wouldn't be be any board file in the case of dt boot (to populate
-> PHY consumers). Maybe your later patch will handle that.
-
-This is something that I copy pasted from gpiolib.c. It felt like a
-good idea to have possibility to create lookup tables even when the
-device has of_node. I don't have strong feelings about this, so we can
-drop it if you like.
-
-> > +	if (!phy || IS_ERR(phy)) {
-> > +		dev_dbg(dev, "using lookup tables for PHY lookup");
-> > +		phy = phy_lookup(dev, con_id, idx);
-> > +	}
-> > +
-> > +	if (IS_ERR(phy)) {
-> > +		dev_dbg(dev, "unable to find phy\n");
-> > +		return phy;
-> >  	}
-> >  
-> >  	if (!try_module_get(phy->ops->owner))
-> > @@ -389,18 +401,20 @@ struct phy *phy_get(struct device *dev, const char *con_id)
-> >  
-> >  	return phy;
-> >  }
-> > -EXPORT_SYMBOL_GPL(phy_get);
-> > +EXPORT_SYMBOL_GPL(phy_get_index);
-> >  
-> >  /**
-> > - * devm_phy_get() - lookup and obtain a reference to a phy.
-> > + * devm_phy_get_index() - obtain a phy based on index
+> Here's the patch I'm using to solve this.  It does something similar.
+> i.e., a SBR if all devices on that bus are safe to be reset.
 > 
-> I don't see the need of these 2 APIs.
+> I prefer it because it provides the standard 'reset' sysfs file that the
+> toolstack/userspace can use.
 
-My goal is really just to prepare for ACPI with this one. I don't know
-if my commit message was not clear enough.
+We can still add the 'reset' to SysFS
+> 
+> It does have some limitations:  a) It does not check whether a device is
+> in use (only if it is bound to pciback); and b) it hand rolls
+> pci_slot_reset() (because it didn't exist at the time).
 
-Thanks,
+.. which can have those limiations removed and be based on this patchset.
+Meaning it won't do a bus-reset or device reset if the rest of the devices
+are _not_ assigned to pciback.
 
--- 
-heikki
+> 
+> diff --git a/drivers/xen/xen-pciback/pci_stub.c
+> b/drivers/xen/xen-pciback/pci_stub.c
+> index 4e8ba38..5a03e63 100644
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/wait.h>
+>  #include <linux/sched.h>
+>  #include <linux/atomic.h>
+> +#include <linux/delay.h>
+>  #include <xen/events.h>
+>  #include <asm/xen/pci.h>
+>  #include <asm/xen/hypervisor.h>
+> @@ -43,6 +44,7 @@ struct pcistub_device {
+>  	struct kref kref;
+>  	struct list_head dev_list;
+>  	spinlock_t lock;
+> +	bool created_reset_file;
+> 
+>  	struct pci_dev *dev;
+>  	struct xen_pcibk_device *pdev;/* non-NULL if struct pci_dev is in use */
+> @@ -60,6 +62,114 @@ static LIST_HEAD(pcistub_devices);
+>  static int initialize_devices;
+>  static LIST_HEAD(seized_devices);
+> 
+> +/*
+> + * pci_reset_function() will only work if there is a mechanism to
+> + * reset that single function (e.g., FLR or a D-state transition).
+> + * For PCI hardware that has two or more functions but no per-function
+> + * reset, we can do a bus reset iff all the functions are co-assigned
+> + * to the same domain.
+> + *
+> + * If a function has no per-function reset mechanism the 'reset' sysfs
+> + * file that the toolstack uses to reset a function prior to assigning
+> + * the device will be missing.  In this case, pciback adds its own
+> + * which will try a bus reset.
+> + *
+> + * Note: pciback does not check for co-assigment before doing a bus
+> + * reset, only that the devices are bound to pciback.  The toolstack
+> + * is assumed to have done the right thing.
+> + */
+> +static int __pcistub_reset_function(struct pci_dev *dev)
+> +{
+> +	struct pci_dev *pdev;
+> +	u16 ctrl;
+> +	int ret;
+> +
+> +	ret = __pci_reset_function_locked(dev);
+> +	if (ret == 0)
+> +		return 0;
+> +
+> +	if (pci_is_root_bus(dev->bus) || dev->subordinate || !dev->bus->self)
+> +		return -ENOTTY;
+> +
+> +	list_for_each_entry(pdev, &dev->bus->devices, bus_list) {
+> +		if (pdev != dev && (!pdev->driver
+> +				    || strcmp(pdev->driver->name, "pciback")))
+> +			return -ENOTTY;
+> +		pci_save_state(pdev);
+> +	}
+> +
+> +	pci_read_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, &ctrl);
+> +	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
+> +	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
+> +	msleep(200);
+> +
+> +	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
+> +	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
+> +	msleep(200);
+> +
+> +	list_for_each_entry(pdev, &dev->bus->devices, bus_list)
+> +		pci_restore_state(pdev);
+> +
+> +	return 0;
+> +}
+> +
+> +static int pcistub_reset_function(struct pci_dev *dev)
+> +{
+> +	int ret;
+> +
+> +	device_lock(&dev->dev);
+> +	ret = __pcistub_reset_function(dev);
+> +	device_unlock(&dev->dev);
+> +
+> +	return ret;
+> +}
+> +
+> +static ssize_t pcistub_reset_store(struct device *dev,
+> +				   struct device_attribute *attr,
+> +				   const char *buf, size_t count)
+> +{
+> +	struct pci_dev *pdev = to_pci_dev(dev);
+> +	unsigned long val;
+> +	ssize_t result = strict_strtoul(buf, 0, &val);
+> +
+> +	if (result < 0)
+> +		return result;
+> +
+> +	if (val != 1)
+> +		return -EINVAL;
+> +
+> +	result = pcistub_reset_function(pdev);
+> +	if (result < 0)
+> +		return result;
+> +	return count;
+> +}
+> +static DEVICE_ATTR(reset, 0200, NULL, pcistub_reset_store);
+> +
+> +static int pcistub_try_create_reset_file(struct pcistub_device *psdev)
+> +{
+> +	struct device *dev = &psdev->dev->dev;
+> +	struct sysfs_dirent *reset_dirent;
+> +	int ret;
+> +
+> +	reset_dirent = sysfs_get_dirent(dev->kobj.sd, NULL, "reset");
+> +	if (reset_dirent) {
+> +		sysfs_put(reset_dirent);
+> +		return 0;
+> +	}
+> +
+> +	ret = device_create_file(dev, &dev_attr_reset);
+> +	if (ret < 0)
+> +		return ret;
+> +	psdev->created_reset_file = true;
+> +	return 0;
+> +}
+> +
+> +static void pcistub_remove_reset_file(struct pcistub_device *psdev)
+> +{
+> +	if (psdev && psdev->created_reset_file)
+> +		device_remove_file(&psdev->dev->dev, &dev_attr_reset);
+> +}
+> +
+>  static struct pcistub_device *pcistub_device_alloc(struct pci_dev *dev)
+>  {
+>  	struct pcistub_device *psdev;
+> @@ -95,12 +205,15 @@ static void pcistub_device_release(struct kref *kref)
+> 
+>  	dev_dbg(&dev->dev, "pcistub_device_release\n");
+> 
+> +	pcistub_remove_reset_file(psdev);
+> +
+>  	xen_unregister_device_domain_owner(dev);
+> 
+>  	/* Call the reset function which does not take lock as this
+>  	 * is called from "unbind" which takes a device_lock mutex.
+>  	 */
+> -	__pci_reset_function_locked(dev);
+> +	__pcistub_reset_function(psdev->dev);
+> +
+>  	if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
+>  		dev_dbg(&dev->dev, "Could not reload PCI state\n");
+>  	else
+> @@ -268,7 +381,7 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>  	/* This is OK - we are running from workqueue context
+>  	 * and want to inhibit the user from fiddling with 'reset'
+>  	 */
+> -	pci_reset_function(dev);
+> +	pcistub_reset_function(psdev->dev);
+>  	pci_restore_state(psdev->dev);
+> 
+>  	/* This disables the device. */
+> @@ -392,7 +505,7 @@ static int pcistub_init_device(struct pci_dev *dev)
+>  		dev_err(&dev->dev, "Could not store PCI conf saved state!\n");
+>  	else {
+>  		dev_dbg(&dev->dev, "resetting (FLR, D3, etc) the device\n");
+> -		__pci_reset_function_locked(dev);
+> +		__pcistub_reset_function(dev);
+>  		pci_restore_state(dev);
+>  	}
+>  	/* Now disable the device (this also ensures some private device
+> @@ -467,6 +580,10 @@ static int pcistub_seize(struct pci_dev *dev)
+>  	if (!psdev)
+>  		return -ENOMEM;
+> 
+> +	err = pcistub_try_create_reset_file(psdev);
+> +	if (err < 0)
+> +		goto out;
+> +
+>  	spin_lock_irqsave(&pcistub_devices_lock, flags);
+> 
+>  	if (initialize_devices) {
+> @@ -485,10 +602,9 @@ static int pcistub_seize(struct pci_dev *dev)
+>  	}
+> 
+>  	spin_unlock_irqrestore(&pcistub_devices_lock, flags);
+> -
+> +out:
+>  	if (err)
+>  		pcistub_device_put(psdev);
+> -
+>  	return err;
+>  }
+> 
