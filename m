@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab3LPKIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:08:34 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:47116 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446Ab3LPKId (ORCPT
+	id S1753068Ab3LPKKw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:10:52 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:52668 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab3LPKKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:08:33 -0500
-Date: Mon, 16 Dec 2013 11:08:28 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, mingo@redhat.com,
-        dvhart@linux.intel.com, peterz@infradead.org, tglx@linutronix.de,
-        jason.low2@hp.com, Waiman.Long@hp.com, scott.norton@hp.com,
-        aswin@hp.com
-Subject: Re: [PATCH 0/3] perf-bench: introduce futex microbenchmarks
-Message-ID: <20131216100828.GA21304@gmail.com>
-References: <1387081917-9102-1-git-send-email-davidlohr@hp.com>
+	Mon, 16 Dec 2013 05:10:50 -0500
+Date: Mon, 16 Dec 2013 15:40:40 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        Dave Jiang <dave.jiang@intel.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, dmaengine@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: [PATCH 1/2] drivers: dma: Mark functions as static in dma_v3.c
+Message-ID: <dba654dc34646dda2998dbf7b08d7ce3c160ff8c.1387188138.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1387081917-9102-1-git-send-email-davidlohr@hp.com>
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mark the functions ioat3_prep_xor_val(), ioat3_prep_pq_val() and
+ioat3_prep_pqxor_val() as static in dma_v3.c because they are not used
+outside this file.
 
-* Davidlohr Bueso <davidlohr@hp.com> wrote:
+This eliminates the following warnings in dma_v3.c:
+drivers/dma/ioat/dma_v3.c:741:1: warning: no previous prototype for ‘ioat3_prep_xor_val’ [-Wmissing-prototypes]
+drivers/dma/ioat/dma_v3.c:1092:1: warning: no previous prototype for ‘ioat3_prep_pq_val’ [-Wmissing-prototypes]
+drivers/dma/ioat/dma_v3.c:1134:1: warning: no previous prototype for ‘ioat3_prep_pqxor_val’ [-Wmissing-prototypes]
 
-> This patchset adds three programs that stress and measure different 
-> futex operations: (i) uaddr hashing, (ii) wakeups and (iii) 
-> requeuing/waiting.
-> 
-> More details and usage examples in each individual patch, along with 
-> parameter descriptions in the code.
-> 
-> While the previous effort (https://lkml.org/lkml/2012/5/17/207) to 
-> add futex benchmarks to perf-bench failed, I strongly believe that 
-> perf is an ideal place for these kinds of programs. This patchset is 
-> different from Hitoshi's because it does not try to take over 
-> Darren's futextest suite, and only deals with finer grained aspects 
-> of the kernel's implementation, and thus mostly useful for kernel 
-> hacking. Furthermore, by being part of the kernel tree, it can get 
-> more attention and naturally evolve with time.
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+---
+ drivers/dma/ioat/dma_v3.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Looks pretty useful!
+diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+index 820817e9..07038ca 100644
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -737,7 +737,7 @@ ioat3_prep_xor(struct dma_chan *chan, dma_addr_t dest, dma_addr_t *src,
+ 	return __ioat3_prep_xor_lock(chan, NULL, dest, src, src_cnt, len, flags);
+ }
+ 
+-struct dma_async_tx_descriptor *
++static struct dma_async_tx_descriptor *
+ ioat3_prep_xor_val(struct dma_chan *chan, dma_addr_t *src,
+ 		    unsigned int src_cnt, size_t len,
+ 		    enum sum_check_flags *result, unsigned long flags)
+@@ -1088,7 +1088,7 @@ ioat3_prep_pq(struct dma_chan *chan, dma_addr_t *dst, dma_addr_t *src,
+ 	}
+ }
+ 
+-struct dma_async_tx_descriptor *
++static struct dma_async_tx_descriptor *
+ ioat3_prep_pq_val(struct dma_chan *chan, dma_addr_t *pq, dma_addr_t *src,
+ 		  unsigned int src_cnt, const unsigned char *scf, size_t len,
+ 		  enum sum_check_flags *pqres, unsigned long flags)
+@@ -1130,7 +1130,7 @@ ioat3_prep_pqxor(struct dma_chan *chan, dma_addr_t dst, dma_addr_t *src,
+ 				     flags);
+ }
+ 
+-struct dma_async_tx_descriptor *
++static struct dma_async_tx_descriptor *
+ ioat3_prep_pqxor_val(struct dma_chan *chan, dma_addr_t *src,
+ 		     unsigned int src_cnt, size_t len,
+ 		     enum sum_check_flags *result, unsigned long flags)
+-- 
+1.7.9.5
 
-Could the two approaches be merged?
-
-Thanks,
-
-	Ingo
