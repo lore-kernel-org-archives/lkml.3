@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab3LPMi0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 07:38:26 -0500
-Received: from s3.sipsolutions.net ([144.76.43.152]:41133 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230Ab3LPMiY (ORCPT
+	id S1753953Ab3LPMlG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 07:41:06 -0500
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:41513 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892Ab3LPMk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 07:38:24 -0500
-Message-ID: <1387197495.4665.16.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH] mac80211: fix TX device statistics for monitor
- interfaces
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Gnedt <david.gnedt@davizone.at>
-Date: Mon, 16 Dec 2013 13:38:15 +0100
-In-Reply-To: <1386492357-20826-1-git-send-email-pali.rohar@gmail.com> (sfid-20131208_094635_923822_94E0BD99)
-References: <87iowiszyu.fsf@purkki.adurom.net>
-	 <1386492357-20826-1-git-send-email-pali.rohar@gmail.com>
-	 (sfid-20131208_094635_923822_94E0BD99)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Mon, 16 Dec 2013 07:40:58 -0500
+Date: Mon, 16 Dec 2013 09:40:51 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 13/14] tools lib traceevent: Get rid of die() in some
+ string conversion funcitons
+Message-ID: <20131216124051.GA3598@ghostprotocols.net>
+References: <1386833777-3790-1-git-send-email-namhyung@kernel.org>
+ <1386833777-3790-14-git-send-email-namhyung@kernel.org>
+ <20131212184147.GE8164@ghostprotocols.net>
+ <87y53phah9.fsf@sejong.aot.lge.com>
+ <20131213145204.GC29275@ghostprotocols.net>
+ <87sitth03c.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87sitth03c.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-12-08 at 09:45 +0100, Pali Rohár wrote:
-> From: David Gnedt <david.gnedt@davizone.at>
-> 
-> Count TX packets and bytes also for monitor interfaces.
+Em Mon, Dec 16, 2013 at 01:49:11PM +0900, Namhyung Kim escreveu:
+> On Fri, 13 Dec 2013 11:52:04 -0300, Arnaldo Carvalho de Melo wrote:
+> > All the rest is ok, so its just the malloc + strcpy that remains to be
+> > converted, do you want me to do it?
+ 
+> Hmm.. did you mean like this?
 
-> +	dev->stats.tx_packets++;
-> +	dev->stats.tx_bytes += skb->len;
-> +
->  	/*
->  	 * fix up the pointers accounting for the radiotap
->  	 * header still being in there.  We are being given
+> 		str = NULL;
+>                 if (val)
+>                 	asprintf(&str, "TRUE");
+>                 else
+>                 	asprintf(&str, "FALSE");
+>                 return str;
 
-Should we really count the machine-local radiotap management stuff?
+More compact:
 
-johannes
+	if (asprintf(&str, "%s", val ? "TRUE" : "FALSE") < 0)
+		// error handling path
 
+At that point str already is set to NULL.
+
+- Arnaldo
