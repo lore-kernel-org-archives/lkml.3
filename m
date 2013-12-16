@@ -1,201 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753724Ab3LPLib (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 06:38:31 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:42630 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139Ab3LPLi3 (ORCPT
+	id S1753609Ab3LPLmB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 06:42:01 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:38972 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097Ab3LPLl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 06:38:29 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: francis.moro@gmail.com, kvm@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH backport hints for <3.10] KVM: x86: Convert vapic synchronization to _cached functions (CVE-2013-6368)
-Date: Mon, 16 Dec 2013 12:38:17 +0100
-Message-Id: <1387193897-24658-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.4.2
+	Mon, 16 Dec 2013 06:41:59 -0500
+Message-ID: <52AEE5DA.1010102@linux.vnet.ibm.com>
+Date: Mon, 16 Dec 2013 17:06:58 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: Zdenek Kabelac <zkabelac@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>, jinchoi@broadcom.com,
+        Paul Bolle <pebolle@tiscali.nl>,
+        ziegler@email.mathematik.uni-freiburg.de, jbarnes@virtuousgeek.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        cpufreq <cpufreq@vger.kernel.org>
+Subject: Re: Regression with suspend resume 5a87182aa21d6d5d306840feab9321818dd3e2a3
+References: <52A448F2.4010208@redhat.com> <CAKohpomO+0q7bFWTnFRgqoRuU2WryfPpFv0WLOCKtHBrLzLRqw@mail.gmail.com> <87iouprrcw.fsf@nemi.mork.no>
+In-Reply-To: <87iouprrcw.fsf@nemi.mork.no>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121611-2674-0000-0000-00000BE906DF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The KVM patch "fix vapic memory corruption" applies to most kernels that
-have KVM, but the fix does not apply on many older branches.  The APIs it
-uses are available in 3.1, but until 3.9 kvm_gfn_to_hva_cache_init had
-one fewer parameter.
+On 12/16/2013 04:32 PM, Bjørn Mork wrote:
+> Viresh Kumar <viresh.kumar@linaro.org> writes:
+>> On 8 December 2013 15:54, Zdenek Kabelac <zkabelac@redhat.com> wrote:
+>>> I'm testing recent 3.13-rc kernel - and I've notice my Lenovo T61 is not
+>>> able to resume.  After bisect I've found commit:
+>>>
+>>> 5a87182aa21d6d5d306840feab9321818dd3e2a3
+>>
+>> That's my patch, sorry for all the trouble.. Just came back after vacations
+>> and multiple threads are there with this patch as culprit..
+>>
+>> I just tested this patch again on Rafael's linux-next branch and suspend/resume
+>> and Hibernation are working fine for me on my Thinkpad T420. I don't see any
+>> issues at all..
+>>
+>> scaling_governor: ondemand
+>> scaling_driver: acpi-cpufreq
+>>
+>>> When I just revert this commit with 374b105797c3d4f29c685f3be535c35f5689b30e
+>>> (3.13-rc3)   suspend/resume works again.
+>>> (I'm using  ondemand CPU governor)
+>>
+>>> Here is bisect log:
+>>
+>>> # bad: [2167e2399dc5e69c62db56d933e9c8cbe107620a] cpufreq: fix garbage
+>>> kobjects on errors during suspend/resume
+>>> git bisect bad 2167e2399dc5e69c62db56d933e9c8cbe107620a
+>>
+>> I don't read bisect logs well but doesn't you log say that the culprit is
+>> 2167e2399dc5e69c62db56d933e9c8cbe107620a instead?
+>>
+>> I am trying with this patch now, but will take some time for results to be out.
+> 
+> It's both patches in combination.  Interesting case, really :-)
+>
 
-The comments in this patch should help fixing kvm_lapic_set_vapic_addr
-in older kernels.  I will review the backports as they are posted to
-LKML (if I am CCed...).
+True... Basically, what happens is that commit 5a87182 prevents POLICY_EXIT
+of governors during suspend - ie., it just does a CPUFREQ_GOV_STOP and prevents
+any further operations on governors.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/kvm/lapic.c | 38 +++++++++++++++++++++++++++++---------
- arch/x86/kvm/lapic.h |  4 ++--
- arch/x86/kvm/x86.c   | 33 +--------------------------------
- 3 files changed, 32 insertions(+), 43 deletions(-)
+Later, commit 2167e23 removes the special suspend/resume handling for CPU hotplug
+and thus in this path, CPU offline sends out POLICY_EXIT and also frees up the
+memory allocated to the policy structure. Since POLICY_EXIT is prevented by the
+cpufreq_suspend() code, this tear-down only gets half-completed and thus goes
+into an inconsistent state.
 
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index 858432287ab6..42c75a0fc467 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -1278,14 +1278,12 @@ void __kvm_migrate_apic_timer(struct kvm_vcpu *vcpu)
- void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
- {
- 	u32 data;
--	void *vapic;
- 
- 	if (!irqchip_in_kernel(vcpu->kvm) || !vcpu->arch.apic->vapic_addr)
- 		return;
- 
--	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
--	data = *(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr));
--	kunmap_atomic(vapic);
-+	kvm_read_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
-+			      sizeof(u32));
- 
- 	apic_set_tpr(vcpu->arch.apic, data & 0xff);
- }
-@@ -1295,7 +1293,6 @@ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu)
- 	u32 data, tpr;
- 	int max_irr, max_isr;
- 	struct kvm_lapic *apic;
--	void *vapic;
- 
- 	if (!irqchip_in_kernel(vcpu->kvm) || !vcpu->arch.apic->vapic_addr)
- 		return;
-@@ -1310,17 +1307,40 @@ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu)
- 		max_isr = 0;
- 	data = (tpr & 0xff) | ((max_isr & 0xf0) << 8) | (max_irr << 24);
- 
--	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
--	*(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr)) = data;
--	kunmap_atomic(vapic);
-+	kvm_write_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
-+			       sizeof(u32));
- }
- 
--void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
-+int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
- {
- 	if (!irqchip_in_kernel(vcpu->kvm))
--		return;
-+		return -EINVAL;
-+
-+	if (vapic_addr) {
-+		/* For kernels with 3-argument kvm_gfn_to_hva_cache_init.  For
-+		 * newer kernels, the original patch sent to stable applies.
-+		 */
-+		if (offset_in_page(vapic_addr) > PAGE_SIZE - 4)
-+			return -EINVAL;
-+
-+		if (kvm_gfn_to_hva_cache_init(vcpu->kvm,
-+					     &vcpu->arch.apic->vapic_cache,
-+					     vapic_addr))
-+			return -EINVAL;
-+
-+#ifdef KVM_APIC_CHECK_VAPIC
-+		/* For kernels with KVM_APIC_CHECK_VAPIC #define.  */
-+               __set_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention);
-+#endif
-+       } else {
-+#ifdef KVM_APIC_CHECK_VAPIC
-+		/* For kernels with KVM_APIC_CHECK_VAPIC #define.  */
-+               __clear_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention);
-+#endif
-+	}
- 
- 	vcpu->arch.apic->vapic_addr = vapic_addr;
-+	return 0;
- }
- 
- int kvm_x2apic_msr_write(struct kvm_vcpu *vcpu, u32 msr, u64 data)
-diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
-index 6f4ce2575d09..6aec0714398e 100644
---- a/arch/x86/kvm/lapic.h
-+++ b/arch/x86/kvm/lapic.h
-@@ -15,7 +15,7 @@ struct kvm_lapic {
- 	bool irr_pending;
- 	void *regs;
- 	gpa_t vapic_addr;
--	struct page *vapic_page;
-+	struct gfn_to_hva_cache vapic_cache;
- };
- int kvm_create_lapic(struct kvm_vcpu *vcpu);
- void kvm_free_lapic(struct kvm_vcpu *vcpu);
-@@ -46,7 +46,7 @@ int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu);
- u64 kvm_get_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu);
- void kvm_set_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu, u64 data);
- 
--void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
-+int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
- void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu);
- void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu);
- 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 185a2b823a2d..896a02f15f38 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2737,8 +2737,7 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
- 		r = -EFAULT;
- 		if (copy_from_user(&va, argp, sizeof va))
- 			goto out;
--		r = 0;
--		kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
-+		r = kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
- 		break;
- 	}
- 	case KVM_X86_SETUP_MCE: {
-@@ -5084,33 +5083,6 @@ static void post_kvm_run_save(struct kvm_vcpu *vcpu)
- 			!kvm_event_needs_reinjection(vcpu);
- }
- 
--static void vapic_enter(struct kvm_vcpu *vcpu)
--{
--	struct kvm_lapic *apic = vcpu->arch.apic;
--	struct page *page;
--
--	if (!apic || !apic->vapic_addr)
--		return;
--
--	page = gfn_to_page(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
--
--	vcpu->arch.apic->vapic_page = page;
--}
--
--static void vapic_exit(struct kvm_vcpu *vcpu)
--{
--	struct kvm_lapic *apic = vcpu->arch.apic;
--	int idx;
--
--	if (!apic || !apic->vapic_addr)
--		return;
--
--	idx = srcu_read_lock(&vcpu->kvm->srcu);
--	kvm_release_page_dirty(apic->vapic_page);
--	mark_page_dirty(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
--	srcu_read_unlock(&vcpu->kvm->srcu, idx);
--}
--
- static void update_cr8_intercept(struct kvm_vcpu *vcpu)
- {
- 	int max_irr, tpr;
-@@ -5394,7 +5366,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
- 	}
- 
- 	vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
--	vapic_enter(vcpu);
- 
- 	r = 1;
- 	while (r > 0) {
-@@ -5451,8 +5422,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
- 
- 	srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
- 
--	vapic_exit(vcpu);
--
- 	return r;
- }
- 
--- 
-1.8.4.2
+So, upon resume, the CPU online operation tries POLICY_INIT, GOV_START etc,
+and again none of these get executed because of the cpufreq_suspend() code.
+Eventually cpufreq_resume() will execute GOV_START, but by then the underlying
+policy-structure is a newly allocated one, and things have already been messed
+up so much that it just can't resume properly.
+
+Overall, the inconsistency in handling governor code during suspend/resume
+is the root-cause of the suspend/resume regression. And as Bjorn mentioned,
+this is caused by the interaction of the 2 commits with one another, and cannot
+be reproduced by either of the commits independently.
+
+IIUC, mainline should be fine now, since Rafael reverted both the commits. We
+need to be more careful in bringing back either functionality in the future.
+As Bjorn and Rafael rightly pointed out in the other email threads, we need to
+fundamentally rethink the design and come up with elegant interfaces/mechanisms
+in the cpufreq subsystem that will allow us to write code that works as expected
+and avoid such subtle regressions.
+
+
+Regards,
+Srivatsa S. Bhat
 
