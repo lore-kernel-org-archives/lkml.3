@@ -1,102 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab3LPUqD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 15:46:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5087 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750846Ab3LPUqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 15:46:02 -0500
-Date: Mon, 16 Dec 2013 21:46:26 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: PATCH? introduce get_compound_page (Was: process 'stuck' at
-	exit)
-Message-ID: <20131216204626.GA8152@redhat.com>
-References: <CA+55aFw_emAUOr5BYx0TfTCGEOrW6-ZRATWbm00DvCXsGD7=DQ@mail.gmail.com> <20131211170844.GA21700@redhat.com> <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de> <20131211175615.GA24546@redhat.com> <20131211191855.GA32485@redhat.com> <20131213151035.GE5408@redhat.com> <20131213162240.GA11762@redhat.com> <20131213173406.GG5408@redhat.com> <20131216183618.GA28252@redhat.com> <20131216201952.GE21218@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131216201952.GE21218@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752278Ab3LPUrh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 15:47:37 -0500
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:53441 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751129Ab3LPUrf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 15:47:35 -0500
+Message-ID: <1387226852.14970.28.camel@x41.thuisdomein>
+Subject: Re: [PATCH 2/2] ahci: only attach ICH6-M if it's in SATA mode
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Levente Kurusa <levex@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 16 Dec 2013 21:47:32 +0100
+In-Reply-To: <52AF384C.9020101@linux.com>
+References: <1387190097.9255.31.camel@x41.thuisdomein>
+	 <20131216155136.GF32509@htj.dyndns.org> <52AF384C.9020101@linux.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Dec 2013 20:47:33.0524 (UTC) FILETIME=[0B841540:01CEFAA0]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16, Andrea Arcangeli wrote:
->
-> On Mon, Dec 16, 2013 at 07:36:18PM +0100, Oleg Nesterov wrote:
-> >
-> > So it seems that put_compound_tail() should also do get/put(head) like
-> > put_compound_page() does, and this probably means we should factor out
-> > the common code somehow.
-> >
->
-> Yes it was supposed to do the get_page_unless_zero before the
-> compound_lock.
+On Mon, 2013-12-16 at 18:28 +0100, Levente Kurusa wrote:
+> Not only they use different class IDs, but IIRC they also change device ids.
+> For example, ICH7M was 0x27C4 in AHCI mode and 0x27DF in IDE mode. (obviously
+> Intel vendor ids)
 
-OK,
+Apparently ICH6-M always uses device ID 0x2653 for its SATA "function"
+(whether in SATA mode or in IDE mode).
 
-> > OTOH, I can't really understand
-> >
-> > 	if (likely(page != page_head && get_page_unless_zero(page_head)))
-> >
-> > in __get_page_tail() and put_compound_page().
-> >
-> > First of all, is it really possible that page == compound_trans_head(page)?
->
-> ...
->
-> If PG_tail gets cleared compound_trans_head returns "page".
+> Paul, did this patch change anything noticeable for you? I mean was there any
+> problem before that this patch fixes or not?
 
-Damn, indeed, thanks.
-
-> > And compound_lock_irqsave() looks racy even after get_page_unless_zero().
-> >
-> > For example, suppose that page_head was already freed and then re-allocated
-> > as (say) alloc_pages(__GFP_COMP, 1). get_page_unless_zero() can succeed right
-> > after prep_new_page() does set_page_refcounted(). Now, can't compound_lock()
-> > race with the non-atomic prep_compound_page()->__SetPageHead() ?
->
-> Yes. We need to change to:
->
-> 	if (order && (gfp_flags & __GFP_COMP))
-> 		prep_compound_page(page, order);
-> 	smp_wmb();
-> 	/* as the compound_lock can be taken after it's refcounted */
-> 	set_page_refcounted(page);
->
-> __SetPageHead uses bts asm insn so literally only a "lock" prefix is
-> missing in a assembly instruction. So the race window is incredibly
-> small, but it must be fixed indeed. This also puts set_page_refcounted
-> as the last action of buffered_rmqueue so there shouldn't be any other
-> issues like this left in the page allocation code.
->
-> Can you reorder set_page_refcount in your v2?
-
-OK. I'll try to make something on Wednesday.
+What triggered these two patches was the warning I quoted in patch 1/2
+(which Tejun already queued). Looking at the code involved raised the,
+obvious, question why ahci bothers to attach to ICH6-M in IDE mode.
+Anyhow, the only problem is that it unsuccessfully probes when ICH6-M is
+in IDE mode. The probe doesn't break things, as far as I can tell.
 
 
-> > Finally. basepage_index(page) after put_page(page) in get_futex_key() looks
-> > confusing imho. I think this is correct, we already checked PageAnon() so it
-> > can't be a thp page. But probably this needs a comment and __basepage_index()
-> > should do BUG_ON(!PageHuge()).
->
-> This looks a bug if you apply the patches to add THP in pagecache, and
-> BUG_ON(!PageHuge) would also break THP in pagecache later (though
-> safer than silently broken like now).
->
-> It'd safer to read the basepage_index in a local variable just before
-> doing the put_compund_tail but I agree it's not going to make a
-> difference right now.
-
-Yes, so lets discuss (and perhaps change) this later/separately.
-
-Andrea, thanks again for your help.
-
-Oleg.
+Paul Bolle
 
