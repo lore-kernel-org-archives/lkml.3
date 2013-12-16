@@ -1,43 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492Ab3LPPUV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:20:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53671 "EHLO mx1.redhat.com"
+	id S1754574Ab3LPPVs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:21:48 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:2397 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754273Ab3LPPUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:20:20 -0500
-Message-ID: <52AF1A22.1070708@redhat.com>
-Date: Mon, 16 Dec 2013 10:20:02 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754535Ab3LPPVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 10:21:45 -0500
+X-IronPort-AV: E=Sophos;i="4.95,495,1384300800"; 
+   d="scan'208";a="82664391"
+Message-ID: <52AF1A84.3090304@citrix.com>
+Date: Mon, 16 Dec 2013 15:21:40 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/7] mm: Annotate page cache allocations
-References: <1386943807-29601-1-git-send-email-mgorman@suse.de> <1386943807-29601-5-git-send-email-mgorman@suse.de>
-In-Reply-To: <1386943807-29601-5-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
+To: Wei Liu <wei.liu2@citrix.com>
+CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v2 1/9] xen-netback: Introduce TX grant map definitions
+References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com> <1386892097-15502-2-git-send-email-zoltan.kiss@citrix.com> <20131213153138.GL21900@zion.uk.xensource.com> <52AB506E.3040509@citrix.com> <20131213191423.GA12582@zion.uk.xensource.com>
+In-Reply-To: <20131213191423.GA12582@zion.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2013 09:10 AM, Mel Gorman wrote:
-> Annotations will be used for fair zone allocation policy. Patch is mostly
-> taken from a link posted by Johannes on IRC. It's not perfect because all
-> callers of these paths are not guaranteed to be allocating pages for page
-> cache. However, it's probably close enough to cover all cases that matter
-> with minimal distortion.
-> 
-> Not-signed-off
+On 13/12/13 19:14, Wei Liu wrote:
+>>>> +	spin_lock_irqsave(&vif->dealloc_lock, flags);
+>>>> > >>+	do {
+>>>> > >>+		pending_idx = ubuf->desc;
+>>>> > >>+		ubuf = (struct ubuf_info *) ubuf->ctx;
+>>>> > >>+		index = pending_index(vif->dealloc_prod);
+>>>> > >>+		vif->dealloc_ring[index] = pending_idx;
+>>>> > >>+		/* Sync with xenvif_tx_action_dealloc:
+>>>> > >>+		 * insert idx then incr producer.
+>>>> > >>+		 */
+>>>> > >>+		smp_wmb();
+>>>> > >>+		vif->dealloc_prod++;
+>>>> > >>+	} while (ubuf);
+>>>> > >>+	wake_up(&vif->dealloc_wq);
+>>>> > >>+	spin_unlock_irqrestore(&vif->dealloc_lock, flags);
+> [...]
+>>> > >
+>>>> > >>+		smp_rmb();
+>>>> > >>+
+>>>> > >>+		while (dc != dp) {
+>>>> > >>+			pending_idx =
+>>>> > >>+				vif->dealloc_ring[pending_index(dc++)];
+>>>> > >>+
+>>>> > >>+			/* Already unmapped? */
+>>>> > >>+			if (vif->grant_tx_handle[pending_idx] ==
+>>>> > >>+				NETBACK_INVALID_HANDLE) {
+>>>> > >>+				netdev_err(vif->dev,
+>>>> > >>+					"Trying to unmap invalid handle! "
+>>>> > >>+					"pending_idx: %x\n", pending_idx);
+>>>> > >>+				continue;
+>>>> > >>+			}
+>>> > >
+>>> > >Should this be BUG_ON? AIUI this kthread should be the only one doing
+>>> > >unmap, right?
+>> >The NAPI instance can do it as well if it is a small packet fits
+>> >into PKT_PROT_LEN. But still this scenario shouldn't really happen,
+>> >I was just not sure we have to crash immediately. Maybe handle it as
+>> >a fatal error and destroy the vif?
+>> >
+> It depends. If this is within the trust boundary, i.e. everything at the
+> stage should have been sanitized then we should BUG_ON because there's
+> clearly a bug somewhere in the sanitization process, or in the
+> interaction of various backend routines.
 
-Whenever you and Johannes sign it off, you can add my
+My understanding is that crashing should be avoided if we can bail out 
+somehow. At this point there is clearly a bug in netback somewhere, 
+something unmapped that page before it should have happened, or at least 
+that array get corrupted somehow. However there is a chance that 
+xenvif_fatal_tx_err() can contain the issue, and the rest of the system 
+can go unaffected.
 
-Acked-by: Rik van Riel <riel@redhat.com>
-
-
--- 
-All rights reversed
+Zoli
