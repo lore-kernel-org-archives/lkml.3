@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611Ab3LPPvz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:51:55 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:35619 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143Ab3LPPvw (ORCPT
+	id S1754647Ab3LPPv6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:51:58 -0500
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:35041 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754143Ab3LPPv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:51:52 -0500
+	Mon, 16 Dec 2013 10:51:56 -0500
+Date: Mon, 16 Dec 2013 10:51:36 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ahci: only attach ICH6-M if it's in SATA mode
+Message-ID: <20131216155136.GF32509@htj.dyndns.org>
+References: <1387190097.9255.31.camel@x41.thuisdomein>
 MIME-Version: 1.0
-In-Reply-To: <20131216150937.GO18769@lee--X1>
-References: <1387194424-2701-1-git-send-email-lpapp@kde.org>
-	<20131216134633.GI18769@lee--X1>
-	<CAOMwXhOnHNrzEvf0+QRn6dGb42xR9a33joZcou3ancwSYe36Ug@mail.gmail.com>
-	<20131216150937.GO18769@lee--X1>
-Date: Mon, 16 Dec 2013 15:51:52 +0000
-X-Google-Sender-Auth: znWkesL91KLCK89jpjSbGEDmxiM
-Message-ID: <CAOMwXhNJFGiRNB4jnTrzzpSGL8XvaR1Ph_pFrdU+x+guy7Tamg@mail.gmail.com>
-Subject: Re: [PATCH] mfd: (max8997) Handle the potential error for mfd_add_devices
-From: Laszlo Papp <lpapp@kde.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387190097.9255.31.camel@x41.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 3:09 PM, Lee Jones <lee.jones@linaro.org> wrote:
->> I think you commented on the wrong patch. There has been a newer submitted.
->
-> No top posting please.
+Hello, Paul.
 
-Tell that to the client I need to use. IMO, making these inline posts
-mandatorily when the reply is a single line makes not much sense.
-Anyway, I will follow the inconvenient way.
+On Mon, Dec 16, 2013 at 11:34:57AM +0100, Paul Bolle wrote:
+> Intel's ICH6-M can operate either in IDE mode or in SATA mode. Attaching
+> in IDE mode is pointless (and should fail, as long as BIOS has configured
+> it even remotely sane). So let's only attach in SATA mode.
+> 
+> Note that ata_piix does the opposite: only attach if ICH6-M is in IDE
+> mode, so we end up with just one driver attaching in either mode.
+> 
+> (And since we're touching this table update a minor typo too.)
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Tested on an ICH6-M that always runs in IDE mode. So I'm not certain
+> this does the right thing for a ICH6-M running in SATA mode. 
+> 
+>  drivers/ata/ahci.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+> index 4ba3bde..12182fd 100644
+> --- a/drivers/ata/ahci.c
+> +++ b/drivers/ata/ahci.c
+> @@ -191,8 +191,10 @@ static const struct ata_port_info ahci_port_info[] = {
+>  
+>  static const struct pci_device_id ahci_pci_tbl[] = {
+>  	/* Intel */
+> -	{ PCI_VDEVICE(INTEL, 0x2652), board_ahci }, /* ICH6 */
+> -	{ PCI_VDEVICE(INTEL, 0x2653), board_ahci }, /* ICH6M */
+> +	{ PCI_VDEVICE(INTEL, 0x2652), board_ahci }, /* ICH6R */
+> +	/* ICH6M Attach iff the controller is in SATA mode. */
+> +	{ PCI_VENDOR_ID_INTEL, 0x2653, PCI_ANY_ID, PCI_ANY_ID,
+> +	  PCI_CLASS_STORAGE_SATA << 8, 0xffff00, board_ahci },
 
->> > The $SUBJECT line is wrong. To see how a subsystem usually formats
->> > theirs you must do something like `git log --oneline -- <subsystem>`.
->> > And duplicate the format.
->> >
->> > Commit message?
->
-> These comments are still relevant, please re-post your patch with the
-> points rectified.
+I'm not quite sure about this one.  The patch seems correct on the
+surface but given how old ich6 is at this point, the general
+crappiness of BIOS on ahci front in that era, and that the existing
+code has been working fine for all these years make me very reluctant
+to change it.  e.g. I don't think CLASS_STORAGE_SATA was the only one.
+They used different class for raid too.  It should be able to figure
+out things given enough test cases but I don't think we have that
+anymore and the benefit (avoding probe failure messages) doesn't seem
+to justify the risk.
 
-I really do not understand how they relevant. "Commit message?" ->
-What about it? It has a pretty clear commit message. Are you now just
-picking nits about "foo:" vs "(foo)" in the short line?
+Thanks.
 
->> >> Signed-off-by: Laszlo Papp <lpapp@kde.org>
->> >> ---
->> >>  drivers/mfd/max8997.c | 10 +++++-----
->> >>  1 file changed, 5 insertions(+), 5 deletions(-)
->> >>
->> >> diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
->> >> index 791aea3..c7cc235 100644
->> >> --- a/drivers/mfd/max8997.c
->> >> +++ b/drivers/mfd/max8997.c
->> >> @@ -227,19 +227,19 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
->> >>       pm_runtime_set_active(max8997->dev);
->> >>
->> >>       max8997_irq_init(max8997);
->> >> -
->> >> -     mfd_add_devices(max8997->dev, -1, max8997_devs,
->> >> +     ret = mfd_add_devices(max8997->dev, -1, max8997_devs,
->> >>                       ARRAY_SIZE(max8997_devs),
->> >>                       NULL, 0, NULL);
->> >> +     if (ret < 0) {
->> >> +             dev_err(dev, "cannot add mfd cells\n");
->> >> +             goto err_mfd;
->> >> +     }
->> >
->> > Have you tested this patch on h/w? Did you even compile it?
->
-> You must ensure to test your patches before sending to the MLs, it's
-> the very least we expect.
-
-I am not sure what point you are trying to make. Feel free to reject
-the patch for this error handling. Clearly, the patch has been updated
-due to a previous mistake. I would not make a fuss about an issue
-which had been fixed before getting any comment.
+-- 
+tejun
