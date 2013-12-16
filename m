@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755115Ab3LPRS6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 12:18:58 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:65058 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754581Ab3LPRS4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 12:18:56 -0500
-Message-ID: <52AF35FD.8000904@linux.com>
-Date: Mon, 16 Dec 2013 18:18:53 +0100
-From: Levente Kurusa <levex@linux.com>
-Reply-To: Levente Kurusa <levex@linux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1755134Ab3LPRTk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 12:19:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35244 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754384Ab3LPRTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 12:19:39 -0500
+Date: Mon, 16 Dec 2013 18:19:37 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.13-rc breaks MEMCG_SWAP
+Message-ID: <20131216171937.GG26797@dhcp22.suse.cz>
+References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
+ <52AEC989.4080509@huawei.com>
+ <20131216095345.GB23582@dhcp22.suse.cz>
+ <20131216104042.GC23582@dhcp22.suse.cz>
+ <20131216163530.GH32509@htj.dyndns.org>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] treewide: add missing put_device calls
-References: <1386962557-8899-1-git-send-email-levex@linux.com> <CAErSpo4dJFsK+Wcfz8PrH=Ras343nLS=XgQFbEr_KCgFVED52Q@mail.gmail.com> <20131214172419.GC22520@kroah.com> <52AD606F.50408@linux.com> <20131215170325.GA28799@kroah.com>
-In-Reply-To: <20131215170325.GA28799@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131216163530.GH32509@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2013 06:03 PM, Greg Kroah-Hartman wrote:
-> On Sun, Dec 15, 2013 at 08:55:27AM +0100, Levente Kurusa wrote:
->> On 12/14/2013 06:24 PM, Greg Kroah-Hartman wrote:
->>> On Fri, Dec 13, 2013 at 01:42:05PM -0700, Bjorn Helgaas wrote:
->>>> [+cc Greg]
->>>>
->>>> On Fri, Dec 13, 2013 at 12:22 PM, Levente Kurusa <levex@linux.com> wrote:
->>>>> Hi,
->>>>>
->>>>> This is just the beginning of patchset-set that aims to fix possible
->>>>> problems caused by not calling put_device() if device_register() fails.
->>>>>
->>>>> The root cause for the need to call put_device() is that the underlying
->>>>> kobject still has a reference count of 1. Thus, device.release() will not
->>>>> be called and the device will just sit there waiting for a put_device().
->>>>> Adding the put_device() also removes the need for the call to kfree() as most
->>>>> release functions already call kfree() on the container of the device.
->>>>>
->>>>> While these have not been experienced, they are potential issues and thus
->>>>> they need to be fixed. Also, they are a few more files that have the same
->>>>> kind of issue, those will be fixed if these are accepted.
->>>>
->>>> Thanks for doing this.  This is the sort of mistake that just gets
->>>> copied everywhere, so fixing the examples in the tree will help
->>>> prevent the problem from spreading more.
->>>>
->>>> I don't know if there's really value in having device_register()
->>>> return an error but rely on the caller to do the put_device().  Are
->>>> there cases where the caller still needs the struct device even if
->>>> device_register() fails?  E.g., could we do something like this
->>>> instead (I know some callers would also require corresponding changes
->>>> to avoid double puts):
->>
->> There are cases where it is needed. There are quite a few files which
->> when device_register() fails, the driver print an error messages.
+On Mon 16-12-13 11:35:30, Tejun Heo wrote:
+> On Mon, Dec 16, 2013 at 11:40:42AM +0100, Michal Hocko wrote:
+> > > How would this work? The task which pushed the memory to the swap is
+> > > still alive (living in a different group) and the swap will be there
+> > > after the last reference to css as well.
+> > 
+> > Or did you mean to get css reference in swap_cgroup_record and release
+> > it in __mem_cgroup_try_charge_swapin?
+> > 
+> > That would prevent the warning (assuming idr_remove would move to
+> > css_free[1]) but I am not sure this is the right thing to do. memsw charges
+> > will be accounted to the parent already (assuming there is one) without
+> > anybody to uncharge them because all uncharges would fallback to the
+> > root memcg after css_offline.
+> > 
+> > Hugh's approach seems much better.
 > 
-> That shouldn't be needed, and can be removed.
-Yes, we could put a pr_warn() when device_register() fails.
+> Hmmm... I think it's reasonable for css's to expect cgrp->id to not be
+> recycled before all css refs are gone.  If Hugh's patches are
+> something desriable independent of cgrp->id issues, great, but, if
+> not, let's first try to get it right from cgroup core.  Is it enough
+> for css_from_id() to return NULL after offline until all refs are
+> gone?  That should be an easy fix.
 
-
-> 
->> IIRC, there are also a few where the device is also unregistered from
->> the specific subsystem's core.
-> 
-> Do you have a specific example of this?  This should happen in the
-> release function of the device already, not in some other code.
-> 
-Character drivers who register with device_register() call cdev_del() when device_register()
-fails. cdev_del() in turn calls kobject_put on the kobject of the device. Of course, this could also
-be replaced. Anyways, I have another set of these patches (approx 40) that I will post in a day or so.
-With that most (if not all) should be fixed.
-
+I have to think about it some more (the brain is not working anymore
+today). But what we really need is that nobody gets the same id while
+the css is alive. So css_from_id returning NULL doesn't seem to be
+enough.
 
 -- 
-Regards,
-Levente Kurusa
+Michal Hocko
+SUSE Labs
