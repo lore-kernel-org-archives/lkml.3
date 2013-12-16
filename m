@@ -1,140 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab3LPP0x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:26:53 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40909 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753978Ab3LPP0w (ORCPT
+	id S1754646Ab3LPP11 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:27:27 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47585 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754092Ab3LPP1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:26:52 -0500
-Date: Mon, 16 Dec 2013 16:26:36 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, davej@redhat.com
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/rcu] rcu: Break call_rcu() deadlock involving
- scheduler and perf
-Message-ID: <20131216152636.GX21999@twins.programming.kicks-ass.net>
-References: <tip-96d3fd0d315a949e30adc80f086031c5cdf070d1@git.kernel.org>
+	Mon, 16 Dec 2013 10:27:23 -0500
+Date: Mon, 16 Dec 2013 07:26:46 -0800
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-1a47245d2f3bf6276c95cd37901b562962d6ae47@git.kernel.org>
+Cc: acme@redhat.com, eranian@google.com, mingo@redhat.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, jolsa@redhat.com,
+        fweisbec@gmail.com, ak@linux.intel.com, dsahern@gmail.com,
+        tglx@linutronix.de, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, namhyung@gmail.com,
+        adrian.hunter@intel.com
+Reply-To: mingo@kernel.org, mingo@redhat.com, eranian@google.com,
+        acme@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        ak@linux.intel.com, tglx@linutronix.de, hpa@zytor.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, namhyung@gmail.com,
+        adrian.hunter@intel.com
+In-Reply-To: <1386765443-26966-12-git-send-email-alexander.shishkin@linux.intel.com>
+References: <1386765443-26966-12-git-send-email-alexander.shishkin@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Add perf_event_paranoid()
+Git-Commit-ID: 1a47245d2f3bf6276c95cd37901b562962d6ae47
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <tip-96d3fd0d315a949e30adc80f086031c5cdf070d1@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 16 Dec 2013 07:26:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 07:19:22AM -0800, tip-bot for Paul E. McKenney wrote:
-> The underlying problem is that perf is invoking call_rcu() with the
-> scheduler locks held, but in NOCB mode, call_rcu() will with high
-> probability invoke the scheduler -- which just might want to use its
-> locks.  The reason that call_rcu() needs to invoke the scheduler is
-> to wake up the corresponding rcuo callback-offload kthread, which
-> does the job of starting up a grace period and invoking the callbacks
-> afterwards.
-> 
-> One solution (championed on a related problem by Lai Jiangshan) is to
-> simply defer the wakeup to some point where scheduler locks are no longer
-> held.  Since we don't want to unnecessarily incur the cost of such
-> deferral, the task before us is threefold:
-> 
-> 1.	Determine when it is likely that a relevant scheduler lock is held.
-> 
-> 2.	Defer the wakeup in such cases.
-> 
-> 3.	Ensure that all deferred wakeups eventually happen, preferably
-> 	sooner rather than later.
-> 
-> We use irqs_disabled_flags() as a proxy for relevant scheduler locks
-> being held.  This works because the relevant locks are always acquired
-> with interrupts disabled.  We may defer more often than needed, but that
-> is at least safe.
+Commit-ID:  1a47245d2f3bf6276c95cd37901b562962d6ae47
+Gitweb:     http://git.kernel.org/tip/1a47245d2f3bf6276c95cd37901b562962d6ae47
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Wed, 11 Dec 2013 14:36:23 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 13 Dec 2013 10:30:20 -0300
 
-This would also allow us to do away with things like the below patch,
-right?
+perf tools: Add perf_event_paranoid()
 
+Add a function to return the value of
+/proc/sys/kernel/perf_event_paranoid.
+
+This will be used to determine default values for mmap size because perf
+is not subject to mmap limits when perf_event_paranoid is less than
+zero.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1386765443-26966-12-git-send-email-alexander.shishkin@linux.intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
-commit 058ebd0eba3aff16b144eabf4510ed9510e1416e
-Author: Peter Zijlstra <peterz@infradead.org>
-Date:   Fri Jul 12 11:08:33 2013 +0200
+ tools/perf/util/evlist.c |  3 +--
+ tools/perf/util/util.c   | 19 +++++++++++++++++++
+ tools/perf/util/util.h   |  1 +
+ 3 files changed, 21 insertions(+), 2 deletions(-)
 
-    perf: Fix perf_lock_task_context() vs RCU
-    
-    Jiri managed to trigger this warning:
-    
-     [] ======================================================
-     [] [ INFO: possible circular locking dependency detected ]
-     [] 3.10.0+ #228 Tainted: G        W
-     [] -------------------------------------------------------
-     [] p/6613 is trying to acquire lock:
-     []  (rcu_node_0){..-...}, at: [<ffffffff810ca797>] rcu_read_unlock_special+0xa7/0x250
-     []
-     [] but task is already holding lock:
-     []  (&ctx->lock){-.-...}, at: [<ffffffff810f2879>] perf_lock_task_context+0xd9/0x2c0
-     []
-     [] which lock already depends on the new lock.
-     []
-     [] the existing dependency chain (in reverse order) is:
-     []
-     [] -> #4 (&ctx->lock){-.-...}:
-     [] -> #3 (&rq->lock){-.-.-.}:
-     [] -> #2 (&p->pi_lock){-.-.-.}:
-     [] -> #1 (&rnp->nocb_gp_wq[1]){......}:
-     [] -> #0 (rcu_node_0){..-...}:
-    
-    Paul was quick to explain that due to preemptible RCU we cannot call
-    rcu_read_unlock() while holding scheduler (or nested) locks when part
-    of the read side critical section was preemptible.
-    
-    Therefore solve it by making the entire RCU read side non-preemptible.
-    
-    Also pull out the retry from under the non-preempt to play nice with RT.
-    
-    Reported-by: Jiri Olsa <jolsa@redhat.com>
-    Helped-out-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-    Cc: <stable@kernel.org>
-    Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-    Signed-off-by: Ingo Molnar <mingo@kernel.org>
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index ef5e7cc686e3..eba8fb5834ae 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -947,8 +947,18 @@ perf_lock_task_context(struct task_struct *task, int ctxn, unsigned long *flags)
- {
- 	struct perf_event_context *ctx;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index af25055..2eb7378 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -1191,8 +1191,7 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist __maybe_unused,
+ 				    "Error:\t%s.\n"
+ 				    "Hint:\tCheck /proc/sys/kernel/perf_event_paranoid setting.", emsg);
  
--	rcu_read_lock();
- retry:
-+	/*
-+	 * One of the few rules of preemptible RCU is that one cannot do
-+	 * rcu_read_unlock() while holding a scheduler (or nested) lock when
-+	 * part of the read side critical section was preemptible -- see
-+	 * rcu_read_unlock_special().
-+	 *
-+	 * Since ctx->lock nests under rq->lock we must ensure the entire read
-+	 * side critical section is non-preemptible.
-+	 */
-+	preempt_disable();
-+	rcu_read_lock();
- 	ctx = rcu_dereference(task->perf_event_ctxp[ctxn]);
- 	if (ctx) {
- 		/*
-@@ -964,6 +974,8 @@ perf_lock_task_context(struct task_struct *task, int ctxn, unsigned long *flags)
- 		raw_spin_lock_irqsave(&ctx->lock, *flags);
- 		if (ctx != rcu_dereference(task->perf_event_ctxp[ctxn])) {
- 			raw_spin_unlock_irqrestore(&ctx->lock, *flags);
-+			rcu_read_unlock();
-+			preempt_enable();
- 			goto retry;
- 		}
+-		if (filename__read_int("/proc/sys/kernel/perf_event_paranoid", &value))
+-			break;
++		value = perf_event_paranoid();
  
-@@ -973,6 +985,7 @@ perf_lock_task_context(struct task_struct *task, int ctxn, unsigned long *flags)
- 		}
- 	}
- 	rcu_read_unlock();
-+	preempt_enable();
- 	return ctx;
+ 		printed += scnprintf(buf + printed, size - printed, "\nHint:\t");
+ 
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 4a57609..8f63dba 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -1,5 +1,6 @@
+ #include "../perf.h"
+ #include "util.h"
++#include "fs.h"
+ #include <sys/mman.h>
+ #ifdef HAVE_BACKTRACE_SUPPORT
+ #include <execinfo.h>
+@@ -8,6 +9,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <errno.h>
++#include <limits.h>
+ #include <linux/kernel.h>
+ 
+ /*
+@@ -496,3 +498,20 @@ const char *get_filename_for_perf_kvm(void)
+ 
+ 	return filename;
  }
++
++int perf_event_paranoid(void)
++{
++	char path[PATH_MAX];
++	const char *procfs = procfs__mountpoint();
++	int value;
++
++	if (!procfs)
++		return INT_MAX;
++
++	scnprintf(path, PATH_MAX, "%s/sys/kernel/perf_event_paranoid", procfs);
++
++	if (filename__read_int(path, &value))
++		return INT_MAX;
++
++	return value;
++}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 0171213..1e7d413 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -321,6 +321,7 @@ void free_srcline(char *srcline);
  
+ int filename__read_int(const char *filename, int *value);
+ int filename__read_str(const char *filename, char **buf, size_t *sizep);
++int perf_event_paranoid(void);
+ 
+ const char *get_filename_for_perf_kvm(void);
+ #endif /* GIT_COMPAT_UTIL_H */
