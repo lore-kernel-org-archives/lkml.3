@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab3LPLAs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 06:00:48 -0500
-Received: from mga02.intel.com ([134.134.136.20]:9089 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753328Ab3LPLAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 06:00:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,494,1384329600"; 
-   d="scan'208";a="452915512"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 01/71] perf: Disable all pmus on unthrottling and rescheduling
-In-Reply-To: <20131213180638.GR21999@twins.programming.kicks-ass.net>
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-2-git-send-email-alexander.shishkin@linux.intel.com> <20131213180638.GR21999@twins.programming.kicks-ass.net>
-User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Mon, 16 Dec 2013 13:00:36 +0200
-Message-ID: <87eh5dt60b.fsf@ashishki-desk.ger.corp.intel.com>
+	id S1753547Ab3LPLBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 06:01:41 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:54705 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335Ab3LPLBj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 06:01:39 -0500
+Date: Mon, 16 Dec 2013 16:31:28 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Rashika Kheria <rashika.kheria@gmail.com>,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, josh@joshtriplett.org
+Subject: [PATCH 2/2] drivers: tty: Mark the function hvc_poll_init() as
+ static in hvc_console.c
+Message-ID: <0dc41f5b30bf9b5c94e658387ffaf092736c26b2.1387191158.git.rashika.kheria@gmail.com>
+References: <0d40902c95942d272a70b1d85b4e311d0cc7afa4.1387191158.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <0d40902c95942d272a70b1d85b4e311d0cc7afa4.1387191158.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+Mark the function hvc_poll_init() as static in hvc/hvc_console.c because
+it is not used outside this file.
 
-> On Wed, Dec 11, 2013 at 02:36:13PM +0200, Alexander Shishkin wrote:
->> Currently, only one pmu in a context gets disabled during unthrottling
->> and event_sched_{out,in}, however, events in one context may belong to
->> different pmus, which results in pmus being reprogrammed while they are
->> still enabled. This patch temporarily disables pmus that correspond to
->> each event in the context while these events are being modified.
->> 
->> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
->> ---
->>  kernel/events/core.c | 27 ++++++++++++++++++++++++---
->>  1 file changed, 24 insertions(+), 3 deletions(-)
->> 
->> diff --git a/kernel/events/core.c b/kernel/events/core.c
->> index 403b781..d656cd6 100644
->> --- a/kernel/events/core.c
->> +++ b/kernel/events/core.c
->> @@ -1396,6 +1396,9 @@ event_sched_out(struct perf_event *event,
->>  	if (event->state != PERF_EVENT_STATE_ACTIVE)
->>  		return;
->>  
->> +	if (event->pmu != ctx->pmu)
->> +		perf_pmu_disable(event->pmu);
->> +
->>  	event->state = PERF_EVENT_STATE_INACTIVE;
->>  	if (event->pending_disable) {
->>  		event->pending_disable = 0;
->> @@ -1412,6 +1415,9 @@ event_sched_out(struct perf_event *event,
->>  		ctx->nr_freq--;
->>  	if (event->attr.exclusive || !cpuctx->active_oncpu)
->>  		cpuctx->exclusive = 0;
->> +
->> +	if (event->pmu != ctx->pmu)
->> +		perf_pmu_enable(event->pmu);
->>  }
->>  
->>  static void
->
-> Hmm, indeed. Does it make sense to drop the conditional?
-> perf_pmu_{en,dis}able() is recursive and the thinking is that if its the
-> same PMU the cacheline is hot because we touched it already recently
-> anyway, so the unconditional inc/dec might actually be faster.. dunno.
+This eliminates the following warning in hvc/hvc_console.c:
+drivers/tty/hvc/hvc_console.c:791:5: warning: no previous prototype for ‘hvc_poll_init’ [-Wmissing-prototypes]
 
-Well, given the disable_count check in perf_pmu_{en,dis}able, this one
-indeed looks redundant to me. Should I resend this one separately?
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+---
+ drivers/tty/hvc/hvc_console.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Regards,
---
-Alex
+diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
+index 9eba119..50b4688 100644
+--- a/drivers/tty/hvc/hvc_console.c
++++ b/drivers/tty/hvc/hvc_console.c
+@@ -788,7 +788,7 @@ static int hvc_tiocmset(struct tty_struct *tty,
+ }
+ 
+ #ifdef CONFIG_CONSOLE_POLL
+-int hvc_poll_init(struct tty_driver *driver, int line, char *options)
++static int hvc_poll_init(struct tty_driver *driver, int line, char *options)
+ {
+ 	return 0;
+ }
+-- 
+1.7.9.5
+
