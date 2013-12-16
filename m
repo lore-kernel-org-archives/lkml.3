@@ -1,73 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab3LPMTi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 07:19:38 -0500
-Received: from relay.parallels.com ([195.214.232.42]:56335 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753900Ab3LPMRU (ORCPT
+	id S1754119Ab3LPMTz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 07:19:55 -0500
+Received: from canardo.mork.no ([148.122.252.1]:60033 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753705Ab3LPMTv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 07:17:20 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <dchinner@redhat.com>, <mhocko@suse.cz>, <hannes@cmpxchg.org>,
-        <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <glommer@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH v14 15/18] fs: make shrinker memcg aware
-Date: Mon, 16 Dec 2013 16:17:04 +0400
-Message-ID: <0b2be5a5020fbb9eabbabdd8ab3b9eebb9de824a.1387193771.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1387193771.git.vdavydov@parallels.com>
-References: <cover.1387193771.git.vdavydov@parallels.com>
+	Mon, 16 Dec 2013 07:19:51 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Zdenek Kabelac <zkabelac@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>, jinchoi@broadcom.com,
+        Paul Bolle <pebolle@tiscali.nl>,
+        ziegler@email.mathematik.uni-freiburg.de,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        jbarnes@virtuousgeek.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: Regression with suspend resume 5a87182aa21d6d5d306840feab9321818dd3e2a3
+Organization: m
+References: <52A448F2.4010208@redhat.com>
+	<CAKohpomO+0q7bFWTnFRgqoRuU2WryfPpFv0WLOCKtHBrLzLRqw@mail.gmail.com>
+	<87iouprrcw.fsf@nemi.mork.no>
+	<CAKohpok+EqA+ujCwzQvL2C7YAyfueGAd4XUXGqvdz2tm5_A0QQ@mail.gmail.com>
+Date: Mon, 16 Dec 2013 13:19:17 +0100
+In-Reply-To: <CAKohpok+EqA+ujCwzQvL2C7YAyfueGAd4XUXGqvdz2tm5_A0QQ@mail.gmail.com>
+	(Viresh Kumar's message of "Mon, 16 Dec 2013 16:58:03 +0530")
+Message-ID: <87eh5drnsq.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, to make any list_lru-based shrinker memcg aware we should only
-initialize its list_lru as memcg-enabled. Let's do it for the general FS
-shrinker (super_block::s_shrink) and mark it as memcg aware.
+Viresh Kumar <viresh.kumar@linaro.org> writes:
 
-There are other FS-specific shrinkers that use list_lru for storing
-objects, such as XFS and GFS2 dquot cache shrinkers, but since they
-reclaim objects that may be shared among different cgroups, there is no
-point making them memcg aware.
+> Adding Rafael, I though he was there on this mail :)
+>
+> On 16 December 2013 16:32, Bjørn Mork <bjorn@mork.no> wrote:
+>> It's both patches in combination.  Interesting case, really :-)
+>
+> Completed my testing now and yes this happened after your patch
+> came in. I read your chats somewhere else as well (there are so
+> many mails, bug reports on this topic, can't give link now.. :))..
+>
+> I think I know why we are facing issues with these two patches in
+> at the same time.
+>
+> - My patch is actually disabling governors at suspend/resume or
+> hibernation..
+> - Which makes __cpufreq_governor() a nops routine, which simply
+> returns zero
+> - Now with your patch you are disabling the frozen feature which
+> actually makes cpufreq core to free/allocate policies again on suspend
+> resume. And so the calls like:
+>
+> __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_INIT)
+>
+> end up doing nothing at resume when CPUs start coming up. And so
+> cpufreq_resume()'s calls to __cpufreq_governor(policy,
+> CPUFREQ_GOV_START) would start behaving badly.. Which is quite
+> obvious..
+>
+> As a summary, after my patch to suspend/resume governors we can't
+> allow policies to be freed and allocated back.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Dave Chinner <dchinner@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
----
- fs/super.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+How do you deal with errors on suspend/resume then?  Are you always able
+to keep the policies, for all error cases?
 
-diff --git a/fs/super.c b/fs/super.c
-index 9084c3d..654d021 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -181,9 +181,9 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 	INIT_HLIST_BL_HEAD(&s->s_anon);
- 	INIT_LIST_HEAD(&s->s_inodes);
- 
--	if (list_lru_init(&s->s_dentry_lru))
-+	if (list_lru_init_memcg(&s->s_dentry_lru))
- 		goto fail;
--	if (list_lru_init(&s->s_inode_lru))
-+	if (list_lru_init_memcg(&s->s_inode_lru))
- 		goto fail;
- 
- 	INIT_LIST_HEAD(&s->s_mounts);
-@@ -221,7 +221,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 	s->s_shrink.scan_objects = super_cache_scan;
- 	s->s_shrink.count_objects = super_cache_count;
- 	s->s_shrink.batch = 1024;
--	s->s_shrink.flags = SHRINKER_NUMA_AWARE;
-+	s->s_shrink.flags = SHRINKER_NUMA_AWARE | SHRINKER_MEMCG_AWARE;
- 	return s;
- 
- fail:
--- 
-1.7.10.4
+In any case: Splitting the suspend code between a cpu hotplug hook with
+special "frozen" logic and a cpufreq_suspend() called from
+dpm_suspend_noirq() confuses me, and I believe many others.  This is the
+reason such a bug could be caused by two "obviously fine" patches.  So
+please, at least keep the suspend logic in *one* place.
 
+Or add a BIG comment both places, explaining the dependencies. This is
+never going to become obvious, and it's not going to be easier when you
+have more than 2 simple patches to look at.
+
+> Its not really a war between my patch versus yours :), but I believe the
+> right thing to do at this point is to get two patches in for 3.13 as well:
+>
+> 5a87182 cpufreq: suspend governors on system suspend/hibernate
+> and patch discussed here:
+> http://www.spinics.net/lists/cpufreq/msg08720.html
+
+Yes, that would probably work fine, at least as long as nothing goes
+wrong.  I must admit that I'm in no way able to play out all the
+different error scenarios in my head, but won't there still be cases
+where you end up freeing policies on suspend/resume?
+
+> To finish this problem as early as possible I tested above two
+> patches and didn't saw any regressions with suspend/resume or
+> Hibernation.. And obviously this fixes your issues as well :)
+>
+> @Rafael: I understand that it would be difficult for you to take these
+> now for 3.13 but they fix some serious problems reported earlier.
+> Specially the first patch which everybody thought is the culprit :)
+>
+> Please see if we can manage to get them in :)
+
+I think it needs serious testing with simulated errors first.  All error
+labels should be executed at least once for all combinations of inputs.
+
+Simply trying it out and verifying that it works in the no-error case is
+not enough.  Which should be quite obvious now.
+
+
+
+Bjørn
