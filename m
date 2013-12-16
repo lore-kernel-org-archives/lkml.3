@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab3LPR22 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 12:28:28 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:45642 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754967Ab3LPR2Z (ORCPT
+	id S1755139Ab3LPR2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 12:28:49 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:47257 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755113Ab3LPR2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 12:28:25 -0500
-Date: Mon, 16 Dec 2013 09:28:22 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Hyun Kwon <hyunk@xilinx.com>
-Subject: Re: [PATCH v5] clk: si570: Add a driver for SI570 oscillators
-Message-ID: <20131216172822.GB1811@roeck-us.net>
-References: <1379806839-13762-1-git-send-email-soren.brinkmann@xilinx.com>
- <b625092b-682c-4072-85a6-9f9d7f378ec0@VA3EHSMHS043.ehs.local>
- <20131002231751.4343.81234@quantum>
- <52AC8857.8070504@roeck-us.net>
- <3bfd63dd-6bf1-4ae9-aaab-b913f9739c19@DB8EHSMHS015.ehs.local>
+	Mon, 16 Dec 2013 12:28:47 -0500
+Message-ID: <52AF384C.9020101@linux.com>
+Date: Mon, 16 Dec 2013 18:28:44 +0100
+From: Levente Kurusa <levex@linux.com>
+Reply-To: Levente Kurusa <levex@linux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3bfd63dd-6bf1-4ae9-aaab-b913f9739c19@DB8EHSMHS015.ehs.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>, Paul Bolle <pebolle@tiscali.nl>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ahci: only attach ICH6-M if it's in SATA mode
+References: <1387190097.9255.31.camel@x41.thuisdomein> <20131216155136.GF32509@htj.dyndns.org>
+In-Reply-To: <20131216155136.GF32509@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 09:03:02AM -0800, Sören Brinkmann wrote:
-> Hi Guenther, Mike,
+On 12/16/2013 04:51 PM, Tejun Heo wrote:
+> Hello, Paul.
 > 
-> On Sat, Dec 14, 2013 at 08:33:27AM -0800, Guenter Roeck wrote:
-> > On 10/02/2013 04:17 PM, Mike Turquette wrote:
-> > >Quoting Sören Brinkmann (2013-10-02 10:20:38)
-> > >>Hi Mike,
-> > >>
-> > >>could you please comment on this/apply it to clk-next?
-> > >
-> > >It looks good and is in the queue. Will show up in clk-next in a few
-> > >days.
-> > >
-> > Hi Mike,
-> > 
-> > trying again ... what happened with this driver ? Any reason for not pushing it after all ?
+> On Mon, Dec 16, 2013 at 11:34:57AM +0100, Paul Bolle wrote:
+>> Intel's ICH6-M can operate either in IDE mode or in SATA mode. Attaching
+>> in IDE mode is pointless (and should fail, as long as BIOS has configured
+>> it even remotely sane). So let's only attach in SATA mode.
+>>
+>> Note that ata_piix does the opposite: only attach if ICH6-M is in IDE
+>> mode, so we end up with just one driver attaching in either mode.
+>>
+>> (And since we're touching this table update a minor typo too.)
+>>
+>> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+>> ---
+>> Tested on an ICH6-M that always runs in IDE mode. So I'm not certain
+>> this does the right thing for a ICH6-M running in SATA mode. 
+>>
+>>  drivers/ata/ahci.c | 6 ++++--
+>>  1 file changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+>> index 4ba3bde..12182fd 100644
+>> --- a/drivers/ata/ahci.c
+>> +++ b/drivers/ata/ahci.c
+>> @@ -191,8 +191,10 @@ static const struct ata_port_info ahci_port_info[] = {
+>>  
+>>  static const struct pci_device_id ahci_pci_tbl[] = {
+>>  	/* Intel */
+>> -	{ PCI_VDEVICE(INTEL, 0x2652), board_ahci }, /* ICH6 */
+>> -	{ PCI_VDEVICE(INTEL, 0x2653), board_ahci }, /* ICH6M */
+>> +	{ PCI_VDEVICE(INTEL, 0x2652), board_ahci }, /* ICH6R */
+>> +	/* ICH6M Attach iff the controller is in SATA mode. */
+>> +	{ PCI_VENDOR_ID_INTEL, 0x2653, PCI_ANY_ID, PCI_ANY_ID,
+>> +	  PCI_CLASS_STORAGE_SATA << 8, 0xffff00, board_ahci },
 > 
-> I've been waiting for it to appear in clk-next for a while too. I just
-> fetched the repo and it's there.
-> Thanks Guenter for following up and Mike for applying.
-> 
-Great!
+> I'm not quite sure about this one.  The patch seems correct on the
+> surface but given how old ich6 is at this point, the general
+> crappiness of BIOS on ahci front in that era, and that the existing
+> code has been working fine for all these years make me very reluctant
+> to change it.  e.g. I don't think CLASS_STORAGE_SATA was the only one.
+> They used different class for raid too.  It should be able to figure
+> out things given enough test cases but I don't think we have that
+> anymore and the benefit (avoding probe failure messages) doesn't seem
+> to justify the risk.
 
-Thanks,
-Guenter
+Not only they use different class IDs, but IIRC they also change device ids.
+For example, ICH7M was 0x27C4 in AHCI mode and 0x27DF in IDE mode. (obviously
+Intel vendor ids)
+
+Paul, did this patch change anything noticeable for you? I mean was there any
+problem before that this patch fixes or not?
+
+
+-- 
+Regards,
+Levente Kurusa
