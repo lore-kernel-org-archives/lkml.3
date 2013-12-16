@@ -1,69 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab3LPOh5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 09:37:57 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:65163 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285Ab3LPOh4 (ORCPT
+	id S1754201Ab3LPOjl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 09:39:41 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:34187 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753755Ab3LPOjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 09:37:56 -0500
-Date: Mon, 16 Dec 2013 15:37:51 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH v0 00/71] perf: Add support for Intel Processor Trace
-Message-ID: <20131216143751.GA7959@gmail.com>
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
- <20131211130448.GA2480@gmail.com>
- <87r49jttqr.fsf@ashishki-desk.ger.corp.intel.com>
- <20131211134724.GC3101@gmail.com>
- <87bo0ht5nj.fsf@ashishki-desk.ger.corp.intel.com>
+	Mon, 16 Dec 2013 09:39:40 -0500
+Date: Mon, 16 Dec 2013 09:39:16 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        gordan@bobich.net
+Subject: Re: [Xen-devel] [RFC PATCH 5/5] xen/pciback: PCI reset slot or bus
+Message-ID: <20131216143916.GC12913@phenom.dumpdata.com>
+References: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
+ <1386950978-8628-6-git-send-email-konrad.wilk@oracle.com>
+ <52AEE548.8010800@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87bo0ht5nj.fsf@ashishki-desk.ger.corp.intel.com>
+In-Reply-To: <52AEE548.8010800@citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Alexander Shishkin <alexander.shishkin@linux.intel.com> wrote:
-
-> > One good approach to do that would be to unify the BTS and PT 
-> > tooling (the kernel side can be unified as well, to the extent it 
-> > makes sense), and to prove it via actual functionality that this 
-> > stuff matters. BTS is available widely, so the tooling can be 
-> > tested by anyone who's interested.
-> >
-> > Allow people to record crashes in core dumps, allow them to look 
-> > at histograms/spectrograms of BTS/PT traces, zoom in on actual 
-> > traces, etc. - make it easier to handle this huge amount of data 
-> > and visualize traces in other ways you find useful, etc.
-> >
-> > None of that is done right now via BTS so nobody uses it.
+On Mon, Dec 16, 2013 at 11:34:32AM +0000, David Vrabel wrote:
+> On 13/12/13 16:09, Konrad Rzeszutek Wilk wrote:
+> > The life-cycle of a PCI device in Xen pciback is a bit complex.
+> > 
+> > It starts with the device being binded to us - for which
+> > we do a device function reset.
+> > 
+> > If the device is unbinded from us - we also do a function
+> > reset.
 > 
-> So I can make BTS appear as an "itrace" pmu similarly to PT. One 
-> question that comes to mind is should we then dispose of the old 
-> interface that's used for accessing BTS functionality or make it 
-> coexist with the new one.
+> Spelling: bound and unbound.
+> 
+> > The reset is done when all of the functions of a device
+> > are binded to Xen pciback. Or when a device is un-assigned
+> > from a guest. We do this by having a 'completion' workqueue
+> > on which the users of the PCI device wait. This workqueue
+> > is started once the device has been 'binded' or de-assigned
+> > from a guest.
+> 
+> The use of a work item and a completion baffles me.  What problem does
+> this solve?
 
-So we could make the old ABI a CONFIG_PERF_EVENTS_COMPAT_X86_BTS kind 
-of legacy option, turned off by default. That allows us its eventual 
-future phasing out.
+Avoiding of deadlock. Whenever you do any SysFS operations on on PCI
+devices it ends up locking pci_dev and then we try to use it .. and
+end up dead-locking. I should have clarified that more.
 
-It all depends on how useful the new tooling becomes: if interesting 
-things can be done with it via an obvious, powerful interface then 
-people might start using it.
+I could add code to pci (Generic) to have an non-locking variant - but
+there is soo much of it I think doing it in a work item and completion
+would be much simpler.
 
-Thanks,
+> 
+> > --- a/drivers/xen/xen-pciback/pci_stub.c
+> > +++ b/drivers/xen/xen-pciback/pci_stub.c
+> [...]
+> > +	/* We expect X amount of slots (this would also find out
+> > +	 * if we do not have all of the slots assigned to us).
+> > +	 */
+> > +	list_for_each_entry(pci_dev, &dev->bus->devices, bus_list)
+> > +		slots++;
+> > +
+> > +	spin_lock_irqsave(&pcistub_devices_lock, flags);
+> > +	/* Iterate over the existing devices to ascertain whether
+> > +	 * all of them are under the bridge and not in use. */
+> > +	list_for_each_entry(psdev, &pcistub_devices, dev_list) {
+> > +		if (!psdev->dev)
+> > +			continue;
+> > +
+> > +		if (pci_domain_nr(psdev->dev->bus) == pci_domain_nr(dev->bus) &&
+> > +		    psdev->dev->bus->number == dev->bus->number &&
+> > +		    PCI_SLOT(psdev->dev->devfn) == PCI_SLOT(dev->devfn)) {
+> > +			slots--;
+> > +			/* Ignore ourselves in case hadn't cleaned up yet */
+> > +			if (psdev->pdev && psdev->dev != dev)
+> > +				inuse++;
+> > +		}
+> > +	}
+> 
+> This check looks broken.  A device added to pciback but still bound to
+> another driver will be considered as safe to reset.
+> 
+> I think you want something like:
+> 
+> list_for_each_entry(pdev, &dev->bus->devices, bus_list)
+> {
+>     if (pdev != dev && pdev->driver
+>         && pdev->driver != xen_pcibk_pci_driver))
+>         return -ENOTTY;
+> }
 
-	Ingo
+Good catch!
+> 
+> It is safe to reset unbound devices (even if they're not (or intended)
+> to be available to pciback).
+
+OK, we can check for that.
+> 
+> It is also possible in the above loop if slot reset is supported to
+> ignore sibling devices that are on different slots.
+
+Not sure what you mean?
+> 
+> > +	spin_unlock_irqrestore(&pcistub_devices_lock, flags);
+> > +	/* Slots should be zero (all slots under the bridge are
+> > +	 * accounted for), and inuse should be zero (not assigned
+> > +	 * to anybody). */
+> > +	if (!slots && !inuse) {
+> > +		int rc = 0, bus = 0;
+> > +		list_for_each_entry(pci_dev, &dev->bus->devices, bus_list) {
+> > +			dev_dbg(&pci_dev->dev, "resetting the slot device\n");
+> > +			if (!pci_probe_reset_slot(pci_dev->slot))
+> > +				rc = pci_reset_slot(pci_dev->slot);
+> > +			else
+> > +				bus = 1;
+> > +			if (rc)
+> > +				dev_info(&pci_dev->dev, "resetting slot failed with %d\n", rc);
+> > +		}
+> 
+> Why are you resetting every slot on the bus?  You only need to reset the
+> slot that the device is on.
+
+Bug.
+> 
+> Take a look at the vfio-pci driver.  It does this bus/slot reset choice
+> in a much more straightforward way.
+> 
+> David
