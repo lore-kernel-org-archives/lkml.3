@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab3LPEcY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 23:32:24 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:52030 "EHLO
+	id S1752850Ab3LPEdd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 23:33:33 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:47856 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602Ab3LPEcW (ORCPT
+	with ESMTP id S1752643Ab3LPEcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 23:32:22 -0500
-X-AuditID: 9c93017e-b7c17ae000003961-28-52ae825334c4
+	Sun, 15 Dec 2013 23:32:24 -0500
+X-AuditID: 9c93017e-b7c17ae000003961-3a-52ae8254dee6
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
@@ -18,9 +18,9 @@ Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 09/17] tracing/probes: Implement 'stack' fetch method for uprobes
-Date: Mon, 16 Dec 2013 13:32:08 +0900
-Message-Id: <1387168336-13213-10-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 15/17] tracing/uprobes: Add support for full argument access methods
+Date: Mon, 16 Dec 2013 13:32:14 +0900
+Message-Id: <1387168336-13213-16-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
 References: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
@@ -31,173 +31,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Use separate method to fetch from stack.  Move existing functions to
-trace_kprobe.c and make them static.  Also add new stack fetch
-implementation for uprobes.
+Enable to fetch other types of argument for the uprobes.  IOW, we can
+access stack, memory, deref, bitfield and retval from uprobes now.
 
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+The format for the argument types are same as kprobes (but @SYMBOL
+type is not supported for uprobes), i.e:
+
+  @ADDR   : Fetch memory at ADDR
+  $stackN : Fetch Nth entry of stack (N >= 0)
+  $stack  : Fetch stack address
+  $retval : Fetch return value
+  +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address
+
+Note that the retval only can be used with uretprobes.
+
+Original-patch-by: Hyeoncheol Lee <cheol.lee@lge.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_kprobe.c | 15 +++++++++++++++
- kernel/trace/trace_probe.c  | 22 ----------------------
- kernel/trace/trace_probe.h  | 14 ++++++++++----
- kernel/trace/trace_uprobe.c | 41 +++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 66 insertions(+), 26 deletions(-)
+ Documentation/trace/uprobetracer.txt | 25 +++++++++++++++++++++++++
+ kernel/trace/trace_probe.c           | 34 ++++++++++++++++++++++------------
+ 2 files changed, 47 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 23c6c3feff82..11478020f76c 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -88,6 +88,21 @@ static int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs);
- static int kretprobe_dispatcher(struct kretprobe_instance *ri,
- 				struct pt_regs *regs);
+diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
+index 8f1a8b8956fc..6e5cff263e2b 100644
+--- a/Documentation/trace/uprobetracer.txt
++++ b/Documentation/trace/uprobetracer.txt
+@@ -31,6 +31,31 @@ Synopsis of uprobe_tracer
  
-+/*
-+ * Kprobes-specific fetch functions
-+ */
-+#define DEFINE_FETCH_stack(type)					\
-+static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
-+					  void *offset, void *dest)	\
-+{									\
-+	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
-+				(unsigned int)((unsigned long)offset));	\
-+}
-+DEFINE_BASIC_FETCH_FUNCS(stack)
-+/* No string on the stack entry */
-+#define fetch_stack_string	NULL
-+#define fetch_stack_string_size	NULL
+   FETCHARGS     : Arguments. Each probe can have up to 128 args.
+    %REG         : Fetch register REG
++   @ADDR	: Fetch memory at ADDR (ADDR should be in userspace)
++   $stackN	: Fetch Nth entry of stack (N >= 0)
++   $stack	: Fetch stack address.
++   $retval	: Fetch return value.(*)
++   +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address.(**)
++   NAME=FETCHARG     : Set NAME as the argument name of FETCHARG.
++   FETCHARG:TYPE     : Set TYPE as the type of FETCHARG. Currently, basic types
++		       (u8/u16/u32/u64/s8/s16/s32/s64), "string" and bitfield
++		       are supported.
 +
- /* Fetch type information table */
- const struct fetch_type kprobes_fetch_type_table[] = {
- 	/* Special types */
++  (*) only for return probe.
++  (**) this is useful for fetching a field of data structures.
++
++Types
++-----
++Several types are supported for fetch-args. Uprobe tracer will access memory
++by given type. Prefix 's' and 'u' means those types are signed and unsigned
++respectively. Traced arguments are shown in decimal (signed) or hex (unsigned).
++String type is a special type, which fetches a "null-terminated" string from
++user space.
++Bitfield is another special type, which takes 3 parameters, bit-width, bit-
++offset, and container-size (usually 32). The syntax is;
++
++ b<bit-width>@<bit-offset>/<container-size>
++
+ 
+ Event Profiling
+ ---------------
 diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index 541036ec7392..77aa7d18821e 100644
+index 8f7a2b6d389d..a130d612e705 100644
 --- a/kernel/trace/trace_probe.c
 +++ b/kernel/trace/trace_probe.c
-@@ -70,16 +70,6 @@ __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
+@@ -255,12 +255,18 @@ fail:
+ }
  
- const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
+ /* Special function : only accept unsigned long */
+-static __kprobes void fetch_stack_address(struct pt_regs *regs,
+-					void *dummy, void *dest)
++static __kprobes void fetch_kernel_stack_address(struct pt_regs *regs,
++						 void *dummy, void *dest)
+ {
+ 	*(unsigned long *)dest = kernel_stack_pointer(regs);
+ }
  
--/*
-- * Define macro for basic types - we don't need to define s* types, because
-- * we have to care only about bitwidth at recording time.
-- */
--#define DEFINE_BASIC_FETCH_FUNCS(method) \
--DEFINE_FETCH_##method(u8)		\
--DEFINE_FETCH_##method(u16)		\
--DEFINE_FETCH_##method(u32)		\
--DEFINE_FETCH_##method(u64)
--
- #define CHECK_FETCH_FUNCS(method, fn)			\
- 	(((FETCH_FUNC_NAME(method, u8) == fn) ||	\
- 	  (FETCH_FUNC_NAME(method, u16) == fn) ||	\
-@@ -102,18 +92,6 @@ DEFINE_BASIC_FETCH_FUNCS(reg)
- #define fetch_reg_string	NULL
- #define fetch_reg_string_size	NULL
- 
--#define DEFINE_FETCH_stack(type)					\
--__kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,	\
--					  void *offset, void *dest)	\
--{									\
--	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
--				(unsigned int)((unsigned long)offset));	\
--}
--DEFINE_BASIC_FETCH_FUNCS(stack)
--/* No string on the stack entry */
--#define fetch_stack_string	NULL
--#define fetch_stack_string_size	NULL
--
- #define DEFINE_FETCH_retval(type)					\
- __kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,	\
- 					  void *dummy, void *dest)	\
-diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index 5b77798d1130..8211dd674ab6 100644
---- a/kernel/trace/trace_probe.h
-+++ b/kernel/trace/trace_probe.h
-@@ -167,10 +167,6 @@ DECLARE_BASIC_FETCH_FUNCS(reg);
- #define fetch_reg_string			NULL
- #define fetch_reg_string_size			NULL
- 
--DECLARE_BASIC_FETCH_FUNCS(stack);
--#define fetch_stack_string			NULL
--#define fetch_stack_string_size			NULL
--
- DECLARE_BASIC_FETCH_FUNCS(retval);
- #define fetch_retval_string			NULL
- #define fetch_retval_string_size		NULL
-@@ -191,6 +187,16 @@ DECLARE_BASIC_FETCH_FUNCS(bitfield);
- #define fetch_bitfield_string			NULL
- #define fetch_bitfield_string_size		NULL
- 
-+/*
-+ * Define macro for basic types - we don't need to define s* types, because
-+ * we have to care only about bitwidth at recording time.
-+ */
-+#define DEFINE_BASIC_FETCH_FUNCS(method) \
-+DEFINE_FETCH_##method(u8)		\
-+DEFINE_FETCH_##method(u16)		\
-+DEFINE_FETCH_##method(u32)		\
-+DEFINE_FETCH_##method(u64)
-+
- /* Default (unsigned long) fetch type */
- #define __DEFAULT_FETCH_TYPE(t) u##t
- #define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 2c60925ea073..5395d37e5e72 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -74,6 +74,47 @@ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs);
- static int uretprobe_dispatcher(struct uprobe_consumer *con,
- 				unsigned long func, struct pt_regs *regs);
- 
-+#ifdef CONFIG_STACK_GROWSUP
-+static unsigned long adjust_stack_addr(unsigned long addr, unsigned int n)
++static __kprobes void fetch_user_stack_address(struct pt_regs *regs,
++					       void *dummy, void *dest)
 +{
-+	return addr - (n * sizeof(long));
-+}
-+#else
-+static unsigned long adjust_stack_addr(unsigned long addr, unsigned int n)
-+{
-+	return addr + (n * sizeof(long));
-+}
-+#endif
-+
-+static unsigned long get_user_stack_nth(struct pt_regs *regs, unsigned int n)
-+{
-+	unsigned long ret;
-+	unsigned long addr = user_stack_pointer(regs);
-+
-+	addr = adjust_stack_addr(addr, n);
-+
-+	if (copy_from_user(&ret, (void __force __user *) addr, sizeof(ret)))
-+		return 0;
-+
-+	return ret;
++	*(unsigned long *)dest = user_stack_pointer(regs);
 +}
 +
-+/*
-+ * Uprobes-specific fetch functions
-+ */
-+#define DEFINE_FETCH_stack(type)					\
-+static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
-+					  void *offset, void *dest)	\
-+{									\
-+	*(type *)dest = (type)get_user_stack_nth(regs,			\
-+					      ((unsigned long)offset)); \
-+}
-+DEFINE_BASIC_FETCH_FUNCS(stack)
-+/* No string on the stack entry */
-+#define fetch_stack_string	NULL
-+#define fetch_stack_string_size	NULL
+ static fetch_func_t get_fetch_size_function(const struct fetch_type *type,
+ 					    fetch_func_t orig_fn,
+ 					    const struct fetch_type *ftbl)
+@@ -305,7 +311,8 @@ int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset)
+ #define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
+ 
+ static int parse_probe_vars(char *arg, const struct fetch_type *t,
+-			    struct fetch_param *f, bool is_return)
++			    struct fetch_param *f, bool is_return,
++			    bool is_kprobe)
+ {
+ 	int ret = 0;
+ 	unsigned long param;
+@@ -317,13 +324,16 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
+ 			ret = -EINVAL;
+ 	} else if (strncmp(arg, "stack", 5) == 0) {
+ 		if (arg[5] == '\0') {
+-			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR) == 0)
+-				f->fn = fetch_stack_address;
++			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR))
++				return -EINVAL;
 +
++			if (is_kprobe)
++				f->fn = fetch_kernel_stack_address;
+ 			else
+-				ret = -EINVAL;
++				f->fn = fetch_user_stack_address;
+ 		} else if (isdigit(arg[5])) {
+ 			ret = kstrtoul(arg + 5, 10, &param);
+-			if (ret || param > PARAM_MAX_STACK)
++			if (ret || (is_kprobe && param > PARAM_MAX_STACK))
+ 				ret = -EINVAL;
+ 			else {
+ 				f->fn = t->fetch[FETCH_MTD_stack];
+@@ -350,13 +360,9 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 	ftbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
+ 	BUG_ON(ftbl == NULL);
+ 
+-	/* Until uprobe_events supports only reg arguments */
+-	if (!is_kprobe && arg[0] != '%')
+-		return -EINVAL;
+-
+ 	switch (arg[0]) {
+ 	case '$':
+-		ret = parse_probe_vars(arg + 1, t, f, is_return);
++		ret = parse_probe_vars(arg + 1, t, f, is_return, is_kprobe);
+ 		break;
+ 
+ 	case '%':	/* named register */
+@@ -377,6 +383,10 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 			f->fn = t->fetch[FETCH_MTD_memory];
+ 			f->data = (void *)param;
+ 		} else {
++			/* uprobes don't support symbols */
++			if (!is_kprobe)
++				return -EINVAL;
 +
- /* Fetch type information table */
- const struct fetch_type uprobes_fetch_type_table[] = {
- 	/* Special types */
+ 			ret = traceprobe_split_symbol_offset(arg + 1, &offset);
+ 			if (ret)
+ 				break;
 -- 
 1.7.11.7
 
