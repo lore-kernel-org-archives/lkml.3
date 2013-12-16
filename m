@@ -1,80 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab3LPQKh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:10:37 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:35168 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab3LPQKg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:10:36 -0500
-Date: Mon, 16 Dec 2013 08:10:31 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
-        tglx@linutronix.de, davej@redhat.com,
-        linux-tip-commits@vger.kernel.org, laijs@cn.fujitsu.com
-Subject: Re: [tip:core/rcu] rcu: Break call_rcu() deadlock involving
- scheduler and perf
-Message-ID: <20131216161031.GD4200@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <tip-96d3fd0d315a949e30adc80f086031c5cdf070d1@git.kernel.org>
- <20131216152636.GX21999@twins.programming.kicks-ass.net>
- <20131216153248.GA4200@linux.vnet.ibm.com>
- <20131216154539.GY21999@twins.programming.kicks-ass.net>
+	id S1754702Ab3LPQKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:10:49 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:20873 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754211Ab3LPQKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 11:10:45 -0500
+X-IronPort-AV: E=Sophos;i="4.95,495,1384300800"; 
+   d="scan'208";a="84967463"
+Message-ID: <52AF2602.2000409@citrix.com>
+Date: Mon, 16 Dec 2013 16:10:42 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131216154539.GY21999@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121616-1542-0000-0000-0000044E71CD
+To: Wei Liu <wei.liu2@citrix.com>
+CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v2 6/9] xen-netback: Handle guests with too many
+ frags
+References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com> <1386892097-15502-7-git-send-email-zoltan.kiss@citrix.com> <20131213154307.GN21900@zion.uk.xensource.com>
+In-Reply-To: <20131213154307.GN21900@zion.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 04:45:39PM +0100, Peter Zijlstra wrote:
-> On Mon, Dec 16, 2013 at 07:32:48AM -0800, Paul E. McKenney wrote:
-> > On Mon, Dec 16, 2013 at 04:26:36PM +0100, Peter Zijlstra wrote:
-> > > On Mon, Dec 16, 2013 at 07:19:22AM -0800, tip-bot for Paul E. McKenney wrote:
-> > > > The underlying problem is that perf is invoking call_rcu() with the
-> > > > scheduler locks held, but in NOCB mode, call_rcu() will with high
-> > > > probability invoke the scheduler -- which just might want to use its
-> > > > locks.  The reason that call_rcu() needs to invoke the scheduler is
-> > > > to wake up the corresponding rcuo callback-offload kthread, which
-> > > > does the job of starting up a grace period and invoking the callbacks
-> > > > afterwards.
-> > > > 
-> > > > One solution (championed on a related problem by Lai Jiangshan) is to
-> > > > simply defer the wakeup to some point where scheduler locks are no longer
-> > > > held.  Since we don't want to unnecessarily incur the cost of such
-> > > > deferral, the task before us is threefold:
-> > > > 
-> > > > 1.	Determine when it is likely that a relevant scheduler lock is held.
-> > > > 
-> > > > 2.	Defer the wakeup in such cases.
-> > > > 
-> > > > 3.	Ensure that all deferred wakeups eventually happen, preferably
-> > > > 	sooner rather than later.
-> > > > 
-> > > > We use irqs_disabled_flags() as a proxy for relevant scheduler locks
-> > > > being held.  This works because the relevant locks are always acquired
-> > > > with interrupts disabled.  We may defer more often than needed, but that
-> > > > is at least safe.
-> > > 
-> > > This would also allow us to do away with things like the below patch,
-> > > right?
-> > 
-> > It takes care of one problem, but there are others, including
-> > rcu_read_unlock() inovking the scheduler to deboost itself.  So for the
-> > moment, we still need the below patch.
-> 
-> Oh right, see I knew I was forgetting something... :-)
+On 13/12/13 15:43, Wei Liu wrote:
+> On Thu, Dec 12, 2013 at 11:48:14PM +0000, Zoltan Kiss wrote:
+>> Xen network protocol had implicit dependency on MAX_SKB_FRAGS. Netback has to
+>> handle guests sending up to XEN_NETBK_LEGACY_SLOTS_MAX slots. To achieve that:
+>> - create a new skb
+>> - map the leftover slots to its frags (no linear buffer here!)
+>> - chain it to the previous through skb_shinfo(skb)->frag_list
+>> - map them
+>> - copy the whole stuff into a brand new skb and send it to the stack
+>> - unmap the 2 old skb's pages
+>>
+>
+> Do you see performance regression with this approach?
+Well, it was pretty hard to reproduce that behaviour even with NFS. I 
+don't think it happens often enough that it causes a noticable 
+performance regression. Anyway, it would be just as slow as the current 
+grant copy with coalescing, maybe a bit slower due to the unmapping. But 
+at least we use a core network function to do the coalescing.
+Or, if you mean the generic performance, if this problem doesn't appear, 
+then no, I don't see performance regression.
 
-I am hoping to make your patch unnecessary, but it ain't trivial.  ;-)
+>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>>
+>> ---
+>>   drivers/net/xen-netback/netback.c |   99 +++++++++++++++++++++++++++++++++++--
+>>   1 file changed, 94 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+>> index e26cdda..f6ed1c8 100644
+>> --- a/drivers/net/xen-netback/netback.c
+>> +++ b/drivers/net/xen-netback/netback.c
+>> @@ -906,11 +906,15 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
+>>   	u16 pending_idx = *((u16 *)skb->data);
+>>   	int start;
+>>   	pending_ring_idx_t index;
+>> -	unsigned int nr_slots;
+>> +	unsigned int nr_slots, frag_overflow = 0;
+>>
+>>   	/* At this point shinfo->nr_frags is in fact the number of
+>>   	 * slots, which can be as large as XEN_NETBK_LEGACY_SLOTS_MAX.
+>>   	 */
+>> +	if (shinfo->nr_frags > MAX_SKB_FRAGS) {
+>> +		frag_overflow = shinfo->nr_frags - MAX_SKB_FRAGS;
+>> +		shinfo->nr_frags = MAX_SKB_FRAGS;
+>> +	}
+>>   	nr_slots = shinfo->nr_frags;
+>>
+>
+> It is also probably better to check whether shinfo->nr_frags is too
+> large which makes frag_overflow > MAX_SKB_FRAGS. I know skb should be
+> already be valid at this point but it wouldn't hurt to be more careful.
+Ok, I've added this:
+	/* At this point shinfo->nr_frags is in fact the number of
+	 * slots, which can be as large as XEN_NETBK_LEGACY_SLOTS_MAX.
+	 */
++	if (shinfo->nr_frags > MAX_SKB_FRAGS) {
++		if (shinfo->nr_frags > XEN_NETBK_LEGACY_SLOTS_MAX) return NULL;
++		frag_overflow = shinfo->nr_frags - MAX_SKB_FRAGS;
 
-We will get there!  Especially if I can find Lai Jiangshan's old patch
-that reworked deboosting.  :-/
 
-							Thanx, Paul
+>
+>>   	/* Skip first skb fragment if it is on same page as header fragment. */
+>> @@ -926,6 +930,33 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
+>>
+>>   	BUG_ON(shinfo->nr_frags > MAX_SKB_FRAGS);
+>>
+>> +	if (frag_overflow) {
+>> +		struct sk_buff *nskb = alloc_skb(NET_SKB_PAD + NET_IP_ALIGN,
+>> +				GFP_ATOMIC | __GFP_NOWARN);
+>> +		if (unlikely(nskb == NULL)) {
+>> +			netdev_err(vif->dev,
+>> +				   "Can't allocate the frag_list skb.\n");
+>> +			return NULL;
+>> +		}
+>> +
+>> +		/* Packets passed to netif_rx() must have some headroom. */
+>> +		skb_reserve(nskb, NET_SKB_PAD + NET_IP_ALIGN);
+>> +
+>
+> The code to call alloc_skb and skb_reserve is copied from other
+> location. I would like to have a dedicated function to allocate skb in
+> netback if possible.
+OK
 
