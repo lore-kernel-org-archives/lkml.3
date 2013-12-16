@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab3LPQjz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:39:55 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:37822 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754466Ab3LPQjy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:39:54 -0500
+	id S1754873Ab3LPQk0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:40:26 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60079 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754466Ab3LPQkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 11:40:22 -0500
+Message-ID: <52AF2CDB.3080406@ti.com>
+Date: Mon, 16 Dec 2013 11:39:55 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20131216150514.GN18769@lee--X1>
-References: <CAOMwXhN5UfR=Y8V3i=A2zSCv7V9sRDd0Z+D1AQFahvRS-mV5Fw@mail.gmail.com>
-	<20131216082556.GE18769@lee--X1>
-	<CAOMwXhN8fG8YbU53A_U_MyMTyGWfV7NCCtr2a5oCbHdB0iqqmA@mail.gmail.com>
-	<20131216150514.GN18769@lee--X1>
-Date: Mon, 16 Dec 2013 16:39:52 +0000
-X-Google-Sender-Auth: nkzAGTMieBjZGUd7mqtoDzOl5Ac
-Message-ID: <CAOMwXhMn5W76Dp=EFNHaknXCqZ4q4e7fphgtttx+8U=1Fc_DMQ@mail.gmail.com>
-Subject: Re: Simple MFD driver example
-From: Laszlo Papp <lpapp@kde.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: sameo@linux.intel.com, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sekhar Nori <nsekhar@ti.com>, Linus Walleij <linus.walleij@linaro.org>
+CC: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, <prabhakar.csengg@gmail.com>,
+        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/2] gpio: davinci: reuse for keystone arch
+References: <1386871973-26762-1-git-send-email-grygorii.strashko@ti.com> <52ACAD50.6060003@ti.com> <52ADB3BC.3080605@ti.com> <52AF17A6.3060007@ti.com>
+In-Reply-To: <52AF17A6.3060007@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 3:05 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> Please refrain from top posting.
->
-> Responses should appear under quoted lines, which they reference.
+On Monday 16 December 2013 10:09 AM, Santosh Shilimkar wrote:
+> On Sunday 15 December 2013 08:50 AM, Sekhar Nori wrote:
+>> On Sunday 15 December 2013 12:41 AM, Santosh Shilimkar wrote:
+>>> Linus, Sekhar,
+>>>
+>>> On Thursday 12 December 2013 01:12 PM, Grygorii Strashko wrote:
+>>>> This series is intended to update Davinci GPIO driver and reuse
+>>>> it for Keystone SoCs, because Keystone uses the similar GPIO IP like Davinci.
+>>>> Keystone GPIO IP: supports:
+>>>> - up to 32 GPIO lines;
+>>>> - only unbanked irqs;
+>>>>
+>>>> See Documentation:
+>>>> Keystone - http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
+>>>>
+>>>> This series depends on:
+>>>> [1] "[PATCH 1/2] gpio: davinci: Fix a check for unbanked gpio"
+>>>> https://lkml.org/lkml/2013/11/8/22
+>>>> [2] "[PATCH v6 0/6] gpio: daVinci: cleanup and feature enhancement"
+>>>> https://www.mail-archive.com/devicetree@vger.kernel.org/msg05970.html
+>>>> [3] "gpio: davinci: get rid of DAVINCI_N_GPIO"
+>>>> https://lkml.org/lkml/2013/11/26/405
+>>>> [4] "gpio: introduce GPIO_DAVINCI kconfig option"
+>>>> https://lkml.org/lkml/2013/11/26/435
+>>>> [5] "gpio: davinci: use chained_irq_enter/chained_irq_exit API"
+>>>> https://lkml.org/lkml/2013/11/26/428
+>>>>
+>>>> To handle all dependencies, I've created a branch where I collected all 
+>>>> "ready to merge" patches (all acks added in patches) and this series:
+>>>> - https://github.com/grygoriyS/linux.git
+>>>> - branch: keystone-master-gpio-for-next
+>>>>
+>>> Can one of you pull all these patches ?
+>>
+>> So I went through my backlog and queued all that I think is ready. Here
+>> is the branch. Let me know if there is anything else missing.
+>>
+> The $subject series (2 patches) don't seems to be on your branch.
+> 
+Ofcourse Linus needs to ack them before they can be considered.
+I have couple of comments as well so refresh of the series
+would be needed.
 
-I intentionally did not reply to a specific quote, but to the email as a whole!
+Linus, Can you also please look at them.
 
->> >> I have been trying to write about 50-100 LOC for 1-2 weeks now. I have
->> >> a fairly simple use case for MFD where I need to have gpio and hwmon
->> >> functionality for a GPIO.
->> >>
->> >> I read the mfd drivers inside and out by now, but it looks a bit
->> >> inconsistent to me. I am not sure what to follow etc. The
->> >> documentation seems to be virtually missing which makes my life and
->> >> involvement even more difficult. :(
->> >>
->> >> May I ask for some pointer how to do all this? It would be nice to see
->> >> a minimal example where the parent does not do anything else than just
->> >> enumerating the sub-device drivers. Is that possible with an empty
->> >> probe callback?
->> >>
->> >> If I understand the regmap correctly (again, it is possible I do not),
->> >> then I would not need this. But in general, it is really hard to deal
->> >> with the linux kernel in this regard when basic documentations are
->> >> missing.
->> >>
->> >> I hope this would change over time for the posterity. It is a pity
->> >> that contributors do not join probably due to this. It is a bit
->> >> chaotic, but I hope it can be changed in the future.
->> >>
->> >> Apologies for my frustration...
->> >
->> > Due to the nature of the MFD subsystem, there isn't a simple use-case
->> > which you can use as a template. It's completely dependent on the
->> > device you are trying to enable. There are lots of well written
->> > drivers in the subsystem that you can use as good examples though.
->
->> Well, if you ask me the MFD subsystem is underdocumented, and there is
->> some inconsistency between the drivers. It is hard to take any of them
->> as a starting point, at least for me.
->
-> Feel free to write some. I'm always happy to take helpful patches.
+Regards,
+Santosh
 
-I am not the right person for documentating everything here,
-especially when I do not even understand basics... I am just trying to
-figure out my way here. It was more like a hint that this area could
-take some love. At least, I would personally appreciate it a lot. It
-is currently somewhat difficult to get involved.
