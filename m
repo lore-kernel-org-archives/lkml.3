@@ -1,126 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356Ab3LPK6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:58:45 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:50284 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787Ab3LPK6o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:58:44 -0500
-Date: Mon, 16 Dec 2013 16:28:24 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, josh@joshtriplett.org
-Subject: [PATCH 1/2] drivers: tty: Mark the functions as static in n_gsm.c
-Message-ID: <0d40902c95942d272a70b1d85b4e311d0cc7afa4.1387191158.git.rashika.kheria@gmail.com>
+	id S1753458Ab3LPK7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:59:06 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:39741 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753133Ab3LPK7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 05:59:04 -0500
+X-IronPort-AV: E=Sophos;i="4.95,494,1384300800"; 
+   d="scan'208";a="84857623"
+Message-ID: <52AEDCF5.8050701@citrix.com>
+Date: Mon, 16 Dec 2013 10:59:01 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <gordan@bobich.net>
+Subject: Re: [Xen-devel] [RFC PATCH] Xen PCI back - do slot and bus reset
+ (v0).
+References: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marks the functions gsm_cleanup_mux(), gsm_activate_mux(),
-gsm_free_mux(), gsm_alloc_mux() and gsm_change_mtu() as static in
-n_gsm.c because they are not used outside this file.
+On 13/12/13 16:09, Konrad Rzeszutek Wilk wrote:
+> Hey,
+> 
+> While I was trying to narrow down the state of GPU passthrough
+> (still not finished) and figuring what needs to be done I realized
+> that Xen PCIback did not reset my GPU properly (when I crashed the
+> Windows guest by mistake). It does an FLR reset or Power one - if
+> the device supports it. But it seems that some of these GPUs
+> are liars and actually don't do the power part properly.
 
-Also, drop the EXPORT_SYMBOL_GPL for the above mentioned functions
-because nothing else in the kernel calls them.
+In my experience the devices do not lie.  They correctly report that
+they do not perform a reset in D3hot.
 
-This eliminates the following warnings in n_gsm.c:
-drivers/tty/n_gsm.c:2022:6: warning: no previous prototype for ‘gsm_cleanup_mux’ [-Wmissing-prototypes]
-drivers/tty/n_gsm.c:2076:5: warning: no previous prototype for ‘gsm_activate_mux’ [-Wmissing-prototypes]
-drivers/tty/n_gsm.c:2120:6: warning: no previous prototype for ‘gsm_free_mux’ [-Wmissing-prototypes]
-drivers/tty/n_gsm.c:2156:17: warning: no previous prototype for ‘gsm_alloc_mux’ [-Wmissing-prototypes]
-drivers/tty/n_gsm.c:2714:5: warning: no previous prototype for ‘gsm_change_mtu’ [-Wmissing-prototypes]
+Here's the patch I'm using to solve this.  It does something similar.
+i.e., a SBR if all devices on that bus are safe to be reset.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
----
- drivers/tty/n_gsm.c |   14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
+I prefer it because it provides the standard 'reset' sysfs file that the
+toolstack/userspace can use.
 
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index c0f76da..6ca9fbb 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -2019,7 +2019,7 @@ static void gsm_error(struct gsm_mux *gsm,
-  *	and then shut down each device hanging up the channels as we go.
-  */
- 
--void gsm_cleanup_mux(struct gsm_mux *gsm)
-+static void gsm_cleanup_mux(struct gsm_mux *gsm)
+It does have some limitations:  a) It does not check whether a device is
+in use (only if it is bound to pciback); and b) it hand rolls
+pci_slot_reset() (because it didn't exist at the time).
+
+diff --git a/drivers/xen/xen-pciback/pci_stub.c
+b/drivers/xen/xen-pciback/pci_stub.c
+index 4e8ba38..5a03e63 100644
+--- a/drivers/xen/xen-pciback/pci_stub.c
++++ b/drivers/xen/xen-pciback/pci_stub.c
+@@ -14,6 +14,7 @@
+ #include <linux/wait.h>
+ #include <linux/sched.h>
+ #include <linux/atomic.h>
++#include <linux/delay.h>
+ #include <xen/events.h>
+ #include <asm/xen/pci.h>
+ #include <asm/xen/hypervisor.h>
+@@ -43,6 +44,7 @@ struct pcistub_device {
+ 	struct kref kref;
+ 	struct list_head dev_list;
+ 	spinlock_t lock;
++	bool created_reset_file;
+
+ 	struct pci_dev *dev;
+ 	struct xen_pcibk_device *pdev;/* non-NULL if struct pci_dev is in use */
+@@ -60,6 +62,114 @@ static LIST_HEAD(pcistub_devices);
+ static int initialize_devices;
+ static LIST_HEAD(seized_devices);
+
++/*
++ * pci_reset_function() will only work if there is a mechanism to
++ * reset that single function (e.g., FLR or a D-state transition).
++ * For PCI hardware that has two or more functions but no per-function
++ * reset, we can do a bus reset iff all the functions are co-assigned
++ * to the same domain.
++ *
++ * If a function has no per-function reset mechanism the 'reset' sysfs
++ * file that the toolstack uses to reset a function prior to assigning
++ * the device will be missing.  In this case, pciback adds its own
++ * which will try a bus reset.
++ *
++ * Note: pciback does not check for co-assigment before doing a bus
++ * reset, only that the devices are bound to pciback.  The toolstack
++ * is assumed to have done the right thing.
++ */
++static int __pcistub_reset_function(struct pci_dev *dev)
++{
++	struct pci_dev *pdev;
++	u16 ctrl;
++	int ret;
++
++	ret = __pci_reset_function_locked(dev);
++	if (ret == 0)
++		return 0;
++
++	if (pci_is_root_bus(dev->bus) || dev->subordinate || !dev->bus->self)
++		return -ENOTTY;
++
++	list_for_each_entry(pdev, &dev->bus->devices, bus_list) {
++		if (pdev != dev && (!pdev->driver
++				    || strcmp(pdev->driver->name, "pciback")))
++			return -ENOTTY;
++		pci_save_state(pdev);
++	}
++
++	pci_read_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, &ctrl);
++	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
++	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
++	msleep(200);
++
++	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
++	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
++	msleep(200);
++
++	list_for_each_entry(pdev, &dev->bus->devices, bus_list)
++		pci_restore_state(pdev);
++
++	return 0;
++}
++
++static int pcistub_reset_function(struct pci_dev *dev)
++{
++	int ret;
++
++	device_lock(&dev->dev);
++	ret = __pcistub_reset_function(dev);
++	device_unlock(&dev->dev);
++
++	return ret;
++}
++
++static ssize_t pcistub_reset_store(struct device *dev,
++				   struct device_attribute *attr,
++				   const char *buf, size_t count)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	unsigned long val;
++	ssize_t result = strict_strtoul(buf, 0, &val);
++
++	if (result < 0)
++		return result;
++
++	if (val != 1)
++		return -EINVAL;
++
++	result = pcistub_reset_function(pdev);
++	if (result < 0)
++		return result;
++	return count;
++}
++static DEVICE_ATTR(reset, 0200, NULL, pcistub_reset_store);
++
++static int pcistub_try_create_reset_file(struct pcistub_device *psdev)
++{
++	struct device *dev = &psdev->dev->dev;
++	struct sysfs_dirent *reset_dirent;
++	int ret;
++
++	reset_dirent = sysfs_get_dirent(dev->kobj.sd, NULL, "reset");
++	if (reset_dirent) {
++		sysfs_put(reset_dirent);
++		return 0;
++	}
++
++	ret = device_create_file(dev, &dev_attr_reset);
++	if (ret < 0)
++		return ret;
++	psdev->created_reset_file = true;
++	return 0;
++}
++
++static void pcistub_remove_reset_file(struct pcistub_device *psdev)
++{
++	if (psdev && psdev->created_reset_file)
++		device_remove_file(&psdev->dev->dev, &dev_attr_reset);
++}
++
+ static struct pcistub_device *pcistub_device_alloc(struct pci_dev *dev)
  {
- 	int i;
- 	struct gsm_dlci *dlci = gsm->dlci[0];
-@@ -2062,7 +2062,6 @@ void gsm_cleanup_mux(struct gsm_mux *gsm)
- 		kfree(txq);
- 	INIT_LIST_HEAD(&gsm->tx_list);
+ 	struct pcistub_device *psdev;
+@@ -95,12 +205,15 @@ static void pcistub_device_release(struct kref *kref)
+
+ 	dev_dbg(&dev->dev, "pcistub_device_release\n");
+
++	pcistub_remove_reset_file(psdev);
++
+ 	xen_unregister_device_domain_owner(dev);
+
+ 	/* Call the reset function which does not take lock as this
+ 	 * is called from "unbind" which takes a device_lock mutex.
+ 	 */
+-	__pci_reset_function_locked(dev);
++	__pcistub_reset_function(psdev->dev);
++
+ 	if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
+ 		dev_dbg(&dev->dev, "Could not reload PCI state\n");
+ 	else
+@@ -268,7 +381,7 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+ 	/* This is OK - we are running from workqueue context
+ 	 * and want to inhibit the user from fiddling with 'reset'
+ 	 */
+-	pci_reset_function(dev);
++	pcistub_reset_function(psdev->dev);
+ 	pci_restore_state(psdev->dev);
+
+ 	/* This disables the device. */
+@@ -392,7 +505,7 @@ static int pcistub_init_device(struct pci_dev *dev)
+ 		dev_err(&dev->dev, "Could not store PCI conf saved state!\n");
+ 	else {
+ 		dev_dbg(&dev->dev, "resetting (FLR, D3, etc) the device\n");
+-		__pci_reset_function_locked(dev);
++		__pcistub_reset_function(dev);
+ 		pci_restore_state(dev);
+ 	}
+ 	/* Now disable the device (this also ensures some private device
+@@ -467,6 +580,10 @@ static int pcistub_seize(struct pci_dev *dev)
+ 	if (!psdev)
+ 		return -ENOMEM;
+
++	err = pcistub_try_create_reset_file(psdev);
++	if (err < 0)
++		goto out;
++
+ 	spin_lock_irqsave(&pcistub_devices_lock, flags);
+
+ 	if (initialize_devices) {
+@@ -485,10 +602,9 @@ static int pcistub_seize(struct pci_dev *dev)
+ 	}
+
+ 	spin_unlock_irqrestore(&pcistub_devices_lock, flags);
+-
++out:
+ 	if (err)
+ 		pcistub_device_put(psdev);
+-
+ 	return err;
  }
--EXPORT_SYMBOL_GPL(gsm_cleanup_mux);
- 
- /**
-  *	gsm_activate_mux	-	generic GSM setup
-@@ -2073,7 +2072,7 @@ EXPORT_SYMBOL_GPL(gsm_cleanup_mux);
-  *	finally kick off connecting to DLCI 0 on the modem.
-  */
- 
--int gsm_activate_mux(struct gsm_mux *gsm)
-+static int gsm_activate_mux(struct gsm_mux *gsm)
- {
- 	struct gsm_dlci *dlci;
- 	int i = 0;
-@@ -2109,7 +2108,6 @@ int gsm_activate_mux(struct gsm_mux *gsm)
- 	gsm->dead = 0;		/* Tty opens are now permissible */
- 	return 0;
- }
--EXPORT_SYMBOL_GPL(gsm_activate_mux);
- 
- /**
-  *	gsm_free_mux		-	free up a mux
-@@ -2117,13 +2115,12 @@ EXPORT_SYMBOL_GPL(gsm_activate_mux);
-  *
-  *	Dispose of allocated resources for a dead mux
-  */
--void gsm_free_mux(struct gsm_mux *gsm)
-+static void gsm_free_mux(struct gsm_mux *gsm)
- {
- 	kfree(gsm->txframe);
- 	kfree(gsm->buf);
- 	kfree(gsm);
- }
--EXPORT_SYMBOL_GPL(gsm_free_mux);
- 
- /**
-  *	gsm_free_muxr		-	free up a mux
-@@ -2153,7 +2150,7 @@ static inline void mux_put(struct gsm_mux *gsm)
-  *	Creates a new mux ready for activation.
-  */
- 
--struct gsm_mux *gsm_alloc_mux(void)
-+static struct gsm_mux *gsm_alloc_mux(void)
- {
- 	struct gsm_mux *gsm = kzalloc(sizeof(struct gsm_mux), GFP_KERNEL);
- 	if (gsm == NULL)
-@@ -2185,7 +2182,6 @@ struct gsm_mux *gsm_alloc_mux(void)
- 
- 	return gsm;
- }
--EXPORT_SYMBOL_GPL(gsm_alloc_mux);
- 
- /**
-  *	gsmld_output		-	write to link
-@@ -2711,7 +2707,7 @@ static void gsm_mux_rx_netchar(struct gsm_dlci *dlci,
- 	return;
- }
- 
--int gsm_change_mtu(struct net_device *net, int new_mtu)
-+static int gsm_change_mtu(struct net_device *net, int new_mtu)
- {
- 	struct gsm_mux_net *mux_net = (struct gsm_mux_net *)netdev_priv(net);
- 	if ((new_mtu < 8) || (new_mtu > mux_net->dlci->gsm->mtu))
--- 
-1.7.9.5
 
