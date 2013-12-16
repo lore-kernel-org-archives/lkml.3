@@ -1,137 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab3LPJBG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 04:01:06 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:42531 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751906Ab3LPJBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 04:01:04 -0500
-Message-ID: <52AEC145.6070208@ti.com>
-Date: Mon, 16 Dec 2013 14:30:53 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752945Ab3LPJCy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 04:02:54 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:20829 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869Ab3LPJCw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 04:02:52 -0500
+Message-ID: <52AEC122.2000609@huawei.com>
+Date: Mon, 16 Dec 2013 17:00:18 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Kamil Debski <k.debski@samsung.com>, <linux-kernel@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-CC: Tomasz Figa <t.figa@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        <gautam.vivek@samsung.com>, <matt.porter@linaro.org>
-Subject: Re: [PATCH RESEND v2 1/2] phy: core: Add an exported of_phy_get function
-References: <1386943380-28596-1-git-send-email-k.debski@samsung.com> <52AB1D75.4030207@ti.com> <008a01cef817$b24844e0$16d8cea0$%debski@samsung.com>
-In-Reply-To: <008a01cef817$b24844e0$16d8cea0$%debski@samsung.com>
+To: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        WuJianguo <wujianguo@huawei.com>
+CC: Xishi Qiu <qiuxishi@huawei.com>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm: fix huge page reallocated in soft_offline_page
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 13 December 2013 08:56 PM, Kamil Debski wrote:
-> Hi Kishon,
-> 
->> From: Kishon Vijay Abraham I [mailto:kishon@ti.com]
->> Sent: Friday, December 13, 2013 3:45 PM
->>
->> Hi,
->>
->> On Friday 13 December 2013 07:32 PM, Kamil Debski wrote:
->>> Previously the of_phy_get function took a struct device * and was
->>> declared static. It was impossible to call it from another driver and
->>> thus it was impossible to get phy defined for a given node. The old
->>> function was renamed to _of_phy_get and was left for internal use.
->>> of_phy_get function was added and it was exported. The function
->>> enables to get a phy for a given device tree node.
->>>
->>> Signed-off-by: Kamil Debski <k.debski@samsung.com>
->>> ---
->>> It seems that my git send-email is playing up and sent the previous
->>> emails without from. This is a resend. Sorry for any confusion.
->>> ---
->>>  drivers/phy/phy-core.c  |   41 ++++++++++++++++++++++++++++++++-----
->> ----
->>>  include/linux/phy/phy.h |    1 +
->>>  2 files changed, 33 insertions(+), 9 deletions(-)
->>>
->>> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c index
->>> 03cf8fb..f0dbd42 100644
->>> --- a/drivers/phy/phy-core.c
->>> +++ b/drivers/phy/phy-core.c
->>> @@ -240,8 +240,8 @@ out:
->>>  EXPORT_SYMBOL_GPL(phy_power_off);
->>>
->>>  /**
->>> - * of_phy_get() - lookup and obtain a reference to a phy by phandle
->>> - * @dev: device that requests this phy
->>> + * _of_phy_get() - lookup and obtain a reference to a phy by phandle
->>> + * @np: device_node for which to get the phy
->>>   * @index: the index of the phy
->>>   *
->>>   * Returns the phy associated with the given phandle value, @@
->>> -250,20 +250,17 @@ EXPORT_SYMBOL_GPL(phy_power_off);
->>>   * not yet loaded. This function uses of_xlate call back function
->> provided
->>>   * while registering the phy_provider to find the phy instance.
->>>   */
->>> -static struct phy *of_phy_get(struct device *dev, int index)
->>> +static struct phy *_of_phy_get(struct device_node *np, int index)
->>>  {
->>>  	int ret;
->>>  	struct phy_provider *phy_provider;
->>>  	struct phy *phy = NULL;
->>>  	struct of_phandle_args args;
->>>
->>> -	ret = of_parse_phandle_with_args(dev->of_node, "phys", "#phy-
->> cells",
->>> +	ret = of_parse_phandle_with_args(np, "phys", "#phy-cells",
->>>  		index, &args);
->>> -	if (ret) {
->>> -		dev_dbg(dev, "failed to get phy in %s node\n",
->>> -			dev->of_node->full_name);
->>> +	if (ret)
->>>  		return ERR_PTR(-ENODEV);
->>> -	}
->>>
->>>  	mutex_lock(&phy_provider_mutex);
->>>  	phy_provider = of_phy_provider_lookup(args.np); @@ -283,6 +280,32
->> @@
->>> err0:
->>>  }
->>>
->>>  /**
->>> + * of_phy_get() - lookup and obtain a reference to a phy using a
->> device_node.
->>> + * @np: device_node for which to get the phy
->>> + * @index: the index of the phy
->>
->> Would be better if the user can get the PHY by string instead of index.
-> 
-> Ok, this sounds doable. I will add of_phy_get_by_name analogous to the clk
-> framework.
+The huge page may be reallocated in soft_offline_page, because
+MIGRATE_ISOLATE can not keep the page until after setting PG_hwpoison.
+alloc_huge_page()
+	dequeue_huge_page_vma()
+		dequeue_huge_page_node()
+If the huge page was reallocated, we need to try offline it again.
 
-Nope. It was decided initially to have minimal no of APIs exported to get PHYs.
-So you can just get string as argument instead of index and leave the name of
-the API to just of_phy_get.
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+---
+ mm/memory-failure.c |   21 ++++++++++++++++++---
+ 1 files changed, 18 insertions(+), 3 deletions(-)
 
-Thanks
-Kishon
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index b7c1716..f384249 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1505,8 +1505,11 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 		if (ret > 0)
+ 			ret = -EIO;
+ 	} else {
++		ret = dequeue_hwpoisoned_huge_page(hpage);
++		/* If the page was reallocated, we need to try again. */
++		if (ret)
++			return -EAGAIN;
+ 		set_page_hwpoison_huge_page(hpage);
+-		dequeue_hwpoisoned_huge_page(hpage);
+ 		atomic_long_add(1 << compound_order(hpage),
+ 				&num_poisoned_pages);
+ 	}
+@@ -1624,10 +1627,11 @@ static int __soft_offline_page(struct page *page, int flags)
+  */
+ int soft_offline_page(struct page *page, int flags)
+ {
+-	int ret;
++	int ret, retry_max = 3;
+ 	unsigned long pfn = page_to_pfn(page);
+ 	struct page *hpage = compound_trans_head(page);
+ 
++retry:
+ 	if (PageHWPoison(page)) {
+ 		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+ 		return -EBUSY;
+@@ -1663,8 +1667,15 @@ int soft_offline_page(struct page *page, int flags)
+ 			ret = __soft_offline_page(page, flags);
+ 	} else if (ret == 0) { /* for free pages */
+ 		if (PageHuge(page)) {
++			ret = dequeue_hwpoisoned_huge_page(hpage);
++			/* If the page was reallocated, we need to try again. */
++			if (ret) {
++				unset_migratetype_isolate(page,
++						MIGRATE_MOVABLE);
++				if (retry_max-- > 0)
++					goto retry;
++			}
+ 			set_page_hwpoison_huge_page(hpage);
+-			dequeue_hwpoisoned_huge_page(hpage);
+ 			atomic_long_add(1 << compound_order(hpage),
+ 					&num_poisoned_pages);
+ 		} else {
+@@ -1673,5 +1684,9 @@ int soft_offline_page(struct page *page, int flags)
+ 		}
+ 	}
+ 	unset_migratetype_isolate(page, MIGRATE_MOVABLE);
++
++	if (ret == -EAGAIN && retry_max-- > 0)
++		goto retry;
++
+ 	return ret;
+ }
+-- 
+1.7.1
 
-> 
->>> + *
->>> + * Returns the phy driver, after getting a refcount to it; or
->>> + * -ENODEV if there is no such phy.  The caller is responsible for
->>> + * calling phy_put() to release that count.
->>> + */
->>> +struct phy *of_phy_get(struct device_node *np, int index) {
->>> +	struct phy *phy = NULL;
->>> +
->>> +	phy = _of_phy_get(np, index);
->>> +	if (IS_ERR(phy))
->> dev_err here?
-> 
-> dev_err requires a dev, so it is not possible with the arguments used.
-> And we do not want to add any extra parameters to keep the function call
-> analogous to other of_*_get (as for example of_clk_get).
-> 
-> Best wishes,
-> 
 
