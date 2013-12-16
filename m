@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab3LPPaS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:30:18 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:45961 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755019Ab3LPPaP (ORCPT
+	id S1755052Ab3LPPbV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:31:21 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47734 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754764Ab3LPP3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:30:15 -0500
-Date: Mon, 16 Dec 2013 16:30:11 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH v0 00/71] perf: Add support for Intel Processor Trace
-Message-ID: <20131216153008.GA26686@localhost.localdomain>
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
- <20131211130448.GA2480@gmail.com>
- <87r49jttqr.fsf@ashishki-desk.ger.corp.intel.com>
- <20131211134724.GC3101@gmail.com>
- <87bo0ht5nj.fsf@ashishki-desk.ger.corp.intel.com>
- <20131216143751.GA7959@gmail.com>
- <20131216151852.GW22695@tassilo.jf.intel.com>
+	Mon, 16 Dec 2013 10:29:06 -0500
+Date: Mon, 16 Dec 2013 07:28:48 -0800
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-ff533fc058975579dffbb62a731f63911ae714be@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <1386833777-3790-8-git-send-email-namhyung@kernel.org>
+References: <1386833777-3790-8-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tools lib traceevent: Make add_left()
+  return pevent_errno
+Git-Commit-ID: ff533fc058975579dffbb62a731f63911ae714be
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20131216151852.GW22695@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 16 Dec 2013 07:28:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 07:18:52AM -0800, Andi Kleen wrote:
-> > So we could make the old ABI a CONFIG_PERF_EVENTS_COMPAT_X86_BTS kind 
-> > of legacy option, turned off by default. That allows us its eventual 
-> > future phasing out.
-> > 
-> > It all depends on how useful the new tooling becomes: if interesting 
-> > things can be done with it via an obvious, powerful interface then 
-> > people might start using it.
-> 
-> The thing to keep in mind is that BTS is really really slow.
-> 
-> It's unlikely it'll be ever all that useful no matter how the API
-> looks like.
+Commit-ID:  ff533fc058975579dffbb62a731f63911ae714be
+Gitweb:     http://git.kernel.org/tip/ff533fc058975579dffbb62a731f63911ae714be
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Thu, 12 Dec 2013 16:36:10 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 13 Dec 2013 10:30:22 -0300
 
-You're right it's extremely slow. But it can still be relevant for debugging,
-at least for apps that don't do too much CPU bound stuffs.
+tools lib traceevent: Make add_left() return pevent_errno
 
-My hope has always been that we can make a userspace function graph tracer
-out of its dumps. And I think we can, I'm pretty sure that would be a useful tool.
+So that it can propagate error properly.
 
-Even better would be to allow for some perf timehist which we can use to navigate through
-the execution flow including all branches. But that's quite sophisticated (although
-possibly very useful), still a function graph would be a good beginning.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1386833777-3790-8-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/lib/traceevent/parse-filter.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Now if we find a faster replacement that can dump similar sources or even better
-if we can filter by branch type (call and ret is all we need for a function graph tracer)
-I'm all for it. But I agree with Ingo that some useful tooling should come along.
+diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
+index c08ce59..774c3e4 100644
+--- a/tools/lib/traceevent/parse-filter.c
++++ b/tools/lib/traceevent/parse-filter.c
+@@ -648,7 +648,7 @@ rotate_op_right(struct filter_arg *a, struct filter_arg *b)
+ 	return arg;
+ }
+ 
+-static int add_left(struct filter_arg *op, struct filter_arg *arg)
++static enum pevent_errno add_left(struct filter_arg *op, struct filter_arg *arg)
+ {
+ 	switch (op->type) {
+ 	case FILTER_ARG_EXP:
+@@ -667,11 +667,11 @@ static int add_left(struct filter_arg *op, struct filter_arg *arg)
+ 		/* left arg of compares must be a field */
+ 		if (arg->type != FILTER_ARG_FIELD &&
+ 		    arg->type != FILTER_ARG_BOOLEAN)
+-			return -1;
++			return PEVENT_ERRNO__INVALID_ARG_TYPE;
+ 		op->num.left = arg;
+ 		break;
+ 	default:
+-		return -1;
++		return PEVENT_ERRNO__INVALID_ARG_TYPE;
+ 	}
+ 	return 0;
+ }
