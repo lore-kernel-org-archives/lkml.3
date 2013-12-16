@@ -1,158 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab3LPEeI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 23:34:08 -0500
-Received: from mailout.micron.com ([137.201.242.129]:12481 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381Ab3LPEeD (ORCPT
+	id S1752586Ab3LPEd3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 23:33:29 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:52250 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab3LPEcZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 23:34:03 -0500
-From: =?gb2312?B?UWkgV2FuZyDN9cbwIChxaXdhbmcp?= <qiwang@micron.com>
-To: "dedekind1@gmail.com" <dedekind1@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-CC: Adrian Hunter <adrian.hunter@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?gb2312?B?UWkgV2FuZyDN9cbwIChxaXdhbmcp?= <qiwang@micron.com>
-Subject: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash after
- erasure interrupted
-Thread-Topic: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash
- after erasure interrupted
-Thread-Index: Ac7bkfL3+Un6Pi2jSbO3yZA9UtDETwNhLovgAa9rO+AAZiFEEAAABJ+gAPpBsUABMH3MEA==
-Date: Mon, 16 Dec 2013 04:33:31 +0000
-Message-ID: <71CF8D7F32C5C24C9CD1D0E02D52498A770B8611@NTXXIAMBX02.xacn.micron.com>
-References: <71CF8D7F32C5C24C9CD1D0E02D52498A770B54B1@NTXXIAMBX02.xacn.micron.com>
- <71CF8D7F32C5C24C9CD1D0E02D52498A770B68A8@NTXXIAMBX02.xacn.micron.com>
- <71CF8D7F32C5C24C9CD1D0E02D52498A770B6F77@NTXXIAMBX02.xacn.micron.com>
-  <71CF8D7F32C5C24C9CD1D0E02D52498A770B79C8@NTXXIAMBX02.xacn.micron.com>
-In-Reply-To: <71CF8D7F32C5C24C9CD1D0E02D52498A770B79C8@NTXXIAMBX02.xacn.micron.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20364.004
-X-TM-AS-Result: No--23.620100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
+	Sun, 15 Dec 2013 23:32:25 -0500
+X-AuditID: 9c93017e-b7c17ae000003961-3f-52ae82543950
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 17/17] tracing/uprobes: Add @+file_offset fetch method
+Date: Mon, 16 Dec 2013 13:32:16 +0900
+Message-Id: <1387168336-13213-18-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
+References: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBG4YE5n022492
 
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Hi Artem:
-As we talked in mail before, please check my patch as below:
+Enable to fetch data from a file offset.  Currently it only supports
+fetching from same binary uprobe set.  It'll translate the file offset
+to a proper virtual address in the process.
 
-From: Qi Wang <qiwang@micron.com>
+The syntax is "@+OFFSET" as it does similar to normal memory fetching
+(@ADDR) which does no address translation.
 
-nor_erase_prepare() will be called before erase a NOR flash, it will program '0'
-into a block to mark this block. But program data into a erasure interrupted block
-can cause program timtout(several minutes at most) error, could impact other 
-operation on NOR flash. So UBIFS can read this block first to avoid unneeded 
-program operation. 
-
-This patch try to put read operation at head of write operation in 
-nor_erase_prepare(), read out the data. 
-If the data is already corrupt, then no need to program any data into this block, 
-just go to erase this block.
-
-Signed-off-by: Qi Wang <qiwang@qiwang@micron.com>
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
-diff --git a/drivers/mtd/ubi/io.c b/drivers/mtd/ubi/io.c
-index bf79def..0a6343d 100644
---- a/drivers/mtd/ubi/io.c
-+++ b/drivers/mtd/ubi/io.c
-@@ -499,6 +499,7 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
- 	size_t written;
- 	loff_t addr;
- 	uint32_t data = 0;
-+	struct ubi_ec_hdr ec_hdr;
- 	/*
- 	 * Note, we cannot generally define VID header buffers on stack,
- 	 * because of the way we deal with these buffers (see the header
-@@ -509,49 +510,38 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
- 	struct ubi_vid_hdr vid_hdr;
+ Documentation/trace/uprobetracer.txt |  1 +
+ kernel/trace/trace_kprobe.c          |  8 ++++++++
+ kernel/trace/trace_probe.c           | 13 +++++++++++-
+ kernel/trace/trace_probe.h           |  2 ++
+ kernel/trace/trace_uprobe.c          | 40 ++++++++++++++++++++++++++++++++++++
+ 5 files changed, 63 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
+index 6e5cff263e2b..f1cf9a34ad9d 100644
+--- a/Documentation/trace/uprobetracer.txt
++++ b/Documentation/trace/uprobetracer.txt
+@@ -32,6 +32,7 @@ Synopsis of uprobe_tracer
+   FETCHARGS     : Arguments. Each probe can have up to 128 args.
+    %REG         : Fetch register REG
+    @ADDR	: Fetch memory at ADDR (ADDR should be in userspace)
++   @+OFFSET	: Fetch memory at OFFSET (OFFSET from same file as PATH)
+    $stackN	: Fetch Nth entry of stack (N >= 0)
+    $stack	: Fetch stack address.
+    $retval	: Fetch return value.(*)
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index d1d3d8982345..cc6bb8531f2f 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -239,6 +239,14 @@ DEFINE_BASIC_FETCH_FUNCS(symbol)
+ DEFINE_FETCH_symbol(string)
+ DEFINE_FETCH_symbol(string_size)
  
- 	/*
-+	 * If VID or EC is valid, need to corrupt it before erase operation.  
- 	 * It is important to first invalidate the EC header, and then the VID
- 	 * header. Otherwise a power cut may lead to valid EC header and
- 	 * invalid VID header, in which case UBI will treat this PEB as
- 	 * corrupted and will try to preserve it, and print scary warnings.
- 	 */
- 	addr = (loff_t)pnum * ubi->peb_size;
--	err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
--	if (!err) {
--		addr += ubi->vid_hdr_aloffset;
--		err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
--		if (!err)
--			return 0;
-+	err = ubi_io_read_ec_hdr(ubi, pnum, &ec_hdr, 0);
-+	if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
-+	    err != UBI_IO_FF){
-+		err1 = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
-+		if(err1)
-+			goto error;
++/* kprobes don't support file_offset fetch methods */
++#define fetch_file_offset_u8		NULL
++#define fetch_file_offset_u16		NULL
++#define fetch_file_offset_u32		NULL
++#define fetch_file_offset_u64		NULL
++#define fetch_file_offset_string	NULL
++#define fetch_file_offset_string_size	NULL
++
+ /* Fetch type information table */
+ const struct fetch_type kprobes_fetch_type_table[] = {
+ 	/* Special types */
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index a130d612e705..8364a421b4df 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -374,7 +374,7 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 		}
+ 		break;
+ 
+-	case '@':	/* memory or symbol */
++	case '@':	/* memory, file-offset or symbol */
+ 		if (isdigit(arg[1])) {
+ 			ret = kstrtoul(arg + 1, 0, &param);
+ 			if (ret)
+@@ -382,6 +382,17 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 
+ 			f->fn = t->fetch[FETCH_MTD_memory];
+ 			f->data = (void *)param;
++		} else if (arg[1] == '+') {
++			/* kprobes don't support file offsets */
++			if (is_kprobe)
++				return -EINVAL;
++
++			ret = kstrtol(arg + 2, 0, &offset);
++			if (ret)
++				break;
++
++			f->fn = t->fetch[FETCH_MTD_file_offset];
++			f->data = (void *)offset;
+ 		} else {
+ 			/* uprobes don't support symbols */
+ 			if (!is_kprobe)
+diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+index 2d5b8f5f5310..e29d743fef5d 100644
+--- a/kernel/trace/trace_probe.h
++++ b/kernel/trace/trace_probe.h
+@@ -106,6 +106,7 @@ enum {
+ 	FETCH_MTD_symbol,
+ 	FETCH_MTD_deref,
+ 	FETCH_MTD_bitfield,
++	FETCH_MTD_file_offset,
+ 	FETCH_MTD_END,
+ };
+ 
+@@ -217,6 +218,7 @@ ASSIGN_FETCH_FUNC(memory, ftype),			\
+ ASSIGN_FETCH_FUNC(symbol, ftype),			\
+ ASSIGN_FETCH_FUNC(deref, ftype),			\
+ ASSIGN_FETCH_FUNC(bitfield, ftype),			\
++ASSIGN_FETCH_FUNC(file_offset, ftype),			\
+ 	  }						\
  	}
  
--	/*
--	 * We failed to write to the media. This was observed with Spansion
--	 * S29GL512N NOR flash. Most probably the previously eraseblock erasure
--	 * was interrupted at a very inappropriate moment, so it became
--	 * unwritable. In this case we probably anyway have garbage in this
--	 * PEB.
--	 */
--	err1 = ubi_io_read_vid_hdr(ubi, pnum, &vid_hdr, 0);
--	if (err1 == UBI_IO_BAD_HDR_EBADMSG || err1 == UBI_IO_BAD_HDR ||
--	    err1 == UBI_IO_FF) {
--		struct ubi_ec_hdr ec_hdr;
--
--		err1 = ubi_io_read_ec_hdr(ubi, pnum, &ec_hdr, 0);
--		if (err1 == UBI_IO_BAD_HDR_EBADMSG || err1 == UBI_IO_BAD_HDR ||
--		    err1 == UBI_IO_FF)
--			/*
--			 * Both VID and EC headers are corrupted, so we can
--			 * safely erase this PEB and not afraid that it will be
--			 * treated as a valid PEB in case of an unclean reboot.
--			 */
--			return 0;
-+	err = ubi_io_read_vid_hdr(ubi, pnum, &vid_hdr, 0);
-+	if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
-+	    err != UBI_IO_FF){
-+	    	addr += ubi->vid_hdr_aloffset;
-+		err1 = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
-+		if (err1)
-+			goto error;	
- 	}
-+	return 0;
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 6ed319be5a84..0f7681c7b757 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -70,6 +70,11 @@ static int unregister_uprobe_event(struct trace_uprobe *tu);
+ static DEFINE_MUTEX(uprobe_lock);
+ static LIST_HEAD(uprobe_list);
  
-+error:
- 	/*
--	 * The PEB contains a valid VID header, but we cannot invalidate it.
-+	 * The PEB contains a valid VID or EC header, but we cannot invalidate it.
- 	 * Supposedly the flash media or the driver is screwed up, so return an
- 	 * error.
- 	 */
--	ubi_err("cannot invalidate PEB %d, write returned %d read returned %d",
-+	ubi_err("cannot invalidate PEB %d, read returned %d write returned %d",
- 		pnum, err, err1);
- 	ubi_dump_flash(ubi, pnum, 0, ubi->peb_size);
- 	return -EIO;
----
++struct uprobe_dispatch_data {
++	struct trace_uprobe	*tu;
++	unsigned long		bp_addr;
++};
++
+ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs);
+ static int uretprobe_dispatcher(struct uprobe_consumer *con,
+ 				unsigned long func, struct pt_regs *regs);
+@@ -175,6 +180,29 @@ static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
+ #define fetch_symbol_string		NULL
+ #define fetch_symbol_string_size	NULL
+ 
++static unsigned long translate_user_vaddr(void *file_offset)
++{
++	unsigned long base_addr;
++	struct uprobe_dispatch_data *udd;
++
++	udd = (void *) current->utask->vaddr;
++
++	base_addr = udd->bp_addr - udd->tu->offset;
++	return base_addr + (unsigned long)file_offset;
++}
++
++#define DEFINE_FETCH_file_offset(type)					\
++static __kprobes void FETCH_FUNC_NAME(file_offset, type)(struct pt_regs *regs,\
++					void *offset, void *dest) 	\
++{									\
++	void *vaddr = (void *)translate_user_vaddr(offset);		\
++									\
++	FETCH_FUNC_NAME(memory, type)(regs, vaddr, dest);		\
++}
++DEFINE_BASIC_FETCH_FUNCS(file_offset)
++DEFINE_FETCH_file_offset(string)
++DEFINE_FETCH_file_offset(string_size)
++
+ /* Fetch type information table */
+ const struct fetch_type uprobes_fetch_type_table[] = {
+ 	/* Special types */
+@@ -1106,11 +1134,17 @@ int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type,
+ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
+ {
+ 	struct trace_uprobe *tu;
++	struct uprobe_dispatch_data udd;
+ 	int ret = 0;
+ 
+ 	tu = container_of(con, struct trace_uprobe, consumer);
+ 	tu->nhit++;
+ 
++	udd.tu = tu;
++	udd.bp_addr = instruction_pointer(regs);
++
++	current->utask->vaddr = (unsigned long) &udd;
++
+ 	if (tu->tp.flags & TP_FLAG_TRACE)
+ 		ret |= uprobe_trace_func(tu, regs);
+ 
+@@ -1125,9 +1159,15 @@ static int uretprobe_dispatcher(struct uprobe_consumer *con,
+ 				unsigned long func, struct pt_regs *regs)
+ {
+ 	struct trace_uprobe *tu;
++	struct uprobe_dispatch_data udd;
+ 
+ 	tu = container_of(con, struct trace_uprobe, consumer);
+ 
++	udd.tu = tu;
++	udd.bp_addr = func;
++
++	current->utask->vaddr = (unsigned long) &udd;
++
+ 	if (tu->tp.flags & TP_FLAG_TRACE)
+ 		uretprobe_trace_func(tu, func, regs);
+ 
+-- 
+1.7.11.7
 
-I have tested this patch on Micron NOR flash, part number is£ºJS28F512M29EWHA.
-If have any questions, please let me know. 
-Thank you
-
-Best Regards, 
-Qi Wang ÍõÆğ
-ESG APAC AE 
-Tel: 86-021-38997158
-Mobile: 86-15201958202
-Email: qiwang@micron.com
-Address: No 601 Fasai Rd, Pudong, Shanghai, China, 200131
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
