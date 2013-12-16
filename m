@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781Ab3LPQWC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:22:02 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:19187 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754101Ab3LPQV7 (ORCPT
+	id S1754806Ab3LPQWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:22:50 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:34667 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754466Ab3LPQWs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:21:59 -0500
-Date: Mon, 16 Dec 2013 16:18:43 -0800
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Christian Daudt <bcm@fixthebug.org>, Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Heiko St?bner <heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Sherman Yin <syin@broadcom.com>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 3/6] pinctrl: Make PINCTRL selectable by
- defconfig/menuconfig
-Message-ID: <20131217001842.GB3840@sonymobile.com>
-References: <1381174108-25168-1-git-send-email-syin@broadcom.com>
- <1386787041-6035-1-git-send-email-syin@broadcom.com>
- <1386787041-6035-4-git-send-email-syin@broadcom.com>
- <CACRpkdauqYNiby-ta3c_he2ovG__0e6ubmzZ8Bx1cP_OzK4=LQ@mail.gmail.com>
- <CAEPRUYpsp_FVobY_DeEQU2+rCD7q7T=p7k++XvG-22x-OWHY8Q@mail.gmail.com>
- <CACRpkdY2BExGiL6HBg7zn_szJQMnSNsxOSuo7RyrRmrz=cVe2A@mail.gmail.com>
+	Mon, 16 Dec 2013 11:22:48 -0500
+Date: Mon, 16 Dec 2013 18:22:42 +0200
+From: Gleb Natapov <gleb@minantech.com>
+To: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, pmatouse@redhat.com, stable@vger.kernel.org,
+        larsbull@google.com
+Subject: Re: [PATCH] KVM: x86: fix guest-initiated crash with x2apic
+ (CVE-2013-6376)
+Message-ID: <20131216162242.GH21068@minantech.com>
+References: <1386880614-23300-4-git-send-email-pbonzini@redhat.com>
+ <20131213160754.GA20763@hpx.cz>
+ <20131214094614.GF21068@minantech.com>
+ <20131216120109.GA3324@hpx.cz>
+ <20131216121637.GB24218@minantech.com>
+ <20131216125526.GC3324@hpx.cz>
+ <20131216133142.GA3676@hpx.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CACRpkdY2BExGiL6HBg7zn_szJQMnSNsxOSuo7RyrRmrz=cVe2A@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20131216133142.GA3676@hpx.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 16 Dec 02:01 PST 2013, Linus Walleij wrote:
+On Mon, Dec 16, 2013 at 02:31:43PM +0100, Radim Krčmář wrote:
+> 2013-12-16 13:55+0100, Radim Krčmář:
+> > 2013-12-16 14:16+0200, Gleb Natapov:
+> > > On Mon, Dec 16, 2013 at 01:01:10PM +0100, Radim Krčmář wrote:
+> > > > > >  - Where does the 'only one supported cluster' come from?
+> > > > > > 
+> > > > > "only one supported cluster" comes from 8 bit cpuid limitation of KVM's x2apic
+> > > > > implementation. With 8 bit cpuid you can only address cluster 0 in logical mode.
+> > > > 
+> > > > One x2apic cluster has 16 cpus and we generate the x2apic LDR correctly,
+> > > > so 8 bit cpuid can address first 16 clusters as well.
+> > > > 
+> > > >   u32 ldr = ((id >> 4) << 16) | (1 << (id & 0xf));
+> > > > 
+> > > Interrupt from a device cannot generate such ldr, only IPI can. Only
+> > > 4 cpus in cluster zero are addressable in clustering mode by a
+> > > device. Without irq remapping x2apic is a PV interface between host
+> > > and guest where guest needs to know KVM implementation's limitation to
+> > > use it.
+> > 
+> > Thanks, I'll read more about devices ... still no idea how could they
+> > address cluster > 15.
+> > 
+With irq remapping device they will be able to provide 32bit apic addresses.
 
-> On Thu, Dec 12, 2013 at 10:35 PM, Christian Daudt <bcm@fixthebug.org> wrote:
+> > >         I do not see a point in fixing problems in x2apic logical mode
+> > > emulation right now since it will not make it usable, as long as
+> > > there is not security problems there.
+> > 
+> > Agreed; I wanted to know why this patch was correct, if we cared.
+> > 
+> > > > > >    I only see we use 'struct kvm_lapic *logical_map[16][16];', which
+> > > > > >    supports 16 clusters of 16 apics = first 256 vcpus, so if we map
+> > > > > >    everything to logical_map[0][0:15], we would not work correctly in
+> > > > > >    the cluster x2apic, with > 16 vcpus.
+> > > > > > 
+> > > > > Such config cannot work today because of 8 bit cpuid limitation. When the limitation
+> > > > > will be removed KMV_X2APIC_CID_BITS will be set to actual number of bits we want to support.
+> > > > 
+> > > > Even with KMV_X2APIC_CID_BITS = 4, which would allow us to support 8 bit
+> > > > cpuid, we would still deliver interrupts destined for cpuid > 256 to
+> > > > potentially plugged cpus.
+> > > Again, KMV_X2APIC_CID_BITS = 4 will not allow us to support 8 bit cpuids
+> > > unfortunately, not sure what you mean by the second part of the sentence.
+> > 
+> > Sorry, I meant that with this change, we map all clusters to cluster 0,
+> > which has two flaws:
+> >  - in kvm_lapic_set_base(), the order of vcpu creation determines those
 > 
-> >  I had requested this from Sherman. The reason is so that pinctrl can
-> > be selectable through defconfig, instead of through SoC select
-> > statements. And the reason for that is so that, in the future, some of
-> > these can be switched into loadable modules (which can't be done from
-> > Kconfig). This will become necessary with the move to multiplatform -
-> > we won't be able to have everything static anymore.
+> Gah, should have been 'recalculate_apic_map()' ...
 > 
-> Isn't it sufficient to make the pin controller entry tristate rather
-> than bool?
+> The patch would be especially surprising with a dynamic adding of vcpus.
 > 
-> And as mentioned elsewhere this does not at all solve the issue
-> that we still need to have all basic IRQchips and timer drivers
-> compiled into the kernel.
+> >    assigned to cluster 0, and the rest is unaddressable (overwritten)
+> >  - we can send IPI to an unplugged high cpuid and it arives in cluster 0
+It does not matter since well behaved guest is not supposed to configure apic like
+that.
 
-No matter how we build the individual pinctrl drivers we will always
-need the pinctrl framework in a multi-soc zImage; so I can't see that
-we gain anything from being able to compile PINCTRL as a module.
-
-I don't like compiling the individual pinctrl drivers as modules, as
-it leaves us with a waterfall of PROBE_DEFERRs.
-
-Regards,
-Bjorn
-
+--
+			Gleb.
