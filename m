@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab3LPQF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:05:29 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:45724 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab3LPQF2 (ORCPT
+	id S1754616Ab3LPQF4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:05:56 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:33500 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540Ab3LPQFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:05:28 -0500
+	Mon, 16 Dec 2013 11:05:55 -0500
+Date: Mon, 16 Dec 2013 11:05:42 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Nigel Cunningham <nigel@nigelcunningham.com.au>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
+        aaron.lu@intel.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] libata, freezer: avoid block device removal while system
+ is frozen
+Message-ID: <20131216160542.GG32509@htj.dyndns.org>
+References: <20131213174932.GA27070@htj.dyndns.org>
+ <20131213185237.GD27070@htj.dyndns.org>
+ <20131213204034.GE27070@htj.dyndns.org>
+ <52AB8E27.90308@nigelcunningham.com.au>
+ <20131213230744.GA17954@htj.dyndns.org>
+ <CACVXFVOWfJKOzUQcRRkQo8TLEkBvU6ByHbtrrD3R_ZncrbpZQQ@mail.gmail.com>
+ <20131216124504.GB32509@htj.dyndns.org>
+ <CACVXFVMPQUjAmvNpO+WVLDzVBwkwPtqqyBga_uXxfptVpEPPbw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOMwXhNJFGiRNB4jnTrzzpSGL8XvaR1Ph_pFrdU+x+guy7Tamg@mail.gmail.com>
-References: <1387194424-2701-1-git-send-email-lpapp@kde.org>
-	<20131216134633.GI18769@lee--X1>
-	<CAOMwXhOnHNrzEvf0+QRn6dGb42xR9a33joZcou3ancwSYe36Ug@mail.gmail.com>
-	<20131216150937.GO18769@lee--X1>
-	<CAOMwXhNJFGiRNB4jnTrzzpSGL8XvaR1Ph_pFrdU+x+guy7Tamg@mail.gmail.com>
-Date: Mon, 16 Dec 2013 17:05:27 +0100
-Message-ID: <CAFLxGvx3nvncXYsai_uVdWLp-jAuGWAQCNxGH9R3NvdD1cPFwA@mail.gmail.com>
-Subject: Re: [PATCH] mfd: (max8997) Handle the potential error for mfd_add_devices
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Lee Jones <lee.jones@linaro.org>, sameo@linux.intel.com,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVMPQUjAmvNpO+WVLDzVBwkwPtqqyBga_uXxfptVpEPPbw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 4:51 PM, Laszlo Papp <lpapp@kde.org> wrote:
->>> > The $SUBJECT line is wrong. To see how a subsystem usually formats
->>> > theirs you must do something like `git log --oneline -- <subsystem>`.
->>> > And duplicate the format.
->>> >
->>> > Commit message?
->>
->> These comments are still relevant, please re-post your patch with the
->> points rectified.
->
-> I really do not understand how they relevant. "Commit message?" ->
-> What about it? It has a pretty clear commit message. Are you now just
-> picking nits about "foo:" vs "(foo)" in the short line?
+Hello, Ming.
 
-The commit message needs to have subject and a body.
-A good message body explains what the current situation is, why it is
-broken/has problems
-and how this patch fixes that.
+On Mon, Dec 16, 2013 at 09:24:40PM +0800, Ming Lei wrote:
+> You mean there are still some write I/O scheduled after processes are
+> frozen? by unfreezable kernel threads?
+
+By unfreezable kernel threads, timer, bh, freezable kernel threads,
+whatever really.  Please note that freezer doesn't enforce any order
+in how the target tasks are frozen.  There's no mechanism to guarantee
+that flusher is frozen after all other freezable tasks are frozen.
+There isn't even a meachnism which guarantees flusher flushes all its
+queues before getting frozen.  There's no interlocking whatsoever.
+The only thing which happens is that we flush all filesystems before
+freezing the kernel threads, so the queues are *likely* to be empty.
+
+I think trying to control all IO sources using the freezer is a
+fundamentally flawed idea.  There are N sources which are difficult to
+track down reliably while there is *single* queue all those have to go
+through, which needs to be quiesced anyway.  The only thing which
+makes sense is controlling the queue.
+
+Maybe it really is necessary for hibernation.  If so, let's please
+make it something tailored for that purpose - quiesce only the ones
+which are actually relevant and in the places where it's necessary.
+Not this "we stopped most of the system, whatever that means, and it
+feels good" thing which doesn't really solve anything while
+introducing this fuzzy wishful idea of mostly stopped system and giant
+lock semantics all over the place.
+
+Thanks.
 
 -- 
-Thanks,
-//richard
+tejun
