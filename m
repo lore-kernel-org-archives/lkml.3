@@ -1,92 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab3LPNfJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 08:35:09 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:32845 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753882Ab3LPNfH convert rfc822-to-8bit (ORCPT
+	id S1754100Ab3LPNhr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 08:37:47 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:64462 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab3LPNhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 08:35:07 -0500
-From: Qais Yousef <Qais.Yousef@imgtec.com>
-To: Yang Yingliang <yangyingliang@huawei.com>
-CC: Eric Dumazet <edumazet@google.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: RE: [PATCH] net/sched/sch_tbf.c: fix linking error
-Thread-Topic: [PATCH] net/sched/sch_tbf.c: fix linking error
-Thread-Index: AQHO+mKET3d6+tCAN0Cy0Rcg6kuBEZpW0iYA
-Date: Mon, 16 Dec 2013 13:34:57 +0000
-Message-ID: <392C4BDEFF12D14FA57A3F30B283D7D13C994E@LEMAIL01.le.imgtec.org>
-References: <1386851356-1395-1-git-send-email-qais.yousef@imgtec.com>
-In-Reply-To: <1386851356-1395-1-git-send-email-qais.yousef@imgtec.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.154.35]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 Dec 2013 08:37:45 -0500
+Date: Mon, 16 Dec 2013 10:37:35 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Pekka Enberg <penberg@kernel.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 2/2] perf: Move fs.* to lib/api/fs/
+Message-ID: <20131216133735.GB3598@ghostprotocols.net>
+References: <1386605664-24041-1-git-send-email-bp@alien8.de>
+ <1386605664-24041-3-git-send-email-bp@alien8.de>
 MIME-Version: 1.0
-X-SEF-Processed: 7_3_0_01192__2013_12_16_13_34_59
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386605664-24041-3-git-send-email-bp@alien8.de>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the noise. I'm not sure how this got sent out again. I definitely didn't type any git send-email commands at all today :-/
+Em Mon, Dec 09, 2013 at 05:14:24PM +0100, Borislav Petkov escreveu:
+> From: Borislav Petkov <bp@suse.de>
+> 
+> Move to generic library and kill magic.h as it is needed only in fs.h.
+> 
+> Signed-off-by: Borislav Petkov <bp@suse.de>
 
-Qais
+Investigating...
 
-> -----Original Message-----
-> From: Qais Yousef [mailto:qais.yousef@imgtec.com]
-> Sent: 12 December 2013 12:29
-> To: Yang Yingliang
-> Cc: Qais Yousef; Eric Dumazet; Jamal Hadi Salim; David S. Miller;
-> netdev@vger.kernel.org; linux-kernel@vger.kernel.org; linux-
-> next@vger.kernel.org
-> Subject: [PATCH] net/sched/sch_tbf.c: fix linking error
-> 
-> ERROR: "__udivdi3" [net/sched/sch_tbf.ko] undefined!
-> 
-> introduced by: cc106e441a63 (net: sched: tbf: fix the calculation of max_size)
-> 
-> which adds a 64 by 32 bit division without using do_div().
-> Fix it by using do_div(len/ 53) instead of len/53.
-> 
-> Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
-> Cc: Eric Dumazet <edumazet@google.com>
-> Cc: Jamal Hadi Salim <jhs@mojatatu.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-next@vger.kernel.org
-> ---
-> We caught this error on linux-next today. This is my quick attemp of a fix.
-> If it's not appropriate or doesn't make sense my apologies and feel free to resend
-> a better fix :)
-> 
->  net/sched/sch_tbf.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/sched/sch_tbf.c b/net/sched/sch_tbf.c index a44928c..771cbec
-> 100644
-> --- a/net/sched/sch_tbf.c
-> +++ b/net/sched/sch_tbf.c
-> @@ -131,8 +131,10 @@ static u64 psched_ns_t2l(const struct psched_ratecfg *r,
-> 
->  	do_div(len, NSEC_PER_SEC);
-> 
-> -	if (unlikely(r->linklayer == TC_LINKLAYER_ATM))
-> -		len = (len / 53) * 48;
-> +	if (unlikely(r->linklayer == TC_LINKLAYER_ATM)) {
-> +		do_div(len, 53);
-> +		len *= 48;
-> +	}
-> 
->  	if (len > r->overhead)
->  		len -= r->overhead;
-> --
-> 1.7.1
+[acme@ssdandy linux]$ am /wb/1
+Applying: perf: Move fs.* to lib/api/fs/
+[perf/core 5da46742cf76] perf tools: Move fs.* to lib/api/fs/
+ Author: Borislav Petkov <bp@suse.de>
+ 10 files changed, 20 insertions(+), 25 deletions(-)
+ rename tools/{perf/util => lib/api/fs}/fs.c (91%)
+ rename tools/{perf/util/include/linux/magic.h => lib/api/fs/fs.h} (50%)
+ delete mode 100644 tools/perf/util/fs.h
+[acme@ssdandy linux]$ fg
+bash: fg: current: no such job
+[acme@ssdandy linux]$ time make O=/tmp/build/perf -C tools/perf/ install-bin
+make: Entering directory `/home/acme/git/linux/tools/perf'
+  BUILD:   Doing 'make -j8' parallel build
+  GEN      perf-archive
+  CC       /tmp/build/perf/util/pmu.o
+  CC       /tmp/build/perf/util/cpumap.o
+  CC       /tmp/build/perf/util/record.o
+  CC       /tmp/build/perf/tests/parse-events.o
+  GEN      /tmp/build/perf/python/perf.so
+  AR       /tmp/build/perf/libperf.a
+  LINK     /tmp/build/perf/libperf-gtk.so
+  LINK     /tmp/build/perf/perf
+  INSTALL  GTK UI
+/tmp/build/perf/libperf.a(pmu.o): In function `pmu_type':
+/home/acme/git/linux/tools/perf/util/pmu.c:314: undefined reference to `sysfs__mountpoint'
+/tmp/build/perf/libperf.a(pmu.o): In function `pmu_cpumask':
+/home/acme/git/linux/tools/perf/util/pmu.c:370: undefined reference to `sysfs__mountpoint'
+/tmp/build/perf/libperf.a(pmu.o): In function `pmu_aliases':
+/home/acme/git/linux/tools/perf/util/pmu.c:267: undefined reference to `sysfs__mountpoint'
+/tmp/build/perf/libperf.a(pmu.o): In function `pmu_format':
+/home/acme/git/linux/tools/perf/util/pmu.c:84: undefined reference to `sysfs__mountpoint'
+/tmp/build/perf/libperf.a(pmu.o): In function `pmu_read_sysfs':
+/home/acme/git/linux/tools/perf/util/pmu.c:342: undefined reference to `sysfs__mountpoint'
+/tmp/build/perf/libperf.a(util.o): In function `perf_event_paranoid':
+/home/acme/git/linux/tools/perf/util/util.c:506: undefined reference to `procfs__mountpoint'
+/tmp/build/perf/libperf.a(cpumap.o): In function `cpu_map__get_socket':
+/home/acme/git/linux/tools/perf/util/cpumap.c:219: undefined reference to `sysfs__mountpoint'
+/tmp/build/perf/libperf.a(cpumap.o): In function `cpu_map__get_core':
+/home/acme/git/linux/tools/perf/util/cpumap.c:282: undefined reference to `sysfs__mountpoint'
+/tmp/build/perf/libperf.a(cpumap.o): In function `cpu_map__get_socket':
+/home/acme/git/linux/tools/perf/util/cpumap.c:219: undefined reference to `sysfs__mountpoint'
+/tmp/build/perf/libperf.a(record.o): In function `get_max_rate':
+/home/acme/git/linux/tools/perf/util/record.c:115: undefined reference to `procfs__mountpoint'
+/tmp/build/perf/libperf.a(parse-events.o): In function `test_pmu':
+/home/acme/git/linux/tools/perf/tests/parse-events.c:1457: undefined reference to `sysfs__mountpoint'
+/tmp/build/perf/libperf.a(parse-events.o): In function `test_pmu_events':
+/home/acme/git/linux/tools/perf/tests/parse-events.c:1474: undefined reference to `sysfs__mountpoint'
+collect2: error: ld returned 1 exit status
+make[1]: *** [/tmp/build/perf/perf] Error 1
+make[1]: *** Waiting for unfinished jobs....
+util/util.c:3:16: fatal error: fs.h: No such file or directory
+compilation terminated.
+error: command 'gcc' failed with exit status 1
+make: *** [install-bin] Error 2
+make: Leaving directory `/home/acme/git/linux/tools/perf'
 
+real	0m2.891s
+user	0m5.030s
+sys	0m0.668s
+[acme@ssdandy linux]$ 
 
