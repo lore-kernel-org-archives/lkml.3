@@ -1,109 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab3LPSmj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 13:42:39 -0500
-Received: from 221-186-24-89.in-addr.arpa ([89.24.186.221]:28503 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754939Ab3LPSmg (ORCPT
+	id S1755349Ab3LPSnm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 13:43:42 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:2845 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754993Ab3LPSnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 13:42:36 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
-        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: [PATCH v4 5/9] PCI/MSI: Make pci_enable_msi/msix() 'nvec' argument type as int
-Date: Mon, 16 Dec 2013 09:34:58 +0100
-Message-Id: <e06648adc93d616db3e4a3541bdff0078e28d4a6.1387140921.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1387140921.git.agordeev@redhat.com>
-References: <cover.1387140921.git.agordeev@redhat.com>
+	Mon, 16 Dec 2013 13:43:40 -0500
+Date: Mon, 16 Dec 2013 11:43:33 -0700
+From: jerry.hoemann@hp.com
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, matt.fleming@intel.com, yinghai@kernel.org,
+        akpm@linux-foundation.org, bp@suse.de, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        penberg@kernel.org, mingo.kernel.org@gmail.com, vgoyal@redhat.com
+Subject: Re: [RFC v2 0/2] Early use of boot service memory
+Message-ID: <20131216184333.GA25634@anatevka.fc.hp.com>
+Reply-To: jerry.hoemann@hp.com
+References: <1385067686-73500-1-git-send-email-jerry.hoemann@hp.com>
+ <20131121230744.GA31592@srcf.ucam.org>
+ <20131121233104.GF1106@anatevka.fc.hp.com>
+ <20131121233831.GB32121@srcf.ucam.org>
+ <20131122010515.GG1106@anatevka.fc.hp.com>
+ <20131122011613.GA1039@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131122011613.GA1039@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make pci_enable_msi_block(), pci_enable_msi_block_auto() and
-pci_enable_msix() consistent with regard to the type of 'nvec'
-argument.
+On Fri, Nov 22, 2013 at 01:16:13AM +0000, Matthew Garrett wrote:
+> On Thu, Nov 21, 2013 at 06:05:15PM -0700, jerry.hoemann@hp.com wrote:
+> > On Thu, Nov 21, 2013 at 11:38:31PM +0000, Matthew Garrett wrote:
+> > > Hm. If the problem is fragmentation, then yeah, I can imagine this 
+> > > causing problems. In that case we could take a two-pass approach - find 
+> > > a gap that *will* be big enough, reserve everything that isn't currently 
+> > > reserved, and then reserve the rest after ExitBootServices()?
+> > 
+> > 
+> 
+> > Interesting questions, but as I don't have access to a system that has
+> > the firmware defects encountered when efi_reserve_boot_services, it makes
+> > it difficult to test that i don't break them.  Hence, the appealing nature
+> > of quirks.  Don't have to worry about breaking other platforms as they
+> > continue to operate same as before.
+> 
+> Yeah. The problem is that some users may want kdump while still having 
+> broken firmware, so a solution that works for them is much more 
+> appealing than one which involves manually maintaining a list of 
+> verified systems...
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Reviewed-by: Tejun Heo <tj@kernel.org>
----
- Documentation/PCI/MSI-HOWTO.txt |    2 +-
- drivers/pci/msi.c               |    4 ++--
- include/linux/pci.h             |    8 ++++----
- 3 files changed, 7 insertions(+), 7 deletions(-)
+Matthew, 
 
-diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
-index a091780..a4d174e 100644
---- a/Documentation/PCI/MSI-HOWTO.txt
-+++ b/Documentation/PCI/MSI-HOWTO.txt
-@@ -129,7 +129,7 @@ call to succeed.
- 
- 4.2.3 pci_enable_msi_block_auto
- 
--int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *count)
-+int pci_enable_msi_block_auto(struct pci_dev *dev, int *count)
- 
- This variation on pci_enable_msi() call allows a device driver to request
- the maximum possible number of MSIs.  The MSI specification only allows
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 623322d..c0e2259 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -846,7 +846,7 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
-  * updates the @dev's irq member to the lowest new interrupt number; the
-  * other interrupt numbers allocated to this device are consecutive.
-  */
--int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
-+int pci_enable_msi_block(struct pci_dev *dev, int nvec)
- {
- 	int status, maxvec;
- 	u16 msgctl;
-@@ -877,7 +877,7 @@ int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
- }
- EXPORT_SYMBOL(pci_enable_msi_block);
- 
--int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec)
-+int pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec)
- {
- 	int ret, nvec;
- 	u16 msgctl;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 39493b7..8cf7b15 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1154,13 +1154,13 @@ struct msix_entry {
- 
- 
- #ifndef CONFIG_PCI_MSI
--static inline int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec)
-+static inline int pci_enable_msi_block(struct pci_dev *dev, int nvec)
- {
- 	return -ENOSYS;
- }
- 
- static inline int
--pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec)
-+pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec)
- {
- 	return -ENOSYS;
- }
-@@ -1195,8 +1195,8 @@ static inline int pci_msi_enabled(void)
- 	return 0;
- }
- #else
--int pci_enable_msi_block(struct pci_dev *dev, unsigned int nvec);
--int pci_enable_msi_block_auto(struct pci_dev *dev, unsigned int *maxvec);
-+int pci_enable_msi_block(struct pci_dev *dev, int nvec);
-+int pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec);
- void pci_msi_shutdown(struct pci_dev *dev);
- void pci_disable_msi(struct pci_dev *dev);
- int pci_msix_table_size(struct pci_dev *dev);
+Sorry for the delay in replying.
+
+We've worked with our firmware engineers who have made changes
+to move around where certain drivers are allocating from which
+has helped reduce some of the fragmentation issue we were having.
+Since we are taking firmware drops from outside sources, we are
+subject to regressions in this area, so i'm still interested in
+this topic.
+
+To your point, kdump may still works for the platforms that
+have the broken firmware.  Much depends upon the memory and IO
+configuration on the system in question.
+
+>From prior mailing, apparently Macs are subject to the problem
+that efi_reserve_boot_services was created to address.  Smaller
+systems w/ less IO don't require the larger crash kernel allocations
+and hence are more likely to be able to find a gap in low memory
+that works.
+
+Its the larger systems with lots of cpus, memory, and IO that
+need to allocate the large crash kernels.  These types of systems
+are more at risk.
+
+Again,  my main concern is finding something that can be back ported
+into legacy kernels/distros.  For distros based upon newer kernel and
+associated tools, we can avoid the problem by allocating memory high.
+But, we don't have that option with legacy kernels/distros.
+
+So, if you have other suggestions, I'm willing to explore them.
+
+
+Jerry
+
 -- 
-1.7.7.6
+
+----------------------------------------------------------------------------
+Jerry Hoemann            Software Engineer              Hewlett-Packard
+
+3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
+Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
+                                                email:  jerry.hoemann@hp.com
+----------------------------------------------------------------------------
 
