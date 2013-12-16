@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab3LPEc2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 23:32:28 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:47856 "EHLO
+	id S1752747Ab3LPEc1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 23:32:27 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:53162 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab3LPEcX (ORCPT
+	with ESMTP id S1752334Ab3LPEcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 15 Dec 2013 23:32:23 -0500
-X-AuditID: 9c93017e-b7c17ae000003961-2f-52ae82535262
+X-AuditID: 9c93017e-b7c17ae000003961-2c-52ae8253f83d
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
@@ -18,9 +18,9 @@ Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 11/17] tracing/probes: Add fetch{,_size} member into deref fetch method
-Date: Mon, 16 Dec 2013 13:32:10 +0900
-Message-Id: <1387168336-13213-12-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 10/17] tracing/probes: Move 'symbol' fetch method to kprobes
+Date: Mon, 16 Dec 2013 13:32:09 +0900
+Message-Id: <1387168336-13213-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
 References: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
@@ -29,78 +29,227 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hyeoncheol Lee <cheol.lee@lge.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-The deref fetch methods access a memory region but it assumes that
-it's a kernel memory since uprobes does not support them.
+Move existing functions to trace_kprobe.c and add NULL entries to the
+uprobes fetch type table.  I don't make them static since some generic
+routines like update/free_XXX_fetch_param() require pointers to the
+functions.
 
-Add ->fetch and ->fetch_size member in order to provide a proper
-access methods for supporting uprobes.
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Hyeoncheol Lee <cheol.lee@lge.com>
-[namhyung@kernel.org: Split original patch into pieces as requested]
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_probe.c | 22 ++++++++++++++++++++--
- 1 file changed, 20 insertions(+), 2 deletions(-)
+ kernel/trace/trace_kprobe.c | 59 +++++++++++++++++++++++++++++++++++++++++++++
+ kernel/trace/trace_probe.c  | 59 ---------------------------------------------
+ kernel/trace/trace_probe.h  | 24 ++++++++++++++++++
+ kernel/trace/trace_uprobe.c |  8 ++++++
+ 4 files changed, 91 insertions(+), 59 deletions(-)
 
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 11478020f76c..1c38f3f47d0d 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -88,6 +88,51 @@ static int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs);
+ static int kretprobe_dispatcher(struct kretprobe_instance *ri,
+ 				struct pt_regs *regs);
+ 
++/* Memory fetching by symbol */
++struct symbol_cache {
++	char		*symbol;
++	long		offset;
++	unsigned long	addr;
++};
++
++unsigned long update_symbol_cache(struct symbol_cache *sc)
++{
++	sc->addr = (unsigned long)kallsyms_lookup_name(sc->symbol);
++
++	if (sc->addr)
++		sc->addr += sc->offset;
++
++	return sc->addr;
++}
++
++void free_symbol_cache(struct symbol_cache *sc)
++{
++	kfree(sc->symbol);
++	kfree(sc);
++}
++
++struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
++{
++	struct symbol_cache *sc;
++
++	if (!sym || strlen(sym) == 0)
++		return NULL;
++
++	sc = kzalloc(sizeof(struct symbol_cache), GFP_KERNEL);
++	if (!sc)
++		return NULL;
++
++	sc->symbol = kstrdup(sym, GFP_KERNEL);
++	if (!sc->symbol) {
++		kfree(sc);
++		return NULL;
++	}
++	sc->offset = offset;
++	update_symbol_cache(sc);
++
++	return sc;
++}
++
+ /*
+  * Kprobes-specific fetch functions
+  */
+@@ -103,6 +148,20 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
+ #define fetch_stack_string	NULL
+ #define fetch_stack_string_size	NULL
+ 
++#define DEFINE_FETCH_symbol(type)					\
++__kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
++					  void *data, void *dest)	\
++{									\
++	struct symbol_cache *sc = data;					\
++	if (sc->addr)							\
++		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
++	else								\
++		*(type *)dest = 0;					\
++}
++DEFINE_BASIC_FETCH_FUNCS(symbol)
++DEFINE_FETCH_symbol(string)
++DEFINE_FETCH_symbol(string_size)
++
+ /* Fetch type information table */
+ const struct fetch_type kprobes_fetch_type_table[] = {
+ 	/* Special types */
 diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index a31ad478b7f6..8d7231d436da 100644
+index 77aa7d18821e..a31ad478b7f6 100644
 --- a/kernel/trace/trace_probe.c
 +++ b/kernel/trace/trace_probe.c
-@@ -184,6 +184,8 @@ __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
+@@ -180,65 +180,6 @@ __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
+ 		*(u32 *)dest = len;
+ }
+ 
+-/* Memory fetching by symbol */
+-struct symbol_cache {
+-	char		*symbol;
+-	long		offset;
+-	unsigned long	addr;
+-};
+-
+-static unsigned long update_symbol_cache(struct symbol_cache *sc)
+-{
+-	sc->addr = (unsigned long)kallsyms_lookup_name(sc->symbol);
+-
+-	if (sc->addr)
+-		sc->addr += sc->offset;
+-
+-	return sc->addr;
+-}
+-
+-static void free_symbol_cache(struct symbol_cache *sc)
+-{
+-	kfree(sc->symbol);
+-	kfree(sc);
+-}
+-
+-static struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
+-{
+-	struct symbol_cache *sc;
+-
+-	if (!sym || strlen(sym) == 0)
+-		return NULL;
+-
+-	sc = kzalloc(sizeof(struct symbol_cache), GFP_KERNEL);
+-	if (!sc)
+-		return NULL;
+-
+-	sc->symbol = kstrdup(sym, GFP_KERNEL);
+-	if (!sc->symbol) {
+-		kfree(sc);
+-		return NULL;
+-	}
+-	sc->offset = offset;
+-	update_symbol_cache(sc);
+-
+-	return sc;
+-}
+-
+-#define DEFINE_FETCH_symbol(type)					\
+-__kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
+-					  void *data, void *dest)	\
+-{									\
+-	struct symbol_cache *sc = data;					\
+-	if (sc->addr)							\
+-		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
+-	else								\
+-		*(type *)dest = 0;					\
+-}
+-DEFINE_BASIC_FETCH_FUNCS(symbol)
+-DEFINE_FETCH_symbol(string)
+-DEFINE_FETCH_symbol(string_size)
+-
+ /* Dereference memory access function */
  struct deref_fetch_param {
  	struct fetch_param	orig;
- 	long			offset;
-+	fetch_func_t		fetch;
-+	fetch_func_t		fetch_size;
- };
+diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+index 8211dd674ab6..8be84550ceb3 100644
+--- a/kernel/trace/trace_probe.h
++++ b/kernel/trace/trace_probe.h
+@@ -239,6 +239,30 @@ ASSIGN_FETCH_FUNC(bitfield, ftype),			\
+ extern __weak const struct fetch_type kprobes_fetch_type_table[];
+ extern __weak const struct fetch_type uprobes_fetch_type_table[];
  
- #define DEFINE_FETCH_deref(type)					\
-@@ -195,13 +197,26 @@ __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
- 	call_fetch(&dprm->orig, regs, &addr);				\
- 	if (addr) {							\
- 		addr += dprm->offset;					\
--		fetch_memory_##type(regs, (void *)addr, dest);		\
-+		dprm->fetch(regs, (void *)addr, dest);			\
- 	} else								\
- 		*(type *)dest = 0;					\
- }
- DEFINE_BASIC_FETCH_FUNCS(deref)
- DEFINE_FETCH_deref(string)
--DEFINE_FETCH_deref(string_size)
-+
-+__kprobes void FETCH_FUNC_NAME(deref, string_size)(struct pt_regs *regs,
-+						   void *data, void *dest)
++#ifdef CONFIG_KPROBE_EVENT
++struct symbol_cache;
++unsigned long update_symbol_cache(struct symbol_cache *sc);
++void free_symbol_cache(struct symbol_cache *sc);
++struct symbol_cache *alloc_symbol_cache(const char *sym, long offset);
++#else
++struct symbol_cache {
++};
++static inline unsigned long __used update_symbol_cache(struct symbol_cache *sc)
 +{
-+	struct deref_fetch_param *dprm = data;
-+	unsigned long addr;
-+
-+	call_fetch(&dprm->orig, regs, &addr);
-+	if (addr && dprm->fetch_size) {
-+		addr += dprm->offset;
-+		dprm->fetch_size(regs, (void *)addr, dest);
-+	} else
-+		*(string_size *)dest = 0;
++	return 0;
 +}
++
++static inline void __used free_symbol_cache(struct symbol_cache *sc)
++{
++}
++
++static inline struct symbol_cache * __used
++alloc_symbol_cache(const char *sym, long offset)
++{
++	return NULL;
++}
++#endif /* CONFIG_KPROBE_EVENT */
++
+ struct probe_arg {
+ 	struct fetch_param	fetch;
+ 	struct fetch_param	fetch_size;
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 5395d37e5e72..adc9ac70fd3c 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -115,6 +115,14 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
+ #define fetch_stack_string_size	NULL
  
- static __kprobes void update_deref_fetch_param(struct deref_fetch_param *data)
- {
-@@ -477,6 +492,9 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
- 				return -ENOMEM;
  
- 			dprm->offset = offset;
-+			dprm->fetch = t->fetch[FETCH_MTD_memory];
-+			dprm->fetch_size = get_fetch_size_function(t,
-+							dprm->fetch, ftbl);
- 			ret = parse_probe_arg(arg, t2, &dprm->orig, is_return,
- 							is_kprobe);
- 			if (ret)
++/* uprobes don't support symbol fetch methods */
++#define fetch_symbol_u8			NULL
++#define fetch_symbol_u16		NULL
++#define fetch_symbol_u32		NULL
++#define fetch_symbol_u64		NULL
++#define fetch_symbol_string		NULL
++#define fetch_symbol_string_size	NULL
++
+ /* Fetch type information table */
+ const struct fetch_type uprobes_fetch_type_table[] = {
+ 	/* Special types */
 -- 
 1.7.11.7
 
