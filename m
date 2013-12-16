@@ -1,111 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab3LPWVa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 17:21:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35743 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750948Ab3LPWV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 17:21:29 -0500
-Date: Mon, 16 Dec 2013 17:20:51 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Eric Paris <eparis@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH 11/12] pid: rewrite task helper functions avoiding
- task->pid and task->tgid
-Message-ID: <20131216222051.GA21056@madcap2.tricolour.ca>
-References: <cover.1377032086.git.rgb@redhat.com>
- <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com>
- <20130822190848.GA25053@redhat.com>
- <20130826220711.GA21098@madcap2.tricolour.ca>
- <20131216173547.GA21582@madcap2.tricolour.ca>
- <20131216210558.GA8565@redhat.com>
+	id S1752038Ab3LPWYO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 17:24:14 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:50448 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab3LPWYM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 17:24:12 -0500
+Date: Mon, 16 Dec 2013 14:24:09 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
+Subject: [GIT PULL] bcache fixes for 3.13
+Message-ID: <20131216222409.GD4054@kmo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131216210558.GA8565@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/12/16, Oleg Nesterov wrote:
-> Hi Richard,
-> 
-> Sorry, I already forgot the context, not sure I understand your email
-> correctly.
-> 
-> On 12/16, Richard Guy Briggs wrote:
-> > On 13/08/26, Richard Guy Briggs wrote:
-> > > On Thu, Aug 22, 2013 at 09:08:48PM +0200, Oleg Nesterov wrote:
-> > > > On 08/20, Richard Guy Briggs wrote:
-> > > > >
-> > > > >  static inline int is_global_init(struct task_struct *tsk)
-> > > > >  {
-> > > > > -	return tsk->pid == 1;
-> > > > > +	return task_pid_nr(tsk) == 1;
-> > > > >  }
-> > > >
-> > > > Probably it would be better to simply kill it. Almost every usage is
-> > > > wrong.
-> > >
-> > > Can you be more clear?  I don't follow.  It should instead return a
-> > > boolean.  Usage of is_global_init() or task_pid_nr()?
-> > >
-> > > If is_global_init(), is that because they could be unaware of pid
-> > > namespaces?
-> > >
-> > > If task_pid_nr(), is that for the same reason?
-> >
-> > Oleg,  I still don't understand your comment above.  Kill what,
-> > "is_global_init()"?  If so, how is almost every usage of it wrong?
-> 
-> Because is_global_init() is only true for the main thread of /sbin/init.
-> 
-> Just look at oom_unkillable_task(). It tries to not kill init. But, say,
-> select_bad_process() can happily find a sub-thread of is_global_init()
-> and still kill it.
+Jens - small pile of bcache fixes. I've been slacking on the writeback fixes but
+those definitely need to get into 3.13:
 
-Ah!  So it should be task_tgid_nr(tsk) == 1.
+The following changes since commit c86949486d41d9e7d7681fc72923555114fd702f:
 
-> > There are a number of functions that call is_global_init().  Might any
-> > of them be called from inside the namespace context of a container and
-> > hence should return true?
-> 
-> Not sure I understand, but certainly some callers should check ->child_reaper
-> or SIGNAL_UNKILLABLE instead. Say, unhandled_signal().
+  bcache: defensively handle format strings (2013-11-10 21:56:43 -0800)
 
-So in some situations it should allow it to kill init of a container and
-in others, refuse it.
+are available in the git repository at:
 
-> > > > >  static inline bool is_idle_task(const struct task_struct *p)
-> > > > >  {
-> > > > > -	return p->pid == 0;
-> > > > > +	return task_pid(p) == &init_struct_pid;
-> > > > >  }
-> > > >
-> > > > hmm. there should be a simpler check for this...
-> > >
-> > > Other than the original, this one is pretty simple.  What did you have
-> > > in mind?
-> >
-> > I vaguely remember a clarification to this, but don't remember and can't
-> > find it.  What sort of simplification did you have in mind?
-> 
-> I do not remember ;) Most probably, I meant "it would be nice to find a
-> simpler check".
+  git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.13
 
-I'll stick with task_pid_nr(p) == 0.
+for you to fetch changes up to 16749c23c00c686ed168471963e3ddb0f3fcd855:
 
-> Oleg.
+  bcache: New writeback PD controller (2013-12-16 14:22:59 -0800)
 
-- RGB
+----------------------------------------------------------------
+Kent Overstreet (4):
+      bcache: Use uninterruptible sleep in writeback
+      bcache: Fix dirty_data accounting
+      bcache: bugfix for race between moving_gc and bucket_invalidate
+      bcache: New writeback PD controller
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+Nicholas Swenson (5):
+      bcache: Fix for can_attach_cache()
+      bcache: Fix heap_peek() macro
+      bcache: fix for gc crashing when no sectors are used
+      bcache: bugfix - moving_gc now moves only correct buckets
+      bcache: fix for gc and writeback race
+
+Stefan Priebe (1):
+      bcache: kthread don't set writeback task to INTERUPTIBLE
+
+Wei Yongjun (1):
+      bcache: fix sparse non static symbol warning
+
+ drivers/md/bcache/alloc.c     |  2 ++
+ drivers/md/bcache/bcache.h    | 12 +++++-----
+ drivers/md/bcache/btree.c     | 27 ++++++++++++++++++++--
+ drivers/md/bcache/movinggc.c  | 21 ++++++++++++-----
+ drivers/md/bcache/super.c     |  2 +-
+ drivers/md/bcache/sysfs.c     | 50 +++++++++++++++++++++++-----------------
+ drivers/md/bcache/util.c      |  8 ++++++-
+ drivers/md/bcache/util.h      |  2 +-
+ drivers/md/bcache/writeback.c | 53 ++++++++++++++++++++-----------------------
+ 9 files changed, 111 insertions(+), 66 deletions(-)
