@@ -1,135 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346Ab3LPDQr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 22:16:47 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:35494 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998Ab3LPDQc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 22:16:32 -0500
-Message-ID: <52AE7086.2030708@gmail.com>
-Date: Sun, 15 Dec 2013 20:16:22 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH v0 07/71] perf tools: Record whether a dso is 64-bit
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-8-git-send-email-alexander.shishkin@linux.intel.com>
-In-Reply-To: <1386765443-26966-8-git-send-email-alexander.shishkin@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752398Ab3LPDSm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 22:18:42 -0500
+Received: from ozlabs.org ([203.10.76.45]:57537 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751998Ab3LPDSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Dec 2013 22:18:40 -0500
+Date: Mon, 16 Dec 2013 14:18:35 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Borislav Petkov <bp@suse.de>, Matt Fleming <matt.fleming@intel.com>
+Subject: linux-next: manual merge of the tip tree with Linus' tree
+Message-Id: <20131216141835.0ded286276730efcf7fed52e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__16_Dec_2013_14_18_35_+1100_fPYZ=ppb6lN5jg_A"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/13, 5:36 AM, Alexander Shishkin wrote:
-> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-> index a0c7c59..80817ec 100644
-> --- a/tools/perf/util/dso.c
-> +++ b/tools/perf/util/dso.c
-> @@ -446,6 +446,7 @@ struct dso *dso__new(const char *name)
->   		dso->cache = RB_ROOT;
->   		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
->   		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
-> +		dso->is_64_bit = (sizeof(void *) == 8);
->   		dso->loaded = 0;
->   		dso->rel = 0;
->   		dso->sorted_by_name = 0;
-> diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-> index 384f2d9..62680e1 100644
-> --- a/tools/perf/util/dso.h
-> +++ b/tools/perf/util/dso.h
-> @@ -91,6 +91,7 @@ struct dso {
->   	u8		 annotate_warned:1;
->   	u8		 sname_alloc:1;
->   	u8		 lname_alloc:1;
-> +	u8		 is_64_bit:1;
->   	u8		 sorted_by_name;
->   	u8		 loaded;
->   	u8		 rel;
-> diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-> index eed0b96..a0fc81b 100644
-> --- a/tools/perf/util/symbol-elf.c
-> +++ b/tools/perf/util/symbol-elf.c
-> @@ -595,6 +595,8 @@ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
->   			goto out_elf_end;
->   	}
->
-> +	ss->is_64_bit = (gelf_getclass(elf) == ELFCLASS64);
-> +
->   	ss->symtab = elf_section_by_name(elf, &ehdr, &ss->symshdr, ".symtab",
->   			NULL);
->   	if (ss->symshdr.sh_type != SHT_SYMTAB)
-> @@ -694,6 +696,7 @@ int dso__load_sym(struct dso *dso, struct map *map,
->   	bool remap_kernel = false, adjust_kernel_syms = false;
->
->   	dso->symtab_type = syms_ss->type;
-> +	dso->is_64_bit = syms_ss->is_64_bit;
->   	dso->rel = syms_ss->ehdr.e_type == ET_REL;
->
->   	/*
-> diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-> index ac7070a..b9d1119 100644
-> --- a/tools/perf/util/symbol-minimal.c
-> +++ b/tools/perf/util/symbol-minimal.c
-> @@ -1,3 +1,4 @@
-> +#include "util.h"
->   #include "symbol.h"
->
->   #include <stdio.h>
-> @@ -287,6 +288,23 @@ int dso__synthesize_plt_symbols(struct dso *dso __maybe_unused,
->   	return 0;
->   }
->
-> +static int fd__is_64_bit(int fd)
-> +{
-> +	u8 e_ident[EI_NIDENT];
-> +
-> +	if (lseek(fd, 0, SEEK_SET))
-> +		return -1;
-> +
-> +	if (readn(fd, e_ident, sizeof(e_ident)) != sizeof(e_ident))
-> +		return -1;
-> +
-> +	if (memcmp(e_ident, ELFMAG, SELFMAG) ||
-> +	    e_ident[EI_VERSION] != EV_CURRENT)
-> +		return -1;
-> +
-> +	return e_ident[EI_CLASS] == ELFCLASS64;
-> +}
-> +
->   int dso__load_sym(struct dso *dso, struct map *map __maybe_unused,
->   		  struct symsrc *ss,
->   		  struct symsrc *runtime_ss __maybe_unused,
-> @@ -294,6 +312,11 @@ int dso__load_sym(struct dso *dso, struct map *map __maybe_unused,
->   		  int kmodule __maybe_unused)
->   {
->   	unsigned char *build_id[BUILD_ID_SIZE];
-> +	int ret;
-> +
-> +	ret = fd__is_64_bit(ss->fd);
-> +	if (ret >= 0)
-> +		dso->is_64_bit = ret;
->
->   	if (filename__read_build_id(ss->name, build_id, BUILD_ID_SIZE) > 0) {
->   		dso__set_build_id(dso, build_id);
+--Signature=_Mon__16_Dec_2013_14_18_35_+1100_fPYZ=ppb6lN5jg_A
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
-Here's what is wrong with this API: you are determining DSO bitness at 
-symbol load time, not when the DSO is created and added to the maps.
+Today's linux-next merge of the tip tree got a conflict in
+arch/x86/platform/efi/efi.c between commit 04bf9ba720fc ("x86, efi: Don't
+use (U)EFI time services on 32 bit") from Linus' tree and commit
+f4fccac05f7f ("x86/efi: Simplify EFI_DEBUG") from the tip tree.
 
-As I pointed out in a prior comment you are initializing dso->is_64_bit 
-to perf's bitness when the dso object is created (dso__new) but the 
-value is not correctly set until dso__load time. Some tools (perf-trace) 
-never load symbols, so that value is always wrong in the sense that its 
-value has no correlation to the dso object.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-David
+--=20
+Cheers,
+Stephen Rothwell <sfr@canb.auug.org.au>
+
+diff --cc arch/x86/platform/efi/efi.c
+index cceb813044ef,f8ec4dafc74e..000000000000
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@@ -690,9 -692,13 +692,7 @@@ void __init efi_init(void
+ =20
+  	set_bit(EFI_MEMMAP, &x86_efi_facility);
+ =20
+- #if EFI_DEBUG
+ -#ifdef CONFIG_X86_32
+ -	if (efi_is_native()) {
+ -		x86_platform.get_wallclock =3D efi_get_time;
+ -		x86_platform.set_wallclock =3D efi_set_rtc_mmss;
+ -	}
+ -#endif
+  	print_efi_memmap();
+- #endif
+  }
+ =20
+  void __init efi_late_init(void)
+
+--Signature=_Mon__16_Dec_2013_14_18_35_+1100_fPYZ=ppb6lN5jg_A
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSrnEOAAoJEMDTa8Ir7ZwVgz8P/2U8vh5ZWOxB8oROWNdBIKSm
+SOJbP2Q/73nI3h0r5xLPmMT5f46MIlt8XN07bIJBBWqDk1yePGWbhIBuNtGB7xNv
+9dW02/bS2ar4e6pneOXqjEFManb++7bjALhxWvqPnROT/JZ/6qfMPn8Pss/1EkGN
+LRMmLFGJpogyEtqIeZdJt4Xq2Ype8bNc9uuCIobrzkEnEm0u+8rS7L31tbBdZ92w
+RXmOU3Y17pNGbHSwFQOcQAz4jjFocYqW8NKt32m4fqZPP9v+qKNO7GplC6vUwAQm
+vZHo9BmmjIi94gHfx/pjbB2RTCXHhA6bU6cEQrPNnsVwduJJYJ42Y0OslaKw4NH5
+nxo53pP7oN6bLy4/Yd07rIcArJWdWOtr9pvgtNzmI2tI9HrDQ0YI7+1CPNq5o9HF
+gDH6bSr4M39s+3ENIGeT3cg25NYoFqhnHllY6vQmU1W+/CD0xoL5+wJVQdAkCiQw
+UDmfjLfhQYXsPlbXRXC0GgP9ubYbpX63alUEI+e0PNBaA8t+cGBNgkHeqDAuyi5O
+bi7os/DUEgcQvQ9ZEHEAlTjUarcDg3rhEf35ykUy835Z7sFbD6ORjcGvTDV7usBu
+44D14nRYcogenv75FU8cqY6IEXNvTuSvnA/5FiT7la0YdGJWHud2w9nTCdGRr1LR
+UO+IOQvFaIZ9p+jdJu44
+=gFDG
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__16_Dec_2013_14_18_35_+1100_fPYZ=ppb6lN5jg_A--
