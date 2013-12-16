@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab3LPKVy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:21:54 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:39364 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753193Ab3LPKVw convert rfc822-to-8bit (ORCPT
+	id S1753270Ab3LPKYp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:24:45 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:61650 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab3LPKYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:21:52 -0500
-X-Originating-IP: 50.43.14.201
-Date: Mon, 16 Dec 2013 02:21:42 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH 2/2] drivers: dma: Include appropriate header file in
- dca.c
-Message-ID: <20131216102142.GB22119@leaf>
-References: <dba654dc34646dda2998dbf7b08d7ce3c160ff8c.1387188138.git.rashika.kheria@gmail.com>
- <855c6e216e86bed7b723c1a647491d9fab2ed77b.1387188138.git.rashika.kheria@gmail.com>
+	Mon, 16 Dec 2013 05:24:43 -0500
+Date: Mon, 16 Dec 2013 11:24:39 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alex Shi <alex.shi@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
+        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
+ range flush v2
+Message-ID: <20131216102439.GA21624@gmail.com>
+References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
+ <CA+55aFyNAigQqBk07xLpf0nkhZ_x-QkBYG8otRzsqg_8A2eg-Q@mail.gmail.com>
+ <20131215155539.GM11295@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <855c6e216e86bed7b723c1a647491d9fab2ed77b.1387188138.git.rashika.kheria@gmail.com>
+In-Reply-To: <20131215155539.GM11295@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 03:44:39PM +0530, Rashika Kheria wrote:
-> Includes an appropriate header file dma_v2.h in ioat/dca.c because
-> functions ioat2_dca_init() and ioat3_dca_init() have their function
-> declarations in dma_v2.h.
-> 
-> This eliminates the following warning in ioat/dca.c:
-> drivers/dma/ioat/dca.c:410:22: warning: no previous prototype for ‘ioat2_dca_init’ [-Wmissing-prototypes]
-> drivers/dma/ioat/dca.c:624:22: warning: no previous prototype for ‘ioat3_dca_init’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+* Mel Gorman <mgorman@suse.de> wrote:
 
->  drivers/dma/ioat/dca.c |    1 +
->  1 file changed, 1 insertion(+)
+> I had hacked ebizzy to report on the performance of each thread, not 
+> just the overall result and worked out the difference in performance 
+> of each thread. In a complete fair test you would expect the 
+> performance of each thread to be identical and so the spread would 
+> be 0
 > 
-> diff --git a/drivers/dma/ioat/dca.c b/drivers/dma/ioat/dca.c
-> index 9e84d5b..b158bba 100644
-> --- a/drivers/dma/ioat/dca.c
-> +++ b/drivers/dma/ioat/dca.c
-> @@ -35,6 +35,7 @@
->  
->  #include "dma.h"
->  #include "registers.h"
-> +#include "dma_v2.h"
->  
->  /*
->   * Bit 7 of a tag map entry is the "valid" bit, if it is set then bits 0:6
-> -- 
-> 1.7.9.5
+> ebizzy thread spread
+>                     3.13.0-rc3            3.13.0-rc3                3.4.69
+>                        vanilla           nowalk-v2r7               vanilla
+> Mean   1        0.00 (  0.00%)        0.00 (  0.00%)        0.00 (  0.00%)
+> Mean   2        0.34 (  0.00%)        0.30 (-11.76%)        0.07 (-79.41%)
+> Mean   3        1.29 (  0.00%)        0.92 (-28.68%)        0.29 (-77.52%)
+> Mean   4        7.08 (  0.00%)       42.38 (498.59%)        0.22 (-96.89%)
+> Mean   5      193.54 (  0.00%)      483.41 (149.77%)        0.41 (-99.79%)
+> Mean   6      151.12 (  0.00%)      198.22 ( 31.17%)        0.42 (-99.72%)
+> Mean   7      115.38 (  0.00%)      160.29 ( 38.92%)        0.58 (-99.50%)
+> Mean   8      108.65 (  0.00%)      138.96 ( 27.90%)        0.44 (-99.60%)
+> Range  1        0.00 (  0.00%)        0.00 (  0.00%)        0.00 (  0.00%)
+> Range  2        5.00 (  0.00%)        6.00 ( 20.00%)        2.00 (-60.00%)
+> Range  3       10.00 (  0.00%)       17.00 ( 70.00%)        9.00 (-10.00%)
+> Range  4      256.00 (  0.00%)     1001.00 (291.02%)        5.00 (-98.05%)
+> Range  5      456.00 (  0.00%)     1226.00 (168.86%)        6.00 (-98.68%)
+> Range  6      298.00 (  0.00%)      294.00 ( -1.34%)        8.00 (-97.32%)
+> Range  7      192.00 (  0.00%)      220.00 ( 14.58%)        7.00 (-96.35%)
+> Range  8      171.00 (  0.00%)      163.00 ( -4.68%)        8.00 (-95.32%)
+> Stddev 1        0.00 (  0.00%)        0.00 (  0.00%)        0.00 (  0.00%)
+> Stddev 2        0.72 (  0.00%)        0.85 (-17.99%)        0.29 ( 59.72%)
+> Stddev 3        1.42 (  0.00%)        1.90 (-34.22%)        1.12 ( 21.19%)
+> Stddev 4       33.83 (  0.00%)      127.26 (-276.15%)        0.79 ( 97.65%)
+> Stddev 5       92.08 (  0.00%)      225.01 (-144.35%)        1.06 ( 98.85%)
+> Stddev 6       64.82 (  0.00%)       69.43 ( -7.11%)        1.28 ( 98.02%)
+> Stddev 7       36.66 (  0.00%)       49.19 (-34.20%)        1.18 ( 96.79%)
+> Stddev 8       30.79 (  0.00%)       36.23 (-17.64%)        1.06 ( 96.55%)
 > 
+> For example, this is saying that with 8 threads on 3.13-rc3 that the 
+> difference between the slowest and fastest thread was 171 
+> records/second.
+
+We aren't blind fairness fetishists, but the noise difference between 
+v3.4 and v3.13 appears to be staggering, it's a serious anomaly in 
+itself.
+
+Whatever we did right in v3.4 we want to do in v3.13 as well - or at 
+least understand it.
+
+I agree that the absolute numbers would probably only be interesting 
+once v3.13 is fixed to not spread thread performance that wildly 
+again.
+
+> [...] Because of this bug, I'd be wary about drawing too many 
+> conclusions about ebizzy performance when the number of threads 
+> exceed the number of CPUs.
+
+Yes.
+
+Could it be that the v3.13 workload context switches a lot more than 
+v3.4 workload? That would magnify any TLB range flushing costs and 
+would make it essentially a secondary symptom, not a primary cause of 
+the regression. (I'm only guessing blindly here though.)
+
+Thanks,
+
+	Ingo
