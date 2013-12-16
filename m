@@ -1,134 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab3LPM73 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 07:59:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55286 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753456Ab3LPM72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 07:59:28 -0500
-Date: Mon, 16 Dec 2013 12:59:23 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alex Shi <alex.shi@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
-        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
- range flush v2
-Message-ID: <20131216125923.GS11295@suse.de>
-References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
- <CA+55aFyNAigQqBk07xLpf0nkhZ_x-QkBYG8otRzsqg_8A2eg-Q@mail.gmail.com>
- <20131215155539.GM11295@suse.de>
- <20131216102439.GA21624@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20131216102439.GA21624@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753908Ab3LPNBc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 08:01:32 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:45392 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345Ab3LPNBb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 08:01:31 -0500
+Message-ID: <1387198885.13062.154.camel@host5.omatika.ru>
+Subject: Re: [PATCH v2 00/16] ARM: support for ICP DAS LP-8x4x (with dts)
+From: Sergei Ianovich <ynvich@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Daniel Mack <zonque@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Date: Mon, 16 Dec 2013 17:01:25 +0400
+In-Reply-To: <201312150355.27755.arnd@arndb.de>
+References: <1386543229-1542-1-git-send-email-ynvich@gmail.com>
+	 <201312150153.54044.arnd@arndb.de>
+	 <1387073571.13062.102.camel@host5.omatika.ru>
+	 <201312150355.27755.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 11:24:39AM +0100, Ingo Molnar wrote:
-> 
-> * Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > I had hacked ebizzy to report on the performance of each thread, not 
-> > just the overall result and worked out the difference in performance 
-> > of each thread. In a complete fair test you would expect the 
-> > performance of each thread to be identical and so the spread would 
-> > be 0
-> > 
-> > ebizzy thread spread
-> >                     3.13.0-rc3            3.13.0-rc3                3.4.69
-> >                        vanilla           nowalk-v2r7               vanilla
-> > Mean   1        0.00 (  0.00%)        0.00 (  0.00%)        0.00 (  0.00%)
-> > Mean   2        0.34 (  0.00%)        0.30 (-11.76%)        0.07 (-79.41%)
-> > Mean   3        1.29 (  0.00%)        0.92 (-28.68%)        0.29 (-77.52%)
-> > Mean   4        7.08 (  0.00%)       42.38 (498.59%)        0.22 (-96.89%)
-> > Mean   5      193.54 (  0.00%)      483.41 (149.77%)        0.41 (-99.79%)
-> > Mean   6      151.12 (  0.00%)      198.22 ( 31.17%)        0.42 (-99.72%)
-> > Mean   7      115.38 (  0.00%)      160.29 ( 38.92%)        0.58 (-99.50%)
-> > Mean   8      108.65 (  0.00%)      138.96 ( 27.90%)        0.44 (-99.60%)
-> > Range  1        0.00 (  0.00%)        0.00 (  0.00%)        0.00 (  0.00%)
-> > Range  2        5.00 (  0.00%)        6.00 ( 20.00%)        2.00 (-60.00%)
-> > Range  3       10.00 (  0.00%)       17.00 ( 70.00%)        9.00 (-10.00%)
-> > Range  4      256.00 (  0.00%)     1001.00 (291.02%)        5.00 (-98.05%)
-> > Range  5      456.00 (  0.00%)     1226.00 (168.86%)        6.00 (-98.68%)
-> > Range  6      298.00 (  0.00%)      294.00 ( -1.34%)        8.00 (-97.32%)
-> > Range  7      192.00 (  0.00%)      220.00 ( 14.58%)        7.00 (-96.35%)
-> > Range  8      171.00 (  0.00%)      163.00 ( -4.68%)        8.00 (-95.32%)
-> > Stddev 1        0.00 (  0.00%)        0.00 (  0.00%)        0.00 (  0.00%)
-> > Stddev 2        0.72 (  0.00%)        0.85 (-17.99%)        0.29 ( 59.72%)
-> > Stddev 3        1.42 (  0.00%)        1.90 (-34.22%)        1.12 ( 21.19%)
-> > Stddev 4       33.83 (  0.00%)      127.26 (-276.15%)        0.79 ( 97.65%)
-> > Stddev 5       92.08 (  0.00%)      225.01 (-144.35%)        1.06 ( 98.85%)
-> > Stddev 6       64.82 (  0.00%)       69.43 ( -7.11%)        1.28 ( 98.02%)
-> > Stddev 7       36.66 (  0.00%)       49.19 (-34.20%)        1.18 ( 96.79%)
-> > Stddev 8       30.79 (  0.00%)       36.23 (-17.64%)        1.06 ( 96.55%)
-> > 
-> > For example, this is saying that with 8 threads on 3.13-rc3 that the 
-> > difference between the slowest and fastest thread was 171 
-> > records/second.
-> 
-> We aren't blind fairness fetishists, but the noise difference between 
-> v3.4 and v3.13 appears to be staggering, it's a serious anomaly in 
-> itself.
-> 
+On Sun, 2013-12-15 at 03:55 +0100, Arnd Bergmann wrote:
+> On Sunday 15 December 2013, Sergei Ianovich wrote:
+> ...
+> I think the way you have structured your code is good, and an MFD would
+> not help. Please just restructure the DT representation to contain the
+> external-bus and/or the fpga connected to it. You probably don't need both,
+> but it doesn't hurt to show them as different device-nodes either.
+> Your choice.
 
-Agreed.
+PXA27x memory bus can have up to 10 devices: up to 6 slower
+flash/SRAM/variable-latency-IO selected by nCS<0> to <5>, and up to 4
+partions of SDRAM selected by nSDCS<0> to <3>.
 
-> Whatever we did right in v3.4 we want to do in v3.13 as well - or at 
-> least understand it.
-> 
+It appears that the FPGA is directly connected to the memory bus and is
+selected by nCS<5>. According to MSC2 configuration (already in the
+mainstream U-Boot), the FPGA is configured as a synchronous SRAM with
+access cycle of 30x memory bus cycles. So I made it a top-level bus like
+pxabus.
 
-Also agreed. I started a bisection before answering this mail. It would
-be cooler and potentially faster to figure it out from direct analysis
-but bisection is reliable and less guesswork.
+Ethernet devices are also connected to the memory bus via some kind of
+gate array. This one is a bit faster -- 15x memory cycles, which is
+still a lot. It explains why network transfers are never faster than 15
+Mbit/s.
 
-> I agree that the absolute numbers would probably only be interesting 
-> once v3.13 is fixed to not spread thread performance that wildly 
-> again.
-> 
-> > [...] Because of this bug, I'd be wary about drawing too many 
-> > conclusions about ebizzy performance when the number of threads 
-> > exceed the number of CPUs.
-> 
-> Yes.
-> 
-> Could it be that the v3.13 workload context switches a lot more than 
-> v3.4 workload?
+The final tree looks like this:
 
-The opposite. 3.13 context switches and interrupts less.
+diff --git a/arch/arm/boot/dts/pxa27x-lp8x4x.dts b/arch/arm/boot/dts/pxa27x-lp8x4x.dts
+new file mode 100644
+index 0000000..cb2a31d
+--- /dev/null
++++ b/arch/arm/boot/dts/pxa27x-lp8x4x.dts
+@@ -0,0 +1,208 @@
++/* Device tree for ICP DAS LP-8x4x */
++/dts-v1/;
++
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++#include "pxa27x.dtsi"
++
++/ {
++	model = "ICP DAS LP-8x4x programmable automation controller";
++	compatible = "marvell,lp8x4x", "marvell,pxa270";
++
++	aliases {
++		ethernet0 = &eth0;
++		ethernet1 = &eth1;
++	};
++
++	memory {
++		/*
++		 * SDRAM
++		 * connected to CPU via nSDCS<0>
++		 */
++		reg = <0xa0000000 0x08000000>;
++	};
++
++	regulators {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		vmmc: regulator@0 {
++			compatible = "regulator-fixed";
++			reg = <0>;
++			regulator-name = "vmmc";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			regulator-always-on;
++		};
++	};
++
++	flash@00000000 {
++		/*
++		 * Boot memory
++		 * connected to CPU via nCS<0>
++		 */
++		compatible = "cfi-flash";
++		reg = <0x0 0x02000000>;
++		bank-width = <4>;
++		device-width = <2>;
++		#address-cells = <1>;
++		#size-cells = <1>;
++		fs@0 {
++			label = "u-boot";
++			reg = <0 0x40000>;
++		};
++		fs@40000 {
++			label = "settings";
++			reg = <0x40000 0x40000>;
++		};
++		fs@80000 {
++			label = "kernel";
++			reg = <0x80000 0x280000>;
++		};
++		fs@300000 {
++			label = "root_fs";
++			reg = <0x300000 0x1d00000>;
++		};
++	};
++
++	flash@04000000 {
++		/*
++		 * connected to CPU via nCS<1>
++		 */
++		compatible = "cfi-flash";
++		reg = <0x04000000 0x02000000>;
++		bank-width = <2>;
++		device-width = <1>;
++	};
++
++	pxabus {
++		pxairq: interrupt-controller@40d00000 {
++			marvell,intc-priority;
++			marvell,intc-nr-irqs = <34>;
++		};
++
++		uart@40100000 {
++			status = "okay";
++		};
++
++		uart@40200000 {
++			status = "okay";
++		};
++
++		uart@40700000 {
++			status = "okay";
++		};
++
++		mmc@41100000 {
++			status = "okay";
++			vmmc-supply = <&vmmc>;
++		};
++
++		ohci@4c000000 {
++			status = "okay";
++			marvell,port-mode = <3>;
++			marvell,oc-mode-perport;
++			marvell,enable-port1;
++		};
++	};
++
++	extbus {
++		/*
++		 * Transparent bus, 2 byte-wide access
++		 * connected to CPU via nCS<3>
++		 */
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++		interrupt-parent = <&gpio>;
++
++		eth0: eth@0c000000 {
++			compatible = "davicom,dm9000";
++			reg = <0x0c000000 0x2
++			       0x0c004000 0x2>;
++			interrupts = <9 IRQ_TYPE_EDGE_RISING>;
++			status = "okay";
++		};
++
++		eth1: eth@0d000000 {
++			compatible = "davicom,dm9000";
++			reg = <0x0d000000 0x2
++			       0x0d004000 0x2>;
++			interrupts = <82 IRQ_TYPE_EDGE_RISING>;
++			status = "okay";
++		};
++	};
++
++	fpgabus {
++		/*
++		 * Transparent bus, 1 byte-wide access, even addresses only
++		 * connected to CPU via nCS<5>
++		 */
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges = <0 0x17000000 0x10000>;
++		interrupt-parent = <&fpga>;
++
++		rtc@901c {
++			compatible = "ds,rtc-ds1302";
++			reg = <0x901c 0x1>;
++			status = "okay";
++		};
++
++		sram@a000 {
++			compatible = "icpdas,sram-lp8x4x";
++			reg = <0xa000 0x1000
++			       0x901e 0x1>;
++		};
++
++		fpga: irq@9006 {
++			compatible = "icpdas,irq-lp8x4x";
++			reg = <0x9006 0x16>;
++			interrupt-parent = <&gpio>;
++			interrupts = <3 IRQ_TYPE_EDGE_FALLING>;
++			#interrupt-cells = <1>;
++			interrupt-controller;
++			status = "okay";
++		};
++
++		uart@9050 {
++			compatible = "icpdas,uart-lp8x4x";
++			reg = <0x9050 0x10
++			       0x9030 0x02>;
++			interrupts = <13>;
++			status = "okay";
++		};
++
++		uart@9060 {
++			compatible = "icpdas,uart-lp8x4x";
++			reg = <0x9060 0x10
++			       0x9032 0x02>;
++			interrupts = <14>;
++			status = "okay";
++		};
++
++		uart@9070 {
++			compatible = "icpdas,uart-lp8x4x";
++			reg = <0x9070 0x10
++			       0x9034 0x02>;
++			interrupts = <15>;
++			status = "okay";
++		};
++
++		backplane@9046 {
++			compatible = "icpdas,backplane-lp8x4x";
++			reg = <0x9046 0x2
++			       0x9004 0x2
++			       0x1000 0x10
++			       0x2000 0x10
++			       0x3000 0x10
++			       0x4000 0x10
++			       0x5000 0x10
++			       0x6000 0x10
++			       0x7000 0x10
++			       0x8000 0x10>;
++		};
++	};
++};
 
-> That would magnify any TLB range flushing costs and 
-> would make it essentially a secondary symptom, not a primary cause of 
-> the regression. (I'm only guessing blindly here though.)
-> 
 
-Fortunately, I had collected data on context switches
 
-4 core machine: http://www.csn.ul.ie/~mel/postings/spread-20131216/global-ebizzy/ivor/report.html
-8 core machine: http://www.csn.ul.ie/~mel/postings/spread-20131216/global-ebizzy/ivy/report.html
-
-The ebizzy results are at the end. One of the graphs are for context
-switches as measured by vmstat running during the test.
-
-In both cases you can see that context switches are higher for 3.4 as
-are interrupts. The difference in context switches are why I thought this
-might be scheduler related but the difference in interrupts was harder to
-explain. I'm guessing they're IPIs but did not record /proc/interrupts
-to answer that. I lack familiarity with scheduler changes between 3.4
-and 3.13-rc4 and have no intuitive feeling for when this might have been
-introduced. I'm also not sure if we used to do anything like send IPIs
-to reschedule tasks or balance tasks between idle cores that changed
-recently. There was also a truckload of nohz changes in that window that
-I'm not familiar with that are potentially responsible. Should have
-answers soon enough.
-
--- 
-Mel Gorman
-SUSE Labs
