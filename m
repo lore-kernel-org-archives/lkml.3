@@ -1,86 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab3LPTk4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 14:40:56 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:36001 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755536Ab3LPTk1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 14:40:27 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 64.17.244.34
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19tXBdV7coD9tjeDcbkQRV8
-Date: Mon, 16 Dec 2013 11:40:23 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Tomasz Figa <t.figa@samsung.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] regulator: Start using standard gpios property and
- deprecate some custom properties
-Message-ID: <20131216194023.GE26293@atomide.com>
-References: <1386965234-26461-1-git-send-email-tony@atomide.com>
- <20131216183615.GK3185@sirena.org.uk>
+	id S1755596Ab3LPTly (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 14:41:54 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:47698 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755228Ab3LPTlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 14:41:52 -0500
+Date: Mon, 16 Dec 2013 13:41:13 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Felipe Balbi <balbi@ti.com>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, WingMan Kwok <w-kwok2@ti.com>,
+        Roger Quadros <rogerq@ti.com>
+Subject: Re: linux-next: build failure after merge of the usb-gadget tree
+Message-ID: <20131216194113.GA5258@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20131216154020.9d7f9dacf60e41b775d44223@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qMm9M+Fa2AknHoGS"
 Content-Disposition: inline
-In-Reply-To: <20131216183615.GK3185@sirena.org.uk>
+In-Reply-To: <20131216154020.9d7f9dacf60e41b775d44223@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mark Brown <broonie@kernel.org> [131216 10:37]:
-> On Fri, Dec 13, 2013 at 12:07:14PM -0800, Tony Lindgren wrote:
-> > We can start moving regulators to using the standard gpios property instead
-> > of various custom GPIO related properties. The reason for doing this is that
-> > at least regulator-fixed can currently cause silent bugs if "gpios" property
-> > is used instead of "gpio" property.
-> 
-> If the issue is typos then I'm not convinced that for singular GPIOs
-> it's going to be helpful, either way is prone to typos.  If the problem
-> is error reporting then that seems like a more important thing to fix.
+--qMm9M+Fa2AknHoGS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Are you serious? A typo here in the binding leads to silent errors where
-nothing happens with the GPIO. That's just totally messed up considering
-we use "gpios" instead of "gpio" everywhere else. So both "gpio" and
-"gpios" should be parsed for sure.
- 
-> > Fix the issue by trying to use "gpios" where possible in the drivers that
-> > can already use it, and if that fails, then try to use the deprecated custom
-> > property for getting the GPIO.
-> 
-> Please split stuff like this up per driver rather than just sending a
-> jumbo patch for the subsystem, it makes it much easier to review
-> especially when they're not all doing exactly the same thing.
+Hi,
 
-OK I'll just do patch for the fixed regulator.
- 
-> > -  - ti,dvs-gpio: GPIO specifier for external DVS pin control of LP872x devices.
-> > +  - gpios: GPIO specifier for external DVS pin control of LP872x devices.
-> 
-> This is definitely a step backwards, it's changing from a named property
-> which does a specific thing to a property with no useful semantics in
-> the name.  That would be a step backwards for both legibility and
-> extensibility, if support for any other GPIO controlled features is
-> added then adding them into the sam property is going to be unpleasant
-> and lead to the usability failures so typical of the older device tree
-> bindings.  The the binding document says to use a name prefix, not to
-> call everything just "gpios".
+On Mon, Dec 16, 2013 at 03:40:20PM +1100, Stephen Rothwell wrote:
+> Hi Felipe,
+>=20
+> After merging the usb-gadget tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>=20
+> drivers/usb/phy/phy-keystone.c: In function 'keystone_usbphy_probe':
+> drivers/usb/phy/phy-keystone.c:96:4: warning: passing argument 3 of 'usb_=
+phy_gen_create_phy' makes pointer from integer without a cast [enabled by d=
+efault]
+>     USB_PHY_TYPE_USB2, 0, false);
+>     ^
+> In file included from drivers/usb/phy/phy-keystone.c:25:0:
+> drivers/usb/phy/phy-generic.h:18:5: note: expected 'struct usb_phy_gen_xc=
+eiv_platform_data *' but argument is of type 'int'
+>  int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_gen_xceiv =
+*nop,
+>      ^
+> drivers/usb/phy/phy-keystone.c:96:4: error: too many arguments to functio=
+n 'usb_phy_gen_create_phy'
+>     USB_PHY_TYPE_USB2, 0, false);
+>     ^
+> In file included from drivers/usb/phy/phy-keystone.c:25:0:
+> drivers/usb/phy/phy-generic.h:18:5: note: declared here
+>  int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_gen_xceiv =
+*nop,
+>      ^
+>=20
+> Caused by commit 25acdd08fd71 ("usb: phy: add Keystone usb phy driver")
+> interacting with commit bd27fa44e138 ("usb: phy: add Keystone usb phy
+> driver") which was merged before v3.13-rc1 and is included in the
+> usb-gadget tree.
 
-OK let's drop that change and just fix the fixed regulator.
- 
-> To be honest I'm also struggling to summon up the enthusiasm for the
-> churn in the bindings, especially without going through and updating all
-> the boards (and all the other GPIO properties in various DTs).  It seems
-> like there's stuff missing in the helpers here, if we really wanted to
-> force the properties to have -gpios on the end of their names then we
-> should've had that being added by the helpers.
+I cannot see how those commits would cause the error above. I have
+recompiled my tree with allmodconfig (x86 and ARM) config and
+omap2plus_defconfig (adding COMPILE_TEST and enabling KEYSTONE PHY) and
+cannot see this error.
 
-Sounds like exposing an infinite number of random *-gpio and *-gpios
-bindings is a topic for another discussion. Anyways it's already totally
-out of control so what do I care.
+Maybe someone applied a drivers/usb/phy/ patch ahead of me ?
 
-Regards,
+--=20
+balbi
 
-Tony
+--qMm9M+Fa2AknHoGS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSr1dZAAoJEIaOsuA1yqREqNMP/RBOb7yh9o4qpuEcRPEARUJM
+i+OrIoMCw1Ws+MhajveJGt2H0uyrv7/zOEzP6bU7+Aah2iJNgCXNAaYmuFQDgtaz
+YWncNNU4eVH69mggZaOzXLtwgNvAOYJQ3v3mPN6vYZsXejlU9fdBifFSh/kDCXSq
+s95kejLkOjzaNhknb34TGQhDWBMFNprCQqNzdxfJKJgiLSG7pMlejjOeDraz6Z+w
+AbFrR4GgLQL77ICx950+si/SgWBiGxxp67Qd49+CMvOYxmbA7SRxWAhu3Rrk8fZ3
+u9hC0koioRq9mgqJ91q+u/dQtiiKSjfpLTaMK/v09M7YfobEneJk9kibnv+WWmPD
+w2UxIyNeW0bR18oEz5nrzfxPBymrYxdFERjtv2JKQS0ZGLCgEfgqhDaubSeG73/Q
+DNTcYyi/oEv1UwJuxepT2GWeTnK3jGuokVoA9b05w13wUQow7gtdCrHO8qJEBDnx
+t3OHGJjVnjfcGMgJ4LwmBQcEdDdacxQ+zSTtD/HjDoGeB+BUq74J1/fxpTnscDcH
+AyRRFwa/D2jBHTPbpfvOdSNX6I87Ro/JThRgdVLZlP0MtPL9WpkeOV16UEJf1Qmw
+PoTE5B4Ou/NwmNWzE4EHJO6m+HPjk9tEUuqlt0YsPJ6G8YGysKjvHJkayNQ6r8lP
+f5AMTMMwzQsVLQ5hxnic
+=SR2K
+-----END PGP SIGNATURE-----
+
+--qMm9M+Fa2AknHoGS--
