@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751107Ab3LPFSV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 00:18:21 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:29419 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab3LPFSU (ORCPT
+	id S1750972Ab3LPFWA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 00:22:00 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:34863 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802Ab3LPFV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 00:18:20 -0500
-Message-ID: <52AE8D03.2040808@oracle.com>
-Date: Mon, 16 Dec 2013 00:17:55 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 16 Dec 2013 00:21:58 -0500
+Date: Sun, 15 Dec 2013 21:21:52 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Karl Dahlke <eklhad@comcast.net>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/input/misc: new PC speaker sounds, clicks and
+ notes
+Message-ID: <20131216052151.GC4322@core.coreip.homeip.net>
+References: <20131109072257.eklhad@comcast.net>
 MIME-Version: 1.0
-To: vegard.nossum@oracle.com, linux-kernel@vger.kernel.org
-CC: Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Kees Cook <keescook@chromium.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: Re: [PATCH 1/9] Known exploit detection
-References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
-In-Reply-To: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131109072257.eklhad@comcast.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vegard,
+Hi Karl,
 
-On 12/12/2013 11:52 AM, vegard.nossum@oracle.com wrote:
- > +#ifdef CONFIG_EXPLOIT_DETECTION
- > +extern void _exploit(const char *id);
+On Mon, Dec 09, 2013 at 07:22:57AM -0500, Karl Dahlke wrote:
+> From: Karl Dahlke <eklhad@gmail.com>
+> 
+> The speaker driver can play a tone at a specified frequency,
+> or the standard control G bell,
+> which is a special case of TONE at 1000 hz 0.1 seconds.
+> This patch adds kd_mkpulse() to generate a soft click.
+> This is introduced to support accessibility modules and adapters in the future.
+> With this in place, a module can easily provide soft clicks,
+> i.e. audible feedback, whenever a key is depressed,
+> or when that keystroke is echoed on screen, whichever you prefer.
+> (Many people find the latter more valuable.)
+> This allows a blind user, for example, to have ongoing feedback while typing,
+> even if he is, at the same time, listening to text that is already on screen.
+> This is faster and more convenient than having characters echoed verbally.
+> And it works all the time, even if speech or braille is not working
+> for whatever reason.  And there are many reasons those adapters could fail.
+> Misconfigured sound card, bad serial connection,
+> software synth not loading, etc.
+> Thus these forms of audio feedback are very important.
+> 
+> This should not be confused with the click function in certain specialized
+> keyboards such as lkkbd.c.
+> That function does a serio write to the client to activate clicks locally.
+> In contrast, this function generates a one-time pulse at the pc speaker,
+> or through a similar driver, so that modules can click whenever they want,
+> e.g. when a key is echoed back to you by a running application,
+> perhaps a thousand miles away over ssh, so you know all is well.
+> A module may want to click, or issue a series of clicks, for many reasons.
 
-So right now the on/off switch is a kernel config option. I suggest we should add another
-dynamic switch (maybe in the form of jump labels) to add an additional level of control:
+I do not think it is a good idea to add SND_PULSE as it can be easily
+implemented by SND_TONE with the additional benefit that parameters of
+the click can be adjusted. Also, if clicking is done elsewhere, it would
+work with other speaker drivers besides pcspkr.
 
-  - It will allow having an opt-in option. Right now users are forced into
-having this feature if the distro maintainers enable it.
-	- Which means that distro maintainers are less likely to enable it.
+> 
+> Another function introduced by this patch is kd_mknotes,
+> which plays a series of tones in the background.
+> You could do this yourself with kd_mksound and timers,
+> but why should everyone reinvent the wheel?
+> It is better to write the function once, properly, in the kernel,
+> and let modules use it thereafter.
 
-  - If the SHTF and there's something wrong we would want a way to disable it
-without having to re-compile the kernel.
+Can it be put into a library instead? Especially given David's work on
+trying to push the VT code out of the kernel. Also, what if you want
+clicks to go through sound card and not the speaker interface?
 
+Thanks.
 
-<bikeshedding>
-Also,
-
-Maybe in the future we could enable/disable specific exploits based on severity or certainty
-(how likely that this specific activity is an exploit attempt).
-
-</bikeshedding>
-
-On 12/12/2013 11:52 AM, vegard.nossum@oracle.com wrote:
-> +#define exploit_on(cond, id) \
-> +	do { \
-> +		if (unlikely(cond)) \
-> +			_exploit(id); \
-> +	} while (0)
-
-What if we make exploit_on() something like this:
-
-	#define exploit_on(cond, id) ({			\
-		int __ret_exploit_on = !!(cond);	\
-		if (unlikely(__ret_exploit_on))		\
-			_exploit(id);			\
-		unlikely(__ret_exploit_on);		\
-	})
-
-That way we can use it within if() conditionals similar to WARN_ON:
-
-	if (exploit_on(srclen > HFS_NAMELEN, "CVE-2011-4330"))
-		srclen = HFS_NAMELEN;
-
-
-
-Thanks,
-Sasha
+-- 
+Dmitry
