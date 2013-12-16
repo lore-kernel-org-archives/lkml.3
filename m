@@ -1,124 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab3LPVlY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 16:41:24 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:47828 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab3LPVlX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 16:41:23 -0500
-Date: Mon, 16 Dec 2013 21:40:57 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Tomasz Figa <t.figa@samsung.com>, Olof Johansson <olof@lixom.net>
-Message-ID: <20131216214057.GG3185@sirena.org.uk>
-References: <1386965234-26461-1-git-send-email-tony@atomide.com>
- <20131216183615.GK3185@sirena.org.uk>
- <20131216194023.GE26293@atomide.com>
- <20131216201102.GP3185@sirena.org.uk>
- <20131216210512.GF26293@atomide.com>
+	id S1751896Ab3LPWOf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 17:14:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3597 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750839Ab3LPWOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 17:14:34 -0500
+Subject: [PATCH] pci: Add "try" reset interfaces
+To: bhelgaas@google.com, linux-pci@vger.kernel.org
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 16 Dec 2013 15:14:31 -0700
+Message-ID: <20131216221229.3393.6171.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+GiWpZ/vZzfY9+ZQ"
-Content-Disposition: inline
-In-Reply-To: <20131216210512.GF26293@atomide.com>
-X-Cookie: Yow!  I threw up on my window!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: Start using standard gpios property and
- deprecate some custom properties
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When doing a function/slot/bus reset PCI grabs the device_lock for
+each device to block things like suspend and driver probes, which is
+all well and good, but call paths exist where this lock may already be
+held.  This creates an opportunity for deadlock.  For instance, vfio
+allows userspace to issue resets so long as it owns the device(s).
+If a driver unbind .remove callback races with userspace issuing a
+reset, we have a deadlock as userspace gets stuck waiting on
+device_lock while another thread has device_lock and waits for .remove
+to complete.  To resolve this, we can make a version of the reset
+interfaces which use trylock.  With this, we can safely attempt a
+reset and return error to userspace if there is contention.
 
---+GiWpZ/vZzfY9+ZQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+ drivers/pci/pci.c   |  155 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h |    3 +
+ 2 files changed, 158 insertions(+)
 
-On Mon, Dec 16, 2013 at 01:05:13PM -0800, Tony Lindgren wrote:
-> * Mark Brown <broonie@kernel.org> [131216 12:12]:
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 33120d1..de6416f 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3445,6 +3445,18 @@ static void pci_dev_lock(struct pci_dev *dev)
+ 	device_lock(&dev->dev);
+ }
+ 
++/* Return 1 on successful lock, 0 on contention */
++static int pci_dev_trylock(struct pci_dev *dev)
++{
++	if (pci_cfg_access_trylock(dev)) {
++		if (device_trylock(&dev->dev))
++			return 1;
++		pci_cfg_access_unlock(dev);
++	}
++
++	return 0;
++}
++
+ static void pci_dev_unlock(struct pci_dev *dev)
+ {
+ 	device_unlock(&dev->dev);
+@@ -3588,6 +3600,34 @@ int pci_reset_function(struct pci_dev *dev)
+ }
+ EXPORT_SYMBOL_GPL(pci_reset_function);
+ 
++/**
++ * pci_try_reset_function - quiesce and reset a PCI device function
++ * @dev: PCI device to reset
++ *
++ * Same as above, except return -EAGAIN if unable to lock device.
++ */
++int pci_try_reset_function(struct pci_dev *dev)
++{
++	int rc;
++
++	rc = pci_dev_reset(dev, 1);
++	if (rc)
++		return rc;
++
++	pci_dev_save_and_disable(dev);
++
++	if (pci_dev_trylock(dev)) {
++		rc = __pci_dev_reset(dev, 0);
++		pci_dev_unlock(dev);
++	} else
++		rc = -EAGAIN;
++
++	pci_dev_restore(dev);
++
++	return rc;
++}
++EXPORT_SYMBOL_GPL(pci_try_reset_function);
++
+ /* Lock devices from the top of the tree down */
+ static void pci_bus_lock(struct pci_bus *bus)
+ {
+@@ -3612,6 +3652,32 @@ static void pci_bus_unlock(struct pci_bus *bus)
+ 	}
+ }
+ 
++/* Return 1 on successful lock, 0 on contention */
++static int pci_bus_trylock(struct pci_bus *bus)
++{
++	struct pci_dev *dev;
++
++	list_for_each_entry(dev, &bus->devices, bus_list) {
++		if (!pci_dev_trylock(dev))
++			goto unlock;
++		if (dev->subordinate) {
++			if (!pci_bus_trylock(dev->subordinate)) {
++				pci_dev_unlock(dev);
++				goto unlock;
++			}
++		}
++	}
++	return 1;
++
++unlock:
++	list_for_each_entry_continue_reverse(dev, &bus->devices, bus_list) {
++		if (dev->subordinate)
++			pci_bus_unlock(dev->subordinate);
++		pci_dev_unlock(dev);
++	}
++	return 0;
++}
++
+ /* Lock devices from the top of the tree down */
+ static void pci_slot_lock(struct pci_slot *slot)
+ {
+@@ -3640,6 +3706,37 @@ static void pci_slot_unlock(struct pci_slot *slot)
+ 	}
+ }
+ 
++/* Return 1 on successful lock, 0 on contention */
++static int pci_slot_trylock(struct pci_slot *slot)
++{
++	struct pci_dev *dev;
++
++	list_for_each_entry(dev, &slot->bus->devices, bus_list) {
++		if (!dev->slot || dev->slot != slot)
++			continue;
++		if (!pci_dev_trylock(dev))
++			goto unlock;
++		if (dev->subordinate) {
++			if (!pci_bus_trylock(dev->subordinate)) {
++				pci_dev_unlock(dev);
++				goto unlock;
++			}
++		}
++	}
++	return 1;
++
++unlock:
++	list_for_each_entry_continue_reverse(dev,
++					     &slot->bus->devices, bus_list) {
++		if (!dev->slot || dev->slot != slot)
++			continue;
++		if (dev->subordinate)
++			pci_bus_unlock(dev->subordinate);
++		pci_dev_unlock(dev);
++	}
++	return 0;
++}
++
+ /* Save and disable devices from the top of the tree down */
+ static void pci_bus_save_and_disable(struct pci_bus *bus)
+ {
+@@ -3763,6 +3860,35 @@ int pci_reset_slot(struct pci_slot *slot)
+ }
+ EXPORT_SYMBOL_GPL(pci_reset_slot);
+ 
++/**
++ * pci_try_reset_slot - Try to reset a PCI slot
++ * @slot: PCI slot to reset
++ *
++ * Same as above except return -EAGAIN if the slot cannot be locked
++ */
++int pci_try_reset_slot(struct pci_slot *slot)
++{
++	int rc;
++
++	rc = pci_slot_reset(slot, 1);
++	if (rc)
++		return rc;
++
++	pci_slot_save_and_disable(slot);
++
++	if (pci_slot_trylock(slot)) {
++		might_sleep();
++		rc = pci_reset_hotplug_slot(slot->hotplug, 0);
++		pci_slot_unlock(slot);
++	} else
++		rc = -EAGAIN;
++
++	pci_slot_restore(slot);
++
++	return rc;
++}
++EXPORT_SYMBOL_GPL(pci_try_reset_slot);
++
+ static int pci_bus_reset(struct pci_bus *bus, int probe)
+ {
+ 	if (!bus->self)
+@@ -3822,6 +3948,35 @@ int pci_reset_bus(struct pci_bus *bus)
+ EXPORT_SYMBOL_GPL(pci_reset_bus);
+ 
+ /**
++ * pci_try_reset_bus - Try to reset a PCI bus
++ * @bus: top level PCI bus to reset
++ *
++ * Same as above except return -EAGAIN if the bus cannot be locked
++ */
++int pci_try_reset_bus(struct pci_bus *bus)
++{
++	int rc;
++
++	rc = pci_bus_reset(bus, 1);
++	if (rc)
++		return rc;
++
++	pci_bus_save_and_disable(bus);
++
++	if (pci_bus_trylock(bus)) {
++		might_sleep();
++		pci_reset_bridge_secondary_bus(bus->self);
++		pci_bus_unlock(bus);
++	} else
++		rc = -EAGAIN;
++
++	pci_bus_restore(bus);
++
++	return rc;
++}
++EXPORT_SYMBOL_GPL(pci_try_reset_bus);
++
++/**
+  * pcix_get_max_mmrbc - get PCI-X maximum designed memory read byte count
+  * @dev: PCI device to query
+  *
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 1084a15..34629df 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -951,10 +951,13 @@ int pcie_get_minimum_link(struct pci_dev *dev, enum pci_bus_speed *speed,
+ int __pci_reset_function(struct pci_dev *dev);
+ int __pci_reset_function_locked(struct pci_dev *dev);
+ int pci_reset_function(struct pci_dev *dev);
++int pci_try_reset_function(struct pci_dev *dev);
+ int pci_probe_reset_slot(struct pci_slot *slot);
+ int pci_reset_slot(struct pci_slot *slot);
++int pci_try_reset_slot(struct pci_slot *slot);
+ int pci_probe_reset_bus(struct pci_bus *bus);
+ int pci_reset_bus(struct pci_bus *bus);
++int pci_try_reset_bus(struct pci_bus *bus);
+ void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
+ void pci_update_resource(struct pci_dev *dev, int resno);
+ int __must_check pci_assign_resource(struct pci_dev *dev, int i);
 
-> > This is the first time anyone's mentioned this so it probably isn't that
-> > serious an issue and bear in mind that the patch was also handling all
-> > the named GPIO specifiers too.
-
-> I've certainly debugged this same exact issue twice already and that
-> probably means that same issue has been debugged tens or hundreds
-> of times by other people.
-
-That surprises me to be honest, but then the fact that the convention
-was even defined surprises me.  Like I say you're the first person to
-mention it; I suspect you might write more DTs than most.
-
-> Personally I don't see any value for a regulator describing the names of
-> the GPIOs in the binding, it's really up to the driver to make sense of
-> them. Especially if there are one or more similar GPIOs. We're not
-
-Devices like PMICs frequently have a *lot* of possible pin functions
-some of which can get mapped onto GPIOs (in either direction), many of
-which are going to be fixed by system design and generally all muxed
-onto a much smaller set of physical pins.  If you try to specify those
-through an unnamed gpios property you end up with a very large array
-(say 30 elements, more wouldn't be too surprising) most of which will be
-empty.  That is not at all usable, it's error prone to write and very
-hard to read even with the preprocessor support that only got added
-quite recently.
-
-> naming interrupts either.
-
-There's typically a much more limited set of interrupts a device can
-have (and many of the more optional ones end up getting expressed via
-the GPIO binding since you also need to read the state to use them) so
-they don't run into the issue so much.
-
-> > In any case, the thing is that there's a difference between parsing both
-> > and deprecation - deprecation implies an intention to remove the old one
-> > which would just reintroduce the problem the other way around since
-> > people are likely to drop or forget the plural, use old DTs and so on.
-> > Adding a gpios property in parallel with plain gpio is fine and what I
-> > was mostly suggesting.
-
-> Deprecation _may_ imply that it will get removed, but not always.
-> Naturally we're going to have to keep the old bindings in place since
-> they were merged. I can changed that to obsoleted if that's any better.
-
-Yes, that's better.
-
-> > Exactly, I think it's way more trouble than it's worth to try to change
-> > for named single element lists.  The standard property makes more sense.
-
-> I don't think there should be any named GPIOs. If we want names, then
-> the GPIO usage should be possible to group quite easily rather than create
-> a new property for everything. Something like "enable-gpio" comes to mind.
-
-I don't understand the difference between your suggestion and named
-GPIOs.
-
---+GiWpZ/vZzfY9+ZQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSr3NlAAoJELSic+t+oim9iDYP/i+jDxlPFZvahRT3hl1G5ZRR
-zneNmRGVvQ+GVHW2ZclI5s0eLPSNv0lKKl97n4QHRsIzvAGcSspBCg/WYda1gdp6
-Eaje6FL9McpglsU0lkOY/3SpGzPJPsdMWilqPn7E+dywv7HwClus8ugPSS9i7Hpz
-itpodSiHNUSrWYWSneTvZZOBWBXRoLrX2EkIS137plmz4EmZ7vKXI3uwigzPi3QO
-OohJW4573SE1RvKHQ1oSyKGR7fpVOJFnFLwAYxvD8yxkMbHyQx4zlH1gWA4nShkl
-L7I35AtJiVErlmvCBzpXFqWBLoduKh0xna8e473tg+3E9jqBuaqCsR/xVTnhblnC
-m/xbzlHQdDIDHyqtY5+go5dvlMyHKk2bQsKJLnLolo6NJ795Lc7j7uU0vCzW+Fa6
-bv44Z5NHPc4371fyoCodLRJAkaYrIMYhH29YLfjmgsyBo9v0kIeC9YseRgR56Ach
-/X/8IT5lM1Yz6FlPCGTldXJLQZh3wSXAU9/PwMs41Lq9L1yWnP/qkLVATXMLVmfA
-ibmLpMijrd2AmW9PLpwR0NMpmNnM3NStljUAd5s7/dpPbx5yLzkiS9+nP3i23PI9
-dnF9K06KV2kGTZFE+Dk+4mNveE191u1iyPMpCfy6KBFUcpV/1S56VejPayBXyJQZ
-aB9SjJuUPjVCX/tdHl98
-=Xy8L
------END PGP SIGNATURE-----
-
---+GiWpZ/vZzfY9+ZQ--
