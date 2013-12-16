@@ -1,184 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab3LPXG3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 18:06:29 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28641 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995Ab3LPXG2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 18:06:28 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 64.17.244.34
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18PnoToUvPZIIAXOMHRLAhF
-Date: Mon, 16 Dec 2013 15:06:22 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Tomasz Figa <t.figa@samsung.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] regulator: Start using standard gpios property and
- deprecate some custom properties
-Message-ID: <20131216230622.GH26293@atomide.com>
-References: <1386965234-26461-1-git-send-email-tony@atomide.com>
- <20131216183615.GK3185@sirena.org.uk>
- <20131216194023.GE26293@atomide.com>
- <20131216201102.GP3185@sirena.org.uk>
- <20131216210512.GF26293@atomide.com>
- <20131216214057.GG3185@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131216214057.GG3185@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752057Ab3LPXKm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 18:10:42 -0500
+Received: from ozlabs.org ([203.10.76.45]:36620 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750995Ab3LPXKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 18:10:41 -0500
+Date: Tue, 17 Dec 2013 10:10:32 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: <balbi@ti.com>
+Cc: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        WingMan Kwok <w-kwok2@ti.com>, Roger Quadros <rogerq@ti.com>
+Subject: Re: linux-next: build failure after merge of the usb-gadget tree
+Message-Id: <20131217101032.1f4d2ba671e6359fce0514cb@canb.auug.org.au>
+In-Reply-To: <20131216194113.GA5258@saruman.home>
+References: <20131216154020.9d7f9dacf60e41b775d44223@canb.auug.org.au>
+	<20131216194113.GA5258@saruman.home>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__17_Dec_2013_10_10_32_+1100_0X+CKrZsN9Yr21+P"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mark Brown <broonie@kernel.org> [131216 13:42]:
-> On Mon, Dec 16, 2013 at 01:05:13PM -0800, Tony Lindgren wrote:
-> > * Mark Brown <broonie@kernel.org> [131216 12:12]:
-> 
-> > > This is the first time anyone's mentioned this so it probably isn't that
-> > > serious an issue and bear in mind that the patch was also handling all
-> > > the named GPIO specifiers too.
-> 
-> > I've certainly debugged this same exact issue twice already and that
-> > probably means that same issue has been debugged tens or hundreds
-> > of times by other people.
-> 
-> That surprises me to be honest, but then the fact that the convention
-> was even defined surprises me.  Like I say you're the first person to
-> mention it; I suspect you might write more DTs than most.
+--Signature=_Tue__17_Dec_2013_10_10_32_+1100_0X+CKrZsN9Yr21+P
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK a limited patch for fixed regulator appended below to deal with the
-above issue only.
- 
-> > Personally I don't see any value for a regulator describing the names of
-> > the GPIOs in the binding, it's really up to the driver to make sense of
-> > them. Especially if there are one or more similar GPIOs. We're not
-> 
-> Devices like PMICs frequently have a *lot* of possible pin functions
-> some of which can get mapped onto GPIOs (in either direction), many of
-> which are going to be fixed by system design and generally all muxed
-> onto a much smaller set of physical pins.  If you try to specify those
-> through an unnamed gpios property you end up with a very large array
-> (say 30 elements, more wouldn't be too surprising) most of which will be
-> empty.  That is not at all usable, it's error prone to write and very
-> hard to read even with the preprocessor support that only got added
-> quite recently.
+Hi Felipe,
 
-That's why PMICs usually show up as GPIO controllers. And if a regulator
-needs to use those GPIOs, it should most likely just use the standard
-"gpios" property.
- 
-> > naming interrupts either.
-> 
-> There's typically a much more limited set of interrupts a device can
-> have (and many of the more optional ones end up getting expressed via
-> the GPIO binding since you also need to read the state to use them) so
-> they don't run into the issue so much.
+On Mon, 16 Dec 2013 13:41:13 -0600 Felipe Balbi <balbi@ti.com> wrote:
+>
+> On Mon, Dec 16, 2013 at 03:40:20PM +1100, Stephen Rothwell wrote:
+> >=20
+> > After merging the usb-gadget tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> >=20
+> > drivers/usb/phy/phy-keystone.c: In function 'keystone_usbphy_probe':
+> > drivers/usb/phy/phy-keystone.c:96:4: warning: passing argument 3 of 'us=
+b_phy_gen_create_phy' makes pointer from integer without a cast [enabled by=
+ default]
+> >     USB_PHY_TYPE_USB2, 0, false);
+> >     ^
+> > In file included from drivers/usb/phy/phy-keystone.c:25:0:
+> > drivers/usb/phy/phy-generic.h:18:5: note: expected 'struct usb_phy_gen_=
+xceiv_platform_data *' but argument is of type 'int'
+> >  int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_gen_xcei=
+v *nop,
+> >      ^
+> > drivers/usb/phy/phy-keystone.c:96:4: error: too many arguments to funct=
+ion 'usb_phy_gen_create_phy'
+> >     USB_PHY_TYPE_USB2, 0, false);
+> >     ^
+> > In file included from drivers/usb/phy/phy-keystone.c:25:0:
+> > drivers/usb/phy/phy-generic.h:18:5: note: declared here
+> >  int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_gen_xcei=
+v *nop,
+> >      ^
+> >=20
+> > Caused by commit 25acdd08fd71 ("usb: phy: add Keystone usb phy driver")
+> > interacting with commit bd27fa44e138 ("usb: phy: add Keystone usb phy
+> > driver") which was merged before v3.13-rc1 and is included in the
+> > usb-gadget tree.
+>=20
+> I cannot see how those commits would cause the error above. I have
+> recompiled my tree with allmodconfig (x86 and ARM) config and
+> omap2plus_defconfig (adding COMPILE_TEST and enabling KEYSTONE PHY) and
+> cannot see this error.
+>=20
+> Maybe someone applied a drivers/usb/phy/ patch ahead of me ?
 
-Hmm to me it seems that pretty much all of these should just use "gpios":
+That would be your patch (af9f51c5512f "usb: phy: generic: fix how we find
+out about our resources") that went into v3.13-rc4 ...
 
-$ git grep -B2 -A1 of_get_named_gpio drivers/regulator
- 
-> > > In any case, the thing is that there's a difference between parsing both
-> > > and deprecation - deprecation implies an intention to remove the old one
-> > > which would just reintroduce the problem the other way around since
-> > > people are likely to drop or forget the plural, use old DTs and so on.
-> > > Adding a gpios property in parallel with plain gpio is fine and what I
-> > > was mostly suggesting.
-> 
-> > Deprecation _may_ imply that it will get removed, but not always.
-> > Naturally we're going to have to keep the old bindings in place since
-> > they were merged. I can changed that to obsoleted if that's any better.
-> 
-> Yes, that's better.
-> 
-> > > Exactly, I think it's way more trouble than it's worth to try to change
-> > > for named single element lists.  The standard property makes more sense.
-> 
-> > I don't think there should be any named GPIOs. If we want names, then
-> > the GPIO usage should be possible to group quite easily rather than create
-> > a new property for everything. Something like "enable-gpio" comes to mind.
-> 
-> I don't understand the difference between your suggestion and named
-> GPIOs.
+Can you send me a suitable merge fixup, please?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-What I'm trying to say is let's not let drivers invent their random
-*-gpio[s] property as those essentially creates new kernel ABIs that
-we're stuck with.
+--Signature=_Tue__17_Dec_2013_10_10_32_+1100_0X+CKrZsN9Yr21+P
+Content-Type: application/pgp-signature
 
-Instead, let's try to use standard properties where possible like
-"gpios" and "enable-gpios", "cs-gpios" and so on.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Regards,
+iQIcBAEBCAAGBQJSr4htAAoJEMDTa8Ir7ZwVXAAP/2rAqWSkIyoLFyZHT5sllv6s
+LW1CRWGGkWPNYh4G8D10jaNmo3eCzxwGgShwnx7tFSXwkx30Vo25+Dq7ra12ePW6
+7KsNWiOJbLlFsikjSFAbRXRG/e4bW447qx8gk+fcbti4ATYitCPHJtVJFj55m842
+KL6olnCqt2ktKnihl48CRKxbjVIao8+BbBNEFzLUV1dBiUxddQZLqvGCkYgfJgIx
+nxFgKSqyMaWPjM+IPTEB9QCQJUxct1VO2GUqA0szfl4h1jZ9Rt6FHdmqCdcM4dp4
+P1ka+NyLW9kHsMToVTTLzsfnyVVjFDZ+DPwrRcrwKVmZnRuweLaiy1L/3X5Z4QmQ
+aweWL0/kKqW/4xfLpjsS9PfNZQI+B9Rl+vwCrwMHf27StrVqYnri16M8XA4FpTRs
+BIwVjhYjLFG2oNk6oJBiQVdAWD/702x68y16/xzfBR93/sBtp61UKsgzEfS9twr0
+2YtWbYqmsFNAwixXqkTIv+BiNHnDkXr0zUSa9CysKKybS0OPRIGfdjmon3aHvQct
+BnBULXYDbKGeMKLFIOota+9qTOj+yWTziCnJ71lEt/P7ASUPjdepZvx8pPjEKxn1
+b5MUmWDhBhVTc8d/XXns8rsRMXA1SnognwAZKP1H23PWuUQM6Z0XqPZFpZ0cRqsM
+u1umEwlyfagt4kSwBzJd
+=MPqW
+-----END PGP SIGNATURE-----
 
-Tony
-
-8< ------------------------
-From: Tony Lindgren <tony@atomide.com>
-Date: Thu, 12 Dec 2013 16:21:52 -0800
-Subject: [PATCH] regulator: Start using standard gpios property for fixed regulator
-
-The fixed regulator has been using a custom "gpio" property instead of
-standard "gpios" property which is confusing and can leave into silent bugs
-with typos where the GPIO value is not changed for the regulator.
-
-Fix the issue by trying to use "gpios" where possible in the drivers that
-can already use it, and if that fails, then try to use the legacy custom
-GPIO property.
-
-Note that we cannot remove the existing legacy property, and don't need
-to churn the .dts files for it. But we can start using the standard
-"gpios" property for the new entries and update the existing entries
-where suitable with other clean-up.
-
-Cc: Tomasz Figa <t.figa@samsung.com>
-Cc: Olof Johansson <olof@lixom.net>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-
---- a/Documentation/devicetree/bindings/regulator/fixed-regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/fixed-regulator.txt
-@@ -4,7 +4,7 @@ Required properties:
- - compatible: Must be "regulator-fixed";
- 
- Optional properties:
--- gpio: gpio to use for enable control
-+- gpios: gpio to use for enable control
- - startup-delay-us: startup time in microseconds
- - enable-active-high: Polarity of GPIO is Active high
- If this property is missing, the default assumed is Active low.
-@@ -12,6 +12,10 @@ If this property is missing, the default assumed is Active low.
-   If this property is missing then default assumption is false.
- -vin-supply: Input supply name.
- 
-+Obsoleted properties:
-+- gpio: Use the standard gpios property listed above instead of
-+  this.
-+
- Any property defined as part of the core regulator
- binding, defined in regulator.txt, can also be used.
- However a fixed voltage regulator is expected to have the
-@@ -25,7 +29,7 @@ Example:
- 		regulator-name = "fixed-supply";
- 		regulator-min-microvolt = <1800000>;
- 		regulator-max-microvolt = <1800000>;
--		gpio = <&gpio1 16 0>;
-+		gpios = <&gpio1 16 0>;
- 		startup-delay-us = <70000>;
- 		enable-active-high;
- 		regulator-boot-on;
---- a/drivers/regulator/fixed.c
-+++ b/drivers/regulator/fixed.c
-@@ -77,7 +77,9 @@ of_get_fixed_voltage_config(struct device *dev)
- 	if (init_data->constraints.boot_on)
- 		config->enabled_at_boot = true;
- 
--	config->gpio = of_get_named_gpio(np, "gpio", 0);
-+	config->gpio = of_get_gpio(np, 0);
-+	if (!gpio_is_valid(config->gpio))
-+		config->gpio = of_get_named_gpio(np, "gpio", 0);
- 	/*
- 	 * of_get_named_gpio() currently returns ENODEV rather than
- 	 * EPROBE_DEFER. This code attempts to be compatible with both
+--Signature=_Tue__17_Dec_2013_10_10_32_+1100_0X+CKrZsN9Yr21+P--
