@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750972Ab3LPFWA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 00:22:00 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:34863 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab3LPFV6 (ORCPT
+	id S1751309Ab3LPFZc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 00:25:32 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:62888 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab3LPFZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 00:21:58 -0500
-Date: Sun, 15 Dec 2013 21:21:52 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Karl Dahlke <eklhad@comcast.net>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/input/misc: new PC speaker sounds, clicks and
- notes
-Message-ID: <20131216052151.GC4322@core.coreip.homeip.net>
-References: <20131109072257.eklhad@comcast.net>
+	Mon, 16 Dec 2013 00:25:31 -0500
+X-AuditID: 9c93017d-b7c5eae000004296-6e-52ae8eca411c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, mingo@redhat.com,
+        dvhart@linux.intel.com, peterz@infradead.org, tglx@linutronix.de,
+        jason.low2@hp.com, Waiman.Long@hp.com, scott.norton@hp.com,
+        aswin@hp.com
+Subject: Re: [PATCH 2/3] perf-bench: add futex-wake microbenchmark
+References: <1387081917-9102-1-git-send-email-davidlohr@hp.com>
+	<1387081917-9102-3-git-send-email-davidlohr@hp.com>
+Date: Mon, 16 Dec 2013 14:25:30 +0900
+In-Reply-To: <1387081917-9102-3-git-send-email-davidlohr@hp.com> (Davidlohr
+	Bueso's message of "Sat, 14 Dec 2013 20:31:56 -0800")
+Message-ID: <87k3f5gyet.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131109072257.eklhad@comcast.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Karl,
+Hi Davidlohr,
 
-On Mon, Dec 09, 2013 at 07:22:57AM -0500, Karl Dahlke wrote:
-> From: Karl Dahlke <eklhad@gmail.com>
-> 
-> The speaker driver can play a tone at a specified frequency,
-> or the standard control G bell,
-> which is a special case of TONE at 1000 hz 0.1 seconds.
-> This patch adds kd_mkpulse() to generate a soft click.
-> This is introduced to support accessibility modules and adapters in the future.
-> With this in place, a module can easily provide soft clicks,
-> i.e. audible feedback, whenever a key is depressed,
-> or when that keystroke is echoed on screen, whichever you prefer.
-> (Many people find the latter more valuable.)
-> This allows a blind user, for example, to have ongoing feedback while typing,
-> even if he is, at the same time, listening to text that is already on screen.
-> This is faster and more convenient than having characters echoed verbally.
-> And it works all the time, even if speech or braille is not working
-> for whatever reason.  And there are many reasons those adapters could fail.
-> Misconfigured sound card, bad serial connection,
-> software synth not loading, etc.
-> Thus these forms of audio feedback are very important.
-> 
-> This should not be confused with the click function in certain specialized
-> keyboards such as lkkbd.c.
-> That function does a serio write to the client to activate clicks locally.
-> In contrast, this function generates a one-time pulse at the pc speaker,
-> or through a similar driver, so that modules can click whenever they want,
-> e.g. when a key is echoed back to you by a running application,
-> perhaps a thousand miles away over ssh, so you know all is well.
-> A module may want to click, or issue a series of clicks, for many reasons.
+On Sat, 14 Dec 2013 20:31:56 -0800, Davidlohr Bueso wrote:
+> Block a bunch of threads on a futex and wake them up, N at a time.
+>
+> This program is particularly useful to measure the latency of nthread wakeups
+> in non-error situations:  all waiters are queued and all wake calls wakeup
+> one or more tasks. An example run:
+>
+> $ perf bench futex -t 512 -r 100
 
-I do not think it is a good idea to add SND_PULSE as it can be easily
-implemented by SND_TONE with the additional benefit that parameters of
-the click can be adjusted. Also, if clicking is done elsewhere, it would
-work with other speaker drivers besides pcspkr.
+Did you mean 'perf bench futex wake'?
 
-> 
-> Another function introduced by this patch is kd_mknotes,
-> which plays a series of tones in the background.
-> You could do this yourself with kd_mksound and timers,
-> but why should everyone reinvent the wheel?
-> It is better to write the function once, properly, in the kernel,
-> and let modules use it thereafter.
-
-Can it be put into a library instead? Especially given David's work on
-trying to push the VT code out of the kernel. Also, what if you want
-clicks to go through sound card and not the speaker interface?
-
-Thanks.
-
--- 
-Dmitry
+Thanks,
+Namhyung
