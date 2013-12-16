@@ -1,113 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377Ab3LPUUT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 15:20:19 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:39535 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328Ab3LPUUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 15:20:14 -0500
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
-        jolsa@redhat.com, zheng.z.yan@intel.com, bp@alien8.de,
-        vincent.weaver@maine.edu, maria.n.dimakopoulou@gmail.com
-Subject: [PATCH 2/2] perf/x86: add RAPL PP1 energy counter support
-Date: Mon, 16 Dec 2013 21:20:24 +0100
-Message-Id: <1387225224-27799-3-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1387225224-27799-1-git-send-email-eranian@google.com>
-References: <1387225224-27799-1-git-send-email-eranian@google.com>
+	id S1752444Ab3LPUU0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 15:20:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63617 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752384Ab3LPUUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 15:20:23 -0500
+Date: Mon, 16 Dec 2013 21:19:52 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: PATCH? introduce get_compound_page (Was: process 'stuck' at exit)
+Message-ID: <20131216201952.GE21218@redhat.com>
+References: <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
+ <CA+55aFw_emAUOr5BYx0TfTCGEOrW6-ZRATWbm00DvCXsGD7=DQ@mail.gmail.com>
+ <20131211170844.GA21700@redhat.com>
+ <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de>
+ <20131211175615.GA24546@redhat.com>
+ <20131211191855.GA32485@redhat.com>
+ <20131213151035.GE5408@redhat.com>
+ <20131213162240.GA11762@redhat.com>
+ <20131213173406.GG5408@redhat.com>
+ <20131216183618.GA28252@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131216183618.GA28252@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the RAPL energy counter PP1.
+On Mon, Dec 16, 2013 at 07:36:18PM +0100, Oleg Nesterov wrote:
+> On 12/13, Andrea Arcangeli wrote:
+> >
+> > On Fri, Dec 13, 2013 at 05:22:40PM +0100, Oleg Nesterov wrote:
+> > >
+> > > I'll try to make v2 based on -mm and your suggestions.
+> >
+> > Ok great!
+> 
+> Yes, it would be great, but I need your help again ;)
+> 
+> 
+> Let me quote the pseudo-code you sent me:
+> 
+> 	put_compound_tail(page) {
+> 		page_head = compound_trans_head(page);
+> 		if (!__compound_tail_refcounted(page_head)) {
+> 			...
+> 			return ...;
+> 		}
+> 
+> 		flags = compound_lock_irqsave(page_head);
+> 		...
+> 
+> Sure, put_compound_tail() should be the simplified version of
+> put_compound_page() which doesn't dec page_head->_count, this is clear.
+> 
+> But afaics, compound_lock_irqsave() above looks unsafe without
+> get_page_unless_zero(page_head) ? If we race with _split, page_head
+> can be freed and compound_lock() can race with, say, free_pages_check()
+> which plays with page->flags ?
+> 
+> So it seems that put_compound_tail() should also do get/put(head) like
+> put_compound_page() does, and this probably means we should factor out
+> the common code somehow.
+> 
 
-On client processors, it usually correspondss to the
-energy consumption of the builtin graphic card.
+Yes it was supposed to do the get_page_unless_zero before the
+compound_lock.
 
-New event:
-- name: power/energy-gfx/
-- code: event=0x4
-- unit: 2^-32 Joules
+> Or I missed something?
+> 
+> 
+> 
+> OTOH, I can't really understand
+> 
+> 	if (likely(page != page_head && get_page_unless_zero(page_head)))
+> 
+> in __get_page_tail() and put_compound_page().
+> 
+> First of all, is it really possible that page == compound_trans_head(page)?
 
-On processors without graphics, this should count 0.
-The patch only enables this event on client processors.
+It is possible if it become a regular page because split_huge_page
+run in between.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+compound_trans_head guarantees us it got us to a safe head page. And
+the idea was to do get_page_unless_zero only on head pages and never
+on tails to be safer/simpler. Same goes for the compound_lock that
+follows still on the page_head where "page != page_head".
 
----
- arch/x86/kernel/cpu/perf_event_intel_rapl.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+If you like, you can try to optimize away the check and reuse the
+PageTail branch inside the compound_lock but I'm not sure if it's
+worth it.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-index 0e3754e..b2dc346 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-@@ -55,10 +55,13 @@
- #define INTEL_RAPL_PKG		0x2	/* pseudo-encoding */
- #define RAPL_IDX_RAM_NRG_STAT	2	/* DRAM */
- #define INTEL_RAPL_RAM		0x3	/* pseudo-encoding */
-+#define RAPL_IDX_PP1_NRG_STAT	3	/* DRAM */
-+#define INTEL_RAPL_PP1		0x4	/* pseudo-encoding */
- 
- /* Clients have PP0, PKG */
- #define RAPL_IDX_CLN	(1<<RAPL_IDX_PP0_NRG_STAT|\
--			 1<<RAPL_IDX_PKG_NRG_STAT)
-+			 1<<RAPL_IDX_PKG_NRG_STAT|\
-+			 1<<RAPL_IDX_PP1_NRG_STAT)
- 
- /* Servers have PP0, PKG, RAM */
- #define RAPL_IDX_SRV	(1<<RAPL_IDX_PP0_NRG_STAT|\
-@@ -315,6 +318,10 @@ static int rapl_pmu_event_init(struct perf_event *event)
- 		bit = RAPL_IDX_RAM_NRG_STAT;
- 		msr = MSR_DRAM_ENERGY_STATUS;
- 		break;
-+	case INTEL_RAPL_PP1:
-+		bit = RAPL_IDX_PP1_NRG_STAT;
-+		msr = MSR_PP1_ENERGY_STATUS;
-+		break;
- 	default:
- 		return -EINVAL;
- 	}
-@@ -369,10 +376,12 @@ static struct attribute_group rapl_pmu_attr_group = {
- EVENT_ATTR_STR(energy-cores, rapl_cores, "event=0x01");
- EVENT_ATTR_STR(energy-pkg  , rapl_pkg, "event=0x02");
- EVENT_ATTR_STR(energy-ram  , rapl_ram, "event=0x03");
-+EVENT_ATTR_STR(energy-gfx, rapl_gfx, "event=0x04");
- 
- EVENT_ATTR_STR(energy-cores.unit, rapl_cores_unit, "Joules");
- EVENT_ATTR_STR(energy-pkg.unit  , rapl_pkg_unit, "Joules");
- EVENT_ATTR_STR(energy-ram.unit  , rapl_ram_unit, "Joules");
-+EVENT_ATTR_STR(energy-gfx.unit  , rapl_gfx_unit, "Joules");
- 
- /*
-  * we compute in 0.23 nJ increments regardless of MSR
-@@ -380,6 +389,7 @@ EVENT_ATTR_STR(energy-ram.unit  , rapl_ram_unit, "Joules");
- EVENT_ATTR_STR(energy-cores.scale, rapl_cores_scale, "2.3283064365386962890625e-10");
- EVENT_ATTR_STR(energy-pkg.scale, rapl_pkg_scale, "2.3283064365386962890625e-10");
- EVENT_ATTR_STR(energy-ram.scale, rapl_ram_scale, "2.3283064365386962890625e-10");
-+EVENT_ATTR_STR(energy-gfx.scale, rapl_gfx_scale, "2.3283064365386962890625e-10");
- 
- static struct attribute *rapl_events_srv_attr[] = {
- 	EVENT_PTR(rapl_cores),
-@@ -399,12 +409,15 @@ static struct attribute *rapl_events_srv_attr[] = {
- static struct attribute *rapl_events_cln_attr[] = {
- 	EVENT_PTR(rapl_cores),
- 	EVENT_PTR(rapl_pkg),
-+	EVENT_PTR(rapl_gfx),
- 
- 	EVENT_PTR(rapl_cores_unit),
- 	EVENT_PTR(rapl_pkg_unit),
-+	EVENT_PTR(rapl_gfx_unit),
- 
- 	EVENT_PTR(rapl_cores_scale),
- 	EVENT_PTR(rapl_pkg_scale),
-+	EVENT_PTR(rapl_gfx_scale),
- 	NULL,
- };
- 
--- 
-1.7.9.5
+> We already verified that PG_tail was set. Of course this bit can be cleared
+> and ->first_page can be a dangling pointer but it can never be changed to
+> point to this page? (in fact, afaics it can be changed at all as long as we
+> have a reference, but this doesn't matter).
 
+If PG_tail gets cleared compound_trans_head returns "page".
+
+> And compound_lock_irqsave() looks racy even after get_page_unless_zero().
+> 
+> For example, suppose that page_head was already freed and then re-allocated
+> as (say) alloc_pages(__GFP_COMP, 1). get_page_unless_zero() can succeed right
+> after prep_new_page() does set_page_refcounted(). Now, can't compound_lock()
+> race with the non-atomic prep_compound_page()->__SetPageHead() ?
+
+Yes. We need to change to:
+
+	if (order && (gfp_flags & __GFP_COMP))
+		prep_compound_page(page, order);
+	smp_wmb();
+	/* as the compound_lock can be taken after it's refcounted */
+	set_page_refcounted(page);
+
+__SetPageHead uses bts asm insn so literally only a "lock" prefix is
+missing in a assembly instruction. So the race window is incredibly
+small, but it must be fixed indeed. This also puts set_page_refcounted
+as the last action of buffered_rmqueue so there shouldn't be any other
+issues like this left in the page allocation code.
+
+Can you reorder set_page_refcount in your v2?
+
+I wonder if arch_alloc_page needs refcount 1, it sets the page as
+stable on s390. the other way around is to move prep_compound_page
+before set_page_refcounted (though I think if we can, keeping the
+refcounted at the very last with a comment is preferable).
+
+> Finally. basepage_index(page) after put_page(page) in get_futex_key() looks
+> confusing imho. I think this is correct, we already checked PageAnon() so it
+> can't be a thp page. But probably this needs a comment and __basepage_index()
+> should do BUG_ON(!PageHuge()).
+
+This looks a bug if you apply the patches to add THP in pagecache, and
+BUG_ON(!PageHuge) would also break THP in pagecache later (though
+safer than silently broken like now).
+
+It'd safer to read the basepage_index in a local variable just before
+doing the put_compund_tail but I agree it's not going to make a
+difference right now.
+
+But the whole idea of working with the head of the THP despite the
+address points to a tail, looks flakey if there is a split (THP in
+pagecache). I mean chances are reading basepage_index(page) before
+releasing the tail pin is not enough.
+
+The Anon path looks sane for all cases, as it doesn't pretend to
+return any information on the actual mapping and it limits itself to
+do the PageAnon check on the actual head that has PageAnon set, which
+is still valid thing to do even after a split, and in fact required if
+a split didn't take place yet as the tail "page" isn't anon but just a
+tail.
