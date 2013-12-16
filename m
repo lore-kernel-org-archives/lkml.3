@@ -1,115 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab3LPQKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:10:49 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:20873 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754211Ab3LPQKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:10:45 -0500
-X-IronPort-AV: E=Sophos;i="4.95,495,1384300800"; 
-   d="scan'208";a="84967463"
-Message-ID: <52AF2602.2000409@citrix.com>
-Date: Mon, 16 Dec 2013 16:10:42 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754722Ab3LPQNt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 11:13:49 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:58800 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183Ab3LPQNs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 11:13:48 -0500
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>
-CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v2 6/9] xen-netback: Handle guests with too many
- frags
-References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com> <1386892097-15502-7-git-send-email-zoltan.kiss@citrix.com> <20131213154307.GN21900@zion.uk.xensource.com>
-In-Reply-To: <20131213154307.GN21900@zion.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+In-Reply-To: <CAFLxGvx3nvncXYsai_uVdWLp-jAuGWAQCNxGH9R3NvdD1cPFwA@mail.gmail.com>
+References: <1387194424-2701-1-git-send-email-lpapp@kde.org>
+	<20131216134633.GI18769@lee--X1>
+	<CAOMwXhOnHNrzEvf0+QRn6dGb42xR9a33joZcou3ancwSYe36Ug@mail.gmail.com>
+	<20131216150937.GO18769@lee--X1>
+	<CAOMwXhNJFGiRNB4jnTrzzpSGL8XvaR1Ph_pFrdU+x+guy7Tamg@mail.gmail.com>
+	<CAFLxGvx3nvncXYsai_uVdWLp-jAuGWAQCNxGH9R3NvdD1cPFwA@mail.gmail.com>
+Date: Mon, 16 Dec 2013 16:13:47 +0000
+X-Google-Sender-Auth: T5a4NODKOsoNQK6df_RC0LQ54Ek
+Message-ID: <CAOMwXhPLU_2MUkJXgz-ab062bBjtcOEsvwNCSj0vG0eg9sr=rQ@mail.gmail.com>
+Subject: Re: [PATCH] mfd: (max8997) Handle the potential error for mfd_add_devices
+From: Laszlo Papp <lpapp@kde.org>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Lee Jones <lee.jones@linaro.org>, sameo@linux.intel.com,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/12/13 15:43, Wei Liu wrote:
-> On Thu, Dec 12, 2013 at 11:48:14PM +0000, Zoltan Kiss wrote:
->> Xen network protocol had implicit dependency on MAX_SKB_FRAGS. Netback has to
->> handle guests sending up to XEN_NETBK_LEGACY_SLOTS_MAX slots. To achieve that:
->> - create a new skb
->> - map the leftover slots to its frags (no linear buffer here!)
->> - chain it to the previous through skb_shinfo(skb)->frag_list
->> - map them
->> - copy the whole stuff into a brand new skb and send it to the stack
->> - unmap the 2 old skb's pages
+On Mon, Dec 16, 2013 at 4:05 PM, Richard Weinberger
+<richard.weinberger@gmail.com> wrote:
+> On Mon, Dec 16, 2013 at 4:51 PM, Laszlo Papp <lpapp@kde.org> wrote:
+>>>> > The $SUBJECT line is wrong. To see how a subsystem usually formats
+>>>> > theirs you must do something like `git log --oneline -- <subsystem>`.
+>>>> > And duplicate the format.
+>>>> >
+>>>> > Commit message?
+>>>
+>>> These comments are still relevant, please re-post your patch with the
+>>> points rectified.
 >>
+>> I really do not understand how they relevant. "Commit message?" ->
+>> What about it? It has a pretty clear commit message. Are you now just
+>> picking nits about "foo:" vs "(foo)" in the short line?
 >
-> Do you see performance regression with this approach?
-Well, it was pretty hard to reproduce that behaviour even with NFS. I 
-don't think it happens often enough that it causes a noticable 
-performance regression. Anyway, it would be just as slow as the current 
-grant copy with coalescing, maybe a bit slower due to the unmapping. But 
-at least we use a core network function to do the coalescing.
-Or, if you mean the generic performance, if this problem doesn't appear, 
-then no, I don't see performance regression.
+> The commit message needs to have subject and a body.
 
->> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
->>
->> ---
->>   drivers/net/xen-netback/netback.c |   99 +++++++++++++++++++++++++++++++++++--
->>   1 file changed, 94 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
->> index e26cdda..f6ed1c8 100644
->> --- a/drivers/net/xen-netback/netback.c
->> +++ b/drivers/net/xen-netback/netback.c
->> @@ -906,11 +906,15 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
->>   	u16 pending_idx = *((u16 *)skb->data);
->>   	int start;
->>   	pending_ring_idx_t index;
->> -	unsigned int nr_slots;
->> +	unsigned int nr_slots, frag_overflow = 0;
->>
->>   	/* At this point shinfo->nr_frags is in fact the number of
->>   	 * slots, which can be as large as XEN_NETBK_LEGACY_SLOTS_MAX.
->>   	 */
->> +	if (shinfo->nr_frags > MAX_SKB_FRAGS) {
->> +		frag_overflow = shinfo->nr_frags - MAX_SKB_FRAGS;
->> +		shinfo->nr_frags = MAX_SKB_FRAGS;
->> +	}
->>   	nr_slots = shinfo->nr_frags;
->>
->
-> It is also probably better to check whether shinfo->nr_frags is too
-> large which makes frag_overflow > MAX_SKB_FRAGS. I know skb should be
-> already be valid at this point but it wouldn't hurt to be more careful.
-Ok, I've added this:
-	/* At this point shinfo->nr_frags is in fact the number of
-	 * slots, which can be as large as XEN_NETBK_LEGACY_SLOTS_MAX.
-	 */
-+	if (shinfo->nr_frags > MAX_SKB_FRAGS) {
-+		if (shinfo->nr_frags > XEN_NETBK_LEGACY_SLOTS_MAX) return NULL;
-+		frag_overflow = shinfo->nr_frags - MAX_SKB_FRAGS;
+Why? What advantage does that have in very simple cases like this?
 
+> A good message body explains what the current situation is, why it is
+> broken/has problems
+> and how this patch fixes that.
 
->
->>   	/* Skip first skb fragment if it is on same page as header fragment. */
->> @@ -926,6 +930,33 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
->>
->>   	BUG_ON(shinfo->nr_frags > MAX_SKB_FRAGS);
->>
->> +	if (frag_overflow) {
->> +		struct sk_buff *nskb = alloc_skb(NET_SKB_PAD + NET_IP_ALIGN,
->> +				GFP_ATOMIC | __GFP_NOWARN);
->> +		if (unlikely(nskb == NULL)) {
->> +			netdev_err(vif->dev,
->> +				   "Can't allocate the frag_list skb.\n");
->> +			return NULL;
->> +		}
->> +
->> +		/* Packets passed to netif_rx() must have some headroom. */
->> +		skb_reserve(nskb, NET_SKB_PAD + NET_IP_ALIGN);
->> +
->
-> The code to call alloc_skb and skb_reserve is copied from other
-> location. I would like to have a dedicated function to allocate skb in
-> netback if possible.
-OK
-
+The current commit message explains that in my opinion. Please bring
+up real issues with it.
