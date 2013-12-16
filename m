@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab3LPPFu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:05:50 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:49596 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753762Ab3LPPFs (ORCPT
+	id S1754524Ab3LPPIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:08:16 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:41904 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753806Ab3LPPIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:05:48 -0500
+	Mon, 16 Dec 2013 10:08:13 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: axboe@kernel.dk, stefano.stabellini@eu.citrix.com, ian.campbell@citrix.com,
         xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
@@ -17,48 +17,59 @@ To: axboe@kernel.dk, stefano.stabellini@eu.citrix.com, ian.campbell@citrix.com,
         tpmdd-devel@lists.sourceforge.net, linux-input@vger.kernel.org,
         netdev@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-fbdev@vger.kernel.org
-Subject: [PATCH v3] if xen_platform_pci=0 is set don't blow up.
-Date: Mon, 16 Dec 2013 10:04:08 -0500
-Message-Id: <1387206250-13963-1-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v3 2/2] xen/pvhvm: Remove the xen_platform_pci int.
+Date: Mon, 16 Dec 2013 10:04:10 -0500
+Message-Id: <1387206250-13963-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1387206250-13963-1-git-send-email-konrad.wilk@oracle.com>
+References: <1387206250-13963-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first patch:
- [PATCH v3 1/2] xen/pvhvm: If xen_platform_pci=0 is set don't blow up
+Since we have  xen_has_pv_devices,xen_has_pv_disk_devices,
+xen_has_pv_nic_devices, and xen_has_pv_and_legacy_disk_devices
+to figure out the different 'unplug' behaviors - lets
+use those instead of this single int.
 
-I would like to commit to stable as it is fixing an eggregious bug -
-where we blow up if the guest config has: "xen_platform_pci=0" setup.
-This bug has been in existence for years and it is time to stamp it out.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/platform-pci-unplug.c | 5 ++---
+ include/xen/platform_pci.h         | 2 --
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
-The second patch is a cleanup - not a stable candidate.
-
-It touches all of the Xen frontend drivers and adds the logic of:
-"if user disabled us, don't init" - with variations. As you can
-specify exactly which ones you want to init and which ones
-not (Linux runtime parameter 'xen_emul_unplug'). But for the majority
-of drivers - it is just an on/off switch.
-
-Since it touches a lot of maintainers I figured I would send it
-to Linus on Wednesday or Thursday.
-
-Thank you!
-
- arch/x86/xen/platform-pci-unplug.c         | 79 ++++++++++++++++++++++++++++--
- drivers/block/xen-blkfront.c               |  4 +-
- drivers/char/tpm/xen-tpmfront.c            |  4 ++
- drivers/input/misc/xen-kbdfront.c          |  4 ++
- drivers/net/xen-netfront.c                 |  2 +-
- drivers/pci/xen-pcifront.c                 |  4 ++
- drivers/video/xen-fbfront.c                |  4 ++
- drivers/xen/xenbus/xenbus_probe_frontend.c |  2 +-
- include/xen/platform_pci.h                 | 25 +++++++++-
- 9 files changed, 119 insertions(+), 9 deletions(-)
-
-
-Konrad Rzeszutek Wilk (2):
-      xen/pvhvm: If xen_platform_pci=0 is set don't blow up (v3).
-      xen/pvhvm: Remove the xen_platform_pci int.
+diff --git a/arch/x86/xen/platform-pci-unplug.c b/arch/x86/xen/platform-pci-unplug.c
+index ab84ac1..a826171 100644
+--- a/arch/x86/xen/platform-pci-unplug.c
++++ b/arch/x86/xen/platform-pci-unplug.c
+@@ -30,10 +30,9 @@
+ #define XEN_PLATFORM_ERR_PROTOCOL -2
+ #define XEN_PLATFORM_ERR_BLACKLIST -3
+ 
+-/* store the value of xen_emul_unplug after the unplug is done */
+-int xen_platform_pci_unplug;
+-EXPORT_SYMBOL_GPL(xen_platform_pci_unplug);
+ #ifdef CONFIG_XEN_PVHVM
++/* store the value of xen_emul_unplug after the unplug is done */
++static int xen_platform_pci_unplug;
+ static int xen_emul_unplug;
+ 
+ static int check_platform_magic(void)
+diff --git a/include/xen/platform_pci.h b/include/xen/platform_pci.h
+index b49eeab..5c52b55 100644
+--- a/include/xen/platform_pci.h
++++ b/include/xen/platform_pci.h
+@@ -46,8 +46,6 @@ static inline int xen_must_unplug_disks(void) {
+ #endif
+ }
+ 
+-extern int xen_platform_pci_unplug;
+-
+ #if defined(CONFIG_XEN_PVHVM)
+ extern bool xen_has_pv_devices(void);
+ extern bool xen_has_pv_disk_devices(void);
+-- 
+1.8.3.1
 
