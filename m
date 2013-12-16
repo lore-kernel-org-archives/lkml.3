@@ -1,89 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab3LPQ6U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 11:58:20 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53170 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536Ab3LPQ6S (ORCPT
+	id S1754671Ab3LPRCI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 12:02:08 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:51212 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab3LPRCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 11:58:18 -0500
-Message-ID: <52AF3126.6090000@wwwdotorg.org>
-Date: Mon, 16 Dec 2013 09:58:14 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 16 Dec 2013 12:02:07 -0500
+Date: Mon, 16 Dec 2013 17:02:00 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: sameo@linux.intel.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd: (max8997) Handle the potential error for
+ mfd_add_devices
+Message-ID: <20131216170200.GT18769@lee--X1>
+References: <1387194424-2701-1-git-send-email-lpapp@kde.org>
+ <20131216134633.GI18769@lee--X1>
+ <CAOMwXhOnHNrzEvf0+QRn6dGb42xR9a33joZcou3ancwSYe36Ug@mail.gmail.com>
+ <20131216150937.GO18769@lee--X1>
+ <CAOMwXhNJFGiRNB4jnTrzzpSGL8XvaR1Ph_pFrdU+x+guy7Tamg@mail.gmail.com>
+ <20131216163546.GR18769@lee--X1>
+ <CAOMwXhNXctcQWMU5vKKW52sQ-Ek3Mw3FZLTNJa4GD5qk4O79Gw@mail.gmail.com>
 MIME-Version: 1.0
-To: bilhuang <bilhuang@nvidia.com>, "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v4 1/1] cpufreq: tegra: Re-model Tegra20 cpufreq driver
-References: <1386840835-28751-1-git-send-email-bilhuang@nvidia.com> <52AB967F.9030900@wwwdotorg.org> <52AEDB6A.2080501@nvidia.com>
-In-Reply-To: <52AEDB6A.2080501@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOMwXhNXctcQWMU5vKKW52sQ-Ek3Mw3FZLTNJa4GD5qk4O79Gw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2013 03:52 AM, bilhuang wrote:
-> On 12/14/2013 07:21 AM, Stephen Warren wrote:
->> On 12/12/2013 02:33 AM, Bill Huang wrote:
->>> Re-model Tegra20 cpufreq driver as below.
->>>
->>> * Rename tegra-cpufreq.c to tegra20-cpufreq.c since this file supports
->>>    only Tegra20.
->>> * Add probe function so defer probe can be used when we're going to
->>>    support DVFS.
->>> * Create a fake cpufreq platform device with its name being
->>>    "${root_compatible}-cpufreq" so SoC cpufreq driver can bind to it
->>>    accordingly.
->>
->>> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
->>
->>> +config ARM_TEGRA20_CPUFREQ
->>> +    bool "NVIDIA TEGRA20"
->>> +    depends on ARM_TEGRA_CPUFREQ && ARCH_TEGRA_2x_SOC
->>> +    default y
->>> +    help
->>> +      This enables Tegra20 cpufreq functionality, it adds
->>> +      Tegra20 CPU frequency ladder and the call back functions
->>> +      to set CPU rate. All the non-SoC dependant codes are
->>> +      controlled by the config ARM_TEGRA20_CPUFREQ.
->>
->> I think that last sentence is no longer true in this patch version. Or,
->> did you mean to write ARM_TEGRA_CPUFREQ rather than ARM_TEGRA20_CPUFREQ?
+> >> > No top posting please.
+> >>
+> >> Tell that to the client I need to use. IMO, making these inline posts
+> >> mandatorily when the reply is a single line makes not much sense.
+> >> Anyway, I will follow the inconvenient way.
+> >
+> > If you are not replying to a particular comment, then there is no need
+> > to quote it.
 > 
-> Right, should be ARM_TEGRA_CPUFREQ, thanks for catching this.
->>
->>> diff --git a/drivers/cpufreq/tegra-cpufreq.c
->>> b/drivers/cpufreq/tegra-cpufreq.c
->>
->>> +static const char * const tegra_soc_compat[] = {
->>> +    "nvidia,tegra124",
->>> +    "nvidia,tegra114",
->>> +    "nvidia,tegra30",
->>> +    "nvidia,tegra20",
->>> +    NULL
->>>   };
->>
->> That table will need editing for each chip. I wonder if you can do
->> something like always use the very last entry in /compatible. That would
->> assume a particular ordering of the compatible entries, but they should
->> be in the order $board, $soc anyway...
-> 
-> How do we get subset of a string and making sure it is the last? There
-> must be some assumptions here (though they will possibly be true) I
-> guess, for example, they should be in the order $board, $soc... and the
-> last "nvidia" should be the start of the last compatible id we would
-> like to get.
+> I did not actually quote anything above my reply.
 
-The compatible property is an array of strings, rather than one big
-string, so you can just keep getting index 0, 1, 2, ... until you find
-there aren't any more entries. I think it's reasonable to assume that
-the SoC compatible value must be last, and it should be in practice,
-although perhaps that is fragile. If you want, we can leave this as-is
-for now, and modify it later if it becomes a problem.
+No, you quoted the entire message _below_ your reply, which is worse.
+
+> > Please read and inwardly digest:
+> >   Documentation/email-clients.txt
+> 
+> I have read that, however I still have certain restrictions here which
+> are over the kernel community rules.  That should not block a useful
+> contribution in my opinion.
+
+Your email client does not prevent you from replying inline, which
+you've proven by this email. Please abide by the rules if you're going
+to contribute.
+
+> >> >> > The $SUBJECT line is wrong. To see how a subsystem usually formats
+> >> >> > theirs you must do something like `git log --oneline -- <subsystem>`.
+> >> >> > And duplicate the format.
+> >> >> >
+> >> >> > Commit message?
+> >> >
+> >> > These comments are still relevant, please re-post your patch with the
+> >> > points rectified.
+> >>
+> >> I really do not understand how they relevant. "Commit message?" ->
+> >> What about it?
+> >
+> > The issue is that there isn't one.
+> 
+> I do not follow. Here is the commit message: "mfd: (max8997) Handle
+> the potential error for mfd_add_devices". What is missing? It now
+> handles an error for adding mfd devices which was not handled before.
+> It mentions for which chip. What more needs to be written? I am
+> currently lost.
+
+Please read:
+  Documentation/SubmittingPatches 
+
+Specifically No2.
+
+> >> It has a pretty clear commit message.
+> >
+> > If you are referencing my comments about the $SUBJECT line, then I
+> > have to disagree with you there. It's actually pretty vague, does not
+> > describe either the issue or what steps you've taken to rectify it.
+> >
+> >> Are you now just
+> >> picking nits about "foo:" vs "(foo)" in the short line?
+> >
+> > That is also an issue. Did you issue the command I sent you:
+> >
+> >   `git log --oneline -- drivers/mfd`
+> >
+> > Issue it now and see if _anyone_ has _ever_ used your formatting.
+> 
+> Right, so nitpicking about a minor nuance over a somewhat important
+> error handling. Is that blocking the error handling change or you can
+> fix that up yourself? I currently do not have time, nor environment
+> for satisfy this request. I can probably do it the upcoming days.
+
+It's not my responsibility to fixup your patches for you. It's your
+job to ensure they are correct on submission. I am happy to review
+them for you and provide you with my comments, which I have done.
+
+Either fix them up and re-submit or don't. It's no skin off my nose.
+
+> >> >> >> +     if (ret < 0) {
+> >> >> >> +             dev_err(dev, "cannot add mfd cells\n");
+> >> >> >> +             goto err_mfd;
+> >> >> >> +     }
+> >> >> >
+> >> >> > Have you tested this patch on h/w? Did you even compile it?
+> >> >
+> >> > You must ensure to test your patches before sending to the MLs, it's
+> >> > the very least we expect.
+> >>
+> >> I am not sure what point you are trying to make. Feel free to reject
+> >> the patch for this error handling.
+> >
+> > I'm not rejecting it because of the error handling, I'm rejecting it
+> > because it hasn't been tested and it doesn't even compile.
+> 
+> It *has* been tested, and it does compile here. I think you just got
+> stuck with the old patch rather than taking any look at new version.
+> May I ask you to do please so? That has been fixed in the new
+> submission before your email.
+
+I have seen the new patch where you fixed it. My comments are solely in
+reference to this patch though. Testing patches _after_ you've sent
+them to the MLs is not acceptable.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
