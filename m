@@ -1,79 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab3LPNaC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 08:30:02 -0500
-Received: from ozlabs.org ([203.10.76.45]:38149 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752803Ab3LPNaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 08:30:00 -0500
-Date: Tue, 17 Dec 2013 00:29:53 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@kernel.org>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-Id: <20131217002953.c767935e277d23742589e367@canb.auug.org.au>
-In-Reply-To: <20131216123301.GG3185@sirena.org.uk>
-References: <20131216164721.79bfe996919a8ec3576867c7@canb.auug.org.au>
-	<1387177714.4280.2.camel@AMDC1943>
-	<20131216114510.GE3185@sirena.org.uk>
-	<1387196021.4280.7.camel@AMDC1943>
-	<20131216123301.GG3185@sirena.org.uk>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__17_Dec_2013_00_29_53_+1100_gr8x/Sjo4.WvwM6t"
+	id S1754003Ab3LPNbz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 08:31:55 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:44017 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846Ab3LPNbx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 08:31:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131216121524.GA6177@earth.universe>
+References: <1387150085-23173-1-git-send-email-sre@debian.org>
+	<1387150085-23173-7-git-send-email-sre@debian.org>
+	<CACRpkdYjjXgE_W8gq1e6z=nGMF=r-m+o2kkvrBFrEMm3o0=RwQ@mail.gmail.com>
+	<20131216121524.GA6177@earth.universe>
+Date: Mon, 16 Dec 2013 14:31:53 +0100
+Message-ID: <CACRpkdbx=Ye8xo4wMkyntME45xv15DeyqV32aeCAcSaa+vDpfA@mail.gmail.com>
+Subject: Re: [RFCv4 06/11] misc: Introduce Nokia CMT driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        =?windows-1251?B?yOLg6evuIMTo7Ojy8O7i?= <freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_Dec_2013_00_29_53_+1100_gr8x/Sjo4.WvwM6t
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Dec 16, 2013 at 1:15 PM, Sebastian Reichel <sre@debian.org> wrote:
+> On Mon, Dec 16, 2013 at 10:48:06AM +0100, Linus Walleij wrote:
 
-On Mon, 16 Dec 2013 12:33:01 +0000 Mark Brown <broonie@kernel.org> wrote:
+>> I.e. it doesn't look device-specific at all, just like some
+>> generic glue code that could be useful to many such
+>> scenarios.
 >
-> On Mon, Dec 16, 2013 at 01:13:41PM +0100, Krzysztof Kozlowski wrote:
->=20
-> > Thanks for applying the patch. The commit introducing error was picked
-> > up by Andrew to MM tree and lately got merged to Linus' tree:
-> > https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/=
-?id=3D8d2763770c34e8ed771f0be86760eb4485febc05
->=20
-> Yeah, I saw it went in through -mm - what I was wondering was why it
-> wasn't causing failures in -next.
+> I like the idea.
+>
+> Probably the remaining gpio exporting code can be converted into
+> some generic gpio-sysfs-export driver as well.
 
-That patch was never in mmotm (which is what linux-next mostly
-includes).  mmotm hasn't been updated since Nov 22.
+I am very reluctant in letting device trees specify exports of GPIOs
+to userspace, not so much because it's Linux-specific but for
+the fact that people are doing things in userspace that should not
+be done in userspace.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Last time it was proposed I asked to the specific usecase,
+exactly why userspace needed this handle on a physical
+GPIO line, and why it can't use another userspace interface
+(example: leds, keys etc.)
 
---Signature=_Tue__17_Dec_2013_00_29_53_+1100_gr8x/Sjo4.WvwM6t
-Content-Type: application/pgp-signature
+> What do you think about the following?
+>
+> /*
+>  * driver, which provides generic reset notifications
+>  */
+> cmt_reset: reset-notifier {
+>     compatible = "linux,reset-notification";
+>
+>     interrupts = <gpio>;
+> };
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Looks good to me.
 
-iQIcBAEBCAAGBQJSrwBWAAoJEMDTa8Ir7ZwVoYwP/AxXEEmx2195Qg0i0r2NSQrt
-RSAbQbbfKtfcqkmmKngAjwlB361WDw3rei+LEoRcNK3a+wQc11xkaNSnj48PrGO6
-Qb8amO+X0Qhj9OZQDyH4DKfq4YgSLOczV0jRxMFuSfFvbWKc++7N7xT2rmQ2Eosd
-NVeQHCSr/5dmuXx7mrsgHQfkO0GCTShOU3FGqGCbmm5KMywt3tUcp+5iJguSDIyZ
-i7CDf8Rtx1SIHZO07hpjDhv/FqRctJM+b4vUVaCAvcZD/Rl5IvMm7NbZ1qOTXTxk
-N6VrCPcZC9mylKWUv9UQxG5KBdMWKENQUsv1509G3f+lLOFmB+DGvnJpHw1dEW1C
-Rx9htoua8YBrEBwJSKEOd5b7KxTB0eMECcJ6zS0ULGsmno5sH8UnEyeJiDRaQDw3
-yu9qFfFA0H8Km9UM5VS01qiqK8I3tt5fH63mLswOdY01bNR35SSu8ZsLXNKpJf8V
-ZqyhVOuIWDXFO+h243eOHr9AFjoAlO7MDfBdMzSYIxAscySv8JAQ4qWRRxS35uBR
-hVpdKN+qDa0gNmJPZwPBgBjBX8OWrvmyEwP9UvhGQp6naExiH+w4GUfos2jqDZ/0
-mPhMnKnXB/X2P1G+qWg3NTddYF9TAMo3QZ622UiPJa+Kb1tOS7LlAi1DZR32cFiv
-xaZAv0GjA5cVKXtYrYvs
-=GsDx
------END PGP SIGNATURE-----
+> /*
+>  * driver, which exports the specified gpios in sysfs with the
+>  * supplied names. The device will be named according to the
+>  * label
+>  */
+> cmt_gpios: gpio-sysfs-export {
+>     compatible = "linux,gpio-sysfs-export";
+>     label = "nokia-cmt";
+>
+>     gpios = <A>, <B>, ...;
+>     gpio-names = "A", "B", ...;
+> };
 
---Signature=_Tue__17_Dec_2013_00_29_53_+1100_gr8x/Sjo4.WvwM6t--
+Please follow the discussion on this topic:
+http://marc.info/?l=linux-gpio&m=138201170431416&w=2
+
+>> Why are you using a tasklet rather than a work
+>> for this?
+>
+> No particular reason. I just took this over from Nokia's code.
+
+Can you try to use a work instead?
+
+Yours,
+Linus Walleij
