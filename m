@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab3LPKOa (ORCPT <rfc822;w@1wt.eu>);
+	id S1753351Ab3LPKOs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:14:48 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:47522 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab3LPKOa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Dec 2013 05:14:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50563 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752566Ab3LPKO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:14:29 -0500
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        joern@logfs.org, Michel Lespinasse <walken@google.com>,
-        Vlastimil Babka <vbabka@suse.cz>
-Subject: [PATCH 0/3] Fix bugs in munlock
-Date: Mon, 16 Dec 2013 11:14:13 +0100
-Message-Id: <1387188856-21027-1-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <52AE07B4.4020203@oracle.com>
-References: <52AE07B4.4020203@oracle.com>
+X-IronPort-AV: E=Sophos;i="4.95,493,1384300800"; 
+   d="scan'208";a="82568272"
+Message-ID: <1387188867.20076.46.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH net-next RFC 0/5] xen-netback: TX grant mapping instead
+ of copy
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Date: Mon, 16 Dec 2013 10:14:27 +0000
+In-Reply-To: <52AA33CF.6030004@citrix.com>
+References: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com>
+			 <1383303035.672.29.camel@kazak.uk.xensource.com>
+			 <5273FA37.6020903@citrix.com>
+		 <1383821563.26213.168.camel@kazak.uk.xensource.com>
+		 <52977F5C.7090703@citrix.com>
+	 <1385660592.20209.27.camel@kazak.uk.xensource.com>
+	 <52AA33CF.6030004@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch mini-series is a result of Sasha Levin's bug reports via trinity.
+On Thu, 2013-12-12 at 22:08 +0000, Zoltan Kiss wrote:
+> On 28/11/13 17:43, Ian Campbell wrote:
+> > On Thu, 2013-11-28 at 17:37 +0000, Zoltan Kiss wrote:
+> > Routing/firewalling domUs is as valid as bridging. There is nothing in
+> > the slightest bit suboptimal about it.
+> >
+> > If this use case regresses with this approach then I'm afraid that
+> > either needs to be addressed or a different approach considered.
+> >
+> >> Anyway, I will try this out, and see if it really copies everything, and
+> >> get some numbers as well.
+> >
+> > Thanks.
+> 
+> Now I managed to try it out. As I expected, Dom0 does copy the mapped 
+> page. The peak throuhput I could get was 6.6 Gbps, however it could keep 
+> that only for short periods, I guess when the unmapping was ideally 
+> batched. The average was 5.53.
+> On the same machine the same 10 min iperf session, without my patches 
+> made the peak 5.9 while the average was 5.65. Do you think it is an 
+> acceptable regression?
 
-First two patches are quite straightforward fixes for bugs introduced in 3.12,
-and earlier versions have been tested. Sasha, can you please test the final
-versions of the first two (together) again? The first one added an extra
-VM_BUG_ON.
+Well, it would of course be preferable to avoid it. I'm quite reluctant
+to see this scenario become a second class citizen.
 
-The third is based on me noticing there might still be an (older than 3.12)
-race with a THP page split with non-fatal but still bad consequences, such as
-pages being kept mlocked. Since this is quite rare and was not reported, any
-review agreeing that it can really happen would be great. Testing as well, of
-course.  So it's kind of RFC at this point.
+> I used 3.12 Dom0 and guest kernel, the guest transmitted though a 10Gb 
+> card to a bare metal box.
+> I plan to look further if we can avoid somehow this:
+> 
+> https://lkml.org/lkml/2012/7/20/363
+> 
+> So then this scenario can benefit from grant mapping.
+> 
+> Regards,
+> 
+> Zoli
 
-Vlastimil Babka (3):
-  mm: munlock: fix a bug where THP tail page is encountered
-  mm: munlock: fix deadlock in __munlock_pagevec()
-  mm: munlock: fix potential race with THP page split
-
- mm/mlock.c | 116 ++++++++++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 76 insertions(+), 40 deletions(-)
-
--- 
-1.8.4
 
