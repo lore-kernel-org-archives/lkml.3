@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab3LPPFZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:05:25 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:60910 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab3LPPFX (ORCPT
+	id S1754471Ab3LPPFu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:05:50 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49596 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753762Ab3LPPFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:05:23 -0500
-Date: Mon, 16 Dec 2013 15:05:14 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: Simple MFD driver example
-Message-ID: <20131216150514.GN18769@lee--X1>
-References: <CAOMwXhN5UfR=Y8V3i=A2zSCv7V9sRDd0Z+D1AQFahvRS-mV5Fw@mail.gmail.com>
- <20131216082556.GE18769@lee--X1>
- <CAOMwXhN8fG8YbU53A_U_MyMTyGWfV7NCCtr2a5oCbHdB0iqqmA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMwXhN8fG8YbU53A_U_MyMTyGWfV7NCCtr2a5oCbHdB0iqqmA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 16 Dec 2013 10:05:48 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: axboe@kernel.dk, stefano.stabellini@eu.citrix.com, ian.campbell@citrix.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        leosilva@linux.vnet.ibm.com, ashley@ashleylai.com, peterhuewe@gmx.de,
+        mail@srajiv.net, tpmdd@selhorst.net, dmitry.torokhov@gmail.com,
+        bhelgaas@google.com, plagnioj@jcrosoft.com, tomi.valkeinen@ti.com,
+        tpmdd-devel@lists.sourceforge.net, linux-input@vger.kernel.org,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: [PATCH v3] if xen_platform_pci=0 is set don't blow up.
+Date: Mon, 16 Dec 2013 10:04:08 -0500
+Message-Id: <1387206250-13963-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please refrain from top posting.
+The first patch:
+ [PATCH v3 1/2] xen/pvhvm: If xen_platform_pci=0 is set don't blow up
 
-Responses should appear under quoted lines, which they reference.
+I would like to commit to stable as it is fixing an eggregious bug -
+where we blow up if the guest config has: "xen_platform_pci=0" setup.
+This bug has been in existence for years and it is time to stamp it out.
 
-> >> I have been trying to write about 50-100 LOC for 1-2 weeks now. I have
-> >> a fairly simple use case for MFD where I need to have gpio and hwmon
-> >> functionality for a GPIO.
-> >>
-> >> I read the mfd drivers inside and out by now, but it looks a bit
-> >> inconsistent to me. I am not sure what to follow etc. The
-> >> documentation seems to be virtually missing which makes my life and
-> >> involvement even more difficult. :(
-> >>
-> >> May I ask for some pointer how to do all this? It would be nice to see
-> >> a minimal example where the parent does not do anything else than just
-> >> enumerating the sub-device drivers. Is that possible with an empty
-> >> probe callback?
-> >>
-> >> If I understand the regmap correctly (again, it is possible I do not),
-> >> then I would not need this. But in general, it is really hard to deal
-> >> with the linux kernel in this regard when basic documentations are
-> >> missing.
-> >>
-> >> I hope this would change over time for the posterity. It is a pity
-> >> that contributors do not join probably due to this. It is a bit
-> >> chaotic, but I hope it can be changed in the future.
-> >>
-> >> Apologies for my frustration...
-> >
-> > Due to the nature of the MFD subsystem, there isn't a simple use-case
-> > which you can use as a template. It's completely dependent on the
-> > device you are trying to enable. There are lots of well written
-> > drivers in the subsystem that you can use as good examples though.
+The second patch is a cleanup - not a stable candidate.
 
-> Well, if you ask me the MFD subsystem is underdocumented, and there is
-> some inconsistency between the drivers. It is hard to take any of them
-> as a starting point, at least for me.
+It touches all of the Xen frontend drivers and adds the logic of:
+"if user disabled us, don't init" - with variations. As you can
+specify exactly which ones you want to init and which ones
+not (Linux runtime parameter 'xen_emul_unplug'). But for the majority
+of drivers - it is just an on/off switch.
 
-Feel free to write some. I'm always happy to take helpful patches.
+Since it touches a lot of maintainers I figured I would send it
+to Linus on Wednesday or Thursday.
 
-> Currently, I wrote a simple one from scratch which I will post soon.
+Thank you!
 
-Okay great.
+ arch/x86/xen/platform-pci-unplug.c         | 79 ++++++++++++++++++++++++++++--
+ drivers/block/xen-blkfront.c               |  4 +-
+ drivers/char/tpm/xen-tpmfront.c            |  4 ++
+ drivers/input/misc/xen-kbdfront.c          |  4 ++
+ drivers/net/xen-netfront.c                 |  2 +-
+ drivers/pci/xen-pcifront.c                 |  4 ++
+ drivers/video/xen-fbfront.c                |  4 ++
+ drivers/xen/xenbus/xenbus_probe_frontend.c |  2 +-
+ include/xen/platform_pci.h                 | 25 +++++++++-
+ 9 files changed, 119 insertions(+), 9 deletions(-)
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+Konrad Rzeszutek Wilk (2):
+      xen/pvhvm: If xen_platform_pci=0 is set don't blow up (v3).
+      xen/pvhvm: Remove the xen_platform_pci int.
+
