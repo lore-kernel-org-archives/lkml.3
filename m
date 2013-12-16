@@ -1,88 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900Ab3LPJGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 04:06:35 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:23570 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037Ab3LPJGe (ORCPT
+	id S1753021Ab3LPJGw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 04:06:52 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:61891 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab3LPJGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 04:06:34 -0500
-Message-ID: <52AEC241.1040507@huawei.com>
-Date: Mon, 16 Dec 2013 17:05:05 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 16 Dec 2013 04:06:47 -0500
+Date: Mon, 16 Dec 2013 12:04:12 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [linux-next] sk->sk_dst_lock inconsistent lock state
+Message-ID: <20131216090412.GA2230@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
-        Scott Wood <scottwood@freescale.com>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH 6/9] powerpc/pci: Use dev_is_pci() to check whether it
- is pci device
-References: <1386244880-22300-1-git-send-email-wangyijing@huawei.com> <20131216071305.GA16842@weiyang.vnet.ibm.com>
-In-Reply-To: <20131216071305.GA16842@weiyang.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/12/16 15:13, Wei Yang wrote:
-> Yijing,
-> 
-> This one looks good.
-> 
-> While I take a look at the source code, there are around 20 places with
-> similar style. Do you think it would be good to change all these places
-> in one patch?
+Hello,
 
-I sent the other similar changes to related maillist, some of them (David, Greg )has been accepted,
-and other is not. :)
+3.13.0-rc4-next-20131216
 
-eg.
-http://article.gmane.org/gmane.linux.kernel/1608341/match=dev_is_pci
+[  114.923321] =================================
+[  114.923324] [ INFO: inconsistent lock state ]
+[  114.923330] 3.13.0-rc4-next-20131216-dbg-dirty #59 Not tainted
+[  114.923333] ---------------------------------
+[  114.923337] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
+[  114.923342] swapper/0/0 [HC0[0]:SC1[1]:HE1:SE0] takes:
+[  114.923346]  (&(&sk->sk_dst_lock)->rlock){+.?...}, at: [<ffffffff813a50db>] __udp4_lib_rcv+0x537/0x765
+[  114.923363] {SOFTIRQ-ON-W} state was registered at:
+[  114.923367]   [<ffffffff81077272>] __lock_acquire+0xa49/0x1b03
+[  114.923376]   [<ffffffff81078aa0>] lock_acquire+0x6f/0x8e
+[  114.923381]   [<ffffffff813eba9b>] _raw_spin_lock+0x33/0x3f
+[  114.923390]   [<ffffffff813ad834>] inet_bind+0x18b/0x216
+[  114.923397]   [<ffffffff8133509e>] SyS_bind+0x7d/0xaa
+[  114.923405]   [<ffffffff813ed266>] tracesys+0xd4/0xd9
+[  114.923412] irq event stamp: 1386010
+[  114.923415] hardirqs last  enabled at (1386010): [<ffffffff810f5cf0>] kmem_cache_free+0xf0/0x17d
+[  114.923424] hardirqs last disabled at (1386009): [<ffffffff810f5cc4>] kmem_cache_free+0xc4/0x17d
+[  114.923431] softirqs last  enabled at (1385998): [<ffffffff81041672>] _local_bh_enable+0x3e/0x40
+[  114.923440] softirqs last disabled at (1385999): [<ffffffff810420f2>] irq_exit+0x52/0xe2
+[  114.923446] 
+other info that might help us debug this:
+[  114.923450]  Possible unsafe locking scenario:
 
-Thanks!
-Yijing.
+[  114.923454]        CPU0
+[  114.923456]        ----
+[  114.923459]   lock(&(&sk->sk_dst_lock)->rlock);
+[  114.923464]   <Interrupt>
+[  114.923467]     lock(&(&sk->sk_dst_lock)->rlock);
+[  114.923472] 
+ *** DEADLOCK ***
 
-> 
-> On Thu, Dec 05, 2013 at 08:01:20PM +0800, Yijing Wang wrote:
->> Use PCI standard marco dev_is_pci() instead of directly compare
->> pci_bus_type to check whether it is pci device.
->>
->> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->> ---
->> arch/powerpc/sysdev/fsl_pci.c |    2 +-
->> 1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
->> index 4dfd61d..7066e52 100644
->> --- a/arch/powerpc/sysdev/fsl_pci.c
->> +++ b/arch/powerpc/sysdev/fsl_pci.c
->> @@ -122,7 +122,7 @@ static int fsl_pci_dma_set_mask(struct device *dev, u64 dma_mask)
->> 	 * address width of the SoC such that we can address any internal
->> 	 * SoC address from across PCI if needed
->> 	 */
->> -	if ((dev->bus == &pci_bus_type) &&
->> +	if ((dev_is_pci(dev)) &&
->> 	    dma_mask >= DMA_BIT_MASK(MAX_PHYS_ADDR_BITS)) {
->> 		set_dma_ops(dev, &dma_direct_ops);
->> 		set_dma_offset(dev, pci64_dma_offset);
->> -- 
->> 1.7.1
->>
->>
->> _______________________________________________
->> Linuxppc-dev mailing list
->> Linuxppc-dev@lists.ozlabs.org
->> https://lists.ozlabs.org/listinfo/linuxppc-dev
-> 
+[  114.923478] 2 locks held by swapper/0/0:
+[  114.923480]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff81348a50>] __netif_receive_skb_core+0x1c1/0x9b0
+[  114.923494]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff81379c83>] ip_local_deliver+0x54/0x34b
+[  114.923509] 
+stack backtrace:
+[  114.923516] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.13.0-rc4-next-20131216-dbg-dirty #59
+[  114.923520] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
+[  114.923524]  0000000000000000 ffff880157c03a58 ffffffff813e57ff ffffffff81612490
+[  114.923533]  ffff880157c03aa8 ffffffff813e2e0c 0000000000000001 ffff880100000001
+[  114.923542]  ffffffff00000000 ffffffff81612b70 0000000000000004 0000000000000006
+[  114.923551] Call Trace:
+[  114.923554]  <IRQ>  [<ffffffff813e57ff>] dump_stack+0x4e/0x7a
+[  114.923566]  [<ffffffff813e2e0c>] print_usage_bug+0x2b1/0x31c
+[  114.923574]  [<ffffffff81075203>] ? print_irq_inversion_bug+0x234/0x234
+[  114.923580]  [<ffffffff81075e9e>] mark_lock+0x341/0x698
+[  114.923586]  [<ffffffff81077200>] __lock_acquire+0x9d7/0x1b03
+[  114.923594]  [<ffffffff813b9597>] ? check_leaf.isra.10+0x20d/0x20d
+[  114.923601]  [<ffffffff81078aa0>] lock_acquire+0x6f/0x8e
+[  114.923608]  [<ffffffff813a50db>] ? __udp4_lib_rcv+0x537/0x765
+[  114.923614]  [<ffffffff813eba9b>] _raw_spin_lock+0x33/0x3f
+[  114.923620]  [<ffffffff813a50db>] ? __udp4_lib_rcv+0x537/0x765
+[  114.923627]  [<ffffffff813a50db>] __udp4_lib_rcv+0x537/0x765
+[  114.923633]  [<ffffffff813a58f5>] udp_rcv+0x15/0x17
+[  114.923640]  [<ffffffff81379e03>] ip_local_deliver+0x1d4/0x34b
+[  114.923646]  [<ffffffff81379c83>] ? ip_local_deliver+0x54/0x34b
+[  114.923653]  [<ffffffff8137a58d>] ip_rcv+0x613/0x6a3
+[  114.923659]  [<ffffffff8134919f>] __netif_receive_skb_core+0x910/0x9b0
+[  114.923665]  [<ffffffff81348a50>] ? __netif_receive_skb_core+0x1c1/0x9b0
+[  114.923674]  [<ffffffff81009275>] ? read_tsc+0x9/0x1b
+[  114.923680]  [<ffffffff81349252>] __netif_receive_skb+0x13/0x55
+[  114.923686]  [<ffffffff81349369>] netif_receive_skb+0xd5/0x1b8
+[  114.923693]  [<ffffffff81349c9a>] napi_gro_receive+0x26/0x66
+[  114.923705]  [<ffffffffa0177027>] tg3_poll_work+0x878/0xc80 [tg3]
+[  114.923716]  [<ffffffffa0177719>] tg3_poll+0x19f/0x352 [tg3]
+[  114.923723]  [<ffffffff8134a3fd>] net_rx_action+0xec/0x1c0
+[  114.923729]  [<ffffffff81041c86>] __do_softirq+0xfe/0x254
+[  114.923735]  [<ffffffff810420f2>] irq_exit+0x52/0xe2
+[  114.923743]  [<ffffffff810041c1>] do_IRQ+0x97/0xae
+[  114.923751]  [<ffffffff813ec7b2>] common_interrupt+0x72/0x72
+[  114.923754]  <EOI>  [<ffffffff8132005d>] ? cpuidle_enter_state+0x54/0xb0
+[  114.923767]  [<ffffffff8132018c>] cpuidle_idle_call+0xd3/0x11c
+[  114.923774]  [<ffffffff8100aab1>] arch_cpu_idle+0x9/0x23
+[  114.923781]  [<ffffffff8108508f>] cpu_startup_entry+0xdf/0x164
+[  114.923788]  [<ffffffff813ddfe9>] rest_init+0x12d/0x131
+[  114.923794]  [<ffffffff813ddebc>] ? csum_partial_copy_generic+0x16c/0x16c
+[  114.923802]  [<ffffffff81685d64>] start_kernel+0x3e2/0x3ee
+[  114.923808]  [<ffffffff81685790>] ? repair_env_string+0x58/0x58
+[  114.923816]  [<ffffffff81685120>] ? early_idt_handlers+0x120/0x120
+[  114.923823]  [<ffffffff81685498>] x86_64_start_reservations+0x2a/0x2c
+[  114.923830]  [<ffffffff81685588>] x86_64_start_kernel+0xee/0xfb
 
 
--- 
-Thanks!
-Yijing
-
+	-ss
