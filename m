@@ -1,83 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab3LPEYr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Dec 2013 23:24:47 -0500
-Received: from mga09.intel.com ([134.134.136.24]:18287 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752371Ab3LPEYp convert rfc822-to-8bit (ORCPT
+	id S1752444Ab3LPE33 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Dec 2013 23:29:29 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:54966 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260Ab3LPE31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Dec 2013 23:24:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,493,1384329600"; 
-   d="scan'208";a="425165998"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jiang Liu <liuj97@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
-        Wang YanQing <udknight@gmail.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>
-Subject: RE: [PATCH v3 [resend] 14/18] smp, x86, xen: kill SMP single
- function call interrupt
-Thread-Topic: [PATCH v3 [resend] 14/18] smp, x86, xen: kill SMP single
- function call interrupt
-Thread-Index: AQHO+gtCEcbarGQnr0yxjfG5Uv34gppWOSrQ
-Date: Mon, 16 Dec 2013 04:24:41 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923350142ABC2@SHSMSX101.ccr.corp.intel.com>
-References: <1387125400-28849-1-git-send-email-liuj97@gmail.com>
- <1387125400-28849-15-git-send-email-liuj97@gmail.com>
- <20131216030040.GB7180@pegasus.dumpdata.com>
-In-Reply-To: <20131216030040.GB7180@pegasus.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 15 Dec 2013 23:29:27 -0500
+Message-ID: <52AE81B3.4010203@linaro.org>
+Date: Sun, 15 Dec 2013 22:29:39 -0600
+From: Alex Elder <alex.elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
+To: Mike Turquette <mturquette@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tim Kryger <tim.kryger@linaro.org>
+CC: "bcm-kernel-feedback-list@broadcom.com" 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] clk: bcm281xx: add initial clock framework support
+References: <529F4B0F.2020801@linaro.org> <529F4B4F.4020405@linaro.org> <20131214235731.26321.53050@quantum> <52ADE93B.3070907@linaro.org> <E566434B-F630-4AD3-91EC-BD5599767F2E@linaro.org>
+In-Reply-To: <E566434B-F630-4AD3-91EC-BD5599767F2E@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
-> On Mon, Dec 16, 2013 at 12:36:36AM +0800, Jiang Liu wrote:
->> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
->> similar to smp_call_function_single()" has unified the way to handle
->> single and multiple cross-CPU function calls. Now only one interrupt
->> is needed for architecture specific code to support generic SMP
->> function 
->> call interfaces, so kill the redundant single function call
->> interrupt. 
->> 
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Shaohua Li <shli@kernel.org>
->> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Cc: Ingo Molnar <mingo@elte.hu>
->> Cc: Steven Rostedt <rostedt@goodmis.org>
->> Cc: Jiri Kosina <trivial@kernel.org>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: "H. Peter Anvin" <hpa@zytor.com>
->> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> I presume this has been tested?
-> 
+On 12/15/2013 06:22 PM, Alex Elder wrote:
+> I think I can prepare a series that puts my changes
+> before Tim's. Unless I have trouble doing that
+> I will send that out in a few hours.
+. . .
 
-I have just test Jiang's patch, it works fine for dom0 booting.
 
-Thanks,
-Jinsong
+I got started on doing this but then I decided to go
+check on the status of Tim's series.  It looks like
+Christian is on the verge of taking his series in,
+and is planning to coordinate with the affected
+maintainers to do so.
 
+I'm going to assume that is going to happen quite
+soon--I hope in the next day or two.  So rather than
+muddy the waters even further, it might be best to
+just wait for Tim's series to be accepted and then
+you take mine in on top of that.
+
+In any case this is a small mess that's going to
+require some coordination to get resolved.  Let
+me know if there's something else specific you
+would recommend.
+
+In the mean time, I have created a new branch that
+is based on v3.13-rc4 (and includes Tim's prerequisite
+patches).  Pull request (still wrapped my my mailer)
+is below.
+
+Thanks.
+
+					-Alex
+
+The following changes since commit 319e2e3f63c348a9b66db4667efa73178e18b17d:
+
+  Linux 3.13-rc4 (2013-12-15 12:31:33 -0800)
+
+are available in the git repository at:
+
+  ssh://git@git.linaro.org/people/alex.elder/linux.git
+review/bcm-kona-clocks-v4
+
+for you to fetch changes up to deebd4ea75c159697d1e43416683d6068821b431:
+
+  ARM: dts: bcm281xx: define real clocks (2013-12-15 22:23:13 -0600)
+
+----------------------------------------------------------------
+Alex Elder (3):
+      clk: bcm281xx: define kona clock binding
+      clk: bcm281xx: add initial clock framework support
+      ARM: dts: bcm281xx: define real clocks
+
+Tim Kryger (8):
+      ARM: dts: Declare clocks as fixed on bcm11351
+      ARM: dts: Specify clocks for UARTs on bcm11351
+      Documentation: dt: kona-sdhci: Add clocks property
+      ARM: dts: Specify clocks for SDHCIs on bcm11351
+      mmc: sdhci-bcm-kona: Add basic use of clocks
+      Documentation: dt: kona-timer: Add clocks property
+      clocksource: kona: Add basic use of external clock
+      ARM: dts: Specify clocks for timer on bcm11351
+
+ .../devicetree/bindings/arm/bcm/kona-timer.txt     |    7 +-
+ .../devicetree/bindings/clock/bcm-kona-clock.txt   |   93 ++
+ .../devicetree/bindings/mmc/kona-sdhci.txt         |    4 +
+ arch/arm/boot/dts/bcm11351.dtsi                    |  199 +++-
+ drivers/clk/Kconfig                                |    1 +
+ drivers/clk/Makefile                               |    1 +
+ drivers/clk/bcm/Kconfig                            |    8 +
+ drivers/clk/bcm/Makefile                           |    3 +
+ drivers/clk/bcm/clk-bcm281xx.c                     |  416 ++++++++
+ drivers/clk/bcm/clk-kona-setup.c                   |  769 +++++++++++++++
+ drivers/clk/bcm/clk-kona.c                         | 1033
+++++++++++++++++++++
+ drivers/clk/bcm/clk-kona.h                         |  414 ++++++++
+ drivers/clocksource/bcm_kona_timer.c               |   14 +-
+ drivers/mmc/host/sdhci-bcm-kona.c                  |   37 +-
+ include/dt-bindings/clock/bcm281xx.h               |   65 ++
+ 15 files changed, 3053 insertions(+), 11 deletions(-)
+ create mode 100644
+Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+ create mode 100644 drivers/clk/bcm/Kconfig
+ create mode 100644 drivers/clk/bcm/Makefile
+ create mode 100644 drivers/clk/bcm/clk-bcm281xx.c
+ create mode 100644 drivers/clk/bcm/clk-kona-setup.c
+ create mode 100644 drivers/clk/bcm/clk-kona.c
+ create mode 100644 drivers/clk/bcm/clk-kona.h
+ create mode 100644 include/dt-bindings/clock/bcm281xx.h
 
