@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab3LPMBV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 07:01:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5842 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753230Ab3LPMBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 07:01:19 -0500
-Date: Mon, 16 Dec 2013 13:01:10 +0100
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Gleb Natapov <gleb@minantech.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        gleb@redhat.com, kvm@vger.kernel.org, pmatouse@redhat.com,
-        stable@vger.kernel.org, larsbull@google.com
-Subject: Re: [PATCH] KVM: x86: fix guest-initiated crash with x2apic
- (CVE-2013-6376)
-Message-ID: <20131216120109.GA3324@hpx.cz>
-References: <1386880614-23300-4-git-send-email-pbonzini@redhat.com>
- <20131213160754.GA20763@hpx.cz>
- <20131214094614.GF21068@minantech.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131214094614.GF21068@minantech.com>
+	id S1753709Ab3LPMEG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 07:04:06 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:63837 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753429Ab3LPMEC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 07:04:02 -0500
+Message-ID: <1387195436.13062.139.camel@host5.omatika.ru>
+Subject: Re: [PATCH v2 03/16] ARM: dts: provide DMA config to pxamci
+From: Sergei Ianovich <ynvich@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Daniel Mack <zonque@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Chris Ball <cjb@laptop.org>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        DOCUMENTATION <linux-doc@vger.kernel.org>, linux-mmc@vger.kernel.org
+Date: Mon, 16 Dec 2013 16:03:56 +0400
+In-Reply-To: <52AEEAF4.3010703@metafoo.de>
+References: <1386543229-1542-1-git-send-email-ynvich@gmail.com>
+	 	 <1386901645-28895-1-git-send-email-ynvich@gmail.com>
+	 	 <1386901645-28895-4-git-send-email-ynvich@gmail.com>
+	 	 <201312142006.26979.arnd@arndb.de>
+	  <1387049660.7152.317.camel@host5.omatika.ru> <52AECEB2.4070807@gmail.com>
+	 <1387194450.13062.134.camel@host5.omatika.ru> <52AEEAF4.3010703@metafoo.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-12-14 11:46+0200, Gleb Natapov:
-> On Fri, Dec 13, 2013 at 05:07:54PM +0100, Radim Krčmář wrote:
-> > 2013-12-12 21:36+0100, Paolo Bonzini:
-> > > From: Gleb Natapov <gleb@redhat.com>
-> > > 
-> > > A guest can cause a BUG_ON() leading to a host kernel crash.
-> > > When the guest writes to the ICR to request an IPI, while in x2apic
-> > > mode the following things happen, the destination is read from
-> > > ICR2, which is a register that the guest can control.
-> > > 
-> > > kvm_irq_delivery_to_apic_fast uses the high 16 bits of ICR2 as the
-> > > cluster id.  A BUG_ON is triggered, which is a protection against
-> > > accessing map->logical_map with an out-of-bounds access and manages
-> > > to avoid that anything really unsafe occurs.
-> > > 
-> > > The logic in the code is correct from real HW point of view. The problem
-> > > is that KVM supports only one cluster with ID 0 in clustered mode, but
-> > > the code that has the bug does not take this into account.
-> > 
-> > The more I read about x2apic, the more confused I am ...
-> > 
-> >  - How was the cluster x2apic enabled?
-> > 
-> >    Linux won't enable cluster x2apic without interrupt remapping and I
-> >    had no idea we were allowed to do it.
-> > 
-> Malicious code can do it.
-> 
-> >  - A hardware test-suite found this?
-> > 
-> >    This bug can only be hit when the destination cpu is > 256, so the
-> >    request itself is buggy -- we don't support that many in kvm and it
-> >    would crash when initializing the vcpus if we did.
-> >    => It looks like we should just ignore the ipi, because we have no
-> >       vcpus in that cluster.
-> > 
-> That's the nature of malicious code: it does what your code does not expects
-> it to do :)
+On Mon, 2013-12-16 at 12:58 +0100, Lars-Peter Clausen wrote:
+> Btw. any driver that parses the dmas property manually should be considered
+> broken. This is a classical layering violation. The layout of the dma
+> specifier is DMA controller specific and should be completely transparent to
+> the device driver.
 
-I was wondering if there wasn't malicious linux on the other side too :)
+PXA as a whole is broken in this respect at the moment. The problem is
+how to move to a "fixed" state without breaking things which work now.
 
-> >  - Where does the 'only one supported cluster' come from?
-> > 
-> "only one supported cluster" comes from 8 bit cpuid limitation of KVM's x2apic
-> implementation. With 8 bit cpuid you can only address cluster 0 in logical mode.
-
-One x2apic cluster has 16 cpus and we generate the x2apic LDR correctly,
-so 8 bit cpuid can address first 16 clusters as well.
-
-  u32 ldr = ((id >> 4) << 16) | (1 << (id & 0xf));
-
-> >    I only see we use 'struct kvm_lapic *logical_map[16][16];', which
-> >    supports 16 clusters of 16 apics = first 256 vcpus, so if we map
-> >    everything to logical_map[0][0:15], we would not work correctly in
-> >    the cluster x2apic, with > 16 vcpus.
-> > 
-> Such config cannot work today because of 8 bit cpuid limitation. When the limitation
-> will be removed KMV_X2APIC_CID_BITS will be set to actual number of bits we want to support.
-
-Even with KMV_X2APIC_CID_BITS = 4, which would allow us to support 8 bit
-cpuid, we would still deliver interrupts destined for cpuid > 256 to
-potentially plugged cpus.
-
-> It will likely be smaller then 16 bit though since full 18 bit support will require huge tables.
-
-Yeah, we'll have to do dynamic allocation if we are ever going to need
-the full potential of x2apic.
-(2^20-16 cpus in cluster and 2^32-1 in flat mode)
