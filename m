@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab3LPLG7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 06:06:59 -0500
-Received: from mga01.intel.com ([192.55.52.88]:23006 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752663Ab3LPLG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 06:06:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,494,1384329600"; 
-   d="scan'208";a="450671290"
-Date: Mon, 16 Dec 2013 11:06:55 +0000
-From: Damien Lespiau <damien.lespiau@intel.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: daniel.vetter@ffwll.ch, airlied@linux.ie, yongjun_wei@trendmicro.com.cn,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Intel-gfx] [PATCH -next] drm/i915: fix return value check of
- debugfs_create_file()
-Message-ID: <20131216110655.GB26921@strange.amr.corp.intel.com>
-References: <CAPgLHd-C925=6rEnQMMkPvHu6+w_BHcJ1-CG8PdK37XM9dzf_A@mail.gmail.com>
+	id S1753505Ab3LPLHp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 06:07:45 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35572 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753384Ab3LPLHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 06:07:44 -0500
+Date: Mon, 16 Dec 2013 12:07:28 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 01/71] perf: Disable all pmus on unthrottling and
+ rescheduling
+Message-ID: <20131216110728.GW21999@twins.programming.kicks-ass.net>
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1386765443-26966-2-git-send-email-alexander.shishkin@linux.intel.com>
+ <20131213180638.GR21999@twins.programming.kicks-ass.net>
+ <87eh5dt60b.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPgLHd-C925=6rEnQMMkPvHu6+w_BHcJ1-CG8PdK37XM9dzf_A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87eh5dt60b.fsf@ashishki-desk.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 02:13:25PM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Mon, Dec 16, 2013 at 01:00:36PM +0200, Alexander Shishkin wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
 > 
-> In case of error, the function debugfs_create_file() returns NULL
-> pointer not ERR_PTR() if debugfs is enabled. The IS_ERR() test in
-> the return value check should be replaced with NULL test.
+> > On Wed, Dec 11, 2013 at 02:36:13PM +0200, Alexander Shishkin wrote:
+> >> Currently, only one pmu in a context gets disabled during unthrottling
+> >> and event_sched_{out,in}, however, events in one context may belong to
+> >> different pmus, which results in pmus being reprogrammed while they are
+> >> still enabled. This patch temporarily disables pmus that correspond to
+> >> each event in the context while these events are being modified.
+> >> 
+> >> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+> >> ---
+> >>  kernel/events/core.c | 27 ++++++++++++++++++++++++---
+> >>  1 file changed, 24 insertions(+), 3 deletions(-)
+> >> 
+> >> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> >> index 403b781..d656cd6 100644
+> >> --- a/kernel/events/core.c
+> >> +++ b/kernel/events/core.c
+> >> @@ -1396,6 +1396,9 @@ event_sched_out(struct perf_event *event,
+> >>  	if (event->state != PERF_EVENT_STATE_ACTIVE)
+> >>  		return;
+> >>  
+> >> +	if (event->pmu != ctx->pmu)
+> >> +		perf_pmu_disable(event->pmu);
+> >> +
+> >>  	event->state = PERF_EVENT_STATE_INACTIVE;
+> >>  	if (event->pending_disable) {
+> >>  		event->pending_disable = 0;
+> >> @@ -1412,6 +1415,9 @@ event_sched_out(struct perf_event *event,
+> >>  		ctx->nr_freq--;
+> >>  	if (event->attr.exclusive || !cpuctx->active_oncpu)
+> >>  		cpuctx->exclusive = 0;
+> >> +
+> >> +	if (event->pmu != ctx->pmu)
+> >> +		perf_pmu_enable(event->pmu);
+> >>  }
+> >>  
+> >>  static void
+> >
+> > Hmm, indeed. Does it make sense to drop the conditional?
+> > perf_pmu_{en,dis}able() is recursive and the thinking is that if its the
+> > same PMU the cacheline is hot because we touched it already recently
+> > anyway, so the unconditional inc/dec might actually be faster.. dunno.
 > 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> Well, given the disable_count check in perf_pmu_{en,dis}able, this one
+> indeed looks redundant to me. Should I resend this one separately?
 
-Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
-
--- 
-Damien
-
-> ---
->  drivers/gpu/drm/i915/i915_debugfs.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
-> index 7008aac..856e18b 100644
-> --- a/drivers/gpu/drm/i915/i915_debugfs.c
-> +++ b/drivers/gpu/drm/i915/i915_debugfs.c
-> @@ -1920,8 +1920,8 @@ static int i915_pipe_crc_create(struct dentry *root, struct drm_minor *minor,
->  	info->dev = dev;
->  	ent = debugfs_create_file(info->name, S_IRUGO, root, info,
->  				  &i915_pipe_crc_fops);
-> -	if (IS_ERR(ent))
-> -		return PTR_ERR(ent);
-> +	if (!ent)
-> +		return -ENOMEM;
->  
->  	return drm_add_fake_info_node(minor, ent, info);
->  }
-> @@ -2931,8 +2931,8 @@ static int i915_forcewake_create(struct dentry *root, struct drm_minor *minor)
->  				  S_IRUSR,
->  				  root, dev,
->  				  &i915_forcewake_fops);
-> -	if (IS_ERR(ent))
-> -		return PTR_ERR(ent);
-> +	if (!ent)
-> +		return -ENOMEM;
->  
->  	return drm_add_fake_info_node(minor, ent, &i915_forcewake_fops);
->  }
-> @@ -2949,8 +2949,8 @@ static int i915_debugfs_create(struct dentry *root,
->  				  S_IRUGO | S_IWUSR,
->  				  root, dev,
->  				  fops);
-> -	if (IS_ERR(ent))
-> -		return PTR_ERR(ent);
-> +	if (!ent)
-> +		return -ENOMEM;
->  
->  	return drm_add_fake_info_node(minor, ent, fops);
->  }
-> 
-> _______________________________________________
-> Intel-gfx mailing list
-> Intel-gfx@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+Yes, it seems an unrelated bugfix, like Andi said.
