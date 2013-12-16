@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351Ab3LPKOs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:14:48 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:47522 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab3LPKOa (ORCPT
+	id S1753370Ab3LPKOx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 05:14:53 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:56470 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab3LPKOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:14:30 -0500
-X-IronPort-AV: E=Sophos;i="4.95,493,1384300800"; 
-   d="scan'208";a="82568272"
-Message-ID: <1387188867.20076.46.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH net-next RFC 0/5] xen-netback: TX grant mapping instead
- of copy
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Date: Mon, 16 Dec 2013 10:14:27 +0000
-In-Reply-To: <52AA33CF.6030004@citrix.com>
-References: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com>
-			 <1383303035.672.29.camel@kazak.uk.xensource.com>
-			 <5273FA37.6020903@citrix.com>
-		 <1383821563.26213.168.camel@kazak.uk.xensource.com>
-		 <52977F5C.7090703@citrix.com>
-	 <1385660592.20209.27.camel@kazak.uk.xensource.com>
-	 <52AA33CF.6030004@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Mon, 16 Dec 2013 05:14:49 -0500
+Date: Mon, 16 Dec 2013 15:44:39 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        dmaengine@vger.kernel.org, josh@joshtriplett.org
+Subject: [PATCH 2/2] drivers: dma: Include appropriate header file in dca.c
+Message-ID: <855c6e216e86bed7b723c1a647491d9fab2ed77b.1387188138.git.rashika.kheria@gmail.com>
+References: <dba654dc34646dda2998dbf7b08d7ce3c160ff8c.1387188138.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <dba654dc34646dda2998dbf7b08d7ce3c160ff8c.1387188138.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-12 at 22:08 +0000, Zoltan Kiss wrote:
-> On 28/11/13 17:43, Ian Campbell wrote:
-> > On Thu, 2013-11-28 at 17:37 +0000, Zoltan Kiss wrote:
-> > Routing/firewalling domUs is as valid as bridging. There is nothing in
-> > the slightest bit suboptimal about it.
-> >
-> > If this use case regresses with this approach then I'm afraid that
-> > either needs to be addressed or a different approach considered.
-> >
-> >> Anyway, I will try this out, and see if it really copies everything, and
-> >> get some numbers as well.
-> >
-> > Thanks.
-> 
-> Now I managed to try it out. As I expected, Dom0 does copy the mapped 
-> page. The peak throuhput I could get was 6.6 Gbps, however it could keep 
-> that only for short periods, I guess when the unmapping was ideally 
-> batched. The average was 5.53.
-> On the same machine the same 10 min iperf session, without my patches 
-> made the peak 5.9 while the average was 5.65. Do you think it is an 
-> acceptable regression?
+Includes an appropriate header file dma_v2.h in ioat/dca.c because
+functions ioat2_dca_init() and ioat3_dca_init() have their function
+declarations in dma_v2.h.
 
-Well, it would of course be preferable to avoid it. I'm quite reluctant
-to see this scenario become a second class citizen.
+This eliminates the following warning in ioat/dca.c:
+drivers/dma/ioat/dca.c:410:22: warning: no previous prototype for ‘ioat2_dca_init’ [-Wmissing-prototypes]
+drivers/dma/ioat/dca.c:624:22: warning: no previous prototype for ‘ioat3_dca_init’ [-Wmissing-prototypes]
 
-> I used 3.12 Dom0 and guest kernel, the guest transmitted though a 10Gb 
-> card to a bare metal box.
-> I plan to look further if we can avoid somehow this:
-> 
-> https://lkml.org/lkml/2012/7/20/363
-> 
-> So then this scenario can benefit from grant mapping.
-> 
-> Regards,
-> 
-> Zoli
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+---
+ drivers/dma/ioat/dca.c |    1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/drivers/dma/ioat/dca.c b/drivers/dma/ioat/dca.c
+index 9e84d5b..b158bba 100644
+--- a/drivers/dma/ioat/dca.c
++++ b/drivers/dma/ioat/dca.c
+@@ -35,6 +35,7 @@
+ 
+ #include "dma.h"
+ #include "registers.h"
++#include "dma_v2.h"
+ 
+ /*
+  * Bit 7 of a tag map entry is the "valid" bit, if it is set then bits 0:6
+-- 
+1.7.9.5
 
