@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab3LPJma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 04:42:30 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:49853 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995Ab3LPJm3 (ORCPT
+	id S1752759Ab3LPJqk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 04:46:40 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:48728 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752515Ab3LPJqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 04:42:29 -0500
-Message-ID: <52AECABE.60902@huawei.com>
-Date: Mon, 16 Dec 2013 17:41:18 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 16 Dec 2013 04:46:38 -0500
+Message-ID: <52AECBFC.5000207@atmel.com>
+Date: Mon, 16 Dec 2013 10:46:36 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Xishi Qiu <qiuxishi@huawei.com>
-CC: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        WuJianguo <wujianguo@huawei.com>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: fix huge page reallocated in soft_offline_page
-References: <52AEC122.2000609@huawei.com>
-In-Reply-To: <52AEC122.2000609@huawei.com>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>, Rob Landley <rob@landley.net>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH] devicetree: macb: Document clock properties
+References: <1386972205-32733-1-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1386972205-32733-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/12/16 17:00, Xishi Qiu wrote:
+On 13/12/2013 23:03, Soren Brinkmann :
+> The macb driver uses the clock bindings. Document the required
+> properties, especially the driver specific clock-names.
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-> The huge page may be reallocated in soft_offline_page, because
-> MIGRATE_ISOLATE can not keep the page until after setting PG_hwpoison.
-> alloc_huge_page()
-> 	dequeue_huge_page_vma()
-> 		dequeue_huge_page_node()
-> If the huge page was reallocated, we need to try offline it again.
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+Thanks.
+
+> ---
+>  Documentation/devicetree/bindings/net/macb.txt | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/net/macb.txt b/Documentation/devicetree/bindings/net/macb.txt
+> index 4ff65047bb9a..70af2ec12b09 100644
+> --- a/Documentation/devicetree/bindings/net/macb.txt
+> +++ b/Documentation/devicetree/bindings/net/macb.txt
+> @@ -10,6 +10,10 @@ Required properties:
+>  - interrupts: Should contain macb interrupt
+>  - phy-mode: String, operation mode of the PHY interface.
+>    Supported values are: "mii", "rmii", "gmii", "rgmii".
+> +- clock-names: Tuple listing input clock names.
+> +	Required elements: 'pclk', 'hclk'
+> +	Optional elements: 'tx_clk'
+> +- clocks: Phandles to input clocks.
+>  
+>  Optional properties:
+>  - local-mac-address: 6 bytes, mac address
+> @@ -22,4 +26,6 @@ Examples:
+>  		interrupts = <21>;
+>  		phy-mode = "rmii";
+>  		local-mac-address = [3a 0e 03 04 05 06];
+> +		clock-names = "pclk", "hclk", "tx_clk";
+> +		clocks = <&clkc 30>, <&clkc 30>, <&clkc 13>;
+>  	};
 > 
 
-Sorry, I made a mistake.
-This bug was fixed in
-commit c8721bbbdd36382de51cd6b7a56322e0acca2414
 
-Thanks,
-Xishi Qiu
-
+-- 
+Nicolas Ferre
