@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab3LPM4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 07:56:20 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:36660 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753859Ab3LPM4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754082Ab3LPM4T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 07:56:19 -0500
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:43446 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753806Ab3LPM4Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Dec 2013 07:56:16 -0500
-X-IronPort-AV: E=Sophos;i="4.95,494,1384300800"; 
-   d="scan'208";a="84884172"
-Message-ID: <52AEF86D.808@citrix.com>
-Date: Mon, 16 Dec 2013 12:56:13 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+Date: Mon, 16 Dec 2013 07:56:04 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        tomaz.solc@tablix.org, aaron.lu@intel.com,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: Writeback threads and freezable
+Message-ID: <20131216125604.GD32509@htj.dyndns.org>
+References: <20131213174932.GA27070@htj.dyndns.org>
+ <20131214015343.GP31386@dastard>
+ <20131214202324.GA4020@htj.dyndns.org>
+ <20131216035652.GY31386@dastard>
+ <20131216125124.GC32509@htj.dyndns.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        <linux-acpi@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xenproject.org>,
-        Dietmar Hahn <dietmar.hahn@ts.fujitsu.com>
-Subject: Re: vunmap() on large regions may trigger soft lockup warnings
-References: <52A899AB.3010506@citrix.com>	<20131211133917.dd10cb2c4360dba65d8e6ce2@linux-foundation.org>	<52A9B127.9010501@citrix.com> <20131214003208.f99bc37c.akpm@linux-foundation.org>
-In-Reply-To: <20131214003208.f99bc37c.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131216125124.GC32509@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/12/13 08:32, Andrew Morton wrote:
-> On Thu, 12 Dec 2013 12:50:47 +0000 David Vrabel <david.vrabel@citrix.com> wrote:
+On Mon, Dec 16, 2013 at 07:51:24AM -0500, Tejun Heo wrote:
+> On Mon, Dec 16, 2013 at 02:56:52PM +1100, Dave Chinner wrote:
+> > > What are you suggesting?  Implementing separate warm and hot unplug
+> > > paths?  That makes no sense whatsoever.  Device hot unplug is just a
+> > > sub operation of general device unplug which should be able to succeed
+> > > whether the underlying device is failing IOs or not.
+> > 
+> > I don't care. Trying to issue IO from an an IO error handling path
+> > where the device has just been removed is fundamentally broken.
 > 
->>> each time.  But that would require difficult tuning of N.
->>>
->>> I suppose we could just do
->>>
->>> 	if (!in_interrupt())
->>> 		cond_resched();
->>>
->>> in vunmap_pmd_range(), but that's pretty specific to ghes.c and doesn't
->>> permit unmap-inside-spinlock.
->>>
->>> So I can't immediately think of a suitable fix apart from adding a new
->>> unmap_kernel_range_atomic().  Then add a `bool atomic' arg to
->>> vunmap_page_range() and pass that all the way down.
->>
->> That would work for the unmap, but looking at the GHES driver some more
->> and it looks like it's call to ioremap_page_range() is already unsafe --
->> it may need to allocate a new PTE page with a non-atomic alloc in
->> pte_alloc_one_kernel().
->>
->> Perhaps what's needed here is a pair of ioremap_page_atomic() and
->> iounmap_page_atomic() calls?  With some prep function to sure the PTE
->> pages (etc.) are preallocated.
-> 
-> Is ghes.c the only problem source here?  If so then a suitable solution
-> would be to declare that driver hopelessly busted and proceed as if it
-> didn't exist :(
+> What?  Have you even read the original message?  IO error handling
+> path isn't issuing the IO here.  The hot unplug operation is
+> completely asynchronous to the IO path.  What's dead locking is not
+> the filesystem and IO path but device driver layer and hot unplug
+> path.  IOs are not stalled.
 
-All the other callers do so from non-atomic context.  ghes.c is the only
-broken caller.
+In fact, this deadlock can be reproduced without hotunplug at all.  If
+you initiate warm unplug and warm unplugging races with suspend/resume
+cycle, it'll behave exactly the same - the IOs from flushing in that
+scenario would succeed but IOs failing or not has *NOTHING* to do with
+this deadlock.  It'd still happen.  It's freezer behaving as a giant
+lock and other locks of course getting dragged into giant dependency
+loop.  Can you please at least *try* to understand what's going on
+before throwing strong assertions?
 
-Shall I resend or are you happy to take the patch off the first email in
-this thread?
-
-David
-
+-- 
+tejun
