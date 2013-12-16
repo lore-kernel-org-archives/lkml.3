@@ -1,91 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab3LPU5V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 15:57:21 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48782 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab3LPU5U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 15:57:20 -0500
-Date: Mon, 16 Dec 2013 20:57:11 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Srinivas Ramana <sramana@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <20131216205711.GZ3185@sirena.org.uk>
-References: <1386718523-2587-1-git-send-email-sboyd@codeaurora.org>
- <1386718523-2587-4-git-send-email-sboyd@codeaurora.org>
- <20131210235000.GK11468@sirena.org.uk>
- <52A7AE1B.3040201@codeaurora.org>
- <20131211005106.GL11468@sirena.org.uk>
- <52A7C0C3.2070805@codeaurora.org>
- <20131211132729.GT11468@sirena.org.uk>
- <52AA42FD.4040503@codeaurora.org>
- <20131213104128.GT11044@sirena.org.uk>
- <20131213171407.GN21983@codeaurora.org>
+	id S1752434Ab3LPU7K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 15:59:10 -0500
+Received: from smtp208.alice.it ([82.57.200.104]:12149 "EHLO smtp208.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751945Ab3LPU7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 15:59:09 -0500
+Date: Mon, 16 Dec 2013 21:58:58 +0100
+From: Gianluca Anzolin <gianluca@sottospazio.it>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Alexander Holler <holler@ahsoftware.de>, marcel@holtmann.org,
+        Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
+        gregkh@linuxfoundation.org, jslaby@suse.cz,
+        linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] rfcomm (userland) broken by commit 29cd718b
+Message-ID: <20131216205858.GA20119@sottospazio.it>
+References: <20130919162413.GG4006@joana>
+ <52AA1854.500@ahsoftware.de>
+ <52AA1E62.1030109@hurleysoftware.com>
+ <52AA483E.4080706@ahsoftware.de>
+ <20131215112413.GA8980@sottospazio.it>
+ <52ADB6B7.5010503@hurleysoftware.com>
+ <20131215150847.GA10288@sottospazio.it>
+ <52AF55B4.6000303@hurleysoftware.com>
+ <20131216202044.GA19746@sottospazio.it>
+ <20131216202720.GB19746@sottospazio.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9CzcV6dAFIr7O1Ie"
+Content-Type: multipart/mixed; boundary="yrj/dFKFPuw6o+aM"
 Content-Disposition: inline
-In-Reply-To: <20131213171407.GN21983@codeaurora.org>
-X-Cookie: Yow!  I threw up on my window!
+In-Reply-To: <20131216202720.GB19746@sottospazio.it>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: Allow regmap_bulk_read() to work for "no-bus"
- regmaps
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---9CzcV6dAFIr7O1Ie
+--yrj/dFKFPuw6o+aM
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, Dec 13, 2013 at 09:14:07AM -0800, Stephen Boyd wrote:
+On Mon, Dec 16, 2013 at 09:27:20PM +0100, Gianluca Anzolin wrote:
+> On Mon, Dec 16, 2013 at 09:20:44PM +0100, Gianluca Anzolin wrote:
+> > On Mon, Dec 16, 2013 at 02:34:12PM -0500, Peter Hurley wrote:
+> > > 
+> > > This solution is acceptable to me, but I think the comment should briefly
+> > > explain why this fix is necessary, and the changelog should explain why in detail.
+> > > 
+> > > Perhaps with a fixme comment that rfcomm_tty_install() should just take over
+> > > the port reference (instead of adding one) and rfcomm_tty_cleanup() should
+> > > conditionally release on RFCOMM_RELEASE_ONHUP.
+> > > 
+> > > Because then:
+> > > 1) this fix would not be necessary.
+> > > 2) the release in rfcomm_tty_hangup() would not be necessary
+> > > 3) the second release in rfcomm_release_dev would not be necessary
+> > > 4) the RFCOMM_TTY_RELEASED bit could be removed
+> > > 
+> > > 
+> > > Regards,
+> > > Peter Hurley
+> > 
+> > Taking over the refcount in the install method would certainly look better. I'm
+> > going to test it ASAP :D
+> > 
+> > But why getting rid of the release in in rfcomm_tty_hangup()?
+> > We could lose the bluetooth connection at any time and the dlc callback
+> > would have to hangup the tty (and release the port if necessary).
+> > 
+> > Also the RFCOMM_TTY_RELEASED bit should still be necessary if the port is
+> > created without the RFCOMM_RELEASE_ONHUP flag.
+> > 
+> > Besides any process could release the port behind us (with the command rfcomm
+> > release rfcomm1 for example).
+> > 
+> > Gianluca
+> 
+> Nevermind I figured it out the reason...
 
-> regmap_bulk_read() should decay to performing individual reads if
-> we're using a "no-bus" regmap. Unfortunately, it returns an
-> error because there is no map->bus pointer. Fix it.
+I'm testing the attached patch ATM, which does what you described. It works
+very well.
 
-Applied, thanks.
+It doesn't remove the RFCOMM_TTY_RELEASE flag yet, another patch should remove
+that bit.
 
-> > Yes, I'd expect the operation to work.  Your changes below are mostly
-> > fine (we should add an additional check for values that aren't integer
-> > numbers of bytes, I can add that) - can you send as a signed off patch
-> > please and I'll apply?
+Does it look better?
 
-> Here you go. Do you have any suggestions on how to make regmap_bulk_write()
-> work?
+Thanks,
+Gianluca
 
-Off the top of my head I'd expect it to just fall back onto
-regmap_write() if it can't do raw I/O.  Or perhaps just change that loop
-to do regmap_write() all the time since it's hardly the fast path.
+--yrj/dFKFPuw6o+aM
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="rfc2.patch"
 
---9CzcV6dAFIr7O1Ie
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/net/bluetooth/rfcomm/tty.c b/net/bluetooth/rfcomm/tty.c
+index 84fcf9f..f455a22 100644
+--- a/net/bluetooth/rfcomm/tty.c
++++ b/net/bluetooth/rfcomm/tty.c
+@@ -437,9 +437,6 @@ static int rfcomm_release_dev(void __user *arg)
+ 		tty_kref_put(tty);
+ 	}
+ 
+-	if (!test_and_set_bit(RFCOMM_TTY_RELEASED, &dev->flags))
+-		tty_port_put(&dev->port);
+-
+ 	tty_port_put(&dev->port);
+ 	return 0;
+ }
+@@ -673,6 +670,14 @@ static int rfcomm_tty_install(struct tty_driver *driver, struct tty_struct *tty)
+ 	if (err)
+ 		rfcomm_tty_cleanup(tty);
+ 
++	/* take over the tty_port reference if it was created with the
++	 * flag RFCOMM_RELEASE_ONHUP. This will force the release of the port
++	 * when the last process closes the tty. This behaviour is expected by
++	 * userspace.
++	 */
++	if (test_bit(RFCOMM_RELEASE_ONHUP, &dev->flags))
++		tty_port_put(&dev->port);
++
+ 	return err;
+ }
+ 
+@@ -1010,10 +1015,6 @@ static void rfcomm_tty_hangup(struct tty_struct *tty)
+ 	BT_DBG("tty %p dev %p", tty, dev);
+ 
+ 	tty_port_hangup(&dev->port);
+-
+-	if (test_bit(RFCOMM_RELEASE_ONHUP, &dev->flags) &&
+-	    !test_and_set_bit(RFCOMM_TTY_RELEASED, &dev->flags))
+-		tty_port_put(&dev->port);
+ }
+ 
+ static int rfcomm_tty_tiocmget(struct tty_struct *tty)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSr2kkAAoJELSic+t+oim9SXQQAJWVZfjunSJ9WLD6v2VbjbG8
-o57ThEWuT2+2zOj1pfFtRlAEd7ooC9izOr+tfxQcuT6mjTW6YFGaP8XmPBx3yUnH
-t1T3e+REmIT64xxV7ZcEtE+Sbh3ROgG6sAUWwxnBBHptv24SM91rXoGI2M2TTqaG
-dqfhobo3iMZ3E90iuZS3VlajyrupjzdyI1RTCT6YhTzI6kf/Nt79iVwZYTgjyv6j
-FGhMa9S6Ns3lkkzyLOfWEKF4FUdIYXemMDq6WY+bAu82pSEeyaYI4Sj+0FY6VXlo
-O539/T+JULyQeNX0whY/cnahAyJEa5sOtBwNozKYIuKugNkBQn6Vne/I9gTr5Hdj
-kDn35dHO1yCIGvKvKuLYUGm3GXIUa5oB8JoxzPYHVPabO94o08H7fxsQ5U/oWDWn
-tBpeculNLJp2NTFW2AWXgvkzU+uIIKDfDFmHoB+NhR96iEHyDbTkdWkHcbCpVHOm
-MA1/cQsGRjtHl9jhisx5vd+Y/2ONDjbXZva/ROfWbaJd2qcATfaHdp87VyA9C3jo
-DAkM8REo/joXIcYBvx3xnWFb0pgk0rQjhWQ2ixw4c5Xc4gtm8jvb7VPla34TBVq3
-PzpI71HYry4xpfSeEQmDXvWYhMk+tnu3Lb2EerkV2KqyNI40hNUFPPG/ni9lqfX5
-HKBLk9IeXkPlfmMXQOS4
-=bRbG
------END PGP SIGNATURE-----
-
---9CzcV6dAFIr7O1Ie--
+--yrj/dFKFPuw6o+aM--
