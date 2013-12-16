@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab3LPT5x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 14:57:53 -0500
-Received: from juliette.telenet-ops.be ([195.130.137.74]:60554 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab3LPT5v (ORCPT
+	id S1752704Ab3LPT7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 14:59:13 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:58860 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab3LPT7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 14:57:51 -0500
-Message-ID: <1387223868.2892.1.camel@piranha.localdomain>
-Subject: Re: stable regression: tda18271_read_regs: [1-0060|M] ERROR:
- i2c_transfer returned: -19
-From: Frederik Himpe <fhimpe@telenet.be>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        stable@vger.kernel.org
-Date: Mon, 16 Dec 2013 20:57:48 +0100
-In-Reply-To: <20131214092443.622b069d@samsung.com>
-References: <1386969579.3914.13.camel@piranha.localdomain>
-	 <20131214092443.622b069d@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 16 Dec 2013 14:59:12 -0500
+Date: Mon, 16 Dec 2013 11:59:10 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 1/7] Input: pmic8xxx-pwrkey - Pass input device
+ directly to interrupt
+Message-ID: <20131216195910.GQ21983@codeaurora.org>
+References: <1386718996-3733-1-git-send-email-sboyd@codeaurora.org>
+ <1386718996-3733-2-git-send-email-sboyd@codeaurora.org>
+ <20131215112103.GA14818@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131215112103.GA14818@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On za, 2013-12-14 at 09:24 -0200, Mauro Carvalho Chehab wrote:
-> Em Fri, 13 Dec 2013 22:19:39 +0100
-> Frederik Himpe <fhimpe@telenet.be> escreveu:
+On 12/15, Dmitry Torokhov wrote:
+> Hi Stephen,
 > 
-> > [My excuses for multiposting, it seems gmane does not permit posting to all
-> > the relevant lists]
+> On Tue, Dec 10, 2013 at 03:43:10PM -0800, Stephen Boyd wrote:
+> > Instead of passing the pointer to the container structure just
+> > pass the input device here. This saves a dereference in the fast
+> > path.
 > > 
-> > Since upgrading my system from Linux 3.12 to 3.12.3, my PCTV Systems
-> > nanoStick T2 290e does not work anymore.
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > ---
+> >  drivers/input/misc/pmic8xxx-pwrkey.c | 22 ++++++++--------------
+> >  1 file changed, 8 insertions(+), 14 deletions(-)
 > > 
-> > This happens with 3.12.3:
-> > 
-
-> > [    3.844020] tda18271 1-0060: creating new instance
-> > [    3.868422] tda18271_read_regs: [1-0060|M] ERROR: i2c_transfer returned: -19
-> > [    3.868492] Error reading device ID @ 1-0060, bailing out.
-> > [    3.868548] tda18271_attach: [1-0060|M] error -5 on line 1285
-> > [    3.868603] tda18271 1-0060: destroying instance
-> > [    3.868666] Em28xx: Initialized (Em28xx dvb Extension) extension
-> > [    3.894687] Registered IR keymap rc-pinnacle-pctv-hd
-> > [    3.894819] input: em28xx IR (em28174 #0) as /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.7/rc/rc0/input23
-> > [    3.894979] rc0: em28xx IR (em28174 #0) as /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.7/rc/rc0
-> > [    3.895570] Em28xx: Initialized (Em28xx Input Extension) extension
-> > 
-> > I see the same problem reported here:
-> > https://github.com/Hexxeh/rpi-firmware/issues/38 where it is mentioned
-> > that this regression also appeared in 3.10 stable series recently.
-> > 
-> > I noticed upstream commit 8393796dfa4cf5dffcceec464c7789bec3a2f471
-> > (media: dvb-frontends: Don't use dynamic static allocation)
-> > entered both 3.10.22 (which is the first version introducing the
-> > regression in 3.10 stable according to the linked bug), and 3.12.3.
-> > This file contains stuff related to tda18271. Could this be the 
-> > culprit?
-> > 
+> > diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
+> > index ce3c426..233b216 100644
+> > --- a/drivers/input/misc/pmic8xxx-pwrkey.c
+> > +++ b/drivers/input/misc/pmic8xxx-pwrkey.c
+> > @@ -32,26 +32,21 @@
+> >   * @key_press_irq: key press irq number
+> >   */
+> >  struct pmic8xxx_pwrkey {
+> > -	struct input_dev *pwr;
 > 
-> Well, for board EM28174_BOARD_PCTV_290E, it first attaches cxd2820r
-> and then the tuner tda18271.
+> This causes compile errors as you need pwrkey->pwr in remove() to
+> unregister input device. I'll fix it up.
 > 
-> I suspect that the issue is at cxd2820r. Could you please apply this
-> patch:
-> 	http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=0db3fa2741ad8371c21b3a6785416a4afc0cc1d4 
-> and see if it solves the issue?
 
-I have applied this patch to 3.12.5 and I can confirm it works fine now.
-Can this patch be applied to the stable series in order to fix this
-regression in stable?
+Ah sorry. I forgot to send the patch before this that converts it
+to devm.
 
+> >  	err = devm_request_irq(&pdev->dev, key_press_irq, pwrkey_press_irq,
+> > -		IRQF_TRIGGER_RISING, "pmic8xxx_pwrkey_press", pwrkey);
+> > +		IRQF_TRIGGER_RISING, "pmic8xxx_pwrkey_press", pwr);
+
+As you can see here because this driver isn't currently using
+devm_request_irq().
 
 -- 
-Frederik Himpe <fhimpe@telenet.be>
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
