@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab3LPMd0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 07:33:26 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50352 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753615Ab3LPMdY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 07:33:24 -0500
-Date: Mon, 16 Dec 2013 12:33:01 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Kyungmin Park <kyungmin.park@samsung.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus <torvalds@linux-foundation.org>
-Message-ID: <20131216123301.GG3185@sirena.org.uk>
-References: <20131216164721.79bfe996919a8ec3576867c7@canb.auug.org.au>
- <1387177714.4280.2.camel@AMDC1943>
- <20131216114510.GE3185@sirena.org.uk>
- <1387196021.4280.7.camel@AMDC1943>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9/eUdp+dLtKXvemk"
-Content-Disposition: inline
-In-Reply-To: <1387196021.4280.7.camel@AMDC1943>
-X-Cookie: Yow!  I threw up on my window!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: build failure after merge of the final tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1753856Ab3LPMfa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 07:35:30 -0500
+Received: from smtp206.alice.it ([82.57.200.102]:63749 "EHLO smtp206.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753812Ab3LPMf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 07:35:29 -0500
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: linux-kernel@vger.kernel.org
+Cc: Antonio Ospite <ospite@studenti.unina.it>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH] Input: fix typos in Documentation/input/gamepad.txt
+Date: Mon, 16 Dec 2013 13:34:52 +0100
+Message-Id: <1387197292-29909-1-git-send-email-ospite@studenti.unina.it>
+X-Mailer: git-send-email 1.8.5.1
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix some typos and while at it also use "PS" as the name for the central
+"HOME" button on Sony controllers, this is how Sony itself calls it.
 
---9/eUdp+dLtKXvemk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
+---
+ Documentation/input/gamepad.txt | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-On Mon, Dec 16, 2013 at 01:13:41PM +0100, Krzysztof Kozlowski wrote:
+diff --git a/Documentation/input/gamepad.txt b/Documentation/input/gamepad.txt
+index 4be7f21..63c0256 100644
+--- a/Documentation/input/gamepad.txt
++++ b/Documentation/input/gamepad.txt
+@@ -71,7 +71,7 @@ features that you need, first. How each feature is mapped is described below.
+ Legacy drivers often don't comply to these rules. As we cannot change them
+ for backwards-compatibility reasons, you need to provide fixup mappings in
+ user-space yourself. Some of them might also provide module-options that
+-change the mappings so you can adivce users to set these.
++change the mappings so you can advice users to set these.
+ 
+ All new gamepads are supposed to comply with this mapping. Please report any
+ bugs, if they don't.
+@@ -156,10 +156,10 @@ Menu-Pad:
+                   BTN_START
+   Many pads also have a third button which is branded or has a special symbol
+   and meaning. Such buttons are mapped as BTN_MODE. Examples are the Nintendo
+-  "HOME" button, the XBox "X"-button or Sony "P" button.
++  "HOME" button, the XBox "X"-button or Sony "PS" button.
+ 
+ Rumble:
+-  Rumble is adverticed as FF_RUMBLE.
++  Rumble is advertised as FF_RUMBLE.
+ 
+ Motion-tracking:
+   Motion-tracking is defined in ./Documentation/input/motion-tracking.txt and
+-- 
+1.8.5.1
 
-> Thanks for applying the patch. The commit introducing error was picked
-> up by Andrew to MM tree and lately got merged to Linus' tree:
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=8d2763770c34e8ed771f0be86760eb4485febc05
-
-Yeah, I saw it went in through -mm - what I was wondering was why it
-wasn't causing failures in -next.
-
---9/eUdp+dLtKXvemk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSrvL6AAoJELSic+t+oim9nEkP/32r6ZE+itcgiqb5qYAjj11x
-BWQuNGH6BRXFKCogBU+2sVFDWU0A42eAmuUyo6dqBXZ3PcqkZtSDNmZhvrMOfeXK
-9ivG9ZRy4oKa+/mEPaXmuWTuHZv9Iozrs/iW73e0kC8hZapHMlmigxq8xrWUDAZ7
-6rQjqmBD7zwVGZTu0aYgg4FfMX5VAwc4Bi6PHrHCcEb8JXAaioWqIkws+vM6i+PB
-bzRFhmTCXXbSYIGKxpgFfBqnHSLg1xTpCn0VV/028YPqtXtoxn2H8Zrjd+rh8eGE
-Oqf00iPMlnW2f9GkhOe6nQGMd5ZNtrAWNocm7tmcjGpvZcNAbzRdV2K2dxgdK3po
-j8JG1Z2y9gYfTpgJ/w3PZSX43fzPDw8BmSLSYuKUfmOwyc6bF5USPRpAHS8hBs5v
-3LNGhHcP3HwrjUABIgfSvnhOsXsELmP+l3H5bM7bZQFJV+qF+VkNBGnGiuhnMcTq
-/7cJCZMG3KfDWqdrQStvBLz8yhCPD0xJU0ZpH1wbZi91UaOC2XrlFDrPax1mpx9H
-gdQ7W1uq17vu0+E1WfvSUe9rZT6NipW61ouiMx+JIyu+7FmoxsUb5yquTKIQMnWw
-om3gJVSolPNC0nFr67yEThjXgSuiSF1dMCIom6w3ehLrgNARluBP4Y2YhrhjiwDb
-yHXn1Nav/cERhakdZXcu
-=TG1G
------END PGP SIGNATURE-----
-
---9/eUdp+dLtKXvemk--
