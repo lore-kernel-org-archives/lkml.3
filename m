@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab3LPRbh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 12:31:37 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:48898 "EHLO smtp.gentoo.org"
+	id S1754748Ab3LPRgU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 12:36:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1390 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754565Ab3LPRbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 12:31:34 -0500
-X-Spam-Check-By: orbis-terrarum.net
-From: "Robin H. Johnson" <robbat2@gentoo.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-ide@vger.kernel.org, "Robin H. Johnson" <robbat2@gentoo.org>
-Subject: [PATCH v2] libata: disable a disk via libata.force params
-Date: Mon, 16 Dec 2013 09:31:19 -0800
-Message-Id: <1387215079-29897-1-git-send-email-robbat2@gentoo.org>
-X-Mailer: git-send-email 1.8.4.3
-In-Reply-To: <1386464187-6993-1-git-send-email-robbat2@gentoo.org>
-References: <1386464187-6993-1-git-send-email-robbat2@gentoo.org>
-X-Virus-Checked: Checked by ClamAV on orbis-terrarum.net
+	id S1754550Ab3LPRgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 12:36:19 -0500
+Date: Mon, 16 Dec 2013 12:35:47 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Eric Paris <eparis@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH 11/12] pid: rewrite task helper functions avoiding
+ task->pid and task->tgid
+Message-ID: <20131216173547.GA21582@madcap2.tricolour.ca>
+References: <cover.1377032086.git.rgb@redhat.com>
+ <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com>
+ <20130822190848.GA25053@redhat.com>
+ <20130826220711.GA21098@madcap2.tricolour.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130826220711.GA21098@madcap2.tricolour.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A user on StackExchange had a failing SSD that's soldered directly onto
-the motherboard of his system. The BIOS does not give any option to
-disable it at all, so he can't just hide it from the OS via the BIOS.
+On 13/08/26, Richard Guy Briggs wrote:
+> On Thu, Aug 22, 2013 at 09:08:48PM +0200, Oleg Nesterov wrote:
+> > On 08/20, Richard Guy Briggs wrote:
+> > >
+> > >  static inline int is_global_init(struct task_struct *tsk)
+> > >  {
+> > > -	return tsk->pid == 1;
+> > > +	return task_pid_nr(tsk) == 1;
+> > >  }
+> > 
+> > Probably it would be better to simply kill it. Almost every usage is
+> > wrong.
+> 
+> Can you be more clear?  I don't follow.  It should instead return a
+> boolean.  Usage of is_global_init() or task_pid_nr()?
+> 
+> If is_global_init(), is that because they could be unaware of pid
+> namespaces?
+> 
+> If task_pid_nr(), is that for the same reason?
 
-The old IDE layer had hdX=noprobe override for situations like this, but
-that was never ported to the libata layer.
+Oleg,  I still don't understand your comment above.  Kill what,
+"is_global_init()"?  If so, how is almost every usage of it wrong?
 
-This patch implements a disable flag for libata.force.
-Example use:
-libata.force=2.0:disable
+There are a number of functions that call is_global_init().  Might any
+of them be called from inside the namespace context of a container and
+hence should return true?
 
-[v2 of the patch, removed the nodisable flag per Tejun Heo]
+> > >  static inline bool is_idle_task(const struct task_struct *p)
+> > >  {
+> > > -	return p->pid == 0;
+> > > +	return task_pid(p) == &init_struct_pid;
+> > >  }
+> > 
+> > hmm. there should be a simpler check for this...
+> 
+> Other than the original, this one is pretty simple.  What did you have
+> in mind?
 
-Signed-off-by: Robin H. Johnson <robbat2@gentoo.org>
-X-URL: http://unix.stackexchange.com/questions/102648/how-to-tell-linux-kernel-3-0-to-completely-ignore-a-failing-disk
-X-URL: http://askubuntu.com/questions/352836/how-can-i-tell-linux-kernel-to-completely-ignore-a-disk-as-if-it-was-not-even-co
-X-URL: http://superuser.com/questions/599333/how-to-disable-kernel-probing-for-drive
----
- Documentation/kernel-parameters.txt | 2 ++
- drivers/ata/libata-core.c           | 1 +
- 2 files changed, 3 insertions(+)
+I vaguely remember a clarification to this, but don't remember and can't
+find it.  What sort of simplification did you have in mind?  I'd like to
+go at least to:
+	task_pid_nr(p) == 0
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 50680a5..b9e9bd8 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1529,6 +1529,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 
- 			* atapi_dmadir: Enable ATAPI DMADIR bridge support
- 
-+			* disable: Disable this device.
-+
- 			If there are multiple matching configurations changing
- 			the same attribute, the last one is used.
- 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 75b9367..70529b8 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -6519,6 +6519,7 @@ static int __init ata_parse_force_one(char **cur,
- 		{ "norst",	.lflags		= ATA_LFLAG_NO_HRST | ATA_LFLAG_NO_SRST },
- 		{ "rstonce",	.lflags		= ATA_LFLAG_RST_ONCE },
- 		{ "atapi_dmadir", .horkage_on	= ATA_HORKAGE_ATAPI_DMADIR },
-+		{ "disable",	.horkage_on	= ATA_HORKAGE_DISABLE },
- 	};
- 	char *start = *cur, *p = *cur;
- 	char *id, *val, *endp;
--- 
-1.8.4.3
+> > Oleg.
+> 
+> - RGB
 
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
