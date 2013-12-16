@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab3LPMTM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 07:19:12 -0500
-Received: from relay.parallels.com ([195.214.232.42]:56374 "EHLO
+	id S1754091Ab3LPMTi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 07:19:38 -0500
+Received: from relay.parallels.com ([195.214.232.42]:56335 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753915Ab3LPMRW (ORCPT
+	with ESMTP id S1753900Ab3LPMRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 07:17:22 -0500
+	Mon, 16 Dec 2013 07:17:20 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <dchinner@redhat.com>, <mhocko@suse.cz>, <hannes@cmpxchg.org>,
         <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <glommer@gmail.com>, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v14 18/18] memcg: flush memcg items upon memcg destruction
-Date: Mon, 16 Dec 2013 16:17:07 +0400
-Message-ID: <1c6f53ea78febe5b5f370356fa9b7a21af19104f.1387193771.git.vdavydov@parallels.com>
+        <glommer@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH v14 15/18] fs: make shrinker memcg aware
+Date: Mon, 16 Dec 2013 16:17:04 +0400
+Message-ID: <0b2be5a5020fbb9eabbabdd8ab3b9eebb9de824a.1387193771.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1387193771.git.vdavydov@parallels.com>
 References: <cover.1387193771.git.vdavydov@parallels.com>
@@ -27,75 +26,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@openvz.org>
+Now, to make any list_lru-based shrinker memcg aware we should only
+initialize its list_lru as memcg-enabled. Let's do it for the general FS
+shrinker (super_block::s_shrink) and mark it as memcg aware.
 
-When a memcg is destroyed, it won't be imediately released until all
-objects are gone. This means that if a memcg is restarted with the very
-same workload - a very common case, the objects already cached won't be
-billed to the new memcg. This is mostly undesirable since a container
-can exploit this by restarting itself every time it reaches its limit,
-and then coming up again with a fresh new limit.
+There are other FS-specific shrinkers that use list_lru for storing
+objects, such as XFS and GFS2 dquot cache shrinkers, but since they
+reclaim objects that may be shared among different cgroups, there is no
+point making them memcg aware.
 
-Since now we have targeted reclaim, I sustain that we should assume that
-a memcg that is destroyed should be flushed away. It makes perfect sense
-if we assume that a memcg that goes away most likely indicates an
-isolated workload that is terminated.
-
-Signed-off-by: Glauber Costa <glommer@openvz.org>
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Glauber Costa <glommer@openvz.org>
+Cc: Dave Chinner <dchinner@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 ---
- mm/memcontrol.c |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ fs/super.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 963285f..28d5472 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6162,12 +6162,40 @@ static void memcg_destroy_kmem(struct mem_cgroup *memcg)
- 	memcg_destroy_all_lrus(memcg);
- }
+diff --git a/fs/super.c b/fs/super.c
+index 9084c3d..654d021 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -181,9 +181,9 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
+ 	INIT_HLIST_BL_HEAD(&s->s_anon);
+ 	INIT_LIST_HEAD(&s->s_inodes);
  
-+static void memcg_drop_slab(struct mem_cgroup *memcg)
-+{
-+	struct shrink_control shrink = {
-+		.gfp_mask = GFP_KERNEL,
-+		.target_mem_cgroup = memcg,
-+	};
-+	unsigned long nr_objects;
-+
-+	nodes_setall(shrink.nodes_to_scan);
-+	do {
-+		nr_objects = shrink_slab(&shrink, 1000, 1000);
-+	} while (nr_objects > 0);
-+}
-+
- static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
- {
- 	if (!memcg_kmem_is_active(memcg))
- 		return;
+-	if (list_lru_init(&s->s_dentry_lru))
++	if (list_lru_init_memcg(&s->s_dentry_lru))
+ 		goto fail;
+-	if (list_lru_init(&s->s_inode_lru))
++	if (list_lru_init_memcg(&s->s_inode_lru))
+ 		goto fail;
  
- 	/*
-+	 * When a memcg is destroyed, it won't be imediately released until all
-+	 * objects are gone. This means that if a memcg is restarted with the
-+	 * very same workload - a very common case, the objects already cached
-+	 * won't be billed to the new memcg. This is mostly undesirable since a
-+	 * container can exploit this by restarting itself every time it
-+	 * reaches its limit, and then coming up again with a fresh new limit.
-+	 *
-+	 * Therefore a memcg that is destroyed should be flushed away. It makes
-+	 * perfect sense if we assume that a memcg that goes away indicates an
-+	 * isolated workload that is terminated.
-+	 */
-+	memcg_drop_slab(memcg);
-+
-+	/*
- 	 * kmem charges can outlive the cgroup. In the case of slab
- 	 * pages, for instance, a page contain objects from various
- 	 * processes. As we prevent from taking a reference for every
+ 	INIT_LIST_HEAD(&s->s_mounts);
+@@ -221,7 +221,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
+ 	s->s_shrink.scan_objects = super_cache_scan;
+ 	s->s_shrink.count_objects = super_cache_count;
+ 	s->s_shrink.batch = 1024;
+-	s->s_shrink.flags = SHRINKER_NUMA_AWARE;
++	s->s_shrink.flags = SHRINKER_NUMA_AWARE | SHRINKER_MEMCG_AWARE;
+ 	return s;
+ 
+ fail:
 -- 
 1.7.10.4
 
