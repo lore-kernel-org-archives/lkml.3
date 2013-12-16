@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab3LPK7e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 05:59:34 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23486 "EHLO
+	id S1753494Ab3LPLAN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 06:00:13 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23800 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab3LPK7d (ORCPT
+	with ESMTP id S1753327Ab3LPLAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 05:59:33 -0500
-Message-ID: <52AEDCFD.9020402@oracle.com>
-Date: Mon, 16 Dec 2013 16:29:09 +0530
+	Mon, 16 Dec 2013 06:00:12 -0500
+Message-ID: <52AEDD2F.8040704@oracle.com>
+Date: Mon, 16 Dec 2013 16:29:59 +0530
 From: Allen Pais <allen.pais@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
@@ -20,7 +20,7 @@ References: <1387166853-10782-1-git-send-email-allen.pais@oracle.com> <138716685
 In-Reply-To: <52AED5BB.1060002@linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -66,7 +66,7 @@ The same goes with 3/3
 [ 2317.606069]  [00000000004060c4] ret_from_syscall+0x1c/0x2c
 [ 2317.606070]  [0000000000000000]           (null)
 
-I did not think it'd be nice to put the call trace in the commit message.
+I am not sure if it'd be nice to put the call trace in the commit message.
 But if needed I can re-send them.
 
 - Allen
