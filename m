@@ -1,118 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab3LPPL7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:11:59 -0500
-Received: from m59-178.qiye.163.com ([123.58.178.59]:54768 "EHLO
+	id S1754725Ab3LPPMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:12:22 -0500
+Received: from m59-178.qiye.163.com ([123.58.178.59]:54742 "EHLO
 	m59-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454Ab3LPPK4 (ORCPT
+	with ESMTP id S1754444Ab3LPPKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:10:56 -0500
+	Mon, 16 Dec 2013 10:10:55 -0500
 From: Li Wang <liwang@ubuntukylin.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Sage Weil <sage@inktank.com>, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Li Wang <liwang@ubuntukylin.com>,
         Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-Subject: =?UTF-8?q?=5BPATCH=200/5=5D=20VFS=3A=20Directory=20level=20cache=20cleaning?=
-Date: Mon, 16 Dec 2013 07:00:04 -0800
-Message-Id: <cover.1387205337.git.liwang@ubuntukylin.com>
+Subject: [PATCH 5/5] VFS: Extend drop_caches sysctl handler to allow directory level cache cleaning
+Date: Mon, 16 Dec 2013 07:00:09 -0800
+Message-Id: <612334c18d31f67fb41416638f40cdf090062140.1387205337.git.liwang@ubuntukylin.com>
 X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUpMVU5MQkJCQkJJSExLTUtOTldZCQ4XHghZQV
-	koKz0kKzooKCQyNSQzPjo*PilBS1VLQDYjJCI#KCQyNSQzPjo*PilBS1VLQCsvKSQiPigkMjUkMz
-	46Pz4pQUtVS0A4NC41LykiJDg1QUtVS0ApPjwyNDUkOigyOkFLVUtAKyk0LTI1OD4kMy41OjVBS1
-	VLQD8iNTo2MjgkMiskNTQkMjUkMz46Pz4pQUtVS0ApPjo3JDIrJDI1JCk5NyQyNSQzPjo*PilBSk
-	lVS0A2LjcvMiQpOCsvJD8yPT0#KT41LyQyNSQzPjo*PilBSVVLQDIrJC80PzoiJDg1LyRLJEpLS0
-	FLVUtAMiskTiQ2MjUuLz4kODUvJEskSktBS1VLQDIrJEokNjI1Li8#JDg1LyRLJEpLQUtVS0AyKy
-	RKJDM0LikkODUvJEskSktLQUtVS0AyKyRISyQ2MjUuLz4kODUvJEskTktBS1VLQD01JDM0LyQzNz
-	EkS0xLTktPQUtVS0AoLjkkPkFKVU5OQD01JCguOSQ#NSw0KT8oJDM3MSRKS0tJS0pBS1VJQ0A9NS
-	Q9KT4#JDM3MSRLTEtOS09BSlVMTlkG
+In-Reply-To: <cover.1387205337.git.liwang@ubuntukylin.com>
+References: <cover.1387205337.git.liwang@ubuntukylin.com>
+In-Reply-To: <cover.1387205337.git.liwang@ubuntukylin.com>
+References: <cover.1387205337.git.liwang@ubuntukylin.com>
+X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUlMVUNJQkJCQkJJSExLTUtOTldZCQ4XHghZQV
+	koKz0kKDQ9Lz06MjckMjUkMz46Pz4pQUtVS0A2IyQiPigkMjUkMz46Pz4pQUtVS0ArLykkNTQkMj
+	UkMz46Pz4pQUlVS0A4NC41LykiJDg1QUtVS0ApPjwyNDUkOigyOkFLVUtAKyk0LTI1OD4kMy41Oj
+	VBS1VLQD8iNTo2MjgkMiskNTQkMjUkMz46Pz4pQUtVS0ApPjo3JDIrJDI1JCk5NyQyNSQzPjo*Pi
+	lBSklVS0A2LjcvMiQpOCsvJD8yPT0#KT41LyQyNSQzPjo*PilBSVVLQDIrJC80PzoiJDg1LyRLJE
+	pLS0FLVUtAMiskTiQ2MjUuLz4kODUvJEskSktBS1VLQDIrJEokNjI1Li8#JDg1LyRLJEpLQUtVS0
+	AyKyRKJDM0LikkODUvJEskSktLQUtVS0AyKyRISyQ2MjUuLz4kODUvJEskTktBS1VLQDU0LyQ9Oj
+	Y0LigkPzQ2OjI1JCgrPSQ9OjI3QUpLVUtAKC45JD5BSlVOTkA9NSQoLjkkPjUsNCk*KCQzNzEkSk
+	tLSUtKQUtVSUNZBg++
 X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSENM
-	SUtNS05PSUtNVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
-	QU9NQ003V1kSC1lBWU1KVUpDTFVOT1VCWQY+
+	SUtNS05NT0xLVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
+	QUhOTkw3V1kSC1lBWU1KVUpDTFVOT1VCWQY+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, Linux only support file system wide VFS
-cache (dentry cache and page cache) cleaning through
-'/proc/sys/vm/drop_caches'. Sometimes this is less
-flexible. The applications may know exactly whether
-the metadata and data will be referenced or not in future,
-a desirable mechanism is to enable applications to
-reclaim the memory of unused cache entries at a finer
-granularity - directory level. This enables applications
-to keep hot metadata and data (to be referenced in the
-future) in the cache, and kick unused out to avoid
-cache thrashing. Another advantage is it is more flexible
-for debugging.
-
-This patch extend the 'drop_caches' interface to
-support directory level cache cleaning and has a complete
-backward compatibility. '{1,2,3}' keeps the same semantics
-as before. Besides, "{1,2,3}:DIRECTORY_PATH_NAME" is allowed
-to recursively clean the caches under DIRECTORY_PATH_NAME.
-For example, 'echo 1:/home/foo/jpg > /proc/sys/vm/drop_caches'
-will clean the page caches of the files inside 'home/foo/jpg'.
-
-It is easy to demonstrate the advantage of directory level
-cache cleaning. We use a virtual machine configured with
-an Intel(R) Xeon(R) 8-core CPU E5506 @ 2.13GHz, and with 1GB
-memory.  Three directories named '1', '2' and '3' are created,
-with each containing 180000 – 280000 files. The test program
-opens all files in a directory and then tries the next directory.
-The order for accessing the directories is '1', '2', '3',
-'1'.
-
-The time on accessing '1' on the second time is measured
-with/without cache cleaning, under different file counts.
-With cache cleaning, we clean all cache entries of files
-in '2' before accessing the files in '3'. The results
-are as follows (in seconds),
-
-Note: by default, VFS will move those unreferenced inodes
-into a global LRU list rather than freeing them, for this
-experiment, we modified iput() to force to free inode as well,
-this behavior and related codes are left for further discussion,
-thus not reflected in this patch)
-
-Number of files:   180000 200000 220000 240000 260000
-Without cleaning:  2.165  6.977  10.032 11.571 13.443
-With cleaning:     1.949  1.906  2.336  2.918  3.651
-
-When the number of files is 180000 in each directory,
-the metadata cache is large enough to buffer all entries
-of three directories, so re-accessing '1' will hit in
-the cache, regardless of whether '2' cleaned up or not.
-As the number of files increases, the cache can now only
-buffer two+ directories. Accessing '3' will result in some
-entries of '1' to be evicted (due to LRU). When re-accessing '1',
-some entries need be reloaded from disk, which is time-consuming.
-In this case, cleaning '2' before accessing '3' enjoys a good
-speedup, a maximum 4.29X performance improvements is achieved.
-The advantage of directory level page cache cleaning should be 
-easier to be demonstrated.
 
 Signed-off-by: Li Wang <liwang@ubuntukylin.com>
 Signed-off-by: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+---
+ fs/drop_caches.c |   45 +++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 37 insertions(+), 8 deletions(-)
 
-Li Wang (5):
-  VFS: Convert drop_caches to accept string
-  VFS: Convert sysctl_drop_caches to string
-  VFS: Add the declaration of shrink_pagecache_parent
-  VFS: Add shrink_pagecache_parent
-  VFS: Extend drop_caches sysctl handler to allow directory level cache
-    cleaning
-
- fs/dcache.c            |   35 +++++++++++++++++++++++++++++++++++
- fs/drop_caches.c       |   45 +++++++++++++++++++++++++++++++++++++--------
- include/linux/dcache.h |    1 +
- include/linux/mm.h     |    3 ++-
- kernel/sysctl.c        |    6 ++----
- 5 files changed, 77 insertions(+), 13 deletions(-)
-
+diff --git a/fs/drop_caches.c b/fs/drop_caches.c
+index 9fd702f..ab31393 100644
+--- a/fs/drop_caches.c
++++ b/fs/drop_caches.c
+@@ -8,10 +8,11 @@
+ #include <linux/writeback.h>
+ #include <linux/sysctl.h>
+ #include <linux/gfp.h>
++#include <linux/fs_struct.h>
+ #include "internal.h"
+ 
+ /* A global variable is a bit ugly, but it keeps the code simple */
+-int sysctl_drop_caches;
++char sysctl_drop_caches[PATH_MAX];
+ 
+ static void drop_pagecache_sb(struct super_block *sb, void *unused)
+ {
+@@ -54,15 +55,43 @@ int drop_caches_sysctl_handler(ctl_table *table, int write,
+ 	void __user *buffer, size_t *length, loff_t *ppos)
+ {
+ 	int ret;
++	int command;
++	struct path path;
++	struct path root;
+ 
+-	ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
+-	if (ret)
+-		return ret;
+-	if (write) {
+-		if (sysctl_drop_caches & 1)
++	ret = proc_dostring(table, write, buffer, length, ppos);
++	if (ret || !write)
++		goto out;
++	ret = -EINVAL;
++	command = sysctl_drop_caches[0] - '0';
++	if (command < 1 || command > 3)
++		goto out;
++	if (sysctl_drop_caches[1] == '\0') {
++		if (command & 1)
+ 			iterate_supers(drop_pagecache_sb, NULL);
+-		if (sysctl_drop_caches & 2)
++		if (command & 2)
+ 			drop_slab();
++		ret = 0;
++		goto out;
+ 	}
+-	return 0;
++	if (sysctl_drop_caches[1] != ':' || sysctl_drop_caches[2] == '\0')
++		goto out;
++	if (sysctl_drop_caches[2] == '/')
++		get_fs_root(current->fs, &root);
++	else
++		get_fs_pwd(current->fs, &root);
++	ret = vfs_path_lookup(root.dentry, root.mnt,
++		&sysctl_drop_caches[2], 0, &path);
++	path_put(&root);
++	if (ret)
++		goto out;
++	if (command & 1)
++		shrink_pagecache_parent(path.dentry);
++	if (command & 2)
++		shrink_dcache_parent(path.dentry);
++	path_put(&path);
++out:
++	if (ret)
++		memset(sysctl_drop_caches, 0, PATH_MAX);
++	return ret;
+ }
 -- 
 1.7.9.5
 
