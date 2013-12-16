@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab3LPPDS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:03:18 -0500
-Received: from science.horizon.com ([71.41.210.146]:37930 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753755Ab3LPPDR (ORCPT
+	id S1754369Ab3LPPFZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:05:25 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:60910 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754124Ab3LPPFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:03:17 -0500
-Date: 16 Dec 2013 10:03:15 -0500
-Message-ID: <20131216150315.4746.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, tytso@mit.edu
-Subject: Re: Replace /dev/random input mix polynomial with Brent's xorgen?
-Cc: linux-kernel@vger.kernel.org, price@mit.edu
-In-Reply-To: <20131216064359.GB28544@thunk.org>
+	Mon, 16 Dec 2013 10:05:23 -0500
+Date: Mon, 16 Dec 2013 15:05:14 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: Simple MFD driver example
+Message-ID: <20131216150514.GN18769@lee--X1>
+References: <CAOMwXhN5UfR=Y8V3i=A2zSCv7V9sRDd0Z+D1AQFahvRS-mV5Fw@mail.gmail.com>
+ <20131216082556.GE18769@lee--X1>
+ <CAOMwXhN8fG8YbU53A_U_MyMTyGWfV7NCCtr2a5oCbHdB0iqqmA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOMwXhN8fG8YbU53A_U_MyMTyGWfV7NCCtr2a5oCbHdB0iqqmA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I understand that; and as I wrote in my last e-mail, I think that is a
-> substantially harder attack than the currently published cache timing
-> attacks, which are chosen plaintext attacks --- that is the attacker
-> doesn't know the key, but can choose the plaintext, and view the
-> resulting ciphertext.
+Please refrain from top posting.
 
-Okay, sorry for the misunderstanding.  I *thought* we were talking past
-each other.
+Responses should appear under quoted lines, which they reference.
 
-First of all, you might want to look at this paper:
-http://www.ieee-security.org/TC/SP2011/PAPERS/2011/paper031.pdf
-"Cache Games -- Bringing Access-Based Cache Attacks on AES to Practice"
+> >> I have been trying to write about 50-100 LOC for 1-2 weeks now. I have
+> >> a fairly simple use case for MFD where I need to have gpio and hwmon
+> >> functionality for a GPIO.
+> >>
+> >> I read the mfd drivers inside and out by now, but it looks a bit
+> >> inconsistent to me. I am not sure what to follow etc. The
+> >> documentation seems to be virtually missing which makes my life and
+> >> involvement even more difficult. :(
+> >>
+> >> May I ask for some pointer how to do all this? It would be nice to see
+> >> a minimal example where the parent does not do anything else than just
+> >> enumerating the sub-device drivers. Is that possible with an empty
+> >> probe callback?
+> >>
+> >> If I understand the regmap correctly (again, it is possible I do not),
+> >> then I would not need this. But in general, it is really hard to deal
+> >> with the linux kernel in this regard when basic documentations are
+> >> missing.
+> >>
+> >> I hope this would change over time for the posterity. It is a pity
+> >> that contributors do not join probably due to this. It is a bit
+> >> chaotic, but I hope it can be changed in the future.
+> >>
+> >> Apologies for my frustration...
+> >
+> > Due to the nature of the MFD subsystem, there isn't a simple use-case
+> > which you can use as a template. It's completely dependent on the
+> > device you are trying to enable. There are lots of well written
+> > drivers in the subsystem that you can use as good examples though.
 
-It describes a practical implementation of a timing-based key-recovery
-attack *without any access to plain- or ciphertext at all* after watching
-~100 block encryptions in OpenSSL.
+> Well, if you ask me the MFD subsystem is underdocumented, and there is
+> some inconsistency between the drivers. It is hard to take any of them
+> as a starting point, at least for me.
 
-Key recovery is the target usually studied, so recovering the text
-(in the absence of the key or other text) is not as well documented,
-but it certainly shouldn't be any harder.
+Feel free to write some. I'm always happy to take helpful patches.
 
-The major complicating factor is that most attacks assume a constant key,
-while hashing uses a varying key per encryption.  But there are strong
-dependencies (the output of one encryption is the input to the next)
-that can perhaps be handled with improved analysis.
+> Currently, I wrote a simple one from scratch which I will post soon.
 
-No, I don't have example code, but I hope you can see how I think
-concerns are realistic.  (And remember: attacks only ever get better.)
+Okay great.
 
-(I should also mention that the paper above exploits the Linux scheduler
-to collect high-resolution timing information, so could be greatly
-hampered by disabling preemption in /dev/random.  But there is probably
-an equivalent attack via hyperthreading.)
-
-
-As I've said before, the point I want to stress is not even that the
-attack is necessarily practical, but it's a PITA to prove that it's *not*,
-and the SHA-3 competition has given us several excellent cryptographic
-cores explicitly designed to avoid the issue entirely.
-
-If the alternatives to AES had serious disadvantages, I'd be getting busy
-with a detailed comparison.  But is that even necessary?
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
