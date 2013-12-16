@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab3LPSYO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 13:24:14 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:39058 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755017Ab3LPSYM (ORCPT
+	id S1755129Ab3LPS0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 13:26:43 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40174 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754550Ab3LPS0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 13:24:12 -0500
-Message-ID: <52AF4549.1010102@linux.com>
-Date: Mon, 16 Dec 2013 19:24:09 +0100
-From: Levente Kurusa <levex@linux.com>
-Reply-To: Levente Kurusa <levex@linux.com>
+	Mon, 16 Dec 2013 13:26:41 -0500
+Message-ID: <52AF45DB.9050302@wwwdotorg.org>
+Date: Mon, 16 Dec 2013 11:26:35 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] treewide: add missing put_device calls
-References: <1386962557-8899-1-git-send-email-levex@linux.com> <CAErSpo4dJFsK+Wcfz8PrH=Ras343nLS=XgQFbEr_KCgFVED52Q@mail.gmail.com> <20131214172419.GC22520@kroah.com> <52AD606F.50408@linux.com> <20131215170325.GA28799@kroah.com> <52AF35FD.8000904@linux.com> <20131216175848.GB2007@kroah.com> <52AF4249.8030000@linux.com> <20131216181822.GA2522@kroah.com>
-In-Reply-To: <20131216181822.GA2522@kroah.com>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>, swarren@nvidia.com, will.deacon@arm.com,
+        thierry.reding@gmail.com, robherring2@gmail.com, joro@8bytes.org,
+        mark.rutland@arm.com, devicetree@vger.kernel.org,
+        lorenzo.pieralisi@arm.com, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, galak@codeaurora.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv7 04/12] driver/core: populate devices in order for IOMMUs
+References: <1386835033-4701-1-git-send-email-hdoyu@nvidia.com> <1386835033-4701-5-git-send-email-hdoyu@nvidia.com> <20131212113920.70E8BC40637@trevor.secretlab.ca> <20131213021402.GB14192@kroah.com>
+In-Reply-To: <20131213021402.GB14192@kroah.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2013 07:18 PM, Greg Kroah-Hartman wrote:
-> On Mon, Dec 16, 2013 at 07:11:21PM +0100, Levente Kurusa wrote:
->> On 12/16/2013 06:58 PM, Greg Kroah-Hartman wrote:
->>> On Mon, Dec 16, 2013 at 06:18:53PM +0100, Levente Kurusa wrote:
->>>>>> IIRC, there are also a few where the device is also unregistered from
->>>>>> the specific subsystem's core.
->>>>>
->>>>> Do you have a specific example of this?  This should happen in the
->>>>> release function of the device already, not in some other code.
->>>>>
->>>> Character drivers who register with device_register() call cdev_del()
->>>> when device_register() fails.
+On 12/12/2013 07:14 PM, Greg KH wrote:
+> On Thu, Dec 12, 2013 at 11:39:20AM +0000, Grant Likely wrote:
+>> On Thu, 12 Dec 2013 09:57:05 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
+>>> IOMMU devices on the bus need to be poplulated first, then iommu
+>>> master devices are done later.
 >>>
->>> A cdev shouldn't be created until _after_ the device is successfully
->>> registered, as it could be opened and accessed before the device is
->>> registered.  That sounds like the drivers that do that should be fixed
->>> (have an example of this somewhere?)
->>
->> I did some research and it seems it has mostly been my false memory that made
->> me think that. The only example I could find that did something like this
->> was: drivers/scsi/osd/osd_uld.c at line 403.
->>
->> When the device_register() fails it immediately jumps to a cdev_del();
-> 
-> That should be easy to reorginize to not do this (i.e. do the cdev_add()
-> call after the device_register() call, if needed.
-> 
+>>> With CONFIG_OF_IOMMU, "iommus=" DT binding would be used to identify
+>>> whether a device can be an iommu msater or not. If a device can, we'll
+>>> defer to populate that device till an iommu device is populated. Then,
+>>> those deferred iommu master devices are populated and configured with
+>>> help of the already populated iommu device.
 
-So it seems that this should be fixed if I understand you correctly.
-If you want I can add this to my TODO list, so I will make a patch in a few
-days?
+>>> This is related to the following discussion:
+>>>   [RFC PATCH] Documentation: devicetree: add description for generic bus properties
+>>>   http://lists.infradead.org/pipermail/linux-arm-kernel/2013-November/215042.html
 
--- 
-Regards,
-Levente Kurusa
+>>> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+
+>>> @@ -273,6 +274,10 @@ static int really_probe(struct device *dev, struct device_driver *drv)
+>>>  
+>>>  	dev->driver = drv;
+>>>  
+>>> +	ret = of_iommu_attach(dev);
+>>> +	if (ret)
+>>> +		goto probe_failed;
+>>> +
+>>
+>> As discussed before, I really don't think hooking in to dd.c is the
+>> right thing to do here, and certainly not as a device tree specific
+>> function. ACPI or PCI described devices may have the same constraints
+>> and those won't have DT descriptions.
+> 
+> I agree, this shouldn't be in the driver core.
+
+I don't think I agree. It'd greatly simplify driver probe() routines if
+the driver core could acquire/set up as many resources as it could on
+behalf of drivers. It'd be nice if it pre-mapped any registers, acquired
+clocks, regulators, ... That way, we wouldn't need to write all that
+code in each individual driver's probe() routine. Now, in many cases
+this is rather difficult since there's currently no way for the driver
+core to know which resources a driver needs, but when the driver core
+can/does know this, shouldn't it simplify the life of drivers?
+Longer-term, perhaps drivers can provide the driver core with some
+specification of the resources it needs (such as a list of clock,
+regulator, ... names), to fill in the missing information.
