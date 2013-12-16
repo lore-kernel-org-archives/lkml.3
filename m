@@ -1,82 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab3LPPVs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 10:21:48 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:2397 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754535Ab3LPPVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 10:21:45 -0500
-X-IronPort-AV: E=Sophos;i="4.95,495,1384300800"; 
-   d="scan'208";a="82664391"
-Message-ID: <52AF1A84.3090304@citrix.com>
-Date: Mon, 16 Dec 2013 15:21:40 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754472Ab3LPPWo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 10:22:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42040 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753762Ab3LPPWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 10:22:43 -0500
+Date: Mon, 16 Dec 2013 07:24:46 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, francis.moro@gmail.com, kvm@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH backport hints for <3.10] KVM: x86: Convert vapic
+ synchronization to _cached functions (CVE-2013-6368)
+Message-ID: <20131216152446.GA1894@kroah.com>
+References: <1387193897-24658-1-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>
-CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v2 1/9] xen-netback: Introduce TX grant map definitions
-References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com> <1386892097-15502-2-git-send-email-zoltan.kiss@citrix.com> <20131213153138.GL21900@zion.uk.xensource.com> <52AB506E.3040509@citrix.com> <20131213191423.GA12582@zion.uk.xensource.com>
-In-Reply-To: <20131213191423.GA12582@zion.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387193897-24658-1-git-send-email-pbonzini@redhat.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/12/13 19:14, Wei Liu wrote:
->>>> +	spin_lock_irqsave(&vif->dealloc_lock, flags);
->>>> > >>+	do {
->>>> > >>+		pending_idx = ubuf->desc;
->>>> > >>+		ubuf = (struct ubuf_info *) ubuf->ctx;
->>>> > >>+		index = pending_index(vif->dealloc_prod);
->>>> > >>+		vif->dealloc_ring[index] = pending_idx;
->>>> > >>+		/* Sync with xenvif_tx_action_dealloc:
->>>> > >>+		 * insert idx then incr producer.
->>>> > >>+		 */
->>>> > >>+		smp_wmb();
->>>> > >>+		vif->dealloc_prod++;
->>>> > >>+	} while (ubuf);
->>>> > >>+	wake_up(&vif->dealloc_wq);
->>>> > >>+	spin_unlock_irqrestore(&vif->dealloc_lock, flags);
-> [...]
->>> > >
->>>> > >>+		smp_rmb();
->>>> > >>+
->>>> > >>+		while (dc != dp) {
->>>> > >>+			pending_idx =
->>>> > >>+				vif->dealloc_ring[pending_index(dc++)];
->>>> > >>+
->>>> > >>+			/* Already unmapped? */
->>>> > >>+			if (vif->grant_tx_handle[pending_idx] ==
->>>> > >>+				NETBACK_INVALID_HANDLE) {
->>>> > >>+				netdev_err(vif->dev,
->>>> > >>+					"Trying to unmap invalid handle! "
->>>> > >>+					"pending_idx: %x\n", pending_idx);
->>>> > >>+				continue;
->>>> > >>+			}
->>> > >
->>> > >Should this be BUG_ON? AIUI this kthread should be the only one doing
->>> > >unmap, right?
->> >The NAPI instance can do it as well if it is a small packet fits
->> >into PKT_PROT_LEN. But still this scenario shouldn't really happen,
->> >I was just not sure we have to crash immediately. Maybe handle it as
->> >a fatal error and destroy the vif?
->> >
-> It depends. If this is within the trust boundary, i.e. everything at the
-> stage should have been sanitized then we should BUG_ON because there's
-> clearly a bug somewhere in the sanitization process, or in the
-> interaction of various backend routines.
+On Mon, Dec 16, 2013 at 12:38:17PM +0100, Paolo Bonzini wrote:
+> The KVM patch "fix vapic memory corruption" applies to most kernels that
+> have KVM, but the fix does not apply on many older branches.  The APIs it
+> uses are available in 3.1, but until 3.9 kvm_gfn_to_hva_cache_init had
+> one fewer parameter.
+> 
+> The comments in this patch should help fixing kvm_lapic_set_vapic_addr
+> in older kernels.  I will review the backports as they are posted to
+> LKML (if I am CCed...).
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  arch/x86/kvm/lapic.c | 38 +++++++++++++++++++++++++++++---------
+>  arch/x86/kvm/lapic.h |  4 ++--
+>  arch/x86/kvm/x86.c   | 33 +--------------------------------
+>  3 files changed, 32 insertions(+), 43 deletions(-)
 
-My understanding is that crashing should be avoided if we can bail out 
-somehow. At this point there is clearly a bug in netback somewhere, 
-something unmapped that page before it should have happened, or at least 
-that array get corrupted somehow. However there is a chance that 
-xenvif_fatal_tx_err() can contain the issue, and the rest of the system 
-can go unaffected.
+I don't understand, what are people supposed to do with this?
 
-Zoli
+greg k-h
