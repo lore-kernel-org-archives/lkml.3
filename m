@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab3LPUTZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 15:19:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20931 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751059Ab3LPUTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 15:19:24 -0500
-Date: Mon, 16 Dec 2013 21:19:52 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH -mm 2/2] mm: thp: turn compound_head() into
-	BUG_ON(!PageTail) in get_huge_page_tail()
-Message-ID: <20131216201952.GC6616@redhat.com>
-References: <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com> <CA+55aFw_emAUOr5BYx0TfTCGEOrW6-ZRATWbm00DvCXsGD7=DQ@mail.gmail.com> <20131211170844.GA21700@redhat.com> <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de> <20131211175615.GA24546@redhat.com> <20131211191855.GA32485@redhat.com> <20131213151035.GE5408@redhat.com> <20131213162240.GA11762@redhat.com> <20131213173406.GG5408@redhat.com> <20131216201900.GA6616@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131216201900.GA6616@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752312Ab3LPUUM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 15:20:12 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:40162 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116Ab3LPUUG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 15:20:06 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, zheng.z.yan@intel.com, bp@alien8.de,
+        vincent.weaver@maine.edu, maria.n.dimakopoulou@gmail.com
+Subject: [PATCH 0/2] perf/x86: various RAPL improvements
+Date: Mon, 16 Dec 2013 21:20:22 +0100
+Message-Id: <1387225224-27799-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_huge_page_tail()->compound_head() looks confusing. Every caller
-must check PageTail(page), otherwise atomic_inc(&page->_mapcount) is
-simply wrong if this page is compound-trans-head.
+This short patch series provides the following improvements
+to the RAPL support for perf_events:
+ - Intel Haswell Celeron (model 69) support
+ - support for RAPL PP1 energy counter
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/mm.h |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+The PP1 counter maps to the builtin graphic card for client
+processors. The new energy event is:
+ - name: power/energy-gfx/
+ - code: 0x4
+ - unit: Joules
+ - scaling factor: 2^-32 Joules.
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 13bae9e..13495bd 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -431,13 +431,12 @@ static inline bool compound_tail_refcounted(struct page *page)
- static inline void get_huge_page_tail(struct page *page)
- {
- 	/*
--	 * __split_huge_page_refcount() cannot run
--	 * from under us.
--	 * In turn no need of compound_trans_head here.
-+	 * __split_huge_page_refcount() cannot run from under us.
- 	 */
-+	VM_BUG_ON(!PageTail(page));
- 	VM_BUG_ON(page_mapcount(page) < 0);
- 	VM_BUG_ON(atomic_read(&page->_count) != 0);
--	if (compound_tail_refcounted(compound_head(page)))
-+	if (compound_tail_refcounted(page->first_page))
- 		atomic_inc(&page->_mapcount);
- }
- 
+Signed-off-by: Stephane Eranian <eranian@google.com>
+
+Stephane Eranian (2):
+  perf/x86: enable Haswell Celeron RAPL support
+  perf/x86: add RAPL PP1 energy counter support
+
+ arch/x86/kernel/cpu/perf_event_intel_rapl.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
 -- 
-1.5.5.1
-
+1.7.9.5
 
