@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab3LPInT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 03:43:19 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:41736 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab3LPInS (ORCPT
+	id S1752874Ab3LPIqN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 03:46:13 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:31156 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3LPIqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 03:43:18 -0500
-Date: Mon, 16 Dec 2013 08:43:13 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 3/3] mfd: mc13xxx: Simplify "probe" & "remove"
-Message-ID: <20131216084313.GF18769@lee--X1>
-References: <1387026192-21234-1-git-send-email-shc_work@mail.ru>
- <1387026192-21234-3-git-send-email-shc_work@mail.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1387026192-21234-3-git-send-email-shc_work@mail.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 16 Dec 2013 03:46:11 -0500
+Date: Mon, 16 Dec 2013 09:45:57 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the jdelvare-hwmon tree with Linus'
+  tree
+Message-ID: <20131216094557.3391bb6a@endymion.delvare>
+In-Reply-To: <20131216115733.16a652c0e350453d94c8551a@canb.auug.org.au>
+References: <20131216115733.16a652c0e350453d94c8551a@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch simplifies "probe" and "remove" functions by moving
-> some initialization code in the driver core.
+Hi Stephen,
+
+On Mon, 16 Dec 2013 11:57:33 +1100, Stephen Rothwell wrote:
+> Today's linux-next merge of the jdelvare-hwmon tree got a conflict in
+> drivers/hwmon/lm90.c between commits from Linus' tree and commits from
+> the jdelvare-hwmon tree.
 > 
-> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-> ---
->  drivers/mfd/mc13xxx-core.c | 36 +++++++++++++++++-------------------
->  drivers/mfd/mc13xxx-i2c.c  | 18 ++++--------------
->  drivers/mfd/mc13xxx-spi.c  | 19 ++++++-------------
->  drivers/mfd/mc13xxx.h      |  6 ++----
->  4 files changed, 29 insertions(+), 50 deletions(-)
-> 
-> diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-> index b0c7cb0..06e64b6 100644
-> --- a/drivers/mfd/mc13xxx-core.c
-> +++ b/drivers/mfd/mc13xxx-core.c
+> It looks like the jdelvare-hwmon patch series has been reset back
+> (unintentionally?) to stuff that has already been merged into Linus'
+> tree ... so I just used the version from Linus' tree.
 
-<snip>
+Oops. Yes, that was totally unintentional.
 
-> -	ret = request_threaded_irq(irq, NULL, mc13xxx_irq_thread,
-> +	ret = request_threaded_irq(mc13xxx->irq, NULL, mc13xxx_irq_thread,
->  			IRQF_ONESHOT | IRQF_TRIGGER_HIGH, "mc13xxx", mc13xxx);
+I had my ISP change some settings for my web hosting, and all my data
+was deleted in the process. I kind of expected that, so I made a
+complete backup before asking for the change. Unfortunately I did not
+expect them to take so long to acknowledge my request and act upon it,
+so when I restored my backup, my web space indeed went back in time by
+several weeks.
 
-Please use devm_* managed resources, then you can remove the free_irq().
+I manually updated everything I remembered having touched during that
+time frame, but as you spotted rightly, I forgot my kernel patch series.
 
-<snip>
-
-> -void mc13xxx_common_cleanup(struct mc13xxx *mc13xxx)
-> +int mc13xxx_common_exit(struct device *dev)
->  {
-> +	struct mc13xxx *mc13xxx = dev_get_drvdata(dev);
-> +
->  	free_irq(mc13xxx->irq, mc13xxx);
-
-Here.
-
-
-> -	spi_set_drvdata(spi, mc13xxx);
-> +	dev_set_drvdata(&spi->dev, mc13xxx);
-> +
-
-What's the point of this? It does the same thing?
+This is all fixed now, sorry for the noise and thanks for letting me
+know.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jean Delvare
