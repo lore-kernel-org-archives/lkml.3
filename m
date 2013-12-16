@@ -1,112 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab3LPJeQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 04:34:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7404 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752356Ab3LPJeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 04:34:09 -0500
-From: Dave Young <dyoung@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
-        matt@console-pimps.org, toshi.kani@hp.com, akpm@linux-foundation.org,
-        mingo@kernel.org, msalter@redhat.com, leif.lindholm@linaro.org
-Subject: [PATCH v6 14/14] x86: kdebugfs do not use __va for getting setup_data virt addr
-Date: Mon, 16 Dec 2013 17:30:35 +0800
-Message-Id: <1387186235-15972-15-git-send-email-dyoung@redhat.com>
-In-Reply-To: <1387186235-15972-1-git-send-email-dyoung@redhat.com>
-References: <1387186235-15972-1-git-send-email-dyoung@redhat.com>
+	id S1753376Ab3LPJeP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 04:34:15 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:57216 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752435Ab3LPJeK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 04:34:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <1387090914-4755-5-git-send-email-bjorn.andersson@sonymobile.com>
+References: <1387090914-4755-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<1387090914-4755-5-git-send-email-bjorn.andersson@sonymobile.com>
+Date: Mon, 16 Dec 2013 10:34:09 +0100
+Message-ID: <CACRpkdaumwvYmxpiHY86+Q7vzb4qymnZCr7pcEBOfvqr81MgoQ@mail.gmail.com>
+Subject: Re: [PATCH 4/4] pinctrl-msm: Rename compatible to be more specific
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kdump kernel will use memmap=exactmap kernel cmdline, but __va does not
-work in case memmap=exactmap, so let's always use ioremap_cache.
+On Sun, Dec 15, 2013 at 8:01 AM, Bjorn Andersson
+<bjorn.andersson@sonymobile.com> wrote:
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- arch/x86/kernel/kdebugfs.c | 35 +++++++++++------------------------
- 1 file changed, 11 insertions(+), 24 deletions(-)
+> Use the more specific form 8974 for the compatible to reduce the
+> risk of future mishaps.
+>
+> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 
-diff --git a/arch/x86/kernel/kdebugfs.c b/arch/x86/kernel/kdebugfs.c
-index dc1404b..185e1ca 100644
---- a/arch/x86/kernel/kdebugfs.c
-+++ b/arch/x86/kernel/kdebugfs.c
-@@ -33,7 +33,6 @@ static ssize_t setup_data_read(struct file *file, char __user *user_buf,
- 	struct setup_data_node *node = file->private_data;
- 	unsigned long remain;
- 	loff_t pos = *ppos;
--	struct page *pg;
- 	void *p;
- 	u64 pa;
- 
-@@ -47,18 +46,12 @@ static ssize_t setup_data_read(struct file *file, char __user *user_buf,
- 		count = node->len - pos;
- 
- 	pa = node->paddr + sizeof(struct setup_data) + pos;
--	pg = pfn_to_page((pa + count - 1) >> PAGE_SHIFT);
--	if (PageHighMem(pg)) {
--		p = ioremap_cache(pa, count);
--		if (!p)
--			return -ENXIO;
--	} else
--		p = __va(pa);
-+	p = ioremap_cache(pa, count);
-+	if (!p)
-+		return -ENXIO;
- 
- 	remain = copy_to_user(user_buf, p, count);
--
--	if (PageHighMem(pg))
--		iounmap(p);
-+	iounmap(p);
- 
- 	if (remain)
- 		return -EFAULT;
-@@ -109,7 +102,6 @@ static int __init create_setup_data_nodes(struct dentry *parent)
- 	struct setup_data *data;
- 	int error;
- 	struct dentry *d;
--	struct page *pg;
- 	u64 pa_data;
- 	int no = 0;
- 
-@@ -126,16 +118,12 @@ static int __init create_setup_data_nodes(struct dentry *parent)
- 			goto err_dir;
- 		}
- 
--		pg = pfn_to_page((pa_data+sizeof(*data)-1) >> PAGE_SHIFT);
--		if (PageHighMem(pg)) {
--			data = ioremap_cache(pa_data, sizeof(*data));
--			if (!data) {
--				kfree(node);
--				error = -ENXIO;
--				goto err_dir;
--			}
--		} else
--			data = __va(pa_data);
-+		data = ioremap_cache(pa_data, sizeof(*data));
-+		if (!data) {
-+			kfree(node);
-+			error = -ENXIO;
-+			goto err_dir;
-+		}
- 
- 		node->paddr = pa_data;
- 		node->type = data->type;
-@@ -143,8 +131,7 @@ static int __init create_setup_data_nodes(struct dentry *parent)
- 		error = create_setup_data_node(d, no, node);
- 		pa_data = data->next;
- 
--		if (PageHighMem(pg))
--			iounmap(data);
-+		iounmap(data);
- 		if (error)
- 			goto err_dir;
- 		no++;
--- 
-1.8.3.1
+Patch applied.
 
+Yours,
+Linus Walleij
