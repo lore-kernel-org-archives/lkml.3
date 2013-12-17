@@ -1,158 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab3LQXk2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 18:40:28 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:50731 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab3LQXk1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 18:40:27 -0500
-Date: Tue, 17 Dec 2013 15:40:23 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH 10/13] nohz: Hand over timekeeping duty on cpu offlining
-Message-ID: <20131217234022.GH19211@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
- <1387320692-28460-11-git-send-email-fweisbec@gmail.com>
+	id S1751906Ab3LQXnh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 18:43:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13239 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751090Ab3LQXnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 18:43:35 -0500
+Subject: [PATCH v2 0/4] pci: virtual channel save/restore support
+From: Alex Williamson <alex.williamson@redhat.com>
+To: bhelgaas@google.com, linux-pci@vger.kernel.org
+Cc: ddutile@redhat.com, linux-kernel@vger.kernel.org
+Date: Tue, 17 Dec 2013 16:43:33 -0700
+Message-ID: <20131217233741.2310.78334.stgit@bling.home>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387320692-28460-11-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121723-9332-0000-0000-000002874F87
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 11:51:29PM +0100, Frederic Weisbecker wrote:
-> When there are full dynticks CPUs around and the timekeeper goes
-> offline, we have to hand over the timekeeping duty to another potential
-> timekeeper.
-> 
-> The default timekeeper (aka CPU 0) is the perfect candidate for this
-> task since it can't be offlined itself.
-> 
-> So lets send an IPI to the default timekeeping when the current
-> timekeeper goes offline, so that the duty is relayed.
+v1->v2:
 
-A few comments below.
+Address Bjorn's comments
+ - split code out to vc.c
+ - #defines for everything
+ - rename VC defines
+ - fix word access to PCI_VC_PORT_CTRL
 
-							Thanx, Paul
+It ended up getting a little bigger since I added function description
+comments, header, includes and misc lines here and there.
 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Alex Shi <alex.shi@linaro.org>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> ---
->  include/linux/tick.h     |  2 ++
->  kernel/time/tick-sched.c | 31 +++++++++++++++++++++++++++++++
->  2 files changed, 33 insertions(+)
-> 
-> diff --git a/include/linux/tick.h b/include/linux/tick.h
-> index af98d2c..bd3c32e 100644
-> --- a/include/linux/tick.h
-> +++ b/include/linux/tick.h
-> @@ -218,6 +218,7 @@ extern void tick_nohz_init(void);
->  extern void __tick_nohz_full_check(void);
->  extern void tick_nohz_full_kick(void);
->  extern void tick_nohz_full_kick_all(void);
-> +extern void tick_nohz_full_kick_timekeeping(void);
->  extern void __tick_nohz_task_switch(struct task_struct *tsk);
->  # else
->  static inline void tick_nohz_init(void) { }
-> @@ -227,6 +228,7 @@ static inline bool tick_timekeeping_cpu(int cpu) { return true; }
->  static inline void __tick_nohz_full_check(void) { }
->  static inline void tick_nohz_full_kick(void) { }
->  static inline void tick_nohz_full_kick_all(void) { }
-> +static inline void tick_nohz_full_kick_timekeeping(void) { }
->  static inline void __tick_nohz_task_switch(struct task_struct *tsk) { }
->  #endif
-> 
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 527b501..94b6901 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -217,6 +217,12 @@ static u64 tick_timekeeping_max_deferment(struct tick_sched *ts)
->  		return timekeeping_max_deferment();
-> 
->  	/*
-> +	 * Order tick_do_timer_cpu read against the IPI, pairs with
-> +	 * tick_nohz_full_kick_timekeeping()
-> +	 */
-> +	smp_rmb();
+v1:
 
-If this is the handler for the smp_send_reschedule(), then the above
-memory barrier is not needed.  (See my comment below.)
+Turns out that even though we don't do much with virtual channel, we
+still need to save/restore it around reset.  The case where this comes
+into play currently is a card with a switch and multiple devices, all
+supporting VC (Nvidia GRID).  On some platforms the system firmware
+will leave all the virtual channel capabilities in their default
+state, where the VC0 TC/VC map is 0xff (TC0-7 enabled over VC0).
+Other systems decide to restrict the available traffic classes and
+configure 0x01 (only TC0 over VC0).  At handoff, everything works, but
+as soon as we do a device reset, especially if done via bus reset, the
+endpoint can be returned to the spec defined default rather than the
+platform default.  If such a device is then assigned to a guest, the
+guest driver sees multiple TCs enabled, attempts to use them, and it
+fails.  The failure mode depends on the platform, ranging from the
+driver in the guest failing to work to host panic from an unsupported
+transaction.
 
-> +
-> +	/*
->  	 * If we are the timekeeper and all full dynticks CPUs are idle,
->  	 * then we can finally sleep.
->  	 */
-> @@ -293,6 +299,22 @@ void tick_nohz_full_kick_all(void)
->  	preempt_enable();
->  }
-> 
-> +/**
-> + * tick_nohz_full_kick_timekeeping - kick the default timekeeper
-> + *
-> + * kick the default timekeeper when a secondary timekeeper goes offline.
-> + */
-> +void tick_nohz_full_kick_timekeeping(void)
-> +{
-> +	tick_do_timer_cpu = tick_timekeeping_default_cpu();
-> +	/*
-> +	 * Order tick_do_timer_cpu against the IPI, pairs with
-> +	 * tick_timekeeping_max_deferment on irq exit.
-> +	 */
-> +	smp_wmb();
+This series attempts to implement full save/restore support for all
+types of virtual channel (VC, MFVC, and VC9).  The buffer sizing code
+will execute for any device with these capabilities, but of couse the
+actual save/restore is only done if a reset is requested for the
+device, which typically means assignment to a VM.  Thanks,
 
-But the IPI is supposed to provide full ordering between the CPU invoking
-the IPI and the IPI handler, right?  I do not believe that you need
-the above smp_wmb() -- though keeping the comment stating that you are
-relying on the implicit barrier in IPI would be good.
+Alex
 
-> +	smp_send_reschedule(tick_timekeeping_default_cpu());
+---
 
-Again, smp_send_reschedule()'s IPI hander does not necessarily do
-anything if there is nothing for the scheduler to do, so any needed
-actions are taking in the return-from-interrupt code?
+Alex Williamson (4):
+      pci: Generalize wait loop
+      pci: Add support for save/restore of extended capabilities
+      pci: Add Virtual Channel to save/restore support
+      pci: Rename PCI_VC_PORT_REG1/2 to PCI_VC_PORT_CAP1/2
 
-> +}
-> +
->  /*
->   * Re-evaluate the need for the tick as we switch the current task.
->   * It might need the tick due to per task/process properties:
-> @@ -351,6 +373,15 @@ static int tick_nohz_cpu_down_callback(struct notifier_block *nfb,
->  		if (tick_nohz_full_running && tick_timekeeping_default_cpu() == cpu)
->  			return NOTIFY_BAD;
->  		break;
-> +
-> +	case CPU_DYING:
-> +		/*
-> +		 * Notify default timekeeper if we are giving up
-> +		 * timekeeping duty
-> +		 */
-> +		if (tick_nohz_full_running && tick_do_timer_cpu == cpu)
-> +			tick_nohz_full_kick_timekeeping();
-> +		break;
->  	}
->  	return NOTIFY_OK;
->  }
-> -- 
-> 1.8.3.1
-> 
 
+ drivers/pci/Makefile               |    2 
+ drivers/pci/pci.c                  |  102 ++++++--
+ drivers/pci/vc.c                   |  434 ++++++++++++++++++++++++++++++++++++
+ drivers/vfio/pci/vfio_pci_config.c |   12 -
+ include/linux/pci.h                |   15 +
+ include/uapi/linux/pci_regs.h      |   29 ++
+ 6 files changed, 549 insertions(+), 45 deletions(-)
+ create mode 100644 drivers/pci/vc.c
