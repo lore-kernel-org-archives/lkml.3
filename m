@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab3LQSmR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:42:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60756 "EHLO
+	id S1755465Ab3LQSN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:13:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60701 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755356Ab3LQSOB (ORCPT
+	with ESMTP id S1755398Ab3LQSNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:14:01 -0500
+	Tue, 17 Dec 2013 13:13:53 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 015/103] net: add BUG_ON if kernel advertises msg_namelen > sizeof(struct sockaddr_storage)
-Date: Tue, 17 Dec 2013 18:12:04 +0000
-Message-Id: <1387304012-23805-16-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 008/103] isdnloop: use strlcpy() instead of strcpy()
+Date: Tue, 17 Dec 2013 18:11:57 +0000
+Message-Id: <1387304012-23805-9-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -28,43 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 68c6beb373955da0886d8f4f5995b3922ceda4be upstream.
+commit f9a23c84486ed350cce7bb1b2828abd1f6658796 upstream.
 
-In that case it is probable that kernel code overwrote part of the
-stack. So we should bail out loudly here.
+These strings come from a copy_from_user() and there is no way to be
+sure they are NUL terminated.
 
-The BUG_ON may be removed in future if we are sure all protocols are
-conformant.
-
-Suggested-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/socket.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/isdn/isdnloop/isdnloop.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/net/socket.c b/net/socket.c
-index 496702e..5febb56 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -215,12 +215,13 @@ static int move_addr_to_user(struct sockaddr_storage *kaddr, int klen,
- 	int err;
- 	int len;
- 
-+	BUG_ON(klen > sizeof(struct sockaddr_storage));
- 	err = get_user(len, ulen);
- 	if (err)
- 		return err;
- 	if (len > klen)
- 		len = klen;
--	if (len < 0 || len > sizeof(struct sockaddr_storage))
-+	if (len < 0)
- 		return -EINVAL;
- 	if (len) {
- 		if (audit_sockaddr(klen, kaddr))
+diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
+index baf2686..02125e6 100644
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -1083,8 +1083,10 @@ isdnloop_start(isdnloop_card *card, isdnloop_sdef *sdefp)
+ 			spin_unlock_irqrestore(&card->isdnloop_lock, flags);
+ 			return -ENOMEM;
+ 		}
+-		for (i = 0; i < 3; i++)
+-			strcpy(card->s0num[i], sdef.num[i]);
++		for (i = 0; i < 3; i++) {
++			strlcpy(card->s0num[i], sdef.num[i],
++				sizeof(card->s0num[0]));
++		}
+ 		break;
+ 	case ISDN_PTYPE_1TR6:
+ 		if (isdnloop_fake(card, "DRV1.04TC-1TR6-CAPI-CNS-BASIS-29.11.95",
+@@ -1097,7 +1099,7 @@ isdnloop_start(isdnloop_card *card, isdnloop_sdef *sdefp)
+ 			spin_unlock_irqrestore(&card->isdnloop_lock, flags);
+ 			return -ENOMEM;
+ 		}
+-		strcpy(card->s0num[0], sdef.num[0]);
++		strlcpy(card->s0num[0], sdef.num[0], sizeof(card->s0num[0]));
+ 		card->s0num[1][0] = '\0';
+ 		card->s0num[2][0] = '\0';
+ 		break;
 -- 
 1.8.3.2
 
