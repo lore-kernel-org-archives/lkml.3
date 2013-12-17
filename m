@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab3LQDH0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 22:07:26 -0500
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:43615 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab3LQDHU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 22:07:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131217132838.cc16a4dbac2f4d3218bbed1d@canb.auug.org.au>
-References: <20131213125716.f432c59bf8782a489400a5a7@canb.auug.org.au>
-	<20131217132838.cc16a4dbac2f4d3218bbed1d@canb.auug.org.au>
-Date: Tue, 17 Dec 2013 11:07:19 +0800
-Message-ID: <CAA+hA=Shwn1P25+xB+VogD+9n7gdvCmJ-EG6khgf3a2gjGwTJQ@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the mmc tree
-From: Dong Aisheng <dongas86@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Chris Ball <cjb@laptop.org>, linux-next@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dong Aisheng <b29396@freescale.com>, Shawn Guo <shawn.guo@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752726Ab3LQDJx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 22:09:53 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:41221 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752312Ab3LQDJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 22:09:50 -0500
+X-IronPort-AV: E=Sophos;i="4.95,498,1384272000"; 
+   d="scan'208";a="9273021"
+From: Gao feng <gaofeng@cn.fujitsu.com>
+To: linux-audit@redhat.com
+Cc: linux-kernel@vger.kernel.org, rgb@redhat.com, eparis@redhat.com,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: [PATCH 2/2] audit: fix incorrect set of audit_sock
+Date: Tue, 17 Dec 2013 11:10:42 +0800
+Message-Id: <1387249842-27793-2-git-send-email-gaofeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1387249842-27793-1-git-send-email-gaofeng@cn.fujitsu.com>
+References: <1387249842-27793-1-git-send-email-gaofeng@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/17 11:09:17,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/17 11:09:22,
+	Serialize complete at 2013/12/17 11:09:22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+NETLINK_CB(skb).sk is the socket of user space process,
+netlink_unicast in kauditd_send_skb wants the kernel
+side socket. Since the sk_state of audit netlink socket
+is not NETLINK_CONNECTED, so the netlink_getsockbyportid
+doesn't return -ECONNREFUSED.
 
-Sorry, i just see this mail.
-It seems the imx pinctrl dt binding has changes since Chris pick my patch.
-I will fix it ASAP.
+And the socket of userspace process can be released anytime,
+so the audit_sock may point to invalid socket.
 
-Regards
-Dong Aisheng
+this patch sets the audit_sock to the kernel side audit
+netlink socket.
 
-On Tue, Dec 17, 2013 at 10:28 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Chris,
->
-> ping?
->
-> On Fri, 13 Dec 2013 12:57:16 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>
->> After merging the mmc tree, today's linux-next build (arm
->> multi_v7_defconfig) failed like this:
->>
->> ERROR (phandle_references): Reference to non-existent node or label "pinctrl_usdhc4_1"
->>
->> ERROR: Input tree has errors, aborting (use -f to force output)
->> make[2]: *** [arch/arm/boot/dts/imx6dl-sabresd.dtb] Error 2
->> ERROR (phandle_references): Reference to non-existent node or label "pinctrl_usdhc4_1"
->>
->> ERROR: Input tree has errors, aborting (use -f to force output)
->> make[2]: *** [arch/arm/boot/dts/imx6q-sabresd.dtb] Error 2
->>
->> Caused by commit fc4fafac9656 ("ARM: dts: sabresd: add usdhc4 support").
->>
->> I have used the mmc tree from next-20131212 for today.
->
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+---
+ kernel/audit.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 041b951..ff1d1d7 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -822,7 +822,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 				audit_log_config_change("audit_pid", new_pid, audit_pid, 1);
+ 			audit_pid = new_pid;
+ 			audit_nlk_portid = NETLINK_CB(skb).portid;
+-			audit_sock = NETLINK_CB(skb).sk;
++			audit_sock = skb->sk;
+ 		}
+ 		if (s.mask & AUDIT_STATUS_RATE_LIMIT) {
+ 			err = audit_set_rate_limit(s.rate_limit);
+-- 
+1.8.3.1
+
