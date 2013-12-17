@@ -1,52 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab3LQVRy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 16:17:54 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:39476 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab3LQVRw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 16:17:52 -0500
+	id S1752629Ab3LQVWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 16:22:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37697 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751112Ab3LQVWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 16:22:22 -0500
+Date: Tue, 17 Dec 2013 21:22:16 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7] mm: page_alloc: Make zone distribution page aging
+ policy configurable
+Message-ID: <20131217212216.GK11295@suse.de>
+References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
+ <1386943807-29601-6-git-send-email-mgorman@suse.de>
+ <20131216204215.GA21724@cmpxchg.org>
+ <20131217152954.GA24067@suse.de>
+ <20131217155435.GE21724@cmpxchg.org>
+ <20131217161420.GG11295@suse.de>
+ <20131217174302.GF21724@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <20131217200022.GD28274@kroah.com>
-References: <20131217182733.GA16202@www.outflux.net>
-	<20131217200022.GD28274@kroah.com>
-Date: Tue, 17 Dec 2013 13:17:51 -0800
-X-Google-Sender-Auth: g-g_pjGmZLIQYF21EKRhIJk5pM4
-Message-ID: <CAGXu5j+wwkiz9=s3DBnmDXmtR_YdtqvXOe5PJsNbRcs_UCGajA@mail.gmail.com>
-Subject: Re: [RESEND][PATCH] scsi: esas2r: fix potential format string flaw
-From: Kees Cook <keescook@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Bradley Grove <linuxdrivers@attotech.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131217174302.GF21724@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 12:00 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Tue, Dec 17, 2013 at 10:27:33AM -0800, Kees Cook wrote:
->> This makes sure format strings cannot leak into the printk call via the
->> constructed buffer.
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->>  drivers/scsi/esas2r/esas2r_log.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> Why is this patch "To:" me?  I'm not the author of this driver, or the
-> maintainer of it or the subsystem, and there's not much, if anything I
-> can do with it...
+On Tue, Dec 17, 2013 at 12:43:02PM -0500, Johannes Weiner wrote:
+> > > > When looking at this closer I found that sysv is a weird exception. It's
+> > > > file-backed as far as most of the VM is concerned but looks anonymous to
+> > > > most applications that care. That and MAP_SHARED anonymous pages should
+> > > > not be treated like files but we still want tmpfs to be treated as
+> > > > files. Details will be in the changelog of the next series.
+> > > 
+> > > In what sense is it seen as file-backed?
+> > 
+> > sysv and anonymous pages are backed by an internal shmem mount point. In
+> > lots of respects, it's looks like a file and quacks like a file but I expect
+> > developers think of it being anonmous and chunks of the VM treats it like
+> > it's anonymous. tmpfs uses the same paths and they get treated similar to
+> > the VM as anon but users may think that tmpfs should be subject to the
+> > fair allocation zone policy "because they're files." It's a sufficently
+> > weird case that any action we take there should be deliberate. It'll be
+> > a bit clearer when I post the patch that special cases this.
+> 
+> The line I see here is mostly derived from performance expectations.
+> 
+> People and programs expect anon, shmem/tmpfs etc. to be fast and avoid
+> their reclaim at great costs, so they size this part of their workload
+> according to memory size and locality.  Filesystem cache (on-disk) on
+> the other hand is expected to be slow on the first fault and after it
+> has been displaced by other data, but the kernel is mostly expected to
+> maximize the caching effects in a predictable manner.
+> 
 
-I've resent this before, and since it lived in "drivers", I figured
-you would be the next up the chain to take it (since it's been
-ignored).
+Part of their performance expectations is that memory referenced from the
+local node will be allocated locally. Consider NUMA-aware applications that
+partition their data usage appropriately and share that data between threads
+using processes and shared memory (some MPI implementations). They have
+an expectation that the memory will be local and a further expectation
+that it will not be reclaimed because they sized it appropriately.
+Automatically interleaving such memory by default will be surprising to
+NUMA aware applications even if NUMA-oblivious applications benefit.
 
--Kees
+Similarly, the pagecache sysctl is documented to affect files, at least
+that's how I wrote it. It's inconsistent to explain that as "the sysctl
+control files, except for tmpfs ones because ...... whatever".
+
+> The round-robin policy makes the displacement predictable (think of
+> the aging artifacts here where random pages do not get displaced
+> reliably because they ended up on remote nodes) and it avoids IO by
+> maximizing memory utilization.
+> 
+> I.e. it improves behavior associated with a cache, but I don't expect
+> shmem/tmpfs to be typically used as a disk cache.  I could be wrong
+> about that, but I figure if you need named shared memory that is
+> bigger than your memory capacity (the point where your tmpfs would
+> actually turn into a disk cache), you'd be better of using a more
+> efficient on-disk filesystem.
+
+I am concerned with semantics like "all files except tmpfs files" or
+alternatively regressing performance of NUMA-aware applications and their
+use of MAP_SHARED and sysv.
 
 -- 
-Kees Cook
-Chrome OS Security
+Mel Gorman
+SUSE Labs
