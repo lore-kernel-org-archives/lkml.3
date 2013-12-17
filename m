@@ -1,32 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab3LQN7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:59:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37118 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752987Ab3LQN7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:59:11 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <5287D78D.4070601@linux.com>
-References: <5287D78D.4070601@linux.com>
-To: Levente Kurusa <levex@linux.com>
-Cc: dhowells@redhat.com, AFS list <linux-afs@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] afs: dir: remove unused label out_skip
-Date: Tue, 17 Dec 2013 13:58:44 +0000
-Message-ID: <31119.1387288724@warthog.procyon.org.uk>
+	id S1754264Ab3LQN7b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:59:31 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:50918 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752987Ab3LQN7a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 08:59:30 -0500
+Date: Tue, 17 Dec 2013 10:59:23 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com, namhyung@kernel.org, artagnon@gmail.com,
+        jolsa@redhat.com
+Subject: Re: [PATCH 5/5 v2] perf timechart: add emphasize option
+Message-ID: <20131217135923.GB6517@ghostprotocols.net>
+References: <1385995056-20158-1-git-send-email-stfomichev@yandex-team.ru>
+ <20131216193800.GA19283@ghostprotocols.net>
+ <20131217093855.GA3345@stfomichev-desktop>
+ <20131217112303.GB27791@gmail.com>
+ <20131217121522.GA6357@stfomichev-desktop>
+ <20131217133821.GA6517@ghostprotocols.net>
+ <20131217134137.GA29396@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131217134137.GA29396@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Levente Kurusa <levex@linux.com> wrote:
+Em Tue, Dec 17, 2013 at 02:41:37PM +0100, Ingo Molnar escreveu:
+> * Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+> > Em Tue, Dec 17, 2013 at 04:15:22PM +0400, Stanislav Fomichev escreveu:
+> > > > Please give a sample usage command line and a sample output. (the 
+> > > > highlighting can be done using ASCII escape sequences in the changelog 
+> > > > as well.)
+> > > Highlighting is done in the generated SVG, so I can't really show it in
+> > > the log or documentation. But I added simple example with -e option.
 
-> The out_skip label is not used, so remove it.
-> 
-> Signed-off-by: Levente Kurusa <levex@linux.com>
+> > > >   -e::
+> > > >   --emphasize=<duration_nsecs|task_name>::
+> > > Thanks, added.
 
-Applied.
+> > I also wonder how to allocate single letter options here... can we live
+> > with just --emphasize for now? Wouldn't at some point we maybe want to
+> > use -e in 'perf timechart' to pick some specific event, and then, to
+> > make it consistent with the other tools, -e would then be used?
+ 
+> I wanted to raise a similar argument too - so if we don't have to do 
+> -e then maybe '--grep' would be the better option name?
+ 
+> If it becomes popular then the pattern matching can be improved, 
+> without having to change the option name and such.
+
+Humm, 'grep' is a filter, i.e. something that removes parts of the data
+being perused, while this case it will not filter anything, it will just
+make something that matches some search criteria to stand out from the
+rest, that is still there, so perhaps --emphasize is Ok albeit kinda
+long...
+
+Do we have any other command line tool that has a long standing
+semantics of "highlighting" or "emphasizing" parts of a data stream?
+
+- Arnaldo
