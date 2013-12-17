@@ -1,50 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab3LQWYp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:24:45 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:42564 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072Ab3LQWYn (ORCPT
+	id S1754362Ab3LQWZf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:25:35 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:53688 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692Ab3LQWZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:24:43 -0500
+	Tue, 17 Dec 2013 17:25:33 -0500
 MIME-Version: 1.0
-In-Reply-To: <1387318331.30327.16.camel@bling.home>
-References: <20131210183339.26294.14581.stgit@bling.home> <20131210184845.26294.81385.stgit@bling.home>
- <20131217004815.GA4781@google.com> <1387318331.30327.16.camel@bling.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 17 Dec 2013 15:24:22 -0700
-Message-ID: <CAErSpo6TH7QghPMhDxrohEz5rUtSiQEh_VR66f+jckPUWjey0g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] pci: Add Virtual Channel to save/restore support
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Don Dutile <ddutile@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20131217174759.GL18680@sgi.com>
+References: <20131212180037.GA134240@sgi.com> <20131213214437.6fdbf7f2.akpm@linux-foundation.org>
+ <20131216171214.GA15663@sgi.com> <CALCETrW9uGYzckWg3Wcsu-VV-vbXxUCr+Dv0kXqE5VMKopjn+A@mail.gmail.com>
+ <20131217160455.GG18680@sgi.com> <CALCETrX_B0D+XyYD8P6mfS4uqty1vzYpOmR-0Mx-yee=wtyR8g@mail.gmail.com>
+ <20131217174759.GL18680@sgi.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 17 Dec 2013 14:25:11 -0800
+Message-ID: <CALCETrVCvpi3KmS9n=WV8Gy3D89aqC-NKfH02LwgmGNGZtFWLw@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] Change how we determine when to hand out THPs
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 3:12 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> On Mon, 2013-12-16 at 17:48 -0700, Bjorn Helgaas wrote:
->> On Tue, Dec 10, 2013 at 11:48:45AM -0700, Alex Williamson wrote:
-
->> > +static void pci_vc_load_arb_table(struct pci_dev *dev, int pos)
->> > +{
->> > +   u32 ctrl;
->> > +
->> > +   pci_read_config_dword(dev, pos + PCI_VC_PORT_CTRL, &ctrl);
->> > +   pci_write_config_dword(dev, pos + PCI_VC_PORT_CTRL, ctrl | 1);
->> > +   if (pci_wait_for_pending(dev, pos + PCI_VC_PORT_STATUS, 1))
-
->> spec says these are 16-bit registers; shouldn't these be "word" accesses?
+On Tue, Dec 17, 2013 at 9:47 AM, Alex Thorlton <athorlton@sgi.com> wrote:
+> On Tue, Dec 17, 2013 at 08:54:10AM -0800, Andy Lutomirski wrote:
+>> On Tue, Dec 17, 2013 at 8:04 AM, Alex Thorlton <athorlton@sgi.com> wrote:
+>> > On Mon, Dec 16, 2013 at 05:43:40PM -0800, Andy Lutomirski wrote:
+>> >> On Mon, Dec 16, 2013 at 9:12 AM, Alex Thorlton <athorlton@sgi.com> wrote:
+>> >> >> Please cc Andrea on this.
+>> >> >
+>> >> > I'm going to clean up a few small things for a v2 pretty soon, I'll be
+>> >> > sure to cc Andrea there.
+>> >> >
+>> >> >> > My proposed solution to the problem is to allow users to set a
+>> >> >> > threshold at which THPs will be handed out.  The idea here is that, when
+>> >> >> > a user faults in a page in an area where they would usually be handed a
+>> >> >> > THP, we pull 512 pages off the free list, as we would with a regular
+>> >> >> > THP, but we only fault in single pages from that chunk, until the user
+>> >> >> > has faulted in enough pages to pass the threshold we've set.  Once they
+>> >> >> > pass the threshold, we do the necessary work to turn our 512 page chunk
+>> >> >> > into a proper THP.  As it stands now, if the user tries to fault in
+>> >> >> > pages from different nodes, we completely give up on ever turning a
+>> >> >> > particular chunk into a THP, and just fault in the 4K pages as they're
+>> >> >> > requested.  We may want to make this tunable in the future (i.e. allow
+>> >> >> > them to fault in from only 2 different nodes).
+>> >> >>
+>> >> >> OK.  But all 512 pages reside on the same node, yes?  Whereas with thp
+>> >> >> disabled those 512 pages would have resided closer to the CPUs which
+>> >> >> instantiated them.
+>> >> >
+>> >> > As it stands right now, yes, since we're pulling a 512 page contiguous
+>> >> > chunk off the free list, everything from that chunk will reside on the
+>> >> > same node, but as I (stupidly) forgot to mention in my original e-mail,
+>> >> > one piece I have yet to add is the functionality to put the remaining
+>> >> > unfaulted pages from our chunk *back* on the free list after we give up
+>> >> > on handing out a THP.  Once this is in there, things will behave more
+>> >> > like they do when THP is turned completely off, i.e. pages will get
+>> >> > faulted in closer to the CPU that first referenced them once we give up
+>> >> > on handing out the THP.
+>> >>
+>> >> This sounds like it's almost the worst possible behavior wrt avoiding
+>> >> memory fragmentation.  If userspace mmaps a very large region and then
+>> >> starts accessing it randomly, it will allocate a bunch of contiguous
+>> >> 512-page regions, claim one page from each, and return the other 511
+>> >> pages to the free list.  Memory is now maximally fragmented from the
+>> >> point of view of future THP allocations.
+>> >
+>> > Maybe I'm missing the point here to some degree, but the way I think
+>> > about this is that if we trigger the behavior to return the pages to the
+>> > free list, we don't *want* future THP allocations in that range of
+>> > memory for the current process anyways.  So, having the memory be
+>> > fragmented from the point of view of future THP allocations isn't an
+>> > issue.
+>> >
+>>
+>> Except that you're causing a problem for the whole system because one
+>> process is triggering the "hugepages aren't helpful" heuristic.
 >
-> The control registers are 32-bit, the status registers are 16-bit.
-> pci_wait_for_pending uses word access.
+> I do see where you're coming from here.  Do you have any good tests
+> that can cause this type of memory fragmentation that I might be able to
+> take a look at, to see how we might combat that issue in this case?
+> It seems like something that could occur anyways, but my patch would
+> create a situation where it could become a problem much more quickly.
 
-The "VC Resource Control Registers" at offset 14h + (n * 0Ch) are 32
-bits, but I was referring to the PCI_VC_PORT_CTRL accesses, sorry I
-didn't make that clear.  I'm looking at 7.11.4 "Port VC Control
-Register" at offset 12 (0Ch), and that one looks like 16 bits to me.
+mmap lots of space (comparable to total system memory).  Touch every
+512th page.  (This will consume ~0.2% of memory with your patches.)
 
-Bjorn
+Now run any workload that benefits from THP (without unmapping the
+first thing).  Make sure it still works well.
+
+--Andy
