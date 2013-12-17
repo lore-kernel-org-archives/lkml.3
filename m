@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab3LQAhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 19:37:16 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:45041 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab3LQAhO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 19:37:14 -0500
-Message-ID: <52AF9CB7.90003@linaro.org>
-Date: Mon, 16 Dec 2013 16:37:11 -0800
-From: John Stultz <john.stultz@linaro.org>
+	id S1752063Ab3LQAq5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 19:46:57 -0500
+Received: from www.sr71.net ([198.145.64.142]:43276 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751691Ab3LQAqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 19:46:55 -0500
+Message-ID: <52AF9EB9.7080606@sr71.net>
+Date: Mon, 16 Dec 2013 16:45:45 -0800
+From: Dave Hansen <dave@sr71.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        kbuild test robot <fengguang.wu@intel.com>
-Subject: Re: [RFC][PATCH 2/3] staging: ion: Fix possible null pointer dereference
-References: <1387229564-19517-1-git-send-email-john.stultz@linaro.org>	<1387229564-19517-3-git-send-email-john.stultz@linaro.org> <CAMbhsRRMMMreYzLMZHxjrRrKj0rZdS5SjLNbpGUuW93mg+Q65w@mail.gmail.com>
-In-Reply-To: <CAMbhsRRMMMreYzLMZHxjrRrKj0rZdS5SjLNbpGUuW93mg+Q65w@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Pravin B Shelar <pshelar@nicira.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [RFC][PATCH 0/7] re-shrink 'struct page' when SLUB is on.
+References: <20131213235903.8236C539@viggo.jf.intel.com> <20131216160128.aa1f1eb8039f5eee578cf560@linux-foundation.org>
+In-Reply-To: <20131216160128.aa1f1eb8039f5eee578cf560@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2013 04:26 PM, Colin Cross wrote:
-> On Mon, Dec 16, 2013 at 1:32 PM, John Stultz <john.stultz@linaro.org> wrote:
->> The kbuild test robot reported:
->>
->> drivers/staging/android/ion/ion_system_heap.c:122 alloc_largest_available() error: potential null dereference 'info'.  (kmalloc returns null)
->>
->> Where the pointer returned from kmalloc goes unchecked for failure.
->>
->> This patch adds a simple check for a null return, and handles the error.
->>
->> XXX: Not sure if continue or 'return NULL' is the right thing to do.
-> Returning NULL is fine, there is no reason the kmalloc is going to
-> succeed if it retries, and it will just have to allocate more of them
-> if it starts fulfilling the allocation with smaller order chunks.
->
-> Allocating the struct before entering the loop might make error handling easier.
+On 12/16/2013 04:01 PM, Andrew Morton wrote:
+> On Fri, 13 Dec 2013 15:59:03 -0800 Dave Hansen <dave@sr71.net> wrote:
+>> SLUB depends on a 16-byte cmpxchg for an optimization.  For the
+>> purposes of this series, I'm assuming that it is a very important
+>> optimization that we desperately need to keep around.
+> 
+> What if we don't do that.
 
-Ok, I had actually done that in my first pass, but then got worried the
-allocation/free might have extra overhead in the case where the pool is
-exhausted, so I stuck with the existing pattern. But if that's not a
-common state, then I agree, it does make the handling simpler.
+I'll do some testing and see if I can coax out any delta from the
+optimization myself.  Christoph went to a lot of trouble to put this
+together, so I assumed that he had a really good reason, although the
+changelogs don't really mention any.
 
-I'll rework this and re-submit. Thanks for the feedback!
+I honestly can't imagine that a cmpxchg16 is going to be *THAT* much
+cheaper than a per-page spinlock.  The contended case of the cmpxchg is
+way more expensive than spinlock contention for sure.
 
-thanks
--john
+fc9bb8c768's commit message says:
+>     The doublewords must be properly aligned for cmpxchg_double to work.
+>     Sadly this increases the size of page struct by one word on some architectures.
+>     But as a resultpage structs are now cacheline aligned on x86_64.
+
+I'm not sure what aligning them buys us though.  I think I just
+demonstrated that cache footprint is *way* more important than alignment.
