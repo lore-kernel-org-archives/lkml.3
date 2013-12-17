@@ -1,91 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab3LQWbt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:31:49 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:50296 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752020Ab3LQWbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:31:47 -0500
-Date: Tue, 17 Dec 2013 17:31:36 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/7] mm: page_alloc: Use zone node IDs to approximate
- locality
-Message-ID: <20131217223136.GI21724@cmpxchg.org>
-References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
- <1386943807-29601-4-git-send-email-mgorman@suse.de>
- <20131216202507.GZ21724@cmpxchg.org>
- <20131217111352.GZ11295@suse.de>
- <20131217153829.GC21724@cmpxchg.org>
- <20131217160808.GF11295@suse.de>
- <20131217201147.GH21724@cmpxchg.org>
- <20131217210340.GJ11295@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131217210340.GJ11295@suse.de>
+	id S1754737Ab3LQWcs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:32:48 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:63105 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754461Ab3LQWcq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 17:32:46 -0500
+Date: Tue, 17 Dec 2013 17:32:44 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Miao Xie <miaox@cn.fujitsu.com>,
+        stable <stable@vger.kernel.org>
+Subject: [GIT PULL] ftrace: Initialize the ftrace profiler for each possible
+ cpu
+Message-ID: <20131217173244.79a44103@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 09:03:40PM +0000, Mel Gorman wrote:
-> On Tue, Dec 17, 2013 at 03:11:47PM -0500, Johannes Weiner wrote:
-> > On Tue, Dec 17, 2013 at 04:08:08PM +0000, Mel Gorman wrote:
-> > > On Tue, Dec 17, 2013 at 10:38:29AM -0500, Johannes Weiner wrote:
-> > > > On Tue, Dec 17, 2013 at 11:13:52AM +0000, Mel Gorman wrote:
-> > > > > On Mon, Dec 16, 2013 at 03:25:07PM -0500, Johannes Weiner wrote:
-> > > > > > On Fri, Dec 13, 2013 at 02:10:03PM +0000, Mel Gorman wrote:
-> > > > > > > zone_local is using node_distance which is a more expensive call than
-> > > > > > > necessary. On x86, it's another function call in the allocator fast path
-> > > > > > > and increases cache footprint. This patch makes the assumption zones on a
-> > > > > > > local node will share the same node ID. The necessary information should
-> > > > > > > already be cache hot.
-> > > > > > > 
-> > > > > > > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > > > > > > ---
-> > > > > > >  mm/page_alloc.c | 2 +-
-> > > > > > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > > > > > 
-> > > > > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > > > > > > index 64020eb..fd9677e 100644
-> > > > > > > --- a/mm/page_alloc.c
-> > > > > > > +++ b/mm/page_alloc.c
-> > > > > > > @@ -1816,7 +1816,7 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
-> > > > > > >  
-> > > > > > >  static bool zone_local(struct zone *local_zone, struct zone *zone)
-> > > > > > >  {
-> > > > > > > -	return node_distance(local_zone->node, zone->node) == LOCAL_DISTANCE;
-> > > > > > > +	return zone_to_nid(zone) == numa_node_id();
-> > > > > > 
-> > > > > > Why numa_node_id()?  We pass in the preferred zone as @local_zone:
-> > > > > > 
-> > > > > 
-> > > > > Initially because I was thinking "local node" and numa_node_id() is a
-> > > > > per-cpu variable that should be cheap to access and in some cases
-> > > > > cache-hot as the top-level gfp API calls numa_node_id().
-> > > > > 
-> > > > > Thinking about it more though it still makes sense because the preferred
-> > > > > zone is not necessarily local. If the allocation request requires ZONE_DMA32
-> > > > > and the local node does not have that zone then preferred zone is on a
-> > > > > remote node.
-> > > > 
-> > > > Don't we treat everything in relation to the preferred zone?
-> > > 
-> > > Usually yes, but this time we really care about whether the memory is
-> > > local or remote. It makes sense to me as it is and struggle to see an
-> > > advantage of expressing it in terms of the preferred zone. Minimally
-> > > zone_local would need to be renamed if it could return true for a remote
-> > > zone and I see no advantage in doing that.
-> > 
-> > What the function tests for is whether any given zone is close
-> > enough/local to the given preferred zone such that we can allocate
-> > from it without having to invoke zone_reclaim_mode.
-> > 
-> 
-> Fine. The helper should then be renamed to zone_preferred_node because
-> it's no longer about being local.
 
-Fair enough!
+Linus,
+
+This fixes a long standing bug in the ftrace profiler.
+The problem is that the profiler only initializes the online
+CPUs, and not possible CPUs. This causes issues if the user takes
+CPUs online or offline while the profiler is running.
+
+If we online a CPU after starting the profiler, we lose all the
+trace information on the CPU going online.
+
+If we offline a CPU after running a test and start a new test, it
+will not clear the old data from that CPU.
+
+This bug causes incorrect data to be reported to the user if they
+online or offline CPUs during the profiling.
+
+Please pull the latest trace-fixes-v3.13-rc2 tree, which can be found at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+trace-fixes-v3.13-rc2
+
+Tag SHA1: bf7af594d3f90d7715db2b19b2579cf88fac0a58
+Head SHA1: c4602c1c818bd6626178d6d3fcc152d9f2f48ac0
+
+
+Miao Xie (1):
+      ftrace: Initialize the ftrace profiler for each possible cpu
+
+----
+ kernel/trace/ftrace.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+---------------------------
+commit c4602c1c818bd6626178d6d3fcc152d9f2f48ac0
+Author: Miao Xie <miaox@cn.fujitsu.com>
+Date:   Mon Dec 16 15:20:01 2013 +0800
+
+    ftrace: Initialize the ftrace profiler for each possible cpu
+    
+    Ftrace currently initializes only the online CPUs. This implementation has
+    two problems:
+    - If we online a CPU after we enable the function profile, and then run the
+      test, we will lose the trace information on that CPU.
+      Steps to reproduce:
+      # echo 0 > /sys/devices/system/cpu/cpu1/online
+      # cd <debugfs>/tracing/
+      # echo <some function name> >> set_ftrace_filter
+      # echo 1 > function_profile_enabled
+      # echo 1 > /sys/devices/system/cpu/cpu1/online
+      # run test
+    - If we offline a CPU before we enable the function profile, we will not clear
+      the trace information when we enable the function profile. It will trouble
+      the users.
+      Steps to reproduce:
+      # cd <debugfs>/tracing/
+      # echo <some function name> >> set_ftrace_filter
+      # echo 1 > function_profile_enabled
+      # run test
+      # cat trace_stat/function*
+      # echo 0 > /sys/devices/system/cpu/cpu1/online
+      # echo 0 > function_profile_enabled
+      # echo 1 > function_profile_enabled
+      # cat trace_stat/function*
+      # run test
+      # cat trace_stat/function*
+    
+    So it is better that we initialize the ftrace profiler for each possible cpu
+    every time we enable the function profile instead of just the online ones.
+    
+    Link: http://lkml.kernel.org/r/1387178401-10619-1-git-send-email-miaox@cn.fujitsu.com
+    
+    Cc: stable@vger.kernel.org # 2.6.31+
+    Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 0e9f9ea..72a0f81 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -775,7 +775,7 @@ static int ftrace_profile_init(void)
+ 	int cpu;
+ 	int ret = 0;
+ 
+-	for_each_online_cpu(cpu) {
++	for_each_possible_cpu(cpu) {
+ 		ret = ftrace_profile_init_cpu(cpu);
+ 		if (ret)
+ 			break;
