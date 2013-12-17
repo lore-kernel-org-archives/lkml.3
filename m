@@ -1,114 +1,380 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab3LQIsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 03:48:16 -0500
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:63046 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab3LQIsP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 03:48:15 -0500
+	id S1752197Ab3LQItY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 03:49:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41910 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750741Ab3LQItX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 03:49:23 -0500
+Message-ID: <52B0100A.3030002@redhat.com>
+Date: Tue, 17 Dec 2013 16:49:14 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1386700403.10013.109.camel@snotra.buserror.net>
-References: <1385712446-28221-1-git-send-email-hongbo.zhang@freescale.com>
-	<1386357684.7375.124.camel@snotra.buserror.net>
-	<52A6EDE8.5060903@freescale.com>
-	<1386700403.10013.109.camel@snotra.buserror.net>
-Date: Tue, 17 Dec 2013 16:48:14 +0800
-X-Google-Sender-Auth: f09U35_Xwvuj5PMQt2RKCkhyPpw
-Message-ID: <CADRPPNRy9SLauRPy0Ucm-xffuAhA7bMsA+9X4a=8XNRaJVMH5A@mail.gmail.com>
-Subject: Re: [PATCH] DTS: DMA: Fix DMA3 interrupts
-From: Li Yang <leoli@freescale.com>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Hongbo Zhang <hongbo.zhang@freescale.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Zhi Yong Wu <zwu.kernel@gmail.com>, netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, davem@davemloft.net, mst@redhat.com,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH] net, tun: remove the flow cache
+References: <1387265182-27312-1-git-send-email-zwu.kernel@gmail.com>
+In-Reply-To: <1387265182-27312-1-git-send-email-zwu.kernel@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 2:33 AM, Scott Wood <scottwood@freescale.com> wrote:
-> On Tue, 2013-12-10 at 18:33 +0800, Hongbo Zhang wrote:
->> Scott,
->> This issue is due to the non-continuous MPIC register, I think there is
->> two ways to fix it.
->>
->> The first one is as what we are discussing, in fact the Bman/Qman DT
->> author had introduced this way, and I had to follow it, it is a trick,
->> adding 208 is a bit ugly I think, and even difficult to explain it to
->> customers etc, but this way changes less codes.
->>
->> The second one is editing MPIC related codes without adding 208 to high
->> interrupts. The point of translate interrupt number to MPIC register
->> address is a so called 'isu' mechanism, we can do like the following
->> example codes, then the tricky adding 208 isn't needed any more.
->>
->> Which one do you prefer?
->> In fact I myself prefer the second, if the idea is acceptable, I will
->> send a patch instead of this one. (and also alone with the internal
->> patch decreasing 208 for the Bman/Qman)
->>
->> void __init corenet_ds_pic_init(void)
->> {
->>      ......
->>
->>      mpic = mpic_alloc(NULL, 0, flags, 0, 512, "OpenPIC");
->>      BUG_ON(mpic == NULL);
->>
->> // Add this start
->>      for (i = 0; i < 17; i++) {
->>          if (i < 11)
->>              addr_off = 0x10000 + 0x20 * 16 * i;
->>          else
->>              addr_off = 0x13000 + 0x20 * 16 * (i - 11);  /* scape the
->> address not for interrupts */
->>          mpic_assign_isu(mpic, i, mpic->paddr + addr_off);
->>      }
->> // Add this end
->>
->>      mpic_init(mpic);
->> }
+On 12/17/2013 03:26 PM, Zhi Yong Wu wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 >
-> NACK
+> The flow cache is an extremely broken concept, and it usually brings up
+> growth issues and DoS attacks, so this patch is trying to remove it from
+> the tuntap driver, and insteadly use a simpler way for its flow control.
+
+NACK.
+
+This single function revert does not make sense to me. Since:
+
+- You in fact removes the flow steering function in tun. We definitely
+need something like this to unbreak the TCP performance in a multiqueue
+guest. Please have a look at the virtio-net driver / virtio sepc for
+more information.
+- The total number of flow caches were limited to 4096, so there's no
+DoS or growth issue.
+- The only issue is scalability, but fixing this is not easy. We can
+just use arrays/indirection table like RSS instead of hash buckets, it
+saves some time in linear search but has other issues like collision
+- I've also had a RFC of using aRFS in the past, it also has several
+drawbacks such as busy looping in the networking hotspot.
+
+So in conclusion, we need flow steering in tun, just removing current
+method does not help. The proper way is to expose several different
+methods to user and let user to choose the preferable mechanism like
+packet.
+
 >
-> We already have a binding that states that the interrupt number is based
-> on the register offset, rather than whatever arbitrary numbers hardware
-> documenters decide to use next week.
+> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> ---
+>  drivers/net/tun.c |  208 +++--------------------------------------------------
+>  1 files changed, 10 insertions(+), 198 deletions(-)
 >
-> While I'm not terribly happy with the usability of this, especially now
-> that it's not a simple "add 16", redefining the existing binding is not
-> OK (and in any case the code above seems obfuscatory).  If we decide to
-> do something other than continue with register offset divided by 32,
-> then we need to define a new interrupt type (similar to current defined
-> types of error interrupt, timer, and IPI) for the new numberspace -- and
-> it should be handled when decoding that type of interrupt specifier,
-> rather than with the isu mechanism.
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index 7c8343a..7c27fdc 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -32,12 +32,15 @@
+>   *
+>   *  Daniel Podlejski <underley@underley.eu.org>
+>   *    Modifications for 2.3.99-pre5 kernel.
+> + *
+> + *  Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> + *    Remove the flow cache.
+>   */
+>  
+>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>  
+>  #define DRV_NAME	"tun"
+> -#define DRV_VERSION	"1.6"
+> +#define DRV_VERSION	"1.7"
+>  #define DRV_DESCRIPTION	"Universal TUN/TAP device driver"
+>  #define DRV_COPYRIGHT	"(C) 1999-2004 Max Krasnyansky <maxk@qualcomm.com>"
+>  
+> @@ -146,18 +149,6 @@ struct tun_file {
+>  	struct tun_struct *detached;
+>  };
+>  
+> -struct tun_flow_entry {
+> -	struct hlist_node hash_link;
+> -	struct rcu_head rcu;
+> -	struct tun_struct *tun;
+> -
+> -	u32 rxhash;
+> -	int queue_index;
+> -	unsigned long updated;
+> -};
+> -
+> -#define TUN_NUM_FLOW_ENTRIES 1024
+> -
+>  /* Since the socket were moved to tun_file, to preserve the behavior of persist
+>   * device, socket filter, sndbuf and vnet header size were restore when the
+>   * file were attached to a persist device.
+> @@ -184,163 +175,11 @@ struct tun_struct {
+>  	int debug;
+>  #endif
+>  	spinlock_t lock;
+> -	struct hlist_head flows[TUN_NUM_FLOW_ENTRIES];
+> -	struct timer_list flow_gc_timer;
+> -	unsigned long ageing_time;
+>  	unsigned int numdisabled;
+>  	struct list_head disabled;
+>  	void *security;
+> -	u32 flow_count;
+>  };
+>  
+> -static inline u32 tun_hashfn(u32 rxhash)
+> -{
+> -	return rxhash & 0x3ff;
+> -}
+> -
+> -static struct tun_flow_entry *tun_flow_find(struct hlist_head *head, u32 rxhash)
+> -{
+> -	struct tun_flow_entry *e;
+> -
+> -	hlist_for_each_entry_rcu(e, head, hash_link) {
+> -		if (e->rxhash == rxhash)
+> -			return e;
+> -	}
+> -	return NULL;
+> -}
+> -
+> -static struct tun_flow_entry *tun_flow_create(struct tun_struct *tun,
+> -					      struct hlist_head *head,
+> -					      u32 rxhash, u16 queue_index)
+> -{
+> -	struct tun_flow_entry *e = kmalloc(sizeof(*e), GFP_ATOMIC);
+> -
+> -	if (e) {
+> -		tun_debug(KERN_INFO, tun, "create flow: hash %u index %u\n",
+> -			  rxhash, queue_index);
+> -		e->updated = jiffies;
+> -		e->rxhash = rxhash;
+> -		e->queue_index = queue_index;
+> -		e->tun = tun;
+> -		hlist_add_head_rcu(&e->hash_link, head);
+> -		++tun->flow_count;
+> -	}
+> -	return e;
+> -}
+> -
+> -static void tun_flow_delete(struct tun_struct *tun, struct tun_flow_entry *e)
+> -{
+> -	tun_debug(KERN_INFO, tun, "delete flow: hash %u index %u\n",
+> -		  e->rxhash, e->queue_index);
+> -	hlist_del_rcu(&e->hash_link);
+> -	kfree_rcu(e, rcu);
+> -	--tun->flow_count;
+> -}
+> -
+> -static void tun_flow_flush(struct tun_struct *tun)
+> -{
+> -	int i;
+> -
+> -	spin_lock_bh(&tun->lock);
+> -	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
+> -		struct tun_flow_entry *e;
+> -		struct hlist_node *n;
+> -
+> -		hlist_for_each_entry_safe(e, n, &tun->flows[i], hash_link)
+> -			tun_flow_delete(tun, e);
+> -	}
+> -	spin_unlock_bh(&tun->lock);
+> -}
+> -
+> -static void tun_flow_delete_by_queue(struct tun_struct *tun, u16 queue_index)
+> -{
+> -	int i;
+> -
+> -	spin_lock_bh(&tun->lock);
+> -	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
+> -		struct tun_flow_entry *e;
+> -		struct hlist_node *n;
+> -
+> -		hlist_for_each_entry_safe(e, n, &tun->flows[i], hash_link) {
+> -			if (e->queue_index == queue_index)
+> -				tun_flow_delete(tun, e);
+> -		}
+> -	}
+> -	spin_unlock_bh(&tun->lock);
+> -}
+> -
+> -static void tun_flow_cleanup(unsigned long data)
+> -{
+> -	struct tun_struct *tun = (struct tun_struct *)data;
+> -	unsigned long delay = tun->ageing_time;
+> -	unsigned long next_timer = jiffies + delay;
+> -	unsigned long count = 0;
+> -	int i;
+> -
+> -	tun_debug(KERN_INFO, tun, "tun_flow_cleanup\n");
+> -
+> -	spin_lock_bh(&tun->lock);
+> -	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
+> -		struct tun_flow_entry *e;
+> -		struct hlist_node *n;
+> -
+> -		hlist_for_each_entry_safe(e, n, &tun->flows[i], hash_link) {
+> -			unsigned long this_timer;
+> -			count++;
+> -			this_timer = e->updated + delay;
+> -			if (time_before_eq(this_timer, jiffies))
+> -				tun_flow_delete(tun, e);
+> -			else if (time_before(this_timer, next_timer))
+> -				next_timer = this_timer;
+> -		}
+> -	}
+> -
+> -	if (count)
+> -		mod_timer(&tun->flow_gc_timer, round_jiffies_up(next_timer));
+> -	spin_unlock_bh(&tun->lock);
+> -}
+> -
+> -static void tun_flow_update(struct tun_struct *tun, u32 rxhash,
+> -			    struct tun_file *tfile)
+> -{
+> -	struct hlist_head *head;
+> -	struct tun_flow_entry *e;
+> -	unsigned long delay = tun->ageing_time;
+> -	u16 queue_index = tfile->queue_index;
+> -
+> -	if (!rxhash)
+> -		return;
+> -	else
+> -		head = &tun->flows[tun_hashfn(rxhash)];
+> -
+> -	rcu_read_lock();
+> -
+> -	/* We may get a very small possibility of OOO during switching, not
+> -	 * worth to optimize.*/
+> -	if (tun->numqueues == 1 || tfile->detached)
+> -		goto unlock;
+> -
+> -	e = tun_flow_find(head, rxhash);
+> -	if (likely(e)) {
+> -		/* TODO: keep queueing to old queue until it's empty? */
+> -		e->queue_index = queue_index;
+> -		e->updated = jiffies;
+> -	} else {
+> -		spin_lock_bh(&tun->lock);
+> -		if (!tun_flow_find(head, rxhash) &&
+> -		    tun->flow_count < MAX_TAP_FLOWS)
+> -			tun_flow_create(tun, head, rxhash, queue_index);
+> -
+> -		if (!timer_pending(&tun->flow_gc_timer))
+> -			mod_timer(&tun->flow_gc_timer,
+> -				  round_jiffies_up(jiffies + delay));
+> -		spin_unlock_bh(&tun->lock);
+> -	}
+> -
+> -unlock:
+> -	rcu_read_unlock();
+> -}
+> -
+>  /* We try to identify a flow through its rxhash first. The reason that
+>   * we do not check rxq no. is becuase some cards(e.g 82599), chooses
+>   * the rxq based on the txq where the last packet of the flow comes. As
+> @@ -351,7 +190,6 @@ unlock:
+>  static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb)
+>  {
+>  	struct tun_struct *tun = netdev_priv(dev);
+> -	struct tun_flow_entry *e;
+>  	u32 txq = 0;
+>  	u32 numqueues = 0;
+>  
+> @@ -360,12 +198,11 @@ static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb)
+>  
+>  	txq = skb_get_rxhash(skb);
+>  	if (txq) {
+> -		e = tun_flow_find(&tun->flows[tun_hashfn(txq)], txq);
+> -		if (e)
+> -			txq = e->queue_index;
+> -		else
+> +		txq = skb_get_queue_mapping(skb);
+> +		if (!txq) {
+>  			/* use multiply and shift instead of expensive divide */
+>  			txq = ((u64)txq * numqueues) >> 32;
+> +		}
+>  	} else if (likely(skb_rx_queue_recorded(skb))) {
+>  		txq = skb_get_rx_queue(skb);
+>  		while (unlikely(txq >= numqueues))
+> @@ -439,7 +276,6 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
+>  			tun_disable_queue(tun, tfile);
+>  
+>  		synchronize_net();
+> -		tun_flow_delete_by_queue(tun, tun->numqueues + 1);
+>  		/* Drop read queue */
+>  		tun_queue_purge(tfile);
+>  		tun_set_real_num_queues(tun);
+> @@ -858,25 +694,6 @@ static const struct net_device_ops tap_netdev_ops = {
+>  #endif
+>  };
+>  
+> -static void tun_flow_init(struct tun_struct *tun)
+> -{
+> -	int i;
+> -
+> -	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++)
+> -		INIT_HLIST_HEAD(&tun->flows[i]);
+> -
+> -	tun->ageing_time = TUN_FLOW_EXPIRE;
+> -	setup_timer(&tun->flow_gc_timer, tun_flow_cleanup, (unsigned long)tun);
+> -	mod_timer(&tun->flow_gc_timer,
+> -		  round_jiffies_up(jiffies + tun->ageing_time));
+> -}
+> -
+> -static void tun_flow_uninit(struct tun_struct *tun)
+> -{
+> -	del_timer_sync(&tun->flow_gc_timer);
+> -	tun_flow_flush(tun);
+> -}
+> -
+>  /* Initialize net device. */
+>  static void tun_net_init(struct net_device *dev)
+>  {
+> @@ -986,7 +803,6 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+>  	int copylen;
+>  	bool zerocopy = false;
+>  	int err;
+> -	u32 rxhash;
+>  
+>  	if (!(tun->flags & TUN_NO_PI)) {
+>  		if (len < sizeof(pi))
+> @@ -1146,13 +962,12 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+>  	skb_reset_network_header(skb);
+>  	skb_probe_transport_header(skb, 0);
+>  
+> -	rxhash = skb_get_rxhash(skb);
+> +	skb_set_queue_mapping(skb, tfile->queue_index);
+>  	netif_rx_ni(skb);
+>  
+>  	tun->dev->stats.rx_packets++;
+>  	tun->dev->stats.rx_bytes += len;
+>  
+> -	tun_flow_update(tun, rxhash, tfile);
+>  	return total_len;
+>  }
+>  
+> @@ -1370,7 +1185,6 @@ static void tun_free_netdev(struct net_device *dev)
+>  	struct tun_struct *tun = netdev_priv(dev);
+>  
+>  	BUG_ON(!(list_empty(&tun->disabled)));
+> -	tun_flow_uninit(tun);
+>  	security_tun_dev_free_security(tun->security);
+>  	free_netdev(dev);
+>  }
+> @@ -1644,7 +1458,6 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+>  			goto err_free_dev;
+>  
+>  		tun_net_init(dev);
+> -		tun_flow_init(tun);
+>  
+>  		dev->hw_features = NETIF_F_SG | NETIF_F_FRAGLIST |
+>  				   TUN_USER_FEATURES | NETIF_F_HW_VLAN_CTAG_TX |
+> @@ -1655,7 +1468,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+>  		INIT_LIST_HEAD(&tun->disabled);
+>  		err = tun_attach(tun, file, false);
+>  		if (err < 0)
+> -			goto err_free_flow;
+> +			goto err_free_security;
+>  
+>  		err = register_netdevice(tun->dev);
+>  		if (err < 0)
+> @@ -1705,8 +1518,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+>  
+>  err_detach:
+>  	tun_detach_all(dev);
+> -err_free_flow:
+> -	tun_flow_uninit(tun);
+> +err_free_security:
+>  	security_tun_dev_free_security(tun->security);
+>  err_free_dev:
+>  	free_netdev(dev);
 
-I had to say that the current binding is terribly confusing.  I know a
-lot of people who were confused while looking into the device tree and
-I had to help them out now and then.  I even got confused for some
-time at the very beginning.  :(  If we want to keep the current
-binding, a big warning message is well deserved at the very beginning
-of the binding document to clarify that the interrupt number used in
-device tree has nothing to do with the interrupt number mentioned in
-the silicon reference manuals.  I think we should even mention the
-"add 16" magic rule also to make it more intuitive.
-
-Adding a new interrupt type for external interrupts is good to make
-the interrupt number consistent with the Reference Manuals.  But doing
-that requires changing all the device trees that used the previous
-binding, and we need a mechanism of judging which binding a device
-tree is complying to.
-
-Hongbo's proposal is not a complete fix for the readability issue.
-But it makes the "add 16" magic rule continue to work, instead of
-making it even worse by introducing the "+208" interrupts.  The DMA3
-patch is the first time that we add the "+208" interrupts in the
-device trees of mainline kernel.  It is a good time now to prevent us
-making the readability even worse while not breaking things out there.
- ISU is a standard mechanism in MPIC to deal with sparse configuration
-register space, and IMO a good fit for this situation.
-
-Regards,
-Leo
