@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab3LQPjf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:39:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61573 "EHLO mx1.redhat.com"
+	id S1754526Ab3LQPoA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 10:44:00 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:50251 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754639Ab3LQPjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:39:31 -0500
-Date: Tue, 17 Dec 2013 16:40:04 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] pid: change task_struct::pid to read-only
-Message-ID: <20131217154004.GA21656@redhat.com>
-References: <8aa73d2b884439496f87d5f34c12ba9b4b40f7e5.1377032086.git.rgb@redhat.com> <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com> <20131217153611.GA18321@redhat.com>
+	id S1754245Ab3LQPn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 10:43:59 -0500
+Date: Tue, 17 Dec 2013 10:43:51 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] mm: page_alloc: Only account batch allocations
+ requests that are eligible
+Message-ID: <20131217154351.GD21724@cmpxchg.org>
+References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
+ <1386943807-29601-7-git-send-email-mgorman@suse.de>
+ <20131216205237.GB21724@cmpxchg.org>
+ <20131217112007.GA11295@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131217153611.GA18321@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20131217112007.GA11295@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17, Oleg Nesterov wrote:
->
-> On 12/16, Richard Guy Briggs wrote:
-> >
-> > task->pid is only ever assigned once (well ok, twice).  For system health and
-> > secure logging confidence, make it const to make it much more intentional when
-> > it is being changed.
->
-> Hmm. I am a bit suprized you decided to constify task->pid, but OK.
->
-> And we can do the same with task->signal, this can actually help to generate
-> a better code, probably.
->
-> >  	if (!thread_group_leader(tsk)) {
-> >  		struct task_struct *leader = tsk->group_leader;
-> > +		/* tast_struct::pid is const pid_t, hence the ugly cast */
-> > +		pid_t *pid_p = (pid_t*)&(tsk->pid);
-> >
-> >  		sig->notify_count = -1;	/* for exit_notify() */
-> >  		for (;;) {
-> > @@ -950,7 +952,7 @@ static int de_thread(struct task_struct *tsk)
-> >  		 * Note: The old leader also uses this pid until release_task
-> >  		 *       is called.  Odd but simple and correct.
-> >  		 */
-> > -		tsk->pid = leader->pid;
-> > +		*pid_p = leader->pid;
->
-> Well, imho this (and de_thread) looks a bit ugly. Perhaps we should add
-> something like
->
-> 	#define ASSIGN_CONST(l, r)      (*(typeof(r) *)&(l) = (r))
->
-> into compiler.h ?
+On Tue, Dec 17, 2013 at 11:20:07AM +0000, Mel Gorman wrote:
+> On Mon, Dec 16, 2013 at 03:52:37PM -0500, Johannes Weiner wrote:
+> > On Fri, Dec 13, 2013 at 02:10:06PM +0000, Mel Gorman wrote:
+> > > Not signed off. Johannes, was the intent really to decrement the batch
+> > > counts regardless of whether the policy was being enforced or not?
+> > 
+> > Yes.  Bursts of allocations for which the policy does not get enforced
+> > will still create memory pressure and affect cache aging on a given
+> > node.  So even if we only distribute page cache, we want to distribute
+> > it in a way that all allocations on the eligible zones equal out.
+> 
+> This means that allocations for page table pages affects the distribution of
+> page cache pages. An adverse workload could time when it faults anonymous
+> pages (to allocate anon and page table pages) in batch sequences and then
+> access files to force page cache pages to be allocated from a single node.
+> 
+> I think I know what your response will be. It will be that the utilisation of
+> the zone for page table pages and anon pages means that you want more page
+> cache pages to be allocated from the other zones so the reclaim pressure
+> is still more or less even. If this is the case or there is another reason
+> then it could have done with a comment because it's a subtle detail.
 
-Or even
+Yes, that was the idea, that the cache placement compensates for pages
+that still are always allocated on the preferred zone first, so that
+the end result is approximately as if round-robin had been applied to
+everybody.
 
-	#define ASSIGN_CONST(l, r)      \
-	        ({ BUILD_BUG_ON(sizeof(l) != sizeof(r)); *(typeof(r) *)&(l) = (r); })
+This should be documented as part of the patch that first diverges
+between the allocations that are counted and the allocations that are
+round-robined:
 
-perhaps it will have more users.
+  mm: page_alloc: exclude unreclaimable allocations from zone fairness policy
 
-Oleg.
-
+I'm updating my tree.
