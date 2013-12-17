@@ -1,105 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183Ab3LQRuA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 12:50:00 -0500
-Received: from mga02.intel.com ([134.134.136.20]:20837 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753453Ab3LQRt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 12:49:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,502,1384329600"; 
-   d="scan'208";a="453744916"
-From: "Moore, Robert" <robert.moore@intel.com>
-To: Rashika Kheria <rashika.kheria@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Zheng, Lv" <lv.zheng@intel.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>,
-        "devel@acpica.org" <devel@acpica.org>
-Subject: RE: [PATCH 05/11] drivers: acpi: Include appropriate header file in
- utstate.c
-Thread-Topic: [PATCH 05/11] drivers: acpi: Include appropriate header file
- in utstate.c
-Thread-Index: AQHO+wmPgCEknuPds0u3DO++aD9Ek5pYpnUw
-Date: Tue, 17 Dec 2013 17:35:46 +0000
-Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E37C7B99F5@ORSMSX103.amr.corp.intel.com>
-References: <c676af6619fc5a84208740bfc7edcf56bb78ed4e.1387271324.git.rashika.kheria@gmail.com>
- <c8f6f6fbcd7de593a726d091f5d0f6a245f6e0f7.1387271324.git.rashika.kheria@gmail.com>
-In-Reply-To: <c8f6f6fbcd7de593a726d091f5d0f6a245f6e0f7.1387271324.git.rashika.kheria@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1755213Ab3LQRuR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 12:50:17 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:45040 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab3LQRuL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 12:50:11 -0500
 MIME-Version: 1.0
+In-Reply-To: <20131212090838.GD25478@pengutronix.de>
+References: <1386364179-28650-1-git-send-email-delicious.quinoa@gmail.com>
+	<CANk1AXS=CADN53aO5KVN3UorddJ0wZ2PTqwo2XmeRuxYe_DoLg@mail.gmail.com>
+	<20131212090838.GD25478@pengutronix.de>
+Date: Tue, 17 Dec 2013 11:50:09 -0600
+Message-ID: <CANk1AXQqXT7evrGkLEam8SP=bXRCdrnke+Q+HbWeTMP5MPFubw@mail.gmail.com>
+Subject: Re: [PATCH v9] gpio: add a driver for Synopsys DesignWare APB GPIO
+From: delicious quinoa <delicious.quinoa@gmail.com>
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBHHo7Xj002945
 
-I'm not sure what version of ACPICA you are looking at, but in the master git tree for ACPICA, the file accommon.h includes "acutils.h".
+On Thu, Dec 12, 2013 at 3:08 AM, Steffen Trumtrar
+<s.trumtrar@pengutronix.de> wrote:
+> Sorry for chiming in late. I tested your driver on the Sockit and the GPIOs
+> work fine (basically just tested the 4 HPS LEDS that are on this board).
+>
+> With the interrupt support I had a little trouble though:
+> The Sockit has an ADXL345 on the i2c bus with a gpio as interrupt line.
+>
+> First: When you use "interrupt-parent", you have to specify the gpio node,
+> rather than the gpio-bank that has the interrupt-controller property. Is
+> that expected? I'm not really sure if that is normal behavior...
 
-> -----Original Message-----
-> From: Rashika Kheria [mailto:rashika.kheria@gmail.com]
-> Sent: Tuesday, December 17, 2013 1:22 AM
-> To: linux-kernel@vger.kernel.org
-> Cc: Moore, Robert; Zheng, Lv; Wysocki, Rafael J; Len Brown; linux-
-> acpi@vger.kernel.org; josh@joshtriplett.org; devel@acpica.org
-> Subject: [PATCH 05/11] drivers: acpi: Include appropriate header file in
-> utstate.c
-> 
-> Include appropriate header file acutils.h in acpica/utstate.c because
-> function acpi_ut_create_pkg_state_and_push() has its prototype declaration
-> in acutils.h. Also, encloses the function in acpica/utstate.c in ifdef
-> condition of ACPI_FUTURE_USAGE.
-> 
-> This eliminates the following warning in utstate.c:
-> drivers/acpi/acpica/utstate.c:64:1: warning: no previous prototype for
-> â€˜acpi_ut_create_pkg_state_and_pushâ€™ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> ---
->  drivers/acpi/acpica/utstate.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/acpi/acpica/utstate.c b/drivers/acpi/acpica/utstate.c
-> index 03c4c2f..0920d23 100644
-> --- a/drivers/acpi/acpica/utstate.c
-> +++ b/drivers/acpi/acpica/utstate.c
-> @@ -43,6 +43,7 @@
-> 
->  #include <acpi/acpi.h>
->  #include "accommon.h"
-> +#include "acutils.h"
-> 
->  #define _COMPONENT          ACPI_UTILITIES
->  ACPI_MODULE_NAME("utstate")
-> @@ -60,6 +61,7 @@ ACPI_MODULE_NAME("utstate")
->   * DESCRIPTION: Create a new state and push it
->   *
-> 
-> **************************************************************************
-> ****/
-> +#ifdef  ACPI_FUTURE_USAGE
->  acpi_status
->  acpi_ut_create_pkg_state_and_push(void *internal_object,
->  				  void *external_object,
-> @@ -79,6 +81,7 @@ acpi_ut_create_pkg_state_and_push(void *internal_object,
->  	acpi_ut_push_generic_state(state_list, state);
->  	return (AE_OK);
->  }
-> +#endif
-> 
-> 
-> /*************************************************************************
-> ******
->   *
+I think it can work several ways.  In my device tree, the gic is one
+level up in the device tree above the gpio.  So I don't have to
+specify interrupt-controller in the gpio node or in the bank.
+
+>
+> Second: The interrupt is registered as "GIC 37", which is a real interrupt on
+> the Socfpga. I would expect it to be marked as "GPIO 2xx" (or something in that
+> range). The interrupt from the gpiochip itself isn't registered at all ?!
+
+The bindings documentation is an example.  You will need to adjust the
+device tree bindings values to suit your board.  For example, on my
+socfpga cyclone5 board, I needed:
+
+        gpio0: gpio@ff708000 {
+                compatible = "snps,dw-apb-gpio";
+                reg = <0xff708000 0x1000>;
+                #address-cells = <1>;
+                #size-cells = <0>;
+
+                port0a: gpio-controller@0 {
+                        compatible = "snps,dw-apb-gpio-port";
+                        gpio-controller;
+                        #gpio-cells = <2>;
+                        snps,nr-gpios = <29>;
+                        reg = <0>;
+                        interrupt-controller;
+                        interrupts = <0 164 4>;
+                        #interrupt-cells = <2>;
+                        clocks = <&per_base_clk>;
+                        };
+                };
+
+(so on for gpio1 and gpio2)
+
+>
+> Third: The interrupt didn't work. But that might also be my failure. I guess/hope
+> you tested interrupts successfully?!
+
+Yes, tested and working for me, including the interrupts.
+
+>
+> (Fourth: small typo in the documentation example: "snps,nr-gpio" instead of "snps,nr-gpios")
+
+Yes, should be the plural form.
+
+Thanks for testing!
+
+Alan
+
+>
+> Regards,
+> Steffen
+>
+>
 > --
-> 1.7.9.5
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
