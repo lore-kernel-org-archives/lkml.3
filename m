@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab3LQSlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:41:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60793 "EHLO
+	id S932215Ab3LQSlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:41:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60787 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755519Ab3LQSOK (ORCPT
+	with ESMTP id S1755515Ab3LQSOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:14:10 -0500
+	Tue, 17 Dec 2013 13:14:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 021/103] inet: fix possible seqlock deadlocks
-Date: Tue, 17 Dec 2013 18:12:10 +0000
-Message-Id: <1387304012-23805-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 020/103] net: clamp ->msg_namelen instead of returning an error
+Date: Tue, 17 Dec 2013 18:12:09 +0000
+Message-Id: <1387304012-23805-21-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -29,70 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit f1d8cba61c3c4b1eb88e507249c4cb8d635d9a76 upstream.
+commit db31c55a6fb245fdbb752a2ca4aefec89afabb06 upstream.
 
-In commit c9e9042994d3 ("ipv4: fix possible seqlock deadlock") I left
-another places where IP_INC_STATS_BH() were improperly used.
+If kmsg->msg_namelen > sizeof(struct sockaddr_storage) then in the
+original code that would lead to memory corruption in the kernel if you
+had audit configured.  If you didn't have audit configured it was
+harmless.
 
-udp_sendmsg(), ping_v4_sendmsg() and tcp_v4_connect() are called from
-process context, not from softirq context.
+There are some programs such as beta versions of Ruby which use too
+large of a buffer and returning an error code breaks them.  We should
+clamp the ->msg_namelen value instead.
 
-This was detected by lockdep seqlock support.
-
-Reported-by: jongman heo <jongman.heo@samsung.com>
-Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
-Fixes: c319b4d76b9e ("net: ipv4: add IPPROTO_ICMP socket kind")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Fixes: 1661bf364ae9 ("net: heap overflow in __audit_sockaddr()")
+Reported-by: Eric Wong <normalperson@yhbt.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Tested-by: Eric Wong <normalperson@yhbt.net>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/ping.c     | 2 +-
- net/ipv4/tcp_ipv4.c | 2 +-
- net/ipv4/udp.c      | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ net/compat.c | 2 +-
+ net/socket.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-index 7207980..80c0847 100644
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -575,7 +575,7 @@ static int ping_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		err = PTR_ERR(rt);
- 		rt = NULL;
- 		if (err == -ENETUNREACH)
--			IP_INC_STATS_BH(net, IPSTATS_MIB_OUTNOROUTES);
-+			IP_INC_STATS(net, IPSTATS_MIB_OUTNOROUTES);
- 		goto out;
- 	}
- 
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index f374da4..03016d8 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -184,7 +184,7 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
- 	if (IS_ERR(rt)) {
- 		err = PTR_ERR(rt);
- 		if (err == -ENETUNREACH)
--			IP_INC_STATS_BH(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
-+			IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
- 		return err;
- 	}
- 
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index fb9ebe9..2598686 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -941,7 +941,7 @@ int udp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 			err = PTR_ERR(rt);
- 			rt = NULL;
- 			if (err == -ENETUNREACH)
--				IP_INC_STATS_BH(net, IPSTATS_MIB_OUTNOROUTES);
-+				IP_INC_STATS(net, IPSTATS_MIB_OUTNOROUTES);
- 			goto out;
- 		}
+diff --git a/net/compat.c b/net/compat.c
+index b4afcb4..1d223d5 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -72,7 +72,7 @@ int get_compat_msghdr(struct msghdr *kmsg, struct compat_msghdr __user *umsg)
+ 	    __get_user(kmsg->msg_flags, &umsg->msg_flags))
+ 		return -EFAULT;
+ 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
+-		return -EINVAL;
++		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
+ 	kmsg->msg_name = compat_ptr(tmp1);
+ 	kmsg->msg_iov = compat_ptr(tmp2);
+ 	kmsg->msg_control = compat_ptr(tmp3);
+diff --git a/net/socket.c b/net/socket.c
+index 5febb56..b04050a 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1907,7 +1907,7 @@ static int copy_msghdr_from_user(struct msghdr *kmsg,
+ 	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
+ 		return -EFAULT;
+ 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
+-		return -EINVAL;
++		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
+ 	return 0;
+ }
  
 -- 
 1.8.3.2
