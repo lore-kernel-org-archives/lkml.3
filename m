@@ -1,179 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab3LQSGc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:06:32 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:46033 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361Ab3LQSGa (ORCPT
+	id S1755234Ab3LQSLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:11:06 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:59360 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361Ab3LQSLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:06:30 -0500
-Date: Tue, 17 Dec 2013 12:57:42 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Panella <stefano.panella@citrix.com>, x86@kernel.org,
-        bhelgaas@google.com, joro@8bytes.org, iommu@lists.linux-foundation.org,
-        dwmw2@infradead.org, shuah.khan@hp.com, akpm@linux-foundation.org
-Cc: gregkh@linuxfoundation.org, maarten.lankhorst@canonical.com,
-        mingo@kernel.org, stefano.stabellini@eu.citrix.com,
-        zoltan.kiss@citrix.com, joe@perches.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xen.org
-Subject: Re: [RFC] dma-mapping: dma_alloc_coherent_mask return dma_addr_t
-Message-ID: <20131217175742.GA24093@phenom.dumpdata.com>
-References: <1386691537-10319-1-git-send-email-stefano.panella@citrix.com>
+	Tue, 17 Dec 2013 13:11:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386691537-10319-1-git-send-email-stefano.panella@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+From: David Timothy Strauss <david@davidstrauss.net>
+Date: Tue, 17 Dec 2013 10:10:42 -0800
+Message-ID: <CAKz8sYWmmmdwKTKUGdoyaMD_v9_7yQydG+UNAb2r-KoO4L+6Ng@mail.gmail.com>
+Subject: NUMA, migrate/N, and tuned-adm
+To: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 04:05:37PM +0000, Stefano Panella wrote:
-> When running a 32bit kernel there are still some pci devices
-> capable of 64bit addressing (eg. sound/pci/hda/hda_intel.c)
-> 
-> If these drivers are setting:
-> 
-> dev->coherent_dma_mask = 0xFFFFFFFFFFFFFFFF
-> 
-> why dma_alloc_coherent_mask is returning unsigned long instead
-> of dma_addr_t resulting in truncation of the dma_mask to 32bit
-> if running a 32bit kernel?
+Our system gets storms of migrate/N (and sometimes kswapd) tasks from
+the kernel, based on what we've seen in top [1]. This issue is unique
+to our hardware application servers; we run hundreds of application
+servers on Xen virtual hardware without this issue and the same
+kernel. We also have no issues with identical kernels and hardware
+servers while running databases.
 
-Ooops.
-> 
-> There are some examples where the dma_alloc_coherent running
-> 32bit kernel can return a machine address bigger than 32bit.
-> 
-> This can be true in particular if running  the 32bit kernel as a
-> pv dom0 under the Xen Hypervisor or PAE on bare metal.
-> 
-> In both cases it would be good if dma_alloc_coherent could return
-> a machine address bigger than 32bit so more constrained 32bit address
-> space could be used by devices not 64bit capable.
-> 
-> I am proposing this patch to eliminate this limitation but I agree
-> that there might be some more reasons to do it in the current way of
-> which I am not awere.
-> 
-> This is why I am just asking for a RFC.
-> 
-> The current patch apply to v3.13-rc3-74-g6c843f5
+System specs:
+ * Fedora 19 with the 3.11.10-200.fc19.x86_64 kernel (just the stock RPM)
+ * Bare-metal servers with 128GB RAM split between two NUMA regions,
+each region with one hex-core processor
+ * More than 700 processes, a couple hundred of which are active
+fairly frequently. The systems were at 7000 processes, but we've
+dropped it while we dive into this issue.
+ * Many of the processes are short-lived. The long-lived ones
+experience spikes in CPU and memory usage while processing requests.
 
-This looks to be already done for other parts of the kernel, see:
-commit 364230b9952143eb2062dc071e919fb751540ae8
-Author: Rob Herring <rob.herring@calxeda.com>
-Date:   Thu Aug 1 15:29:29 2013 -0500
+Here's what we've tried, to no avail:
+ * tuned-adm on latency-performance and virtual-host profiles; this
+places the system on the deadline scheduler, but this problem occurred
+on the default one too
+ * kernel.sched_migration_cost_ns=5000000 (which tuned will do for
+those profiles in v3.3/Fedora 20)
+ * numad to balance between regions
+ * Global use of sched_relax_domain_level=1 and sched_relax_domain_level=2
+ * Splitting the system with cpuset into management tasks (6 virtual
+cores) and workload tasks (18 virtual cores) with
+sched_relax_domain_level=2. This is based on recommendations for NUMA
+systems in the cpuset man page.
 
-    ARM: use phys_addr_t for DMA zone sizes
-    
-commit 6d7d5da7d75c6df676c8b72d32b02ff024438f0c
-Author: Magnus Damm <damm@opensource.se>
-Date:   Tue Oct 22 17:59:54 2013 +0100
+Here's what we've used for analysis:
+ * powertop
+ * top/htop
+ * perf record -a -g
+ * SystemTap with code to print out migrations occurring
+ * numatop
 
-    ARM: 7864/1: Handle 64-bit memory in case of 32-bit phys_addr_t
+[1] https://gist.github.com/davidstrauss/3ff0b29c4d3766bedd49
 
-mmit dbd3fc3345390a989a033427aa915a0dfb62149f
-Author: Bjorn Helgaas <bhelgaas@google.com>
-Date:   Mon Dec 10 11:24:42 2012 -0700
+David Strauss
+Pantheon Systems
+Fedora Server Working Group
 
-    PCI: Use phys_addr_t for physical ROM address
-
-commit 7e6735c3578e76c270a2797225a4214176ba13ef
-Author: Cyril Chemparathy <cyril@ti.com>
-Date:   Wed Sep 12 14:05:58 2012 -0400
-
-    /dev/mem: use phys_addr_t for physical addresses
-
-Where the phys_addr_t is used instead of unsigned long. This is
-doing it for the dma_addr_t.
-
-So I think this is the correct thing to do. We should CC more
-people thought.
-> 
-> Signed-off-by: Stefano Panella <stefano.panella@citrix.com>
-> ---
->  Documentation/DMA-API.txt          |    5 ++---
->  arch/x86/include/asm/dma-mapping.h |    8 ++++----
->  arch/x86/kernel/pci-dma.c          |    2 +-
->  drivers/xen/swiotlb-xen.c          |    6 +++---
->  4 files changed, 10 insertions(+), 11 deletions(-)
-> 
-> diff --git a/Documentation/DMA-API.txt b/Documentation/DMA-API.txt
-> index e865279..483458b 100644
-> --- a/Documentation/DMA-API.txt
-> +++ b/Documentation/DMA-API.txt
-> @@ -33,9 +33,8 @@ to make sure to flush the processor's write buffers before telling
->  devices to read that memory.)
->  
->  This routine allocates a region of <size> bytes of consistent memory.
-> -It also returns a <dma_handle> which may be cast to an unsigned
-> -integer the same width as the bus and used as the physical address
-> -base of the region.
-> +It also returns a <dma_handle> which should be used as the physical 
-> +address base of the region.
->  
->  Returns: a pointer to the allocated region (in the processor's virtual
->  address space) or NULL if the allocation failed.
-> diff --git a/arch/x86/include/asm/dma-mapping.h b/arch/x86/include/asm/dma-mapping.h
-> index 808dae6..6357810 100644
-> --- a/arch/x86/include/asm/dma-mapping.h
-> +++ b/arch/x86/include/asm/dma-mapping.h
-> @@ -100,10 +100,10 @@ dma_cache_sync(struct device *dev, void *vaddr, size_t size,
->  	flush_write_buffers();
->  }
->  
-> -static inline unsigned long dma_alloc_coherent_mask(struct device *dev,
-> -						    gfp_t gfp)
-> +static inline dma_addr_t dma_alloc_coherent_mask(struct device *dev,
-> +						 gfp_t gfp)
->  {
-> -	unsigned long dma_mask = 0;
-> +	dma_addr_t dma_mask = 0;
->  
->  	dma_mask = dev->coherent_dma_mask;
->  	if (!dma_mask)
-> @@ -114,7 +114,7 @@ static inline unsigned long dma_alloc_coherent_mask(struct device *dev,
->  
->  static inline gfp_t dma_alloc_coherent_gfp_flags(struct device *dev, gfp_t gfp)
->  {
-> -	unsigned long dma_mask = dma_alloc_coherent_mask(dev, gfp);
-> +	dma_addr_t dma_mask = dma_alloc_coherent_mask(dev, gfp);
->  
->  	if (dma_mask <= DMA_BIT_MASK(24))
->  		gfp |= GFP_DMA;
-> diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
-> index 872079a..a061f7b 100644
-> --- a/arch/x86/kernel/pci-dma.c
-> +++ b/arch/x86/kernel/pci-dma.c
-> @@ -90,7 +90,7 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
->  				 dma_addr_t *dma_addr, gfp_t flag,
->  				 struct dma_attrs *attrs)
->  {
-> -	unsigned long dma_mask;
-> +	dma_addr_t dma_mask;
->  	struct page *page;
->  	unsigned int count = PAGE_ALIGN(size) >> PAGE_SHIFT;
->  	dma_addr_t addr;
-> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> index 1eac073..6f75599 100644
-> --- a/drivers/xen/swiotlb-xen.c
-> +++ b/drivers/xen/swiotlb-xen.c
-> @@ -54,10 +54,10 @@
->   */
->  
->  #ifndef CONFIG_X86
-> -static unsigned long dma_alloc_coherent_mask(struct device *dev,
-> -					    gfp_t gfp)
-> +static dma_addr_t dma_alloc_coherent_mask(struct device *dev,
-> +					  gfp_t gfp)
->  {
-> -	unsigned long dma_mask = 0;
-> +	dma_addr_t dma_mask = 0;
->  
->  	dma_mask = dev->coherent_dma_mask;
->  	if (!dma_mask)
-> -- 
-> 1.7.9.5
-> 
+P.S. Josh Boyer (jwb) referred me here from the Fedora kernel side.
