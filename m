@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678Ab3LQTso (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 14:48:44 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:43678 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173Ab3LQTin (ORCPT
+	id S1753240Ab3LQTt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 14:49:56 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:44618 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752676Ab3LQTtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 14:38:43 -0500
-From: Sergei Ianovich <ynvich@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Sergei Ianovich <ynvich@gmail.com>, Daniel Mack <zonque@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: [PATCH v3 04/21] ARM: dts: pxa3xx: move declaration to header
-Date: Tue, 17 Dec 2013 23:37:34 +0400
-Message-Id: <1387309071-22382-5-git-send-email-ynvich@gmail.com>
-X-Mailer: git-send-email 1.8.5.1
-In-Reply-To: <1387309071-22382-1-git-send-email-ynvich@gmail.com>
-References: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
- <1387309071-22382-1-git-send-email-ynvich@gmail.com>
+	Tue, 17 Dec 2013 14:49:52 -0500
+Date: Tue, 17 Dec 2013 11:49:46 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] qrwlock: A queue read/write lock implementation
+Message-ID: <20131217194946.GO5919@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1385147087-26588-1-git-send-email-Waiman.Long@hp.com>
+ <1385147087-26588-2-git-send-email-Waiman.Long@hp.com>
+ <20131217192128.GA15969@linux.vnet.ibm.com>
+ <CA+55aFzNSZCKnuEm+CDWUN2G4bfrN+HafX8r13NcfT2tJ4h-jw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzNSZCKnuEm+CDWUN2G4bfrN+HafX8r13NcfT2tJ4h-jw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121719-9332-0000-0000-00000286C581
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This way it will be more difficult to change the declaration in one
-place, but not the other.
+On Tue, Dec 17, 2013 at 11:27:29AM -0800, Linus Torvalds wrote:
+> On Tue, Dec 17, 2013 at 11:21 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> >
+> > Looks like xadd() is x86-specific, but this is common code.  One
+> > approach would be to do xadd() for other arches, another approach
+> > would be to make .rw be an atomic_t rather than a u32.  Making it
+> > be atomic_t is probably easiest.  (The cmpxchg()s would then need
+> > to be atomic_cmpxchg().)
+> 
+> Note that "xadd()" has different semantics from "atomic_add_return()".
 
-In addition, the change allows to use the binding for pxa-gpio on
-other PXA CPUs.
+Gah, that one always trips me up.  :-/
 
-Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
-CC: Daniel Mack <zonque@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>
----
-   v2..v3
-   * no changes
+> xadd() returns the original value, while atomic_add_return() returns
+> the result of the addition.
+> 
+> In this case, we seem to want the xadd() semantics. I guess we can use
+> "atomic_add_return(val,&atomic)-val" and just assume that the compiler
+> gets it right (with the addition and the subtraction cancelling out).
 
-   v1..v2
-   * drop #ifdef in header file
-   * number changed from 6 to 4 (dropped patches)
+That seems like it would work well.
 
- arch/arm/mach-pxa/include/mach/irqs.h | 2 ++
- arch/arm/mach-pxa/pxa3xx.c            | 2 --
- 2 files changed, 2 insertions(+), 2 deletions(-)
+> Or maybe we should have a "atomic_add_return_original()" with xadd
+> semantics?
 
-diff --git a/arch/arm/mach-pxa/include/mach/irqs.h b/arch/arm/mach-pxa/include/mach/irqs.h
-index 48c2fd8..732315d 100644
---- a/arch/arm/mach-pxa/include/mach/irqs.h
-+++ b/arch/arm/mach-pxa/include/mach/irqs.h
-@@ -113,4 +113,6 @@ void ichp_handle_irq(struct pt_regs *);
- void pxa_init_irq(int irq_nr, int (*set_wake)(struct irq_data *, unsigned int));
- #endif
- 
-+extern void __init pxa_dt_irq_init(int (*fn)(struct irq_data *, unsigned int));
-+
- #endif /* __ASM_MACH_IRQS_H */
-diff --git a/arch/arm/mach-pxa/pxa3xx.c b/arch/arm/mach-pxa/pxa3xx.c
-index 87011f3..2397dec 100644
---- a/arch/arm/mach-pxa/pxa3xx.c
-+++ b/arch/arm/mach-pxa/pxa3xx.c
-@@ -42,8 +42,6 @@
- #define PECR_IE(n)	((1 << ((n) * 2)) << 28)
- #define PECR_IS(n)	((1 << ((n) * 2)) << 29)
- 
--extern void __init pxa_dt_irq_init(int (*fn)(struct irq_data *, unsigned int));
--
- static DEFINE_PXA3_CKEN(pxa3xx_ffuart, FFUART, 14857000, 1);
- static DEFINE_PXA3_CKEN(pxa3xx_btuart, BTUART, 14857000, 1);
- static DEFINE_PXA3_CKEN(pxa3xx_stuart, STUART, 14857000, 1);
--- 
-1.8.4.2
+My lazy side prefers the autocancellation.  ;-)  But yes, there are a
+number of architectures (including ARM and Power) where the compiler
+would have to be very tricky to reach into an asm to do the cancellation.
+
+So perhaps a generic atomic_add_return_original() that is defined in
+terms of atomic_add_return() as you say above, allowing architectures
+to override with more-efficient implementations?  The same could be done
+for add_smp() and xadd(), for that matter.
+
+							Thanx, Paul
 
