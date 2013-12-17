@@ -1,129 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab3LQOQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 09:16:29 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:37452 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753989Ab3LQOQ1 (ORCPT
+	id S1753784Ab3LQOTA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 09:19:00 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51592 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab3LQOS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 09:16:27 -0500
-Date: Tue, 17 Dec 2013 09:16:24 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Mike Galbraith <bitbucket@online.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.12.5-rt6
-Message-ID: <20131217091624.65be757c@gandalf.local.home>
-In-Reply-To: <20131217124248.GA21694@linutronix.de>
-References: <20131216091431.GA13796@linutronix.de>
-	<1387264591.5340.23.camel@marge.simpson.net>
-	<20131217063156.6ac3bfed@gandalf.local.home>
-	<20131217124248.GA21694@linutronix.de>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Tue, 17 Dec 2013 09:18:59 -0500
+Date: Tue, 17 Dec 2013 09:18:48 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-sctp@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2 1/2] printk: Add a pr_warn_deprecated macro
+Message-ID: <20131217141848.GA8633@hmsreliant.think-freely.org>
+References: <1387205049-22752-1-git-send-email-nhorman@tuxdriver.com>
+ <1387213605-27206-1-git-send-email-nhorman@tuxdriver.com>
+ <1387213605-27206-2-git-send-email-nhorman@tuxdriver.com>
+ <1387216201.18217.58.camel@joe-AO722>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387216201.18217.58.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Dec 2013 13:42:48 +0100
-Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
-
- 
-> >> @@ -1068,8 +1082,10 @@ unsigned long wait_task_inactive(struct
-> >>  		 * is actually now running somewhere else!
-> >>  		 */
-> >>  		while (task_running(rq, p)) {
-> >> -			if (match_state && unlikely(p->state != match_state))
-> >> +			if (match_state && unlikely(p->state != match_state)
-> >> +			    && unlikely(p->saved_state != match_state))
-> >>  				return 0;
-> >> +			}
-> >
-> >Yeah, it should just be:
-> >
-> >		if (match_state && check_task_state(p, match_state))
-> >			return 0;
+On Mon, Dec 16, 2013 at 09:50:01AM -0800, Joe Perches wrote:
+> (adding Andrew Morton to cc's)
 > 
-> Are you sure?
-
-No :-)
-
-> If the state matches we should continue as long as it runs
-> therefore I would go for !check_task_state(). The problem here was that
-
-Yeah yeah, hey, I typed it by hand, no cut and paste there. Thus, I
-dropped the '!' by accident ;-)
-
-Hey! Here's a case where cut and paste would have prevented the bug!
-
-
-> I return 0 in both cases.
+> On Mon, 2013-12-16 at 12:06 -0500, Neil Horman wrote:
+> > sctp has several points in its setsockopt path in which it issues deprecation
+> > warnings.  It seems like it might be handy to macrotize such a warning so other
+> > subsystems can use it easily
+> []
+> > diff --git a/include/linux/printk.h b/include/linux/printk.h
+> []
+> > @@ -336,6 +336,9 @@ extern asmlinkage void dump_stack(void) __cold;
+> >  	printk_ratelimited(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
+> >  /* no pr_cont_ratelimited, don't do that... */
+> >  
+> > +#define pr_warn_deprecated(fmt, ...)					\
+> > +	pr_warn_ratelimited("Deprecated: " fmt, ##__VA_ARGS__)
 > 
-> >Also, looking at check_task_state():
-> >
-> >+static bool check_task_state(struct task_struct *p, long match_state)
-> >+{
-> >+       bool match = false;
-> >+
-> >+       raw_spin_lock_irq(&p->pi_lock);
-> >+       if (p->state == match_state)
-> >+               match = true;
-> >+       else if (p->saved_state == match_state)
-> >+               match = true;
-> >
-> >Why the if () else if()? and not just:
-> >
-> >	if (p->state == match_state || p->save_state == match_state)
-> >		match = true;
-> >?
-> >
-> >The else if makes me think there's something missing.
+> Continuing the thread from:
+> http://patchwork.ozlabs.org/patch/301738/
 > 
-> Okay I can do this. But regarding the check_task_state part, I think I
-> should go with:
+> Making this a global kernel #define is different than
+> using it in your subsystem.
 > 
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1076,9 +1076,7 @@ static bool check_task_state(struct task_struct *p, long match_state)
->  	bool match = false;
->  
->  	raw_spin_lock_irq(&p->pi_lock);
-> -	if (p->state == match_state)
-> -		match = true;
-> -	else if (p->saved_state == match_state)
-> +	if (p->state == match_state || p->saved_state == match_state)
->  		match = true;
->  	raw_spin_unlock_irq(&p->pi_lock);
->  
-> @@ -1129,11 +1127,8 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
->  		 * is actually now running somewhere else!
->  		 */
->  		while (task_running(rq, p)) {
-> -			if (match_state) {
-> -				if (!unlikely(check_task_state(p, match_state)))
-> -					return 0;
-> +			if (match_state && !check_task_state(p, match_state))
-
-Ah, it was that "!unlikely(" that caused me to miss the '!'. That
-should have been: likely(!check_task_state()). But anyway, I rather
-just keep what you wrote and drop the unlikely altogether.
-
-
->  				return 0;
-> -			}
->  			cpu_relax();
->  		}
->  
+> I think this is very analogous to the FW_INFO/FW_WARN
+> uses and maybe should just have a #define for the
+> string "deprecated:" inserted as a constant.
 > 
->  Any objections?
+> ie: just using
 > 
+> 	pr_warn_once(DEPRECATED fmt, args...)
+> or
+> 	pr_warn_ratelimited(DEPRECATED fmt, args...)
+> 
+The define is a nice idea, but I'm not sure about the use of the once variant.
+Multiple users may use multiple programs that trigger these deprecation
+warnings, and we should probably warn on each of them to avoid masking the
+others.
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+I'll work up a new patch set
+Neil
 
--- Steve
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
