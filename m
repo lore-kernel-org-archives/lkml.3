@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab3LQPwF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:52:05 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47984 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488Ab3LQPwB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:52:01 -0500
-Date: Tue, 17 Dec 2013 16:51:44 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Chris Redpath <chris.redpath@arm.com>
-Cc: "pjt@google.com" <pjt@google.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bsegall@google.com" <bsegall@google.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 2/2] sched: update runqueue clock before migrations away
-Message-ID: <20131217155144.GQ21999@twins.programming.kicks-ass.net>
-References: <1386593950-26475-1-git-send-email-chris.redpath@arm.com>
- <1386593950-26475-3-git-send-email-chris.redpath@arm.com>
- <20131210114825.GF12849@twins.programming.kicks-ass.net>
- <52A71605.5090509@arm.com>
- <20131210151428.GH12849@twins.programming.kicks-ass.net>
- <52A7397F.4000806@arm.com>
- <20131212182414.GF2480@laptop.programming.kicks-ass.net>
- <52B05B09.5090807@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B05B09.5090807@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1755196Ab3LQPvb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 10:51:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32324 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755169Ab3LQPv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 10:51:26 -0500
+From: Mark Salter <msalter@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Salter <msalter@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org,
+        linux-mips@linux-mips.org, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org
+Subject: [PATCH v2 00/10] Kconfig: cleanup SERIO_I8042 dependencies
+Date: Tue, 17 Dec 2013 10:48:43 -0500
+Message-Id: <1387295333-24684-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 02:09:13PM +0000, Chris Redpath wrote:
-> On 12/12/13 18:24, Peter Zijlstra wrote:
-> >Would pre_schedule_idle() -> rq_last_tick_reset() -> rq->last_sched_tick
-> >be useful?
-> >
-> >I suppose we could easily lift that to NO_HZ_COMMON.
-> >
-> 
-> Many thanks for the tip Peter, I have tried this out and it does provide
-> enough information to be able to correct the problem. The new version
-> doesn't update the rq, just carries the extra unaccounted time (estimated
-> from the jiffies) over to be processed during enqueue.
-> 
-> However before I send a new patch set I have a question about the existing
-> behavior. Ben, you may already know the answer to this?
-> 
-> During a wake migration we call __synchronize_entity_decay in
-> migrate_task_rq_fair, which will decay avg.runnable_avg_sum. We also record
-> the amount of periods we decayed for as a negative number in
-> avg.decay_count.
-> 
-> We then enqueue the task on its target runqueue, and again we decay the load
-> by the number of periods it has been off-rq.
-> 
-> if (unlikely(se->avg.decay_count <= 0)) {
-> 	se->avg.last_runnable_update = rq_clock_task(rq_of(cfs_rq));
-> 	if (se->avg.decay_count) {
-> 		se->avg.last_runnable_update -= (-se->avg.decay_count)
-> 							<< 20;
-> >>>		update_entity_load_avg(se, 0);
-> 
-> Am I misunderstanding how this is supposed to work or have we been always
-> double-accounting sleep time for wake migrations?
+This patch series removes the messy dependencies from SERIO_I8042
+by having it depend on one variable (ARCH_MAY_HAVE_PC_SERIO) and
+having architectures which need it select that variable in
+arch/*/Kconfig.
 
-The way I understood this is that on migrate we sync from dequeue to
-migrate point, and subtract the 'current (at point of migrate)' blocked
-load from the src rq, and add it to the dst rq.
+New architectures are unlikely to need SERIO_I8042, so this avoids
+having an ever growing list of architectures to exclude. If an
+architecture without i8042 support isn't excluded through the
+dependency list for SERIO_I8042 or through explicit disabling in
+a config, it will likely panic on boot with something similar to
+this (from arm64):
 
-Then on enqueue we sync again, but now from migrate to enqueue.
+[   27.426181] [<ffffffc000403b1c>] i8042_flush+0x88/0x10c
+[   27.426251] [<ffffffc00084cc2c>] i8042_init+0x58/0xe8
+[   27.426320] [<ffffffc000080bec>] do_one_initcall+0xc4/0x14c
+[   27.426404] [<ffffffc000820970>] kernel_init_freeable+0x1a4/0x244
+[   27.426480] [<ffffffc0005a894c>] kernel_init+0x18/0x148
+[   27.426561] Code: d2800c82 f2bf7c02 f2dff7e2 f2ffffe2 (39400042) 
+[   27.426789] ---[ end trace ac076843cf0f383e ]---
+[   27.426875] Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+
+This is v2 of the patch series. Changes from version 1:
+
+  o Added acks. arm, ia64, and sh are only ones without acks.
+  o Moved select of ARCH_MIGHT_HAVE_PC_SERIO to board-specific
+    Kconfigs for arm and sh.
+    
+A tree with these patches is at:
+
+   git://github.com/mosalter/linux.git (serio-i8042-v2 branch)
+
+
+Mark Salter (10):
+  alpha: select ARCH_MIGHT_HAVE_PC_SERIO
+  arm: select ARCH_MIGHT_HAVE_PC_SERIO
+  ia64: select ARCH_MIGHT_HAVE_PC_SERIO
+  mips: select ARCH_MIGHT_HAVE_PC_SERIO
+  powerpc: select ARCH_MIGHT_HAVE_PC_SERIO
+  sh: select ARCH_MIGHT_HAVE_PC_SERIO for SH_CAYMAN
+  sparc: select ARCH_MIGHT_HAVE_PC_SERIO
+  unicore32: select ARCH_MIGHT_HAVE_PC_SERIO
+  x86: select ARCH_MIGHT_HAVE_PC_SERIO
+  Kconfig: cleanup SERIO_I8042 dependencies
+
+ arch/alpha/Kconfig               |  1 +
+ arch/arm/mach-footbridge/Kconfig |  1 +
+ arch/ia64/Kconfig                |  1 +
+ arch/mips/Kconfig                |  1 +
+ arch/powerpc/Kconfig             |  1 +
+ arch/sh/boards/Kconfig           |  1 +
+ arch/sparc/Kconfig               |  1 +
+ arch/unicore32/Kconfig           |  1 +
+ arch/x86/Kconfig                 |  1 +
+ drivers/input/serio/Kconfig      | 11 ++++++++---
+ 10 files changed, 17 insertions(+), 3 deletions(-)
+
+-- 
+1.8.3.1
+
