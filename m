@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab3LQBLe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 20:11:34 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:43204 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682Ab3LQBLd convert rfc822-to-8bit (ORCPT
+	id S1752286Ab3LQBNZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 20:13:25 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:53855 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab3LQBNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 20:11:33 -0500
-Date: Mon, 16 Dec 2013 20:11:27 -0500 (EST)
-Message-Id: <20131216.201127.533912619440960142.davem@davemloft.net>
-To: speiro@ai2.upv.es
-Cc: linux-kernel@vger.kernel.org, security@kernel.org,
-        linux-hams@vger.kernel.org, netdev@vger.kernel.org, jpr@f6fbb.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] hamradio/yam: fix info leak in ioctl
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1386920767-27962-1-git-send-email-speiro@ai2.upv.es>
-References: <1386920767-27962-1-git-send-email-speiro@ai2.upv.es>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 16 Dec 2013 17:11:32 -0800 (PST)
+	Mon, 16 Dec 2013 20:13:24 -0500
+Message-ID: <52AFA3BB.5070901@huawei.com>
+Date: Tue, 17 Dec 2013 09:07:07 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Mel Gorman <mgorman@suse.de>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, qiuxishi <qiuxishi@huawei.com>,
+        Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: [PATCH] mm/hugetlb: check for pte NULL pointer in __page_check_address()
+References: <52AEC8FD.6050200@huawei.com> <20131216142513.784A8E0090@blue.fi.intel.com>
+In-Reply-To: <20131216142513.784A8E0090@blue.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Salva Peiró <speiro@ai2.upv.es>
-Date: Fri, 13 Dec 2013 08:46:07 +0100
+Hi Kirill,
 
-> The yam_ioctl() code fails to initialise the cmd field
-> of the struct yamdrv_ioctl_cfg. Add an explicit memset(0)
-> before filling the structure to avoid the 4-byte info leak.
+On 2013/12/16 22:25, Kirill A. Shutemov wrote:
+
+> Jianguo Wu wrote:
+>> In __page_check_address(), if address's pud is not present,
+>> huge_pte_offset() will return NULL, we should check the return value.
+>>
+>> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
 > 
-> Signed-off-by: Salva Peiró <speiro@ai2.upv.es>
+> Looks okay to me.
+> 
+> Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> 
+> Have you triggered a crash there? Or just spotted by reading the code?
+> 
 
-Put this into the SIOCYAMGCFG case statement, which is where the
-problem actually exists.
+
+By reading the code.
+
+Thanks,
+Jianguo Wu
+
