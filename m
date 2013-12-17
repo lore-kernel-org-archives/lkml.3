@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336Ab3LQBWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 20:22:51 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:36772 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132Ab3LQBWu (ORCPT
+	id S1752535Ab3LQBYq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 20:24:46 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:38760 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752434Ab3LQBYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 20:22:50 -0500
-Message-ID: <52AFA766.9070804@linaro.org>
-Date: Mon, 16 Dec 2013 17:22:46 -0800
-From: John Stultz <john.stultz@linaro.org>
+	Mon, 16 Dec 2013 20:24:45 -0500
+Message-ID: <52AFA7CF.3050800@hurleysoftware.com>
+Date: Mon, 16 Dec 2013 20:24:31 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [RFC][PATCH 3/3] staging: ion: Avoid using rt_mutexes directly.
-References: <1387229564-19517-1-git-send-email-john.stultz@linaro.org>	<1387229564-19517-4-git-send-email-john.stultz@linaro.org> <CAMbhsRQOWKWBjQJWndr57Cz_Xf0EeU8jNMJOyiOEBHFRf=Tt=Q@mail.gmail.com>
-In-Reply-To: <CAMbhsRQOWKWBjQJWndr57Cz_Xf0EeU8jNMJOyiOEBHFRf=Tt=Q@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Stas Sergeev <stsp@list.ru>,
+        Margarita Manterola <margamanterola@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Caylan Van Larson <i@caylan.net>,
+        Maximiliano Curia <maxy@gnuservers.com.ar>,
+        Pavel Machek <pavel@ucw.cz>,
+        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+Subject: Re: [PATCH v4] n_tty: Fix buffer overruns with larger-than-4k pastes
+References: <52A79030.9090403@hurleysoftware.com> <1386713522-6959-1-git-send-email-peter@hurleysoftware.com> <20131217005719.GA26381@kroah.com>
+In-Reply-To: <20131217005719.GA26381@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2013 04:17 PM, Colin Cross wrote:
-> The lock is only used to protect the heap's free_list and
-> free_list_size members, and is not held for any long or sleeping
-> operations.  Converting to a spinlock should prevent priority
-> inversion without using the rt_mutex.  I'd also rename it to free_lock
-> to so it doesn't get used as a general heap lock.
+On 12/16/2013 07:57 PM, Greg Kroah-Hartman wrote:
+> On Tue, Dec 10, 2013 at 05:12:02PM -0500, Peter Hurley wrote:
+>> readline() inadvertently triggers an error recovery path when
+>> pastes larger than 4k overrun the line discipline buffer. The
+>> error recovery path discards input when the line discipline buffer
+>> is full and operating in canonical mode and no newline has been
+>> received. Because readline() changes the termios to non-canonical
+>> mode to read the line char-by-char, the line discipline buffer
+>> can become full, and then when readline() restores termios back
+>> to canonical mode for the caller, the now-full line discipline
+>> buffer triggers the error recovery.
+>>
+>> When changing termios from non-canon to canon mode and the read
+>> buffer contains data, simulate an EOF push _without_ the
+>> DISABLED_CHAR in the read buffer.
+>>
+>> Importantly for the readline() problem, the termios can be
+>> changed back to non-canonical mode without changes to the read
+>> buffer occurring; ie., as if the previous termios change had not
+>> happened (as long as no intervening read took place).
+>>
+>> Preserve existing userspace behavior which allows '\0's already
+>> received in non-canon mode to be read as '\0's in canon mode
+>> (rather than trigger add'l EOF pushes or an actual EOF).
+>>
+>> Patch based on original proposal and discussion here
+>> https://bugzilla.kernel.org/show_bug.cgi?id=55991
+>> by Stas Sergeev <stsp@users.sourceforge.net>
+>>
+>> Reported-by: Margarita Manterola <margamanterola@gmail.com>
+>> Cc: Maximiliano Curia <maxy@gnuservers.com.ar>
+>> Cc: Pavel Machek <pavel@ucw.cz>
+>> Cc: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+>> Acked-by: Stas Sergeev <stsp@users.sourceforge.net>
+>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+>> ---
+>
+> Is this a 3.13-final thing, or can it wait for 3.14-rc1?
 
-Hrm.. So at least a trivial conversion to use spinlocks doesn't quite
-work out, as we call ion_buffer_destroy() in ion_heap_freelist_drain()
-while holding the lock, and that calls all sorts of not safe stuff.
+Definitely not 3.13 at this point -- it should go to -next.
 
-I'll spend some more time looking at it later tonight, but let me know
-if you have an approach for this case in mind.
-
-thanks
--john
+Regards,
+Peter Hurley
 
