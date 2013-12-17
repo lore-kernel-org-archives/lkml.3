@@ -1,43 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab3LQSCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:02:40 -0500
-Received: from vs16.mail.saunalahti.fi ([62.142.117.197]:59531 "EHLO
-	vs16.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753869Ab3LQSCj convert rfc822-to-8bit (ORCPT
+	id S1755305Ab3LQSDJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:03:09 -0500
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:40802 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755224Ab3LQSDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:02:39 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
-Subject: Re: [PATCH] scsi: int overflow in st_ioctl()
-From: =?windows-1252?Q?=22Kai_M=E4kisara_=28Kolumbus=29=22?= 
-	<kai.makisara@kolumbus.fi>
-In-Reply-To: <1387291383-25126-1-git-send-email-xuyongjiande@gmail.com>
-Date: Tue, 17 Dec 2013 19:53:52 +0200
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F1B567DD-C322-4BA7-BFEA-E7C4B1F82697@kolumbus.fi>
-References: <1387291383-25126-1-git-send-email-xuyongjiande@gmail.com>
-To: xuyongjiande@gmail.com
-X-Mailer: Apple Mail (2.1822)
+	Tue, 17 Dec 2013 13:03:07 -0500
+From: bsegall@google.com
+To: Chris Redpath <chris.redpath@arm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, "pjt\@google.com" <pjt@google.com>,
+        "mingo\@redhat.com" <mingo@redhat.com>,
+        "alex.shi\@linaro.org" <alex.shi@linaro.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 2/2] sched: update runqueue clock before migrations away
+References: <1386593950-26475-1-git-send-email-chris.redpath@arm.com>
+	<1386593950-26475-3-git-send-email-chris.redpath@arm.com>
+	<20131210114825.GF12849@twins.programming.kicks-ass.net>
+	<52A71605.5090509@arm.com>
+	<20131210151428.GH12849@twins.programming.kicks-ass.net>
+	<52A7397F.4000806@arm.com>
+	<20131212182414.GF2480@laptop.programming.kicks-ass.net>
+	<52B05B09.5090807@arm.com>
+Date: Tue, 17 Dec 2013 10:03:01 -0800
+In-Reply-To: <52B05B09.5090807@arm.com> (Chris Redpath's message of "Tue, 17
+	Dec 2013 14:09:13 +0000")
+Message-ID: <xm26vbynmk2y.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.12.2013, at 16.43, Yongjian Xu xuyongjiande@gmail.com wrote:
+Chris Redpath <chris.redpath@arm.com> writes:
 
-> From: Yongjian Xu <xuyongjiande@gmail.com>
-> 
-> mtc.mt_count comes from user-space.
-> int overflow may occur:
-> mtc.mt_count++;
-> mtc.mt_count—;
+> On 12/12/13 18:24, Peter Zijlstra wrote:
+>> Would pre_schedule_idle() -> rq_last_tick_reset() -> rq->last_sched_tick
+>> be useful?
+>>
+>> I suppose we could easily lift that to NO_HZ_COMMON.
+>>
+>
+> Many thanks for the tip Peter, I have tried this out and it does provide enough
+> information to be able to correct the problem. The new version doesn't update
+> the rq, just carries the extra unaccounted time (estimated from the jiffies)
+> over to be processed during enqueue.
+>
+> However before I send a new patch set I have a question about the existing
+> behavior. Ben, you may already know the answer to this?
+>
+> During a wake migration we call __synchronize_entity_decay in
+> migrate_task_rq_fair, which will decay avg.runnable_avg_sum. We also record the
+> amount of periods we decayed for as a negative number in avg.decay_count.
+>
+> We then enqueue the task on its target runqueue, and again we decay the load by
+> the number of periods it has been off-rq.
+>
+> if (unlikely(se->avg.decay_count <= 0)) {
+> 	se->avg.last_runnable_update = rq_clock_task(rq_of(cfs_rq));
+> 	if (se->avg.decay_count) {
+> 		se->avg.last_runnable_update -= (-se->avg.decay_count)
+> 							<< 20;
+>>>>		update_entity_load_avg(se, 0);
+>
+> Am I misunderstanding how this is supposed to work or have we been always
+> double-accounting sleep time for wake migrations?
 
-I agree that this is a problem. However, it seems that there is also another problem: the SPACE command uses a 24-bit count field and this overflows far below INT_MAX. Should the count in MTFSF etc. be limited to (2<<24-2)? This would make the checks you suggest unnecessary. (-2 so that the behavior does not depend on whether we are at file mark or not.)
+__synchronize_entity_decay will decay load_avg_contrib in order to
+figure out how much to remove from old_cfs_rq->blocked_load.
+update_entity_load_avg will update the underlying runnable_avg_sum/period that
+is used to update load_avg_contrib.
 
-I am a bit hesitant with this suggestion because someone may use count INT_MAX to space to the end of the tape. This probably succeeds now but after the fix it would return an error.
-
-Thanks,
-Kai
-
+(Normally we update runnable_avg_sum, which updates load_avg_contrib via
+__update_entity_load_avg_contrib. Here we go in the reverse direction
+because we don't hold the right rq locks at the right times.)
