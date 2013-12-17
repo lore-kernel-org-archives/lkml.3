@@ -1,146 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab3LQXYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 18:24:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39442 "EHLO mx2.suse.de"
+	id S1752110Ab3LQXZk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 18:25:40 -0500
+Received: from ring0.de ([91.143.88.219]:51482 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122Ab3LQXYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 18:24:24 -0500
-Date: Tue, 17 Dec 2013 23:24:19 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/7] mm: page_alloc: Make zone distribution page aging
- policy configurable
-Message-ID: <20131217232419.GM11295@suse.de>
-References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
- <1386943807-29601-6-git-send-email-mgorman@suse.de>
- <20131216204215.GA21724@cmpxchg.org>
- <20131217152954.GA24067@suse.de>
- <20131217155435.GE21724@cmpxchg.org>
- <20131217161420.GG11295@suse.de>
- <20131217174302.GF21724@cmpxchg.org>
- <20131217212216.GK11295@suse.de>
- <20131217225716.GJ21724@cmpxchg.org>
+	id S1751016Ab3LQXZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 18:25:37 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Wed, 18 Dec 2013 00:25:27 +0100
+From: Sebastian Reichel <sre@ring0.de>
+To: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, "pavel@ucw.cz" <pavel@ucw.cz>
+Subject: Re: Re: [RFCv4 06/11] misc: Introduce Nokia CMT driver
+Message-ID: <20131217232525.GA12152@earth.universe>
+Mail-Followup-To: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+	Linus Walleij <linus.walleij@linaro.org>,
+	Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+	Carlos Chinea <cch.devel@gmail.com>,
+	Tony Lindgren <tony@atomide.com>,
+	Grant Likely <grant.likely@linaro.org>,
+	Rob Herring <rob.herring@calxeda.com>,
+	Pawel Moll <pawel.moll@arm.com>,
+	Mark Rutland <mark.rutland@arm.com>,
+	Stephen Warren <swarren@wwwdotorg.org>,
+	Ian Campbell <ijc+devicetree@hellion.org.uk>,
+	Rob Landley <rob@landley.net>,
+	=?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Linux-OMAP <linux-omap@vger.kernel.org>,
+	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+	=?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= <freemangordon@abv.bg>,
+	Joni Lapilainen <joni.lapilainen@gmail.com>,
+	Aaro Koskinen <aaro.koskinen@iki.fi>, "pavel@ucw.cz" <pavel@ucw.cz>
+References: <1387150085-23173-1-git-send-email-sre@debian.org>
+ <1387150085-23173-7-git-send-email-sre@debian.org>
+ <CACRpkdYjjXgE_W8gq1e6z=nGMF=r-m+o2kkvrBFrEMm3o0=RwQ@mail.gmail.com>
+ <20131216121524.GA6177@earth.universe>
+ <CACRpkdbx=Ye8xo4wMkyntME45xv15DeyqV32aeCAcSaa+vDpfA@mail.gmail.com>
+ <20131216183448.GA10614@earth.universe>
+ <52B090E0.5040006@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="J2SCkAp4GZ/dPZZf"
 Content-Disposition: inline
-In-Reply-To: <20131217225716.GJ21724@cmpxchg.org>
+In-Reply-To: <52B090E0.5040006@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 05:57:16PM -0500, Johannes Weiner wrote:
-> On Tue, Dec 17, 2013 at 09:22:16PM +0000, Mel Gorman wrote:
-> > On Tue, Dec 17, 2013 at 12:43:02PM -0500, Johannes Weiner wrote:
-> > > > > > When looking at this closer I found that sysv is a weird exception. It's
-> > > > > > file-backed as far as most of the VM is concerned but looks anonymous to
-> > > > > > most applications that care. That and MAP_SHARED anonymous pages should
-> > > > > > not be treated like files but we still want tmpfs to be treated as
-> > > > > > files. Details will be in the changelog of the next series.
-> > > > > 
-> > > > > In what sense is it seen as file-backed?
-> > > > 
-> > > > sysv and anonymous pages are backed by an internal shmem mount point. In
-> > > > lots of respects, it's looks like a file and quacks like a file but I expect
-> > > > developers think of it being anonmous and chunks of the VM treats it like
-> > > > it's anonymous. tmpfs uses the same paths and they get treated similar to
-> > > > the VM as anon but users may think that tmpfs should be subject to the
-> > > > fair allocation zone policy "because they're files." It's a sufficently
-> > > > weird case that any action we take there should be deliberate. It'll be
-> > > > a bit clearer when I post the patch that special cases this.
-> > > 
-> > > The line I see here is mostly derived from performance expectations.
-> > > 
-> > > People and programs expect anon, shmem/tmpfs etc. to be fast and avoid
-> > > their reclaim at great costs, so they size this part of their workload
-> > > according to memory size and locality.  Filesystem cache (on-disk) on
-> > > the other hand is expected to be slow on the first fault and after it
-> > > has been displaced by other data, but the kernel is mostly expected to
-> > > maximize the caching effects in a predictable manner.
-> > > 
-> > 
-> > Part of their performance expectations is that memory referenced from the
-> > local node will be allocated locally. Consider NUMA-aware applications that
-> > partition their data usage appropriately and share that data between threads
-> > using processes and shared memory (some MPI implementations). They have
-> > an expectation that the memory will be local and a further expectation
-> > that it will not be reclaimed because they sized it appropriately.
-> > Automatically interleaving such memory by default will be surprising to
-> > NUMA aware applications even if NUMA-oblivious applications benefit.
-> 
-> That's exactly why I want to exclude any type of data that is
-> typically sized to memory capacity.  Are we talking past each other?
-> 
 
-No, we're not but I'm concerned that your treatment of shmem ends up
-being inconsistent. Your proposal to me has two choices
+--J2SCkAp4GZ/dPZZf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-a) leave it alone. We get proper behaviour for MAP_SHARED anonymous and
-   sysv but tmpfs is different to every other filesystem
-b) interleave shmem. tmpfs is consistent with other filesystems but
-   MAP_SHARED anonymous and sysv is surprising
+On Tue, Dec 17, 2013 at 07:58:56PM +0200, Ivajlo Dimitrov wrote:
+> >On Mon, Dec 16, 2013 at 02:31:53PM +0100, Linus Walleij wrote:
+> >>I am very reluctant in letting device trees specify exports of GPIOs
+> >>to userspace, not so much because it's Linux-specific but for
+> >>the fact that people are doing things in userspace that should not
+> >>be done in userspace.
+> >>
+> >>Last time it was proposed I asked to the specific usecase,
+> >>exactly why userspace needed this handle on a physical
+> >>GPIO line, and why it can't use another userspace interface
+> >>(example: leds, keys etc.)
+> >There are a couple of lines ("cmt_apeslpx", "cmt_rst_rq", "cmt_en",
+> >"cmt_rst", "cmt_bsi"), which are handled by ofono to do the correct
+> >power sequence for the modem. The relevant ofono code is here:
+> >
+> >https://git.kernel.org/cgit/network/ofono/ofono.git/tree/plugins/nokia-g=
+pio.c
+> >
+> >In MeeGo etc. they have a little board specific init script, which
+> >exports the gpio lines and setups some symlinks. IMHO at least the
+> >board specific stuff should be handled by the kernel, thus I added
+> >this code to the driver. I guess you prefer to move the power
+> >sequencing completly to the kernel?
+>=20
+> Don't forget there is not only ofono, but rtcom-call-ui and all the
+> telephony stack in Maemo 5 :). However, power sequencing and control
+> is specific not only to the modem model, but to the firmware version
+> the modem is running as well (afaik). IMO you can't simply move the
+> modem power/reset/sleep control to the kernel and hope for the best,
+> I am not sure there is enough documentation (if any) for this to be
+> done reliably, esp on n900 with its BB5 modem. The point is that
+> those gpios are used not only for the initial power-up, but for
+> control of the modem state and reset (if needed) during normal
+> usage. The APE reset line is an example of stuff that can't be moved
+> to the kernel without providing some interface/feedback to/from the
+> userspace IMO - what if she is dialing 112 at the moment the modem
+> decides it is too hot and wants a device reset (or whatever reason
+> there could be for a modem to request a device reset)? The same goes
+> for the APE sleep request line (cmt_apeslpx) - based on what should
+> the kernel decide whether to put the modem in sleep?
+>=20
+> Sure, exporting gpios to userspace might not be the best way to
+> achieve the required functionality, but every way could be argued if
+> it is the best. And for sure labeling a modem "LED" won't make it
+> such.
 
-> > Similarly, the pagecache sysctl is documented to affect files, at least
-> > that's how I wrote it. It's inconsistent to explain that as "the sysctl
-> > control files, except for tmpfs ones because ...... whatever".
-> 
-> I documented it as affecting by secondary storage cache.
-> 
+Yes, but as far as I know the kernel design rules are not bended for
+nonfree userspace components. Using the nonfree Maemo stuff should
+be supported by disabling the CMT driver and exporting the pins from
+userspace using some board specific init script (=3D> this is how its
+done until now).
 
-That is very subtle and a bit weird to me. Arguably tmpfs is also driven
-by secondary storage where storage happens to be swap. It's still "files
-except for tmpfs files beacuse they're special". That's why I'm
-uncomfortable with it.
+I had a look at both ofono's and freesmartphone.org's implementation
+for the GPIO handling and both implementations are very similar. I
+think it should be possible to move the state machine described in
+[0] into the kernel and provide a simple sysfs/uevent interface.
 
-> > > The round-robin policy makes the displacement predictable (think of
-> > > the aging artifacts here where random pages do not get displaced
-> > > reliably because they ended up on remote nodes) and it avoids IO by
-> > > maximizing memory utilization.
-> > > 
-> > > I.e. it improves behavior associated with a cache, but I don't expect
-> > > shmem/tmpfs to be typically used as a disk cache.  I could be wrong
-> > > about that, but I figure if you need named shared memory that is
-> > > bigger than your memory capacity (the point where your tmpfs would
-> > > actually turn into a disk cache), you'd be better of using a more
-> > > efficient on-disk filesystem.
-> > 
-> > I am concerned with semantics like "all files except tmpfs files" or
-> > alternatively regressing performance of NUMA-aware applications and their
-> > use of MAP_SHARED and sysv.
-> 
-> I'm really not following.  MAP_SHARED, sysv, shmem, tmpfs, whatever is
-> entirely unaffected by my proposal. 
+I was thinking of something like /sys/devices/platform/nokia-cmt/state,
+which accepts "enable", "disable" and "reset" as input and outputs the
+current state.
 
-I understand, it's the tmpfs different to every filesystem I'm not happy
-with. From a VM perspective it makes some sense but from a user
-perspective it just looks weird.
+[0] https://git.kernel.org/cgit/network/ofono/ofono.git/tree/plugins/nokia-=
+gpio.c
 
-> I never claimed "all files except
-> tmpfs".  It's about what backs the data, which what makes a difference
-> in people's performance expectation, which makes a difference in how
-> they size the workloads.
-> 
+-- Sebastian
 
-So potentially applications have to stat the file they are mapping if they
-want to understand what memory policy applies.
+--J2SCkAp4GZ/dPZZf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> Tmpfs files that may overflow into swap on heavy memory pressure have
-> an entirely different trade-off than actual cache that is continuously
-> replaced as part of its size management, and in that sense they are
-> much closer to anon and sysv shared memory. 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-Again, from a VM perspective I understand what you're suggesting but
-from an application perspective that is mapping files, it's a tricky
-interface.
+iQIcBAEBCAAGBQJSsN1lAAoJENju1/PIO/qaZ3QP/0z/Bio3vzPk2PMFF6Bedo21
+t8CZM9lZvlVDKRoNy/54cN8wtImBYpT0n3x3888Ph8//ITjq9U7RywIbtLsY2gnq
+jeVoGpXpoFel+dsHRL9MULww+K1lxZ7O4mHZ4Rxd4Kzmm4bptTmmPtTliIy9RnVF
+NcZizYKJgasMAiIlOMXJgVbJA/9iGWAiOXyW5j4g0sXpJXURznRNtuZ3A+Z+hdMW
+qKYDhL9hFSiDr40BXiVoBc/NH2fhNCqoxJAwxDVBDNbL+IR1Y3XO+vUfJdjx6PF/
+A/68ryI5d85S1FJnPmE7wCW8ii78nu8pgS2aqz6MonJkci2cu/PDRtqyAg/ZbM/U
+XTt0gDZ5DkhhxH+dnvBgLI995JialKx3uzK5SR9cRKXRqiNXs0veBHI9Gq80suTg
+WkvvTbTmAxRV2SN914vHbjy1IJAo3ZrwkpgJmUQk+AA9QPYSJkAjVUWd0sFRsS5U
+P86sxG3y4Qib8Vo029u1enAP9hIOgOGJYal8LTQDj7GqrSo3LeX3Dd658VrGtI8F
+rBhrmfleQisZ/VanWZiSg4ajxV+rLwllxLGAL9U/ccJOOkuLyzRrTsv+FEV3Qz06
+BnLF1T8N6WMgCdfz4v1UwKguIhzBv8J9iAaFuVL2+rNVCKgPBfCfyUMMSD+gTnEv
+aVgnqXZ+A8DAGtvKQQ+i
+=X1qW
+-----END PGP SIGNATURE-----
 
-In terms of restoring historical behaviour in 3.12 and for 3.13 I think my
-approach is the more conservative and least surprising to users. We can bash
-out whether to default remote interleaving or special case tmpfs in 3.14.
-
--- 
-Mel Gorman
-SUSE Labs
+--J2SCkAp4GZ/dPZZf--
