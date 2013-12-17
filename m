@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab3LQQoP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 11:44:15 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:51780 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753270Ab3LQQoN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 11:44:13 -0500
-X-Originating-IP: 50.43.14.201
-Date: Tue, 17 Dec 2013 08:44:03 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org
-Subject: Re: [PATCH 1/2] drivers: ide: Include appropriate header file in
- ide-cd_verbose.c
-Message-ID: <20131217164403.GD1062@leaf>
-References: <d24d7befadfbfb9501d0e873f13e39fd42ec893b.1387278225.git.rashika.kheria@gmail.com>
- <20131217111920.GA30592@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131217111920.GA30592@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+	id S1754601Ab3LQQs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:48:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60486 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753185Ab3LQQs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 11:48:26 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [RFC PATCH 0/6] Configurable fair allocation zone policy v3
+Date: Tue, 17 Dec 2013 16:48:18 +0000
+Message-Id: <1387298904-8824-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 12:19:21PM +0100, Borislav Petkov wrote:
-> On Tue, Dec 17, 2013 at 04:38:16PM +0530, Rashika Kheria wrote:
-> > Include appropriate header file ide-cd.h in ide-cd_verbose.c because
-> > function ide_cd_log_error() has its prototype declaration in ide-cd.h.
-> > Also, include linux/ide.h because it contains certain declarations
-> > necessary for including ide-cd.h.
-> > 
-> > This eliminates the following warnings in ide-cd_verbose.c:
-> > drivers/ide/ide-cd_verbose.c:251:6: warning: no previous prototype for ‘ide_cd_log_error’ [-Wmissing-prototypes]
-> 
-> drivers/ide/ is open only to fixes for serious, real bugs - nothing
-> else. I wouldn't waste my time with it if I were you.
+This series is currently untested and is being posted to sync up discussions
+on the treatment of page cache pages, particularly the sysv part. I have
+not thought it through in detail but postings patches is the easiest way
+to highlight where I think a problem might be.
 
-A quick check of "git log drivers/ide/" turns up a pile of fixes and
-cleanups; for instance:
+Changelog since v2
+o Drop an accounting patch, behaviour is deliberate
+o Special case tmpfs and shmem pages for discussion
 
-c2f7d1e ide: pmac: remove unnecessary pci_set_drvdata()
-a6fd6063 ide: cs5536: use module_pci_driver()
-58e48be ide: pmac: Remove casting the return value which is a void pointer
-64110c1 ide: sgiioc4: Staticize ioc4_ide_attach_one()
-70ddce8 ide: palm_bk3710: add missing __iomem annotation
+Changelog since v1
+o Fix lot of brain damage in the configurable policy patch
+o Yoink a page cache annotation patch
+o Only account batch pages against allocations eligible for the fair policy
+o Add patch that default distributes file pages on remote nodes
 
-The two proposed patches here are extremely low risk, don't actually
-change the compiled code in any way like some of those did, and fix real
-compiler warnings.
+Commit 81c0a2bb ("mm: page_alloc: fair zone allocator policy") solved a
+bug whereby new pages could be reclaimed before old pages because of how
+the page allocator and kswapd interacted on the per-zone LRU lists.
 
-- Josh Triplett
+Unfortunately a side-effect missed during review was that it's now very
+easy to allocate remote memory on NUMA machines. The problem is that
+it is not a simple case of just restoring local allocation policies as
+there are genuine reasons why global page aging may be prefereable. It's
+still a major change to default behaviour so this patch makes the policy
+configurable and sets what I think is a sensible default.
+
+The patches are on top of some NUMA balancing patches currently in -mm.
+It's untested and posted to discuss patches 4 and 6.
+
+ Documentation/sysctl/vm.txt |  29 ++++++++++
+ include/linux/gfp.h         |   4 +-
+ include/linux/mmzone.h      |   2 +
+ include/linux/pagemap.h     |   2 +-
+ include/linux/swap.h        |   2 +
+ kernel/sysctl.c             |   8 +++
+ mm/filemap.c                |   2 +
+ mm/page_alloc.c             | 136 +++++++++++++++++++++++++++++++++++++-------
+ mm/shmem.c                  |  14 +++++
+ 9 files changed, 176 insertions(+), 23 deletions(-)
+
+-- 
+1.8.4
+
