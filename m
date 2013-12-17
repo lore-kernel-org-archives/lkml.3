@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab3LQLI0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 06:08:26 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:47893 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab3LQLIY (ORCPT
+	id S1753013Ab3LQLJB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 06:09:01 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:62697 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab3LQLJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 06:08:24 -0500
-Date: Tue, 17 Dec 2013 16:38:16 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Borislav Petkov <bp@alien8.de>, "David S. Miller" <davem@davemloft.net>,
-        linux-ide@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 1/2] drivers: ide: Include appropriate header file in
- ide-cd_verbose.c
-Message-ID: <d24d7befadfbfb9501d0e873f13e39fd42ec893b.1387278225.git.rashika.kheria@gmail.com>
+	Tue, 17 Dec 2013 06:09:00 -0500
+Date: Tue, 17 Dec 2013 12:08:56 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "jean.pihet@linaro.org" <jean.pihet@linaro.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Arnaldo <acme@ghostprotocols.net>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 0/3] ARM64: add perf support
+Message-ID: <20131217110856.GA27791@gmail.com>
+References: <52af2f21.41590e0a.0251.ffffd94c@mx.google.com>
+ <20131217104534.GA27383@gmail.com>
+ <20131217110154.GA7602@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131217110154.GA7602@mudshark.cambridge.arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include appropriate header file ide-cd.h in ide-cd_verbose.c because
-function ide_cd_log_error() has its prototype declaration in ide-cd.h.
-Also, include linux/ide.h because it contains certain declarations
-necessary for including ide-cd.h.
 
-This eliminates the following warnings in ide-cd_verbose.c:
-drivers/ide/ide-cd_verbose.c:251:6: warning: no previous prototype for ‘ide_cd_log_error’ [-Wmissing-prototypes]
+* Will Deacon <will.deacon@arm.com> wrote:
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
----
- drivers/ide/ide-cd_verbose.c |    2 ++
- 1 file changed, 2 insertions(+)
+> On Tue, Dec 17, 2013 at 10:45:34AM +0000, Ingo Molnar wrote:
+> > * jean.pihet@linaro.org <jean.pihet@linaro.org> wrote:
+> > > From: Jean Pihet <jean.pihet@linaro.org>
+> > > 
+> > > Add perf support for the AARCH64 architecture. This includes the
+> > > support for:
+> > > - AARCH64 perf registers definition and hooks,
+> > > - compat mode registers use, i.e. profiling a 32-bit binary on
+> > >    a 64-bit system,
+> > > - unwinding using the dwarf information from the .debug_frame
+> > >    section of the ELF binary; only in 64-bit mode,
+> > > - unwinding using the frame pointer information; in 64-bit and
+> > >    compat modes.
+> > > 
+> > > ToDo:
+> > > - add support for unwinding using the dwarf information in compat
+> > >    mode. This requires some changes to the libunwind code.
+> > > 
+> > > Tested on ARMv7 and ARMv8 platforms. The compat mode has been tested
+> > > on ARMv8 using statically built 32-bit binaries.
+> > > 
+> > > 
+> > > Jean Pihet (3):
+> > >   ARM64: perf: add support for perf registers API
+> > >   ARM64: perf: wire up perf_regs and unwind support
+> > >   ARM64: perf: add support for frame pointer unwinding in compat mode
+> > > 
+> > >  arch/arm64/Kconfig                        |  2 +
+> > >  arch/arm64/include/asm/ptrace.h           |  1 +
+> > >  arch/arm64/include/uapi/asm/Kbuild        |  1 +
+> > >  arch/arm64/include/uapi/asm/perf_regs.h   | 40 ++++++++++++++
+> > >  arch/arm64/kernel/Makefile                |  1 +
+> > >  arch/arm64/kernel/perf_event.c            | 75 +++++++++++++++++++++++---
+> > >  arch/arm64/kernel/perf_regs.c             | 46 ++++++++++++++++
+> > >  tools/perf/arch/arm64/Makefile            |  7 +++
+> > >  tools/perf/arch/arm64/include/perf_regs.h | 88 +++++++++++++++++++++++++++++++
+> > >  tools/perf/arch/arm64/util/dwarf-regs.c   | 81 ++++++++++++++++++++++++++++
+> > >  tools/perf/arch/arm64/util/unwind.c       | 82 ++++++++++++++++++++++++++++
+> > >  tools/perf/config/Makefile                |  8 ++-
+> > >  12 files changed, 423 insertions(+), 9 deletions(-)
+> > >  create mode 100644 arch/arm64/include/uapi/asm/perf_regs.h
+> > >  create mode 100644 arch/arm64/kernel/perf_regs.c
+> > >  create mode 100644 tools/perf/arch/arm64/Makefile
+> > >  create mode 100644 tools/perf/arch/arm64/include/perf_regs.h
+> > >  create mode 100644 tools/perf/arch/arm64/util/dwarf-regs.c
+> > >  create mode 100644 tools/perf/arch/arm64/util/unwind.c
+> > 
+> > Arnaldo, AFAICS the main merging complexity will probably be on 
+> > the perf tooling side, so if you are happy with these bits, mind 
+> > picking them up into your tree?
+> 
+> Hold your horses! I've got a few review comments on the series...
 
-diff --git a/drivers/ide/ide-cd_verbose.c b/drivers/ide/ide-cd_verbose.c
-index 6490a2d..f079ca2 100644
---- a/drivers/ide/ide-cd_verbose.c
-+++ b/drivers/ide/ide-cd_verbose.c
-@@ -9,7 +9,9 @@
- #include <linux/kernel.h>
- #include <linux/blkdev.h>
- #include <linux/cdrom.h>
-+#include <linux/ide.h>
- #include <scsi/scsi.h>
-+#include "ide-cd.h"
- 
- #ifndef CONFIG_BLK_DEV_IDECD_VERBOSE_ERRORS
- void ide_cd_log_error(const char *name, struct request *failed_command,
--- 
-1.7.9.5
+Sure :-)
 
+Thanks,
+
+	Ingo
