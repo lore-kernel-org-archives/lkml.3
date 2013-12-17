@@ -1,148 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224Ab3LQXtU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 18:49:20 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:55683 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab3LQXtT (ORCPT
+	id S1752297Ab3LQXvW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 18:51:22 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:37866 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007Ab3LQXvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 18:49:19 -0500
-Date: Wed, 18 Dec 2013 00:49:15 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	Tue, 17 Dec 2013 18:51:21 -0500
+Date: Tue, 17 Dec 2013 15:51:17 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
         Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH 03/13] rcu: Exclude all potential timekeepers from
- sysidle detection
-Message-ID: <20131217234913.GB18689@localhost.localdomain>
+Subject: Re: [PATCH 09/13] nohz: Allow timekeeper's tick to stop when all
+ full dynticks CPUs are idle
+Message-ID: <20131217235117.GI19211@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
- <1387320692-28460-4-git-send-email-fweisbec@gmail.com>
- <20131217232714.GD19211@linux.vnet.ibm.com>
+ <1387320692-28460-10-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131217232714.GD19211@linux.vnet.ibm.com>
+In-Reply-To: <1387320692-28460-10-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121723-9332-0000-0000-0000028752B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 03:27:14PM -0800, Paul E. McKenney wrote:
-> On Tue, Dec 17, 2013 at 11:51:22PM +0100, Frederic Weisbecker wrote:
-> > The purpose of the full system idle detection is to notify the CPU
-> > handling the timekeeping when the rest of the system is idle so that it
-> > can sleep when nobody needs the jiffies nor GTOD to be maintained.
-> > 
-> > Now this machinery excludes CPU 0 itself from the range of the idle
-> > detection because if CPU 0 has any non-idle task to execute, it is going
-> > to restart its own tick since it's guaranteed to be outside the full
-> > dynticks range. And as it is the only eligible timekeeper when
-> > CONFIG_NO_HZ_FULL=y anyway, it can handle the timekeeping duty for
-> > and by itself.
-> > 
-> > Still we also plan to extend the timekeepers affinity and allow every CPU
-> > outside the full dynticks range to handle the timekeeping duty, not just
-> > CPU 0.
-> > 
-> > So once we reach that step, we can state that all CPUs that are not
-> > full dynticks can be excluded from the full system idle detection,
-> > simply because those CPUs share the same property than CPU 0 today. When
-> > a non full dynticks CPU needs to run some busy task, it restarts its
-> > tick and handles the timekeeping duty for its own needs as is currently
-> > done under CONFIG_NO_HZ_IDLE=y.
-> > 
-> > To prepare for this support in the sysidle detection, we can use the
-> > tick_timekeeping_cpu() API which checks if a CPU is allowed to handle
-> > timekeeping duty. If so we can conclude that it's not full dynticks and
-> > it can maintain timekeeping by itself and as such it can be excluded
-> > from the sysidle detection.
-> > 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: John Stultz <john.stultz@linaro.org>
-> > Cc: Alex Shi <alex.shi@linaro.org>
-> > Cc: Kevin Hilman <khilman@linaro.org>
+On Tue, Dec 17, 2013 at 11:51:28PM +0100, Frederic Weisbecker wrote:
+> When all full dynticks CPUs are idle, as detected by RCU's sysidle
+> detection, there is no need to keep the timekeeping CPU's tick alive
+> anymore. So lets shut it down when we meet this favourable state. The
+> timekeeper will be notified with an IPI if any full dynticks CPU
+> wakes up.
 > 
-> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Also, since we plan to allow every CPUs outside the full dynticks range
+> to handle the timekeeping duty, lets also allow the timekeeping duty
+> to be balanced. The only requirement is that the last timekeeper can't
+> shut down its idle tick further than 1 jiffie until some other CPU
+> takes its duty or until all full dynticks CPUs go to sleep.
 
-Thanks!
+Some questions below...
 
+							Thanx, Paul
+
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Alex Shi <alex.shi@linaro.org>
+> Cc: Kevin Hilman <khilman@linaro.org>
+> ---
+>  kernel/time/tick-sched.c | 67 ++++++++++++++++++++++++++++++++++++------------
+>  1 file changed, 50 insertions(+), 17 deletions(-)
 > 
-> A few comments below as well.
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 0d2d774..527b501 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -192,6 +192,49 @@ static bool can_stop_full_tick(void)
+>  	return true;
+>  }
 > 
-> > ---
-> >  kernel/rcu/tree_plugin.h | 8 ++++----
-> >  1 file changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> > index 6abb03d..08004da 100644
-> > --- a/kernel/rcu/tree_plugin.h
-> > +++ b/kernel/rcu/tree_plugin.h
+> +/*
+> + * Fetch max deferment for the current clockevent source until it overflows.
+> + * Also in full dynticks environment, make sure the current timekeeper
+> + * stays periodic until some other CPU can take its timekeeping duty
+> + * or until all full dynticks go to sleep.
+> + */
+> +static u64 tick_timekeeping_max_deferment(struct tick_sched *ts)
+> +{
+> +	int cpu;
+> +	u64 ret = KTIME_MAX;
+> +
+> +	/*
+> +	 * Fast path for full dynticks off-case: skip to
+> +	 * clockevent max deferment
+> +	 */
+> +	if (!tick_nohz_full_enabled())
+> +		return timekeeping_max_deferment();
+> +
+> +	cpu = smp_processor_id();
+> +
+> +	/* Full dynticks CPU don't take timekeeping duty */
+> +	if (!tick_timekeeping_cpu(cpu))
+> +		return timekeeping_max_deferment();
+> +
+> +	/*
+> +	 * If we are the timekeeper and all full dynticks CPUs are idle,
+> +	 * then we can finally sleep.
+> +	 */
+> +	if (tick_do_timer_cpu == cpu ||
+> +	    (tick_do_timer_cpu == TICK_DO_TIMER_NONE &&	ts->do_timer_last == 1)) {
+> +		if (!rcu_sys_is_idle()) {
+
+So multiple CPUs could call rcu_sys_is_idle()?  Seems like this could
+happen if tick_do_timer_cpu == TICK_DO_TIMER_NONE.  This would be OK only
+if tick_timekeeping_cpu() returns true for one and only one of the CPUs
+at any given range of time -- and also that no one calls rcu_sys_is_idle()
+during a timekeeping CPU handoff.
+
+If two different CPUs call rcu_sys_is_idle() anywhere nearly concurrently
+on a small system (CONFIG_NO_HZ_FULL_SYSIDLE_SMALL), rcu_sys_is_idle()
+will break and you will have voided your warranty.  ;-)
+
+Also, if tick_timekeeping_cpu() doesn't think that there is a timekeeping
+CPU, rcu_sys_is_idle() will always return false.  I think that this is
+what you want to happen, just checking.
+
+> +			/*
+> +			 * Stop tick for 1 jiffy. In practice we stay periodic
+> +			 * but that let us possibly delegate our timekeeping duty
+> +			 * to stop the tick for real in the future.
+> +			 */
+> +			ret = tick_period.tv64;
+> +		}
+
+Do we need to set tick_do_timer_cpu to cpu?  Or is that handled elsewhere?
+(If this is the boot-safety feature deleted below, could we please have
+the comment back here?)
+
+> +	}
+> +
+> +	return min_t(u64, ret, timekeeping_max_deferment());
+> +}
+> +
+>  static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now);
 > 
-> The rcu_sysidle_force_exit() function uses tick_do_timer_cpu, but
-> presumably needs to continue doing so in order to whack the right
-> CPU over the head.  I am happy to defer worrying about the interaction
-> with multiple timekeeping CPUs for the moment.  ;-)
-
-So yeah, I changed that in "nohz: Wake up timekeeper on exit from sysidle state".
-We always target CPU 0 for the IPI.
-
-That's to start simple as CPU 0 can't be offlined. But we certainly want
-to optimize that by kicking a potential timekeeper that is not idle.
-
-But that require a lookup like get_timer_nohz_target() and some safety against
-CPU hotplug. So that needs more thought :)
-
+>  /*
+> @@ -352,7 +395,12 @@ void __init tick_nohz_init(void)
+>  	cpulist_scnprintf(nohz_full_buf, sizeof(nohz_full_buf), tick_nohz_full_mask);
+>  	pr_info("NO_HZ: Full dynticks CPUs: %s.\n", nohz_full_buf);
+>  }
+> -#endif
+> +# else /* CONFIG_NO_HZ_FULL */
+> +static u64 tick_timekeeping_max_deferment(struct tick_sched *ts)
+> +{
+> +	return timekeeping_max_deferment();
+> +}
+> +#endif /* CONFIG_NO_HZ_FULL */
 > 
-> > @@ -2539,7 +2539,7 @@ static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq)
-> >  	 * invoke rcu_sysidle_force_exit() directly if it does anything
-> >  	 * more than take a scheduling-clock interrupt.
-> >  	 */
-> > -	if (smp_processor_id() == tick_do_timer_cpu)
-> > +	if (tick_timekeeping_cpu(smp_processor_id()))
-> >  		return;
-> > 
-> >  	/* Update system-idle state: We are clearly no longer fully idle! */
-> > @@ -2563,10 +2563,10 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
-> >  	 * is an offline or the timekeeping CPU, nothing to do.
-> >  	 */
-> >  	if (!*isidle || rdp->rsp != rcu_sysidle_state ||
-> > -	    cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
-> > +	    cpu_is_offline(rdp->cpu) || tick_timekeeping_cpu(rdp->cpu))
-> >  		return;
-> >  	if (rcu_gp_in_progress(rdp->rsp))
-> > -		WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
-> > +		WARN_ON_ONCE(!tick_timekeeping_cpu(smp_processor_id()));
-> > 
-> >  	/* Pick up current idle and NMI-nesting counter and check. */
-> >  	cur = atomic_read(&rdtp->dynticks_idle);
+>  /*
+>   * NOHZ - aka dynamic tick functionality
+> @@ -532,7 +580,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+>  	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
+>  	u64 time_delta;
 > 
-> The rcu_bind_gp_kthread() uses tick_do_timer_cpu to figure out where
-> to run.  Is there some CPU mask that it should use instead once there
-> can be multiple timekeeping CPUs?
-
-Good point, we'll need to build one, or use ~nohz_full_mask
-
-Thanks.
-
+> -	time_delta = timekeeping_max_deferment();
+> +	time_delta = tick_timekeeping_max_deferment(ts);
 > 
-> > @@ -2729,7 +2729,7 @@ bool rcu_sys_is_idle(void)
-> >  	static struct rcu_sysidle_head rsh;
-> >  	int rss = ACCESS_ONCE(full_sysidle_state);
-> > 
-> > -	if (WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu))
-> > +	if (WARN_ON_ONCE(!tick_timekeeping_cpu(smp_processor_id())))
-> >  		return false;
-> > 
-> >  	/* Handle small-system case by doing a full scan of CPUs. */
-> > -- 
-> > 1.8.3.1
-> > 
+>  	/* Read jiffies and the time when jiffies were updated last */
+>  	do {
+> @@ -726,21 +774,6 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
+>  		return false;
+>  	}
 > 
+> -	if (tick_nohz_full_enabled()) {
+> -		/*
+> -		 * Keep the tick alive to guarantee timekeeping progression
+> -		 * if there are full dynticks CPUs around
+> -		 */
+> -		if (tick_do_timer_cpu == cpu)
+> -			return false;
+> -		/*
+> -		 * Boot safety: make sure the timekeeping duty has been
+> -		 * assigned before entering dyntick-idle mode,
+> -		 */
+> -		if (tick_do_timer_cpu == TICK_DO_TIMER_NONE)
+> -			return false;
+> -	}
+> -
+>  	return true;
+>  }
+> 
+> -- 
+> 1.8.3.1
+> 
+
