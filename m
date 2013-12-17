@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab3LQSPR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:15:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:32774 "EHLO
+	id S932194Ab3LQS13 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:27:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:32799 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755807Ab3LQSPG (ORCPT
+	with ESMTP id S1755875Ab3LQSPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:15:06 -0500
+	Tue, 17 Dec 2013 13:15:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nanno Langstraat <langstr@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
+        Chris J Arges <chris.j.arges@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 060/103] HID: apple: option to swap the 'Option' ("Alt") and 'Command' ("Flag") keys.
-Date: Tue, 17 Dec 2013 18:12:49 +0000
-Message-Id: <1387304012-23805-61-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 063/103] sched: Avoid throttle_cfs_rq() racing with period_timer stopping
+Date: Tue, 17 Dec 2013 18:12:52 +0000
+Message-Id: <1387304012-23805-64-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -27,68 +29,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nanno Langstraat <langstr@gmail.com>
+From: Ben Segall <bsegall@google.com>
 
-commit 43c831468b3d26dbe8f2e061ccaf1abaf9cc1b8b upstream.
+commit f9f9ffc237dd924f048204e8799da74f9ecf40cf upstream.
 
-Use case: people who use both Apple and PC keyboards regularly, and desire to
-keep&use their PC muscle memory.
+throttle_cfs_rq() doesn't check to make sure that period_timer is running,
+and while update_curr/assign_cfs_runtime does, a concurrently running
+period_timer on another cpu could cancel itself between this cpu's
+update_curr and throttle_cfs_rq(). If there are no other cfs_rqs running
+in the tg to restart the timer, this causes the cfs_rq to be stranded
+forever.
 
-A particular use case: an Apple compact external keyboard connected to a PC
-laptop. (This use case can't be covered well by X.org key remappings etc.)
+Fix this by calling __start_cfs_bandwidth() in throttle if the timer is
+inactive.
 
-Signed-off-by: Nanno Langstraat <langstr@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+(Also add some sched_debug lines for cfs_bandwidth.)
+
+Tested: make a run/sleep task in a cgroup, loop switching the cgroup
+between 1ms/100ms quota and unlimited, checking for timer_active=0 and
+throttled=1 as a failure. With the throttle_cfs_rq() change commented out
+this fails, with the full patch it passes.
+
+Signed-off-by: Ben Segall <bsegall@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-apple.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ kernel/sched/debug.c | 8 ++++++++
+ kernel/sched/fair.c  | 2 ++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
-index 585344b..5a7087e 100644
---- a/drivers/hid/hid-apple.c
-+++ b/drivers/hid/hid-apple.c
-@@ -48,6 +48,12 @@ module_param(iso_layout, uint, 0644);
- MODULE_PARM_DESC(iso_layout, "Enable/Disable hardcoded ISO-layout of the keyboard. "
- 		"(0 = disabled, [1] = enabled)");
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 6f79596..9c16752 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -215,6 +215,14 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 	SEQ_printf(m, "  .%-30s: %d\n", "load_tg",
+ 			atomic_read(&cfs_rq->tg->load_weight));
+ #endif
++#ifdef CONFIG_CFS_BANDWIDTH
++	SEQ_printf(m, "  .%-30s: %d\n", "tg->cfs_bandwidth.timer_active",
++			cfs_rq->tg->cfs_bandwidth.timer_active);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttled",
++			cfs_rq->throttled);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttle_count",
++			cfs_rq->throttle_count);
++#endif
  
-+static unsigned int swap_opt_cmd = 0;
-+module_param(swap_opt_cmd, uint, 0644);
-+MODULE_PARM_DESC(swap_opt_cmd, "Swap the Option (\"Alt\") and Command (\"Flag\") keys. "
-+		"(For people who want to keep Windows PC keyboard muscle memory. "
-+		"[0] = as-is, Mac layout. 1 = swapped, Windows layout.)");
-+
- struct apple_sc {
- 	unsigned long quirks;
- 	unsigned int fn_on;
-@@ -152,6 +158,14 @@ static const struct apple_key_translation apple_iso_keyboard[] = {
- 	{ }
- };
- 
-+static const struct apple_key_translation swapped_option_cmd_keys[] = {
-+	{ KEY_LEFTALT,	KEY_LEFTMETA },
-+	{ KEY_LEFTMETA,	KEY_LEFTALT },
-+	{ KEY_RIGHTALT,	KEY_RIGHTMETA },
-+	{ KEY_RIGHTMETA,KEY_RIGHTALT },
-+	{ }
-+};
-+
- static const struct apple_key_translation *apple_find_translation(
- 		const struct apple_key_translation *table, u16 from)
- {
-@@ -244,6 +258,14 @@ static int hidinput_apple_event(struct hid_device *hid, struct input_dev *input,
- 		}
- 	}
- 
-+	if (swap_opt_cmd) {
-+		trans = apple_find_translation(swapped_option_cmd_keys, usage->code);
-+		if (trans) {
-+			input_event(input, usage->type, trans->to, value);
-+			return 1;
-+		}
-+	}
-+
- 	return 0;
+ 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
+ #endif
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 811a254..97ecdafd 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1655,6 +1655,8 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+ 	cfs_rq->throttled_timestamp = rq->clock;
+ 	raw_spin_lock(&cfs_b->lock);
+ 	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
++	if (!cfs_b->timer_active)
++		__start_cfs_bandwidth(cfs_b);
+ 	raw_spin_unlock(&cfs_b->lock);
  }
  
 -- 
