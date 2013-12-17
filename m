@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab3LQUpz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:45:55 -0500
-Received: from mga02.intel.com ([134.134.136.20]:3442 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754007Ab3LQUpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:45:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,503,1384329600"; 
-   d="scan'208";a="453840626"
-Message-ID: <1387313151.3051.39.camel@empanada>
-Subject: Re: [PATCH] Tracing events with GPIOs
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 17 Dec 2013 14:45:51 -0600
-In-Reply-To: <20131217140502.2aed31aa@gandalf.local.home>
-References: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
-	 <52AFA5E0.7040707@hitachi.com>
-	 <CACh+v5NgwyAD5xy-feykUDXpzVUuF2yFxP35TsnGk3r+LFtRPA@mail.gmail.com>
-	 <1387304970.3051.35.camel@empanada>
-	 <20131217140502.2aed31aa@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753343Ab3LQUuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:50:16 -0500
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:52082 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502Ab3LQUuO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 15:50:14 -0500
+Date: Tue, 17 Dec 2013 12:50:09 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+In-Reply-To: <20131217162342.GG28991@dhcp22.suse.cz>
+Message-ID: <alpine.DEB.2.02.1312171240541.21640@chino.kir.corp.google.com>
+References: <20131204111318.GE8410@dhcp22.suse.cz> <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com> <20131209124840.GC3597@dhcp22.suse.cz> <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com> <20131210103827.GB20242@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com> <20131211095549.GA18741@dhcp22.suse.cz> <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com> <20131212103159.GB2630@dhcp22.suse.cz> <alpine.DEB.2.02.1312131551220.28704@chino.kir.corp.google.com>
+ <20131217162342.GG28991@dhcp22.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-17 at 14:05 -0500, Steven Rostedt wrote:
-> On Tue, 17 Dec 2013 12:29:30 -0600
-> Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
-> 
-> > > Tom,
-> > > is git://git.yoctoproject.org/linux-yocto-contrib
-> > > tzanussi/event-triggers-v11 the right starting point ?
+On Tue, 17 Dec 2013, Michal Hocko wrote:
+
+> > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > > index c72b03bf9679..fee25c5934d2 100644
+> > > --- a/mm/memcontrol.c
+> > > +++ b/mm/memcontrol.c
+> > > @@ -2692,7 +2693,8 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+> > >  	 * MEMDIE process.
+> > >  	 */
+> > >  	if (unlikely(test_thread_flag(TIF_MEMDIE)
+> > > -		     || fatal_signal_pending(current)))
+> > > +		     || fatal_signal_pending(current))
+> > > +		     || current->flags & PF_EXITING)
+> > >  		goto bypass;
+> > >  
+> > >  	if (unlikely(task_in_memcg_oom(current)))
+> > > 
+> > > rather than the later checks down the oom_synchronize paths. The comment
+> > > already mentions dying process...
 > > > 
 > > 
-> > Yep, that's the last iteration - I haven't changed anything since then.
-> > 
+> > This is scary because it doesn't even try to reclaim memcg memory before 
+> > allowing the allocation to succeed.
 > 
-> Is this the same as the last patch series you sent out? I started
-> testing them again last week, but they failed some of my tests.
-
-Yeah, that's the same patchset.  I tested it here and didn't see any
-problems but I guess your tests must be different/more rigorous - it
-would be good to know what failed.  I could also run your test suite
-here if that would help.
-
-> Unfortunately, I didn't get a chance to look into why. I'm hoping to
-> get that series out to my for-next branch by end of the week, as I'll
-> be taking two weeks off starting next week.
+> Why should it reclaim in the first place when it simply is on the way to
+> release memory. In other words why should it increase the memory
+> pressure when it is in fact releasing it?
 > 
-> Year end crap is piling up, preventing me from getting real work
-> done ;-)
 
-I know what you mean, same here.  ;-)
+(Answering about removing the fatal_signal_pending() check as well here.)
 
+For memory isolation, we'd only want to bypass memcg charges when 
+absolutely necessary and it seems like TIF_MEMDIE is the only case where 
+that's required.  We don't give processes with pending SIGKILLs or those 
+in the exit() path access to memory reserves in the page allocator without 
+first determining that reclaim can't make any progress for the same reason 
+and then we only do so by setting TIF_MEMDIE when calling the oom killer.  
+
+> I am really puzzled here. On one hand you are strongly arguing for not
+> notifying when we know we can prevent from OOM action and on the other
+> hand you are ok to get vmpressure/thresholds notification when an
+> exiting task triggers reclaim.
 > 
-> -- Steve
+> So I am really lost in what you are trying to achieve here. It sounds a
+> bit arbirtrary.
+> 
 
+It's not arbitrary to define when memcg bypass is allowed and, in my 
+opinion, it should only be done in situations where it is unavoidable and 
+therefore breaking memory isolation is required.
 
+(We wouldn't expect a 128MB memcg to be oom [and perhaps with a userspace 
+oom handler attached] when it has 100 children each 1MB in size just 
+because they all happen to be oom at the same time.  We set up the excess 
+memory in the parent specifically for the memcg with the oom handler 
+attached.)
