@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932373Ab3LQSa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:30:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60985 "EHLO
+	id S932349Ab3LQSa6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:30:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60990 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755813Ab3LQSPA (ORCPT
+	with ESMTP id S1755815Ab3LQSPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:15:00 -0500
+	Tue, 17 Dec 2013 13:15:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Seth Heasley <seth.heasley@intel.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
+Cc: Marek Vasut <marex@denx.de>, Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 056/103] i2c: i801: SMBus patch for Intel Avoton DeviceIDs
-Date: Tue, 17 Dec 2013 18:12:45 +0000
-Message-Id: <1387304012-23805-57-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 057/103] HID: add quirk for Freescale i.MX23 ROM recovery
+Date: Tue, 17 Dec 2013 18:12:46 +0000
+Message-Id: <1387304012-23805-58-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -28,74 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Heasley <seth.heasley@intel.com>
+From: Marek Vasut <marex@denx.de>
 
-commit c2db409cbc8751ccc7e6d2cc2e41af0d12ea637f upstream.
+commit 436136cec650d661eb662fcb508a99878606d050 upstream.
 
-This patch adds the PCU SMBus DeviceID for the Intel Avoton SOC.
+The USB recovery mode present in i.MX23 ROM emulates USB HID.  It needs this
+quirk to behave properly.
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Even if the official branding of the chip is Freescale i.MX23, I named it
+Sigmatel STMP3780 since that's what the chip really is and it even reports
+itself as STMP3780.
+
+Signed-off-by: Marek Vasut <marex@denx.de>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Documentation/i2c/busses/i2c-i801 | 1 +
- drivers/i2c/busses/Kconfig        | 1 +
- drivers/i2c/busses/i2c-i801.c     | 3 +++
- 3 files changed, 5 insertions(+)
+ drivers/hid/hid-ids.h           | 3 +++
+ drivers/hid/usbhid/hid-quirks.c | 1 +
+ 2 files changed, 4 insertions(+)
 
-diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
-index 99d4e44..8bb57d7 100644
---- a/Documentation/i2c/busses/i2c-i801
-+++ b/Documentation/i2c/busses/i2c-i801
-@@ -22,6 +22,7 @@ Supported adapters:
-   * Intel Panther Point (PCH)
-   * Intel Lynx Point (PCH)
-   * Intel Lynx Point-LP (PCH)
-+  * Intel Avoton (SOC)
-    Datasheets: Publicly available at the Intel website
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 16641fd..0e59c28 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -686,6 +686,9 @@
+ #define USB_VENDOR_ID_SIGMA_MICRO	0x1c4f
+ #define USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD	0x0002
  
- On Intel Patsburg and later chipsets, both the normal host SMBus controller
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index f2f2058..d63973d 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -105,6 +105,7 @@ config I2C_I801
- 	    Panther Point (PCH)
- 	    Lynx Point (PCH)
- 	    Lynx Point-LP (PCH)
-+	    Avoton (SOC)
++#define USB_VENDOR_ID_SIGMATEL		0x066F
++#define USB_DEVICE_ID_SIGMATEL_STMP3780	0x3780
++
+ #define USB_VENDOR_ID_SKYCABLE			0x1223
+ #define	USB_DEVICE_ID_SKYCABLE_WIRELESS_PRESENTER	0x3F07
  
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-i801.
-diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-index d88ec81..d63e130 100644
---- a/drivers/i2c/busses/i2c-i801.c
-+++ b/drivers/i2c/busses/i2c-i801.c
-@@ -53,6 +53,7 @@
-   Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
-   Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
-   Lynx Point-LP (PCH)   0x9c22     32     hard     yes     yes     yes
-+  Avoton (SOC)          0x1f3c     32     hard     yes     yes     yes
- 
-   Features supported by this driver:
-   Software PEC                     no
-@@ -145,6 +146,7 @@
- #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF1	0x1d71
- #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF2	0x1d72
- #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS	0x1e22
-+#define PCI_DEVICE_ID_INTEL_AVOTON_SMBUS	0x1f3c
- #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
- #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
- #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
-@@ -639,6 +641,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids) = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_AVOTON_SMBUS) },
- 	{ 0, }
- };
- 
+diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+index 4c37560..bb09319 100644
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -82,6 +82,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_REALTEK, USB_DEVICE_ID_REALTEK_READER, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_SENNHEISER, USB_DEVICE_ID_SENNHEISER_BTD500USB, HID_QUIRK_NOGET },
++	{ USB_VENDOR_ID_SIGMATEL, USB_DEVICE_ID_SIGMATEL_STMP3780, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_1, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_2, HID_QUIRK_NOGET },
 -- 
 1.8.3.2
 
