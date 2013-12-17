@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab3LQSPl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:15:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:32885 "EHLO
+	id S932168Ab3LQSPo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:15:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:32900 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755926Ab3LQSPh (ORCPT
+	with ESMTP id S932142Ab3LQSPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:15:37 -0500
+	Tue, 17 Dec 2013 13:15:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tom Lendacky <thomas.lendacky@amd.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
+Cc: Stefano Panella <stefano.panella@citrix.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 082/103] crypto: scatterwalk - Use sg_chain_ptr on chain entries
-Date: Tue, 17 Dec 2013 18:13:11 +0000
-Message-Id: <1387304012-23805-83-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 085/103] ALSA: memalloc.h - fix wrong truncation of dma_addr_t
+Date: Tue, 17 Dec 2013 18:13:14 +0000
+Message-Id: <1387304012-23805-86-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Lendacky <thomas.lendacky@amd.com>
+From: Stefano Panella <stefano.panella@citrix.com>
 
-commit 389a5390583a18e45bc4abd4439291abec5e7a63 upstream.
+commit 932e9dec380c67ec15ac3eb073bb55797d8b4801 upstream.
 
-Now that scatterwalk_sg_chain sets the chain pointer bit the sg_page
-call in scatterwalk_sg_next hits a BUG_ON when CONFIG_DEBUG_SG is
-enabled. Use sg_chain_ptr instead of sg_page on a chain entry.
+When running a 32bit kernel the hda_intel driver is still reporting
+a 64bit dma_mask if the HW supports it.
 
-Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+>From sound/pci/hda/hda_intel.c:
+
+        /* allow 64bit DMA address if supported by H/W */
+        if ((gcap & ICH6_GCAP_64OK) && !pci_set_dma_mask(pci, DMA_BIT_MASK(64)))
+                pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(64));
+        else {
+                pci_set_dma_mask(pci, DMA_BIT_MASK(32));
+                pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32));
+        }
+
+which means when there is a call to dma_alloc_coherent from
+snd_malloc_dev_pages a machine address bigger than 32bit can be returned.
+This can be true in particular if running  the 32bit kernel as a pv dom0
+under the Xen Hypervisor or PAE on bare metal.
+
+The problem is that when calling setup_bdle to program the BLE the
+dma_addr_t returned from the dma_alloc_coherent is wrongly truncated
+from snd_sgbuf_get_addr if running a 32bit kernel:
+
+static inline dma_addr_t snd_sgbuf_get_addr(struct snd_dma_buffer *dmab,
+                                           size_t offset)
+{
+        struct snd_sg_buf *sgbuf = dmab->private_data;
+        dma_addr_t addr = sgbuf->table[offset >> PAGE_SHIFT].addr;
+        addr &= PAGE_MASK;
+        return addr + offset % PAGE_SIZE;
+}
+
+where PAGE_MASK in a 32bit kernel is zeroing the upper 32bit af addr.
+
+Without this patch the HW will fetch the 32bit truncated address,
+which is not the one obtained from dma_alloc_coherent and will result
+to a non working audio but can corrupt host memory at a random location.
+
+The current patch apply to v3.13-rc3-74-g6c843f5
+
+Signed-off-by: Stefano Panella <stefano.panella@citrix.com>
+Reviewed-by: Frediano Ziglio <frediano.ziglio@citrix.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/crypto/scatterwalk.h | 2 +-
+ include/sound/memalloc.h | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/crypto/scatterwalk.h b/include/crypto/scatterwalk.h
-index 09ef1a0..2cddd2b 100644
---- a/include/crypto/scatterwalk.h
-+++ b/include/crypto/scatterwalk.h
-@@ -44,7 +44,7 @@ static inline struct scatterlist *scatterwalk_sg_next(struct scatterlist *sg)
- 	if (sg_is_last(sg))
- 		return NULL;
- 
--	return (++sg)->length ? sg : (void *)sg_page(sg);
-+	return (++sg)->length ? sg : sg_chain_ptr(sg);
+diff --git a/include/sound/memalloc.h b/include/sound/memalloc.h
+index c425062..ab240bb 100644
+--- a/include/sound/memalloc.h
++++ b/include/sound/memalloc.h
+@@ -101,7 +101,7 @@ static inline unsigned int snd_sgbuf_aligned_pages(size_t size)
+ static inline dma_addr_t snd_sgbuf_get_addr(struct snd_sg_buf *sgbuf, size_t offset)
+ {
+ 	dma_addr_t addr = sgbuf->table[offset >> PAGE_SHIFT].addr;
+-	addr &= PAGE_MASK;
++	addr &= ~((dma_addr_t)PAGE_SIZE - 1);
+ 	return addr + offset % PAGE_SIZE;
  }
  
- static inline void scatterwalk_crypto_chain(struct scatterlist *head,
 -- 
 1.8.3.2
 
