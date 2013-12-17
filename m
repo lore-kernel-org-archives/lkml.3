@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab3LQA5c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 19:57:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47599 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab3LQA5U (ORCPT
+	id S1752175Ab3LQBAu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 20:00:50 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:48261 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab3LQBAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 19:57:20 -0500
-Date: Mon, 16 Dec 2013 16:57:19 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Stas Sergeev <stsp@list.ru>,
-        Margarita Manterola <margamanterola@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Caylan Van Larson <i@caylan.net>,
-        Maximiliano Curia <maxy@gnuservers.com.ar>,
-        Pavel Machek <pavel@ucw.cz>,
-        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-Subject: Re: [PATCH v4] n_tty: Fix buffer overruns with larger-than-4k pastes
-Message-ID: <20131217005719.GA26381@kroah.com>
-References: <52A79030.9090403@hurleysoftware.com>
- <1386713522-6959-1-git-send-email-peter@hurleysoftware.com>
+	Mon, 16 Dec 2013 20:00:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386713522-6959-1-git-send-email-peter@hurleysoftware.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1387206250-13963-1-git-send-email-konrad.wilk@oracle.com>
+References: <1387206250-13963-1-git-send-email-konrad.wilk@oracle.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 16 Dec 2013 18:00:25 -0700
+Message-ID: <CAErSpo7F+-TZ_dGwsFtr7pra45hVqTv4HLuQNr-SR4MeLespYw@mail.gmail.com>
+Subject: Re: [PATCH v3] if xen_platform_pci=0 is set don't blow up.
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        ian.campbell@citrix.com, xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        boris.ostrovsky@oracle.com, David Vrabel <david.vrabel@citrix.com>,
+        leosilva@linux.vnet.ibm.com, ashley@ashleylai.com,
+        =?UTF-8?Q?Peter_H=C3=BCwe?= <peterhuewe@gmx.de>, mail@srajiv.net,
+        tpmdd@selhorst.net, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        plagnioj@jcrosoft.com, tomi.valkeinen@ti.com,
+        tpmdd-devel@lists.sourceforge.net,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-fbdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 05:12:02PM -0500, Peter Hurley wrote:
-> readline() inadvertently triggers an error recovery path when
-> pastes larger than 4k overrun the line discipline buffer. The
-> error recovery path discards input when the line discipline buffer
-> is full and operating in canonical mode and no newline has been
-> received. Because readline() changes the termios to non-canonical
-> mode to read the line char-by-char, the line discipline buffer
-> can become full, and then when readline() restores termios back
-> to canonical mode for the caller, the now-full line discipline
-> buffer triggers the error recovery.
-> 
-> When changing termios from non-canon to canon mode and the read
-> buffer contains data, simulate an EOF push _without_ the
-> DISABLED_CHAR in the read buffer.
-> 
-> Importantly for the readline() problem, the termios can be
-> changed back to non-canonical mode without changes to the read
-> buffer occurring; ie., as if the previous termios change had not
-> happened (as long as no intervening read took place).
-> 
-> Preserve existing userspace behavior which allows '\0's already
-> received in non-canon mode to be read as '\0's in canon mode
-> (rather than trigger add'l EOF pushes or an actual EOF).
-> 
-> Patch based on original proposal and discussion here
-> https://bugzilla.kernel.org/show_bug.cgi?id=55991
-> by Stas Sergeev <stsp@users.sourceforge.net>
-> 
-> Reported-by: Margarita Manterola <margamanterola@gmail.com>
-> Cc: Maximiliano Curia <maxy@gnuservers.com.ar>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Cc: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-> Acked-by: Stas Sergeev <stsp@users.sourceforge.net>
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> ---
+On Mon, Dec 16, 2013 at 8:04 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> The first patch:
+>  [PATCH v3 1/2] xen/pvhvm: If xen_platform_pci=0 is set don't blow up
+>
+> I would like to commit to stable as it is fixing an eggregious bug -
+> where we blow up if the guest config has: "xen_platform_pci=0" setup.
+> This bug has been in existence for years and it is time to stamp it out.
+>
+> The second patch is a cleanup - not a stable candidate.
+>
+> It touches all of the Xen frontend drivers and adds the logic of:
+> "if user disabled us, don't init" - with variations. As you can
+> specify exactly which ones you want to init and which ones
+> not (Linux runtime parameter 'xen_emul_unplug'). But for the majority
+> of drivers - it is just an on/off switch.
+>
+> Since it touches a lot of maintainers I figured I would send it
+> to Linus on Wednesday or Thursday.
+>
+> Thank you!
+>
+>  arch/x86/xen/platform-pci-unplug.c         | 79 ++++++++++++++++++++++++++++--
+>  drivers/block/xen-blkfront.c               |  4 +-
+>  drivers/char/tpm/xen-tpmfront.c            |  4 ++
+>  drivers/input/misc/xen-kbdfront.c          |  4 ++
+>  drivers/net/xen-netfront.c                 |  2 +-
+>  drivers/pci/xen-pcifront.c                 |  4 ++
+>  drivers/video/xen-fbfront.c                |  4 ++
+>  drivers/xen/xenbus/xenbus_probe_frontend.c |  2 +-
+>  include/xen/platform_pci.h                 | 25 +++++++++-
+>  9 files changed, 119 insertions(+), 9 deletions(-)
 
-Is this a 3.13-final thing, or can it wait for 3.14-rc1?
+If you want it:
 
-thanks,
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-greg k-h
+for the PCI parts.
+
+>
+> Konrad Rzeszutek Wilk (2):
+>       xen/pvhvm: If xen_platform_pci=0 is set don't blow up (v3).
+>       xen/pvhvm: Remove the xen_platform_pci int.
+>
