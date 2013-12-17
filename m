@@ -1,98 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab3LQFn1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 00:43:27 -0500
-Received: from ozlabs.org ([203.10.76.45]:42905 "EHLO ozlabs.org"
+	id S1751888Ab3LQFyh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 00:54:37 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:19203 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750872Ab3LQFn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 00:43:26 -0500
-Date: Tue, 17 Dec 2013 16:43:17 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tang Chen <tangchen@cn.fujitsu.com>
-Subject: linux-next: build failure after merge of the final tree
- (akpm-current tree related)
-Message-Id: <20131217164317.f9ba5505266969cd32706a79@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__17_Dec_2013_16_43_17_+1100_a=xtZj/sut1.KYm3"
+	id S1751118Ab3LQFyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 00:54:36 -0500
+Message-ID: <52AFE70D.70407@c-s.fr>
+Date: Tue, 17 Dec 2013 06:54:21 +0100
+From: leroy christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Scott Wood <scottwood@freescale.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2] powerpc 8xx: Loading kernels over 8Mbytes without
+ CONFIG_PIN_TLB
+References: <20131210112945.E4E311A2BF3@localhost.localdomain>	 <1386714253.10013.123.camel@snotra.buserror.net> <52A79E31.9070304@c-s.fr>	 <1386717537.10013.150.camel@snotra.buserror.net> <52A7A58F.8090705@c-s.fr> <1387234621.10013.408.camel@snotra.buserror.net>
+In-Reply-To: <1387234621.10013.408.camel@snotra.buserror.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_Dec_2013_16_43_17_+1100_a=xtZj/sut1.KYm3
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Le 16/12/2013 23:57, Scott Wood a écrit :
+> On Wed, 2013-12-11 at 00:36 +0100, leroy christophe wrote:
+>> Le 11/12/2013 00:18, Scott Wood a écrit :
+>>> There wasn't previously an ifdef specifically around the setting of
+>>> SPRN_MD_CTR.  That's new.  There was an ifdef around the entire block,
+>>> which has gone away because you are now trying to map more than 8M
+>>> regardless of CONFIG_PIN_TLB, but that has nothing to do with whether
+>>> there should be an ifdef around SPRN_MD_CTR.
+>>>
+>>>
+>> Euh, ok, but then we have to fix it in the whole function, not only in
+>> this block. Do you think it is worth doing it ?
+> Fix what in the whole function?  I was asking what harm there would be
+> if you just remove all the CONFIG_PIN_TLB ifdefs except around the
+> actual RSV4I setting -- do we really care what value goes in MD_CTR for
+> the non-pinned case, as long as it's different for each entry?
+>
+>
+MD_CTR is decremented after each entry added.
+However, the function populates entry 28, then 29, then 30, then 31. At 
+the end MD_CTR has then value 30, ready to overide entry 30 then 29 then 
+28 then 27 .....
 
-Hi all,
+So I will remove all the CONFIG_PIN_TLB, but I'll also have to fix the 
+value set in MD_CTR to start from 31, won't I ?
 
-After merging the final tree, today's linux-next build (powerpc
-allnoconfig) failed like this:
+Do you have any comment/recommendation on my tentative v3 patch where I 
+have tried to implement based on the use of r7 as you recommended ?
 
-arch/powerpc/mm/mem.c: In function 'do_init_bootmem':
-arch/powerpc/mm/mem.c:212:49: error: 'memblock_memory' undeclared (first us=
-e in this function)
-  memblock_set_node(0, (phys_addr_t)ULLONG_MAX, &memblock_memory, 0);
-                                                 ^
-
-Caused by commit 3a543893d46a ("memblock: make memblock_set_node()
-support different memblock_type") from the apm-current tree.
-
-I added the following fix for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 17 Dec 2013 16:38:21 +1100
-Subject: [PATCH] memblock-make-memblock_set_node-support-different-memblock=
-_type-fix
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/powerpc/mm/mem.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
-index 231b785b726e..8c1dd23652a1 100644
---- a/arch/powerpc/mm/mem.c
-+++ b/arch/powerpc/mm/mem.c
-@@ -209,7 +209,7 @@ void __init do_init_bootmem(void)
- 	/* Place all memblock_regions in the same node and merge contiguous
- 	 * memblock_regions
- 	 */
--	memblock_set_node(0, (phys_addr_t)ULLONG_MAX, &memblock_memory, 0);
-+	memblock_set_node(0, (phys_addr_t)ULLONG_MAX, &memblock.memory, 0);
-=20
- 	/* Add all physical memory to the bootmem map, mark each area
- 	 * present.
---=20
-1.8.5.1
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__17_Dec_2013_16_43_17_+1100_a=xtZj/sut1.KYm3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSr+R7AAoJEMDTa8Ir7ZwVJYsP/0O86UyHhPj+iSHbhUVrX0X8
-5kxqcOCZzxiec/R94JzTnMG5yi0zdjiRKygDcSG6LuQCwE5yWwbGG83zBw9V6US1
-VpNhp8BAwS9KdMP499iKF40F69E6uf3eKEqPNR3JLAAhnsYp7uhBES7D+M5QAPMz
-UJesYzxsGiyqf7lturUcGqypIbjERVRnNFrFNUIAG7GUA9ahlKnlSuPdzorh2CjC
-TR04o9xkpKtOOFJfRjCw8TNl6+41NwAt6Q/MJBnoF9x/bUFDbmUICr+uYqCCeN7G
-G+ziF3R9LcXbatq5BYTB5C22LE6dvQug0vjtmz9bvUVl8KwtxjhoYvpFW+va+o6w
-mYuxVbWsPqTKfMbW5ny8CaB+4lh5F5uztJPWQYcdCApWqYMzOZlOs+NhrqdT0bXn
-SKVeCMLYIxEDWZjYM7LEaVX9LSTcJYGu0miIT0NeXYn2RGxFnkaGUFMLnGjEcDlb
-6ki3RsaGcuOQvT8BFL6wdH4YrgHQZel2xJPWFzb92GtyO3EAP9wuWUzn86Tpqz6y
-5rEXorC3H/IW69bKMg9rfvQ+R8yIzY710Yi9IcBAHMu5RkK8kQBc7YuzDbLCrYcy
-BKvukiWlDcQ5pWgWHP27Q6gYUpMvxM4n84fSRNk1jYI/G9haspvY/7VDa50B48uI
-qhDrqy/lHFsxLBpbLh7z
-=Yv92
------END PGP SIGNATURE-----
-
---Signature=_Tue__17_Dec_2013_16_43_17_+1100_a=xtZj/sut1.KYm3--
+Christophe
