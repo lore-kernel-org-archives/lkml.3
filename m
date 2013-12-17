@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab3LQUv6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:51:58 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:28444 "EHLO
+	id S1754104Ab3LQUv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:51:56 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:28443 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab3LQUvy (ORCPT
+	with ESMTP id S1751240Ab3LQUvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Dec 2013 15:51:54 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -12,96 +12,132 @@ To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
         boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
         mukesh.rathor@oracle.com, jbeulich@suse.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v11 04/12] xen/pvh: Don't setup P2M tree.
-Date: Tue, 17 Dec 2013 15:51:35 -0500
-Message-Id: <1387313503-31362-5-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH v11 09/12] xen/pvh: Piggyback on PVHVM XenBus and event channels for PVH.
+Date: Tue, 17 Dec 2013 15:51:40 -0500
+Message-Id: <1387313503-31362-10-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
 References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-P2M is not available for PVH. Fortunatly for us the
-P2M code already has mostly the support for auto-xlat guest thanks to
-commit 3d24bbd7dddbea54358a9795abaf051b0f18973c
-"grant-table: call set_phys_to_machine after mapping grant refs"
-which: "
-introduces set_phys_to_machine calls for auto_translated guests
-(even on x86) in gnttab_map_refs and gnttab_unmap_refs.
-translated by swiotlb-xen... " so we don't need to muck much.
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
 
-But we still have to inhibit the building of the P2M tree.
-That had been done in the past by not calling
-xen_build_dynamic_phys_to_machine (which setups the P2M tree
-and gives us virtual address to access them). But we are missing
-a check for xen_build_mfn_list_list - which was continuing to setup
-the P2M tree and would blow up at trying to get the virtual
-address of p2m_missing (which would have been setup by
-xen_build_dynamic_phys_to_machine).
+PVH is a PV guest with a twist - there are certain things
+that work in it like HVM and some like PV. There is
+a similar mode - PVHVM where we run in HVM mode with
+PV code enabled - and this patch explores that.
 
-Hence a check is needed to not call xen_build_mfn_list_list when
-running in auto-xlat mode.
+The most notable PV interfaces are the XenBus and event channels.
+For PVH, we will use XenBus and event channels.
 
-Instead of replicating the check for auto-xlat in enlighten.c
-do it in the p2m.c code. The reason is that the xen_build_mfn_list_list
-is called also in xen_arch_post_suspend without any checks for
-auto-xlat. So for PVH or PV with auto-xlat - we would needlessly
-allocate space for an P2M tree.
+For the XenBus mechanism we piggyback on how it is done for
+PVHVM guests.
 
+Ditto for the event channel mechanism - we piggyback on PVHVM -
+by setting up a specific vector callback and that
+vector ends up calling the event channel mechanism to
+dispatch the events as needed.
+
+This means that from a pvops perspective, we can use
+native_irq_ops instead of the Xen PV specific. Albeit in the
+future we could support pirq_eoi_map. But that is
+a feature request that can be shared with PVHVM.
+
+Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/enlighten.c |  3 +--
- arch/x86/xen/p2m.c       | 12 ++++++++++--
- 2 files changed, 11 insertions(+), 4 deletions(-)
+ arch/x86/xen/enlighten.c           | 6 ++++++
+ arch/x86/xen/irq.c                 | 5 ++++-
+ drivers/xen/events.c               | 5 +++++
+ drivers/xen/xenbus/xenbus_client.c | 3 ++-
+ 4 files changed, 17 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 3b21c82..c7341d0 100644
+index e420613..7fceb51 100644
 --- a/arch/x86/xen/enlighten.c
 +++ b/arch/x86/xen/enlighten.c
-@@ -1493,8 +1493,7 @@ asmlinkage void __init xen_start_kernel(void)
- 	x86_configure_nx();
+@@ -1134,6 +1134,8 @@ void xen_setup_shared_info(void)
+ 	/* In UP this is as good a place as any to set up shared info */
+ 	xen_setup_vcpu_info_placement();
+ #endif
++	if (xen_pvh_domain())
++		return;
  
- 	/* Get mfn list */
--	if (!xen_feature(XENFEAT_auto_translated_physmap))
--		xen_build_dynamic_phys_to_machine();
-+	xen_build_dynamic_phys_to_machine();
+ 	xen_setup_mfn_list_list();
+ }
+@@ -1146,6 +1148,10 @@ void xen_setup_vcpu_info_placement(void)
+ 	for_each_possible_cpu(cpu)
+ 		xen_vcpu_setup(cpu);
  
- 	/*
- 	 * Set up kernel GDT and segment registers, mainly so that
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 2ae8699..fb7ee0a 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -280,6 +280,9 @@ void __ref xen_build_mfn_list_list(void)
- {
- 	unsigned long pfn;
- 
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
++	/* PVH always uses native IRQ ops */
++	if (xen_pvh_domain())
 +		return;
 +
- 	/* Pre-initialize p2m_top_mfn to be completely missing */
- 	if (p2m_top_mfn == NULL) {
- 		p2m_mid_missing_mfn = extend_brk(PAGE_SIZE, PAGE_SIZE);
-@@ -346,10 +349,15 @@ void xen_setup_mfn_list_list(void)
- /* Set up p2m_top to point to the domain-builder provided p2m pages */
- void __init xen_build_dynamic_phys_to_machine(void)
+ 	/* xen_vcpu_setup managed to place the vcpu_info within the
+ 	   percpu area for all cpus, so make use of it */
+ 	if (have_vcpu_info_placement) {
+diff --git a/arch/x86/xen/irq.c b/arch/x86/xen/irq.c
+index 0da7f86..4f7f351 100644
+--- a/arch/x86/xen/irq.c
++++ b/arch/x86/xen/irq.c
+@@ -5,6 +5,7 @@
+ #include <xen/interface/xen.h>
+ #include <xen/interface/sched.h>
+ #include <xen/interface/vcpu.h>
++#include <xen/features.h>
+ #include <xen/events.h>
+ 
+ #include <asm/xen/hypercall.h>
+@@ -128,6 +129,8 @@ static const struct pv_irq_ops xen_irq_ops __initconst = {
+ 
+ void __init xen_init_irq_ops(void)
  {
--	unsigned long *mfn_list = (unsigned long *)xen_start_info->mfn_list;
--	unsigned long max_pfn = min(MAX_DOMAIN_PAGES, xen_start_info->nr_pages);
-+	unsigned long *mfn_list;
-+	unsigned long max_pfn;
- 	unsigned long pfn;
+-	pv_irq_ops = xen_irq_ops;
++	/* For PVH we use default pv_irq_ops settings */
++	if (!xen_feature(XENFEAT_hvm_callback_vector))
++		pv_irq_ops = xen_irq_ops;
+ 	x86_init.irqs.intr_init = xen_init_IRQ;
+ }
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 4035e83..627a16a 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -1922,6 +1922,11 @@ void __init xen_init_IRQ(void)
+ 		if (xen_initial_domain())
+ 			pci_xen_initial_domain();
  
-+	 if (xen_feature(XENFEAT_auto_translated_physmap))
-+		return;
++		if (xen_feature(XENFEAT_hvm_callback_vector)) {
++			xen_callback_vector();
++			return;
++		}
 +
-+	mfn_list = (unsigned long *)xen_start_info->mfn_list;
-+	max_pfn = min(MAX_DOMAIN_PAGES, xen_start_info->nr_pages);
- 	xen_max_p2m_pfn = max_pfn;
+ 		pirq_eoi_map = (void *)__get_free_page(GFP_KERNEL|__GFP_ZERO);
+ 		eoi_gmfn.gmfn = virt_to_mfn(pirq_eoi_map);
+ 		rc = HYPERVISOR_physdev_op(PHYSDEVOP_pirq_eoi_gmfn_v2, &eoi_gmfn);
+diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
+index ec097d6..7f7c454 100644
+--- a/drivers/xen/xenbus/xenbus_client.c
++++ b/drivers/xen/xenbus/xenbus_client.c
+@@ -45,6 +45,7 @@
+ #include <xen/grant_table.h>
+ #include <xen/xenbus.h>
+ #include <xen/xen.h>
++#include <xen/features.h>
  
- 	p2m_missing = extend_brk(PAGE_SIZE, PAGE_SIZE);
+ #include "xenbus_probe.h"
+ 
+@@ -743,7 +744,7 @@ static const struct xenbus_ring_ops ring_ops_hvm = {
+ 
+ void __init xenbus_ring_ops_init(void)
+ {
+-	if (xen_pv_domain())
++	if (xen_pv_domain() && !xen_feature(XENFEAT_auto_translated_physmap))
+ 		ring_ops = &ring_ops_pv;
+ 	else
+ 		ring_ops = &ring_ops_hvm;
 -- 
 1.8.3.1
 
