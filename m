@@ -1,243 +1,377 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab3LQU5t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:57:49 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:28446 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752699Ab3LQUvy (ORCPT
+	id S1752803Ab3LQVAC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 16:00:02 -0500
+Received: from 9.mo4.mail-out.ovh.net ([46.105.40.176]:47503 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752081Ab3LQVAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:51:54 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        mukesh.rathor@oracle.com, jbeulich@suse.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v11 10/12] xen/pvh: Piggyback on PVHVM for grant driver.
-Date: Tue, 17 Dec 2013 15:51:41 -0500
-Message-Id: <1387313503-31362-11-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
-References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 17 Dec 2013 16:00:00 -0500
+X-Greylist: delayed 10799 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Dec 2013 16:00:00 EST
+MIME-Version: 1.0
+In-Reply-To: <52AFA5E0.7040707@hitachi.com>
+References: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
+	<52AFA5E0.7040707@hitachi.com>
+Date: Tue, 17 Dec 2013 18:22:53 +0100
+Message-ID: <CACh+v5NgwyAD5xy-feykUDXpzVUuF2yFxP35TsnGk3r+LFtRPA@mail.gmail.com>
+Subject: Re: [PATCH] Tracing events with GPIOs
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        tom.zanussi@linux.intel.com
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, rostedt@goodmis.org,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-Ovh-Tracer-Id: 9831076513562187800
+X-Ovh-Remote: 209.85.192.180 (mail-pd0-f180.google.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: 0
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: 0
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In PVH the shared grant frame is the PFN and not MFN,
-hence its mapped via the same code path as HVM.
+2013/12/17 Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>:
+> (2013/12/17 9:22), Jean-Jacques Hiblot wrote:
+>> This patch implements a new tracing mechanism based on kprobes and using GPIO.
+>> Debugging with GPIO is very common in the embedded world. At least for those of us
+>> fortunate enough to have an oscilloscope or a logic analyzer on their bench...
+>> This is especially true if the issue results of a hardware/sofware interaction.
+>>
+>> Typical use cases are :
+>> * mixed software/hardware debugging. For example when the software detects a
+>>   situation of interest (typically an error) it toggles a GPIO to trigger the
+>>   oscilloscope acquisition.
+>> * direct latency/duration measurements.
+>
+> Ah, it's interesting to me :)
+>
+> And I think this feature should be built on the event triggers which
+> Tom is working on, instead of kprobes directly, because it allows
+> you to take gpio actions on normal tracepoints, and uprobes too :)
+>
 
-The allocation of the grant frame is done differently - we
-do not use the early platform-pci driver and have an
-ioremap area - instead we use balloon memory and stitch
-all of the non-contingous pages in a virtualized area.
+I'll make a version that uses this framework then. When it's ready
+I'll make some measurements to check the overhead of both solutions.
 
-That means when we call the hypervisor to replace the GMFN
-with a XENMAPSPACE_grant_table type, we need to lookup the
-old PFN for every iteration instead of assuming a flat
-contingous PFN allocation.
+Tom,
+is git://git.yoctoproject.org/linux-yocto-contrib
+tzanussi/event-triggers-v11 the right starting point ?
 
-Lastly, we only use v1 for grants. This is because PVHVM
-is not able to use v2 due to no XENMEM_add_to_physmap
-calls on the error status page (see commit
-69e8f430e243d657c2053f097efebc2e2cd559f0
- xen/granttable: Disable grant v2 for HVM domains.)
+Thanks,
 
-Until that is implemented this workaround has to
-be in place.
+Jean-Jacques
 
-Also per suggestions by Stefano utilize the PVHVM paths
-as they share common functionality.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/gntdev.c       |  2 +-
- drivers/xen/grant-table.c  | 80 ++++++++++++++++++++++++++++++++++++++++++----
- drivers/xen/platform-pci.c |  2 +-
- include/xen/grant_table.h  |  2 +-
- 4 files changed, 76 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-index e41c79c..073b4a1 100644
---- a/drivers/xen/gntdev.c
-+++ b/drivers/xen/gntdev.c
-@@ -846,7 +846,7 @@ static int __init gntdev_init(void)
- 	if (!xen_domain())
- 		return -ENODEV;
- 
--	use_ptemod = xen_pv_domain();
-+	use_ptemod = !xen_feature(XENFEAT_auto_translated_physmap);
- 
- 	err = misc_register(&gntdev_miscdev);
- 	if (err != 0) {
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index aa846a4..c0ded9f 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -47,6 +47,7 @@
- #include <xen/interface/xen.h>
- #include <xen/page.h>
- #include <xen/grant_table.h>
-+#include <xen/balloon.h>
- #include <xen/interface/memory.h>
- #include <xen/hvc-console.h>
- #include <xen/swiotlb-xen.h>
-@@ -66,8 +67,8 @@ static unsigned int boot_max_nr_grant_frames;
- static int gnttab_free_count;
- static grant_ref_t gnttab_free_head;
- static DEFINE_SPINLOCK(gnttab_list_lock);
--unsigned long xen_hvm_resume_frames;
--EXPORT_SYMBOL_GPL(xen_hvm_resume_frames);
-+unsigned long xen_auto_xlat_grant_frames;
-+EXPORT_SYMBOL_GPL(xen_auto_xlat_grant_frames);
- 
- static union {
- 	struct grant_entry_v1 *v1;
-@@ -1060,7 +1061,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
- 	unsigned int nr_gframes = end_idx + 1;
- 	int rc;
- 
--	if (xen_hvm_domain()) {
-+	if (xen_feature(XENFEAT_auto_translated_physmap)) {
- 		struct xen_add_to_physmap xatp;
- 		unsigned int i = end_idx;
- 		rc = 0;
-@@ -1069,10 +1070,24 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
- 		 * index, ensuring that the table will grow only once.
- 		 */
- 		do {
-+			unsigned long vaddr;
-+			unsigned int level;
-+			pte_t *pte;
-+
- 			xatp.domid = DOMID_SELF;
- 			xatp.idx = i;
- 			xatp.space = XENMAPSPACE_grant_table;
--			xatp.gpfn = (xen_hvm_resume_frames >> PAGE_SHIFT) + i;
-+
-+			/*
-+			 * Don't assume the memory is contingous. Lookup each.
-+			 */
-+			vaddr = xen_auto_xlat_grant_frames + (i * PAGE_SIZE);
-+			if (xen_hvm_domain())
-+				xatp.gpfn = vaddr >> PAGE_SHIFT;
-+			else {
-+				pte = lookup_address(vaddr, &level);
-+				xatp.gpfn = pte_mfn(*pte);
-+			}
- 			rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp);
- 			if (rc != 0) {
- 				pr_warn("grant table add_to_physmap failed, err=%d\n",
-@@ -1135,7 +1150,7 @@ static void gnttab_request_version(void)
- 	int rc;
- 	struct gnttab_set_version gsv;
- 
--	if (xen_hvm_domain())
-+	if (xen_hvm_domain() || xen_feature(XENFEAT_auto_translated_physmap))
- 		gsv.version = 1;
- 	else
- 		gsv.version = 2;
-@@ -1161,6 +1176,46 @@ static void gnttab_request_version(void)
- 	pr_info("Grant tables using version %d layout\n", grant_table_version);
- }
- 
-+static int xlated_setup_gnttab_pages(unsigned long nr_grant_frames,
-+				     unsigned long max, void *addr)
-+{
-+	struct page **pages;
-+	unsigned long *pfns;
-+	int rc, i;
-+
-+	pages = kcalloc(nr_grant_frames, sizeof(pages[0]), GFP_KERNEL);
-+	if (!pages)
-+		return -ENOMEM;
-+
-+	pfns = kcalloc(nr_grant_frames, sizeof(pfns[0]), GFP_KERNEL);
-+	if (!pfns) {
-+		kfree(pages);
-+		return -ENOMEM;
-+	}
-+	rc = alloc_xenballooned_pages(nr_grant_frames, pages, 0 /* lowmem */);
-+	if (rc) {
-+		pr_warn("%s Couldn't balloon alloc %ld pfns rc:%d\n", __func__,
-+			nr_grant_frames, rc);
-+		kfree(pages);
-+		kfree(pfns);
-+		return rc;
-+	}
-+	for (i = 0; i < nr_grant_frames; i++)
-+		pfns[i] = page_to_pfn(pages[i]);
-+
-+	rc = arch_gnttab_map_shared(pfns, nr_grant_frames, max, addr);
-+
-+	kfree(pages);
-+	kfree(pfns);
-+	if (rc) {
-+		pr_warn("%s Couldn't map %ld pfns rc:%d\n", __func__,
-+			nr_grant_frames, rc);
-+		free_xenballooned_pages(nr_grant_frames, pages);
-+		return rc;
-+	}
-+	return rc;
-+}
-+
- static int gnttab_setup(void)
- {
- 	unsigned int max_nr_gframes;
-@@ -1169,15 +1224,26 @@ static int gnttab_setup(void)
- 	if (max_nr_gframes < nr_grant_frames)
- 		return -ENOSYS;
- 
-+	if (xen_feature(XENFEAT_auto_translated_physmap) && !xen_auto_xlat_grant_frames) {
-+		/*
-+		 * xen_auto_xlat_grant_frames is setup for PVHVM by
-+		 * alloc_xen_mmio by the time this is called.
-+		 */
-+		int rc = xlated_setup_gnttab_pages(max_nr_gframes, max_nr_gframes,
-+						   &gnttab_shared.addr);
-+		if (rc)
-+			return rc;
-+		xen_auto_xlat_grant_frames = (unsigned long)gnttab_shared.addr;
-+	}
- 	if (xen_pv_domain())
- 		return gnttab_map(0, nr_grant_frames - 1);
- 
- 	if (gnttab_shared.addr == NULL) {
--		gnttab_shared.addr = xen_remap(xen_hvm_resume_frames,
-+		gnttab_shared.addr = xen_remap(xen_auto_xlat_grant_frames,
- 						PAGE_SIZE * max_nr_gframes);
- 		if (gnttab_shared.addr == NULL) {
- 			pr_warn("Failed to ioremap gnttab share frames (addr=0x%08lx)!\n",
--					xen_hvm_resume_frames);
-+					xen_auto_xlat_grant_frames);
- 			return -ENOMEM;
- 		}
- 	}
-diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
-index 2f3528e..44bc5a6 100644
---- a/drivers/xen/platform-pci.c
-+++ b/drivers/xen/platform-pci.c
-@@ -154,7 +154,7 @@ static int platform_pci_init(struct pci_dev *pdev,
- 	}
- 
- 	max_nr_gframes = gnttab_max_grant_frames();
--	xen_hvm_resume_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
-+	xen_auto_xlat_grant_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
- 	ret = gnttab_init();
- 	if (ret)
- 		goto out;
-diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-index 694dcaf..24280ac 100644
---- a/include/xen/grant_table.h
-+++ b/include/xen/grant_table.h
-@@ -178,7 +178,7 @@ int arch_gnttab_map_status(uint64_t *frames, unsigned long nr_gframes,
- 			   grant_status_t **__shared);
- void arch_gnttab_unmap(void *shared, unsigned long nr_gframes);
- 
--extern unsigned long xen_hvm_resume_frames;
-+extern unsigned long xen_auto_xlat_grant_frames;
- unsigned int gnttab_max_grant_frames(void);
- 
- #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
--- 
-1.8.3.1
-
+> Thank you!
+>
+>>
+>> examples:
+>> To trig the oscilloscope whenever a mmc command error:
+>>   echo "p:my_mmc_blk_error mmc_blk_cmd_error gpiopulse@13" > /sys/kernel/debug/tracing/kprobe_events
+>>   echo 1 > /sys/kernel/debug/tracing/events/kprobes/my_mmc_blk_error/enable
+>>
+>> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+>> ---
+>>  kernel/trace/Kconfig        |  12 ++++
+>>  kernel/trace/trace_kprobe.c | 167 +++++++++++++++++++++++++++++++++++++++++++-
+>>  2 files changed, 177 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+>> index 015f85a..4228768 100644
+>> --- a/kernel/trace/Kconfig
+>> +++ b/kernel/trace/Kconfig
+>> @@ -420,6 +420,18 @@ config KPROBE_EVENT
+>>         This option is also required by perf-probe subcommand of perf tools.
+>>         If you want to use perf tools, this option is strongly recommended.
+>>
+>> +config KPROBE_EVENT_GPIO
+>> +     depends on KPROBE_EVENT
+>> +     depends on GPIOLIB
+>> +     bool "Enable kprobes-based tracing of events via GPIO"
+>> +     default n
+>> +     help
+>> +             This allows the user to use GPIOs as a tracing tool.The primary
+>> +             purpose of this option is to allow the user to trigger an
+>> +             oscilloscope on software events.
+>> +             The GPIO can be set, cleared, toggled, or pulsed when the event
+>> +             is hit.
+>> +
+>>  config UPROBE_EVENT
+>>       bool "Enable uprobes-based dynamic events"
+>>       depends on ARCH_SUPPORTS_UPROBES
+>> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+>> index dae9541..5d297f5 100644
+>> --- a/kernel/trace/trace_kprobe.c
+>> +++ b/kernel/trace/trace_kprobe.c
+>> @@ -19,6 +19,7 @@
+>>
+>>  #include <linux/module.h>
+>>  #include <linux/uaccess.h>
+>> +#include <linux/gpio.h>
+>>
+>>  #include "trace_probe.h"
+>>
+>> @@ -27,6 +28,33 @@
+>>  /**
+>>   * Kprobe event core functions
+>>   */
+>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>> +#define TP_GPIO_UNDEFINED      0
+>> +#define TP_GPIO_CMD_SET                1
+>> +#define TP_GPIO_CMD_CLEAR      2
+>> +#define TP_GPIO_CMD_TOGGLE     3
+>> +#define TP_GPIO_CMD_PULSE      4
+>> +#define TP_GPIO_CMD_PULSE_HIGH 5
+>> +#define TP_GPIO_CMD_PULSE_LOW  6
+>> +
+>> +static const struct {
+>> +     const char *name;
+>> +     int action;
+>> +} gpio_actions[] = {
+>> +     {"gpioset", TP_GPIO_CMD_SET},
+>> +     {"gpioclear", TP_GPIO_CMD_CLEAR},
+>> +     {"gpiotoggle", TP_GPIO_CMD_TOGGLE},
+>> +     {"gpiopulse", TP_GPIO_CMD_PULSE},
+>> +     {"gpiopulsehigh", TP_GPIO_CMD_PULSE_HIGH},
+>> +     {"gpiopulselow", TP_GPIO_CMD_PULSE_LOW},
+>> +};
+>> +
+>> +struct gpio_trace {
+>> +     int gpio;
+>> +     int action;
+>> +};
+>> +#endif
+>> +
+>>  struct trace_probe {
+>>       struct list_head        list;
+>>       struct kretprobe        rp;     /* Use rp.kp for kprobe use */
+>> @@ -38,6 +66,9 @@ struct trace_probe {
+>>       struct list_head        files;
+>>       ssize_t                 size;           /* trace entry size */
+>>       unsigned int            nr_args;
+>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>> +     struct gpio_trace               gpio_trace;
+>> +#endif
+>>       struct probe_arg        args[];
+>>  };
+>>
+>> @@ -164,10 +195,24 @@ error:
+>>       return ERR_PTR(ret);
+>>  }
+>>
+>> +static struct trace_probe *find_gpio_probe(int gpio)
+>> +{
+>> +     struct trace_probe *tp;
+>> +
+>> +     list_for_each_entry(tp, &probe_list, list)
+>> +     if ((tp->gpio_trace.action) && (tp->gpio_trace.gpio == gpio))
+>> +             return tp;
+>> +     return NULL;
+>> +}
+>> +
+>>  static void free_trace_probe(struct trace_probe *tp)
+>>  {
+>>       int i;
+>>
+>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>> +     if (tp->gpio_trace.action && !find_gpio_probe(tp->gpio_trace.gpio))
+>> +             gpio_free(tp->gpio_trace.gpio);
+>> +#endif
+>>       for (i = 0; i < tp->nr_args; i++)
+>>               traceprobe_free_probe_arg(&tp->args[i]);
+>>
+>> @@ -435,8 +480,14 @@ static int create_trace_probe(int argc, char **argv)
+>>  {
+>>       /*
+>>        * Argument syntax:
+>> -      *  - Add kprobe: p[:[GRP/]EVENT] [MOD:]KSYM[+OFFS]|KADDR [FETCHARGS]
+>> -      *  - Add kretprobe: r[:[GRP/]EVENT] [MOD:]KSYM[+0] [FETCHARGS]
+>> +      *  - Add kprobe: p[:[GRP/]EVENT] [MOD:]KSYM[+OFFS]|KADDR
+>> +      *                [GPIOACTION@GPIONUM] [FETCHARGS]
+>> +      *  - Add kretprobe: r[:[GRP/]EVENT] [MOD:]KSYM[+0]
+>> +      *                   [GPIOACTION@GPIONUM] [FETCHARGS]
+>> +      * Gpio tracing:
+>> +      *   gpio action can be : gpioset, gpioclear, gpiotoggle, gpiopulse,
+>> +      *                        gpiopulsehigh and gpiopulselow
+>> +      *   gpionum is the id of the gpio
+>>        * Fetch args:
+>>        *  $retval     : fetch return value
+>>        *  $stack      : fetch stack address
+>> @@ -459,6 +510,9 @@ static int create_trace_probe(int argc, char **argv)
+>>       unsigned long offset = 0;
+>>       void *addr = NULL;
+>>       char buf[MAX_EVENT_NAME_LEN];
+>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>> +     int len;
+>> +#endif
+>>
+>>       /* argc must be >= 1 */
+>>       if (argv[0][0] == 'p')
+>> @@ -541,6 +595,7 @@ static int create_trace_probe(int argc, char **argv)
+>>                       return -EINVAL;
+>>               }
+>>       }
+>> +
+>>       argc -= 2; argv += 2;
+>>
+>>       /* setup a probe */
+>> @@ -562,6 +617,66 @@ static int create_trace_probe(int argc, char **argv)
+>>               return PTR_ERR(tp);
+>>       }
+>>
+>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>> +     /* parse the optionnal gpio action argument */
+>> +     for (i = 0; argc && (i < ARRAY_SIZE(gpio_actions)); i++) {
+>> +             len = strlen(gpio_actions[i].name);
+>> +             if (strncmp(argv[0], gpio_actions[i].name, len) == 0)
+>> +                     break;
+>> +     }
+>> +
+>> +     if (argc && (i < ARRAY_SIZE(gpio_actions))) {
+>> +             int gpio;
+>> +             unsigned long ul;
+>> +             int gpio_requested = 0;
+>> +             ret = -EINVAL;
+>> +             if (argv[0][len] != '@') {
+>> +                     pr_info("Syntax error. wrong gpio syntax\n");
+>> +                     goto error;
+>> +             }
+>> +
+>> +             if (kstrtoul(&argv[0][len+1], 0, &ul)) {
+>> +                     pr_info("Failed to parse gpio number.\n");
+>> +                     goto error;
+>> +             }
+>> +             gpio = ul;
+>> +
+>> +             if (!gpio_is_valid(gpio)) {
+>> +                     pr_info("gpio %d is not valid.\n", gpio);
+>> +                     goto error;
+>> +             }
+>> +
+>> +             if (gpio_cansleep(gpio))
+>> +                     pr_info("gpio %d can sleep. This may break your"
+>> +                             "kernel!!!!!!\n", gpio);
+>> +
+>> +             if (!find_gpio_probe(gpio)) {
+>> +                     ret = gpio_request(gpio, event);
+>> +                     if (ret) {
+>> +                             pr_info("can't request gpio %d.\n", gpio);
+>> +                             goto error;
+>> +                     }
+>> +                     gpio_requested = 1;
+>> +             }
+>> +
+>> +             if ((gpio_actions[i].action == TP_GPIO_CMD_CLEAR) ||
+>> +                     (gpio_actions[i].action == TP_GPIO_CMD_PULSE_LOW))
+>> +                     ret = gpio_direction_output(gpio, 1);
+>> +             else
+>> +                     ret = gpio_direction_output(gpio, 0);
+>> +             if (ret) {
+>> +                     pr_info("can't make gpio %d an output.\n", gpio);
+>> +                     if (gpio_requested)
+>> +                             gpio_free(gpio);
+>> +                     goto error;
+>> +             }
+>> +
+>> +             tp->gpio_trace.gpio = gpio;
+>> +             tp->gpio_trace.action = gpio_actions[i].action;
+>> +             argc -= 1; argv += 1;
+>> +     }
+>> +#endif
+>> +
+>>       /* parse arguments */
+>>       ret = 0;
+>>       for (i = 0; i < argc && i < MAX_TRACE_ARGS; i++) {
+>> @@ -1145,12 +1260,54 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+>>  }
+>>  #endif       /* CONFIG_PERF_EVENTS */
+>>
+>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>> +static __kprobes void kprobe_gpio_take_action(int gpio, int action)
+>> +{
+>> +     int val;
+>> +     switch (action) {
+>> +     case TP_GPIO_CMD_PULSE_HIGH:
+>> +             gpio_set_value(gpio, 1);
+>> +             /* intentionnaly don't break here */
+>> +     case TP_GPIO_CMD_CLEAR:
+>> +             gpio_set_value(gpio, 0);
+>> +     break;
+>> +
+>> +     case TP_GPIO_CMD_PULSE_LOW:
+>> +             gpio_set_value(gpio, 0);
+>> +             /* intentionnaly don't break here */
+>> +     case TP_GPIO_CMD_SET:
+>> +             gpio_set_value(gpio, 1);
+>> +     break;
+>> +
+>> +     case TP_GPIO_CMD_TOGGLE:
+>> +             val = gpio_get_value(gpio);
+>> +             gpio_set_value(gpio, val ? 0 : 1);
+>> +     break;
+>> +
+>> +     case TP_GPIO_CMD_PULSE:
+>> +             val = gpio_get_value(gpio);
+>> +             gpio_set_value(gpio, val ? 0 : 1);
+>> +             gpio_set_value(gpio, val);
+>> +     break;
+>> +     }
+>> +}
+>> +
+>>  /*
+>>   * called by perf_trace_init() or __ftrace_set_clr_event() under event_mutex.
+>>   *
+>>   * kprobe_trace_self_tests_init() does enable_trace_probe/disable_trace_probe
+>>   * lockless, but we can't race with this __init function.
+>>   */
+>> +/* Kprobe gpio handler */
+>> +static inline __kprobes void kprobe_gpio_func(struct trace_probe *tp,
+>> +                                           struct pt_regs *regs)
+>> +{
+>> +     if (tp->gpio_trace.action)
+>> +             kprobe_gpio_take_action(tp->gpio_trace.gpio,
+>> +                                     tp->gpio_trace.action);
+>> +}
+>> +#endif /* CONFIG_KPROBE_EVENT_GPIO */
+>> +
+>>  static __kprobes
+>>  int kprobe_register(struct ftrace_event_call *event,
+>>                   enum trace_reg type, void *data)
+>> @@ -1186,6 +1343,9 @@ int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs)
+>>
+>>       tp->nhit++;
+>>
+>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>> +     kprobe_gpio_func(tp, regs);
+>> +#endif
+>>       if (tp->flags & TP_FLAG_TRACE)
+>>               kprobe_trace_func(tp, regs);
+>>  #ifdef CONFIG_PERF_EVENTS
+>> @@ -1202,6 +1362,9 @@ int kretprobe_dispatcher(struct kretprobe_instance *ri, struct pt_regs *regs)
+>>
+>>       tp->nhit++;
+>>
+>> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+>> +     kprobe_gpio_func(tp, regs);
+>> +#endif
+>>       if (tp->flags & TP_FLAG_TRACE)
+>>               kretprobe_trace_func(tp, ri, regs);
+>>  #ifdef CONFIG_PERF_EVENTS
+>>
+>
+>
+> --
+> Masami HIRAMATSU
+> IT Management Research Dept. Linux Technology Center
+> Hitachi, Ltd., Yokohama Research Laboratory
+> E-mail: masami.hiramatsu.pt@hitachi.com
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-gpio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
