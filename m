@@ -1,65 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269Ab3LQSdk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:33:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60933 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755727Ab3LQSOr (ORCPT
+	id S932422Ab3LQSeD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:34:03 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:4551 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143Ab3LQSdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:14:47 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Bo Shen <voice.shen@atmel.com>, Mark Brown <broonie@linaro.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 046/103] ASoC: wm8731: fix dsp mode configuration
-Date: Tue, 17 Dec 2013 18:12:35 +0000
-Message-Id: <1387304012-23805-47-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
-References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 17 Dec 2013 13:33:49 -0500
+Message-ID: <1387305222.8071.40.camel@ejdallLaptop>
+Subject: Re: [PATCH] PCI AER: handle
+ pci_cleanup_aer_uncorrect_error_status() in firmware first mode
+From: Betty Dall <betty.dall@hp.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Date: Tue, 17 Dec 2013 11:33:42 -0700
+In-Reply-To: <CAErSpo5s7euqGvqg=W=_j=98eyPp1uk=Zw8gD1gif6A9h_BNpQ@mail.gmail.com>
+References: <1386949306-30601-1-git-send-email-betty.dall@hp.com>
+	 <CAErSpo4tswv8PHGOQDviFj6Rc7QMYkWQ5rhMCFmHZFL9jM6oBQ@mail.gmail.com>
+	 <1386976612.10497.80.camel@ejdallLaptop>
+	 <CAErSpo5s7euqGvqg=W=_j=98eyPp1uk=Zw8gD1gif6A9h_BNpQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.28 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, 2013-12-16 at 12:51 -0700, Bjorn Helgaas wrote:
+> On Fri, Dec 13, 2013 at 4:16 PM, Betty Dall <betty.dall@hp.com> wrote:
+> > On Fri, 2013-12-13 at 15:35 -0700, Bjorn Helgaas wrote:
+> >> On Fri, Dec 13, 2013 at 8:41 AM, Betty Dall <betty.dall@hp.com> wrote:
+> >> > There are three functions exported from aerdrv_core.c that could be
+> >> > called when the system is in firmware first mode:
+> >> > pci_enable_pcie_error_reporting(), pci_disable_pcie_error_reporting, and
+> >> > pci_cleanup_aer_uncorrect_error_status(). The first two functions check if
+> >> > we are in firmware first mode and return immediately.
+> >> > pci_cleanup_aer_uncorrect_error_status() does not check firmware first
+> >> > mode. The problem is that all of these functions should not access the AER
+> >> > registers in firmware first mode because the firmware has not granted OS
+> >> > control of the AER registers through the _OSC.
+> >>
+> >> This looks like a good fix to me.  If I read aer_acpi_firmware_first()
+> >> correctly, we don't even *ask* for control of AER if
+> >> ACPI_HEST_FIRMWARE_FIRST appears anywhere in the HEST.  Does that
+> >> match your understanding?
+> >
+> > Yes, when the system is in firmware first mode the code setting the _OSC
+> > control register does not ask for AER control.
+> >
+> >>
+> >> > Many drivers call this
+> >> > function in their pci_error_handlers in firmware first mode.
+> >>
+> >> Drivers don't have any idea whether their device is in firmware-first
+> >> mode, do they?
+> >
+> > Right. And I think we want to keep it that way. Having this function is
+> > a good thing so that the firmware first can be abstracted from the
+> > drivers.
+> >
+> >>
+> >> > The fix is to change pci_cleanup_aer_uncorrect_error_status() to check
+> >> > firmware first mode before accessing the AER registers. If it is in firmware
+> >> > first mode, return 0. I considered returning -EIO, but decided the status
+> >> > has been cleaned up appropriately for firmware first. Returning 0 also avoids
+> >> > an error message. Not many places check the return of this function, and the
+> >> > ones that do, print an error message and continue such as:
+> >> >    err = pci_cleanup_aer_uncorrect_error_status(pdev);
+> >> >    if (err) {
+> >> >        dev_err(&pdev->dev,
+> >> >            "pci_cleanup_aer_uncorrect_error_status failed 0x%0x\n",
+> >> >             err); /* non-fatal, continue */
+> >> >    }
+> >> > That error message is how I found this problem, and it is not applicable
+> >> > for the firmware first recovery path.
+> >>
+> >> I'm curious -- did you find this problem because you saw a message
+> >> when pci_cleanup_aer_uncorrect_error_status() returned failure?  The
+> >> only way it can return failure is if there is no AER capability, and
+> >> that should be completely independent of whether we're in
+> >> firmware-first mode.
+> >
+> > Yes, I saw the error message during error injection testing and using a
+> > firmware that denies access to AER control because it is firmware first.
+> > You are right that it would only print out when there is no AER
+> > capability. I was reading code looking for places that might access the
+> > AER registers in firmware first mode. This is the only one I found.
+> 
+> I see why you added a pcie_aer_get_firmware_first() test, because
+> that's what pci_enable_pcie_error_reporting() and
+> pci_disable_pcie_error_reporting() do.
+> 
+> But I think we implemented the firmware-first stuff wrong by elevating
+> the firmware-first concept to the arch-independent level.  The
+> connection between this and the _OSC negotiation is pretty convoluted,
+> even on x86.  It's hard to verify by reading the code that we avoid
+> touching AER if we haven't asked for control or the BIOS declined to
+> grant it.
+> 
+> I think it would be better if the pci_dev.__aer_firmware_first stuff
+> were replaced by a more generic "can we use AER?" flag.  That flag
+> should be set at device enumeration time, so we wouldn't need anything
+> like the __aer_firmware_first_valid flag.
+> 
+> Bjorn
 
-------------------
+Hi Bjorn,
 
-From: Bo Shen <voice.shen@atmel.com>
+I see what you are saying about the interaction of firmware first and
+_OSC AER control being convoluted. I will work on some patches to
+address this. 
 
-commit b4af6ef99a60c5b56df137d7accd81ba1ee1254e upstream.
+I am thinking about a new flag __aer_control_granted that would be set
+if _OSC control is granted to the OS for AER. We already account for
+firmware first in negotiate_os_control(). An new function
+aer_control_granted(struct pci_dev) could be used instead of
+pcie_aer_get_firmware_first() in functions like
+pci_enable_pcie_error_reporting(), pci_disable_pcie_error_reporting(),
+and pci_cleanup_aer_uncorrect_error_status(). 
 
-According to WM8731 "PD, Rev 4.9 October 2012" datasheet, when it
-works in DSP mode A, LRP = 1, while works in DSP mode B, LRP = 0.
-So, fix LRP for DSP mode as the datesheet specification.
+Another idea is to put a check for aer_control_granted() in
+pci_find_ext_capability() so that any driver requesting the AER extended
+capability would not even get the capability pointer if AER control has
+not been granted. 
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
-Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- sound/soc/codecs/wm8731.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/sound/soc/codecs/wm8731.c b/sound/soc/codecs/wm8731.c
-index 9d1b9b02..067cc12 100644
---- a/sound/soc/codecs/wm8731.c
-+++ b/sound/soc/codecs/wm8731.c
-@@ -406,10 +406,10 @@ static int wm8731_set_dai_fmt(struct snd_soc_dai *codec_dai,
- 		iface |= 0x0001;
- 		break;
- 	case SND_SOC_DAIFMT_DSP_A:
--		iface |= 0x0003;
-+		iface |= 0x0013;
- 		break;
- 	case SND_SOC_DAIFMT_DSP_B:
--		iface |= 0x0013;
-+		iface |= 0x0003;
- 		break;
- 	default:
- 		return -EINVAL;
--- 
-1.8.3.2
+-Betty
 
