@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab3LQMIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 07:08:32 -0500
-Received: from forward5h.mail.yandex.net ([84.201.186.23]:34217 "EHLO
-	forward5h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab3LQMIa (ORCPT
+	id S1753309Ab3LQMKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 07:10:33 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:48736 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751090Ab3LQMKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 07:08:30 -0500
-X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Dec 2013 07:08:30 EST
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-In-Reply-To: <20131213154211.GP21999@twins.programming.kicks-ass.net>
-References: <49231385567953@web4m.yandex.ru> <20131213154211.GP21999@twins.programming.kicks-ass.net>
-Subject: Re: [PATCH] sched/rt: Fix rq's cpupri leak while enqueue/dequeue child RT entities
+	Tue, 17 Dec 2013 07:10:31 -0500
+Date: Tue, 17 Dec 2013 12:10:24 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linux EFI <linux-efi@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Young <dyoung@redhat.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 3/3] efi: Make efi virtual runtime map passing more robust
+Message-ID: <20131217121024.GB3145@console-pimps.org>
+References: <1387236997-26975-1-git-send-email-bp@alien8.de>
+ <1387236997-26975-4-git-send-email-bp@alien8.de>
 MIME-Version: 1.0
-Message-Id: <122071387281778@web18h.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Tue, 17 Dec 2013 16:02:58 +0400
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+In-Reply-To: <1387236997-26975-4-git-send-email-bp@alien8.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 17 Dec, at 12:36:37AM, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
+> 
+> Currently, running SetVirtualAddressMap() and passing the physical
+> address of the virtual map array was working only by a lucky coincidence
+> because the memory was present in the EFI page table too. Until Toshi
+> went and booted this on a big HP box - the krealloc() manner of resizing
+> the memmap we're doing did allocate from such physical addresses which
+> were not mapped anymore and boom:
+> 
+> http://lkml.kernel.org/r/1386806463.1791.295.camel@misato.fc.hp.com
+> 
+> One way to take care of that issue is to reimplement the krealloc thing
+> but with pages. We start with contiguous pages of order 1, i.e. 2 pages,
+> and when we deplete that memory (shouldn't happen all that often but you
+> know firmware) we realloc the next power-of-two pages.
+> 
+> Having the pages, it is much more handy and easy to map them into the
+> EFI page table with the already existing mapping code which we're using
+> for building the virtual mappings.
+> 
+> And, it doesn't matter all that much how much pages we've used as we're
+> freeing them right after they've fulfilled their purpose at the end of
+> the function anyway.
+> 
+> Reported-by: Toshi Kani <toshi.kani@hp.com>
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  arch/x86/platform/efi/efi.c | 57 ++++++++++++++++++++++++++++++++++++++-------
+>  1 file changed, 48 insertions(+), 9 deletions(-)
 
+[...]
 
-13.12.2013, 19:42, "Peter Zijlstra" <peterz@infradead.org>:
-> On Wed, Nov 27, 2013 at 07:59:13PM +0400, Kirill Tkhai wrote:
->
->> šThis patch touches RT group scheduling case.
->>
->> šFunctions inc_rt_prio_smp() and dec_rt_prio_smp() change (global) rq's priority,
->> šwhile rt_rq passed to them may be not the top-level rt_rq. This is wrong, because
->> šchanging of priority on a child level does not guarantee that the priority is
->> šthe highest all over the rq. So, this leak makes RT balancing unusable.
->>
->> šThe short example: the task having the highest priority among all rq's RT tasks
->> š(no one other task has the same priority) are waking on a throttle rt_rq.
->> šThe rq's cpupri is set to the task's priority equivalent, but real
->> šrq->rt.highest_prio.curr is less.
->>
->> šThe patch below fixes the problem.
->>
->> šIt looks like all version have this bug, so I CC'ed stable mailing list.
->
-> Yeah, I think this is right.
->
-> cpupri stuff should indeed only be changed for the top level group.
+> @@ -794,12 +814,13 @@ void __init old_map_region(efi_memory_desc_t *md)
+>   */
+>  void __init efi_enter_virtual_mode(void)
+>  {
+> +	pgd_t *pgd = (pgd_t *)__va(real_mode_header->trampoline_pgd);
+> +	unsigned long size, new_memmap_left = 0;
+>  	efi_memory_desc_t *md, *prev_md = NULL;
+> +	int count = 0, new_memmap_shift = 0;
+>  	void *p, *new_memmap = NULL;
+> -	unsigned long size;
+>  	efi_status_t status;
+>  	u64 end, systab;
+> -	int count = 0;
+>  
+>  	efi.systab = NULL;
 
-Ingo, are you going to apply this patch? Or will you give any comments?
+You sunk my i386 battleship,
+
+/home/build/git/efi/arch/x86/platform/efi/efi.c:824:24: error: â€˜struct real_mode_headerâ€™ has no member named â€˜trampoline_pgdâ€™
+make[4]: *** [arch/x86/platform/efi/efi.o] Error 1
+make[3]: *** [arch/x86/platform/efi] Error 2
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
