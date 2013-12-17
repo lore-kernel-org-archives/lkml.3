@@ -1,44 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab3LQSmz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:42:55 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:55805 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932344Ab3LQSmw (ORCPT
+	id S932550Ab3LQSmy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:42:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60746 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755400Ab3LQSN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:42:52 -0500
-Message-ID: <52B0A93E.7090503@cogentembedded.com>
-Date: Tue, 17 Dec 2013 22:42:54 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Josh Triplett <josh@joshtriplett.org>
-CC: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org
-Subject: Re: [PATCH 1/2] drivers: ide: Include appropriate header file in
- ide-cd_verbose.c
-References: <d24d7befadfbfb9501d0e873f13e39fd42ec893b.1387278225.git.rashika.kheria@gmail.com> <20131217111920.GA30592@pd.tnic> <20131217164403.GD1062@leaf> <20131217175451.GI30592@pd.tnic>
-In-Reply-To: <20131217175451.GI30592@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Dec 2013 13:13:58 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 005/103] bonding: don't permit to use ARP monitoring in 802.3ad mode
+Date: Tue, 17 Dec 2013 18:11:54 +0000
+Message-Id: <1387304012-23805-6-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
+References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+3.5.7.28 -stable review patch.  If anyone has any objections, please let me know.
 
-On 12/17/2013 08:54 PM, Borislav Petkov wrote:
+------------------
 
->> The two proposed patches here are extremely low risk, don't actually
->> change the compiled code in any way like some of those did, and fix
->> real compiler warnings.
+From: Veaceslav Falico <vfalico@redhat.com>
 
-> Considering the fact that IDE is about to be deleted (unless something
-> embedded still wants it which I hardly doubt
+commit ec9f1d15db8185f63a2c3143dc1e90ba18541b08 upstream.
 
-    You're right in your doubting: there are quite a lot of drivers used by 
-embedded platforms that nobody has bothered to convert to libata thus far.
+Currently the ARP monitoring is not supported with 802.3ad, and it's
+prohibited to use it via the module params.
 
-MBR, Sergei
+However we still can set it afterwards via sysfs, cause we only check for
+*LB modes there.
+
+To fix this - add a check for 802.3ad mode in bonding_store_arp_interval.
+
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/net/bonding/bond_sysfs.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
+index ed4f9e5..753640c 100644
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -533,8 +533,9 @@ static ssize_t bonding_store_arp_interval(struct device *d,
+ 		goto out;
+ 	}
+ 	if (bond->params.mode == BOND_MODE_ALB ||
+-	    bond->params.mode == BOND_MODE_TLB) {
+-		pr_info("%s: ARP monitoring cannot be used with ALB/TLB. Only MII monitoring is supported on %s.\n",
++	    bond->params.mode == BOND_MODE_TLB ||
++	    bond->params.mode == BOND_MODE_8023AD) {
++		pr_info("%s: ARP monitoring cannot be used with ALB/TLB/802.3ad. Only MII monitoring is supported on %s.\n",
+ 			bond->dev->name, bond->dev->name);
+ 		ret = -EINVAL;
+ 		goto out;
+-- 
+1.8.3.2
 
