@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241Ab3LQKMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 05:12:19 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:54482 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab3LQKMS (ORCPT
+	id S1752479Ab3LQKMb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 05:12:31 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:62222 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab3LQKM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 05:12:18 -0500
+	Tue, 17 Dec 2013 05:12:28 -0500
 From: Magnus Damm <magnus.damm@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: khilman@linaro.org, arnd@arndb.de, linux-sh@vger.kernel.org,
         daniel.lezcano@linaro.org, horms@verge.net.au, john.stultz@linaro.org,
         olof@lixom.net, Magnus Damm <magnus.damm@gmail.com>,
         tglx@linutronix.de
-Date: Tue, 17 Dec 2013 19:12:48 +0900
-Message-Id: <20131217101248.17491.52424.sendpatchset@w520>
+Date: Tue, 17 Dec 2013 19:13:19 +0900
+Message-Id: <20131217101319.17491.50953.sendpatchset@w520>
 In-Reply-To: <20131217101212.17491.56898.sendpatchset@w520>
 References: <20131217101212.17491.56898.sendpatchset@w520>
-Subject: [PATCH v5 02/03] ARM: shmobile: Remove CMT, TMU and STI Kconfig entries
+Subject: [PATCH v5 03/03] sh: Remove Kconfig entries for TMU, CMT and MTU2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,143 +25,220 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Magnus Damm <damm@opensource.se>
 
 Now when drivers/clocksource/Kconfig has been
-updated with entires for CMT, TMU and STI
-it is safe to remove these from mach-shmobile.
-
-Also select timers per SoC via SYS_SUPPORTS_xxx.
+updated with entires for CMT, TMU and MTU2
+it is safe to remove these from SH.
 
 Signed-off-by: Magnus Damm <damm@opensource.se>
 Acked-by: John Stultz <john.stultz@linaro.org>
 ---
 
- arch/arm/mach-shmobile/Kconfig |   35 +++++++++++++++++------------------
- 1 file changed, 17 insertions(+), 18 deletions(-)
+ arch/sh/Kconfig |   76 ++++++++++++++++---------------------------------------
+ 1 file changed, 23 insertions(+), 53 deletions(-)
 
---- 0001/arch/arm/mach-shmobile/Kconfig
-+++ work/arch/arm/mach-shmobile/Kconfig	2013-12-17 18:52:58.000000000 +0900
-@@ -24,13 +24,16 @@ comment "Renesas ARM SoCs System Type"
+--- 0001/arch/sh/Kconfig
++++ work/arch/sh/Kconfig	2013-12-17 18:56:15.000000000 +0900
+@@ -122,15 +122,6 @@ config SYS_SUPPORTS_NUMA
+ config SYS_SUPPORTS_PCI
+ 	bool
  
- config ARCH_EMEV2
- 	bool "Emma Mobile EV2"
-+	select SYS_SUPPORTS_EM_STI
+-config SYS_SUPPORTS_CMT
+-	bool
+-
+-config SYS_SUPPORTS_MTU2
+-	bool
+-
+-config SYS_SUPPORTS_TMU
+-	bool
+-
+ config STACKTRACE_SUPPORT
+ 	def_bool y
  
- config ARCH_R7S72100
- 	bool "RZ/A1H (R7S72100)"
+@@ -190,14 +181,14 @@ config CPU_SH3
+ 	bool
+ 	select CPU_HAS_INTEVT
+ 	select CPU_HAS_SR_RB
+-	select SYS_SUPPORTS_TMU
++	select SYS_SUPPORTS_SH_TMU
+ 
+ config CPU_SH4
+ 	bool
+ 	select CPU_HAS_INTEVT
+ 	select CPU_HAS_SR_RB
+ 	select CPU_HAS_FPU if !CPU_SH4AL_DSP
+-	select SYS_SUPPORTS_TMU
++	select SYS_SUPPORTS_SH_TMU
+ 	select SYS_SUPPORTS_HUGETLBFS if MMU
+ 
+ config CPU_SH4A
+@@ -212,7 +203,7 @@ config CPU_SH4AL_DSP
+ config CPU_SH5
+ 	bool
+ 	select CPU_HAS_FPU
+-	select SYS_SUPPORTS_TMU
++	select SYS_SUPPORTS_SH_TMU
+ 	select SYS_SUPPORTS_HUGETLBFS if MMU
+ 
+ config CPU_SHX2
+@@ -249,7 +240,7 @@ choice
+ config CPU_SUBTYPE_SH7619
+ 	bool "Support SH7619 processor"
+ 	select CPU_SH2
+-	select SYS_SUPPORTS_CMT
++	select SYS_SUPPORTS_SH_CMT
+ 
+ # SH-2A Processor Support
+ 
+@@ -257,50 +248,50 @@ config CPU_SUBTYPE_SH7201
+ 	bool "Support SH7201 processor"
+ 	select CPU_SH2A
+ 	select CPU_HAS_FPU
+-	select SYS_SUPPORTS_MTU2
++	select SYS_SUPPORTS_SH_MTU2
+  
+ config CPU_SUBTYPE_SH7203
+ 	bool "Support SH7203 processor"
+ 	select CPU_SH2A
+ 	select CPU_HAS_FPU
+-	select SYS_SUPPORTS_CMT
+-	select SYS_SUPPORTS_MTU2
++	select SYS_SUPPORTS_SH_CMT
++	select SYS_SUPPORTS_SH_MTU2
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select PINCTRL
+ 
+ config CPU_SUBTYPE_SH7206
+ 	bool "Support SH7206 processor"
+ 	select CPU_SH2A
+-	select SYS_SUPPORTS_CMT
+-	select SYS_SUPPORTS_MTU2
++	select SYS_SUPPORTS_SH_CMT
 +	select SYS_SUPPORTS_SH_MTU2
  
- config ARCH_R8A7791
- 	bool "R-Car M2 (R8A77910)"
- 	select RENESAS_IRQC
+ config CPU_SUBTYPE_SH7263
+ 	bool "Support SH7263 processor"
+ 	select CPU_SH2A
+ 	select CPU_HAS_FPU
+-	select SYS_SUPPORTS_CMT
+-	select SYS_SUPPORTS_MTU2
 +	select SYS_SUPPORTS_SH_CMT
- 
- comment "Renesas ARM SoCs Board Type"
- 
-@@ -60,6 +63,8 @@ config ARCH_SH7372
- 	select ARM_CPU_SUSPEND if PM || CPU_IDLE
- 	select CPU_V7
- 	select SH_CLK_CPG
-+	select SYS_SUPPORTS_SH_CMT
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_SH73A0
- 	bool "SH-Mobile AG5 (R8A73A00)"
-@@ -69,6 +74,8 @@ config ARCH_SH73A0
- 	select I2C
- 	select SH_CLK_CPG
- 	select RENESAS_INTC_IRQPIN
-+	select SYS_SUPPORTS_SH_CMT
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A73A4
- 	bool "R-Mobile APE6 (R8A73A40)"
-@@ -79,6 +86,8 @@ config ARCH_R8A73A4
- 	select RENESAS_IRQC
- 	select ARCH_HAS_CPUFREQ
- 	select ARCH_HAS_OPP
-+	select SYS_SUPPORTS_SH_CMT
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A7740
- 	bool "R-Mobile A1 (R8A77400)"
-@@ -87,6 +96,8 @@ config ARCH_R8A7740
- 	select CPU_V7
- 	select SH_CLK_CPG
- 	select RENESAS_INTC_IRQPIN
-+	select SYS_SUPPORTS_SH_CMT
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A7778
- 	bool "R-Car M1A (R8A77781)"
-@@ -96,6 +107,7 @@ config ARCH_R8A7778
- 	select ARM_GIC
- 	select USB_ARCH_HAS_EHCI
- 	select USB_ARCH_HAS_OHCI
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A7779
- 	bool "R-Car H1 (R8A77790)"
-@@ -106,6 +118,7 @@ config ARCH_R8A7779
- 	select USB_ARCH_HAS_EHCI
- 	select USB_ARCH_HAS_OHCI
- 	select RENESAS_INTC_IRQPIN
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A7790
- 	bool "R-Car H2 (R8A77900)"
-@@ -115,6 +128,7 @@ config ARCH_R8A7790
- 	select MIGHT_HAVE_PCI
- 	select SH_CLK_CPG
- 	select RENESAS_IRQC
-+	select SYS_SUPPORTS_SH_CMT
- 
- config ARCH_R8A7791
- 	bool "R-Car M2 (R8A77910)"
-@@ -124,6 +138,7 @@ config ARCH_R8A7791
- 	select MIGHT_HAVE_PCI
- 	select SH_CLK_CPG
- 	select RENESAS_IRQC
-+	select SYS_SUPPORTS_SH_CMT
- 
- config ARCH_EMEV2
- 	bool "Emma Mobile EV2"
-@@ -133,6 +148,7 @@ config ARCH_EMEV2
- 	select MIGHT_HAVE_PCI
- 	select USE_OF
- 	select AUTO_ZRELADDR
-+	select SYS_SUPPORTS_EM_STI
- 
- config ARCH_R7S72100
- 	bool "RZ/A1H (R7S72100)"
-@@ -140,6 +156,7 @@ config ARCH_R7S72100
- 	select ARM_GIC
- 	select CPU_V7
- 	select SH_CLK_CPG
 +	select SYS_SUPPORTS_SH_MTU2
  
- comment "Renesas ARM SoCs Board Type"
+ config CPU_SUBTYPE_SH7264
+ 	bool "Support SH7264 processor"
+ 	select CPU_SH2A
+ 	select CPU_HAS_FPU
+-	select SYS_SUPPORTS_CMT
+-	select SYS_SUPPORTS_MTU2
++	select SYS_SUPPORTS_SH_CMT
++	select SYS_SUPPORTS_SH_MTU2
+ 	select PINCTRL
  
-@@ -334,24 +351,6 @@ config SHMOBILE_TIMER_HZ
- 	  want to select a HZ value such as 128 that can evenly divide RCLK.
- 	  A HZ value that does not divide evenly may cause timer drift.
+ config CPU_SUBTYPE_SH7269
+ 	bool "Support SH7269 processor"
+ 	select CPU_SH2A
+ 	select CPU_HAS_FPU
+-	select SYS_SUPPORTS_CMT
+-	select SYS_SUPPORTS_MTU2
++	select SYS_SUPPORTS_SH_CMT
++	select SYS_SUPPORTS_SH_MTU2
+ 	select PINCTRL
  
+ config CPU_SUBTYPE_MXG
+ 	bool "Support MX-G processor"
+ 	select CPU_SH2A
+-	select SYS_SUPPORTS_MTU2
++	select SYS_SUPPORTS_SH_MTU2
+ 	help
+ 	  Select MX-G if running on an R8A03022BG part.
+ 
+@@ -353,7 +344,7 @@ config CPU_SUBTYPE_SH7720
+ 	bool "Support SH7720 processor"
+ 	select CPU_SH3
+ 	select CPU_HAS_DSP
+-	select SYS_SUPPORTS_CMT
++	select SYS_SUPPORTS_SH_CMT
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select USB_ARCH_HAS_OHCI
+ 	select USB_OHCI_SH if USB_OHCI_HCD
+@@ -365,7 +356,7 @@ config CPU_SUBTYPE_SH7721
+ 	bool "Support SH7721 processor"
+ 	select CPU_SH3
+ 	select CPU_HAS_DSP
+-	select SYS_SUPPORTS_CMT
++	select SYS_SUPPORTS_SH_CMT
+ 	select USB_ARCH_HAS_OHCI
+ 	select USB_OHCI_SH if USB_OHCI_HCD
+ 	help
+@@ -421,7 +412,7 @@ config CPU_SUBTYPE_SH7723
+ 	select CPU_SHX2
+ 	select ARCH_SHMOBILE
+ 	select ARCH_SPARSEMEM_ENABLE
+-	select SYS_SUPPORTS_CMT
++	select SYS_SUPPORTS_SH_CMT
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select PINCTRL
+ 	help
+@@ -433,7 +424,7 @@ config CPU_SUBTYPE_SH7724
+ 	select CPU_SHX2
+ 	select ARCH_SHMOBILE
+ 	select ARCH_SPARSEMEM_ENABLE
+-	select SYS_SUPPORTS_CMT
++	select SYS_SUPPORTS_SH_CMT
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select PINCTRL
+ 	help
+@@ -513,7 +504,7 @@ config CPU_SUBTYPE_SH7343
+ 	bool "Support SH7343 processor"
+ 	select CPU_SH4AL_DSP
+ 	select ARCH_SHMOBILE
+-	select SYS_SUPPORTS_CMT
++	select SYS_SUPPORTS_SH_CMT
+ 
+ config CPU_SUBTYPE_SH7722
+ 	bool "Support SH7722 processor"
+@@ -522,7 +513,7 @@ config CPU_SUBTYPE_SH7722
+ 	select ARCH_SHMOBILE
+ 	select ARCH_SPARSEMEM_ENABLE
+ 	select SYS_SUPPORTS_NUMA
+-	select SYS_SUPPORTS_CMT
++	select SYS_SUPPORTS_SH_CMT
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select PINCTRL
+ 
+@@ -533,7 +524,7 @@ config CPU_SUBTYPE_SH7366
+ 	select ARCH_SHMOBILE
+ 	select ARCH_SPARSEMEM_ENABLE
+ 	select SYS_SUPPORTS_NUMA
+-	select SYS_SUPPORTS_CMT
++	select SYS_SUPPORTS_SH_CMT
+ 
+ endchoice
+ 
+@@ -566,27 +557,6 @@ source "arch/sh/boards/Kconfig"
+ 
+ menu "Timer and clock configuration"
+ 
+-config SH_TIMER_TMU
+-	bool "TMU timer driver"
+-	depends on SYS_SUPPORTS_TMU
+-	default y
+-	help
+-	  This enables the build of the TMU timer driver.
+-
 -config SH_TIMER_CMT
 -	bool "CMT timer driver"
+-	depends on SYS_SUPPORTS_CMT
 -	default y
 -	help
 -	  This enables build of the CMT timer driver.
 -
--config SH_TIMER_TMU
--	bool "TMU timer driver"
+-config SH_TIMER_MTU2
+-	bool "MTU2 timer driver"
+-	depends on SYS_SUPPORTS_MTU2
 -	default y
 -	help
--	  This enables build of the TMU timer driver.
+-	  This enables build of the MTU2 timer driver.
 -
--config EM_TIMER_STI
--	bool "STI timer driver"
--	default y
--	help
--	  This enables build of the STI timer driver.
--
- endmenu
- 
- endif
+ config SH_PCLK_FREQ
+ 	int "Peripheral clock frequency (in Hz)"
+ 	depends on SH_CLK_CPG_LEGACY
