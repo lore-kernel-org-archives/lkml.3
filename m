@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab3LQSOE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:14:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60751 "EHLO
+	id S1755742Ab3LQSOr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:14:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60925 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755470Ab3LQSOA (ORCPT
+	with ESMTP id S1755711Ab3LQSOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:14:00 -0500
+	Tue, 17 Dec 2013 13:14:44 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Miller <davem@davemloft.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+Cc: Liu Gang <Gang.Liu@freescale.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 014/103] net: rework recvmsg handler msg_name and msg_namelen logic
-Date: Tue, 17 Dec 2013 18:12:03 +0000
-Message-Id: <1387304012-23805-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 045/103] powerpc/gpio: Fix the wrong GPIO input data on MPC8572/MPC8536
+Date: Tue, 17 Dec 2013 18:12:34 +0000
+Message-Id: <1387304012-23805-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -28,717 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Liu Gang <Gang.Liu@freescale.com>
 
-commit f3d3342602f8bcbf37d7c46641cb9bca7618eb1c upstream.
+commit 1aeef303b5d9e243c41d5b80f8bb059366514a10 upstream.
 
-This patch now always passes msg->msg_namelen as 0. recvmsg handlers must
-set msg_namelen to the proper size <= sizeof(struct sockaddr_storage)
-to return msg_name to the user.
+For MPC8572/MPC8536, the status of GPIOs defined as output
+cannot be determined by reading GPDAT register, so the code
+use shadow data register instead. But the code may give the
+wrong status of GPIOs defined as input under some scenarios:
 
-This prevents numerous uninitialized memory leaks we had in the
-recvmsg handlers and makes it harder for new code to accidentally leak
-uninitialized memory.
+1. If some pins were configured as inputs and were asserted
+high before booting the kernel, the shadow data has been
+initialized with those pin values.
+2. Some pins have been configured as output first and have
+been set to the high value, then reconfigured as input.
 
-Optimize for the case recvfrom is called with NULL as address. We don't
-need to copy the address at all, so set it to NULL before invoking the
-recvmsg handler. We can do so, because all the recvmsg handlers must
-cope with the case a plain read() is called on them. read() also sets
-msg_name to NULL.
+The above cases will make the shadow data for those input
+pins to be set to high. Then reading the pin status will
+always return high even if the actual pin status is low.
 
-Also document these changes in include/linux/net.h as suggested by David
-Miller.
+The code should eliminate the effects of the shadow data to
+the input pins, and the status of those pins should be
+read directly from GPDAT.
 
-Changes since RFC:
-
-Set msg->msg_name = NULL if user specified a NULL in msg_name but had a
-non-null msg_namelen in verify_iovec/verify_compat_iovec. This doesn't
-affect sendto as it would bail out earlier while trying to copy-in the
-address. It also more naturally reflects the logic by the callers of
-verify_iovec.
-
-With this change in place I could remove "
-if (!uaddr || msg_sys->msg_namelen == 0)
-	msg->msg_name = NULL
-".
-
-This change does not alter the user visible error logic as we ignore
-msg_namelen as long as msg_name is NULL.
-
-Also remove two unnecessary curly brackets in ___sys_recvmsg and change
-comments to netdev style.
-
-Cc: David Miller <davem@davemloft.net>
-Suggested-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.5: used davem's backport to 3.4 ]
+Acked-by: Scott Wood <scottwood@freescale.com>
+Acked-by: Anatolij Gustschin <agust@denx.de>
+Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- crypto/algif_hash.c          |  2 --
- crypto/algif_skcipher.c      |  1 -
- drivers/isdn/mISDN/socket.c  | 13 ++++---------
- drivers/net/ppp/pppoe.c      |  2 --
- include/linux/net.h          |  8 ++++++++
- net/appletalk/ddp.c          | 16 +++++++---------
- net/atm/common.c             |  2 --
- net/ax25/af_ax25.c           |  4 ++--
- net/bluetooth/af_bluetooth.c |  4 ----
- net/bluetooth/hci_sock.c     |  2 --
- net/bluetooth/rfcomm/sock.c  |  1 -
- net/caif/caif_socket.c       |  4 ----
- net/compat.c                 |  3 ++-
- net/core/iovec.c             |  3 ++-
- net/ipx/af_ipx.c             |  3 +--
- net/irda/af_irda.c           |  4 ----
- net/iucv/af_iucv.c           |  2 --
- net/key/af_key.c             |  1 -
- net/l2tp/l2tp_ppp.c          |  2 --
- net/llc/af_llc.c             |  2 --
- net/netlink/af_netlink.c     |  2 --
- net/netrom/af_netrom.c       |  3 +--
- net/nfc/rawsock.c            |  2 --
- net/packet/af_packet.c       | 32 +++++++++++++++-----------------
- net/rds/recv.c               |  2 --
- net/rose/af_rose.c           |  8 +++++---
- net/rxrpc/ar-recvmsg.c       |  9 ++++++---
- net/socket.c                 | 19 +++++++++++--------
- net/tipc/socket.c            |  6 ------
- net/unix/af_unix.c           |  5 -----
- net/x25/af_x25.c             |  3 +--
- 31 files changed, 65 insertions(+), 105 deletions(-)
+ drivers/gpio/gpio-mpc8xxx.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
-index 0262210..ef5356c 100644
---- a/crypto/algif_hash.c
-+++ b/crypto/algif_hash.c
-@@ -161,8 +161,6 @@ static int hash_recvmsg(struct kiocb *unused, struct socket *sock,
- 	else if (len < ds)
- 		msg->msg_flags |= MSG_TRUNC;
+diff --git a/drivers/gpio/gpio-mpc8xxx.c b/drivers/gpio/gpio-mpc8xxx.c
+index 5a1817e..c81b8da 100644
+--- a/drivers/gpio/gpio-mpc8xxx.c
++++ b/drivers/gpio/gpio-mpc8xxx.c
+@@ -69,10 +69,14 @@ static int mpc8572_gpio_get(struct gpio_chip *gc, unsigned int gpio)
+ 	u32 val;
+ 	struct of_mm_gpio_chip *mm = to_of_mm_gpio_chip(gc);
+ 	struct mpc8xxx_gpio_chip *mpc8xxx_gc = to_mpc8xxx_gpio_chip(mm);
++	u32 out_mask, out_shadow;
  
--	msg->msg_namelen = 0;
--
- 	lock_sock(sk);
- 	if (ctx->more) {
- 		ctx->more = 0;
-diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
-index a1c4f0a..6a6dfc0 100644
---- a/crypto/algif_skcipher.c
-+++ b/crypto/algif_skcipher.c
-@@ -432,7 +432,6 @@ static int skcipher_recvmsg(struct kiocb *unused, struct socket *sock,
- 	long copied = 0;
+-	val = in_be32(mm->regs + GPIO_DAT) & ~in_be32(mm->regs + GPIO_DIR);
++	out_mask = in_be32(mm->regs + GPIO_DIR);
  
- 	lock_sock(sk);
--	msg->msg_namelen = 0;
- 	for (iov = msg->msg_iov, iovlen = msg->msg_iovlen; iovlen > 0;
- 	     iovlen--, iov++) {
- 		unsigned long seglen = iov->iov_len;
-diff --git a/drivers/isdn/mISDN/socket.c b/drivers/isdn/mISDN/socket.c
-index abe2d69..ade1bcf 100644
---- a/drivers/isdn/mISDN/socket.c
-+++ b/drivers/isdn/mISDN/socket.c
-@@ -117,7 +117,6 @@ mISDN_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
- {
- 	struct sk_buff		*skb;
- 	struct sock		*sk = sock->sk;
--	struct sockaddr_mISDN	*maddr;
- 
- 	int		copied, err;
- 
-@@ -135,9 +134,9 @@ mISDN_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (!skb)
- 		return err;
- 
--	if (msg->msg_namelen >= sizeof(struct sockaddr_mISDN)) {
--		msg->msg_namelen = sizeof(struct sockaddr_mISDN);
--		maddr = (struct sockaddr_mISDN *)msg->msg_name;
-+	if (msg->msg_name) {
-+		struct sockaddr_mISDN *maddr = msg->msg_name;
+-	return (val | mpc8xxx_gc->data) & mpc8xxx_gpio2mask(gpio);
++	val = in_be32(mm->regs + GPIO_DAT) & ~out_mask;
++	out_shadow = mpc8xxx_gc->data & out_mask;
 +
- 		maddr->family = AF_ISDN;
- 		maddr->dev = _pms(sk)->dev->id;
- 		if ((sk->sk_protocol == ISDN_P_LAPD_TE) ||
-@@ -150,11 +149,7 @@ mISDN_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
- 			maddr->sapi = _pms(sk)->ch.addr & 0xFF;
- 			maddr->tei =  (_pms(sk)->ch.addr >> 8) & 0xFF;
- 		}
--	} else {
--		if (msg->msg_namelen)
--			printk(KERN_WARNING "%s: too small namelen %d\n",
--			       __func__, msg->msg_namelen);
--		msg->msg_namelen = 0;
-+		msg->msg_namelen = sizeof(*maddr);
- 	}
++	return (val | out_shadow) & mpc8xxx_gpio2mask(gpio);
+ }
  
- 	copied = skb->len + MISDN_HEADER_LEN;
-diff --git a/drivers/net/ppp/pppoe.c b/drivers/net/ppp/pppoe.c
-index 20f31d0..56b52af 100644
---- a/drivers/net/ppp/pppoe.c
-+++ b/drivers/net/ppp/pppoe.c
-@@ -979,8 +979,6 @@ static int pppoe_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (error < 0)
- 		goto end;
- 
--	m->msg_namelen = 0;
--
- 	if (skb) {
- 		total_len = min_t(size_t, total_len, skb->len);
- 		error = skb_copy_datagram_iovec(skb, 0, m->msg_iov, total_len);
-diff --git a/include/linux/net.h b/include/linux/net.h
-index dc95700..f150cdf 100644
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -198,6 +198,14 @@ struct proto_ops {
- #endif
- 	int		(*sendmsg)   (struct kiocb *iocb, struct socket *sock,
- 				      struct msghdr *m, size_t total_len);
-+	/* Notes for implementing recvmsg:
-+	 * ===============================
-+	 * msg->msg_namelen should get updated by the recvmsg handlers
-+	 * iff msg_name != NULL. It is by default 0 to prevent
-+	 * returning uninitialized memory to user space.  The recvfrom
-+	 * handlers can assume that msg.msg_name is either NULL or has
-+	 * a minimum size of sizeof(struct sockaddr_storage).
-+	 */
- 	int		(*recvmsg)   (struct kiocb *iocb, struct socket *sock,
- 				      struct msghdr *m, size_t total_len,
- 				      int flags);
-diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
-index 8685296..5f05768 100644
---- a/net/appletalk/ddp.c
-+++ b/net/appletalk/ddp.c
-@@ -1738,7 +1738,6 @@ static int atalk_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 			 size_t size, int flags)
- {
- 	struct sock *sk = sock->sk;
--	struct sockaddr_at *sat = (struct sockaddr_at *)msg->msg_name;
- 	struct ddpehdr *ddp;
- 	int copied = 0;
- 	int offset = 0;
-@@ -1767,14 +1766,13 @@ static int atalk_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 	}
- 	err = skb_copy_datagram_iovec(skb, offset, msg->msg_iov, copied);
- 
--	if (!err) {
--		if (sat) {
--			sat->sat_family      = AF_APPLETALK;
--			sat->sat_port        = ddp->deh_sport;
--			sat->sat_addr.s_node = ddp->deh_snode;
--			sat->sat_addr.s_net  = ddp->deh_snet;
--		}
--		msg->msg_namelen = sizeof(*sat);
-+	if (!err && msg->msg_name) {
-+		struct sockaddr_at *sat = msg->msg_name;
-+		sat->sat_family      = AF_APPLETALK;
-+		sat->sat_port        = ddp->deh_sport;
-+		sat->sat_addr.s_node = ddp->deh_snode;
-+		sat->sat_addr.s_net  = ddp->deh_snet;
-+		msg->msg_namelen     = sizeof(*sat);
- 	}
- 
- 	skb_free_datagram(sk, skb);	/* Free the datagram. */
-diff --git a/net/atm/common.c b/net/atm/common.c
-index f0a9b7e..0c0ad93 100644
---- a/net/atm/common.c
-+++ b/net/atm/common.c
-@@ -520,8 +520,6 @@ int vcc_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *msg,
- 	struct sk_buff *skb;
- 	int copied, error = -EINVAL;
- 
--	msg->msg_namelen = 0;
--
- 	if (sock->state != SS_CONNECTED)
- 		return -ENOTCONN;
- 
-diff --git a/net/ax25/af_ax25.c b/net/ax25/af_ax25.c
-index d53a123..eb37327 100644
---- a/net/ax25/af_ax25.c
-+++ b/net/ax25/af_ax25.c
-@@ -1641,11 +1641,11 @@ static int ax25_recvmsg(struct kiocb *iocb, struct socket *sock,
- 
- 	skb_copy_datagram_iovec(skb, 0, msg->msg_iov, copied);
- 
--	if (msg->msg_namelen != 0) {
--		struct sockaddr_ax25 *sax = (struct sockaddr_ax25 *)msg->msg_name;
-+	if (msg->msg_name) {
- 		ax25_digi digi;
- 		ax25_address src;
- 		const unsigned char *mac = skb_mac_header(skb);
-+		struct sockaddr_ax25 *sax = msg->msg_name;
- 
- 		memset(sax, 0, sizeof(struct full_sockaddr_ax25));
- 		ax25_addr_parse(mac + 1, skb->data - mac - 1, &src, NULL,
-diff --git a/net/bluetooth/af_bluetooth.c b/net/bluetooth/af_bluetooth.c
-index 821e9d3..63b79e2 100644
---- a/net/bluetooth/af_bluetooth.c
-+++ b/net/bluetooth/af_bluetooth.c
-@@ -240,8 +240,6 @@ int bt_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (flags & (MSG_OOB))
- 		return -EOPNOTSUPP;
- 
--	msg->msg_namelen = 0;
--
- 	skb = skb_recv_datagram(sk, flags, noblock, &err);
- 	if (!skb) {
- 		if (sk->sk_shutdown & RCV_SHUTDOWN)
-@@ -306,8 +304,6 @@ int bt_sock_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (flags & MSG_OOB)
- 		return -EOPNOTSUPP;
- 
--	msg->msg_namelen = 0;
--
- 	BT_DBG("sk %p size %zu", sk, size);
- 
- 	lock_sock(sk);
-diff --git a/net/bluetooth/hci_sock.c b/net/bluetooth/hci_sock.c
-index bedc768..8c2cb05 100644
---- a/net/bluetooth/hci_sock.c
-+++ b/net/bluetooth/hci_sock.c
-@@ -767,8 +767,6 @@ static int hci_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (!skb)
- 		return err;
- 
--	msg->msg_namelen = 0;
--
- 	copied = skb->len;
- 	if (len < copied) {
- 		msg->msg_flags |= MSG_TRUNC;
-diff --git a/net/bluetooth/rfcomm/sock.c b/net/bluetooth/rfcomm/sock.c
-index 514bead..20bd148 100644
---- a/net/bluetooth/rfcomm/sock.c
-+++ b/net/bluetooth/rfcomm/sock.c
-@@ -629,7 +629,6 @@ static int rfcomm_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
- 
- 	if (test_and_clear_bit(RFCOMM_DEFER_SETUP, &d->flags)) {
- 		rfcomm_dlc_accept(d);
--		msg->msg_namelen = 0;
- 		return 0;
- 	}
- 
-diff --git a/net/caif/caif_socket.c b/net/caif/caif_socket.c
-index 21a1840..bbe5dbd 100644
---- a/net/caif/caif_socket.c
-+++ b/net/caif/caif_socket.c
-@@ -286,8 +286,6 @@ static int caif_seqpkt_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (m->msg_flags&MSG_OOB)
- 		goto read_error;
- 
--	m->msg_namelen = 0;
--
- 	skb = skb_recv_datagram(sk, flags, 0 , &ret);
- 	if (!skb)
- 		goto read_error;
-@@ -361,8 +359,6 @@ static int caif_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (flags&MSG_OOB)
- 		goto out;
- 
--	msg->msg_namelen = 0;
--
- 	/*
- 	 * Lock the socket to prevent queue disordering
- 	 * while sleeps in memcpy_tomsg
-diff --git a/net/compat.c b/net/compat.c
-index 707f5ba..b4afcb4 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -93,7 +93,8 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
- 			if (err < 0)
- 				return err;
- 		}
--		kern_msg->msg_name = kern_address;
-+		if (kern_msg->msg_name)
-+			kern_msg->msg_name = kern_address;
- 	} else
- 		kern_msg->msg_name = NULL;
- 
-diff --git a/net/core/iovec.c b/net/core/iovec.c
-index 7e7aeb0..7fd34a5 100644
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -48,7 +48,8 @@ int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *a
- 			if (err < 0)
- 				return err;
- 		}
--		m->msg_name = address;
-+		if (m->msg_name)
-+			m->msg_name = address;
- 	} else {
- 		m->msg_name = NULL;
- 	}
-diff --git a/net/ipx/af_ipx.c b/net/ipx/af_ipx.c
-index dfd6faa..624520d 100644
---- a/net/ipx/af_ipx.c
-+++ b/net/ipx/af_ipx.c
-@@ -1827,8 +1827,6 @@ static int ipx_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (skb->tstamp.tv64)
- 		sk->sk_stamp = skb->tstamp;
- 
--	msg->msg_namelen = sizeof(*sipx);
--
- 	if (sipx) {
- 		sipx->sipx_family	= AF_IPX;
- 		sipx->sipx_port		= ipx->ipx_source.sock;
-@@ -1836,6 +1834,7 @@ static int ipx_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		sipx->sipx_network	= IPX_SKB_CB(skb)->ipx_source_net;
- 		sipx->sipx_type 	= ipx->ipx_type;
- 		sipx->sipx_zero		= 0;
-+		msg->msg_namelen	= sizeof(*sipx);
- 	}
- 	rc = copied;
- 
-diff --git a/net/irda/af_irda.c b/net/irda/af_irda.c
-index bd25678..12218f7 100644
---- a/net/irda/af_irda.c
-+++ b/net/irda/af_irda.c
-@@ -1386,8 +1386,6 @@ static int irda_recvmsg_dgram(struct kiocb *iocb, struct socket *sock,
- 
- 	IRDA_DEBUG(4, "%s()\n", __func__);
- 
--	msg->msg_namelen = 0;
--
- 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
- 				flags & MSG_DONTWAIT, &err);
- 	if (!skb)
-@@ -1452,8 +1450,6 @@ static int irda_recvmsg_stream(struct kiocb *iocb, struct socket *sock,
- 	target = sock_rcvlowat(sk, flags & MSG_WAITALL, size);
- 	timeo = sock_rcvtimeo(sk, noblock);
- 
--	msg->msg_namelen = 0;
--
- 	do {
- 		int chunk;
- 		struct sk_buff *skb = skb_dequeue(&sk->sk_receive_queue);
-diff --git a/net/iucv/af_iucv.c b/net/iucv/af_iucv.c
-index 625bc50..cd6f7a9 100644
---- a/net/iucv/af_iucv.c
-+++ b/net/iucv/af_iucv.c
-@@ -1331,8 +1331,6 @@ static int iucv_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	struct sk_buff *skb, *rskb, *cskb;
- 	int err = 0;
- 
--	msg->msg_namelen = 0;
--
- 	if ((sk->sk_state == IUCV_DISCONN) &&
- 	    skb_queue_empty(&iucv->backlog_skb_q) &&
- 	    skb_queue_empty(&sk->sk_receive_queue) &&
-diff --git a/net/key/af_key.c b/net/key/af_key.c
-index b606ce5..7d500a4 100644
---- a/net/key/af_key.c
-+++ b/net/key/af_key.c
-@@ -3595,7 +3595,6 @@ static int pfkey_recvmsg(struct kiocb *kiocb,
- 	if (flags & ~(MSG_PEEK|MSG_DONTWAIT|MSG_TRUNC|MSG_CMSG_COMPAT))
- 		goto out;
- 
--	msg->msg_namelen = 0;
- 	skb = skb_recv_datagram(sk, flags, flags & MSG_DONTWAIT, &err);
- 	if (skb == NULL)
- 		goto out;
-diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
-index 624cf33..63c74b7 100644
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -196,8 +196,6 @@ static int pppol2tp_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (sk->sk_state & PPPOX_BOUND)
- 		goto end;
- 
--	msg->msg_namelen = 0;
--
- 	err = 0;
- 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
- 				flags & MSG_DONTWAIT, &err);
-diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
-index 445882cb..a13c3e2 100644
---- a/net/llc/af_llc.c
-+++ b/net/llc/af_llc.c
-@@ -720,8 +720,6 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	int target;	/* Read at least this many bytes */
- 	long timeo;
- 
--	msg->msg_namelen = 0;
--
- 	lock_sock(sk);
- 	copied = -ENOTCONN;
- 	if (unlikely(sk->sk_type == SOCK_STREAM && sk->sk_state == TCP_LISTEN))
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index f4980b6..bd9e5b7 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -1458,8 +1458,6 @@ static int netlink_recvmsg(struct kiocb *kiocb, struct socket *sock,
- 	}
- #endif
- 
--	msg->msg_namelen = 0;
--
- 	copied = data_skb->len;
- 	if (len < copied) {
- 		msg->msg_flags |= MSG_TRUNC;
-diff --git a/net/netrom/af_netrom.c b/net/netrom/af_netrom.c
-index 7ed9b1d..dcf6791 100644
---- a/net/netrom/af_netrom.c
-+++ b/net/netrom/af_netrom.c
-@@ -1181,10 +1181,9 @@ static int nr_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		sax->sax25_family = AF_NETROM;
- 		skb_copy_from_linear_data_offset(skb, 7, sax->sax25_call.ax25_call,
- 			      AX25_ADDR_LEN);
-+		msg->msg_namelen = sizeof(*sax);
- 	}
- 
--	msg->msg_namelen = sizeof(*sax);
--
- 	skb_free_datagram(sk, skb);
- 
- 	release_sock(sk);
-diff --git a/net/nfc/rawsock.c b/net/nfc/rawsock.c
-index 8b8a6a2..ea01613 100644
---- a/net/nfc/rawsock.c
-+++ b/net/nfc/rawsock.c
-@@ -241,8 +241,6 @@ static int rawsock_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (!skb)
- 		return rc;
- 
--	msg->msg_namelen = 0;
--
- 	copied = skb->len;
- 	if (len < copied) {
- 		msg->msg_flags |= MSG_TRUNC;
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 1522b93..3673677 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -2697,7 +2697,6 @@ static int packet_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	struct sock *sk = sock->sk;
- 	struct sk_buff *skb;
- 	int copied, err;
--	struct sockaddr_ll *sll;
- 	int vnet_hdr_len = 0;
- 
- 	err = -EINVAL;
-@@ -2780,22 +2779,10 @@ static int packet_recvmsg(struct kiocb *iocb, struct socket *sock,
- 			goto out_free;
- 	}
- 
--	/*
--	 *	If the address length field is there to be filled in, we fill
--	 *	it in now.
--	 */
--
--	sll = &PACKET_SKB_CB(skb)->sa.ll;
--	if (sock->type == SOCK_PACKET)
--		msg->msg_namelen = sizeof(struct sockaddr_pkt);
--	else
--		msg->msg_namelen = sll->sll_halen + offsetof(struct sockaddr_ll, sll_addr);
--
--	/*
--	 *	You lose any data beyond the buffer you gave. If it worries a
--	 *	user program they can ask the device for its MTU anyway.
-+	/* You lose any data beyond the buffer you gave. If it worries
-+	 * a user program they can ask the device for its MTU
-+	 * anyway.
- 	 */
--
- 	copied = skb->len;
- 	if (copied > len) {
- 		copied = len;
-@@ -2808,9 +2795,20 @@ static int packet_recvmsg(struct kiocb *iocb, struct socket *sock,
- 
- 	sock_recv_ts_and_drops(msg, sk, skb);
- 
--	if (msg->msg_name)
-+	if (msg->msg_name) {
-+		/* If the address length field is there to be filled
-+		 * in, we fill it in now.
-+		 */
-+		if (sock->type == SOCK_PACKET) {
-+			msg->msg_namelen = sizeof(struct sockaddr_pkt);
-+		} else {
-+			struct sockaddr_ll *sll = &PACKET_SKB_CB(skb)->sa.ll;
-+			msg->msg_namelen = sll->sll_halen +
-+				offsetof(struct sockaddr_ll, sll_addr);
-+		}
- 		memcpy(msg->msg_name, &PACKET_SKB_CB(skb)->sa,
- 		       msg->msg_namelen);
-+	}
- 
- 	if (pkt_sk(sk)->auxdata) {
- 		struct tpacket_auxdata aux;
-diff --git a/net/rds/recv.c b/net/rds/recv.c
-index 9f0f17c..de339b2 100644
---- a/net/rds/recv.c
-+++ b/net/rds/recv.c
-@@ -410,8 +410,6 @@ int rds_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *msg,
- 
- 	rdsdebug("size %zu flags 0x%x timeo %ld\n", size, msg_flags, timeo);
- 
--	msg->msg_namelen = 0;
--
- 	if (msg_flags & MSG_OOB)
- 		goto out;
- 
-diff --git a/net/rose/af_rose.c b/net/rose/af_rose.c
-index 7f645d1..ce5f5b9 100644
---- a/net/rose/af_rose.c
-+++ b/net/rose/af_rose.c
-@@ -1220,7 +1220,6 @@ static int rose_recvmsg(struct kiocb *iocb, struct socket *sock,
- {
- 	struct sock *sk = sock->sk;
- 	struct rose_sock *rose = rose_sk(sk);
--	struct sockaddr_rose *srose = (struct sockaddr_rose *)msg->msg_name;
- 	size_t copied;
- 	unsigned char *asmptr;
- 	struct sk_buff *skb;
-@@ -1256,8 +1255,11 @@ static int rose_recvmsg(struct kiocb *iocb, struct socket *sock,
- 
- 	skb_copy_datagram_iovec(skb, 0, msg->msg_iov, copied);
- 
--	if (srose != NULL) {
--		memset(srose, 0, msg->msg_namelen);
-+	if (msg->msg_name) {
-+		struct sockaddr_rose *srose;
-+
-+		memset(msg->msg_name, 0, sizeof(struct full_sockaddr_rose));
-+		srose = msg->msg_name;
- 		srose->srose_family = AF_ROSE;
- 		srose->srose_addr   = rose->dest_addr;
- 		srose->srose_call   = rose->dest_call;
-diff --git a/net/rxrpc/ar-recvmsg.c b/net/rxrpc/ar-recvmsg.c
-index 4b48687..898492a 100644
---- a/net/rxrpc/ar-recvmsg.c
-+++ b/net/rxrpc/ar-recvmsg.c
-@@ -143,10 +143,13 @@ int rxrpc_recvmsg(struct kiocb *iocb, struct socket *sock,
- 
- 		/* copy the peer address and timestamp */
- 		if (!continue_call) {
--			if (msg->msg_name && msg->msg_namelen > 0)
-+			if (msg->msg_name) {
-+				size_t len =
-+					sizeof(call->conn->trans->peer->srx);
- 				memcpy(msg->msg_name,
--				       &call->conn->trans->peer->srx,
--				       sizeof(call->conn->trans->peer->srx));
-+				       &call->conn->trans->peer->srx, len);
-+				msg->msg_namelen = len;
-+			}
- 			sock_recv_ts_and_drops(msg, &rx->sk, skb);
- 		}
- 
-diff --git a/net/socket.c b/net/socket.c
-index c9b6b90..496702e 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -1774,8 +1774,10 @@ SYSCALL_DEFINE6(recvfrom, int, fd, void __user *, ubuf, size_t, size,
- 	msg.msg_iov = &iov;
- 	iov.iov_len = size;
- 	iov.iov_base = ubuf;
--	msg.msg_name = (struct sockaddr *)&address;
--	msg.msg_namelen = sizeof(address);
-+	/* Save some cycles and don't copy the address if not needed */
-+	msg.msg_name = addr ? (struct sockaddr *)&address : NULL;
-+	/* We assume all kernel code knows the size of sockaddr_storage */
-+	msg.msg_namelen = 0;
- 	if (sock->file->f_flags & O_NONBLOCK)
- 		flags |= MSG_DONTWAIT;
- 	err = sock_recvmsg(sock, &msg, size, flags);
-@@ -2155,16 +2157,14 @@ static int ___sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
- 			goto out;
- 	}
- 
--	/*
--	 *      Save the user-mode address (verify_iovec will change the
--	 *      kernel msghdr to use the kernel address space)
-+	/* Save the user-mode address (verify_iovec will change the
-+	 * kernel msghdr to use the kernel address space)
- 	 */
--
- 	uaddr = (__force void __user *)msg_sys->msg_name;
- 	uaddr_len = COMPAT_NAMELEN(msg);
--	if (MSG_CMSG_COMPAT & flags) {
-+	if (MSG_CMSG_COMPAT & flags)
- 		err = verify_compat_iovec(msg_sys, iov, &addr, VERIFY_WRITE);
--	} else
-+	else
- 		err = verify_iovec(msg_sys, iov, &addr, VERIFY_WRITE);
- 	if (err < 0)
- 		goto out_freeiov;
-@@ -2173,6 +2173,9 @@ static int ___sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
- 	cmsg_ptr = (unsigned long)msg_sys->msg_control;
- 	msg_sys->msg_flags = flags & (MSG_CMSG_CLOEXEC|MSG_CMSG_COMPAT);
- 
-+	/* We assume all kernel code knows the size of sockaddr_storage */
-+	msg_sys->msg_namelen = 0;
-+
- 	if (sock->file->f_flags & O_NONBLOCK)
- 		flags |= MSG_DONTWAIT;
- 	err = (nosec ? sock_recvmsg_nosec : sock_recvmsg)(sock, msg_sys,
-diff --git a/net/tipc/socket.c b/net/tipc/socket.c
-index 91fd130..9cc3e87 100644
---- a/net/tipc/socket.c
-+++ b/net/tipc/socket.c
-@@ -917,9 +917,6 @@ static int recv_msg(struct kiocb *iocb, struct socket *sock,
- 		goto exit;
- 	}
- 
--	/* will be updated in set_orig_addr() if needed */
--	m->msg_namelen = 0;
--
- 	timeout = sock_rcvtimeo(sk, flags & MSG_DONTWAIT);
- restart:
- 
-@@ -1036,9 +1033,6 @@ static int recv_stream(struct kiocb *iocb, struct socket *sock,
- 		goto exit;
- 	}
- 
--	/* will be updated in set_orig_addr() if needed */
--	m->msg_namelen = 0;
--
- 	target = sock_rcvlowat(sk, flags & MSG_WAITALL, buf_len);
- 	timeout = sock_rcvtimeo(sk, flags & MSG_DONTWAIT);
- 
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 2e67391..a0df32b 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1765,7 +1765,6 @@ static void unix_copy_addr(struct msghdr *msg, struct sock *sk)
- {
- 	struct unix_sock *u = unix_sk(sk);
- 
--	msg->msg_namelen = 0;
- 	if (u->addr) {
- 		msg->msg_namelen = u->addr->len;
- 		memcpy(msg->msg_name, u->addr->name, u->addr->len);
-@@ -1789,8 +1788,6 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (flags&MSG_OOB)
- 		goto out;
- 
--	msg->msg_namelen = 0;
--
- 	err = mutex_lock_interruptible(&u->readlock);
- 	if (err) {
- 		err = sock_intr_errno(sock_rcvtimeo(sk, noblock));
-@@ -1932,8 +1929,6 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	target = sock_rcvlowat(sk, flags&MSG_WAITALL, size);
- 	timeo = sock_rcvtimeo(sk, flags&MSG_DONTWAIT);
- 
--	msg->msg_namelen = 0;
--
- 	/* Lock the socket to prevent queue disordering
- 	 * while sleeps in memcpy_tomsg
- 	 */
-diff --git a/net/x25/af_x25.c b/net/x25/af_x25.c
-index b943e3e..92aed9e 100644
---- a/net/x25/af_x25.c
-+++ b/net/x25/af_x25.c
-@@ -1343,10 +1343,9 @@ static int x25_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (sx25) {
- 		sx25->sx25_family = AF_X25;
- 		sx25->sx25_addr   = x25->dest_addr;
-+		msg->msg_namelen = sizeof(*sx25);
- 	}
- 
--	msg->msg_namelen = sizeof(struct sockaddr_x25);
--
- 	x25_check_rbuf(sk);
- 	rc = copied;
- out_free_dgram:
+ static int mpc8xxx_gpio_get(struct gpio_chip *gc, unsigned int gpio)
 -- 
 1.8.3.2
 
