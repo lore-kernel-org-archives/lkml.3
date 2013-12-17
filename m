@@ -1,84 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab3LQBoC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 20:44:02 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:47381 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab3LQBoA (ORCPT
+	id S1752273Ab3LQBuP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 20:50:15 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:34350 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab3LQBuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 20:44:00 -0500
+	Mon, 16 Dec 2013 20:50:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131216171214.GA15663@sgi.com>
-References: <20131212180037.GA134240@sgi.com> <20131213214437.6fdbf7f2.akpm@linux-foundation.org>
- <20131216171214.GA15663@sgi.com>
+In-Reply-To: <1387133834-31966-2-git-send-email-tixxdz@opendz.org>
+References: <1387133834-31966-1-git-send-email-tixxdz@opendz.org> <1387133834-31966-2-git-send-email-tixxdz@opendz.org>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 16 Dec 2013 17:43:40 -0800
-Message-ID: <CALCETrW9uGYzckWg3Wcsu-VV-vbXxUCr+Dv0kXqE5VMKopjn+A@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] Change how we determine when to hand out THPs
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
+Date: Mon, 16 Dec 2013 17:49:53 -0800
+Message-ID: <CALCETrUmYxrd0nU+9oZvgJf7Lp0QgSXM3vRfoWshHYb1v_Sc9g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] procfs: make /proc/*/{stack,syscall,personality} 0400
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 9:12 AM, Alex Thorlton <athorlton@sgi.com> wrote:
->> Please cc Andrea on this.
->
-> I'm going to clean up a few small things for a v2 pretty soon, I'll be
-> sure to cc Andrea there.
->
->> > My proposed solution to the problem is to allow users to set a
->> > threshold at which THPs will be handed out.  The idea here is that, when
->> > a user faults in a page in an area where they would usually be handed a
->> > THP, we pull 512 pages off the free list, as we would with a regular
->> > THP, but we only fault in single pages from that chunk, until the user
->> > has faulted in enough pages to pass the threshold we've set.  Once they
->> > pass the threshold, we do the necessary work to turn our 512 page chunk
->> > into a proper THP.  As it stands now, if the user tries to fault in
->> > pages from different nodes, we completely give up on ever turning a
->> > particular chunk into a THP, and just fault in the 4K pages as they're
->> > requested.  We may want to make this tunable in the future (i.e. allow
->> > them to fault in from only 2 different nodes).
->>
->> OK.  But all 512 pages reside on the same node, yes?  Whereas with thp
->> disabled those 512 pages would have resided closer to the CPUs which
->> instantiated them.
->
-> As it stands right now, yes, since we're pulling a 512 page contiguous
-> chunk off the free list, everything from that chunk will reside on the
-> same node, but as I (stupidly) forgot to mention in my original e-mail,
-> one piece I have yet to add is the functionality to put the remaining
-> unfaulted pages from our chunk *back* on the free list after we give up
-> on handing out a THP.  Once this is in there, things will behave more
-> like they do when THP is turned completely off, i.e. pages will get
-> faulted in closer to the CPU that first referenced them once we give up
-> on handing out the THP.
+On Sun, Dec 15, 2013 at 10:57 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> These procfs files contain sensitive information and currently their
+> mode is 0444. Change this to 0400, so the VFS will be able to block
+> unprivileged processes from getting file descriptors on arbitrary
+> privileged /proc/*/{stack,syscall,personality} files.
 
-This sounds like it's almost the worst possible behavior wrt avoiding
-memory fragmentation.  If userspace mmaps a very large region and then
-starts accessing it randomly, it will allocate a bunch of contiguous
-512-page regions, claim one page from each, and return the other 511
-pages to the free list.  Memory is now maximally fragmented from the
-point of view of future THP allocations.
+Looks good.  It's hard to imagine this breaking anything that deserves to work.
 
---Andy
+Acked-by: Andy Lutomirski <luto@amacapital.net>
+
+>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Acked-by: Kees Cook <keescook@chromium.org>
+> Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+> ---
+>  fs/proc/base.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> index 5150706..e69df4b 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -2587,7 +2587,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+>         REG("environ",    S_IRUSR, proc_environ_operations),
+>         INF("auxv",       S_IRUSR, proc_pid_auxv),
+>         ONE("status",     S_IRUGO, proc_pid_status),
+> -       ONE("personality", S_IRUGO, proc_pid_personality),
+> +       ONE("personality", S_IRUSR, proc_pid_personality),
+>         INF("limits",     S_IRUGO, proc_pid_limits),
+>  #ifdef CONFIG_SCHED_DEBUG
+>         REG("sched",      S_IRUGO|S_IWUSR, proc_pid_sched_operations),
+> @@ -2597,7 +2597,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+>  #endif
+>         REG("comm",      S_IRUGO|S_IWUSR, proc_pid_set_comm_operations),
+>  #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
+> -       INF("syscall",    S_IRUGO, proc_pid_syscall),
+> +       INF("syscall",    S_IRUSR, proc_pid_syscall),
+>  #endif
+>         INF("cmdline",    S_IRUGO, proc_pid_cmdline),
+>         ONE("stat",       S_IRUGO, proc_tgid_stat),
+> @@ -2625,7 +2625,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+>         INF("wchan",      S_IRUGO, proc_pid_wchan),
+>  #endif
+>  #ifdef CONFIG_STACKTRACE
+> -       ONE("stack",      S_IRUGO, proc_pid_stack),
+> +       ONE("stack",      S_IRUSR, proc_pid_stack),
+>  #endif
+>  #ifdef CONFIG_SCHEDSTATS
+>         INF("schedstat",  S_IRUGO, proc_pid_schedstat),
+> @@ -2926,14 +2926,14 @@ static const struct pid_entry tid_base_stuff[] = {
+>         REG("environ",   S_IRUSR, proc_environ_operations),
+>         INF("auxv",      S_IRUSR, proc_pid_auxv),
+>         ONE("status",    S_IRUGO, proc_pid_status),
+> -       ONE("personality", S_IRUGO, proc_pid_personality),
+> +       ONE("personality", S_IRUSR, proc_pid_personality),
+>         INF("limits",    S_IRUGO, proc_pid_limits),
+>  #ifdef CONFIG_SCHED_DEBUG
+>         REG("sched",     S_IRUGO|S_IWUSR, proc_pid_sched_operations),
+>  #endif
+>         REG("comm",      S_IRUGO|S_IWUSR, proc_pid_set_comm_operations),
+>  #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
+> -       INF("syscall",   S_IRUGO, proc_pid_syscall),
+> +       INF("syscall",   S_IRUSR, proc_pid_syscall),
+>  #endif
+>         INF("cmdline",   S_IRUGO, proc_pid_cmdline),
+>         ONE("stat",      S_IRUGO, proc_tid_stat),
+> @@ -2963,7 +2963,7 @@ static const struct pid_entry tid_base_stuff[] = {
+>         INF("wchan",     S_IRUGO, proc_pid_wchan),
+>  #endif
+>  #ifdef CONFIG_STACKTRACE
+> -       ONE("stack",      S_IRUGO, proc_pid_stack),
+> +       ONE("stack",      S_IRUSR, proc_pid_stack),
+>  #endif
+>  #ifdef CONFIG_SCHEDSTATS
+>         INF("schedstat", S_IRUGO, proc_pid_schedstat),
+> --
+> 1.7.11.7
+>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
