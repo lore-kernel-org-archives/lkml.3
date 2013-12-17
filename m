@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab3LQQBY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 11:01:24 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:59314 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754318Ab3LQQBW (ORCPT
+	id S1754740Ab3LQQC3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:02:29 -0500
+Received: from 18.mo3.mail-out.ovh.net ([87.98.172.162]:47541 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753356Ab3LQQC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 11:01:22 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        linus.walleij@linaro.org, wsa@the-dreams.de, horms@verge.net.au
-Subject: Re: [PATCH 03/05 v2] pinctrl: sh-pfc: r7s72100 single pin macros
-Date: Tue, 17 Dec 2013 17:01:41 +0100
-Message-ID: <4641687.OeSyoZmW7s@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131217023814.24573.91649.sendpatchset@w520>
-References: <20131217023745.24573.3660.sendpatchset@w520> <20131217023814.24573.91649.sendpatchset@w520>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 17 Dec 2013 11:02:27 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Landley <rob@landley.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-serial@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+Subject: [PATCH] tty/serial: at91: document clock properties
+Date: Tue, 17 Dec 2013 17:02:01 +0100
+Message-Id: <1387296121-7558-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 8471270900300019810
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+Document the clock properties required by the at91 i2c bus driver.
 
-Thank you for the patches.
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ .../devicetree/bindings/serial/atmel-usart.txt     |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-On Tuesday 17 December 2013 11:38:14 Magnus Damm wrote:
-> From: Magnus Damm <damm@opensource.se>
-> 
-> Introduce macros that allow description of one pin per line.
-> Compared to the other ways of doing this, using this style
-> we can compresses the description of each pin from 9 to 1 line.
-> 
-> Signed-off-by: Magnus Damm <damm@opensource.se>
-> ---
-> 
->  This patch uses RZ_PMX_GROUP and RZ_GROUPS, thanks Laurent!
-> 
->  drivers/pinctrl/sh-pfc/pfc-r7s72100.c |   21 +++++++++++++++++++++
->  1 file changed, 21 insertions(+)
-> 
-> --- 0003/drivers/pinctrl/sh-pfc/pfc-r7s72100.c
-> +++ work/drivers/pinctrl/sh-pfc/pfc-r7s72100.c	2013-12-16 
-19:14:30.000000000
-> +0900 @@ -98,9 +98,30 @@ static struct sh_pfc_pin pinmux_pins[] =
-> 
->  #define RZ_PORT_PIN(bank, pin) (((bank) * 16) + (pin))
-> 
-> +#define __RZ_STR(pfx, hw, bank, pin, sfx)		\
-> +	pfx##_##hw##_p##bank##_##pin####sfx
-
-Do you mean s/####sfx/##sfx/ ?
-
-> +
-> +#define RZ_PIN_AND_MUX(pfx, hw, bank, pin, fn)				\
-> +static const unsigned int __RZ_STR(pfx, hw, bank, pin, _pins)[] = {	\
-> +	RZ_PORT_PIN(bank, pin),						\
-> +};									\
-> +static const unsigned int __RZ_STR(pfx, hw, bank, pin, _mux)[] = {	\
-> +	P_##bank##_##pin##_MARK_FN##fn,					\
-> +};
-
-I would have preferred keeping the trailing semicolon (and comma in the 
-RZ_GROUPS macro) out of the macro, but that won't be possible as the 
-RZ_PIN_AND_MUX and RZ_GROUPS macros are used as arguments to the SCIF macros 
-in the next patch.
-
-> +
-> +#define RZ_PMX_GROUP(pfx, hw, bank, pin, fn) \
-> +	SH_PFC_PIN_GROUP(pfx##_##hw##_p##bank##_##pin),
-> +
-> +#define __RZ_GROUPS(x) #x
-
-Can't you replace __RZ_GROUPS() by __stringify() ?
-
-> +#define RZ_GROUPS(pfx, hw, bank, pin, fn) \
-> +	__RZ_GROUPS(pfx##_##hw##_p##bank##_##pin),
-> +
->  static const struct sh_pfc_pin_group pinmux_groups[] = {
->  };
-> 
-> +static const char * const scif2_groups[] = {
-> +};
-
-I think this should be part of patch 04/05.
-
->  static const struct sh_pfc_function pinmux_functions[] = {
->  };
-
+diff --git a/Documentation/devicetree/bindings/serial/atmel-usart.txt b/Documentation/devicetree/bindings/serial/atmel-usart.txt
+index 2191dcb..9c5d19a 100644
+--- a/Documentation/devicetree/bindings/serial/atmel-usart.txt
++++ b/Documentation/devicetree/bindings/serial/atmel-usart.txt
+@@ -6,6 +6,9 @@ Required properties:
+   additional mode or an USART new feature.
+ - reg: Should contain registers location and length
+ - interrupts: Should contain interrupt
++- clock-names: tuple listing input clock names.
++	Required elements: "usart"
++- clocks: phandles to input clocks.
+ 
+ Optional properties:
+ - atmel,use-dma-rx: use of PDC or DMA for receiving data
+@@ -26,6 +29,8 @@ Example:
+ 		compatible = "atmel,at91sam9260-usart";
+ 		reg = <0xfff8c000 0x4000>;
+ 		interrupts = <7>;
++		clocks = <&usart0_clk>;
++		clock-names = "usart";
+ 		atmel,use-dma-rx;
+ 		atmel,use-dma-tx;
+ 	};
+@@ -35,6 +40,8 @@ Example:
+ 		compatible = "atmel,at91sam9260-usart";
+ 		reg = <0xf001c000 0x100>;
+ 		interrupts = <12 4 5>;
++		clocks = <&usart0_clk>;
++		clock-names = "usart";
+ 		atmel,use-dma-rx;
+ 		atmel,use-dma-tx;
+ 		dmas = <&dma0 2 0x3>,
 -- 
-Regards,
-
-Laurent Pinchart
+1.7.9.5
 
