@@ -1,110 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab3LQBOX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 20:14:23 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:34113 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab3LQBOU (ORCPT
+	id S1752479Ab3LQBQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 20:16:26 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:34726 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944Ab3LQBQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 20:14:20 -0500
+	Mon, 16 Dec 2013 20:16:24 -0500
+Message-ID: <52AFA5E0.7040707@hitachi.com>
+Date: Tue, 17 Dec 2013 10:16:16 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <20131216173907.GC1811@roeck-us.net>
-References: <529E5C0E.80903@gmail.com> <20131212224407.GL4699@google.com>
- <CAE9FiQX8XXkwbhhuNhCF-pHdc_3or_dMEH-VN5NBSEV_eXE-Pg@mail.gmail.com>
- <CAErSpo5BsaLNrny3T1sYknz3wo4hN0SKJk0_u6eNyEd6qq5o=g@mail.gmail.com>
- <428d664592c2466c9e5e6b393df9d690@DM2PR05MB671.namprd05.prod.outlook.com>
- <CAErSpo5NjOCqkao03Ea=98gunVEaUUitq8mGLarpKW_DQoDF8g@mail.gmail.com>
- <CAE9FiQX-ZP0R-weuPoOJ6GkPxOLp5jk9thnjfPQ+Q5tCHugD4w@mail.gmail.com>
- <20131214033911.GA25115@roeck-us.net> <241775f7fb71476aa84bbb19fde4602f@DM2PR05MB671.namprd05.prod.outlook.com>
- <CAErSpo4grMgCBetm7DMmizWQS_peM5yYBwFS99K8jbXaEWGmEg@mail.gmail.com> <20131216173907.GC1811@roeck-us.net>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 16 Dec 2013 18:14:00 -0700
-Message-ID: <CAErSpo6pBk6HR79jLfxd2sZPQ3Xq=Z-u1t__ODzDqa31_TLPSA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] pciehp: Use link change notifications for hot-plug
- and removal
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Rajat Jain <rajatjain@juniper.net>, Yinghai Lu <yinghai@kernel.org>,
-        Rajat Jain <rajatjain.linux@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, Paul Bolle <pebolle@tiscali.nl>,
-        Rajat Jain <rajatxjain@gmail.com>, Guenter Roeck <groeck@juniper.net>
-Content-Type: text/plain; charset=UTF-8
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        tom.zanussi@linux.intel.com
+Cc: rostedt@goodmis.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Tracing events with GPIOs
+References: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
+In-Reply-To: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 10:39 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On Sun, Dec 15, 2013 at 05:18:26PM -0700, Bjorn Helgaas wrote:
->> On Sun, Dec 15, 2013 at 4:24 PM, Rajat Jain <rajatjain@juniper.net> wrote:
->> >> > >
->> >> > >> Once again: the way I interpret this is: * Always enable Link events.
->> >> > >> * Disable presence events if attention button is present.
->> >> > >
->> >> > > That sounds like a good plan to me.
->> >> >
->> >> > How about Diag_Reset from MPT2SAS and others?  link could up and down
->> >> >
->> >
->> > I am assuming you are referring to
->> >
->> > static int _base_diag_reset(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
->> >
->> > Which as far as I could understand would cause link to go down and come up
->> > again without the kernel knowing anything about it?  ...
->>
->> > In general, I guess the question is when a link goes down and back up,
->> > whether or not we want to treat it as a hot unplug followed by a hotplug. I
->> > think there may be cases such as AER (or the one Yinghai mentions) where we
->> > don't want to treat it as a hotplug (see note below). And there may be cases
->> > that we definitely want to treat it as hotplug (need link events!).
->> > Situation gets more complex since there may be pciehp slots downstream of a
->> > link getting reset.
->> >
->> > It seems to me that we are saying that a mechanism is needed so that a
->> > voluntary Link flap is NOT treated like a hotplug temporarily?  ...
->>
->> > Notes: * it may not OK, if the kernel thinks the device is accessible when
->> > it is really not.  What if during this downtime, someone tries to access the
->> > device (say userspace)?  * How do we know after the link up, that the device
->> > is really the same.  If during this reset, the device changed its
->> > "character", say a different class?  I think a rescan should be mandated
->> > after every such event.  * Do we need to unload and reload the driver after
->> > the link reset, since it can be a different device?
->>
->> I am quite dubious about the idea of a voluntary link flap.  If the link goes
->> down and comes back up, I don't see how we can make any assumptions about what
->> device is there.
->>
->> I let Alex talk me into pciehp_reset_slot(), which disables presence detect
->> interrupts while resetting a device, so we already have a bit of precedent for
->> the idea.  But even in that case, the device could easily come out of reset as
->> a different device, e.g., if the reset caused it to load updated firmware.
->>
->> I would feel much better if we treated link down as a remove and did a rescan
->> on the link up.
->>
-> Agreed. Question is if we might need some means for a driver to tell the PCIe
-> core about an upcoming "planned" link flap. pciehp_reset_slot() doesn't seem
-> to address the condition where a driver resets a connected chip by other means
-> than by calling pciehp_reset_slot(). Still not sure what happens when the
-> mpt2sas driver issues its diagnostic reset, to take Yinghai's example (or if
-> there would be a cleaner way to implement such a reset).
+(2013/12/17 9:22), Jean-Jacques Hiblot wrote:
+> This patch implements a new tracing mechanism based on kprobes and using GPIO.
+> Debugging with GPIO is very common in the embedded world. At least for those of us
+> fortunate enough to have an oscilloscope or a logic analyzer on their bench...
+> This is especially true if the issue results of a hardware/sofware interaction.
+> 
+> Typical use cases are :
+> * mixed software/hardware debugging. For example when the software detects a
+>   situation of interest (typically an error) it toggles a GPIO to trigger the
+>   oscilloscope acquisition.
+> * direct latency/duration measurements.
 
-In my opinion we should not add the concept of a planned link flap.
-We already have pci_reset_function(), and we can probably make that
-deal with link up/down events internally, so I think we should try to
-use that if we can.  I think it's too much of a mess to try to support
-link flaps for random driver-initiated resets that don't go through
-the PCI core.
+Ah, it's interesting to me :)
 
-That probably means going through and identifying all the drivers we
-can find that do their own internal resets, and converting them.
-We'll likely miss some, since the mechanisms are driver-specific.  And
-maybe there are some driver resets that think they add value over the
-core's pci_reset_function() (I'm not sure what that would be, but I'm
-open to discussion about it).
+And I think this feature should be built on the event triggers which
+Tom is working on, instead of kprobes directly, because it allows
+you to take gpio actions on normal tracepoints, and uprobes too :)
 
-Bjorn
+Thank you!
+
+> 
+> examples:
+> To trig the oscilloscope whenever a mmc command error:
+>   echo "p:my_mmc_blk_error mmc_blk_cmd_error gpiopulse@13" > /sys/kernel/debug/tracing/kprobe_events
+>   echo 1 > /sys/kernel/debug/tracing/events/kprobes/my_mmc_blk_error/enable
+> 
+> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+> ---
+>  kernel/trace/Kconfig        |  12 ++++
+>  kernel/trace/trace_kprobe.c | 167 +++++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 177 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+> index 015f85a..4228768 100644
+> --- a/kernel/trace/Kconfig
+> +++ b/kernel/trace/Kconfig
+> @@ -420,6 +420,18 @@ config KPROBE_EVENT
+>  	  This option is also required by perf-probe subcommand of perf tools.
+>  	  If you want to use perf tools, this option is strongly recommended.
+>  
+> +config KPROBE_EVENT_GPIO
+> +	depends on KPROBE_EVENT
+> +	depends on GPIOLIB
+> +	bool "Enable kprobes-based tracing of events via GPIO"
+> +	default n
+> +	help
+> +		This allows the user to use GPIOs as a tracing tool.The primary
+> +		purpose of this option is to allow the user to trigger an
+> +		oscilloscope on software events.
+> +		The GPIO can be set, cleared, toggled, or pulsed when the event
+> +		is hit.
+> +
+>  config UPROBE_EVENT
+>  	bool "Enable uprobes-based dynamic events"
+>  	depends on ARCH_SUPPORTS_UPROBES
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index dae9541..5d297f5 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -19,6 +19,7 @@
+>  
+>  #include <linux/module.h>
+>  #include <linux/uaccess.h>
+> +#include <linux/gpio.h>
+>  
+>  #include "trace_probe.h"
+>  
+> @@ -27,6 +28,33 @@
+>  /**
+>   * Kprobe event core functions
+>   */
+> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+> +#define TP_GPIO_UNDEFINED      0
+> +#define TP_GPIO_CMD_SET                1
+> +#define TP_GPIO_CMD_CLEAR      2
+> +#define TP_GPIO_CMD_TOGGLE     3
+> +#define TP_GPIO_CMD_PULSE      4
+> +#define TP_GPIO_CMD_PULSE_HIGH 5
+> +#define TP_GPIO_CMD_PULSE_LOW  6
+> +
+> +static const struct {
+> +	const char *name;
+> +	int action;
+> +} gpio_actions[] = {
+> +	{"gpioset", TP_GPIO_CMD_SET},
+> +	{"gpioclear", TP_GPIO_CMD_CLEAR},
+> +	{"gpiotoggle", TP_GPIO_CMD_TOGGLE},
+> +	{"gpiopulse", TP_GPIO_CMD_PULSE},
+> +	{"gpiopulsehigh", TP_GPIO_CMD_PULSE_HIGH},
+> +	{"gpiopulselow", TP_GPIO_CMD_PULSE_LOW},
+> +};
+> +
+> +struct gpio_trace {
+> +	int gpio;
+> +	int action;
+> +};
+> +#endif
+> +
+>  struct trace_probe {
+>  	struct list_head	list;
+>  	struct kretprobe	rp;	/* Use rp.kp for kprobe use */
+> @@ -38,6 +66,9 @@ struct trace_probe {
+>  	struct list_head	files;
+>  	ssize_t			size;		/* trace entry size */
+>  	unsigned int		nr_args;
+> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+> +	struct gpio_trace               gpio_trace;
+> +#endif
+>  	struct probe_arg	args[];
+>  };
+>  
+> @@ -164,10 +195,24 @@ error:
+>  	return ERR_PTR(ret);
+>  }
+>  
+> +static struct trace_probe *find_gpio_probe(int gpio)
+> +{
+> +	struct trace_probe *tp;
+> +
+> +	list_for_each_entry(tp, &probe_list, list)
+> +	if ((tp->gpio_trace.action) && (tp->gpio_trace.gpio == gpio))
+> +		return tp;
+> +	return NULL;
+> +}
+> +
+>  static void free_trace_probe(struct trace_probe *tp)
+>  {
+>  	int i;
+>  
+> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+> +	if (tp->gpio_trace.action && !find_gpio_probe(tp->gpio_trace.gpio))
+> +		gpio_free(tp->gpio_trace.gpio);
+> +#endif
+>  	for (i = 0; i < tp->nr_args; i++)
+>  		traceprobe_free_probe_arg(&tp->args[i]);
+>  
+> @@ -435,8 +480,14 @@ static int create_trace_probe(int argc, char **argv)
+>  {
+>  	/*
+>  	 * Argument syntax:
+> -	 *  - Add kprobe: p[:[GRP/]EVENT] [MOD:]KSYM[+OFFS]|KADDR [FETCHARGS]
+> -	 *  - Add kretprobe: r[:[GRP/]EVENT] [MOD:]KSYM[+0] [FETCHARGS]
+> +	 *  - Add kprobe: p[:[GRP/]EVENT] [MOD:]KSYM[+OFFS]|KADDR
+> +	 *                [GPIOACTION@GPIONUM] [FETCHARGS]
+> +	 *  - Add kretprobe: r[:[GRP/]EVENT] [MOD:]KSYM[+0]
+> +	 *                   [GPIOACTION@GPIONUM] [FETCHARGS]
+> +	 * Gpio tracing:
+> +	 *   gpio action can be : gpioset, gpioclear, gpiotoggle, gpiopulse,
+> +	 *                        gpiopulsehigh and gpiopulselow
+> +	 *   gpionum is the id of the gpio
+>  	 * Fetch args:
+>  	 *  $retval	: fetch return value
+>  	 *  $stack	: fetch stack address
+> @@ -459,6 +510,9 @@ static int create_trace_probe(int argc, char **argv)
+>  	unsigned long offset = 0;
+>  	void *addr = NULL;
+>  	char buf[MAX_EVENT_NAME_LEN];
+> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+> +	int len;
+> +#endif
+>  
+>  	/* argc must be >= 1 */
+>  	if (argv[0][0] == 'p')
+> @@ -541,6 +595,7 @@ static int create_trace_probe(int argc, char **argv)
+>  			return -EINVAL;
+>  		}
+>  	}
+> +
+>  	argc -= 2; argv += 2;
+>  
+>  	/* setup a probe */
+> @@ -562,6 +617,66 @@ static int create_trace_probe(int argc, char **argv)
+>  		return PTR_ERR(tp);
+>  	}
+>  
+> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+> +	/* parse the optionnal gpio action argument */
+> +	for (i = 0; argc && (i < ARRAY_SIZE(gpio_actions)); i++) {
+> +		len = strlen(gpio_actions[i].name);
+> +		if (strncmp(argv[0], gpio_actions[i].name, len) == 0)
+> +			break;
+> +	}
+> +
+> +	if (argc && (i < ARRAY_SIZE(gpio_actions))) {
+> +		int gpio;
+> +		unsigned long ul;
+> +		int gpio_requested = 0;
+> +		ret = -EINVAL;
+> +		if (argv[0][len] != '@') {
+> +			pr_info("Syntax error. wrong gpio syntax\n");
+> +			goto error;
+> +		}
+> +
+> +		if (kstrtoul(&argv[0][len+1], 0, &ul)) {
+> +			pr_info("Failed to parse gpio number.\n");
+> +			goto error;
+> +		}
+> +		gpio = ul;
+> +
+> +		if (!gpio_is_valid(gpio)) {
+> +			pr_info("gpio %d is not valid.\n", gpio);
+> +			goto error;
+> +		}
+> +
+> +		if (gpio_cansleep(gpio))
+> +			pr_info("gpio %d can sleep. This may break your"
+> +				"kernel!!!!!!\n", gpio);
+> +
+> +		if (!find_gpio_probe(gpio)) {
+> +			ret = gpio_request(gpio, event);
+> +			if (ret) {
+> +				pr_info("can't request gpio %d.\n", gpio);
+> +				goto error;
+> +			}
+> +			gpio_requested = 1;
+> +		}
+> +
+> +		if ((gpio_actions[i].action == TP_GPIO_CMD_CLEAR) ||
+> +			(gpio_actions[i].action == TP_GPIO_CMD_PULSE_LOW))
+> +			ret = gpio_direction_output(gpio, 1);
+> +		else
+> +			ret = gpio_direction_output(gpio, 0);
+> +		if (ret) {
+> +			pr_info("can't make gpio %d an output.\n", gpio);
+> +			if (gpio_requested)
+> +				gpio_free(gpio);
+> +			goto error;
+> +		}
+> +
+> +		tp->gpio_trace.gpio = gpio;
+> +		tp->gpio_trace.action = gpio_actions[i].action;
+> +		argc -= 1; argv += 1;
+> +	}
+> +#endif
+> +
+>  	/* parse arguments */
+>  	ret = 0;
+>  	for (i = 0; i < argc && i < MAX_TRACE_ARGS; i++) {
+> @@ -1145,12 +1260,54 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+>  }
+>  #endif	/* CONFIG_PERF_EVENTS */
+>  
+> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+> +static __kprobes void kprobe_gpio_take_action(int gpio, int action)
+> +{
+> +	int val;
+> +	switch (action) {
+> +	case TP_GPIO_CMD_PULSE_HIGH:
+> +		gpio_set_value(gpio, 1);
+> +		/* intentionnaly don't break here */
+> +	case TP_GPIO_CMD_CLEAR:
+> +		gpio_set_value(gpio, 0);
+> +	break;
+> +
+> +	case TP_GPIO_CMD_PULSE_LOW:
+> +		gpio_set_value(gpio, 0);
+> +		/* intentionnaly don't break here */
+> +	case TP_GPIO_CMD_SET:
+> +		gpio_set_value(gpio, 1);
+> +	break;
+> +
+> +	case TP_GPIO_CMD_TOGGLE:
+> +		val = gpio_get_value(gpio);
+> +		gpio_set_value(gpio, val ? 0 : 1);
+> +	break;
+> +
+> +	case TP_GPIO_CMD_PULSE:
+> +		val = gpio_get_value(gpio);
+> +		gpio_set_value(gpio, val ? 0 : 1);
+> +		gpio_set_value(gpio, val);
+> +	break;
+> +	}
+> +}
+> +
+>  /*
+>   * called by perf_trace_init() or __ftrace_set_clr_event() under event_mutex.
+>   *
+>   * kprobe_trace_self_tests_init() does enable_trace_probe/disable_trace_probe
+>   * lockless, but we can't race with this __init function.
+>   */
+> +/* Kprobe gpio handler */
+> +static inline __kprobes void kprobe_gpio_func(struct trace_probe *tp,
+> +					      struct pt_regs *regs)
+> +{
+> +	if (tp->gpio_trace.action)
+> +		kprobe_gpio_take_action(tp->gpio_trace.gpio,
+> +					tp->gpio_trace.action);
+> +}
+> +#endif /* CONFIG_KPROBE_EVENT_GPIO */
+> +
+>  static __kprobes
+>  int kprobe_register(struct ftrace_event_call *event,
+>  		    enum trace_reg type, void *data)
+> @@ -1186,6 +1343,9 @@ int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs)
+>  
+>  	tp->nhit++;
+>  
+> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+> +	kprobe_gpio_func(tp, regs);
+> +#endif
+>  	if (tp->flags & TP_FLAG_TRACE)
+>  		kprobe_trace_func(tp, regs);
+>  #ifdef CONFIG_PERF_EVENTS
+> @@ -1202,6 +1362,9 @@ int kretprobe_dispatcher(struct kretprobe_instance *ri, struct pt_regs *regs)
+>  
+>  	tp->nhit++;
+>  
+> +#ifdef CONFIG_KPROBE_EVENT_GPIO
+> +	kprobe_gpio_func(tp, regs);
+> +#endif
+>  	if (tp->flags & TP_FLAG_TRACE)
+>  		kretprobe_trace_func(tp, ri, regs);
+>  #ifdef CONFIG_PERF_EVENTS
+> 
+
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
