@@ -1,36 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab3LQVM5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 16:12:57 -0500
-Received: from mx2.compro.net ([12.186.155.30]:56567 "HELO mx2.compro.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751706Ab3LQVM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 16:12:56 -0500
-X-Greylist: delayed 666 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Dec 2013 16:12:56 EST
-X-BYPSHEADER: 8453371
-X-SMScore: -1050
-Message-ID: <52B0BBBD.3000704@compro.net>
-Date: Tue, 17 Dec 2013 16:01:49 -0500
-From: Mark Hounschell <markh@compro.net>
-Reply-To: markh@compro.net
-Organization: Compro Computer Svcs.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752718Ab3LQVRy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 16:17:54 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:39476 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab3LQVRw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 16:17:52 -0500
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: question about cpu_active_mask
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131217200022.GD28274@kroah.com>
+References: <20131217182733.GA16202@www.outflux.net>
+	<20131217200022.GD28274@kroah.com>
+Date: Tue, 17 Dec 2013 13:17:51 -0800
+X-Google-Sender-Auth: g-g_pjGmZLIQYF21EKRhIJk5pM4
+Message-ID: <CAGXu5j+wwkiz9=s3DBnmDXmtR_YdtqvXOe5PJsNbRcs_UCGajA@mail.gmail.com>
+Subject: Re: [RESEND][PATCH] scsi: esas2r: fix potential format string flaw
+From: Kees Cook <keescook@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Bradley Grove <linuxdrivers@attotech.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I hope it is OK to ask a newbie question here. I'm trying to better 
-understand the boot process. I can't seem to find where in the kernel 
-sources the cpu_active_mask (defined in include/linux/cpumask.h) gets 
-populated. I can see that it does get populated as it brings cpus online 
-but it is not obvious to me where. I'm using a 32 bit 3.4.x flavor kernel.
+On Tue, Dec 17, 2013 at 12:00 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Tue, Dec 17, 2013 at 10:27:33AM -0800, Kees Cook wrote:
+>> This makes sure format strings cannot leak into the printk call via the
+>> constructed buffer.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>>  drivers/scsi/esas2r/esas2r_log.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> Why is this patch "To:" me?  I'm not the author of this driver, or the
+> maintainer of it or the subsystem, and there's not much, if anything I
+> can do with it...
 
-Sorry for the noise and thanks for any pointers
+I've resent this before, and since it lived in "drivers", I figured
+you would be the next up the chain to take it (since it's been
+ignored).
 
-Regards
-Mark
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
