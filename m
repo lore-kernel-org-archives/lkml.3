@@ -1,129 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab3LQB0w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 20:26:52 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23853 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356Ab3LQB0v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 20:26:51 -0500
-Message-ID: <52AFA845.3060109@oracle.com>
-Date: Tue, 17 Dec 2013 09:26:29 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1752386Ab3LQBbF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 20:31:05 -0500
+Received: from seketeli.net ([91.121.166.71]:38245 "EHLO ms.seketeli.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751522Ab3LQBbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 20:31:03 -0500
+Date: Tue, 17 Dec 2013 02:31:00 +0100
+From: Apelete Seketeli <apelete@seketeli.net>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH 3/3] usb: musb: fix setting JZ4740 gadget periphal mode
+ on reset
+Message-ID: <20131217013100.GX4581@hermes>
+References: <1386992918-1531-1-git-send-email-apelete@seketeli.net>
+ <1386992918-1531-4-git-send-email-apelete@seketeli.net>
+ <20131216212056.GE12896@saruman.home>
 MIME-Version: 1.0
-To: Vlastimil Babka <vbabka@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, joern@logfs.org,
-        Michel Lespinasse <walken@google.com>, stable@kernel.org
-Subject: Re: [PATCH 1/3] mm: munlock: fix a bug where THP tail page is encountered
-References: <52AE07B4.4020203@oracle.com> <1387188856-21027-1-git-send-email-vbabka@suse.cz> <1387188856-21027-2-git-send-email-vbabka@suse.cz>
-In-Reply-To: <1387188856-21027-2-git-send-email-vbabka@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131216212056.GE12896@saruman.home>
+X-Operating-System: Debian GNU/Linux jessie/sid
+X-URL: http://apelete.seketeli.fr
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2013 06:14 PM, Vlastimil Babka wrote:
-> Since commit ff6a6da60 ("mm: accelerate munlock() treatment of THP pages")
-> munlock skips tail pages of a munlocked THP page. However, when the head page
-> already has PageMlocked unset, it will not skip the tail pages.
+On 16-Dec-13, Felipe Balbi wrote:
+> On Sat, Dec 14, 2013 at 04:48:38AM +0100, Apelete Seketeli wrote:
+> > JZ4740 USB Device Controller is not OTG compatible and does not have DEVCTL
+> > register in silicon.
+> > 
+> > During ethernet-over-usb transactions, on reset, musb driver tries to
+> > read from DEVCTL and consequently sets device as host (A-Device)
+> > instead of peripheral (B-Device), which makes it a composite device to
+> > the USB gadget driver.
+> > This induces a kernel panic during power down where the USB gadget
+> > driver does a null pointer dereference when trying to access the
+> > composite device configuration.
+> > 
+> > On reset, do not rely on DEVCTL value for setting gadget peripheral
+> > mode: hardcode it instead to B-Device.
+> > 
+> > Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
+> > ---
+> >  drivers/usb/musb/musb_gadget.c |    9 +++++++++
+> >  1 file changed, 9 insertions(+)
+> > 
+> > diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+> > index 32fb057..b4bea7a 100644
+> > --- a/drivers/usb/musb/musb_gadget.c
+> > +++ b/drivers/usb/musb/musb_gadget.c
+> > @@ -2119,6 +2119,14 @@ __acquires(musb->lock)
+> >  	/* Normal reset, as B-Device;
+> >  	 * or else after HNP, as A-Device
+> >  	 */
+> > +#if defined(CONFIG_USB_MUSB_JZ4740) || defined(CONFIG_USB_MUSB_JZ4740_MODULE)
 > 
-> Commit 7225522bb ("mm: munlock: batch non-THP page isolation and
-> munlock+putback using pagevec") has added a PageTransHuge() check which
-> contains VM_BUG_ON(PageTail(page)). Sasha Levin found this triggered using
-> trinity, on the first tail page of a THP page without PageMlocked flag.
-> 
-> This patch fixes the issue by skipping tail pages also in the case when
-> PageMlocked flag is unset. There is still a possibility of race with THP page
-> split between clearing PageMlocked and determining how many pages to skip.
-> The race might result in former tail pages not being skipped, which is however
-> no longer a bug, as during the skip the PageTail flags are cleared.
-> 
-> However this race also affects correctness of NR_MLOCK accounting, which is to
-> be fixed in a separate patch.
-> 
-> Cc: stable@kernel.org
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> ---
->  mm/mlock.c | 24 ++++++++++++++++++------
->  1 file changed, 18 insertions(+), 6 deletions(-)
-> 
-> diff --git a/mm/mlock.c b/mm/mlock.c
-> index d480cd6..3847b13 100644
-> --- a/mm/mlock.c
-> +++ b/mm/mlock.c
-> @@ -148,21 +148,30 @@ static void __munlock_isolation_failed(struct page *page)
->   */
->  unsigned int munlock_vma_page(struct page *page)
->  {
-> -	unsigned int page_mask = 0;
-> +	unsigned int nr_pages;
->  
->  	BUG_ON(!PageLocked(page));
->  
->  	if (TestClearPageMlocked(page)) {
-> -		unsigned int nr_pages = hpage_nr_pages(page);
-> +		nr_pages = hpage_nr_pages(page);
+> NAK, no ifdefs in this driver. Pass a quirk flag through platform_data
+> or something similar.
 
-This line can be put before the if.
+I get that, makes sense to me, but problem is the driver has to read a
+valid value from DEVCTL hardware register when musb_g_reset() is
+called, and I do not see how this can be achieved through
+platform_data.
 
->  		mod_zone_page_state(page_zone(page), NR_MLOCK, -nr_pages);
-> -		page_mask = nr_pages - 1;
->  		if (!isolate_lru_page(page))
->  			__munlock_isolated_page(page);
->  		else
->  			__munlock_isolation_failed(page);
-> +	} else {
-> +		nr_pages = hpage_nr_pages(page);
->  	}
->  
-> -	return page_mask;
-> +	/*
-> +	 * Regardless of the original PageMlocked flag, we determine nr_pages
-> +	 * after touching the flag. This leaves a possible race with a THP page
-> +	 * split, such that a whole THP page was munlocked, but nr_pages == 1.
-> +	 * Returning a smaller mask due to that is OK, the worst that can
-> +	 * happen is subsequent useless scanning of the former tail pages.
-> +	 * The NR_MLOCK accounting can however become broken.
-> +	 */
-> +	return nr_pages - 1;
->  }
+Is it ok to use ifdefs in musb_regs.h to add specific hardware
+register indexes for JZ4740 instead ?
+I am actually thinking about fooling the musb driver into reading a
+valid value from another register instead of DEVCTL.
 
-Personally, I'd prefer to make munlock_vma_page() return void.
-If not please add some comment about the return value in this function's
-description also.
-
->  
->  /**
-> @@ -440,7 +449,8 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
->  
->  	while (start < end) {
->  		struct page *page = NULL;
-> -		unsigned int page_mask, page_increm;
-> +		unsigned int page_mask;
-> +		unsigned long page_increm;
->  		struct pagevec pvec;
->  		struct zone *zone;
->  		int zoneid;
-> @@ -490,7 +500,9 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
->  				goto next;
->  			}
->  		}
-> -		page_increm = 1 + (~(start >> PAGE_SHIFT) & page_mask);
-> +		/* It's a bug to munlock in the middle of a THP page */
-> +		VM_BUG_ON((start >> PAGE_SHIFT) & page_mask);
-> +		page_increm = 1 + page_mask;
->  		start += page_increm * PAGE_SIZE;
->  next:
->  		cond_resched();
-> 
-
+Cheers.
 -- 
-Regards,
--Bob
+        Apelete
