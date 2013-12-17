@@ -1,120 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab3LQNIY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:08:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55136 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753668Ab3LQNIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:08:23 -0500
-Message-ID: <52B04CC4.2020301@suse.cz>
-Date: Tue, 17 Dec 2013 14:08:20 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753836Ab3LQNIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:08:31 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:62232 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764Ab3LQNI2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 08:08:28 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Xiubo Li <Li.Xiubo@freescale.com>, mark.rutland@arm.com,
+        s.hauer@pengutronix.de, galak@codeaurora.org, swarren@wwwdotorg.org,
+        t.figa@samsung.com, grant.likely@linaro.org, matt.porter@linaro.org,
+        rob@landley.net, ian.campbell@citrix.com, pawel.moll@arm.com,
+        rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org,
+        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Alison Wang <b18965@freescale.com>,
+        Jingchang Lu <b35083@freescale.com>
+Subject: Re: [PATCHv7 1/4] pwm: Add Freescale FTM PWM driver support
+Date: Tue, 17 Dec 2013 14:08:17 +0100
+Message-ID: <2074242.bGmqYDKUOT@flatron>
+User-Agent: KMail/4.11.4 (Linux/3.12.2-gentoo; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <20131217130435.GV4360@n2100.arm.linux.org.uk>
+References: <1386925027-16288-1-git-send-email-Li.Xiubo@freescale.com> <1500339.E8bGm7xZUi@flatron> <20131217130435.GV4360@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Sasha Levin <sasha.levin@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, joern@logfs.org,
-        Michel Lespinasse <walken@google.com>, stable@kernel.org
-Subject: Re: [PATCH 2/3] mm: munlock: fix deadlock in __munlock_pagevec()
-References: <52AE07B4.4020203@oracle.com>	<1387188856-21027-1-git-send-email-vbabka@suse.cz>	<1387188856-21027-3-git-send-email-vbabka@suse.cz> <20131216163120.28218456e2c870c4c1bfce1e@linux-foundation.org>
-In-Reply-To: <20131216163120.28218456e2c870c4c1bfce1e@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2013 01:31 AM, Andrew Morton wrote:
-> On Mon, 16 Dec 2013 11:14:15 +0100 Vlastimil Babka <vbabka@suse.cz> wrote:
->
->> Commit 7225522bb ("mm: munlock: batch non-THP page isolation and
->> munlock+putback using pagevec" introduced __munlock_pagevec() to speed up
->> munlock by holding lru_lock over multiple isolated pages. Pages that fail to
->> be isolated are put_back() immediately, also within the lock.
->>
->> This can lead to deadlock when __munlock_pagevec() becomes the holder of the
->> last page pin and put_back() leads to __page_cache_release() which also locks
->> lru_lock. The deadlock has been observed by Sasha Levin using trinity.
->>
->> This patch avoids the deadlock by deferring put_back() operations until
->> lru_lock is released. Another pagevec (which is also used by later phases
->> of the function is reused to gather the pages for put_back() operation.
->>
->> ...
->>
->
-> Thanks for fixing this one.  I'll cross it off the rather large list of
-> recent MM regressions :(
+On Tuesday 17 of December 2013 13:04:35 Russell King - ARM Linux wrote:
+> On Tue, Dec 17, 2013 at 01:54:35PM +0100, Tomasz Figa wrote:
+> > On Tuesday 17 of December 2013 13:45:06 Thierry Reding wrote:
+> > > I fail to see how that would eliminate the problem with the types. That
+> > > said I don't actually see sparse complaining about any type mismatches.
+> > > That's probably because the various macros implicitly cast to u32.
+> > 
+> > Well, in BE variant you would read the register using __raw_readl() into
+> > a __be32 and then get an u32 from be32_to_cpu() and return it. Similarly
+> > for writes
+> 
+> __raw_readl() returns a u32, so you'll get a warning trying to assign a
+> u32 to a __be32.
+> 
+> We do have ioread32() and ioread32be() which do the appropriate conversion,
+> as well as the write versions too.  They both include the barrier if you're
+> overly concerned about that.
 
-Well I made this one in the first place :/
+Nice. I wasn't aware of their existence. Thanks.
 
->> --- a/mm/mlock.c
->> +++ b/mm/mlock.c
->> @@ -295,10 +295,12 @@ static void __munlock_pagevec(struct pagevec *pvec, struct zone *zone)
->>   {
->>   	int i;
->>   	int nr = pagevec_count(pvec);
->> -	int delta_munlocked = -nr;
->> +	int delta_munlocked;
->>   	struct pagevec pvec_putback;
->>   	int pgrescued = 0;
->>
->> +	pagevec_init(&pvec_putback, 0);
->> +
->>   	/* Phase 1: page isolation */
->>   	spin_lock_irq(&zone->lru_lock);
->>   	for (i = 0; i < nr; i++) {
->> @@ -327,16 +329,22 @@ skip_munlock:
->>   			/*
->>   			 * We won't be munlocking this page in the next phase
->>   			 * but we still need to release the follow_page_mask()
->> -			 * pin.
->> +			 * pin. We cannot do it under lru_lock however. If it's
->> +			 * the last pin, __page_cache_release would deadlock.
->>   			 */
->> +			pagevec_add(&pvec_putback, pvec->pages[i]);
->>   			pvec->pages[i] = NULL;
->> -			put_page(page);
->> -			delta_munlocked++;
->>   		}
->>   	}
->> +	delta_munlocked = -nr + pagevec_count(&pvec_putback);
->>   	__mod_zone_page_state(zone, NR_MLOCK, delta_munlocked);
->>   	spin_unlock_irq(&zone->lru_lock);
->>
->> +	/* Now we can release pins of pages that we are not munlocking */
->> +	for (i = 0; i < pagevec_count(&pvec_putback); i++) {
->> +		put_page(pvec_putback.pages[i]);
->> +	}
->> +
->
-> We could just do
->
-> --- a/mm/mlock.c~mm-munlock-fix-deadlock-in-__munlock_pagevec-fix
-> +++ a/mm/mlock.c
-> @@ -341,12 +341,9 @@ skip_munlock:
->   	spin_unlock_irq(&zone->lru_lock);
->
->   	/* Now we can release pins of pages that we are not munlocking */
-> -	for (i = 0; i < pagevec_count(&pvec_putback); i++) {
-> -		put_page(pvec_putback.pages[i]);
-> -	}
-> +	pagevec_release(&pvec_putback);
->
->   	/* Phase 2: page munlock */
-> -	pagevec_init(&pvec_putback, 0);
->   	for (i = 0; i < nr; i++) {
->   		struct page *page = pvec->pages[i];
->
-
-Yeah that looks nicer.
-
-> The lru_add_drain() is unnecessary overhead here.  What do you think?
-
-I would expect these isolation failures to be sufficiently rare so that 
-it doesn't matter. Especially in process exit path which was the 
-original target of my munlock work. But I don't have any numbers and my 
-mmtests benchmark for munlock is most likely too simple to trigger this. 
-But even once per pagevec the drain shouldn't hurt I guess...
+Best regards,
+Tomasz
 
