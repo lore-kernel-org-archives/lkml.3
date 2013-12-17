@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab3LQOTA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 09:19:00 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:51592 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab3LQOS7 (ORCPT
+	id S1753727Ab3LQO0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 09:26:30 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:60487 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab3LQO03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 09:18:59 -0500
-Date: Tue, 17 Dec 2013 09:18:48 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-sctp@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 1/2] printk: Add a pr_warn_deprecated macro
-Message-ID: <20131217141848.GA8633@hmsreliant.think-freely.org>
-References: <1387205049-22752-1-git-send-email-nhorman@tuxdriver.com>
- <1387213605-27206-1-git-send-email-nhorman@tuxdriver.com>
- <1387213605-27206-2-git-send-email-nhorman@tuxdriver.com>
- <1387216201.18217.58.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387216201.18217.58.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	Tue, 17 Dec 2013 09:26:29 -0500
+Message-ID: <1387290376.2399.11.camel@marge.simpson.net>
+Subject: Re: [ANNOUNCE] 3.12.5-rt6
+From: Mike Galbraith <bitbucket@online.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Date: Tue, 17 Dec 2013 15:26:16 +0100
+In-Reply-To: <20131217091624.65be757c@gandalf.local.home>
+References: <20131216091431.GA13796@linutronix.de>
+	 <1387264591.5340.23.camel@marge.simpson.net>
+	 <20131217063156.6ac3bfed@gandalf.local.home>
+	 <20131217124248.GA21694@linutronix.de>
+	 <20131217091624.65be757c@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:3rNzbJ9dfk3QvWIR4HXGNPbmn3fATSPRXV5rinkp2cM
+ 7gfblRWGSa1sbfdesC0PpKZVPhBEybjvy+RKcsMsjrNrFnIZHC
+ Htkp/tyxq+IalQn+b1gcMjW7b4nSc4ujx73lp/nM5z6xz1Sp2I
+ KiCF9ojQ99+xoqophYKl0iPg/E7F2jRJOTz+P+C7xtGYyjAaoh
+ qsCT9k7lOAtCnG6TSZZ9HYFUA35W0rnMTktPAgAdzXsOBJExKi
+ R+RfDiOGS+p1f9+39kkQawKEhftjqQPJhIU68VWbRE7NUhPrP+
+ yMb5OUdouRBwj7VCbJ715Av/4Oz8OFjse/IHbXTmB+WqpjGF8V
+ R7Oq2KKLY7VXErmYv4ElqWxT4peWqCpjHNlqonMEV
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 09:50:01AM -0800, Joe Perches wrote:
-> (adding Andrew Morton to cc's)
+On Tue, 2013-12-17 at 09:16 -0500, Steven Rostedt wrote: 
 > 
-> On Mon, 2013-12-16 at 12:06 -0500, Neil Horman wrote:
-> > sctp has several points in its setsockopt path in which it issues deprecation
-> > warnings.  It seems like it might be handy to macrotize such a warning so other
-> > subsystems can use it easily
-> []
-> > diff --git a/include/linux/printk.h b/include/linux/printk.h
-> []
-> > @@ -336,6 +336,9 @@ extern asmlinkage void dump_stack(void) __cold;
-> >  	printk_ratelimited(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
-> >  /* no pr_cont_ratelimited, don't do that... */
-> >  
-> > +#define pr_warn_deprecated(fmt, ...)					\
-> > +	pr_warn_ratelimited("Deprecated: " fmt, ##__VA_ARGS__)
+> > @@ -1129,11 +1127,8 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
+> >  		 * is actually now running somewhere else!
+> >  		 */
+> >  		while (task_running(rq, p)) {
+> > -			if (match_state) {
+> > -				if (!unlikely(check_task_state(p, match_state)))
+> > -					return 0;
+> > +			if (match_state && !check_task_state(p, match_state))
 > 
-> Continuing the thread from:
-> http://patchwork.ozlabs.org/patch/301738/
-> 
-> Making this a global kernel #define is different than
-> using it in your subsystem.
-> 
-> I think this is very analogous to the FW_INFO/FW_WARN
-> uses and maybe should just have a #define for the
-> string "deprecated:" inserted as a constant.
-> 
-> ie: just using
-> 
-> 	pr_warn_once(DEPRECATED fmt, args...)
-> or
-> 	pr_warn_ratelimited(DEPRECATED fmt, args...)
-> 
-The define is a nice idea, but I'm not sure about the use of the once variant.
-Multiple users may use multiple programs that trigger these deprecation
-warnings, and we should probably warn on each of them to avoid masking the
-others.
+> Ah, it was that "!unlikely(" that caused me to miss the '!'. That
+> should have been: likely(!check_task_state()). But anyway, I rather
+> just keep what you wrote and drop the unlikely altogether.
 
-I'll work up a new patch set
-Neil
+Maybe better would be to put the thing back inline, with a brief
+reference to the race.
 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+-Mike
+
