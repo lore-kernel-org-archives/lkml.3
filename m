@@ -1,235 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab3LQMPg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 07:15:36 -0500
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:41094 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750929Ab3LQMPf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 07:15:35 -0500
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Date: Tue, 17 Dec 2013 16:15:22 +0400
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, namhyung@kernel.org, artagnon@gmail.com,
-        jolsa@redhat.com
-Subject: Re: [PATCH 5/5 v2] perf timechart: add emphasize option
-Message-ID: <20131217121522.GA6357@stfomichev-desktop>
-References: <1385995056-20158-1-git-send-email-stfomichev@yandex-team.ru>
- <20131216193800.GA19283@ghostprotocols.net>
- <20131217093855.GA3345@stfomichev-desktop>
- <20131217112303.GB27791@gmail.com>
+	id S1753170Ab3LQMVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 07:21:15 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:51382 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751090Ab3LQMVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 07:21:13 -0500
+Message-ID: <52B04140.1060709@ti.com>
+Date: Tue, 17 Dec 2013 14:19:12 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131217112303.GB27791@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Brian Norris <computersforpeace@gmail.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
+        <dwmw2@infradead.org>
+Subject: Re: [PATCH v3 7/9] mtd: nand: davinci: adjust DT properties to MTD
+ generic
+References: <1386264358-9738-1-git-send-email-ivan.khoronzhuk@ti.com> <1386264358-9738-8-git-send-email-ivan.khoronzhuk@ti.com> <20131217085027.GK12034@norris-Latitude-E6410>
+In-Reply-To: <20131217085027.GK12034@norris-Latitude-E6410>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Please give a sample usage command line and a sample output. (the 
-> highlighting can be done using ASCII escape sequences in the changelog 
-> as well.)
-Highlighting is done in the generated SVG, so I can't really show it in
-the log or documentation. But I added simple example with -e option.
-
->   -e::
->   --emphasize=<duration_nsecs|task_name>::
-Thanks, added.
-
-> It's also not made clear that the option can take a numeric input, and 
-> if the input is numeric, it is interpreted as a task name.
+On 12/17/2013 10:50 AM, Brian Norris wrote:
+> On Thu, Dec 05, 2013 at 07:25:55PM +0200, Ivan Khoronzhuk wrote:
+>> --- a/drivers/mtd/nand/davinci_nand.c
+>> +++ b/drivers/mtd/nand/davinci_nand.c
+>> @@ -558,6 +557,8 @@ static struct davinci_nand_pdata
+>>   			"ti,davinci-mask-chipsel", &prop))
+>>   			pdata->mask_chipsel = prop;
+>>   		if (!of_property_read_string(pdev->dev.of_node,
+>> +			"nand-ecc-mode", &mode) ||
 > 
-> So please make features more approachable!
-Added more info to the documentation.
+> Is it possible to use the of_get_nand_ecc_mode() helper? It's
+> unfortunate that davinci_nand had to use custom bindings in the first
+> place, making this more difficult... So I can take this patch as-is.
+> 
 
-Attached new patch below.
+Yes, I will do nothing for that
 
----
+>> +		    !of_property_read_string(pdev->dev.of_node,
+>>   			"ti,davinci-ecc-mode", &mode)) {
+>>   			if (!strncmp("none", mode, 4))
+>>   				pdata->ecc_mode = NAND_ECC_NONE;
+>> @@ -570,11 +571,15 @@ static struct davinci_nand_pdata
+>>   			"ti,davinci-ecc-bits", &prop))
+>>   			pdata->ecc_bits = prop;
+>>   		if (!of_property_read_u32(pdev->dev.of_node,
+>> +			"nand-bus-width", &prop) ||
+> 
+> Similar story here, with of_get_nand_bus_width().
+> 
 
-This option highlights tasks (using different color) that run more than given
-duration or tasks with given name.
+It seems for bus width I can replace it on:
 
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
----
- tools/perf/Documentation/perf-timechart.txt | 14 ++++++++++++++
- tools/perf/builtin-timechart.c              | 21 ++++++++++++++++++++-
- tools/perf/util/svghelper.c                 | 23 ++++++++++++++++++++---
- tools/perf/util/svghelper.h                 |  4 +++-
- 4 files changed, 57 insertions(+), 5 deletions(-)
+prop = of_get_nand_bus_width(pdev->dev.of_node);
+if ( 0 < prop || !of_property_read_u32(pdev->dev.of_node,
+	     "ti,davinci-nand-buswidth", &prop))
+     if (prop == 16)
+	     pdata->options |= NAND_BUSWIDTH_16;
 
-diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
-index 367c1be0551c..b81e91dd16ce 100644
---- a/tools/perf/Documentation/perf-timechart.txt
-+++ b/tools/perf/Documentation/perf-timechart.txt
-@@ -56,12 +56,26 @@ $ perf timechart
- 
-   Written 10.2 seconds of trace to output.svg.
- 
-+Record system-wide timechart:
-+
-+  $ perf timechart record
-+
-+  then generate timechart and highlight 'gcc' tasks:
-+
-+  $ perf timechart -e gcc
-+
- -n::
- --proc-num::
-         Print task info for at least given number of tasks.
- -t::
- --topology::
-         Sort CPUs according to topology.
-+-e::
-+--emphasize=<duration_nsecs|task_name>::
-+	Highlight tasks (using different color) that run more than given
-+	duration or tasks with given name. If number is given it's interpreted
-+	as number of nanoseconds. If non-numeric string is given it's
-+	interpreted as task name.
- 
- RECORD OPTIONS
- --------------
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 8bde57c5c908..c0dcb05909b2 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -841,7 +841,6 @@ static void draw_cpu_usage(struct timechart *tchart)
- 						    sample->start_time,
- 						    sample->end_time,
- 						    p->pid,
--						    "sample",
- 						    c->comm,
- 						    sample->backtrace);
- 				}
-@@ -1252,6 +1251,23 @@ parse_process(const struct option *opt __maybe_unused, const char *arg,
- 	return 0;
- }
- 
-+static int
-+parse_emphasize(const struct option *opt __maybe_unused, const char *arg,
-+		int __maybe_unused unset)
-+{
-+	unsigned long duration = strtoul(arg, NULL, 0);
-+
-+	if (svg_emphasize || svg_emphasize_name)
-+		return -1;
-+
-+	if (duration)
-+		svg_emphasize = duration;
-+	else
-+		svg_emphasize_name = strdup(arg);
-+
-+	return 0;
-+}
-+
- int cmd_timechart(int argc, const char **argv,
- 		  const char *prefix __maybe_unused)
- {
-@@ -1270,6 +1286,9 @@ int cmd_timechart(int argc, const char **argv,
- 	OPT_STRING('i', "input", &input_name, "file", "input file name"),
- 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
- 	OPT_INTEGER('w', "width", &svg_page_width, "page width"),
-+	OPT_CALLBACK('e', "emphasize", NULL, "duration or name",
-+		      "emphasize tasks. Pass duration in ns or process name.",
-+		       parse_emphasize),
- 	OPT_BOOLEAN('P', "power-only", &tchart.power_only, "output power data only"),
- 	OPT_BOOLEAN('T', "tasks-only", &tchart.tasks_only,
- 		    "output processes data only"),
-diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
-index 9468136735ca..f056a7450e5f 100644
---- a/tools/perf/util/svghelper.c
-+++ b/tools/perf/util/svghelper.c
-@@ -31,6 +31,8 @@ static u64 turbo_frequency, max_freq;
- #define SLOT_HEIGHT 25.0
- 
- int svg_page_width = 1000;
-+u64 svg_emphasize;
-+const char *svg_emphasize_name;
- 
- #define MIN_TEXT_SIZE 0.01
- 
-@@ -112,6 +114,7 @@ void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end)
- 	fprintf(svgfile, "      rect.process  { fill:rgb(180,180,180); fill-opacity:0.9; stroke-width:1;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.process2 { fill:rgb(180,180,180); fill-opacity:0.9; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.sample   { fill:rgb(  0,  0,255); fill-opacity:0.8; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
-+	fprintf(svgfile, "      rect.sample_em{ fill:rgb(255,128,  0); fill-opacity:0.8; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.blocked  { fill:rgb(255,  0,  0); fill-opacity:0.5; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.waiting  { fill:rgb(224,214,  0); fill-opacity:0.8; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.WAITING  { fill:rgb(255,214, 48); fill-opacity:0.6; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
-@@ -155,17 +158,24 @@ void svg_blocked(int Yslot, int cpu, u64 start, u64 end, const char *backtrace)
- void svg_running(int Yslot, int cpu, u64 start, u64 end, const char *backtrace)
- {
- 	double text_size;
-+	const char *type;
-+
- 	if (!svgfile)
- 		return;
- 
-+	if (svg_emphasize && end - start > svg_emphasize)
-+		type = "sample_em";
-+	else
-+		type = "sample";
- 	fprintf(svgfile, "<g>\n");
- 
- 	fprintf(svgfile, "<title>#%d running %s</title>\n",
- 		cpu, time_to_string(end - start));
- 	if (backtrace)
- 		fprintf(svgfile, "<desc>Switched because:\n%s</desc>\n", backtrace);
--	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"sample\"/>\n",
--		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT);
-+	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"%s\"/>\n",
-+		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT,
-+		type);
- 
- 	text_size = (time2pixels(end)-time2pixels(start));
- 	if (cpu > 9)
-@@ -293,13 +303,20 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
- 	fprintf(svgfile, "</g>\n");
- }
- 
--void svg_process(int cpu, u64 start, u64 end, int pid, const char *type, const char *name, const char *backtrace)
-+void svg_process(int cpu, u64 start, u64 end, int pid, const char *name, const char *backtrace)
- {
- 	double width;
-+	const char *type;
- 
- 	if (!svgfile)
- 		return;
- 
-+	if (svg_emphasize && end - start >= svg_emphasize)
-+		type = "sample_em";
-+	else if (svg_emphasize_name && strstr(name, svg_emphasize_name))
-+		type = "sample_em";
-+	else
-+		type = "sample";
- 
- 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), cpu2y(cpu));
- 	fprintf(svgfile, "<title>%d %s running %s</title>\n", pid, name, time_to_string(end - start));
-diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
-index 1df4fb6c3a4a..10b4187bff6a 100644
---- a/tools/perf/util/svghelper.h
-+++ b/tools/perf/util/svghelper.h
-@@ -11,7 +11,7 @@ extern void svg_waiting(int Yslot, int cpu, u64 start, u64 end, const char *back
- extern void svg_cpu_box(int cpu, u64 max_frequency, u64 turbo_frequency);
- 
- 
--extern void svg_process(int cpu, u64 start, u64 end, int pid, const char *type, const char *name, const char *backtrace);
-+extern void svg_process(int cpu, u64 start, u64 end, int pid, const char *name, const char *backtrace);
- extern void svg_cstate(int cpu, u64 start, u64 end, int type);
- extern void svg_pstate(int cpu, u64 start, u64 end, u64 freq);
- 
-@@ -27,5 +27,7 @@ extern int svg_build_topology_map(char *sib_core, int sib_core_nr,
- 				  char *sib_thr, int sib_thr_nr);
- 
- extern int svg_page_width;
-+extern u64 svg_emphasize;
-+extern const char *svg_emphasize_name;
- 
- #endif /* __PERF_SVGHELPER_H */
+
+>> +		    !of_property_read_u32(pdev->dev.of_node,
+>>   			"ti,davinci-nand-buswidth", &prop))
+>>   			if (prop == 16)
+>>   				pdata->options |= NAND_BUSWIDTH_16;
+>> -		if (of_find_property(pdev->dev.of_node,
+>> -			"ti,davinci-nand-use-bbt", &len))
+>> +		if (of_property_read_bool(pdev->dev.of_node,
+>> +			"nand-on-flash-bbt") ||
+>> +		    of_property_read_bool(pdev->dev.of_node,
+>> +			"ti,davinci-nand-use-bbt"))
+>>   			pdata->bbt_options = NAND_BBT_USE_FLASH;
+>>   	}
+>>   
+> 
+> Brian
+> 
+
+
 -- 
-1.8.3.2
-
-
+Regards,
+Ivan Khoronzhuk
