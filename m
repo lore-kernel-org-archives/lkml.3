@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044Ab3LQAQk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 19:16:40 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:50837 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab3LQAQj (ORCPT
+	id S1752124Ab3LQARl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 19:17:41 -0500
+Received: from smtprelay0181.hostedemail.com ([216.40.44.181]:40090 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751665Ab3LQARk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 19:16:39 -0500
-X-AuditID: 9c93017d-b7c5eae000004296-d6-52af97e5f4cb
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 10/17] tracing/probes: Move 'symbol' fetch method to kprobes
-References: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
-	<1387168336-13213-11-git-send-email-namhyung@kernel.org>
-	<52AEB87D.6020507@hitachi.com> <87fvptgpe0.fsf@sejong.aot.lge.com>
-Date: Tue, 17 Dec 2013 09:16:37 +0900
-In-Reply-To: <87fvptgpe0.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
-	"Mon, 16 Dec 2013 17:40:23 +0900")
-Message-ID: <8738lsgwm2.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 16 Dec 2013 19:17:40 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2731:2828:2904:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3872:3874:4321:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: jump41_4274b7c8f3024
+X-Filterd-Recvd-Size: 2773
+Message-ID: <1387239455.18217.61.camel@joe-AO722>
+Subject: Re: [PATCH 05/10] mfd: menelaus: Use for_each_set_bit()
+From: Joe Perches <joe@perches.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: lee.jones@linaro.org, Tony Lindgren <tony@atomide.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Date: Mon, 16 Dec 2013 16:17:35 -0800
+In-Reply-To: <1387238904-7843-5-git-send-email-balbi@ti.com>
+References: <20131216153936.GQ18769@lee--X1>
+	 <1387238904-7843-1-git-send-email-balbi@ti.com>
+	 <1387238904-7843-5-git-send-email-balbi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+On Mon, 2013-12-16 at 18:08 -0600, Felipe Balbi wrote:
+> That macro just helps removing some extra line of code and hides ffs()
+> calls.
+> 
+> While at that, also fix a variable shadowing bug where 'int irq' was
+> being redeclared inside inner loop while it was also argument to
+> interrupt handler.
+> 
+> Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
+>  drivers/mfd/menelaus.c | 16 +++++++---------
+>  1 file changed, 7 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
+> index 87d80a8..d3e3022 100644
+> --- a/drivers/mfd/menelaus.c
+> +++ b/drivers/mfd/menelaus.c
+> @@ -795,24 +795,22 @@ static irqreturn_t menelaus_irq(int irq, void *_menelaus)
+>  {
+>  	struct menelaus_chip *menelaus = _menelaus;
+>  	void (*handler)(struct menelaus_chip *menelaus);
+> -	unsigned isr;
+> +	unsigned long isr;
+> +	unsigned long i;
+>  
+>  	isr = (menelaus_read_reg(MENELAUS_INT_STATUS2)
+>  			& ~menelaus->mask2) << 8;
+>  	isr |= menelaus_read_reg(MENELAUS_INT_STATUS1)
+>  		& ~menelaus->mask1;
+>  
+> -	while (isr) {
+> -		int irq = fls(isr) - 1;
+> -		isr &= ~(1 << irq);
+> -
+> +	for_each_set_bit(i, &isr, 16) {
+>  		mutex_lock(&menelaus->lock);
+> -		menelaus_disable_irq(irq);
+> -		menelaus_ack_irq(irq);
+> -		handler = menelaus->handlers[irq];
+> +		menelaus_disable_irq(i);
+> +		menelaus_ack_irq(i);
+> +		handler = menelaus->handlers[i];
+>  		if (handler)
+>  			handler(menelaus);
+> -		menelaus_enable_irq(irq);
+> +		menelaus_enable_irq(i);
+>  		mutex_unlock(&menelaus->lock);
+>  	}
+>  
 
-Would you please review this and consider merging it?  It seems there's
-no more remaining issue and we want to make a progress on it. :)
+This could handle the irqs in reverse order.
+Does that matter?
 
-Oleg, Srikar, it'd be great if you could confirm it though.
-
-Thanks,
-Namhyung
-
-
-On Mon, 16 Dec 2013 17:40:23 +0900, Namhyung Kim wrote:
-> Hi Masami,
->
-> On Mon, 16 Dec 2013 17:23:25 +0900, Masami Hiramatsu wrote:
->> (2013/12/16 13:32), Namhyung Kim wrote:
->>> From: Namhyung Kim <namhyung.kim@lge.com>
->>> 
->>> Move existing functions to trace_kprobe.c and add NULL entries to the
->>> uprobes fetch type table.  I don't make them static since some generic
->>> routines like update/free_XXX_fetch_param() require pointers to the
->>> functions.
->>> 
->>> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->>> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
->>> Cc: Oleg Nesterov <oleg@redhat.com>
->>> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
->>> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
->>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->>
->> This looks good for me :)
->>
->> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->>
->> And now all of this series has been reviewed/acked by me!
->
-> Thank you so much for your review! :)
->
-> Thanks,
-> Namhyung
