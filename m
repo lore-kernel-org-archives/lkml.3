@@ -1,66 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab3LQP6v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:58:51 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:48057 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752452Ab3LQP6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:58:50 -0500
-Date: Tue, 17 Dec 2013 16:58:44 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
-Subject: Re: [PATCH v5 10/14] efi: only print saved efi runtime maps instead
- of all memmap ranges for kexec
-Message-ID: <20131217155844.GG30592@pd.tnic>
-References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
- <1386582147-9802-11-git-send-email-dyoung@redhat.com>
- <20131213160150.GE32329@pd.tnic>
- <20131216020010.GC3754@dhcp-16-126.nay.redhat.com>
- <20131216113324.GB4922@pd.tnic>
- <20131217063436.GF6751@dhcp-16-126.nay.redhat.com>
+	id S1754657Ab3LQQBY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:01:24 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:59314 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754318Ab3LQQBW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 11:01:22 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        linus.walleij@linaro.org, wsa@the-dreams.de, horms@verge.net.au
+Subject: Re: [PATCH 03/05 v2] pinctrl: sh-pfc: r7s72100 single pin macros
+Date: Tue, 17 Dec 2013 17:01:41 +0100
+Message-ID: <4641687.OeSyoZmW7s@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20131217023814.24573.91649.sendpatchset@w520>
+References: <20131217023745.24573.3660.sendpatchset@w520> <20131217023814.24573.91649.sendpatchset@w520>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131217063436.GF6751@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 02:34:36PM +0800, Dave Young wrote:
-> They are moved to efi.c efi_setup_init(), I'm not sure if I expained
-> clear enough, in current code parse_efi_setup only accept one argument
-> phys_addr so I will mapping it with sizeof(struct setup_data) to
-> get the payload size then get the nr_efi_runtime_map. This is a
-> simplification from the old implementation.
->
-> Based on current implementation, yes, I can add back another argument
-> data_len to avoid the 1st mapping thus I can print efi memmap as you
-> said.
->
-> In this way I need export another extern for the data_len though.
+Hi Magnus,
 
-Well, think about it: do you want to do the memremap/unmap a second time
-*just* to print the memmap in the efi kernel or do you want to do the
-memremap/unmap only once and do the work once?
+Thank you for the patches.
 
-If you say you don't care about speed and wasting cycles then I'm
-certainly fine with that as I've spent more time hinting at the
-performance aspect than I'd like to.
+On Tuesday 17 December 2013 11:38:14 Magnus Damm wrote:
+> From: Magnus Damm <damm@opensource.se>
+> 
+> Introduce macros that allow description of one pin per line.
+> Compared to the other ways of doing this, using this style
+> we can compresses the description of each pin from 9 to 1 line.
+> 
+> Signed-off-by: Magnus Damm <damm@opensource.se>
+> ---
+> 
+>  This patch uses RZ_PMX_GROUP and RZ_GROUPS, thanks Laurent!
+> 
+>  drivers/pinctrl/sh-pfc/pfc-r7s72100.c |   21 +++++++++++++++++++++
+>  1 file changed, 21 insertions(+)
+> 
+> --- 0003/drivers/pinctrl/sh-pfc/pfc-r7s72100.c
+> +++ work/drivers/pinctrl/sh-pfc/pfc-r7s72100.c	2013-12-16 
+19:14:30.000000000
+> +0900 @@ -98,9 +98,30 @@ static struct sh_pfc_pin pinmux_pins[] =
+> 
+>  #define RZ_PORT_PIN(bank, pin) (((bank) * 16) + (pin))
+> 
+> +#define __RZ_STR(pfx, hw, bank, pin, sfx)		\
+> +	pfx##_##hw##_p##bank##_##pin####sfx
 
-> What do you mean about NOPARSE, do you want another function name like
-> save_efi_setup()?
+Do you mean s/####sfx/##sfx/ ?
 
--ENOPARSE means I cannot parse what you said above.
+> +
+> +#define RZ_PIN_AND_MUX(pfx, hw, bank, pin, fn)				\
+> +static const unsigned int __RZ_STR(pfx, hw, bank, pin, _pins)[] = {	\
+> +	RZ_PORT_PIN(bank, pin),						\
+> +};									\
+> +static const unsigned int __RZ_STR(pfx, hw, bank, pin, _mux)[] = {	\
+> +	P_##bank##_##pin##_MARK_FN##fn,					\
+> +};
+
+I would have preferred keeping the trailing semicolon (and comma in the 
+RZ_GROUPS macro) out of the macro, but that won't be possible as the 
+RZ_PIN_AND_MUX and RZ_GROUPS macros are used as arguments to the SCIF macros 
+in the next patch.
+
+> +
+> +#define RZ_PMX_GROUP(pfx, hw, bank, pin, fn) \
+> +	SH_PFC_PIN_GROUP(pfx##_##hw##_p##bank##_##pin),
+> +
+> +#define __RZ_GROUPS(x) #x
+
+Can't you replace __RZ_GROUPS() by __stringify() ?
+
+> +#define RZ_GROUPS(pfx, hw, bank, pin, fn) \
+> +	__RZ_GROUPS(pfx##_##hw##_p##bank##_##pin),
+> +
+>  static const struct sh_pfc_pin_group pinmux_groups[] = {
+>  };
+> 
+> +static const char * const scif2_groups[] = {
+> +};
+
+I think this should be part of patch 04/05.
+
+>  static const struct sh_pfc_function pinmux_functions[] = {
+>  };
 
 -- 
-Regards/Gruss,
-    Boris.
+Regards,
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Laurent Pinchart
+
