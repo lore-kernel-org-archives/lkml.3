@@ -1,65 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab3LQSXC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:23:02 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:32880 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125Ab3LQSPf (ORCPT
+	id S1756168Ab3LQSXh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:23:37 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:57212 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755368Ab3LQSXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:15:35 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Tom Lendacky <thomas.lendacky@amd.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 081/103] crypto: scatterwalk - Set the chain pointer indication bit
-Date: Tue, 17 Dec 2013 18:13:10 +0000
-Message-Id: <1387304012-23805-82-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
-References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 17 Dec 2013 13:23:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo5s7euqGvqg=W=_j=98eyPp1uk=Zw8gD1gif6A9h_BNpQ@mail.gmail.com>
+References: <1386949306-30601-1-git-send-email-betty.dall@hp.com>
+ <CAErSpo4tswv8PHGOQDviFj6Rc7QMYkWQ5rhMCFmHZFL9jM6oBQ@mail.gmail.com>
+ <1386976612.10497.80.camel@ejdallLaptop> <CAErSpo5s7euqGvqg=W=_j=98eyPp1uk=Zw8gD1gif6A9h_BNpQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 17 Dec 2013 11:23:12 -0700
+Message-ID: <CAErSpo4wbaoGL3P=-ju9+TfUjRrjwDh5Y9w0aCVyK08NJKZdaQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI AER: handle pci_cleanup_aer_uncorrect_error_status()
+ in firmware first mode
+To: Betty Dall <betty.dall@hp.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.28 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Dec 16, 2013 at 12:51 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Fri, Dec 13, 2013 at 4:16 PM, Betty Dall <betty.dall@hp.com> wrote:
+>> On Fri, 2013-12-13 at 15:35 -0700, Bjorn Helgaas wrote:
+>>> On Fri, Dec 13, 2013 at 8:41 AM, Betty Dall <betty.dall@hp.com> wrote:
+>>> > There are three functions exported from aerdrv_core.c that could be
+>>> > called when the system is in firmware first mode:
+>>> > pci_enable_pcie_error_reporting(), pci_disable_pcie_error_reporting, and
+>>> > pci_cleanup_aer_uncorrect_error_status(). The first two functions check if
+>>> > we are in firmware first mode and return immediately.
+>>> > pci_cleanup_aer_uncorrect_error_status() does not check firmware first
+>>> > mode. The problem is that all of these functions should not access the AER
+>>> > registers in firmware first mode because the firmware has not granted OS
+>>> > control of the AER registers through the _OSC.
+>>>
+>>> This looks like a good fix to me.  If I read aer_acpi_firmware_first()
+>>> correctly, we don't even *ask* for control of AER if
+>>> ACPI_HEST_FIRMWARE_FIRST appears anywhere in the HEST.  Does that
+>>> match your understanding?
+>>
+>> Yes, when the system is in firmware first mode the code setting the _OSC
+>> control register does not ask for AER control.
+>>
+>>>
+>>> > Many drivers call this
+>>> > function in their pci_error_handlers in firmware first mode.
+>>>
+>>> Drivers don't have any idea whether their device is in firmware-first
+>>> mode, do they?
+>>
+>> Right. And I think we want to keep it that way. Having this function is
+>> a good thing so that the firmware first can be abstracted from the
+>> drivers.
+>>
+>>>
+>>> > The fix is to change pci_cleanup_aer_uncorrect_error_status() to check
+>>> > firmware first mode before accessing the AER registers. If it is in firmware
+>>> > first mode, return 0. I considered returning -EIO, but decided the status
+>>> > has been cleaned up appropriately for firmware first. Returning 0 also avoids
+>>> > an error message. Not many places check the return of this function, and the
+>>> > ones that do, print an error message and continue such as:
+>>> >    err = pci_cleanup_aer_uncorrect_error_status(pdev);
+>>> >    if (err) {
+>>> >        dev_err(&pdev->dev,
+>>> >            "pci_cleanup_aer_uncorrect_error_status failed 0x%0x\n",
+>>> >             err); /* non-fatal, continue */
+>>> >    }
+>>> > That error message is how I found this problem, and it is not applicable
+>>> > for the firmware first recovery path.
+>>>
+>>> I'm curious -- did you find this problem because you saw a message
+>>> when pci_cleanup_aer_uncorrect_error_status() returned failure?  The
+>>> only way it can return failure is if there is no AER capability, and
+>>> that should be completely independent of whether we're in
+>>> firmware-first mode.
+>>
+>> Yes, I saw the error message during error injection testing and using a
+>> firmware that denies access to AER control because it is firmware first.
+>> You are right that it would only print out when there is no AER
+>> capability. I was reading code looking for places that might access the
+>> AER registers in firmware first mode. This is the only one I found.
+>
+> I see why you added a pcie_aer_get_firmware_first() test, because
+> that's what pci_enable_pcie_error_reporting() and
+> pci_disable_pcie_error_reporting() do.
+>
+> But I think we implemented the firmware-first stuff wrong by elevating
+> the firmware-first concept to the arch-independent level.  The
+> connection between this and the _OSC negotiation is pretty convoluted,
+> even on x86.  It's hard to verify by reading the code that we avoid
+> touching AER if we haven't asked for control or the BIOS declined to
+> grant it.
+>
+> I think it would be better if the pci_dev.__aer_firmware_first stuff
+> were replaced by a more generic "can we use AER?" flag.  That flag
+> should be set at device enumeration time, so we wouldn't need anything
+> like the __aer_firmware_first_valid flag.
 
-------------------
+I guess I'm assuming that firmware-first means "the OS should not use
+AER at all for this device; any errors will be reported via HEST."  Is
+that true?
 
-From: Tom Lendacky <thomas.lendacky@amd.com>
+The term "firmware-first" definitely suggests that the firmware gets
+to process an error before the OS does anything.  It *could* also
+suggest that after the firmware gets first chance, the OS can do its
+normal error handling with AER.  But I hope that's not the case
+because I think it would be hard to coordinate.
 
-commit 41da8b5adba77e22584f8b45f9641504fa885308 upstream.
+Bjorn
 
-The scatterwalk_crypto_chain function invokes the scatterwalk_sg_chain
-function to chain two scatterlists, but the chain pointer indication
-bit is not set.  When the resulting scatterlist is used, for example,
-by sg_nents to count the number of scatterlist entries, a segfault occurs
-because sg_nents does not follow the chain pointer to the chained scatterlist.
-
-Update scatterwalk_sg_chain to set the chain pointer indication bit as is
-done by the sg_chain function.
-
-Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- include/crypto/scatterwalk.h | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/include/crypto/scatterwalk.h b/include/crypto/scatterwalk.h
-index 3744d2a..09ef1a0 100644
---- a/include/crypto/scatterwalk.h
-+++ b/include/crypto/scatterwalk.h
-@@ -36,6 +36,7 @@ static inline void scatterwalk_sg_chain(struct scatterlist *sg1, int num,
- {
- 	sg_set_page(&sg1[num - 1], (void *)sg2, 0, 0);
- 	sg1[num - 1].page_link &= ~0x02;
-+	sg1[num - 1].page_link |= 0x01;
- }
- 
- static inline struct scatterlist *scatterwalk_sg_next(struct scatterlist *sg)
--- 
-1.8.3.2
-
+>>> > Signed-off-by: Betty Dall <betty.dall@hp.com>
+>>> > ---
+>>> >
+>>> >  drivers/pci/pcie/aer/aerdrv_core.c |    3 +++
+>>> >  1 files changed, 3 insertions(+), 0 deletions(-)
+>>> >
+>>> >
+>>> > diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+>>> > index b2c8881..1f60408 100644
+>>> > --- a/drivers/pci/pcie/aer/aerdrv_core.c
+>>> > +++ b/drivers/pci/pcie/aer/aerdrv_core.c
+>>> > @@ -62,6 +62,9 @@ int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev)
+>>> >         int pos;
+>>> >         u32 status;
+>>> >
+>>> > +       if (pcie_aer_get_firmware_first(dev))
+>>> > +               return 0;
+>>> > +
+>>> >         pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR);
+>>> >         if (!pos)
+>>> >                 return -EIO;
+>>
+>>
