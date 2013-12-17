@@ -1,122 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab3LQRq1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 12:46:27 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:47075 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753798Ab3LQRq0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 12:46:26 -0500
-Message-ID: <52B08DEB.5050304@hurleysoftware.com>
-Date: Tue, 17 Dec 2013 12:46:19 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755048Ab3LQRry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 12:47:54 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:52086 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754625Ab3LQRrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 12:47:53 -0500
+Date: Tue, 17 Dec 2013 11:47:59 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC PATCH 0/3] Change how we determine when to hand out THPs
+Message-ID: <20131217174759.GL18680@sgi.com>
+References: <20131212180037.GA134240@sgi.com>
+ <20131213214437.6fdbf7f2.akpm@linux-foundation.org>
+ <20131216171214.GA15663@sgi.com>
+ <CALCETrW9uGYzckWg3Wcsu-VV-vbXxUCr+Dv0kXqE5VMKopjn+A@mail.gmail.com>
+ <20131217160455.GG18680@sgi.com>
+ <CALCETrX_B0D+XyYD8P6mfS4uqty1vzYpOmR-0Mx-yee=wtyR8g@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Karl Dahlke <eklhad@comcast.net>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: Bug in tty cooked mode kernel 3.12.3
-References: <20131107184607.eklhad@comcast.net> <1386630367-4658-1-git-send-email-peter@hurleysoftware.com> <20131217173052.GA15633@kroah.com>
-In-Reply-To: <20131217173052.GA15633@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrX_B0D+XyYD8P6mfS4uqty1vzYpOmR-0Mx-yee=wtyR8g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2013 12:30 PM, Greg Kroah-Hartman wrote:
-> On Mon, Dec 09, 2013 at 06:06:07PM -0500, Peter Hurley wrote:
->> On 12/07/2013 06:46 PM, Karl Dahlke wrote:
->>> This may have appeared in 3.9.11 with the changes to tty.
->>> Don't know; I just started running 3.12 from kernel.org.
->>> Perhaps nobody saw it before because nobody runs command line programs,
->>> we're all on desktops or x or whatever,
->>> and even those in the command line are still raw.
->>> bash is raw by default, but I run it cooked.
->>> You can supress its readline functions like this.
->>>
->>> set +o emacs
->>> set +o vi
->>> set +o histexpand
->>> set +o history
->>>
->>> That puts its tty back into cooked mode.
->>>
->>> Come up in run level 3, command line mode,
->>> and bring up two consoles with bash in cooked mode as above.
->>> Set a simple prompt like this.
->>>
->>> PS1='$ '
->>>
->>> Switch to console 2 via alt-f2.
->>> Hit return.
->>> The cursor should drop to a new line then give you the $ prompt.
->>> But it puts the $ prompt next too the old one, then drops down
->>> to a blank line.
->>> The $ prompt and the crlf are out of sequence.
->>> Hit return a few more times and it will straighten itself out.
->>> Then switch back to console 1 alt-f1
->>> Hit return and the same bug,
->>> $ $
->>>
->>> hit return a few more times to straighten it out.
->>> Switch back to console 2 and the same problem.
->>> For me it's repeatable.
->>>
->>> It's also very confusing when I'm running other command line programs with cooked tty.
->>> For unknown reasons the crlf can come out at the wrong time,
->>> breaking lines or leaving lines together.
->>> My editor can run either way, so I've switched it over to readline mode
->>> and I haven't noticed any problems this way, yet.
->>> But I would prefer the cooked mode.
->>>
->>> I looked through MAINTAINERS but couldn't find
->>> a clear maintainer for drivers/tty/tty*.c
->>> Please forward this to the appropriate people.
->>
->> Thanks for the report, Karl.
->>
->> Please test the patch below (requires
->> commit 39434abd942c8e4b9c14c06a03b3245beaf8467f,
->> 'n_tty: Fix missing newline echo').
->> This should fix the 'newline output after the new prompt' problem.
->>
->> Note however that the other output order you observe is correct:
->> you press enter, a newline is echoed to terminal which mixes
->> with program output, the program ends, and the cooked mode
->> shell outputs an extra prompt because it reads a newline (which
->> the program did not read).
->>
->> Regards,
->> Peter Hurley
->>
->> --- >% ---
->> From: Peter Hurley <peter@hurleysoftware.com>
->> Subject: [PATCH] n_tty: Fix apparent order of echoed output
->>
->> With block processing of echoed output, observed output order is still
->> required. Push completed echoes and echo commands prior to output.
->>
->> Introduce echo_mark echo buffer index, which tracks completed echo
->> commands; ie., those submitted via commit_echoes but which may not
->> have been committed. Ensure that completed echoes are output prior
->> to subsequent terminal writes in process_echoes().
->>
->> Fixes newline/prompt output order in cooked mode shell.
->>
->> Cc: <stable@vger.kernel.org> # 3.12.x : 39434ab n_tty: Fix missing newline echo
->> Reported-by: Karl Dahlke <eklhad@comcast.net>
->> Reported-by: Mikulas Patocka <mpatocka@redhat.com>
->> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
->> ---
->>   drivers/tty/n_tty.c | 7 ++++++-
->>   1 file changed, 6 insertions(+), 1 deletion(-)
->
-> Do you want me to queue this up for 3.13-final, or have I already?
+On Tue, Dec 17, 2013 at 08:54:10AM -0800, Andy Lutomirski wrote:
+> On Tue, Dec 17, 2013 at 8:04 AM, Alex Thorlton <athorlton@sgi.com> wrote:
+> > On Mon, Dec 16, 2013 at 05:43:40PM -0800, Andy Lutomirski wrote:
+> >> On Mon, Dec 16, 2013 at 9:12 AM, Alex Thorlton <athorlton@sgi.com> wrote:
+> >> >> Please cc Andrea on this.
+> >> >
+> >> > I'm going to clean up a few small things for a v2 pretty soon, I'll be
+> >> > sure to cc Andrea there.
+> >> >
+> >> >> > My proposed solution to the problem is to allow users to set a
+> >> >> > threshold at which THPs will be handed out.  The idea here is that, when
+> >> >> > a user faults in a page in an area where they would usually be handed a
+> >> >> > THP, we pull 512 pages off the free list, as we would with a regular
+> >> >> > THP, but we only fault in single pages from that chunk, until the user
+> >> >> > has faulted in enough pages to pass the threshold we've set.  Once they
+> >> >> > pass the threshold, we do the necessary work to turn our 512 page chunk
+> >> >> > into a proper THP.  As it stands now, if the user tries to fault in
+> >> >> > pages from different nodes, we completely give up on ever turning a
+> >> >> > particular chunk into a THP, and just fault in the 4K pages as they're
+> >> >> > requested.  We may want to make this tunable in the future (i.e. allow
+> >> >> > them to fault in from only 2 different nodes).
+> >> >>
+> >> >> OK.  But all 512 pages reside on the same node, yes?  Whereas with thp
+> >> >> disabled those 512 pages would have resided closer to the CPUs which
+> >> >> instantiated them.
+> >> >
+> >> > As it stands right now, yes, since we're pulling a 512 page contiguous
+> >> > chunk off the free list, everything from that chunk will reside on the
+> >> > same node, but as I (stupidly) forgot to mention in my original e-mail,
+> >> > one piece I have yet to add is the functionality to put the remaining
+> >> > unfaulted pages from our chunk *back* on the free list after we give up
+> >> > on handing out a THP.  Once this is in there, things will behave more
+> >> > like they do when THP is turned completely off, i.e. pages will get
+> >> > faulted in closer to the CPU that first referenced them once we give up
+> >> > on handing out the THP.
+> >>
+> >> This sounds like it's almost the worst possible behavior wrt avoiding
+> >> memory fragmentation.  If userspace mmaps a very large region and then
+> >> starts accessing it randomly, it will allocate a bunch of contiguous
+> >> 512-page regions, claim one page from each, and return the other 511
+> >> pages to the free list.  Memory is now maximally fragmented from the
+> >> point of view of future THP allocations.
+> >
+> > Maybe I'm missing the point here to some degree, but the way I think
+> > about this is that if we trigger the behavior to return the pages to the
+> > free list, we don't *want* future THP allocations in that range of
+> > memory for the current process anyways.  So, having the memory be
+> > fragmented from the point of view of future THP allocations isn't an
+> > issue.
+> >
+> 
+> Except that you're causing a problem for the whole system because one
+> process is triggering the "hugepages aren't helpful" heuristic.
 
-Yes, please queue this for 3.13.
+I do see where you're coming from here.  Do you have any good tests
+that can cause this type of memory fragmentation that I might be able to
+take a look at, to see how we might combat that issue in this case?
+It seems like something that could occur anyways, but my patch would
+create a situation where it could become a problem much more quickly.
 
-Regards,
-Peter Hurley
+Also, just a side note, I see this being more of a problem on a smaller
+system, where swap is enabled.  However, on larger systems where swap is
+turned off, I think that this scenario might be a bit tougher to hit.  I
+understand that we don't want to hurt the average small system in favor
+of large ones, but that's why we leave it as a tunable and leave it up
+to the system administrator to decide whether or not this is appropriate
+to enable.
 
+- Alex
