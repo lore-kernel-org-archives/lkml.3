@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755115Ab3LQQtw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 11:49:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60493 "EHLO mx2.suse.de"
+	id S1754797Ab3LQQxN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:53:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11328 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754194Ab3LQQs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 11:48:27 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 1/6] mm: page_alloc: exclude unreclaimable allocations from zone fairness policy
-Date: Tue, 17 Dec 2013 16:48:19 +0000
-Message-Id: <1387298904-8824-2-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1387298904-8824-1-git-send-email-mgorman@suse.de>
-References: <1387298904-8824-1-git-send-email-mgorman@suse.de>
+	id S1752964Ab3LQQxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 11:53:12 -0500
+Date: Tue, 17 Dec 2013 17:53:35 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: PATCH? introduce get_compound_page (Was: process 'stuck' at
+	exit)
+Message-ID: <20131217165335.GA24799@redhat.com>
+References: <20131211170844.GA21700@redhat.com> <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de> <20131211175615.GA24546@redhat.com> <20131211191855.GA32485@redhat.com> <20131213151035.GE5408@redhat.com> <20131213162240.GA11762@redhat.com> <20131213173406.GG5408@redhat.com> <20131216183618.GA28252@redhat.com> <20131216201952.GE21218@redhat.com> <20131216204626.GA8152@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131216204626.GA8152@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+On 12/16, Oleg Nesterov wrote:
+>
+> On 12/16, Andrea Arcangeli wrote:
+> >
+> > On Mon, Dec 16, 2013 at 07:36:18PM +0100, Oleg Nesterov wrote:
+> > >
+> > > And compound_lock_irqsave() looks racy even after get_page_unless_zero().
+> > >
+> > > For example, suppose that page_head was already freed and then re-allocated
+> > > as (say) alloc_pages(__GFP_COMP, 1). get_page_unless_zero() can succeed right
+> > > after prep_new_page() does set_page_refcounted(). Now, can't compound_lock()
+> > > race with the non-atomic prep_compound_page()->__SetPageHead() ?
+> >
+> > Yes. We need to change to:
+> >
+> > 	if (order && (gfp_flags & __GFP_COMP))
+> > 		prep_compound_page(page, order);
+> > 	smp_wmb();
+> > 	/* as the compound_lock can be taken after it's refcounted */
+> > 	set_page_refcounted(page);
+> >
+> > __SetPageHead uses bts asm insn so literally only a "lock" prefix is
+> > missing in a assembly instruction. So the race window is incredibly
+> > small, but it must be fixed indeed. This also puts set_page_refcounted
+> > as the last action of buffered_rmqueue so there shouldn't be any other
+> > issues like this left in the page allocation code.
+> >
+> > Can you reorder set_page_refcount in your v2?
+>
+> OK. I'll try to make something on Wednesday.
 
-Dave Hansen noted a regression in a microbenchmark that loops around
-open() and close() on an 8-node NUMA machine and bisected it down to
-81c0a2bb515f ("mm: page_alloc: fair zone allocator policy").  That
-change forces the slab allocations of the file descriptor to spread
-out to all 8 nodes, causing remote references in the page allocator
-and slab.
+Yes, I will, but...
 
-The round-robin policy is only there to provide fairness among memory
-allocations that are reclaimed involuntarily based on pressure in each
-zone.  It does not make sense to apply it to unreclaimable kernel
-allocations that are freed manually, in this case instantly after the
-allocation, and incur the remote reference costs twice for no reason.
+I can't stop thinking about another change. What if we simply change
+__split_huge_page_refcount() to also do compound_lock/unlock(page_tail)
+in a main loop?
 
-Only round-robin allocations that are usually freed through page
-reclaim or slab shrinking.
+This way we can greatly simplify get/put_page paths, we can rely on
+compound_lock(sub-page) and avoid get_page_unless_zero(page_head).
+Yes, this will make _split a bit slower, but PG_compound_lock should
+not be contended? And we should change page_tail->flags carefully, but
+this looks simple.
 
-Cc: <stable@kernel.org>
-Bisected-by: Dave Hansen <dave.hansen@intel.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
----
- mm/page_alloc.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Or this is not possible/desirable?
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 580a5f0..f861d02 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1920,7 +1920,8 @@ zonelist_scan:
- 		 * back to remote zones that do not partake in the
- 		 * fairness round-robin cycle of this zonelist.
- 		 */
--		if (alloc_flags & ALLOC_WMARK_LOW) {
-+		if ((alloc_flags & ALLOC_WMARK_LOW) &&
-+		    (gfp_mask & GFP_MOVABLE_MASK)) {
- 			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
- 				continue;
- 			if (zone_reclaim_mode &&
--- 
-1.8.4
+Oleg.
 
