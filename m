@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab3LQJsx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 04:48:53 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37280 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab3LQJsv (ORCPT
+	id S1752714Ab3LQJxJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 04:53:09 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:33349 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950Ab3LQJxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 04:48:51 -0500
-Date: Tue, 17 Dec 2013 10:48:40 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Eric Paris <eparis@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH 11/12] pid: rewrite task helper functions avoiding
- task->pid and task->tgid
-Message-ID: <20131217094840.GP3694@twins.programming.kicks-ass.net>
-References: <cover.1377032086.git.rgb@redhat.com>
- <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com>
- <20130822190848.GA25053@redhat.com>
- <20130826220711.GA21098@madcap2.tricolour.ca>
- <20131216173547.GA21582@madcap2.tricolour.ca>
- <20131216210558.GA8565@redhat.com>
- <20131216222051.GA21056@madcap2.tricolour.ca>
- <20131217093442.GE21999@twins.programming.kicks-ass.net>
+	Tue, 17 Dec 2013 04:53:05 -0500
+Date: Tue, 17 Dec 2013 09:53:00 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Sangbeom Kim <sbkim73@samsung.com>,
+        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH mfd-next] mfd: max14577 and sec: add PM_SLEEP dependency
+ to suspend/resume
+Message-ID: <20131217095300.GA19810@lee--X1>
+References: <1387272505-4621-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131217093442.GE21999@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1387272505-4621-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 10:34:42AM +0100, Peter Zijlstra wrote:
-> On Mon, Dec 16, 2013 at 05:20:51PM -0500, Richard Guy Briggs wrote:
-> 
->  >  static inline bool is_idle_task(const struct task_struct *p)
->  >  {
->  > -	return p->pid == 0;
->  > +	return task_pid(p) == &init_struct_pid;
->  >  }
-> 
-> > I'll stick with task_pid_nr(p) == 0.
-> 
-> We're going to probably switch to:
-> 
->   return p->flags & PF_IDLE;
-> 
-> Soon, because people are playing silly tricks and want normal threads
-> to temporarily appear to be the idle thread (idle time injection).
+On Tue, 17 Dec 2013, Krzysztof Kozlowski wrote:
 
-See http://marc.info/?l=linux-kernel&m=138548236506953&w=2 for more
-context.
+> Add CONFIG_PM_SLEEP dependency to suspend and resume functions of
+> max14577 MFD driver and sec-core.c code.
+> 
+> This fixes the warnings:
+> drivers/mfd/max14577.c:176:12: warning: ‘max14577_suspend’ defined but not used [-Wunused-function]
+> drivers/mfd/max14577.c:199:12: warning: ‘max14577_resume’ defined but not used [-Wunused-function]
+> drivers/mfd/sec-core.c:347:12: warning: ‘sec_pmic_suspend’ defined but not used [-Wunused-function]
+> drivers/mfd/sec-core.c:369:12: warning: ‘sec_pmic_resume’ defined but not used [-Wunused-function]
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/mfd/max14577.c |    2 ++
+>  drivers/mfd/sec-core.c |    2 ++
+>  2 files changed, 4 insertions(+)
+> 
+> diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
+> index a5e1c370c609..1018a6644469 100644
+> --- a/drivers/mfd/max14577.c
+> +++ b/drivers/mfd/max14577.c
+> @@ -173,6 +173,7 @@ static const struct i2c_device_id max14577_i2c_id[] = {
+>  };
+>  MODULE_DEVICE_TABLE(i2c, max14577_i2c_id);
+>  
+> +#ifdef CONFIG_PM_SLEEP
+>  static int max14577_suspend(struct device *dev)
+>  {
+>  	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
+> @@ -208,6 +209,7 @@ static int max14577_resume(struct device *dev)
+>  
+>  	return 0;
+>  }
+> +#endif /* CONFIG_PM_SLEEP */
+
+Is this the best way we have of doing this?
+
+Isn't there a helper which casts these to NULL if unused?
+
+>  static struct of_device_id max14577_dt_match[] = {
+>  	{ .compatible = "maxim,max14577", },
+> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+> index 56615af42a28..455e3a8fb95d 100644
+> --- a/drivers/mfd/sec-core.c
+> +++ b/drivers/mfd/sec-core.c
+> @@ -343,6 +343,7 @@ static int sec_pmic_remove(struct i2c_client *i2c)
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_PM_SLEEP
+>  static int sec_pmic_suspend(struct device *dev)
+>  {
+>  	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
+> @@ -377,6 +378,7 @@ static int sec_pmic_resume(struct device *dev)
+>  
+>  	return 0;
+>  }
+> +#endif /* CONFIG_PM_SLEEP */
+>  
+>  static SIMPLE_DEV_PM_OPS(sec_pmic_pm_ops, sec_pmic_suspend, sec_pmic_resume);
+>  
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
