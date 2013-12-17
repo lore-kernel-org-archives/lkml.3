@@ -1,45 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577Ab3LQTPs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 14:15:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62166 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750760Ab3LQTPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 14:15:47 -0500
-Message-ID: <1387307715.1979.169.camel@deneb.redhat.com>
-Subject: Re: [PATCH 4/4] arm64: add early_ioremap support
-From: Mark Salter <msalter@redhat.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Rob Landley <rob@landley.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Date: Tue, 17 Dec 2013 14:15:15 -0500
-In-Reply-To: <20131205162800.GB1495@darko.cambridge.arm.com>
-References: <1385606679-30446-1-git-send-email-msalter@redhat.com>
-	 <1385606679-30446-5-git-send-email-msalter@redhat.com>
-	 <20131205162800.GB1495@darko.cambridge.arm.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751832Ab3LQTRm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 14:17:42 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:64561 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab3LQTRk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 14:17:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <1387305222.8071.40.camel@ejdallLaptop>
+References: <1386949306-30601-1-git-send-email-betty.dall@hp.com>
+ <CAErSpo4tswv8PHGOQDviFj6Rc7QMYkWQ5rhMCFmHZFL9jM6oBQ@mail.gmail.com>
+ <1386976612.10497.80.camel@ejdallLaptop> <CAErSpo5s7euqGvqg=W=_j=98eyPp1uk=Zw8gD1gif6A9h_BNpQ@mail.gmail.com>
+ <1387305222.8071.40.camel@ejdallLaptop>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 17 Dec 2013 12:17:19 -0700
+Message-ID: <CAErSpo7hAO13+WCFtxyMAW5RH1EdW2nNyaQdm1idtymya1=ecw@mail.gmail.com>
+Subject: Re: [PATCH] PCI AER: handle pci_cleanup_aer_uncorrect_error_status()
+ in firmware first mode
+To: Betty Dall <betty.dall@hp.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-05 at 16:28 +0000, Catalin Marinas wrote:
-> > +#define FIXMAP_PAGE_NORMAL __pgprot(PROT_NORMAL | PTE_PXN | PTE_UXN)
-> 
-> I'll push a fix to change PROT_DEFAULT to (pgprot_default | PTE_DIRTY).
-> 
+On Tue, Dec 17, 2013 at 11:33 AM, Betty Dall <betty.dall@hp.com> wrote:
+> On Mon, 2013-12-16 at 12:51 -0700, Bjorn Helgaas wrote:
+>> On Fri, Dec 13, 2013 at 4:16 PM, Betty Dall <betty.dall@hp.com> wrote:
+>> > On Fri, 2013-12-13 at 15:35 -0700, Bjorn Helgaas wrote:
+>> >> On Fri, Dec 13, 2013 at 8:41 AM, Betty Dall <betty.dall@hp.com> wrote:
+>> >> > There are three functions exported from aerdrv_core.c that could be
+>> >> > called when the system is in firmware first mode:
+>> >> > pci_enable_pcie_error_reporting(), pci_disable_pcie_error_reporting, and
+>> >> > pci_cleanup_aer_uncorrect_error_status(). The first two functions check if
+>> >> > we are in firmware first mode and return immediately.
+>> >> > pci_cleanup_aer_uncorrect_error_status() does not check firmware first
+>> >> > mode. The problem is that all of these functions should not access the AER
+>> >> > registers in firmware first mode because the firmware has not granted OS
+>> >> > control of the AER registers through the _OSC.
+>> >>
+>> >> This looks like a good fix to me.  If I read aer_acpi_firmware_first()
+>> >> correctly, we don't even *ask* for control of AER if
+>> >> ACPI_HEST_FIRMWARE_FIRST appears anywhere in the HEST.  Does that
+>> >> match your understanding?
+>> >
+>> > Yes, when the system is in firmware first mode the code setting the _OSC
+>> > control register does not ask for AER control.
+>> >
+>> >>
+>> >> > Many drivers call this
+>> >> > function in their pci_error_handlers in firmware first mode.
+>> >>
+>> >> Drivers don't have any idea whether their device is in firmware-first
+>> >> mode, do they?
+>> >
+>> > Right. And I think we want to keep it that way. Having this function is
+>> > a good thing so that the firmware first can be abstracted from the
+>> > drivers.
+>> >
+>> >>
+>> >> > The fix is to change pci_cleanup_aer_uncorrect_error_status() to check
+>> >> > firmware first mode before accessing the AER registers. If it is in firmware
+>> >> > first mode, return 0. I considered returning -EIO, but decided the status
+>> >> > has been cleaned up appropriately for firmware first. Returning 0 also avoids
+>> >> > an error message. Not many places check the return of this function, and the
+>> >> > ones that do, print an error message and continue such as:
+>> >> >    err = pci_cleanup_aer_uncorrect_error_status(pdev);
+>> >> >    if (err) {
+>> >> >        dev_err(&pdev->dev,
+>> >> >            "pci_cleanup_aer_uncorrect_error_status failed 0x%0x\n",
+>> >> >             err); /* non-fatal, continue */
+>> >> >    }
+>> >> > That error message is how I found this problem, and it is not applicable
+>> >> > for the firmware first recovery path.
+>> >>
+>> >> I'm curious -- did you find this problem because you saw a message
+>> >> when pci_cleanup_aer_uncorrect_error_status() returned failure?  The
+>> >> only way it can return failure is if there is no AER capability, and
+>> >> that should be completely independent of whether we're in
+>> >> firmware-first mode.
+>> >
+>> > Yes, I saw the error message during error injection testing and using a
+>> > firmware that denies access to AER control because it is firmware first.
+>> > You are right that it would only print out when there is no AER
+>> > capability. I was reading code looking for places that might access the
+>> > AER registers in firmware first mode. This is the only one I found.
+>>
+>> I see why you added a pcie_aer_get_firmware_first() test, because
+>> that's what pci_enable_pcie_error_reporting() and
+>> pci_disable_pcie_error_reporting() do.
+>>
+>> But I think we implemented the firmware-first stuff wrong by elevating
+>> the firmware-first concept to the arch-independent level.  The
+>> connection between this and the _OSC negotiation is pretty convoluted,
+>> even on x86.  It's hard to verify by reading the code that we avoid
+>> touching AER if we haven't asked for control or the BIOS declined to
+>> grant it.
+>>
+>> I think it would be better if the pci_dev.__aer_firmware_first stuff
+>> were replaced by a more generic "can we use AER?" flag.  That flag
+>> should be set at device enumeration time, so we wouldn't need anything
+>> like the __aer_firmware_first_valid flag.
+>>
+>> Bjorn
+>
+> Hi Bjorn,
+>
+> I see what you are saying about the interaction of firmware first and
+> _OSC AER control being convoluted. I will work on some patches to
+> address this.
+>
+> I am thinking about a new flag __aer_control_granted that would be set
+> if _OSC control is granted to the OS for AER. We already account for
+> firmware first in negotiate_os_control(). An new function
+> aer_control_granted(struct pci_dev) could be used instead of
+> pcie_aer_get_firmware_first() in functions like
+> pci_enable_pcie_error_reporting(), pci_disable_pcie_error_reporting(),
+> and pci_cleanup_aer_uncorrect_error_status().
+>
+> Another idea is to put a check for aer_control_granted() in
+> pci_find_ext_capability() so that any driver requesting the AER extended
+> capability would not even get the capability pointer if AER control has
+> not been granted.
 
-This doesn't help early_ioremap because pgprot_default gets set up in
-init_mem_pgprot() which is called from paging_init(). The early_ioremaps
-happen before paging_init(). Would it be okay to make init_mem_pgprot()
-non-static and call it from setup_arch() before early_ioremap_init()?
+I kind of like the idea of a check in pci_find_ext_capability().  I
+looked at all the users of PCI_EXT_CAP_ID_ERR, and it's not very clear
+to me that they all keep their mitts off the AER capability when
+firmware-first is enabled.
 
---Mark
+At least one (atl1c_reset_pcie()) requires a fix because it doesn't
+check for failure of pci_find_ext_capability().
 
+I'm not sure drivers like ixgbe will work correctly with
+firmware-first.  I think the firmware-first path feeds into AER
+(ghes_do_proc() calls aer_recover_queue()), which ultimately calls a
+driver's .error_detected() method, such as ixgbe_io_error_detected(),
+which reads the error info directly from the AER capability.  But I
+assume that with firmware-first, the error info should come from the
+firmware, not from the AER capability.  Right?
 
+And I'm not sure what the effect of skipping other AER accesses is.
+E.g., myhri10ge enables ECRC and masks link down events, netxen masks
+AER correctable errors, pci_configure_slot() sets hotplug settings,
+etc.  What happens if we skip all these things when firmware-first is
+enabled?  What happens if we *don't* skip them; will we mess up things
+set by the firmware?
+
+Bjorn
