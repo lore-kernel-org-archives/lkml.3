@@ -1,46 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab3LQQZM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 11:25:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63733 "EHLO mx1.redhat.com"
+	id S1753995Ab3LQQdD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:33:03 -0500
+Received: from mga01.intel.com ([192.55.52.88]:36899 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753630Ab3LQQZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 11:25:10 -0500
-From: Mark Salter <msalter@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Salter <msalter@redhat.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 02/10] arm: select ARCH_MIGHT_HAVE_PC_SERIO
-Date: Tue, 17 Dec 2013 10:48:45 -0500
-Message-Id: <1387295333-24684-3-git-send-email-msalter@redhat.com>
-In-Reply-To: <1387295333-24684-1-git-send-email-msalter@redhat.com>
-References: <1387295333-24684-1-git-send-email-msalter@redhat.com>
+	id S1752609Ab3LQQdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 11:33:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,502,1384329600"; 
+   d="scan'208";a="451459618"
+Date: Tue, 17 Dec 2013 08:32:59 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: Re: [PATCH] export: declare ksymtab symbols
+Message-ID: <20131217163259.GB22695@tassilo.jf.intel.com>
+References: <1387273136-31449-1-git-send-email-johannes@sipsolutions.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387273136-31449-1-git-send-email-johannes@sipsolutions.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Architectures which might use an i8042 for serial IO to keyboard,
-mouse, etc should select ARCH_MIGHT_HAVE_PC_SERIO.
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: linux-arm-kernel@lists.infradead.org
----
- arch/arm/mach-footbridge/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+Acked-by: Andi Kleen <ak@linux.intel.com>
 
-diff --git a/arch/arm/mach-footbridge/Kconfig b/arch/arm/mach-footbridge/Kconfig
-index 0f2111a..d0fb921 100644
---- a/arch/arm/mach-footbridge/Kconfig
-+++ b/arch/arm/mach-footbridge/Kconfig
-@@ -85,6 +85,7 @@ config FOOTBRIDGE
- # Footbridge in host mode
- config FOOTBRIDGE_HOST
- 	bool
-+        select ARCH_MIGHT_HAVE_PC_SERIO
- 
- # Footbridge in addin mode
- config FOOTBRIDGE_ADDIN
--- 
-1.8.3.1
-
+-Andi
