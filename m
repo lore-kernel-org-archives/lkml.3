@@ -1,54 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777Ab3LQR1x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 12:27:53 -0500
-Received: from mail.fireflyinternet.com ([87.106.93.118]:55051 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754498Ab3LQR1w (ORCPT
+	id S1754937Ab3LQRay (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 12:30:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53454 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab3LQRaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 12:27:52 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Tue, 17 Dec 2013 17:27:40 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Keith Packard <keithp@keithp.com>
-Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH] drm/intel: Only smash VGA SR01 register if
- intel is default VGA device
-Message-ID: <20131217172740.GM22448@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Keith Packard <keithp@keithp.com>, intel-gfx@lists.freedesktop.org,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <1387300330-8844-1-git-send-email-keithp@keithp.com>
+	Tue, 17 Dec 2013 12:30:52 -0500
+Date: Tue, 17 Dec 2013 09:30:52 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Karl Dahlke <eklhad@comcast.net>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: Bug in tty cooked mode kernel 3.12.3
+Message-ID: <20131217173052.GA15633@kroah.com>
+References: <20131107184607.eklhad@comcast.net>
+ <1386630367-4658-1-git-send-email-peter@hurleysoftware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1387300330-8844-1-git-send-email-keithp@keithp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1386630367-4658-1-git-send-email-peter@hurleysoftware.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 09:12:10AM -0800, Keith Packard wrote:
-> We want to disable the (unused) VGA plane on the intel hardware, which
-> should be a simple matter of writing the vga control register. However,
-> in 2009 (commit 24f119c769bacac5729297b682fec7811a983cc6), that simple
-> code was changed to also smash the SR01 VGA register to fix "random
-> crash and lockups".
+On Mon, Dec 09, 2013 at 06:06:07PM -0500, Peter Hurley wrote:
+> On 12/07/2013 06:46 PM, Karl Dahlke wrote:
+> > This may have appeared in 3.9.11 with the changes to tty.
+> > Don't know; I just started running 3.12 from kernel.org.
+> > Perhaps nobody saw it before because nobody runs command line programs,
+> > we're all on desktops or x or whatever,
+> > and even those in the command line are still raw.
+> > bash is raw by default, but I run it cooked.
+> > You can supress its readline functions like this.
+> > 
+> > set +o emacs
+> > set +o vi
+> > set +o histexpand
+> > set +o history
+> > 
+> > That puts its tty back into cooked mode.
+> > 
+> > Come up in run level 3, command line mode,
+> > and bring up two consoles with bash in cooked mode as above.
+> > Set a simple prompt like this.
+> > 
+> > PS1='$ '
+> > 
+> > Switch to console 2 via alt-f2.
+> > Hit return.
+> > The cursor should drop to a new line then give you the $ prompt.
+> > But it puts the $ prompt next too the old one, then drops down
+> > to a blank line.
+> > The $ prompt and the crlf are out of sequence.
+> > Hit return a few more times and it will straighten itself out.
+> > Then switch back to console 1 alt-f1
+> > Hit return and the same bug,
+> > $ $
+> > 
+> > hit return a few more times to straighten it out.
+> > Switch back to console 2 and the same problem.
+> > For me it's repeatable.
+> > 
+> > It's also very confusing when I'm running other command line programs with cooked tty.
+> > For unknown reasons the crlf can come out at the wrong time,
+> > breaking lines or leaving lines together.
+> > My editor can run either way, so I've switched it over to readline mode
+> > and I haven't noticed any problems this way, yet.
+> > But I would prefer the cooked mode.
+> > 
+> > I looked through MAINTAINERS but couldn't find
+> > a clear maintainer for drivers/tty/tty*.c
+> > Please forward this to the appropriate people.
 > 
-> When running efifb on an nVidia card, executing this store to SR01
-> ends up causing the screen to go black.
+> Thanks for the report, Karl.
 > 
-> I'm not sure if this store is still required; this patch limits it to
-> when the intel card is primary.
+> Please test the patch below (requires
+> commit 39434abd942c8e4b9c14c06a03b3245beaf8467f,
+> 'n_tty: Fix missing newline echo').
+> This should fix the 'newline output after the new prompt' problem.
+> 
+> Note however that the other output order you observe is correct:
+> you press enter, a newline is echoed to terminal which mixes
+> with program output, the program ends, and the cooked mode
+> shell outputs an extra prompt because it reads a newline (which
+> the program did not read).
+> 
+> Regards,
+> Peter Hurley
+> 
+> --- >% ---
+> From: Peter Hurley <peter@hurleysoftware.com>
+> Subject: [PATCH] n_tty: Fix apparent order of echoed output
+> 
+> With block processing of echoed output, observed output order is still
+> required. Push completed echoes and echo commands prior to output.
+> 
+> Introduce echo_mark echo buffer index, which tracks completed echo
+> commands; ie., those submitted via commit_echoes but which may not
+> have been committed. Ensure that completed echoes are output prior
+> to subsequent terminal writes in process_echoes().
+> 
+> Fixes newline/prompt output order in cooked mode shell.
+> 
+> Cc: <stable@vger.kernel.org> # 3.12.x : 39434ab n_tty: Fix missing newline echo
+> Reported-by: Karl Dahlke <eklhad@comcast.net>
+> Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  drivers/tty/n_tty.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
 
-The bspec still says we must assert SR01 bit5 prior to disabling the VGA
-plane.
+Do you want me to queue this up for 3.13-final, or have I already?
 
-Perhaps the test should be whether (vga_reg & VGA_DISP_DISABLE) == 0 and
-do nothing if the plane is already off.
--Chris
+thanks,
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+greg k-h
