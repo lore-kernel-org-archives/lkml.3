@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab3LQNgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:36:05 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:42774 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753547Ab3LQNgE (ORCPT
+	id S1753767Ab3LQNhX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:37:23 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:41013 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755Ab3LQNhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:36:04 -0500
-Date: Tue, 17 Dec 2013 14:35:59 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fix
-Message-ID: <20131217133559.GA28957@gmail.com>
+	Tue, 17 Dec 2013 08:37:22 -0500
+Date: Tue, 17 Dec 2013 05:37:21 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org
+Subject: Re: [PATCH v3 6/6] locks: add new "private" lock type that is owned
+ by the filp
+Message-ID: <20131217133721.GA16724@infradead.org>
+References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
+ <1386703055-22308-7-git-send-email-jlayton@redhat.com>
+ <20131217083125.4ce0382b@tlielax.poochiereds.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20131217083125.4ce0382b@tlielax.poochiereds.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, Dec 17, 2013 at 08:31:25AM -0500, Jeff Layton wrote:
+> So, I think the above semantics are pretty clear, but now that I've had
+> a go at sitting down to document this stuff for the POSIX spec and
+> manpages, it's clear how convoluted the text in there is becoming.
+> 
+> That makes me wonder...would we be better off with a new set of cmd
+> values here instead of new l_type values? IOW, we could add new:
+> 
+> F_GETLKP
+> F_SETLKP
+> F_SETLKPW
 
-Please pull the latest perf-urgent-for-linus git tree from:
+That seems a tad cleaner to me indeed.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+> ...and then just reuse the same F_RDLCK/F_WRLCK/F_UNLCK values? With
+> that too, we could create a new equivalent to struct flock that has
+> fixed length types instead of dealing with the off_t mess.
 
-   # HEAD: cf30d52e2d11523c42048ab89ed4215b5021526a perf/x86: Fix constraint table end marker bug
+For the Posix interface you'd need an off_t as that's what the whole
+API uses for file offsets.  We could make sure to always use a off64_t
+for the kernel interface though.
 
-An x86/intel event constraint fix.
+What is the API you propose to posix?  An new posix_lockf?
 
- Thanks,
-
-	Ingo
-
------------------->
-Maria Dimakopoulou (1):
-      perf/x86: Fix constraint table end marker bug
-
-
- arch/x86/kernel/cpu/perf_event.h | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index fd00bb2..c1a8618 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -262,11 +262,20 @@ struct cpu_hw_events {
- 	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
- 			  HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST_HSW)
- 
--#define EVENT_CONSTRAINT_END		\
--	EVENT_CONSTRAINT(0, 0, 0)
-+/*
-+ * We define the end marker as having a weight of -1
-+ * to enable blacklisting of events using a counter bitmask
-+ * of zero and thus a weight of zero.
-+ * The end marker has a weight that cannot possibly be
-+ * obtained from counting the bits in the bitmask.
-+ */
-+#define EVENT_CONSTRAINT_END { .weight = -1 }
- 
-+/*
-+ * Check for end marker with weight == -1
-+ */
- #define for_each_event_constraint(e, c)	\
--	for ((e) = (c); (e)->weight; (e)++)
-+	for ((e) = (c); (e)->weight != -1; (e)++)
- 
- /*
-  * Extra registers for specific events.
