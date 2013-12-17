@@ -1,54 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab3LQJjK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 04:39:10 -0500
-Received: from s3.sipsolutions.net ([144.76.43.152]:44813 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab3LQJjG (ORCPT
+	id S1753039Ab3LQJj2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 04:39:28 -0500
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:40303 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750966Ab3LQJjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Dec 2013 04:39:06 -0500
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH] export: declare ksymtab symbols
-Date: Tue, 17 Dec 2013 10:38:56 +0100
-Message-Id: <1387273136-31449-1-git-send-email-johannes@sipsolutions.net>
-X-Mailer: git-send-email 1.8.5.1
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Tue, 17 Dec 2013 13:38:55 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com, namhyung@kernel.org, artagnon@gmail.com,
+        jolsa@redhat.com
+Subject: [PATCH 5/5] perf timechart: add emphasize option
+Message-ID: <20131217093855.GA3345@stfomichev-desktop>
+References: <1385995056-20158-1-git-send-email-stfomichev@yandex-team.ru>
+ <20131216193800.GA19283@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131216193800.GA19283@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Berg <johannes.berg@intel.com>
+This option highlights tasks (using different color) that run more than given
+duration or tasks with given name.
 
-sparse complains about any __ksymtab symbols with the following:
-
- warning: symbol '__ksymtab_...' was not declared. Should it be static?
-
-due to Andi's patch making it non-static.
-
-Mollify sparse by declaring the symbol extern, otherwise we get
-drowned in sparse warnings for anything that uses EXPORT_SYMBOL
-in the sources, making it easy to miss real warnings.
-
-Cc: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
 ---
- include/linux/export.h | 1 +
- 1 file changed, 1 insertion(+)
+ tools/perf/Documentation/perf-timechart.txt |  4 ++++
+ tools/perf/builtin-timechart.c              | 21 ++++++++++++++++++++-
+ tools/perf/util/svghelper.c                 | 23 ++++++++++++++++++++---
+ tools/perf/util/svghelper.h                 |  4 +++-
+ 4 files changed, 47 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/export.h b/include/linux/export.h
-index 3f2793d..96e45ea 100644
---- a/include/linux/export.h
-+++ b/include/linux/export.h
-@@ -59,6 +59,7 @@ extern struct module __this_module;
- 	static const char __kstrtab_##sym[]			\
- 	__attribute__((section("__ksymtab_strings"), aligned(1))) \
- 	= VMLINUX_SYMBOL_STR(sym);				\
-+	extern const struct kernel_symbol __ksymtab_##sym;	\
- 	__visible const struct kernel_symbol __ksymtab_##sym	\
- 	__used							\
- 	__attribute__((section("___ksymtab" sec "+" #sym), unused))	\
+diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
+index 367c1be0551c..aac589b0d377 100644
+--- a/tools/perf/Documentation/perf-timechart.txt
++++ b/tools/perf/Documentation/perf-timechart.txt
+@@ -62,6 +62,10 @@ $ perf timechart
+ -t::
+ --topology::
+         Sort CPUs according to topology.
++-e::
++--emphasize::
++        Emphasize tasks which were running at least given number of
++        nanoseconds or tasks with given name.
+ 
+ RECORD OPTIONS
+ --------------
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 8bde57c5c908..c0dcb05909b2 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -841,7 +841,6 @@ static void draw_cpu_usage(struct timechart *tchart)
+ 						    sample->start_time,
+ 						    sample->end_time,
+ 						    p->pid,
+-						    "sample",
+ 						    c->comm,
+ 						    sample->backtrace);
+ 				}
+@@ -1252,6 +1251,23 @@ parse_process(const struct option *opt __maybe_unused, const char *arg,
+ 	return 0;
+ }
+ 
++static int
++parse_emphasize(const struct option *opt __maybe_unused, const char *arg,
++		int __maybe_unused unset)
++{
++	unsigned long duration = strtoul(arg, NULL, 0);
++
++	if (svg_emphasize || svg_emphasize_name)
++		return -1;
++
++	if (duration)
++		svg_emphasize = duration;
++	else
++		svg_emphasize_name = strdup(arg);
++
++	return 0;
++}
++
+ int cmd_timechart(int argc, const char **argv,
+ 		  const char *prefix __maybe_unused)
+ {
+@@ -1270,6 +1286,9 @@ int cmd_timechart(int argc, const char **argv,
+ 	OPT_STRING('i', "input", &input_name, "file", "input file name"),
+ 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
+ 	OPT_INTEGER('w', "width", &svg_page_width, "page width"),
++	OPT_CALLBACK('e', "emphasize", NULL, "duration or name",
++		      "emphasize tasks. Pass duration in ns or process name.",
++		       parse_emphasize),
+ 	OPT_BOOLEAN('P', "power-only", &tchart.power_only, "output power data only"),
+ 	OPT_BOOLEAN('T', "tasks-only", &tchart.tasks_only,
+ 		    "output processes data only"),
+diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
+index 9468136735ca..f056a7450e5f 100644
+--- a/tools/perf/util/svghelper.c
++++ b/tools/perf/util/svghelper.c
+@@ -31,6 +31,8 @@ static u64 turbo_frequency, max_freq;
+ #define SLOT_HEIGHT 25.0
+ 
+ int svg_page_width = 1000;
++u64 svg_emphasize;
++const char *svg_emphasize_name;
+ 
+ #define MIN_TEXT_SIZE 0.01
+ 
+@@ -112,6 +114,7 @@ void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end)
+ 	fprintf(svgfile, "      rect.process  { fill:rgb(180,180,180); fill-opacity:0.9; stroke-width:1;   stroke:rgb(  0,  0,  0); } \n");
+ 	fprintf(svgfile, "      rect.process2 { fill:rgb(180,180,180); fill-opacity:0.9; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
+ 	fprintf(svgfile, "      rect.sample   { fill:rgb(  0,  0,255); fill-opacity:0.8; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
++	fprintf(svgfile, "      rect.sample_em{ fill:rgb(255,128,  0); fill-opacity:0.8; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
+ 	fprintf(svgfile, "      rect.blocked  { fill:rgb(255,  0,  0); fill-opacity:0.5; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
+ 	fprintf(svgfile, "      rect.waiting  { fill:rgb(224,214,  0); fill-opacity:0.8; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
+ 	fprintf(svgfile, "      rect.WAITING  { fill:rgb(255,214, 48); fill-opacity:0.6; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
+@@ -155,17 +158,24 @@ void svg_blocked(int Yslot, int cpu, u64 start, u64 end, const char *backtrace)
+ void svg_running(int Yslot, int cpu, u64 start, u64 end, const char *backtrace)
+ {
+ 	double text_size;
++	const char *type;
++
+ 	if (!svgfile)
+ 		return;
+ 
++	if (svg_emphasize && end - start > svg_emphasize)
++		type = "sample_em";
++	else
++		type = "sample";
+ 	fprintf(svgfile, "<g>\n");
+ 
+ 	fprintf(svgfile, "<title>#%d running %s</title>\n",
+ 		cpu, time_to_string(end - start));
+ 	if (backtrace)
+ 		fprintf(svgfile, "<desc>Switched because:\n%s</desc>\n", backtrace);
+-	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"sample\"/>\n",
+-		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT);
++	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"%s\"/>\n",
++		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT,
++		type);
+ 
+ 	text_size = (time2pixels(end)-time2pixels(start));
+ 	if (cpu > 9)
+@@ -293,13 +303,20 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
+ 	fprintf(svgfile, "</g>\n");
+ }
+ 
+-void svg_process(int cpu, u64 start, u64 end, int pid, const char *type, const char *name, const char *backtrace)
++void svg_process(int cpu, u64 start, u64 end, int pid, const char *name, const char *backtrace)
+ {
+ 	double width;
++	const char *type;
+ 
+ 	if (!svgfile)
+ 		return;
+ 
++	if (svg_emphasize && end - start >= svg_emphasize)
++		type = "sample_em";
++	else if (svg_emphasize_name && strstr(name, svg_emphasize_name))
++		type = "sample_em";
++	else
++		type = "sample";
+ 
+ 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), cpu2y(cpu));
+ 	fprintf(svgfile, "<title>%d %s running %s</title>\n", pid, name, time_to_string(end - start));
+diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
+index 1df4fb6c3a4a..10b4187bff6a 100644
+--- a/tools/perf/util/svghelper.h
++++ b/tools/perf/util/svghelper.h
+@@ -11,7 +11,7 @@ extern void svg_waiting(int Yslot, int cpu, u64 start, u64 end, const char *back
+ extern void svg_cpu_box(int cpu, u64 max_frequency, u64 turbo_frequency);
+ 
+ 
+-extern void svg_process(int cpu, u64 start, u64 end, int pid, const char *type, const char *name, const char *backtrace);
++extern void svg_process(int cpu, u64 start, u64 end, int pid, const char *name, const char *backtrace);
+ extern void svg_cstate(int cpu, u64 start, u64 end, int type);
+ extern void svg_pstate(int cpu, u64 start, u64 end, u64 freq);
+ 
+@@ -27,5 +27,7 @@ extern int svg_build_topology_map(char *sib_core, int sib_core_nr,
+ 				  char *sib_thr, int sib_thr_nr);
+ 
+ extern int svg_page_width;
++extern u64 svg_emphasize;
++extern const char *svg_emphasize_name;
+ 
+ #endif /* __PERF_SVGHELPER_H */
 -- 
-1.8.5.1
+1.8.3.2
 
