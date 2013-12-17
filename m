@@ -1,100 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360Ab3LQCC2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 21:02:28 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:42779 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191Ab3LQCC0 (ORCPT
+	id S1752190Ab3LQCKJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 21:10:09 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:36052 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750901Ab3LQCKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 21:02:26 -0500
-Date: Tue, 17 Dec 2013 10:02:17 +0800
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Wei Yang <weiyang@linux.vnet.ibm.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hanjun Guo <guohanjun@huawei.com>,
-        Scott Wood <scottwood@freescale.com>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 6/9] powerpc/pci: Use dev_is_pci() to check whether it is
- pci device
-Message-ID: <20131217020217.GA7677@weiyang.vnet.ibm.com>
-Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-References: <1386244880-22300-1-git-send-email-wangyijing@huawei.com>
- <20131216071305.GA16842@weiyang.vnet.ibm.com>
- <52AEC241.1040507@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52AEC241.1040507@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121702-5490-0000-0000-000004A8D79A
+	Mon, 16 Dec 2013 21:10:06 -0500
+Date: Mon, 16 Dec 2013 21:09:57 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.10.22-rt20
+Message-ID: <20131216210957.20241549@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 05:05:05PM +0800, Yijing Wang wrote:
->On 2013/12/16 15:13, Wei Yang wrote:
->> Yijing,
->> 
->> This one looks good.
->> 
->> While I take a look at the source code, there are around 20 places with
->> similar style. Do you think it would be good to change all these places
->> in one patch?
->
->I sent the other similar changes to related maillist, some of them (David, Greg )has been accepted,
->and other is not. :)
->
->eg.
->http://article.gmane.org/gmane.linux.kernel/1608341/match=dev_is_pci
 
-Ah, I see. Thanks :-)
+Dear RT Folks,
 
->
->Thanks!
->Yijing.
->
->> 
->> On Thu, Dec 05, 2013 at 08:01:20PM +0800, Yijing Wang wrote:
->>> Use PCI standard marco dev_is_pci() instead of directly compare
->>> pci_bus_type to check whether it is pci device.
->>>
->>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->>> ---
->>> arch/powerpc/sysdev/fsl_pci.c |    2 +-
->>> 1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
->>> index 4dfd61d..7066e52 100644
->>> --- a/arch/powerpc/sysdev/fsl_pci.c
->>> +++ b/arch/powerpc/sysdev/fsl_pci.c
->>> @@ -122,7 +122,7 @@ static int fsl_pci_dma_set_mask(struct device *dev, u64 dma_mask)
->>> 	 * address width of the SoC such that we can address any internal
->>> 	 * SoC address from across PCI if needed
->>> 	 */
->>> -	if ((dev->bus == &pci_bus_type) &&
->>> +	if ((dev_is_pci(dev)) &&
->>> 	    dma_mask >= DMA_BIT_MASK(MAX_PHYS_ADDR_BITS)) {
->>> 		set_dma_ops(dev, &dma_direct_ops);
->>> 		set_dma_offset(dev, pci64_dma_offset);
->>> -- 
->>> 1.7.1
->>>
->>>
->>> _______________________________________________
->>> Linuxppc-dev mailing list
->>> Linuxppc-dev@lists.ozlabs.org
->>> https://lists.ozlabs.org/listinfo/linuxppc-dev
->> 
->
->
->-- 
->Thanks!
->Yijing
+I'm pleased to announce the 3.10.22-rt20 stable release.
 
--- 
-Richard Yang
-Help you, Help me
 
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.10-rt
+  Head SHA1: 67a8032136484766fb109303006b4a2a20ce8abf
+
+
+Or to build 3.10.22-rt20 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.10.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.10.22.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.22-rt20.patch.xz
+
+
+
+You can also build from 3.10.22-rt19 by applying the incremental patch:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/incr/patch-3.10.22-rt19-rt20.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+Changes from v3.10.22-rt19:
+
+---
+
+Peter Zijlstra (1):
+      lockdep: Correctly annotate hardirq context in irq_exit()
+
+Sebastian Andrzej Siewior (2):
+      swait: Add a few more users
+      rtmutex: use a trylock for waiter lock in trylock
+
+Sebastian Siewior (1):
+      net: make neigh_priv_len in struct net_device 16bit instead of 8bit
+
+Steven Rostedt (Red Hat) (1):
+      Linux 3.10.22-rt20
+
+Tiejun Chen (1):
+      cpu_down: move migrate_enable() back
+
+----
+ drivers/net/wireless/orinoco/orinoco_usb.c |  2 +-
+ drivers/usb/gadget/f_fs.c                  |  2 +-
+ drivers/usb/gadget/inode.c                 |  4 +--
+ include/linux/netdevice.h                  |  2 +-
+ include/linux/spinlock_rt.h                |  1 +
+ kernel/cpu.c                               |  2 +-
+ kernel/rtmutex.c                           | 31 +++++++++++++++++---
+ kernel/softirq.c                           | 46 +++++++++++++++++++++++++++---
+ kernel/timer.c                             |  2 +-
+ localversion-rt                            |  2 +-
+ 10 files changed, 78 insertions(+), 16 deletions(-)
+---------------------------
+diff --git a/drivers/net/wireless/orinoco/orinoco_usb.c b/drivers/net/wireless/orinoco/orinoco_usb.c
+index 1f9cb55..a28f298 100644
+--- a/drivers/net/wireless/orinoco/orinoco_usb.c
++++ b/drivers/net/wireless/orinoco/orinoco_usb.c
+@@ -714,7 +714,7 @@ static void ezusb_req_ctx_wait(struct ezusb_priv *upriv,
+ 			while (!ctx->done.done && msecs--)
+ 				udelay(1000);
+ 		} else {
+-			wait_event_interruptible(ctx->done.wait,
++			swait_event_interruptible(ctx->done.wait,
+ 						 ctx->done.done);
+ 		}
+ 		break;
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index b6e9d91..35d9c53 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -1282,7 +1282,7 @@ static void ffs_data_put(struct ffs_data *ffs)
+ 		pr_info("%s(): freeing\n", __func__);
+ 		ffs_data_clear(ffs);
+ 		BUG_ON(waitqueue_active(&ffs->ev.waitq) ||
+-		       waitqueue_active(&ffs->ep0req_completion.wait));
++		       swaitqueue_active(&ffs->ep0req_completion.wait));
+ 		kfree(ffs->dev_name);
+ 		kfree(ffs);
+ 	}
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index 570c005..c60233d 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -340,7 +340,7 @@ ep_io (struct ep_data *epdata, void *buf, unsigned len)
+ 	spin_unlock_irq (&epdata->dev->lock);
+ 
+ 	if (likely (value == 0)) {
+-		value = wait_event_interruptible (done.wait, done.done);
++		value = swait_event_interruptible (done.wait, done.done);
+ 		if (value != 0) {
+ 			spin_lock_irq (&epdata->dev->lock);
+ 			if (likely (epdata->ep != NULL)) {
+@@ -349,7 +349,7 @@ ep_io (struct ep_data *epdata, void *buf, unsigned len)
+ 				usb_ep_dequeue (epdata->ep, epdata->req);
+ 				spin_unlock_irq (&epdata->dev->lock);
+ 
+-				wait_event (done.wait, done.done);
++				swait_event (done.wait, done.done);
+ 				if (epdata->status == -ECONNRESET)
+ 					epdata->status = -EINTR;
+ 			} else {
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 819923f..ba78526 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1139,7 +1139,7 @@ struct net_device {
+ 	unsigned char		perm_addr[MAX_ADDR_LEN]; /* permanent hw address */
+ 	unsigned char		addr_assign_type; /* hw address assignment type */
+ 	unsigned char		addr_len;	/* hardware address length	*/
+-	unsigned char		neigh_priv_len;
++	unsigned short		neigh_priv_len;
+ 	unsigned short          dev_id;		/* for shared network cards */
+ 
+ 	spinlock_t		addr_list_lock;
+diff --git a/include/linux/spinlock_rt.h b/include/linux/spinlock_rt.h
+index 0618387..b3c504b 100644
+--- a/include/linux/spinlock_rt.h
++++ b/include/linux/spinlock_rt.h
+@@ -22,6 +22,7 @@ extern void __lockfunc rt_spin_lock(spinlock_t *lock);
+ extern unsigned long __lockfunc rt_spin_lock_trace_flags(spinlock_t *lock);
+ extern void __lockfunc rt_spin_lock_nested(spinlock_t *lock, int subclass);
+ extern void __lockfunc rt_spin_unlock(spinlock_t *lock);
++extern void __lockfunc rt_spin_unlock_after_trylock_in_irq(spinlock_t *lock);
+ extern void __lockfunc rt_spin_unlock_wait(spinlock_t *lock);
+ extern int __lockfunc rt_spin_trylock_irqsave(spinlock_t *lock, unsigned long *flags);
+ extern int __lockfunc rt_spin_trylock_bh(spinlock_t *lock);
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 716c98b..c62ae01 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -596,6 +596,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 		err = -EBUSY;
+ 		goto restore_cpus;
+ 	}
++	migrate_enable();
+ 
+ 	cpu_hotplug_begin();
+ 	err = cpu_unplug_begin(cpu);
+@@ -649,7 +650,6 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ out_release:
+ 	cpu_unplug_done(cpu);
+ out_cancel:
+-	migrate_enable();
+ 	cpu_hotplug_done();
+ 	if (!err)
+ 		cpu_notify_nofail(CPU_POST_DEAD | mod, hcpu);
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index 5d76634..0a64a90 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -802,10 +802,8 @@ static void  noinline __sched rt_spin_lock_slowlock(struct rt_mutex *lock)
+ /*
+  * Slow path to release a rt_mutex spin_lock style
+  */
+-static void  noinline __sched rt_spin_lock_slowunlock(struct rt_mutex *lock)
++static void __sched __rt_spin_lock_slowunlock(struct rt_mutex *lock)
+ {
+-	raw_spin_lock(&lock->wait_lock);
+-
+ 	debug_rt_mutex_unlock(lock);
+ 
+ 	rt_mutex_deadlock_account_unlock(current);
+@@ -824,6 +822,23 @@ static void  noinline __sched rt_spin_lock_slowunlock(struct rt_mutex *lock)
+ 	rt_mutex_adjust_prio(current);
+ }
+ 
++static void  noinline __sched rt_spin_lock_slowunlock(struct rt_mutex *lock)
++{
++	raw_spin_lock(&lock->wait_lock);
++	__rt_spin_lock_slowunlock(lock);
++}
++
++static void  noinline __sched rt_spin_lock_slowunlock_hirq(struct rt_mutex *lock)
++{
++	int ret;
++
++	do {
++		ret = raw_spin_trylock(&lock->wait_lock);
++	} while (!ret);
++
++	__rt_spin_lock_slowunlock(lock);
++}
++
+ void __lockfunc rt_spin_lock(spinlock_t *lock)
+ {
+ 	rt_spin_lock_fastlock(&lock->lock, rt_spin_lock_slowlock);
+@@ -854,6 +869,13 @@ void __lockfunc rt_spin_unlock(spinlock_t *lock)
+ }
+ EXPORT_SYMBOL(rt_spin_unlock);
+ 
++void __lockfunc rt_spin_unlock_after_trylock_in_irq(spinlock_t *lock)
++{
++	/* NOTE: we always pass in '1' for nested, for simplicity */
++	spin_release(&lock->dep_map, 1, _RET_IP_);
++	rt_spin_lock_fastunlock(&lock->lock, rt_spin_lock_slowunlock_hirq);
++}
++
+ void __lockfunc __rt_spin_unlock(struct rt_mutex *lock)
+ {
+ 	rt_spin_lock_fastunlock(lock, rt_spin_lock_slowunlock);
+@@ -1057,7 +1079,8 @@ rt_mutex_slowtrylock(struct rt_mutex *lock)
+ {
+ 	int ret = 0;
+ 
+-	raw_spin_lock(&lock->wait_lock);
++	if (!raw_spin_trylock(&lock->wait_lock))
++		return ret;
+ 	init_lists(lock);
+ 
+ 	if (likely(rt_mutex_owner(lock) != current)) {
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 4cacbcd..541adf3 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -355,6 +355,44 @@ EXPORT_SYMBOL(local_bh_enable_ip);
+ #define MAX_SOFTIRQ_TIME  msecs_to_jiffies(2)
+ #define MAX_SOFTIRQ_RESTART 10
+ 
++#ifdef CONFIG_TRACE_IRQFLAGS
++/*
++ * Convoluted means of passing __do_softirq() a message through the various
++ * architecture execute_on_stack() bits.
++ *
++ * When we run softirqs from irq_exit() and thus on the hardirq stack we need
++ * to keep the lockdep irq context tracking as tight as possible in order to
++ * not miss-qualify lock contexts and miss possible deadlocks.
++ */
++static DEFINE_PER_CPU(int, softirq_from_hardirq);
++
++static inline void lockdep_softirq_from_hardirq(void)
++{
++	this_cpu_write(softirq_from_hardirq, 1);
++}
++
++static inline void lockdep_softirq_start(void)
++{
++	if (this_cpu_read(softirq_from_hardirq))
++		trace_hardirq_exit();
++	lockdep_softirq_enter();
++}
++
++static inline void lockdep_softirq_end(void)
++{
++	lockdep_softirq_exit();
++	if (this_cpu_read(softirq_from_hardirq)) {
++		this_cpu_write(softirq_from_hardirq, 0);
++		trace_hardirq_enter();
++	}
++}
++
++#else
++static inline void lockdep_softirq_from_hardirq(void) { }
++static inline void lockdep_softirq_start(void) { }
++static inline void lockdep_softirq_end(void) { }
++#endif
++
+ asmlinkage void __do_softirq(void)
+ {
+ 	__u32 pending;
+@@ -375,7 +413,7 @@ asmlinkage void __do_softirq(void)
+ 
+ 	__local_bh_disable((unsigned long)__builtin_return_address(0),
+ 			   SOFTIRQ_OFFSET);
+-	lockdep_softirq_enter();
++	lockdep_softirq_start();
+ 
+ 	cpu = smp_processor_id();
+ restart:
+@@ -393,8 +431,7 @@ restart:
+ 		wakeup_softirqd();
+ 	}
+ 
+-	lockdep_softirq_exit();
+-
++	lockdep_softirq_end();
+ 	account_irq_exit_time(current);
+ 	__local_bh_enable(SOFTIRQ_OFFSET);
+ 	tsk_restore_flags(current, old_flags, PF_MEMALLOC);
+@@ -700,6 +737,7 @@ static inline void invoke_softirq(void)
+ {
+ #ifndef CONFIG_PREEMPT_RT_FULL
+ 	if (!force_irqthreads) {
++		lockdep_softirq_from_hardirq();
+ 		/*
+ 		 * We can safely execute softirq on the current stack if
+ 		 * it is the irq stack, because it should be near empty
+@@ -749,13 +787,13 @@ void irq_exit(void)
+ #endif
+ 
+ 	account_irq_exit_time(current);
+-	trace_hardirq_exit();
+ 	sub_preempt_count(HARDIRQ_OFFSET);
+ 	if (!in_interrupt() && local_softirq_pending())
+ 		invoke_softirq();
+ 
+ 	tick_irq_exit();
+ 	rcu_irq_exit();
++	trace_hardirq_exit(); /* must be last! */
+ }
+ 
+ void raise_softirq(unsigned int nr)
+diff --git a/kernel/timer.c b/kernel/timer.c
+index f53f592..48652cc 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1400,7 +1400,7 @@ unsigned long get_next_timer_interrupt(unsigned long now)
+ 		expires = base->next_timer;
+ 	}
+ #ifdef CONFIG_PREEMPT_RT_FULL
+-	rt_spin_unlock(&base->lock);
++	rt_spin_unlock_after_trylock_in_irq(&base->lock);
+ #else
+ 	spin_unlock(&base->lock);
+ #endif
+diff --git a/localversion-rt b/localversion-rt
+index 483ad77..e095ab8 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt19
++-rt20
