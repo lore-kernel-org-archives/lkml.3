@@ -1,104 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab3LQL3i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 06:29:38 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:57403 "EHLO
-	highbank-bc01-b06.austin.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751072Ab3LQL3g (ORCPT
+	id S1753154Ab3LQLcA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 06:32:00 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:49990 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752053Ab3LQLb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 06:29:36 -0500
-Date: Tue, 17 Dec 2013 11:29:14 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Graeme Gregory <graeme.gregory@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Mark Rutland <Mark.Rutland@arm.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Linaro-acpi] [RFC part1 PATCH 1/7] ACPI: Make ACPI core
- running without PCI on ARM64
-Message-ID: <20131217112914.GB32118@arm.com>
-References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
- <201312091735.05014.arnd@arndb.de>
- <20131209165548.GE19163@arm.com>
- <201312091820.23006.arnd@arndb.de>
- <20131209180155.GG19163@arm.com>
- <20131216205133.GI5617@xora-haswell.xora.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131216205133.GI5617@xora-haswell.xora.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 17 Dec 2013 06:31:58 -0500
+Date: Tue, 17 Dec 2013 06:31:56 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.12.5-rt6
+Message-ID: <20131217063156.6ac3bfed@gandalf.local.home>
+In-Reply-To: <1387264591.5340.23.camel@marge.simpson.net>
+References: <20131216091431.GA13796@linutronix.de>
+	<1387264591.5340.23.camel@marge.simpson.net>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Graeme,
+On Tue, 17 Dec 2013 08:16:31 +0100
+Mike Galbraith <bitbucket@online.de> wrote:
 
-On Mon, Dec 16, 2013 at 08:51:33PM +0000, Graeme Gregory wrote:
-> So the real question now is how do we progress with these ACPI patches? After
-> repeated incorrect accusations of developing behind closed doors I am loath
-> to dissapear back into linaro with them for another few months.
+> Hi Sebastian,
+> 
+> Looks like there's a booboo here:
+> 
+> On Mon, 2013-12-16 at 10:14 +0100, Sebastian Andrzej Siewior wrote:
+ 
+> "ptrace: fix ptrace vs tasklist_lock race" added.. 
+> 
+> @@ -1068,8 +1082,11 @@ unsigned long wait_task_inactive(struct
+>  		 * is actually now running somewhere else!
+>  		 */
+>  		while (task_running(rq, p)) {
+> -			if (match_state && unlikely(p->state != match_state))
+> +			if (match_state) {
+> +				if (!unlikely(check_task_state(p, match_state)))
+> +					return 0;
+>  				return 0;
+> +			}
 
-Well, just follow the Linux community process, no need to disappear
-back. There was feedback that needs to be addressed, work on getting
-acks from maintainers. The first version has only been posted two weeks
-ago, I don't see any reason to panic ;).
+Ouch! 
+>  			cpu_relax();
+>  		}
+>  
+> ..which is how it stays with the whole series applied.
+> 
+> The patch contains hunk 2 from
+> 
+>    "sched/rt: Fix wait_task_interactive() to test rt_spin_lock state",
+> 
+> which went away in -rt6, so it seems the busted hunk should be as below
+> if the two are to be merged.
+> 
+> @@ -1068,8 +1082,10 @@ unsigned long wait_task_inactive(struct
+>  		 * is actually now running somewhere else!
+>  		 */
+>  		while (task_running(rq, p)) {
+> -			if (match_state && unlikely(p->state != match_state))
+> +			if (match_state && unlikely(p->state != match_state)
+> +			    && unlikely(p->saved_state != match_state))
+>  				return 0;
+> +			}
 
-> Also as Mark Brown has already pointed out the bigger the patchset gets
-> while developed in Linaro trees the more strain it is going to put on
-> maintainers for review.
+Yeah, it should just be:
 
-Yes, that's correct, so just gather maintainer's acks in smaller steps.
+		if (match_state && check_task_state(p, match_state))
+			return 0;
 
-> We have worked to try and keep the patchset as self contained as possible
-> and to affect arch/arm64 in a minimal way. It should not affect it at all
-> in the !CONFIG_ACPI case.
+Also, looking at check_task_state():
 
-And this is great, I really don't have any complaints here.
++static bool check_task_state(struct task_struct *p, long match_state)
++{
++       bool match = false;
++
++       raw_spin_lock_irq(&p->pi_lock);
++       if (p->state == match_state)
++               match = true;
++       else if (p->saved_state == match_state)
++               match = true;
 
-> Currently Hanjun is busy preparing a v2 PATCH series which contains amendments
-> for all the technical issues found in review so far. Should we continue with
-> this process until all the neccessary Acks are in place?
+Why the if () else if()? and not just:
 
-Reviews/acks is the first step and you are on the right track here. The
-following step would be upstreaming with good arguments on why and when
-the code needs to be merged. Code quality on its own is not an argument
-for merging. Backlog in Linaro's trees is not an argument either. You
-could of course start upstreaming clean-up code that is necessary
-whether you have ACPI on arm64 or not.
+	if (p->state == match_state || p->save_state == match_state)
+		match = true;
+?
 
-So while waiting to debate the good arguments for when to merge the code
-(once reviewed), I have several concerns which I want addressed before
-enabling ACPI for arm64:
+The else if makes me think there's something missing.
 
-- Does anyone have a wider view of how ACPI on ARM looks like? There is
-  a lot of effort going into the next version of ACPI but for now I
-  don't see how we can enable a feature and hope we sort it out later.
-- Who is coordinating the non-standard ACPI descriptors being pushed to
-  various drivers in the kernel? Do we trust the hw vendors to do the
-  right thing (and also talk to each other)?
-- What if two hw vendors have different descriptors for the same device?
-- Have we agreed what we do about clocks, voltage regulators?
-- Do we actually have a real platform which requires ACPI at this point?
+-- Steve
 
-Just to be clear, I'm not against ACPI for arm64 and I am aware of
-hardware vendors requiring this. But I'm looking forward to them being
-more open and explain what (rather than why) they need because I don't
-think ACPI solves anything for the ARM kernel community. It's rather a
-favour we do to them and OS distros.
++       raw_spin_unlock_irq(&p->pi_lock);
++
++       return match;
++}
 
--- 
-Catalin
+
+
+>  			cpu_relax();
+>  		}
+>  
+> 
+
