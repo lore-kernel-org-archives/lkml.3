@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab3LQBbF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 20:31:05 -0500
-Received: from seketeli.net ([91.121.166.71]:38245 "EHLO ms.seketeli.net"
+	id S1752558Ab3LQBcm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 20:32:42 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36703 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751522Ab3LQBbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 20:31:03 -0500
-Date: Tue, 17 Dec 2013 02:31:00 +0100
-From: Apelete Seketeli <apelete@seketeli.net>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH 3/3] usb: musb: fix setting JZ4740 gadget periphal mode
- on reset
-Message-ID: <20131217013100.GX4581@hermes>
-References: <1386992918-1531-1-git-send-email-apelete@seketeli.net>
- <1386992918-1531-4-git-send-email-apelete@seketeli.net>
- <20131216212056.GE12896@saruman.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131216212056.GE12896@saruman.home>
-X-Operating-System: Debian GNU/Linux jessie/sid
-X-URL: http://apelete.seketeli.fr
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751019Ab3LQBcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 20:32:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,498,1384329600"; 
+   d="scan'208";a="453321282"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Cc: bhelgaas@google.com, david.a.cohen@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [PATCH v2.1 4/4] x86: intel-mid: remove deprecated X86_MDFLD and X86_WANT_INTEL_MID configs
+Date: Mon, 16 Dec 2013 17:37:26 -0800
+Message-Id: <1387244246-20714-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1387224459-25746-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1387224459-25746-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16-Dec-13, Felipe Balbi wrote:
-> On Sat, Dec 14, 2013 at 04:48:38AM +0100, Apelete Seketeli wrote:
-> > JZ4740 USB Device Controller is not OTG compatible and does not have DEVCTL
-> > register in silicon.
-> > 
-> > During ethernet-over-usb transactions, on reset, musb driver tries to
-> > read from DEVCTL and consequently sets device as host (A-Device)
-> > instead of peripheral (B-Device), which makes it a composite device to
-> > the USB gadget driver.
-> > This induces a kernel panic during power down where the USB gadget
-> > driver does a null pointer dereference when trying to access the
-> > composite device configuration.
-> > 
-> > On reset, do not rely on DEVCTL value for setting gadget peripheral
-> > mode: hardcode it instead to B-Device.
-> > 
-> > Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
-> > ---
-> >  drivers/usb/musb/musb_gadget.c |    9 +++++++++
-> >  1 file changed, 9 insertions(+)
-> > 
-> > diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-> > index 32fb057..b4bea7a 100644
-> > --- a/drivers/usb/musb/musb_gadget.c
-> > +++ b/drivers/usb/musb/musb_gadget.c
-> > @@ -2119,6 +2119,14 @@ __acquires(musb->lock)
-> >  	/* Normal reset, as B-Device;
-> >  	 * or else after HNP, as A-Device
-> >  	 */
-> > +#if defined(CONFIG_USB_MUSB_JZ4740) || defined(CONFIG_USB_MUSB_JZ4740_MODULE)
-> 
-> NAK, no ifdefs in this driver. Pass a quirk flag through platform_data
-> or something similar.
+We want to support all Intel Mid platforms with a single config
+selection. This patch removes deprecated CONFIG_X86_MDFLD and
+X86_WANT_INTEL_MID options in favor of having CONFIG_X86_INTEL_MID only.
 
-I get that, makes sense to me, but problem is the driver has to read a
-valid value from DEVCTL hardware register when musb_g_reset() is
-called, and I do not see how this can be achieved through
-platform_data.
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+---
+ arch/x86/Kconfig | 30 +++++++-----------------------
+ 1 file changed, 7 insertions(+), 23 deletions(-)
 
-Is it ok to use ifdefs in musb_regs.h to add specific hardware
-register indexes for JZ4740 instead ?
-I am actually thinking about fooling the musb driver into reading a
-valid value from another register instead of DEVCTL.
-
-Cheers.
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index e903c71f7e69..f998be2d2901 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -437,42 +437,26 @@ config X86_INTEL_CE
+ 	  This option compiles in support for the CE4100 SOC for settop
+ 	  boxes and media devices.
+ 
+-config X86_WANT_INTEL_MID
++config X86_INTEL_MID
+ 	bool "Intel MID platform support"
+ 	depends on X86_32
+ 	depends on X86_EXTENDED_PLATFORM
+-	---help---
+-	  Select to build a kernel capable of supporting Intel MID platform
+-	  systems which do not have the PCI legacy interfaces (Moorestown,
+-	  Medfield). If you are building for a PC class system say N here.
+-
+-if X86_WANT_INTEL_MID
+-
+-config X86_INTEL_MID
+-	bool
+-
+-config X86_MDFLD
+-       bool "Medfield MID platform"
+ 	depends on PCI
+ 	depends on PCI_GOANY
+ 	depends on X86_IO_APIC
+-	select X86_INTEL_MID
+ 	select SFI
++	select I2C
+ 	select DW_APB_TIMER
+ 	select APB_TIMER
+-	select I2C
+-	select SPI
+ 	select INTEL_SCU_IPC
+-	select X86_PLATFORM_DEVICES
+ 	select MFD_INTEL_MSIC
+ 	---help---
+-	  Medfield is Intel's Low Power Intel Architecture (LPIA) based Moblin
+-	  Internet Device(MID) platform. 
+-	  Unlike standard x86 PCs, Medfield does not have many legacy devices
+-	  nor standard legacy replacement devices/features. e.g. Medfield does
+-	  not contain i8259, i8254, HPET, legacy BIOS, most of the io ports.
++	  Select to build a kernel capable of supporting Intel MID (Mobile
++	  Internet Device) platform systems which do not have the PCI legacy
++	  interfaces. If you are building for a PC class system say N here.
+ 
+-endif
++	  Intel MID platforms are based on an Intel processor and chipset which
++	  consume less power than most of the x86 derivatives.
+ 
+ config X86_INTEL_LPSS
+ 	bool "Intel Low Power Subsystem Support"
 -- 
-        Apelete
+1.8.4.2
+
