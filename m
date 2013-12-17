@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab3LQNMp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:12:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55204 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752135Ab3LQNMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:12:43 -0500
-Date: Tue, 17 Dec 2013 14:12:41 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.13-rc breaks MEMCG_SWAP
-Message-ID: <20131217131241.GE28991@dhcp22.suse.cz>
-References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
- <52AEC989.4080509@huawei.com>
- <20131216095345.GB23582@dhcp22.suse.cz>
- <20131216104042.GC23582@dhcp22.suse.cz>
- <20131216163530.GH32509@htj.dyndns.org>
- <20131216171937.GG26797@dhcp22.suse.cz>
- <20131216172143.GJ32509@htj.dyndns.org>
- <alpine.LNX.2.00.1312161718001.2037@eggly.anvils>
- <52AFC163.5010507@huawei.com>
- <20131217122926.GC29989@htj.dyndns.org>
+	id S1753611Ab3LQNM5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:12:57 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:48863 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753443Ab3LQNMy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 08:12:54 -0500
+Date: Tue, 17 Dec 2013 14:12:49 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com, namhyung@kernel.org, artagnon@gmail.com,
+        jolsa@redhat.com
+Subject: Re: [PATCH 5/5 v2] perf timechart: add emphasize option
+Message-ID: <20131217131249.GA28677@gmail.com>
+References: <1385995056-20158-1-git-send-email-stfomichev@yandex-team.ru>
+ <20131216193800.GA19283@ghostprotocols.net>
+ <20131217093855.GA3345@stfomichev-desktop>
+ <20131217112303.GB27791@gmail.com>
+ <20131217121522.GA6357@stfomichev-desktop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131217122926.GC29989@htj.dyndns.org>
+In-Reply-To: <20131217121522.GA6357@stfomichev-desktop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 17-12-13 07:29:26, Tejun Heo wrote:
-> Hello, Li.
-> 
-> On Tue, Dec 17, 2013 at 11:13:39AM +0800, Li Zefan wrote:
-> > diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> > index c36d906..769b5bb 100644
-> > --- a/kernel/cgroup.c
-> > +++ b/kernel/cgroup.c
-> > @@ -868,6 +868,15 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
-> >  		struct cgroup *cgrp = dentry->d_fsdata;
-> >  
-> >  		BUG_ON(!(cgroup_is_dead(cgrp)));
-> > +
-> > +		/*
-> > +		 * We should remove the cgroup object from idr before its
-> > +		 * grace period starts, so we won't be looking up a cgroup
-> > +		 * while the cgroup is being freed.
-> > +		 */
-> 
-> Let's remove this comment and instead comment that this is to be made
-> per-css.  I mixed up the lifetime rules of the cgroup and css and
-> thought css_from_id() should fail once css is confirmed to be offline,
-> so the above comment.  It looks like we'll eventually have to move
-> cgrp->id to css->id (just simple per-ss idr) as the two objects'
-> lifetime rules will be completely separate.  Other than that, looks
-> good to me.
 
-Yeah, please remove it. It made me think that idr_remove cannot be
-pulled to later and that's why I ruled out css based solution from the
-beginning.
--- 
-Michal Hocko
-SUSE Labs
+* Stanislav Fomichev <stfomichev@yandex-team.ru> wrote:
+
+> > Please give a sample usage command line and a sample output. (the 
+> > highlighting can be done using ASCII escape sequences in the changelog 
+> > as well.)
+> Highlighting is done in the generated SVG, so I can't really show it in
+> the log or documentation. But I added simple example with -e option.
+> 
+> >   -e::
+> >   --emphasize=<duration_nsecs|task_name>::
+> Thanks, added.
+> 
+> > It's also not made clear that the option can take a numeric input, and 
+> > if the input is numeric, it is interpreted as a task name.
+> > 
+> > So please make features more approachable!
+> Added more info to the documentation.
+> 
+> Attached new patch below.
+> 
+> ---
+> 
+> This option highlights tasks (using different color) that run more than given
+> duration or tasks with given name.
+> 
+> Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+> ---
+>  tools/perf/Documentation/perf-timechart.txt | 14 ++++++++++++++
+>  tools/perf/builtin-timechart.c              | 21 ++++++++++++++++++++-
+>  tools/perf/util/svghelper.c                 | 23 ++++++++++++++++++++---
+>  tools/perf/util/svghelper.h                 |  4 +++-
+>  4 files changed, 57 insertions(+), 5 deletions(-)
+> 
+> diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
+> index 367c1be0551c..b81e91dd16ce 100644
+> --- a/tools/perf/Documentation/perf-timechart.txt
+> +++ b/tools/perf/Documentation/perf-timechart.txt
+> @@ -56,12 +56,26 @@ $ perf timechart
+>  
+>    Written 10.2 seconds of trace to output.svg.
+>  
+> +Record system-wide timechart:
+> +
+> +  $ perf timechart record
+> +
+> +  then generate timechart and highlight 'gcc' tasks:
+> +
+> +  $ perf timechart -e gcc
+> +
+>  -n::
+>  --proc-num::
+>          Print task info for at least given number of tasks.
+>  -t::
+>  --topology::
+>          Sort CPUs according to topology.
+> +-e::
+> +--emphasize=<duration_nsecs|task_name>::
+> +	Highlight tasks (using different color) that run more than given
+> +	duration or tasks with given name. If number is given it's interpreted
+> +	as number of nanoseconds. If non-numeric string is given it's
+> +	interpreted as task name.
+
+Looks good to me, thanks!
+
+Acked-by: Ingo Molnar <mingo@kernel.org>
+
+Thanks,
+
+	Ingo
