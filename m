@@ -1,92 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab3LQOPq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 09:15:46 -0500
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:46540 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab3LQOPo (ORCPT
+	id S1754122Ab3LQOQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 09:16:29 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:37452 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753989Ab3LQOQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 09:15:44 -0500
-Date: Tue, 17 Dec 2013 11:15:32 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, namhyung@kernel.org, artagnon@gmail.com,
-        jolsa@redhat.com
-Subject: Re: [PATCH 5/5 v2] perf timechart: add emphasize option
-Message-ID: <20131217141532.GC6517@ghostprotocols.net>
-References: <1385995056-20158-1-git-send-email-stfomichev@yandex-team.ru>
- <20131216193800.GA19283@ghostprotocols.net>
- <20131217093855.GA3345@stfomichev-desktop>
- <20131217112303.GB27791@gmail.com>
- <20131217121522.GA6357@stfomichev-desktop>
- <20131217133821.GA6517@ghostprotocols.net>
- <20131217134137.GA29396@gmail.com>
- <20131217135923.GB6517@ghostprotocols.net>
- <20131217140608.GA29975@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131217140608.GA29975@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Dec 2013 09:16:27 -0500
+Date: Tue, 17 Dec 2013 09:16:24 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Mike Galbraith <bitbucket@online.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.12.5-rt6
+Message-ID: <20131217091624.65be757c@gandalf.local.home>
+In-Reply-To: <20131217124248.GA21694@linutronix.de>
+References: <20131216091431.GA13796@linutronix.de>
+	<1387264591.5340.23.camel@marge.simpson.net>
+	<20131217063156.6ac3bfed@gandalf.local.home>
+	<20131217124248.GA21694@linutronix.de>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 17, 2013 at 03:06:08PM +0100, Ingo Molnar escreveu:
-> * Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
-> > Em Tue, Dec 17, 2013 at 02:41:37PM +0100, Ingo Molnar escreveu:
-> > > * Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
-> > > > Em Tue, Dec 17, 2013 at 04:15:22PM +0400, Stanislav Fomichev escreveu:
-> > > > > > Please give a sample usage command line and a sample output. (the 
-> > > > > > highlighting can be done using ASCII escape sequences in the changelog 
-> > > > > > as well.)
-> > > > > Highlighting is done in the generated SVG, so I can't really show it in
-> > > > > the log or documentation. But I added simple example with -e option.
+On Tue, 17 Dec 2013 13:42:48 +0100
+Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
 
-> > > > > >   -e::
-> > > > > >   --emphasize=<duration_nsecs|task_name>::
-> > > > > Thanks, added.
-
-> > > > I also wonder how to allocate single letter options here... can we live
-> > > > with just --emphasize for now? Wouldn't at some point we maybe want to
-> > > > use -e in 'perf timechart' to pick some specific event, and then, to
-> > > > make it consistent with the other tools, -e would then be used?
-
-> > > I wanted to raise a similar argument too - so if we don't have to do 
-> > > -e then maybe '--grep' would be the better option name?
-
-> > > If it becomes popular then the pattern matching can be improved, 
-> > > without having to change the option name and such.
-
-> > Humm, 'grep' is a filter, i.e. something that removes parts of the 
-> > data being perused, while this case it will not filter anything, it 
-> > will just make something that matches some search criteria to stand 
-> > out from the rest, that is still there, so perhaps --emphasize is Ok 
-> > albeit kinda long...
-> 
-> So I frequently use grep with -C 1000 --color=always to also show the 
-> context. But --grep-context sounds too long.
-
-Just tried it here, and on fedora 18 one doesn't even needs the
---color=always, but then basic grep usage doesn't imply showing contexts
-and highlighting, i.e. grep grew into a swiss knife, like many others
-:-\
  
-> Maybe --highlight ?
-
-That is ok for me, I think it is better than --emphasize
- 
-> > Do we have any other command line tool that has a long standing 
-> > semantics of "highlighting" or "emphasizing" parts of a data stream?
+> >> @@ -1068,8 +1082,10 @@ unsigned long wait_task_inactive(struct
+> >>  		 * is actually now running somewhere else!
+> >>  		 */
+> >>  		while (task_running(rq, p)) {
+> >> -			if (match_state && unlikely(p->state != match_state))
+> >> +			if (match_state && unlikely(p->state != match_state)
+> >> +			    && unlikely(p->saved_state != match_state))
+> >>  				return 0;
+> >> +			}
+> >
+> >Yeah, it should just be:
+> >
+> >		if (match_state && check_task_state(p, match_state))
+> >			return 0;
 > 
-> Yeah, grep's -C, -A, -B options. (--context, --context-after, 
-> --context-before), combined with the --color option to highlight.
+> Are you sure?
 
-I don't feel like there is a direct mapping of what he wants to achieve
-to reusing the 'grep' keyword, at least it didn't sound natural at first
-sight to me. :-)
+No :-)
 
-- Arnaldo
+> If the state matches we should continue as long as it runs
+> therefore I would go for !check_task_state(). The problem here was that
+
+Yeah yeah, hey, I typed it by hand, no cut and paste there. Thus, I
+dropped the '!' by accident ;-)
+
+Hey! Here's a case where cut and paste would have prevented the bug!
+
+
+> I return 0 in both cases.
+> 
+> >Also, looking at check_task_state():
+> >
+> >+static bool check_task_state(struct task_struct *p, long match_state)
+> >+{
+> >+       bool match = false;
+> >+
+> >+       raw_spin_lock_irq(&p->pi_lock);
+> >+       if (p->state == match_state)
+> >+               match = true;
+> >+       else if (p->saved_state == match_state)
+> >+               match = true;
+> >
+> >Why the if () else if()? and not just:
+> >
+> >	if (p->state == match_state || p->save_state == match_state)
+> >		match = true;
+> >?
+> >
+> >The else if makes me think there's something missing.
+> 
+> Okay I can do this. But regarding the check_task_state part, I think I
+> should go with:
+> 
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1076,9 +1076,7 @@ static bool check_task_state(struct task_struct *p, long match_state)
+>  	bool match = false;
+>  
+>  	raw_spin_lock_irq(&p->pi_lock);
+> -	if (p->state == match_state)
+> -		match = true;
+> -	else if (p->saved_state == match_state)
+> +	if (p->state == match_state || p->saved_state == match_state)
+>  		match = true;
+>  	raw_spin_unlock_irq(&p->pi_lock);
+>  
+> @@ -1129,11 +1127,8 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
+>  		 * is actually now running somewhere else!
+>  		 */
+>  		while (task_running(rq, p)) {
+> -			if (match_state) {
+> -				if (!unlikely(check_task_state(p, match_state)))
+> -					return 0;
+> +			if (match_state && !check_task_state(p, match_state))
+
+Ah, it was that "!unlikely(" that caused me to miss the '!'. That
+should have been: likely(!check_task_state()). But anyway, I rather
+just keep what you wrote and drop the unlikely altogether.
+
+
+>  				return 0;
+> -			}
+>  			cpu_relax();
+>  		}
+>  
+> 
+>  Any objections?
+> 
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
