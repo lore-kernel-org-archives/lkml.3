@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519Ab3LQWwp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:52:45 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:65392 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966Ab3LQWvv (ORCPT
+	id S1752557Ab3LQWvu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:51:50 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:60819 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338Ab3LQWvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:51:51 -0500
+	Tue, 17 Dec 2013 17:51:47 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 12/13] nohz: Allow all CPUs outside nohz_full range to do timekeeping
-Date: Tue, 17 Dec 2013 23:51:31 +0100
-Message-Id: <1387320692-28460-13-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 08/13] nohz: Get timekeeping max deferment outside jiffies_lock
+Date: Tue, 17 Dec 2013 23:51:27 +0100
+Message-Id: <1387320692-28460-9-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
 References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
@@ -26,9 +26,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have all the infrastructure in place and ready to support
-timekeeping duty balanced across every non full dynticks CPUs, we can
-hereby extend the timekeeping duty affinity.
+We don't need to fetch the timekeeping max deferment under the
+jiffies_lock seqlock.
+
+If the clocksource is updated concurrently while we stop the tick,
+stop machine is called and the tick will be reevaluated again along with
+uptodate jiffies and its related values.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -40,30 +43,28 @@ Cc: John Stultz <john.stultz@linaro.org>
 Cc: Alex Shi <alex.shi@linaro.org>
 Cc: Kevin Hilman <khilman@linaro.org>
 ---
- include/linux/tick.h | 10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+ kernel/time/tick-sched.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index bd3c32e..07c02e8 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -203,15 +203,7 @@ static inline int tick_timekeeping_default_cpu(void)
-  */
- static inline bool tick_timekeeping_cpu(int cpu)
- {
--	/*
--	 * If there are full dynticks CPUs around,
--	 * CPU 0 must stay periodic to update timekeeping.
--	 */
--	if (tick_nohz_full_enabled())
--		return cpu == 0;
--
--	/* Otherwise any CPU is elligible for timekeeping duty */
--	return true;
-+	return !tick_nohz_full_cpu(cpu);
- }
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 9a91c31..0d2d774 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -532,12 +532,13 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+ 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
+ 	u64 time_delta;
  
- extern void tick_nohz_init(void);
++	time_delta = timekeeping_max_deferment();
++
+ 	/* Read jiffies and the time when jiffies were updated last */
+ 	do {
+ 		seq = read_seqbegin(&jiffies_lock);
+ 		last_update = last_jiffies_update;
+ 		last_jiffies = jiffies;
+-		time_delta = timekeeping_max_deferment();
+ 	} while (read_seqretry(&jiffies_lock, seq));
+ 
+ 	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) ||
 -- 
 1.8.3.1
 
