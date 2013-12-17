@@ -1,110 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab3LQNZi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:25:38 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:25089 "EHLO
+	id S1754108Ab3LQN0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:26:43 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:25250 "EHLO
 	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab3LQNXh (ORCPT
+	with ESMTP id S1752162Ab3LQN0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:23:37 -0500
-X-AuditID: cbfec7f4-b7fc96d000006cd4-db-52b05057c3ba
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 5/5] regulator: s5m8767: Document new bindings for Buck9 GPIO
- control
-Date: Tue, 17 Dec 2013 14:23:21 +0100
-Message-id: <1387286601-21646-6-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1387286601-21646-1-git-send-email-k.kozlowski@samsung.com>
-References: <1387286601-21646-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t/xK7rhARuCDG7OMbVouBpiMfXhEzaL
-	+UfOsVr0v1nIanHgzw5Gi3OvVjJavH5haHG26Q27xf2vRxktvl3pYLJY2LaExeLyrjlsFmuP
-	3GW3WHr9IpPFhOlrWSwOrzjAZLHu5XQWi5N/ehktTnezWlxc8YXJ4tiMJYwOoh5r5q1h9Fjw
-	+Qq7x+W+XiaPnbPusnusXP6FzWPTqk42j1erZ7J63Lm2h81j3slAj74tqxg9Pm+SC+CO4rJJ
-	Sc3JLEst0rdL4MpoP3mSpWCbcMWJhj1MDYwtAl2MnBwSAiYS8851sEHYYhIX7q0Hsrk4hASW
-	MkosmdfNDuH0MUksW72aGaSKTcBYYvPyJWAdIgLXWCXOnAntYuTgYBaIkXgxxQ4kLCwQLnH9
-	4ywmEJtFQFXixfKljCAlvALuEr+XZoOYEgIKEnMm2YBUcAp4SHxaeoIFJCwEVLF9XtUERt4F
-	jAyrGEVTS5MLipPScw31ihNzi0vz0vWS83M3MULi4csOxsXHrA4xCnAwKvHw7pi/PkiINbGs
-	uDL3EKMEB7OSCO83jw1BQrwpiZVVqUX58UWlOanFhxiZODilGhjrNpf+cA3eFR12OMzdIuu8
-	jVpZ1oLptUZTHz3PsWJn0vji5WyQ2XeZ5fwLvb4oC5P37l+9Vh/O8G/4t8lt8tYJ98snFCsF
-	b3l1SZ8n9d1SLrtoh6kaTLf3RPF8iungOnNo+wP/D3fep0yz81C96iJ6yfwOZ3CY5Mr3LSeu
-	LFbdN73/8PLTvPZKLMUZiYZazEXFiQBLMuCpZQIAAA==
+	Tue, 17 Dec 2013 08:26:40 -0500
+X-AuditID: cbfec7f5-b7f6f6d000005b3b-c4-52b0510f6edb
+From: Kamil Debski <k.debski@samsung.com>
+To: "'Anton Tikhomirov'" <av.tikhomirov@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
+Cc: kyungmin.park@samsung.com, kishon@ti.com, Tomasz Figa <t.figa@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, gautam.vivek@samsung.com,
+        mat.krawczuk@gmail.com, yulgon.kim@samsung.com, p.paneri@samsung.com,
+        jg1.han@samsung.com, galak@codeaurora.org, matt.porter@linaro.org
+References: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
+ <1386246579-25141-4-git-send-email-k.debski@samsung.com>
+ <006a01cef551$7fb4e240$7f1ea6c0$%tikhomirov@samsung.com>
+In-reply-to: <006a01cef551$7fb4e240$7f1ea6c0$%tikhomirov@samsung.com>
+Subject: RE: [PATCH v4 3/9] phy: Add new Exynos USB PHY driver
+Date: Tue, 17 Dec 2013 14:26:37 +0100
+Message-id: <02d201cefb2b$9e04e710$da0eb530$%debski@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7xtb/TcbT2JoEKQI6IBVag+SxyjgDmHfwwAXcg4IA=
+Content-language: pl
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsVy+t/xy7r8gRuCDOb+57ZYsvsGq8X8I+dY
+	LfrfLGS1aLtykN3i8sJLrBYXnvawWZxtegPk7prDZjHj/D4mi0XLWpkt1h65y25xtv82m8XE
+	pmnsFue3dDJZHH7TzmqxfsZrFouOswfZHQQ9Lvf1MnnsnHWX3ePOtT1sHn1bVjF6HL+xncnj
+	8ya5ALYoLpuU1JzMstQifbsEroyL63rYCh6zVbRPn8HawLietYuRk0NCwETifU8/lC0mceHe
+	erYuRi4OIYGljBIn9lxkh3AamCT+/1zC2MXIwcEmoCmx6p4HSFxEYB2jxNYns1hAHGaBy0wS
+	R+6/ZYXo2MUosaV5EzvIXE4BV4nHO1cwg9jCAnYS57d3MYLYLAKqEoc6toLFeQUcJN5c/MwE
+	YQtK/Jh8jwXEZhbQkli/8zgThC0vsXnNW2aQKyQE1CUe/dUFCYsIWEn8m9kDVS4icbfhOesE
+	RqFZSCbNQjJpFpJJs5C0LGBkWcUomlqaXFCclJ5rpFecmFtcmpeul5yfu4kREp9fdzAuPWZ1
+	iFGAg1GJh/fAsvVBQqyJZcWVuYcYJTiYlUR4v3lsCBLiTUmsrEotyo8vKs1JLT7EyMTBKdXA
+	mPbxVlVdwd/3ly9t7zx+XD9n6d/Y0qQ9f5nu5XaGyWwXvTzV5saXtM4zD+5ESafznq7hXskg
+	w/Nw1ZTde1alv2q5+f1AelHqbXHXqzz9xV8mLGTJPfn55LEjAgUrdAJYD/3zX3UuUWSuZau2
+	tYznPRv2EE3uhwLWjyLCvzqkXXigtvW1f+kOYSWW4oxEQy3mouJEACO/jf6tAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add documentation for new bindings for controlling (enable/disable) the
-Buck9 Converter by GPIO (BUCK9EN).
+Hi Anton,
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
----
- .../bindings/regulator/s5m8767-regulator.txt       |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+> From: Anton Tikhomirov [mailto:av.tikhomirov@samsung.com]
+> Sent: Tuesday, December 10, 2013 3:43 AM
+> 
+> Hi Kamil,
+> 
+> Same USB2.0 PHY may be used by several HCDs, for example EHCI and OHCI.
+> Consider the situation, when EHCI stops using the PHY and calls
+> power_off, then OHCI becomes non-operational. In other words, PHY
+> power_on and power_off calls must be balanced.
+> 
+> Shall we handle it in your driver? (usage count?)
 
-diff --git a/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt b/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt
-index d1660a90fc06..6a921b5582a2 100644
---- a/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/s5m8767-regulator.txt
-@@ -43,6 +43,7 @@ Optional properties:
- - s5m8767,pmic-buck2-uses-gpio-dvs: 'buck2' can be controlled by gpio dvs.
- - s5m8767,pmic-buck3-uses-gpio-dvs: 'buck3' can be controlled by gpio dvs.
- - s5m8767,pmic-buck4-uses-gpio-dvs: 'buck4' can be controlled by gpio dvs.
-+- s5m8767,pmic-buck9-uses-gpio: 'buck9' can be enabled/disabled by GPIO.
- 
- Additional properties required if either of the optional properties are used:
- 
-@@ -54,6 +55,11 @@ Additional properties required if either of the optional properties are used:
- - s5m8767,pmic-buck-dvs-gpios: GPIO specifiers for three host gpio's used
-   for dvs. The format of the gpio specifier depends in the gpio controller.
- 
-+- s5m8767,pmic-buck9-gpio: GPIO specifier for one GPIO controlling buck9.
-+  This property is required when 's5m8767,pmic-buck9-uses-gpio' is specified.
-+  Additionally for proper GPIO control the buck9 regulator should be also
-+  configured with proper opmode (low power or suspend).
-+
- Regulators: The regulators of s5m8767 that have to be instantiated should be
- included in a sub-node named 'regulators'. Regulator nodes included in this
- sub-node should be of the format as listed below.
-@@ -126,6 +132,9 @@ Example:
- 						 <1200000>, <1200000>,
- 						 <1200000>, <1200000>;
- 
-+		s5m8767,pmic-buck9-uses-gpio;
-+		s5m8767,pmic-buck9-gpio = <&gpk0 2 0>;
-+
- 		regulators {
- 			ldo1_reg: LDO1 {
- 				regulator-name = "VDD_ABB_3.3V";
-@@ -148,5 +157,12 @@ Example:
- 				regulator-always-on;
- 				regulator-boot-on;
- 			};
-+
-+			vemmc_reg: BUCK9 {
-+				regulator-name = "VMEM_VDD_2.8V";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+				op_mode = <3>; /* Standby Mode */
-+			};
- 		};
- 	};
+Please look in the drivers/phy/phy-core.c file. Usage count is handled
+there - see phy_power_on and phy_power_off functions. I understand that
+after both EHCI and OHCI power on the phy, the usage count is 2. So
+powering off one of them (EHCI for instance) the usage count is still
+1, so the OHCI should still work properly.
+
+[snip]
+
+Best wishes,
 -- 
-1.7.9.5
+Kamil Debski
+Samsung R&D Institute Poland
+
 
