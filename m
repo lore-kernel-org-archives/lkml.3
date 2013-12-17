@@ -1,36 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab3LQHeS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 02:34:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11318 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751663Ab3LQHeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 02:34:17 -0500
-Date: Tue, 17 Dec 2013 02:34:04 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+	id S1752297Ab3LQHk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 02:40:58 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:19344 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab3LQHk5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 02:40:57 -0500
+Message-ID: <52AFFFF2.6040009@oracle.com>
+Date: Tue, 17 Dec 2013 15:40:34 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
 To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
+CC: Andrew Morton <akpm@linux-foundation.org>,
         Sasha Levin <sasha.levin@oracle.com>,
-        Dave Jones <davej@codemonkey.org.uk>, Bob Liu <bob.liu@oracle.com>,
-        dan.carpenter@oracle.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1387265644-l2iufoc7-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1387262658-29067-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1387262658-29067-1-git-send-email-liwanp@linux.vnet.ibm.com>
+        Dave Jones <davej@codemonkey.org.uk>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, dan.carpenter@oracle.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] mm/mempolicy: fix !vma in new_vma_page()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
+References: <1387262658-29067-1-git-send-email-liwanp@linux.vnet.ibm.com>
+In-Reply-To: <1387262658-29067-1-git-send-email-liwanp@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <1387262658-29067-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 02:44:17PM +0800, Wanpeng Li wrote:
+
+On 12/17/2013 02:44 PM, Wanpeng Li wrote:
 > BUG_ON(!vma) assumption is introduced by commit 0bf598d8 (mbind: add BUG_ON(!vma) 
 > in new_vma_page()), however, even if address = __vma_address(page, vma); and 
 > vma->start < address < vma->end; page_address_in_vma() may still return -EFAULT 
@@ -75,9 +74,7 @@ On Tue, Dec 17, 2013 at 02:44:17PM +0800, Wanpeng Li wrote:
 > Reported-by: Sasha Levin <sasha.levin@oracle.com>
 > Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-Thanks Wanpeng, and everyone!
-
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Bob Liu <bob.liu@oracle.com>
 
 > ---
 >  mm/mempolicy.c |   14 ++++++++------
@@ -110,6 +107,8 @@ Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 >  	return alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
 >  }
 >  #else
-> -- 
-> 1.7.5.4
 > 
+
+-- 
+Regards,
+-Bob
