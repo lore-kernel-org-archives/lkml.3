@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab3LQFdJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 00:33:09 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:63709 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab3LQFdH (ORCPT
+	id S1752055Ab3LQFhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 00:37:37 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.246]:63101 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750901Ab3LQFhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 00:33:07 -0500
-Message-ID: <52AFE107.4040705@gmail.com>
-Date: Mon, 16 Dec 2013 21:28:39 -0800
-From: Connor Behan <connor.behan@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	Tue, 17 Dec 2013 00:37:36 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <broonie@kernel.org>
+CC: <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <linux-doc@vger.kernel.org>, <vpalatin@chromium.org>,
+        <nicolas.ferre@atmel.com>, <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <wenyou.yang@atmel.com>
+Subject: [PATCH 0/3 v2] regulator: act8865: add PMIC driver
+Date: Tue, 17 Dec 2013 13:36:34 +0800
+Message-ID: <1387258597-21866-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Devin Heitmueller <dheitmueller@kernellabs.com>
-CC: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Frederik Himpe <fhimpe@telenet.be>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: stable regression: tda18271_read_regs: [1-0060|M] ERROR: i2c_transfer
- returned: -19
-References: <1386969579.3914.13.camel@piranha.localdomain> <20131214092443.622b069d@samsung.com> <52ACE809.1000406@gmail.com> <CAGoCfiwxGU-j14oGDfvoYTA5WZUkQdM_3=80gfpWUjXVNN_nng@mail.gmail.com>
-In-Reply-To: <CAGoCfiwxGU-j14oGDfvoYTA5WZUkQdM_3=80gfpWUjXVNN_nng@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="DltcxB3loXq9jsvH6c3K1Bg9Tln8WUMOn"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---DltcxB3loXq9jsvH6c3K1Bg9Tln8WUMOn
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Mark,
 
-Thanks for the detailed answer. I have tried your patch and updated the
-wiki page. Would a 950 or 950Q be safer to buy next time?
+Thanks a lot for quickly feedbacks. According to your advice, I prepared the new version.
 
-On 14/12/13 05:17 PM, Devin Heitmueller wrote:
-> I had a patch kicking around which fixed part of the issue, but it
-> didn't completely work because of the lgdt3305 having AGC enabled at
-> chip powerup (which interferes with analog tuning on the shared
-> tuner), and the internal v4l-dvb APIs don't provide any easy way to
-> reset the AGC from the analog side of the device.=20
+The patch set is to add act8865 PMIC driver.
 
-By this do you mean that the functions exist but they aren't part of the
-public API? Maybe this problem can be addressed if there is ever "v4l3"
-or some other reason to break compatibility.
+The active-semi act8865 is designed as a PMIC for Atmel sama5d3x and at91sam9 series.
+Its datasheet is available at: http://www.active-semi.com/sheets/ACT8865_Datasheet.pdf.
 
+The patches is based on the branch: for-next of git respository, 
+	git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git
+and [PATCH] regulator: read low power states configuration from device tree from Vincent Palatin
+	https://patchwork.kernel.org/patch/2833667/
 
---DltcxB3loXq9jsvH6c3K1Bg9Tln8WUMOn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Best Regards,
+Wenyou Yang
 
-iQEcBAEBAgAGBQJSr+ESAAoJENU6BEW0eg2r3ucH/Rr/AwVYH+tfrbnbZbQXNH9O
-0fxOP3tie0J5GE5Zp+D3BnPA/RqhYmbhjqfsTNfjnHPWcidtw8SSLKgRZwGpiz5B
-1FMP49zyIMRqgUA9VbHbGtRGKjudCQqKeGRRRWb4k8zJzYZbPwQ4C0vf1HXGXNq6
-3GwrgPTicV21WzAxmPLBLuPhEjD8J89VTtCHGcgK2QEOxHLRqbgvx06xFev/KB+r
-/gfm1iX5rKg8aWN8DgliFw5KXwYfceWTwKt4A31EsEIT3FIk23EnqFwq9isxOiTX
-xvuYBgZSycq38w4+KCiZtfJm5KecHSTa/iGtDlrJAXKGtcaj9tAweCczAL56WO0=
-=Mv/V
------END PGP SIGNATURE-----
+v2 changelog:
+ 1./ Using regmap for register I/O instead of i2c function directly.
+ 2./ Using the helpers provided by the core.
+ 3./ Remove noisy logging.
+ 4./ Using the latest regulator register API.
+ 5./ Using module_i2c_driver helper macro replace module_init and module_exit.
+ 6./ Remove the vsel-state-low dt property which is not used now.
 
---DltcxB3loXq9jsvH6c3K1Bg9Tln8WUMOn--
+Wenyou Yang (3):
+  regulator: act8865: add PMIC act8865 driver
+  regulator: act8865: add device tree binding doc
+  ARM: dts: sama5d3xcm: add the regulator device node
+
+ .../bindings/regulator/act8865-regulator.txt       |   56 +++
+ arch/arm/boot/dts/sama5d3xcm.dtsi                  |   46 +++
+ drivers/regulator/Kconfig                          |    8 +
+ drivers/regulator/Makefile                         |    1 +
+ drivers/regulator/act8865-regulator.c              |  381 ++++++++++++++++++++
+ include/linux/regulator/act8865.h                  |   55 +++
+ 6 files changed, 547 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/regulator/act8865-regulator.txt
+ create mode 100644 drivers/regulator/act8865-regulator.c
+ create mode 100644 include/linux/regulator/act8865.h
+
+-- 
+1.7.9.5
+
