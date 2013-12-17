@@ -1,250 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab3LQUCj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:02:39 -0500
-Received: from mo-p04-ob.rzone.de ([81.169.146.177]:42193 "EHLO
-	mo-p04-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451Ab3LQUCg convert rfc822-to-8bit (ORCPT
+	id S1753100Ab3LQUCt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:02:49 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:35033 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027Ab3LQUCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:02:36 -0500
-X-Greylist: delayed 357 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Dec 2013 15:02:35 EST
-X-RZG-CLASS-ID: mo04
-X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat4gNPppw==
-Subject: Re: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION GTM601 during RING indication
-Mime-Version: 1.0 (Apple Message framework v1085)
+	Tue, 17 Dec 2013 15:02:47 -0500
+Date: Tue, 17 Dec 2013 17:02:39 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 13/14] tools lib traceevent: Get rid of die() in some
+ string conversion funcitons
+Message-ID: <20131217200239.GE6517@ghostprotocols.net>
+References: <1386833777-3790-1-git-send-email-namhyung@kernel.org>
+ <1386833777-3790-14-git-send-email-namhyung@kernel.org>
+ <20131212184147.GE8164@ghostprotocols.net>
+ <87y53phah9.fsf@sejong.aot.lge.com>
+ <20131213145204.GC29275@ghostprotocols.net>
+ <87sitth03c.fsf@sejong.aot.lge.com>
+ <20131216124051.GA3598@ghostprotocols.net>
+ <878uvkgx9f.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-In-Reply-To: <1387222829.2156.51.camel@dcbw.foobar.com>
-Date: Tue, 17 Dec 2013 20:56:33 +0100
-Cc: Jan Dumon <j.dumon@option.com>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Belisko Marek <marek.belisko@gmail.com>, e.verdonck@option.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <174CD81C-6425-4560-A3FA-3BFAA83BA770@goldelico.com>
-References: <B1808224-5850-41E3-9A8F-0F350F84FF89@goldelico.com> <541AADAC-7D20-4410-90FC-3E354B0C1457@goldelico.com> <1387222829.2156.51.camel@dcbw.foobar.com>
-To: Dan Williams <dcbw@redhat.com>
-X-Mailer: Apple Mail (2.1085)
+Content-Disposition: inline
+In-Reply-To: <878uvkgx9f.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+Em Tue, Dec 17, 2013 at 09:02:36AM +0900, Namhyung Kim escreveu:
+> On Mon, 16 Dec 2013 09:40:51 -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Mon, Dec 16, 2013 at 01:49:11PM +0900, Namhyung Kim escreveu:
+> >> On Fri, 13 Dec 2013 11:52:04 -0300, Arnaldo Carvalho de Melo wrote:
+> >> > All the rest is ok, so its just the malloc + strcpy that remains to be
+> >> > converted, do you want me to do it?
 
-Am 16.12.2013 um 20:40 schrieb Dan Williams:
+> >> Hmm.. did you mean like this?
 
-> On Fri, 2013-12-13 at 15:43 +0100, Dr. H. Nikolaus Schaller wrote:
->> Hi,
->> 
->> Am 02.10.2013 um 09:00 schrieb Dr. H. Nikolaus Schaller:
->> 
->>> Hi Jan,
->>> 
->>> we are using a GTM601 modem (Firmware 1.7) for a while and have spotted an
->>> issue that under some conditions the modem sends a packed wIndex over USB
->>> that is rejected by the hso driver making troubles afterwards. Not rejecting makes
->>> it work fine.
->>> 
->>> BR,
->>> Nikolaus Schaller
->>> 
->>> ---
->>> 
->>> From f5c7e15b61f2ce4fe3105ff914f6bfaf5d74af0d Mon Sep 17 00:00:00 2001
->>> From: "H. Nikolaus Schaller" <hns@goldelico.com>
->>> Date: Thu, 15 Nov 2012 14:40:57 +0100
->>> Subject: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION
->>> GTM601 during RING indication
->>> 
->>> It has been observed that the GTM601 with 1.7 firmware sometimes sends a value
->>> wIndex that has bit 0x04 set instead of being reset as the code expects. So we
->>> mask it for the error check.
->>> 
->>> See http://lists.goldelico.com/pipermail/gta04-owner/2012-February/001643.html
->>> 
->>> Signed-off-by: NeilBrown <neilb@suse.de>
->>> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.de>
->>> ---
->>> drivers/net/usb/hso.c |    3 ++-
->>> 1 files changed, 2 insertions(+), 1 deletions(-)
->>> 
->>> diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
->>> index cba1d46..d146e26 100644
->>> --- a/drivers/net/usb/hso.c
->>> +++ b/drivers/net/usb/hso.c
->>> @@ -1503,7 +1503,8 @@ static void tiocmget_intr_callback(struct urb *urb)
->>> 	if (serial_state_notification->bmRequestType != BM_REQUEST_TYPE ||
->>> 	    serial_state_notification->bNotification != B_NOTIFICATION ||
->>> 	    le16_to_cpu(serial_state_notification->wValue) != W_VALUE ||
->>> -	    le16_to_cpu(serial_state_notification->wIndex) != W_INDEX ||
->>> +	    (le16_to_cpu(serial_state_notification->wIndex) & ~0x4) !=
->>> +		W_INDEX ||
->>> 	    le16_to_cpu(serial_state_notification->wLength) != W_LENGTH) {
->>> 		dev_warn(&usb->dev,
->>> 			 "hso received invalid serial state notification\n");
->>> -- 
->>> 1.7.7.4
->>> 
->>> 
->> 
->> I have found this (better) proposal by OPTION, but wonder what did happen to it.
->> It neither shows in mainline 3.13-rc nor linux-next:
->> 
->> https://lkml.org/lkml/2013/10/9/263
-> 
-> Likely because nobody formally submitted the patch with a signed-off-by,
-> which indicates their intent that the patch is tested, correct, and can
-> be merged to the kernel.
+> >> 		str = NULL;
+> >>                 if (val)
+> >>                 	asprintf(&str, "TRUE");
+> >>                 else
+> >>                 	asprintf(&str, "FALSE");
+> >>                 return str;
 
-Ok, I see. I just wasn't aware of the proposal at all since I missed the discussion
-and wasn't on CC.
+> > More compact:
 
-Therefore I have added Eric to the CC.
+> > 	if (asprintf(&str, "%s", val ? "TRUE" : "FALSE") < 0)
+> > 		// error handling path
 
-> 
-> I looked at this today, and I'm left wondering how any port other than
-> HSO_PORT_MODEM can get the notification via tiocmget_intr_callback().
-> "serial->tiocmget" is only created for HSO_PORT_MODEM serial ports (see
-> hso_create_bulk_serial_device()):
-> 
-> 	if ((port & HSO_PORT_MASK) == HSO_PORT_MODEM) {
-> 		num_urbs = 2;
-> 		serial->tiocmget = kzalloc(sizeof(struct hso_tiocmget),
-> 					   GFP_KERNEL);
-> 
-> and the code in tiocmget_intr_callback() does this:
-> 
-> 	tiocmget = serial->tiocmget;
-> 	if (!tiocmget)
-> 		return;
-> 
-> which should mean that only a HSO_PORT_MODEM will ever process the
-> notification.  Further, the tiocmget interrupt URB is only created and
-> submitted if serial->tiocmget != NULL, so only HSO_PORT_MODEM should
-> ever be calling into tiocmget_intr_callback().
+> > At that point str already is set to NULL.
 
-Ok, that looks plausible.
+> Okay, this is a new one:
 
-> 
-> So I think Eric's patch is actually wrong because it will *always* pass
-> the new check.
-> 
-> The original code had the correct intention, but the original code was
-> obviously wrong for newer devices where the port layout is read from
-> firmware and not from static tables, and thus for recent devices where
-> the modem interface is not USB interface #2.
+Thanks, it all seems now, but just prior to applying this I noticed:
 
-This explains why we did run into the problem with the GTM601.
+> Those functions are for stringify filter arguments.  As caller of
+> those functions handles NULL string properly, it seems that it's
+> enough to return NULL rather than calling die().
 
-> 
-> Can you confirm/deny that the 'modem' interface for your GTM601 is USB
-> interface #6?  For example, my Icon 452 has the following USB interface
-> layout:
-> 
-> 0: Diag
-> 1: GPS
-> 2: GPS control
-> 3: Application
-> 4: Control
-> 5: Network
-> 6: Modem
-> 
-> So like the GTM601, I would expect any RING notifications to appear for
-> wIndex=0x06.
+It handles NULL in what way? This comment:
 
-Interestingly I see:
+> @@ -2369,7 +2340,7 @@ static char *arg_to_str(struct event_filter *filter, struct filter_arg *arg)
+>   * Returns a string that displays the filter contents.
+>   *  This string must be freed with free(str).
+> - *  NULL is returned if no filter is found.
+> + *  NULL is returned if no filter is found or allocation failed.
+>   */
+>  char *
+>  pevent_filter_make_string(struct event_filter *filter, int event_id)
 
-0: Diagnostic
-1: GPS
-2: GPS Control
-3: Application
-4: Control
-5: Modem
+Made me a bit unconfortable, so if it handles NULL as a filter not
+found, how will it figure out what happened?
 
-I.e. there is no Network interface. Originally we did focus on /dev/ttyHS3
-to access the Application interface, but people reported that it is not stable
-or always so. Therefore we have some udev rule to add symbolic names
-(e.g. /dev/ttyHS_Application):
+/me looks at the callers...
 
-http://git.goldelico.com/?p=gta04-kernel.git;a=blob;f=GTA04/udev-rules/hso.rules;hb=HEAD
+>From just a quick look I couldn't see cases where NULL could cause
+segfaults, but saw some cases where allocation errors would not be
+notified in any way to the user :-\
 
-So I think the assignment is not even always the same on the same device.
+Anyway, applying this patch, those are other kinds of problems, i.e. further
+fallout from converting from the previous panic()-at-alloc-failure approach.
 
-And I am a little puzzled why we do see the wIndex == 6 if it is the interface
-number. Maybe it happens only in some scenario where the Modem becomes
-interface #6.
-
-> 
-> Does the following patch fix the problem for you?
-
-I will try but need a little time to setup a test scenario (because I need to trigger
-RING indications) and will then report.
-
-BR,
-Nikolaus
-
-> 
-> Dan
-> 
-> ---
-> diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-> index 86292e6..1c7bdeb 100644
-> --- a/drivers/net/usb/hso.c
-> +++ b/drivers/net/usb/hso.c
-> @@ -181,15 +181,14 @@ enum rx_ctrl_state{
-> 	RX_SENT,
-> 	RX_PENDING
-> };
-> 
-> #define BM_REQUEST_TYPE (0xa1)
-> #define B_NOTIFICATION  (0x20)
-> #define W_VALUE         (0x0)
-> -#define W_INDEX         (0x2)
-> #define W_LENGTH        (0x2)
-> 
-> #define B_OVERRUN       (0x1<<6)
-> #define B_PARITY        (0x1<<5)
-> #define B_FRAMING       (0x1<<4)
-> #define B_RING_SIGNAL   (0x1<<3)
-> #define B_BREAK         (0x1<<2)
-> @@ -1483,31 +1482,38 @@ static void tiocmget_intr_callback(struct urb *urb)
-> 	struct hso_serial *serial = urb->context;
-> 	struct hso_tiocmget *tiocmget;
-> 	int status = urb->status;
-> 	u16 UART_state_bitmap, prev_UART_state_bitmap;
-> 	struct uart_icount *icount;
-> 	struct hso_serial_state_notification *serial_state_notification;
-> 	struct usb_device *usb;
-> +	int if_num;
-> 
-> 	/* Sanity checks */
-> 	if (!serial)
-> 		return;
-> 	if (status) {
-> 		handle_usb_error(status, __func__, serial->parent);
-> 		return;
-> 	}
-> +
-> +	/* tiocmget is only supported on HSO_PORT_MODEM */
-> 	tiocmget = serial->tiocmget;
-> 	if (!tiocmget)
-> 		return;
-> +	BUG_ON((serial->parent->port_spec & HSO_PORT_MASK) != HSO_PORT_MODEM);
-> +
-> 	usb = serial->parent->usb;
-> +	if_num = serial->parent->interface->altsetting->desc.bInterfaceNumber;
-> +
-> 	serial_state_notification = &tiocmget->serial_state_notification;
-> 	if (serial_state_notification->bmRequestType != BM_REQUEST_TYPE ||
-> 	    serial_state_notification->bNotification != B_NOTIFICATION ||
-> 	    le16_to_cpu(serial_state_notification->wValue) != W_VALUE ||
-> -	    le16_to_cpu(serial_state_notification->wIndex) != W_INDEX ||
-> +	    le16_to_cpu(serial_state_notification->wIndex) != if_num ||
-> 	    le16_to_cpu(serial_state_notification->wLength) != W_LENGTH) {
-> 		dev_warn(&usb->dev,
-> 			 "hso received invalid serial state notification\n");
-> 		DUMP(serial_state_notification,
-> 		     sizeof(struct hso_serial_state_notification));
-> 	} else {
-> 
-> 
-
+- Arnaldo
