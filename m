@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab3LQQWp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 11:22:45 -0500
-Received: from 9.mo3.mail-out.ovh.net ([87.98.184.141]:41282 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753626Ab3LQQWn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 11:22:43 -0500
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Landley <rob@landley.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [PATCH v2] tty/serial: at91: document clock properties
-Date: Tue, 17 Dec 2013 17:22:20 +0100
-Message-Id: <1387297340-8198-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1387296121-7558-1-git-send-email-b.brezillon@overkiz.com>
-References: <1387296121-7558-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 8813825947638397026
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1754801Ab3LQQXp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:23:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59641 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753185Ab3LQQXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 11:23:43 -0500
+Date: Tue, 17 Dec 2013 17:23:42 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20131217162342.GG28991@dhcp22.suse.cz>
+References: <20131204111318.GE8410@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com>
+ <20131209124840.GC3597@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
+ <20131210103827.GB20242@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com>
+ <20131211095549.GA18741@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com>
+ <20131212103159.GB2630@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312131551220.28704@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1312131551220.28704@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the clock properties required by the at91 usart driver.
+On Fri 13-12-13 15:55:44, David Rientjes wrote:
+> On Thu, 12 Dec 2013, Michal Hocko wrote:
+[...]
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index c72b03bf9679..fee25c5934d2 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -2692,7 +2693,8 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+> >  	 * MEMDIE process.
+> >  	 */
+> >  	if (unlikely(test_thread_flag(TIF_MEMDIE)
+> > -		     || fatal_signal_pending(current)))
+> > +		     || fatal_signal_pending(current))
+> > +		     || current->flags & PF_EXITING)
+> >  		goto bypass;
+> >  
+> >  	if (unlikely(task_in_memcg_oom(current)))
+> > 
+> > rather than the later checks down the oom_synchronize paths. The comment
+> > already mentions dying process...
+> > 
+> 
+> This is scary because it doesn't even try to reclaim memcg memory before 
+> allowing the allocation to succeed.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
-Changes since v1:
- - fix commit message
+Why should it reclaim in the first place when it simply is on the way to
+release memory. In other words why should it increase the memory
+pressure when it is in fact releasing it?
 
- .../devicetree/bindings/serial/atmel-usart.txt     |    7 +++++++
- 1 file changed, 7 insertions(+)
+I am really puzzled here. On one hand you are strongly arguing for not
+notifying when we know we can prevent from OOM action and on the other
+hand you are ok to get vmpressure/thresholds notification when an
+exiting task triggers reclaim.
 
-diff --git a/Documentation/devicetree/bindings/serial/atmel-usart.txt b/Documentation/devicetree/bindings/serial/atmel-usart.txt
-index 2191dcb..9c5d19a 100644
---- a/Documentation/devicetree/bindings/serial/atmel-usart.txt
-+++ b/Documentation/devicetree/bindings/serial/atmel-usart.txt
-@@ -6,6 +6,9 @@ Required properties:
-   additional mode or an USART new feature.
- - reg: Should contain registers location and length
- - interrupts: Should contain interrupt
-+- clock-names: tuple listing input clock names.
-+	Required elements: "usart"
-+- clocks: phandles to input clocks.
- 
- Optional properties:
- - atmel,use-dma-rx: use of PDC or DMA for receiving data
-@@ -26,6 +29,8 @@ Example:
- 		compatible = "atmel,at91sam9260-usart";
- 		reg = <0xfff8c000 0x4000>;
- 		interrupts = <7>;
-+		clocks = <&usart0_clk>;
-+		clock-names = "usart";
- 		atmel,use-dma-rx;
- 		atmel,use-dma-tx;
- 	};
-@@ -35,6 +40,8 @@ Example:
- 		compatible = "atmel,at91sam9260-usart";
- 		reg = <0xf001c000 0x100>;
- 		interrupts = <12 4 5>;
-+		clocks = <&usart0_clk>;
-+		clock-names = "usart";
- 		atmel,use-dma-rx;
- 		atmel,use-dma-tx;
- 		dmas = <&dma0 2 0x3>,
+So I am really lost in what you are trying to achieve here. It sounds a
+bit arbirtrary.
+
+> I think we could even argue that we should move the
+> fatal_signal_pending(current) check to later and the only condition we
+> should really be bypassing here is TIF_MEMDIE since it will only get
+> set when reclaim has already failed.
+
+Any arguments?
+
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
