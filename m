@@ -1,170 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab3LQUy5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:54:57 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56162 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754439Ab3LQUwX (ORCPT
+	id S1754372Ab3LQUwN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:52:13 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:28502 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754050Ab3LQUwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:52:23 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 09/10] perf symbols: Use consistent name for the DSO binary type member
-Date: Tue, 17 Dec 2013 17:52:10 -0300
-Message-Id: <1387313531-14629-10-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1387313531-14629-1-git-send-email-acme@infradead.org>
-References: <1387313531-14629-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 17 Dec 2013 15:52:03 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        mukesh.rathor@oracle.com, jbeulich@suse.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v11 06/12] xen/pvh: Load GDT/GS in early PV bootup code for BSP.
+Date: Tue, 17 Dec 2013 15:51:37 -0500
+Message-Id: <1387313503-31362-7-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
+References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
 
-It was called "data_type", but in this context "data" is way too vague,
-it could mean the "data" ELF segment, or something else.
+During early bootup we start life using the Xen provided
+GDT, which means that we are running with %cs segment set
+to FLAT_KERNEL_CS (FLAT_RING3_CS64 0xe033, GDT index 261).
 
-Since we have dso__read_binary_type_filename() and the values this field
-receives are all DSO__BINARY_TYPE_<FOO> we may as well call it
-"binary_type" for consistency sake.
+But for PVH we want to be use HVM type mechanism for
+segment operations. As such we need to switch to the HVM
+one and also reload ourselves with the __KERNEL_CS:eip
+to run in the proper GDT and segment.
 
-It also seems more appropriate since it determines if we can do
-operations like annotation and DWARF unwinding, that needs more than
-just the symtab, requiring access to ELF text segments, CFI ELF
-sections, etc.
+For HVM this is usually done in 'secondary_startup_64' in
+(head_64.S) but since we are not taking that bootup
+path (we start in PV - xen_start_kernel) we need to do
+that in the early PV bootup paths.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-2lkbqrn23uc2uvnn9w9in379@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+For good measure we also zero out the %fs, %ds, and %es
+(not strictly needed as Xen has already cleared them
+for us). The %gs is loaded by 'switch_to_new_gdt'.
+
+Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- tools/perf/util/dso.c    | 10 +++++-----
- tools/perf/util/dso.h    | 10 +++++-----
- tools/perf/util/symbol.c |  8 ++++----
- 3 files changed, 14 insertions(+), 14 deletions(-)
+ arch/x86/xen/enlighten.c | 39 +++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 37 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index eef166212324..4ddeecb9ff85 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -148,7 +148,7 @@ static int open_dso(struct dso *dso, struct machine *machine)
- 	if (machine)
- 		root_dir = machine->root_dir;
- 
--	if (dso__read_binary_type_filename(dso, dso->data_type,
-+	if (dso__read_binary_type_filename(dso, dso->binary_type,
- 					    root_dir, name, PATH_MAX)) {
- 		free(name);
- 		return -EINVAL;
-@@ -168,19 +168,19 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
- 	};
- 	int i = 0;
- 
--	if (dso->data_type != DSO_BINARY_TYPE__NOT_FOUND)
-+	if (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND)
- 		return open_dso(dso, machine);
- 
- 	do {
- 		int fd;
- 
--		dso->data_type = binary_type_data[i++];
-+		dso->binary_type = binary_type_data[i++];
- 
- 		fd = open_dso(dso, machine);
- 		if (fd >= 0)
- 			return fd;
- 
--	} while (dso->data_type != DSO_BINARY_TYPE__NOT_FOUND);
-+	} while (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND);
- 
- 	return -EINVAL;
- }
-@@ -475,7 +475,7 @@ struct dso *dso__new(const char *name)
- 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
- 		dso->cache = RB_ROOT;
- 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
--		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
-+		dso->binary_type = DSO_BINARY_TYPE__NOT_FOUND;
- 		dso->loaded = 0;
- 		dso->rel = 0;
- 		dso->sorted_by_name = 0;
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index aa3384745d75..cd7d6f078cdd 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -83,7 +83,7 @@ struct dso {
- 	enum dso_kernel_type	kernel;
- 	enum dso_swap_type	needs_swap;
- 	enum dso_binary_type	symtab_type;
--	enum dso_binary_type	data_type;
-+	enum dso_binary_type	binary_type;
- 	u8		 adjust_symbols:1;
- 	u8		 has_build_id:1;
- 	u8		 has_srcline:1;
-@@ -159,14 +159,14 @@ size_t dso__fprintf(struct dso *dso, enum map_type type, FILE *fp);
- 
- static inline bool dso__is_vmlinux(struct dso *dso)
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index c7341d0..0d13652 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1413,8 +1413,43 @@ static void __init xen_boot_params_init_edd(void)
+  * we do this, we have to be careful not to call any stack-protected
+  * function, which is most of the kernel.
+  */
+-static void __init xen_setup_stackprotector(void)
++static void __init xen_setup_gdt(void)
  {
--	return dso->data_type == DSO_BINARY_TYPE__VMLINUX ||
--	       dso->data_type == DSO_BINARY_TYPE__GUEST_VMLINUX;
-+	return dso->binary_type == DSO_BINARY_TYPE__VMLINUX ||
-+	       dso->binary_type == DSO_BINARY_TYPE__GUEST_VMLINUX;
- }
++	if (xen_feature(XENFEAT_auto_translated_physmap)) {
++#ifdef CONFIG_X86_64
++		unsigned long dummy;
++
++		switch_to_new_gdt(0); /* GDT and GS set */
++
++		/* We are switching of the Xen provided GDT to our HVM mode
++		 * GDT. The new GDT has  __KERNEL_CS with CS.L = 1
++		 * and we are jumping to reload it.
++		 */
++		asm volatile ("pushq %0\n"
++			      "leaq 1f(%%rip),%0\n"
++			      "pushq %0\n"
++			      "lretq\n"
++			      "1:\n"
++			      : "=&r" (dummy) : "0" (__KERNEL_CS));
++
++		/*
++		 * While not needed, we also set the %es, %ds, and %fs
++		 * to zero. We don't care about %ss as it is NULL.
++		 * Strictly speaking this is not needed as Xen zeros those
++		 * out (and also MSR_FS_BASE, MSR_GS_BASE, MSR_KERNEL_GS_BASE)
++		 *
++		 * Linux zeros them in cpu_init() and in secondary_startup_64
++		 * (for BSP).
++		 */
++		loadsegment(es, 0);
++		loadsegment(ds, 0);
++		loadsegment(fs, 0);
++#else
++		/* PVH: TODO Implement. */
++		BUG();
++#endif
++		return;
++	}
+ 	pv_cpu_ops.write_gdt_entry = xen_write_gdt_entry_boot;
+ 	pv_cpu_ops.load_gdt = xen_load_gdt_boot;
  
- static inline bool dso__is_kcore(struct dso *dso)
- {
--	return dso->data_type == DSO_BINARY_TYPE__KCORE ||
--	       dso->data_type == DSO_BINARY_TYPE__GUEST_KCORE;
-+	return dso->binary_type == DSO_BINARY_TYPE__KCORE ||
-+	       dso->binary_type == DSO_BINARY_TYPE__GUEST_KCORE;
- }
- 
- void dso__free_a2l(struct dso *dso);
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 9ee4b80dac57..923d00040bbf 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1089,9 +1089,9 @@ static int dso__load_kcore(struct dso *dso, struct map *map,
- 	 * dso__data_read_addr().
+@@ -1499,7 +1534,7 @@ asmlinkage void __init xen_start_kernel(void)
+ 	 * Set up kernel GDT and segment registers, mainly so that
+ 	 * -fstack-protector code can be executed.
  	 */
- 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
--		dso->data_type = DSO_BINARY_TYPE__GUEST_KCORE;
-+		dso->binary_type = DSO_BINARY_TYPE__GUEST_KCORE;
- 	else
--		dso->data_type = DSO_BINARY_TYPE__KCORE;
-+		dso->binary_type = DSO_BINARY_TYPE__KCORE;
- 	dso__set_long_name(dso, strdup(kcore_filename), true);
+-	xen_setup_stackprotector();
++	xen_setup_gdt();
  
- 	close(fd);
-@@ -1368,9 +1368,9 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
- 
- 	if (err > 0) {
- 		if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
--			dso->data_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
-+			dso->binary_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
- 		else
--			dso->data_type = DSO_BINARY_TYPE__VMLINUX;
-+			dso->binary_type = DSO_BINARY_TYPE__VMLINUX;
- 		dso__set_long_name(dso, vmlinux, vmlinux_allocated);
- 		dso__set_loaded(dso, map->type);
- 		pr_debug("Using %s for symbols\n", symfs_vmlinux);
+ 	xen_init_irq_ops();
+ 	xen_init_cpuid_mask();
 -- 
-1.8.1.4
+1.8.3.1
 
