@@ -1,101 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab3LQGbl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 01:31:41 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:54495 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab3LQGbi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 01:31:38 -0500
+	id S1752131Ab3LQGf0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 01:35:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62070 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751088Ab3LQGfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 01:35:24 -0500
+Date: Tue, 17 Dec 2013 14:34:36 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
+Subject: Re: [PATCH v5 10/14] efi: only print saved efi runtime maps instead
+ of all memmap ranges for kexec
+Message-ID: <20131217063436.GF6751@dhcp-16-126.nay.redhat.com>
+References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
+ <1386582147-9802-11-git-send-email-dyoung@redhat.com>
+ <20131213160150.GE32329@pd.tnic>
+ <20131216020010.GC3754@dhcp-16-126.nay.redhat.com>
+ <20131216113324.GB4922@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <1386229462-3474-2-git-send-email-bilhuang@nvidia.com>
-References: <1386229462-3474-1-git-send-email-bilhuang@nvidia.com>
-	<1386229462-3474-2-git-send-email-bilhuang@nvidia.com>
-Date: Tue, 17 Dec 2013 12:01:37 +0530
-Message-ID: <CAKohpo=OAg96OUe_dmitd_OWThtZv6M+0fsx=4ngCez0MgDhLw@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] cpufreq: tegra: Call tegra_cpufreq_init()
- specifically in machine code
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Bill Huang <bilhuang@nvidia.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Stephen Warren <swarren@wwwdotorg.org>, thierry.reding@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        linux-tegra@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131216113324.GB4922@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 December 2013 13:14, Bill Huang <bilhuang@nvidia.com> wrote:
-> Move the call from module_init to Tegra machine codes so it won't be
-> called in a multi-platform kernel running on non-Tegra SoCs.
->
-> Signed-off-by: Bill Huang <bilhuang@nvidia.com>
-> ---
->  arch/arm/mach-tegra/tegra.c     |    2 ++
->  drivers/cpufreq/tegra-cpufreq.c |   13 ++-----------
->  include/linux/tegra-soc.h       |   11 ++++++++++-
->  3 files changed, 14 insertions(+), 12 deletions(-)
->
-> diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
-> index 7336817..14490ad 100644
-> --- a/arch/arm/mach-tegra/tegra.c
-> +++ b/arch/arm/mach-tegra/tegra.c
-> @@ -34,6 +34,7 @@
->  #include <linux/usb/tegra_usb_phy.h>
->  #include <linux/clk/tegra.h>
->  #include <linux/irqchip.h>
-> +#include <linux/tegra-soc.h>
->
->  #include <asm/hardware/cache-l2x0.h>
->  #include <asm/mach-types.h>
-> @@ -160,6 +161,7 @@ static void __init tegra_dt_init_late(void)
->  {
->         int i;
->
-> +       tegra_cpufreq_init();
->         tegra_init_suspend();
->         tegra_cpuidle_init();
->         tegra_powergate_debugfs_init();
-> diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-> index 63f0059..ae1c0f1 100644
-> --- a/drivers/cpufreq/tegra-cpufreq.c
-> +++ b/drivers/cpufreq/tegra-cpufreq.c
-> @@ -155,7 +155,7 @@ static struct cpufreq_driver tegra_cpufreq_driver = {
->  #endif
->  };
+On 12/16/13 at 12:33pm, Borislav Petkov wrote:
+> On Mon, Dec 16, 2013 at 10:00:10AM +0800, Dave Young wrote:
+> > > > -	print_efi_memmap();
+> > > > +	if (efi_setup) {
+> > > > +		int s;
+> > > > +		struct efi_setup_data *data;
+> > > > +
+> > > > +		s = sizeof(*data) + nr_efi_runtime_map * sizeof(data->map[0]);
+> > > > +		data = early_memremap(efi_setup, s);
+> > > > +		if (!data)
+> > > > +			return;
+> > > > +		print_efi_memmap(data->map, nr_efi_runtime_map,
+> > > > +				 sizeof(data->map[0]));
+> > > > +		early_memunmap(data, s);
+> > > 
+> > > Well, if you call print_efi_memmap() in parse_efi_setup() you can save
+> > > yourself that map/unmaping no?
+> > 
+> > In parse_efi_setup, I need map twice as well:
+> 
+> Well, your v6 has a something completely different:
+> 
+> void __init parse_efi_setup(u64 phys_addr)
+> {
+>         efi_setup = phys_addr;
+> }
+> 
+> There's no mapping at all anymore. So please redo your reply against v6.
 
-Remove module.h as well ??
+They are moved to efi.c efi_setup_init(), I'm not sure if I expained clear
+enough, in current code parse_efi_setup only accept one argument phys_addr
+so I will mapping it with sizeof(struct setup_data) to get the payload size
+then get the nr_efi_runtime_map. This is a simplification from the old 
+implementation.
 
-> -static int __init tegra_cpufreq_init(void)
-> +int __init tegra_cpufreq_init(void)
->  {
->         cpu_clk = clk_get_sys(NULL, "cclk");
->         if (IS_ERR(cpu_clk))
-> @@ -177,17 +177,8 @@ static int __init tegra_cpufreq_init(void)
->
->         return cpufreq_register_driver(&tegra_cpufreq_driver);
->  }
-> -
-> -static void __exit tegra_cpufreq_exit(void)
-> -{
-> -        cpufreq_unregister_driver(&tegra_cpufreq_driver);
-> -       clk_put(emc_clk);
-> -       clk_put(cpu_clk);
-> -}
-> -
-> +EXPORT_SYMBOL(tegra_cpufreq_init);
->
->  MODULE_AUTHOR("Colin Cross <ccross@android.com>");
->  MODULE_DESCRIPTION("cpufreq driver for Nvidia Tegra2");
->  MODULE_LICENSE("GPL");
+Based on current implementation, yes, I can add back another argument data_len
+to avoid the 1st mapping thus I can print efi memmap as you said.
 
-Remove these as well? As they don't have a meaning for Tegra
-cpufreq driver which can't be compiled as module.
+In this way I need export another extern for the data_len though.
 
-> -module_init(tegra_cpufreq_init);
-> -module_exit(tegra_cpufreq_exit);
+> 
+> > Another where what I print in this patch is same position what
+> > non-kexec kernel does, it looks better that print them only if earlier
+> > init is ok.
+> 
+> -ENOPARSE.
 
-Rest as what Stephen suggested.
+What do you mean about NOPARSE, do you want another function name like
+save_efi_setup()?
+
+> 
+> All I'm saying is, if you're going to memremap/memunmap efi_setup,
+> then do it once in efi_setup_init() as you do already and call
+> print_efi_memmap from there - no need to do work twice for no reason.
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
