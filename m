@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab3LQVZj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 16:25:39 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:40305 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754016Ab3LQVZg (ORCPT
+	id S1753205Ab3LQV1X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 16:27:23 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41966 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752204Ab3LQV1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 16:25:36 -0500
+	Tue, 17 Dec 2013 16:27:21 -0500
+Date: Tue, 17 Dec 2013 21:27:09 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: Julian Calaby <julian.calaby@gmail.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Avinash Patil <avinashapatil@gmail.com>
+Message-ID: <20131217212709.GB5624@decadent.org.uk>
+References: <1342235583.20131211182804@eikelenboom.it>
+ <CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com>
+ <871324710.20131211191104@eikelenboom.it>
+ <CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com>
+ <1937118387.20131216122200@eikelenboom.it>
+ <52AEE60B.6030509@broadcom.com>
+ <19210260274.20131216135644@eikelenboom.it>
+ <CAGRGNgXHemM2FfnXgW5RbzhFT+9SfUfVkjdysK3+=_u3hWSacw@mail.gmail.com>
+ <1534126119.20131217104548@eikelenboom.it>
+ <387552477.20131217213319@eikelenboom.it>
 MIME-Version: 1.0
-X-Originating-IP: [67.244.6.56]
-In-Reply-To: <52B0BD72.9000804@iki.fi>
-References: <1386969579.3914.13.camel@piranha.localdomain>
-	<20131214092443.622b069d@samsung.com>
-	<52ACE809.1000406@gmail.com>
-	<CAGoCfiwxGU-j14oGDfvoYTA5WZUkQdM_3=80gfpWUjXVNN_nng@mail.gmail.com>
-	<52AFE107.4040705@gmail.com>
-	<CAGoCfiztzv-QFjmKXdiJreTPCYN1RTe5bPTO0awx5a-ER161qQ@mail.gmail.com>
-	<52B0BD72.9000804@iki.fi>
-Date: Tue, 17 Dec 2013 16:25:35 -0500
-Message-ID: <CAGoCfixT0rabuv-MAhw4vhhCxyeOgzjb3FGbORPTV3JgkhjKdw@mail.gmail.com>
-Subject: Re: stable regression: tda18271_read_regs: [1-0060|M] ERROR:
- i2c_transfer returned: -19
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
-To: Antti Palosaari <crope@iki.fi>
-Cc: Connor Behan <connor.behan@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Frederik Himpe <fhimpe@telenet.be>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <387552477.20131217213319@eikelenboom.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't
+ work.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 4:09 PM, Antti Palosaari <crope@iki.fi> wrote:
-> That shared DVB / V4L2 tuner is one problem that I have also currently (SDR
-> is on V4L2 API and DTV is provided via DVB API). I have decided to try model
-> where I separate RF tuner totally independent used DVB / V4L2 APIs, just to
-> plain I2C driver model. Idea is here to provide needed set of general
-> callbacks and communication and device binding is done via I2C driver model.
-> I am not sure though if there is any big caveats I haven't realized yet...
+On Tue, Dec 17, 2013 at 09:33:19PM +0100, Sander Eikelenboom wrote:
+[...]
+> > It's the official Debian package.
+[...]
+> > I will report back when i have tested converting the wireless stuff to loadable modules / seeing if i can put the CRDA stuff in initrd.
+> 
+> With all the wireless stuff switched to loadable modules it *does* work.
+> 
+> So the problem is that:
+> The current code blocks all future regulatory domain setting attempts forever (till the next reboot)
+> when it can't find the CRDA. This can and does happen when the modules are compiled in and the CRDA is not in initrd.
+> 
+> So from the question department:
+> 
+> A) Why doesn't the code timeout the processing of a regulatory domain hint and remove the pending request when it aborts ?
+> B) Why isn't the CRDA treated as firmware and placed in /lib/firmware, which has a much greater chance of automagically appearing in initrd ?
+[...]
 
-It's a tough problem - a more strictly defined API in theory allows
-for better uniformity across drivers (although admittedly we've done a
-piss-poor job in practice).  However such a strictly defined API makes
-it harder to add hacks that are sometimes required by the silicon.
+It doesn't make any logical sense to put a userland program in
+/lib/firmware, and it wouldn't have any effect on the initramfs
+builders I'm familiar with (which look at module metadata to work
+out which files to include from /lib/firmware).
 
-The additional abstractions provided by v4l2 subdev and tuner-core
-just make it that much harder to get past those layers and poke the
-device directly (which as much as I hate to admit it, is sometimes
-required to work around bugs and weird edge cases in the silicon not
-addressable via the API).  These problems are exacerbated by cases
-where there are order-of-operations requirements that cannot be
-accommodated by the API.
+Debian official kernels use modular drivers, and neither
+initramfs-tools nor dracut includes wireless drivers in the initramfs.
+If you build a custom kernel with built-in drivers then you most
+likely don't need an initramfs at all.
 
-All that said though, moving to an entirely I2C based API feels like
-to provides "too much flexibility" such that every bridge will talk a
-little differently to every tuner.  Given what a crappy job we've done
-in the past even with a strict framework, I cringe to think how much
-worse the problem would be if every developer took a different
-approach.
+As maintainer of crda in Debian, I could add an initramfs hook that
+would include it in an initramfs.  But I don't understand why it would
+be worth doing so.  Why is it so useful to have wireless drivers
+built-in *and* an initramfs?  If you think I should do this then open
+a bug (reportbug crda).
 
-I'm not against implementing a callback which allows you to feed
-arbitrary I2C commands to a device, to be used *sparingly* for those
-cases where it is *really* required to do something not supported via
-the framework's API.  But I don't see it as a replacement for the
-existing frameworks for addressing tuners.
-
-Devin
+Ben.
 
 -- 
-Devin J. Heitmueller - Kernel Labs
-http://www.kernellabs.com
+Ben Hutchings
+Life would be so much easier if we could look at the source code.
