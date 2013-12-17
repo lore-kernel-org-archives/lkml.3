@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab3LQNvc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:51:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49117 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752726Ab3LQNv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:51:29 -0500
-Date: Tue, 17 Dec 2013 08:50:55 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org
-Subject: Re: [PATCH v3 6/6] locks: add new "private" lock type that is owned
- by the filp
-Message-ID: <20131217085055.1e89965c@tlielax.poochiereds.net>
-In-Reply-To: <20131217133721.GA16724@infradead.org>
-References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
-	<1386703055-22308-7-git-send-email-jlayton@redhat.com>
-	<20131217083125.4ce0382b@tlielax.poochiereds.net>
-	<20131217133721.GA16724@infradead.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754127Ab3LQNwD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:52:03 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:35418 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753948Ab3LQNwA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 08:52:00 -0500
+Date: Tue, 17 Dec 2013 13:51:56 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linux EFI <linux-efi@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Young <dyoung@redhat.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 3/3] efi: Make efi virtual runtime map passing more robust
+Message-ID: <20131217135156.GC3145@console-pimps.org>
+References: <1387236997-26975-1-git-send-email-bp@alien8.de>
+ <1387236997-26975-4-git-send-email-bp@alien8.de>
+ <20131217121024.GB3145@console-pimps.org>
+ <20131217134006.GC30592@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131217134006.GC30592@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Dec 2013 05:37:21 -0800
-Christoph Hellwig <hch@infradead.org> wrote:
-
-> On Tue, Dec 17, 2013 at 08:31:25AM -0500, Jeff Layton wrote:
-> > So, I think the above semantics are pretty clear, but now that I've had
-> > a go at sitting down to document this stuff for the POSIX spec and
-> > manpages, it's clear how convoluted the text in there is becoming.
+On Tue, 17 Dec, at 02:40:06PM, Borislav Petkov wrote:
+> On Tue, Dec 17, 2013 at 12:10:24PM +0000, Matt Fleming wrote:
+> > You sunk my i386 battleship,
 > > 
-> > That makes me wonder...would we be better off with a new set of cmd
-> > values here instead of new l_type values? IOW, we could add new:
-> > 
-> > F_GETLKP
-> > F_SETLKP
-> > F_SETLKPW
+> > /home/build/git/efi/arch/x86/platform/efi/efi.c:824:24: error: ‘struct real_mode_header’ has no member named ‘trampoline_pgd’
+> > make[4]: *** [arch/x86/platform/efi/efi.o] Error 1
+> > make[3]: *** [arch/x86/platform/efi] Error 2
 > 
-> That seems a tad cleaner to me indeed.
-> 
-> > ...and then just reuse the same F_RDLCK/F_WRLCK/F_UNLCK values? With
-> > that too, we could create a new equivalent to struct flock that has
-> > fixed length types instead of dealing with the off_t mess.
-> 
-> For the Posix interface you'd need an off_t as that's what the whole
-> API uses for file offsets.  We could make sure to always use a off64_t
-> for the kernel interface though.
-> 
+> Right, this is a recurring issue with the trampoline_pgd. What do you
+> prefer: an #ifdef CONFIG_X86_64 or a separate function in efi_$(BITS).c?
 
-Ok.
+Couldn't we do the mapping in efi_setup_page_tables() if we pass
+__pa(new_memmap) and 1 << new_memmap_shift as arguments?
 
-> What is the API you propose to posix?  An new posix_lockf?
-> 
-
-I haven't proposed anything concrete to POSIX just yet. I'm trying to
-get the Linux patches done and then I'll do that. I don't think we want
-a new syscall when fcntl() will work.
-
-If we use new cmd values however, then we don't necessarily need to use
-struct flock/flock64. I think the question is -- should we stick with
-struct flock/flock64, or would we be better served with something new
-for this?
-
-Thanks,
 -- 
-Jeff Layton <jlayton@redhat.com>
+Matt Fleming, Intel Open Source Technology Center
