@@ -1,226 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab3LQPyE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:54:04 -0500
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:53460 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754493Ab3LQPyB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:54:01 -0500
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Date: Tue, 17 Dec 2013 19:53:49 +0400
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        namhyung@kernel.org, artagnon@gmail.com, jolsa@redhat.com
-Subject: Re: [PATCH 5/5 v2] perf timechart: add emphasize option
-Message-ID: <20131217155349.GA13021@stfomichev-desktop>
-References: <1385995056-20158-1-git-send-email-stfomichev@yandex-team.ru>
- <20131216193800.GA19283@ghostprotocols.net>
- <20131217093855.GA3345@stfomichev-desktop>
- <20131217112303.GB27791@gmail.com>
- <20131217121522.GA6357@stfomichev-desktop>
- <20131217133821.GA6517@ghostprotocols.net>
- <20131217134137.GA29396@gmail.com>
- <20131217135923.GB6517@ghostprotocols.net>
- <20131217140608.GA29975@gmail.com>
- <20131217141532.GC6517@ghostprotocols.net>
+	id S1755291Ab3LQPyo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 10:54:44 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:50257 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754542Ab3LQPym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 10:54:42 -0500
+Date: Tue, 17 Dec 2013 10:54:35 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7] mm: page_alloc: Make zone distribution page aging
+ policy configurable
+Message-ID: <20131217155435.GE21724@cmpxchg.org>
+References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
+ <1386943807-29601-6-git-send-email-mgorman@suse.de>
+ <20131216204215.GA21724@cmpxchg.org>
+ <20131217152954.GA24067@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131217141532.GC6517@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131217152954.GA24067@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Maybe --highlight ?
+On Tue, Dec 17, 2013 at 03:29:54PM +0000, Mel Gorman wrote:
+> On Mon, Dec 16, 2013 at 03:42:15PM -0500, Johannes Weiner wrote:
+> > On Fri, Dec 13, 2013 at 02:10:05PM +0000, Mel Gorman wrote:
+> > > Commit 81c0a2bb ("mm: page_alloc: fair zone allocator policy") solved a
+> > > bug whereby new pages could be reclaimed before old pages because of
+> > > how the page allocator and kswapd interacted on the per-zone LRU lists.
+> > > Unfortunately it was missed during review that a consequence is that
+> > > we also round-robin between NUMA nodes. This is bad for two reasons
+> > > 
+> > > 1. It alters the semantics of MPOL_LOCAL without telling anyone
+> > > 2. It incurs an immediate remote memory performance hit in exchange
+> > >    for a potential performance gain when memory needs to be reclaimed
+> > >    later
+> > > 
+> > > No cookies for the reviewers on this one.
+> > > 
+> > > This patch makes the behaviour of the fair zone allocator policy
+> > > configurable.  By default it will only distribute pages that are going
+> > > to exist on the LRU between zones local to the allocating process. This
+> > > preserves the historical semantics of MPOL_LOCAL.
+> > > 
+> > > By default, slab pages are not distributed between zones after this patch is
+> > > applied. It can be argued that they should get similar treatment but they
+> > > have different lifecycles to LRU pages, the shrinkers are not zone-aware
+> > > and the interaction between the page allocator and kswapd is different
+> > > for slabs. If it turns out to be an almost universal win, we can change
+> > > the default.
+> > > 
+> > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > > ---
+> > >  Documentation/sysctl/vm.txt |  32 ++++++++++++++
+> > >  include/linux/mmzone.h      |   2 +
+> > >  include/linux/swap.h        |   2 +
+> > >  kernel/sysctl.c             |   8 ++++
+> > >  mm/page_alloc.c             | 102 ++++++++++++++++++++++++++++++++++++++------
+> > >  5 files changed, 134 insertions(+), 12 deletions(-)
+> > > 
+> > > diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+> > > index 1fbd4eb..8eaa562 100644
+> > > --- a/Documentation/sysctl/vm.txt
+> > > +++ b/Documentation/sysctl/vm.txt
+> > > @@ -56,6 +56,7 @@ Currently, these files are in /proc/sys/vm:
+> > >  - swappiness
+> > >  - user_reserve_kbytes
+> > >  - vfs_cache_pressure
+> > > +- zone_distribute_mode
+> > >  - zone_reclaim_mode
+> > >  
+> > >  ==============================================================
+> > > @@ -724,6 +725,37 @@ causes the kernel to prefer to reclaim dentries and inodes.
+> > >  
+> > >  ==============================================================
+> > >  
+> > > +zone_distribute_mode
+> > > +
+> > > +Pages allocation and reclaim are managed on a per-zone basis. When the
+> > > +system needs to reclaim memory, candidate pages are selected from these
+> > > +per-zone lists.  Historically, a potential consequence was that recently
+> > > +allocated pages were considered reclaim candidates. From a zone-local
+> > > +perspective, page aging was preserved but from a system-wide perspective
+> > > +there was an age inversion problem.
+> > > +
+> > > +A similar problem occurs on a node level where young pages may be reclaimed
+> > > +from the local node instead of allocating remote memory. Unforuntately, the
+> > > +cost of accessing remote nodes is higher so the system must choose by default
+> > > +between favouring page aging or node locality. zone_distribute_mode controls
+> > > +how the system will distribute page ages between zones.
+> > > +
+> > > +0	= Never round-robin based on age
+> > 
+> > I think we should be very conservative with the userspace interface we
+> > export on a mechanism we are obviously just figuring out.
+> > 
 > 
-> That is ok for me, I think it is better than --emphasize
-I actually didn't use highlight because its short counterpart (-h) is
-help :-)
-New patch with --highlight instead of --emphasize and -e below.
+> And we have a proposal on how to limit this. I'll be layering another
+> patch on top and removes this interface again. That will allows us to
+> rollback one patch and still have a usable interface if necessary.
+> 
+> > > +Otherwise the values are ORed together
+> > > +
+> > > +1	= Distribute anon pages between zones local to the allocating node
+> > > +2	= Distribute file pages between zones local to the allocating node
+> > > +4	= Distribute slab pages between zones local to the allocating node
+> > 
+> > Zone fairness within a node does not affect mempolicy or remote
+> > reference costs.  Is there a reason to have this configurable?
+> > 
+> 
+> Symmetry
+> 
+> > > +The following three flags effectively alter MPOL_DEFAULT, be careful.
+> > > +
+> > > +8	= Distribute anon pages between zones remote to the allocating node
+> > > +16	= Distribute file pages between zones remote to the allocating node
+> > > +32	= Distribute slab pages between zones remote to the allocating node
+> > 
+> > Yes, it's conceivable that somebody might want to disable remote
+> > distribution because of the extra references.
+> > 
+> > But at this point, I'd much rather back out anon and slab distribution
+> > entirely, it was a mistake to include them.
+> > 
+> > That would leave us with a single knob to disable remote page cache
+> > placement.
+> > 
+> 
+> When looking at this closer I found that sysv is a weird exception. It's
+> file-backed as far as most of the VM is concerned but looks anonymous to
+> most applications that care. That and MAP_SHARED anonymous pages should
+> not be treated like files but we still want tmpfs to be treated as
+> files. Details will be in the changelog of the next series.
 
----
-This option highlights tasks (using different color) that run more than given
-duration or tasks with given name.
-
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
----
- tools/perf/Documentation/perf-timechart.txt | 13 +++++++++++++
- tools/perf/builtin-timechart.c              | 21 ++++++++++++++++++++-
- tools/perf/util/svghelper.c                 | 23 ++++++++++++++++++++---
- tools/perf/util/svghelper.h                 |  4 +++-
- 4 files changed, 56 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
-index 367c1be0551c..faf713d4d0c5 100644
---- a/tools/perf/Documentation/perf-timechart.txt
-+++ b/tools/perf/Documentation/perf-timechart.txt
-@@ -56,12 +56,25 @@ $ perf timechart
- 
-   Written 10.2 seconds of trace to output.svg.
- 
-+Record system-wide timechart:
-+
-+  $ perf timechart record
-+
-+  then generate timechart and highlight 'gcc' tasks:
-+
-+  $ perf timechart --highlight gcc
-+
- -n::
- --proc-num::
-         Print task info for at least given number of tasks.
- -t::
- --topology::
-         Sort CPUs according to topology.
-+--highlight=<duration_nsecs|task_name>::
-+	Highlight tasks (using different color) that run more than given
-+	duration or tasks with given name. If number is given it's interpreted
-+	as number of nanoseconds. If non-numeric string is given it's
-+	interpreted as task name.
- 
- RECORD OPTIONS
- --------------
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 8bde57c5c908..20d4212fa337 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -841,7 +841,6 @@ static void draw_cpu_usage(struct timechart *tchart)
- 						    sample->start_time,
- 						    sample->end_time,
- 						    p->pid,
--						    "sample",
- 						    c->comm,
- 						    sample->backtrace);
- 				}
-@@ -1252,6 +1251,23 @@ parse_process(const struct option *opt __maybe_unused, const char *arg,
- 	return 0;
- }
- 
-+static int
-+parse_highlight(const struct option *opt __maybe_unused, const char *arg,
-+		int __maybe_unused unset)
-+{
-+	unsigned long duration = strtoul(arg, NULL, 0);
-+
-+	if (svg_highlight || svg_highlight_name)
-+		return -1;
-+
-+	if (duration)
-+		svg_highlight = duration;
-+	else
-+		svg_highlight_name = strdup(arg);
-+
-+	return 0;
-+}
-+
- int cmd_timechart(int argc, const char **argv,
- 		  const char *prefix __maybe_unused)
- {
-@@ -1270,6 +1286,9 @@ int cmd_timechart(int argc, const char **argv,
- 	OPT_STRING('i', "input", &input_name, "file", "input file name"),
- 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
- 	OPT_INTEGER('w', "width", &svg_page_width, "page width"),
-+	OPT_CALLBACK(0, "highlight", NULL, "duration or task name",
-+		      "highlight tasks. Pass duration in ns or process name.",
-+		       parse_highlight),
- 	OPT_BOOLEAN('P', "power-only", &tchart.power_only, "output power data only"),
- 	OPT_BOOLEAN('T', "tasks-only", &tchart.tasks_only,
- 		    "output processes data only"),
-diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
-index 9468136735ca..56a84f2cc46d 100644
---- a/tools/perf/util/svghelper.c
-+++ b/tools/perf/util/svghelper.c
-@@ -31,6 +31,8 @@ static u64 turbo_frequency, max_freq;
- #define SLOT_HEIGHT 25.0
- 
- int svg_page_width = 1000;
-+u64 svg_highlight;
-+const char *svg_highlight_name;
- 
- #define MIN_TEXT_SIZE 0.01
- 
-@@ -112,6 +114,7 @@ void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end)
- 	fprintf(svgfile, "      rect.process  { fill:rgb(180,180,180); fill-opacity:0.9; stroke-width:1;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.process2 { fill:rgb(180,180,180); fill-opacity:0.9; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.sample   { fill:rgb(  0,  0,255); fill-opacity:0.8; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
-+	fprintf(svgfile, "      rect.sample_hi{ fill:rgb(255,128,  0); fill-opacity:0.8; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.blocked  { fill:rgb(255,  0,  0); fill-opacity:0.5; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.waiting  { fill:rgb(224,214,  0); fill-opacity:0.8; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.WAITING  { fill:rgb(255,214, 48); fill-opacity:0.6; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
-@@ -155,17 +158,24 @@ void svg_blocked(int Yslot, int cpu, u64 start, u64 end, const char *backtrace)
- void svg_running(int Yslot, int cpu, u64 start, u64 end, const char *backtrace)
- {
- 	double text_size;
-+	const char *type;
-+
- 	if (!svgfile)
- 		return;
- 
-+	if (svg_highlight && end - start > svg_highlight)
-+		type = "sample_hi";
-+	else
-+		type = "sample";
- 	fprintf(svgfile, "<g>\n");
- 
- 	fprintf(svgfile, "<title>#%d running %s</title>\n",
- 		cpu, time_to_string(end - start));
- 	if (backtrace)
- 		fprintf(svgfile, "<desc>Switched because:\n%s</desc>\n", backtrace);
--	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"sample\"/>\n",
--		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT);
-+	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"%s\"/>\n",
-+		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT,
-+		type);
- 
- 	text_size = (time2pixels(end)-time2pixels(start));
- 	if (cpu > 9)
-@@ -293,13 +303,20 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
- 	fprintf(svgfile, "</g>\n");
- }
- 
--void svg_process(int cpu, u64 start, u64 end, int pid, const char *type, const char *name, const char *backtrace)
-+void svg_process(int cpu, u64 start, u64 end, int pid, const char *name, const char *backtrace)
- {
- 	double width;
-+	const char *type;
- 
- 	if (!svgfile)
- 		return;
- 
-+	if (svg_highlight && end - start >= svg_highlight)
-+		type = "sample_hi";
-+	else if (svg_highlight_name && strstr(name, svg_highlight_name))
-+		type = "sample_hi";
-+	else
-+		type = "sample";
- 
- 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), cpu2y(cpu));
- 	fprintf(svgfile, "<title>%d %s running %s</title>\n", pid, name, time_to_string(end - start));
-diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
-index 1df4fb6c3a4a..f7b4d6e699ea 100644
---- a/tools/perf/util/svghelper.h
-+++ b/tools/perf/util/svghelper.h
-@@ -11,7 +11,7 @@ extern void svg_waiting(int Yslot, int cpu, u64 start, u64 end, const char *back
- extern void svg_cpu_box(int cpu, u64 max_frequency, u64 turbo_frequency);
- 
- 
--extern void svg_process(int cpu, u64 start, u64 end, int pid, const char *type, const char *name, const char *backtrace);
-+extern void svg_process(int cpu, u64 start, u64 end, int pid, const char *name, const char *backtrace);
- extern void svg_cstate(int cpu, u64 start, u64 end, int type);
- extern void svg_pstate(int cpu, u64 start, u64 end, u64 freq);
- 
-@@ -27,5 +27,7 @@ extern int svg_build_topology_map(char *sib_core, int sib_core_nr,
- 				  char *sib_thr, int sib_thr_nr);
- 
- extern int svg_page_width;
-+extern u64 svg_highlight;
-+extern const char *svg_highlight_name;
- 
- #endif /* __PERF_SVGHELPER_H */
--- 
-1.8.3.2
-
+In what sense is it seen as file-backed?  The pages are swapbacked and
+they sit on the anon LRUs, so at least as far as aging and reclaim
+goes (what this series is concerned with) they are anon, not file.
