@@ -1,175 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751690Ab3LQFIl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 00:08:41 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:62278 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab3LQFIE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 00:08:04 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 3/3] staging: ion: Avoid using rt_mutexes directly.
-Date: Mon, 16 Dec 2013 21:07:53 -0800
-Message-Id: <1387256873-21350-4-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387256873-21350-1-git-send-email-john.stultz@linaro.org>
-References: <1387256873-21350-1-git-send-email-john.stultz@linaro.org>
+	id S1752049Ab3LQFJH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 00:09:07 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34923 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751942Ab3LQFJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 00:09:05 -0500
+Date: Mon, 16 Dec 2013 23:08:22 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <balbi@ti.com>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Anton Tikhomirov <av.tikhomirov@samsung.com>
+Subject: Re: linux-next: build failure after merge of the usb-gadget tree
+Message-ID: <20131217050822.GA22658@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20131209145803.4aba29ca2eba4444070e43ce@canb.auug.org.au>
+ <20131209041152.GC20608@saruman.home>
+ <20131217153625.744ebbe433f3d624d11af2bb@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="W/nzBZO5zC0uMSeA"
+Content-Disposition: inline
+In-Reply-To: <20131217153625.744ebbe433f3d624d11af2bb@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RT_MUTEXES can be configured out of the kernel, causing compile
-problems with ION.
+--W/nzBZO5zC0uMSeA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-To quote Colin:
-"rt_mutexes were added with the deferred freeing feature.  Heaps need
-to return zeroed memory to userspace, but zeroing the memory on every
-allocation was causing performance issues.  We added a SCHED_IDLE
-thread to zero memory in the background after freeing, but locking the
-heap from the SCHED_IDLE thread might block a high priority allocation
-thread for a long time.
+On Tue, Dec 17, 2013 at 03:36:25PM +1100, Stephen Rothwell wrote:
+> Hi Felipe,
+>=20
+> On Sun, 8 Dec 2013 22:11:52 -0600 Felipe Balbi <balbi@ti.com> wrote:
+> >
+> > On Mon, Dec 09, 2013 at 02:58:03PM +1100, Stephen Rothwell wrote:
+> > >=20
+> > > After merging the usb-gadget tree, today's linux-next build (x86_64
+> > > allmodconfig) failed like this:
+> > >=20
+> > > drivers/built-in.o: In function `otg_set_state':
+> > > (.text+0x14f7de): undefined reference to `usb_bus_start_enum'
+> > >=20
+> > > CONFIG_USB is 'm' in this build.
+> > >=20
+> > > I am not sure what changed to cause this, maybe e1d2e31975e1 ("usb: p=
+hy:
+> > > Add OTG FSM configuration option")?
+> > >=20
+> > > I have used the usb-gadget tree from next-20131206 for today.
+> >=20
+> > I see what caused it, will fix it up with a patch which should probably
+> > be backported a few kernels back. Thanks for letting me know.
+>=20
+> I am still getting this error ...
 
-The lock is only used to protect the heap's free_list and
-free_list_size members, and is not held for any long or sleeping
-operations.  Converting to a spinlock should prevent priority
-inversion without using the rt_mutex.  I'd also rename it to free_lock
-to so it doesn't get used as a general heap lock."
+Fix is in Greg's queue, not sure if it has reached mainline, yet. Will
+check when I wake up.
 
-Thus this patch converts the rt_mutex usage to a spinlock and
-renames the lock free_lock to be more clear as to its use.
+--=20
+balbi
 
-I also had to change a bit of logic in ion_heap_freelist_drain()
-despite the for loop being a for_each_entry_safe(), I was still
-seeing list corruption or buffer sg table corruption if I dropped
-the lock before calling ion_buffer_destroy().
+--W/nzBZO5zC0uMSeA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Not being able to sort out exactly why, I borrowed the loop structure
-from ion_heap_deferred_free() and that works in my testing w/o issue.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-Not sure if its the mixing of list traversal methods causing the issue?
-Thoughts would be appreciated.
+iQIcBAEBAgAGBQJSr9xFAAoJEIaOsuA1yqREcykP/iR8dN8BP37hPgPpwIYQJlq1
+IeZWwgANcXxC4JRlNfXtUZrT+I9Fe/Z2XOTYZPpWx3+yw6OAFSgt5bztnDROIJaU
+4U8A10t08w9LM5xhH/Rco+Dn5xLGkPVre3ljHvRYomWKawMbtPTFTOEuYFzLb0Yh
+Ryokm3SXFHiI8wySx16dNnqc0nOCgMmXBeEx8nW8LpotWXt/ZvujZUTXoe2mCmXS
+NIUCE5XvCOpgRHKMzAcmJ7W/JofaHe1yPPAMooooIiz0AM6ZkbKE2WFZy5DKtVsS
+eJkeUR/9Ux7RKwPmQcV41bdfSpqBLQyAMPqQ0yiOQuRamDMFDiKSyIkQ/jS25lxJ
+rqRpds45W9im9QkIs0unBxU6KlFqYj0EhbOoAXjTerVTlgn6IRNMpxnzQQVP9CVR
+sulkIIyppA2cZXJpxajj0SrIkw5UBAUDXfs2kNcPjpXBbYxMfAuCZv0p0WVtsMKi
+A1XK4mMYgvu6VEDuJrfc6aWezARxaEU8n7C3BlMJ0ESS0kNHq7d4H3fMtd7Xk+iR
+Nw0YZHoYnGLPJKWq6uRYbAbHOQM16UcLTJRfsiA8/IuX1+/7/8ly5iUWF7PlA4yi
+IEbErU+wrlCjvz0OGdX/Xa8UCqo5h+tjsRGNxoxrr27Bq9SNrYQWHWH0Gk5EbWr6
+oPXpSnI4mLnsrPpJUqY3
+=/wBt
+-----END PGP SIGNATURE-----
 
-Cc: Colin Cross <ccross@android.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Reported-by: Jim Davis <jim.epost@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/staging/android/ion/ion_heap.c | 31 +++++++++++++++++++------------
- drivers/staging/android/ion/ion_priv.h |  2 +-
- 2 files changed, 20 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/staging/android/ion/ion_heap.c b/drivers/staging/android/ion/ion_heap.c
-index 9cf5622..72fe74b 100644
---- a/drivers/staging/android/ion/ion_heap.c
-+++ b/drivers/staging/android/ion/ion_heap.c
-@@ -160,10 +160,10 @@ int ion_heap_pages_zero(struct page *page, size_t size, pgprot_t pgprot)
- 
- void ion_heap_freelist_add(struct ion_heap *heap, struct ion_buffer *buffer)
- {
--	rt_mutex_lock(&heap->lock);
-+	spin_lock(&heap->free_lock);
- 	list_add(&buffer->list, &heap->free_list);
- 	heap->free_list_size += buffer->size;
--	rt_mutex_unlock(&heap->lock);
-+	spin_unlock(&heap->free_lock);
- 	wake_up(&heap->waitqueue);
- }
- 
-@@ -171,34 +171,41 @@ size_t ion_heap_freelist_size(struct ion_heap *heap)
- {
- 	size_t size;
- 
--	rt_mutex_lock(&heap->lock);
-+	spin_lock(&heap->free_lock);
- 	size = heap->free_list_size;
--	rt_mutex_unlock(&heap->lock);
-+	spin_unlock(&heap->free_lock);
- 
- 	return size;
- }
- 
- size_t ion_heap_freelist_drain(struct ion_heap *heap, size_t size)
- {
--	struct ion_buffer *buffer, *tmp;
-+	struct ion_buffer *buffer;
- 	size_t total_drained = 0;
- 
- 	if (ion_heap_freelist_size(heap) == 0)
- 		return 0;
- 
--	rt_mutex_lock(&heap->lock);
-+	spin_lock(&heap->free_lock);
- 	if (size == 0)
- 		size = heap->free_list_size;
- 
--	list_for_each_entry_safe(buffer, tmp, &heap->free_list, list) {
-+	while (true) {
- 		if (total_drained >= size)
- 			break;
-+		if (list_empty(&heap->free_list))
-+			break;
-+
-+		buffer = list_first_entry(&heap->free_list, struct ion_buffer,
-+					  list);
- 		list_del(&buffer->list);
- 		heap->free_list_size -= buffer->size;
- 		total_drained += buffer->size;
-+		spin_unlock(&heap->free_lock);
- 		ion_buffer_destroy(buffer);
-+		spin_lock(&heap->free_lock);
- 	}
--	rt_mutex_unlock(&heap->lock);
-+	spin_unlock(&heap->free_lock);
- 
- 	return total_drained;
- }
-@@ -213,16 +220,16 @@ static int ion_heap_deferred_free(void *data)
- 		wait_event_freezable(heap->waitqueue,
- 				     ion_heap_freelist_size(heap) > 0);
- 
--		rt_mutex_lock(&heap->lock);
-+		spin_lock(&heap->free_lock);
- 		if (list_empty(&heap->free_list)) {
--			rt_mutex_unlock(&heap->lock);
-+			spin_unlock(&heap->free_lock);
- 			continue;
- 		}
- 		buffer = list_first_entry(&heap->free_list, struct ion_buffer,
- 					  list);
- 		list_del(&buffer->list);
- 		heap->free_list_size -= buffer->size;
--		rt_mutex_unlock(&heap->lock);
-+		spin_unlock(&heap->free_lock);
- 		ion_buffer_destroy(buffer);
- 	}
- 
-@@ -235,7 +242,7 @@ int ion_heap_init_deferred_free(struct ion_heap *heap)
- 
- 	INIT_LIST_HEAD(&heap->free_list);
- 	heap->free_list_size = 0;
--	rt_mutex_init(&heap->lock);
-+	spin_lock_init(&heap->free_lock);
- 	init_waitqueue_head(&heap->waitqueue);
- 	heap->task = kthread_run(ion_heap_deferred_free, heap,
- 				 "%s", heap->name);
-diff --git a/drivers/staging/android/ion/ion_priv.h b/drivers/staging/android/ion/ion_priv.h
-index fc8a4c3..d986739 100644
---- a/drivers/staging/android/ion/ion_priv.h
-+++ b/drivers/staging/android/ion/ion_priv.h
-@@ -159,7 +159,7 @@ struct ion_heap {
- 	struct shrinker shrinker;
- 	struct list_head free_list;
- 	size_t free_list_size;
--	struct rt_mutex lock;
-+	spinlock_t free_lock;
- 	wait_queue_head_t waitqueue;
- 	struct task_struct *task;
- 	int (*debug_show)(struct ion_heap *heap, struct seq_file *, void *);
--- 
-1.8.3.2
-
+--W/nzBZO5zC0uMSeA--
