@@ -1,111 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab3LQWvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:51:40 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:55379 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068Ab3LQWvi (ORCPT
+	id S1753463Ab3LQWzN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:55:13 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:51373 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108Ab3LQWvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:51:38 -0500
+	Tue, 17 Dec 2013 17:51:41 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Alex Shi <alex.shi@linaro.org>,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        John Stultz <john.stultz@linaro.org>,
+        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [RFC PATCH 00/13] nohz: Use sysidle detection to let the timekeeper sleep
-Date: Tue, 17 Dec 2013 23:51:19 +0100
-Message-Id: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 03/13] rcu: Exclude all potential timekeepers from sysidle detection
+Date: Tue, 17 Dec 2013 23:51:22 +0100
+Message-Id: <1387320692-28460-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
+References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The purpose of the full system idle detection is to notify the CPU
+handling the timekeeping when the rest of the system is idle so that it
+can sleep when nobody needs the jiffies nor GTOD to be maintained.
 
-This series makes the nohz subsystem eventually use the RCU full sysidle
-detection.
+Now this machinery excludes CPU 0 itself from the range of the idle
+detection because if CPU 0 has any non-idle task to execute, it is going
+to restart its own tick since it's guaranteed to be outside the full
+dynticks range. And as it is the only eligible timekeeper when
+CONFIG_NO_HZ_FULL=y anyway, it can handle the timekeeping duty for
+and by itself.
 
-When we have CPUs running in full dynticks mode in the system, the
-CPU 0 handles the timekeeping duty on behalf of all other CPUs. Given
-that full dynticks can run anytime, CPU 0 stays periodic and never
-enter into dynticks idle mode. This is of course a powersaving issue.
+Still we also plan to extend the timekeepers affinity and allow every CPU
+outside the full dynticks range to handle the timekeeping duty, not just
+CPU 0.
 
-Now making CPU 0 to become more power-friendly sounds like an easy task.
-After all we just need to allow it to enter in dynticks idle mode as
-soon as all full dynticks CPUs are idle (aka sysidle state, we'll
-probably need some more precise name as it only applies to full dynticks
-CPUs).
+So once we reach that step, we can state that all CPUs that are not
+full dynticks can be excluded from the full system idle detection,
+simply because those CPUs share the same property than CPU 0 today. When
+a non full dynticks CPU needs to run some busy task, it restarts its
+tick and handles the timekeeping duty for its own needs as is currently
+done under CONFIG_NO_HZ_IDLE=y.
 
-But sysidle state detection is actually difficult to get right. It
-must scale with growing number of CPUs, minimize IPIs and atomic
-operations on fast paths. Given that this detection already existed into
-a bit more generalized form through the existing RCU extended quiescent
-state detection, it has been implemented by specializing this code and
-adding a state machine on top of it.
-(Thanks to Paul for this work, more details: https://lwn.net/Articles/558284/)
+To prepare for this support in the sysidle detection, we can use the
+tick_timekeeping_cpu() API which checks if a CPU is allowed to handle
+timekeeping duty. If so we can conclude that it's not full dynticks and
+it can maintain timekeeping by itself and as such it can be excluded
+from the sysidle detection.
 
-This feature which is enabled with CONFIG_NO_HZ_FULL_SYSIDLE=y, is
-working but is not yet plugged into the nohz subsystem. Namely we can
-detect states where all full dynticks CPUs are sleeping, but we don't
-yet take benefit from it by opportunistically stopping the tick of
-the timekeeper CPU 0.
-
-So this is what this series brings, more details following:
-
-* Some code, naming and whitespace cleanups
-
-* Allow all CPUs outside the nohz_full range to handle the timekeeping
-  duty, not just CPU 0. Balancing the timekeeping duty should improve
-  powersavings.
-
-* Let the timekeeper (including CPU 0) sleep when its duty is
-  handed over to another CPU
-
-* Allow timekeeper to sleep when all full dynticks CPUs are sleeping
-  (plug nohz to RCU sysidle detection)
-
-* Wake up timekeeper with an IPI when full dynticks CPUs exit sysidle
-  state
-
-* Wake up CPU 0 when a secondary timekeeper is offlined so that its
-  duty gets migrated
-
-
-For convenience, you can fetch this from:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	timers/full_sysidle-rfc
-
-Thanks,
-	Frederic
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Alex Shi <alex.shi@linaro.org>
+Cc: Kevin Hilman <khilman@linaro.org>
 ---
+ kernel/rcu/tree_plugin.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Frederic Weisbecker (12):
-      tick: Rename tick_check_idle() to tick_irq_enter()
-      time: New helper to check CPU eligibility to handle timekeeping
-      rcu: Exclude all potential timekeepers from sysidle detection
-      tick: Use timekeeping_cpu() to elect the CPU handling timekeeping duty
-      rcu: Fix unraised IPI to timekeeping CPU
-      nohz: Introduce full dynticks' default timekeeping target
-      sched: Enable IPI reception on timekeeper under nohz full system
-      nohz: Get timekeeping max deferment outside jiffies_lock
-      nohz: Allow timekeeper's tick to stop when all full dynticks CPUs are idle
-      nohz: Hand over timekeeping duty on cpu offlining
-      nohz: Wake up timekeeper on exit from sysidle state
-      nohz: Allow all CPUs outside nohz_full range to do timekeeping
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 6abb03d..08004da 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2539,7 +2539,7 @@ static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq)
+ 	 * invoke rcu_sysidle_force_exit() directly if it does anything
+ 	 * more than take a scheduling-clock interrupt.
+ 	 */
+-	if (smp_processor_id() == tick_do_timer_cpu)
++	if (tick_timekeeping_cpu(smp_processor_id()))
+ 		return;
+ 
+ 	/* Update system-idle state: We are clearly no longer fully idle! */
+@@ -2563,10 +2563,10 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
+ 	 * is an offline or the timekeeping CPU, nothing to do.
+ 	 */
+ 	if (!*isidle || rdp->rsp != rcu_sysidle_state ||
+-	    cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
++	    cpu_is_offline(rdp->cpu) || tick_timekeeping_cpu(rdp->cpu))
+ 		return;
+ 	if (rcu_gp_in_progress(rdp->rsp))
+-		WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
++		WARN_ON_ONCE(!tick_timekeeping_cpu(smp_processor_id()));
+ 
+ 	/* Pick up current idle and NMI-nesting counter and check. */
+ 	cur = atomic_read(&rdtp->dynticks_idle);
+@@ -2729,7 +2729,7 @@ bool rcu_sys_is_idle(void)
+ 	static struct rcu_sysidle_head rsh;
+ 	int rss = ACCESS_ONCE(full_sysidle_state);
+ 
+-	if (WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu))
++	if (WARN_ON_ONCE(!tick_timekeeping_cpu(smp_processor_id())))
+ 		return false;
+ 
+ 	/* Handle small-system case by doing a full scan of CPUs. */
+-- 
+1.8.3.1
 
-Alex Shi (1):
-      nohz_full: fix code style issue of tick_nohz_full_stop_tick
-
-
- include/linux/tick.h      |  38 ++++++++++++--
- kernel/rcu/tree_plugin.h  |  12 ++---
- kernel/sched/core.c       |   6 +--
- kernel/softirq.c          |   2 +-
- kernel/time/tick-common.c |   2 +-
- kernel/time/tick-sched.c  | 128 +++++++++++++++++++++++++++++++++++-----------
- 6 files changed, 142 insertions(+), 46 deletions(-)
