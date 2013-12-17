@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354Ab3LQKUL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 05:20:11 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:56989 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab3LQKUI (ORCPT
+	id S1751962Ab3LQKXS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 05:23:18 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:36686 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab3LQKXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 05:20:08 -0500
+	Tue, 17 Dec 2013 05:23:16 -0500
+Message-ID: <52B02598.5060004@ti.com>
+Date: Tue, 17 Dec 2013 12:21:12 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <52ADAB0E.4020800@ti.com>
-References: <1385057731-4348-1-git-send-email-prabhakar.csengg@gmail.com>
-	<1385057731-4348-7-git-send-email-prabhakar.csengg@gmail.com>
-	<52ADAB0E.4020800@ti.com>
-Date: Tue, 17 Dec 2013 11:20:07 +0100
-Message-ID: <CACRpkdZQ9Q1SxXZ4FPpTN_swUBCyZd8CzNzVzEm87vjYZsQ2+Q@mail.gmail.com>
-Subject: Re: [PATCH v6 6/6] ARM: davinci: da850 evm: add GPIO pinumux entries
- DT node
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+To: Brian Norris <computersforpeace@gmail.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
+        <dwmw2@infradead.org>
+Subject: Re: [PATCH v3 1/9] mtd: nand: davinci: fix driver registration
+References: <1386264358-9738-1-git-send-email-ivan.khoronzhuk@ti.com> <1386264358-9738-2-git-send-email-ivan.khoronzhuk@ti.com> <20131217092449.GL12034@norris-Latitude-E6410>
+In-Reply-To: <20131217092449.GL12034@norris-Latitude-E6410>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 15, 2013 at 2:13 PM, Sekhar Nori <nsekhar@ti.com> wrote:
-> On Thursday 21 November 2013 11:45 PM, Prabhakar Lad wrote:
->> From: KV Sujith <sujithkv@ti.com>
+On 12/17/2013 11:24 AM, Brian Norris wrote:
+> On Thu, Dec 05, 2013 at 07:25:49PM +0200, Ivan Khoronzhuk wrote:
+>> --- a/drivers/mtd/nand/davinci_nand.c
+>> +++ b/drivers/mtd/nand/davinci_nand.c
+>> @@ -877,6 +877,7 @@ static int __exit nand_davinci_remove(struct platform_device *pdev)
+>>   }
+>>   
+>>   static struct platform_driver nand_davinci_driver = {
+>> +	.probe		= nand_davinci_probe,
+>>   	.remove		= __exit_p(nand_davinci_remove),
+> 
+> I believe you need to drop the __exit_p() here. And now that you're
+> using module_platform_driver(), you need to drop the __init and __exit
+> from the probe() and remove() routines, to avoid section mismatch
+> warnings.
+> 
+>>   	.driver		= {
+>>   		.name	= "davinci_nand",
+> 
+> So on second thought, please resubmit the series with the requested
+> changes.
+> 
+> Thanks,
+> Brian
+> 
 
->> +
->> +                     gpio_pins: pinmux_gpio_pins {
->> +                             pinctrl-single,bits = <
->> +                                     /* GPIO2_4 GPIO2_6 */
->> +                                     0x18 0x00008080 0x0000f0f0
->> +                                     /* GPIO2_8 GPIO2_15 */
->> +                                     0x14 0x80000008 0xf000000f
->> +                                     /* GPIO3_12 GPIO3_13 */
->> +                                     0x1C 0x00008800 0x0000ff00
->> +                                     /* GPIO4_0 GPIO4_1 */
->> +                                     0x28 0x88000000 0xff000000
->> +                                     /* GPIO6_9 GPIO6_10 GPIO6_13 */
->> +                                     0x34 0x08800800 0x0ff00f00
->> +                             >;
->> +                     };
->>               };
->
-> Shouldn't these pinmux entries be part of actual device
-> node which needs them to be muxed this way?
+Thanks, Brian.
+Do you want me to drop it in stand alone patch or in this one?
 
-The usual way to do it is to set up as states for the device,
-or as a hog (on the pin controller itself).
-
-Yours,
-Linus Walleij
+-- 
+Regards,
+Ivan Khoronzhuk
