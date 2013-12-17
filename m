@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335Ab3LQWvm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:51:42 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:59906 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab3LQWvj (ORCPT
+	id S1753361Ab3LQWyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:54:43 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:40141 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab3LQWvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:51:39 -0500
+	Tue, 17 Dec 2013 17:51:43 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 01/13] tick: Rename tick_check_idle() to tick_irq_enter()
-Date: Tue, 17 Dec 2013 23:51:20 +0100
-Message-Id: <1387320692-28460-2-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 05/13] rcu: Fix unraised IPI to timekeeping CPU
+Date: Tue, 17 Dec 2013 23:51:24 +0100
+Message-Id: <1387320692-28460-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
 References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
@@ -26,16 +26,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the code more symetric against the existing tick functions
-called on irq exit: tick_irq_exit() and tick_nohz_irq_exit().
+The plan with full system idle detection is to allow the timekeeper
+to sleep when all full dynticks CPUs are sleeping.
 
-These function are also symetric as they mirror each other's action:
-we start to account idle time on irq exit and we stop this accounting
-on irq entry. Also the tick is stopped on irq exit and timekeeping
-catches up with the tickless time elapsed until we reach irq entry.
+Then when a full dynticks CPU wakes up while the whole system is idle,
+it sends an IPI to the timekeeping CPU which then restarts its tick
+and polls on its timekeeping duty on behalf of all other CPUs in the
+system.
 
-This rename was suggested by Peter Zijlstra a long while ago but it
-got forgotten in the mass.
+But we are using rcu_kick_nohz_cpu() to raise this IPI, which is wrong
+because this function is used to kick full dynticks CPUs when they run
+in the kernel for too long without reporting a quiescent state. And
+this function ignores targets that are not full dynticks, like our
+timekeeper.
+
+To fix this, use the smp_send_reschedule() function directly.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -47,89 +52,22 @@ Cc: John Stultz <john.stultz@linaro.org>
 Cc: Alex Shi <alex.shi@linaro.org>
 Cc: Kevin Hilman <khilman@linaro.org>
 ---
- include/linux/tick.h     | 6 +++---
- kernel/softirq.c         | 2 +-
- kernel/time/tick-sched.c | 8 ++++----
- 3 files changed, 8 insertions(+), 8 deletions(-)
+ kernel/rcu/tree_plugin.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index 0175d86..b84773c 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -104,7 +104,7 @@ extern struct cpumask *tick_get_broadcast_oneshot_mask(void);
- extern void tick_clock_notify(void);
- extern int tick_check_oneshot_change(int allow_nohz);
- extern struct tick_sched *tick_get_tick_sched(int cpu);
--extern void tick_check_idle(void);
-+extern void tick_irq_enter(void);
- extern int tick_oneshot_mode_active(void);
- #  ifndef arch_needs_cpu
- #   define arch_needs_cpu(cpu) (0)
-@@ -112,7 +112,7 @@ extern int tick_oneshot_mode_active(void);
- # else
- static inline void tick_clock_notify(void) { }
- static inline int tick_check_oneshot_change(int allow_nohz) { return 0; }
--static inline void tick_check_idle(void) { }
-+static inline void tick_irq_enter(void) { }
- static inline int tick_oneshot_mode_active(void) { return 0; }
- # endif
- 
-@@ -121,7 +121,7 @@ static inline void tick_init(void) { }
- static inline void tick_cancel_sched_timer(int cpu) { }
- static inline void tick_clock_notify(void) { }
- static inline int tick_check_oneshot_change(int allow_nohz) { return 0; }
--static inline void tick_check_idle(void) { }
-+static inline void tick_irq_enter(void) { }
- static inline int tick_oneshot_mode_active(void) { return 0; }
- #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
- 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 11348de..ca9cb35 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -318,7 +318,7 @@ void irq_enter(void)
- 		 * here, as softirq will be serviced on return from interrupt.
- 		 */
- 		local_bh_disable();
--		tick_check_idle();
-+		tick_irq_enter();
- 		_local_bh_enable();
- 	}
- 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 2afd43f..df6432d 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -1025,7 +1025,7 @@ static void tick_nohz_kick_tick(struct tick_sched *ts, ktime_t now)
- #endif
- }
- 
--static inline void tick_check_nohz_this_cpu(void)
-+static inline void tick_nohz_irq_enter(void)
- {
- 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
- 	ktime_t now;
-@@ -1044,17 +1044,17 @@ static inline void tick_check_nohz_this_cpu(void)
- #else
- 
- static inline void tick_nohz_switch_to_nohz(void) { }
--static inline void tick_check_nohz_this_cpu(void) { }
-+static inline void tick_nohz_irq_enter(void) { }
- 
- #endif /* CONFIG_NO_HZ_COMMON */
- 
- /*
-  * Called from irq_enter to notify about the possible interruption of idle()
-  */
--void tick_check_idle(void)
-+void tick_irq_enter(void)
- {
- 	tick_check_oneshot_broadcast_this_cpu();
--	tick_check_nohz_this_cpu();
-+	tick_nohz_irq_enter();
- }
- 
- /*
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 08004da..84d90c8 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2488,7 +2488,7 @@ void rcu_sysidle_force_exit(void)
+ 				      oldstate, RCU_SYSIDLE_NOT);
+ 		if (oldstate == newoldstate &&
+ 		    oldstate == RCU_SYSIDLE_FULL_NOTED) {
+-			rcu_kick_nohz_cpu(tick_do_timer_cpu);
++			smp_send_reschedule(tick_do_timer_cpu);
+ 			return; /* We cleared it, done! */
+ 		}
+ 		oldstate = newoldstate;
 -- 
 1.8.3.1
 
