@@ -1,115 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab3LQLcA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 06:32:00 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:49990 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752053Ab3LQLb6 (ORCPT
+	id S1752859Ab3LQLpR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 06:45:17 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50828 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751090Ab3LQLpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 06:31:58 -0500
-Date: Tue, 17 Dec 2013 06:31:56 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.12.5-rt6
-Message-ID: <20131217063156.6ac3bfed@gandalf.local.home>
-In-Reply-To: <1387264591.5340.23.camel@marge.simpson.net>
-References: <20131216091431.GA13796@linutronix.de>
-	<1387264591.5340.23.camel@marge.simpson.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Tue, 17 Dec 2013 06:45:16 -0500
+Date: Tue, 17 Dec 2013 11:44:58 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: "jean.pihet@linaro.org" <jean.pihet@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Arnaldo <acme@ghostprotocols.net>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 2/3] ARM64: perf: wire up perf_regs and unwind support
+Message-ID: <20131217114458.GC7602@mudshark.cambridge.arm.com>
+References: <1387212562-8128-1-git-send-email-y>
+ <52af2f26.41590e0a.0251.ffffd953@mx.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52af2f26.41590e0a.0251.ffffd953@mx.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Dec 2013 08:16:31 +0100
-Mike Galbraith <bitbucket@online.de> wrote:
-
-> Hi Sebastian,
+On Mon, Dec 16, 2013 at 04:49:21PM +0000, jean.pihet@linaro.org wrote:
+> From: Jean Pihet <jean.pihet@linaro.org>
 > 
-> Looks like there's a booboo here:
+> This patch hooks in the perf_regs and libunwind code for ARM64.
+> The tools/perf/arch/arm64 is created; it contains the arch specific
+> code for DWARF unwinding.
 > 
-> On Mon, 2013-12-16 at 10:14 +0100, Sebastian Andrzej Siewior wrote:
- 
-> "ptrace: fix ptrace vs tasklist_lock race" added.. 
-> 
-> @@ -1068,8 +1082,11 @@ unsigned long wait_task_inactive(struct
->  		 * is actually now running somewhere else!
->  		 */
->  		while (task_running(rq, p)) {
-> -			if (match_state && unlikely(p->state != match_state))
-> +			if (match_state) {
-> +				if (!unlikely(check_task_state(p, match_state)))
-> +					return 0;
->  				return 0;
-> +			}
+> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> Cc: Will Deacon <will.deacon@arm.com>
+> ---
+>  tools/perf/arch/arm64/Makefile            |  7 +++
+>  tools/perf/arch/arm64/include/perf_regs.h | 88 +++++++++++++++++++++++++++++++
+>  tools/perf/arch/arm64/util/dwarf-regs.c   | 81 ++++++++++++++++++++++++++++
+>  tools/perf/arch/arm64/util/unwind.c       | 82 ++++++++++++++++++++++++++++
+>  tools/perf/config/Makefile                |  8 ++-
+>  5 files changed, 265 insertions(+), 1 deletion(-)
+>  create mode 100644 tools/perf/arch/arm64/Makefile
+>  create mode 100644 tools/perf/arch/arm64/include/perf_regs.h
+>  create mode 100644 tools/perf/arch/arm64/util/dwarf-regs.c
+>  create mode 100644 tools/perf/arch/arm64/util/unwind.c
 
-Ouch! 
->  			cpu_relax();
->  		}
->  
-> ..which is how it stays with the whole series applied.
-> 
-> The patch contains hunk 2 from
-> 
->    "sched/rt: Fix wait_task_interactive() to test rt_spin_lock state",
-> 
-> which went away in -rt6, so it seems the busted hunk should be as below
-> if the two are to be merged.
-> 
-> @@ -1068,8 +1082,10 @@ unsigned long wait_task_inactive(struct
->  		 * is actually now running somewhere else!
->  		 */
->  		while (task_running(rq, p)) {
-> -			if (match_state && unlikely(p->state != match_state))
-> +			if (match_state && unlikely(p->state != match_state)
-> +			    && unlikely(p->saved_state != match_state))
->  				return 0;
-> +			}
+[...]
 
-Yeah, it should just be:
+> diff --git a/tools/perf/arch/arm64/include/perf_regs.h b/tools/perf/arch/arm64/include/perf_regs.h
+> new file mode 100644
+> index 0000000..a8a9683
+> --- /dev/null
+> +++ b/tools/perf/arch/arm64/include/perf_regs.h
+> @@ -0,0 +1,88 @@
+> +#ifndef ARCH_PERF_REGS_H
+> +#define ARCH_PERF_REGS_H
+> +
+> +#include <stdlib.h>
+> +#include "../../util/types.h"
+> +#include <asm/perf_regs.h>
+> +
+> +#define PERF_REGS_MASK	((1ULL << PERF_REG_ARM_MAX) - 1)
+> +#define PERF_REG_IP	PERF_REG_ARM_PC
+> +#define PERF_REG_SP	PERF_REG_ARM_SP
+> +
+> +static inline const char *perf_reg_name(int id)
+> +{
+> +	switch (id) {
+> +	case PERF_REG_ARM_X0:
+> +		return "x0";
+> +	case PERF_REG_ARM_X1:
+> +		return "x1";
 
-		if (match_state && check_task_state(p, match_state))
-			return 0;
+[...]
 
-Also, looking at check_task_state():
+> +	case PERF_REG_ARM_X28:
+> +		return "x28";
+> +	case PERF_REG_ARM_FP:
+> +		return "fp";
 
-+static bool check_task_state(struct task_struct *p, long match_state)
-+{
-+       bool match = false;
-+
-+       raw_spin_lock_irq(&p->pi_lock);
-+       if (p->state == match_state)
-+               match = true;
-+       else if (p->saved_state == match_state)
-+               match = true;
+Again, I'd just treat this as x29. There's nothing special about the frame
+pointer as far as the hardware/architecture is concerned. GAS won't even
+accept it as a register name.
 
-Why the if () else if()? and not just:
+> +	case PERF_REG_ARM_SP:
+> +		return "sp";
+> +	case PERF_REG_ARM_LR:
+> +		return "lr";
+> +	case PERF_REG_ARM_PC:
+> +		return "pc";
+> +	default:
+> +		return NULL;
+> +	}
+> +
+> +	return NULL;
+> +}
+> +
+> +#endif /* ARCH_PERF_REGS_H */
+> diff --git a/tools/perf/arch/arm64/util/dwarf-regs.c b/tools/perf/arch/arm64/util/dwarf-regs.c
+> new file mode 100644
+> index 0000000..23d319e
+> --- /dev/null
+> +++ b/tools/perf/arch/arm64/util/dwarf-regs.c
+> @@ -0,0 +1,81 @@
+> +/*
+> + * Mapping of DWARF debug register numbers into register names.
+> + *
+> + * Copyright (C) 2010 Will Deacon, ARM Ltd.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <stddef.h>
+> +#include <dwarf-regs.h>
+> +
+> +struct pt_regs_dwarfnum {
+> +	const char *name;
+> +	unsigned int dwarfnum;
+> +};
+> +
+> +#define STR(s) #s
+> +#define REG_DWARFNUM_NAME(r, num) {.name = r, .dwarfnum = num}
+> +#define GPR_DWARFNUM_NAME(num) \
+> +	{.name = STR(%r##num), .dwarfnum = num}
 
-	if (p->state == match_state || p->save_state == match_state)
-		match = true;
-?
+Surely you want 'x' instead of 'r'?
 
-The else if makes me think there's something missing.
+> +#define REG_DWARFNUM_END {.name = NULL, .dwarfnum = 0}
+> +
+> +/*
+> + * Reference:
+> + * http://infocenter.arm.com/help/topic/com.arm.doc.ihi0057b/IHI0057B_aadwarf64.pdf
 
--- Steve
+So, according to that document...
 
-+       raw_spin_unlock_irq(&p->pi_lock);
-+
-+       return match;
-+}
+> + */
+> +static const struct pt_regs_dwarfnum regdwarfnum_table[] = {
+> +	GPR_DWARFNUM_NAME(0),
+> +	GPR_DWARFNUM_NAME(1),
+> +	GPR_DWARFNUM_NAME(2),
+> +	GPR_DWARFNUM_NAME(3),
+> +	GPR_DWARFNUM_NAME(4),
+> +	GPR_DWARFNUM_NAME(5),
+> +	GPR_DWARFNUM_NAME(6),
+> +	GPR_DWARFNUM_NAME(7),
+> +	GPR_DWARFNUM_NAME(8),
+> +	GPR_DWARFNUM_NAME(9),
+> +	GPR_DWARFNUM_NAME(10),
+> +	GPR_DWARFNUM_NAME(11),
+> +	GPR_DWARFNUM_NAME(12),
+> +	GPR_DWARFNUM_NAME(13),
+> +	GPR_DWARFNUM_NAME(14),
+> +	GPR_DWARFNUM_NAME(15),
+> +	GPR_DWARFNUM_NAME(16),
+> +	GPR_DWARFNUM_NAME(17),
+> +	GPR_DWARFNUM_NAME(18),
+> +	GPR_DWARFNUM_NAME(19),
+> +	GPR_DWARFNUM_NAME(20),
+> +	GPR_DWARFNUM_NAME(21),
+> +	GPR_DWARFNUM_NAME(22),
+> +	GPR_DWARFNUM_NAME(23),
+> +	GPR_DWARFNUM_NAME(24),
+> +	GPR_DWARFNUM_NAME(25),
+> +	GPR_DWARFNUM_NAME(26),
+> +	GPR_DWARFNUM_NAME(27),
+> +	GPR_DWARFNUM_NAME(28),
+> +	REG_DWARFNUM_NAME("%fp", 29),
+> +	REG_DWARFNUM_NAME("%lr", 30),
+> +	REG_DWARFNUM_NAME("%sp", 31),
+> +	REG_DWARFNUM_NAME("%pc", 32),
 
+...register name 32 is `Reserved'. I don't think we should be using it here.
+In fact, the PC isn't even described in that spec. Do we need to expose it
+here?
 
-
->  			cpu_relax();
->  		}
->  
-> 
-
+Will
