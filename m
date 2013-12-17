@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751870Ab3LQXIu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 18:08:50 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55333 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016Ab3LQXIs (ORCPT
+	id S1752066Ab3LQXVH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 18:21:07 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:38167 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab3LQXVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 18:08:48 -0500
-Date: Wed, 18 Dec 2013 00:08:43 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        Nigel Cunningham <nigel@tuxonice.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system
- suspend/hibernation
-Message-ID: <20131217230843.GA2911@amd.pavel.ucw.cz>
-References: <201201281445.49377.rjw@sisk.pl>
- <201202172159.15396.rjw@sisk.pl>
- <CA+5PVA50UA1oP1jKgnQjHh8APp=cNWREw3bkfrkV1OW_Tg1g+A@mail.gmail.com>
- <201205252113.50900.rjw@sisk.pl>
- <CA+5PVA5GWsTdNky-K1-hu5_R55hdKfr-Oa26HpX=FdA1cRZsbQ@mail.gmail.com>
- <CA+5PVA7vsZPd9eXwN-Q+d8c9+0bAmVdr698vv+LFyrn+3iFOMA@mail.gmail.com>
+	Tue, 17 Dec 2013 18:21:04 -0500
+Date: Tue, 17 Dec 2013 15:21:00 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 05/13] rcu: Fix unraised IPI to timekeeping CPU
+Message-ID: <20131217232100.GC19211@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
+ <1387320692-28460-6-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+5PVA7vsZPd9eXwN-Q+d8c9+0bAmVdr698vv+LFyrn+3iFOMA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1387320692-28460-6-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121723-9332-0000-0000-000002874779
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tue, Dec 17, 2013 at 11:51:24PM +0100, Frederic Weisbecker wrote:
+> The plan with full system idle detection is to allow the timekeeper
+> to sleep when all full dynticks CPUs are sleeping.
+> 
+> Then when a full dynticks CPU wakes up while the whole system is idle,
+> it sends an IPI to the timekeeping CPU which then restarts its tick
+> and polls on its timekeeping duty on behalf of all other CPUs in the
+> system.
+> 
+> But we are using rcu_kick_nohz_cpu() to raise this IPI, which is wrong
+> because this function is used to kick full dynticks CPUs when they run
+> in the kernel for too long without reporting a quiescent state. And
+> this function ignores targets that are not full dynticks, like our
+> timekeeper.
+> 
+> To fix this, use the smp_send_reschedule() function directly.
 
-> >>> Did this patch ever wind up going anywhere?  Fedora has it sitting in
-> >>> our tree with a comment that says "rebase" and I don't see it in the
-> >>> linux-next tree at all.
-> >>>
-> >>> Did if fall through the cracks or was it NAKed somewhere?
-> >>
-> >> No, it wasn't in principle. There were some comments I haven't addressed yet.
-> >
-> > Dredging up a really old thread, sorry.
-> >
-> > We're still carrying this patch along in Fedora.  Should we drop it at
-> > this point, or is it still eventually going to head upstream?
+I guess the fact that you needed some change is reassuring.  You know
+the old saying, "no bugs, no users".  ;-)
 
-I'd say drop.
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Alex Shi <alex.shi@linaro.org>
+> Cc: Kevin Hilman <khilman@linaro.org>
+> ---
+>  kernel/rcu/tree_plugin.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index 08004da..84d90c8 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -2488,7 +2488,7 @@ void rcu_sysidle_force_exit(void)
+>  				      oldstate, RCU_SYSIDLE_NOT);
+>  		if (oldstate == newoldstate &&
+>  		    oldstate == RCU_SYSIDLE_FULL_NOTED) {
+> -			rcu_kick_nohz_cpu(tick_do_timer_cpu);
+> +			smp_send_reschedule(tick_do_timer_cpu);
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Hmmm...
+
+We haven't done any sort of wakeup, and tick_nohz_full_cpu() should
+return false for tick_do_timer_cpu, and I don't see that we have
+done anything to make got_nohz_idle_kick() return true.
+
+So the idea is that the fact of the interrupt is sufficient, and
+the target CPU will figure out that it must turn its scheduling-clock
+interrupt when returning from interrupt?
+
+Or is something else going on here?
+
+							Thanx, Paul
+
+>  			return; /* We cleared it, done! */
+>  		}
+>  		oldstate = newoldstate;
+> -- 
+> 1.8.3.1
+> 
+
