@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670Ab3LQUhW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:37:22 -0500
-Received: from a9-46.smtp-out.amazonses.com ([54.240.9.46]:50478 "EHLO
-	a9-46.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751332Ab3LQUhU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:37:20 -0500
-Date: Tue, 17 Dec 2013 20:37:18 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: netfilter: active obj WARN when cleaning up
-In-Reply-To: <52B0ABB6.8090205@oracle.com>
-Message-ID: <000001430246e902-112cfb9d-5393-4eed-8529-e0008f88df45-000000@email.amazonses.com>
-References: <20131127233415.GB19270@kroah.com> <00000142b4282aaf-913f5e4c-314c-4351-9d24-615e66928157-000000@email.amazonses.com> <20131202164039.GA19937@kroah.com> <00000142b4514eb5-2e8f675d-0ecc-423b-9906-58c5f383089b-000000@email.amazonses.com>
- <20131202172615.GA4722@kroah.com> <00000142b4aeca89-186fc179-92b8-492f-956c-38a7c196d187-000000@email.amazonses.com> <20131202190814.GA2267@kroah.com> <00000142b4d4360c-5755af87-b9b0-4847-b5fa-7a9dd13b49c5-000000@email.amazonses.com> <20131202212235.GA1297@kroah.com>
- <00000142b54f6694-c51e81b1-f1a2-483b-a1ce-a2d4cb6b155c-000000@email.amazonses.com> <20131202222208.GB13034@kroah.com> <00000142b90da700-19f6b465-ff15-4b2b-9bcd-b91d71958b7f-000000@email.amazonses.com> <52B0ABB6.8090205@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753444Ab3LQUlq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:41:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53211 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752634Ab3LQUlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 15:41:45 -0500
+Message-ID: <52B0B6FF.7000507@redhat.com>
+Date: Tue, 17 Dec 2013 15:41:35 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.12.17-54.240.9.46
+To: David Timothy Strauss <david@davidstrauss.net>
+CC: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: NUMA, migrate/N, and tuned-adm
+References: <CAKz8sYWmmmdwKTKUGdoyaMD_v9_7yQydG+UNAb2r-KoO4L+6Ng@mail.gmail.com>
+In-Reply-To: <CAKz8sYWmmmdwKTKUGdoyaMD_v9_7yQydG+UNAb2r-KoO4L+6Ng@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Dec 2013, Sasha Levin wrote:
+On 12/17/2013 01:10 PM, David Timothy Strauss wrote:
 
-> I'm still seeing warnings with this patch applied:
+> System specs:
+>  * Fedora 19 with the 3.11.10-200.fc19.x86_64 kernel (just the stock RPM)
+>  * Bare-metal servers with 128GB RAM split between two NUMA regions,
+> each region with one hex-core processor
+>  * More than 700 processes, a couple hundred of which are active
+> fairly frequently. The systems were at 7000 processes, but we've
+> dropped it while we dive into this issue.
+>  * Many of the processes are short-lived. The long-lived ones
+> experience spikes in CPU and memory usage while processing requests.
+> 
+> Here's what we've tried, to no avail:
+>  * tuned-adm on latency-performance and virtual-host profiles; this
+> places the system on the deadline scheduler, but this problem occurred
+> on the default one too
+>  * kernel.sched_migration_cost_ns=5000000 (which tuned will do for
+> those profiles in v3.3/Fedora 20)
+>  * numad to balance between regions
+>  * Global use of sched_relax_domain_level=1 and sched_relax_domain_level=2
+>  * Splitting the system with cpuset into management tasks (6 virtual
+> cores) and workload tasks (18 virtual cores) with
+> sched_relax_domain_level=2. This is based on recommendations for NUMA
+> systems in the cpuset man page.
 
-Looks like this is related to some device release mechanism that frees
-twice?
+Just for a quick sanity check, can you try disabling the
+automatic numa balancing code?
 
-I do not see any kmem_cache management functions in the backtrace and
-therefore would guess that this is not the same issue.
+# echo NO_NUMA > /sys/kernel/debug/sched_features
 
+> Here's what we've used for analysis:
+>  * powertop
+>  * top/htop
+>  * perf record -a -g
+
+Does "perf report -g" show where the calls to the
+migration code are coming from? Something must be
+migrating tasks around, and it will be good to know
+what it is...
+
+-- 
+All rights reversed
