@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab3LQMe7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 07:34:59 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:63986 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab3LQMe6 (ORCPT
+	id S1753241Ab3LQMfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 07:35:05 -0500
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:48966 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021Ab3LQMfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 07:34:58 -0500
-Date: Tue, 17 Dec 2013 18:04:50 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Len Brown <lenb@kernel.org>, sfi-devel@simplefirmware.org,
-        josh@joshtriplett.org
-Subject: [PATCH 2/2] drivers: sfi: Mark functions as static in sfi_core.c
-Message-ID: <78c9d53e2266bfdf06bf1d545cb2cf7fb5e7226c.1387283325.git.rashika.kheria@gmail.com>
-References: <c351cee2521c4728d60810eb0212e8f307c79ac6.1387283325.git.rashika.kheria@gmail.com>
+	Tue, 17 Dec 2013 07:35:01 -0500
+Date: Tue, 17 Dec 2013 07:34:57 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Nigel Cunningham <nigel@nigelcunningham.com.au>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
+        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] libata, freezer: avoid block device removal while system
+ is frozen
+Message-ID: <20131217123457.GD29989@htj.dyndns.org>
+References: <20131213174932.GA27070@htj.dyndns.org>
+ <52AB9509.1080004@nigelcunningham.com.au>
+ <20131214203121.GB4020@htj.dyndns.org>
+ <8951916.gd5Uu6GpK1@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <c351cee2521c4728d60810eb0212e8f307c79ac6.1387283325.git.rashika.kheria@gmail.com>
+In-Reply-To: <8951916.gd5Uu6GpK1@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions sfi_map_table() and sfi_unmap_table() as static in
-sfi_core.c because they are not used outside this file.
+Hello, Rafael.
 
-This eliminates following warning in sfi_core.c:
-drivers/sfi/sfi_core.c:164:26: warning: no previous prototype for ‘sfi_map_table’ [-Wmissing-prototypes]
-drivers/sfi/sfi_core.c:192:6: warning: no previous prototype for ‘sfi_unmap_table’ [-Wmissing-prototypes]
+On Tue, Dec 17, 2013 at 03:34:00AM +0100, Rafael J. Wysocki wrote:
+> No, it isn't.  [I guess it was originally, but it has not been the case
+> for a very long time.]  It is about getting user space interactions (all of
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
----
- drivers/sfi/sfi_core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Heh... no wonder people are all so confused about this thing.
 
-diff --git a/drivers/sfi/sfi_core.c b/drivers/sfi/sfi_core.c
-index 1e824fb..296db7a 100644
---- a/drivers/sfi/sfi_core.c
-+++ b/drivers/sfi/sfi_core.c
-@@ -161,7 +161,7 @@ static int sfi_verify_table(struct sfi_table_header *table)
-  * Check for common case that we can re-use mapping to SYST,
-  * which requires syst_pa, syst_va to be initialized.
-  */
--struct sfi_table_header *sfi_map_table(u64 pa)
-+static struct sfi_table_header *sfi_map_table(u64 pa)
- {
- 	struct sfi_table_header *th;
- 	u32 length;
-@@ -189,7 +189,7 @@ struct sfi_table_header *sfi_map_table(u64 pa)
-  * Undoes effect of sfi_map_table() by unmapping table
-  * if it did not completely fit on same page as SYST.
-  */
--void sfi_unmap_table(struct sfi_table_header *th)
-+static void sfi_unmap_table(struct sfi_table_header *th)
- {
- 	if (!TABLE_ON_PAGE(syst_va, th, th->len))
- 		sfi_unmap_memory(th, TABLE_ON_PAGE(th, th, th->len) ?
+> the sysfs/ioctl/mmap/read/write/you-name-it thingies user space can do to
+> devices) when we're calling device suspend/resume routines.  The reason is
+> that otherwise all of them would have had to do a "oh, are we suspending by
+> the way?" check pretty much on every code path that can be triggered by
+> user space.
+
+Freezing userland is fine.  I have no problem with that but up until
+now the only use case that seems fundamentally valid to me is freezing
+IO processing kthread in a driver as a cheap way to implement
+suspend/resume.  At this point, given the general level of confusion,
+it seems to be costing more than benefiting.
+
+> > Does that mean that it's safe to unfreeze before invoking resume?
+> 
+> No, it isn't.
+
+So, are you saying it's really about giving device drivers easy way to
+implement suspend/resume?  If that's the case, let's please make it
+*way* more specific and clear - ie. things like helpers to implement
+suspend/resume hooks trivially or whatnot.  Freezable kthreads (and
+now workqueues) have been becoming a giant mess for a while now.
+
+Thanks.
+
 -- 
-1.7.9.5
-
+tejun
