@@ -1,82 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab3LQC2r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 21:28:47 -0500
-Received: from ozlabs.org ([203.10.76.45]:47500 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751738Ab3LQC2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 21:28:45 -0500
-Date: Tue, 17 Dec 2013 13:28:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dong Aisheng <b29396@freescale.com>
-Subject: Re: linux-next: build failure after merge of the mmc tree
-Message-Id: <20131217132838.cc16a4dbac2f4d3218bbed1d@canb.auug.org.au>
-In-Reply-To: <20131213125716.f432c59bf8782a489400a5a7@canb.auug.org.au>
-References: <20131213125716.f432c59bf8782a489400a5a7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__17_Dec_2013_13_28_38_+1100_4_imMTusJeo.Q8Qw"
+	id S1752644Ab3LQCau (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 21:30:50 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:35373 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab3LQCas (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 21:30:48 -0500
+Date: Mon, 16 Dec 2013 18:30:47 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Srinivas Ramana <sramana@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] regmap: Allow regmap_bulk_write() to work for "no-bus"
+ regmaps
+Message-ID: <20131217023047.GC31766@codeaurora.org>
+References: <1386718523-2587-4-git-send-email-sboyd@codeaurora.org>
+ <20131210235000.GK11468@sirena.org.uk>
+ <52A7AE1B.3040201@codeaurora.org>
+ <20131211005106.GL11468@sirena.org.uk>
+ <52A7C0C3.2070805@codeaurora.org>
+ <20131211132729.GT11468@sirena.org.uk>
+ <52AA42FD.4040503@codeaurora.org>
+ <20131213104128.GT11044@sirena.org.uk>
+ <20131213213707.GO21983@codeaurora.org>
+ <20131216210153.GA3185@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131216210153.GA3185@sirena.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_Dec_2013_13_28_38_+1100_4_imMTusJeo.Q8Qw
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+regmap_bulk_write() should decay to performing individual writes
+if we're using a "no-bus" regmap. Unfortunately, it returns an
+error because there is no map->bus pointer. Fix it.
 
-Hi Chris,
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
 
-ping?
+On 12/16, Mark Brown wrote:
+> On Fri, Dec 13, 2013 at 01:37:07PM -0800, Stephen Boyd wrote:
+> 
+> > I came up with this (possibly ugly) patch. It works for my
+> > specific case but I'm not sure if unpacking the val bits into an
+> > unsigned int and passing that to _regmap_write() is sane. What do
+> > you think?
+> 
+> It's not lovely but it's about as good as it gets.  I'd probaly just
+> drop the raw single write case so it's simpler - just either raw write
+> the lot or write a register at a time with unpacking (and so refactor
+> the the loop that does the in place formatting into the raw case only
+> and not bother for the single write).
 
-On Fri, 13 Dec 2013 12:57:16 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> After merging the mmc tree, today's linux-next build (arm
-> multi_v7_defconfig) failed like this:
->=20
-> ERROR (phandle_references): Reference to non-existent node or label "pinc=
-trl_usdhc4_1"
->=20
-> ERROR: Input tree has errors, aborting (use -f to force output)
-> make[2]: *** [arch/arm/boot/dts/imx6dl-sabresd.dtb] Error 2
-> ERROR (phandle_references): Reference to non-existent node or label "pinc=
-trl_usdhc4_1"
->=20
-> ERROR: Input tree has errors, aborting (use -f to force output)
-> make[2]: *** [arch/arm/boot/dts/imx6q-sabresd.dtb] Error 2
->=20
-> Caused by commit fc4fafac9656 ("ARM: dts: sabresd: add usdhc4 support").
->=20
-> I have used the mmc tree from next-20131212 for today.
+Ok how about this?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+ drivers/base/regmap/regmap.c | 43 ++++++++++++++++++-------------------------
+ 1 file changed, 18 insertions(+), 25 deletions(-)
 
---Signature=_Tue__17_Dec_2013_13_28_38_+1100_4_imMTusJeo.Q8Qw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSr7baAAoJEMDTa8Ir7ZwVqEMP/AseTyBC5UxhbSbXbGZ1UU7O
-BmWZiMFMZ6/bfLwyzzGaD8ahyhtkoBpOBGjzDZkX/GVDx6InPTNe2+4cki2MAQyD
-P429RqPmu7a/SJ66ex9I4vcaXZ5FoQOWhVcOyyZ+IDL3fKlZb9UDyRxjlr9nUhkP
-yA72xjhRXfGTtf8fd2lCt2T+dxjYr707lZFZ9vci/iDBKW9farBgEQXdc37s2zOP
-jn5aSuOMrmjpJmj4XhjpOajhizEK/RBIYLpt3VoEjxhtBkR17PnWUZXtHYgE25iJ
-IdsQ2yzzgZge8hscssEQVhQD7YgkmO9IWSGZCakOFDdZA2Hcmdh+nkX5PMrt5TQF
-QWdk9c7VBKh3FdqNbT7c3BYh2DTCqfEQd5na+rNnsfiuKLRv9jKPQ2f7mDXviGeR
-xrCy3U5qKU+wyWET0ComidW8q8F0Xcbt/F1IL6fHx5xXoCgWjD5ALoPqXoHYb5l0
-pDzHs1E2QxJPTGE313U/mvoRoJOTwdmbLNzfdJjYMpKkKzQC9wg+kghGhNAF95Kb
-Ah7j79EPXjk43/4ZE262YL8B7CTTRUkEqLqIC5w8JiI4f5rw+tJzIxK+LrD2qSke
-w7hw1RHKrg7CcOK5mipwpvY5sSkktP+HUEzoJyIO/mTff4/cDwPaU34KH0O6z+ni
-CvV93EpYTSSdJNaQ5yfP
-=PS1r
------END PGP SIGNATURE-----
-
---Signature=_Tue__17_Dec_2013_13_28_38_+1100_4_imMTusJeo.Q8Qw--
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 1ccd61b..12b80f6 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1514,21 +1514,30 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+ {
+ 	int ret = 0, i;
+ 	size_t val_bytes = map->format.val_bytes;
+-	void *wval;
+ 
+-	if (!map->bus)
+-		return -EINVAL;
+-	if (!map->format.parse_inplace)
++	if (map->bus && !map->format.parse_inplace)
+ 		return -EINVAL;
+ 	if (reg % map->reg_stride)
+ 		return -EINVAL;
+ 
+ 	map->lock(map->lock_arg);
++	/*
++	 * Some devices don't support bulk write, for
++	 * them we have a series of single write operations.
++	 */
++	if (!map->bus || map->use_single_rw) {
++		for (i = 0; i < val_count; i++) {
++			unsigned int ival;
+ 
+-	/* No formatting is require if val_byte is 1 */
+-	if (val_bytes == 1) {
+-		wval = (void *)val;
++			ival = *(unsigned int *)(val + (i * val_bytes));
++			ret = _regmap_write(map, reg + (i * map->reg_stride),
++					ival);
++			if (ret != 0)
++				goto out;
++		}
+ 	} else {
++		void *wval;
++
+ 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
+ 		if (!wval) {
+ 			ret = -ENOMEM;
+@@ -1537,27 +1546,11 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+ 		}
+ 		for (i = 0; i < val_count * val_bytes; i += val_bytes)
+ 			map->format.parse_inplace(wval + i);
+-	}
+-	/*
+-	 * Some devices does not support bulk write, for
+-	 * them we have a series of single write operations.
+-	 */
+-	if (map->use_single_rw) {
+-		for (i = 0; i < val_count; i++) {
+-			ret = _regmap_raw_write(map,
+-						reg + (i * map->reg_stride),
+-						val + (i * val_bytes),
+-						val_bytes);
+-			if (ret != 0)
+-				return ret;
+-		}
+-	} else {
++
+ 		ret = _regmap_raw_write(map, reg, wval, val_bytes * val_count);
+-	}
+ 
+-	if (val_bytes != 1)
+ 		kfree(wval);
+-
++	}
+ out:
+ 	map->unlock(map->lock_arg);
+ 	return ret;
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
