@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727Ab3LQO0a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 09:26:30 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:60487 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274Ab3LQO03 (ORCPT
+	id S1753974Ab3LQO0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 09:26:36 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:36978 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753736Ab3LQO0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 09:26:29 -0500
-Message-ID: <1387290376.2399.11.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] 3.12.5-rt6
-From: Mike Galbraith <bitbucket@online.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
-Date: Tue, 17 Dec 2013 15:26:16 +0100
-In-Reply-To: <20131217091624.65be757c@gandalf.local.home>
-References: <20131216091431.GA13796@linutronix.de>
-	 <1387264591.5340.23.camel@marge.simpson.net>
-	 <20131217063156.6ac3bfed@gandalf.local.home>
-	 <20131217124248.GA21694@linutronix.de>
-	 <20131217091624.65be757c@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:3rNzbJ9dfk3QvWIR4HXGNPbmn3fATSPRXV5rinkp2cM
- 7gfblRWGSa1sbfdesC0PpKZVPhBEybjvy+RKcsMsjrNrFnIZHC
- Htkp/tyxq+IalQn+b1gcMjW7b4nSc4ujx73lp/nM5z6xz1Sp2I
- KiCF9ojQ99+xoqophYKl0iPg/E7F2jRJOTz+P+C7xtGYyjAaoh
- qsCT9k7lOAtCnG6TSZZ9HYFUA35W0rnMTktPAgAdzXsOBJExKi
- R+RfDiOGS+p1f9+39kkQawKEhftjqQPJhIU68VWbRE7NUhPrP+
- yMb5OUdouRBwj7VCbJ715Av/4Oz8OFjse/IHbXTmB+WqpjGF8V
- R7Oq2KKLY7VXErmYv4ElqWxT4peWqCpjHNlqonMEV
+	Tue, 17 Dec 2013 09:26:32 -0500
+Date: Tue, 17 Dec 2013 15:26:28 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com, namhyung@kernel.org, artagnon@gmail.com,
+        jolsa@redhat.com
+Subject: Re: [PATCH 5/5 v2] perf timechart: add emphasize option
+Message-ID: <20131217142628.GA7643@gmail.com>
+References: <1385995056-20158-1-git-send-email-stfomichev@yandex-team.ru>
+ <20131216193800.GA19283@ghostprotocols.net>
+ <20131217093855.GA3345@stfomichev-desktop>
+ <20131217112303.GB27791@gmail.com>
+ <20131217121522.GA6357@stfomichev-desktop>
+ <20131217133821.GA6517@ghostprotocols.net>
+ <20131217134137.GA29396@gmail.com>
+ <20131217135923.GB6517@ghostprotocols.net>
+ <20131217140608.GA29975@gmail.com>
+ <20131217141532.GC6517@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131217141532.GC6517@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-17 at 09:16 -0500, Steven Rostedt wrote: 
+
+* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+
+> Em Tue, Dec 17, 2013 at 03:06:08PM +0100, Ingo Molnar escreveu:
+> > * Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+> > > Em Tue, Dec 17, 2013 at 02:41:37PM +0100, Ingo Molnar escreveu:
+> > > > * Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+> > > > > Em Tue, Dec 17, 2013 at 04:15:22PM +0400, Stanislav Fomichev escreveu:
+> > > > > > > Please give a sample usage command line and a sample output. (the 
+> > > > > > > highlighting can be done using ASCII escape sequences in the changelog 
+> > > > > > > as well.)
+> > > > > > Highlighting is done in the generated SVG, so I can't really show it in
+> > > > > > the log or documentation. But I added simple example with -e option.
 > 
-> > @@ -1129,11 +1127,8 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
-> >  		 * is actually now running somewhere else!
-> >  		 */
-> >  		while (task_running(rq, p)) {
-> > -			if (match_state) {
-> > -				if (!unlikely(check_task_state(p, match_state)))
-> > -					return 0;
-> > +			if (match_state && !check_task_state(p, match_state))
+> > > > > > >   -e::
+> > > > > > >   --emphasize=<duration_nsecs|task_name>::
+> > > > > > Thanks, added.
 > 
-> Ah, it was that "!unlikely(" that caused me to miss the '!'. That
-> should have been: likely(!check_task_state()). But anyway, I rather
-> just keep what you wrote and drop the unlikely altogether.
+> > > > > I also wonder how to allocate single letter options here... can we live
+> > > > > with just --emphasize for now? Wouldn't at some point we maybe want to
+> > > > > use -e in 'perf timechart' to pick some specific event, and then, to
+> > > > > make it consistent with the other tools, -e would then be used?
+> 
+> > > > I wanted to raise a similar argument too - so if we don't have to do 
+> > > > -e then maybe '--grep' would be the better option name?
+> 
+> > > > If it becomes popular then the pattern matching can be improved, 
+> > > > without having to change the option name and such.
+> 
+> > > Humm, 'grep' is a filter, i.e. something that removes parts of the 
+> > > data being perused, while this case it will not filter anything, it 
+> > > will just make something that matches some search criteria to stand 
+> > > out from the rest, that is still there, so perhaps --emphasize is Ok 
+> > > albeit kinda long...
+> > 
+> > So I frequently use grep with -C 1000 --color=always to also show the 
+> > context. But --grep-context sounds too long.
+> 
+> Just tried it here, and on fedora 18 one doesn't even needs the
+> --color=always [...]
 
-Maybe better would be to put the thing back inline, with a brief
-reference to the race.
+That's only needed if you look at it through 'less' and such. (at 
+which point 'less -R' is your friend.)
 
--Mike
+> > > Do we have any other command line tool that has a long standing 
+> > > semantics of "highlighting" or "emphasizing" parts of a data 
+> > > stream?
+> > 
+> > Yeah, grep's -C, -A, -B options. (--context, --context-after, 
+> > --context-before), combined with the --color option to highlight.
+> 
+> I don't feel like there is a direct mapping of what he wants to 
+> achieve to reusing the 'grep' keyword, at least it didn't sound 
+> natural at first sight to me. :-)
 
+Yeah, agreed.
+
+Thanks,
+
+	Ingo
