@@ -1,118 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937Ab3LQRay (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 12:30:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53454 "EHLO
+	id S1754886Ab3LQRjf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 12:39:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab3LQRaw (ORCPT
+	with ESMTP id S1754556Ab3LQRje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 12:30:52 -0500
-Date: Tue, 17 Dec 2013 09:30:52 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Karl Dahlke <eklhad@comcast.net>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: Bug in tty cooked mode kernel 3.12.3
-Message-ID: <20131217173052.GA15633@kroah.com>
-References: <20131107184607.eklhad@comcast.net>
- <1386630367-4658-1-git-send-email-peter@hurleysoftware.com>
+	Tue, 17 Dec 2013 12:39:34 -0500
+Date: Tue, 17 Dec 2013 09:39:34 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: xqx12 <s2exqx@gmail.com>
+Cc: jslaby@suse.cz, linux-kernel@vger.kernel.org, chyyuu@gmail.com,
+        xuyongjiande@gmail.com, xqx12 <xiaoqixue_1@163.com>
+Subject: Re: [PATCH] tty: an overflow of multiplication in
+ drivers/tty/cyclades.c
+Message-ID: <20131217173934.GA9074@kroah.com>
+References: <1387203696-10759-1-git-send-email-xiaoqixue_1@163.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386630367-4658-1-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1387203696-10759-1-git-send-email-xiaoqixue_1@163.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 06:06:07PM -0500, Peter Hurley wrote:
-> On 12/07/2013 06:46 PM, Karl Dahlke wrote:
-> > This may have appeared in 3.9.11 with the changes to tty.
-> > Don't know; I just started running 3.12 from kernel.org.
-> > Perhaps nobody saw it before because nobody runs command line programs,
-> > we're all on desktops or x or whatever,
-> > and even those in the command line are still raw.
-> > bash is raw by default, but I run it cooked.
-> > You can supress its readline functions like this.
-> > 
-> > set +o emacs
-> > set +o vi
-> > set +o histexpand
-> > set +o history
-> > 
-> > That puts its tty back into cooked mode.
-> > 
-> > Come up in run level 3, command line mode,
-> > and bring up two consoles with bash in cooked mode as above.
-> > Set a simple prompt like this.
-> > 
-> > PS1='$ '
-> > 
-> > Switch to console 2 via alt-f2.
-> > Hit return.
-> > The cursor should drop to a new line then give you the $ prompt.
-> > But it puts the $ prompt next too the old one, then drops down
-> > to a blank line.
-> > The $ prompt and the crlf are out of sequence.
-> > Hit return a few more times and it will straighten itself out.
-> > Then switch back to console 1 alt-f1
-> > Hit return and the same bug,
-> > $ $
-> > 
-> > hit return a few more times to straighten it out.
-> > Switch back to console 2 and the same problem.
-> > For me it's repeatable.
-> > 
-> > It's also very confusing when I'm running other command line programs with cooked tty.
-> > For unknown reasons the crlf can come out at the wrong time,
-> > breaking lines or leaving lines together.
-> > My editor can run either way, so I've switched it over to readline mode
-> > and I haven't noticed any problems this way, yet.
-> > But I would prefer the cooked mode.
-> > 
-> > I looked through MAINTAINERS but couldn't find
-> > a clear maintainer for drivers/tty/tty*.c
-> > Please forward this to the appropriate people.
+On Mon, Dec 16, 2013 at 10:21:36PM +0800, xqx12 wrote:
+> there is an overflow in the code :
+> cyz_polling_cycle = (arg * HZ) / 1000,
+> the multiplicator arg comes from user, so it may be an overflow if
+> arg is a big number. And the value of cyc_polling_cycle will be
+> wrong when it is used next time.
 > 
-> Thanks for the report, Karl.
-> 
-> Please test the patch below (requires
-> commit 39434abd942c8e4b9c14c06a03b3245beaf8467f,
-> 'n_tty: Fix missing newline echo').
-> This should fix the 'newline output after the new prompt' problem.
-> 
-> Note however that the other output order you observe is correct:
-> you press enter, a newline is echoed to terminal which mixes
-> with program output, the program ends, and the cooked mode
-> shell outputs an extra prompt because it reads a newline (which
-> the program did not read).
-> 
-> Regards,
-> Peter Hurley
-> 
-> --- >% ---
-> From: Peter Hurley <peter@hurleysoftware.com>
-> Subject: [PATCH] n_tty: Fix apparent order of echoed output
-> 
-> With block processing of echoed output, observed output order is still
-> required. Push completed echoes and echo commands prior to output.
-> 
-> Introduce echo_mark echo buffer index, which tracks completed echo
-> commands; ie., those submitted via commit_echoes but which may not
-> have been committed. Ensure that completed echoes are output prior
-> to subsequent terminal writes in process_echoes().
-> 
-> Fixes newline/prompt output order in cooked mode shell.
-> 
-> Cc: <stable@vger.kernel.org> # 3.12.x : 39434ab n_tty: Fix missing newline echo
-> Reported-by: Karl Dahlke <eklhad@comcast.net>
-> Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> Reported-by: Qixue Xiao <xiaoqixue_1@163.com>
+> Suggested-by: Yongjian Xu <xuyongjiande@gmail.com>
+> Suggested-by: Yu Chen <chyyuu@gmail.com>
+> Signed-off-by: Qixue Xiao <xiaoqixue_1@163.com>
 > ---
->  drivers/tty/n_tty.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
+>  drivers/tty/cyclades.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/tty/cyclades.c b/drivers/tty/cyclades.c
+> index cfeec97..7eec1c5 100644
+> --- a/drivers/tty/cyclades.c
+> +++ b/drivers/tty/cyclades.c
+> @@ -2728,7 +2728,8 @@ cy_ioctl(struct tty_struct *tty,
+>  		break;
+>  #ifndef CONFIG_CYZ_INTR
+>  	case CYZSETPOLLCYCLE:
+> +		if (arg > LONG_MAX / HZ)
+> +			return -ENODEV;
 
-Do you want me to queue this up for 3.13-final, or have I already?
+This patch fails to apply at all to any of my trees, can you please redo
+it against the latest tty tree and resend it so that I can apply it?
 
 thanks,
 
