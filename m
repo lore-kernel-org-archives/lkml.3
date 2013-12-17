@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab3LQQse (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 11:48:34 -0500
+	id S1754825Ab3LQQsd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:48:33 -0500
 Received: from cantor2.suse.de ([195.135.220.15]:60500 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753185Ab3LQQs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 11:48:28 -0500
+	id S1754616Ab3LQQs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 11:48:29 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/6] mm: page_alloc: Break out zone page aging distribution into its own helper
-Date: Tue, 17 Dec 2013 16:48:20 +0000
-Message-Id: <1387298904-8824-3-git-send-email-mgorman@suse.de>
+Subject: [PATCH 4/6] mm: Annotate page cache allocations
+Date: Tue, 17 Dec 2013 16:48:22 +0000
+Message-Id: <1387298904-8824-5-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1387298904-8824-1-git-send-email-mgorman@suse.de>
 References: <1387298904-8824-1-git-send-email-mgorman@suse.de>
@@ -22,98 +22,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves the decision on whether to round-robin allocations between
-zones and nodes into its own helper functions. It'll make some later patches
-easier to understand and it will be automatically inlined.
+The fair zone allocation policy needs to distinguish between anonymous,
+slab and file-backed pages. This patch annotates many of the page cache
+allocations by adjusting __page_cache_alloc. This does not guarantee
+that all page cache allocations are being properly annotated. One case
+for special consideration is shmem. sysv shared memory and MAP_SHARED
+anonymous pages are backed by this and they should be treated as anon by
+the fair allocation policy. It is also used by tmpfs which arguably should
+be treated as file by the fair allocation policy.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+The primary top-level shmem allocation function is shmem_getpage_gfp
+which ultimately uses alloc_pages_vma() and not __page_cache_alloc. This
+is correct for sysv and MAP_SHARED but tmpfs is still treated as anonymous.
+This patch special cases shmem to annotate tmpfs allocations as files for
+the fair zone allocation policy.
+
+NOTE: At time of writing it has not been double checked that it annotates
+	the different shmem request types. Furthermore, this patch was
+	originally base on a patch from Johannes and does not have his
+	signed-off-by. Without his signed-off, I cannot sign it off
+
+Cannot-sign-off-without-Johannes
 ---
- mm/page_alloc.c | 63 ++++++++++++++++++++++++++++++++++++++-------------------
- 1 file changed, 42 insertions(+), 21 deletions(-)
+ include/linux/gfp.h     |  4 +++-
+ include/linux/pagemap.h |  2 +-
+ mm/filemap.c            |  2 ++
+ mm/shmem.c              | 14 ++++++++++++++
+ 4 files changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index f861d02..64020eb 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1872,6 +1872,42 @@ static inline void init_zone_allows_reclaim(int nid)
- #endif	/* CONFIG_NUMA */
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 9b4dd49..f69e4cb 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -35,6 +35,7 @@ struct vm_area_struct;
+ #define ___GFP_NO_KSWAPD	0x400000u
+ #define ___GFP_OTHER_NODE	0x800000u
+ #define ___GFP_WRITE		0x1000000u
++#define ___GFP_PAGECACHE	0x2000000u
+ /* If the above are modified, __GFP_BITS_SHIFT may need updating */
  
  /*
-+ * Distribute pages in proportion to the individual zone size to ensure fair
-+ * page aging.  The zone a page was allocated in should have no effect on the
-+ * time the page has in memory before being reclaimed.
-+ * 
-+ * Returns true if this zone should be skipped to spread the page ages to
-+ * other zones.
-+ */
-+static bool zone_distribute_age(gfp_t gfp_mask, struct zone *preferred_zone,
-+				struct zone *zone, int alloc_flags)
+@@ -92,6 +93,7 @@ struct vm_area_struct;
+ #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
+ #define __GFP_KMEMCG	((__force gfp_t)___GFP_KMEMCG) /* Allocation comes from a memcg-accounted resource */
+ #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
++#define __GFP_PAGECACHE ((__force gfp_t)___GFP_PAGECACHE)   /* Page cache allocation */
+ 
+ /*
+  * This may seem redundant, but it's a way of annotating false positives vs.
+@@ -99,7 +101,7 @@ struct vm_area_struct;
+  */
+ #define __GFP_NOTRACK_FALSE_POSITIVE (__GFP_NOTRACK)
+ 
+-#define __GFP_BITS_SHIFT 25	/* Room for N __GFP_FOO bits */
++#define __GFP_BITS_SHIFT 26	/* Room for N __GFP_FOO bits */
+ #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
+ 
+ /* This equals 0, but use constants in case they ever change */
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index e3dea75..bda4845 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -221,7 +221,7 @@ extern struct page *__page_cache_alloc(gfp_t gfp);
+ #else
+ static inline struct page *__page_cache_alloc(gfp_t gfp)
+ {
+-	return alloc_pages(gfp, 0);
++	return alloc_pages(gfp | __GFP_PAGECACHE, 0);
+ }
+ #endif
+ 
+diff --git a/mm/filemap.c b/mm/filemap.c
+index b7749a9..5bb9225 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -517,6 +517,8 @@ struct page *__page_cache_alloc(gfp_t gfp)
+ 	int n;
+ 	struct page *page;
+ 
++	gfp |= __GFP_PAGECACHE;
++
+ 	if (cpuset_do_page_mem_spread()) {
+ 		unsigned int cpuset_mems_cookie;
+ 		do {
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 8297623..02d7a9c 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -929,6 +929,17 @@ static struct page *shmem_swapin(swp_entry_t swap, gfp_t gfp,
+ 	return page;
+ }
+ 
++/* Fugly method of distinguishing sysv/MAP_SHARED anon from tmpfs */
++static bool shmem_inode_on_tmpfs(struct shmem_inode_info *info)
 +{
-+	/* Only round robin in the allocator fast path */
-+	if (!(alloc_flags & ALLOC_WMARK_LOW))
-+		return false;
-+
-+	/* Only round robin pages likely to be LRU or reclaimable slab */
-+	if (!(gfp_mask & GFP_MOVABLE_MASK))
-+		return false;
-+
-+	/* Distribute to the next zone if this zone has exhausted its batch */
-+	if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
++	/* If no internal shm_mount then it must be tmpfs */
++	if (IS_ERR(shm_mnt))
 +		return true;
 +
-+	/*
-+	 * When zone_reclaim_mode is enabled, try to stay in local zones in the
-+	 * fastpath.  If that fails, the slowpath is entered, which will do
-+	 * another pass starting with the local zones, but ultimately fall back
-+	 * back to remote zones that do not partake in the fairness round-robin
-+	 * cycle of this zonelist.
-+	 */
-+	if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
-+		return true;
-+
-+	return false;
++	/* Consider it to be tmpfs if the superblock is not the internal mount */
++	return info->vfs_inode.i_sb != shm_mnt->mnt_sb;
 +}
 +
-+/*
-  * get_page_from_freelist goes through the zonelist trying to allocate
-  * a page.
-  */
-@@ -1907,27 +1943,12 @@ zonelist_scan:
- 		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
- 		if (unlikely(alloc_flags & ALLOC_NO_WATERMARKS))
- 			goto try_this_zone;
--		/*
--		 * Distribute pages in proportion to the individual
--		 * zone size to ensure fair page aging.  The zone a
--		 * page was allocated in should have no effect on the
--		 * time the page has in memory before being reclaimed.
--		 *
--		 * When zone_reclaim_mode is enabled, try to stay in
--		 * local zones in the fastpath.  If that fails, the
--		 * slowpath is entered, which will do another pass
--		 * starting with the local zones, but ultimately fall
--		 * back to remote zones that do not partake in the
--		 * fairness round-robin cycle of this zonelist.
--		 */
--		if ((alloc_flags & ALLOC_WMARK_LOW) &&
--		    (gfp_mask & GFP_MOVABLE_MASK)) {
--			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
--				continue;
--			if (zone_reclaim_mode &&
--			    !zone_local(preferred_zone, zone))
--				continue;
--		}
+ static struct page *shmem_alloc_page(gfp_t gfp,
+ 			struct shmem_inode_info *info, pgoff_t index)
+ {
+@@ -942,6 +953,9 @@ static struct page *shmem_alloc_page(gfp_t gfp,
+ 	pvma.vm_ops = NULL;
+ 	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, index);
+ 
++	if (shmem_inode_on_tmpfs(info))
++		gfp |= __GFP_PAGECACHE;
 +
-+		/* Distribute pages to ensure fair page aging */
-+		if (zone_distribute_age(gfp_mask, preferred_zone, zone,
-+					alloc_flags))
-+			continue;
-+
- 		/*
- 		 * When allocating a page cache page for writing, we
- 		 * want to get it from a zone that is within its dirty
+ 	page = alloc_page_vma(gfp, &pvma, 0);
+ 
+ 	/* Drop reference taken by mpol_shared_policy_lookup() */
 -- 
 1.8.4
 
