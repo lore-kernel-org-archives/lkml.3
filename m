@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab3LQUGz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:06:55 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:54811 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab3LQUGx (ORCPT
+	id S1753923Ab3LQUHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:07:08 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:47382 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752733Ab3LQUHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:06:53 -0500
-Message-ID: <52B0AED9.6090402@gmail.com>
-Date: Tue, 17 Dec 2013 12:06:49 -0800
+	Tue, 17 Dec 2013 15:07:04 -0500
+Message-ID: <52B0AEE4.1000900@gmail.com>
+Date: Tue, 17 Dec 2013 12:07:00 -0800
 From: Rajat Jain <rajatjain.linux@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
@@ -19,83 +19,160 @@ To: Bjorn Helgaas <bhelgaas@google.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yhlu.kernel@gmail.com>
 CC: Guenter Roeck <groeck@juniper.net>, Rajat Jain <rajatjain@juniper.net>,
         Rajat Jain <rajatxjain@gmail.com>
-Subject: [PATCH v3 6/8] pciehp: Disabling the link notification across slot
- reset
+Subject: [PATCH v3 7/8] pciehp: Ensure very fast hotplug events are also processed.
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disable the link notification (in addition to presence detect
-notifications) across the slot reset since it could potentialy flap
-the link and we don't want to treat it as hot unplug followed by a
-hotplug.
+Today, this is how all the hotplug and unplug events work:
+
+Hotplug / Removal needs to be done
+  => Set slot->state (protected by slot->lock) to either
+    POWERON_STATE (for enabling) or POWEROFF_STATE (for disabling).
+  => Submit the work item for pciehp_power_thread() to slot->wq.
+
+Problem:
+  There is a problem if the hotplug events can happen fast enough that
+  they do not give SW enough time to add or remove the new devices.
+
+  => Assume: Event for unplug comes (e.g. surprise removal). But
+     before the pciehp_power_thread() work item was executed, the
+     card was replaced by another card, causing surprise hotplug event.
+
+  => What goes wrong:
+    => The hot-removal event sets slot->state to POWEROFF_STATE, and
+       schedules the pciehp_power_thread().
+    => The hot-add event sets slot->state to POWERON_STATE, and
+       schedules the pciehp_power_thread().
+    => Now the pciehp_power_thread() is scheduled twice, and on both
+       occasions it will find POWERON_STATE and will try to add the
+       devices on the slot, and will fail complaining that the devices
+       already exist.
+
+  => Why this is a problem: If the device was replaced between the hot
+     removal and hot-add, then we should unload the old driver and
+     reload the new one. This does not happen today. The kernel or the
+     driver is not even aware that the device was replaced.
+
+     The problem is that the pciehp_power_thread() only looks at the
+     slot->state which would only contain the *latest* state - not
+     the actual event (add / remove) that was the intent of the IRQ
+     handler who submitted the work.
+
+What this patch does:
+
+  => Hotplug events pass on an actual request (for addition or removal)
+     to pciehp_power_thread() which is local to that work item
+     submission.
+
+  => pciehp_power_thread() does not need to look at slote->state and
+     hence no locks needed in that.
+
+  => Essentially this results in all the hotplug and unplug events
+     "replayed" by pciehp_power_thread().
 
 Signed-off-by: Rajat Jain <rajatjain@juniper.net>
 Signed-off-by: Guenter Roeck <groeck@juniper.net>
 ---
-v3: * created by splitting the patch v2 [2/4]
-    * Add the ATTN BTN condition
-v2: (non existent)
-v1: (non existent)
+v3: * same as v2. Only the patch numbering has changed from [3/4] to [7/8]
+    * Folded 4 hunks into one since handler functions were combined.
+v2: Same as v1, dropped the "RFC" from subject, added Guenter's signature
+v1: Initial patch
 
- drivers/pci/hotplug/pciehp_hpc.c |   29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
+ drivers/pci/hotplug/pciehp_ctrl.c |   29 ++++++++++++++++++++---------
+ 1 file changed, 20 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
-index ab12555..c2f3e37 100644
---- a/drivers/pci/hotplug/pciehp_hpc.c
-+++ b/drivers/pci/hotplug/pciehp_hpc.c
-@@ -746,31 +746,36 @@ static void pcie_disable_notification(struct controller *ctrl)
+diff --git a/drivers/pci/hotplug/pciehp_ctrl.c b/drivers/pci/hotplug/pciehp_ctrl.c
+index e934618..36a8061 100644
+--- a/drivers/pci/hotplug/pciehp_ctrl.c
++++ b/drivers/pci/hotplug/pciehp_ctrl.c
+@@ -297,6 +297,9 @@ static int remove_board(struct slot *p_slot)
+ struct power_work_info {
+ 	struct slot *p_slot;
+ 	struct work_struct work;
++	unsigned int req;
++#define DISABLE_REQ 0
++#define ENABLE_REQ  1
+ };
  
- /*
-  * pciehp has a 1:1 bus:slot relationship so we ultimately want a secondary
-- * bus reset of the bridge, but if the slot supports surprise removal we need
-- * to disable presence detection around the bus reset and clear any spurious
-+ * bus reset of the bridge, but if the slot supports surprise removal (or
-+ * link state change based hotplug), we need to disable presence detection
-+ * (or link state notifications) around the bus reset and clear any spurious
-  * events after.
-  */
- int pciehp_reset_slot(struct slot *slot, int probe)
- {
- 	struct controller *ctrl = slot->ctrl;
-+	u16 stat_mask = 0, ctrl_mask = 0;
+ /**
+@@ -312,10 +315,8 @@ static void pciehp_power_thread(struct work_struct *work)
+ 		container_of(work, struct power_work_info, work);
+ 	struct slot *p_slot = info->p_slot;
  
- 	if (probe)
- 		return 0;
- 
--	if (HP_SUPR_RM(ctrl)) {
--		pcie_write_cmd(ctrl, 0, PCI_EXP_SLTCTL_PDCE);
--		if (pciehp_poll_mode)
--			del_timer_sync(&ctrl->poll_timer);
-+	if (HP_SUPR_RM(ctrl) && !ATTN_BUTTN(ctrl)) {
-+		ctrl_mask |= PCI_EXP_SLTCTL_PDCE;
-+		stat_mask |= PCI_EXP_SLTSTA_PDC;
+-	mutex_lock(&p_slot->lock);
+-	switch (p_slot->state) {
+-	case POWEROFF_STATE:
+-		mutex_unlock(&p_slot->lock);
++	switch (info->req) {
++	case DISABLE_REQ:
+ 		ctrl_dbg(p_slot->ctrl,
+ 			 "Disabling domain:bus:device=%04x:%02x:00\n",
+ 			 pci_domain_nr(p_slot->ctrl->pcie->port->subordinate),
+@@ -323,18 +324,22 @@ static void pciehp_power_thread(struct work_struct *work)
+ 		pciehp_disable_slot(p_slot);
+ 		mutex_lock(&p_slot->lock);
+ 		p_slot->state = STATIC_STATE;
+-		break;
+-	case POWERON_STATE:
+ 		mutex_unlock(&p_slot->lock);
++		break;
++	case ENABLE_REQ:
++		ctrl_dbg(p_slot->ctrl,
++			 "Enabling domain:bus:device=%04x:%02x:00\n",
++			 pci_domain_nr(p_slot->ctrl->pcie->port->subordinate),
++			 p_slot->ctrl->pcie->port->subordinate->number);
+ 		if (pciehp_enable_slot(p_slot) && PWR_LED(p_slot->ctrl))
+ 			pciehp_green_led_off(p_slot);
+ 		mutex_lock(&p_slot->lock);
+ 		p_slot->state = STATIC_STATE;
++		mutex_unlock(&p_slot->lock);
+ 		break;
+ 	default:
+ 		break;
  	}
-+	ctrl_mask |= PCI_EXP_SLTCTL_DLLSCE;
-+	stat_mask |= PCI_EXP_SLTSTA_DLLSC;
-+
-+	pcie_write_cmd(ctrl, 0, ctrl_mask);
-+	if (pciehp_poll_mode)
-+		del_timer_sync(&ctrl->poll_timer);
+-	mutex_unlock(&p_slot->lock);
  
- 	pci_reset_bridge_secondary_bus(ctrl->pcie->port);
- 
--	if (HP_SUPR_RM(ctrl)) {
--		pciehp_writew(ctrl, PCI_EXP_SLTSTA, PCI_EXP_SLTSTA_PDC);
--		pcie_write_cmd(ctrl, PCI_EXP_SLTCTL_PDCE, PCI_EXP_SLTCTL_PDCE);
--		if (pciehp_poll_mode)
--			int_poll_timeout(ctrl->poll_timer.data);
--	}
-+	pciehp_writew(ctrl, PCI_EXP_SLTSTA, stat_mask);
-+	pcie_write_cmd(ctrl, ctrl_mask, ctrl_mask);
-+	if (pciehp_poll_mode)
-+		int_poll_timeout(ctrl->poll_timer.data);
- 
- 	return 0;
+ 	kfree(info);
  }
+@@ -357,9 +362,11 @@ void pciehp_queue_pushbutton_work(struct work_struct *work)
+ 	switch (p_slot->state) {
+ 	case BLINKINGOFF_STATE:
+ 		p_slot->state = POWEROFF_STATE;
++		info->req = DISABLE_REQ;
+ 		break;
+ 	case BLINKINGON_STATE:
+ 		p_slot->state = POWERON_STATE;
++		info->req = ENABLE_REQ;
+ 		break;
+ 	default:
+ 		kfree(info);
+@@ -455,10 +462,13 @@ static void handle_surprise_event(struct slot *p_slot)
+ 	INIT_WORK(&info->work, pciehp_power_thread);
+ 
+ 	pciehp_get_adapter_status(p_slot, &getstatus);
+-	if (!getstatus)
++	if (!getstatus) {
+ 		p_slot->state = POWEROFF_STATE;
+-	else
++		info->req = DISABLE_REQ;
++	} else {
+ 		p_slot->state = POWERON_STATE;
++		info->req = ENABLE_REQ;
++	}
+ 
+ 	queue_work(p_slot->wq, &info->work);
+ }
+@@ -478,6 +488,7 @@ static void handle_link_event(struct slot *p_slot, u32 event)
+ 		return;
+ 	}
+ 	info->p_slot = p_slot;
++	info->req = event == INT_LINK_UP ? ENABLE_REQ : DISABLE_REQ;
+ 	INIT_WORK(&info->work, pciehp_power_thread);
+ 
+ 	switch (p_slot->state) {
 -- 
 1.7.9.5
 
