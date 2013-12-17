@@ -1,77 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab3LQBYq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 20:24:46 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:38760 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752434Ab3LQBYp (ORCPT
+	id S1752338Ab3LQB0w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 20:26:52 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23853 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356Ab3LQB0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 20:24:45 -0500
-Message-ID: <52AFA7CF.3050800@hurleysoftware.com>
-Date: Mon, 16 Dec 2013 20:24:31 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 16 Dec 2013 20:26:51 -0500
+Message-ID: <52AFA845.3060109@oracle.com>
+Date: Tue, 17 Dec 2013 09:26:29 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Stas Sergeev <stsp@list.ru>,
-        Margarita Manterola <margamanterola@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Caylan Van Larson <i@caylan.net>,
-        Maximiliano Curia <maxy@gnuservers.com.ar>,
-        Pavel Machek <pavel@ucw.cz>,
-        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-Subject: Re: [PATCH v4] n_tty: Fix buffer overruns with larger-than-4k pastes
-References: <52A79030.9090403@hurleysoftware.com> <1386713522-6959-1-git-send-email-peter@hurleysoftware.com> <20131217005719.GA26381@kroah.com>
-In-Reply-To: <20131217005719.GA26381@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Vlastimil Babka <vbabka@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, joern@logfs.org,
+        Michel Lespinasse <walken@google.com>, stable@kernel.org
+Subject: Re: [PATCH 1/3] mm: munlock: fix a bug where THP tail page is encountered
+References: <52AE07B4.4020203@oracle.com> <1387188856-21027-1-git-send-email-vbabka@suse.cz> <1387188856-21027-2-git-send-email-vbabka@suse.cz>
+In-Reply-To: <1387188856-21027-2-git-send-email-vbabka@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2013 07:57 PM, Greg Kroah-Hartman wrote:
-> On Tue, Dec 10, 2013 at 05:12:02PM -0500, Peter Hurley wrote:
->> readline() inadvertently triggers an error recovery path when
->> pastes larger than 4k overrun the line discipline buffer. The
->> error recovery path discards input when the line discipline buffer
->> is full and operating in canonical mode and no newline has been
->> received. Because readline() changes the termios to non-canonical
->> mode to read the line char-by-char, the line discipline buffer
->> can become full, and then when readline() restores termios back
->> to canonical mode for the caller, the now-full line discipline
->> buffer triggers the error recovery.
->>
->> When changing termios from non-canon to canon mode and the read
->> buffer contains data, simulate an EOF push _without_ the
->> DISABLED_CHAR in the read buffer.
->>
->> Importantly for the readline() problem, the termios can be
->> changed back to non-canonical mode without changes to the read
->> buffer occurring; ie., as if the previous termios change had not
->> happened (as long as no intervening read took place).
->>
->> Preserve existing userspace behavior which allows '\0's already
->> received in non-canon mode to be read as '\0's in canon mode
->> (rather than trigger add'l EOF pushes or an actual EOF).
->>
->> Patch based on original proposal and discussion here
->> https://bugzilla.kernel.org/show_bug.cgi?id=55991
->> by Stas Sergeev <stsp@users.sourceforge.net>
->>
->> Reported-by: Margarita Manterola <margamanterola@gmail.com>
->> Cc: Maximiliano Curia <maxy@gnuservers.com.ar>
->> Cc: Pavel Machek <pavel@ucw.cz>
->> Cc: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
->> Acked-by: Stas Sergeev <stsp@users.sourceforge.net>
->> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
->> ---
->
-> Is this a 3.13-final thing, or can it wait for 3.14-rc1?
+On 12/16/2013 06:14 PM, Vlastimil Babka wrote:
+> Since commit ff6a6da60 ("mm: accelerate munlock() treatment of THP pages")
+> munlock skips tail pages of a munlocked THP page. However, when the head page
+> already has PageMlocked unset, it will not skip the tail pages.
+> 
+> Commit 7225522bb ("mm: munlock: batch non-THP page isolation and
+> munlock+putback using pagevec") has added a PageTransHuge() check which
+> contains VM_BUG_ON(PageTail(page)). Sasha Levin found this triggered using
+> trinity, on the first tail page of a THP page without PageMlocked flag.
+> 
+> This patch fixes the issue by skipping tail pages also in the case when
+> PageMlocked flag is unset. There is still a possibility of race with THP page
+> split between clearing PageMlocked and determining how many pages to skip.
+> The race might result in former tail pages not being skipped, which is however
+> no longer a bug, as during the skip the PageTail flags are cleared.
+> 
+> However this race also affects correctness of NR_MLOCK accounting, which is to
+> be fixed in a separate patch.
+> 
+> Cc: stable@kernel.org
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> ---
+>  mm/mlock.c | 24 ++++++++++++++++++------
+>  1 file changed, 18 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/mlock.c b/mm/mlock.c
+> index d480cd6..3847b13 100644
+> --- a/mm/mlock.c
+> +++ b/mm/mlock.c
+> @@ -148,21 +148,30 @@ static void __munlock_isolation_failed(struct page *page)
+>   */
+>  unsigned int munlock_vma_page(struct page *page)
+>  {
+> -	unsigned int page_mask = 0;
+> +	unsigned int nr_pages;
+>  
+>  	BUG_ON(!PageLocked(page));
+>  
+>  	if (TestClearPageMlocked(page)) {
+> -		unsigned int nr_pages = hpage_nr_pages(page);
+> +		nr_pages = hpage_nr_pages(page);
 
-Definitely not 3.13 at this point -- it should go to -next.
+This line can be put before the if.
 
+>  		mod_zone_page_state(page_zone(page), NR_MLOCK, -nr_pages);
+> -		page_mask = nr_pages - 1;
+>  		if (!isolate_lru_page(page))
+>  			__munlock_isolated_page(page);
+>  		else
+>  			__munlock_isolation_failed(page);
+> +	} else {
+> +		nr_pages = hpage_nr_pages(page);
+>  	}
+>  
+> -	return page_mask;
+> +	/*
+> +	 * Regardless of the original PageMlocked flag, we determine nr_pages
+> +	 * after touching the flag. This leaves a possible race with a THP page
+> +	 * split, such that a whole THP page was munlocked, but nr_pages == 1.
+> +	 * Returning a smaller mask due to that is OK, the worst that can
+> +	 * happen is subsequent useless scanning of the former tail pages.
+> +	 * The NR_MLOCK accounting can however become broken.
+> +	 */
+> +	return nr_pages - 1;
+>  }
+
+Personally, I'd prefer to make munlock_vma_page() return void.
+If not please add some comment about the return value in this function's
+description also.
+
+>  
+>  /**
+> @@ -440,7 +449,8 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
+>  
+>  	while (start < end) {
+>  		struct page *page = NULL;
+> -		unsigned int page_mask, page_increm;
+> +		unsigned int page_mask;
+> +		unsigned long page_increm;
+>  		struct pagevec pvec;
+>  		struct zone *zone;
+>  		int zoneid;
+> @@ -490,7 +500,9 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
+>  				goto next;
+>  			}
+>  		}
+> -		page_increm = 1 + (~(start >> PAGE_SHIFT) & page_mask);
+> +		/* It's a bug to munlock in the middle of a THP page */
+> +		VM_BUG_ON((start >> PAGE_SHIFT) & page_mask);
+> +		page_increm = 1 + page_mask;
+>  		start += page_increm * PAGE_SIZE;
+>  next:
+>  		cond_resched();
+> 
+
+-- 
 Regards,
-Peter Hurley
-
+-Bob
