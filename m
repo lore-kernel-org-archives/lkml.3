@@ -1,67 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab3LQUlq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:41:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53211 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752634Ab3LQUlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:41:45 -0500
-Message-ID: <52B0B6FF.7000507@redhat.com>
-Date: Tue, 17 Dec 2013 15:41:35 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753714Ab3LQUlu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:41:50 -0500
+Received: from mail-vb0-f74.google.com ([209.85.212.74]:51795 "EHLO
+	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752634Ab3LQUls (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 15:41:48 -0500
+From: Greg Thelen <gthelen@google.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] ipc: introduce ipc_valid_object() helper to sort out IPC_RMID races
+References: <e70c06876f986f0ac7f2f104bab50edff4a524a0.1387302999.git.aquini@redhat.com>
+Date: Tue, 17 Dec 2013 12:41:46 -0800
+Message-ID: <xr93vbynjjlh.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.130007 (Ma Gnus v0.7) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: David Timothy Strauss <david@davidstrauss.net>
-CC: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: NUMA, migrate/N, and tuned-adm
-References: <CAKz8sYWmmmdwKTKUGdoyaMD_v9_7yQydG+UNAb2r-KoO4L+6Ng@mail.gmail.com>
-In-Reply-To: <CAKz8sYWmmmdwKTKUGdoyaMD_v9_7yQydG+UNAb2r-KoO4L+6Ng@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2013 01:10 PM, David Timothy Strauss wrote:
+On Tue, Dec 17 2013, Rafael Aquini wrote:
 
-> System specs:
->  * Fedora 19 with the 3.11.10-200.fc19.x86_64 kernel (just the stock RPM)
->  * Bare-metal servers with 128GB RAM split between two NUMA regions,
-> each region with one hex-core processor
->  * More than 700 processes, a couple hundred of which are active
-> fairly frequently. The systems were at 7000 processes, but we've
-> dropped it while we dive into this issue.
->  * Many of the processes are short-lived. The long-lived ones
-> experience spikes in CPU and memory usage while processing requests.
-> 
-> Here's what we've tried, to no avail:
->  * tuned-adm on latency-performance and virtual-host profiles; this
-> places the system on the deadline scheduler, but this problem occurred
-> on the default one too
->  * kernel.sched_migration_cost_ns=5000000 (which tuned will do for
-> those profiles in v3.3/Fedora 20)
->  * numad to balance between regions
->  * Global use of sched_relax_domain_level=1 and sched_relax_domain_level=2
->  * Splitting the system with cpuset into management tasks (6 virtual
-> cores) and workload tasks (18 virtual cores) with
-> sched_relax_domain_level=2. This is based on recommendations for NUMA
-> systems in the cpuset man page.
+> After the locking semantics for the SysV IPC API got improved, a couple of
+> IPC_RMID race windows were opened because we ended up dropping the
+> 'kern_ipc_perm.deleted' check performed way down in ipc_lock().
+> The spotted races got sorted out by re-introducing the old test within
+> the racy critical sections.
+>
+> This patch introduces ipc_valid_object() to consolidate the way we cope with
+> IPC_RMID races by using the same abstraction across the API implementation.
+>
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
 
-Just for a quick sanity check, can you try disabling the
-automatic numa balancing code?
-
-# echo NO_NUMA > /sys/kernel/debug/sched_features
-
-> Here's what we've used for analysis:
->  * powertop
->  * top/htop
->  * perf record -a -g
-
-Does "perf report -g" show where the calls to the
-migration code are coming from? Something must be
-migrating tasks around, and it will be good to know
-what it is...
-
--- 
-All rights reversed
+Acked-by: Greg Thelen <gthelen@google.com>
