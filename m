@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611Ab3LQRQa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 12:16:30 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57738 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753933Ab3LQRQ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 12:16:28 -0500
-Date: Tue, 17 Dec 2013 17:16:25 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Javi Merino <Javi.Merino@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
-        Wang YanQing <udknight@gmail.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v3 [resend] 05/18] smp, ARM64: kill SMP single function
- call interrupt
-Message-ID: <20131217171625.GE349@mudshark.cambridge.arm.com>
-References: <1387125400-28849-1-git-send-email-liuj97@gmail.com>
- <1387125400-28849-6-git-send-email-liuj97@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387125400-28849-6-git-send-email-liuj97@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754686Ab3LQRTW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 12:19:22 -0500
+Received: from home.keithp.com ([63.227.221.253]:50885 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753129Ab3LQRTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 12:19:21 -0500
+X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Dec 2013 12:19:21 EST
+From: Keith Packard <keithp@keithp.com>
+To: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Keith Packard <keithp@keithp.com>
+Subject: [PATCH] drm/intel: Only smash VGA SR01 register if intel is default VGA device
+Date: Tue, 17 Dec 2013 09:12:10 -0800
+Message-Id: <1387300330-8844-1-git-send-email-keithp@keithp.com>
+X-Mailer: git-send-email 1.8.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 15, 2013 at 04:36:27PM +0000, Jiang Liu wrote:
-> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
-> similar to smp_call_function_single()" has unified the way to handle
-> single and multiple cross-CPU function calls. Now only one interrupt
-> is needed for architecture specific code to support generic SMP function
-> call interfaces, so kill the redundant single function call interrupt.
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Shaohua Li <shli@kernel.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Jiri Kosina <trivial@kernel.org>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
-> ---
->  arch/arm64/include/asm/hardirq.h |  2 +-
->  arch/arm64/kernel/smp.c          | 10 +---------
->  2 files changed, 2 insertions(+), 10 deletions(-)
+We want to disable the (unused) VGA plane on the intel hardware, which
+should be a simple matter of writing the vga control register. However,
+in 2009 (commit 24f119c769bacac5729297b682fec7811a983cc6), that simple
+code was changed to also smash the SR01 VGA register to fix "random
+crash and lockups".
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+When running efifb on an nVidia card, executing this store to SR01
+ends up causing the screen to go black.
 
-I assume you're taking this series via some other route (than the arch/
-trees) in order to deal with any core dependencies?
+I'm not sure if this store is still required; this patch limits it to
+when the intel card is primary.
 
-Will
+Signed-off-by: Keith Packard <keithp@keithp.com>
+---
+
+ drivers/gpu/drm/i915/intel_display.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index c714d4d..545b271 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -9038,12 +9038,14 @@ static void i915_disable_vga(struct drm_device *dev)
+ 	u8 sr1;
+ 	u32 vga_reg = i915_vgacntrl_reg(dev);
+ 
+-	vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
+-	outb(SR01, VGA_SR_INDEX);
+-	sr1 = inb(VGA_SR_DATA);
+-	outb(sr1 | 1<<5, VGA_SR_DATA);
+-	vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
+-	udelay(300);
++	if (dev->pdev == vga_default_device()) {
++		vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
++		outb(SR01, VGA_SR_INDEX);
++		sr1 = inb(VGA_SR_DATA);
++		outb(sr1 | 1<<5, VGA_SR_DATA);
++		vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
++		udelay(300);
++	}
+ 
+ 	I915_WRITE(vga_reg, VGA_DISP_DISABLE);
+ 	POSTING_READ(vga_reg);
+-- 
+1.8.5.1
+
