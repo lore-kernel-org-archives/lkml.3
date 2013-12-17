@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab3LQWFL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:05:11 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:52381 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750966Ab3LQWFJ (ORCPT
+	id S1754300Ab3LQWGK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:06:10 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:49239 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504Ab3LQWGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:05:09 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmcIAJHJsFJ5LHyk/2dsb2JhbABZgwqDPFSwGIVQgSEXdIIlAQEBAwEOFQ8BIw8UBQsIAxgCAgUhAgIPBSUDIROHfAexEZhRFxaBE4x9bAeCbjWBEwSUM4NikhWDPyiBNQ
-Date: Wed, 18 Dec 2013 09:05:03 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Li Wang <liwang@ubuntukylin.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Sage Weil <sage@inktank.com>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-Subject: Re: [PATCH 0/5] VFS: Directory level cache cleaning
-Message-ID: <20131217220503.GA20579@dastard>
-References: <cover.1387205337.git.liwang@ubuntukylin.com>
+	Tue, 17 Dec 2013 17:06:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <cover.1387205337.git.liwang@ubuntukylin.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1254825772.20131217224914@eikelenboom.it>
+References: <1342235583.20131211182804@eikelenboom.it>
+	<CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com>
+	<871324710.20131211191104@eikelenboom.it>
+	<CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com>
+	<1937118387.20131216122200@eikelenboom.it>
+	<52AEE60B.6030509@broadcom.com>
+	<19210260274.20131216135644@eikelenboom.it>
+	<CAGRGNgXHemM2FfnXgW5RbzhFT+9SfUfVkjdysK3+=_u3hWSacw@mail.gmail.com>
+	<1534126119.20131217104548@eikelenboom.it>
+	<387552477.20131217213319@eikelenboom.it>
+	<20131217212709.GB5624@decadent.org.uk>
+	<1254825772.20131217224914@eikelenboom.it>
+Date: Tue, 17 Dec 2013 14:06:06 -0800
+X-Google-Sender-Auth: T5m1u6MNECKuuSt5Vj9Su2v8ggA
+Message-ID: <CA+55aFxQg6=MAWEkEGz64Hz8OawvPyX=fpBOjY8cGBL5XgB9WQ@mail.gmail.com>
+Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        Julian Calaby <julian.calaby@gmail.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Avinash Patil <avinashapatil@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 07:00:04AM -0800, Li Wang wrote:
-> Currently, Linux only support file system wide VFS
-> cache (dentry cache and page cache) cleaning through
-> '/proc/sys/vm/drop_caches'. Sometimes this is less
-> flexible. The applications may know exactly whether
-> the metadata and data will be referenced or not in future,
-> a desirable mechanism is to enable applications to
-> reclaim the memory of unused cache entries at a finer
-> granularity - directory level. This enables applications
-> to keep hot metadata and data (to be referenced in the
-> future) in the cache, and kick unused out to avoid
-> cache thrashing. Another advantage is it is more flexible
-> for debugging.
+On Tue, Dec 17, 2013 at 1:49 PM, Sander Eikelenboom
+<linux@eikelenboom.it> wrote:
 >
-> This patch extend the 'drop_caches' interface to
-> support directory level cache cleaning and has a complete
-> backward compatibility. '{1,2,3}' keeps the same semantics
-> as before. Besides, "{1,2,3}:DIRECTORY_PATH_NAME" is allowed
-> to recursively clean the caches under DIRECTORY_PATH_NAME.
-> For example, 'echo 1:/home/foo/jpg > /proc/sys/vm/drop_caches'
-> will clean the page caches of the files inside 'home/foo/jpg'.
-> 
-> It is easy to demonstrate the advantage of directory level
-> cache cleaning. We use a virtual machine configured with
-> an Intel(R) Xeon(R) 8-core CPU E5506 @ 2.13GHz, and with 1GB
-> memory.  Three directories named '1', '2' and '3' are created,
-> with each containing 180000 – 280000 files. The test program
-> opens all files in a directory and then tries the next directory.
-> The order for accessing the directories is '1', '2', '3',
-> '1'.
-> 
-> The time on accessing '1' on the second time is measured
-> with/without cache cleaning, under different file counts.
-> With cache cleaning, we clean all cache entries of files
-> in '2' before accessing the files in '3'. The results
-> are as follows (in seconds),
+> So if i combine the two .. it's essentially just a very bad idea to compile the wireless stuff in.
+> It needs a access to a userland program at module load time, or it will block forever.
 
-This sounds like a highly contrived test case. There is no reason
-why dentry cache access time would change going from 180k to 280k
-files in 3 directories unless you're right at the memory pressure
-balance point in terms of cache sizing.
+No, it's a very stupid module if it does that.
 
-> Note: by default, VFS will move those unreferenced inodes
-> into a global LRU list rather than freeing them, for this
-> experiment, we modified iput() to force to free inode as well,
-> this behavior and related codes are left for further discussion,
-> thus not reflected in this patch)
-> 
-> Number of files:   180000 200000 220000 240000 260000
-> Without cleaning:  2.165  6.977  10.032 11.571 13.443
-> With cleaning:     1.949  1.906  2.336  2.918  3.651
->
-> When the number of files is 180000 in each directory,
-> the metadata cache is large enough to buffer all entries
-> of three directories, so re-accessing '1' will hit in
-> the cache, regardless of whether '2' cleaned up or not.
-> As the number of files increases, the cache can now only
-> buffer two+ directories. Accessing '3' will result in some
-> entries of '1' to be evicted (due to LRU). When re-accessing '1',
-> some entries need be reloaded from disk, which is time-consuming.
+It should require the crda hook not at module load time, but at first
+ifconfig time.
 
-Ok, so exactly as I thought - your example working set is slightly
-larger than what the cache holds. Hence what you are describing is
-a cache reclaim threshold effect: something you can avoid with
-/proc/sys/vm/vfs_cache_pressure.
+We've had bugs like this before.  Doing user-mode callbacks at module
+loading time is a disaster exactly because it doesn't work well with
+built-in modules.
 
-Cheers,
+The fact that those things apparently also don't time out or notice
+when they fail seems to then just exacerbate the bad decision.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+We have literally had this *exact* same issue with firmware loading.
+Network drivers shouldn't try to load firmware at module load time.
+Same deal.
+
+What's the broken path? Is this driver-specific, or is it generic to
+the 802.11 code?
+
+                Linus
