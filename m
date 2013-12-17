@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab3LQERU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 23:17:20 -0500
-Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:52763
+	id S1752850Ab3LQERS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 23:17:18 -0500
+Received: from mail-db9lp0252.outbound.messaging.microsoft.com ([213.199.154.252]:40768
 	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752720Ab3LQERC (ORCPT
+	by vger.kernel.org with ESMTP id S1752709Ab3LQEQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 23:17:02 -0500
+	Mon, 16 Dec 2013 23:16:53 -0500
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 1
 X-BigFish: VS1(z551bizzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
@@ -21,10 +21,11 @@ CC: <r64188@freescale.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
         <oskar@scara.com>, <shawn.guo@linaro.org>, <b42378@freescale.com>,
         <b18965@freescale.com>, <devicetree@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <alsa-devel@alsa-project.org>
-Subject: [PATCHv3 3/7] ARM: dts: Enable SAI ALSA SoC DAI device for Vybrid VF610 TOWER board.
-Date: Tue, 17 Dec 2013 11:24:40 +0800
-Message-ID: <1387250684-23406-4-git-send-email-Li.Xiubo@freescale.com>
+        <linux-arm-kernel@lists.infradead.org>, <alsa-devel@alsa-project.org>,
+        Jingchang Lu <b35083@freescale.com>
+Subject: [PATCHv3 2/7] ARM: dts: Add Freescale SAI ALSA SoC Digital Audio Interface node for VF610.
+Date: Tue, 17 Dec 2013 11:24:39 +0800
+Message-ID: <1387250684-23406-3-git-send-email-Li.Xiubo@freescale.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1387250684-23406-1-git-send-email-Li.Xiubo@freescale.com>
 References: <1387250684-23406-1-git-send-email-Li.Xiubo@freescale.com>
@@ -37,30 +38,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds and enables the SAI device.
+This patch adds the SAI's edma mux Tx and Rx support.
 
+Signed-off-by: Jingchang Lu <b35083@freescale.com>
 Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- arch/arm/boot/dts/vf610-twr.dts | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/arm/boot/dts/vf610.dtsi | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
-index c8047ca..e60c20c 100644
---- a/arch/arm/boot/dts/vf610-twr.dts
-+++ b/arch/arm/boot/dts/vf610-twr.dts
-@@ -74,6 +74,12 @@
- 	status = "okay";
- };
+diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
+index e84d84c..2d6ddd0 100644
+--- a/arch/arm/boot/dts/vf610.dtsi
++++ b/arch/arm/boot/dts/vf610.dtsi
+@@ -166,6 +166,9 @@
+ 				interrupts = <0 86 0x04>;
+ 				clocks = <&clks VF610_CLK_SAI2>;
+ 				clock-names = "sai";
++				dma-names = "tx", "rx";
++				dmas = <&edma0 0 VF610_EDMA_MUXID0_SAI2_TX>,
++					<&edma0 0 VF610_EDMA_MUXID0_SAI2_RX>;
+ 				status = "disabled";
+ 			};
  
-+&sai2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_sai2_1>;
-+	status = "okay";
-+};
-+
- &uart1 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_uart1_1>;
 -- 
 1.8.4
 
