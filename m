@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab3LQFcl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 00:32:41 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:48914 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab3LQFcj (ORCPT
+	id S1752099Ab3LQFdJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 00:33:09 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:63709 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760Ab3LQFdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 00:32:39 -0500
+	Tue, 17 Dec 2013 00:33:07 -0500
+Message-ID: <52AFE107.4040705@gmail.com>
+Date: Mon, 16 Dec 2013 21:28:39 -0800
+From: Connor Behan <connor.behan@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <CANqRtoSH88L9riQNodA6qBbfvU6DYJc2U-=4KhsjBu-qAjPFjQ@mail.gmail.com>
-References: <20131211235616.12661.19702.sendpatchset@w520>
-	<20131211235626.12661.8865.sendpatchset@w520>
-	<20131212010503.GI21531@quad.lixom.net>
-	<CANqRtoTGuXnGT0LW+et0w6U6QOC8x8xx0OEEqxQH8X6EtWrEcg@mail.gmail.com>
-	<20131216053950.GA5822@quad.lixom.net>
-	<CANqRtoSH88L9riQNodA6qBbfvU6DYJc2U-=4KhsjBu-qAjPFjQ@mail.gmail.com>
-Date: Mon, 16 Dec 2013 21:32:38 -0800
-Message-ID: <CAOesGMivkshW-9gtSxO+eymQ-QXuTrmf1+uS5hzr7NO9gbaPgw@mail.gmail.com>
-Subject: Re: [PATCH v4 01/03] clocksource: Add Kconfig entries for CMT, MTU2,
- TMU and STI
-From: Olof Johansson <olof@lixom.net>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Devin Heitmueller <dheitmueller@kernellabs.com>
+CC: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Frederik Himpe <fhimpe@telenet.be>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        stable@vger.kernel.org
+Subject: Re: stable regression: tda18271_read_regs: [1-0060|M] ERROR: i2c_transfer
+ returned: -19
+References: <1386969579.3914.13.camel@piranha.localdomain> <20131214092443.622b069d@samsung.com> <52ACE809.1000406@gmail.com> <CAGoCfiwxGU-j14oGDfvoYTA5WZUkQdM_3=80gfpWUjXVNN_nng@mail.gmail.com>
+In-Reply-To: <CAGoCfiwxGU-j14oGDfvoYTA5WZUkQdM_3=80gfpWUjXVNN_nng@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="DltcxB3loXq9jsvH6c3K1Bg9Tln8WUMOn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 9:28 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
-> Hi Olof,
->
-> On Mon, Dec 16, 2013 at 2:39 PM, Olof Johansson <olof@lixom.net> wrote:
->> On Fri, Dec 13, 2013 at 07:12:58PM +0900, Magnus Damm wrote:
->>> Hi Olof,
->>>
->>> On Thu, Dec 12, 2013 at 10:05 AM, Olof Johansson <olof@lixom.net> wrote:
->>> > Hi,
->>> >
->>> > A couple of small comments below.
->>>
->>> Thanks for your feedback!
->>>
->>> > On Thu, Dec 12, 2013 at 08:56:26AM +0900, Magnus Damm wrote:
->>> >> From: Magnus Damm <damm@opensource.se>
->>> >>
->>> >> Add Kconfig entries for CMT, MTU2, TMU and STI to
->>> >> drivers/clocksource/Kconfig. This will allow us to
->>> >> get rid of duplicated entires in architecture code
->>> >> such as arch/sh and arch/arm/mach-shmobile.
->>> >>
->>> >> Signed-off-by: Magnus Damm <damm@opensource.se>
->>> >> ---
->>> >>
->>> >>  drivers/clocksource/Kconfig |   44 +++++++++++++++++++++++++++++++++++++++++++
->>> >>  1 file changed, 44 insertions(+)
->>> >>
->>> >> --- 0001/drivers/clocksource/Kconfig
->>> >> +++ work/drivers/clocksource/Kconfig  2013-12-12 08:41:55.000000000 +0900
->>> >> @@ -134,3 +134,47 @@ config VF_PIT_TIMER
->>> >>       bool
->>> >>       help
->>> >>         Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
->>> >> +
->>> >> +config SYS_SUPPORTS_CMT
->>> >> +        bool
->>> >> +
->>> >> +config SYS_SUPPORTS_TMU
->>> >> +        bool
->>> >> +
->>> >> +config SYS_SUPPORTS_MTU2
->>> >> +        bool
->>> >> +
->>> >> +config SYS_SUPPORTS_STI
->>> >> +        bool
->>> >
->>> > Maybe a prefix to avoid namespace collissions here?
->>>
->>> Sure, that is fine with me. I based the ones above on already existing
->>> ones used by SH but I don't mind reworking those.
->>>
->>> How about SYS_SUPPORTS_CLKSRC_xxx?
->>
->> Oh, I was hoping for something shmobile-specific. Other platforms might have
->> some other clock source that they name STI or MTU, for example.
->
-> Thanks for the clarification. So how about the following?
->
-> SYS_SUPPORTS_SH_CMT
-> SYS_SUPPORTS_SH_MTU2
-> SYS_SUPPORTS_SH_TMU
-> SYS_SUPPORTS_EM_STI
->
-> The above match the style of the existing CONFIG_ SH/EM _TIMER_
-> CMT/MTU2/TMU/STI. Regarding the SH vs EM prefix, the SH ones are
-> present on arch/sh while EM_STI is only present on Emma Mobile SoCs.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--DltcxB3loXq9jsvH6c3K1Bg9Tln8WUMOn
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Yep, that sounds good.
+Thanks for the detailed answer. I have tried your patch and updated the
+wiki page. Would a 950 or 950Q be safer to buy next time?
+
+On 14/12/13 05:17 PM, Devin Heitmueller wrote:
+> I had a patch kicking around which fixed part of the issue, but it
+> didn't completely work because of the lgdt3305 having AGC enabled at
+> chip powerup (which interferes with analog tuning on the shared
+> tuner), and the internal v4l-dvb APIs don't provide any easy way to
+> reset the AGC from the analog side of the device.=20
+
+By this do you mean that the functions exist but they aren't part of the
+public API? Maybe this problem can be addressed if there is ever "v4l3"
+or some other reason to break compatibility.
 
 
--Olof
+--DltcxB3loXq9jsvH6c3K1Bg9Tln8WUMOn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJSr+ESAAoJENU6BEW0eg2r3ucH/Rr/AwVYH+tfrbnbZbQXNH9O
+0fxOP3tie0J5GE5Zp+D3BnPA/RqhYmbhjqfsTNfjnHPWcidtw8SSLKgRZwGpiz5B
+1FMP49zyIMRqgUA9VbHbGtRGKjudCQqKeGRRRWb4k8zJzYZbPwQ4C0vf1HXGXNq6
+3GwrgPTicV21WzAxmPLBLuPhEjD8J89VTtCHGcgK2QEOxHLRqbgvx06xFev/KB+r
+/gfm1iX5rKg8aWN8DgliFw5KXwYfceWTwKt4A31EsEIT3FIk23EnqFwq9isxOiTX
+xvuYBgZSycq38w4+KCiZtfJm5KecHSTa/iGtDlrJAXKGtcaj9tAweCczAL56WO0=
+=Mv/V
+-----END PGP SIGNATURE-----
+
+--DltcxB3loXq9jsvH6c3K1Bg9Tln8WUMOn--
