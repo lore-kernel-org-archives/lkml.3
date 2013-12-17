@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab3LQE1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 23:27:13 -0500
-Received: from ozlabs.org ([203.10.76.45]:54618 "EHLO ozlabs.org"
+	id S1752675Ab3LQEge (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 23:36:34 -0500
+Received: from ozlabs.org ([203.10.76.45]:59393 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751765Ab3LQE1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 23:27:11 -0500
-Date: Tue, 17 Dec 2013 15:27:04 +1100
+	id S1751954Ab3LQEgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 23:36:32 -0500
+Date: Tue, 17 Dec 2013 15:36:25 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: <balbi@ti.com>
 Cc: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        WingMan Kwok <w-kwok2@ti.com>, Roger Quadros <rogerq@ti.com>
+        Anton Tikhomirov <av.tikhomirov@samsung.com>
 Subject: Re: linux-next: build failure after merge of the usb-gadget tree
-Message-Id: <20131217152704.e4ce5fd1556402ed4da789b1@canb.auug.org.au>
-In-Reply-To: <20131216233815.GB29284@saruman.home>
-References: <20131216154020.9d7f9dacf60e41b775d44223@canb.auug.org.au>
-	<20131216194113.GA5258@saruman.home>
-	<20131217101032.1f4d2ba671e6359fce0514cb@canb.auug.org.au>
-	<20131216233815.GB29284@saruman.home>
+Message-Id: <20131217153625.744ebbe433f3d624d11af2bb@canb.auug.org.au>
+In-Reply-To: <20131209041152.GC20608@saruman.home>
+References: <20131209145803.4aba29ca2eba4444070e43ce@canb.auug.org.au>
+	<20131209041152.GC20608@saruman.home>
 X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Tue__17_Dec_2013_15_27_04_+1100_ckHV8ffl4s+G31mx"
+ boundary="Signature=_Tue__17_Dec_2013_15_36_25_+1100_/k1KCpW4C9ERgLU9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_Dec_2013_15_27_04_+1100_ckHV8ffl4s+G31mx
+--Signature=_Tue__17_Dec_2013_15_36_25_+1100_/k1KCpW4C9ERgLU9
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Filipe,
+Hi Felipe,
 
-On Mon, 16 Dec 2013 17:38:15 -0600 Felipe Balbi <balbi@ti.com> wrote:
+On Sun, 8 Dec 2013 22:11:52 -0600 Felipe Balbi <balbi@ti.com> wrote:
 >
-> It's long, sorry, basically what I did was this:
+> On Mon, Dec 09, 2013 at 02:58:03PM +1100, Stephen Rothwell wrote:
+> >=20
+> > After merging the usb-gadget tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> >=20
+> > drivers/built-in.o: In function `otg_set_state':
+> > (.text+0x14f7de): undefined reference to `usb_bus_start_enum'
+> >=20
+> > CONFIG_USB is 'm' in this build.
+> >=20
+> > I am not sure what changed to cause this, maybe e1d2e31975e1 ("usb: phy:
+> > Add OTG FSM configuration option")?
+> >=20
+> > I have used the usb-gadget tree from next-20131206 for today.
 >=20
-> -      ret =3D usb_phy_gen_create_phy(dev, &k_phy->usb_phy_gen,
-> -                      USB_PHY_TYPE_USB2, 0, false);
-> +      ret =3D usb_phy_gen_create_phy(dev, &k_phy->usb_phy_gen, NULL);
+> I see what caused it, will fix it up with a patch which should probably
+> be backported a few kernels back. Thanks for letting me know.
 
-OK, so I added that as a merge fix patch from today.
-
-Thanks.
-
+I am still getting this error ...
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Tue__17_Dec_2013_15_27_04_+1100_ckHV8ffl4s+G31mx
+--Signature=_Tue__17_Dec_2013_15_36_25_+1100_/k1KCpW4C9ERgLU9
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBCAAGBQJSr9KcAAoJEMDTa8Ir7ZwVIxkP/R/DfWzqNKIVztMhttDJyw/Z
-UKGa3Xzq5W59m36lEipekFZfR50mVEit5skt9l5AKFfePdSPe613nazDs/dYccOG
-NssPISjCSSe2v6cfp3ZLtbCAHSQfelU7nABTQY5zEWjw6vsKFjJuT58CY03N87XK
-Sh4rginwFjrIY0VknvZzqEG1cG+mspeYkW4hIcWz81o6NFHetlhFK0ZXPDuI9fLA
-aoVnC0iRcRAyaNnqcbZJTAK/oyMA78bF5Rtbo5qW1oiexTlBq6mLNEJoVc13BMYP
-uc2i1R5WXpRk4d2IXal/Qj6DOPQ4RV9tiHXyFC1dangg59eWmjLrVBsMC3gIO/pi
-VUG5hplhI2C/z+2BHI9NSsSRBvlaWb43xPSag4sce9kiRdSA1K0JJJEiJ5UuovFu
-CCY53uQ18Z58U0aUiFhzJG+/xkNyhjl1Gc5NukRybHbOZxTUnaR8L4f3d8fnlj0K
-tc6CRFlGbTJjT7mI4v8XGOzhT3x+dl2T4zCcOTtHAS0/4g1sjKocJToSUGP/TX6B
-19rnxdkC2LdOh4tF81TSz8si82Eardy8XL8ht1xYYP3P7JSJeJC0qGPM62ISwio0
-aavBptcCMbC4Gy1MuKlE9CVB/OLj6Hxv2w5qBFyfSMiJpTT8aS1LT9OSmyZFEQov
-X5Ua1ssFRj9gURhe50tN
-=Hk2L
+iQIcBAEBCAAGBQJSr9TOAAoJEMDTa8Ir7ZwVzOkP/3aYPZ6nqyqjqUiPDYjirRzy
+0vPZ1Lv+u3x1DYnHaXvRL7ARqaJho9G+AhyGWo3YZw3upfmqucA7EP0h5ZBK9seO
+a18r6yyY229UY8hSFjzKwiXO1SnTneUhSbIUmB4SLQxXxQDo9KcgcPlhSmE6Or1Z
+g4p+msq2uaTFPoPG+ioKGhJ3j9J8eF1Jjux6UAruCN1KDFQr6Z0SP+dGWLbqybyJ
+6q1N5Mzr3LR/AI6JO9f/GvOio1TqObTE+E/JJu/Yr+JOrP2zzTMLZtObMWvqGoiQ
+kjMc/RcRmxuv41hbwECvjz4467uLKDYrtsdwhlHZZkbWXxCY9NhuTTMa4QksGAr2
+vKChs5ki/H2xFMuV1y8qUzI4ZrDZVKBbw8itITGrxH8oKY2Mva2MaYzGhYbMDbxs
+Fco4UzApTcdF9OK6HML3gi0ZxmQg5P/FO5cXlMtGT7U721BIG4gcOI090of4Mi5X
+JPZtGljVWZX6phmaNigTMUgSEFr2KU36MynXwmursg7BigDL2Ym2juhCV1bTYx3I
+f2+4PP5fJJgoWan1oMF/smRueC3dyDjNtRPGP+ITPY6DDnuH+oqfiDzYZvRzIZZO
+MBxDSyQlRtz02xGu8OvEH5HjUsxif2rO3K0Eik1NqSE/r+qaGpVhveuAio62tjpL
+h7qEClJuUE4chDcYuEQJ
+=iihW
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__17_Dec_2013_15_27_04_+1100_ckHV8ffl4s+G31mx--
+--Signature=_Tue__17_Dec_2013_15_36_25_+1100_/k1KCpW4C9ERgLU9--
