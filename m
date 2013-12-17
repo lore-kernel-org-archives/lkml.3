@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab3LQXcA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 18:32:00 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:60346 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751231Ab3LQXb6 (ORCPT
+	id S1752623Ab3LQXcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 18:32:33 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:48485 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab3LQXcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 18:31:58 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlMIAJrdsFJ5LHyk/2dsb2JhbABZgwqDPLBwhVCBHhd0giUBAQEEOhwjEAgDGAklDwUlAyETiAPJZRcWjnwHgyOBEwSYFZIVgW2BUiiBLCM
-Date: Wed, 18 Dec 2013 10:31:52 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, Nigel Cunningham <nigel@tuxonice.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system
- suspend/hibernation
-Message-ID: <20131217233152.GC20579@dastard>
-References: <201201281445.49377.rjw@sisk.pl>
- <201202172159.15396.rjw@sisk.pl>
- <CA+5PVA50UA1oP1jKgnQjHh8APp=cNWREw3bkfrkV1OW_Tg1g+A@mail.gmail.com>
- <201205252113.50900.rjw@sisk.pl>
- <CA+5PVA5GWsTdNky-K1-hu5_R55hdKfr-Oa26HpX=FdA1cRZsbQ@mail.gmail.com>
- <CA+5PVA7vsZPd9eXwN-Q+d8c9+0bAmVdr698vv+LFyrn+3iFOMA@mail.gmail.com>
- <20131217230843.GA2911@amd.pavel.ucw.cz>
+	Tue, 17 Dec 2013 18:32:32 -0500
+Date: Tue, 17 Dec 2013 15:32:28 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 12/13] nohz: Allow all CPUs outside nohz_full range to do
+ timekeeping
+Message-ID: <20131217233228.GF19211@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
+ <1387320692-28460-13-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131217230843.GA2911@amd.pavel.ucw.cz>
+In-Reply-To: <1387320692-28460-13-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121723-7164-0000-0000-00000458967B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 12:08:43AM +0100, Pavel Machek wrote:
-> Hi!
+On Tue, Dec 17, 2013 at 11:51:31PM +0100, Frederic Weisbecker wrote:
+> Now that we have all the infrastructure in place and ready to support
+> timekeeping duty balanced across every non full dynticks CPUs, we can
+> hereby extend the timekeeping duty affinity.
 > 
-> > >>> Did this patch ever wind up going anywhere?  Fedora has it sitting in
-> > >>> our tree with a comment that says "rebase" and I don't see it in the
-> > >>> linux-next tree at all.
-> > >>>
-> > >>> Did if fall through the cracks or was it NAKed somewhere?
-> > >>
-> > >> No, it wasn't in principle. There were some comments I haven't addressed yet.
-> > >
-> > > Dredging up a really old thread, sorry.
-> > >
-> > > We're still carrying this patch along in Fedora.  Should we drop it at
-> > > this point, or is it still eventually going to head upstream?
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Alex Shi <alex.shi@linaro.org>
+> Cc: Kevin Hilman <khilman@linaro.org>
+> ---
+>  include/linux/tick.h | 10 +---------
+>  1 file changed, 1 insertion(+), 9 deletions(-)
 > 
-> I'd say drop.
+> diff --git a/include/linux/tick.h b/include/linux/tick.h
+> index bd3c32e..07c02e8 100644
+> --- a/include/linux/tick.h
+> +++ b/include/linux/tick.h
+> @@ -203,15 +203,7 @@ static inline int tick_timekeeping_default_cpu(void)
+>   */
+>  static inline bool tick_timekeeping_cpu(int cpu)
+>  {
+> -	/*
+> -	 * If there are full dynticks CPUs around,
+> -	 * CPU 0 must stay periodic to update timekeeping.
+> -	 */
+> -	if (tick_nohz_full_enabled())
+> -		return cpu == 0;
+> -
+> -	/* Otherwise any CPU is elligible for timekeeping duty */
+> -	return true;
+> +	return !tick_nohz_full_cpu(cpu);
 
-I disagree - given the problem it is resolving leads to silent
-filesystem corruption, this patch should be considered somewhat of a
-priority to push...
+OK, I guess the future is already here.  ;-)
 
-Cheers,
+Is it still OK for RCU to kick tick_do_timer_cpu?  Or are there race
+conditions that could result in the wrong CPU being kicked?  Or is
+there some guarantee that I missed that says that the timekeeping
+CPU cannot change while in RCU_SYSIDLE_FULL_NOTED state?
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+							Thanx, Paul
+
+>  }
+> 
+>  extern void tick_nohz_init(void);
+> -- 
+> 1.8.3.1
+> 
+
