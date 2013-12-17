@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465Ab3LQSN7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:13:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60701 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755398Ab3LQSNx (ORCPT
+	id S932564Ab3LQSmz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:42:55 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:55805 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932344Ab3LQSmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:13:53 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 008/103] isdnloop: use strlcpy() instead of strcpy()
-Date: Tue, 17 Dec 2013 18:11:57 +0000
-Message-Id: <1387304012-23805-9-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
-References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 17 Dec 2013 13:42:52 -0500
+Message-ID: <52B0A93E.7090503@cogentembedded.com>
+Date: Tue, 17 Dec 2013 22:42:54 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, Josh Triplett <josh@joshtriplett.org>
+CC: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org
+Subject: Re: [PATCH 1/2] drivers: ide: Include appropriate header file in
+ ide-cd_verbose.c
+References: <d24d7befadfbfb9501d0e873f13e39fd42ec893b.1387278225.git.rashika.kheria@gmail.com> <20131217111920.GA30592@pd.tnic> <20131217164403.GD1062@leaf> <20131217175451.GI30592@pd.tnic>
+In-Reply-To: <20131217175451.GI30592@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.28 -stable review patch.  If anyone has any objections, please let me know.
+Hello.
 
-------------------
+On 12/17/2013 08:54 PM, Borislav Petkov wrote:
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+>> The two proposed patches here are extremely low risk, don't actually
+>> change the compiled code in any way like some of those did, and fix
+>> real compiler warnings.
 
-commit f9a23c84486ed350cce7bb1b2828abd1f6658796 upstream.
+> Considering the fact that IDE is about to be deleted (unless something
+> embedded still wants it which I hardly doubt
 
-These strings come from a copy_from_user() and there is no way to be
-sure they are NUL terminated.
+    You're right in your doubting: there are quite a lot of drivers used by 
+embedded platforms that nobody has bothered to convert to libata thus far.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/isdn/isdnloop/isdnloop.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
-index baf2686..02125e6 100644
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -1083,8 +1083,10 @@ isdnloop_start(isdnloop_card *card, isdnloop_sdef *sdefp)
- 			spin_unlock_irqrestore(&card->isdnloop_lock, flags);
- 			return -ENOMEM;
- 		}
--		for (i = 0; i < 3; i++)
--			strcpy(card->s0num[i], sdef.num[i]);
-+		for (i = 0; i < 3; i++) {
-+			strlcpy(card->s0num[i], sdef.num[i],
-+				sizeof(card->s0num[0]));
-+		}
- 		break;
- 	case ISDN_PTYPE_1TR6:
- 		if (isdnloop_fake(card, "DRV1.04TC-1TR6-CAPI-CNS-BASIS-29.11.95",
-@@ -1097,7 +1099,7 @@ isdnloop_start(isdnloop_card *card, isdnloop_sdef *sdefp)
- 			spin_unlock_irqrestore(&card->isdnloop_lock, flags);
- 			return -ENOMEM;
- 		}
--		strcpy(card->s0num[0], sdef.num[0]);
-+		strlcpy(card->s0num[0], sdef.num[0], sizeof(card->s0num[0]));
- 		card->s0num[1][0] = '\0';
- 		card->s0num[2][0] = '\0';
- 		break;
--- 
-1.8.3.2
+MBR, Sergei
 
