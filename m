@@ -1,171 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab3LQUHS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:07:18 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:62151 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224Ab3LQUHP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:07:15 -0500
-Message-ID: <52B0AEEF.8000403@gmail.com>
-Date: Tue, 17 Dec 2013 12:07:11 -0800
-From: Rajat Jain <rajatjain.linux@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752995Ab3LQUL4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:11:56 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:50285 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751880Ab3LQULy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 15:11:54 -0500
+Date: Tue, 17 Dec 2013 15:11:47 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7] mm: page_alloc: Use zone node IDs to approximate
+ locality
+Message-ID: <20131217201147.GH21724@cmpxchg.org>
+References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
+ <1386943807-29601-4-git-send-email-mgorman@suse.de>
+ <20131216202507.GZ21724@cmpxchg.org>
+ <20131217111352.GZ11295@suse.de>
+ <20131217153829.GC21724@cmpxchg.org>
+ <20131217160808.GF11295@suse.de>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yhlu.kernel@gmail.com>
-CC: Guenter Roeck <groeck@juniper.net>, Rajat Jain <rajatjain@juniper.net>,
-        Rajat Jain <rajatxjain@gmail.com>
-Subject: [PATCH v3 8/8] pciehp: Introduce hotplug_lock to serialize HP events
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131217160808.GF11295@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today it is there is no protection around pciehp_enable_slot() and
-pciehp_disable_slot() to ensure that they complete before another
-hot-plug operation can be done on that particular slot.
+On Tue, Dec 17, 2013 at 04:08:08PM +0000, Mel Gorman wrote:
+> On Tue, Dec 17, 2013 at 10:38:29AM -0500, Johannes Weiner wrote:
+> > On Tue, Dec 17, 2013 at 11:13:52AM +0000, Mel Gorman wrote:
+> > > On Mon, Dec 16, 2013 at 03:25:07PM -0500, Johannes Weiner wrote:
+> > > > On Fri, Dec 13, 2013 at 02:10:03PM +0000, Mel Gorman wrote:
+> > > > > zone_local is using node_distance which is a more expensive call than
+> > > > > necessary. On x86, it's another function call in the allocator fast path
+> > > > > and increases cache footprint. This patch makes the assumption zones on a
+> > > > > local node will share the same node ID. The necessary information should
+> > > > > already be cache hot.
+> > > > > 
+> > > > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > > > > ---
+> > > > >  mm/page_alloc.c | 2 +-
+> > > > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > > > 
+> > > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > > > index 64020eb..fd9677e 100644
+> > > > > --- a/mm/page_alloc.c
+> > > > > +++ b/mm/page_alloc.c
+> > > > > @@ -1816,7 +1816,7 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
+> > > > >  
+> > > > >  static bool zone_local(struct zone *local_zone, struct zone *zone)
+> > > > >  {
+> > > > > -	return node_distance(local_zone->node, zone->node) == LOCAL_DISTANCE;
+> > > > > +	return zone_to_nid(zone) == numa_node_id();
+> > > > 
+> > > > Why numa_node_id()?  We pass in the preferred zone as @local_zone:
+> > > > 
+> > > 
+> > > Initially because I was thinking "local node" and numa_node_id() is a
+> > > per-cpu variable that should be cheap to access and in some cases
+> > > cache-hot as the top-level gfp API calls numa_node_id().
+> > > 
+> > > Thinking about it more though it still makes sense because the preferred
+> > > zone is not necessarily local. If the allocation request requires ZONE_DMA32
+> > > and the local node does not have that zone then preferred zone is on a
+> > > remote node.
+> > 
+> > Don't we treat everything in relation to the preferred zone?
+> 
+> Usually yes, but this time we really care about whether the memory is
+> local or remote. It makes sense to me as it is and struggle to see an
+> advantage of expressing it in terms of the preferred zone. Minimally
+> zone_local would need to be renamed if it could return true for a remote
+> zone and I see no advantage in doing that.
 
-This patch introduces the slot->hotplug_lock to ensure that any
-hotplug operations (add / remove) complete before another HP event
-can begin processing on that particular slot.
+What the function tests for is whether any given zone is close
+enough/local to the given preferred zone such that we can allocate
+from it without having to invoke zone_reclaim_mode.
 
-Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-Signed-off-by: Guenter Roeck <groeck@juniper.net>
----
-v3: same as v2, only patch numbering changed from [4/4] to [8/8].
-v2: Same as v1, dropped the "RFC" from subject, added Guenter's signature
-v1: Initial patch
+In your example, if the preferred DMA32 zone were to be on a remote
+node and eligible for allocation but full, a DMA zone on the same node
+should be fine as well and would not impose a higher remote reference
+burden on the allocator than allocating from the preferred DMA32 zone.
 
- drivers/pci/hotplug/pciehp.h      |    1 +
- drivers/pci/hotplug/pciehp_core.c |    7 ++++++-
- drivers/pci/hotplug/pciehp_ctrl.c |   17 +++++++++++++++--
- drivers/pci/hotplug/pciehp_hpc.c  |    1 +
- 4 files changed, 23 insertions(+), 3 deletions(-)
+So it's really not about the locality of the allocating task but about
+the locality of the given preferred zone.
 
-diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
-index 92d7fed..589339b 100644
---- a/drivers/pci/hotplug/pciehp.h
-+++ b/drivers/pci/hotplug/pciehp.h
-@@ -77,6 +77,7 @@ struct slot {
- 	struct hotplug_slot *hotplug_slot;
- 	struct delayed_work work;	/* work for button event */
- 	struct mutex lock;
-+	struct mutex hotplug_lock;
- 	struct workqueue_struct *wq;
- };
- 
-diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
-index bbd48bb..d01573d 100644
---- a/drivers/pci/hotplug/pciehp_core.c
-+++ b/drivers/pci/hotplug/pciehp_core.c
-@@ -278,8 +278,11 @@ static int pciehp_probe(struct pcie_device *dev)
- 	slot = ctrl->slot;
- 	pciehp_get_adapter_status(slot, &occupied);
- 	pciehp_get_power_status(slot, &poweron);
--	if (occupied && pciehp_force)
-+	if (occupied && pciehp_force) {
-+		mutex_lock(&slot->hotplug_lock);
- 		pciehp_enable_slot(slot);
-+		mutex_unlock(&slot->hotplug_lock);
-+	}
- 	/* If empty slot's power status is on, turn power off */
- 	if (!occupied && poweron && POWER_CTRL(ctrl))
- 		pciehp_power_off_slot(slot);
-@@ -323,10 +326,12 @@ static int pciehp_resume (struct pcie_device *dev)
- 
- 	/* Check if slot is occupied */
- 	pciehp_get_adapter_status(slot, &status);
-+	mutex_lock(&slot->hotplug_lock);
- 	if (status)
- 		pciehp_enable_slot(slot);
- 	else
- 		pciehp_disable_slot(slot);
-+	mutex_unlock(&slot->hotplug_lock);
- 	return 0;
- }
- #endif /* PM */
-diff --git a/drivers/pci/hotplug/pciehp_ctrl.c b/drivers/pci/hotplug/pciehp_ctrl.c
-index 36a8061..e6a5941 100644
---- a/drivers/pci/hotplug/pciehp_ctrl.c
-+++ b/drivers/pci/hotplug/pciehp_ctrl.c
-@@ -314,6 +314,7 @@ static void pciehp_power_thread(struct work_struct *work)
- 	struct power_work_info *info =
- 		container_of(work, struct power_work_info, work);
- 	struct slot *p_slot = info->p_slot;
-+	int ret;
- 
- 	switch (info->req) {
- 	case DISABLE_REQ:
-@@ -321,7 +322,9 @@ static void pciehp_power_thread(struct work_struct *work)
- 			 "Disabling domain:bus:device=%04x:%02x:00\n",
- 			 pci_domain_nr(p_slot->ctrl->pcie->port->subordinate),
- 			 p_slot->ctrl->pcie->port->subordinate->number);
-+		mutex_lock(&p_slot->hotplug_lock);
- 		pciehp_disable_slot(p_slot);
-+		mutex_unlock(&p_slot->hotplug_lock);
- 		mutex_lock(&p_slot->lock);
- 		p_slot->state = STATIC_STATE;
- 		mutex_unlock(&p_slot->lock);
-@@ -331,7 +334,10 @@ static void pciehp_power_thread(struct work_struct *work)
- 			 "Enabling domain:bus:device=%04x:%02x:00\n",
- 			 pci_domain_nr(p_slot->ctrl->pcie->port->subordinate),
- 			 p_slot->ctrl->pcie->port->subordinate->number);
--		if (pciehp_enable_slot(p_slot) && PWR_LED(p_slot->ctrl))
-+		mutex_lock(&p_slot->hotplug_lock);
-+		ret = pciehp_enable_slot(p_slot);
-+		mutex_unlock(&p_slot->hotplug_lock);
-+		if (ret && PWR_LED(p_slot->ctrl))
- 			pciehp_green_led_off(p_slot);
- 		mutex_lock(&p_slot->lock);
- 		p_slot->state = STATIC_STATE;
-@@ -575,6 +581,9 @@ static void interrupt_event_handler(struct work_struct *work)
- 	kfree(info);
- }
- 
-+/*
-+ * Note: This function must be called with slot->hotplug_lock held
-+ */
- int pciehp_enable_slot(struct slot *p_slot)
- {
- 	u8 getstatus = 0;
-@@ -613,7 +622,9 @@ int pciehp_enable_slot(struct slot *p_slot)
- 	return rc;
- }
- 
--
-+/*
-+ * Note: This function must be called with slot->hotplug_lock held
-+ */
- int pciehp_disable_slot(struct slot *p_slot)
- {
- 	u8 getstatus = 0;
-@@ -647,7 +658,9 @@ int pciehp_sysfs_enable_slot(struct slot *p_slot)
- 	case STATIC_STATE:
- 		p_slot->state = POWERON_STATE;
- 		mutex_unlock(&p_slot->lock);
-+		mutex_lock(&p_slot->hotplug_lock);
- 		retval = pciehp_enable_slot(p_slot);
-+		mutex_unlock(&p_slot->hotplug_lock);
- 		mutex_lock(&p_slot->lock);
- 		p_slot->state = STATIC_STATE;
- 		break;
-diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
-index c2f3e37..5c747a9 100644
---- a/drivers/pci/hotplug/pciehp_hpc.c
-+++ b/drivers/pci/hotplug/pciehp_hpc.c
-@@ -815,6 +815,7 @@ static int pcie_init_slot(struct controller *ctrl)
- 
- 	slot->ctrl = ctrl;
- 	mutex_init(&slot->lock);
-+	mutex_init(&slot->hotplug_lock);
- 	INIT_DELAYED_WORK(&slot->work, pciehp_queue_pushbutton_work);
- 	ctrl->slot = slot;
- 	return 0;
--- 
-1.7.9.5
+In my tree, I replaced the function body with
 
+	return local_zone->node == zone->node;
