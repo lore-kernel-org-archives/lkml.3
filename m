@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372Ab3LQUwN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:52:13 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:28502 "EHLO
+	id S1754320Ab3LQUwK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:52:10 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:28505 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050Ab3LQUwD (ORCPT
+	with ESMTP id S1754248Ab3LQUwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Dec 2013 15:52:03 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -12,101 +12,130 @@ To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
         boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
         mukesh.rathor@oracle.com, jbeulich@suse.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v11 06/12] xen/pvh: Load GDT/GS in early PV bootup code for BSP.
-Date: Tue, 17 Dec 2013 15:51:37 -0500
-Message-Id: <1387313503-31362-7-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH v11 08/12] xen/pvh: MMU changes for PVH
+Date: Tue, 17 Dec 2013 15:51:39 -0500
+Message-Id: <1387313503-31362-9-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
 References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mukesh Rathor <mukesh.rathor@oracle.com>
 
-During early bootup we start life using the Xen provided
-GDT, which means that we are running with %cs segment set
-to FLAT_KERNEL_CS (FLAT_RING3_CS64 0xe033, GDT index 261).
+.. which are surprinsingly small compared to the amount for PV code.
 
-But for PVH we want to be use HVM type mechanism for
-segment operations. As such we need to switch to the HVM
-one and also reload ourselves with the __KERNEL_CS:eip
-to run in the proper GDT and segment.
+PVH uses mostly native mmu ops, we leave the generic (native_*) for
+the majority and just overwrite the baremetal with the ones we need.
 
-For HVM this is usually done in 'secondary_startup_64' in
-(head_64.S) but since we are not taking that bootup
-path (we start in PV - xen_start_kernel) we need to do
-that in the early PV bootup paths.
-
-For good measure we also zero out the %fs, %ds, and %es
-(not strictly needed as Xen has already cleared them
-for us). The %gs is loaded by 'switch_to_new_gdt'.
+We also optimize one - the TLB flush. The native operation would
+needlessly IPI offline VCPUs causing extra wakeups. Using the
+Xen one avoids that and lets the hypervisor determine which
+VCPU needs the TLB flush.
 
 Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/enlighten.c | 39 +++++++++++++++++++++++++++++++++++++--
- 1 file changed, 37 insertions(+), 2 deletions(-)
+ arch/x86/xen/mmu.c | 35 +++++++++++++++++++++++++++++++----
+ 1 file changed, 31 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index c7341d0..0d13652 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1413,8 +1413,43 @@ static void __init xen_boot_params_init_edd(void)
-  * we do this, we have to be careful not to call any stack-protected
-  * function, which is most of the kernel.
-  */
--static void __init xen_setup_stackprotector(void)
-+static void __init xen_setup_gdt(void)
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index ce563be..77b7622 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -74,6 +74,7 @@
+ #include <xen/interface/version.h>
+ #include <xen/interface/memory.h>
+ #include <xen/hvc-console.h>
++#include <xen/balloon.h>
+ 
+ #include "multicalls.h"
+ #include "mmu.h"
+@@ -1207,6 +1208,8 @@ static void __init xen_pagetable_init(void)
+ #endif
+ 	paging_init();
+ 	xen_setup_shared_info();
++	if (xen_feature(XENFEAT_auto_translated_physmap))
++		return;
+ #ifdef CONFIG_X86_64
+ 	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+ 		unsigned long new_mfn_list;
+@@ -1556,6 +1559,10 @@ static void __init xen_set_pte_init(pte_t *ptep, pte_t pte)
+ static void pin_pagetable_pfn(unsigned cmd, unsigned long pfn)
  {
+ 	struct mmuext_op op;
++
++	if (xen_feature(XENFEAT_writable_page_tables))
++		return;
++
+ 	op.cmd = cmd;
+ 	op.arg1.mfn = pfn_to_mfn(pfn);
+ 	if (HYPERVISOR_mmuext_op(&op, 1, NULL, DOMID_SELF))
+@@ -1753,6 +1760,10 @@ static void set_page_prot_flags(void *addr, pgprot_t prot, unsigned long flags)
+ 	unsigned long pfn = __pa(addr) >> PAGE_SHIFT;
+ 	pte_t pte = pfn_pte(pfn, prot);
+ 
++	/* recall for PVH, page tables are native. */
++	if (xen_feature(XENFEAT_auto_translated_physmap))
++		return;
++
+ 	if (HYPERVISOR_update_va_mapping((unsigned long)addr, pte, flags))
+ 		BUG();
+ }
+@@ -1834,6 +1845,9 @@ static void convert_pfn_mfn(void *v)
+ 	pte_t *pte = v;
+ 	int i;
+ 
++	if (xen_feature(XENFEAT_auto_translated_physmap))
++		return;
++
+ 	/* All levels are converted the same way, so just treat them
+ 	   as ptes. */
+ 	for (i = 0; i < PTRS_PER_PTE; i++)
+@@ -1863,6 +1877,7 @@ static void __init check_pt_base(unsigned long *pt_base, unsigned long *pt_end,
+  * but that's enough to get __va working.  We need to fill in the rest
+  * of the physical mapping once some sort of allocator has been set
+  * up.
++ * NOTE: for PVH, the page tables are native.
+  */
+ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ {
+@@ -1940,10 +1955,13 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 	 * structure to attach it to, so make sure we just set kernel
+ 	 * pgd.
+ 	 */
+-	xen_mc_batch();
+-	__xen_write_cr3(true, __pa(init_level4_pgt));
+-	xen_mc_issue(PARAVIRT_LAZY_CPU);
+-
++	if (xen_feature(XENFEAT_writable_page_tables)) {
++		native_write_cr3(__pa(init_level4_pgt));
++	} else {
++		xen_mc_batch();
++		__xen_write_cr3(true, __pa(init_level4_pgt));
++		xen_mc_issue(PARAVIRT_LAZY_CPU);
++	}
+ 	/* We can't that easily rip out L3 and L2, as the Xen pagetables are
+ 	 * set out this way: [L4], [L1], [L2], [L3], [L1], [L1] ...  for
+ 	 * the initial domain. For guests using the toolstack, they are in:
+@@ -2207,6 +2225,15 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
+ void __init xen_init_mmu_ops(void)
+ {
+ 	x86_init.paging.pagetable_init = xen_pagetable_init;
++
++	/* Optimization - we can use the HVM one but it has no idea which
++	 * VCPUs are descheduled - which means that it will needlessly IPI
++	 * them. Xen knows so let it do the job.
++	 */
 +	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-+#ifdef CONFIG_X86_64
-+		unsigned long dummy;
-+
-+		switch_to_new_gdt(0); /* GDT and GS set */
-+
-+		/* We are switching of the Xen provided GDT to our HVM mode
-+		 * GDT. The new GDT has  __KERNEL_CS with CS.L = 1
-+		 * and we are jumping to reload it.
-+		 */
-+		asm volatile ("pushq %0\n"
-+			      "leaq 1f(%%rip),%0\n"
-+			      "pushq %0\n"
-+			      "lretq\n"
-+			      "1:\n"
-+			      : "=&r" (dummy) : "0" (__KERNEL_CS));
-+
-+		/*
-+		 * While not needed, we also set the %es, %ds, and %fs
-+		 * to zero. We don't care about %ss as it is NULL.
-+		 * Strictly speaking this is not needed as Xen zeros those
-+		 * out (and also MSR_FS_BASE, MSR_GS_BASE, MSR_KERNEL_GS_BASE)
-+		 *
-+		 * Linux zeros them in cpu_init() and in secondary_startup_64
-+		 * (for BSP).
-+		 */
-+		loadsegment(es, 0);
-+		loadsegment(ds, 0);
-+		loadsegment(fs, 0);
-+#else
-+		/* PVH: TODO Implement. */
-+		BUG();
-+#endif
++		pv_mmu_ops.flush_tlb_others = xen_flush_tlb_others;
 +		return;
 +	}
- 	pv_cpu_ops.write_gdt_entry = xen_write_gdt_entry_boot;
- 	pv_cpu_ops.load_gdt = xen_load_gdt_boot;
+ 	pv_mmu_ops = xen_mmu_ops;
  
-@@ -1499,7 +1534,7 @@ asmlinkage void __init xen_start_kernel(void)
- 	 * Set up kernel GDT and segment registers, mainly so that
- 	 * -fstack-protector code can be executed.
- 	 */
--	xen_setup_stackprotector();
-+	xen_setup_gdt();
- 
- 	xen_init_irq_ops();
- 	xen_init_cpuid_mask();
+ 	memset(dummy_mapping, 0xff, PAGE_SIZE);
 -- 
 1.8.3.1
 
