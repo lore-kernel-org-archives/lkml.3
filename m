@@ -1,137 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab3LQUwl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:52:41 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56200 "EHLO
+	id S1754633Ab3LQUwb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:52:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56150 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754685Ab3LQUwi (ORCPT
+	with ESMTP id S1754430Ab3LQUwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:52:38 -0500
+	Tue, 17 Dec 2013 15:52:22 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Borislav Petkov <bp@suse.de>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        Robert Richter <rric@kernel.org>,
         Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 00/10] perf/core improvements and refactorings
-Date: Tue, 17 Dec 2013 17:52:01 -0300
-Message-Id: <1387313531-14629-1-git-send-email-acme@infradead.org>
+Subject: [PATCH 03/10] perf timechart: Print pid along the name
+Date: Tue, 17 Dec 2013 17:52:04 -0300
+Message-Id: <1387313531-14629-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1387313531-14629-1-git-send-email-acme@infradead.org>
+References: <1387313531-14629-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
 
-Hi Ingo,
+Add PID to the figures of CPU usage timechart.
 
-	Please consider pulling,
-
-Regards,
-
-- Arnaldo
-
-The following changes since commit b283d2f3b74bc98174e8453c0be41dfcda3cae1b:
-
-  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-12-16 14:52:03 +0100)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-
-for you to fetch changes up to f23b24f1bf90b56cfaeb2a1c9b77c46efe8916a6:
-
-  tools lib traceevent: Get rid of die() in some string conversion functions (2013-12-17 16:51:49 -0300)
-
-----------------------------------------------------------------
-perf/core improvements and refactorings:
-
-New features:
-
-. In perf timechart:
-	- Add backtrace support to CPU info
-	. Print pid along the name
-	. Add support for CPU topology
-	. Add new option --highlight'ing threads, be it by name or,
-	  if a numeric value is provided, that run more than given duration.
-  From Stanislav Fomichev.
-
-Refactorings:
-
-. Rename some struct DSO binary_type related members and methods,
-  to clarify its purpose and need for differentiation from symtab_type,
-  i.e. one is about the files .text, CFI, etc, i.e. its binary contents,
-  and the other is about where the symbol table came from.
-
-. Convert to new topic libraries, starting with an API one (sysfs, debugfs,
-  etc), renaming liblk in the process, from Borislav Petkov.
-
-. Get rid of some more panic() like error handling in libtraceevent,
-  from Namhyung Kim.
-
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ramkumar Ramachandra <artagnon@gmail.com>
+Link: http://lkml.kernel.org/r/1385995056-20158-3-git-send-email-stfomichev@yandex-team.ru
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-timechart.c | 1 +
+ tools/perf/util/svghelper.c    | 4 ++--
+ tools/perf/util/svghelper.h    | 2 +-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
 
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (3):
-      perf symbols: Remove needless static binary_type array
-      perf symbols: Clarify method to get DSO binary_type filename
-      perf symbols: Use consistent name for the DSO binary type member
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index d955095b6d63..99fe363f1de8 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -841,6 +841,7 @@ static void draw_cpu_usage(struct timechart *tchart)
+ 					svg_process(sample->cpu,
+ 						    sample->start_time,
+ 						    sample->end_time,
++						    p->pid,
+ 						    "sample",
+ 						    c->comm,
+ 						    sample->backtrace);
+diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
+index 740f0328fc13..927851d05d03 100644
+--- a/tools/perf/util/svghelper.c
++++ b/tools/perf/util/svghelper.c
+@@ -285,7 +285,7 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
+ 	fprintf(svgfile, "</g>\n");
+ }
+ 
+-void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name, const char *backtrace)
++void svg_process(int cpu, u64 start, u64 end, int pid, const char *type, const char *name, const char *backtrace)
+ {
+ 	double width;
+ 
+@@ -294,7 +294,7 @@ void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name
+ 
+ 
+ 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), cpu2y(cpu));
+-	fprintf(svgfile, "<title>%s %s</title>\n", name, time_to_string(end - start));
++	fprintf(svgfile, "<title>%d %s running %s</title>\n", pid, name, time_to_string(end - start));
+ 	if (backtrace)
+ 		fprintf(svgfile, "<desc>Switched because:\n%s</desc>\n", backtrace);
+ 	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
+diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
+index 7db6ae98bf2c..8b77ca631686 100644
+--- a/tools/perf/util/svghelper.h
++++ b/tools/perf/util/svghelper.h
+@@ -11,7 +11,7 @@ extern void svg_waiting(int Yslot, int cpu, u64 start, u64 end, const char *back
+ extern void svg_cpu_box(int cpu, u64 max_frequency, u64 turbo_frequency);
+ 
+ 
+-extern void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name, const char *backtrace);
++extern void svg_process(int cpu, u64 start, u64 end, int pid, const char *type, const char *name, const char *backtrace);
+ extern void svg_cstate(int cpu, u64 start, u64 end, int type);
+ extern void svg_pstate(int cpu, u64 start, u64 end, u64 freq);
+ 
+-- 
+1.8.1.4
 
-Borislav Petkov (1):
-      tools/: Convert to new topic libraries
-
-Namhyung Kim (1):
-      tools lib traceevent: Get rid of die() in some string conversion functions
-
-Stanislav Fomichev (5):
-      perf timechart: Add backtrace support to CPU info
-      perf timechart: Print pid along the name
-      perf timechart: Get number of CPUs from perf header
-      perf timechart: Add support for topology
-      perf timechart: Add --highlight option
-
- tools/Makefile                              |  12 +--
- tools/lib/{lk => api}/Makefile              |  18 ++--
- tools/lib/{lk => api/fs}/debugfs.c          |   0
- tools/lib/{lk => api/fs}/debugfs.h          |   6 +-
- tools/lib/traceevent/parse-filter.c         |  67 ++++--------
- tools/perf/Documentation/perf-timechart.txt |  16 +++
- tools/perf/Makefile.perf                    |  33 +++---
- tools/perf/builtin-kvm.c                    |   2 +-
- tools/perf/builtin-probe.c                  |   2 +-
- tools/perf/builtin-timechart.c              |  79 ++++++++++++--
- tools/perf/perf.c                           |   2 +-
- tools/perf/tests/parse-events.c             |   2 +-
- tools/perf/util/dso.c                       |  24 ++---
- tools/perf/util/dso.h                       |  14 +--
- tools/perf/util/evlist.c                    |   2 +-
- tools/perf/util/evsel.c                     |   2 +-
- tools/perf/util/parse-events.c              |   2 +-
- tools/perf/util/probe-event.c               |   2 +-
- tools/perf/util/setup.py                    |   4 +-
- tools/perf/util/svghelper.c                 | 159 ++++++++++++++++++++++++++--
- tools/perf/util/svghelper.h                 |   6 +-
- tools/perf/util/symbol.c                    |  12 +--
- tools/perf/util/trace-event-info.c          |   2 +-
- tools/perf/util/util.h                      |   2 +-
- tools/vm/Makefile                           |  14 +--
- tools/vm/page-types.c                       |   2 +-
- 26 files changed, 344 insertions(+), 142 deletions(-)
- rename tools/lib/{lk => api}/Makefile (66%)
- rename tools/lib/{lk => api/fs}/debugfs.c (100%)
- rename tools/lib/{lk => api/fs}/debugfs.h (86%)
