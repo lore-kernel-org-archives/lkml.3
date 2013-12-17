@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab3LQHsW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 02:48:22 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:38179 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab3LQHsU (ORCPT
+	id S1752083Ab3LQH4E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 02:56:04 -0500
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:37797
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751054Ab3LQH4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 02:48:20 -0500
+	Tue, 17 Dec 2013 02:56:02 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zz98dIzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Tue, 17 Dec 2013 15:56:51 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: "Gupta, Pekon" <pekon@ti.com>
+CC: Huang Shijie <b32955@freescale.com>,
+        "mike@steroidmicros.com" <mike@steroidmicros.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "angus.clark@st.com" <angus.clark@st.com>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "marex@denx.de" <marex@denx.de>,
+        "Poddar, Sourav" <sourav.poddar@ti.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "b44548@freescale.com" <b44548@freescale.com>,
+        "b18965@freescale.com" <b18965@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v3 0/7] mtd: spi-nor: add a new framework for SPI NOR
+Message-ID: <20131217075649.GL6691@S2101-09.ap.freescale.net>
+References: <1387184330-14448-1-git-send-email-b32955@freescale.com>
+ <20980858CB6D3A4BAE95CA194937D5E73EA56ADC@DBDE04.ent.ti.com>
+ <20131217040209.GA27091@shlinux2.ap.freescale.net>
+ <20980858CB6D3A4BAE95CA194937D5E73EA56B3A@DBDE04.ent.ti.com>
+ <20131217060731.GJ6691@S2101-09.ap.freescale.net>
+ <20980858CB6D3A4BAE95CA194937D5E73EA56C5B@DBDE04.ent.ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20131216164730.GD26797@dhcp22.suse.cz>
-References: <965cbb70fb55fe50a77382537b9a1b7455deac86.1387007793.git.vdavydov@parallels.com>
-	<20131216164730.GD26797@dhcp22.suse.cz>
-Date: Tue, 17 Dec 2013 11:48:20 +0400
-Message-ID: <CAA6-i6rX7-F9UO2DO3gwC2SHNuSv2Fn48eLb1BZmc3HjCkbuvQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] memcg: fix memcg_size() calculation
-From: Glauber Costa <glommer@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Vladimir Davydov <vdavydov@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, devel@openvz.org,
-        Glauber Costa <glommer@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73EA56C5B@DBDE04.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 8:47 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Sat 14-12-13 12:15:33, Vladimir Davydov wrote:
->> The mem_cgroup structure contains nr_node_ids pointers to
->> mem_cgroup_per_node objects, not the objects themselves.
->
-> Ouch! This is 2k per node which is wasted. What a shame I haven't
-> noticed this back then when reviewing 45cf7ebd5a033 (memcg: reduce the
-> size of struct memcg 244-fold)
->
-IIRC, they weren't pointers back then. I think they were embedded in
-the structure, and I let
-them embedded.
-My mind may be tricking me, but I think I recall that Johannes changed
-them to pointers
-in a later time. No ?
+On Tue, Dec 17, 2013 at 07:17:01AM +0000, Gupta, Pekon wrote:
+> All I said was using company names in Headers or MODULE_AUTHOR of
+> *generic frameworks*. A generic framework is maintained and updated
+> by community at large. And over course of time other people contribute
+> more than the author. So tagging a company name there would sound like
+> _repeatedly_ giving credit to company or yourself, even if most of the
+> original  code is changed now. Does that make sense ?
 
-In any case, this is correct.
+I could somehow buy in the argument of using person email over company
+one in MODULE_AUTHOR(), but still not the one that do not use company
+name in Headers.
+
+In this case, Huang works for Freescale and Freescale pays him to do the
+work, so Huang shares the authorship and Freescale shares the copyright.
+There is nothing wrong adding Freescale copyright into the file header,
+based on my understanding.  When other people make significant changes
+and contributions to the file, they are welcomed to add more copyright
+info on top of the existing ones.
+
+I'm not a lawyer, and more than happy to be corrected if I'm wrong.
+
+Shawn
+
