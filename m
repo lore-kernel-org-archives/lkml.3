@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab3LQPrb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:47:31 -0500
-Received: from 9.mo3.mail-out.ovh.net ([87.98.184.141]:58443 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754826Ab3LQPrY (ORCPT
+	id S1754732Ab3LQPtV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 10:49:21 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:33311 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754224Ab3LQPtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:47:24 -0500
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Landley <rob@landley.net>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [PATCH] drivers/misc: atmel_tclib: document clock properties
-Date: Tue, 17 Dec 2013 16:47:14 +0100
-Message-Id: <1387295234-7123-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 8222728495901735010
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Tue, 17 Dec 2013 10:49:18 -0500
+From: David Herrmann <dh.herrmann@gmail.com>
+To: linux-input@vger.kernel.org
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        linux-kernel@vger.kernel.org, input-tools@lists.freedesktop.org,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH 0/4] Input: ABS2 and friends
+Date: Tue, 17 Dec 2013 16:48:50 +0100
+Message-Id: <1387295334-1744-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.8.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the clock properties required by the atmel_tclib driver.
+Hi
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- .../devicetree/bindings/arm/atmel-at91.txt         |    8 ++++++++
- 1 file changed, 8 insertions(+)
+This implements the recently discussed ABS2 API. It's working fine on my machine
+with libevdev. Comments welcome!
 
-diff --git a/Documentation/devicetree/bindings/arm/atmel-at91.txt b/Documentation/devicetree/bindings/arm/atmel-at91.txt
-index 1196290..78530e6 100644
---- a/Documentation/devicetree/bindings/arm/atmel-at91.txt
-+++ b/Documentation/devicetree/bindings/arm/atmel-at91.txt
-@@ -20,6 +20,10 @@ TC/TCLIB Timer required properties:
- - interrupts: Should contain all interrupts for the TC block
-   Note that you can specify several interrupt cells if the TC
-   block has one interrupt per channel.
-+- clock-names: tuple listing input clock names.
-+	Required elements: "t0_clk"
-+	Optional elements: "t1_clk", "t2_clk"
-+- clocks: phandles to input clocks.
- 
- Examples:
- 
-@@ -28,6 +32,8 @@ One interrupt per TC block:
- 		compatible = "atmel,at91rm9200-tcb";
- 		reg = <0xfff7c000 0x100>;
- 		interrupts = <18 4>;
-+		clocks = <&tcb0_clk>;
-+		clock-names = "t0_clk";
- 	};
- 
- One interrupt per TC channel in a TC block:
-@@ -35,6 +41,8 @@ One interrupt per TC channel in a TC block:
- 		compatible = "atmel,at91rm9200-tcb";
- 		reg = <0xfffdc000 0x100>;
- 		interrupts = <26 4 27 4 28 4>;
-+		clocks = <&tcb1_clk>;
-+		clock-names = "t0_clk";
- 	};
- 
- RSTC Reset Controller required properties:
+* Patch #1 fixes some uinput shortcomings and prepares uinput for ABS2
+* Patch #2 adds ABS2
+* Patch #3 is just a small comment-fix for #4
+* Patch #4 adds some new example ABS values in the new range
+
+Note that I have patches pending which make use of the new ABS values, but I'd
+like to get this reduced series in first.
+
+Thanks
+David
+
+David Herrmann (4):
+  Input: uinput: add full absinfo support
+  Input: introduce ABS_MAX2/CNT2 and friends
+  Input: remove ambigious gamepad comment
+  Input: add motion-tracking ABS_* bits and docs
+
+ Documentation/input/gamepad.txt          |   9 +-
+ Documentation/input/motion-tracking.txt  | 149 +++++++++++++++++++++++++++++++
+ drivers/hid/hid-debug.c                  |   2 +-
+ drivers/hid/hid-input.c                  |   2 +-
+ drivers/input/evdev.c                    |  95 +++++++++++++++++++-
+ drivers/input/input.c                    |  14 +--
+ drivers/input/keyboard/goldfish_events.c |   6 +-
+ drivers/input/keyboard/hil_kbd.c         |   2 +-
+ drivers/input/misc/uinput.c              | 146 ++++++++++++++++++++++--------
+ include/linux/hid.h                      |   2 +-
+ include/linux/input.h                    |   6 +-
+ include/linux/mod_devicetable.h          |   2 +-
+ include/uapi/linux/input.h               |  49 +++++++++-
+ include/uapi/linux/uinput.h              |   9 ++
+ 14 files changed, 431 insertions(+), 62 deletions(-)
+ create mode 100644 Documentation/input/motion-tracking.txt
+
 -- 
-1.7.9.5
+1.8.5.1
 
