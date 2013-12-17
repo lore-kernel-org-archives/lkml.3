@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab3LQSa6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:30:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60990 "EHLO
+	id S1755806Ab3LQSO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:14:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60963 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755815Ab3LQSPC (ORCPT
+	with ESMTP id S1755776Ab3LQSO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:15:02 -0500
+	Tue, 17 Dec 2013 13:14:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Marek Vasut <marex@denx.de>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Tomoki Sekiyama <tomoki.sekiyama@hds.com>, Jens Axboe <axboe@kernel.dk>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 057/103] HID: add quirk for Freescale i.MX23 ROM recovery
-Date: Tue, 17 Dec 2013 18:12:46 +0000
-Message-Id: <1387304012-23805-58-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 051/103] elevator: acquire q->sysfs_lock in elevator_change()
+Date: Tue, 17 Dec 2013 18:12:40 +0000
+Message-Id: <1387304012-23805-52-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -27,51 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Vasut <marex@denx.de>
+From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
 
-commit 436136cec650d661eb662fcb508a99878606d050 upstream.
+commit 7c8a3679e3d8e9d92d58f282161760a0e247df97 upstream.
 
-The USB recovery mode present in i.MX23 ROM emulates USB HID.  It needs this
-quirk to behave properly.
+Add locking of q->sysfs_lock into elevator_change() (an exported function)
+to ensure it is held to protect q->elevator from elevator_init(), even if
+elevator_change() is called from non-sysfs paths.
+sysfs path (elv_iosched_store) uses __elevator_change(), non-locking
+version, as the lock is already taken by elv_iosched_store().
 
-Even if the official branding of the chip is Freescale i.MX23, I named it
-Sigmatel STMP3780 since that's what the chip really is and it even reports
-itself as STMP3780.
-
-Signed-off-by: Marek Vasut <marex@denx.de>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-ids.h           | 3 +++
- drivers/hid/usbhid/hid-quirks.c | 1 +
- 2 files changed, 4 insertions(+)
+ block/elevator.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 16641fd..0e59c28 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -686,6 +686,9 @@
- #define USB_VENDOR_ID_SIGMA_MICRO	0x1c4f
- #define USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD	0x0002
+diff --git a/block/elevator.c b/block/elevator.c
+index 6a55d41..f69363e 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -936,7 +936,7 @@ fail_init:
+ /*
+  * Switch this queue to the given IO scheduler.
+  */
+-int elevator_change(struct request_queue *q, const char *name)
++static int __elevator_change(struct request_queue *q, const char *name)
+ {
+ 	char elevator_name[ELV_NAME_MAX];
+ 	struct elevator_type *e;
+@@ -958,6 +958,18 @@ int elevator_change(struct request_queue *q, const char *name)
  
-+#define USB_VENDOR_ID_SIGMATEL		0x066F
-+#define USB_DEVICE_ID_SIGMATEL_STMP3780	0x3780
+ 	return elevator_switch(q, e);
+ }
 +
- #define USB_VENDOR_ID_SKYCABLE			0x1223
- #define	USB_DEVICE_ID_SKYCABLE_WIRELESS_PRESENTER	0x3F07
++int elevator_change(struct request_queue *q, const char *name)
++{
++	int ret;
++
++	/* Protect q->elevator from elevator_init() */
++	mutex_lock(&q->sysfs_lock);
++	ret = __elevator_change(q, name);
++	mutex_unlock(&q->sysfs_lock);
++
++	return ret;
++}
+ EXPORT_SYMBOL(elevator_change);
  
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 4c37560..bb09319 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -82,6 +82,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_REALTEK, USB_DEVICE_ID_REALTEK_READER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SENNHEISER, USB_DEVICE_ID_SENNHEISER_BTD500USB, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_SIGMATEL, USB_DEVICE_ID_SIGMATEL_STMP3780, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_1, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_2, HID_QUIRK_NOGET },
+ ssize_t elv_iosched_store(struct request_queue *q, const char *name,
+@@ -968,7 +980,7 @@ ssize_t elv_iosched_store(struct request_queue *q, const char *name,
+ 	if (!q->elevator)
+ 		return count;
+ 
+-	ret = elevator_change(q, name);
++	ret = __elevator_change(q, name);
+ 	if (!ret)
+ 		return count;
+ 
 -- 
 1.8.3.2
 
