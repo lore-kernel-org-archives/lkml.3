@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246Ab3LQXno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 18:43:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13576 "EHLO mx1.redhat.com"
+	id S1752533Ab3LQXnz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 18:43:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14664 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752138Ab3LQXnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 18:43:41 -0500
-Subject: [PATCH v2 1/4] pci: Generalize wait loop
+	id S1752278Ab3LQXns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 18:43:48 -0500
+Subject: [PATCH v2 2/4] pci: Add support for save/restore of extended
+ capabilities
 From: Alex Williamson <alex.williamson@redhat.com>
 To: bhelgaas@google.com, linux-pci@vger.kernel.org
 Cc: ddutile@redhat.com, linux-kernel@vger.kernel.org
-Date: Tue, 17 Dec 2013 16:43:39 -0700
-Message-ID: <20131217234339.2310.68566.stgit@bling.home>
+Date: Tue, 17 Dec 2013 16:43:45 -0700
+Message-ID: <20131217234345.2310.58636.stgit@bling.home>
 In-Reply-To: <20131217233741.2310.78334.stgit@bling.home>
 References: <20131217233741.2310.78334.stgit@bling.home>
 User-Agent: StGit/0.17-dirty
@@ -22,115 +23,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently have two instance of this loop which waits for a pending
-bit to clear in a status dword.  Generalize the function for future
-users.
+Current save/restore is specific to standard capabilities.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/pci/pci.c   |   54 +++++++++++++++++++++++++++++----------------------
- include/linux/pci.h |    1 +
- 2 files changed, 32 insertions(+), 23 deletions(-)
+ drivers/pci/pci.c   |   43 +++++++++++++++++++++++++++++++++++--------
+ include/linux/pci.h |    9 ++++++++-
+ 2 files changed, 43 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 07369f3..848023f 100644
+index 848023f..c65d53c 100644
 --- a/drivers/pci/pci.c
 +++ b/drivers/pci/pci.c
-@@ -431,6 +431,32 @@ pci_find_parent_resource(const struct pci_dev *dev, struct resource *res)
+@@ -861,18 +861,28 @@ EXPORT_SYMBOL(pci_choose_state);
+ #define PCI_EXP_SAVE_REGS	7
+ 
+ 
+-static struct pci_cap_saved_state *pci_find_saved_cap(
+-	struct pci_dev *pci_dev, char cap)
++static struct pci_cap_saved_state *_pci_find_saved_cap(struct pci_dev *pci_dev,
++						       u16 cap, bool extended)
+ {
+ 	struct pci_cap_saved_state *tmp;
+ 
+ 	hlist_for_each_entry(tmp, &pci_dev->saved_cap_space, next) {
+-		if (tmp->cap.cap_nr == cap)
++		if (tmp->cap.cap_extended == extended && tmp->cap.cap_nr == cap)
+ 			return tmp;
+ 	}
+ 	return NULL;
+ }
+ 
++struct pci_cap_saved_state *pci_find_saved_cap(struct pci_dev *dev, char cap)
++{
++	return _pci_find_saved_cap(dev, cap, false);
++}
++
++struct pci_cap_saved_state *pci_find_saved_ext_cap(struct pci_dev *dev, u16 cap)
++{
++	return _pci_find_saved_cap(dev, cap, true);
++}
++
+ static int pci_save_pcie_state(struct pci_dev *dev)
+ {
+ 	int i = 0;
+@@ -1113,7 +1123,7 @@ int pci_load_saved_state(struct pci_dev *dev, struct pci_saved_state *state)
+ 	while (cap->size) {
+ 		struct pci_cap_saved_state *tmp;
+ 
+-		tmp = pci_find_saved_cap(dev, cap->cap_nr);
++		tmp = _pci_find_saved_cap(dev, cap->cap_nr, cap->cap_extended);
+ 		if (!tmp || tmp->cap.size != cap->size)
+ 			return -EINVAL;
+ 
+@@ -2047,18 +2057,24 @@ static void pci_add_saved_cap(struct pci_dev *pci_dev,
  }
  
  /**
-+ * pci_wait_for_pending - wait for @mask bit(s) to clear in status word @pos
-+ * @dev: the PCI device to operate on
-+ * @pos: config space offset of status word
-+ * @mask: mask of bit(s) to care about in status word
-+ *
-+ * Return 1 when mask bit(s) in status word clear, 0 otherwise.
-+ */
-+int pci_wait_for_pending(struct pci_dev *dev, int pos, u16 mask)
-+{
-+	int i;
-+
-+	/* Wait for Transaction Pending bit clean */
-+	for (i = 0; i < 4; i++) {
-+		u16 status;
-+		if (i)
-+			msleep((1 << (i - 1)) * 100);
-+
-+		pci_read_config_word(dev, pos, &status);
-+		if (!(status & mask))
-+			return 1;
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-  * pci_restore_bars - restore a devices BAR values (e.g. after wake-up)
-  * @dev: PCI device to have its BARs restored
-  *
-@@ -3204,20 +3230,10 @@ EXPORT_SYMBOL(pci_set_dma_seg_boundary);
+- * pci_add_cap_save_buffer - allocate buffer for saving given capability registers
++ * _pci_add_cap_save_buffer - allocate buffer for saving given
++ *                            capability registers
+  * @dev: the PCI device
+  * @cap: the capability to allocate the buffer for
++ * @extended: Standard or Extended capability ID
+  * @size: requested size of the buffer
   */
- int pci_wait_for_pending_transaction(struct pci_dev *dev)
+-static int pci_add_cap_save_buffer(
+-	struct pci_dev *dev, char cap, unsigned int size)
++static int _pci_add_cap_save_buffer(struct pci_dev *dev, u16 cap,
++				    bool extended, unsigned int size)
  {
--	int i;
--	u16 status;
--
--	/* Wait for Transaction Pending bit clean */
--	for (i = 0; i < 4; i++) {
--		if (i)
--			msleep((1 << (i - 1)) * 100);
--
--		pcie_capability_read_word(dev, PCI_EXP_DEVSTA, &status);
--		if (!(status & PCI_EXP_DEVSTA_TRPND))
--			return 1;
--	}
-+	if (!pci_is_pcie(dev))
-+		return 1;
- 
--	return 0;
-+	return pci_wait_for_pending(dev, PCI_EXP_DEVSTA, PCI_EXP_DEVSTA_TRPND);
- }
- EXPORT_SYMBOL(pci_wait_for_pending_transaction);
- 
-@@ -3244,10 +3260,8 @@ static int pcie_flr(struct pci_dev *dev, int probe)
- 
- static int pci_af_flr(struct pci_dev *dev, int probe)
- {
--	int i;
  	int pos;
- 	u8 cap;
--	u8 status;
+ 	struct pci_cap_saved_state *save_state;
  
- 	pos = pci_find_capability(dev, PCI_CAP_ID_AF);
- 	if (!pos)
-@@ -3261,14 +3275,8 @@ static int pci_af_flr(struct pci_dev *dev, int probe)
+-	pos = pci_find_capability(dev, cap);
++	if (extended)
++		pos = pci_find_ext_capability(dev, cap);
++	else
++		pos = pci_find_capability(dev, cap);
++
+ 	if (pos <= 0)
  		return 0;
  
- 	/* Wait for Transaction Pending bit clean */
--	for (i = 0; i < 4; i++) {
--		if (i)
--			msleep((1 << (i - 1)) * 100);
--
--		pci_read_config_byte(dev, pos + PCI_AF_STATUS, &status);
--		if (!(status & PCI_AF_STATUS_TP))
--			goto clear;
--	}
-+	if (pci_wait_for_pending(dev, PCI_AF_STATUS, PCI_AF_STATUS_TP))
-+		goto clear;
+@@ -2067,12 +2083,23 @@ static int pci_add_cap_save_buffer(
+ 		return -ENOMEM;
  
- 	dev_err(&dev->dev, "transaction is not cleared; "
- 			"proceeding with reset anyway\n");
+ 	save_state->cap.cap_nr = cap;
++	save_state->cap.cap_extended = extended;
+ 	save_state->cap.size = size;
+ 	pci_add_saved_cap(dev, save_state);
+ 
+ 	return 0;
+ }
+ 
++int pci_add_cap_save_buffer(struct pci_dev *dev, char cap, unsigned int size)
++{
++	return _pci_add_cap_save_buffer(dev, cap, false, size);
++}
++
++int pci_add_ext_cap_save_buffer(struct pci_dev *dev, u16 cap, unsigned int size)
++{
++	return _pci_add_cap_save_buffer(dev, cap, true, size);
++}
++
+ /**
+  * pci_allocate_cap_save_buffers - allocate buffers for saving capabilities
+  * @dev: the PCI device
 diff --git a/include/linux/pci.h b/include/linux/pci.h
-index a13d682..e661333 100644
+index e661333..ebbd311 100644
 --- a/include/linux/pci.h
 +++ b/include/linux/pci.h
-@@ -938,6 +938,7 @@ bool pci_check_and_unmask_intx(struct pci_dev *dev);
- void pci_msi_off(struct pci_dev *dev);
- int pci_set_dma_max_seg_size(struct pci_dev *dev, unsigned int size);
- int pci_set_dma_seg_boundary(struct pci_dev *dev, unsigned long mask);
-+int pci_wait_for_pending(struct pci_dev *dev, int pos, u16 mask);
- int pci_wait_for_pending_transaction(struct pci_dev *dev);
- int pcix_get_max_mmrbc(struct pci_dev *dev);
- int pcix_get_mmrbc(struct pci_dev *dev);
+@@ -224,7 +224,8 @@ enum pci_bus_speed {
+ };
+ 
+ struct pci_cap_saved_data {
+-	char cap_nr;
++	u16 cap_nr;
++	bool cap_extended;
+ 	unsigned int size;
+ 	u32 data[0];
+ };
+@@ -978,6 +979,12 @@ struct pci_saved_state *pci_store_saved_state(struct pci_dev *dev);
+ int pci_load_saved_state(struct pci_dev *dev, struct pci_saved_state *state);
+ int pci_load_and_free_saved_state(struct pci_dev *dev,
+ 				  struct pci_saved_state **state);
++struct pci_cap_saved_state *pci_find_saved_cap(struct pci_dev *dev, char cap);
++struct pci_cap_saved_state *pci_find_saved_ext_cap(struct pci_dev *dev,
++						   u16 cap);
++int pci_add_cap_save_buffer(struct pci_dev *dev, char cap, unsigned int size);
++int pci_add_ext_cap_save_buffer(struct pci_dev *dev,
++				u16 cap, unsigned int size);
+ int __pci_complete_power_transition(struct pci_dev *dev, pci_power_t state);
+ int pci_set_power_state(struct pci_dev *dev, pci_power_t state);
+ pci_power_t pci_choose_state(struct pci_dev *dev, pm_message_t state);
 
