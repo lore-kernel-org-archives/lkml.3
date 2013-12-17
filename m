@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644Ab3LQWvw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:51:52 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:42719 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752435Ab3LQWvp (ORCPT
+	id S1752724Ab3LQWvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:51:55 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:44273 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628Ab3LQWvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:51:45 -0500
+	Tue, 17 Dec 2013 17:51:52 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+Cc: Alex Shi <alex.shi@linaro.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 07/13] sched: Enable IPI reception on timekeeper under nohz full system
-Date: Tue, 17 Dec 2013 23:51:26 +0100
-Message-Id: <1387320692-28460-8-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 13/13] nohz_full: fix code style issue of tick_nohz_full_stop_tick
+Date: Tue, 17 Dec 2013 23:51:32 +0100
+Message-Id: <1387320692-28460-14-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
 References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
@@ -26,16 +26,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need the default timekeeping CPU to be able to receive IPIs sent
-from full dynticks CPUs when they wake up from full system idle state.
+From: Alex Shi <alex.shi@linaro.org>
 
-Therefore we need an entrypoint from the scheduler IPI so that the
-need to poll on timekeeping duty is re-evaluated from irq_exit().
+Code usually starts with 'tab' instead of 7 'space' in kernel
 
-In order to achieve this, lets take the scheduler IPI everytime as long
-as there is at least one full dynticks CPU around. Full dynticks CPUs
-are interested too in taking scheduler IPIs to reevaluate their tick.
-
+Signed-off-by: Alex Shi <alex.shi@linaro.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -46,26 +41,40 @@ Cc: John Stultz <john.stultz@linaro.org>
 Cc: Alex Shi <alex.shi@linaro.org>
 Cc: Kevin Hilman <khilman@linaro.org>
 ---
- kernel/sched/core.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ kernel/time/tick-sched.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index e85cda2..f46a7bc 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1502,9 +1502,9 @@ void scheduler_ipi(void)
- 	if (tif_need_resched())
- 		set_preempt_need_resched();
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index f5ae69f..8c47c6c 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -758,18 +758,18 @@ out:
+ static void tick_nohz_full_stop_tick(struct tick_sched *ts)
+ {
+ #ifdef CONFIG_NO_HZ_FULL
+-       int cpu = smp_processor_id();
++	int cpu = smp_processor_id();
  
--	if (llist_empty(&this_rq()->wake_list)
--			&& !tick_nohz_full_cpu(smp_processor_id())
--			&& !got_nohz_idle_kick())
-+	if (llist_empty(&this_rq()->wake_list) &&
-+	    !tick_nohz_full_enabled() &&
-+	    !got_nohz_idle_kick())
- 		return;
+-       if (!tick_nohz_full_cpu(cpu) || is_idle_task(current))
+-               return;
++	if (!tick_nohz_full_cpu(cpu) || is_idle_task(current))
++		return;
  
- 	/*
+-       if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE)
+-	       return;
++	if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE)
++		return;
+ 
+-       if (!can_stop_full_tick())
+-               return;
++	if (!can_stop_full_tick())
++		return;
+ 
+-       tick_nohz_stop_sched_tick(ts, ktime_get(), cpu);
++	tick_nohz_stop_sched_tick(ts, ktime_get(), cpu);
+ #endif
+ }
+ 
 -- 
 1.8.3.1
 
