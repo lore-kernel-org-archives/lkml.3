@@ -1,94 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab3LQFjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 00:39:15 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.246]:63597 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751662Ab3LQFjN (ORCPT
+	id S1752574Ab3LQFjd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 00:39:33 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:56092 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab3LQFjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 00:39:13 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <broonie@kernel.org>
-CC: <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <linux-doc@vger.kernel.org>, <vpalatin@chromium.org>,
-        <nicolas.ferre@atmel.com>, <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <wenyou.yang@atmel.com>
-Subject: [PATCH 3/3 v2] ARM: dts: sama5d3xcm: add the regulator device node
-Date: Tue, 17 Dec 2013 13:36:37 +0800
-Message-ID: <1387258597-21866-4-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1387258597-21866-1-git-send-email-wenyou.yang@atmel.com>
-References: <1387258597-21866-1-git-send-email-wenyou.yang@atmel.com>
+	Tue, 17 Dec 2013 00:39:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Originating-IP: [67.244.6.56]
+In-Reply-To: <52AFE107.4040705@gmail.com>
+References: <1386969579.3914.13.camel@piranha.localdomain>
+	<20131214092443.622b069d@samsung.com>
+	<52ACE809.1000406@gmail.com>
+	<CAGoCfiwxGU-j14oGDfvoYTA5WZUkQdM_3=80gfpWUjXVNN_nng@mail.gmail.com>
+	<52AFE107.4040705@gmail.com>
+Date: Tue, 17 Dec 2013 00:39:29 -0500
+Message-ID: <CAGoCfiztzv-QFjmKXdiJreTPCYN1RTe5bPTO0awx5a-ER161qQ@mail.gmail.com>
+Subject: Re: stable regression: tda18271_read_regs: [1-0060|M] ERROR:
+ i2c_transfer returned: -19
+From: Devin Heitmueller <dheitmueller@kernellabs.com>
+To: Connor Behan <connor.behan@gmail.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Frederik Himpe <fhimpe@telenet.be>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
- arch/arm/boot/dts/sama5d3xcm.dtsi |   46 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
+Hi Connor,
 
-diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
-index 726a0f3..634adf5 100644
---- a/arch/arm/boot/dts/sama5d3xcm.dtsi
-+++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
-@@ -38,6 +38,52 @@
- 			macb0: ethernet@f0028000 {
- 				phy-mode = "rgmii";
- 			};
-+
-+			i2c1: i2c@f0018000 {
-+				pmic: act8865@5b {
-+					compatible = "active-semi,act8865";
-+					reg = <0x5b>;
-+					status = "disabled";
-+
-+					regulators {
-+						vcc_1v8_reg: DCDC_REG1 {
-+							regulator-name = "DCDC_REG1";
-+							regulator-min-microvolt = <1800000>;
-+							regulator-max-microvolt = <1800000>;
-+							regulator-always-on;
-+						};
-+
-+						vcc_1v2_reg: DCDC_REG2 {
-+							regulator-name = "DCDC_REG2";
-+							regulator-min-microvolt = <1100000>;
-+							regulator-max-microvolt = <1300000>;
-+							regulator-suspend-mem-microvolt = <1150000>;
-+							regulator-suspend-standby-microvolt = <1150000>;
-+							regulator-always-on;
-+						};
-+
-+						vcc_3v3_reg: DCDC_REG3 {
-+							regulator-name = "DCDC_REG3";
-+							regulator-min-microvolt = <3300000>;
-+							regulator-max-microvolt = <3300000>;
-+							regulator-always-on;
-+						};
-+
-+						vddfuse_reg: LDO_REG4 {
-+							regulator-name = "LDO_REG4";
-+							regulator-min-microvolt = <3300000>;
-+							regulator-max-microvolt = <3300000>;
-+							regulator-always-on;
-+						};
-+
-+						vddana_reg: LDO_REG5 {
-+							regulator-name = "LDO_REG5";
-+							regulator-min-microvolt = <2500000>;
-+							regulator-max-microvolt = <2500000>;
-+						};
-+					};
-+				};
-+			};
- 		};
- 
- 		nand0: nand@60000000 {
+On Tue, Dec 17, 2013 at 12:28 AM, Connor Behan <connor.behan@gmail.com> wrote:
+> Thanks for the detailed answer. I have tried your patch and updated the
+> wiki page. Would a 950 or 950Q be safer to buy next time?
+
+The 950 has long since been obsoleted.  You cannot buy them anymore.
+The 950q though is well supported and doesn't have this issue as it
+uses a different chip.
+
+> On 14/12/13 05:17 PM, Devin Heitmueller wrote:
+>> I had a patch kicking around which fixed part of the issue, but it
+>> didn't completely work because of the lgdt3305 having AGC enabled at
+>> chip powerup (which interferes with analog tuning on the shared
+>> tuner), and the internal v4l-dvb APIs don't provide any easy way to
+>> reset the AGC from the analog side of the device.
+>
+> By this do you mean that the functions exist but they aren't part of the
+> public API? Maybe this problem can be addressed if there is ever "v4l3"
+> or some other reason to break compatibility.
+
+No, these are internal APIs that dictate how the various driver
+components talk to each other.  Because the V4L and DVB subsystems
+were developed independently of each other, they do a really crappy
+job of communicating between them (a problem which manifests itself in
+particular when sharing hardware resources such as tuners).
+
+The problem *can* be fixed, but it would likely require
+extensions/changes to the basic frameworks used to communicate between
+the different drivers.
+
+Devin
+
 -- 
-1.7.9.5
-
+Devin J. Heitmueller - Kernel Labs
+http://www.kernellabs.com
