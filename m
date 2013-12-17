@@ -1,117 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415Ab3LQJc1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 04:32:27 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:43101 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab3LQJcZ (ORCPT
+	id S1753276Ab3LQJdO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 04:33:14 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:19889 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753181Ab3LQJdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 04:32:25 -0500
-Date: Tue, 17 Dec 2013 15:02:14 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        linux-acpi@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 09/11] drivers: acpi: Remove unused function in ec.c and add
- prototype declaration in header file internal.h
-Message-ID: <5cb8c4062f65223dbde9e595af87bea0fc690b85.1387271324.git.rashika.kheria@gmail.com>
-References: <c676af6619fc5a84208740bfc7edcf56bb78ed4e.1387271324.git.rashika.kheria@gmail.com>
+	Tue, 17 Dec 2013 04:33:07 -0500
+Message-ID: <52B01A50.4080209@atmel.com>
+Date: Tue, 17 Dec 2013 10:33:04 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <c676af6619fc5a84208740bfc7edcf56bb78ed4e.1387271324.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: Fengguang Wu <fengguang.wu@intel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: at91: fix pmc_clk_ids data type attriubte
+References: <1387229127-7605-1-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1387229127-7605-1-git-send-email-b.brezillon@overkiz.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds the prototype declarations of functions acpi_ec_add_query_handler()
-and acpi_ec_remove_query_handler() in header file internal.h and removes
-unused functions ec_burst_enable() and ec_burst_disable() in ec.c.
+On 16/12/2013 22:25, Boris BREZILLON :
+> Fix pmc_clk_ids data type attribute (__initdata -> __initconst).
+> 
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 
-This eliminates the following warnings in ec.c:
-drivers/acpi/ec.c:393:5: warning: no previous prototype for ‘ec_burst_enable’ [-Wmissing-prototypes]
-drivers/acpi/ec.c:402:5: warning: no previous prototype for ‘ec_burst_disable’ [-Wmissing-prototypes]
-drivers/acpi/ec.c:531:5: warning: no previous prototype for ‘acpi_ec_add_query_handler’ [-Wmissing-prototypes]
-drivers/acpi/ec.c:552:6: warning: no previous prototype for ‘acpi_ec_remove_query_handler’ [-Wmissing-prototypes]
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/acpi/ec.c       |   25 -------------------------
- drivers/acpi/internal.h |    9 +++++++++
- 2 files changed, 9 insertions(+), 25 deletions(-)
+I take it in at91-3.14-cleanup2 branch and send it upstream through
+arm-soc like any other CCF material for AT91 for the 3.14 release.
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index ba5b56d..5391e02 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -91,10 +91,6 @@ static unsigned int ec_storm_threshold  __read_mostly = 8;
- module_param(ec_storm_threshold, uint, 0644);
- MODULE_PARM_DESC(ec_storm_threshold, "Maxim false GPE numbers not considered as GPE storm");
- 
--/* If we find an EC via the ECDT, we need to keep a ptr to its context */
--/* External interfaces use first EC only, so remember */
--typedef int (*acpi_ec_query_func) (void *data);
--
- struct acpi_ec_query_handler {
- 	struct list_head node;
- 	acpi_ec_query_func func;
-@@ -387,27 +383,6 @@ static int acpi_ec_write(struct acpi_ec *ec, u8 address, u8 data)
- 	return acpi_ec_transaction(ec, &t);
- }
- 
--/*
-- * Externally callable EC access functions. For now, assume 1 EC only
-- */
--int ec_burst_enable(void)
--{
--	if (!first_ec)
--		return -ENODEV;
--	return acpi_ec_burst_enable(first_ec);
--}
--
--EXPORT_SYMBOL(ec_burst_enable);
--
--int ec_burst_disable(void)
--{
--	if (!first_ec)
--		return -ENODEV;
--	return acpi_ec_burst_disable(first_ec);
--}
--
--EXPORT_SYMBOL(ec_burst_disable);
--
- int ec_read(u8 addr, u8 *val)
- {
- 	int err;
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index a29739c..8ef9787 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -127,12 +127,21 @@ struct acpi_ec {
- 
- extern struct acpi_ec *first_ec;
- 
-+/* If we find an EC via the ECDT, we need to keep a ptr to its context */
-+/* External interfaces use first EC only, so remember */
-+typedef int (*acpi_ec_query_func) (void *data);
-+
- int acpi_ec_init(void);
- int acpi_ec_ecdt_probe(void);
- int acpi_boot_ec_enable(void);
- void acpi_ec_block_transactions(void);
- void acpi_ec_unblock_transactions(void);
- void acpi_ec_unblock_transactions_early(void);
-+int acpi_ec_add_query_handler(struct acpi_ec *ec, u8 query_bit,
-+			      acpi_handle handle, acpi_ec_query_func func,
-+			      void *data);
-+void acpi_ec_remove_query_handler(struct acpi_ec *ec, u8 query_bit);
-+
- 
- /*--------------------------------------------------------------------------
-                                   Suspend/Resume
+I guess that even without Mike Acked-by, this little fix can follow this
+path.
+
+Bye,
+
+> ---
+>  drivers/clk/at91/pmc.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
+> index 7b9db60..4c03eda 100644
+> --- a/drivers/clk/at91/pmc.c
+> +++ b/drivers/clk/at91/pmc.c
+> @@ -228,7 +228,7 @@ out_free_pmc:
+>  	return NULL;
+>  }
+>  
+> -static const struct of_device_id pmc_clk_ids[] __initdata = {
+> +static const struct of_device_id pmc_clk_ids[] __initconst = {
+>  	/* Main clock */
+>  	{
+>  		.compatible = "atmel,at91rm9200-clk-main",
+> 
+
+
 -- 
-1.7.9.5
-
+Nicolas Ferre
