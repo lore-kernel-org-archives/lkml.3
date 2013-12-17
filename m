@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab3LQUv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:51:56 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:28443 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240Ab3LQUvy (ORCPT
+	id S1754729Ab3LQU4x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:56:53 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:20051 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754093Ab3LQUv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:51:54 -0500
+	Tue, 17 Dec 2013 15:51:56 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
         boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
         mukesh.rathor@oracle.com, jbeulich@suse.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v11 09/12] xen/pvh: Piggyback on PVHVM XenBus and event channels for PVH.
-Date: Tue, 17 Dec 2013 15:51:40 -0500
-Message-Id: <1387313503-31362-10-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH v11 07/12] xen/pvh: Secondary VCPU bringup (non-bootup CPUs)
+Date: Tue, 17 Dec 2013 15:51:38 -0500
+Message-Id: <1387313503-31362-8-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
 References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
@@ -25,119 +25,182 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mukesh Rathor <mukesh.rathor@oracle.com>
 
-PVH is a PV guest with a twist - there are certain things
-that work in it like HVM and some like PV. There is
-a similar mode - PVHVM where we run in HVM mode with
-PV code enabled - and this patch explores that.
+The VCPU bringup protocol follows the PV with certain twists.
+>From xen/include/public/arch-x86/xen.h:
 
-The most notable PV interfaces are the XenBus and event channels.
-For PVH, we will use XenBus and event channels.
+Also note that when calling DOMCTL_setvcpucontext and VCPU_initialise
+for HVM and PVH guests, not all information in this structure is updated:
 
-For the XenBus mechanism we piggyback on how it is done for
-PVHVM guests.
+ - For HVM guests, the structures read include: fpu_ctxt (if
+ VGCT_I387_VALID is set), flags, user_regs, debugreg[*]
 
-Ditto for the event channel mechanism - we piggyback on PVHVM -
-by setting up a specific vector callback and that
-vector ends up calling the event channel mechanism to
-dispatch the events as needed.
+ - PVH guests are the same as HVM guests, but additionally use ctrlreg[3] to
+ set cr3. All other fields not used should be set to 0.
 
-This means that from a pvops perspective, we can use
-native_irq_ops instead of the Xen PV specific. Albeit in the
-future we could support pirq_eoi_map. But that is
-a feature request that can be shared with PVHVM.
+This is what we do. We piggyback on the 'xen_setup_gdt' - but modify
+a bit - we need to call 'load_percpu_segment' so that 'switch_to_new_gdt'
+can load per-cpu data-structures. It has no effect on the VCPU0.
+
+We also piggyback on the %rdi register to pass in the CPU number - so
+that when we bootup a new CPU, the cpu_bringup_and_idle will have
+passed as the first parameter the CPU number (via %rdi for 64-bit).
 
 Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/enlighten.c           | 6 ++++++
- arch/x86/xen/irq.c                 | 5 ++++-
- drivers/xen/events.c               | 5 +++++
- drivers/xen/xenbus/xenbus_client.c | 3 ++-
- 4 files changed, 17 insertions(+), 2 deletions(-)
+ arch/x86/xen/enlighten.c |  7 ++++---
+ arch/x86/xen/smp.c       | 49 ++++++++++++++++++++++++++++++++----------------
+ arch/x86/xen/xen-ops.h   |  1 +
+ 3 files changed, 38 insertions(+), 19 deletions(-)
 
 diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index e420613..7fceb51 100644
+index 0d13652..e420613 100644
 --- a/arch/x86/xen/enlighten.c
 +++ b/arch/x86/xen/enlighten.c
-@@ -1134,6 +1134,8 @@ void xen_setup_shared_info(void)
- 	/* In UP this is as good a place as any to set up shared info */
- 	xen_setup_vcpu_info_placement();
+@@ -1413,13 +1413,14 @@ static void __init xen_boot_params_init_edd(void)
+  * we do this, we have to be careful not to call any stack-protected
+  * function, which is most of the kernel.
+  */
+-static void __init xen_setup_gdt(void)
++void xen_setup_gdt(int cpu)
+ {
+ 	if (xen_feature(XENFEAT_auto_translated_physmap)) {
+ #ifdef CONFIG_X86_64
+ 		unsigned long dummy;
+ 
+-		switch_to_new_gdt(0); /* GDT and GS set */
++		load_percpu_segment(cpu); /* We need to access per-cpu area */
++		switch_to_new_gdt(cpu); /* GDT and GS set */
+ 
+ 		/* We are switching of the Xen provided GDT to our HVM mode
+ 		 * GDT. The new GDT has  __KERNEL_CS with CS.L = 1
+@@ -1534,7 +1535,7 @@ asmlinkage void __init xen_start_kernel(void)
+ 	 * Set up kernel GDT and segment registers, mainly so that
+ 	 * -fstack-protector code can be executed.
+ 	 */
+-	xen_setup_gdt();
++	xen_setup_gdt(0);
+ 
+ 	xen_init_irq_ops();
+ 	xen_init_cpuid_mask();
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index c36b325..5e46190 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -73,9 +73,11 @@ static void cpu_bringup(void)
+ 	touch_softlockup_watchdog();
+ 	preempt_disable();
+ 
+-	xen_enable_sysenter();
+-	xen_enable_syscall();
+-
++	/* PVH runs in ring 0 and allows us to do native syscalls. Yay! */
++	if (!xen_feature(XENFEAT_supervisor_mode_kernel)) {
++		xen_enable_sysenter();
++		xen_enable_syscall();
++	}
+ 	cpu = smp_processor_id();
+ 	smp_store_cpu_info(cpu);
+ 	cpu_data(cpu).x86_max_cores = 1;
+@@ -97,8 +99,14 @@ static void cpu_bringup(void)
+ 	wmb();			/* make sure everything is out */
+ }
+ 
+-static void cpu_bringup_and_idle(void)
++/* Note: cpu parameter is only relevant for PVH */
++static void cpu_bringup_and_idle(int cpu)
+ {
++#ifdef CONFIG_X86_64
++	if (xen_feature(XENFEAT_auto_translated_physmap) &&
++	    xen_feature(XENFEAT_supervisor_mode_kernel))
++		xen_setup_gdt(cpu);
++#endif
+ 	cpu_bringup();
+ 	cpu_startup_entry(CPUHP_ONLINE);
+ }
+@@ -274,9 +282,10 @@ static void __init xen_smp_prepare_boot_cpu(void)
+ 	native_smp_prepare_boot_cpu();
+ 
+ 	if (xen_pv_domain()) {
+-		/* We've switched to the "real" per-cpu gdt, so make sure the
+-		   old memory can be recycled */
+-		make_lowmem_page_readwrite(xen_initial_gdt);
++		if (!xen_feature(XENFEAT_writable_page_tables))
++			/* We've switched to the "real" per-cpu gdt, so make
++			 * sure the old memory can be recycled. */
++			make_lowmem_page_readwrite(xen_initial_gdt);
+ 
+ #ifdef CONFIG_X86_32
+ 		/*
+@@ -360,22 +369,21 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
+ 
+ 	gdt = get_cpu_gdt_table(cpu);
+ 
+-	ctxt->flags = VGCF_IN_KERNEL;
+-	ctxt->user_regs.ss = __KERNEL_DS;
+ #ifdef CONFIG_X86_32
++	/* Note: PVH is not yet supported on x86_32. */
+ 	ctxt->user_regs.fs = __KERNEL_PERCPU;
+ 	ctxt->user_regs.gs = __KERNEL_STACK_CANARY;
+-#else
+-	ctxt->gs_base_kernel = per_cpu_offset(cpu);
  #endif
-+	if (xen_pvh_domain())
-+		return;
+ 	ctxt->user_regs.eip = (unsigned long)cpu_bringup_and_idle;
  
- 	xen_setup_mfn_list_list();
- }
-@@ -1146,6 +1148,10 @@ void xen_setup_vcpu_info_placement(void)
- 	for_each_possible_cpu(cpu)
- 		xen_vcpu_setup(cpu);
+ 	memset(&ctxt->fpu_ctxt, 0, sizeof(ctxt->fpu_ctxt));
  
-+	/* PVH always uses native IRQ ops */
-+	if (xen_pvh_domain())
-+		return;
-+
- 	/* xen_vcpu_setup managed to place the vcpu_info within the
- 	   percpu area for all cpus, so make use of it */
- 	if (have_vcpu_info_placement) {
-diff --git a/arch/x86/xen/irq.c b/arch/x86/xen/irq.c
-index 0da7f86..4f7f351 100644
---- a/arch/x86/xen/irq.c
-+++ b/arch/x86/xen/irq.c
-@@ -5,6 +5,7 @@
- #include <xen/interface/xen.h>
- #include <xen/interface/sched.h>
- #include <xen/interface/vcpu.h>
-+#include <xen/features.h>
- #include <xen/events.h>
+-	{
++	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
++		ctxt->flags = VGCF_IN_KERNEL;
+ 		ctxt->user_regs.eflags = 0x1000; /* IOPL_RING1 */
+ 		ctxt->user_regs.ds = __USER_DS;
+ 		ctxt->user_regs.es = __USER_DS;
++		ctxt->user_regs.ss = __KERNEL_DS;
  
- #include <asm/xen/hypercall.h>
-@@ -128,6 +129,8 @@ static const struct pv_irq_ops xen_irq_ops __initconst = {
+ 		xen_copy_trap_info(ctxt->trap_ctxt);
  
- void __init xen_init_irq_ops(void)
- {
--	pv_irq_ops = xen_irq_ops;
-+	/* For PVH we use default pv_irq_ops settings */
-+	if (!xen_feature(XENFEAT_hvm_callback_vector))
-+		pv_irq_ops = xen_irq_ops;
- 	x86_init.irqs.intr_init = xen_init_IRQ;
- }
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 4035e83..627a16a 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1922,6 +1922,11 @@ void __init xen_init_IRQ(void)
- 		if (xen_initial_domain())
- 			pci_xen_initial_domain();
+@@ -396,18 +404,27 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
+ #ifdef CONFIG_X86_32
+ 		ctxt->event_callback_cs     = __KERNEL_CS;
+ 		ctxt->failsafe_callback_cs  = __KERNEL_CS;
++#else
++		ctxt->gs_base_kernel = per_cpu_offset(cpu);
+ #endif
+ 		ctxt->event_callback_eip    =
+ 					(unsigned long)xen_hypervisor_callback;
+ 		ctxt->failsafe_callback_eip =
+ 					(unsigned long)xen_failsafe_callback;
++		ctxt->user_regs.cs = __KERNEL_CS;
++		per_cpu(xen_cr3, cpu) = __pa(swapper_pg_dir);
++#ifdef CONFIG_X86_32
+ 	}
+-	ctxt->user_regs.cs = __KERNEL_CS;
++#else
++	} else
++		/* N.B. The user_regs.eip (cpu_bringup_and_idle) is called with
++		 * %rdi having the cpu number - which means are passing in
++		 * as the first parameter the cpu. Subtle!
++		 */
++		ctxt->user_regs.rdi = cpu;
++#endif
+ 	ctxt->user_regs.esp = idle->thread.sp0 - sizeof(struct pt_regs);
+-
+-	per_cpu(xen_cr3, cpu) = __pa(swapper_pg_dir);
+ 	ctxt->ctrlreg[3] = xen_pfn_to_cr3(virt_to_mfn(swapper_pg_dir));
+-
+ 	if (HYPERVISOR_vcpu_op(VCPUOP_initialise, cpu, ctxt))
+ 		BUG();
  
-+		if (xen_feature(XENFEAT_hvm_callback_vector)) {
-+			xen_callback_vector();
-+			return;
-+		}
-+
- 		pirq_eoi_map = (void *)__get_free_page(GFP_KERNEL|__GFP_ZERO);
- 		eoi_gmfn.gmfn = virt_to_mfn(pirq_eoi_map);
- 		rc = HYPERVISOR_physdev_op(PHYSDEVOP_pirq_eoi_gmfn_v2, &eoi_gmfn);
-diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
-index ec097d6..7f7c454 100644
---- a/drivers/xen/xenbus/xenbus_client.c
-+++ b/drivers/xen/xenbus/xenbus_client.c
-@@ -45,6 +45,7 @@
- #include <xen/grant_table.h>
- #include <xen/xenbus.h>
- #include <xen/xen.h>
-+#include <xen/features.h>
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index 95f8c61..9059c24 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -123,4 +123,5 @@ __visible void xen_adjust_exception_frame(void);
  
- #include "xenbus_probe.h"
+ extern int xen_panic_handler_init(void);
  
-@@ -743,7 +744,7 @@ static const struct xenbus_ring_ops ring_ops_hvm = {
- 
- void __init xenbus_ring_ops_init(void)
- {
--	if (xen_pv_domain())
-+	if (xen_pv_domain() && !xen_feature(XENFEAT_auto_translated_physmap))
- 		ring_ops = &ring_ops_pv;
- 	else
- 		ring_ops = &ring_ops_hvm;
++void xen_setup_gdt(int cpu);
+ #endif /* XEN_OPS_H */
 -- 
 1.8.3.1
 
