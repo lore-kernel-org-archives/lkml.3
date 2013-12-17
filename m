@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab3LQNth (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:49:37 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:37146 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753839Ab3LQNtf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:49:35 -0500
-Date: Tue, 17 Dec 2013 13:49:28 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 4/5] regulator: s5m8767: Use GPIO for controlling
- Buck9/eMMC
-Message-ID: <20131217134928.GH19810@lee--X1>
-References: <1387286601-21646-1-git-send-email-k.kozlowski@samsung.com>
- <1387286601-21646-5-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1387286601-21646-5-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753935Ab3LQNvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:51:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49117 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752726Ab3LQNv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 08:51:29 -0500
+Date: Tue, 17 Dec 2013 08:50:55 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org
+Subject: Re: [PATCH v3 6/6] locks: add new "private" lock type that is owned
+ by the filp
+Message-ID: <20131217085055.1e89965c@tlielax.poochiereds.net>
+In-Reply-To: <20131217133721.GA16724@infradead.org>
+References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
+	<1386703055-22308-7-git-send-email-jlayton@redhat.com>
+	<20131217083125.4ce0382b@tlielax.poochiereds.net>
+	<20131217133721.GA16724@infradead.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Dec 2013, Krzysztof Kozlowski wrote:
+On Tue, 17 Dec 2013 05:37:21 -0800
+Christoph Hellwig <hch@infradead.org> wrote:
 
-> Add support for GPIO control (enable/disable) over Buck9. The Buck9
-> Converter is used as a supply for eMMC Host Controller.
+> On Tue, Dec 17, 2013 at 08:31:25AM -0500, Jeff Layton wrote:
+> > So, I think the above semantics are pretty clear, but now that I've had
+> > a go at sitting down to document this stuff for the POSIX spec and
+> > manpages, it's clear how convoluted the text in there is becoming.
+> > 
+> > That makes me wonder...would we be better off with a new set of cmd
+> > values here instead of new l_type values? IOW, we could add new:
+> > 
+> > F_GETLKP
+> > F_SETLKP
+> > F_SETLKPW
 > 
-> BUCK9EN GPIO of S5M8767 chip may be used by application processor to
-> enable or disable the Buck9. This has two benefits:
->  - It is faster than toggling it over I2C bus.
->  - It allows disabling the regulator during suspend to RAM; The AP will
->    enable it during resume; Without the patch the regulator supplying
->    eMMC must be defined as fixed-regulator.
+> That seems a tad cleaner to me indeed.
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> ---
->  drivers/regulator/s5m8767.c         |  120 ++++++++++++++++++++++++++++++++++-
->  include/linux/mfd/samsung/core.h    |    2 +
->  include/linux/mfd/samsung/s5m8767.h |    7 ++
+> > ...and then just reuse the same F_RDLCK/F_WRLCK/F_UNLCK values? With
+> > that too, we could create a new equivalent to struct flock that has
+> > fixed length types instead of dealing with the off_t mess.
+> 
+> For the Posix interface you'd need an off_t as that's what the whole
+> API uses for file offsets.  We could make sure to always use a off64_t
+> for the kernel interface though.
+> 
 
-So long as they fit in with the rest of the changes, the MFD adaptions
-look fine to me:
+Ok.
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+> What is the API you propose to posix?  An new posix_lockf?
+> 
 
+I haven't proposed anything concrete to POSIX just yet. I'm trying to
+get the Linux patches done and then I'll do that. I don't think we want
+a new syscall when fcntl() will work.
+
+If we use new cmd values however, then we don't necessarily need to use
+struct flock/flock64. I think the question is -- should we stick with
+struct flock/flock64, or would we be better served with something new
+for this?
+
+Thanks,
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jeff Layton <jlayton@redhat.com>
