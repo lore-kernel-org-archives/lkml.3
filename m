@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab3LQWAM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:00:12 -0500
-Received: from sw.attotech.com ([208.69.85.34]:21159 "EHLO
-	NOTESERV1.attotech.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751219Ab3LQWAK (ORCPT
+	id S1754248Ab3LQWB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:01:59 -0500
+Received: from www.linutronix.de ([62.245.132.108]:41161 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab3LQWB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:00:10 -0500
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Dec 2013 17:00:10 EST
-Message-ID: <52B0C5DC.3000407@attotech.com>
-Date: Tue, 17 Dec 2013 16:45:00 -0500
-From: Bradley Grove <bgrove@attotech.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 17 Dec 2013 17:01:57 -0500
+Date: Tue, 17 Dec 2013 23:01:42 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Christoph Lameter <cl@linux.com>, Greg KH <greg@kroah.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: netfilter: active obj WARN when cleaning up
+In-Reply-To: <52B0ABB6.8090205@oracle.com>
+Message-ID: <alpine.DEB.2.02.1312172259000.31521@ionos.tec.linutronix.de>
+References: <20131127233415.GB19270@kroah.com> <00000142b4282aaf-913f5e4c-314c-4351-9d24-615e66928157-000000@email.amazonses.com> <20131202164039.GA19937@kroah.com> <00000142b4514eb5-2e8f675d-0ecc-423b-9906-58c5f383089b-000000@email.amazonses.com>
+ <20131202172615.GA4722@kroah.com> <00000142b4aeca89-186fc179-92b8-492f-956c-38a7c196d187-000000@email.amazonses.com> <20131202190814.GA2267@kroah.com> <00000142b4d4360c-5755af87-b9b0-4847-b5fa-7a9dd13b49c5-000000@email.amazonses.com> <20131202212235.GA1297@kroah.com>
+ <00000142b54f6694-c51e81b1-f1a2-483b-a1ce-a2d4cb6b155c-000000@email.amazonses.com> <20131202222208.GB13034@kroah.com> <00000142b90da700-19f6b465-ff15-4b2b-9bcd-b91d71958b7f-000000@email.amazonses.com> <52B0ABB6.8090205@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Bradley Grove <linuxdrivers@attotech.com>, linux-scsi@vger.kernel.org
-Subject: Re: [RESEND][PATCH] scsi: esas2r: fix potential format string flaw
-References: <20131217182733.GA16202@www.outflux.net>
-In-Reply-To: <20131217182733.GA16202@www.outflux.net>
-X-MIMETrack: Itemize by SMTP Server on NOTESERV2/SERV/ATTO(Release 9.0|March 08, 2013) at
- 12/17/2013 04:45:05 PM,
-	Serialize by Router on NOTESERV1/SERV/ATTO(Release 9.0|March 08, 2013) at
- 12/17/2013 05:00:09 PM,
-	Serialize complete at 12/17/2013 05:00:09 PM
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Bradley Grove <bgrove@attotech.com>
+On Tue, 17 Dec 2013, Sasha Levin wrote:
 
+Cc'ing RTC folks
 
-On 12/17/2013 01:27 PM, Kees Cook wrote:
-> This makes sure format strings cannot leak into the printk call via the
-> constructed buffer.
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->   drivers/scsi/esas2r/esas2r_log.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/scsi/esas2r/esas2r_log.c b/drivers/scsi/esas2r/esas2r_log.c
-> index 9bf285df58dd..61fc19d296bd 100644
-> --- a/drivers/scsi/esas2r/esas2r_log.c
-> +++ b/drivers/scsi/esas2r/esas2r_log.c
-> @@ -171,7 +171,7 @@ static int esas2r_log_master(const long level,
->   		if (strlen(event_buffer) < buflen)
->   			strcat(buffer, "\n");
->
-> -		printk(event_buffer);
-> +		printk("%s", event_buffer);
->
->   		spin_unlock_irqrestore(&event_buffer_lock, flags);
->   	}
->
+> I'm still seeing warnings with this patch applied:
 
+That's not a sl*b issue.
+ 
+> [   24.900482] WARNING: CPU: 12 PID: 3654 at lib/debugobjects.c:260
+> debug_print_object+
+> 0x8d/0xb0()
+> [   24.900482] ODEBUG: free active (active state 0) object type: timer_list
+> hint: delay
+> ed_work_timer_fn+0x0/0x20
+> [   24.900482] Modules linked in:
+> [   24.900482] CPU: 12 PID: 3654 Comm: kworker/12:1 Tainted: G        W
+> 3.13.0-rc4-n
+> ext-20131217-sasha-00013-ga878504-dirty #4149
+> [   24.900482] Workqueue: events kobject_delayed_cleanup
+> [   24.900482]  0000000000000104 ffff8804f429bae8 ffffffff8439501c
+> ffffffff8555a92c
+> [   24.900482]  ffff8804f429bb38 ffff8804f429bb28 ffffffff8112f8ac
+> ffff8804f429bb58
+> [   24.900482]  ffffffff856a9413 ffff880826333530 ffffffff85c68c40
+> ffffffff8801bb58
+> [   24.900482] Call Trace:
+> [   24.900482]  [<ffffffff8439501c>] dump_stack+0x52/0x7f
+> [   24.900482]  [<ffffffff8112f8ac>] warn_slowpath_common+0x8c/0xc0
+> [   24.900482]  [<ffffffff8112f996>] warn_slowpath_fmt+0x46/0x50
+> [   24.900482]  [<ffffffff81adb50d>] debug_print_object+0x8d/0xb0
+> [   24.900482]  [<ffffffff81153090>] ? __queue_work+0x3f0/0x3f0
+> [   24.900482]  [<ffffffff81adbd15>] __debug_check_no_obj_freed+0xa5/0x220
+> [   24.900482]  [<ffffffff832b1acb>] ? rtc_device_release+0x2b/0x40
+> [   24.900482]  [<ffffffff832b1acb>] ? rtc_device_release+0x2b/0x40
+> [   24.900482]  [<ffffffff81adbea5>] debug_check_no_obj_freed+0x15/0x20
+> [   24.900482]  [<ffffffff812ad54f>] kfree+0x21f/0x2e0
+> [   24.900482]  [<ffffffff832b1acb>] rtc_device_release+0x2b/0x40
+> [   24.900482]  [<ffffffff8207efd5>] device_release+0x65/0xc0
+> [   24.900482]  [<ffffffff81ab05e5>] kobject_cleanup+0x145/0x190
+> [   24.900482]  [<ffffffff81ab063d>] kobject_delayed_cleanup+0xd/0x10
+> [   24.900482]  [<ffffffff81153a60>] process_one_work+0x320/0x530
+> [   24.900482]  [<ffffffff81153940>] ? process_one_work+0x200/0x530
+> [   24.900482]  [<ffffffff81155fe5>] worker_thread+0x215/0x350
+> [   24.900482]  [<ffffffff81155dd0>] ? manage_workers+0x180/0x180
+> [   24.900482]  [<ffffffff8115c9c5>] kthread+0x105/0x110
+> [   24.900482]  [<ffffffff8115c8c0>] ? set_kthreadd_affinity+0x30/0x30
+> [   24.900482]  [<ffffffff843a5e7c>] ret_from_fork+0x7c/0xb0
+> [   24.900482]  [<ffffffff8115c8c0>] ? set_kthreadd_affinity+0x30/0x30
+> [   24.900482] ---[ end trace 45529ebf79b2573e ]---
+> 
+> 
+> Thanks,
+> Sasha
+> 
+> 
