@@ -1,50 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab3LQNFx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:05:53 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55268 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab3LQNFu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:05:50 -0500
-Date: Tue, 17 Dec 2013 13:04:35 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Xiubo Li <Li.Xiubo@freescale.com>, mark.rutland@arm.com,
-        s.hauer@pengutronix.de, galak@codeaurora.org, swarren@wwwdotorg.org,
-        t.figa@samsung.com, grant.likely@linaro.org, matt.porter@linaro.org,
-        rob@landley.net, ian.campbell@citrix.com, pawel.moll@arm.com,
-        rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org,
-        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        Alison Wang <b18965@freescale.com>,
-        Jingchang Lu <b35083@freescale.com>
-Subject: Re: [PATCHv7 1/4] pwm: Add Freescale FTM PWM driver support
-Message-ID: <20131217130435.GV4360@n2100.arm.linux.org.uk>
-References: <1386925027-16288-1-git-send-email-Li.Xiubo@freescale.com> <5295539.cCkPY1PpyC@flatron> <20131217124505.GB17210@ulmo.nvidia.com> <1500339.E8bGm7xZUi@flatron>
+	id S1753447Ab3LQNF7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:05:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55071 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751279Ab3LQNF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 08:05:57 -0500
+Date: Tue, 17 Dec 2013 14:05:55 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.13-rc breaks MEMCG_SWAP
+Message-ID: <20131217130555.GC28991@dhcp22.suse.cz>
+References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
+ <52AEC989.4080509@huawei.com>
+ <20131216095345.GB23582@dhcp22.suse.cz>
+ <20131216104042.GC23582@dhcp22.suse.cz>
+ <20131216163530.GH32509@htj.dyndns.org>
+ <20131216171937.GG26797@dhcp22.suse.cz>
+ <20131216172143.GJ32509@htj.dyndns.org>
+ <alpine.LNX.2.00.1312161718001.2037@eggly.anvils>
+ <52AFC163.5010507@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1500339.E8bGm7xZUi@flatron>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <52AFC163.5010507@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 01:54:35PM +0100, Tomasz Figa wrote:
-> On Tuesday 17 of December 2013 13:45:06 Thierry Reding wrote:
-> > I fail to see how that would eliminate the problem with the types. That
-> > said I don't actually see sparse complaining about any type mismatches.
-> > That's probably because the various macros implicitly cast to u32.
+On Tue 17-12-13 11:13:39, Li Zefan wrote:
+[...]
+> From: Li Zefan <lizefan@huawei.com>
+> Date: Tue, 17 Dec 2013 10:45:09 +0800
+> Subject: [PATCH] cgroup: don't recycle cgroup id until all csses' have been destroyed
 > 
-> Well, in BE variant you would read the register using __raw_readl() into
-> a __be32 and then get an u32 from be32_to_cpu() and return it. Similarly
-> for writes
+> Hugh reported this bug:
+> 
+> > CONFIG_MEMCG_SWAP is broken in 3.13-rc.  Try something like this:
+> >
+> > mkdir -p /tmp/tmpfs /tmp/memcg
+> > mount -t tmpfs -o size=1G tmpfs /tmp/tmpfs
+> > mount -t cgroup -o memory memcg /tmp/memcg
+> > mkdir /tmp/memcg/old
+> > echo 512M >/tmp/memcg/old/memory.limit_in_bytes
+> > echo $$ >/tmp/memcg/old/tasks
+> > cp /dev/zero /tmp/tmpfs/zero 2>/dev/null
+> > echo $$ >/tmp/memcg/tasks
+> > rmdir /tmp/memcg/old
+> > sleep 1	# let rmdir work complete
+> > mkdir /tmp/memcg/new
+> > umount /tmp/tmpfs
+> > dmesg | grep WARNING
+> > rmdir /tmp/memcg/new
+> > umount /tmp/memcg
+> >
+> > Shows lots of WARNING: CPU: 1 PID: 1006 at kernel/res_counter.c:91
+> >                            res_counter_uncharge_locked+0x1f/0x2f()
+> >
+> > Breakage comes from 34c00c319ce7 ("memcg: convert to use cgroup id").
+> >
+> > The lifetime of a cgroup id is different from the lifetime of the
+> > css id it replaced: memsw's css_get()s do nothing to hold on to the
+> > old cgroup id, it soon gets recycled to a new cgroup, which then
+> > mysteriously inherits the old's swap, without any charge for it.
+> 
+> Instead of removing cgroup id right after all the csses have been
+> offlined, we should do that after csses have been destroyed.
+> 
+> To make sure an invalid css pointer won't be returned after the css
+> is destroyed, make sure css_from_id() returns NULL in this case.
 
-__raw_readl() returns a u32, so you'll get a warning trying to assign a
-u32 to a __be32.
+OK, so this will postpone idr_remove to css_free and until then
+mem_cgroup_lookup finds a correct memcg. This will work as well.
+It is basically the same thing we had with css_id AFAIR.
 
-We do have ioread32() and ioread32be() which do the appropriate conversion,
-as well as the write versions too.  They both include the barrier if you're
-overly concerned about that.
+Originally I thought this wouldn't be possible because of the comment
+above idr_remove for some reason.
+
+> Reported-by: Hugh Dickins <hughd@google.com>
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  kernel/cgroup.c | 18 ++++++++++--------
+>  1 file changed, 10 insertions(+), 8 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index c36d906..769b5bb 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -868,6 +868,15 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+>  		struct cgroup *cgrp = dentry->d_fsdata;
+>  
+>  		BUG_ON(!(cgroup_is_dead(cgrp)));
+> +
+> +		/*
+> +		 * We should remove the cgroup object from idr before its
+> +		 * grace period starts, so we won't be looking up a cgroup
+> +		 * while the cgroup is being freed.
+> +		 */
+> +		idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
+> +		cgrp->id = -1;
+> +
+>  		call_rcu(&cgrp->rcu_head, cgroup_free_rcu);
+>  	} else {
+>  		struct cfent *cfe = __d_cfe(dentry);
+> @@ -4104,6 +4113,7 @@ static void css_release(struct percpu_ref *ref)
+>  	struct cgroup_subsys_state *css =
+>  		container_of(ref, struct cgroup_subsys_state, refcnt);
+>  
+> +	rcu_assign_pointer(css->cgroup->subsys[css->ss->subsys_id], NULL);
+>  	call_rcu(&css->rcu_head, css_free_rcu_fn);
+>  }
+>  
+> @@ -4545,14 +4555,6 @@ static void cgroup_destroy_css_killed(struct cgroup *cgrp)
+>  	/* delete this cgroup from parent->children */
+>  	list_del_rcu(&cgrp->sibling);
+>  
+> -	/*
+> -	 * We should remove the cgroup object from idr before its grace
+> -	 * period starts, so we won't be looking up a cgroup while the
+> -	 * cgroup is being freed.
+> -	 */
+> -	idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
+> -	cgrp->id = -1;
+> -
+>  	dput(d);
+>  
+>  	set_bit(CGRP_RELEASABLE, &parent->flags);
+> -- 
+> 1.8.0.2
+> 
+> 
+> 
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
