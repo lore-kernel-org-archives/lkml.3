@@ -1,112 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab3LQUwB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:52:01 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:20047 "EHLO
+	id S1754415Ab3LQUwP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:52:15 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:20105 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050Ab3LQUv4 (ORCPT
+	with ESMTP id S1754249Ab3LQUwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:51:56 -0500
+	Tue, 17 Dec 2013 15:52:03 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
         boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
         mukesh.rathor@oracle.com, jbeulich@suse.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v11 05/12] xen/pvh: Update E820 to work with PVH
-Date: Tue, 17 Dec 2013 15:51:36 -0500
-Message-Id: <1387313503-31362-6-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH v11 11/12] xen/pvh: Disable PV code that does not work with PVH.
+Date: Tue, 17 Dec 2013 15:51:42 -0500
+Message-Id: <1387313503-31362-12-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
 References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mukesh Rathor <mukesh.rathor@oracle.com>
 
-In xen_add_extra_mem() we can skip updating P2M as it's managed
-by Xen. PVH maps the entire IO space, but only RAM pages need
-to be repopulated.
+As we do not have yet a mechanism for that.
 
 Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/setup.c | 19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ drivers/xen/cpu_hotplug.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 2137c51..f93bca1 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -27,6 +27,7 @@
- #include <xen/interface/memory.h>
- #include <xen/interface/physdev.h>
- #include <xen/features.h>
-+#include "mmu.h"
- #include "xen-ops.h"
- #include "vdso.h"
+diff --git a/drivers/xen/cpu_hotplug.c b/drivers/xen/cpu_hotplug.c
+index cc6513a..cbb02af 100644
+--- a/drivers/xen/cpu_hotplug.c
++++ b/drivers/xen/cpu_hotplug.c
+@@ -4,6 +4,7 @@
  
-@@ -81,6 +82,9 @@ static void __init xen_add_extra_mem(u64 start, u64 size)
+ #include <xen/xen.h>
+ #include <xen/xenbus.h>
++#include <xen/features.h>
  
- 	memblock_reserve(start, size);
+ #include <asm/xen/hypervisor.h>
+ #include <asm/cpu.h>
+@@ -102,7 +103,8 @@ static int __init setup_vcpu_hotplug_event(void)
+ 	static struct notifier_block xsn_cpu = {
+ 		.notifier_call = setup_cpu_watcher };
  
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		return;
-+
- 	xen_max_p2m_pfn = PFN_DOWN(start + size);
- 	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
- 		unsigned long mfn = pfn_to_mfn(pfn);
-@@ -103,6 +107,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
- 		.domid        = DOMID_SELF
- 	};
- 	unsigned long len = 0;
-+	int xlated_phys = xen_feature(XENFEAT_auto_translated_physmap);
- 	unsigned long pfn;
- 	int ret;
+-	if (!xen_pv_domain())
++	/* PVH TBD/FIXME: future work */
++	if (!xen_pv_domain() || xen_feature(XENFEAT_auto_translated_physmap))
+ 		return -ENODEV;
  
-@@ -116,7 +121,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
- 				continue;
- 			frame = mfn;
- 		} else {
--			if (mfn != INVALID_P2M_ENTRY)
-+			if (!xlated_phys && mfn != INVALID_P2M_ENTRY)
- 				continue;
- 			frame = pfn;
- 		}
-@@ -154,6 +159,13 @@ static unsigned long __init xen_do_chunk(unsigned long start,
- static unsigned long __init xen_release_chunk(unsigned long start,
- 					      unsigned long end)
- {
-+	/*
-+	 * Xen already ballooned out the E820 non RAM regions for us
-+	 * and set them up properly in EPT.
-+	 */
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		return end - start;
-+
- 	return xen_do_chunk(start, end, true);
- }
- 
-@@ -222,6 +234,9 @@ static void __init xen_set_identity_and_release_chunk(
- 	 * (except for the ISA region which must be 1:1 mapped) to
- 	 * release the refcounts (in Xen) on the original frames.
- 	 */
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		goto skip;
-+
- 	for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn; pfn++) {
- 		pte_t pte = __pte_ma(0);
- 
-@@ -231,7 +246,7 @@ static void __init xen_set_identity_and_release_chunk(
- 		(void)HYPERVISOR_update_va_mapping(
- 			(unsigned long)__va(pfn << PAGE_SHIFT), pte, 0);
- 	}
--
-+skip:
- 	if (start_pfn < nr_pages)
- 		*released += xen_release_chunk(
- 			start_pfn, min(end_pfn, nr_pages));
+ 	register_xenstore_notifier(&xsn_cpu);
 -- 
 1.8.3.1
 
