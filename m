@@ -1,59 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002Ab3LQTVs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 14:21:48 -0500
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:35796
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751474Ab3LQTVp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 14:21:45 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(z579ehz98dIc89bh1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h906i1155h)
-Date: Tue, 17 Dec 2013 11:21:30 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 3/9] clocksource/cadence_ttc: Store timer frequency in
- driver data
-References: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com>
- <1385514296-26702-4-git-send-email-soren.brinkmann@xilinx.com>
+	id S1752068Ab3LQTWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 14:22:45 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:55543 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab3LQTWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 14:22:43 -0500
+Date: Tue, 17 Dec 2013 11:22:37 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v7 2/4] qrwlock x86: Enable x86 to use queue read/write
+ lock
+Message-ID: <20131217192236.GB15969@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1385147087-26588-1-git-send-email-Waiman.Long@hp.com>
+ <1385147087-26588-3-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1385514296-26702-4-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1385147087-26588-3-git-send-email-Waiman.Long@hp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <5cff3201-db97-4061-a686-bf79ac17d4fe@CO1EHSMHS006.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121719-1542-0000-0000-0000045995C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-On Tue, Nov 26, 2013 at 05:04:50PM -0800, Soren Brinkmann wrote:
-> It is not allowed to call clk_get_rate() from interrupt context. To
-> avoid such calls the timer input frequency is stored in the driver's
-> data struct which makes it accessible to the driver in any context.
+On Fri, Nov 22, 2013 at 02:04:45PM -0500, Waiman Long wrote:
+> This patch makes the necessary changes at the x86 architecture specific
+> layer to enable the presence of the CONFIG_QUEUE_RWLOCK kernel option
+> to replace the read/write lock by the queue read/write lock.
 > 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> It also enables the CONFIG_QUEUE_RWLOCK option by default for x86 which
+> will force the use of queue read/write lock. That will greatly improve
+> the fairness of read/write lock and eliminate live-lock situation
+> where one task may not get the lock for an indefinite period of time.
+> 
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 
-I doubt that we'll resolve all issues with this series before the
-holidays or even the next merge window. Could you take this patch into
-your tree for 3.14? It is not directly related to the cpufreq work and
-fixes an actual issue that triggers a kernel WARN under some condition
-(I missed preserving the details and the trace). That would take the
-easy stuff out of the way and we can focus on the more controversial
-changes.
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-	Thanks,
-	Sören
-
+> ---
+>  arch/x86/Kconfig                      |    1 +
+>  arch/x86/include/asm/spinlock.h       |    2 ++
+>  arch/x86/include/asm/spinlock_types.h |    4 ++++
+>  3 files changed, 7 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index e903c71..c4a9c54 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -124,6 +124,7 @@ config X86
+>  	select RTC_LIB
+>  	select HAVE_DEBUG_STACKOVERFLOW
+>  	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
+> +	select QUEUE_RWLOCK
+> 
+>  config INSTRUCTION_DECODER
+>  	def_bool y
+> diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+> index bf156de..8fb88c5 100644
+> --- a/arch/x86/include/asm/spinlock.h
+> +++ b/arch/x86/include/asm/spinlock.h
+> @@ -188,6 +188,7 @@ static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
+>  		cpu_relax();
+>  }
+> 
+> +#ifndef CONFIG_QUEUE_RWLOCK
+>  /*
+>   * Read-write spinlocks, allowing multiple readers
+>   * but only one writer.
+> @@ -270,6 +271,7 @@ static inline void arch_write_unlock(arch_rwlock_t *rw)
+>  	asm volatile(LOCK_PREFIX WRITE_LOCK_ADD(%1) "%0"
+>  		     : "+m" (rw->write) : "i" (RW_LOCK_BIAS) : "memory");
+>  }
+> +#endif /* CONFIG_QUEUE_RWLOCK */
+> 
+>  #define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
+>  #define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
+> diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+> index 4f1bea1..a585635 100644
+> --- a/arch/x86/include/asm/spinlock_types.h
+> +++ b/arch/x86/include/asm/spinlock_types.h
+> @@ -34,6 +34,10 @@ typedef struct arch_spinlock {
+> 
+>  #define __ARCH_SPIN_LOCK_UNLOCKED	{ { 0 } }
+> 
+> +#ifdef CONFIG_QUEUE_RWLOCK
+> +#include <asm-generic/qrwlock.h>
+> +#else
+>  #include <asm/rwlock.h>
+> +#endif
+> 
+>  #endif /* _ASM_X86_SPINLOCK_TYPES_H */
+> -- 
+> 1.7.1
+> 
 
