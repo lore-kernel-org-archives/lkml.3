@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab3LQNBU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:01:20 -0500
-Received: from smtp5.epfl.ch ([128.178.224.8]:50581 "EHLO smtp5.epfl.ch"
+	id S1753879Ab3LQNB3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:01:29 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60055 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753653Ab3LQNAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:00:55 -0500
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-To: Joerg Roedel <joro@8bytes.org>, Tony Lindgren <tony@atomide.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+	id S1753653Ab3LQNB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 08:01:26 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>
+CC: <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        iommu@lists.linux-foundation.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 5/7] ARM: dts: Complete data for isp iommu
-Date: Tue, 17 Dec 2013 13:53:36 +0100
-Message-Id: <1387284818-28739-6-git-send-email-florian.vaussard@epfl.ch>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1387284818-28739-1-git-send-email-florian.vaussard@epfl.ch>
-References: <1387284818-28739-1-git-send-email-florian.vaussard@epfl.ch>
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
+        <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v4 0/9] Reuse davinci-nand driver for Keystone arch
+Date: Tue, 17 Dec 2013 14:59:06 +0200
+Message-ID: <1387285155-19182-1-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing information required to probe the iommu for the camera
-subsystem.
+This series contains fixes and updates of Davinci nand driver in
+order to reuse it for Keystone platform.
 
-Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
----
- arch/arm/boot/dts/omap3.dtsi | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+v3..v4:
+- mtd: nand: davinci: fix driver registration
+	dropped __init/__exit/__exit_p as module_platform_driver() is used
+- mtd: nand: davinci: adjust DT properties to MTD generic
+	used of_get_nand_bus_width() helper
+- mtd: nand: davinci: don't request AEMIF address range
+	added comment at code change
 
-diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-index daabf99..610d084 100644
---- a/arch/arm/boot/dts/omap3.dtsi
-+++ b/arch/arm/boot/dts/omap3.dtsi
-@@ -371,11 +371,13 @@
- 			dma-names = "tx", "rx";
- 		};
- 
--		mmu_isp: mmu@480bd400 {
-+		mmu_isp: mmu_isp@480bd400 {
- 			compatible = "ti,omap3-mmu-isp";
- 			ti,hwmods = "mmu_isp";
- 			reg = <0x480bd400 0x80>;
- 			interrupts = <8>;
-+			ti,#tlb-entries = <8>;
-+			dma-window = <0 0xfffff000>;	/* IOVA start & length */
- 		};
- 
- 		wdt2: wdt@48314000 {
+v2..v3:
+- mtd: nand: davinci: don't set timings if AEMIF is used
+	dropped, it would be replaced by alone patch
+	ARM: davinci: aemif: get rid of davinci-nand driver dependency on aemif
+
+v1..v2
+The series is combination of two following series:
+- Davinci nand driver fixes and updates:
+https://lkml.org/lkml/2013/11/20/271
+- Reuse davinci-nand driver for Keystone arch
+https://lkml.org/lkml/2013/11/20/315
+
+- mtd: nand: davinci: extend description of bindings
+	clarified changeset description
+
+- mtd: nand: davinci: reuse driver for Keystone arch
+	removed "ti,keystone-nand" compatible from driver
+
+Ivan Khoronzhuk (9):
+  mtd: nand: davinci: fix driver registration
+  mtd: nand: davinci: return ENOMEM if memory allocation is failed
+  mtd: nand: davinci: check required ti,davinci-chipselect property
+  mtd: nand: davinci: simplify error handling
+  mtd: nand: davinci: move bindings under mtd
+  mtd: nand: davinci: extend description of bindings
+  mtd: nand: davinci: adjust DT properties to MTD generic
+  mtd: nand: davinci: reuse driver for Keystone arch
+  mtd: nand: davinci: don't request AEMIF address range
+
+ .../devicetree/bindings/arm/davinci/nand.txt       |   46 ----------
+ .../devicetree/bindings/mtd/davinci-nand.txt       |   94 ++++++++++++++++++++
+ drivers/mtd/nand/Kconfig                           |    6 +-
+ drivers/mtd/nand/davinci_nand.c                    |   89 +++++++++---------
+ 4 files changed, 146 insertions(+), 89 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/arm/davinci/nand.txt
+ create mode 100644 Documentation/devicetree/bindings/mtd/davinci-nand.txt
+
 -- 
-1.8.1.2
+1.7.9.5
 
