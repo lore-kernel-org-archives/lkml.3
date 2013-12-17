@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab3LQUuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:50:16 -0500
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:52082 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab3LQUuO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:50:14 -0500
-Date: Tue, 17 Dec 2013 12:50:09 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-In-Reply-To: <20131217162342.GG28991@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.02.1312171240541.21640@chino.kir.corp.google.com>
-References: <20131204111318.GE8410@dhcp22.suse.cz> <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com> <20131209124840.GC3597@dhcp22.suse.cz> <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com> <20131210103827.GB20242@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com> <20131211095549.GA18741@dhcp22.suse.cz> <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com> <20131212103159.GB2630@dhcp22.suse.cz> <alpine.DEB.2.02.1312131551220.28704@chino.kir.corp.google.com>
- <20131217162342.GG28991@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753915Ab3LQUvU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:51:20 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:44851 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751706Ab3LQUvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 15:51:18 -0500
+Message-ID: <52B0B920.1000001@ti.com>
+Date: Tue, 17 Dec 2013 15:50:40 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] ARM: keystone: enable GPIO support
+References: <1387211981-26045-1-git-send-email-grygorii.strashko@ti.com>
+In-Reply-To: <1387211981-26045-1-git-send-email-grygorii.strashko@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Dec 2013, Michal Hocko wrote:
-
-> > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > index c72b03bf9679..fee25c5934d2 100644
-> > > --- a/mm/memcontrol.c
-> > > +++ b/mm/memcontrol.c
-> > > @@ -2692,7 +2693,8 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
-> > >  	 * MEMDIE process.
-> > >  	 */
-> > >  	if (unlikely(test_thread_flag(TIF_MEMDIE)
-> > > -		     || fatal_signal_pending(current)))
-> > > +		     || fatal_signal_pending(current))
-> > > +		     || current->flags & PF_EXITING)
-> > >  		goto bypass;
-> > >  
-> > >  	if (unlikely(task_in_memcg_oom(current)))
-> > > 
-> > > rather than the later checks down the oom_synchronize paths. The comment
-> > > already mentions dying process...
-> > > 
-> > 
-> > This is scary because it doesn't even try to reclaim memcg memory before 
-> > allowing the allocation to succeed.
+On Monday 16 December 2013 11:39 AM, Grygorii Strashko wrote:
+> This series adds Keystone GPIO IP definition in DT and enable GPIO support in
+> Keystone configuration file.
 > 
-> Why should it reclaim in the first place when it simply is on the way to
-> release memory. In other words why should it increase the memory
-> pressure when it is in fact releasing it?
+> Also, it enables LEDs support for Keystone 2 K2H EVM as specified in board 
+> schematic. For more information see:
+> - http://www.advantech.com/Support/TI-EVM/EVMK2HX.aspx 
 > 
-
-(Answering about removing the fatal_signal_pending() check as well here.)
-
-For memory isolation, we'd only want to bypass memcg charges when 
-absolutely necessary and it seems like TIF_MEMDIE is the only case where 
-that's required.  We don't give processes with pending SIGKILLs or those 
-in the exit() path access to memory reserves in the page allocator without 
-first determining that reclaim can't make any progress for the same reason 
-and then we only do so by setting TIF_MEMDIE when calling the oom killer.  
-
-> I am really puzzled here. On one hand you are strongly arguing for not
-> notifying when we know we can prevent from OOM action and on the other
-> hand you are ok to get vmpressure/thresholds notification when an
-> exiting task triggers reclaim.
+> Depends on:
+> [PATCH 0/2] gpio: davinci: reuse for keystone arch
+> - https://lkml.org/lkml/2013/12/12/366
 > 
-> So I am really lost in what you are trying to achieve here. It sounds a
-> bit arbirtrary.
+> Grygorii Strashko (4):
+>   arm: dts: keystone: add GPIO device entry
+>   ARM: keystone_defconfig: enable gpio support
+>   arm: dts: keystone-evm: add LEDs supports
+>   ARM: keystone_defconfig: enable LED support
 > 
+Patch subjects should be consistent. I will fix
+them while applying it on my tree. Will wait
+for the GPIO driver support patches state
+before applying the subject series.
 
-It's not arbitrary to define when memcg bypass is allowed and, in my 
-opinion, it should only be done in situations where it is unavoidable and 
-therefore breaking memory isolation is required.
+Thanks for the patches.
 
-(We wouldn't expect a 128MB memcg to be oom [and perhaps with a userspace 
-oom handler attached] when it has 100 children each 1MB in size just 
-because they all happen to be oom at the same time.  We set up the excess 
-memory in the parent specifically for the memcg with the oom handler 
-attached.)
+Regards,
+Santosh
+
