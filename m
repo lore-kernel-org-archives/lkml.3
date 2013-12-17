@@ -1,123 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505Ab3LQNVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:21:23 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:48298 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726Ab3LQNVU (ORCPT
+	id S1753802Ab3LQNXn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:23:43 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:25605 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752800Ab3LQNXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:21:20 -0500
-Date: Tue, 17 Dec 2013 14:19:53 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Xiubo Li <Li.Xiubo@freescale.com>, mark.rutland@arm.com,
-        s.hauer@pengutronix.de, galak@codeaurora.org, swarren@wwwdotorg.org,
-        t.figa@samsung.com, grant.likely@linaro.org, matt.porter@linaro.org,
-        rob@landley.net, tomasz.figa@gmail.com, ian.campbell@citrix.com,
-        pawel.moll@arm.com, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, Alison Wang <b18965@freescale.com>,
-        Jingchang Lu <b35083@freescale.com>
-Subject: Re: [PATCHv7 1/4] pwm: Add Freescale FTM PWM driver support
-Message-ID: <20131217131951.GA2329@ulmo.nvidia.com>
-References: <1386925027-16288-1-git-send-email-Li.Xiubo@freescale.com>
- <1386925027-16288-2-git-send-email-Li.Xiubo@freescale.com>
- <20131217111020.GF13823@ulmo.nvidia.com>
- <20131217115136.GT4360@n2100.arm.linux.org.uk>
- <20131217122431.GA17210@ulmo.nvidia.com>
- <20131217125832.GU4360@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5mCyUwZo2JvN/JJP"
-Content-Disposition: inline
-In-Reply-To: <20131217125832.GU4360@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Tue, 17 Dec 2013 08:23:35 -0500
+X-AuditID: cbfec7f4-b7fc96d000006cd4-d7-52b050564313
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH 3/5] mfd: sec: Remove sec_reg* regmap helpers
+Date: Tue, 17 Dec 2013 14:23:19 +0100
+Message-id: <1387286601-21646-4-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1387286601-21646-1-git-send-email-k.kozlowski@samsung.com>
+References: <1387286601-21646-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t/xK7phARuCDK49ZbZouBpiMfXhEzaL
+	+UfOsVr0v1nIanHgzw5Gi3OvVjJavH5haHG26Q27xf2vRxktvl3pYLJY2LaExeLyrjlsFmuP
+	3GW3WHr9IpPFhOlrWSwOrzjAZLHu5XQWi5N/ehktTnezWlxc8YXJ4tiMJYwOoh5r5q1h9Fjw
+	+Qq7x+W+XiaPnbPusnusXP6FzWPTqk42j1erZ7J63Lm2h81j3slAj74tqxg9Pm+SC+CO4rJJ
+	Sc3JLEst0rdL4Mq4/v0Xa8EEsYq1898xNzB+Eepi5OSQEDCRmPHrCTuELSZx4d56ti5GLg4h
+	gaWMEu/O/Ydy+pgkfv9oZwOpYhMwlti8fAmYLSJwjVXizJnQLkYODmaBGIkXU+xAwsICthJ7
+	Vn0EK2ERUJX4suk+I0gJr4C7xI5n+iCmhICCxJxJNiAVnAIeEp+WnmABCQsBVWyfVzWBkXcB
+	I8MqRtHU0uSC4qT0XEO94sTc4tK8dL3k/NxNjJB4+LKDcfExq0OMAhyMSjy8O+avDxJiTSwr
+	rsw9xCjBwawkwvvNY0OQEG9KYmVValF+fFFpTmrxIUYmDk6pBkbm2c377t5Su/Cx6ehkztVF
+	PW+kJmzMfMgsIRmy8p9MlLDj3HPLrq6ewufDey7xvJ/h2l/LHus/7/UN/7TbSuy0iMjra53b
+	t23/n192qvDbor35wWniSdOmPCpv3schmmF/u3+P+eKZrb/+Xq3SMr14qcKivnjmRq+Uj8v3
+	GbAdntSwpia95UCaEktxRqKhFnNRcSIABVmU52UCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Remove sec_reg* helpers as they are not used anymore. These helpers were
+error-prone as they mixed u8 with unsigned int and they changed order of
+some of parameters (val and mask in sec_reg_update()).
 
---5mCyUwZo2JvN/JJP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Also the helpers didn't give any way of useful abstraction as they just
+called corresponding regmap function.
 
-On Tue, Dec 17, 2013 at 12:58:32PM +0000, Russell King - ARM Linux wrote:
-> On Tue, Dec 17, 2013 at 01:24:33PM +0100, Thierry Reding wrote:
-> > On Tue, Dec 17, 2013 at 11:51:36AM +0000, Russell King - ARM Linux wrot=
-e:
-> > > Same comments here - what memory operations is the wmb() trying to
-> > > serialise?  Does this PWM driver somehow end up doing DMA?
-> >=20
-> > Not that I can see. But if my understanding is correct, not using the
-> > barriers would allow the compiler and CPU to reorder accesses, and by
-> > that cause the register accesses to potentially happen in the wrong
-> > order.
->=20
-> The compiler won't reorder them, but the CPU may if it meets certain
-> criteria.  The architecture guarantees that accesses to device memory
-> within a (minimum of) 1KB block will be ordered.
->=20
-> The ARM ARM is slightly ambiguous in how this is applied - in one
-> place it says that "Accesses must arrive at any particular memory-mapped
-> peripheral or block of memory in program order" and another part it
-> says "The size of a memory mapped peripheral, or a block of memory,
-> is IMPLEMENTATION DEFINED, but is not smaller than 1KByte.  Note
-> This implies that the maximum memory-mapped peripheral size for which
-> the architecture guarantees order for all implementations is 1KB."  See
-> page A3-148.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ drivers/mfd/sec-core.c           |   30 ------------------------------
+ include/linux/mfd/samsung/core.h |    6 ------
+ 2 files changed, 36 deletions(-)
 
-None of the ARM ARM versions that I have seem to have page A3-148. Which
-version should I be looking at? Not that I'm in any way doubting what
-you're saying, I'd just like to make sure to have the correct reference
-to look at in the future.
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index 83f31e2e5754..ab4c77b01f9f 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -79,36 +79,6 @@ static struct of_device_id sec_dt_match[] = {
+ };
+ #endif
+ 
+-int sec_reg_read(struct sec_pmic_dev *sec_pmic, u8 reg, void *dest)
+-{
+-	return regmap_read(sec_pmic->regmap_pmic, reg, dest);
+-}
+-EXPORT_SYMBOL_GPL(sec_reg_read);
+-
+-int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf)
+-{
+-	return regmap_bulk_read(sec_pmic->regmap_pmic, reg, buf, count);
+-}
+-EXPORT_SYMBOL_GPL(sec_bulk_read);
+-
+-int sec_reg_write(struct sec_pmic_dev *sec_pmic, u8 reg, u8 value)
+-{
+-	return regmap_write(sec_pmic->regmap_pmic, reg, value);
+-}
+-EXPORT_SYMBOL_GPL(sec_reg_write);
+-
+-int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf)
+-{
+-	return regmap_raw_write(sec_pmic->regmap_pmic, reg, buf, count);
+-}
+-EXPORT_SYMBOL_GPL(sec_bulk_write);
+-
+-int sec_reg_update(struct sec_pmic_dev *sec_pmic, u8 reg, u8 val, u8 mask)
+-{
+-	return regmap_update_bits(sec_pmic->regmap_pmic, reg, mask, val);
+-}
+-EXPORT_SYMBOL_GPL(sec_reg_update);
+-
+ static bool s2mps11_volatile(struct device *dev, unsigned int reg)
+ {
+ 	switch (reg) {
+diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
+index cab2dd279076..41c9bde410c5 100644
+--- a/include/linux/mfd/samsung/core.h
++++ b/include/linux/mfd/samsung/core.h
+@@ -59,12 +59,6 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic);
+ void sec_irq_exit(struct sec_pmic_dev *sec_pmic);
+ int sec_irq_resume(struct sec_pmic_dev *sec_pmic);
+ 
+-extern int sec_reg_read(struct sec_pmic_dev *sec_pmic, u8 reg, void *dest);
+-extern int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf);
+-extern int sec_reg_write(struct sec_pmic_dev *sec_pmic, u8 reg, u8 value);
+-extern int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf);
+-extern int sec_reg_update(struct sec_pmic_dev *sec_pmic, u8 reg, u8 val, u8 mask);
+-
+ struct sec_platform_data {
+ 	struct sec_regulator_data	*regulators;
+ 	struct sec_opmode_data		*opmode;
+-- 
+1.7.9.5
 
-> What this means (to me at least) is that on any SoC, the architecture
-> guarantees that accesses _within_ a 1KB device memory block will always
-> be ordered, but two accesses outside of a 1KB block _to the same device_
-> is implementation defined whether it is ordered or not.
-
-This means at least every ARM SoC would behave that way. Since this
-driver doesn't have an explicit dependency on ARM I assume it could
-eventually be used on a different architecture. Even more so since
-there's Freescale in the name.
-
-> The interesting point here though is that the "note" contradicts the
-> first definition if you have (eg) AMBA Primecell peripherals which are
-> generally 4KB in size, since if the architecture only guarantees 1KB,
-> then accesses _may_ _not_ arrive at one primecell in program order.
-> Hence, the note is a direct contradiction of the first definition.
-
-Interesting indeed. Perhaps implementation defined in this case means
-that an implementation would have to adjust the size of a memory mapped
-peripheral or block of memory accordingly, depending on the largest
-block within the SoC.
-
-I suppose, though, that if the architecture doesn't give any guarantees
-about it, we can't safely assume that the implementation will.
-
-Thierry
-
---5mCyUwZo2JvN/JJP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSsE93AAoJEN0jrNd/PrOhCfQP/3cH75pm5Zwulhq3sHErpMrN
-L3b/L2gbKa3SFJ/eHIcYKcykMI0Yj4HdsSsgTYPpZtNFiWUGz+9/lq4x8GQxCv3g
-p7P58wswfifP+zngLIGo00wAtw8ut8ND4xMLfDAu5uBK7We0GAZJ6xEiWjjHiT+Z
-SOKKxal/ZX11rHESNVmA1K3oQgsbDtjXC8p37AF/epxlEqxS6ynEv4cclnlitiw2
-cwQlJeBCZVLZZX2ybt6FMvUkHerLIY3RdWfCfEH+1Bm4gz3i0rg2Il3ZaOl49FeM
-PF7kcuuhQaNVSJHc2NXHj0AZ1d5UYA6P9aQ17pG1X8Llg9LZ85XzycV+yKBqQDg9
-f49uqRPHs+EM8rnPoHzkmKZltWVanhzMS4v2Sjd2f0wk5XkzMGBppZ23baBQMtY+
-NsG+N9yjVNYSVxjOO9XEO1bqOwGuzwi+Ym7DTlybJem9eq55sWnf8hy9wkJaqgnF
-BnsNPvBdr1NmOhaIkunhrR3VdzzkJ2FMaLrNa0iMH+7gyiaCsVwXS5aIUTXPdnEp
-Y1krm29vHTCs8QOo95wa7v46Osh6NZfmu7ZdZHWxMSltTUcCeegd4qGvbUCS8jle
-Wj/FuHUBZK9RIMWcoehi9+ERvEp0ETfJ5W10Y95ncqslxEnt6oITlrdd8GpzHt/r
-xb5qLiXZq08A96yyZMNz
-=Kz+j
------END PGP SIGNATURE-----
-
---5mCyUwZo2JvN/JJP--
