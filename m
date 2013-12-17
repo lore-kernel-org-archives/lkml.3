@@ -1,142 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab3LQNPc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:15:32 -0500
-Received: from mail-gg0-f182.google.com ([209.85.161.182]:36847 "EHLO
-	mail-gg0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab3LQNP3 (ORCPT
+	id S1753402Ab3LQNTo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:19:44 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:48967 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753058Ab3LQNTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:15:29 -0500
-Date: Tue, 17 Dec 2013 08:15:25 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH cgroup/for-3.13-fixes] cgroup: don't recycle cgroup id until
- all csses' have been destroyed
-Message-ID: <20131217131525.GH29989@htj.dyndns.org>
-References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
- <52AEC989.4080509@huawei.com>
- <20131216095345.GB23582@dhcp22.suse.cz>
- <20131216104042.GC23582@dhcp22.suse.cz>
- <20131216163530.GH32509@htj.dyndns.org>
- <20131216171937.GG26797@dhcp22.suse.cz>
- <20131216172143.GJ32509@htj.dyndns.org>
- <alpine.LNX.2.00.1312161718001.2037@eggly.anvils>
- <52AFC163.5010507@huawei.com>
+	Tue, 17 Dec 2013 08:19:42 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
+Date: Tue, 17 Dec 2013 14:19:38 +0100
+User-Agent: KMail/1.13.7 (Linux/3.12.0-5-generic; KDE/4.11.3; x86_64; ; )
+Cc: David Howells <dhowells@redhat.com>, linux-afs@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+References: <201311201430.56135@pali> <20131215230004.97d14ce7.akpm@linux-foundation.org>
+In-Reply-To: <20131215230004.97d14ce7.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52AFC163.5010507@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart5643856.4tIZ9J6O1x";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312171419.38790@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+--nextPart5643856.4tIZ9J6O1x
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-I updated the comment myself and applied the patch to
-cgroup/for-3.13-fixes.
+On Monday 16 December 2013 08:00:04 Andrew Morton wrote:
+> On Wed, 20 Nov 2013 14:30:55 +0100 Pali Roh__r=20
+<pali.rohar@gmail.com> wrote:
+> > Both proc files are writeable and used for configuring
+> > cells. But there is missing correct mode flag for writeable
+> > files. Without this patch both proc files are read only.
+> >=20
+> > diff --git a/fs/afs/proc.c b/fs/afs/proc.c
+> > index 526e4bb..276cb6e 100644
+> > --- a/fs/afs/proc.c
+> > +++ b/fs/afs/proc.c
+> > @@ -147,11 +147,11 @@ int afs_proc_init(void)
+> >=20
+> >  	if (!proc_afs)
+> >  =09
+> >  		goto error_dir;
+> >=20
+> > -	p =3D proc_create("cells", 0, proc_afs,
+> > &afs_proc_cells_fops); +	p =3D proc_create("cells", S_IFREG |
+> > S_IRUGO | S_IWUSR, proc_afs, &afs_proc_cells_fops);
+> >=20
+> >  	if (!p)
+> >  =09
+> >  		goto error_cells;
+> >=20
+> > -	p =3D proc_create("rootcell", 0, proc_afs,
+> > &afs_proc_rootcell_fops); +	p =3D proc_create("rootcell",
+> > S_IFREG | S_IRUGO | S_IWUSR, proc_afs,
+> > &afs_proc_rootcell_fops);
+> >=20
+> >  	if (!p)
+> >  =09
+> >  		goto error_rootcell;
+>=20
+> Please send a signed-off-by: for this, as per
+> Documentation/SubmittingPatches, section 12.
+>=20
+> David ack?
 
-Thanks!
--------- 8< --------
->From c1a71504e9715812a2d15e7c03b5aa147ae70ded Mon Sep 17 00:00:00 2001
-From: Li Zefan <lizefan@huawei.com>
-Date: Tue, 17 Dec 2013 11:13:39 +0800
+Sorry, I forgot to add Signed-off-by. Here it is:
 
-Hugh reported this bug:
+Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
 
-> CONFIG_MEMCG_SWAP is broken in 3.13-rc.  Try something like this:
->
-> mkdir -p /tmp/tmpfs /tmp/memcg
-> mount -t tmpfs -o size=1G tmpfs /tmp/tmpfs
-> mount -t cgroup -o memory memcg /tmp/memcg
-> mkdir /tmp/memcg/old
-> echo 512M >/tmp/memcg/old/memory.limit_in_bytes
-> echo $$ >/tmp/memcg/old/tasks
-> cp /dev/zero /tmp/tmpfs/zero 2>/dev/null
-> echo $$ >/tmp/memcg/tasks
-> rmdir /tmp/memcg/old
-> sleep 1	# let rmdir work complete
-> mkdir /tmp/memcg/new
-> umount /tmp/tmpfs
-> dmesg | grep WARNING
-> rmdir /tmp/memcg/new
-> umount /tmp/memcg
->
-> Shows lots of WARNING: CPU: 1 PID: 1006 at kernel/res_counter.c:91
->                            res_counter_uncharge_locked+0x1f/0x2f()
->
-> Breakage comes from 34c00c319ce7 ("memcg: convert to use cgroup id").
->
-> The lifetime of a cgroup id is different from the lifetime of the
-> css id it replaced: memsw's css_get()s do nothing to hold on to the
-> old cgroup id, it soon gets recycled to a new cgroup, which then
-> mysteriously inherits the old's swap, without any charge for it.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Instead of removing cgroup id right after all the csses have been
-offlined, we should do that after csses have been destroyed.
+--nextPart5643856.4tIZ9J6O1x
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-To make sure an invalid css pointer won't be returned after the css
-is destroyed, make sure css_from_id() returns NULL in this case.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-tj: Updated comment to note planned changes for cgrp->id.
+iEYEABECAAYFAlKwT2oACgkQi/DJPQPkQ1LixwCgmgqoqqOoAbs+pR3IGMsS/QSV
+uhAAn2e04uR46eGZvg5cE+WMiEf670Ov
+=r24O
+-----END PGP SIGNATURE-----
 
-Reported-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/cgroup.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index bcb1755..bc1dcab 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -890,6 +890,16 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
- 		struct cgroup *cgrp = dentry->d_fsdata;
- 
- 		BUG_ON(!(cgroup_is_dead(cgrp)));
-+
-+		/*
-+		 * XXX: cgrp->id is only used to look up css's.  As cgroup
-+		 * and css's lifetimes will be decoupled, it should be made
-+		 * per-subsystem and moved to css->id so that lookups are
-+		 * successful until the target css is released.
-+		 */
-+		idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
-+		cgrp->id = -1;
-+
- 		call_rcu(&cgrp->rcu_head, cgroup_free_rcu);
- 	} else {
- 		struct cfent *cfe = __d_cfe(dentry);
-@@ -4268,6 +4278,7 @@ static void css_release(struct percpu_ref *ref)
- 	struct cgroup_subsys_state *css =
- 		container_of(ref, struct cgroup_subsys_state, refcnt);
- 
-+	rcu_assign_pointer(css->cgroup->subsys[css->ss->subsys_id], NULL);
- 	call_rcu(&css->rcu_head, css_free_rcu_fn);
- }
- 
-@@ -4733,14 +4744,6 @@ static void cgroup_destroy_css_killed(struct cgroup *cgrp)
- 	/* delete this cgroup from parent->children */
- 	list_del_rcu(&cgrp->sibling);
- 
--	/*
--	 * We should remove the cgroup object from idr before its grace
--	 * period starts, so we won't be looking up a cgroup while the
--	 * cgroup is being freed.
--	 */
--	idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
--	cgrp->id = -1;
--
- 	dput(d);
- 
- 	set_bit(CGRP_RELEASABLE, &parent->flags);
--- 
-1.8.4.2
-
+--nextPart5643856.4tIZ9J6O1x--
