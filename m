@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab3LQWSM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:18:12 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:28380 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003Ab3LQWSL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:18:11 -0500
-Message-ID: <1387318682.2797.25.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] ipc: introduce ipc_valid_object() helper to sort out
- IPC_RMID races
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Greg Thelen <gthelen@google.com>,
-        Manfred Spraul <manfred@colorfullife.com>
-Date: Tue, 17 Dec 2013 14:18:02 -0800
-In-Reply-To: <20131217214653.GC31827@localhost.localdomain>
-References: <e70c06876f986f0ac7f2f104bab50edff4a524a0.1387302999.git.aquini@redhat.com>
-	 <1387315669.2797.21.camel@buesod1.americas.hpqcorp.net>
-	 <20131217214653.GC31827@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754151Ab3LQWTl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:19:41 -0500
+Received: from mga02.intel.com ([134.134.136.20]:52262 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752193Ab3LQWTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 17:19:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,503,1384329600"; 
+   d="scan'208";a="426273187"
+From: Andi Kleen <andi@firstfloor.org>
+To: Dmitry Mikushin <dmitry@kernelgen.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: ia32 emulation on Pentium I
+References: <52AB522F.8000703@kernelgen.org>
+Date: Tue, 17 Dec 2013 14:19:38 -0800
+In-Reply-To: <52AB522F.8000703@kernelgen.org> (Dmitry Mikushin's message of
+	"Fri, 13 Dec 2013 19:30:07 +0100")
+Message-ID: <871u1bxgqt.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-17 at 19:46 -0200, Rafael Aquini wrote:
-> On Tue, Dec 17, 2013 at 01:27:49PM -0800, Davidlohr Bueso wrote:
-> > Ccing Manfred.
-> > 
-> > On Tue, 2013-12-17 at 17:03 -0200, Rafael Aquini wrote:
-> > > After the locking semantics for the SysV IPC API got improved, a couple of
-> > > IPC_RMID race windows were opened because we ended up dropping the
-> > > 'kern_ipc_perm.deleted' check performed way down in ipc_lock().
-> > > The spotted races got sorted out by re-introducing the old test within
-> > > the racy critical sections.
-> > > 
-> > > This patch introduces ipc_valid_object() to consolidate the way we cope with
-> > > IPC_RMID races by using the same abstraction across the API implementation.
-> > 
-> > This is certainly a good function to have. Some comments below.
-> > 
-[...]
-> > > 
-> > >  		shm_file = shp->shm_file;
-> > > -
-> > > -		/* check if shm_destroy() is tearing down shp */
-> > > -		if (shm_file == NULL) {
-> > > -			err = -EIDRM;
-> > > -			goto out_unlock0;
-> > > -		}
-> > 
-> > Ok, this seems safe, we can always rely on .deleted for validity since
-> > shm_destroy() ends up calling shm_rmid() which sets .deleted. So this
-> > change is really moving what we're checking against just a few
-> > instructions later.
-> >
-> 
-> Yep, I did change it cause it seems that there's no reason to delay the return
-> condition if we raced with shm_destroy(), anyways.
->  
+Dmitry Mikushin <dmitry@kernelgen.org> writes:
+>
+> So, it seems ia32 emulation assumes Pentium II+. Do you see a quick
+> way to make it Pentium I -compatible?
 
-Right, but I was referring to moving what we consider as valid.
+The SYSENTER code path should be never executed, so you could either hack the
+assembler to allow it, or just open code it.
 
-static void shm_destroy(struct ipc_namespace *ns, struct shmid_kernel *shp)
-{
-	struct file *shm_file;
+Something like (totally untested):
 
-	shm_file = shp->shm_file;
-	shp->shm_file = NULL;   <--- we currently use this.
-	ns->shm_tot -= (shp->shm_segsz + PAGE_SIZE - 1) >> PAGE_SHIFT;
-	shm_rmid(ns, shp); <--- with your patch we now use this.
-	shm_unlock(shp);
-	...
-}
+From: Andi Kleen <ak@linux.intel.com>
 
-... and it makes since since shm was the only one not using .deleted for
-RMID racing checks.
+use .byte to implement SYSEXIT for k1om assembler
 
-Thanks,
-Davidlohr
+diff --git a/arch/x86/include/asm/irqflags.h b/arch/x86/include/asm/irqflags.h
+index bba3cf8..1ad2378 100644
+--- a/arch/x86/include/asm/irqflags.h
++++ b/arch/x86/include/asm/irqflags.h
+@@ -130,6 +130,8 @@ static inline notrace unsigned long arch_local_irq_save(void)
+ #define PARAVIRT_ADJUST_EXCEPTION_FRAME	/*  */
+ 
+ #define INTERRUPT_RETURN	iretq
++#define SYSEXIT			.byte 0x0f,0x35
++
+ #define USERGS_SYSRET64				\
+ 	swapgs;					\
+ 	sysretq;
+@@ -139,7 +141,7 @@ static inline notrace unsigned long arch_local_irq_save(void)
+ #define ENABLE_INTERRUPTS_SYSEXIT32		\
+ 	swapgs;					\
+ 	sti;					\
+-	sysexit
++	SYSEXIT	
+ 
+ #else
+ #define INTERRUPT_RETURN		iret
 
+-- 
+ak@linux.intel.com -- Speaking for myself only
