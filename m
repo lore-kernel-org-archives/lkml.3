@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab3LQWGK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:06:10 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:49239 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504Ab3LQWGI (ORCPT
+	id S1752440Ab3LQWJq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:09:46 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:17601 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267Ab3LQWJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:06:08 -0500
+	Tue, 17 Dec 2013 17:09:44 -0500
+Message-ID: <52B0CB84.9050907@oracle.com>
+Date: Tue, 17 Dec 2013 17:09:08 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1254825772.20131217224914@eikelenboom.it>
-References: <1342235583.20131211182804@eikelenboom.it>
-	<CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com>
-	<871324710.20131211191104@eikelenboom.it>
-	<CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com>
-	<1937118387.20131216122200@eikelenboom.it>
-	<52AEE60B.6030509@broadcom.com>
-	<19210260274.20131216135644@eikelenboom.it>
-	<CAGRGNgXHemM2FfnXgW5RbzhFT+9SfUfVkjdysK3+=_u3hWSacw@mail.gmail.com>
-	<1534126119.20131217104548@eikelenboom.it>
-	<387552477.20131217213319@eikelenboom.it>
-	<20131217212709.GB5624@decadent.org.uk>
-	<1254825772.20131217224914@eikelenboom.it>
-Date: Tue, 17 Dec 2013 14:06:06 -0800
-X-Google-Sender-Auth: T5m1u6MNECKuuSt5Vj9Su2v8ggA
-Message-ID: <CA+55aFxQg6=MAWEkEGz64Hz8OawvPyX=fpBOjY8cGBL5XgB9WQ@mail.gmail.com>
-Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        Julian Calaby <julian.calaby@gmail.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Avinash Patil <avinashapatil@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Christoph Lameter <cl@linux.com>
+CC: Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: netfilter: active obj WARN when cleaning up
+References: <20131127233415.GB19270@kroah.com> <00000142b4282aaf-913f5e4c-314c-4351-9d24-615e66928157-000000@email.amazonses.com> <20131202164039.GA19937@kroah.com> <00000142b4514eb5-2e8f675d-0ecc-423b-9906-58c5f383089b-000000@email.amazonses.com> <20131202172615.GA4722@kroah.com> <00000142b4aeca89-186fc179-92b8-492f-956c-38a7c196d187-000000@email.amazonses.com> <20131202190814.GA2267@kroah.com> <00000142b4d4360c-5755af87-b9b0-4847-b5fa-7a9dd13b49c5-000000@email.amazonses.com> <20131202212235.GA1297@kroah.com> <00000142b54f6694-c51e81b1-f1a2-483b-a1ce-a2d4cb6b155c-000000@email.amazonses.com> <20131202222208.GB13034@kroah.com> <00000142b90da700-19f6b465-ff15-4b2b-9bcd-b91d71958b7f-000000@email.amazonses.com> <52B0ABB6.8090205@oracle.com> <000001430246e902-112cfb9d-5393-4eed-8529-e0008f88df45-000000@email.amazonses.com>
+In-Reply-To: <000001430246e902-112cfb9d-5393-4eed-8529-e0008f88df45-000000@email.amazonses.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 1:49 PM, Sander Eikelenboom
-<linux@eikelenboom.it> wrote:
+On 12/17/2013 03:37 PM, Christoph Lameter wrote:
+> On Tue, 17 Dec 2013, Sasha Levin wrote:
 >
-> So if i combine the two .. it's essentially just a very bad idea to compile the wireless stuff in.
-> It needs a access to a userland program at module load time, or it will block forever.
+>> I'm still seeing warnings with this patch applied:
+>
+> Looks like this is related to some device release mechanism that frees
+> twice?
+>
+> I do not see any kmem_cache management functions in the backtrace and
+> therefore would guess that this is not the same issue.
 
-No, it's a very stupid module if it does that.
+rgr, sorry about that - I grepped for 'timer_list' which seemed to have been in
+all previous kmem_cache spews and thought this one is related.
 
-It should require the crda hook not at module load time, but at first
-ifconfig time.
+If that's not the case, your patch works for me.
 
-We've had bugs like this before.  Doing user-mode callbacks at module
-loading time is a disaster exactly because it doesn't work well with
-built-in modules.
 
-The fact that those things apparently also don't time out or notice
-when they fail seems to then just exacerbate the bad decision.
+Thanks,
+Sasha
 
-We have literally had this *exact* same issue with firmware loading.
-Network drivers shouldn't try to load firmware at module load time.
-Same deal.
-
-What's the broken path? Is this driver-specific, or is it generic to
-the 802.11 code?
-
-                Linus
