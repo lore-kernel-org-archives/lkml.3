@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861Ab3LQMsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 07:48:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54567 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753786Ab3LQMsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 07:48:09 -0500
-Date: Tue, 17 Dec 2013 13:48:07 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.13-rc breaks MEMCG_SWAP
-Message-ID: <20131217124807.GB28991@dhcp22.suse.cz>
-References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
- <52AEC989.4080509@huawei.com>
- <20131216095345.GB23582@dhcp22.suse.cz>
- <20131216104042.GC23582@dhcp22.suse.cz>
- <20131216163530.GH32509@htj.dyndns.org>
- <20131216171937.GG26797@dhcp22.suse.cz>
- <20131216172143.GJ32509@htj.dyndns.org>
- <alpine.LNX.2.00.1312161718001.2037@eggly.anvils>
- <52AFC163.5010507@huawei.com>
+	id S1753820Ab3LQMsO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 07:48:14 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50812 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543Ab3LQMsL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 07:48:11 -0500
+Date: Tue, 17 Dec 2013 12:47:50 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, linux-doc@vger.kernel.org,
+        vpalatin@chromium.org, nicolas.ferre@atmel.com, plagnioj@jcrosoft.com,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Message-ID: <20131217124750.GX3185@sirena.org.uk>
+References: <1387258597-21866-1-git-send-email-wenyou.yang@atmel.com>
+ <1387258597-21866-3-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NZYMWYzz24GaIu3e"
 Content-Disposition: inline
-In-Reply-To: <52AFC163.5010507@huawei.com>
+In-Reply-To: <1387258597-21866-3-git-send-email-wenyou.yang@atmel.com>
+X-Cookie: Yow!  I threw up on my window!
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/3 v2] regulator: act8865: add device tree binding doc
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 17-12-13 11:13:39, Li Zefan wrote:
-> On 2013/12/17 9:41, Hugh Dickins wrote:
-> > On Mon, 16 Dec 2013, Tejun Heo wrote:
-> >> On Mon, Dec 16, 2013 at 06:19:37PM +0100, Michal Hocko wrote:
-> >>> I have to think about it some more (the brain is not working anymore
-> >>> today). But what we really need is that nobody gets the same id while
-> >>> the css is alive.
-> 
-> That's what I meant to do in my last reply.
-> 
-> But I'm confused by
-> 
-> "How would this work? .. the swap will be there
-> after the last reference to css as well."
 
-Sorry about the confusion. Johannes correctly pointed out that a css
-reference is taken when we record memcg id and released after the record
-is removed.
+--NZYMWYzz24GaIu3e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Michal Hocko
-SUSE Labs
+On Tue, Dec 17, 2013 at 01:36:36PM +0800, Wenyou Yang wrote:
+
+> +Required properties:
+> +- compatible: "active-semi,act8865"
+> +- reg: I2C slave address
+
+This needs to also document the regulators property, for example all the
+regulator names.
+
+--NZYMWYzz24GaIu3e
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSsEfzAAoJELSic+t+oim9oKQP/1jh55BVuh2HAFivNeOKsPPe
+0h6v+D54tdBnAmV996wIrU+9INNlFPWocWfj+pfK6Q4zCucrbE+6m/oGfzHqfg80
+FaQN0aKW6A95dR61NLHIzZ9c3uWKbQ+flffb1ZhzXOmL2O7ACsj8EwM8Js1+M9Ni
+9DGQMx9Mwyh93T0QkmX+j9G8uyY9EenpQnOC/Er7vNeteBub6cWLOIvDycQBW2Pi
+2xr8grvXpzI/+u4FqIwssblVWb5z9Bpp/N8pghCnRnvDwvCgf6jbNFBGt550HVgJ
+XygBj0IHFG5ZTHWaSh39v2u1bhbS0AFKFedLsEuJXMG6y446aAG4eV2oVsfCWJms
+08yLyXnVQ5f6tNZYap3RAQKVddgVtbhdEa5aeRGBpTV9dRjIwcTSkOWjBq+x7qEc
+xVhKuNzcsdJLVbil18t9d3XO8bMbBoef4Ro9r48Gzfo6g56AgwsaDwOM8Fx9hpSK
+xoRznZQHEVQFb8e4uBHU9uR/1RUMDhI/SIMHg0R/XNtPJc7Tn5FQ5lNrtht1q83G
+8jxWfMkdQjJBDKx9IhiDAK7nh1sXHVHOIXv8hGd3dVoHTCPerFCtkrxe0vst496o
+ySHgfVrB11/20s/wuHiuZG4DVMPu/zWOBOu5LSfuUGSuvpY7mC6g00majWHCi66x
+4aZoNvEN05orIkRlSxAU
+=/mBm
+-----END PGP SIGNATURE-----
+
+--NZYMWYzz24GaIu3e--
