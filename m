@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab3LQSPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:15:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:32913 "EHLO
+	id S1755915Ab3LQSUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:20:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:32920 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755289Ab3LQSPq (ORCPT
+	with ESMTP id S1755349Ab3LQSPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:15:46 -0500
+	Tue, 17 Dec 2013 13:15:48 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Kevin B. Smith" <kevin.b.smith@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 088/103] x86, build, icc: Remove uninitialized_var() from compiler-intel.h
-Date: Tue, 17 Dec 2013 18:13:17 +0000
-Message-Id: <1387304012-23805-89-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 090/103] dm bufio: initialize read-only module parameters
+Date: Tue, 17 Dec 2013 18:13:19 +0000
+Message-Id: <1387304012-23805-91-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -28,36 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 503cf95c061a0551eb684da364509297efbe55d9 upstream.
+commit 4cb57ab4a2e61978f3a9b7d4f53988f30d61c27f upstream.
 
-When compiling with icc, <linux/compiler-gcc.h> ends up included
-because the icc environment defines __GNUC__.  Thus, we neither need
-nor want to have this macro defined in both compiler-gcc.h and
-compiler-intel.h, and the fact that they are inconsistent just makes
-the compiler spew warnings.
+Some module parameters in dm-bufio are read-only. These parameters
+inform the user about memory consumption. They are not supposed to be
+changed by the user.
 
-Reported-by: Sunil K. Pandey <sunil.k.pandey@intel.com>
-Cc: Kevin B. Smith <kevin.b.smith@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-0mbwou1zt7pafij09b897lg3@git.kernel.org
-[ luis: backported to 3.5: adjusted context ]
+However, despite being read-only, these parameters can be set on
+modprobe or insmod command line, for example:
+modprobe dm-bufio current_allocated_bytes=12345
+
+The kernel doesn't expect that these variables can be non-zero at module
+initialization and if the user sets them, it results in BUG.
+
+This patch initializes the variables in the module init routine, so that
+user-supplied values are ignored.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/compiler-intel.h | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/md/dm-bufio.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/include/linux/compiler-intel.h b/include/linux/compiler-intel.h
-index d8e636e..cba9593 100644
---- a/include/linux/compiler-intel.h
-+++ b/include/linux/compiler-intel.h
-@@ -27,5 +27,3 @@
- #define __must_be_array(a) 0
+diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+index e9097af..10a13e3 100644
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -1668,6 +1668,11 @@ static int __init dm_bufio_init(void)
+ {
+ 	__u64 mem;
  
- #endif
--
--#define uninitialized_var(x) x
++	dm_bufio_allocated_kmem_cache = 0;
++	dm_bufio_allocated_get_free_pages = 0;
++	dm_bufio_allocated_vmalloc = 0;
++	dm_bufio_current_allocated = 0;
++
+ 	memset(&dm_bufio_caches, 0, sizeof dm_bufio_caches);
+ 	memset(&dm_bufio_cache_names, 0, sizeof dm_bufio_cache_names);
+ 
 -- 
 1.8.3.2
 
