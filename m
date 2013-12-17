@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab3LQPOM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:14:12 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:46533 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab3LQPOK (ORCPT
+	id S1754373Ab3LQPRk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 10:17:40 -0500
+Received: from a9-62.smtp-out.amazonses.com ([54.240.9.62]:33224 "EHLO
+	a9-62.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753354Ab3LQPRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:14:10 -0500
-Date: Tue, 17 Dec 2013 16:13:37 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH 00/15] cleanups and optimizations
-Message-ID: <20131217151337.GN21999@twins.programming.kicks-ass.net>
-References: <20131212140835.729222186@infradead.org>
- <52AAE61D.4060406@linux.intel.com>
- <20131213135626.GL21999@twins.programming.kicks-ass.net>
- <52AF3CF0.3090502@linux.intel.com>
- <20131217133204.GK21999@twins.programming.kicks-ass.net>
- <52B059CE.9090709@linux.intel.com>
+	Tue, 17 Dec 2013 10:17:38 -0500
+Date: Tue, 17 Dec 2013 15:17:37 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Dave Hansen <dave@sr71.net>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pravin B Shelar <pshelar@nicira.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [RFC][PATCH 0/7] re-shrink 'struct page' when SLUB is on.
+In-Reply-To: <52AF9EB9.7080606@sr71.net>
+Message-ID: <0000014301223b3e-a73f3d59-8234-48f1-9888-9af32709a879-000000@email.amazonses.com>
+References: <20131213235903.8236C539@viggo.jf.intel.com> <20131216160128.aa1f1eb8039f5eee578cf560@linux-foundation.org> <52AF9EB9.7080606@sr71.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B059CE.9090709@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.12.17-54.240.9.62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 04:03:58PM +0200, Eliezer Tamir wrote:
-> n 17/12/2013 15:32, Peter Zijlstra wrote:
-> > 
-> > Awesomeness.. you'll work on subtracting the spin time from the sleep
-> > time?
-> 
-> Me or someone on our team will work on it.
-> 
-> I'm not sure that subtracting the spin time is the optimal thing to do.
-> 
-> The busy poll time is supposed to be limited to something less than 1ms.
-> (I'm using 50us in most of my tests)
-> This is typically orders of magnitude smaller than the poll timeout.
-> Would it make more sense to just enforce a limit on poll time?
-> 
-> What do you think?
+On Mon, 16 Dec 2013, Dave Hansen wrote:
 
-I've no idea what people normally expect of select/poll wakeup
-granularity but typically we already have 50us of timer slack, although
-RT tasks go without this.
+> I'll do some testing and see if I can coax out any delta from the
+> optimization myself.  Christoph went to a lot of trouble to put this
+> together, so I assumed that he had a really good reason, although the
+> changelogs don't really mention any.
 
-It shouldn't be too hard to simply subtract the busy wait from the
-expire ktime and avoid the entire issue though, so why not DTRT if its
-fairly straight fwd to do so?
+The cmpxchg on the struct page avoids disabling interrupts etc and
+therefore simplifies the code significantly.
+
+> I honestly can't imagine that a cmpxchg16 is going to be *THAT* much
+> cheaper than a per-page spinlock.  The contended case of the cmpxchg is
+> way more expensive than spinlock contention for sure.
+
+Make sure slub does not set __CMPXCHG_DOUBLE in the kmem_cache flags
+and it will fall back to spinlocks if you want to do a comparison. Most
+non x86 arches will use that fallback code.
+
+
