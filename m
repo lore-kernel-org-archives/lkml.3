@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754Ab3LQKfc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 05:35:32 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:46537 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab3LQKfa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 05:35:30 -0500
+	id S1752851Ab3LQKfj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 05:35:39 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47134 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074Ab3LQKfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 05:35:36 -0500
+Message-ID: <52B02878.8090703@ti.com>
+Date: Tue, 17 Dec 2013 12:33:28 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20131211132212.GA7862@localhost.localdomain>
-References: <CAKohponch=o3nBKTmakA87OiN=HbgnEwJUL23mGkjQiNoJWjWw@mail.gmail.com>
-	<20131211132212.GA7862@localhost.localdomain>
-Date: Tue, 17 Dec 2013 16:05:29 +0530
-Message-ID: <CAKohponKxw8F6djaXaw0MEzGRWGTSQ=peiYuTGBCOHE0VaJR5Q@mail.gmail.com>
-Subject: Re: [Query] Ticks happen in pair for NO_HZ_FULL cores ?
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Kevin Hilman <khilman@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Brian Norris <computersforpeace@gmail.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
+        <dwmw2@infradead.org>
+Subject: Re: [PATCH v3 9/9] mtd: nand: davinci: don't request AEMIF address
+ range
+References: <1386264358-9738-1-git-send-email-ivan.khoronzhuk@ti.com> <1386264358-9738-10-git-send-email-ivan.khoronzhuk@ti.com> <20131217084238.GJ12034@norris-Latitude-E6410>
+In-Reply-To: <20131217084238.GJ12034@norris-Latitude-E6410>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the delay, was on holidays..
-
-On 11 December 2013 18:52, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Tue, Dec 03, 2013 at 01:57:37PM +0530, Viresh Kumar wrote:
->> - again got arch_timer interrupt after 5 ms (HZ=200)
+On 12/17/2013 10:42 AM, Brian Norris wrote:
+> On Thu, Dec 05, 2013 at 07:25:57PM +0200, Ivan Khoronzhuk wrote:
+>> The TI AEMIF driver registers are used to setup timings for each chip
+>> select. The same registers range is used to setup NAND settings.
+>> The AEMIF and NAND drivers not use the same registers in this range.
+>>
+>> In case with TI AEMIF driver, the memory address range is requested
+>> already by AEMIF, so we cannot request it twice, just ioremap.
+>>
+>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Reviewed-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> Reviewed-by: Taras Kondratiuk <taras@ti.com>
+>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>> ---
+>>   drivers/mtd/nand/davinci_nand.c |    8 +++++---
+>>   1 file changed, 5 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+>> index f7b21b8..0cd4dbc 100644
+>> --- a/drivers/mtd/nand/davinci_nand.c
+>> +++ b/drivers/mtd/nand/davinci_nand.c
+>> @@ -636,9 +636,11 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+>>   	if (IS_ERR(vaddr))
+>>   		return PTR_ERR(vaddr);
+>>
+>> -	base = devm_ioremap_resource(&pdev->dev, res2);
+>> -	if (IS_ERR(base))
+>> -		return PTR_ERR(base);
+>> +	base = devm_ioremap(&pdev->dev, res2->start, resource_size(res2));
 >
-> Right, looking at the details, the 2nd interrupt is caused by workqueue delayed
-> work bdi writeback.
-
-I am not that great at reading traces or kernelshark output, but I
-still feel I haven't
-seen anything wrong. And I wasn't talking about the delayed workqueue here..
-
-I am looking at the trace I attached with kernelshark after filtering
-out CPU0 events:
-- Event 41, timestamp: 159.891973
-- it ends at event 56, timestamp: 159.892043
-
-And after that the next event comes after 5 Seconds.
-
-And so I was talking for the Event 41.
-
->> So the query is: why don't we check that at the end of servicing vmstat
->> stuff and migrating back to "stress" ??
+> Since it's important that we don't re-introduce the "request resource"
+> boilerplate later, can you add a comment describing the situation?
 >
-> I fear I don't understand your question. Do you mean why don't we prevent from
-> that bdi writeback work to run when we are in full dynticks mode?
+>> +	if (!base) {
+>> +		dev_err(&pdev->dev, "ioremap failed for resource %pR\n", res2);
+>> +		return -EADDRNOTAVAIL;
+>> +	}
+>>
+>>   	info->dev		= &pdev->dev;
+>>   	info->base		= base;
+>
+> Thanks,
+> Brian
+>
 
-No..
+Yes, I'll add the comment.
+
+-- 
+Regards,
+Ivan Khoronzhuk
