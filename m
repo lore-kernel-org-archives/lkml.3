@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab3LQSS7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:18:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:32953 "EHLO
+	id S932208Ab3LQSPx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:15:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:32927 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932220Ab3LQSP4 (ORCPT
+	with ESMTP id S932182Ab3LQSPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:15:56 -0500
+	Tue, 17 Dec 2013 13:15:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mel Gorman <mgorman@suse.de>, Darren Hart <dvhart@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Olof Johansson <olof@lixom.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 095/103] futex: fix handling of read-only-mapped hugepages
-Date: Tue, 17 Dec 2013 18:13:24 +0000
-Message-Id: <1387304012-23805-96-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 091/103] ARM: pxa: tosa: fix keys mapping
+Date: Tue, 17 Dec 2013 18:13:20 +0000
+Message-Id: <1387304012-23805-92-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -30,46 +29,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
-commit f12d5bfceb7e1f9051563381ec047f7f13956c3c upstream.
+commit 506cac15ac86f204b83e3cfccde73eeb4e7c5f34 upstream.
 
-The hugepage code had the exact same bug that regular pages had in
-commit 7485d0d3758e ("futexes: Remove rw parameter from
-get_futex_key()").
+When converting from tosa-keyboard driver to matrix keyboard, tosa keys
+received extra 1 column shift. Replace that with correct values to make
+keyboard work again.
 
-The regular page case was fixed by commit 9ea71503a8ed ("futex: Fix
-regression with read only mappings"), but the transparent hugepage case
-(added in a5b338f2b0b1: "thp: update futex compound knowledge") case
-remained broken.
-
-Found by Dave Jones and his trinity tool.
-
-Reported-and-tested-by: Dave Jones <davej@fedoraproject.org>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: f69a6548c9d5 ('[ARM] pxa/tosa: make use of the matrix keypad driver')
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/futex.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-pxa/tosa.c | 102 +++++++++++++++++++++++------------------------
+ 1 file changed, 51 insertions(+), 51 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index f0ee318..e564a9a 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -285,7 +285,7 @@ again:
- 		put_page(page);
- 		/* serialize against __split_huge_page_splitting() */
- 		local_irq_disable();
--		if (likely(__get_user_pages_fast(address, 1, 1, &page) == 1)) {
-+		if (likely(__get_user_pages_fast(address, 1, !ro, &page) == 1)) {
- 			page_head = compound_head(page);
- 			/*
- 			 * page_head is valid pointer but we must pin
+diff --git a/arch/arm/mach-pxa/tosa.c b/arch/arm/mach-pxa/tosa.c
+index 4d4eb60..aeb7c10 100644
+--- a/arch/arm/mach-pxa/tosa.c
++++ b/arch/arm/mach-pxa/tosa.c
+@@ -424,57 +424,57 @@ static struct platform_device tosa_power_device = {
+  * Tosa Keyboard
+  */
+ static const uint32_t tosakbd_keymap[] = {
+-	KEY(0, 2, KEY_W),
+-	KEY(0, 6, KEY_K),
+-	KEY(0, 7, KEY_BACKSPACE),
+-	KEY(0, 8, KEY_P),
+-	KEY(1, 1, KEY_Q),
+-	KEY(1, 2, KEY_E),
+-	KEY(1, 3, KEY_T),
+-	KEY(1, 4, KEY_Y),
+-	KEY(1, 6, KEY_O),
+-	KEY(1, 7, KEY_I),
+-	KEY(1, 8, KEY_COMMA),
+-	KEY(2, 1, KEY_A),
+-	KEY(2, 2, KEY_D),
+-	KEY(2, 3, KEY_G),
+-	KEY(2, 4, KEY_U),
+-	KEY(2, 6, KEY_L),
+-	KEY(2, 7, KEY_ENTER),
+-	KEY(2, 8, KEY_DOT),
+-	KEY(3, 1, KEY_Z),
+-	KEY(3, 2, KEY_C),
+-	KEY(3, 3, KEY_V),
+-	KEY(3, 4, KEY_J),
+-	KEY(3, 5, TOSA_KEY_ADDRESSBOOK),
+-	KEY(3, 6, TOSA_KEY_CANCEL),
+-	KEY(3, 7, TOSA_KEY_CENTER),
+-	KEY(3, 8, TOSA_KEY_OK),
+-	KEY(3, 9, KEY_LEFTSHIFT),
+-	KEY(4, 1, KEY_S),
+-	KEY(4, 2, KEY_R),
+-	KEY(4, 3, KEY_B),
+-	KEY(4, 4, KEY_N),
+-	KEY(4, 5, TOSA_KEY_CALENDAR),
+-	KEY(4, 6, TOSA_KEY_HOMEPAGE),
+-	KEY(4, 7, KEY_LEFTCTRL),
+-	KEY(4, 8, TOSA_KEY_LIGHT),
+-	KEY(4, 10, KEY_RIGHTSHIFT),
+-	KEY(5, 1, KEY_TAB),
+-	KEY(5, 2, KEY_SLASH),
+-	KEY(5, 3, KEY_H),
+-	KEY(5, 4, KEY_M),
+-	KEY(5, 5, TOSA_KEY_MENU),
+-	KEY(5, 7, KEY_UP),
+-	KEY(5, 11, TOSA_KEY_FN),
+-	KEY(6, 1, KEY_X),
+-	KEY(6, 2, KEY_F),
+-	KEY(6, 3, KEY_SPACE),
+-	KEY(6, 4, KEY_APOSTROPHE),
+-	KEY(6, 5, TOSA_KEY_MAIL),
+-	KEY(6, 6, KEY_LEFT),
+-	KEY(6, 7, KEY_DOWN),
+-	KEY(6, 8, KEY_RIGHT),
++	KEY(0, 1, KEY_W),
++	KEY(0, 5, KEY_K),
++	KEY(0, 6, KEY_BACKSPACE),
++	KEY(0, 7, KEY_P),
++	KEY(1, 0, KEY_Q),
++	KEY(1, 1, KEY_E),
++	KEY(1, 2, KEY_T),
++	KEY(1, 3, KEY_Y),
++	KEY(1, 5, KEY_O),
++	KEY(1, 6, KEY_I),
++	KEY(1, 7, KEY_COMMA),
++	KEY(2, 0, KEY_A),
++	KEY(2, 1, KEY_D),
++	KEY(2, 2, KEY_G),
++	KEY(2, 3, KEY_U),
++	KEY(2, 5, KEY_L),
++	KEY(2, 6, KEY_ENTER),
++	KEY(2, 7, KEY_DOT),
++	KEY(3, 0, KEY_Z),
++	KEY(3, 1, KEY_C),
++	KEY(3, 2, KEY_V),
++	KEY(3, 3, KEY_J),
++	KEY(3, 4, TOSA_KEY_ADDRESSBOOK),
++	KEY(3, 5, TOSA_KEY_CANCEL),
++	KEY(3, 6, TOSA_KEY_CENTER),
++	KEY(3, 7, TOSA_KEY_OK),
++	KEY(3, 8, KEY_LEFTSHIFT),
++	KEY(4, 0, KEY_S),
++	KEY(4, 1, KEY_R),
++	KEY(4, 2, KEY_B),
++	KEY(4, 3, KEY_N),
++	KEY(4, 4, TOSA_KEY_CALENDAR),
++	KEY(4, 5, TOSA_KEY_HOMEPAGE),
++	KEY(4, 6, KEY_LEFTCTRL),
++	KEY(4, 7, TOSA_KEY_LIGHT),
++	KEY(4, 9, KEY_RIGHTSHIFT),
++	KEY(5, 0, KEY_TAB),
++	KEY(5, 1, KEY_SLASH),
++	KEY(5, 2, KEY_H),
++	KEY(5, 3, KEY_M),
++	KEY(5, 4, TOSA_KEY_MENU),
++	KEY(5, 6, KEY_UP),
++	KEY(5, 10, TOSA_KEY_FN),
++	KEY(6, 0, KEY_X),
++	KEY(6, 1, KEY_F),
++	KEY(6, 2, KEY_SPACE),
++	KEY(6, 3, KEY_APOSTROPHE),
++	KEY(6, 4, TOSA_KEY_MAIL),
++	KEY(6, 5, KEY_LEFT),
++	KEY(6, 6, KEY_DOWN),
++	KEY(6, 7, KEY_RIGHT),
+ };
+ 
+ static struct matrix_keymap_data tosakbd_keymap_data = {
 -- 
 1.8.3.2
 
