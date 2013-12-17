@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432Ab3LQSes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:34:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60920 "EHLO
+	id S932457Ab3LQSfP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:35:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60916 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755693Ab3LQSOm (ORCPT
+	with ESMTP id S1755686Ab3LQSOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:14:42 -0500
+	Tue, 17 Dec 2013 13:14:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: James Bottomley <JBottomley@Parallels.com>,
+Cc: Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@fluxnic.net>,
+        Eric Miao <eric.y.miao@gmail.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 044/103] [SCSI] enclosure: fix WARN_ON in dual path device removing
-Date: Tue, 17 Dec 2013 18:12:33 +0000
-Message-Id: <1387304012-23805-45-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 039/103] net: smc91: fix crash regression on the versatile
+Date: Tue, 17 Dec 2013 18:12:28 +0000
+Message-Id: <1387304012-23805-40-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -27,49 +31,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit a1470c7bf3a4676e62e4c0fb204e339399eb5c59 upstream.
+commit b268daffdcb9762ad9aa3898096570a9dd92aa9b upstream.
 
-Bug report from: wenxiong@linux.vnet.ibm.com
+After commit e9e4ea74f06635f2ffc1dffe5ef40c854faa0a90
+"net: smc91x: dont't use SMC_outw for fixing up halfword-aligned data"
+The Versatile SMSC LAN91C111 is crashing like this:
 
-The issue is happened in dual controller configuration. We got the
-sysfs warnings when rmmod the ipr module.
+------------[ cut here ]------------
+kernel BUG at /home/linus/linux/drivers/net/ethernet/smsc/smc91x.c:599!
+Internal error: Oops - BUG: 0 [#1] ARM
+Modules linked in:
+CPU: 0 PID: 43 Comm: udhcpc Not tainted 3.13.0-rc1+ #24
+task: c6ccfaa0 ti: c6cd0000 task.ti: c6cd0000
+PC is at smc_hardware_send_pkt+0x198/0x22c
+LR is at smc_hardware_send_pkt+0x24/0x22c
+pc : [<c01be324>]    lr : [<c01be1b0>]    psr: 20000013
+sp : c6cd1d08  ip : 00000001  fp : 00000000
+r10: c02adb08  r9 : 00000000  r8 : c6ced802
+r7 : c786fba0  r6 : 00000146  r5 : c8800000  r4 : c78d6000
+r3 : 0000000f  r2 : 00000146  r1 : 00000000  r0 : 00000031
+Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 0005317f  Table: 06cf4000  DAC: 00000015
+Process udhcpc (pid: 43, stack limit = 0xc6cd01c0)
+Stack: (0xc6cd1d08 to 0xc6cd2000)
+1d00:                   00000010 c8800000 c78d6000 c786fba0 c78d6000 c01be868
+1d20: c01be7a4 00004000 00000000 c786fba0 c6c12b80 c0208554 000004d0 c780fc60
+1d40: 00000220 c01fb734 00000000 00000000 00000000 c6c9a440 c6c12b80 c78d6000
+1d60: c786fba0 c6c9a440 00000000 c021d1d8 00000000 00000000 c6c12b80 c78d6000
+1d80: c786fba0 00000001 c6c9a440 c02087f8 c6c9a4a0 00080008 00000000 00000000
+1da0: c78d6000 c786fba0 c78d6000 00000138 00000000 00000000 00000000 00000000
+1dc0: 00000000 c027ba74 00000138 00000138 00000001 00000010 c6cedc00 00000000
+1de0: 00000008 c7404400 c6cd1eec c6cd1f14 c067a73c c065c0b8 00000000 c067a740
+1e00: 01ffffff 002040d0 00000000 00000000 00000000 00000000 00000000 ffffffff
+1e20: 43004400 00110022 c6cdef20 c027ae8c c6ccfaa0 be82d65c 00000014 be82d3cc
+1e40: 00000000 00000000 00000000 c01f2870 00000000 00000000 00000000 c6cd1e88
+1e60: c6ccfaa0 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+1e80: 00000000 00000000 00000031 c7802310 c7802300 00000138 c7404400 c0771da0
+1ea0: 00000000 c6cd1eec c7800340 00000138 be82d65c 00000014 be82d3cc c6cd1f08
+1ec0: 00000014 00000000 c7404400 c7404400 00000138 c01f4628 c78d6000 00000000
+1ee0: 00000000 be82d3cc 00000138 c6cd1f08 00000014 c6cd1ee4 00000001 00000000
+1f00: 00000000 00000000 00080011 00000002 06000000 ffffffff 0000ffff 00000002
+1f20: 06000000 ffffffff 0000ffff c00928c8 c065c520 c6cd1f58 00000003 c009299c
+1f40: 00000003 c065c520 c7404400 00000000 c7404400 c01f2218 c78106b0 c7441cb0
+1f60: 00000000 00000006 c06799fc 00000000 00000000 00000006 00000000 c01f3ee0
+1f80: 00000000 00000000 be82d678 be82d65c 00000014 00000001 00000122 c00139c8
+1fa0: c6cd0000 c0013840 be82d65c 00000014 00000006 be82d3cc 00000138 00000000
+1fc0: be82d65c 00000014 00000001 00000122 00000000 00000000 00018cb1 00000000
+1fe0: 00003801 be82d3a8 0003a0c7 b6e9af08 60000010 00000006 00000000 00000000
+[<c01be324>] (smc_hardware_send_pkt+0x198/0x22c) from [<c01be868>] (smc_hard_start_xmit+0xc4/0x1e8)
+[<c01be868>] (smc_hard_start_xmit+0xc4/0x1e8) from [<c0208554>] (dev_hard_start_xmit+0x460/0x4cc)
+[<c0208554>] (dev_hard_start_xmit+0x460/0x4cc) from [<c021d1d8>] (sch_direct_xmit+0x94/0x18c)
+[<c021d1d8>] (sch_direct_xmit+0x94/0x18c) from [<c02087f8>] (dev_queue_xmit+0x238/0x42c)
+[<c02087f8>] (dev_queue_xmit+0x238/0x42c) from [<c027ba74>] (packet_sendmsg+0xbe8/0xd28)
+[<c027ba74>] (packet_sendmsg+0xbe8/0xd28) from [<c01f2870>] (sock_sendmsg+0x84/0xa8)
+[<c01f2870>] (sock_sendmsg+0x84/0xa8) from [<c01f4628>] (SyS_sendto+0xb8/0xdc)
+[<c01f4628>] (SyS_sendto+0xb8/0xdc) from [<c0013840>] (ret_fast_syscall+0x0/0x2c)
+Code: e3130002 1a000001 e3130001 0affffcd (e7f001f2)
+---[ end trace 81104fe70e8da7fe ]---
+Kernel panic - not syncing: Fatal exception in interrupt
 
-enclosure_unregister() in drivers/msic/enclosure.c, call device_unregister()
-for each componment deivce, device_unregister() ->device_del()->kobject_del()
-->sysfs_remove_dir(). In sysfs_remove_dir(), set kobj->sd = NULL.
+This is because the macro operations in smc91x.h defined
+for Versatile are missing SMC_outsw() as used in this
+commit.
 
-For each componment device,
-enclosure_component_release()->enclosure_remove_links()->sysfs_remove_link()
-in which checking kobj->sd again, it has been set as NULL when doing
-device_unregister. So we saw all these sysfs WARNING.
+The Versatile needs and uses the same accessors as the other
+platforms in the first if(...) clause, just switch it to using
+that and we have one problem less to worry about.
 
-Tested-by: wenxiong@linux.vnet.ibm.com
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Checkpatch complains about spacing, but I have opted to
+follow the style of this .h-file.
+
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nico@fluxnic.net>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/misc/enclosure.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/net/ethernet/smsc/smc91x.h | 20 ++------------------
+ 1 file changed, 2 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/misc/enclosure.c b/drivers/misc/enclosure.c
-index 00e5fcac8..cbee842 100644
---- a/drivers/misc/enclosure.c
-+++ b/drivers/misc/enclosure.c
-@@ -198,6 +198,13 @@ static void enclosure_remove_links(struct enclosure_component *cdev)
- {
- 	char name[ENCLOSURE_NAME_SIZE];
+diff --git a/drivers/net/ethernet/smsc/smc91x.h b/drivers/net/ethernet/smsc/smc91x.h
+index 5f53fbb..a838e71 100644
+--- a/drivers/net/ethernet/smsc/smc91x.h
++++ b/drivers/net/ethernet/smsc/smc91x.h
+@@ -46,7 +46,8 @@
+     defined(CONFIG_MACH_LITTLETON) ||\
+     defined(CONFIG_MACH_ZYLONITE2) ||\
+     defined(CONFIG_ARCH_VIPER) ||\
+-    defined(CONFIG_MACH_STARGATE2)
++    defined(CONFIG_MACH_STARGATE2) ||\
++    defined(CONFIG_ARCH_VERSATILE)
  
-+	/*
-+	 * In odd circumstances, like multipath devices, something else may
-+	 * already have removed the links, so check for this condition first.
-+	 */
-+	if (!cdev->dev->kobj.sd)
-+		return;
-+
- 	enclosure_link_name(cdev, name);
- 	sysfs_remove_link(&cdev->dev->kobj, name);
- 	sysfs_remove_link(&cdev->cdev.kobj, "device");
+ #include <asm/mach-types.h>
+ 
+@@ -206,23 +207,6 @@ SMC_outw(u16 val, void __iomem *ioaddr, int reg)
+ #define RPC_LSA_DEFAULT		RPC_LED_TX_RX
+ #define RPC_LSB_DEFAULT		RPC_LED_100_10
+ 
+-#elif	defined(CONFIG_ARCH_VERSATILE)
+-
+-#define SMC_CAN_USE_8BIT	1
+-#define SMC_CAN_USE_16BIT	1
+-#define SMC_CAN_USE_32BIT	1
+-#define SMC_NOWAIT		1
+-
+-#define SMC_inb(a, r)		readb((a) + (r))
+-#define SMC_inw(a, r)		readw((a) + (r))
+-#define SMC_inl(a, r)		readl((a) + (r))
+-#define SMC_outb(v, a, r)	writeb(v, (a) + (r))
+-#define SMC_outw(v, a, r)	writew(v, (a) + (r))
+-#define SMC_outl(v, a, r)	writel(v, (a) + (r))
+-#define SMC_insl(a, r, p, l)	readsl((a) + (r), p, l)
+-#define SMC_outsl(a, r, p, l)	writesl((a) + (r), p, l)
+-#define SMC_IRQ_FLAGS		(-1)	/* from resource */
+-
+ #elif defined(CONFIG_MN10300)
+ 
+ /*
 -- 
 1.8.3.2
 
