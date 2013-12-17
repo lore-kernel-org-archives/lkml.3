@@ -1,158 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364Ab3LQQO0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 11:14:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59372 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753006Ab3LQQOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 11:14:24 -0500
-Date: Tue, 17 Dec 2013 16:14:20 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/7] mm: page_alloc: Make zone distribution page aging
- policy configurable
-Message-ID: <20131217161420.GG11295@suse.de>
-References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
- <1386943807-29601-6-git-send-email-mgorman@suse.de>
- <20131216204215.GA21724@cmpxchg.org>
- <20131217152954.GA24067@suse.de>
- <20131217155435.GE21724@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20131217155435.GE21724@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754391Ab3LQQQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:16:29 -0500
+Received: from 3.mo3.mail-out.ovh.net ([46.105.44.175]:50137 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753185Ab3LQQQ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 11:16:26 -0500
+X-Greylist: delayed 18443 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Dec 2013 11:16:26 EST
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Landley <rob@landley.net>, Jonathan Cameron <jic23@kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-iio@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
+Subject: [PATCH] iio: at91: document ADC clock properties
+Date: Tue, 17 Dec 2013 17:16:13 +0100
+Message-Id: <1387296973-7779-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 8710806105196099682
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 10:54:35AM -0500, Johannes Weiner wrote:
-> On Tue, Dec 17, 2013 at 03:29:54PM +0000, Mel Gorman wrote:
-> > On Mon, Dec 16, 2013 at 03:42:15PM -0500, Johannes Weiner wrote:
-> > > On Fri, Dec 13, 2013 at 02:10:05PM +0000, Mel Gorman wrote:
-> > > > Commit 81c0a2bb ("mm: page_alloc: fair zone allocator policy") solved a
-> > > > bug whereby new pages could be reclaimed before old pages because of
-> > > > how the page allocator and kswapd interacted on the per-zone LRU lists.
-> > > > Unfortunately it was missed during review that a consequence is that
-> > > > we also round-robin between NUMA nodes. This is bad for two reasons
-> > > > 
-> > > > 1. It alters the semantics of MPOL_LOCAL without telling anyone
-> > > > 2. It incurs an immediate remote memory performance hit in exchange
-> > > >    for a potential performance gain when memory needs to be reclaimed
-> > > >    later
-> > > > 
-> > > > No cookies for the reviewers on this one.
-> > > > 
-> > > > This patch makes the behaviour of the fair zone allocator policy
-> > > > configurable.  By default it will only distribute pages that are going
-> > > > to exist on the LRU between zones local to the allocating process. This
-> > > > preserves the historical semantics of MPOL_LOCAL.
-> > > > 
-> > > > By default, slab pages are not distributed between zones after this patch is
-> > > > applied. It can be argued that they should get similar treatment but they
-> > > > have different lifecycles to LRU pages, the shrinkers are not zone-aware
-> > > > and the interaction between the page allocator and kswapd is different
-> > > > for slabs. If it turns out to be an almost universal win, we can change
-> > > > the default.
-> > > > 
-> > > > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > > > ---
-> > > >  Documentation/sysctl/vm.txt |  32 ++++++++++++++
-> > > >  include/linux/mmzone.h      |   2 +
-> > > >  include/linux/swap.h        |   2 +
-> > > >  kernel/sysctl.c             |   8 ++++
-> > > >  mm/page_alloc.c             | 102 ++++++++++++++++++++++++++++++++++++++------
-> > > >  5 files changed, 134 insertions(+), 12 deletions(-)
-> > > > 
-> > > > diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-> > > > index 1fbd4eb..8eaa562 100644
-> > > > --- a/Documentation/sysctl/vm.txt
-> > > > +++ b/Documentation/sysctl/vm.txt
-> > > > @@ -56,6 +56,7 @@ Currently, these files are in /proc/sys/vm:
-> > > >  - swappiness
-> > > >  - user_reserve_kbytes
-> > > >  - vfs_cache_pressure
-> > > > +- zone_distribute_mode
-> > > >  - zone_reclaim_mode
-> > > >  
-> > > >  ==============================================================
-> > > > @@ -724,6 +725,37 @@ causes the kernel to prefer to reclaim dentries and inodes.
-> > > >  
-> > > >  ==============================================================
-> > > >  
-> > > > +zone_distribute_mode
-> > > > +
-> > > > +Pages allocation and reclaim are managed on a per-zone basis. When the
-> > > > +system needs to reclaim memory, candidate pages are selected from these
-> > > > +per-zone lists.  Historically, a potential consequence was that recently
-> > > > +allocated pages were considered reclaim candidates. From a zone-local
-> > > > +perspective, page aging was preserved but from a system-wide perspective
-> > > > +there was an age inversion problem.
-> > > > +
-> > > > +A similar problem occurs on a node level where young pages may be reclaimed
-> > > > +from the local node instead of allocating remote memory. Unforuntately, the
-> > > > +cost of accessing remote nodes is higher so the system must choose by default
-> > > > +between favouring page aging or node locality. zone_distribute_mode controls
-> > > > +how the system will distribute page ages between zones.
-> > > > +
-> > > > +0	= Never round-robin based on age
-> > > 
-> > > I think we should be very conservative with the userspace interface we
-> > > export on a mechanism we are obviously just figuring out.
-> > > 
-> > 
-> > And we have a proposal on how to limit this. I'll be layering another
-> > patch on top and removes this interface again. That will allows us to
-> > rollback one patch and still have a usable interface if necessary.
-> > 
-> > > > +Otherwise the values are ORed together
-> > > > +
-> > > > +1	= Distribute anon pages between zones local to the allocating node
-> > > > +2	= Distribute file pages between zones local to the allocating node
-> > > > +4	= Distribute slab pages between zones local to the allocating node
-> > > 
-> > > Zone fairness within a node does not affect mempolicy or remote
-> > > reference costs.  Is there a reason to have this configurable?
-> > > 
-> > 
-> > Symmetry
-> > 
-> > > > +The following three flags effectively alter MPOL_DEFAULT, be careful.
-> > > > +
-> > > > +8	= Distribute anon pages between zones remote to the allocating node
-> > > > +16	= Distribute file pages between zones remote to the allocating node
-> > > > +32	= Distribute slab pages between zones remote to the allocating node
-> > > 
-> > > Yes, it's conceivable that somebody might want to disable remote
-> > > distribution because of the extra references.
-> > > 
-> > > But at this point, I'd much rather back out anon and slab distribution
-> > > entirely, it was a mistake to include them.
-> > > 
-> > > That would leave us with a single knob to disable remote page cache
-> > > placement.
-> > > 
-> > 
-> > When looking at this closer I found that sysv is a weird exception. It's
-> > file-backed as far as most of the VM is concerned but looks anonymous to
-> > most applications that care. That and MAP_SHARED anonymous pages should
-> > not be treated like files but we still want tmpfs to be treated as
-> > files. Details will be in the changelog of the next series.
-> 
-> In what sense is it seen as file-backed?
+Document the clock properties required by the at91 ADC driver.
 
-sysv and anonymous pages are backed by an internal shmem mount point. In
-lots of respects, it's looks like a file and quacks like a file but I expect
-developers think of it being anonmous and chunks of the VM treats it like
-it's anonymous. tmpfs uses the same paths and they get treated similar to
-the VM as anon but users may think that tmpfs should be subject to the
-fair allocation zone policy "because they're files." It's a sufficently
-weird case that any action we take there should be deliberate. It'll be
-a bit clearer when I post the patch that special cases this.
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ .../devicetree/bindings/arm/atmel-adc.txt          |    5 +++++
+ 1 file changed, 5 insertions(+)
 
+diff --git a/Documentation/devicetree/bindings/arm/atmel-adc.txt b/Documentation/devicetree/bindings/arm/atmel-adc.txt
+index d106146..9a1175b 100644
+--- a/Documentation/devicetree/bindings/arm/atmel-adc.txt
++++ b/Documentation/devicetree/bindings/arm/atmel-adc.txt
+@@ -5,6 +5,9 @@ Required properties:
+     <chip> can be "at91sam9260", "at91sam9g45" or "at91sam9x5"
+   - reg: Should contain ADC registers location and length
+   - interrupts: Should contain the IRQ line for the ADC
++  - clock-names: tuple listing input clock names.
++	Required elements: "adc_clk", "adc_op_clk".
++  - clocks: phandles to input clocks.
+   - atmel,adc-channels-used: Bitmask of the channels muxed and enable for this
+     device
+   - atmel,adc-startup-time: Startup Time of the ADC in microseconds as
+@@ -44,6 +47,8 @@ adc0: adc@fffb0000 {
+ 	compatible = "atmel,at91sam9260-adc";
+ 	reg = <0xfffb0000 0x100>;
+ 	interrupts = <20 4>;
++	clocks = <&adc_clk>, <&adc_op_clk>;
++	clock-names = "adc_clk", "adc_op_clk";
+ 	atmel,adc-channel-base = <0x30>;
+ 	atmel,adc-channels-used = <0xff>;
+ 	atmel,adc-drdy-mask = <0x10000>;
 -- 
-Mel Gorman
-SUSE Labs
+1.7.9.5
+
