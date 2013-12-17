@@ -1,89 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab3LQJ0e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 04:26:34 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:53341 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab3LQJ0a (ORCPT
+	id S1752316Ab3LQJ2g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 04:28:36 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:8391 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab3LQJ2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 04:26:30 -0500
-X-AuditID: cbfee61b-b7fbf6d0000051a3-bf-52b018bfc848
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-To: netdev@vger.kernel.org
-Cc: kyungmin.park@samsung.com, lennart@poettering.net,
-        linux-kernel@vger.kernel.org,
-        Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: [PATCH] net: Make it possible to set defaults for net.core.[rw]mem_max
- parameters
-Date: Tue, 17 Dec 2013 10:25:53 +0100
-Message-id: <1387272353-3560-1-git-send-email-k.lewandowsk@samsung.com>
-X-Mailer: git-send-email 1.8.4.rc3
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGJMWRmVeSWpSXmKPExsVy+t9jQd39EhuCDPr2GVk0fprLbHG26Q27
-	xbe+Z4wWl3fNYbM4tkDMgdXjyvr3jB59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CVcebjEcaC
-	Fr6KLx/nsjYw7uDuYuTkkBAwkZi48BkThC0mceHeerYuRi4OIYHpjBK7zj1ngnA6mCTe9z1g
-	A6liEzCS+HZoAzOILSIgJfFxx3Z2EJtZoJlRYkuTdBcjB4ewQIzErtPWIGEWAVWJTWv+sYDY
-	vALuEo+mfmaDWKYksfDUNtYJjNwLGBlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgT7/pn0
-	DsZVDRaHGAU4GJV4eDlmrw8SYk0sK67MPcQowcGsJMLLUgAU4k1JrKxKLcqPLyrNSS0+xCjN
-	waIkznuw1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwDjVd+Ohs65/eKeufxhr0Cw6d9vX4ENnPlk8
-	cGgQdEx+Ot/PWOeT/6LnPm9f31ywwDX69EPRjalK0lfOKjqKv/3s9mX9pz+bGIzmR58wNfpp
-	dNrJzKtvtXtpVc9xB535l7d3P0hpvNkSd9iDX4lfufbYod/H/YPOXeid/0uNpX6CidY/1TKG
-	7GwlluKMREMt5qLiRAATy4/2+QEAAA==
+	Tue, 17 Dec 2013 04:28:33 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f5-b7f6f6d000005b3b-3e-52b0193f3e6e
+Content-transfer-encoding: 8BIT
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Sangbeom Kim <sbkim73@samsung.com>, linux-kernel@vger.kernel.org
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH mfd-next] mfd: max14577 and sec: add PM_SLEEP dependency to
+ suspend/resume
+Date: Tue, 17 Dec 2013 10:28:25 +0100
+Message-id: <1387272505-4621-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t/xy7r2khuCDK7tFbV4/cLQ4v7Xo4wW
+	l3fNYbM43c1qcXHFFyaLrXuvsjuweTTeuMHmcefaHjaPeScDPfq2rGL0+LxJLoA1issmJTUn
+	syy1SN8ugSvjWd9OtoL7/BVt5xeyNTCu4e1i5OSQEDCRODR7MyOELSZx4d56ti5GLg4hgaWM
+	Ekt2nWECSfAKCEr8mHyPpYuRg4NZQF7iyKVskDCzgLrEpHmLmCHq+5gk9jU1s4Mk2ASMJTYv
+	XwI2SESgj1Fi2cp5bBAdMRJP3m4H2yYMZN/e1swMYrMIqEr0NsxmAlnAK+AmcaK7AMSUEFCQ
+	mDPJZgIj3ywkV8xCuGIWkisWMDKvYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/dxAgJ0K87GJce
+	szrEKMDBqMTDe2DZ+iAh1sSy4srcQ4wSHMxKIrwsBUAh3pTEyqrUovz4otKc1OJDjEwcnFIN
+	jKlPbXyvmD1o0mFre6m3YOP9WcXndqfe3MP8TzcnfoISp6tnmaKo0PvZu2ZYSvDGCmixRwe0
+	WM2bP8PH512/g/8Rhzuyn8yUKySk5M+nyAXu0r/3PJmjwDlzk8zKNSYz5hozPVzVnHfx+NmY
+	P1uWuh35Lv+7cfOjDUa3vpmqcgeLnBMSeJu/QomlOCPRUIu5qDgRADeFgekuAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Default limits are quite low even for today's embedded hardware.
+Add CONFIG_PM_SLEEP dependency to suspend and resume functions of
+max14577 MFD driver and sec-core.c code.
 
-Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
+This fixes the warnings:
+drivers/mfd/max14577.c:176:12: warning: ‘max14577_suspend’ defined but not used [-Wunused-function]
+drivers/mfd/max14577.c:199:12: warning: ‘max14577_resume’ defined but not used [-Wunused-function]
+drivers/mfd/sec-core.c:347:12: warning: ‘sec_pmic_suspend’ defined but not used [-Wunused-function]
+drivers/mfd/sec-core.c:369:12: warning: ‘sec_pmic_resume’ defined but not used [-Wunused-function]
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- net/Kconfig      | 1 +
- net/core/Kconfig | 7 +++++++
- net/core/sock.c  | 5 ++---
- 3 files changed, 10 insertions(+), 3 deletions(-)
- create mode 100644 net/core/Kconfig
+ drivers/mfd/max14577.c |    2 ++
+ drivers/mfd/sec-core.c |    2 ++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/net/Kconfig b/net/Kconfig
-index d334678..75b7478 100644
---- a/net/Kconfig
-+++ b/net/Kconfig
-@@ -46,6 +46,7 @@ config COMPAT_NETLINK_MESSAGES
+diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
+index a5e1c370c609..1018a6644469 100644
+--- a/drivers/mfd/max14577.c
++++ b/drivers/mfd/max14577.c
+@@ -173,6 +173,7 @@ static const struct i2c_device_id max14577_i2c_id[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, max14577_i2c_id);
  
- menu "Networking options"
++#ifdef CONFIG_PM_SLEEP
+ static int max14577_suspend(struct device *dev)
+ {
+ 	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
+@@ -208,6 +209,7 @@ static int max14577_resume(struct device *dev)
  
-+source "net/core/Kconfig"
- source "net/packet/Kconfig"
- source "net/unix/Kconfig"
- source "net/xfrm/Kconfig"
-diff --git a/net/core/Kconfig b/net/core/Kconfig
-new file mode 100644
-index 0000000..91aa793
---- /dev/null
-+++ b/net/core/Kconfig
-@@ -0,0 +1,7 @@
-+config SK_MEM_PACKETS
-+        int "Default maximum socket queue depth (packets)" if EMBEDDED
-+        range 128 65536
-+        default 256
-+        ---help---
-+          This config option allows to set defaults for net.core.[rw]mem_max
-+          parameters
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 5393b4b..6f33bd6 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -259,10 +259,9 @@ static struct lock_class_key af_callback_keys[AF_MAX];
-  * platforms.  This makes socket queueing behavior and performance
-  * not depend upon such differences.
-  */
--#define _SK_MEM_PACKETS		256
- #define _SK_MEM_OVERHEAD	SKB_TRUESIZE(256)
--#define SK_WMEM_MAX		(_SK_MEM_OVERHEAD * _SK_MEM_PACKETS)
--#define SK_RMEM_MAX		(_SK_MEM_OVERHEAD * _SK_MEM_PACKETS)
-+#define SK_WMEM_MAX		(_SK_MEM_OVERHEAD * CONFIG_SK_MEM_PACKETS)
-+#define SK_RMEM_MAX		(_SK_MEM_OVERHEAD * CONFIG_SK_MEM_PACKETS)
+ 	return 0;
+ }
++#endif /* CONFIG_PM_SLEEP */
  
- /* Run time adjustable parameters. */
- __u32 sysctl_wmem_max __read_mostly = SK_WMEM_MAX;
+ static struct of_device_id max14577_dt_match[] = {
+ 	{ .compatible = "maxim,max14577", },
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index 56615af42a28..455e3a8fb95d 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -343,6 +343,7 @@ static int sec_pmic_remove(struct i2c_client *i2c)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int sec_pmic_suspend(struct device *dev)
+ {
+ 	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
+@@ -377,6 +378,7 @@ static int sec_pmic_resume(struct device *dev)
+ 
+ 	return 0;
+ }
++#endif /* CONFIG_PM_SLEEP */
+ 
+ static SIMPLE_DEV_PM_OPS(sec_pmic_pm_ops, sec_pmic_suspend, sec_pmic_resume);
+ 
 -- 
-1.8.4.rc3
+1.7.9.5
 
