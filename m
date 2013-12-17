@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab3LQA5K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 19:57:10 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:59417 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab3LQA5I (ORCPT
+	id S1752131Ab3LQA5c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 19:57:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47599 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab3LQA5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 19:57:08 -0500
+	Mon, 16 Dec 2013 19:57:20 -0500
+Date: Mon, 16 Dec 2013 16:57:19 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Stas Sergeev <stsp@list.ru>,
+        Margarita Manterola <margamanterola@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Caylan Van Larson <i@caylan.net>,
+        Maximiliano Curia <maxy@gnuservers.com.ar>,
+        Pavel Machek <pavel@ucw.cz>,
+        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+Subject: Re: [PATCH v4] n_tty: Fix buffer overruns with larger-than-4k pastes
+Message-ID: <20131217005719.GA26381@kroah.com>
+References: <52A79030.9090403@hurleysoftware.com>
+ <1386713522-6959-1-git-send-email-peter@hurleysoftware.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+6_M65pDoJjx1NEUw8SkfpGjH=yhswt-RW=_W97=kkzQ@mail.gmail.com>
-References: <20131126203727.GA352@www.outflux.net>
-	<20131127112731.GA10435@gmail.com>
-	<CAGXu5jLY+AzaB4f92OLA6Orm=Mr9C+G+-mgOmSf-yju+YCmaUg@mail.gmail.com>
-	<20131127175442.GA28088@gmail.com>
-	<52963223.9080701@zytor.com>
-	<CAGXu5j+6_M65pDoJjx1NEUw8SkfpGjH=yhswt-RW=_W97=kkzQ@mail.gmail.com>
-Date: Mon, 16 Dec 2013 16:57:08 -0800
-X-Google-Sender-Auth: ckf1SO812-sVmyh-nzda-OWsa18
-Message-ID: <CAGXu5j+0gjN118RijCinw31g51BZez_oGKFYJwq2T3=yojG_ww@mail.gmail.com>
-Subject: Re: [PATCH v2] use -fstack-protector-strong
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Ingo Molnar <mingo@redhat.com>, Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Olof Johansson <olofj@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386713522-6959-1-git-send-email-peter@hurleysoftware.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 10:11 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Wed, Nov 27, 2013 at 9:55 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 11/27/2013 09:54 AM, Ingo Molnar wrote:
->>>>
->>>> Looks to be 2% for defconfig. That's way better. Shall I send a v3?
->>>
->>> Well, it's better than 9%, but still almost an order of magnitude
->>> higher than the cost is today, and a lot of distros have
->>> CONFIG_CC_STACKPROTECTOR=y.
->>>
->>> So it would be nice to measure how much the instruction count goes up
->>> in some realistic system-bound test. How much does something like
->>> kernel/built-in.o increase, as per 'size' output?
->
->    text    data     bss     dec     hex filename
->  929611   90851  594496 1614958  18a46e built-in.o-gcc-4.9
->  954648   90851  594496 1639995  19063b built-in.o-gcc-4.9+strong
->
-> Looks like 3% for defconfg + CONFIG_CC_STACKPROTECTOR
->
->>
->> Do we need CONFIG_CC_STACKPROTECTOR_STRONG?
->
-> I'm hoping to avoid this since nearly anyone using CC_STACKPROTECTOR
-> would want strong added, but as a fallback, I'm happy to implement it
-> as a separate config item.
+On Tue, Dec 10, 2013 at 05:12:02PM -0500, Peter Hurley wrote:
+> readline() inadvertently triggers an error recovery path when
+> pastes larger than 4k overrun the line discipline buffer. The
+> error recovery path discards input when the line discipline buffer
+> is full and operating in canonical mode and no newline has been
+> received. Because readline() changes the termios to non-canonical
+> mode to read the line char-by-char, the line discipline buffer
+> can become full, and then when readline() restores termios back
+> to canonical mode for the caller, the now-full line discipline
+> buffer triggers the error recovery.
+> 
+> When changing termios from non-canon to canon mode and the read
+> buffer contains data, simulate an EOF push _without_ the
+> DISABLED_CHAR in the read buffer.
+> 
+> Importantly for the readline() problem, the termios can be
+> changed back to non-canonical mode without changes to the read
+> buffer occurring; ie., as if the previous termios change had not
+> happened (as long as no intervening read took place).
+> 
+> Preserve existing userspace behavior which allows '\0's already
+> received in non-canon mode to be read as '\0's in canon mode
+> (rather than trigger add'l EOF pushes or an actual EOF).
+> 
+> Patch based on original proposal and discussion here
+> https://bugzilla.kernel.org/show_bug.cgi?id=55991
+> by Stas Sergeev <stsp@users.sourceforge.net>
+> 
+> Reported-by: Margarita Manterola <margamanterola@gmail.com>
+> Cc: Maximiliano Curia <maxy@gnuservers.com.ar>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+> Acked-by: Stas Sergeev <stsp@users.sourceforge.net>
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
 
-Any verdict on this? Should I go with adding ..._STRONG like we used
-to have for ..._ALL, or is defaulting to -strong best?
+Is this a 3.13-final thing, or can it wait for 3.14-rc1?
 
--Kees
+thanks,
 
--- 
-Kees Cook
-Chrome OS Security
+greg k-h
