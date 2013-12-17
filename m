@@ -1,76 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab3LQQxN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 11:53:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11328 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752964Ab3LQQxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 11:53:12 -0500
-Date: Tue, 17 Dec 2013 17:53:35 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: PATCH? introduce get_compound_page (Was: process 'stuck' at
-	exit)
-Message-ID: <20131217165335.GA24799@redhat.com>
-References: <20131211170844.GA21700@redhat.com> <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de> <20131211175615.GA24546@redhat.com> <20131211191855.GA32485@redhat.com> <20131213151035.GE5408@redhat.com> <20131213162240.GA11762@redhat.com> <20131213173406.GG5408@redhat.com> <20131216183618.GA28252@redhat.com> <20131216201952.GE21218@redhat.com> <20131216204626.GA8152@redhat.com>
+	id S1754850Ab3LQQyd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:54:33 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:57938 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753455Ab3LQQyb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 11:54:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131216204626.GA8152@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20131217160455.GG18680@sgi.com>
+References: <20131212180037.GA134240@sgi.com> <20131213214437.6fdbf7f2.akpm@linux-foundation.org>
+ <20131216171214.GA15663@sgi.com> <CALCETrW9uGYzckWg3Wcsu-VV-vbXxUCr+Dv0kXqE5VMKopjn+A@mail.gmail.com>
+ <20131217160455.GG18680@sgi.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 17 Dec 2013 08:54:10 -0800
+Message-ID: <CALCETrX_B0D+XyYD8P6mfS4uqty1vzYpOmR-0Mx-yee=wtyR8g@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] Change how we determine when to hand out THPs
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16, Oleg Nesterov wrote:
+On Tue, Dec 17, 2013 at 8:04 AM, Alex Thorlton <athorlton@sgi.com> wrote:
+> On Mon, Dec 16, 2013 at 05:43:40PM -0800, Andy Lutomirski wrote:
+>> On Mon, Dec 16, 2013 at 9:12 AM, Alex Thorlton <athorlton@sgi.com> wrote:
+>> >> Please cc Andrea on this.
+>> >
+>> > I'm going to clean up a few small things for a v2 pretty soon, I'll be
+>> > sure to cc Andrea there.
+>> >
+>> >> > My proposed solution to the problem is to allow users to set a
+>> >> > threshold at which THPs will be handed out.  The idea here is that, when
+>> >> > a user faults in a page in an area where they would usually be handed a
+>> >> > THP, we pull 512 pages off the free list, as we would with a regular
+>> >> > THP, but we only fault in single pages from that chunk, until the user
+>> >> > has faulted in enough pages to pass the threshold we've set.  Once they
+>> >> > pass the threshold, we do the necessary work to turn our 512 page chunk
+>> >> > into a proper THP.  As it stands now, if the user tries to fault in
+>> >> > pages from different nodes, we completely give up on ever turning a
+>> >> > particular chunk into a THP, and just fault in the 4K pages as they're
+>> >> > requested.  We may want to make this tunable in the future (i.e. allow
+>> >> > them to fault in from only 2 different nodes).
+>> >>
+>> >> OK.  But all 512 pages reside on the same node, yes?  Whereas with thp
+>> >> disabled those 512 pages would have resided closer to the CPUs which
+>> >> instantiated them.
+>> >
+>> > As it stands right now, yes, since we're pulling a 512 page contiguous
+>> > chunk off the free list, everything from that chunk will reside on the
+>> > same node, but as I (stupidly) forgot to mention in my original e-mail,
+>> > one piece I have yet to add is the functionality to put the remaining
+>> > unfaulted pages from our chunk *back* on the free list after we give up
+>> > on handing out a THP.  Once this is in there, things will behave more
+>> > like they do when THP is turned completely off, i.e. pages will get
+>> > faulted in closer to the CPU that first referenced them once we give up
+>> > on handing out the THP.
+>>
+>> This sounds like it's almost the worst possible behavior wrt avoiding
+>> memory fragmentation.  If userspace mmaps a very large region and then
+>> starts accessing it randomly, it will allocate a bunch of contiguous
+>> 512-page regions, claim one page from each, and return the other 511
+>> pages to the free list.  Memory is now maximally fragmented from the
+>> point of view of future THP allocations.
 >
-> On 12/16, Andrea Arcangeli wrote:
-> >
-> > On Mon, Dec 16, 2013 at 07:36:18PM +0100, Oleg Nesterov wrote:
-> > >
-> > > And compound_lock_irqsave() looks racy even after get_page_unless_zero().
-> > >
-> > > For example, suppose that page_head was already freed and then re-allocated
-> > > as (say) alloc_pages(__GFP_COMP, 1). get_page_unless_zero() can succeed right
-> > > after prep_new_page() does set_page_refcounted(). Now, can't compound_lock()
-> > > race with the non-atomic prep_compound_page()->__SetPageHead() ?
-> >
-> > Yes. We need to change to:
-> >
-> > 	if (order && (gfp_flags & __GFP_COMP))
-> > 		prep_compound_page(page, order);
-> > 	smp_wmb();
-> > 	/* as the compound_lock can be taken after it's refcounted */
-> > 	set_page_refcounted(page);
-> >
-> > __SetPageHead uses bts asm insn so literally only a "lock" prefix is
-> > missing in a assembly instruction. So the race window is incredibly
-> > small, but it must be fixed indeed. This also puts set_page_refcounted
-> > as the last action of buffered_rmqueue so there shouldn't be any other
-> > issues like this left in the page allocation code.
-> >
-> > Can you reorder set_page_refcount in your v2?
+> Maybe I'm missing the point here to some degree, but the way I think
+> about this is that if we trigger the behavior to return the pages to the
+> free list, we don't *want* future THP allocations in that range of
+> memory for the current process anyways.  So, having the memory be
+> fragmented from the point of view of future THP allocations isn't an
+> issue.
 >
-> OK. I'll try to make something on Wednesday.
 
-Yes, I will, but...
+Except that you're causing a problem for the whole system because one
+process is triggering the "hugepages aren't helpful" heuristic.
 
-I can't stop thinking about another change. What if we simply change
-__split_huge_page_refcount() to also do compound_lock/unlock(page_tail)
-in a main loop?
+--Andy
 
-This way we can greatly simplify get/put_page paths, we can rely on
-compound_lock(sub-page) and avoid get_page_unless_zero(page_head).
-Yes, this will make _split a bit slower, but PG_compound_lock should
-not be contended? And we should change page_tail->flags carefully, but
-this looks simple.
+> - Alex
 
-Or this is not possible/desirable?
 
-Oleg.
 
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
