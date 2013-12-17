@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718Ab3LQSOo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:14:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60887 "EHLO
+	id S1755701Ab3LQSOn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:14:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60895 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755656Ab3LQSOf (ORCPT
+	with ESMTP id S1755640Ab3LQSOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:14:35 -0500
+	Tue, 17 Dec 2013 13:14:37 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 038/103] ALSA: hda - Fix silent output on ASUS W7J laptop
-Date: Tue, 17 Dec 2013 18:12:27 +0000
-Message-Id: <1387304012-23805-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 040/103] ARM: footbridge: fix VGA initialisation
+Date: Tue, 17 Dec 2013 18:12:29 +0000
+Message-Id: <1387304012-23805-41-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -27,58 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 6ddf0fd1c462a418a3cbb8b0653820dc48ffbd98 upstream.
+commit 43659222e7a0113912ed02f6b2231550b3e471ac upstream.
 
-The recent kernels got regressions on ASUS W7J with ALC660 codec where
-no sound comes out.  After a long debugging session, we found out that
-setting the pin control on the unused NID 0x10 is mandatory for the
-outputs.  And, it was found out that another magic of NID 0x0f that is
-required for other ASUS laptops isn't needed on this machine.
+It's no good setting vga_base after the VGA console has been
+initialised, because if we do that we get this:
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66081
-Reported-and-tested-by: Andrey Lipaev <lipaev@mail.ru>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Unable to handle kernel paging request at virtual address 000b8000
+pgd = c0004000
+[000b8000] *pgd=07ffc831, *pte=00000000, *ppte=00000000
+0Internal error: Oops: 5017 [#1] ARM
+Modules linked in:
+CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0+ #49
+task: c03e2974 ti: c03d8000 task.ti: c03d8000
+PC is at vgacon_startup+0x258/0x39c
+LR is at request_resource+0x10/0x1c
+pc : [<c01725d0>]    lr : [<c0022b50>]    psr: 60000053
+sp : c03d9f68  ip : 000b8000  fp : c03d9f8c
+r10: 000055aa  r9 : 4401a103  r8 : ffffaa55
+r7 : c03e357c  r6 : c051b460  r5 : 000000ff  r4 : 000c0000
+r3 : 000b8000  r2 : c03e0514  r1 : 00000000  r0 : c0304971
+Flags: nZCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+
+which is an access to the 0xb8000 without the PCI offset required to
+make it work.
+
+Fixes: cc22b4c18540 ("ARM: set vga memory base at run-time")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/arm/mach-footbridge/common.c  | 5 ++++-
+ arch/arm/mach-footbridge/dc21285.c | 2 --
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 45f1b1c..3fa47b3 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6291,6 +6291,7 @@ enum {
- 	ALC861_FIXUP_AMP_VREF_0F,
- 	ALC861_FIXUP_NO_JACK_DETECT,
- 	ALC861_FIXUP_ASUS_A6RP,
-+	ALC660_FIXUP_ASUS_W7J,
- };
+diff --git a/arch/arm/mach-footbridge/common.c b/arch/arm/mach-footbridge/common.c
+index 3e6aaa6..e8cf2a1 100644
+--- a/arch/arm/mach-footbridge/common.c
++++ b/arch/arm/mach-footbridge/common.c
+@@ -15,7 +15,8 @@
+ #include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
+- 
++#include <video/vga.h>
++
+ #include <asm/pgtable.h>
+ #include <asm/page.h>
+ #include <asm/irq.h>
+@@ -198,6 +199,8 @@ void __init footbridge_map_io(void)
+ 	 */
+ 	if (footbridge_cfn_mode())
+ 		iotable_init(ebsa285_host_io_desc, ARRAY_SIZE(ebsa285_host_io_desc));
++
++	vga_base = PCIMEM_BASE;
+ }
  
- /* On some laptops, VREF of pin 0x0f is abused for controlling the main amp */
-@@ -6341,10 +6342,21 @@ static const struct alc_fixup alc861_fixups[] = {
- 		.v.func = alc861_fixup_asus_amp_vref_0f,
- 		.chained = true,
- 		.chain_id = ALC861_FIXUP_NO_JACK_DETECT,
-+	},
-+	[ALC660_FIXUP_ASUS_W7J] = {
-+		.type = HDA_FIXUP_VERBS,
-+		.v.verbs = (const struct hda_verb[]) {
-+			/* ASUS W7J needs a magic pin setup on unused NID 0x10
-+			 * for enabling outputs
-+			 */
-+			{0x10, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24},
-+			{ }
-+		},
- 	}
- };
+ void footbridge_restart(char mode, const char *cmd)
+diff --git a/arch/arm/mach-footbridge/dc21285.c b/arch/arm/mach-footbridge/dc21285.c
+index 9d62e33..405d22b 100644
+--- a/arch/arm/mach-footbridge/dc21285.c
++++ b/arch/arm/mach-footbridge/dc21285.c
+@@ -18,7 +18,6 @@
+ #include <linux/irq.h>
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
+-#include <video/vga.h>
  
- static const struct snd_pci_quirk alc861_fixup_tbl[] = {
-+	SND_PCI_QUIRK(0x1043, 0x1253, "ASUS W7J", ALC660_FIXUP_ASUS_W7J),
- 	SND_PCI_QUIRK(0x1043, 0x1393, "ASUS A6Rp", ALC861_FIXUP_ASUS_A6RP),
- 	SND_PCI_QUIRK_VENDOR(0x1043, "ASUS laptop", ALC861_FIXUP_AMP_VREF_0F),
- 	SND_PCI_QUIRK(0x1462, 0x7254, "HP DX2200", ALC861_FIXUP_NO_JACK_DETECT),
+ #include <asm/irq.h>
+ #include <asm/mach/pci.h>
+@@ -293,7 +292,6 @@ void __init dc21285_preinit(void)
+ 	int cfn_mode;
+ 
+ 	pcibios_min_mem = 0x81000000;
+-	vga_base = PCIMEM_BASE;
+ 
+ 	mem_size = (unsigned int)high_memory - PAGE_OFFSET;
+ 	for (mem_mask = 0x00100000; mem_mask < 0x10000000; mem_mask <<= 1)
 -- 
 1.8.3.2
 
