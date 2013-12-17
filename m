@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab3LQSYD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:24:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:32869 "EHLO
+	id S1756193Ab3LQSYf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:24:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:32864 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932107Ab3LQSPd (ORCPT
+	with ESMTP id S1755927Ab3LQSPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:15:33 -0500
+	Tue, 17 Dec 2013 13:15:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Julius Werner <jwerner@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 079/103] usb: hub: Use correct reset for wedged USB3 devices that are NOTATTACHED
-Date: Tue, 17 Dec 2013 18:13:08 +0000
-Message-Id: <1387304012-23805-80-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 078/103] drm/radeon: fixup bad vram size on SI
+Date: Tue, 17 Dec 2013 18:13:07 +0000
+Message-Id: <1387304012-23805-79-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -28,40 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julius Werner <jwerner@chromium.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 2d51f3cd11f414c56a87dc018196b85fd50b04a4 upstream.
+commit 0ca223b029a261e82fb2f50c52eb85d510f4260e upstream.
 
-This patch adds a check for USB_STATE_NOTATTACHED to the
-hub_port_warm_reset_required() workaround for ports that end up in
-Compliance Mode in hub_events() when trying to decide which reset
-function to use. Trying to call usb_reset_device() with a NOTATTACHED
-device will just fail and leave the port broken.
+Some boards seem to have garbage in the upper
+16 bits of the vram size register.  Check for
+this and clamp the size properly.  Fixes
+boards reporting bogus amounts of vram.
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/core/hub.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/si.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index b79aa83..5e67525 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -4561,8 +4561,9 @@ static void hub_events(void)
- 					hub->hdev->children[i - 1];
- 
- 				dev_dbg(hub_dev, "warm reset port %d\n", i);
--				if (!udev || !(portstatus &
--						USB_PORT_STAT_CONNECTION)) {
-+				if (!udev ||
-+				    !(portstatus & USB_PORT_STAT_CONNECTION) ||
-+				    udev->state == USB_STATE_NOTATTACHED) {
- 					status = hub_port_reset(hub, i,
- 							NULL, HUB_BH_RESET_TIME,
- 							true);
+diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
+index 9987345..b7be000 100644
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -2325,8 +2325,15 @@ static int si_mc_init(struct radeon_device *rdev)
+ 	rdev->mc.aper_base = pci_resource_start(rdev->pdev, 0);
+ 	rdev->mc.aper_size = pci_resource_len(rdev->pdev, 0);
+ 	/* size in MB on si */
+-	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
+-	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
++	tmp = RREG32(CONFIG_MEMSIZE);
++	/* some boards may have garbage in the upper 16 bits */
++	if (tmp & 0xffff0000) {
++		DRM_INFO("Probable bad vram size: 0x%08x\n", tmp);
++		if (tmp & 0xffff)
++			tmp &= 0xffff;
++	}
++	rdev->mc.mc_vram_size = tmp * 1024ULL * 1024ULL;
++	rdev->mc.real_vram_size = rdev->mc.mc_vram_size;
+ 	rdev->mc.visible_vram_size = rdev->mc.aper_size;
+ 	si_vram_gtt_location(rdev, &rdev->mc);
+ 	radeon_update_bandwidth_info(rdev);
 -- 
 1.8.3.2
 
