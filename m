@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab3LQQfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 11:35:37 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:51553 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800Ab3LQQfe convert rfc822-to-8bit (ORCPT
+	id S1754975Ab3LQQfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:35:46 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:63951 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754907Ab3LQQfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 11:35:34 -0500
-X-Originating-IP: 50.43.14.201
-Date: Tue, 17 Dec 2013 08:35:25 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        sfi-devel@simplefirmware.org
-Subject: Re: [PATCH 2/2] drivers: sfi: Mark functions as static in sfi_core.c
-Message-ID: <20131217163525.GD737@leaf>
-References: <c351cee2521c4728d60810eb0212e8f307c79ac6.1387283325.git.rashika.kheria@gmail.com>
- <78c9d53e2266bfdf06bf1d545cb2cf7fb5e7226c.1387283325.git.rashika.kheria@gmail.com>
+	Tue, 17 Dec 2013 11:35:42 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [Query] Ticks happen in pair for NO_HZ_FULL cores ?
+References: <CAKohponch=o3nBKTmakA87OiN=HbgnEwJUL23mGkjQiNoJWjWw@mail.gmail.com>
+	<20131211132212.GA7862@localhost.localdomain>
+	<CAKohponKxw8F6djaXaw0MEzGRWGTSQ=peiYuTGBCOHE0VaJR5Q@mail.gmail.com>
+Date: Tue, 17 Dec 2013 08:35:39 -0800
+In-Reply-To: <CAKohponKxw8F6djaXaw0MEzGRWGTSQ=peiYuTGBCOHE0VaJR5Q@mail.gmail.com>
+	(Viresh Kumar's message of "Tue, 17 Dec 2013 16:05:29 +0530")
+Message-ID: <87wqj34eqs.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <78c9d53e2266bfdf06bf1d545cb2cf7fb5e7226c.1387283325.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 06:04:50PM +0530, Rashika Kheria wrote:
-> Mark functions sfi_map_table() and sfi_unmap_table() as static in
-> sfi_core.c because they are not used outside this file.
-> 
-> This eliminates following warning in sfi_core.c:
-> drivers/sfi/sfi_core.c:164:26: warning: no previous prototype for ‘sfi_map_table’ [-Wmissing-prototypes]
-> drivers/sfi/sfi_core.c:192:6: warning: no previous prototype for ‘sfi_unmap_table’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Viresh Kumar <viresh.kumar@linaro.org> writes:
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> Sorry for the delay, was on holidays..
+>
+> On 11 December 2013 18:52, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> On Tue, Dec 03, 2013 at 01:57:37PM +0530, Viresh Kumar wrote:
+>>> - again got arch_timer interrupt after 5 ms (HZ=200)
+>>
+>> Right, looking at the details, the 2nd interrupt is caused by workqueue delayed
+>> work bdi writeback.
+>
+> I am not that great at reading traces or kernelshark output, but I
+> still feel I haven't
+> seen anything wrong. And I wasn't talking about the delayed workqueue here..
+>
+> I am looking at the trace I attached with kernelshark after filtering
+> out CPU0 events:
+> - Event 41, timestamp: 159.891973
+> - it ends at event 56, timestamp: 159.892043
 
->  drivers/sfi/sfi_core.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/sfi/sfi_core.c b/drivers/sfi/sfi_core.c
-> index 1e824fb..296db7a 100644
-> --- a/drivers/sfi/sfi_core.c
-> +++ b/drivers/sfi/sfi_core.c
-> @@ -161,7 +161,7 @@ static int sfi_verify_table(struct sfi_table_header *table)
->   * Check for common case that we can re-use mapping to SYST,
->   * which requires syst_pa, syst_va to be initialized.
->   */
-> -struct sfi_table_header *sfi_map_table(u64 pa)
-> +static struct sfi_table_header *sfi_map_table(u64 pa)
->  {
->  	struct sfi_table_header *th;
->  	u32 length;
-> @@ -189,7 +189,7 @@ struct sfi_table_header *sfi_map_table(u64 pa)
->   * Undoes effect of sfi_map_table() by unmapping table
->   * if it did not completely fit on same page as SYST.
->   */
-> -void sfi_unmap_table(struct sfi_table_header *th)
-> +static void sfi_unmap_table(struct sfi_table_header *th)
->  {
->  	if (!TABLE_ON_PAGE(syst_va, th, th->len))
->  		sfi_unmap_memory(th, TABLE_ON_PAGE(th, th, th->len) ?
-> -- 
-> 1.7.9.5
-> 
+For future reference, for generating email friendly trace output for
+discussion like this, you can use something like:
+
+   trace-cmd report --cpu=1 trace.dat
+
+> And after that the next event comes after 5 Seconds.
+>
+> And so I was talking for the Event 41.
+
+That first event (Event 41) is an interrupt, and comes from the
+scheduler tick.  The tick is happening because the writeback workqueue
+just ran and we're not in NO_HZ mode.
+
+However, as soon as that IRQ (and resulting softirqs) are finished, we
+enter NO_HZ mode again.  But as you mention, it only lasts for ~5 sec
+when the timer fires again.  Once again, it fires because of the
+writeback workqueue, and soon therafter it switches back to NO_HZ mode
+again.
+
+So the solution to avoid this jitter on the NO_HZ CPU is to set the
+affinity of the writeback workqueue to CPU0:
+
+  # pin the writeback workqueue to CPU0
+  echo 1 > /sys/bus/workqueue/devices/writeback/cpumask
+
+I suspect by doing that, you will no longer see the jitter.
+
+Kevin
