@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab3LQUxt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:53:49 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56171 "EHLO
+	id S1754513Ab3LQUwZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:52:25 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56160 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab3LQUw0 (ORCPT
+	with ESMTP id S1754435Ab3LQUwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:52:26 -0500
+	Tue, 17 Dec 2013 15:52:23 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 07/10] perf symbols: Clarify method to get DSO binary_type filename
-Date: Tue, 17 Dec 2013 17:52:08 -0300
-Message-Id: <1387313531-14629-8-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 05/10] perf timechart: Add support for topology
+Date: Tue, 17 Dec 2013 17:52:06 -0300
+Message-Id: <1387313531-14629-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1387313531-14629-1-git-send-email-acme@infradead.org>
 References: <1387313531-14629-1-git-send-email-acme@infradead.org>
@@ -29,104 +28,260 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
 
-Using dso__binary_type_file() make it look like this function will
-return a file, not just its filename, so rename it to:
+Add -t switch to sort CPUs topologically.
 
-	dso__read_binary_type_filename()
-
-to make its purpose clear, just like we have:
-
-	dso__read_running_kernel_build_id()
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-vkf3upzrfrxtr01wueej4xw4@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ramkumar Ramachandra <artagnon@gmail.com>
+Link: http://lkml.kernel.org/r/1385995056-20158-5-git-send-email-stfomichev@yandex-team.ru
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/dso.c    | 14 +++++++-------
- tools/perf/util/dso.h    |  4 ++--
- tools/perf/util/symbol.c |  4 ++--
- 3 files changed, 11 insertions(+), 11 deletions(-)
+ tools/perf/Documentation/perf-timechart.txt |   3 +
+ tools/perf/builtin-timechart.c              |  17 +++-
+ tools/perf/util/svghelper.c                 | 132 +++++++++++++++++++++++++++-
+ tools/perf/util/svghelper.h                 |   2 +
+ 4 files changed, 151 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index e7f4449088e4..eef166212324 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -28,8 +28,9 @@ char dso__symtab_origin(const struct dso *dso)
- 	return origin[dso->symtab_type];
+diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
+index 271dd4ed5b05..367c1be0551c 100644
+--- a/tools/perf/Documentation/perf-timechart.txt
++++ b/tools/perf/Documentation/perf-timechart.txt
+@@ -59,6 +59,9 @@ $ perf timechart
+ -n::
+ --proc-num::
+         Print task info for at least given number of tasks.
++-t::
++--topology::
++        Sort CPUs according to topology.
+ 
+ RECORD OPTIONS
+ --------------
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index db9c4c172587..8bde57c5c908 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -58,7 +58,8 @@ struct timechart {
+ 				first_time, last_time;
+ 	bool			power_only,
+ 				tasks_only,
+-				with_backtrace;
++				with_backtrace,
++				topology;
+ };
+ 
+ struct per_pidcomm;
+@@ -1077,6 +1078,18 @@ static int process_header(struct perf_file_section *section __maybe_unused,
+ 	case HEADER_NRCPUS:
+ 		tchart->numcpus = ph->env.nr_cpus_avail;
+ 		break;
++
++	case HEADER_CPU_TOPOLOGY:
++		if (!tchart->topology)
++			break;
++
++		if (svg_build_topology_map(ph->env.sibling_cores,
++					   ph->env.nr_sibling_cores,
++					   ph->env.sibling_threads,
++					   ph->env.nr_sibling_threads))
++			fprintf(stderr, "problem building topology\n");
++		break;
++
+ 	default:
+ 		break;
+ 	}
+@@ -1267,6 +1280,8 @@ int cmd_timechart(int argc, const char **argv,
+ 		    "Look for files with symbols relative to this directory"),
+ 	OPT_INTEGER('n', "proc-num", &tchart.proc_num,
+ 		    "min. number of tasks to print"),
++	OPT_BOOLEAN('t', "topology", &tchart.topology,
++		    "sort CPUs according to topology"),
+ 	OPT_END()
+ 	};
+ 	const char * const timechart_usage[] = {
+diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
+index 927851d05d03..9468136735ca 100644
+--- a/tools/perf/util/svghelper.c
++++ b/tools/perf/util/svghelper.c
+@@ -17,8 +17,11 @@
+ #include <stdlib.h>
+ #include <unistd.h>
+ #include <string.h>
++#include <linux/bitops.h>
+ 
++#include "perf.h"
+ #include "svghelper.h"
++#include "cpumap.h"
+ 
+ static u64 first_time, last_time;
+ static u64 turbo_frequency, max_freq;
+@@ -39,9 +42,14 @@ static double cpu2slot(int cpu)
+ 	return 2 * cpu + 1;
  }
  
--int dso__binary_type_file(const struct dso *dso, enum dso_binary_type type,
--			  char *root_dir, char *filename, size_t size)
-+int dso__read_binary_type_filename(const struct dso *dso,
-+				   enum dso_binary_type type,
-+				   char *root_dir, char *filename, size_t size)
++static int *topology_map;
++
+ static double cpu2y(int cpu)
  {
- 	char build_id_hex[BUILD_ID_SIZE * 2 + 1];
- 	int ret = 0;
-@@ -137,19 +138,18 @@ int dso__binary_type_file(const struct dso *dso, enum dso_binary_type type,
+-	return cpu2slot(cpu) * SLOT_MULT;
++	if (topology_map)
++		return cpu2slot(topology_map[cpu]) * SLOT_MULT;
++	else
++		return cpu2slot(cpu) * SLOT_MULT;
+ }
  
- static int open_dso(struct dso *dso, struct machine *machine)
- {
--	char *root_dir = (char *) "";
--	char *name;
- 	int fd;
-+	char *root_dir = (char *)"";
-+	char *name = malloc(PATH_MAX);
+ static double time2pixels(u64 __time)
+@@ -275,7 +283,7 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
+ 		time2pixels(last_time)-time2pixels(first_time),
+ 		cpu2y(cpu), SLOT_MULT+SLOT_HEIGHT);
  
--	name = malloc(PATH_MAX);
- 	if (!name)
- 		return -ENOMEM;
+-	sprintf(cpu_string, "CPU %i", (int)cpu+1);
++	sprintf(cpu_string, "CPU %i", (int)cpu);
+ 	fprintf(svgfile, "<text x=\"%4.8f\" y=\"%4.8f\">%s</text>\n",
+ 		10+time2pixels(first_time), cpu2y(cpu) + SLOT_HEIGHT/2, cpu_string);
  
- 	if (machine)
- 		root_dir = machine->root_dir;
- 
--	if (dso__binary_type_file(dso, dso->data_type,
--				  root_dir, name, PATH_MAX)) {
-+	if (dso__read_binary_type_filename(dso, dso->data_type,
-+					    root_dir, name, PATH_MAX)) {
- 		free(name);
- 		return -EINVAL;
+@@ -568,3 +576,123 @@ void svg_close(void)
+ 		svgfile = NULL;
  	}
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index e1cc50698137..aa3384745d75 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -128,8 +128,8 @@ void dso__read_running_kernel_build_id(struct dso *dso,
- int dso__kernel_module_get_build_id(struct dso *dso, const char *root_dir);
+ }
++
++#define cpumask_bits(maskp) ((maskp)->bits)
++typedef struct { DECLARE_BITMAP(bits, MAX_NR_CPUS); } cpumask_t;
++
++struct topology {
++	cpumask_t *sib_core;
++	int sib_core_nr;
++	cpumask_t *sib_thr;
++	int sib_thr_nr;
++};
++
++static void scan_thread_topology(int *map, struct topology *t, int cpu, int *pos)
++{
++	int i;
++	int thr;
++
++	for (i = 0; i < t->sib_thr_nr; i++) {
++		if (!test_bit(cpu, cpumask_bits(&t->sib_thr[i])))
++			continue;
++
++		for_each_set_bit(thr,
++				 cpumask_bits(&t->sib_thr[i]),
++				 MAX_NR_CPUS)
++			if (map[thr] == -1)
++				map[thr] = (*pos)++;
++	}
++}
++
++static void scan_core_topology(int *map, struct topology *t)
++{
++	int pos = 0;
++	int i;
++	int cpu;
++
++	for (i = 0; i < t->sib_core_nr; i++)
++		for_each_set_bit(cpu,
++				 cpumask_bits(&t->sib_core[i]),
++				 MAX_NR_CPUS)
++			scan_thread_topology(map, t, cpu, &pos);
++}
++
++static int str_to_bitmap(char *s, cpumask_t *b)
++{
++	int i;
++	int ret = 0;
++	struct cpu_map *m;
++	int c;
++
++	m = cpu_map__new(s);
++	if (!m)
++		return -1;
++
++	for (i = 0; i < m->nr; i++) {
++		c = m->map[i];
++		if (c >= MAX_NR_CPUS) {
++			ret = -1;
++			break;
++		}
++
++		set_bit(c, cpumask_bits(b));
++	}
++
++	cpu_map__delete(m);
++
++	return ret;
++}
++
++int svg_build_topology_map(char *sib_core, int sib_core_nr,
++			   char *sib_thr, int sib_thr_nr)
++{
++	int i;
++	struct topology t;
++
++	t.sib_core_nr = sib_core_nr;
++	t.sib_thr_nr = sib_thr_nr;
++	t.sib_core = calloc(sib_core_nr, sizeof(cpumask_t));
++	t.sib_thr = calloc(sib_thr_nr, sizeof(cpumask_t));
++
++	if (!t.sib_core || !t.sib_thr) {
++		fprintf(stderr, "topology: no memory\n");
++		goto exit;
++	}
++
++	for (i = 0; i < sib_core_nr; i++) {
++		if (str_to_bitmap(sib_core, &t.sib_core[i])) {
++			fprintf(stderr, "topology: can't parse siblings map\n");
++			goto exit;
++		}
++
++		sib_core += strlen(sib_core) + 1;
++	}
++
++	for (i = 0; i < sib_thr_nr; i++) {
++		if (str_to_bitmap(sib_thr, &t.sib_thr[i])) {
++			fprintf(stderr, "topology: can't parse siblings map\n");
++			goto exit;
++		}
++
++		sib_thr += strlen(sib_thr) + 1;
++	}
++
++	topology_map = malloc(sizeof(int) * MAX_NR_CPUS);
++	if (!topology_map) {
++		fprintf(stderr, "topology: no memory\n");
++		goto exit;
++	}
++
++	for (i = 0; i < MAX_NR_CPUS; i++)
++		topology_map[i] = -1;
++
++	scan_core_topology(topology_map, &t);
++
++	return 0;
++
++exit:
++	free(t.sib_core);
++	free(t.sib_thr);
++
++	return -1;
++}
+diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
+index 8b77ca631686..1df4fb6c3a4a 100644
+--- a/tools/perf/util/svghelper.h
++++ b/tools/perf/util/svghelper.h
+@@ -23,6 +23,8 @@ extern void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, cha
+ extern void svg_interrupt(u64 start, int row, const char *backtrace);
+ extern void svg_text(int Yslot, u64 start, const char *text);
+ extern void svg_close(void);
++extern int svg_build_topology_map(char *sib_core, int sib_core_nr,
++				  char *sib_thr, int sib_thr_nr);
  
- char dso__symtab_origin(const struct dso *dso);
--int dso__binary_type_file(const struct dso *dso, enum dso_binary_type type,
--			  char *root_dir, char *filename, size_t size);
-+int dso__read_binary_type_filename(const struct dso *dso, enum dso_binary_type type,
-+				   char *root_dir, char *filename, size_t size);
+ extern int svg_page_width;
  
- int dso__data_fd(struct dso *dso, struct machine *machine);
- ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 61eb1cddf01a..9ee4b80dac57 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1258,8 +1258,8 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 
- 		enum dso_binary_type symtab_type = binary_type_symtab[i];
- 
--		if (dso__binary_type_file(dso, symtab_type,
--					  root_dir, name, PATH_MAX))
-+		if (dso__read_binary_type_filename(dso, symtab_type,
-+						   root_dir, name, PATH_MAX))
- 			continue;
- 
- 		/* Name is now the name of the next image to try */
 -- 
 1.8.1.4
 
