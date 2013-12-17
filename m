@@ -1,195 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab3LQOjc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 09:39:32 -0500
-Received: from 18.mo3.mail-out.ovh.net ([87.98.172.162]:60431 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751274Ab3LQOja (ORCPT
+	id S1754056Ab3LQOmf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 09:42:35 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:34367 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab3LQOmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 09:39:30 -0500
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Landley <rob@landley.net>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 2/2] clk: add accuracy support for fixed clock
-Date: Tue, 17 Dec 2013 15:36:23 +0100
-Message-Id: <1387290983-6236-3-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1387290983-6236-1-git-send-email-b.brezillon@overkiz.com>
-References: <1387290983-6236-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 7058829467843197028
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Tue, 17 Dec 2013 09:42:33 -0500
+Date: Tue, 17 Dec 2013 15:42:14 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alex Shi <alex.shi@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
+        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
+ range flush v2
+Message-ID: <20131217144214.GA12370@gmail.com>
+References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
+ <CA+55aFyNAigQqBk07xLpf0nkhZ_x-QkBYG8otRzsqg_8A2eg-Q@mail.gmail.com>
+ <20131215155539.GM11295@suse.de>
+ <20131216102439.GA21624@gmail.com>
+ <20131216125923.GS11295@suse.de>
+ <20131216134449.GA3034@gmail.com>
+ <20131217092124.GV11295@suse.de>
+ <20131217110051.GA27701@gmail.com>
+ <20131217143253.GB11295@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131217143253.GB11295@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for accuracy retrieval on fixed clocks.
-It also adds a new dt property called 'clock-accuracy' to define the clock
-accuracy.
 
-This can be usefull for oscillator (RC, crystal, ...) definitions which are
-always given an accuracy characteristic.
+* Mel Gorman <mgorman@suse.de> wrote:
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- .../devicetree/bindings/clock/fixed-clock.txt      |    3 ++
- drivers/clk/clk-fixed-rate.c                       |   43 +++++++++++++++++---
- include/linux/clk-provider.h                       |    4 ++
- 3 files changed, 44 insertions(+), 6 deletions(-)
+> [...]
+>
+> At that point it'll be time to look at profiles and see where we are 
+> actually spending time because the possibilities of finding things 
+> to fix through bisection will be exhausted.
 
-diff --git a/Documentation/devicetree/bindings/clock/fixed-clock.txt b/Documentation/devicetree/bindings/clock/fixed-clock.txt
-index 0b1fe78..48ea0ad 100644
---- a/Documentation/devicetree/bindings/clock/fixed-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/fixed-clock.txt
-@@ -10,6 +10,8 @@ Required properties:
- - clock-frequency : frequency of clock in Hz. Should be a single cell.
- 
- Optional properties:
-+- clock-accuracy : accuracy of clock in ppb (parts per billion).
-+		   Should be a single cell.
- - gpios : From common gpio binding; gpio connection to clock enable pin.
- - clock-output-names : From common clock binding.
- 
-@@ -18,4 +20,5 @@ Example:
- 		compatible = "fixed-clock";
- 		#clock-cells = <0>;
- 		clock-frequency = <1000000000>;
-+		clock-accuracy = <100>;
- 	};
-diff --git a/drivers/clk/clk-fixed-rate.c b/drivers/clk/clk-fixed-rate.c
-index 1ed591a..0fc56ab 100644
---- a/drivers/clk/clk-fixed-rate.c
-+++ b/drivers/clk/clk-fixed-rate.c
-@@ -34,22 +34,31 @@ static unsigned long clk_fixed_rate_recalc_rate(struct clk_hw *hw,
- 	return to_clk_fixed_rate(hw)->fixed_rate;
- }
- 
-+static unsigned long clk_fixed_rate_recalc_accuracy(struct clk_hw *hw,
-+		unsigned long parent_accuracy)
-+{
-+	return to_clk_fixed_rate(hw)->fixed_accuracy;
-+}
-+
- const struct clk_ops clk_fixed_rate_ops = {
- 	.recalc_rate = clk_fixed_rate_recalc_rate,
-+	.recalc_accuracy = clk_fixed_rate_recalc_accuracy,
- };
- EXPORT_SYMBOL_GPL(clk_fixed_rate_ops);
- 
- /**
-- * clk_register_fixed_rate - register fixed-rate clock with the clock framework
-+ * clk_register_fixed_rate_with_accuracy - register fixed-rate clock with the
-+ *					   clock framework
-  * @dev: device that is registering this clock
-  * @name: name of this clock
-  * @parent_name: name of clock's parent
-  * @flags: framework-specific flags
-  * @fixed_rate: non-adjustable clock rate
-+ * @fixed_accuracy: non-adjustable clock rate
-  */
--struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
--		const char *parent_name, unsigned long flags,
--		unsigned long fixed_rate)
-+struct clk *clk_register_fixed_rate_with_accuracy(struct device *dev,
-+		const char *name, const char *parent_name, unsigned long flags,
-+		unsigned long fixed_rate, unsigned long fixed_accuracy)
- {
- 	struct clk_fixed_rate *fixed;
- 	struct clk *clk;
-@@ -70,16 +79,33 @@ struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
- 
- 	/* struct clk_fixed_rate assignments */
- 	fixed->fixed_rate = fixed_rate;
-+	fixed->fixed_accuracy = fixed_accuracy;
- 	fixed->hw.init = &init;
- 
- 	/* register the clock */
- 	clk = clk_register(dev, &fixed->hw);
--
- 	if (IS_ERR(clk))
- 		kfree(fixed);
- 
- 	return clk;
- }
-+EXPORT_SYMBOL_GPL(clk_register_fixed_rate_with_accuracy);
-+
-+/**
-+ * clk_register_fixed_rate - register fixed-rate clock with the clock framework
-+ * @dev: device that is registering this clock
-+ * @name: name of this clock
-+ * @parent_name: name of clock's parent
-+ * @flags: framework-specific flags
-+ * @fixed_rate: non-adjustable clock rate
-+ */
-+struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
-+		const char *parent_name, unsigned long flags,
-+		unsigned long fixed_rate)
-+{
-+	return clk_register_fixed_rate_with_accuracy(dev, name, parent_name,
-+						     flags, fixed_rate, 0);
-+}
- EXPORT_SYMBOL_GPL(clk_register_fixed_rate);
- 
- #ifdef CONFIG_OF
-@@ -91,13 +117,18 @@ void of_fixed_clk_setup(struct device_node *node)
- 	struct clk *clk;
- 	const char *clk_name = node->name;
- 	u32 rate;
-+	u32 accuracy = 0;
- 
- 	if (of_property_read_u32(node, "clock-frequency", &rate))
- 		return;
- 
-+	of_property_read_u32(node, "clock-accuracy", &accuracy);
-+
- 	of_property_read_string(node, "clock-output-names", &clk_name);
- 
--	clk = clk_register_fixed_rate(NULL, clk_name, NULL, CLK_IS_ROOT, rate);
-+	clk = clk_register_fixed_rate_with_accuracy(NULL, clk_name, NULL,
-+						    CLK_IS_ROOT, rate,
-+						    accuracy);
- 	if (!IS_ERR(clk))
- 		of_clk_add_provider(node, of_clk_src_simple_get, clk);
- }
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 16d182c..5429f5d 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -204,6 +204,7 @@ struct clk_hw {
- struct clk_fixed_rate {
- 	struct		clk_hw hw;
- 	unsigned long	fixed_rate;
-+	unsigned long	fixed_accuracy;
- 	u8		flags;
- };
- 
-@@ -211,6 +212,9 @@ extern const struct clk_ops clk_fixed_rate_ops;
- struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		unsigned long fixed_rate);
-+struct clk *clk_register_fixed_rate_with_accuracy(struct device *dev,
-+		const char *name, const char *parent_name, unsigned long flags,
-+		unsigned long fixed_rate, unsigned long fixed_accuracy);
- 
- void of_fixed_clk_setup(struct device_node *np);
- 
--- 
-1.7.9.5
+Yeah.
 
+One (heavy handed but effective) trick that can be used in such a 
+situation is to just revert everything that is causing problems, and 
+continue reverting until we get back to a v3.4 baseline performance.
+
+Once such a 'clean' tree (or queue of patches) is achived, that can be 
+used as a measurement base and the individual features can be 
+re-applied again, one by one, with measurement and analysis becoming a 
+lot easier.
+
+> > Also it appears the Ebizzy numbers ought to be stable enough now 
+> > to make the range-TLB-flush measurements more precise?
+> 
+> Right now, the tlbflush microbenchmark figures look awful on the 
+> 8-core machine when the tlbflush shift patch and the schedule domain 
+> fix are both applied.
+
+I think that furthr strengthens the case for the 'clean base' approach 
+I outlined above - but it's your call obviously ...
+
+Thanks again for going through all this. Tracking multi-commit 
+performance regressions across 1.5 years worth of commits is generally 
+very hard. Does your testing effort comes from enterprise Linux QA 
+testing, or did you ran into this problem accidentally?
+
+Thanks,
+
+	Ingo
