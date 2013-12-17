@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334Ab3LQSgy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:36:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60881 "EHLO
+	id S1756381Ab3LQShU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:37:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60867 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755623Ab3LQSOc (ORCPT
+	with ESMTP id S1755627Ab3LQSO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:14:32 -0500
+	Tue, 17 Dec 2013 13:14:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        Horia Geanta <horia.geanta@freescale.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
+Cc: Jan Glauber <jang@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 036/103] crypto: ccm - Fix handling of zero plaintext when computing mac
-Date: Tue, 17 Dec 2013 18:12:25 +0000
-Message-Id: <1387304012-23805-37-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 034/103] s390/crypto: Don't panic after crypto instruction failures
+Date: Tue, 17 Dec 2013 18:12:23 +0000
+Message-Id: <1387304012-23805-35-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -29,74 +28,230 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Horia Geanta <horia.geanta@freescale.com>
+From: Jan Glauber <jang@linux.vnet.ibm.com>
 
-commit 5638cabf3e4883f38dfb246c30980cebf694fbda upstream.
+commit 36eb2caa7bace31b7868a57f77cb148e58d1c9f9 upstream.
 
-There are cases when cryptlen can be zero in crypto_ccm_auth():
--encryptiom: input scatterlist length is zero (no plaintext)
--decryption: input scatterlist contains only the mac
-plus the condition of having different source and destination buffers
-(or else scatterlist length = max(plaintext_len, ciphertext_len)).
+Remove the BUG_ON's that check for failure or incomplete
+results of the s390 hardware crypto instructions.
+Rather report the errors as -EIO to the crypto layer.
 
-These are not handled correctly, leading to crashes like:
-
-root@p4080ds:~/crypto# insmod tcrypt.ko mode=45
-------------[ cut here ]------------
-kernel BUG at crypto/scatterwalk.c:37!
-Oops: Exception in kernel mode, sig: 5 [#1]
-SMP NR_CPUS=8 P4080 DS
-Modules linked in: tcrypt(+) crc32c xts xcbc vmac pcbc ecb gcm ghash_generic gf128mul ccm ctr seqiv
-CPU: 3 PID: 1082 Comm: cryptomgr_test Not tainted 3.11.0 #14
-task: ee12c5b0 ti: eecd0000 task.ti: eecd0000
-NIP: c0204d98 LR: f9225848 CTR: c0204d80
-REGS: eecd1b70 TRAP: 0700   Not tainted  (3.11.0)
-MSR: 00029002 <CE,EE,ME>  CR: 22044022  XER: 20000000
-
-GPR00: f9225c94 eecd1c20 ee12c5b0 eecd1c28 ee879400 ee879400 00000000 ee607464
-GPR08: 00000001 00000001 00000000 006b0000 c0204d80 00000000 00000002 c0698e20
-GPR16: ee987000 ee895000 fffffff4 ee879500 00000100 eecd1d58 00000001 00000000
-GPR24: ee879400 00000020 00000000 00000000 ee5b2800 ee607430 00000004 ee607460
-NIP [c0204d98] scatterwalk_start+0x18/0x30
-LR [f9225848] get_data_to_compute+0x28/0x2f0 [ccm]
-Call Trace:
-[eecd1c20] [f9225974] get_data_to_compute+0x154/0x2f0 [ccm] (unreliable)
-[eecd1c70] [f9225c94] crypto_ccm_auth+0x184/0x1d0 [ccm]
-[eecd1cb0] [f9225d40] crypto_ccm_encrypt+0x60/0x2d0 [ccm]
-[eecd1cf0] [c020d77c] __test_aead+0x3ec/0xe20
-[eecd1e20] [c020f35c] test_aead+0x6c/0xe0
-[eecd1e40] [c020f420] alg_test_aead+0x50/0xd0
-[eecd1e60] [c020e5e4] alg_test+0x114/0x2e0
-[eecd1ee0] [c020bd1c] cryptomgr_test+0x4c/0x60
-[eecd1ef0] [c0047058] kthread+0xa8/0xb0
-[eecd1f40] [c000eb0c] ret_from_kernel_thread+0x5c/0x64
-Instruction dump:
-0f080000 81290024 552807fe 0f080000 5529003a 4bffffb4 90830000 39400000
-39000001 8124000c 2f890000 7d28579e <0f090000> 81240008 91230004 4e800020
----[ end trace 6d652dfcd1be37bd ]---
-
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Signed-off-by: Horia Geanta <horia.geanta@freescale.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Jan Glauber <jang@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+[ luis: 3.5.y prereq for:
+  - 9dda276 crypto: s390 - Fix aes-xts parameter corruption ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- crypto/ccm.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/s390/crypto/aes_s390.c   | 18 ++++++++++++------
+ arch/s390/crypto/des_s390.c   | 12 ++++++++----
+ arch/s390/crypto/ghash_s390.c | 21 +++++++++++++--------
+ arch/s390/crypto/sha_common.c |  9 ++++++---
+ 4 files changed, 39 insertions(+), 21 deletions(-)
 
-diff --git a/crypto/ccm.c b/crypto/ccm.c
-index 32fe1bb..18d64ad 100644
---- a/crypto/ccm.c
-+++ b/crypto/ccm.c
-@@ -271,7 +271,8 @@ static int crypto_ccm_auth(struct aead_request *req, struct scatterlist *plain,
+diff --git a/arch/s390/crypto/aes_s390.c b/arch/s390/crypto/aes_s390.c
+index 6522bb7..a6e37d4 100644
+--- a/arch/s390/crypto/aes_s390.c
++++ b/arch/s390/crypto/aes_s390.c
+@@ -325,7 +325,8 @@ static int ecb_aes_crypt(struct blkcipher_desc *desc, long func, void *param,
+ 		u8 *in = walk->src.virt.addr;
+ 
+ 		ret = crypt_s390_km(func, param, out, in, n);
+-		BUG_ON((ret < 0) || (ret != n));
++		if (ret < 0 || ret != n)
++			return -EIO;
+ 
+ 		nbytes &= AES_BLOCK_SIZE - 1;
+ 		ret = blkcipher_walk_done(desc, walk, nbytes);
+@@ -464,7 +465,8 @@ static int cbc_aes_crypt(struct blkcipher_desc *desc, long func,
+ 		u8 *in = walk->src.virt.addr;
+ 
+ 		ret = crypt_s390_kmc(func, &param, out, in, n);
+-		BUG_ON((ret < 0) || (ret != n));
++		if (ret < 0 || ret != n)
++			return -EIO;
+ 
+ 		nbytes &= AES_BLOCK_SIZE - 1;
+ 		ret = blkcipher_walk_done(desc, walk, nbytes);
+@@ -633,7 +635,8 @@ static int xts_aes_crypt(struct blkcipher_desc *desc, long func,
+ 	memcpy(xts_ctx->pcc.tweak, walk->iv, sizeof(xts_ctx->pcc.tweak));
+ 	param = xts_ctx->pcc.key + offset;
+ 	ret = crypt_s390_pcc(func, param);
+-	BUG_ON(ret < 0);
++	if (ret < 0)
++		return -EIO;
+ 
+ 	memcpy(xts_ctx->xts_param, xts_ctx->pcc.xts, 16);
+ 	param = xts_ctx->key + offset;
+@@ -644,7 +647,8 @@ static int xts_aes_crypt(struct blkcipher_desc *desc, long func,
+ 		in = walk->src.virt.addr;
+ 
+ 		ret = crypt_s390_km(func, param, out, in, n);
+-		BUG_ON(ret < 0 || ret != n);
++		if (ret < 0 || ret != n)
++			return -EIO;
+ 
+ 		nbytes &= AES_BLOCK_SIZE - 1;
+ 		ret = blkcipher_walk_done(desc, walk, nbytes);
+@@ -778,7 +782,8 @@ static int ctr_aes_crypt(struct blkcipher_desc *desc, long func,
+ 				crypto_inc(ctrblk + i, AES_BLOCK_SIZE);
+ 			}
+ 			ret = crypt_s390_kmctr(func, sctx->key, out, in, n, ctrblk);
+-			BUG_ON(ret < 0 || ret != n);
++			if (ret < 0 || ret != n)
++				return -EIO;
+ 			if (n > AES_BLOCK_SIZE)
+ 				memcpy(ctrblk, ctrblk + n - AES_BLOCK_SIZE,
+ 				       AES_BLOCK_SIZE);
+@@ -797,7 +802,8 @@ static int ctr_aes_crypt(struct blkcipher_desc *desc, long func,
+ 		in = walk->src.virt.addr;
+ 		ret = crypt_s390_kmctr(func, sctx->key, buf, in,
+ 				       AES_BLOCK_SIZE, ctrblk);
+-		BUG_ON(ret < 0 || ret != AES_BLOCK_SIZE);
++		if (ret < 0 || ret != AES_BLOCK_SIZE)
++			return -EIO;
+ 		memcpy(out, buf, nbytes);
+ 		crypto_inc(ctrblk, AES_BLOCK_SIZE);
+ 		ret = blkcipher_walk_done(desc, walk, 0);
+diff --git a/arch/s390/crypto/des_s390.c b/arch/s390/crypto/des_s390.c
+index a52bfd1..00d649c 100644
+--- a/arch/s390/crypto/des_s390.c
++++ b/arch/s390/crypto/des_s390.c
+@@ -95,7 +95,8 @@ static int ecb_desall_crypt(struct blkcipher_desc *desc, long func,
+ 		u8 *in = walk->src.virt.addr;
+ 
+ 		ret = crypt_s390_km(func, key, out, in, n);
+-		BUG_ON((ret < 0) || (ret != n));
++		if (ret < 0 || ret != n)
++			return -EIO;
+ 
+ 		nbytes &= DES_BLOCK_SIZE - 1;
+ 		ret = blkcipher_walk_done(desc, walk, nbytes);
+@@ -121,7 +122,8 @@ static int cbc_desall_crypt(struct blkcipher_desc *desc, long func,
+ 		u8 *in = walk->src.virt.addr;
+ 
+ 		ret = crypt_s390_kmc(func, iv, out, in, n);
+-		BUG_ON((ret < 0) || (ret != n));
++		if (ret < 0 || ret != n)
++			return -EIO;
+ 
+ 		nbytes &= DES_BLOCK_SIZE - 1;
+ 		ret = blkcipher_walk_done(desc, walk, nbytes);
+@@ -394,7 +396,8 @@ static int ctr_desall_crypt(struct blkcipher_desc *desc, long func,
+ 				crypto_inc(ctrblk + i, DES_BLOCK_SIZE);
+ 			}
+ 			ret = crypt_s390_kmctr(func, ctx->key, out, in, n, ctrblk);
+-			BUG_ON((ret < 0) || (ret != n));
++			if (ret < 0 || ret != n)
++				return -EIO;
+ 			if (n > DES_BLOCK_SIZE)
+ 				memcpy(ctrblk, ctrblk + n - DES_BLOCK_SIZE,
+ 				       DES_BLOCK_SIZE);
+@@ -412,7 +415,8 @@ static int ctr_desall_crypt(struct blkcipher_desc *desc, long func,
+ 		in = walk->src.virt.addr;
+ 		ret = crypt_s390_kmctr(func, ctx->key, buf, in,
+ 				       DES_BLOCK_SIZE, ctrblk);
+-		BUG_ON(ret < 0 || ret != DES_BLOCK_SIZE);
++		if (ret < 0 || ret != DES_BLOCK_SIZE)
++			return -EIO;
+ 		memcpy(out, buf, nbytes);
+ 		crypto_inc(ctrblk, DES_BLOCK_SIZE);
+ 		ret = blkcipher_walk_done(desc, walk, 0);
+diff --git a/arch/s390/crypto/ghash_s390.c b/arch/s390/crypto/ghash_s390.c
+index b1bd170..f6373f0 100644
+--- a/arch/s390/crypto/ghash_s390.c
++++ b/arch/s390/crypto/ghash_s390.c
+@@ -72,14 +72,16 @@ static int ghash_update(struct shash_desc *desc,
+ 		if (!dctx->bytes) {
+ 			ret = crypt_s390_kimd(KIMD_GHASH, ctx, buf,
+ 					      GHASH_BLOCK_SIZE);
+-			BUG_ON(ret != GHASH_BLOCK_SIZE);
++			if (ret != GHASH_BLOCK_SIZE)
++				return -EIO;
+ 		}
  	}
  
- 	/* compute plaintext into mac */
--	get_data_to_compute(cipher, pctx, plain, cryptlen);
-+	if (cryptlen)
-+		get_data_to_compute(cipher, pctx, plain, cryptlen);
+ 	n = srclen & ~(GHASH_BLOCK_SIZE - 1);
+ 	if (n) {
+ 		ret = crypt_s390_kimd(KIMD_GHASH, ctx, src, n);
+-		BUG_ON(ret != n);
++		if (ret != n)
++			return -EIO;
+ 		src += n;
+ 		srclen -= n;
+ 	}
+@@ -92,7 +94,7 @@ static int ghash_update(struct shash_desc *desc,
+ 	return 0;
+ }
  
- out:
- 	return err;
+-static void ghash_flush(struct ghash_ctx *ctx, struct ghash_desc_ctx *dctx)
++static int ghash_flush(struct ghash_ctx *ctx, struct ghash_desc_ctx *dctx)
+ {
+ 	u8 *buf = dctx->buffer;
+ 	int ret;
+@@ -103,21 +105,24 @@ static void ghash_flush(struct ghash_ctx *ctx, struct ghash_desc_ctx *dctx)
+ 		memset(pos, 0, dctx->bytes);
+ 
+ 		ret = crypt_s390_kimd(KIMD_GHASH, ctx, buf, GHASH_BLOCK_SIZE);
+-		BUG_ON(ret != GHASH_BLOCK_SIZE);
++		if (ret != GHASH_BLOCK_SIZE)
++			return -EIO;
+ 	}
+ 
+ 	dctx->bytes = 0;
++	return 0;
+ }
+ 
+ static int ghash_final(struct shash_desc *desc, u8 *dst)
+ {
+ 	struct ghash_desc_ctx *dctx = shash_desc_ctx(desc);
+ 	struct ghash_ctx *ctx = crypto_shash_ctx(desc->tfm);
++	int ret;
+ 
+-	ghash_flush(ctx, dctx);
+-	memcpy(dst, ctx->icv, GHASH_BLOCK_SIZE);
+-
+-	return 0;
++	ret = ghash_flush(ctx, dctx);
++	if (!ret)
++		memcpy(dst, ctx->icv, GHASH_BLOCK_SIZE);
++	return ret;
+ }
+ 
+ static struct shash_alg ghash_alg = {
+diff --git a/arch/s390/crypto/sha_common.c b/arch/s390/crypto/sha_common.c
+index bd37d09..8620b0e 100644
+--- a/arch/s390/crypto/sha_common.c
++++ b/arch/s390/crypto/sha_common.c
+@@ -36,7 +36,8 @@ int s390_sha_update(struct shash_desc *desc, const u8 *data, unsigned int len)
+ 	if (index) {
+ 		memcpy(ctx->buf + index, data, bsize - index);
+ 		ret = crypt_s390_kimd(ctx->func, ctx->state, ctx->buf, bsize);
+-		BUG_ON(ret != bsize);
++		if (ret != bsize)
++			return -EIO;
+ 		data += bsize - index;
+ 		len -= bsize - index;
+ 		index = 0;
+@@ -46,7 +47,8 @@ int s390_sha_update(struct shash_desc *desc, const u8 *data, unsigned int len)
+ 	if (len >= bsize) {
+ 		ret = crypt_s390_kimd(ctx->func, ctx->state, data,
+ 				      len & ~(bsize - 1));
+-		BUG_ON(ret != (len & ~(bsize - 1)));
++		if (ret != (len & ~(bsize - 1)))
++			return -EIO;
+ 		data += ret;
+ 		len -= ret;
+ 	}
+@@ -88,7 +90,8 @@ int s390_sha_final(struct shash_desc *desc, u8 *out)
+ 	memcpy(ctx->buf + end - 8, &bits, sizeof(bits));
+ 
+ 	ret = crypt_s390_kimd(ctx->func, ctx->state, ctx->buf, end);
+-	BUG_ON(ret != end);
++	if (ret != end)
++		return -EIO;
+ 
+ 	/* copy digest to out */
+ 	memcpy(out, ctx->state, crypto_shash_digestsize(desc->tfm));
 -- 
 1.8.3.2
 
