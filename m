@@ -1,76 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab3LQN0n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:26:43 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:25250 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162Ab3LQN0k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:26:40 -0500
-X-AuditID: cbfec7f5-b7f6f6d000005b3b-c4-52b0510f6edb
-From: Kamil Debski <k.debski@samsung.com>
-To: "'Anton Tikhomirov'" <av.tikhomirov@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
-Cc: kyungmin.park@samsung.com, kishon@ti.com, Tomasz Figa <t.figa@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, gautam.vivek@samsung.com,
-        mat.krawczuk@gmail.com, yulgon.kim@samsung.com, p.paneri@samsung.com,
-        jg1.han@samsung.com, galak@codeaurora.org, matt.porter@linaro.org
-References: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
- <1386246579-25141-4-git-send-email-k.debski@samsung.com>
- <006a01cef551$7fb4e240$7f1ea6c0$%tikhomirov@samsung.com>
-In-reply-to: <006a01cef551$7fb4e240$7f1ea6c0$%tikhomirov@samsung.com>
-Subject: RE: [PATCH v4 3/9] phy: Add new Exynos USB PHY driver
-Date: Tue, 17 Dec 2013 14:26:37 +0100
-Message-id: <02d201cefb2b$9e04e710$da0eb530$%debski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7xtb/TcbT2JoEKQI6IBVag+SxyjgDmHfwwAXcg4IA=
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsVy+t/xy7r8gRuCDOb+57ZYsvsGq8X8I+dY
-	LfrfLGS1aLtykN3i8sJLrBYXnvawWZxtegPk7prDZjHj/D4mi0XLWpkt1h65y25xtv82m8XE
-	pmnsFue3dDJZHH7TzmqxfsZrFouOswfZHQQ9Lvf1MnnsnHWX3ePOtT1sHn1bVjF6HL+xncnj
-	8ya5ALYoLpuU1JzMstQifbsEroyL63rYCh6zVbRPn8HawLietYuRk0NCwETifU8/lC0mceHe
-	erYuRi4OIYGljBIn9lxkh3AamCT+/1zC2MXIwcEmoCmx6p4HSFxEYB2jxNYns1hAHGaBy0wS
-	R+6/ZYXo2MUosaV5EzvIXE4BV4nHO1cwg9jCAnYS57d3MYLYLAKqEoc6toLFeQUcJN5c/MwE
-	YQtK/Jh8jwXEZhbQkli/8zgThC0vsXnNW2aQKyQE1CUe/dUFCYsIWEn8m9kDVS4icbfhOesE
-	RqFZSCbNQjJpFpJJs5C0LGBkWcUomlqaXFCclJ5rpFecmFtcmpeul5yfu4kREp9fdzAuPWZ1
-	iFGAg1GJh/fAsvVBQqyJZcWVuYcYJTiYlUR4v3lsCBLiTUmsrEotyo8vKs1JLT7EyMTBKdXA
-	mPbxVlVdwd/3ly9t7zx+XD9n6d/Y0qQ9f5nu5XaGyWwXvTzV5saXtM4zD+5ESafznq7hXskg
-	w/Nw1ZTde1alv2q5+f1AelHqbXHXqzz9xV8mLGTJPfn55LEjAgUrdAJYD/3zX3UuUWSuZau2
-	tYznPRv2EE3uhwLWjyLCvzqkXXigtvW1f+kOYSWW4oxEQy3mouJEACO/jf6tAgAA
+	id S1753345Ab3LQNbj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:31:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18902 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750929Ab3LQNbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 08:31:37 -0500
+Date: Tue, 17 Dec 2013 08:31:25 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org
+Subject: Re: [PATCH v3 6/6] locks: add new "private" lock type that is owned
+ by the filp
+Message-ID: <20131217083125.4ce0382b@tlielax.poochiereds.net>
+In-Reply-To: <1386703055-22308-7-git-send-email-jlayton@redhat.com>
+References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
+	<1386703055-22308-7-git-send-email-jlayton@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
+On Tue, 10 Dec 2013 14:17:35 -0500
+Jeff Layton <jlayton@redhat.com> wrote:
 
-> From: Anton Tikhomirov [mailto:av.tikhomirov@samsung.com]
-> Sent: Tuesday, December 10, 2013 3:43 AM
+> Due to some unfortunate history, POSIX locks have very strange and
+> unhelpful semantics. The thing that usually catches people by surprise
+> is that they are dropped whenever the process closes any file descriptor
+> associated with the inode.
 > 
-> Hi Kamil,
+> This is extremely problematic for people developing file servers that
+> need to implement byte-range locks. Developers often need a "lock
+> management" facility to ensure that file descriptors are not closed
+> until all of the locks associated with the inode are finished.
 > 
-> Same USB2.0 PHY may be used by several HCDs, for example EHCI and OHCI.
-> Consider the situation, when EHCI stops using the PHY and calls
-> power_off, then OHCI becomes non-operational. In other words, PHY
-> power_on and power_off calls must be balanced.
+> Additionally, "classic" POSIX locks are owned by the process. Locks
+> taken between threads within the same process won't conflict with one
+> another, which renders classic POSIX locks useless for synchronization
+> between threads.
 > 
-> Shall we handle it in your driver? (usage count?)
+> This patchset adds a new type of lock that attempts to address these
+> issues. These locks work just like classic POSIX read/write locks, but
+> have semantics that are more like BSD locks with respect to inheritance
+> and behavior on close.
+> 
+> This is implemented primarily by changing how fl_owner field is set for
+> these locks. Instead of having them owned by the files_struct of the
+> process, they are instead owned by the filp on which they were acquired.
+> Thus, they are inherited across fork() and are only released when the
+> last reference to a filp is put.
+> 
+> These new semantics prevent them from being merged with classic POSIX
+> locks, even if they are acquired by the same process. These locks will
+> also conflict with classic POSIX locks even if they are acquired by
+> the same process or on the same file descriptor.
+> 
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> ---
+>  fs/locks.c                       | 32 ++++++++++++++++++++++++++++++--
+>  include/uapi/asm-generic/fcntl.h | 16 ++++++++++++++++
+>  2 files changed, 46 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/locks.c b/fs/locks.c
+> index 5372ddd..98a503d 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -367,7 +367,34 @@ flock_to_posix_lock_common(struct file_lock *fl, struct file *filp, short type)
+>  		break;
+>  	}
+>  
+> -	return assign_type(fl, type);
+> +	/*
+> +	 * FL_FILE_PVT locks are "owned" by the filp upon which they were
+> +	 * acquired, regardless of what task is dealing with them. Set the
+> +	 * fl_owner appropriately and flag them as private.
+> +	 */
+> +	switch(type) {
+> +	case F_RDLCKP:
+> +		fl->fl_owner = (fl_owner_t)fl->fl_file;
+> +		fl->fl_type = F_RDLCK;
+> +		fl->fl_flags |= FL_FILE_PVT;
+> +		break;
+> +	case F_WRLCKP:
+> +		fl->fl_owner = (fl_owner_t)fl->fl_file;
+> +		fl->fl_type = F_WRLCK;
+> +		fl->fl_flags |= FL_FILE_PVT;
+> +		break;
+> +	case F_UNLCKP:
+> +		fl->fl_owner = (fl_owner_t)fl->fl_file;
+> +		fl->fl_type = F_UNLCK;
+> +		fl->fl_flags |= FL_FILE_PVT;
+> +		break;
+> +	default:
+> +		/* Any other POSIX lock is owned by the file_struct */
+> +		fl->fl_owner = current->files;
+> +		return assign_type(fl, type);
+> +	}
+> +
+> +	return 0;
+>  }
+>  
+>  /* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
+> @@ -2259,7 +2286,8 @@ void locks_remove_file(struct file *filp)
+>  
+>  	while ((fl = *before) != NULL) {
+>  		if (fl->fl_file == filp) {
+> -			if (IS_FLOCK(fl)) {
+> +			if (IS_FLOCK(fl) ||
+> +			    (IS_POSIX(fl) && IS_FILE_PVT(fl))) {
+>  				locks_delete_lock(before);
+>  				continue;
+>  			}
+> diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
+> index 95e46c8..ed09fc5 100644
+> --- a/include/uapi/asm-generic/fcntl.h
+> +++ b/include/uapi/asm-generic/fcntl.h
+> @@ -151,6 +151,22 @@ struct f_owner_ex {
+>  #define F_UNLCK		2
+>  #endif
+>  
+> +/*
+> + * fd "private" POSIX locks.
+> + *
+> + * Usually POSIX locks held by a process are released on *any* close and are
+> + * not inherited across a fork().
+> + *
+> + * These lock types will conflict with normal POSIX locks, but are "owned"
+> + * by the opened file, not the process. This means that they are inherited
+> + * across fork() like BSD (flock) locks, and they are only released
+> + * automatically when the last reference to the the open file against which
+> + * they were acquired is put.
+> + */
+> +#define F_RDLCKP	5
+> +#define F_WRLCKP	6
+> +#define F_UNLCKP	7
+> +
+>  /* for old implementation of bsd flock () */
+>  #ifndef F_EXLCK
+>  #define F_EXLCK		4	/* or 3 */
 
-Please look in the drivers/phy/phy-core.c file. Usage count is handled
-there - see phy_power_on and phy_power_off functions. I understand that
-after both EHCI and OHCI power on the phy, the usage count is 2. So
-powering off one of them (EHCI for instance) the usage count is still
-1, so the OHCI should still work properly.
 
-[snip]
+So, I think the above semantics are pretty clear, but now that I've had
+a go at sitting down to document this stuff for the POSIX spec and
+manpages, it's clear how convoluted the text in there is becoming.
 
-Best wishes,
+That makes me wonder...would we be better off with a new set of cmd
+values here instead of new l_type values? IOW, we could add new:
+
+F_GETLKP
+F_SETLKP
+F_SETLKPW
+
+...and then just reuse the same F_RDLCK/F_WRLCK/F_UNLCK values? With
+that too, we could create a new equivalent to struct flock that has
+fixed length types instead of dealing with the off_t mess.
+
+I think doing that would make it a little easier to document, at the
+expense of being a little trickier to code up for all of the different
+arches. What would be the most intuitive interface from the standpoint
+of a userland developer?
+
 -- 
-Kamil Debski
-Samsung R&D Institute Poland
-
-
+Jeff Layton <jlayton@redhat.com>
