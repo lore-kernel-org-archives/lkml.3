@@ -1,143 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab3LQM72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 07:59:28 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:49220 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752435Ab3LQM71 (ORCPT
+	id S1753381Ab3LQM7t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 07:59:49 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55253 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab3LQM7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 07:59:27 -0500
-Message-ID: <52B04AAD.3070403@gmail.com>
-Date: Tue, 17 Dec 2013 07:59:25 -0500
-From: Austin S Hemmelgarn <ahferroin7@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 17 Dec 2013 07:59:47 -0500
+Date: Tue, 17 Dec 2013 12:58:32 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Xiubo Li <Li.Xiubo@freescale.com>, mark.rutland@arm.com,
+        s.hauer@pengutronix.de, galak@codeaurora.org, swarren@wwwdotorg.org,
+        t.figa@samsung.com, grant.likely@linaro.org, matt.porter@linaro.org,
+        rob@landley.net, tomasz.figa@gmail.com, ian.campbell@citrix.com,
+        pawel.moll@arm.com, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, Alison Wang <b18965@freescale.com>,
+        Jingchang Lu <b35083@freescale.com>
+Subject: Re: [PATCHv7 1/4] pwm: Add Freescale FTM PWM driver support
+Message-ID: <20131217125832.GU4360@n2100.arm.linux.org.uk>
+References: <1386925027-16288-1-git-send-email-Li.Xiubo@freescale.com> <1386925027-16288-2-git-send-email-Li.Xiubo@freescale.com> <20131217111020.GF13823@ulmo.nvidia.com> <20131217115136.GT4360@n2100.arm.linux.org.uk> <20131217122431.GA17210@ulmo.nvidia.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, John <da_audiophile@yahoo.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "david.heidelberger@ixit.cz" <david.heidelberger@ixit.cz>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] expand micro-optimizations in kernel to newer model CPUs
-References: <1386518000.90452.YahooMailNeo@web140004.mail.bf1.yahoo.com> <864985fbeb1d8148439e25ec01f47a67@ixit.cz> <52AAFF89.5080509@gmail.com> <1387051250.86178.YahooMailNeo@web140005.mail.bf1.yahoo.com> <ce679ca5-bf83-4c2a-9234-859cc7a4206b@email.android.com> <1387057337.97000.YahooMailNeo@web140004.mail.bf1.yahoo.com> <52ACECC4.208@zytor.com> <1387108841.76039.YahooMailNeo@web140006.mail.bf1.yahoo.com> <20131216142816.GA6350@gmail.com>
-In-Reply-To: <20131216142816.GA6350@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131217122431.GA17210@ulmo.nvidia.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-12-16 09:28, Ingo Molnar wrote:
+On Tue, Dec 17, 2013 at 01:24:33PM +0100, Thierry Reding wrote:
+> On Tue, Dec 17, 2013 at 11:51:36AM +0000, Russell King - ARM Linux wrote:
+> > Same comments here - what memory operations is the wmb() trying to
+> > serialise?  Does this PWM driver somehow end up doing DMA?
 > 
-> * John <da_audiophile@yahoo.com> wrote:
-> 
->> This patch has been tested on and known to work with kernel versions 
->> from 3.2 up to the latest git version (pulled on 12/14/2013).
->>
->> This patch will expand the number of microarchitectures to include 
->> new processors including: AMD K10-family, AMD Family 10h 
->> (Barcelona), AMD Family 14h (Bobcat), AMD Family 15h (Bulldozer), 
->> AMD Family 15h (Piledriver), AMD Family 16h (Jaguar), Intel 1st Gen 
->> Core i3/i5/i7 (Nehalem), Intel 2nd Gen Core i3/i5/i7 (Sandybridge), 
->> Intel 3rd Gen Core i3/i5/i7 (Ivybridge), and Intel 4th Gen Core 
->> i3/i5/i7 (Haswell). It also offers the compiler the 'native' flag.
-> 
-> So let me (again) follow Linus's general advice to say 'no' to patches 
-> more forcefully, so that people don't go down potential dead ends for 
-> too long time without strong negative feedback from upstream. :-)
-> 
-> This series does not look convincing enough to me. My complaints:
-> 
->  - I'm not convinced the numbers are right. Rarely are such tiny
->    compiler optimizations measureable in integer-only kernel code ...
->    Too noisy benchmarks were used. More precise measurements done by
->    Boris showed no statistically significant improvements:
-> 
->       http://marc.info/?l=linux-kernel&m=138081947417204
-> 
->  - Modern CPUs have inherently high noise: boot-to-boot variance is 
->    often higher on modern systems with large caches than the speedup 
->    claimed by optimization options ...
-> 
->  - I'm not convinced the whole concept is long term maintainable to 
->    begin with. When Linux on x86 began we used to have just 2-3 major 
->    CPU models to care about, so it made sense. That count grew rapidly 
->    and today we havedozens (if not hundreds) of models, families and
->    variants and our 'optimization' options are just one big 
->    fragmented, rarely tested mess with essentially random compiler 
->    flags thrown at it.
-> 
->  - The cost of getting optimizations wrong by going away from sane 
->    defaults is probably high as well: see the case where Boris
->    measured a regression from an 'optimization' option.
-> 
->  - GCC itself changes as well, so a seemingly good but rarely used
->    optimization flag could get out of sync and hurt performance on 
->    rarer, rarely tested CPU models. It's sometimes safer to go with 
->    the herd and use good, sensible defaults in most situations.
-> 
-> For those reasons I think we should just strip out all the current 
-> outdated micro-management of models/ and go to more logical, much 
-> broader optimization categories such as:
-> 
->    "Optimize for modern Intel CPUs"
->    "Optimize for modern AMD CPUs"
-> 
-> because most of the day to day measurement and testing work is 
-> concentrated on modern CPUs.
-> 
-> We might not even want to make a vendor differentiation there and just 
-> do a generic:
-> 
->    "Optimize for modern x86 CPUs"
->    
-> With perhaps a "workarounds" sub-option opening up:
-> 
->    "Optimization workarounds" [x]
->       "Intel Atom CPUs" [x]
-> 
-> Because occasionally there will be oddball yet common CPUs that need 
-> starkly different optimizations/workarounds. Naming it a 'workaround' 
-> creates an incentive to return such platforms to the common options.
-> 
-> I.e. handle and document the exceptions, and try to minimize them - 
-> instead of trying to enumerate every CPU model which is IMHO a losing 
-> game ...
-> 
-> [ If that is done then we also need much more statistically convincing
->   methods to test how well a kernel's compiler options perform.
+> Not that I can see. But if my understanding is correct, not using the
+> barriers would allow the compiler and CPU to reorder accesses, and by
+> that cause the register accesses to potentially happen in the wrong
+> order.
 
-As an alternative to removing them altogether, why not make options
-other than CONFIG_GENERICCPU and the big exceptions (such as Atom CPUs)
- depend on CONFIG_EXPERT and mark the kernel as tainted.  This way
-people can still use the optimizations, and the developers have recourse
-for dismissing bugs that are probably caused by them.
+The compiler won't reorder them, but the CPU may if it meets certain
+criteria.  The architecture guarantees that accesses to device memory
+within a (minimum of) 1KB block will be ordered.
 
-As far as I see things, people who are using these options fall into
-four general categories:
-1. People running HPC clusters.
-2. People using embedded systems.
-3. Power users (who actually do testing to determine how worthwhile the
-optimization is).
-4. Idiots who think that building a custom kernel is cool, but don't
-have the ability to deal with potential fallout.
+The ARM ARM is slightly ambiguous in how this is applied - in one
+place it says that "Accesses must arrive at any particular memory-mapped
+peripheral or block of memory in program order" and another part it
+says "The size of a memory mapped peripheral, or a block of memory,
+is IMPLEMENTATION DEFINED, but is not smaller than 1KByte.  Note
+This implies that the maximum memory-mapped peripheral size for which
+the architecture guarantees order for all implementations is 1KB."  See
+page A3-148.
 
-People in the first category will usually have sufficient resources to
-hire someone to fix problems caused by the optimizations.  People in the
-second and third categories usually know what they are doing and can
-deal with any problems that may arise. People in the fourth category
-shouldn't be using a custom kernel build to begin with.
+What this means (to me at least) is that on any SoC, the architecture
+guarantees that accesses _within_ a 1KB device memory block will always
+be ordered, but two accesses outside of a 1KB block _to the same device_
+is implementation defined whether it is ordered or not.
 
-In general, following the above suggestion, people in the first three
-groups will likely be happy to rebuild the kernel with CONFIG_GENERICCPU
-instead of system specific optimizations to try and reproduce a bug.
-
-I understand wanting to make it harder for people to shoot themselves,
-but there are still a multitude of legitimate uses for these options,
-and I would personally think that a providing a standardized methodology
-for optimizing the kernel is generally preferable to making everyone who
-wants to do so hack things together.
+The interesting point here though is that the "note" contradicts the
+first definition if you have (eg) AMBA Primecell peripherals which are
+generally 4KB in size, since if the architecture only guarantees 1KB,
+then accesses _may_ _not_ arrive at one primecell in program order.
+Hence, the note is a direct contradiction of the first definition.
