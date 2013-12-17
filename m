@@ -1,442 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab3LQICd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 03:02:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26009 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752275Ab3LQICc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 03:02:32 -0500
-Date: Tue, 17 Dec 2013 16:01:40 +0800
-From: Dave Young <dyoung@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
-        matt@console-pimps.org, toshi.kani@hp.com, akpm@linux-foundation.org,
-        mingo@kernel.org, msalter@redhat.com, leif.lindholm@linaro.org
-Subject: Re: [PATCH v7 09/14] efi: passing kexec necessary efi data via
- setup_data
-Message-ID: <20131217080140.GB12621@dhcp-16-126.nay.redhat.com>
-References: <1387186235-15972-1-git-send-email-dyoung@redhat.com>
- <1387186235-15972-10-git-send-email-dyoung@redhat.com>
+	id S1752790Ab3LQICv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 03:02:51 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:46312 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275Ab3LQICs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 03:02:48 -0500
+Message-ID: <52B00547.8030904@gmail.com>
+Date: Tue, 17 Dec 2013 09:03:19 +0100
+From: Francis Moreau <francis.moro@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387186235-15972-10-git-send-email-dyoung@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: micky <micky_ching@realsil.com.cn>, wwang <wei_wang@realsil.com.cn>,
+        Samuel Ortiz <sameo@linux.intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Jingoo Han <jg1.han@samsung.com>,
+        "'Chris Ball'" <cjb@laptop.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "'Borislav Petkov'" <bp@alien8.de>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
+References: <20131117195358.GO27323@pd.tnic> <4523614.I5MBhorHFt@vostro.rjw.lan> <5292FF5D.1050304@gmail.com> <1821758.2MoNI3h1Mv@vostro.rjw.lan> <52985041.5050000@gmail.com> <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de> <5299FF38.7060203@gmail.com> <alpine.DEB.2.02.1312021145190.30673@ionos.tec.linutronix.de> <alpine.DEB.2.02.1312021219090.30673@ionos.tec.linutronix.de> <529D92D6.8050409@gmail.com> <20131209221721.GB8612@zurbaran> <52A670E4.5050501@realsil.com.cn> <52A674E0.2080407@realsil.com.cn>
+In-Reply-To: <52A674E0.2080407@realsil.com.cn>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-From: Dave Young <dyoung@redhat.com>
-Date: Tue, 26 Nov 2013 10:10:24 +0800
-Subject: [PATCH 09/13] efi: passing kexec necessary efi data via setup_data
+On 12/10/2013 02:56 AM, micky wrote:
+> Hi Francis:
+> On 12/10/2013 09:39 AM, wwang wrote:
+>> which is based on Thomas' patch. 
+> 
+> Can you help us test this patch, we disable irq while suspend here.
 
-Add a new setup_data type SETUP_EFI for kexec use.
-Passing the saved fw_vendor, runtime, config tables and efi runtime mappings.
+This patch doesn't seem to help, it still oops:
 
-When entering virtual mode, directly mapping the efi runtime ragions which
-we passed in previously. And skip the step to call SetVirtualAddressMap.
-
-Specially for HP z420 workstation we need save the smbios physical address.
-The kernel boot sequence proceeds in the following order.  Step 2
-requires efi.smbios to be the physical address.  However, I found that on
-HP z420 EFI system table has a virtual address of SMBIOS in step 1.  Hence,
-we need set it back to the physical address with the smbios in
-efi_setup_data.  (When it is still the physical address, it simply sets
-the same value.)
-
-1. efi_init() - Set efi.smbios from EFI system table
-2. dmi_scan_machine() - Temporary map efi.smbios to access SMBIOS table
-3. efi_enter_virtual_mode() - Map EFI ranges
-
-Tested on ovmf+qemu, lenovo thinkpad, a dell laptop and an
-HP z420 workstation.
-
-v2: refresh based on previous patch changes, code cleanup.
-v3: use ioremap instead of phys_to_virt for efi_setup
-v5: improve some code structure per comments from Matt
-    Boris: improve code structure, spell fix, etc.
-    Improve changelog from Toshi.
-    change the variable efi_setup to the physical address of efi setup_data
-    instead of the ioremapped virt address
-v6: Boris: Documentation fixes
-           move parse_efi_setup to efi_$(BITS).c
-           simplify parse_efi_setup logic
-    Matt: check return value of efi_reuse_config
-
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- arch/x86/include/asm/efi.h            |  13 +++
- arch/x86/include/uapi/asm/bootparam.h |   1 +
- arch/x86/kernel/setup.c               |   3 +
- arch/x86/platform/efi/efi.c           | 183 +++++++++++++++++++++++++++++-----
- arch/x86/platform/efi/efi_32.c        |   1 +
- arch/x86/platform/efi/efi_64.c        |   6 ++
- 6 files changed, 183 insertions(+), 24 deletions(-)
-
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index 9fbaeb2..cfcf438 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -133,6 +133,19 @@ extern void efi_sync_low_kernel_mappings(void);
- extern void efi_setup_page_tables(void);
- extern void __init old_map_region(efi_memory_desc_t *md);
- 
-+struct efi_setup_data {
-+	u64 fw_vendor;
-+	u64 runtime;
-+	u64 tables;
-+	u64 smbios;
-+	u64 reserved[8];
-+	efi_memory_desc_t map[0];
-+};
-+
-+extern u64 efi_setup;
-+extern u32 efi_data_len;
-+extern void parse_efi_setup(u64 phys_addr, u32 data_len);
-+
- #ifdef CONFIG_EFI
- 
- static inline bool efi_is_native(void)
-diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
-index 9c3733c..64fe421 100644
---- a/arch/x86/include/uapi/asm/bootparam.h
-+++ b/arch/x86/include/uapi/asm/bootparam.h
-@@ -6,6 +6,7 @@
- #define SETUP_E820_EXT			1
- #define SETUP_DTB			2
- #define SETUP_PCI			3
-+#define SETUP_EFI			4
- 
- /* ram_size flags */
- #define RAMDISK_IMAGE_START_MASK	0x07FF
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index cb233bc..24536f7 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -447,6 +447,9 @@ static void __init parse_setup_data(void)
- 		case SETUP_DTB:
- 			add_dtb(pa_data);
- 			break;
-+		case SETUP_EFI:
-+			parse_efi_setup(pa_data, data_len);
-+			break;
- 		default:
- 			break;
- 		}
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index b1fff8e..5438083 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -78,6 +78,8 @@ static __initdata efi_config_table_type_t arch_tables[] = {
- 
- static void *efi_runtime_map;
- static int nr_efi_runtime_map;
-+u64 efi_setup;		/* efi setup_data physical address */
-+u32 efi_data_len;	/* efi setup_data payload length */
- 
- /*
-  * Returns 1 if 'facility' is enabled, 0 otherwise.
-@@ -115,7 +117,6 @@ static int __init setup_storage_paranoia(char *arg)
- }
- early_param("efi_no_storage_paranoia", setup_storage_paranoia);
- 
--
- static efi_status_t virt_efi_get_time(efi_time_t *tm, efi_time_cap_t *tc)
- {
- 	unsigned long flags;
-@@ -494,18 +495,28 @@ static int __init efi_systab_init(void *phys)
- {
- 	if (efi_enabled(EFI_64BIT)) {
- 		efi_system_table_64_t *systab64;
-+		struct efi_setup_data *data = NULL;
- 		u64 tmp = 0;
- 
-+		if (efi_setup) {
-+			data = early_memremap(efi_setup, sizeof(*data));
-+			if (!data)
-+				return -ENOMEM;
-+		}
- 		systab64 = early_memremap((unsigned long)phys,
- 					 sizeof(*systab64));
- 		if (systab64 == NULL) {
- 			pr_err("Couldn't map the system table!\n");
-+			if (data)
-+				early_memunmap(data, sizeof(*data));
- 			return -ENOMEM;
- 		}
- 
- 		efi_systab.hdr = systab64->hdr;
--		efi_systab.fw_vendor = systab64->fw_vendor;
--		tmp |= systab64->fw_vendor;
-+
-+		efi_systab.fw_vendor = data ? (unsigned long)data->fw_vendor :
-+					      systab64->fw_vendor;
-+		tmp |= efi_systab.fw_vendor;
- 		efi_systab.fw_revision = systab64->fw_revision;
- 		efi_systab.con_in_handle = systab64->con_in_handle;
- 		tmp |= systab64->con_in_handle;
-@@ -519,15 +530,20 @@ static int __init efi_systab_init(void *phys)
- 		tmp |= systab64->stderr_handle;
- 		efi_systab.stderr = systab64->stderr;
- 		tmp |= systab64->stderr;
--		efi_systab.runtime = (void *)(unsigned long)systab64->runtime;
--		tmp |= systab64->runtime;
-+		efi_systab.runtime = data ?
-+				     (void *)(unsigned long)data->runtime :
-+				     (void *)(unsigned long)systab64->runtime;
-+		tmp |= (unsigned long)efi_systab.runtime;
- 		efi_systab.boottime = (void *)(unsigned long)systab64->boottime;
- 		tmp |= systab64->boottime;
- 		efi_systab.nr_tables = systab64->nr_tables;
--		efi_systab.tables = systab64->tables;
--		tmp |= systab64->tables;
-+		efi_systab.tables = data ? (unsigned long)data->tables :
-+					   systab64->tables;
-+		tmp |= efi_systab.tables;
- 
- 		early_memunmap(systab64, sizeof(*systab64));
-+		if (data)
-+			early_memunmap(data, sizeof(*data));
- #ifdef CONFIG_X86_32
- 		if (tmp >> 32) {
- 			pr_err("EFI data located above 4GB, disabling EFI.\n");
-@@ -631,6 +647,71 @@ static int __init efi_memmap_init(void)
- 	return 0;
- }
- 
-+/*
-+ * A number of config table entries get remapped to virtual addresses
-+ * after entering EFI virtual mode. However, the kexec kernel requires
-+ * their physical addresses therefore we pass them via setup_data and
-+ * correct those entries to their respective physical addresses here.
-+ *
-+ * Currently only handles smbios which is necessary for some firmware
-+ * implementation.
-+ */
-+static int __init efi_reuse_config(u64 tables, int nr_tables)
-+{
-+	int i, sz, ret = 0;
-+	void *p, *tablep;
-+	struct efi_setup_data *data;
-+
-+	if (!efi_setup)
-+		return 0;
-+
-+	if (!efi_enabled(EFI_64BIT))
-+		return 0;
-+
-+	data = early_memremap(efi_setup, sizeof(*data));
-+	if (!data) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	if (!data->smbios)
-+		goto out_memremap;
-+
-+	sz = sizeof(efi_config_table_64_t);
-+
-+	p = tablep = early_memremap(tables, nr_tables * sz);
-+	if (!p) {
-+		pr_err("Could not map Configuration table!\n");
-+		ret = -ENOMEM;
-+		goto out_memremap;
-+	}
-+
-+	for (i = 0; i < efi.systab->nr_tables; i++) {
-+		efi_guid_t guid;
-+
-+		guid = ((efi_config_table_64_t *)p)->guid;
-+
-+		if (!efi_guidcmp(guid, SMBIOS_TABLE_GUID))
-+			((efi_config_table_64_t *)p)->table = data->smbios;
-+		p += sz;
-+	}
-+	early_memunmap(tablep, nr_tables * sz);
-+
-+out_memremap:
-+	early_memunmap(data, sizeof(*data));
-+out:
-+	return ret;
-+}
-+
-+static void get_nr_runtime_map(void)
-+{
-+	if (!efi_setup)
-+		return;
-+
-+	nr_efi_runtime_map = (efi_data_len - sizeof(struct efi_setup_data)) /
-+			     sizeof(efi_memory_desc_t);
-+}
-+
- void __init efi_init(void)
- {
- 	efi_char16_t *c16;
-@@ -638,6 +719,7 @@ void __init efi_init(void)
- 	int i = 0;
- 	void *tmp;
- 
-+	get_nr_runtime_map();
- #ifdef CONFIG_X86_32
- 	if (boot_params.efi_info.efi_systab_hi ||
- 	    boot_params.efi_info.efi_memmap_hi) {
-@@ -676,6 +758,9 @@ void __init efi_init(void)
- 		efi.systab->hdr.revision >> 16,
- 		efi.systab->hdr.revision & 0xffff, vendor);
- 
-+	if (efi_reuse_config(efi.systab->tables, efi.systab->nr_tables))
-+		return;
-+
- 	if (efi_config_init(arch_tables))
- 		return;
- 
-@@ -887,6 +972,43 @@ out:
- }
- 
- /*
-+ * Map efi regions which were passed via setup_data. The virt_addr is a fixed
-+ * addr which was used in first kernel of a kexec boot.
-+ */
-+static int __init map_regions_fixed(void)
-+{
-+	int i, s, ret = 0;
-+	u64 end, systab;
-+	unsigned long size;
-+	efi_memory_desc_t *md;
-+	struct efi_setup_data *data;
-+
-+	s = sizeof(*data) + nr_efi_runtime_map * sizeof(data->map[0]);
-+	data = early_memremap(efi_setup, s);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	for (i = 0, md = data->map; i < nr_efi_runtime_map; i++, md++) {
-+		efi_map_region_fixed(md); /* FIXME: add error handling */
-+		size = md->num_pages << PAGE_SHIFT;
-+		end = md->phys_addr + size;
-+
-+		systab = (u64) (unsigned long) efi_phys.systab;
-+		if (md->phys_addr <= systab && systab < end) {
-+			systab += md->virt_addr - md->phys_addr;
-+			efi.systab = (efi_system_table_t *)(unsigned long)systab;
-+		}
-+		ret = save_runtime_map(md, i);
-+		if (ret)
-+			goto out;
-+	}
-+
-+out:
-+	early_memunmap(data, s);
-+	return ret;
-+}
-+
-+/*
-  * This function will switch the EFI runtime services to virtual mode.
-  * Essentially, we look through the EFI memmap and map every region that
-  * has the runtime attribute bit set in its memory descriptor into the
-@@ -902,12 +1024,16 @@ out:
-  * so that we're in a different address space when calling a runtime
-  * function. For function arguments passing we do copy the PGDs of the
-  * kernel page table into ->trampoline_pgd prior to each call.
-+ *
-+ * Specially for kexec boot, efi runtime maps in previous kernel should
-+ * be passed in via setup_data. In that case runtime ranges will be mapped
-+ * to the same virtual addresses as the first kernel.
-  */
- void __init efi_enter_virtual_mode(void)
- {
- 	efi_status_t status;
- 	void *new_memmap = NULL;
--	int count = 0;
-+	int err, count = 0;
- 
- 	efi.systab = NULL;
- 
-@@ -920,12 +1046,19 @@ void __init efi_enter_virtual_mode(void)
- 		return;
- 	}
- 
--	efi_merge_regions();
--
--	new_memmap = efi_map_regions(&count);
--	if (!new_memmap) {
--		pr_err("Error reallocating memory, EFI runtime non-functional!\n");
--		return;
-+	if (efi_setup) {
-+		err = map_regions_fixed();
-+		if (err) {
-+			pr_err("Error mapping runtime services, EFI runtime non-functional!\n");
-+			return;
-+		}
-+	} else {
-+		efi_merge_regions();
-+		new_memmap = efi_map_regions(&count);
-+		if (!new_memmap) {
-+			pr_err("Error reallocating memory, EFI runtime non-functional!\n");
-+			return;
-+		}
- 	}
- 
- 	efi_runtime_map_setup(efi_runtime_map, nr_efi_runtime_map,
-@@ -936,16 +1069,18 @@ void __init efi_enter_virtual_mode(void)
- 	efi_setup_page_tables();
- 	efi_sync_low_kernel_mappings();
- 
--	status = phys_efi_set_virtual_address_map(
--		memmap.desc_size * count,
--		memmap.desc_size,
--		memmap.desc_version,
--		(efi_memory_desc_t *)__pa(new_memmap));
--
--	if (status != EFI_SUCCESS) {
--		pr_alert("Unable to switch EFI into virtual mode "
--			 "(status=%lx)!\n", status);
--		panic("EFI call to SetVirtualAddressMap() failed!");
-+	if (!efi_setup) {
-+		status = phys_efi_set_virtual_address_map(
-+			memmap.desc_size * count,
-+			memmap.desc_size,
-+			memmap.desc_version,
-+			(efi_memory_desc_t *)__pa(new_memmap));
-+
-+		if (status != EFI_SUCCESS) {
-+			pr_alert("Unable to switch EFI into virtual mode (status=%lx)!\n",
-+				 status);
-+			panic("EFI call to SetVirtualAddressMap() failed!");
-+		}
- 	}
- 
- 	/*
-diff --git a/arch/x86/platform/efi/efi_32.c b/arch/x86/platform/efi/efi_32.c
-index 7b3ec6e..249b183 100644
---- a/arch/x86/platform/efi/efi_32.c
-+++ b/arch/x86/platform/efi/efi_32.c
-@@ -48,6 +48,7 @@ void __init efi_map_region(efi_memory_desc_t *md)
- }
- 
- void __init efi_map_region_fixed(efi_memory_desc_t *md) {}
-+void __init parse_efi_setup(u64 phys_addr, u32 data_len) {}
- 
- void efi_call_phys_prelog(void)
- {
-diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index ff08cb1..324b651 100644
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -228,3 +228,9 @@ void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
- 
- 	return (void __iomem *)__va(phys_addr);
- }
-+
-+void __init parse_efi_setup(u64 phys_addr, u32 data_len)
-+{
-+	efi_setup = phys_addr + sizeof(struct setup_data);
-+	efi_data_len = data_len - sizeof(struct setup_data);
-+}
--- 
-1.8.3.1
-
+[   29.843910] ------------[ cut here ]------------
+[   29.843917] WARNING: CPU: 0 PID: 53 at lib/debugobjects.c:260
+debug_print_object+0x83/0xa0()
+[   29.843921] ODEBUG: free active (active state 0) object type:
+timer_list hint: delayed_work_timer_fn+0x0/0x20
+[   29.843972] Modules linked in: x86_pkg_temp_thermal intel_powerclamp
+coretemp kvm_intel kvm rtsx_pci_ms i915 i2c_algo_bit intel_agp intel_gtt
+memstick iTCO_wdt drm_kms_helper crc32c_intel video drm r8169 mei_me mii
+thermal agpgart mei wmi iTCO_vendor_support ac i2c_i801 i2c_core battery
+evdev button shpchp lpc_ich mperf processor serio_raw microcode ext4
+crc16 mbcache jbd2 sr_mod cdrom sd_mod usb_storage rtsx_pci_sdmmc
+mmc_core ahci libahci libata scsi_mod ehci_pci xhci_hcd ehci_hcd
+rtsx_pci usbcore usb_common
+[   29.844004] CPU: 0 PID: 53 Comm: kworker/0:1 Not tainted
+3.11.0-rc2-ARCH #66
+[   29.844006] Hardware name: CLEVO CO.                        W55xEU
+                       /W55xEU                          , BIOS 4.6.5
+03/05/2013
+[   29.844010] Workqueue: kacpi_hotplug hotplug_event_work
+[   29.844012]  0000000000000009 ffff880407a95a18 ffffffff81459fe9
+ffff880407a95a60
+[   29.844014]  ffff880407a95a50 ffffffff8104dc7d ffff880406b896b8
+ffffffff81836fc0
+[   29.844017]  ffffffff81701358 ffffffff81b2f9b0 0000000000000003
+ffff880407a95ab0
+[   29.844019] Call Trace:
+[   29.844024]  [<ffffffff81459fe9>] dump_stack+0x54/0x8d
+[   29.844027]  [<ffffffff8104dc7d>] warn_slowpath_common+0x7d/0xa0
+[   29.844029]  [<ffffffff8104dcec>] warn_slowpath_fmt+0x4c/0x50
+[   29.844032]  [<ffffffff81261433>] debug_print_object+0x83/0xa0
+[   29.844034]  [<ffffffff8106b820>] ? queue_work_on+0x50/0x50
+[   29.844037]  [<ffffffff81261c2b>] __debug_check_no_obj_freed+0x1fb/0x240
+[   29.844044]  [<ffffffffa00d8989>] ? rtsx_pci_remove+0x119/0x1d0
+[rtsx_pci]
+[   29.844046]  [<ffffffff81262619>] debug_check_no_obj_freed+0x19/0x20
+[   29.844049]  [<ffffffff8116f861>] kfree+0x191/0x210
+[   29.844054]  [<ffffffff813819e0>] ? pcibios_disable_device+0x20/0x30
+[   29.844066]  [<ffffffffa00d8989>] ? rtsx_pci_remove+0x119/0x1d0
+[rtsx_pci]
+[   29.844071]  [<ffffffffa00d8989>] rtsx_pci_remove+0x119/0x1d0 [rtsx_pci]
+[   29.844075]  [<ffffffff8128004b>] pci_device_remove+0x3b/0xb0
+[   29.844079]  [<ffffffff8132c92f>] __device_release_driver+0x7f/0xf0
+[   29.844082]  [<ffffffff8132c9c3>] device_release_driver+0x23/0x30
+[   29.844084]  [<ffffffff8132c194>] bus_remove_device+0xf4/0x170
+[   29.844087]  [<ffffffff81328c55>] device_del+0x135/0x1d0
+[   29.844089]  [<ffffffff8127ae24>] pci_stop_bus_device+0x94/0xa0
+[   29.844091]  [<ffffffff8127af32>]
+pci_stop_and_remove_bus_device+0x12/0x20
+[   29.844094]  [<ffffffff81297466>] disable_slot+0x76/0xd0
+[   29.844096]  [<ffffffff81297568>] acpiphp_check_bridge+0xa8/0xd0
+[   29.844099]  [<ffffffff81297c8a>] hotplug_event+0xfa/0x210
+[   29.844101]  [<ffffffff81297dc7>] hotplug_event_work+0x27/0x60
+[   29.844104]  [<ffffffff8106c178>] process_one_work+0x178/0x470
+[   29.844106]  [<ffffffff8106cb91>] worker_thread+0x121/0x3a0
+[   29.844109]  [<ffffffff8106ca70>] ? manage_workers.isra.21+0x2b0/0x2b0
+[   29.844111]  [<ffffffff81073a50>] kthread+0xc0/0xd0
+[   29.844114]  [<ffffffff81073990>] ? kthread_create_on_node+0x120/0x120
+[   29.844117]  [<ffffffff814688ec>] ret_from_fork+0x7c/0xb0
+[   29.844119]  [<ffffffff81073990>] ? kthread_create_on_node+0x120/0x120
+[   29.844120] ---[ end trace ed9751fe6c0cd9e3 ]---
+[   29.844137] kobject: '0000:03:00.0' (ffff880407a010a8):
+kobject_uevent_env
+[   29.844150] kobject: '0000:03:00.0' (ffff880407a010a8):
+fill_kobj_path: path = '/devices/pci0000:00/0000:00:1c.3/0000:03:00.0'
+[   29.844162] kobject: '0000:03:00.0' (ffff880407a010a8): kobject_cleanup
+[   29.844164] kobject: '0000:03:00.0' (ffff880407a010a8): calling ktype
+release
+[   29.844166] kobject: '0000:03:00.0': free name
+[   29.844367] kobject: 'rx-0' (ffff8804067ae010): kobject_cleanup
+[   29.844370] kobject: 'rx-0' (ffff8804067ae010): auto cleanup 'remove'
+event
+[   29.844371] kobject: 'rx-0' (ffff8804067ae010): kobject_uevent_env
+[   29.844374] kobject: 'rx-0' (ffff8804067ae010): fill_kobj_path: path
+= '/devices/pci0000:00/0000:00:1c.3/0000:03:00.2/net/enp3s0f2/queues/rx-0'
+[   29.844379] kobject: 'rx-0' (ffff8804067ae010): auto cleanup kobject_del
+[   29.844383] kobject: 'rx-0' (ffff8804067ae010): calling ktype release
+[   29.844384] kobject: 'rx-0': free name
+[   29.844389] kobject: 'tx-0' (ffff880407205e18): kobject_cleanup
+[   29.844390] kobject: 'tx-0' (ffff880407205e18): auto cleanup 'remove'
+event
+[   29.844391] kobject: 'tx-0' (ffff880407205e18): kobject_uevent_env
+[   29.844393] kobject: 'tx-0' (ffff880407205e18): fill_kobj_path: path
+= '/devices/pci0000:00/0000:00:1c.3/0000:03:00.2/net/enp3s0f2/queues/tx-0'
+[   29.844396] kobject: 'tx-0' (ffff880407205e18): auto cleanup kobject_del
+[   29.844398] kobject: 'tx-0' (ffff880407205e18): calling ktype release
+[   29.844399] kobject: 'tx-0': free name
+[   29.844400] kobject: 'queues' (ffff880406216c78): kobject_cleanup
+[   29.844401] kobject: 'queues' (ffff880406216c78): auto cleanup
+kobject_del
+[   29.844403] kobject: 'queues' (ffff880406216c78): calling ktype release
+[   29.844404] kobject: 'queues' (ffff880406216c78): kset_release
+[   29.844405] kobject: 'queues': free name
+[   29.844438] kobject: 'enp3s0f2' (ffff880406be2410): kobject_uevent_env
+[   29.844440] kobject: 'enp3s0f2' (ffff880406be2410): fill_kobj_path:
+path = '/devices/pci0000:00/0000:00:1c.3/0000:03:00.2/net/enp3s0f2'
+[   29.844445] kobject: 'net' (ffff880406216cc0): kobject_cleanup
+[   29.844446] kobject: 'net' (ffff880406216cc0): auto cleanup kobject_del
+[   29.844447] kobject: 'net' (ffff880406216cc0): calling ktype release
+[   29.844448] kobject: 'net': free name
+[   29.890009] kobject: '44' (ffff880407327408): kobject_cleanup
+[   29.890014] kobject: '44' (ffff880407327408): calling ktype release
+[   29.890015] kobject: '44': free name
+[   29.890018] kobject: 'msi_irqs' (ffff880406216d38): kobject_cleanup
+[   29.890019] kobject: 'msi_irqs' (ffff880406216d38): auto cleanup
+kobject_del
+[   29.890022] kobject: 'msi_irqs' (ffff880406216d38): calling ktype release
+[   29.890024] kobject: 'msi_irqs' (ffff880406216d38): kset_release
+[   29.890026] kobject: 'msi_irqs': free name
+[   29.890121] kobject: 'enp3s0f2' (ffff880406be2410): kobject_cleanup
+[   29.890123] kobject: 'enp3s0f2' (ffff880406be2410): calling ktype release
+[   29.890127] kobject: 'enp3s0f2': free name
+[   29.899887] kobject: '0000:03:00.2' (ffff880407a020a8):
+kobject_uevent_env
+[   29.899892] kobject: '0000:03:00.2' (ffff880407a020a8):
+fill_kobj_path: path = '/devices/pci0000:00/0000:00:1c.3/0000:03:00.2'
+[   29.899914] kobject: '0000:03:00.2' (ffff880407a020a8): kobject_cleanup
+[   29.899915] kobject: '0000:03:00.2' (ffff880407a020a8): calling ktype
+release
+[   29.899918] kobject: '0000:03:00.2': free name
+[   29.899966] kobject: 'device:10' (ffff8804079731f0): kobject_uevent_env
+[   29.899969] kobject: 'device:10' (ffff8804079731f0): fill_kobj_path:
+path = '/devices/LNXSYSTM:00/device:00/PNP0A08:00/device:0f/device:10'
+[   29.899976] ACPI: Device does not support D3cold
+[   29.899978] kobject: 'device:10' (ffff8804079731f0): kobject_cleanup
+[   29.899979] kobject: 'device:10' (ffff8804079731f0): calling ktype
+release
+[   29.899982] kobject: 'device:10': free name
+[   29.900025] kobject: 'device:11' (ffff8804079739f0): kobject_uevent_env
+[   29.900028] kobject: 'device:11' (ffff8804079739f0): fill_kobj_path:
+path = '/devices/LNXSYSTM:00/device:00/PNP0A08:00/device:0f/device:11'
+[   29.900033] ACPI: Device does not support D3cold
+[   29.900035] kobject: 'device:11' (ffff8804079739f0): kobject_cleanup
+[   29.900036] kobject: 'device:11' (ffff8804079739f0): calling ktype
+release
+[   29.900038] kobject: 'device:11': free name
+[   29.900105] kobject: 'device:12' (ffff8804079741f0): kobject_uevent_env
+[   29.900106] kobject: 'device:12' (ffff8804079741f0): fill_kobj_path:
+path = '/devices/LNXSYSTM:00/device:00/PNP0A08:00/device:0f/device:12'
+[   29.900112] ACPI: Device does not support D3cold
+[   29.900114] kobject: 'device:12' (ffff8804079741f0): kobject_cleanup
+[   29.900114] kobject: 'device:12' (ffff8804079741f0): calling ktype
+release
+[   29.900117] kobject: 'device:12': free name
+[   29.900163] kobject: 'device:14' (ffff8804079751f0): kobject_uevent_env
+[   29.900164] kobject: 'device:14' (ffff8804079751f0): fill_kobj_path:
+path = '/devices/LNXSYSTM:00/device:00/PNP0A08:00/device:13/device:14'
+[   29.900171] ACPI: Device does not support D3cold
+[   29.900174] kobject: 'device:14' (ffff8804079751f0): kobject_cleanup
+[   29.900175] kobject: 'device:14' (ffff8804079751f0): calling ktype
+release
+[   29.900178] kobject: 'device:14': free name
+[   30.404233] irq 16: nobody cared (try booting with the "irqpoll" option)
+[   30.404272] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W
+3.11.0-rc2-ARCH #66
+[   30.404274] Hardware name: CLEVO CO.                        W55xEU
+                       /W55xEU                          , BIOS 4.6.5
+03/05/2013
+[   30.404275]  ffff8804078bd38c ffff88041e203e48 ffffffff81459fe9
+ffff8804078bd300
+[   30.404278]  ffff88041e203e70 ffffffff810d8632 ffff8804078bd300
+0000000000000010
+[   30.404280]  0000000000000000 ffff88041e203eb0 ffffffff810d8a58
+ffffffff8136a882
+[   30.404282] Call Trace:
+[   30.404284]  <IRQ>  [<ffffffff81459fe9>] dump_stack+0x54/0x8d
+[   30.404293]  [<ffffffff810d8632>] __report_bad_irq+0x32/0xd0
+[   30.404296]  [<ffffffff810d8a58>] note_interrupt+0x138/0x1f0
+[   30.404299]  [<ffffffff8136a882>] ? cpuidle_enter_state+0x52/0xc0
+[   30.404302]  [<ffffffff810d6439>] handle_irq_event_percpu+0xf9/0x250
+[   30.404304]  [<ffffffff810d65cd>] handle_irq_event+0x3d/0x60
+[   30.404306]  [<ffffffff810d95ca>] handle_fasteoi_irq+0x5a/0x100
+[   30.404309]  [<ffffffff81004a6e>] handle_irq+0x1e/0x30
+[   30.404312]  [<ffffffff8146aafd>] do_IRQ+0x4d/0xc0
+[   30.404314]  [<ffffffff8146116d>] common_interrupt+0x6d/0x6d
+[   30.404315]  <EOI>  [<ffffffff8136a882>] ? cpuidle_enter_state+0x52/0xc0
+[   30.404319]  [<ffffffff8136a878>] ? cpuidle_enter_state+0x48/0xc0
+[   30.404321]  [<ffffffff8136a9b9>] cpuidle_idle_call+0xc9/0x280
+[   30.404325]  [<ffffffff8100bf6e>] arch_cpu_idle+0xe/0x30
+[   30.404328]  [<ffffffff810a1287>] cpu_startup_entry+0x257/0x2d0
+[   30.404330]  [<ffffffff8144d404>] rest_init+0x84/0x90
+[   30.404333]  [<ffffffff818d9ee1>] start_kernel+0x414/0x420
+[   30.404335]  [<ffffffff818d98d6>] ? repair_env_string+0x5c/0x5c
+[   30.404337]  [<ffffffff818d9120>] ? early_idt_handlers+0x120/0x120
+[   30.404339]  [<ffffffff818d95be>] x86_64_start_reservations+0x2a/0x2c
+[   30.404342]  [<ffffffff818d96c8>] x86_64_start_kernel+0x108/0x117
+[   30.404343] handlers:
+[   30.404363] [<ffffffffa00168f0>] usb_hcd_irq [usbcore]
+[   30.404383] Disabling IRQ #16
