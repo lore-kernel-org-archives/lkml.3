@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab3LQPyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:54:43 -0500
-Received: from 18.mo3.mail-out.ovh.net ([87.98.172.162]:38115 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754334Ab3LQPyl (ORCPT
+	id S1755059Ab3LQPzW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 10:55:22 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:45549 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600Ab3LQPzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:54:41 -0500
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Landley <rob@landley.net>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-i2c@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [PATCH] i2c: at91: document clock properties
-Date: Tue, 17 Dec 2013 16:54:04 +0100
-Message-Id: <1387295644-7382-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 8336725860273256546
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Tue, 17 Dec 2013 10:55:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120514164106.GB4439@redhat.com>
+References: <20120514164106.GB4439@redhat.com>
+Date: Tue, 17 Dec 2013 10:55:17 -0500
+X-Google-Sender-Auth: W6z94WzQ-yp57z2uVf-SdLbZ0rw
+Message-ID: <CA+5PVA6zz0b9V-YzzBLhJ+CktT+YsmxpAQZtXDr87D+69EnkUw@mail.gmail.com>
+Subject: Re: Remove empty /proc/device-tree when no openfirmware exists.
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the clock properties required by the at91 i2c bus driver.
+On Mon, May 14, 2012 at 12:41 PM, Dave Jones <davej@redhat.com> wrote:
+> distribution kernels might want to build in support for /proc/device-tree
+> for kernels that might end up running on hardware that doesn't support openfirmware.
+> This results in an empty /proc/device-tree existing.
+> Remove it if the OFW root node doesn't exist.
+>
+> [This situation actually confuses grub2, resulting in install failures.
+>  grub2 sees the /proc/device-tree and picks the wrong install target
+>  cf. http://bzr.savannah.gnu.org/lh/grub/trunk/grub/annotate/4300/util/grub-install.in#L311
+>  grub should be more robust, but still, leaving an empty proc dir seems pointless. ]
+>
+> Signed-off-by: Dave Jones <davej@redhat.com>
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- Documentation/devicetree/bindings/i2c/i2c-at91.txt |    2 ++
- 1 file changed, 2 insertions(+)
+We're still carrying this in Fedora for
+https://bugzilla.redhat.com/show_bug.cgi?id=818378 .  Can we get this
+upstream sometime soon?
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-at91.txt b/Documentation/devicetree/bindings/i2c/i2c-at91.txt
-index b689a0d..4fade84 100644
---- a/Documentation/devicetree/bindings/i2c/i2c-at91.txt
-+++ b/Documentation/devicetree/bindings/i2c/i2c-at91.txt
-@@ -9,6 +9,7 @@ Required properties :
- - interrupts: interrupt number to the cpu.
- - #address-cells = <1>;
- - #size-cells = <0>;
-+- clocks: phandles to input clocks.
- 
- Optional properties:
- - Child nodes conforming to i2c bus binding
-@@ -21,6 +22,7 @@ i2c0: i2c@fff84000 {
- 	interrupts = <12 4 6>;
- 	#address-cells = <1>;
- 	#size-cells = <0>;
-+	clocks = <&twi0_clk>;
- 
- 	24c512@50 {
- 		compatible = "24c512";
--- 
-1.7.9.5
+josh
 
+> diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
+> index 927cbd1..f060f28 100644
+> --- a/fs/proc/proc_devtree.c
+> +++ b/fs/proc/proc_devtree.c
+> @@ -233,6 +233,7 @@ void __init proc_device_tree_init(void)
+>                 return;
+>         root = of_find_node_by_path("/");
+>         if (root == NULL) {
+> +               remove_proc_entry("device-tree", NULL);
+>                 pr_debug("/proc/device-tree: can't find root\n");
+>                 return;
+>         }
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
