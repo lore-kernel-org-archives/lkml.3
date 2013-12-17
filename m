@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab3LQFjd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 00:39:33 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:56092 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750794Ab3LQFjb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 00:39:31 -0500
-MIME-Version: 1.0
-X-Originating-IP: [67.244.6.56]
-In-Reply-To: <52AFE107.4040705@gmail.com>
-References: <1386969579.3914.13.camel@piranha.localdomain>
-	<20131214092443.622b069d@samsung.com>
-	<52ACE809.1000406@gmail.com>
-	<CAGoCfiwxGU-j14oGDfvoYTA5WZUkQdM_3=80gfpWUjXVNN_nng@mail.gmail.com>
-	<52AFE107.4040705@gmail.com>
-Date: Tue, 17 Dec 2013 00:39:29 -0500
-Message-ID: <CAGoCfiztzv-QFjmKXdiJreTPCYN1RTe5bPTO0awx5a-ER161qQ@mail.gmail.com>
-Subject: Re: stable regression: tda18271_read_regs: [1-0060|M] ERROR:
- i2c_transfer returned: -19
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
-To: Connor Behan <connor.behan@gmail.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Frederik Himpe <fhimpe@telenet.be>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752071Ab3LQFn1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 00:43:27 -0500
+Received: from ozlabs.org ([203.10.76.45]:42905 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750872Ab3LQFn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 00:43:26 -0500
+Date: Tue, 17 Dec 2013 16:43:17 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tang Chen <tangchen@cn.fujitsu.com>
+Subject: linux-next: build failure after merge of the final tree
+ (akpm-current tree related)
+Message-Id: <20131217164317.f9ba5505266969cd32706a79@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__17_Dec_2013_16_43_17_+1100_a=xtZj/sut1.KYm3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Connor,
+--Signature=_Tue__17_Dec_2013_16_43_17_+1100_a=xtZj/sut1.KYm3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Dec 17, 2013 at 12:28 AM, Connor Behan <connor.behan@gmail.com> wrote:
-> Thanks for the detailed answer. I have tried your patch and updated the
-> wiki page. Would a 950 or 950Q be safer to buy next time?
+Hi all,
 
-The 950 has long since been obsoleted.  You cannot buy them anymore.
-The 950q though is well supported and doesn't have this issue as it
-uses a different chip.
+After merging the final tree, today's linux-next build (powerpc
+allnoconfig) failed like this:
 
-> On 14/12/13 05:17 PM, Devin Heitmueller wrote:
->> I had a patch kicking around which fixed part of the issue, but it
->> didn't completely work because of the lgdt3305 having AGC enabled at
->> chip powerup (which interferes with analog tuning on the shared
->> tuner), and the internal v4l-dvb APIs don't provide any easy way to
->> reset the AGC from the analog side of the device.
->
-> By this do you mean that the functions exist but they aren't part of the
-> public API? Maybe this problem can be addressed if there is ever "v4l3"
-> or some other reason to break compatibility.
+arch/powerpc/mm/mem.c: In function 'do_init_bootmem':
+arch/powerpc/mm/mem.c:212:49: error: 'memblock_memory' undeclared (first us=
+e in this function)
+  memblock_set_node(0, (phys_addr_t)ULLONG_MAX, &memblock_memory, 0);
+                                                 ^
 
-No, these are internal APIs that dictate how the various driver
-components talk to each other.  Because the V4L and DVB subsystems
-were developed independently of each other, they do a really crappy
-job of communicating between them (a problem which manifests itself in
-particular when sharing hardware resources such as tuners).
+Caused by commit 3a543893d46a ("memblock: make memblock_set_node()
+support different memblock_type") from the apm-current tree.
 
-The problem *can* be fixed, but it would likely require
-extensions/changes to the basic frameworks used to communicate between
-the different drivers.
+I added the following fix for today:
 
-Devin
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 17 Dec 2013 16:38:21 +1100
+Subject: [PATCH] memblock-make-memblock_set_node-support-different-memblock=
+_type-fix
 
--- 
-Devin J. Heitmueller - Kernel Labs
-http://www.kernellabs.com
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/powerpc/mm/mem.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index 231b785b726e..8c1dd23652a1 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -209,7 +209,7 @@ void __init do_init_bootmem(void)
+ 	/* Place all memblock_regions in the same node and merge contiguous
+ 	 * memblock_regions
+ 	 */
+-	memblock_set_node(0, (phys_addr_t)ULLONG_MAX, &memblock_memory, 0);
++	memblock_set_node(0, (phys_addr_t)ULLONG_MAX, &memblock.memory, 0);
+=20
+ 	/* Add all physical memory to the bootmem map, mark each area
+ 	 * present.
+--=20
+1.8.5.1
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__17_Dec_2013_16_43_17_+1100_a=xtZj/sut1.KYm3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSr+R7AAoJEMDTa8Ir7ZwVJYsP/0O86UyHhPj+iSHbhUVrX0X8
+5kxqcOCZzxiec/R94JzTnMG5yi0zdjiRKygDcSG6LuQCwE5yWwbGG83zBw9V6US1
+VpNhp8BAwS9KdMP499iKF40F69E6uf3eKEqPNR3JLAAhnsYp7uhBES7D+M5QAPMz
+UJesYzxsGiyqf7lturUcGqypIbjERVRnNFrFNUIAG7GUA9ahlKnlSuPdzorh2CjC
+TR04o9xkpKtOOFJfRjCw8TNl6+41NwAt6Q/MJBnoF9x/bUFDbmUICr+uYqCCeN7G
+G+ziF3R9LcXbatq5BYTB5C22LE6dvQug0vjtmz9bvUVl8KwtxjhoYvpFW+va+o6w
+mYuxVbWsPqTKfMbW5ny8CaB+4lh5F5uztJPWQYcdCApWqYMzOZlOs+NhrqdT0bXn
+SKVeCMLYIxEDWZjYM7LEaVX9LSTcJYGu0miIT0NeXYn2RGxFnkaGUFMLnGjEcDlb
+6ki3RsaGcuOQvT8BFL6wdH4YrgHQZel2xJPWFzb92GtyO3EAP9wuWUzn86Tpqz6y
+5rEXorC3H/IW69bKMg9rfvQ+R8yIzY710Yi9IcBAHMu5RkK8kQBc7YuzDbLCrYcy
+BKvukiWlDcQ5pWgWHP27Q6gYUpMvxM4n84fSRNk1jYI/G9haspvY/7VDa50B48uI
+qhDrqy/lHFsxLBpbLh7z
+=Yv92
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__17_Dec_2013_16_43_17_+1100_a=xtZj/sut1.KYm3--
