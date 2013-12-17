@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab3LQSOu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:14:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60935 "EHLO
+	id S1755670Ab3LQSOg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:14:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60871 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755739Ab3LQSOr (ORCPT
+	with ESMTP id S1755640Ab3LQSOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:14:47 -0500
+	Tue, 17 Dec 2013 13:14:30 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 047/103] cpuidle: Check for dev before deregistering it.
-Date: Tue, 17 Dec 2013 18:12:36 +0000
-Message-Id: <1387304012-23805-48-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 035/103] crypto: s390 - Fix aes-xts parameter corruption
+Date: Tue, 17 Dec 2013 18:12:24 +0000
+Message-Id: <1387304012-23805-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -28,61 +28,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
 
-commit 813e8e3d6aaa0b511126cce15c16a931afffe768 upstream.
+commit 9dda2769af4f3f3093434648c409bb351120d9e8 upstream.
 
-If not, we could end up in the unfortunate situation where
-we dereference a NULL pointer b/c we have cpuidle disabled.
+Some s390 crypto algorithms incorrectly use the crypto_tfm structure to
+store private data. As the tfm can be shared among multiple threads, this
+can result in data corruption.
 
-This is the case when booting under Xen (which uses the
-ACPI P/C states but disables the CPU idle driver) - and can
-be easily reproduced when booting with cpuidle.off=1.
+This patch fixes aes-xts by moving the xts and pcc parameter blocks from
+the tfm onto the stack (48 + 96 bytes).
 
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<ffffffff8156db4a>] cpuidle_unregister_device+0x2a/0x90
-.. snip..
-Call Trace:
- [<ffffffff813b15b4>] acpi_processor_power_exit+0x3c/0x5c
- [<ffffffff813af0a9>] acpi_processor_stop+0x61/0xb6
- [<ffffffff814215bf>] __device_release_driver+0fffff81421653>] device_release_driver+0x23/0x30
- [<ffffffff81420ed8>] bus_remove_device+0x108/0x180
- [<ffffffff8141d9d9>] device_del+0x129/0x1c0
- [<ffffffff813cb4b0>] ? unregister_xenbus_watch+0x1f0/0x1f0
- [<ffffffff8141da8e>] device_unregister+0x1e/0x60
- [<ffffffff814243e9>] unregister_cpu+0x39/0x60
- [<ffffffff81019e03>] arch_unregister_cpu+0x23/0x30
- [<ffffffff813c3c51>] handle_vcpu_hotplug_event+0xc1/0xe0
- [<ffffffff813cb4f5>] xenwatch_thread+0x45/0x120
- [<ffffffff810af010>] ? abort_exclusive_wait+0xb0/0xb0
- [<ffffffff8108ec42>] kthread+0xd2/0xf0
- [<ffffffff8108eb70>] ? kthread_create_on_node+0x180/0x180
- [<ffffffff816ce17c>] ret_from_fork+0x7c/0xb0
- [<ffffffff8108eb70>] ? kthread_create_on_node+0x180/0x180
-
-This problem also appears in 3.12 and could be a candidate for backport.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/cpuidle/cpuidle.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/s390/crypto/aes_s390.c | 31 +++++++++++++++++--------------
+ 1 file changed, 17 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index d90519c..31bb083 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -420,7 +420,7 @@ void cpuidle_unregister_device(struct cpuidle_device *dev)
- 	struct device *cpu_dev = get_cpu_device((unsigned long)dev->cpu);
- 	struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
+diff --git a/arch/s390/crypto/aes_s390.c b/arch/s390/crypto/aes_s390.c
+index a6e37d4..f3000a4 100644
+--- a/arch/s390/crypto/aes_s390.c
++++ b/arch/s390/crypto/aes_s390.c
+@@ -55,8 +55,7 @@ struct pcc_param {
  
--	if (dev->registered == 0)
-+	if (!dev || dev->registered == 0)
- 		return;
+ struct s390_xts_ctx {
+ 	u8 key[32];
+-	u8 xts_param[16];
+-	struct pcc_param pcc;
++	u8 pcc_key[32];
+ 	long enc;
+ 	long dec;
+ 	int key_len;
+@@ -594,7 +593,7 @@ static int xts_aes_set_key(struct crypto_tfm *tfm, const u8 *in_key,
+ 		xts_ctx->enc = KM_XTS_128_ENCRYPT;
+ 		xts_ctx->dec = KM_XTS_128_DECRYPT;
+ 		memcpy(xts_ctx->key + 16, in_key, 16);
+-		memcpy(xts_ctx->pcc.key + 16, in_key + 16, 16);
++		memcpy(xts_ctx->pcc_key + 16, in_key + 16, 16);
+ 		break;
+ 	case 48:
+ 		xts_ctx->enc = 0;
+@@ -605,7 +604,7 @@ static int xts_aes_set_key(struct crypto_tfm *tfm, const u8 *in_key,
+ 		xts_ctx->enc = KM_XTS_256_ENCRYPT;
+ 		xts_ctx->dec = KM_XTS_256_DECRYPT;
+ 		memcpy(xts_ctx->key, in_key, 32);
+-		memcpy(xts_ctx->pcc.key, in_key + 32, 32);
++		memcpy(xts_ctx->pcc_key, in_key + 32, 32);
+ 		break;
+ 	default:
+ 		*flags |= CRYPTO_TFM_RES_BAD_KEY_LEN;
+@@ -624,29 +623,33 @@ static int xts_aes_crypt(struct blkcipher_desc *desc, long func,
+ 	unsigned int nbytes = walk->nbytes;
+ 	unsigned int n;
+ 	u8 *in, *out;
+-	void *param;
++	struct pcc_param pcc_param;
++	struct {
++		u8 key[32];
++		u8 init[16];
++	} xts_param;
  
- 	cpuidle_pause_and_lock();
+ 	if (!nbytes)
+ 		goto out;
+ 
+-	memset(xts_ctx->pcc.block, 0, sizeof(xts_ctx->pcc.block));
+-	memset(xts_ctx->pcc.bit, 0, sizeof(xts_ctx->pcc.bit));
+-	memset(xts_ctx->pcc.xts, 0, sizeof(xts_ctx->pcc.xts));
+-	memcpy(xts_ctx->pcc.tweak, walk->iv, sizeof(xts_ctx->pcc.tweak));
+-	param = xts_ctx->pcc.key + offset;
+-	ret = crypt_s390_pcc(func, param);
++	memset(pcc_param.block, 0, sizeof(pcc_param.block));
++	memset(pcc_param.bit, 0, sizeof(pcc_param.bit));
++	memset(pcc_param.xts, 0, sizeof(pcc_param.xts));
++	memcpy(pcc_param.tweak, walk->iv, sizeof(pcc_param.tweak));
++	memcpy(pcc_param.key, xts_ctx->pcc_key, 32);
++	ret = crypt_s390_pcc(func, &pcc_param.key[offset]);
+ 	if (ret < 0)
+ 		return -EIO;
+ 
+-	memcpy(xts_ctx->xts_param, xts_ctx->pcc.xts, 16);
+-	param = xts_ctx->key + offset;
++	memcpy(xts_param.key, xts_ctx->key, 32);
++	memcpy(xts_param.init, pcc_param.xts, 16);
+ 	do {
+ 		/* only use complete blocks */
+ 		n = nbytes & ~(AES_BLOCK_SIZE - 1);
+ 		out = walk->dst.virt.addr;
+ 		in = walk->src.virt.addr;
+ 
+-		ret = crypt_s390_km(func, param, out, in, n);
++		ret = crypt_s390_km(func, &xts_param.key[offset], out, in, n);
+ 		if (ret < 0 || ret != n)
+ 			return -EIO;
+ 
 -- 
 1.8.3.2
 
