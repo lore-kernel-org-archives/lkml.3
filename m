@@ -1,68 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab3LQOJT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 09:09:19 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:46108 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab3LQOJR convert rfc822-to-8bit (ORCPT
+	id S1753839Ab3LQOKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 09:10:53 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50182 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752726Ab3LQOKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 09:09:17 -0500
-Message-ID: <52B05B09.5090807@arm.com>
-Date: Tue, 17 Dec 2013 14:09:13 +0000
-From: Chris Redpath <chris.redpath@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 17 Dec 2013 09:10:52 -0500
+Date: Tue, 17 Dec 2013 14:10:12 +0000
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Alex Shi <alex.shi@linaro.org>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "pjt@google.com" <pjt@google.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "jason.low2@hp.com" <jason.low2@hp.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] sched: bias to target cpu load to reduce task moving
+Message-ID: <20131217141012.GG10134@e103034-lin>
+References: <1386061556-28233-1-git-send-email-alex.shi@linaro.org>
+ <1386061556-28233-5-git-send-email-alex.shi@linaro.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "pjt@google.com" <pjt@google.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bsegall@google.com" <bsegall@google.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 2/2] sched: update runqueue clock before migrations away
-References: <1386593950-26475-1-git-send-email-chris.redpath@arm.com> <1386593950-26475-3-git-send-email-chris.redpath@arm.com> <20131210114825.GF12849@twins.programming.kicks-ass.net> <52A71605.5090509@arm.com> <20131210151428.GH12849@twins.programming.kicks-ass.net> <52A7397F.4000806@arm.com> <20131212182414.GF2480@laptop.programming.kicks-ass.net>
-In-Reply-To: <20131212182414.GF2480@laptop.programming.kicks-ass.net>
-X-OriginalArrivalTime: 17 Dec 2013 14:09:13.0947 (UTC) FILETIME=[90ABCAB0:01CEFB31]
-X-MC-Unique: 113121714091402601
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386061556-28233-5-git-send-email-alex.shi@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/13 18:24, Peter Zijlstra wrote:
-> Would pre_schedule_idle() -> rq_last_tick_reset() -> rq->last_sched_tick
-> be useful?
->
-> I suppose we could easily lift that to NO_HZ_COMMON.
->
+On Tue, Dec 03, 2013 at 09:05:56AM +0000, Alex Shi wrote:
+> Task migration happens when target just a bit less then source cpu load.
+> To reduce such situation happens, aggravate the target cpu load with
+> sd->imbalance_pct/100.
+> 
+> This patch removes the hackbench thread regression on Daniel's
+> Intel Core2 server.
+> 
+> a5d6e63		+patch1~3		+patch1~4
+> hackbench -T -s 4096 -l 1000 -g 10 -f 40
+> 27.914"         38.694"			28.587"
+> 28.390"         38.341"			29.513"
+> 28.048"         38.626"			28.706"
+> 
+> Signed-off-by: Alex Shi <alex.shi@linaro.org>
+> ---
+>  kernel/sched/fair.c | 18 ++++++++++++------
+>  1 file changed, 12 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index bccdd89..c49b7ba 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -978,7 +978,7 @@ static inline unsigned long group_weight(struct task_struct *p, int nid)
+>  
+>  static unsigned long weighted_cpuload(const int cpu);
+>  static unsigned long source_load(int cpu);
+> -static unsigned long target_load(int cpu);
+> +static unsigned long target_load(int cpu, int imbalance_pct);
+>  static unsigned long power_of(int cpu);
+>  static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
+>  
+> @@ -3809,11 +3809,17 @@ static unsigned long source_load(int cpu)
+>   * Return a high guess at the load of a migration-target cpu weighted
+>   * according to the scheduling class and "nice" value.
+>   */
+> -static unsigned long target_load(int cpu)
+> +static unsigned long target_load(int cpu, int imbalance_pct)
+>  {
+>  	struct rq *rq = cpu_rq(cpu);
+>  	unsigned long total = weighted_cpuload(cpu);
+>  
+> +	/*
+> +	 * without cpu_load decay, in most of time cpu_load is same as total
+> +	 * so we need to make target a bit heavier to reduce task migration
+> +	 */
+> +	total = total * imbalance_pct / 100;
+> +
+>  	if (!sched_feat(LB_BIAS))
+>  		return total;
+>  
+> @@ -4033,7 +4039,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>  	this_cpu  = smp_processor_id();
+>  	prev_cpu  = task_cpu(p);
+>  	load	  = source_load(prev_cpu);
+> -	this_load = target_load(this_cpu);
+> +	this_load = target_load(this_cpu, 100);
+>  
+>  	/*
+>  	 * If sync wakeup then subtract the (maximum possible)
+> @@ -4089,7 +4095,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>  
+>  	if (balanced ||
+>  	    (this_load <= load &&
+> -	     this_load + target_load(prev_cpu) <= tl_per_task)) {
+> +	     this_load + target_load(prev_cpu, 100) <= tl_per_task)) {
+>  		/*
+>  		 * This domain has SD_WAKE_AFFINE and
+>  		 * p is cache cold in this domain, and
+> @@ -4135,7 +4141,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p, int this_cpu)
+>  			if (local_group)
+>  				load = source_load(i);
+>  			else
+> -				load = target_load(i);
+> +				load = target_load(i, sd->imbalance_pct);
 
-Many thanks for the tip Peter, I have tried this out and it does provide 
-enough information to be able to correct the problem. The new version 
-doesn't update the rq, just carries the extra unaccounted time 
-(estimated from the jiffies) over to be processed during enqueue.
+Don't you apply imbalance_pct twice here? Later on in
+find_idlest_group() you have:
 
-However before I send a new patch set I have a question about the 
-existing behavior. Ben, you may already know the answer to this?
+	if (!idlest || 100*this_load < imbalance*min_load)
+		return NULL;
 
-During a wake migration we call __synchronize_entity_decay in 
-migrate_task_rq_fair, which will decay avg.runnable_avg_sum. We also 
-record the amount of periods we decayed for as a negative number in 
-avg.decay_count.
-
-We then enqueue the task on its target runqueue, and again we decay the 
-load by the number of periods it has been off-rq.
-
-if (unlikely(se->avg.decay_count <= 0)) {
-	se->avg.last_runnable_update = rq_clock_task(rq_of(cfs_rq));
-	if (se->avg.decay_count) {
-		se->avg.last_runnable_update -= (-se->avg.decay_count)
-							<< 20;
- >>>		update_entity_load_avg(se, 0);
-
-Am I misunderstanding how this is supposed to work or have we been 
-always double-accounting sleep time for wake migrations?
+where min_load comes from target_load().
 
 
+>  
+>  			avg_load += load;
+>  		}
+> @@ -5478,7 +5484,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+>  
+>  		/* Bias balancing toward cpus of our domain */
+>  		if (local_group)
+> -			load = target_load(i);
+> +			load = target_load(i, env->sd->imbalance_pct);
+
+You probably have the same problem here.
+
+Morten
