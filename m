@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475Ab3LQSiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:38:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60834 "EHLO
+	id S932522Ab3LQSjL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:39:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60826 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755581Ab3LQSOW (ORCPT
+	with ESMTP id S1755571Ab3LQSOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:14:22 -0500
+	Tue, 17 Dec 2013 13:14:21 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 027/103] NFSv4: Update list of irrecoverable errors on DELEGRETURN
-Date: Tue, 17 Dec 2013 18:12:16 +0000
-Message-Id: <1387304012-23805-28-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 029/103] ASoC: wm8990: Mark the register map as dirty when powering down
+Date: Tue, 17 Dec 2013 18:12:18 +0000
+Message-Id: <1387304012-23805-30-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -27,46 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Mark Brown <broonie@linaro.org>
 
-commit c97cf606e43b85a6cf158b810375dd77312024db upstream.
+commit 2ab2b74277a86afe0dd92976db695a2bb8b93366 upstream.
 
-If the DELEGRETURN errors out with something like NFS4ERR_BAD_STATEID
-then there is no recovery possible. Just quit without returning an error.
+Otherwise we'll skip sync on resume.
 
-Also, note that the client must not assume that the NFSv4 lease has been
-renewed when it sees an error on DELEGRETURN.
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfs/nfs4proc.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ sound/soc/codecs/wm8990.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index a89661e..1bcab31 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4074,11 +4074,17 @@ static void nfs4_delegreturn_done(struct rpc_task *task, void *calldata)
- 		return;
+diff --git a/sound/soc/codecs/wm8990.c b/sound/soc/codecs/wm8990.c
+index db63c97..9c43b10 100644
+--- a/sound/soc/codecs/wm8990.c
++++ b/sound/soc/codecs/wm8990.c
+@@ -1264,6 +1264,8 @@ static int wm8990_set_bias_level(struct snd_soc_codec *codec,
  
- 	switch (task->tk_status) {
--	case -NFS4ERR_STALE_STATEID:
--	case -NFS4ERR_EXPIRED:
- 	case 0:
- 		renew_lease(data->res.server, data->timestamp);
+ 		/* disable POBCTRL, SOFT_ST and BUFDCOPEN */
+ 		snd_soc_write(codec, WM8990_ANTIPOP2, 0x0);
++
++		codec->cache_sync = 1;
  		break;
-+	case -NFS4ERR_ADMIN_REVOKED:
-+	case -NFS4ERR_DELEG_REVOKED:
-+	case -NFS4ERR_BAD_STATEID:
-+	case -NFS4ERR_OLD_STATEID:
-+	case -NFS4ERR_STALE_STATEID:
-+	case -NFS4ERR_EXPIRED:
-+		task->tk_status = 0;
-+		break;
- 	default:
- 		if (nfs4_async_handle_error(task, data->res.server, NULL) ==
- 				-EAGAIN) {
+ 	}
+ 
 -- 
 1.8.3.2
 
