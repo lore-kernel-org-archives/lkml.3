@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab3LQWwO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:52:14 -0500
-Received: from ozlabs.org ([203.10.76.45]:54059 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752588Ab3LQWwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:52:10 -0500
-Date: Wed, 18 Dec 2013 09:52:03 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: linux-next: build warning in Linus' tree
-Message-Id: <20131218095203.aceb7cfffffa16907feb9af7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__18_Dec_2013_09_52_03_+1100_u6ymJkaAjEug80Fh"
+	id S1752519Ab3LQWwp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:52:45 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:65392 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966Ab3LQWvv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 17:51:51 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: [PATCH 12/13] nohz: Allow all CPUs outside nohz_full range to do timekeeping
+Date: Tue, 17 Dec 2013 23:51:31 +0100
+Message-Id: <1387320692-28460-13-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
+References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__18_Dec_2013_09_52_03_+1100_u6ymJkaAjEug80Fh
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Now that we have all the infrastructure in place and ready to support
+timekeeping duty balanced across every non full dynticks CPUs, we can
+hereby extend the timekeeping duty affinity.
 
-Hi all,
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Alex Shi <alex.shi@linaro.org>
+Cc: Kevin Hilman <khilman@linaro.org>
+---
+ include/linux/tick.h | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
-While building Linus' tree, today's linux-next build (powerpc
-ppc64_defconfig) produced this warning:
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index bd3c32e..07c02e8 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -203,15 +203,7 @@ static inline int tick_timekeeping_default_cpu(void)
+  */
+ static inline bool tick_timekeeping_cpu(int cpu)
+ {
+-	/*
+-	 * If there are full dynticks CPUs around,
+-	 * CPU 0 must stay periodic to update timekeeping.
+-	 */
+-	if (tick_nohz_full_enabled())
+-		return cpu == 0;
+-
+-	/* Otherwise any CPU is elligible for timekeeping duty */
+-	return true;
++	return !tick_nohz_full_cpu(cpu);
+ }
+ 
+ extern void tick_nohz_init(void);
+-- 
+1.8.3.1
 
-drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c: In function 'ixgbe_pci_srio=
-v_disable':
-drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c:294:6: warning: unused varia=
-ble 'current_flags' [-Wunused-variable]
-  u32 current_flags =3D adapter->flags;
-      ^
-
-Introduced by commit 2a47fa45d4df ("ixgbe: enable l2 forwarding
-acceleration for macvlans") which was merged before v3.13-rc1.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__18_Dec_2013_09_52_03_+1100_u6ymJkaAjEug80Fh
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSsNWXAAoJEMDTa8Ir7ZwVJvQQAJMlqkwq6m8iUu+XT3Scrw6l
-RzOUPvbvlIk5T0ojg5YL+j4lK5n+M71wsud9vDTNQCQvXGt92+oqmwJX0s7AY76c
-khaOHGkP9Fie4wiLlZLYE8CybYtUQLizTPxqxlQOz7cUM9THUX+yZ74IInYc0tE3
-pUwRAegvRi8JVrVUNOvBBC4CkY9SOF/vsHYVfsJBFR2VKUcfWL2m9UODa8Ih7k8i
-Jw36z1mHa5mvP+KHgOM6rUvWV6KrjetrbKkgFkFeWf/5CUhjiZz4PteQqdk7wH+Y
-bTQM/MO35UoBgJYUmLT6yZESu8BsPBAwbOaTq3FFuI940m2c+wugNl0BTLvSkPFy
-BKWKJxKS+5KcN6M4uVDOxNEDFL1xoMMX1glT9qDSqXOrrUw18OSWxqQc2Wg++bbw
-pLF+DB0eOqDqNTzIfQehCLHbPgVdUyRBNvx7m8swrTFRS1IxMszl/zE5MQgykZ5u
-OP1zjF0Fg+1YKum8SqK1TC8YImAvNTrTKr/GfMsPHkya0/4fBOdeTJWVKLFJcEyC
-P22f7D3SnxEX0s8yoCPlQPZ5/Un7NZSn7NMOfw9QZvtPAI13FZdlmUofXZ+5ePvb
-l8tngQgpN5CBfHeiR2psgCaL5BPAMRgXLbvybNjKHTAkPvG/yYX1RlzWiybds3IV
-vQKfUVa9GphqfxQsisyZ
-=9bvM
------END PGP SIGNATURE-----
-
---Signature=_Wed__18_Dec_2013_09_52_03_+1100_u6ymJkaAjEug80Fh--
