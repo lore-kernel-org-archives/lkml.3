@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab3LQSSa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:18:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:32960 "EHLO
+	id S932245Ab3LQSP6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:15:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:32942 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932244Ab3LQSP7 (ORCPT
+	with ESMTP id S932182Ab3LQSPy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:15:59 -0500
+	Tue, 17 Dec 2013 13:15:54 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Jean Delvare <khali@linux-fr.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 097/103] KVM: x86: Fix potential divide by 0 in lapic (CVE-2013-6367)
-Date: Tue, 17 Dec 2013 18:13:26 +0000
-Message-Id: <1387304012-23805-98-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 094/103] hwmon: Prevent some divide by zeros in FAN_TO_REG()
+Date: Tue, 17 Dec 2013 18:13:23 +0000
+Message-Id: <1387304012-23805-95-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -27,48 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Honig <ahonig@google.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit b963a22e6d1a266a67e9eecc88134713fd54775c upstream.
+commit 3806b45ba4655147a011df03242cc197ab986c43 upstream.
 
-Under guest controllable circumstances apic_get_tmcct will execute a
-divide by zero and cause a crash.  If the guest cpuid support
-tsc deadline timers and performs the following sequence of requests
-the host will crash.
-- Set the mode to periodic
-- Set the TMICT to 0
-- Set the mode bits to 11 (neither periodic, nor one shot, nor tsc deadline)
-- Set the TMICT to non-zero.
-Then the lapic_timer.period will be 0, but the TMICT will not be.  If the
-guest then reads from the TMCCT then the host will perform a divide by 0.
+The "rpm * div" operations can overflow here, so this patch adds an
+upper limit to rpm to prevent that.  Jean Delvare helped me with this
+patch.
 
-This patch ensures that if the lapic_timer.period is 0, then the division
-does not occur.
-
-Reported-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[ luis: backported to 3.5:
-  - use apic_get_reg() instead of kvm_apic_get_reg() ]
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Roger Lucas <vt8231@hiddenengine.co.uk>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kvm/lapic.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/hwmon/lm78.c    | 2 ++
+ drivers/hwmon/sis5595.c | 2 ++
+ drivers/hwmon/vt8231.c  | 2 +-
+ 3 files changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index 93c1574..399df2f 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -545,7 +545,8 @@ static u32 apic_get_tmcct(struct kvm_lapic *apic)
- 	ASSERT(apic != NULL);
+diff --git a/drivers/hwmon/lm78.c b/drivers/hwmon/lm78.c
+index f6bc414..8d6a133 100644
+--- a/drivers/hwmon/lm78.c
++++ b/drivers/hwmon/lm78.c
+@@ -94,6 +94,8 @@ static inline u8 FAN_TO_REG(long rpm, int div)
+ {
+ 	if (rpm <= 0)
+ 		return 255;
++	if (rpm > 1350000)
++		return 1;
+ 	return SENSORS_LIMIT((1350000 + rpm * div / 2) / (rpm * div), 1, 254);
+ }
  
- 	/* if initial count is 0, current count should also be 0 */
--	if (apic_get_reg(apic, APIC_TMICT) == 0)
-+	if (apic_get_reg(apic, APIC_TMICT) == 0 ||
-+		apic->lapic_timer.period == 0)
+diff --git a/drivers/hwmon/sis5595.c b/drivers/hwmon/sis5595.c
+index 6c4d8eb..098489c 100644
+--- a/drivers/hwmon/sis5595.c
++++ b/drivers/hwmon/sis5595.c
+@@ -141,6 +141,8 @@ static inline u8 FAN_TO_REG(long rpm, int div)
+ {
+ 	if (rpm <= 0)
+ 		return 255;
++	if (rpm > 1350000)
++		return 1;
+ 	return SENSORS_LIMIT((1350000 + rpm * div / 2) / (rpm * div), 1, 254);
+ }
+ 
+diff --git a/drivers/hwmon/vt8231.c b/drivers/hwmon/vt8231.c
+index 386a845..0a287e0 100644
+--- a/drivers/hwmon/vt8231.c
++++ b/drivers/hwmon/vt8231.c
+@@ -145,7 +145,7 @@ static const u8 regtempmin[] = { 0x3a, 0x3e, 0x2c, 0x2e, 0x30, 0x32 };
+  */
+ static inline u8 FAN_TO_REG(long rpm, int div)
+ {
+-	if (rpm == 0)
++	if (rpm <= 0 || rpm > 1310720)
  		return 0;
- 
- 	remaining = hrtimer_get_remaining(&apic->lapic_timer.timer);
+ 	return SENSORS_LIMIT(1310720 / (rpm * div), 1, 255);
+ }
 -- 
 1.8.3.2
 
