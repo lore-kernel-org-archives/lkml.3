@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab3LQSVg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:21:36 -0500
-Received: from mga01.intel.com ([192.55.52.88]:15566 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755951Ab3LQSVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:21:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,502,1384329600"; 
-   d="scan'208";a="451527140"
-Message-ID: <52B095C9.7040105@linux.intel.com>
-Date: Tue, 17 Dec 2013 20:19:53 +0200
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH 00/15] cleanups and optimizations
-References: <20131212140835.729222186@infradead.org> <52AAE61D.4060406@linux.intel.com> <20131213135626.GL21999@twins.programming.kicks-ass.net> <52AF3CF0.3090502@linux.intel.com> <20131217133204.GK21999@twins.programming.kicks-ass.net> <52B059CE.9090709@linux.intel.com> <20131217151337.GN21999@twins.programming.kicks-ass.net>
-In-Reply-To: <20131217151337.GN21999@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756128Ab3LQSWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:22:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:32897 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932134Ab3LQSPk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 13:15:40 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 084/103] ARM: 7913/1: fix framepointer check in unwind_frame
+Date: Tue, 17 Dec 2013 18:13:13 +0000
+Message-Id: <1387304012-23805-85-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
+References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/12/2013 17:13, Peter Zijlstra wrote:
-> On Tue, Dec 17, 2013 at 04:03:58PM +0200, Eliezer Tamir wrote:
->>
->> I'm not sure that subtracting the spin time is the optimal thing to do.
->>
->> The busy poll time is supposed to be limited to something less than 1ms.
->> (I'm using 50us in most of my tests)
->> This is typically orders of magnitude smaller than the poll timeout.
->> Would it make more sense to just enforce a limit on poll time?
->>
->> What do you think?
-> 
-> I've no idea what people normally expect of select/poll wakeup
-> granularity but typically we already have 50us of timer slack, although
-> RT tasks go without this.
+3.5.7.28 -stable review patch.  If anyone has any objections, please let me know.
 
-If RT tasks can't accept 50us of fuzziness, then the
-path of least astonishment would be to have fully accurate
-timekeeping, as you suggested. OK, so that's the plan.
+------------------
 
-Thanks,
-Eliezer
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+
+commit 3abb6671a9c04479c4bd026798a05f857393b7e2 upstream.
+
+This patch fixes corner case when (fp + 4) overflows unsigned long,
+for example: fp = 0xFFFFFFFF -> fp + 4 == 3.
+
+Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/arm/kernel/stacktrace.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
+index 00f79e5..af4e8c8 100644
+--- a/arch/arm/kernel/stacktrace.c
++++ b/arch/arm/kernel/stacktrace.c
+@@ -31,7 +31,7 @@ int notrace unwind_frame(struct stackframe *frame)
+ 	high = ALIGN(low, THREAD_SIZE);
+ 
+ 	/* check current frame pointer is within bounds */
+-	if (fp < (low + 12) || fp + 4 >= high)
++	if (fp < low + 12 || fp > high - 4)
+ 		return -EINVAL;
+ 
+ 	/* restore the registers from the stack frame */
+-- 
+1.8.3.2
 
