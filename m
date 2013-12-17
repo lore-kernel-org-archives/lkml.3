@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab3LQWyW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:54:22 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:55470 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346Ab3LQWvo (ORCPT
+	id S1752335Ab3LQWvm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:51:42 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:59906 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab3LQWvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:51:44 -0500
+	Tue, 17 Dec 2013 17:51:39 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 06/13] nohz: Introduce full dynticks' default timekeeping target
-Date: Tue, 17 Dec 2013 23:51:25 +0100
-Message-Id: <1387320692-28460-7-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 01/13] tick: Rename tick_check_idle() to tick_irq_enter()
+Date: Tue, 17 Dec 2013 23:51:20 +0100
+Message-Id: <1387320692-28460-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
 References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
@@ -26,26 +26,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a full dynticks CPU wakes up while the whole rest of the system
-is idle, we need to wake up the CPU in charge of the timekeeping duty
-handling.
+This makes the code more symetric against the existing tick functions
+called on irq exit: tick_irq_exit() and tick_nohz_irq_exit().
 
-As of today, the CPU that maintains this duty is CPU 0 when
-CONFIG_NO_HZ_FULL=y. So referring to tick_do_timer_cpu like we
-currently do is correct. But this behaviour is subject to change
-in the future because we want to balance the timekeeping duty over all
-the CPUs outside the full dynticks range.
+These function are also symetric as they mirror each other's action:
+we start to account idle time on irq exit and we stop this accounting
+on irq entry. Also the tick is stopped on irq exit and timekeeping
+catches up with the tickless time elapsed until we reach irq entry.
 
-As such we now need to define a default timekeeping CPU which receives
-the timekeeping wakeup IPIs and which can't be offlined so that it's
-guaranteed to always be present for full dynticks CPUs housekeeping.
-
-So lets stick to CPU 0 for this purpose. It's convenient because
-rejecting any other CPU's offlining request may result in suspend
-failure.
-
-We can optimize this solution later by adaptively sending the IPI
-to a potential timekeeping CPU that is already running a non idle task.
+This rename was suggested by Peter Zijlstra a long while ago but it
+got forgotten in the mass.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -57,73 +47,89 @@ Cc: John Stultz <john.stultz@linaro.org>
 Cc: Alex Shi <alex.shi@linaro.org>
 Cc: Kevin Hilman <khilman@linaro.org>
 ---
- include/linux/tick.h     | 16 ++++++++++++++++
- kernel/rcu/tree_plugin.h |  4 ++--
- kernel/time/tick-sched.c |  2 +-
- 3 files changed, 19 insertions(+), 3 deletions(-)
+ include/linux/tick.h     | 6 +++---
+ kernel/softirq.c         | 2 +-
+ kernel/time/tick-sched.c | 8 ++++----
+ 3 files changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/include/linux/tick.h b/include/linux/tick.h
-index cf2fd34..af98d2c 100644
+index 0175d86..b84773c 100644
 --- a/include/linux/tick.h
 +++ b/include/linux/tick.h
-@@ -180,6 +180,22 @@ static inline bool tick_nohz_full_cpu(int cpu)
- }
+@@ -104,7 +104,7 @@ extern struct cpumask *tick_get_broadcast_oneshot_mask(void);
+ extern void tick_clock_notify(void);
+ extern int tick_check_oneshot_change(int allow_nohz);
+ extern struct tick_sched *tick_get_tick_sched(int cpu);
+-extern void tick_check_idle(void);
++extern void tick_irq_enter(void);
+ extern int tick_oneshot_mode_active(void);
+ #  ifndef arch_needs_cpu
+ #   define arch_needs_cpu(cpu) (0)
+@@ -112,7 +112,7 @@ extern int tick_oneshot_mode_active(void);
+ # else
+ static inline void tick_clock_notify(void) { }
+ static inline int tick_check_oneshot_change(int allow_nohz) { return 0; }
+-static inline void tick_check_idle(void) { }
++static inline void tick_irq_enter(void) { }
+ static inline int tick_oneshot_mode_active(void) { return 0; }
+ # endif
  
- /**
-+ * tick_timekeeping_default_cpu - seek timekeeping default CPU
-+
-+ * @return the default target which we send an IPI to
-+ * when a full dynticks CPU wakes up and exits from full
-+ * system idle state.
-+ *
-+ * This target is always CPU 0 in full dynticks environment.
-+ * If we were to pick up any other CPU, that would result in suspend
-+ * failures due to rejected offlining request.
-+ */
-+static inline int tick_timekeeping_default_cpu(void)
-+{
-+	return 0;
-+}
-+
-+/**
-  * tick_timeeping_cpu - check if a CPU is elligble to handle timekeeping duty
-  * @cpu:	the cpu to check
-  *
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 84d90c8..1795265 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -2488,7 +2488,7 @@ void rcu_sysidle_force_exit(void)
- 				      oldstate, RCU_SYSIDLE_NOT);
- 		if (oldstate == newoldstate &&
- 		    oldstate == RCU_SYSIDLE_FULL_NOTED) {
--			smp_send_reschedule(tick_do_timer_cpu);
-+			smp_send_reschedule(tick_timekeeping_default_cpu());
- 			return; /* We cleared it, done! */
- 		}
- 		oldstate = newoldstate;
-@@ -2597,7 +2597,7 @@ static bool is_sysidle_rcu_state(struct rcu_state *rsp)
-  */
- static void rcu_bind_gp_kthread(void)
- {
--	int cpu = ACCESS_ONCE(tick_do_timer_cpu);
-+	int cpu = tick_timekeeping_default_cpu();
+@@ -121,7 +121,7 @@ static inline void tick_init(void) { }
+ static inline void tick_cancel_sched_timer(int cpu) { }
+ static inline void tick_clock_notify(void) { }
+ static inline int tick_check_oneshot_change(int allow_nohz) { return 0; }
+-static inline void tick_check_idle(void) { }
++static inline void tick_irq_enter(void) { }
+ static inline int tick_oneshot_mode_active(void) { return 0; }
+ #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
  
- 	if (cpu < 0 || cpu >= nr_cpu_ids)
- 		return;
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 11348de..ca9cb35 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -318,7 +318,7 @@ void irq_enter(void)
+ 		 * here, as softirq will be serviced on return from interrupt.
+ 		 */
+ 		local_bh_disable();
+-		tick_check_idle();
++		tick_irq_enter();
+ 		_local_bh_enable();
+ 	}
+ 
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index ea0d411..9a91c31 100644
+index 2afd43f..df6432d 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -305,7 +305,7 @@ static int tick_nohz_cpu_down_callback(struct notifier_block *nfb,
- 		 * If we handle the timekeeping duty for full dynticks CPUs,
- 		 * we can't safely shutdown that CPU.
- 		 */
--		if (tick_nohz_full_running && tick_do_timer_cpu == cpu)
-+		if (tick_nohz_full_running && tick_timekeeping_default_cpu() == cpu)
- 			return NOTIFY_BAD;
- 		break;
- 	}
+@@ -1025,7 +1025,7 @@ static void tick_nohz_kick_tick(struct tick_sched *ts, ktime_t now)
+ #endif
+ }
+ 
+-static inline void tick_check_nohz_this_cpu(void)
++static inline void tick_nohz_irq_enter(void)
+ {
+ 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
+ 	ktime_t now;
+@@ -1044,17 +1044,17 @@ static inline void tick_check_nohz_this_cpu(void)
+ #else
+ 
+ static inline void tick_nohz_switch_to_nohz(void) { }
+-static inline void tick_check_nohz_this_cpu(void) { }
++static inline void tick_nohz_irq_enter(void) { }
+ 
+ #endif /* CONFIG_NO_HZ_COMMON */
+ 
+ /*
+  * Called from irq_enter to notify about the possible interruption of idle()
+  */
+-void tick_check_idle(void)
++void tick_irq_enter(void)
+ {
+ 	tick_check_oneshot_broadcast_this_cpu();
+-	tick_check_nohz_this_cpu();
++	tick_nohz_irq_enter();
+ }
+ 
+ /*
 -- 
 1.8.3.1
 
