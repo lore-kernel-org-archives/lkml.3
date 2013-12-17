@@ -1,118 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab3LQCgG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 21:36:06 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:63798 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab3LQCgE (ORCPT
+	id S1752804Ab3LQCg4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 21:36:56 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:44849 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502Ab3LQCgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 21:36:04 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52AFB891.5020700@roeck-us.net>
-Date: Mon, 16 Dec 2013 18:36:01 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Rajat Jain <rajatjain@juniper.net>, Yinghai Lu <yinghai@kernel.org>,
-        Rajat Jain <rajatjain.linux@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, Paul Bolle <pebolle@tiscali.nl>,
-        Rajat Jain <rajatxjain@gmail.com>, Guenter Roeck <groeck@juniper.net>
-Subject: Re: [PATCH v2 2/4] pciehp: Use link change notifications for hot-plug
- and removal
-References: <529E5C0E.80903@gmail.com> <20131212224407.GL4699@google.com> <CAE9FiQX8XXkwbhhuNhCF-pHdc_3or_dMEH-VN5NBSEV_eXE-Pg@mail.gmail.com> <CAErSpo5BsaLNrny3T1sYknz3wo4hN0SKJk0_u6eNyEd6qq5o=g@mail.gmail.com> <428d664592c2466c9e5e6b393df9d690@DM2PR05MB671.namprd05.prod.outlook.com> <CAErSpo5NjOCqkao03Ea=98gunVEaUUitq8mGLarpKW_DQoDF8g@mail.gmail.com> <CAE9FiQX-ZP0R-weuPoOJ6GkPxOLp5jk9thnjfPQ+Q5tCHugD4w@mail.gmail.com> <20131214033911.GA25115@roeck-us.net> <241775f7fb71476aa84bbb19fde4602f@DM2PR05MB671.namprd05.prod.outlook.com> <CAErSpo4grMgCBetm7DMmizWQS_peM5yYBwFS99K8jbXaEWGmEg@mail.gmail.com> <20131216173907.GC1811@roeck-us.net> <CAErSpo6pBk6HR79jLfxd2sZPQ3Xq=Z-u1t__ODzDqa31_TLPSA@mail.gmail.com>
-In-Reply-To: <CAErSpo6pBk6HR79jLfxd2sZPQ3Xq=Z-u1t__ODzDqa31_TLPSA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 16 Dec 2013 21:36:54 -0500
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: wsa@the-dreams.de, linus.walleij@linaro.org, linux-sh@vger.kernel.org,
+        horms@verge.net.au, laurent.pinchart@ideasonboard.com,
+        Magnus Damm <magnus.damm@gmail.com>
+Date: Tue, 17 Dec 2013 11:37:45 +0900
+Message-Id: <20131217023745.24573.3660.sendpatchset@w520>
+Subject: [PATCH 00/05 v2] pinctrl: sh-pfc: r7s72100 support V2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2013 05:14 PM, Bjorn Helgaas wrote:
-> On Mon, Dec 16, 2013 at 10:39 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->> On Sun, Dec 15, 2013 at 05:18:26PM -0700, Bjorn Helgaas wrote:
->>> On Sun, Dec 15, 2013 at 4:24 PM, Rajat Jain <rajatjain@juniper.net> wrote:
->>>>>>>
->>>>>>>> Once again: the way I interpret this is: * Always enable Link events.
->>>>>>>> * Disable presence events if attention button is present.
->>>>>>>
->>>>>>> That sounds like a good plan to me.
->>>>>>
->>>>>> How about Diag_Reset from MPT2SAS and others?  link could up and down
->>>>>>
->>>>
->>>> I am assuming you are referring to
->>>>
->>>> static int _base_diag_reset(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
->>>>
->>>> Which as far as I could understand would cause link to go down and come up
->>>> again without the kernel knowing anything about it?  ...
->>>
->>>> In general, I guess the question is when a link goes down and back up,
->>>> whether or not we want to treat it as a hot unplug followed by a hotplug. I
->>>> think there may be cases such as AER (or the one Yinghai mentions) where we
->>>> don't want to treat it as a hotplug (see note below). And there may be cases
->>>> that we definitely want to treat it as hotplug (need link events!).
->>>> Situation gets more complex since there may be pciehp slots downstream of a
->>>> link getting reset.
->>>>
->>>> It seems to me that we are saying that a mechanism is needed so that a
->>>> voluntary Link flap is NOT treated like a hotplug temporarily?  ...
->>>
->>>> Notes: * it may not OK, if the kernel thinks the device is accessible when
->>>> it is really not.  What if during this downtime, someone tries to access the
->>>> device (say userspace)?  * How do we know after the link up, that the device
->>>> is really the same.  If during this reset, the device changed its
->>>> "character", say a different class?  I think a rescan should be mandated
->>>> after every such event.  * Do we need to unload and reload the driver after
->>>> the link reset, since it can be a different device?
->>>
->>> I am quite dubious about the idea of a voluntary link flap.  If the link goes
->>> down and comes back up, I don't see how we can make any assumptions about what
->>> device is there.
->>>
->>> I let Alex talk me into pciehp_reset_slot(), which disables presence detect
->>> interrupts while resetting a device, so we already have a bit of precedent for
->>> the idea.  But even in that case, the device could easily come out of reset as
->>> a different device, e.g., if the reset caused it to load updated firmware.
->>>
->>> I would feel much better if we treated link down as a remove and did a rescan
->>> on the link up.
->>>
->> Agreed. Question is if we might need some means for a driver to tell the PCIe
->> core about an upcoming "planned" link flap. pciehp_reset_slot() doesn't seem
->> to address the condition where a driver resets a connected chip by other means
->> than by calling pciehp_reset_slot(). Still not sure what happens when the
->> mpt2sas driver issues its diagnostic reset, to take Yinghai's example (or if
->> there would be a cleaner way to implement such a reset).
->
-> In my opinion we should not add the concept of a planned link flap.
-> We already have pci_reset_function(), and we can probably make that
-> deal with link up/down events internally, so I think we should try to
-> use that if we can.  I think it's too much of a mess to try to support
-> link flaps for random driver-initiated resets that don't go through
-> the PCI core.
->
-Perfectly fine with me.
+pinctrl: sh-pfc: r7s72100 support V2
 
-> That probably means going through and identifying all the drivers we
-> can find that do their own internal resets, and converting them.
-> We'll likely miss some, since the mechanisms are driver-specific.  And
+[PATCH 01/05 v2] pinctrl: sh-pfc: Rework _GP_GPIO, introduce _GP_GPIO32
+[PATCH 02/05 v2] pinctrl: sh-pfc: r7s72100 base support
+[PATCH 03/05 v2] pinctrl: sh-pfc: r7s72100 single pin macros
+[PATCH 04/05 v2] pinctrl: sh-pfc: r7s72100 SCIF support
+[PATCH 05/05 v2] pinctrl: sh-pfc: r8a7791 and r7s72100 binding docs
 
-Also might be difficult - that kind of work really asks for having
-the hardware available for testing.
+This is V2 of r7s72100 PFC support. Included this time is:
+- Some slight rework of shared sh-pfc macros
+- Complete r7s72100 SCIF support
+- Binding documentation
 
-Guenter
+If you prefer me to adjust this code somehow then please let me know.
 
-> maybe there are some driver resets that think they add value over the
-> core's pci_reset_function() (I'm not sure what that would be, but I'm
-> open to discussion about it).
->
-> Bjorn
->
->
+Signed-off-by: Magnus Damm <damm@opensource.se>
+---
 
+ Written against renesas.git tag renesas-devel-v3.13-rc3-20131214v2
+
+ Documentation/devicetree/bindings/pinctrl/renesas,pfc-pinctrl.txt |    2 
+ drivers/pinctrl/sh-pfc/Kconfig                                    |    5 
+ drivers/pinctrl/sh-pfc/Makefile                                   |    1 
+ drivers/pinctrl/sh-pfc/core.c                                     |    9 
+ drivers/pinctrl/sh-pfc/core.h                                     |    1 
+ drivers/pinctrl/sh-pfc/pfc-r7s72100.c                             |  340 ++++++++++
+ drivers/pinctrl/sh-pfc/sh_pfc.h                                   |    9 
+ 7 files changed, 363 insertions(+), 4 deletions(-)
