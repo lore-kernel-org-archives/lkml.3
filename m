@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab3LQSP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:15:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:32942 "EHLO
+	id S932226Ab3LQSP5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:15:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:32928 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932182Ab3LQSPy (ORCPT
+	with ESMTP id S932185Ab3LQSPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:15:54 -0500
+	Tue, 17 Dec 2013 13:15:50 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Jean Delvare <khali@linux-fr.org>,
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 094/103] hwmon: Prevent some divide by zeros in FAN_TO_REG()
-Date: Tue, 17 Dec 2013 18:13:23 +0000
-Message-Id: <1387304012-23805-95-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 089/103] x86, efi: Don't use (U)EFI time services on 32 bit
+Date: Tue, 17 Dec 2013 18:13:18 +0000
+Message-Id: <1387304012-23805-90-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -28,64 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Matthew Garrett <matthew.garrett@nebula.com>
 
-commit 3806b45ba4655147a011df03242cc197ab986c43 upstream.
+commit 04bf9ba720fcc4fa313fa122b799ae0989b6cd50 upstream.
 
-The "rpm * div" operations can overflow here, so this patch adds an
-upper limit to rpm to prevent that.  Jean Delvare helped me with this
-patch.
+UEFI time services are often broken once we're in virtual mode. We were
+already refusing to use them on 64-bit systems, but it turns out that
+they're also broken on some 32-bit firmware, including the Dell Venue.
+Disable them for now, we can revisit once we have the 1:1 mappings code
+incorporated.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Roger Lucas <vt8231@hiddenengine.co.uk>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+Link: http://lkml.kernel.org/r/1385754283-2464-1-git-send-email-matthew.garrett@nebula.com
+Cc: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hwmon/lm78.c    | 2 ++
- drivers/hwmon/sis5595.c | 2 ++
- drivers/hwmon/vt8231.c  | 2 +-
- 3 files changed, 5 insertions(+), 1 deletion(-)
+ arch/x86/platform/efi/efi.c | 7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/drivers/hwmon/lm78.c b/drivers/hwmon/lm78.c
-index f6bc414..8d6a133 100644
---- a/drivers/hwmon/lm78.c
-+++ b/drivers/hwmon/lm78.c
-@@ -94,6 +94,8 @@ static inline u8 FAN_TO_REG(long rpm, int div)
- {
- 	if (rpm <= 0)
- 		return 255;
-+	if (rpm > 1350000)
-+		return 1;
- 	return SENSORS_LIMIT((1350000 + rpm * div / 2) / (rpm * div), 1, 254);
- }
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index cfe8b9c..46e5387 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -760,13 +760,6 @@ void __init efi_init(void)
  
-diff --git a/drivers/hwmon/sis5595.c b/drivers/hwmon/sis5595.c
-index 6c4d8eb..098489c 100644
---- a/drivers/hwmon/sis5595.c
-+++ b/drivers/hwmon/sis5595.c
-@@ -141,6 +141,8 @@ static inline u8 FAN_TO_REG(long rpm, int div)
- {
- 	if (rpm <= 0)
- 		return 255;
-+	if (rpm > 1350000)
-+		return 1;
- 	return SENSORS_LIMIT((1350000 + rpm * div / 2) / (rpm * div), 1, 254);
- }
+ 	set_bit(EFI_MEMMAP, &x86_efi_facility);
  
-diff --git a/drivers/hwmon/vt8231.c b/drivers/hwmon/vt8231.c
-index 386a845..0a287e0 100644
---- a/drivers/hwmon/vt8231.c
-+++ b/drivers/hwmon/vt8231.c
-@@ -145,7 +145,7 @@ static const u8 regtempmin[] = { 0x3a, 0x3e, 0x2c, 0x2e, 0x30, 0x32 };
-  */
- static inline u8 FAN_TO_REG(long rpm, int div)
- {
--	if (rpm == 0)
-+	if (rpm <= 0 || rpm > 1310720)
- 		return 0;
- 	return SENSORS_LIMIT(1310720 / (rpm * div), 1, 255);
- }
+-#ifdef CONFIG_X86_32
+-	if (efi_is_native()) {
+-		x86_platform.get_wallclock = efi_get_time;
+-		x86_platform.set_wallclock = efi_set_rtc_mmss;
+-	}
+-#endif
+-
+ #if EFI_DEBUG
+ 	print_efi_memmap();
+ #endif
 -- 
 1.8.3.2
 
