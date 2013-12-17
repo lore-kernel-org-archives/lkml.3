@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751128Ab3LQJCo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 04:02:44 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36107 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab3LQJCl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 04:02:41 -0500
-Date: Tue, 17 Dec 2013 10:02:11 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
-        acme@redhat.com, jolsa@redhat.com, zheng.z.yan@intel.com, bp@alien8.de,
-        vincent.weaver@maine.edu, maria.n.dimakopoulou@gmail.com
-Subject: Re: [PATCH 0/2] perf/x86: various RAPL improvements
-Message-ID: <20131217090211.GZ21999@twins.programming.kicks-ass.net>
-References: <1387225224-27799-1-git-send-email-eranian@google.com>
+	id S1752113Ab3LQJHW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 04:07:22 -0500
+Received: from smtpsalv.cc.upv.es ([158.42.249.11]:50478 "EHLO smtpsalv.upv.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750839Ab3LQJHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 04:07:19 -0500
+From: =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>
+To: linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>, security@kernel.org,
+        linux-hams@vger.kernel.org, netdev@vger.kernel.org,
+        Jean-Paul Roubelat <jpr@f6fbb.org>, stable@vger.kernel.org
+Subject: =?UTF-8?q?=5BPATCH=20v2=5D=20hamradio/yam=3A=20fix=20info=20leak=20in=20ioctl?=
+Date: Tue, 17 Dec 2013 10:06:30 +0100
+Message-Id: <1387271191-10355-1-git-send-email-speiro@ai2.upv.es>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1386920767-27962-1-git-send-email-speiro@ai2.upv.es>
+References: <1386920767-27962-1-git-send-email-speiro@ai2.upv.es>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387225224-27799-1-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 09:20:22PM +0100, Stephane Eranian wrote:
-> This short patch series provides the following improvements
-> to the RAPL support for perf_events:
->  - Intel Haswell Celeron (model 69) support
->  - support for RAPL PP1 energy counter
-> 
-> The PP1 counter maps to the builtin graphic card for client
-> processors. The new energy event is:
->  - name: power/energy-gfx/
->  - code: 0x4
->  - unit: Joules
->  - scaling factor: 2^-32 Joules.
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
+The yam_ioctl() code fails to initialise the cmd field
+of the struct yamdrv_ioctl_cfg. Add an explicit memset(0)
+before filling the structure to avoid the 4-byte info leak.
 
-Thanks!
+Signed-off-by: Salva Peiró <speiro@ai2.upv.es>
+CC: <stable@vger.kernel.org>
+---
+ drivers/net/hamradio/yam.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/hamradio/yam.c b/drivers/net/hamradio/yam.c
+index 1971411..61dd244 100644
+--- a/drivers/net/hamradio/yam.c
++++ b/drivers/net/hamradio/yam.c
+@@ -1057,6 +1057,7 @@ static int yam_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+ 		break;
+ 
+ 	case SIOCYAMGCFG:
++		memset(&yi, 0, sizeof(yi));
+ 		yi.cfg.mask = 0xffffffff;
+ 		yi.cfg.iobase = yp->iobase;
+ 		yi.cfg.irq = yp->irq;
+-- 
+1.7.10.4
+
