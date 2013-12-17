@@ -1,95 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab3LQJxJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 04:53:09 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:33349 "EHLO
+	id S1753034Ab3LQJxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 04:53:17 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:45094 "EHLO
 	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab3LQJxF (ORCPT
+	with ESMTP id S1751007Ab3LQJxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 04:53:05 -0500
-Date: Tue, 17 Dec 2013 09:53:00 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH mfd-next] mfd: max14577 and sec: add PM_SLEEP dependency
- to suspend/resume
-Message-ID: <20131217095300.GA19810@lee--X1>
-References: <1387272505-4621-1-git-send-email-k.kozlowski@samsung.com>
+	Tue, 17 Dec 2013 04:53:11 -0500
+Message-ID: <52B01F07.1070001@linaro.org>
+Date: Tue, 17 Dec 2013 10:53:11 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Alex Shi <alex.shi@linaro.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Amit Kucheria <amit.kucheria@linaro.org>,
+        Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+Subject: power aware scheduler: remove the idle task ?
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1387272505-4621-1-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Dec 2013, Krzysztof Kozlowski wrote:
 
-> Add CONFIG_PM_SLEEP dependency to suspend and resume functions of
-> max14577 MFD driver and sec-core.c code.
-> 
-> This fixes the warnings:
-> drivers/mfd/max14577.c:176:12: warning: ‘max14577_suspend’ defined but not used [-Wunused-function]
-> drivers/mfd/max14577.c:199:12: warning: ‘max14577_resume’ defined but not used [-Wunused-function]
-> drivers/mfd/sec-core.c:347:12: warning: ‘sec_pmic_suspend’ defined but not used [-Wunused-function]
-> drivers/mfd/sec-core.c:369:12: warning: ‘sec_pmic_resume’ defined but not used [-Wunused-function]
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/mfd/max14577.c |    2 ++
->  drivers/mfd/sec-core.c |    2 ++
->  2 files changed, 4 insertions(+)
-> 
-> diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-> index a5e1c370c609..1018a6644469 100644
-> --- a/drivers/mfd/max14577.c
-> +++ b/drivers/mfd/max14577.c
-> @@ -173,6 +173,7 @@ static const struct i2c_device_id max14577_i2c_id[] = {
->  };
->  MODULE_DEVICE_TABLE(i2c, max14577_i2c_id);
->  
-> +#ifdef CONFIG_PM_SLEEP
->  static int max14577_suspend(struct device *dev)
->  {
->  	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-> @@ -208,6 +209,7 @@ static int max14577_resume(struct device *dev)
->  
->  	return 0;
->  }
-> +#endif /* CONFIG_PM_SLEEP */
+Hi all,
 
-Is this the best way we have of doing this?
+yes, another thread about the power aware scheduler :)
 
-Isn't there a helper which casts these to NULL if unused?
+There have been a lot of discussions about the integrating the power 
+management into the scheduler but it seems we are still turning around 
+without agreeing on a consensus.
 
->  static struct of_device_id max14577_dt_match[] = {
->  	{ .compatible = "maxim,max14577", },
-> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-> index 56615af42a28..455e3a8fb95d 100644
-> --- a/drivers/mfd/sec-core.c
-> +++ b/drivers/mfd/sec-core.c
-> @@ -343,6 +343,7 @@ static int sec_pmic_remove(struct i2c_client *i2c)
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_PM_SLEEP
->  static int sec_pmic_suspend(struct device *dev)
->  {
->  	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-> @@ -377,6 +378,7 @@ static int sec_pmic_resume(struct device *dev)
->  
->  	return 0;
->  }
-> +#endif /* CONFIG_PM_SLEEP */
->  
->  static SIMPLE_DEV_PM_OPS(sec_pmic_pm_ops, sec_pmic_suspend, sec_pmic_resume);
->  
+I would like to have some clarifications on one point.
+
+Peter said in an email [1] :
+
+"[...]
+
+I think the scheduler simply wants to say: we expect to go idle for X 
+ns, we want a guaranteed wakeup latency of Y ns -- go do your thing.
+
+[...]"
+
+I share 100% this opinion but that may imply the following:
+
+1. the scheduler should get some information from the cpuidle framework 
+in order to get the idle state it is supposed to go with its wakeup 
+latency. Some of the heuristics of the cpuidle governors should be 
+shared with the scheduler also in order to get how long it should stay idle.
+
+2. the idle task should get some informations from the scheduler in 
+order to get the idle time but it could be woken up several times, 
+without preemption, thus it will need to recompute the expected idle 
+time on its own and depending on the idle state, it will need to update 
+the wakeup latency for the scheduler.
+
+3. the pm qos is part of the constraint but also the idle balance 
+constraints should be added for more integration.
+
+4. ... certainly a lot of more things related to sched fair class with 
+the scheduler.
+
+So at the end, the resulting sub systems design is:
+
+  -----------       -----------       ---------
+| scheduler |<--->| idle task |<--->| cpuidle |
+  -----------       -----------       ---------
+      ^                                   ^
+      |                                   |
+       -----------------------------------
+
+IMHO, this creates cyclical dependencies between scheduler, cpuidle
+and idle task instead of integrating idle policy into the scheduler.
+
+So, I am wondering if the idle task removal is something the maintainers 
+had in mind when they talked about the power aware scheduler ?
+
+The scheduler would gather all the idle informations and can modulate 
+them regarding the behavior of the tasks (no details for now) and just 
+tells the cpuidle framework to go the state fulfilling the constraints 
+passed as parameter.
+
+If the power aware scheduler implies the removal of the idle task, we 
+could start by creating two paths in the scheduler, one with the old 
+scheduler code with the idle task and the other one experimental without 
+the idle task. Wouldn't make sense to investigate this first before 
+moving code around to make the scheduler power aware ?
+
+It would be nice if the maintainers and the other people deeply involved 
+in the scheduler changes can share their opinion about that.
+
+Thanks !
+
+   -- Daniel
+
+[1] https://lkml.org/lkml/2013/11/11/353
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
