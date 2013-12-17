@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264Ab3LQN7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:59:31 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:50918 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987Ab3LQN7a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:59:30 -0500
-Date: Tue, 17 Dec 2013 10:59:23 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, namhyung@kernel.org, artagnon@gmail.com,
-        jolsa@redhat.com
-Subject: Re: [PATCH 5/5 v2] perf timechart: add emphasize option
-Message-ID: <20131217135923.GB6517@ghostprotocols.net>
-References: <1385995056-20158-1-git-send-email-stfomichev@yandex-team.ru>
- <20131216193800.GA19283@ghostprotocols.net>
- <20131217093855.GA3345@stfomichev-desktop>
- <20131217112303.GB27791@gmail.com>
- <20131217121522.GA6357@stfomichev-desktop>
- <20131217133821.GA6517@ghostprotocols.net>
- <20131217134137.GA29396@gmail.com>
+	id S1753654Ab3LQOEP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 09:04:15 -0500
+Received: from mga11.intel.com ([192.55.52.93]:41555 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752958Ab3LQOEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 09:04:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,501,1384329600"; 
+   d="scan'208";a="451374127"
+Message-ID: <52B059CE.9090709@linux.intel.com>
+Date: Tue, 17 Dec 2013 16:03:58 +0200
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131217134137.GA29396@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH 00/15] cleanups and optimizations
+References: <20131212140835.729222186@infradead.org> <52AAE61D.4060406@linux.intel.com> <20131213135626.GL21999@twins.programming.kicks-ass.net> <52AF3CF0.3090502@linux.intel.com> <20131217133204.GK21999@twins.programming.kicks-ass.net>
+In-Reply-To: <20131217133204.GK21999@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 17, 2013 at 02:41:37PM +0100, Ingo Molnar escreveu:
-> * Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
-> > Em Tue, Dec 17, 2013 at 04:15:22PM +0400, Stanislav Fomichev escreveu:
-> > > > Please give a sample usage command line and a sample output. (the 
-> > > > highlighting can be done using ASCII escape sequences in the changelog 
-> > > > as well.)
-> > > Highlighting is done in the generated SVG, so I can't really show it in
-> > > the log or documentation. But I added simple example with -e option.
+n 17/12/2013 15:32, Peter Zijlstra wrote:
+> 
+> Awesomeness.. you'll work on subtracting the spin time from the sleep
+> time?
 
-> > > >   -e::
-> > > >   --emphasize=<duration_nsecs|task_name>::
-> > > Thanks, added.
+Me or someone on our team will work on it.
 
-> > I also wonder how to allocate single letter options here... can we live
-> > with just --emphasize for now? Wouldn't at some point we maybe want to
-> > use -e in 'perf timechart' to pick some specific event, and then, to
-> > make it consistent with the other tools, -e would then be used?
- 
-> I wanted to raise a similar argument too - so if we don't have to do 
-> -e then maybe '--grep' would be the better option name?
- 
-> If it becomes popular then the pattern matching can be improved, 
-> without having to change the option name and such.
+I'm not sure that subtracting the spin time is the optimal thing to do.
 
-Humm, 'grep' is a filter, i.e. something that removes parts of the data
-being perused, while this case it will not filter anything, it will just
-make something that matches some search criteria to stand out from the
-rest, that is still there, so perhaps --emphasize is Ok albeit kinda
-long...
+The busy poll time is supposed to be limited to something less than 1ms.
+(I'm using 50us in most of my tests)
+This is typically orders of magnitude smaller than the poll timeout.
+Would it make more sense to just enforce a limit on poll time?
 
-Do we have any other command line tool that has a long standing
-semantics of "highlighting" or "emphasizing" parts of a data stream?
+What do you think?
 
-- Arnaldo
+Thanks,
+Eliezer
