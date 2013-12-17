@@ -1,85 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab3LQQXp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 11:23:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59641 "EHLO mx2.suse.de"
+	id S1754640Ab3LQQZM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:25:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63733 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753185Ab3LQQXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 11:23:43 -0500
-Date: Tue, 17 Dec 2013 17:23:42 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-Message-ID: <20131217162342.GG28991@dhcp22.suse.cz>
-References: <20131204111318.GE8410@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com>
- <20131209124840.GC3597@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
- <20131210103827.GB20242@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com>
- <20131211095549.GA18741@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com>
- <20131212103159.GB2630@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312131551220.28704@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312131551220.28704@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753630Ab3LQQZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 11:25:10 -0500
+From: Mark Salter <msalter@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Salter <msalter@redhat.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 02/10] arm: select ARCH_MIGHT_HAVE_PC_SERIO
+Date: Tue, 17 Dec 2013 10:48:45 -0500
+Message-Id: <1387295333-24684-3-git-send-email-msalter@redhat.com>
+In-Reply-To: <1387295333-24684-1-git-send-email-msalter@redhat.com>
+References: <1387295333-24684-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 13-12-13 15:55:44, David Rientjes wrote:
-> On Thu, 12 Dec 2013, Michal Hocko wrote:
-[...]
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index c72b03bf9679..fee25c5934d2 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -2692,7 +2693,8 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
-> >  	 * MEMDIE process.
-> >  	 */
-> >  	if (unlikely(test_thread_flag(TIF_MEMDIE)
-> > -		     || fatal_signal_pending(current)))
-> > +		     || fatal_signal_pending(current))
-> > +		     || current->flags & PF_EXITING)
-> >  		goto bypass;
-> >  
-> >  	if (unlikely(task_in_memcg_oom(current)))
-> > 
-> > rather than the later checks down the oom_synchronize paths. The comment
-> > already mentions dying process...
-> > 
-> 
-> This is scary because it doesn't even try to reclaim memcg memory before 
-> allowing the allocation to succeed.
+Architectures which might use an i8042 for serial IO to keyboard,
+mouse, etc should select ARCH_MIGHT_HAVE_PC_SERIO.
 
-Why should it reclaim in the first place when it simply is on the way to
-release memory. In other words why should it increase the memory
-pressure when it is in fact releasing it?
+Signed-off-by: Mark Salter <msalter@redhat.com>
+CC: Russell King <linux@arm.linux.org.uk>
+CC: linux-arm-kernel@lists.infradead.org
+---
+ arch/arm/mach-footbridge/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-I am really puzzled here. On one hand you are strongly arguing for not
-notifying when we know we can prevent from OOM action and on the other
-hand you are ok to get vmpressure/thresholds notification when an
-exiting task triggers reclaim.
-
-So I am really lost in what you are trying to achieve here. It sounds a
-bit arbirtrary.
-
-> I think we could even argue that we should move the
-> fatal_signal_pending(current) check to later and the only condition we
-> should really be bypassing here is TIF_MEMDIE since it will only get
-> set when reclaim has already failed.
-
-Any arguments?
-
+diff --git a/arch/arm/mach-footbridge/Kconfig b/arch/arm/mach-footbridge/Kconfig
+index 0f2111a..d0fb921 100644
+--- a/arch/arm/mach-footbridge/Kconfig
++++ b/arch/arm/mach-footbridge/Kconfig
+@@ -85,6 +85,7 @@ config FOOTBRIDGE
+ # Footbridge in host mode
+ config FOOTBRIDGE_HOST
+ 	bool
++        select ARCH_MIGHT_HAVE_PC_SERIO
+ 
+ # Footbridge in addin mode
+ config FOOTBRIDGE_ADDIN
 -- 
-Michal Hocko
-SUSE Labs
+1.8.3.1
+
