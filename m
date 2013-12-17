@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab3LQTmz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 14:42:55 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:44611 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752382Ab3LQTmw (ORCPT
+	id S1753337Ab3LQTnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 14:43:00 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:46297 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753274Ab3LQTmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 14:42:52 -0500
+	Tue, 17 Dec 2013 14:42:55 -0500
 From: Matt Porter <mporter@linaro.org>
 To: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -25,9 +25,9 @@ Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Devicetree List <devicetree@vger.kernel.org>,
         Linaro Patches <patches@linaro.org>
-Subject: [PATCH v7 3/9] usb: gadget: s3c-hsotg: enable build for other platforms
-Date: Tue, 17 Dec 2013 14:42:30 -0500
-Message-Id: <1387309356-17195-4-git-send-email-mporter@linaro.org>
+Subject: [PATCH v7 4/9] usb: gadget: s3c-hsotg: add snps,dwc2 compatible string
+Date: Tue, 17 Dec 2013 14:42:31 -0500
+Message-Id: <1387309356-17195-5-git-send-email-mporter@linaro.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1387309356-17195-1-git-send-email-mporter@linaro.org>
 References: <1387309356-17195-1-git-send-email-mporter@linaro.org>
@@ -35,49 +35,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unused Samsung-specific machine include and Kconfig
-dependency on S3C.
+Enable support for the dwc2 binding.
 
 Signed-off-by: Matt Porter <mporter@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
 ---
- drivers/usb/gadget/Kconfig     | 7 +++----
- drivers/usb/gadget/s3c-hsotg.c | 2 --
- 2 files changed, 3 insertions(+), 6 deletions(-)
+ drivers/usb/gadget/s3c-hsotg.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index a91e642..181e760 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -294,11 +294,10 @@ config USB_PXA27X
- 	   gadget drivers to also be dynamically linked.
- 
- config USB_S3C_HSOTG
--	tristate "S3C HS/OtG USB Device controller"
--	depends on S3C_DEV_USB_HSOTG
-+	tristate "Designware/S3C HS/OtG USB Device controller"
- 	help
--	  The Samsung S3C64XX USB2.0 high-speed gadget controller
--	  integrated into the S3C64XX series SoC.
-+	  The Designware USB2.0 high-speed gadget controller
-+	  integrated into many SoCs.
- 
- config USB_S3C2410
- 	tristate "S3C2410 USB Device Controller"
 diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index 9875d9c..db797f2 100644
+index db797f2..cbfbf41 100644
 --- a/drivers/usb/gadget/s3c-hsotg.c
 +++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -36,8 +36,6 @@
- #include <linux/usb/phy.h>
- #include <linux/platform_data/s3c-hsotg.h>
- 
--#include <mach/map.h>
--
- #include "s3c-hsotg.h"
- 
- static const char * const s3c_hsotg_supply_names[] = {
+@@ -3726,6 +3726,7 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
+ #ifdef CONFIG_OF
+ static const struct of_device_id s3c_hsotg_of_ids[] = {
+ 	{ .compatible = "samsung,s3c6400-hsotg", },
++	{ .compatible = "snps,dwc2", },
+ 	{ /* sentinel */ }
+ };
+ MODULE_DEVICE_TABLE(of, s3c_hsotg_of_ids);
 -- 
 1.8.4
 
