@@ -1,164 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514Ab3LQLA6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 06:00:58 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:62431 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab3LQLA5 (ORCPT
+	id S1752823Ab3LQLCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 06:02:41 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49843 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751390Ab3LQLCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 06:00:57 -0500
-Date: Tue, 17 Dec 2013 12:00:51 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alex Shi <alex.shi@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
-        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
- range flush v2
-Message-ID: <20131217110051.GA27701@gmail.com>
-References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
- <CA+55aFyNAigQqBk07xLpf0nkhZ_x-QkBYG8otRzsqg_8A2eg-Q@mail.gmail.com>
- <20131215155539.GM11295@suse.de>
- <20131216102439.GA21624@gmail.com>
- <20131216125923.GS11295@suse.de>
- <20131216134449.GA3034@gmail.com>
- <20131217092124.GV11295@suse.de>
+	Tue, 17 Dec 2013 06:02:39 -0500
+Date: Tue, 17 Dec 2013 11:01:54 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "jean.pihet@linaro.org" <jean.pihet@linaro.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Arnaldo <acme@ghostprotocols.net>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 0/3] ARM64: add perf support
+Message-ID: <20131217110154.GA7602@mudshark.cambridge.arm.com>
+References: <52af2f21.41590e0a.0251.ffffd94c@mx.google.com>
+ <20131217104534.GA27383@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131217092124.GV11295@suse.de>
+In-Reply-To: <20131217104534.GA27383@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mel Gorman <mgorman@suse.de> wrote:
-
-> On Mon, Dec 16, 2013 at 02:44:49PM +0100, Ingo Molnar wrote:
+On Tue, Dec 17, 2013 at 10:45:34AM +0000, Ingo Molnar wrote:
+> * jean.pihet@linaro.org <jean.pihet@linaro.org> wrote:
+> > From: Jean Pihet <jean.pihet@linaro.org>
 > > 
-> > * Mel Gorman <mgorman@suse.de> wrote:
+> > Add perf support for the AARCH64 architecture. This includes the
+> > support for:
+> > - AARCH64 perf registers definition and hooks,
+> > - compat mode registers use, i.e. profiling a 32-bit binary on
+> >    a 64-bit system,
+> > - unwinding using the dwarf information from the .debug_frame
+> >    section of the ELF binary; only in 64-bit mode,
+> > - unwinding using the frame pointer information; in 64-bit and
+> >    compat modes.
 > > 
-> > > > Whatever we did right in v3.4 we want to do in v3.13 as well - or 
-> > > > at least understand it.
-> > > 
-> > > Also agreed. I started a bisection before answering this mail. It 
-> > > would be cooler and potentially faster to figure it out from direct 
-> > > analysis but bisection is reliable and less guesswork.
+> > ToDo:
+> > - add support for unwinding using the dwarf information in compat
+> >    mode. This requires some changes to the libunwind code.
 > > 
-> > Trying to guess can potentially last a _lot_ longer than a generic, 
-> > no-assumptions bisection ...
+> > Tested on ARMv7 and ARMv8 platforms. The compat mode has been tested
+> > on ARMv8 using statically built 32-bit binaries.
 > > 
-> 
-> Indeed. In this case, it would have taken me a while to find the correct
-> problem because I would consider the affected area to be relatively stable.
-> 
-> > <SNIP>
-> >
-> > Does the benchmark execute a fixed amount of transactions per thread? 
 > > 
-> 
-> Yes.
-> 
-> > That might artificially increase the numeric regression: with more 
-> > threads it 'magnifies' any unfairness effects because slower threads 
-> > will become slower, faster threads will become faster, as the thread 
-> > count increases.
+> > Jean Pihet (3):
+> >   ARM64: perf: add support for perf registers API
+> >   ARM64: perf: wire up perf_regs and unwind support
+> >   ARM64: perf: add support for frame pointer unwinding in compat mode
 > > 
-> > [ That in itself is somewhat artificial, because real workloads tend 
-> >   to balance between threads dynamically and don't insist on keeping 
-> >   the fastest threads idle near the end of a run. It does not
-> >   invalidate the complaint about the unfairness itself, obviously. ]
-> > 
+> >  arch/arm64/Kconfig                        |  2 +
+> >  arch/arm64/include/asm/ptrace.h           |  1 +
+> >  arch/arm64/include/uapi/asm/Kbuild        |  1 +
+> >  arch/arm64/include/uapi/asm/perf_regs.h   | 40 ++++++++++++++
+> >  arch/arm64/kernel/Makefile                |  1 +
+> >  arch/arm64/kernel/perf_event.c            | 75 +++++++++++++++++++++++---
+> >  arch/arm64/kernel/perf_regs.c             | 46 ++++++++++++++++
+> >  tools/perf/arch/arm64/Makefile            |  7 +++
+> >  tools/perf/arch/arm64/include/perf_regs.h | 88 +++++++++++++++++++++++++++++++
+> >  tools/perf/arch/arm64/util/dwarf-regs.c   | 81 ++++++++++++++++++++++++++++
+> >  tools/perf/arch/arm64/util/unwind.c       | 82 ++++++++++++++++++++++++++++
+> >  tools/perf/config/Makefile                |  8 ++-
+> >  12 files changed, 423 insertions(+), 9 deletions(-)
+> >  create mode 100644 arch/arm64/include/uapi/asm/perf_regs.h
+> >  create mode 100644 arch/arm64/kernel/perf_regs.c
+> >  create mode 100644 tools/perf/arch/arm64/Makefile
+> >  create mode 100644 tools/perf/arch/arm64/include/perf_regs.h
+> >  create mode 100644 tools/perf/arch/arm64/util/dwarf-regs.c
+> >  create mode 100644 tools/perf/arch/arm64/util/unwind.c
 > 
-> I was wrong about fairness. The first bisection found that cache hotness
-> was a more important factor due to a small mistake made in 3.13-rc1
-> 
-> ---8<---
-> sched: Assign correct scheduling domain to sd_llc
-> 
-> Commit 42eb088e (sched: Avoid NULL dereference on sd_busy) corrected a NULL
-> dereference on sd_busy but the fix also altered what scheduling domain it
-> used for sd_llc. One impact of this is that a task selecting a runqueue may
-> consider idle CPUs that are not cache siblings as candidates for running.
-> Tasks are then running on CPUs that are not cache hot.
-> 
-> This was found through bisection where ebizzy threads were not seeing equal
-> performance and it looked like a scheduling fairness issue. This patch
-> mitigates but does not completely fix the problem on all machines tested
-> implying there may be an additional bug or a common root cause. Here are
-> the average range of performance seen by individual ebizzy threads. It
-> was tested on top of candidate patches related to x86 TLB range flushing.
-> 
-> 4-core machine
->                     3.13.0-rc3            3.13.0-rc3
->                        vanilla            fixsd-v3r3
-> Mean   1        0.00 (  0.00%)        0.00 (  0.00%)
-> Mean   2        0.34 (  0.00%)        0.10 ( 70.59%)
-> Mean   3        1.29 (  0.00%)        0.93 ( 27.91%)
-> Mean   4        7.08 (  0.00%)        0.77 ( 89.12%)
-> Mean   5      193.54 (  0.00%)        2.14 ( 98.89%)
-> Mean   6      151.12 (  0.00%)        2.06 ( 98.64%)
-> Mean   7      115.38 (  0.00%)        2.04 ( 98.23%)
-> Mean   8      108.65 (  0.00%)        1.92 ( 98.23%)
-> 
-> 8-core machine
-> Mean   1         0.00 (  0.00%)        0.00 (  0.00%)
-> Mean   2         0.40 (  0.00%)        0.21 ( 47.50%)
-> Mean   3        23.73 (  0.00%)        0.89 ( 96.25%)
-> Mean   4        12.79 (  0.00%)        1.04 ( 91.87%)
-> Mean   5        13.08 (  0.00%)        2.42 ( 81.50%)
-> Mean   6        23.21 (  0.00%)       69.46 (-199.27%)
-> Mean   7        15.85 (  0.00%)      101.72 (-541.77%)
-> Mean   8       109.37 (  0.00%)       19.13 ( 82.51%)
-> Mean   12      124.84 (  0.00%)       28.62 ( 77.07%)
-> Mean   16      113.50 (  0.00%)       24.16 ( 78.71%)
-> 
-> It's eliminated for one machine and reduced for another.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  kernel/sched/core.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index e85cda2..a848254 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4902,6 +4902,7 @@ DEFINE_PER_CPU(struct sched_domain *, sd_asym);
->  static void update_top_cache_domain(int cpu)
->  {
->  	struct sched_domain *sd;
-> +	struct sched_domain *busy_sd = NULL;
->  	int id = cpu;
->  	int size = 1;
->  
-> @@ -4909,9 +4910,9 @@ static void update_top_cache_domain(int cpu)
->  	if (sd) {
->  		id = cpumask_first(sched_domain_span(sd));
->  		size = cpumask_weight(sched_domain_span(sd));
-> -		sd = sd->parent; /* sd_busy */
-> +		busy_sd = sd->parent; /* sd_busy */
->  	}
-> -	rcu_assign_pointer(per_cpu(sd_busy, cpu), sd);
-> +	rcu_assign_pointer(per_cpu(sd_busy, cpu), busy_sd);
->  
->  	rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
->  	per_cpu(sd_llc_size, cpu) = size;
+> Arnaldo, AFAICS the main merging complexity will probably be on the 
+> perf tooling side, so if you are happy with these bits, mind picking 
+> them up into your tree?
 
-Indeed that makes a lot of sense, thanks Mel for tracking down this 
-part of the puzzle! Will get your fix to Linus ASAP.
+Hold your horses! I've got a few review comments on the series...
 
-Does this fix also speed up Ebizzy's transaction performance, or is 
-its main effect a reduction in workload variation noise?
-
-Also it appears the Ebizzy numbers ought to be stable enough now to 
-make the range-TLB-flush measurements more precise?
-
-Thanks,
-
-	Ingo
+Will
