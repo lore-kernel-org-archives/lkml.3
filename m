@@ -1,93 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab3LQUCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:02:49 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:35033 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027Ab3LQUCr (ORCPT
+	id S1753331Ab3LQUEx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:04:53 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:53044 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255Ab3LQUEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:02:47 -0500
-Date: Tue, 17 Dec 2013 17:02:39 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 13/14] tools lib traceevent: Get rid of die() in some
- string conversion funcitons
-Message-ID: <20131217200239.GE6517@ghostprotocols.net>
-References: <1386833777-3790-1-git-send-email-namhyung@kernel.org>
- <1386833777-3790-14-git-send-email-namhyung@kernel.org>
- <20131212184147.GE8164@ghostprotocols.net>
- <87y53phah9.fsf@sejong.aot.lge.com>
- <20131213145204.GC29275@ghostprotocols.net>
- <87sitth03c.fsf@sejong.aot.lge.com>
- <20131216124051.GA3598@ghostprotocols.net>
- <878uvkgx9f.fsf@sejong.aot.lge.com>
+	Tue, 17 Dec 2013 15:04:51 -0500
+Message-ID: <52B0AE5E.8040806@gmail.com>
+Date: Tue, 17 Dec 2013 12:04:46 -0800
+From: Rajat Jain <rajatjain.linux@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <878uvkgx9f.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yhlu.kernel@gmail.com>
+CC: Guenter Roeck <groeck@juniper.net>, Rajat Jain <rajatjain@juniper.net>,
+        Rajat Jain <rajatxjain@gmail.com>
+Subject: [PATCH v3 0/8] Allow Link state changes for Hot-Plug
+Content-Type: multipart/mixed;
+ boundary="------------020703040102090302050002"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 17, 2013 at 09:02:36AM +0900, Namhyung Kim escreveu:
-> On Mon, 16 Dec 2013 09:40:51 -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Mon, Dec 16, 2013 at 01:49:11PM +0900, Namhyung Kim escreveu:
-> >> On Fri, 13 Dec 2013 11:52:04 -0300, Arnaldo Carvalho de Melo wrote:
-> >> > All the rest is ok, so its just the malloc + strcpy that remains to be
-> >> > converted, do you want me to do it?
+This is a multi-part message in MIME format.
+--------------020703040102090302050002
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-> >> Hmm.. did you mean like this?
+Hello,
 
-> >> 		str = NULL;
-> >>                 if (val)
-> >>                 	asprintf(&str, "TRUE");
-> >>                 else
-> >>                 	asprintf(&str, "FALSE");
-> >>                 return str;
+This patch set enables the use of PCI Express link up and link down events
+for Hotplug or Unplug. Resending the patch after taking care of review
+comments, splitting patch into multiple smaller patches, and incorporating
+the conclusions drawn from the discussion here:
 
-> > More compact:
+http://marc.info/?t=138611014300001&r=1&w=2
 
-> > 	if (asprintf(&str, "%s", val ? "TRUE" : "FALSE") < 0)
-> > 		// error handling path
+Due to splitting of the patch, 4 new patches are added to the patchset,
+although the content is almost the same. 
 
-> > At that point str already is set to NULL.
+Patch v2 [1/4] = Patch v3 [1/8]
 
-> Okay, this is a new one:
+Patch v2 [2/8] = Patch v3 [2/8] +
+                 Patch v3 [3/8] +
+                 Patch v3 [4/8] +
+                 Patch v3 [5/8] +
+                 Patch v3 [6/8]
 
-Thanks, it all seems now, but just prior to applying this I noticed:
+Patch v2 [3/4] = Patch v3 [7/8]
 
-> Those functions are for stringify filter arguments.  As caller of
-> those functions handles NULL string properly, it seems that it's
-> enough to return NULL rather than calling die().
+Patch v2 [4/4] = Patch v3 [8/8]
 
-It handles NULL in what way? This comment:
+(As a side effect, this patch also fixes the bug 
+https://bugzilla.kernel.org/show_bug.cgi?id=65521 )
 
-> @@ -2369,7 +2340,7 @@ static char *arg_to_str(struct event_filter *filter, struct filter_arg *arg)
->   * Returns a string that displays the filter contents.
->   *  This string must be freed with free(str).
-> - *  NULL is returned if no filter is found.
-> + *  NULL is returned if no filter is found or allocation failed.
->   */
->  char *
->  pevent_filter_make_string(struct event_filter *filter, int event_id)
+I'd appreciate if you could please review and provide me with any comments.
 
-Made me a bit unconfortable, so if it handles NULL as a filter not
-found, how will it figure out what happened?
+Thanks,
 
-/me looks at the callers...
+Rajat
 
->From just a quick look I couldn't see cases where NULL could cause
-segfaults, but saw some cases where allocation errors would not be
-notified in any way to the user :-\
+Rajat Jain (8):
+  pciehp: Make check_link_active() non-static
+  pciehp: Use link change notifications for hot-plug and removal
+  pciehp: Enable link state change notifications
+  pciehp: Don't disable the link permanently, during removal
+  pciehp: Don't check for adapter or latch status while disabling
+  pciehp: Disabling the link notification across slot reset
+  pciehp: Ensure very fast hotplug events are also processed.
+  pciehp: Introduce hotplug_lock to serialize HP events
 
-Anyway, applying this patch, those are other kinds of problems, i.e. further
-fallout from converting from the previous panic()-at-alloc-failure approach.
+ drivers/pci/hotplug/pciehp.h      |    5 ++
+ drivers/pci/hotplug/pciehp_core.c |    7 +-
+ drivers/pci/hotplug/pciehp_ctrl.c |  152 ++++++++++++++++++++++++++++++-------
+ drivers/pci/hotplug/pciehp_hpc.c  |   73 +++++++++---------
+ 4 files changed, 171 insertions(+), 66 deletions(-)
 
-- Arnaldo
+-- 
+1.7.9.5
+
+
+--------------020703040102090302050002
+Content-Type: text/plain; charset=UTF-8;
+ name="Attached Message Part"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="Attached Message Part"
+
+
+--------------020703040102090302050002--
