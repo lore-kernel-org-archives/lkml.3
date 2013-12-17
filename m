@@ -1,89 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab3LQV1X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 16:27:23 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41966 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752204Ab3LQV1V (ORCPT
+	id S1754099Ab3LQV1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 16:27:55 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:33503 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751910Ab3LQV1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 16:27:21 -0500
-Date: Tue, 17 Dec 2013 21:27:09 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: Julian Calaby <julian.calaby@gmail.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Avinash Patil <avinashapatil@gmail.com>
-Message-ID: <20131217212709.GB5624@decadent.org.uk>
-References: <1342235583.20131211182804@eikelenboom.it>
- <CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com>
- <871324710.20131211191104@eikelenboom.it>
- <CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com>
- <1937118387.20131216122200@eikelenboom.it>
- <52AEE60B.6030509@broadcom.com>
- <19210260274.20131216135644@eikelenboom.it>
- <CAGRGNgXHemM2FfnXgW5RbzhFT+9SfUfVkjdysK3+=_u3hWSacw@mail.gmail.com>
- <1534126119.20131217104548@eikelenboom.it>
- <387552477.20131217213319@eikelenboom.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <387552477.20131217213319@eikelenboom.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't
- work.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	Tue, 17 Dec 2013 16:27:54 -0500
+Message-ID: <1387315669.2797.21.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] ipc: introduce ipc_valid_object() helper to sort out
+ IPC_RMID races
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Greg Thelen <gthelen@google.com>,
+        Manfred Spraul <manfred@colorfullife.com>
+Date: Tue, 17 Dec 2013 13:27:49 -0800
+In-Reply-To: <e70c06876f986f0ac7f2f104bab50edff4a524a0.1387302999.git.aquini@redhat.com>
+References: <e70c06876f986f0ac7f2f104bab50edff4a524a0.1387302999.git.aquini@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 09:33:19PM +0100, Sander Eikelenboom wrote:
-[...]
-> > It's the official Debian package.
-[...]
-> > I will report back when i have tested converting the wireless stuff to loadable modules / seeing if i can put the CRDA stuff in initrd.
+Ccing Manfred.
+
+On Tue, 2013-12-17 at 17:03 -0200, Rafael Aquini wrote:
+> After the locking semantics for the SysV IPC API got improved, a couple of
+> IPC_RMID race windows were opened because we ended up dropping the
+> 'kern_ipc_perm.deleted' check performed way down in ipc_lock().
+> The spotted races got sorted out by re-introducing the old test within
+> the racy critical sections.
 > 
-> With all the wireless stuff switched to loadable modules it *does* work.
+> This patch introduces ipc_valid_object() to consolidate the way we cope with
+> IPC_RMID races by using the same abstraction across the API implementation.
+
+This is certainly a good function to have. Some comments below.
+
 > 
-> So the problem is that:
-> The current code blocks all future regulatory domain setting attempts forever (till the next reboot)
-> when it can't find the CRDA. This can and does happen when the modules are compiled in and the CRDA is not in initrd.
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> ---
+>  ipc/msg.c  |  7 ++++---
+>  ipc/sem.c  |  8 ++++----
+>  ipc/shm.c  | 16 ++++++++--------
+>  ipc/util.h | 13 +++++++++++++
+>  4 files changed, 29 insertions(+), 15 deletions(-)
 > 
-> So from the question department:
-> 
-> A) Why doesn't the code timeout the processing of a regulatory domain hint and remove the pending request when it aborts ?
-> B) Why isn't the CRDA treated as firmware and placed in /lib/firmware, which has a much greater chance of automagically appearing in initrd ?
-[...]
+> diff --git a/ipc/msg.c b/ipc/msg.c
+> index 558aa91..8983ea5 100644
+> --- a/ipc/msg.c
+> +++ b/ipc/msg.c
+> @@ -696,7 +696,7 @@ long do_msgsnd(int msqid, long mtype, void __user *mtext,
+>  			goto out_unlock0;
+>  
+>  		/* raced with RMID? */
+> -		if (msq->q_perm.deleted) {
+> +		if (!ipc_valid_object(&msq->q_perm)) {
+>  			err = -EIDRM;
+>  			goto out_unlock0;
+>  		}
+> @@ -731,7 +731,8 @@ long do_msgsnd(int msqid, long mtype, void __user *mtext,
+>  		ipc_lock_object(&msq->q_perm);
+>  
+>  		ipc_rcu_putref(msq, ipc_rcu_free);
+> -		if (msq->q_perm.deleted) {
+> +		/* raced with RMID? */
+> +		if (!ipc_valid_object(&msq->q_perm)) {
+>  			err = -EIDRM;
+>  			goto out_unlock0;
+>  		}
+> @@ -909,7 +910,7 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp, int msgfl
+>  		ipc_lock_object(&msq->q_perm);
+>  
+>  		/* raced with RMID? */
+> -		if (msq->q_perm.deleted) {
+> +		if (!ipc_valid_object(&msq->q_perm)) {
+>  			msg = ERR_PTR(-EIDRM);
+>  			goto out_unlock0;
+>  		}
+> diff --git a/ipc/sem.c b/ipc/sem.c
+> index db9d241..f4fad32 100644
+> --- a/ipc/sem.c
+> +++ b/ipc/sem.c
+> @@ -1282,7 +1282,7 @@ static int semctl_setval(struct ipc_namespace *ns, int semid, int semnum,
+>  
+>  	sem_lock(sma, NULL, -1);
+>  
+> -	if (sma->sem_perm.deleted) {
+> +	if (!ipc_valid_object(&sma->sem_perm)) {
+>  		sem_unlock(sma, -1);
+>  		rcu_read_unlock();
+>  		return -EIDRM;
+> @@ -1342,7 +1342,7 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+>  		int i;
+>  
+>  		sem_lock(sma, NULL, -1);
+> -		if (sma->sem_perm.deleted) {
+> +		if (!ipc_valid_object(&sma->sem_perm)) {
+>  			err = -EIDRM;
+>  			goto out_unlock;
+>  		}
+> @@ -1435,7 +1435,7 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+>  		goto out_rcu_wakeup;
+>  
+>  	sem_lock(sma, NULL, -1);
+> -	if (sma->sem_perm.deleted) {
+> +	if (!ipc_valid_object(&sma->sem_perm)) {
+>  		err = -EIDRM;
+>  		goto out_unlock;
+>  	}
+> @@ -2068,7 +2068,7 @@ void exit_sem(struct task_struct *tsk)
+>  
+>  		sem_lock(sma, NULL, -1);
+>  		/* exit_sem raced with IPC_RMID, nothing to do */
+> -		if (sma->sem_perm.deleted) {
+> +		if (!ipc_valid_object(&sma->sem_perm)) {
+>  			sem_unlock(sma, -1);
+>  			rcu_read_unlock();
+>  			continue;
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index 7a51443..1bc68f1 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -975,6 +975,13 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
+>  			goto out_unlock1;
+>  
+>  		ipc_lock_object(&shp->shm_perm);
+> +
+> +		/* check if shm_destroy() is tearing down shp */
+> +		if (!ipc_valid_object(&shp->shm_perm)) {
+> +			err = -EIDRM;
+> +			goto out_unlock0;
+> +		}
+> +
+>  		if (!ns_capable(ns->user_ns, CAP_IPC_LOCK)) {
+>  			kuid_t euid = current_euid();
+>  			if (!uid_eq(euid, shp->shm_perm.uid) &&
+> @@ -989,13 +996,6 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
+>  		}
+>  
+>  		shm_file = shp->shm_file;
+> -
+> -		/* check if shm_destroy() is tearing down shp */
+> -		if (shm_file == NULL) {
+> -			err = -EIDRM;
+> -			goto out_unlock0;
+> -		}
 
-It doesn't make any logical sense to put a userland program in
-/lib/firmware, and it wouldn't have any effect on the initramfs
-builders I'm familiar with (which look at module metadata to work
-out which files to include from /lib/firmware).
+Ok, this seems safe, we can always rely on .deleted for validity since
+shm_destroy() ends up calling shm_rmid() which sets .deleted. So this
+change is really moving what we're checking against just a few
+instructions later.
 
-Debian official kernels use modular drivers, and neither
-initramfs-tools nor dracut includes wireless drivers in the initramfs.
-If you build a custom kernel with built-in drivers then you most
-likely don't need an initramfs at all.
+> -
+>  		if (is_file_hugepages(shm_file))
+>  			goto out_unlock0;
+>  
+> @@ -1116,7 +1116,7 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+>  	ipc_lock_object(&shp->shm_perm);
+>  
+>  	/* check if shm_destroy() is tearing down shp */
+> -	if (shp->shm_file == NULL) {
+> +	if (!ipc_valid_object(&shp->shm_perm)) {
+>  		ipc_unlock_object(&shp->shm_perm);
+>  		err = -EIDRM;
+>  		goto out_unlock;
+> diff --git a/ipc/util.h b/ipc/util.h
+> index 59d78aa..3a5f0d0 100644
+> --- a/ipc/util.h
+> +++ b/ipc/util.h
+> @@ -185,6 +185,19 @@ static inline void ipc_unlock(struct kern_ipc_perm *perm)
+>  	rcu_read_unlock();
+>  }
+>  
+> +/*
+> + * ipc_valid_object() - helper to sort out IPC_RMID races for codepaths
+> + * where the respective ipc_ids.rwsem is not being held down.
+> + * Checks whether the ipc object is still around or if it's gone already, as
+> + * ipc_rmid() may have already freed the ID while the ipc lock was spinning.
+> + * Needs to be called with kern_ipc_perm.lock held.
+> + */
+> +static inline bool ipc_valid_object(struct kern_ipc_perm *perm)
+> +{
+> +	assert_spin_locked(&perm->lock);
 
-As maintainer of crda in Debian, I could add an initramfs hook that
-would include it in an initramfs.  But I don't understand why it would
-be worth doing so.  Why is it so useful to have wireless drivers
-built-in *and* an initramfs?  If you think I should do this then open
-a bug (reportbug crda).
+This is already guaranteed, we don't need it (not that it's much of an
+overhead in any case). IMO the comment above explicitly saying to call
+it with the ipc lock held is enough.
 
-Ben.
 
--- 
-Ben Hutchings
-Life would be so much easier if we could look at the source code.
+> +	return perm->deleted == 0;
+
+We should turn this into a bool (yes, that's another patch).
+
+> +}
+> +
+>  struct kern_ipc_perm *ipc_obtain_object_check(struct ipc_ids *ids, int id);
+>  int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
+>  			struct ipc_ops *ops, struct ipc_params *params);
+
+
