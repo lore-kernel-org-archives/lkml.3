@@ -1,176 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab3LQRnN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 12:43:13 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:50267 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754625Ab3LQRnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 12:43:12 -0500
-Date: Tue, 17 Dec 2013 12:43:02 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/7] mm: page_alloc: Make zone distribution page aging
- policy configurable
-Message-ID: <20131217174302.GF21724@cmpxchg.org>
-References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
- <1386943807-29601-6-git-send-email-mgorman@suse.de>
- <20131216204215.GA21724@cmpxchg.org>
- <20131217152954.GA24067@suse.de>
- <20131217155435.GE21724@cmpxchg.org>
- <20131217161420.GG11295@suse.de>
+	id S1755136Ab3LQRq1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 12:46:27 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:47075 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753798Ab3LQRq0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 12:46:26 -0500
+Message-ID: <52B08DEB.5050304@hurleysoftware.com>
+Date: Tue, 17 Dec 2013 12:46:19 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131217161420.GG11295@suse.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Karl Dahlke <eklhad@comcast.net>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: Bug in tty cooked mode kernel 3.12.3
+References: <20131107184607.eklhad@comcast.net> <1386630367-4658-1-git-send-email-peter@hurleysoftware.com> <20131217173052.GA15633@kroah.com>
+In-Reply-To: <20131217173052.GA15633@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 04:14:20PM +0000, Mel Gorman wrote:
-> On Tue, Dec 17, 2013 at 10:54:35AM -0500, Johannes Weiner wrote:
-> > On Tue, Dec 17, 2013 at 03:29:54PM +0000, Mel Gorman wrote:
-> > > On Mon, Dec 16, 2013 at 03:42:15PM -0500, Johannes Weiner wrote:
-> > > > On Fri, Dec 13, 2013 at 02:10:05PM +0000, Mel Gorman wrote:
-> > > > > Commit 81c0a2bb ("mm: page_alloc: fair zone allocator policy") solved a
-> > > > > bug whereby new pages could be reclaimed before old pages because of
-> > > > > how the page allocator and kswapd interacted on the per-zone LRU lists.
-> > > > > Unfortunately it was missed during review that a consequence is that
-> > > > > we also round-robin between NUMA nodes. This is bad for two reasons
-> > > > > 
-> > > > > 1. It alters the semantics of MPOL_LOCAL without telling anyone
-> > > > > 2. It incurs an immediate remote memory performance hit in exchange
-> > > > >    for a potential performance gain when memory needs to be reclaimed
-> > > > >    later
-> > > > > 
-> > > > > No cookies for the reviewers on this one.
-> > > > > 
-> > > > > This patch makes the behaviour of the fair zone allocator policy
-> > > > > configurable.  By default it will only distribute pages that are going
-> > > > > to exist on the LRU between zones local to the allocating process. This
-> > > > > preserves the historical semantics of MPOL_LOCAL.
-> > > > > 
-> > > > > By default, slab pages are not distributed between zones after this patch is
-> > > > > applied. It can be argued that they should get similar treatment but they
-> > > > > have different lifecycles to LRU pages, the shrinkers are not zone-aware
-> > > > > and the interaction between the page allocator and kswapd is different
-> > > > > for slabs. If it turns out to be an almost universal win, we can change
-> > > > > the default.
-> > > > > 
-> > > > > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > > > > ---
-> > > > >  Documentation/sysctl/vm.txt |  32 ++++++++++++++
-> > > > >  include/linux/mmzone.h      |   2 +
-> > > > >  include/linux/swap.h        |   2 +
-> > > > >  kernel/sysctl.c             |   8 ++++
-> > > > >  mm/page_alloc.c             | 102 ++++++++++++++++++++++++++++++++++++++------
-> > > > >  5 files changed, 134 insertions(+), 12 deletions(-)
-> > > > > 
-> > > > > diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-> > > > > index 1fbd4eb..8eaa562 100644
-> > > > > --- a/Documentation/sysctl/vm.txt
-> > > > > +++ b/Documentation/sysctl/vm.txt
-> > > > > @@ -56,6 +56,7 @@ Currently, these files are in /proc/sys/vm:
-> > > > >  - swappiness
-> > > > >  - user_reserve_kbytes
-> > > > >  - vfs_cache_pressure
-> > > > > +- zone_distribute_mode
-> > > > >  - zone_reclaim_mode
-> > > > >  
-> > > > >  ==============================================================
-> > > > > @@ -724,6 +725,37 @@ causes the kernel to prefer to reclaim dentries and inodes.
-> > > > >  
-> > > > >  ==============================================================
-> > > > >  
-> > > > > +zone_distribute_mode
-> > > > > +
-> > > > > +Pages allocation and reclaim are managed on a per-zone basis. When the
-> > > > > +system needs to reclaim memory, candidate pages are selected from these
-> > > > > +per-zone lists.  Historically, a potential consequence was that recently
-> > > > > +allocated pages were considered reclaim candidates. From a zone-local
-> > > > > +perspective, page aging was preserved but from a system-wide perspective
-> > > > > +there was an age inversion problem.
-> > > > > +
-> > > > > +A similar problem occurs on a node level where young pages may be reclaimed
-> > > > > +from the local node instead of allocating remote memory. Unforuntately, the
-> > > > > +cost of accessing remote nodes is higher so the system must choose by default
-> > > > > +between favouring page aging or node locality. zone_distribute_mode controls
-> > > > > +how the system will distribute page ages between zones.
-> > > > > +
-> > > > > +0	= Never round-robin based on age
-> > > > 
-> > > > I think we should be very conservative with the userspace interface we
-> > > > export on a mechanism we are obviously just figuring out.
-> > > > 
-> > > 
-> > > And we have a proposal on how to limit this. I'll be layering another
-> > > patch on top and removes this interface again. That will allows us to
-> > > rollback one patch and still have a usable interface if necessary.
-> > > 
-> > > > > +Otherwise the values are ORed together
-> > > > > +
-> > > > > +1	= Distribute anon pages between zones local to the allocating node
-> > > > > +2	= Distribute file pages between zones local to the allocating node
-> > > > > +4	= Distribute slab pages between zones local to the allocating node
-> > > > 
-> > > > Zone fairness within a node does not affect mempolicy or remote
-> > > > reference costs.  Is there a reason to have this configurable?
-> > > > 
-> > > 
-> > > Symmetry
-> > > 
-> > > > > +The following three flags effectively alter MPOL_DEFAULT, be careful.
-> > > > > +
-> > > > > +8	= Distribute anon pages between zones remote to the allocating node
-> > > > > +16	= Distribute file pages between zones remote to the allocating node
-> > > > > +32	= Distribute slab pages between zones remote to the allocating node
-> > > > 
-> > > > Yes, it's conceivable that somebody might want to disable remote
-> > > > distribution because of the extra references.
-> > > > 
-> > > > But at this point, I'd much rather back out anon and slab distribution
-> > > > entirely, it was a mistake to include them.
-> > > > 
-> > > > That would leave us with a single knob to disable remote page cache
-> > > > placement.
-> > > > 
-> > > 
-> > > When looking at this closer I found that sysv is a weird exception. It's
-> > > file-backed as far as most of the VM is concerned but looks anonymous to
-> > > most applications that care. That and MAP_SHARED anonymous pages should
-> > > not be treated like files but we still want tmpfs to be treated as
-> > > files. Details will be in the changelog of the next series.
-> > 
-> > In what sense is it seen as file-backed?
-> 
-> sysv and anonymous pages are backed by an internal shmem mount point. In
-> lots of respects, it's looks like a file and quacks like a file but I expect
-> developers think of it being anonmous and chunks of the VM treats it like
-> it's anonymous. tmpfs uses the same paths and they get treated similar to
-> the VM as anon but users may think that tmpfs should be subject to the
-> fair allocation zone policy "because they're files." It's a sufficently
-> weird case that any action we take there should be deliberate. It'll be
-> a bit clearer when I post the patch that special cases this.
+On 12/17/2013 12:30 PM, Greg Kroah-Hartman wrote:
+> On Mon, Dec 09, 2013 at 06:06:07PM -0500, Peter Hurley wrote:
+>> On 12/07/2013 06:46 PM, Karl Dahlke wrote:
+>>> This may have appeared in 3.9.11 with the changes to tty.
+>>> Don't know; I just started running 3.12 from kernel.org.
+>>> Perhaps nobody saw it before because nobody runs command line programs,
+>>> we're all on desktops or x or whatever,
+>>> and even those in the command line are still raw.
+>>> bash is raw by default, but I run it cooked.
+>>> You can supress its readline functions like this.
+>>>
+>>> set +o emacs
+>>> set +o vi
+>>> set +o histexpand
+>>> set +o history
+>>>
+>>> That puts its tty back into cooked mode.
+>>>
+>>> Come up in run level 3, command line mode,
+>>> and bring up two consoles with bash in cooked mode as above.
+>>> Set a simple prompt like this.
+>>>
+>>> PS1='$ '
+>>>
+>>> Switch to console 2 via alt-f2.
+>>> Hit return.
+>>> The cursor should drop to a new line then give you the $ prompt.
+>>> But it puts the $ prompt next too the old one, then drops down
+>>> to a blank line.
+>>> The $ prompt and the crlf are out of sequence.
+>>> Hit return a few more times and it will straighten itself out.
+>>> Then switch back to console 1 alt-f1
+>>> Hit return and the same bug,
+>>> $ $
+>>>
+>>> hit return a few more times to straighten it out.
+>>> Switch back to console 2 and the same problem.
+>>> For me it's repeatable.
+>>>
+>>> It's also very confusing when I'm running other command line programs with cooked tty.
+>>> For unknown reasons the crlf can come out at the wrong time,
+>>> breaking lines or leaving lines together.
+>>> My editor can run either way, so I've switched it over to readline mode
+>>> and I haven't noticed any problems this way, yet.
+>>> But I would prefer the cooked mode.
+>>>
+>>> I looked through MAINTAINERS but couldn't find
+>>> a clear maintainer for drivers/tty/tty*.c
+>>> Please forward this to the appropriate people.
+>>
+>> Thanks for the report, Karl.
+>>
+>> Please test the patch below (requires
+>> commit 39434abd942c8e4b9c14c06a03b3245beaf8467f,
+>> 'n_tty: Fix missing newline echo').
+>> This should fix the 'newline output after the new prompt' problem.
+>>
+>> Note however that the other output order you observe is correct:
+>> you press enter, a newline is echoed to terminal which mixes
+>> with program output, the program ends, and the cooked mode
+>> shell outputs an extra prompt because it reads a newline (which
+>> the program did not read).
+>>
+>> Regards,
+>> Peter Hurley
+>>
+>> --- >% ---
+>> From: Peter Hurley <peter@hurleysoftware.com>
+>> Subject: [PATCH] n_tty: Fix apparent order of echoed output
+>>
+>> With block processing of echoed output, observed output order is still
+>> required. Push completed echoes and echo commands prior to output.
+>>
+>> Introduce echo_mark echo buffer index, which tracks completed echo
+>> commands; ie., those submitted via commit_echoes but which may not
+>> have been committed. Ensure that completed echoes are output prior
+>> to subsequent terminal writes in process_echoes().
+>>
+>> Fixes newline/prompt output order in cooked mode shell.
+>>
+>> Cc: <stable@vger.kernel.org> # 3.12.x : 39434ab n_tty: Fix missing newline echo
+>> Reported-by: Karl Dahlke <eklhad@comcast.net>
+>> Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+>> ---
+>>   drivers/tty/n_tty.c | 7 ++++++-
+>>   1 file changed, 6 insertions(+), 1 deletion(-)
+>
+> Do you want me to queue this up for 3.13-final, or have I already?
 
-The line I see here is mostly derived from performance expectations.
+Yes, please queue this for 3.13.
 
-People and programs expect anon, shmem/tmpfs etc. to be fast and avoid
-their reclaim at great costs, so they size this part of their workload
-according to memory size and locality.  Filesystem cache (on-disk) on
-the other hand is expected to be slow on the first fault and after it
-has been displaced by other data, but the kernel is mostly expected to
-maximize the caching effects in a predictable manner.
+Regards,
+Peter Hurley
 
-The round-robin policy makes the displacement predictable (think of
-the aging artifacts here where random pages do not get displaced
-reliably because they ended up on remote nodes) and it avoids IO by
-maximizing memory utilization.
-
-I.e. it improves behavior associated with a cache, but I don't expect
-shmem/tmpfs to be typically used as a disk cache.  I could be wrong
-about that, but I figure if you need named shared memory that is
-bigger than your memory capacity (the point where your tmpfs would
-actually turn into a disk cache), you'd be better of using a more
-efficient on-disk filesystem.
