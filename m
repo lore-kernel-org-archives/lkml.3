@@ -1,57 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab3LQNPD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:15:03 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:53541 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800Ab3LQNPA (ORCPT
+	id S1753920Ab3LQNPc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:15:32 -0500
+Received: from mail-gg0-f182.google.com ([209.85.161.182]:36847 "EHLO
+	mail-gg0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323Ab3LQNP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:15:00 -0500
-Date: Tue, 17 Dec 2013 14:14:56 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Alex Shi <alex.shi@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        H Peter Anvin <hpa@zytor.com>, Linux-X86 <x86@kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Tue, 17 Dec 2013 08:15:29 -0500
+Date: Tue, 17 Dec 2013 08:15:25 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH 2/3] x86: mm: Change tlb_flushall_shift for IvyBridge
-Message-ID: <20131217131456.GA28688@gmail.com>
-References: <1386849309-22584-3-git-send-email-mgorman@suse.de>
- <20131212131309.GD5806@gmail.com>
- <52A9BC3A.7010602@linaro.org>
- <20131212141147.GB17059@gmail.com>
- <52AA5C92.7030207@linaro.org>
- <52AA6CB9.60302@linaro.org>
- <20131214141902.GA16438@laptop.programming.kicks-ass.net>
- <20131214142741.GB16438@laptop.programming.kicks-ass.net>
- <20131216135901.GA6171@gmail.com>
- <52B03C84.1000600@linaro.org>
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH cgroup/for-3.13-fixes] cgroup: don't recycle cgroup id until
+ all csses' have been destroyed
+Message-ID: <20131217131525.GH29989@htj.dyndns.org>
+References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
+ <52AEC989.4080509@huawei.com>
+ <20131216095345.GB23582@dhcp22.suse.cz>
+ <20131216104042.GC23582@dhcp22.suse.cz>
+ <20131216163530.GH32509@htj.dyndns.org>
+ <20131216171937.GG26797@dhcp22.suse.cz>
+ <20131216172143.GJ32509@htj.dyndns.org>
+ <alpine.LNX.2.00.1312161718001.2037@eggly.anvils>
+ <52AFC163.5010507@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52B03C84.1000600@linaro.org>
+In-Reply-To: <52AFC163.5010507@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey,
 
-* Alex Shi <alex.shi@linaro.org> wrote:
+I updated the comment myself and applied the patch to
+cgroup/for-3.13-fixes.
 
-> > Building the kernel is obviously a prime workload - and given that 
-> > the kernel is active only about 10% of the time for a typical 
-> > kernel build, a 1-2% speedup means a 10-20% speedup in kernel 
-> > performance (which sounds a bit too good at first glance).
-> 
-> Maybe a extra time tlb flush causes more tlb refill that cost much 
-> user space time.
+Thanks!
+-------- 8< --------
+>From c1a71504e9715812a2d15e7c03b5aa147ae70ded Mon Sep 17 00:00:00 2001
+From: Li Zefan <lizefan@huawei.com>
+Date: Tue, 17 Dec 2013 11:13:39 +0800
 
-All these things are measurable, that way maybes can be converted into 
-certainty.
+Hugh reported this bug:
 
-Thanks,
+> CONFIG_MEMCG_SWAP is broken in 3.13-rc.  Try something like this:
+>
+> mkdir -p /tmp/tmpfs /tmp/memcg
+> mount -t tmpfs -o size=1G tmpfs /tmp/tmpfs
+> mount -t cgroup -o memory memcg /tmp/memcg
+> mkdir /tmp/memcg/old
+> echo 512M >/tmp/memcg/old/memory.limit_in_bytes
+> echo $$ >/tmp/memcg/old/tasks
+> cp /dev/zero /tmp/tmpfs/zero 2>/dev/null
+> echo $$ >/tmp/memcg/tasks
+> rmdir /tmp/memcg/old
+> sleep 1	# let rmdir work complete
+> mkdir /tmp/memcg/new
+> umount /tmp/tmpfs
+> dmesg | grep WARNING
+> rmdir /tmp/memcg/new
+> umount /tmp/memcg
+>
+> Shows lots of WARNING: CPU: 1 PID: 1006 at kernel/res_counter.c:91
+>                            res_counter_uncharge_locked+0x1f/0x2f()
+>
+> Breakage comes from 34c00c319ce7 ("memcg: convert to use cgroup id").
+>
+> The lifetime of a cgroup id is different from the lifetime of the
+> css id it replaced: memsw's css_get()s do nothing to hold on to the
+> old cgroup id, it soon gets recycled to a new cgroup, which then
+> mysteriously inherits the old's swap, without any charge for it.
 
-	Ingo
+Instead of removing cgroup id right after all the csses have been
+offlined, we should do that after csses have been destroyed.
+
+To make sure an invalid css pointer won't be returned after the css
+is destroyed, make sure css_from_id() returns NULL in this case.
+
+tj: Updated comment to note planned changes for cgrp->id.
+
+Reported-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index bcb1755..bc1dcab 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -890,6 +890,16 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+ 		struct cgroup *cgrp = dentry->d_fsdata;
+ 
+ 		BUG_ON(!(cgroup_is_dead(cgrp)));
++
++		/*
++		 * XXX: cgrp->id is only used to look up css's.  As cgroup
++		 * and css's lifetimes will be decoupled, it should be made
++		 * per-subsystem and moved to css->id so that lookups are
++		 * successful until the target css is released.
++		 */
++		idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
++		cgrp->id = -1;
++
+ 		call_rcu(&cgrp->rcu_head, cgroup_free_rcu);
+ 	} else {
+ 		struct cfent *cfe = __d_cfe(dentry);
+@@ -4268,6 +4278,7 @@ static void css_release(struct percpu_ref *ref)
+ 	struct cgroup_subsys_state *css =
+ 		container_of(ref, struct cgroup_subsys_state, refcnt);
+ 
++	rcu_assign_pointer(css->cgroup->subsys[css->ss->subsys_id], NULL);
+ 	call_rcu(&css->rcu_head, css_free_rcu_fn);
+ }
+ 
+@@ -4733,14 +4744,6 @@ static void cgroup_destroy_css_killed(struct cgroup *cgrp)
+ 	/* delete this cgroup from parent->children */
+ 	list_del_rcu(&cgrp->sibling);
+ 
+-	/*
+-	 * We should remove the cgroup object from idr before its grace
+-	 * period starts, so we won't be looking up a cgroup while the
+-	 * cgroup is being freed.
+-	 */
+-	idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
+-	cgrp->id = -1;
+-
+ 	dput(d);
+ 
+ 	set_bit(CGRP_RELEASABLE, &parent->flags);
+-- 
+1.8.4.2
+
