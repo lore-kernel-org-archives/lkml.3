@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab3LQHZd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 02:25:33 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:55710 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab3LQHZc (ORCPT
+	id S1752804Ab3LQH0F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 02:26:05 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:32916 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab3LQH0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 02:25:32 -0500
+	Tue, 17 Dec 2013 02:26:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <1387256873-21350-2-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <1387256873-21350-3-git-send-email-john.stultz@linaro.org>
 References: <1387256873-21350-1-git-send-email-john.stultz@linaro.org>
-	<1387256873-21350-2-git-send-email-john.stultz@linaro.org>
-Date: Mon, 16 Dec 2013 23:25:31 -0800
-X-Google-Sender-Auth: FXKAQ-EBWTrrUnfeHkkAihP0MBU
-Message-ID: <CAMbhsRSZAME6YDiexwUsqBGNJXnjxiA7gk_tCNoM=qcm74sfdg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] staging: ion: Add HAVE_MEMBLOCK config dependency
+	<1387256873-21350-3-git-send-email-john.stultz@linaro.org>
+Date: Mon, 16 Dec 2013 23:26:02 -0800
+X-Google-Sender-Auth: 4s5iBgHQwegRBcwHdcDwTu83ehk
+Message-ID: <CAMbhsRTczY7zwCAYtrXm9EsfT+BLnJy_rnbf35cFOQ_303ODCA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] staging: ion: Fix possible null pointer dereference
 From: Colin Cross <ccross@android.com>
 To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
         Android Kernel Team <kernel-team@android.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
         kbuild test robot <fengguang.wu@intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Colin Cross <ccross@android.com>
-
 On Mon, Dec 16, 2013 at 9:07 PM, John Stultz <john.stultz@linaro.org> wrote:
-> The kbuild test robot reported a build issue w/ ION on m68k:
+> The kbuild test robot reported:
 >
-> drivers/staging/android/ion/ion.c: In function 'ion_reserve':
-> drivers/staging/android/ion/ion.c:1526:4: error: implicit declaration of function 'memblock_alloc_base' [-Werror=implicit-function-declaration]
-> drivers/staging/android/ion/ion.c:1528:11: error: 'MEMBLOCK_ALLOC_ANYWHERE' undeclared (first use in this function)
-> drivers/staging/android/ion/ion.c:1528:11: note: each undeclared identifier is reported only once for each function it appears in
-> drivers/staging/android/ion/ion.c:1537:4: error: implicit declaration of function 'memblock_reserve' [-Werror=implicit-function-declaration]
->    cc1: some warnings being treated as errors
+> drivers/staging/android/ion/ion_system_heap.c:122 alloc_largest_available() error: potential null dereference 'info'.  (kmalloc returns null)
 >
-> This is caused by ION using memblock functionality which m68k doesn't support.
+> Where the pointer returned from kmalloc goes unchecked for failure.
 >
-> This patch adds a HAVE_MEMBLOCK dependency to the ION config.
+> This patch checks the return for NULL, and reworks the logic, as
+> suggested by Colin, so we allocate the page_info structure first.
 >
 > Cc: Colin Cross <ccross@android.com>
-> Cc: Android Kernel Team <kernel-team@android.com>
 > Cc: Greg KH <gregkh@linuxfoundation.org>
+> Cc: Android Kernel Team <kernel-team@android.com>
 > Cc: kbuild test robot <fengguang.wu@intel.com>
 > Reported-by: kbuild test robot <fengguang.wu@intel.com>
 > Signed-off-by: John Stultz <john.stultz@linaro.org>
 > ---
->  drivers/staging/android/ion/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
+>  drivers/staging/android/ion/ion_system_heap.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
 >
-> diff --git a/drivers/staging/android/ion/Kconfig b/drivers/staging/android/ion/Kconfig
-> index b95281e..a9a64ea 100644
-> --- a/drivers/staging/android/ion/Kconfig
-> +++ b/drivers/staging/android/ion/Kconfig
-> @@ -1,5 +1,6 @@
->  menuconfig ION
->         bool "Ion Memory Manager"
-> +       depends on HAVE_MEMBLOCK
->         select GENERIC_ALLOCATOR
->         select DMA_SHARED_BUFFER
->         ---help---
-> --
-> 1.8.3.2
+> diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
+> index 144b2272..7f07291 100644
+> --- a/drivers/staging/android/ion/ion_system_heap.c
+> +++ b/drivers/staging/android/ion/ion_system_heap.c
+> @@ -108,6 +108,10 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
+>         struct page_info *info;
+>         int i;
 >
-> To unsubscribe from this group and stop receiving emails from it, send an email to kernel-team+unsubscribe@android.com.
+> +       info = kmalloc(sizeof(struct page_info), GFP_KERNEL);
+> +       if (!info)
+> +               return NULL;
+> +
+>         for (i = 0; i < num_orders; i++) {
+>                 if (size < order_to_size(orders[i]))
+>                         continue;
+> @@ -118,11 +122,12 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
+>                 if (!page)
+>                         continue;
+>
+> -               info = kmalloc(sizeof(struct page_info), GFP_KERNEL);
+>                 info->page = page;
+>                 info->order = orders[i];
+>                 return info;
+>         }
+> +       kfree(info);
+> +
+>         return NULL;
+>  }
+>
+
+Acked-by: Colin Cross <ccross@android.com>
