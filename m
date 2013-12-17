@@ -1,377 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab3LQVAC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 16:00:02 -0500
-Received: from 9.mo4.mail-out.ovh.net ([46.105.40.176]:47503 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752081Ab3LQVAA (ORCPT
+	id S1753212Ab3LQVB5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 16:01:57 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:49568 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752031Ab3LQVBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 16:00:00 -0500
-X-Greylist: delayed 10799 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Dec 2013 16:00:00 EST
+	Tue, 17 Dec 2013 16:01:55 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmQIAIS7sFJ5LHyk/2dsb2JhbABZgwqDPLBthVCBIBd0giUBAQEEOhwjEAgDDgYECSUPBSUDIROIA8luFxaOfAeDI4ETBJgVikyHSYFtgVIo
+Date: Wed, 18 Dec 2013 08:01:37 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Rich Johnston <rjohnston@sgi.com>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, viro@zeniv.linux.org.uk, bpm@sgi.com,
+        tytso@mit.edu, adilger.kernel@dilger.ca, jack@suse.cz,
+        Namjae Jeon <namjae.jeon@samsung.com>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com, Ashish Sangwan <a.sangwan@samsung.com>,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v4 4/10] xfsprog: xfsio: Add support
+ FALLOC_FL_COLLAPSE_RANGE for fallocate
+Message-ID: <20131217210137.GF31386@dastard>
+References: <1386511890-3794-1-git-send-email-linkinjeon@gmail.com>
+ <52B08446.3080102@sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <52AFA5E0.7040707@hitachi.com>
-References: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
-	<52AFA5E0.7040707@hitachi.com>
-Date: Tue, 17 Dec 2013 18:22:53 +0100
-Message-ID: <CACh+v5NgwyAD5xy-feykUDXpzVUuF2yFxP35TsnGk3r+LFtRPA@mail.gmail.com>
-Subject: Re: [PATCH] Tracing events with GPIOs
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        tom.zanussi@linux.intel.com
-Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, rostedt@goodmis.org,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-Ovh-Tracer-Id: 9831076513562187800
-X-Ovh-Remote: 209.85.192.180 (mail-pd0-f180.google.com)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: 0
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: 0
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B08446.3080102@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/12/17 Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>:
-> (2013/12/17 9:22), Jean-Jacques Hiblot wrote:
->> This patch implements a new tracing mechanism based on kprobes and using GPIO.
->> Debugging with GPIO is very common in the embedded world. At least for those of us
->> fortunate enough to have an oscilloscope or a logic analyzer on their bench...
->> This is especially true if the issue results of a hardware/sofware interaction.
->>
->> Typical use cases are :
->> * mixed software/hardware debugging. For example when the software detects a
->>   situation of interest (typically an error) it toggles a GPIO to trigger the
->>   oscilloscope acquisition.
->> * direct latency/duration measurements.
->
-> Ah, it's interesting to me :)
->
-> And I think this feature should be built on the event triggers which
-> Tom is working on, instead of kprobes directly, because it allows
-> you to take gpio actions on normal tracepoints, and uprobes too :)
->
+On Tue, Dec 17, 2013 at 11:05:10AM -0600, Rich Johnston wrote:
+> This patch stands alone and has been committed.
+> 
+> Thanks
+> --Rich
+> 
+> commit ca692f162d36c871c9c1b6169136b2c70503f2d8
+> Author: Namjae Jeon <namjae.jeon@samsung.com>
+> Date:   Sun Dec 8 14:11:30 2013 +0000
+> 
+>     xfsprog: xfsio: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
 
-I'll make a version that uses this framework then. When it's ready
-I'll make some measurements to check the overhead of both solutions.
+<sigh>
 
-Tom,
-is git://git.yoctoproject.org/linux-yocto-contrib
-tzanussi/event-triggers-v11 the right starting point ?
+Rich, we've been here before:
 
-Thanks,
+19e73c9 Revert "[RESEND, 4/7] xfsprogs: xfsio: add support FALLOC_FL_COLLAPSE_RANGE"
 
-Jean-Jacques
+Please go back and read the discussion that lead to that revert.
 
-> Thank you!
->
->>
->> examples:
->> To trig the oscilloscope whenever a mmc command error:
->>   echo "p:my_mmc_blk_error mmc_blk_cmd_error gpiopulse@13" > /sys/kernel/debug/tracing/kprobe_events
->>   echo 1 > /sys/kernel/debug/tracing/events/kprobes/my_mmc_blk_error/enable
->>
->> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
->> ---
->>  kernel/trace/Kconfig        |  12 ++++
->>  kernel/trace/trace_kprobe.c | 167 +++++++++++++++++++++++++++++++++++++++++++-
->>  2 files changed, 177 insertions(+), 2 deletions(-)
->>
->> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
->> index 015f85a..4228768 100644
->> --- a/kernel/trace/Kconfig
->> +++ b/kernel/trace/Kconfig
->> @@ -420,6 +420,18 @@ config KPROBE_EVENT
->>         This option is also required by perf-probe subcommand of perf tools.
->>         If you want to use perf tools, this option is strongly recommended.
->>
->> +config KPROBE_EVENT_GPIO
->> +     depends on KPROBE_EVENT
->> +     depends on GPIOLIB
->> +     bool "Enable kprobes-based tracing of events via GPIO"
->> +     default n
->> +     help
->> +             This allows the user to use GPIOs as a tracing tool.The primary
->> +             purpose of this option is to allow the user to trigger an
->> +             oscilloscope on software events.
->> +             The GPIO can be set, cleared, toggled, or pulsed when the event
->> +             is hit.
->> +
->>  config UPROBE_EVENT
->>       bool "Enable uprobes-based dynamic events"
->>       depends on ARCH_SUPPORTS_UPROBES
->> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
->> index dae9541..5d297f5 100644
->> --- a/kernel/trace/trace_kprobe.c
->> +++ b/kernel/trace/trace_kprobe.c
->> @@ -19,6 +19,7 @@
->>
->>  #include <linux/module.h>
->>  #include <linux/uaccess.h>
->> +#include <linux/gpio.h>
->>
->>  #include "trace_probe.h"
->>
->> @@ -27,6 +28,33 @@
->>  /**
->>   * Kprobe event core functions
->>   */
->> +#ifdef CONFIG_KPROBE_EVENT_GPIO
->> +#define TP_GPIO_UNDEFINED      0
->> +#define TP_GPIO_CMD_SET                1
->> +#define TP_GPIO_CMD_CLEAR      2
->> +#define TP_GPIO_CMD_TOGGLE     3
->> +#define TP_GPIO_CMD_PULSE      4
->> +#define TP_GPIO_CMD_PULSE_HIGH 5
->> +#define TP_GPIO_CMD_PULSE_LOW  6
->> +
->> +static const struct {
->> +     const char *name;
->> +     int action;
->> +} gpio_actions[] = {
->> +     {"gpioset", TP_GPIO_CMD_SET},
->> +     {"gpioclear", TP_GPIO_CMD_CLEAR},
->> +     {"gpiotoggle", TP_GPIO_CMD_TOGGLE},
->> +     {"gpiopulse", TP_GPIO_CMD_PULSE},
->> +     {"gpiopulsehigh", TP_GPIO_CMD_PULSE_HIGH},
->> +     {"gpiopulselow", TP_GPIO_CMD_PULSE_LOW},
->> +};
->> +
->> +struct gpio_trace {
->> +     int gpio;
->> +     int action;
->> +};
->> +#endif
->> +
->>  struct trace_probe {
->>       struct list_head        list;
->>       struct kretprobe        rp;     /* Use rp.kp for kprobe use */
->> @@ -38,6 +66,9 @@ struct trace_probe {
->>       struct list_head        files;
->>       ssize_t                 size;           /* trace entry size */
->>       unsigned int            nr_args;
->> +#ifdef CONFIG_KPROBE_EVENT_GPIO
->> +     struct gpio_trace               gpio_trace;
->> +#endif
->>       struct probe_arg        args[];
->>  };
->>
->> @@ -164,10 +195,24 @@ error:
->>       return ERR_PTR(ret);
->>  }
->>
->> +static struct trace_probe *find_gpio_probe(int gpio)
->> +{
->> +     struct trace_probe *tp;
->> +
->> +     list_for_each_entry(tp, &probe_list, list)
->> +     if ((tp->gpio_trace.action) && (tp->gpio_trace.gpio == gpio))
->> +             return tp;
->> +     return NULL;
->> +}
->> +
->>  static void free_trace_probe(struct trace_probe *tp)
->>  {
->>       int i;
->>
->> +#ifdef CONFIG_KPROBE_EVENT_GPIO
->> +     if (tp->gpio_trace.action && !find_gpio_probe(tp->gpio_trace.gpio))
->> +             gpio_free(tp->gpio_trace.gpio);
->> +#endif
->>       for (i = 0; i < tp->nr_args; i++)
->>               traceprobe_free_probe_arg(&tp->args[i]);
->>
->> @@ -435,8 +480,14 @@ static int create_trace_probe(int argc, char **argv)
->>  {
->>       /*
->>        * Argument syntax:
->> -      *  - Add kprobe: p[:[GRP/]EVENT] [MOD:]KSYM[+OFFS]|KADDR [FETCHARGS]
->> -      *  - Add kretprobe: r[:[GRP/]EVENT] [MOD:]KSYM[+0] [FETCHARGS]
->> +      *  - Add kprobe: p[:[GRP/]EVENT] [MOD:]KSYM[+OFFS]|KADDR
->> +      *                [GPIOACTION@GPIONUM] [FETCHARGS]
->> +      *  - Add kretprobe: r[:[GRP/]EVENT] [MOD:]KSYM[+0]
->> +      *                   [GPIOACTION@GPIONUM] [FETCHARGS]
->> +      * Gpio tracing:
->> +      *   gpio action can be : gpioset, gpioclear, gpiotoggle, gpiopulse,
->> +      *                        gpiopulsehigh and gpiopulselow
->> +      *   gpionum is the id of the gpio
->>        * Fetch args:
->>        *  $retval     : fetch return value
->>        *  $stack      : fetch stack address
->> @@ -459,6 +510,9 @@ static int create_trace_probe(int argc, char **argv)
->>       unsigned long offset = 0;
->>       void *addr = NULL;
->>       char buf[MAX_EVENT_NAME_LEN];
->> +#ifdef CONFIG_KPROBE_EVENT_GPIO
->> +     int len;
->> +#endif
->>
->>       /* argc must be >= 1 */
->>       if (argv[0][0] == 'p')
->> @@ -541,6 +595,7 @@ static int create_trace_probe(int argc, char **argv)
->>                       return -EINVAL;
->>               }
->>       }
->> +
->>       argc -= 2; argv += 2;
->>
->>       /* setup a probe */
->> @@ -562,6 +617,66 @@ static int create_trace_probe(int argc, char **argv)
->>               return PTR_ERR(tp);
->>       }
->>
->> +#ifdef CONFIG_KPROBE_EVENT_GPIO
->> +     /* parse the optionnal gpio action argument */
->> +     for (i = 0; argc && (i < ARRAY_SIZE(gpio_actions)); i++) {
->> +             len = strlen(gpio_actions[i].name);
->> +             if (strncmp(argv[0], gpio_actions[i].name, len) == 0)
->> +                     break;
->> +     }
->> +
->> +     if (argc && (i < ARRAY_SIZE(gpio_actions))) {
->> +             int gpio;
->> +             unsigned long ul;
->> +             int gpio_requested = 0;
->> +             ret = -EINVAL;
->> +             if (argv[0][len] != '@') {
->> +                     pr_info("Syntax error. wrong gpio syntax\n");
->> +                     goto error;
->> +             }
->> +
->> +             if (kstrtoul(&argv[0][len+1], 0, &ul)) {
->> +                     pr_info("Failed to parse gpio number.\n");
->> +                     goto error;
->> +             }
->> +             gpio = ul;
->> +
->> +             if (!gpio_is_valid(gpio)) {
->> +                     pr_info("gpio %d is not valid.\n", gpio);
->> +                     goto error;
->> +             }
->> +
->> +             if (gpio_cansleep(gpio))
->> +                     pr_info("gpio %d can sleep. This may break your"
->> +                             "kernel!!!!!!\n", gpio);
->> +
->> +             if (!find_gpio_probe(gpio)) {
->> +                     ret = gpio_request(gpio, event);
->> +                     if (ret) {
->> +                             pr_info("can't request gpio %d.\n", gpio);
->> +                             goto error;
->> +                     }
->> +                     gpio_requested = 1;
->> +             }
->> +
->> +             if ((gpio_actions[i].action == TP_GPIO_CMD_CLEAR) ||
->> +                     (gpio_actions[i].action == TP_GPIO_CMD_PULSE_LOW))
->> +                     ret = gpio_direction_output(gpio, 1);
->> +             else
->> +                     ret = gpio_direction_output(gpio, 0);
->> +             if (ret) {
->> +                     pr_info("can't make gpio %d an output.\n", gpio);
->> +                     if (gpio_requested)
->> +                             gpio_free(gpio);
->> +                     goto error;
->> +             }
->> +
->> +             tp->gpio_trace.gpio = gpio;
->> +             tp->gpio_trace.action = gpio_actions[i].action;
->> +             argc -= 1; argv += 1;
->> +     }
->> +#endif
->> +
->>       /* parse arguments */
->>       ret = 0;
->>       for (i = 0; i < argc && i < MAX_TRACE_ARGS; i++) {
->> @@ -1145,12 +1260,54 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
->>  }
->>  #endif       /* CONFIG_PERF_EVENTS */
->>
->> +#ifdef CONFIG_KPROBE_EVENT_GPIO
->> +static __kprobes void kprobe_gpio_take_action(int gpio, int action)
->> +{
->> +     int val;
->> +     switch (action) {
->> +     case TP_GPIO_CMD_PULSE_HIGH:
->> +             gpio_set_value(gpio, 1);
->> +             /* intentionnaly don't break here */
->> +     case TP_GPIO_CMD_CLEAR:
->> +             gpio_set_value(gpio, 0);
->> +     break;
->> +
->> +     case TP_GPIO_CMD_PULSE_LOW:
->> +             gpio_set_value(gpio, 0);
->> +             /* intentionnaly don't break here */
->> +     case TP_GPIO_CMD_SET:
->> +             gpio_set_value(gpio, 1);
->> +     break;
->> +
->> +     case TP_GPIO_CMD_TOGGLE:
->> +             val = gpio_get_value(gpio);
->> +             gpio_set_value(gpio, val ? 0 : 1);
->> +     break;
->> +
->> +     case TP_GPIO_CMD_PULSE:
->> +             val = gpio_get_value(gpio);
->> +             gpio_set_value(gpio, val ? 0 : 1);
->> +             gpio_set_value(gpio, val);
->> +     break;
->> +     }
->> +}
->> +
->>  /*
->>   * called by perf_trace_init() or __ftrace_set_clr_event() under event_mutex.
->>   *
->>   * kprobe_trace_self_tests_init() does enable_trace_probe/disable_trace_probe
->>   * lockless, but we can't race with this __init function.
->>   */
->> +/* Kprobe gpio handler */
->> +static inline __kprobes void kprobe_gpio_func(struct trace_probe *tp,
->> +                                           struct pt_regs *regs)
->> +{
->> +     if (tp->gpio_trace.action)
->> +             kprobe_gpio_take_action(tp->gpio_trace.gpio,
->> +                                     tp->gpio_trace.action);
->> +}
->> +#endif /* CONFIG_KPROBE_EVENT_GPIO */
->> +
->>  static __kprobes
->>  int kprobe_register(struct ftrace_event_call *event,
->>                   enum trace_reg type, void *data)
->> @@ -1186,6 +1343,9 @@ int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs)
->>
->>       tp->nhit++;
->>
->> +#ifdef CONFIG_KPROBE_EVENT_GPIO
->> +     kprobe_gpio_func(tp, regs);
->> +#endif
->>       if (tp->flags & TP_FLAG_TRACE)
->>               kprobe_trace_func(tp, regs);
->>  #ifdef CONFIG_PERF_EVENTS
->> @@ -1202,6 +1362,9 @@ int kretprobe_dispatcher(struct kretprobe_instance *ri, struct pt_regs *regs)
->>
->>       tp->nhit++;
->>
->> +#ifdef CONFIG_KPROBE_EVENT_GPIO
->> +     kprobe_gpio_func(tp, regs);
->> +#endif
->>       if (tp->flags & TP_FLAG_TRACE)
->>               kretprobe_trace_func(tp, ri, regs);
->>  #ifdef CONFIG_PERF_EVENTS
->>
->
->
-> --
-> Masami HIRAMATSU
-> IT Management Research Dept. Linux Technology Center
-> Hitachi, Ltd., Yokohama Research Laboratory
-> E-mail: masami.hiramatsu.pt@hitachi.com
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-gpio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
