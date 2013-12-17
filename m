@@ -1,62 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab3LQNIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:08:11 -0500
-Received: from forward16.mail.yandex.net ([95.108.253.141]:36677 "EHLO
-	forward16.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab3LQNIJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:08:09 -0500
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-In-Reply-To: <20131217124656.GI21999@twins.programming.kicks-ass.net>
-References: <49231385567953@web4m.yandex.ru>
- <20131213154211.GP21999@twins.programming.kicks-ass.net>
- <122071387281778@web18h.yandex.ru> <20131217124656.GI21999@twins.programming.kicks-ass.net>
-Subject: Re: [PATCH] sched/rt: Fix rq's cpupri leak while enqueue/dequeue child RT entities
+	id S1753755Ab3LQNIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:08:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55136 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753668Ab3LQNIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 08:08:23 -0500
+Message-ID: <52B04CC4.2020301@suse.cz>
+Date: Tue, 17 Dec 2013 14:08:20 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Message-Id: <96341387285682@web18g.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Tue, 17 Dec 2013 17:08:02 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Sasha Levin <sasha.levin@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, joern@logfs.org,
+        Michel Lespinasse <walken@google.com>, stable@kernel.org
+Subject: Re: [PATCH 2/3] mm: munlock: fix deadlock in __munlock_pagevec()
+References: <52AE07B4.4020203@oracle.com>	<1387188856-21027-1-git-send-email-vbabka@suse.cz>	<1387188856-21027-3-git-send-email-vbabka@suse.cz> <20131216163120.28218456e2c870c4c1bfce1e@linux-foundation.org>
+In-Reply-To: <20131216163120.28218456e2c870c4c1bfce1e@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-17.12.2013, 16:47, "Peter Zijlstra" <peterz@infradead.org>:
-> On Tue, Dec 17, 2013 at 04:02:58PM +0400, Kirill Tkhai wrote:
+On 12/17/2013 01:31 AM, Andrew Morton wrote:
+> On Mon, 16 Dec 2013 11:14:15 +0100 Vlastimil Babka <vbabka@suse.cz> wrote:
 >
->> š13.12.2013, 19:42, "Peter Zijlstra" <peterz@infradead.org>:
->>> šOn Wed, Nov 27, 2013 at 07:59:13PM +0400, Kirill Tkhai wrote:
->>>> ššThis patch touches RT group scheduling case.
->>>>
->>>> ššFunctions inc_rt_prio_smp() and dec_rt_prio_smp() change (global) rq's priority,
->>>> ššwhile rt_rq passed to them may be not the top-level rt_rq. This is wrong, because
->>>> ššchanging of priority on a child level does not guarantee that the priority is
->>>> ššthe highest all over the rq. So, this leak makes RT balancing unusable.
->>>>
->>>> ššThe short example: the task having the highest priority among all rq's RT tasks
->>>> šš(no one other task has the same priority) are waking on a throttle rt_rq.
->>>> ššThe rq's cpupri is set to the task's priority equivalent, but real
->>>> ššrq->rt.highest_prio.curr is less.
->>>>
->>>> ššThe patch below fixes the problem.
->>>>
->>>> ššIt looks like all version have this bug, so I CC'ed stable mailing list.
->>> šYeah, I think this is right.
->>>
->>> šcpupri stuff should indeed only be changed for the top level group.
->> šIngo, are you going to apply this patch? Or will you give any comments?
+>> Commit 7225522bb ("mm: munlock: batch non-THP page isolation and
+>> munlock+putback using pagevec" introduced __munlock_pagevec() to speed up
+>> munlock by holding lru_lock over multiple isolated pages. Pages that fail to
+>> be isolated are put_back() immediately, also within the lock.
+>>
+>> This can lead to deadlock when __munlock_pagevec() becomes the holder of the
+>> last page pin and put_back() leads to __page_cache_release() which also locks
+>> lru_lock. The deadlock has been observed by Sasha Levin using trinity.
+>>
+>> This patch avoids the deadlock by deferring put_back() operations until
+>> lru_lock is released. Another pagevec (which is also used by later phases
+>> of the function is reused to gather the pages for put_back() operation.
+>>
+>> ...
+>>
 >
-> I queued it, Ingo should get it through me somewhere today if all things
-> go well.
->
-> Thanks
+> Thanks for fixing this one.  I'll cross it off the rather large list of
+> recent MM regressions :(
 
-Thanks, Peter
+Well I made this one in the first place :/
+
+>> --- a/mm/mlock.c
+>> +++ b/mm/mlock.c
+>> @@ -295,10 +295,12 @@ static void __munlock_pagevec(struct pagevec *pvec, struct zone *zone)
+>>   {
+>>   	int i;
+>>   	int nr = pagevec_count(pvec);
+>> -	int delta_munlocked = -nr;
+>> +	int delta_munlocked;
+>>   	struct pagevec pvec_putback;
+>>   	int pgrescued = 0;
+>>
+>> +	pagevec_init(&pvec_putback, 0);
+>> +
+>>   	/* Phase 1: page isolation */
+>>   	spin_lock_irq(&zone->lru_lock);
+>>   	for (i = 0; i < nr; i++) {
+>> @@ -327,16 +329,22 @@ skip_munlock:
+>>   			/*
+>>   			 * We won't be munlocking this page in the next phase
+>>   			 * but we still need to release the follow_page_mask()
+>> -			 * pin.
+>> +			 * pin. We cannot do it under lru_lock however. If it's
+>> +			 * the last pin, __page_cache_release would deadlock.
+>>   			 */
+>> +			pagevec_add(&pvec_putback, pvec->pages[i]);
+>>   			pvec->pages[i] = NULL;
+>> -			put_page(page);
+>> -			delta_munlocked++;
+>>   		}
+>>   	}
+>> +	delta_munlocked = -nr + pagevec_count(&pvec_putback);
+>>   	__mod_zone_page_state(zone, NR_MLOCK, delta_munlocked);
+>>   	spin_unlock_irq(&zone->lru_lock);
+>>
+>> +	/* Now we can release pins of pages that we are not munlocking */
+>> +	for (i = 0; i < pagevec_count(&pvec_putback); i++) {
+>> +		put_page(pvec_putback.pages[i]);
+>> +	}
+>> +
+>
+> We could just do
+>
+> --- a/mm/mlock.c~mm-munlock-fix-deadlock-in-__munlock_pagevec-fix
+> +++ a/mm/mlock.c
+> @@ -341,12 +341,9 @@ skip_munlock:
+>   	spin_unlock_irq(&zone->lru_lock);
+>
+>   	/* Now we can release pins of pages that we are not munlocking */
+> -	for (i = 0; i < pagevec_count(&pvec_putback); i++) {
+> -		put_page(pvec_putback.pages[i]);
+> -	}
+> +	pagevec_release(&pvec_putback);
+>
+>   	/* Phase 2: page munlock */
+> -	pagevec_init(&pvec_putback, 0);
+>   	for (i = 0; i < nr; i++) {
+>   		struct page *page = pvec->pages[i];
+>
+
+Yeah that looks nicer.
+
+> The lru_add_drain() is unnecessary overhead here.  What do you think?
+
+I would expect these isolation failures to be sufficiently rare so that 
+it doesn't matter. Especially in process exit path which was the 
+original target of my munlock work. But I don't have any numbers and my 
+mmtests benchmark for munlock is most likely too simple to trigger this. 
+But even once per pagevec the drain shouldn't hurt I guess...
 
