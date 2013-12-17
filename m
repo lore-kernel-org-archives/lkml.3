@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab3LQIMI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 03:12:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47037 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751188Ab3LQIMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 03:12:05 -0500
-Date: Tue, 17 Dec 2013 09:12:02 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@gmail.com>
-Cc: Vladimir Davydov <vdavydov@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, devel@openvz.org,
-        Glauber Costa <glommer@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 1/2] memcg: fix memcg_size() calculation
-Message-ID: <20131217081202.GA26640@dhcp22.suse.cz>
-References: <965cbb70fb55fe50a77382537b9a1b7455deac86.1387007793.git.vdavydov@parallels.com>
- <20131216164730.GD26797@dhcp22.suse.cz>
- <CAA6-i6rX7-F9UO2DO3gwC2SHNuSv2Fn48eLb1BZmc3HjCkbuvQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA6-i6rX7-F9UO2DO3gwC2SHNuSv2Fn48eLb1BZmc3HjCkbuvQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752958Ab3LQIOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 03:14:14 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:43344 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001Ab3LQIOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 03:14:12 -0500
+Subject: Re: [RFC PATCH] net, tun: remove the flow cache
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Reply-To: wuzhy@linux.vnet.ibm.com
+To: Stephen Hemminger <stephen@networkplumber.org>
+Cc: Zhi Yong Wu <zwu.kernel@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net, mst@redhat.com,
+        jasowang@redhat.com
+Date: Tue, 17 Dec 2013 16:13:58 +0800
+In-Reply-To: <20131216234736.781457cd@samsung-9.home.lan>
+References: <1387265182-27312-1-git-send-email-zwu.kernel@gmail.com>
+	 <20131216234736.781457cd@samsung-9.home.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1387268041.7571.10.camel@f15>
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121708-9332-0000-0000-00000285002B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 17-12-13 11:48:20, Glauber Costa wrote:
-> On Mon, Dec 16, 2013 at 8:47 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> > On Sat 14-12-13 12:15:33, Vladimir Davydov wrote:
-> >> The mem_cgroup structure contains nr_node_ids pointers to
-> >> mem_cgroup_per_node objects, not the objects themselves.
-> >
-> > Ouch! This is 2k per node which is wasted. What a shame I haven't
-> > noticed this back then when reviewing 45cf7ebd5a033 (memcg: reduce the
-> > size of struct memcg 244-fold)
-> >
-> IIRC, they weren't pointers back then. I think they were embedded in
-> the structure, and I let
-> them embedded.
-> My mind may be tricking me, but I think I recall that Johannes changed
-> them to pointers
-> in a later time. No ?
+On Mon, 2013-12-16 at 23:47 -0800, Stephen Hemminger wrote:
+> On Tue, 17 Dec 2013 15:26:22 +0800
+> Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
+> 
+> > From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> > 
+> > The flow cache is an extremely broken concept, and it usually brings up
+> > growth issues and DoS attacks, so this patch is trying to remove it from
+> > the tuntap driver, and insteadly use a simpler way for its flow control.
+> > 
+> > Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> > ---
+> >  drivers/net/tun.c |  208 +++--------------------------------------------------
+> >  1 files changed, 10 insertions(+), 198 deletions(-)
+> > 
+> > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> > index 7c8343a..7c27fdc 100644
+> > --- a/drivers/net/tun.c
+> > +++ b/drivers/net/tun.c
+> > @@ -32,12 +32,15 @@
+> >   *
+> >   *  Daniel Podlejski <underley@underley.eu.org>
+> >   *    Modifications for 2.3.99-pre5 kernel.
+> > + *
+> > + *  Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> > + *    Remove the flow cache.
+> >   */
+> 
+> I agree with your patch, but please don't add to the comment changelog.
+> These are all historical. The kernel development process has not used
+> them for 5+ years.
+> 
+> Can we get kernel janitors to just remove them, or would that step
+> on too many early developers toes by removing credit?
+I thought that it is a big code change, and need to add some changelog
+for this, but you seem to have a big argue. :) I don't object to
+removing my comment in its changelog if other guys also agree with you.
 
-It was wrapped by mem_cgroup_lru_info back then but the memcg_size
-hasn't changed after 54f72fe022d9 (memcg: clean up memcg->nodeinfo) so
-the missing * was there since 45cf7ebd5a033
 
-> In any case, this is correct.
+> 
 
 -- 
-Michal Hocko
-SUSE Labs
+Regards,
+
+Zhi Yong Wu
+
