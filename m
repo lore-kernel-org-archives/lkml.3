@@ -1,40 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab3LQPDX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:03:23 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:53546 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543Ab3LQPDW (ORCPT
+	id S1754304Ab3LQPDj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 10:03:39 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:35818 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754133Ab3LQPDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:03:22 -0500
-Message-ID: <52B067AD.2050907@gmail.com>
-Date: Tue, 17 Dec 2013 08:03:09 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 17 Dec 2013 10:03:35 -0500
+Date: Tue, 17 Dec 2013 15:03:28 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 2/5] regulator: s5m8767: Do not use sec_reg* regmap
+ helpers
+Message-ID: <20131217150328.GB32283@lee--X1>
+References: <1387286601-21646-1-git-send-email-k.kozlowski@samsung.com>
+ <1387286601-21646-3-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>
-CC: Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, namhyung@kernel.org, artagnon@gmail.com,
-        jolsa@redhat.com
-Subject: Re: [PATCH 5/5 v2] perf timechart: add emphasize option
-References: <1385995056-20158-1-git-send-email-stfomichev@yandex-team.ru> <20131216193800.GA19283@ghostprotocols.net> <20131217093855.GA3345@stfomichev-desktop> <20131217112303.GB27791@gmail.com> <20131217121522.GA6357@stfomichev-desktop> <20131217133821.GA6517@ghostprotocols.net> <20131217134137.GA29396@gmail.com> <20131217135923.GB6517@ghostprotocols.net> <20131217140608.GA29975@gmail.com> <20131217141532.GC6517@ghostprotocols.net>
-In-Reply-To: <20131217141532.GC6517@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1387286601-21646-3-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/13, 7:15 AM, Arnaldo Carvalho de Melo wrote:
-> Just tried it here, and on fedora 18 one doesn't even needs the
-> --color=always,
+On Tue, 17 Dec 2013, Krzysztof Kozlowski wrote:
 
-Default aliases:
+> Replace calls to sec_reg* helpers with direct usage of regmap API. The
+> sec_reg* helpers are error-prone as they mix u8 with unsigned int and
+> order of some of parameters (val and mask in sec_reg_update()).
+> 
+> Also the helpers do not give any way of useful abstraction as they just
+> call corresponding regmap function.
+> 
+> This patch replaces:
+>  - sec_reg_read() with regmap_read(),
+>  - sec_reg_write() with regmap_write(),
+>  - sec_reg_update() with regmap_update_bits().
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> ---
+>  drivers/regulator/s5m8767.c |   71 +++++++++++++++++++++++++------------------
+>  1 file changed, 41 insertions(+), 30 deletions(-)
+> 
 
-$ alias
-alias egrep='egrep --color=auto'
-alias fgrep='fgrep --color=auto'
-alias grep='grep --color=auto'
+Mark,
 
+As this is heavily reliant on the previous patch, feel free to
+take it through the Regulator tree.
+
+Acked-by: Lee Jones <lee.jones@linaro.org>
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
