@@ -1,36 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab3LQUQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:16:58 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:48675 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593Ab3LQUQ5 (ORCPT
+	id S1753310Ab3LQUSB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:18:01 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:20842 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751140Ab3LQUR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:16:57 -0500
-Date: Tue, 17 Dec 2013 15:16:56 -0500 (EST)
-Message-Id: <20131217.151656.2218064732946772466.davem@davemloft.net>
-To: khoroshilov@ispras.ru
-Cc: dhowells@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RXRPC]: do not unlock unheld spinlock in
- rxrpc_connect_exclusive()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1386975369-30837-1-git-send-email-khoroshilov@ispras.ru>
-References: <1386975369-30837-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 17 Dec 2013 15:17:59 -0500
+Date: Tue, 17 Dec 2013 15:17:53 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com
+Subject: [PATCH] sched, deadline: Properly initialize def_dl_bandwidth lock
+Message-ID: <20131217151753.58834399@gandalf.local.home>
+In-Reply-To: <20131217122720.950475833@infradead.org>
+References: <20131217122720.950475833@infradead.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 17 Dec 2013 12:16:57 -0800 (PST)
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Date: Sat, 14 Dec 2013 02:56:09 +0400
 
-> +		_net("CONNECT EXCL old %d on TRANS %d",
-> +		     conn->debug_id, conn->trans->debug_id);
+Spinlocks even in structures require to be properly initialized.
 
-Please do not add more of these ad-hoc kernel log tracing entries.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Thanks.
+Index: linux-rt.git/kernel/sched/deadline.c
+===================================================================
+--- linux-rt.git.orig/kernel/sched/deadline.c
++++ linux-rt.git/kernel/sched/deadline.c
+@@ -18,7 +18,9 @@
+ 
+ #include <linux/slab.h>
+ 
+-struct dl_bandwidth def_dl_bandwidth;
++struct dl_bandwidth def_dl_bandwidth = {
++	.dl_runtime_lock = __RAW_SPIN_LOCK_UNLOCKED(def_dl_bandwidth.dl_runtime_lock),
++};
+ 
+ static inline struct task_struct *dl_task_of(struct sched_dl_entity *dl_se)
+ {
