@@ -1,211 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab3LQNAI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:00:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54809 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751302Ab3LQNAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:00:06 -0500
-Message-ID: <52B04AD2.2070406@suse.cz>
-Date: Tue, 17 Dec 2013 14:00:02 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753494Ab3LQNAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:00:15 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34332 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352Ab3LQNAL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 08:00:11 -0500
+Date: Tue, 17 Dec 2013 13:00:07 +0000
+From: Mark Brown <broonie@kernel.org>
+To: "Anson.Huang@freescale.com" <Anson.Huang@freescale.com>
+Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20131217130007.GZ3185@sirena.org.uk>
+References: <1387228827-933-1-git-send-email-b20788@freescale.com>
+ <20131216185753.GN3185@sirena.org.uk>
+ <c9e35710598c4a66823e67fd4f81c0d7@BY2PR03MB315.namprd03.prod.outlook.com>
+ <20131217122923.GT3185@sirena.org.uk>
+ <A9C48E12-97A7-4A66-98EB-BA7BC23F27B3@freescale.com>
 MIME-Version: 1.0
-To: Bob Liu <bob.liu@oracle.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, joern@logfs.org,
-        Michel Lespinasse <walken@google.com>, stable@kernel.org
-Subject: Re: [PATCH 1/3] mm: munlock: fix a bug where THP tail page is encountered
-References: <52AE07B4.4020203@oracle.com> <1387188856-21027-1-git-send-email-vbabka@suse.cz> <1387188856-21027-2-git-send-email-vbabka@suse.cz> <52AFA845.3060109@oracle.com>
-In-Reply-To: <52AFA845.3060109@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AMgu92tiTAjHNJcM"
+Content-Disposition: inline
+In-Reply-To: <A9C48E12-97A7-4A66-98EB-BA7BC23F27B3@freescale.com>
+X-Cookie: Yow!  I threw up on my window!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: anatop: add is_enabled interface
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2013 02:26 AM, Bob Liu wrote:
-> On 12/16/2013 06:14 PM, Vlastimil Babka wrote:
->> Since commit ff6a6da60 ("mm: accelerate munlock() treatment of THP pages")
->> munlock skips tail pages of a munlocked THP page. However, when the head page
->> already has PageMlocked unset, it will not skip the tail pages.
->>
->> Commit 7225522bb ("mm: munlock: batch non-THP page isolation and
->> munlock+putback using pagevec") has added a PageTransHuge() check which
->> contains VM_BUG_ON(PageTail(page)). Sasha Levin found this triggered using
->> trinity, on the first tail page of a THP page without PageMlocked flag.
->>
->> This patch fixes the issue by skipping tail pages also in the case when
->> PageMlocked flag is unset. There is still a possibility of race with THP page
->> split between clearing PageMlocked and determining how many pages to skip.
->> The race might result in former tail pages not being skipped, which is however
->> no longer a bug, as during the skip the PageTail flags are cleared.
->>
->> However this race also affects correctness of NR_MLOCK accounting, which is to
->> be fixed in a separate patch.
->>
->> Cc: stable@kernel.org
->> Reported-by: Sasha Levin <sasha.levin@oracle.com>
->> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
->> ---
->>   mm/mlock.c | 24 ++++++++++++++++++------
->>   1 file changed, 18 insertions(+), 6 deletions(-)
->>
->> diff --git a/mm/mlock.c b/mm/mlock.c
->> index d480cd6..3847b13 100644
->> --- a/mm/mlock.c
->> +++ b/mm/mlock.c
->> @@ -148,21 +148,30 @@ static void __munlock_isolation_failed(struct page *page)
->>    */
->>   unsigned int munlock_vma_page(struct page *page)
->>   {
->> -	unsigned int page_mask = 0;
->> +	unsigned int nr_pages;
->>   
->>   	BUG_ON(!PageLocked(page));
->>   
->>   	if (TestClearPageMlocked(page)) {
->> -		unsigned int nr_pages = hpage_nr_pages(page);
->> +		nr_pages = hpage_nr_pages(page);
-> 
-> This line can be put before the if.
 
-But that would just "help" the race so that it thinks it munlocked a whole THP page
-which however got split before the flag was cleared. If I'm correct about patch 3,
-then this is moot anyway.
- 
->>   		mod_zone_page_state(page_zone(page), NR_MLOCK, -nr_pages);
->> -		page_mask = nr_pages - 1;
->>   		if (!isolate_lru_page(page))
->>   			__munlock_isolated_page(page);
->>   		else
->>   			__munlock_isolation_failed(page);
->> +	} else {
->> +		nr_pages = hpage_nr_pages(page);
->>   	}
->>   
->> -	return page_mask;
->> +	/*
->> +	 * Regardless of the original PageMlocked flag, we determine nr_pages
->> +	 * after touching the flag. This leaves a possible race with a THP page
->> +	 * split, such that a whole THP page was munlocked, but nr_pages == 1.
->> +	 * Returning a smaller mask due to that is OK, the worst that can
->> +	 * happen is subsequent useless scanning of the former tail pages.
->> +	 * The NR_MLOCK accounting can however become broken.
->> +	 */
->> +	return nr_pages - 1;
->>   }
-> 
-> Personally, I'd prefer to make munlock_vma_page() return void.
+--AMgu92tiTAjHNJcM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I would prefer that too but patch 3 needs it again, so I left it as it is here.
-As for comment, here's a revised patch that adds it:
+On Tue, Dec 17, 2013 at 12:38:33PM +0000, Anson.Huang@freescale.com wrote:
 
-------8<------
-From: Vlastimil Babka <vbabka@suse.cz>
-Date: Fri, 13 Dec 2013 14:25:21 +0100
-Subject: [PATCH 1/3] mm: munlock: fix a bug where THP tail page is encountered
+> > better to add the error checking there wouldn't it?
 
-Since commit ff6a6da60 ("mm: accelerate munlock() treatment of THP pages")
-munlock skips tail pages of a munlocked THP page. However, when the head page
-already has PageMlocked unset, it will not skip the tail pages.
+> Okay, than what about other functions? there is such condition check
+> there is other functions too, that is why I add it here. if you think
+> it is no necessary, I will remove this check in my patch?
 
-Commit 7225522bb ("mm: munlock: batch non-THP page isolation and
-munlock+putback using pagevec") has added a PageTransHuge() check which
-contains VM_BUG_ON(PageTail(page)). Sasha Levin found this triggered using
-trinity, on the first tail page of a THP page without PageMlocked flag.
+It shouldn't be in the other functions either.
 
-This patch fixes the issue by skipping tail pages also in the case when
-PageMlocked flag is unset. There is still a possibility of race with THP page
-split between clearing PageMlocked and determining how many pages to skip.
-The race might result in former tail pages not being skipped, which is however
-no longer a bug, as during the skip the PageTail flags are cleared.
+> > This sounds like you need to have some higher level synchronisation
+> > between whatever is managing this supply and your cpufreq driver - if
+> > you rely on reading back the current status from the hardware there will
+> > always be races between reading the state and the other thing doing the
+> > enable or disable.
 
-However this race also affects correctness of NR_MLOCK accounting, which is to
-be fixed in a separate patch.
+> yes, you are right. but I think we have handled that, all the
+> operations of this LDO will via regulator interface, and regulator
+> framework already has mutex lock. so there should be no such race in
+> kernel as long as we all use regulator interface to access anatop LDO.
 
-Cc: stable@kernel.org
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
----
- mm/mlock.c | 29 ++++++++++++++++++++++-------
- 1 file changed, 22 insertions(+), 7 deletions(-)
+No, that's not going to work.  Consider this sequence:
 
-diff --git a/mm/mlock.c b/mm/mlock.c
-index d480cd6..c59c420 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -133,7 +133,10 @@ static void __munlock_isolation_failed(struct page *page)
- 
- /**
-  * munlock_vma_page - munlock a vma page
-- * @page - page to be unlocked
-+ * @page - page to be unlocked, either a normal page or THP page head
-+ *
-+ * returns the size of the page as a page mask (0 for normal page,
-+ *         HPAGE_PMD_NR - 1 for THP head page)
-  *
-  * called from munlock()/munmap() path with page supposedly on the LRU.
-  * When we munlock a page, because the vma where we found the page is being
-@@ -148,21 +151,30 @@ static void __munlock_isolation_failed(struct page *page)
-  */
- unsigned int munlock_vma_page(struct page *page)
- {
--	unsigned int page_mask = 0;
-+	unsigned int nr_pages;
- 
- 	BUG_ON(!PageLocked(page));
- 
- 	if (TestClearPageMlocked(page)) {
--		unsigned int nr_pages = hpage_nr_pages(page);
-+		nr_pages = hpage_nr_pages(page);
- 		mod_zone_page_state(page_zone(page), NR_MLOCK, -nr_pages);
--		page_mask = nr_pages - 1;
- 		if (!isolate_lru_page(page))
- 			__munlock_isolated_page(page);
- 		else
- 			__munlock_isolation_failed(page);
-+	} else {
-+		nr_pages = hpage_nr_pages(page);
- 	}
- 
--	return page_mask;
-+	/*
-+	 * Regardless of the original PageMlocked flag, we determine nr_pages
-+	 * after touching the flag. This leaves a possible race with a THP page
-+	 * split, such that a whole THP page was munlocked, but nr_pages == 1.
-+	 * Returning a smaller mask due to that is OK, the worst that can
-+	 * happen is subsequent useless scanning of the former tail pages.
-+	 * The NR_MLOCK accounting can however become broken.
-+	 */
-+	return nr_pages - 1;
- }
- 
- /**
-@@ -440,7 +452,8 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
- 
- 	while (start < end) {
- 		struct page *page = NULL;
--		unsigned int page_mask, page_increm;
-+		unsigned int page_mask;
-+		unsigned long page_increm;
- 		struct pagevec pvec;
- 		struct zone *zone;
- 		int zoneid;
-@@ -490,7 +503,9 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
- 				goto next;
- 			}
- 		}
--		page_increm = 1 + (~(start >> PAGE_SHIFT) & page_mask);
-+		/* It's a bug to munlock in the middle of a THP page */
-+		VM_BUG_ON((start >> PAGE_SHIFT) & page_mask);
-+		page_increm = 1 + page_mask;
- 		start += page_increm * PAGE_SIZE;
- next:
- 		cond_resched();
--- 
-1.8.4
+	cpufreq		other driver
+			disable()
+	is_enabled()
+			enable()
 
+The locking the regulator core does won't help you here, nothing stops
+the state of the regulator changing after it's read.  Your cpufreq
+driver should just change the voltage and not worry if the regulator is
+enabled, the voltage change won't have any effect while the regulator is
+off and presumably if it does get enabled then it needs to be enabled at
+whatever voltage cpufreq set anyway.
 
+In any case I'd be much happier with this patch if it implemented the
+enable and disable operations as well.
+
+--AMgu92tiTAjHNJcM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSsErUAAoJELSic+t+oim94Z4QAJfq0Hnrt1sVDNxJKOlh87vC
+aJa/4HHE4yDmEI0klo3gBme+H1LXYhispir502UyyDCF+wySwH8BOtUZ7QG8k85i
+3z7k6ZZ+6MoTF1eiWHsTwvWFoYv6E22q2ODVqNwWnLKbpcMMY6DmYeuUS6UNx3/5
+loP2lktb0P5TG1Qy0ft21l1PmxPZaNaanz/eskvERO8L/VMTO4KLkqs7RozxedLQ
+WR2qrdxcJSin1MOOaTZ4ifSigHFptAEojkoXA5p18PcD9lIa7sC69EWg6M8WTnYO
+ad3FRe/5+hytBTvqF8ds7e3rQpyJUD7R/L4xWJaKpaOUi7BZmYtgQTAqTZblE5n1
+EPrrmTUa9vUHXBw1J/EiS8Qn5mhjhYY+PtjmxSE8s/DPCi7whYcy6tmpk2qSxkC/
+z5AjfiOjThBcYXgTL6nsxLfa8YP7sq3AqzE6CQ3YvVUb98lsEebH8S2Uw/4dJje/
+c0gFpXfXOl5wJyNvKgETeYwWOrzonlf4XTCM/cxqSdj5OiRdll7DDinFnApOEPsP
+yW1W5qXm6oz0Kjv6PoBwbiFsgqFQm0mHZkUZ0sj9KiVQj0Ua2+szNSNxNJy97X/Y
+onlNrKxmDT471xizmnor09hUmeyBD7G0wYfQRLjWqjHo0AnQTYAT/4bTfnn40sep
+CcMqJA5NKCAjGSNgiTWb
+=3qpD
+-----END PGP SIGNATURE-----
+
+--AMgu92tiTAjHNJcM--
