@@ -1,136 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab3LQQRf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 11:17:35 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:59430 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502Ab3LQQRd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 11:17:33 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, wsa@the-dreams.de, linus.walleij@linaro.org,
-        linux-sh@vger.kernel.org, horms@verge.net.au
-Subject: Re: [PATCH 02/05 v2] pinctrl: sh-pfc: r7s72100 base support
-Date: Tue, 17 Dec 2013 17:17:52 +0100
-Message-ID: <1495224.jieznL8M7N@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131217023804.24573.82351.sendpatchset@w520>
-References: <20131217023745.24573.3660.sendpatchset@w520> <20131217023804.24573.82351.sendpatchset@w520>
+	id S1754309Ab3LQQUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:20:00 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:58767 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753495Ab3LQQT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 11:19:58 -0500
+Date: Tue, 17 Dec 2013 10:20:07 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/3] Change how we determine when to hand out THPs
+Message-ID: <20131217162006.GH18680@sgi.com>
+References: <20131212180037.GA134240@sgi.com>
+ <20131213214437.6fdbf7f2.akpm@linux-foundation.org>
+ <20131216171214.GA15663@sgi.com>
+ <20131216175111.GD21218@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131216175111.GD21218@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
-
-Thank you for the patch.
-
-On Tuesday 17 December 2013 11:38:04 Magnus Damm wrote:
-> From: Magnus Damm <damm@opensource.se>
+On Mon, Dec 16, 2013 at 06:51:11PM +0100, Andrea Arcangeli wrote:
+> On Mon, Dec 16, 2013 at 11:12:15AM -0600, Alex Thorlton wrote:
+> > As it stands right now, yes, since we're pulling a 512 page contiguous
+> > chunk off the free list, everything from that chunk will reside on the
+> > same node, but as I (stupidly) forgot to mention in my original e-mail,
+> > one piece I have yet to add is the functionality to put the remaining
+> > unfaulted pages from our chunk *back* on the free list after we give up
+> > on handing out a THP.  Once this is in there, things will behave more
+> > like they do when THP is turned completely off, i.e. pages will get
+> > faulted in closer to the CPU that first referenced them once we give up
+> > on handing out the THP.
 > 
-> Add r7s72100 PINCTRL support via sh-pfc V2. At this point the code
-> provides enough support to allow use together with the gpio-rz
-> driver. Incremental per-device patches will in the future be
-> submitted on top of this base patch to allow PINCTRL enablement
-> for each individual device.
+> The only problem is the additional complexity and the slowdown to the
+> common cases that benefit from THP immediately.
+
+Agreed.  I understand that jobs which perform well with the current
+behavior will be adversely affected by the change.  My thinking here was
+that we could at least reach a middle ground between jobs that don't
+like THP, and jobs that perform well with it, allowing them both to run
+without users having to use a malloc hook or something similar to
+achieve that goal, especially considering some cases where malloc hooks
+for madvise aren't an option.
+
+> > Yes.  Due to the time it takes to search for the temporary THP, I'm sure
+> > we won't get down to 76 secs, but hopefully we'll get close.  I'm also
 > 
-> Signed-off-by: Magnus Damm <damm@opensource.se>
-> ---
+> Did you consider using MADV_NOHUGEPAGE?
 > 
->  Changes since V1:
->  - Moved RZ_PORT_PIN() macro
->  - Make use of _GP_GPIO() for 16-bit bank support
->  - Updated _P_DATA() and _P_FN() to control PIPC
+> Clearly this will disable it not just on NUMA, but NUMA vs non-NUMA
+> the problem is pretty much the same. You may want to verify if your
+> runs faster on non-NUMA too, with MADV_NOHUGEPAGE.
 > 
->  Thanks to Laurent for the review.
+> If every thread only touches 1 subpage of every hugepage mapped, the
+> number of TLB misses will be lower with many 4k d-TLB than with fewer
+> 2M d-TLB entries. The only benefit that remains from THP in such case
+> is that the TLB miss is faster with THP and that's not always enough
+> to offset the cost of the increased number of TLB misses.
 > 
->  drivers/pinctrl/sh-pfc/Kconfig        |    5 +
->  drivers/pinctrl/sh-pfc/Makefile       |    1
->  drivers/pinctrl/sh-pfc/core.c         |    9 +
->  drivers/pinctrl/sh-pfc/core.h         |    1
->  drivers/pinctrl/sh-pfc/pfc-r7s72100.c |  161 ++++++++++++++++++++++++++++++
->  5 files changed, 177 insertions(+)
+> But MADV_NOHUGEPAGE is made specifically to tune for those non common
+> cases and if you know what the app is doing and you know the faster
+> TLB miss is a win despite the fewer 2M TLB entries on non-NUMA, you
+> could do:
+> 
+>       if (numnodes() > 1)
+>       	 madvise(MADV_NOHUGEPAGE, ...);
 
-[snip]
+Please see this thread where I discussed some of the problems we ran
+into with madvise, also this touches on the per-process fix that you
+mention below:
 
-> --- /dev/null
-> +++ work/drivers/pinctrl/sh-pfc/pfc-r7s72100.c	2013-12-17
-> 10:47:26.000000000 +0900
-> @@ -0,0 +1,161 @@
+https://lkml.org/lkml/2013/8/2/671
 
-[snip]
+This message in particular:
 
-> +#define RZ_PORT_PIN(bank, pin) (((bank) * 16) + (pin))
+https://lkml.org/lkml/2013/8/2/697
 
-Could you please move this macro to the next patch where it gets use d?
+> 
+> > considering switching the linked list that stores the temporary THPs
+> > over to an rbtree to make that search faster, just fyi.
+> 
+> Problem is that it'll be still slower than no change.
+> 
+> I'm certainly not against trying to make the kernel smarter to
+> optimize for non common workloads, but if the default behavior shall
+> not change and this is a tweak the admin should tune manually, I'd
+> like an explanation of why the non privileged MADV_NOHUGEPAGE madvise
+> is worse solution for this than a privileged tweak in sysfs that the
+> root user may also forget if not careful.
+> 
+> The problem in all this, is that this is a tradeoff and depending on
+> the app anything in between the settings "never" and "always" could be
+> optimal.
+> 
+> The idea was just to map THP whenever possible by default to keep the
+> kernel simpler and to gain the maximum performance from the faster TLB
+> miss immediately (and hopefully offset those cases were the number of
+> TLB misses doesn't decrease with THP enabled, like probably your app,
+> and at the same time avoiding the need later for a THP collapsing
+> event that requires TLB flushes and will add additional costs). For
+> what is extreme and just wants THP off, I thought MADV_NOHUGEPAGE
+> would be fine solution.
+>
+> I doubt we can change the default behavior, at the very least it would
+> require lots of benchmarking and the only benchmarking I've seen here
+> is for the corner case app which may actually run the fastest with
+> MADV_NOHUGEPAGE than with a intermediate threshold.
+> 
+> If we instead we need an intermediate threshold less aggressive than
+> MADV_NOHUGEPAGE, I think the tweaks should be per-process and not
+> privileged, like MADV_NOHUGEPAGE. Because by definition of the
+> tradeoff, every app could have its own preferred threshold. And like
+> your app wants THP off, the majority still wants it on without
+> intermediate steps. So with a system wide setting you can't make
+> everyone happy unless you're like #osv in a VM running a single app.
 
-> +static const struct sh_pfc_pin_group pinmux_groups[] = {
-> +};
-> +
-> +static const struct sh_pfc_function pinmux_functions[] = {
-> +};
-> +
-> +#define PFC_REG(idx, name, reg)						\
-> +	{ PINMUX_CFG_REG(__stringify(name), reg, 16, 1) {		\
-> +		P_##idx##_15_##name##_0, P_##idx##_15_##name##_1,	\
-> +		P_##idx##_14_##name##_0, P_##idx##_14_##name##_1,	\
-> +		P_##idx##_13_##name##_0, P_##idx##_13_##name##_1,	\
-> +		P_##idx##_12_##name##_0, P_##idx##_12_##name##_1,	\
-> +		P_##idx##_11_##name##_0, P_##idx##_11_##name##_1,	\
-> +		P_##idx##_10_##name##_0, P_##idx##_10_##name##_1,	\
-> +		P_##idx##_9_##name##_0, P_##idx##_9_##name##_1,		\
-> +		P_##idx##_8_##name##_0, P_##idx##_8_##name##_1,		\
-> +		P_##idx##_7_##name##_0, P_##idx##_7_##name##_1,		\
-> +		P_##idx##_6_##name##_0, P_##idx##_6_##name##_1,		\
-> +		P_##idx##_5_##name##_0, P_##idx##_5_##name##_1,		\
-> +		P_##idx##_4_##name##_0, P_##idx##_4_##name##_1,		\
-> +		P_##idx##_3_##name##_0, P_##idx##_3_##name##_1,		\
-> +		P_##idx##_2_##name##_0, P_##idx##_2_##name##_1,		\
-> +		P_##idx##_1_##name##_0, P_##idx##_1_##name##_1,		\
-> +		P_##idx##_0_##name##_0, P_##idx##_0_##name##_1 }	\
-> +	}
-> +
-> +#define PFC_REGS(idx)						\
-> +	PFC_REG(idx, PMC, (0xfcfe3400 + (idx * 4))),		\
-> +	PFC_REG(idx, PFC, (0xfcfe3500 + (idx * 4))),		\
-> +	PFC_REG(idx, PFCE, (0xfcfe3600 + (idx * 4))),		\
-> +	PFC_REG(idx, PFCAE, (0xfcfe3a00 + (idx * 4))),		\
-> +	PFC_REG(idx, PIBC, (0xfcfe7000 + (idx * 4))),		\
-> +	PFC_REG(idx, PBDC, (0xfcfe7100 + (idx * 4))),		\
-> +	PFC_REG(idx, PIPC, (0xfcfe7200 + (idx * 4)))
-> +
-> +static struct pinmux_cfg_reg pinmux_config_regs[] = {
-> +	PFC_REGS(0), PFC_REGS(1), PFC_REGS(2), PFC_REGS(3),
-> +	PFC_REGS(4), PFC_REGS(5), PFC_REGS(6), PFC_REGS(7),
-> +	PFC_REGS(8), PFC_REGS(9), PFC_REGS(10), PFC_REGS(11),
-> +	PFC_REG(12, PMC, 0xfcfe7b40),
-> +	PFC_REG(12, PIBC, 0xfcfe7f00),
-> +	{ },
-> +};
-> +
-> +const struct sh_pfc_soc_info r7s72100_pinmux_info = {
-> +	.name = "r7s72100_pfc",
-> +
-> +	.function = { PINMUX_FUNCTION_BEGIN, PINMUX_FUNCTION_END },
-> +
-> +	.pins = pinmux_pins,
-> +	.nr_pins = ARRAY_SIZE(pinmux_pins),
-> +	.groups = pinmux_groups,
-> +	.nr_groups = ARRAY_SIZE(pinmux_groups),
-> +	.functions = pinmux_functions,
-> +	.nr_functions = ARRAY_SIZE(pinmux_functions),
-> +
-> +	.cfg_regs = pinmux_config_regs,
-> +
-> +	.gpio_data = pinmux_data,
-> +	.gpio_data_size = ARRAY_SIZE(pinmux_data),
-> +};
+The thread I mention above originally proposed a per-process switch to
+disable THP without the use of madvise, but it was not very well 
+received.  I'm more than willing to revisit that idea, and possibly
+meld the two (a per-process threshold, instead of a big-hammer on-off
+swtich).  Let me know if that seems preferable to this idea and we can
+discuss.
 
--- 
-Regards,
+Thanks for the input!
 
-Laurent Pinchart
-
+- Alex
