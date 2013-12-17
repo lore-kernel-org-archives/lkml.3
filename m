@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab3LQMAV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 07:00:21 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:45592 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab3LQMAT (ORCPT
+	id S1753299Ab3LQMIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 07:08:32 -0500
+Received: from forward5h.mail.yandex.net ([84.201.186.23]:34217 "EHLO
+	forward5h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab3LQMIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 07:00:19 -0500
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Xiubo Li <Li.Xiubo@freescale.com>, mark.rutland@arm.com,
-        s.hauer@pengutronix.de, galak@codeaurora.org, swarren@wwwdotorg.org,
-        t.figa@samsung.com, grant.likely@linaro.org, matt.porter@linaro.org,
-        rob@landley.net, ian.campbell@citrix.com, pawel.moll@arm.com,
-        rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org,
-        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        Alison Wang <b18965@freescale.com>,
-        Jingchang Lu <b35083@freescale.com>
-Subject: Re: [PATCHv7 1/4] pwm: Add Freescale FTM PWM driver support
-Date: Tue, 17 Dec 2013 13:00:10 +0100
-Message-ID: <5295539.cCkPY1PpyC@flatron>
-User-Agent: KMail/4.11.4 (Linux/3.12.2-gentoo; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <20131217115136.GT4360@n2100.arm.linux.org.uk>
-References: <1386925027-16288-1-git-send-email-Li.Xiubo@freescale.com> <20131217111020.GF13823@ulmo.nvidia.com> <20131217115136.GT4360@n2100.arm.linux.org.uk>
+	Tue, 17 Dec 2013 07:08:30 -0500
+X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Dec 2013 07:08:30 EST
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+In-Reply-To: <20131213154211.GP21999@twins.programming.kicks-ass.net>
+References: <49231385567953@web4m.yandex.ru> <20131213154211.GP21999@twins.programming.kicks-ass.net>
+Subject: Re: [PATCH] sched/rt: Fix rq's cpupri leak while enqueue/dequeue child RT entities
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Message-Id: <122071387281778@web18h.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Tue, 17 Dec 2013 16:02:58 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 of December 2013 11:51:36 Russell King - ARM Linux wrote:
-> On Tue, Dec 17, 2013 at 12:10:22PM +0100, Thierry Reding wrote:
-> > On Fri, Dec 13, 2013 at 04:57:04PM +0800, Xiubo Li wrote:
-> > > +static inline u32 fsl_pwm_readl(struct fsl_pwm_chip *fpc,
-> > > +		const void __iomem *addr)
-> > > +{
-> > > +	u32 val;
-> > > +
-> > > +	val = __raw_readl(addr);
-> > > +
-> > > +	if (likely(fpc->big_endian))
-> > 
-> > The likely() probably isn't very useful in this case. But if you want to
-> > keep it, it should at least be reversed, since little-endian is actually
-> > the default (you have to specify the big-endian property to activate the
-> > big endian mode).
-> > 
-> > > +		val = be32_to_cpu(val);
-> > > +	else
-> > > +		val = le32_to_cpu(val);
-> 
-> This will also cause sparse errors, because when sparse is enabled, these
-> expect __le32 or __be32 arguments, not u32.
 
-My question is why can't you just create two sets of accessors, one big
-endian and one little endian, add two function pointers to your
-fsl_pwm_chip struct and let the driver set the to correct accessors in
-probe?
 
-This would eliminate the problem with types Russell mentioned and IMHO
-make the code cleaner.
+13.12.2013, 19:42, "Peter Zijlstra" <peterz@infradead.org>:
+> On Wed, Nov 27, 2013 at 07:59:13PM +0400, Kirill Tkhai wrote:
+>
+>> šThis patch touches RT group scheduling case.
+>>
+>> šFunctions inc_rt_prio_smp() and dec_rt_prio_smp() change (global) rq's priority,
+>> šwhile rt_rq passed to them may be not the top-level rt_rq. This is wrong, because
+>> šchanging of priority on a child level does not guarantee that the priority is
+>> šthe highest all over the rq. So, this leak makes RT balancing unusable.
+>>
+>> šThe short example: the task having the highest priority among all rq's RT tasks
+>> š(no one other task has the same priority) are waking on a throttle rt_rq.
+>> šThe rq's cpupri is set to the task's priority equivalent, but real
+>> šrq->rt.highest_prio.curr is less.
+>>
+>> šThe patch below fixes the problem.
+>>
+>> šIt looks like all version have this bug, so I CC'ed stable mailing list.
+>
+> Yeah, I think this is right.
+>
+> cpupri stuff should indeed only be changed for the top level group.
 
-Best regards,
-Tomasz
-
-> 
-> > > +	rmb();
-> > 
-> > I'd prefer the rmb() to follow the __raw_readl() immediately to make the
-> > relationship more explicit.
-> 
-> A better question to ask is: why is this barrier here?  What memory
-> ordering operations is it trying to serialise?
-
-I'd also add a question why __raw accessors are used here.
-
-Best regards,
-Tomasz
-
+Ingo, are you going to apply this patch? Or will you give any comments?
