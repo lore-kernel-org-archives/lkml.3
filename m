@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab3LQP5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:57:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20120 "EHLO mx1.redhat.com"
+	id S1754866Ab3LQP6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 10:58:51 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:48057 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752800Ab3LQP5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:57:47 -0500
-Message-ID: <1387295792.23829.86.camel@flatline.rdu.redhat.com>
-Subject: Re: [PATCH 1/2] audit: print error message when fail to create
- audit socket
-From: Eric Paris <eparis@redhat.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org, rgb@redhat.com
-Date: Tue, 17 Dec 2013 10:56:32 -0500
-In-Reply-To: <1387249842-27793-1-git-send-email-gaofeng@cn.fujitsu.com>
-References: <1387249842-27793-1-git-send-email-gaofeng@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752452Ab3LQP6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 10:58:50 -0500
+Date: Tue, 17 Dec 2013 16:58:44 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
+Subject: Re: [PATCH v5 10/14] efi: only print saved efi runtime maps instead
+ of all memmap ranges for kexec
+Message-ID: <20131217155844.GG30592@pd.tnic>
+References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
+ <1386582147-9802-11-git-send-email-dyoung@redhat.com>
+ <20131213160150.GE32329@pd.tnic>
+ <20131216020010.GC3754@dhcp-16-126.nay.redhat.com>
+ <20131216113324.GB4922@pd.tnic>
+ <20131217063436.GF6751@dhcp-16-126.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131217063436.GF6751@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-17 at 11:10 +0800, Gao feng wrote:
-> print the error message and then return -ENOMEM.
-> 
-> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+On Tue, Dec 17, 2013 at 02:34:36PM +0800, Dave Young wrote:
+> They are moved to efi.c efi_setup_init(), I'm not sure if I expained
+> clear enough, in current code parse_efi_setup only accept one argument
+> phys_addr so I will mapping it with sizeof(struct setup_data) to
+> get the payload size then get the nr_efi_runtime_map. This is a
+> simplification from the old implementation.
+>
+> Based on current implementation, yes, I can add back another argument
+> data_len to avoid the 1st mapping thus I can print efi memmap as you
+> said.
+>
+> In this way I need export another extern for the data_len though.
 
-Haha.  If it's NULL return.  No no, if it's REALLY null audit_panic().
+Well, think about it: do you want to do the memremap/unmap a second time
+*just* to print the memmap in the efi kernel or do you want to do the
+memremap/unmap only once and do the work once?
 
-Acked-by: Eric Paris <eparis@redhat.com>
-> ---
->  kernel/audit.c | 9 ++++-----
->  1 file changed, 4 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 2a0ed0b..041b951 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -1083,12 +1083,11 @@ static int __net_init audit_net_init(struct net *net)
->  	pr_info("audit: initializing netlink socket in namespace\n");
->  
->  	aunet->nlsk = netlink_kernel_create(net, NETLINK_AUDIT, &cfg);
-> -	if (aunet->nlsk == NULL)
-> -		return -ENOMEM;
-> -	if (!aunet->nlsk)
-> +	if (aunet->nlsk == NULL) {
->  		audit_panic("cannot initialize netlink socket in namespace");
-> -	else
-> -		aunet->nlsk->sk_sndtimeo = MAX_SCHEDULE_TIMEOUT;
-> +		return -ENOMEM;
-> +	}
-> +	aunet->nlsk->sk_sndtimeo = MAX_SCHEDULE_TIMEOUT;
->  	return 0;
->  }
->  
+If you say you don't care about speed and wasting cycles then I'm
+certainly fine with that as I've spent more time hinting at the
+performance aspect than I'd like to.
 
+> What do you mean about NOPARSE, do you want another function name like
+> save_efi_setup()?
 
+-ENOPARSE means I cannot parse what you said above.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
