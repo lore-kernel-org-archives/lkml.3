@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751906Ab3LQXnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 18:43:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13239 "EHLO mx1.redhat.com"
+	id S1752246Ab3LQXno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 18:43:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13576 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751090Ab3LQXnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 18:43:35 -0500
-Subject: [PATCH v2 0/4] pci: virtual channel save/restore support
+	id S1752138Ab3LQXnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 18:43:41 -0500
+Subject: [PATCH v2 1/4] pci: Generalize wait loop
 From: Alex Williamson <alex.williamson@redhat.com>
 To: bhelgaas@google.com, linux-pci@vger.kernel.org
 Cc: ddutile@redhat.com, linux-kernel@vger.kernel.org
-Date: Tue, 17 Dec 2013 16:43:33 -0700
-Message-ID: <20131217233741.2310.78334.stgit@bling.home>
+Date: Tue, 17 Dec 2013 16:43:39 -0700
+Message-ID: <20131217234339.2310.68566.stgit@bling.home>
+In-Reply-To: <20131217233741.2310.78334.stgit@bling.home>
+References: <20131217233741.2310.78334.stgit@bling.home>
 User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -20,57 +22,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v1->v2:
+We currently have two instance of this loop which waits for a pending
+bit to clear in a status dword.  Generalize the function for future
+users.
 
-Address Bjorn's comments
- - split code out to vc.c
- - #defines for everything
- - rename VC defines
- - fix word access to PCI_VC_PORT_CTRL
-
-It ended up getting a little bigger since I added function description
-comments, header, includes and misc lines here and there.
-
-v1:
-
-Turns out that even though we don't do much with virtual channel, we
-still need to save/restore it around reset.  The case where this comes
-into play currently is a card with a switch and multiple devices, all
-supporting VC (Nvidia GRID).  On some platforms the system firmware
-will leave all the virtual channel capabilities in their default
-state, where the VC0 TC/VC map is 0xff (TC0-7 enabled over VC0).
-Other systems decide to restrict the available traffic classes and
-configure 0x01 (only TC0 over VC0).  At handoff, everything works, but
-as soon as we do a device reset, especially if done via bus reset, the
-endpoint can be returned to the spec defined default rather than the
-platform default.  If such a device is then assigned to a guest, the
-guest driver sees multiple TCs enabled, attempts to use them, and it
-fails.  The failure mode depends on the platform, ranging from the
-driver in the guest failing to work to host panic from an unsupported
-transaction.
-
-This series attempts to implement full save/restore support for all
-types of virtual channel (VC, MFVC, and VC9).  The buffer sizing code
-will execute for any device with these capabilities, but of couse the
-actual save/restore is only done if a reset is requested for the
-device, which typically means assignment to a VM.  Thanks,
-
-Alex
-
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
+ drivers/pci/pci.c   |   54 +++++++++++++++++++++++++++++----------------------
+ include/linux/pci.h |    1 +
+ 2 files changed, 32 insertions(+), 23 deletions(-)
 
-Alex Williamson (4):
-      pci: Generalize wait loop
-      pci: Add support for save/restore of extended capabilities
-      pci: Add Virtual Channel to save/restore support
-      pci: Rename PCI_VC_PORT_REG1/2 to PCI_VC_PORT_CAP1/2
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 07369f3..848023f 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -431,6 +431,32 @@ pci_find_parent_resource(const struct pci_dev *dev, struct resource *res)
+ }
+ 
+ /**
++ * pci_wait_for_pending - wait for @mask bit(s) to clear in status word @pos
++ * @dev: the PCI device to operate on
++ * @pos: config space offset of status word
++ * @mask: mask of bit(s) to care about in status word
++ *
++ * Return 1 when mask bit(s) in status word clear, 0 otherwise.
++ */
++int pci_wait_for_pending(struct pci_dev *dev, int pos, u16 mask)
++{
++	int i;
++
++	/* Wait for Transaction Pending bit clean */
++	for (i = 0; i < 4; i++) {
++		u16 status;
++		if (i)
++			msleep((1 << (i - 1)) * 100);
++
++		pci_read_config_word(dev, pos, &status);
++		if (!(status & mask))
++			return 1;
++	}
++
++	return 0;
++}
++
++/**
+  * pci_restore_bars - restore a devices BAR values (e.g. after wake-up)
+  * @dev: PCI device to have its BARs restored
+  *
+@@ -3204,20 +3230,10 @@ EXPORT_SYMBOL(pci_set_dma_seg_boundary);
+  */
+ int pci_wait_for_pending_transaction(struct pci_dev *dev)
+ {
+-	int i;
+-	u16 status;
+-
+-	/* Wait for Transaction Pending bit clean */
+-	for (i = 0; i < 4; i++) {
+-		if (i)
+-			msleep((1 << (i - 1)) * 100);
+-
+-		pcie_capability_read_word(dev, PCI_EXP_DEVSTA, &status);
+-		if (!(status & PCI_EXP_DEVSTA_TRPND))
+-			return 1;
+-	}
++	if (!pci_is_pcie(dev))
++		return 1;
+ 
+-	return 0;
++	return pci_wait_for_pending(dev, PCI_EXP_DEVSTA, PCI_EXP_DEVSTA_TRPND);
+ }
+ EXPORT_SYMBOL(pci_wait_for_pending_transaction);
+ 
+@@ -3244,10 +3260,8 @@ static int pcie_flr(struct pci_dev *dev, int probe)
+ 
+ static int pci_af_flr(struct pci_dev *dev, int probe)
+ {
+-	int i;
+ 	int pos;
+ 	u8 cap;
+-	u8 status;
+ 
+ 	pos = pci_find_capability(dev, PCI_CAP_ID_AF);
+ 	if (!pos)
+@@ -3261,14 +3275,8 @@ static int pci_af_flr(struct pci_dev *dev, int probe)
+ 		return 0;
+ 
+ 	/* Wait for Transaction Pending bit clean */
+-	for (i = 0; i < 4; i++) {
+-		if (i)
+-			msleep((1 << (i - 1)) * 100);
+-
+-		pci_read_config_byte(dev, pos + PCI_AF_STATUS, &status);
+-		if (!(status & PCI_AF_STATUS_TP))
+-			goto clear;
+-	}
++	if (pci_wait_for_pending(dev, PCI_AF_STATUS, PCI_AF_STATUS_TP))
++		goto clear;
+ 
+ 	dev_err(&dev->dev, "transaction is not cleared; "
+ 			"proceeding with reset anyway\n");
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index a13d682..e661333 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -938,6 +938,7 @@ bool pci_check_and_unmask_intx(struct pci_dev *dev);
+ void pci_msi_off(struct pci_dev *dev);
+ int pci_set_dma_max_seg_size(struct pci_dev *dev, unsigned int size);
+ int pci_set_dma_seg_boundary(struct pci_dev *dev, unsigned long mask);
++int pci_wait_for_pending(struct pci_dev *dev, int pos, u16 mask);
+ int pci_wait_for_pending_transaction(struct pci_dev *dev);
+ int pcix_get_max_mmrbc(struct pci_dev *dev);
+ int pcix_get_mmrbc(struct pci_dev *dev);
 
-
- drivers/pci/Makefile               |    2 
- drivers/pci/pci.c                  |  102 ++++++--
- drivers/pci/vc.c                   |  434 ++++++++++++++++++++++++++++++++++++
- drivers/vfio/pci/vfio_pci_config.c |   12 -
- include/linux/pci.h                |   15 +
- include/uapi/linux/pci_regs.h      |   29 ++
- 6 files changed, 549 insertions(+), 45 deletions(-)
- create mode 100644 drivers/pci/vc.c
