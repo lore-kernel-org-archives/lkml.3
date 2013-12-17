@@ -1,195 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab3LQJj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 04:39:28 -0500
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:40303 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750966Ab3LQJjG (ORCPT
+	id S1753035Ab3LQJmG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 04:42:06 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:9318 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab3LQJmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 04:39:06 -0500
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Date: Tue, 17 Dec 2013 13:38:55 +0400
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, namhyung@kernel.org, artagnon@gmail.com,
-        jolsa@redhat.com
-Subject: [PATCH 5/5] perf timechart: add emphasize option
-Message-ID: <20131217093855.GA3345@stfomichev-desktop>
-References: <1385995056-20158-1-git-send-email-stfomichev@yandex-team.ru>
- <20131216193800.GA19283@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131216193800.GA19283@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Dec 2013 04:42:01 -0500
+X-AuditID: cbfec7f4-b7fc96d000006cd4-17-52b01c66ef80
+From: Kamil Debski <k.debski@samsung.com>
+To: "'Matt Porter'" <mporter@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, kishon@ti.com,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, gautam.vivek@samsung.com,
+        mat.krawczuk@gmail.com, yulgon.kim@samsung.com, p.paneri@samsung.com,
+        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
+        "'Felipe Balbi'" <balbi@ti.com>
+References: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
+ <1386246579-25141-6-git-send-email-k.debski@samsung.com>
+ <20131216214012.GB15814@beef>
+In-reply-to: <20131216214012.GB15814@beef>
+Subject: RE: [PATCH v4 5/9] usb: s3c-hsotg: Use the new Exynos USB phy driver
+ with the generic phy framework
+Date: Tue, 17 Dec 2013 10:41:56 +0100
+Message-id: <02bb01cefb0c$3ad4d890$b07e89b0$%debski@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac76p2t6N1AbRc86QQKDwJ7RZeetOgAYkJsg
+Content-language: pl
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJIsWRmVeSWpSXmKPExsVy+t/xa7ppMhuCDF5MlrdYsvsGq8XB+/UW
+	84+cY7Xof7OQ1aLtykF2i8sLL7FaXHjaw2ZxtukNkLtrDpvFjPP7mCwWLWtltlh75C67xdn+
+	22wWc9ZqW5zf0slkcfhNO6vF+hmvWSw6zh5kdxDyuNzXy+Sxc9Zddo871/awefRtWcXocfzG
+	diaPz5vkAtiiuGxSUnMyy1KL9O0SuDLOvtzJWrBNs+Je5wLGBsYFil2MnBwSAiYSfTufMEPY
+	YhIX7q1n62Lk4hASWMoo8f/pHVaQhJBAA5PE4R9WXYwcHGwCmhKr7nmAhEUE1CS+zLvKCFLP
+	LPCZWWLJod3sEPXzGSWWHwkAsTkFtCTm3Z/BBGILC+RJ7H6yCcxmEVCVuH/6HTPITF4BB4lZ
+	y4pBwrwCghI/Jt9jAbGZgVrX7zzOBGHLS2xe8xasXEJAXeLRX12IE4wk1jz/xQxRIiJxt+E5
+	6wRGoVlIJs1CMmkWkkmzkLQsYGRZxSiaWppcUJyUnmuoV5yYW1yal66XnJ+7iRESnV92MC4+
+	ZnWIUYCDUYmHd8f89UFCrIllxZW5hxglOJiVRHhZCoBCvCmJlVWpRfnxRaU5qcWHGJk4OKUa
+	GKcGTryw7cXEa392CqdEZm1vmc/teveL17d/e11Vb50/o6Ksf2RG5ex3e5QfBBv2MfeuvTNr
+	2u+4kq8CPQqTNu49uEtHT3Ph95eVRtt2czukKSUkn50at9NwxU/9GfvrBPSehW6KcC3vEr5w
+	UqKw4w9v6UvpjGevb1+foLmiW+JbhfLtGRJOk98psRRnJBpqMRcVJwIAABYwBKwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This option highlights tasks (using different color) that run more than given
-duration or tasks with given name.
+Hi Matt,
 
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
----
- tools/perf/Documentation/perf-timechart.txt |  4 ++++
- tools/perf/builtin-timechart.c              | 21 ++++++++++++++++++++-
- tools/perf/util/svghelper.c                 | 23 ++++++++++++++++++++---
- tools/perf/util/svghelper.h                 |  4 +++-
- 4 files changed, 47 insertions(+), 5 deletions(-)
+I am afraid it is not possible. This patch cannot go in without the 
+new  phy driver. It would break Exynos USB functionality. This
+is because it changes s3c-hsotg to use the new phy driver.
 
-diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
-index 367c1be0551c..aac589b0d377 100644
---- a/tools/perf/Documentation/perf-timechart.txt
-+++ b/tools/perf/Documentation/perf-timechart.txt
-@@ -62,6 +62,10 @@ $ perf timechart
- -t::
- --topology::
-         Sort CPUs according to topology.
-+-e::
-+--emphasize::
-+        Emphasize tasks which were running at least given number of
-+        nanoseconds or tasks with given name.
- 
- RECORD OPTIONS
- --------------
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 8bde57c5c908..c0dcb05909b2 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -841,7 +841,6 @@ static void draw_cpu_usage(struct timechart *tchart)
- 						    sample->start_time,
- 						    sample->end_time,
- 						    p->pid,
--						    "sample",
- 						    c->comm,
- 						    sample->backtrace);
- 				}
-@@ -1252,6 +1251,23 @@ parse_process(const struct option *opt __maybe_unused, const char *arg,
- 	return 0;
- }
- 
-+static int
-+parse_emphasize(const struct option *opt __maybe_unused, const char *arg,
-+		int __maybe_unused unset)
-+{
-+	unsigned long duration = strtoul(arg, NULL, 0);
-+
-+	if (svg_emphasize || svg_emphasize_name)
-+		return -1;
-+
-+	if (duration)
-+		svg_emphasize = duration;
-+	else
-+		svg_emphasize_name = strdup(arg);
-+
-+	return 0;
-+}
-+
- int cmd_timechart(int argc, const char **argv,
- 		  const char *prefix __maybe_unused)
- {
-@@ -1270,6 +1286,9 @@ int cmd_timechart(int argc, const char **argv,
- 	OPT_STRING('i', "input", &input_name, "file", "input file name"),
- 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
- 	OPT_INTEGER('w', "width", &svg_page_width, "page width"),
-+	OPT_CALLBACK('e', "emphasize", NULL, "duration or name",
-+		      "emphasize tasks. Pass duration in ns or process name.",
-+		       parse_emphasize),
- 	OPT_BOOLEAN('P', "power-only", &tchart.power_only, "output power data only"),
- 	OPT_BOOLEAN('T', "tasks-only", &tchart.tasks_only,
- 		    "output processes data only"),
-diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
-index 9468136735ca..f056a7450e5f 100644
---- a/tools/perf/util/svghelper.c
-+++ b/tools/perf/util/svghelper.c
-@@ -31,6 +31,8 @@ static u64 turbo_frequency, max_freq;
- #define SLOT_HEIGHT 25.0
- 
- int svg_page_width = 1000;
-+u64 svg_emphasize;
-+const char *svg_emphasize_name;
- 
- #define MIN_TEXT_SIZE 0.01
- 
-@@ -112,6 +114,7 @@ void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end)
- 	fprintf(svgfile, "      rect.process  { fill:rgb(180,180,180); fill-opacity:0.9; stroke-width:1;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.process2 { fill:rgb(180,180,180); fill-opacity:0.9; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.sample   { fill:rgb(  0,  0,255); fill-opacity:0.8; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
-+	fprintf(svgfile, "      rect.sample_em{ fill:rgb(255,128,  0); fill-opacity:0.8; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.blocked  { fill:rgb(255,  0,  0); fill-opacity:0.5; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.waiting  { fill:rgb(224,214,  0); fill-opacity:0.8; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
- 	fprintf(svgfile, "      rect.WAITING  { fill:rgb(255,214, 48); fill-opacity:0.6; stroke-width:0;   stroke:rgb(  0,  0,  0); } \n");
-@@ -155,17 +158,24 @@ void svg_blocked(int Yslot, int cpu, u64 start, u64 end, const char *backtrace)
- void svg_running(int Yslot, int cpu, u64 start, u64 end, const char *backtrace)
- {
- 	double text_size;
-+	const char *type;
-+
- 	if (!svgfile)
- 		return;
- 
-+	if (svg_emphasize && end - start > svg_emphasize)
-+		type = "sample_em";
-+	else
-+		type = "sample";
- 	fprintf(svgfile, "<g>\n");
- 
- 	fprintf(svgfile, "<title>#%d running %s</title>\n",
- 		cpu, time_to_string(end - start));
- 	if (backtrace)
- 		fprintf(svgfile, "<desc>Switched because:\n%s</desc>\n", backtrace);
--	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"sample\"/>\n",
--		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT);
-+	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"%s\"/>\n",
-+		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT,
-+		type);
- 
- 	text_size = (time2pixels(end)-time2pixels(start));
- 	if (cpu > 9)
-@@ -293,13 +303,20 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
- 	fprintf(svgfile, "</g>\n");
- }
- 
--void svg_process(int cpu, u64 start, u64 end, int pid, const char *type, const char *name, const char *backtrace)
-+void svg_process(int cpu, u64 start, u64 end, int pid, const char *name, const char *backtrace)
- {
- 	double width;
-+	const char *type;
- 
- 	if (!svgfile)
- 		return;
- 
-+	if (svg_emphasize && end - start >= svg_emphasize)
-+		type = "sample_em";
-+	else if (svg_emphasize_name && strstr(name, svg_emphasize_name))
-+		type = "sample_em";
-+	else
-+		type = "sample";
- 
- 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), cpu2y(cpu));
- 	fprintf(svgfile, "<title>%d %s running %s</title>\n", pid, name, time_to_string(end - start));
-diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
-index 1df4fb6c3a4a..10b4187bff6a 100644
---- a/tools/perf/util/svghelper.h
-+++ b/tools/perf/util/svghelper.h
-@@ -11,7 +11,7 @@ extern void svg_waiting(int Yslot, int cpu, u64 start, u64 end, const char *back
- extern void svg_cpu_box(int cpu, u64 max_frequency, u64 turbo_frequency);
- 
- 
--extern void svg_process(int cpu, u64 start, u64 end, int pid, const char *type, const char *name, const char *backtrace);
-+extern void svg_process(int cpu, u64 start, u64 end, int pid, const char *name, const char *backtrace);
- extern void svg_cstate(int cpu, u64 start, u64 end, int type);
- extern void svg_pstate(int cpu, u64 start, u64 end, u64 freq);
- 
-@@ -27,5 +27,7 @@ extern int svg_build_topology_map(char *sib_core, int sib_core_nr,
- 				  char *sib_thr, int sib_thr_nr);
- 
- extern int svg_page_width;
-+extern u64 svg_emphasize;
-+extern const char *svg_emphasize_name;
- 
- #endif /* __PERF_SVGHELPER_H */
+I am working on an updated patch series addressing all the comments.
+time permitting I want to post an alternative version - integrating
+as much as possible in a single file. This way it would be possible
+to have a hands-on comparison of the two approaches we were
+discussing with Kishon. 
+
+I estimate that I post it this week.
+
+Best wishes,
 -- 
-1.8.3.2
+Kamil Debski
+Samsung R&D Institute Poland
+
+
+> -----Original Message-----
+> From: Matt Porter [mailto:mporter@linaro.org]
+> Sent: Monday, December 16, 2013 10:40 PM
+> To: Kamil Debski
+> Cc: linux-kernel@vger.kernel.org; linux-samsung-soc@vger.kernel.org;
+> linux-usb@vger.kernel.org; devicetree@vger.kernel.org;
+> kyungmin.park@samsung.com; kishon@ti.com; t.figa@samsung.com;
+> s.nawrocki@samsung.com; m.szyprowski@samsung.com;
+> gautam.vivek@samsung.com; mat.krawczuk@gmail.com;
+> yulgon.kim@samsung.com; p.paneri@samsung.com; av.tikhomirov@samsung.com;
+> jg1.han@samsung.com; galak@codeaurora.org; Felipe Balbi
+> Subject: Re: [PATCH v4 5/9] usb: s3c-hsotg: Use the new Exynos USB phy
+> driver with the generic phy framework
+> 
+> On Thu, Dec 05, 2013 at 01:29:35PM +0100, Kamil Debski wrote:
+> > Change the used phy driver to the new Exynos USB phy driver that uses
+> > the generic phy framework.
+> >
+> > Signed-off-by: Kamil Debski <k.debski@samsung.com>
+> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > ---
+> >  .../devicetree/bindings/usb/samsung-hsotg.txt      |    4 ++++
+> >  drivers/usb/gadget/s3c-hsotg.c                     |   11 ++++++----
+> -
+> >  2 files changed, 10 insertions(+), 5 deletions(-)
+> 
+> Kamil,
+> 
+> Can we separate this patch out of this series? My bcm281xx series is
+> ready to go except for this dependency. Felipe has noted that there's
+> only a week until he locks his tree down for 3.14 [1]. I'm willing to
+> update this versus the comment Kishon made on fixing the example if you
+> don't have time before then. Let me know.
+> 
+> [1] https://lkml.org/lkml/2013/12/16/555
+> 
+> Thanks,
+> Matt
+> 
+> > diff --git a/Documentation/devicetree/bindings/usb/samsung-hsotg.txt
+> > b/Documentation/devicetree/bindings/usb/samsung-hsotg.txt
+> > index b83d428..9340d06 100644
+> > --- a/Documentation/devicetree/bindings/usb/samsung-hsotg.txt
+> > +++ b/Documentation/devicetree/bindings/usb/samsung-hsotg.txt
+> > @@ -24,6 +24,8 @@ Required properties:
+> >      - first entry: must be "otg"
+> >  - vusb_d-supply: phandle to voltage regulator of digital section,
+> >  - vusb_a-supply: phandle to voltage regulator of analog section.
+> > +- phys: from general PHY binding: phandle to the PHY device
+> > +- phy-names: from general PHY binding: should be "usb2-phy"
+> >
+> >  Example
+> >  -----
+> > @@ -36,5 +38,7 @@ Example
+> >  		clock-names = "otg";
+> >  		vusb_d-supply = <&vusb_reg>;
+> >  		vusb_a-supply = <&vusbdac_reg>;
+> > +		phys = <&usb2phy 0>;
+> > +		phy-names = "device";
+> >  	};
+> >
+> > diff --git a/drivers/usb/gadget/s3c-hsotg.c
+> > b/drivers/usb/gadget/s3c-hsotg.c index eccb147..db096fd 100644
+> > --- a/drivers/usb/gadget/s3c-hsotg.c
+> > +++ b/drivers/usb/gadget/s3c-hsotg.c
+> > @@ -31,6 +31,7 @@
+> >  #include <linux/regulator/consumer.h>  #include <linux/of.h>
+> > #include <linux/of_platform.h>
+> > +#include <linux/phy/phy.h>
+> >
+> >  #include <linux/usb/ch9.h>
+> >  #include <linux/usb/gadget.h>
+> > @@ -162,7 +163,7 @@ struct s3c_hsotg_ep {  struct s3c_hsotg {
+> >  	struct device		 *dev;
+> >  	struct usb_gadget_driver *driver;
+> > -	struct usb_phy		*phy;
+> > +	struct phy		 *phy;
+> >  	struct s3c_hsotg_plat	 *plat;
+> >
+> >  	spinlock_t              lock;
+> > @@ -2905,7 +2906,7 @@ static void s3c_hsotg_phy_enable(struct
+> s3c_hsotg *hsotg)
+> >  	dev_dbg(hsotg->dev, "pdev 0x%p\n", pdev);
+> >
+> >  	if (hsotg->phy)
+> > -		usb_phy_init(hsotg->phy);
+> > +		phy_power_on(hsotg->phy);
+> >  	else if (hsotg->plat->phy_init)
+> >  		hsotg->plat->phy_init(pdev, hsotg->plat->phy_type);  } @@ -
+> 2922,7
+> > +2923,7 @@ static void s3c_hsotg_phy_disable(struct s3c_hsotg *hsotg)
+> >  	struct platform_device *pdev = to_platform_device(hsotg->dev);
+> >
+> >  	if (hsotg->phy)
+> > -		usb_phy_shutdown(hsotg->phy);
+> > +		phy_power_off(hsotg->phy);
+> >  	else if (hsotg->plat->phy_exit)
+> >  		hsotg->plat->phy_exit(pdev, hsotg->plat->phy_type);  } @@ -
+> 3529,7
+> > +3530,7 @@ static void s3c_hsotg_delete_debug(struct s3c_hsotg *hsotg)
+> > static int s3c_hsotg_probe(struct platform_device *pdev)  {
+> >  	struct s3c_hsotg_plat *plat = dev_get_platdata(&pdev->dev);
+> > -	struct usb_phy *phy;
+> > +	struct phy *phy;
+> >  	struct device *dev = &pdev->dev;
+> >  	struct s3c_hsotg_ep *eps;
+> >  	struct s3c_hsotg *hsotg;
+> > @@ -3544,7 +3545,7 @@ static int s3c_hsotg_probe(struct
+> platform_device *pdev)
+> >  		return -ENOMEM;
+> >  	}
+> >
+> > -	phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> > +	phy = devm_phy_get(&pdev->dev, "usb2-phy");
+> >  	if (IS_ERR(phy)) {
+> >  		/* Fallback for pdata */
+> >  		plat = dev_get_platdata(&pdev->dev);
+> > --
+> > 1.7.9.5
+> >
 
