@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab3LQSP5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:15:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:32928 "EHLO
+	id S1756045Ab3LQSS7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:18:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:32953 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185Ab3LQSPu (ORCPT
+	with ESMTP id S932220Ab3LQSP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:15:50 -0500
+	Tue, 17 Dec 2013 13:15:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Mel Gorman <mgorman@suse.de>, Darren Hart <dvhart@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 089/103] x86, efi: Don't use (U)EFI time services on 32 bit
-Date: Tue, 17 Dec 2013 18:13:18 +0000
-Message-Id: <1387304012-23805-90-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 095/103] futex: fix handling of read-only-mapped hugepages
+Date: Tue, 17 Dec 2013 18:13:24 +0000
+Message-Id: <1387304012-23805-96-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -29,43 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <matthew.garrett@nebula.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 04bf9ba720fcc4fa313fa122b799ae0989b6cd50 upstream.
+commit f12d5bfceb7e1f9051563381ec047f7f13956c3c upstream.
 
-UEFI time services are often broken once we're in virtual mode. We were
-already refusing to use them on 64-bit systems, but it turns out that
-they're also broken on some 32-bit firmware, including the Dell Venue.
-Disable them for now, we can revisit once we have the 1:1 mappings code
-incorporated.
+The hugepage code had the exact same bug that regular pages had in
+commit 7485d0d3758e ("futexes: Remove rw parameter from
+get_futex_key()").
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-Link: http://lkml.kernel.org/r/1385754283-2464-1-git-send-email-matthew.garrett@nebula.com
-Cc: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+The regular page case was fixed by commit 9ea71503a8ed ("futex: Fix
+regression with read only mappings"), but the transparent hugepage case
+(added in a5b338f2b0b1: "thp: update futex compound knowledge") case
+remained broken.
+
+Found by Dave Jones and his trinity tool.
+
+Reported-and-tested-by: Dave Jones <davej@fedoraproject.org>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Darren Hart <dvhart@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/platform/efi/efi.c | 7 -------
- 1 file changed, 7 deletions(-)
+ kernel/futex.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index cfe8b9c..46e5387 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -760,13 +760,6 @@ void __init efi_init(void)
- 
- 	set_bit(EFI_MEMMAP, &x86_efi_facility);
- 
--#ifdef CONFIG_X86_32
--	if (efi_is_native()) {
--		x86_platform.get_wallclock = efi_get_time;
--		x86_platform.set_wallclock = efi_set_rtc_mmss;
--	}
--#endif
--
- #if EFI_DEBUG
- 	print_efi_memmap();
- #endif
+diff --git a/kernel/futex.c b/kernel/futex.c
+index f0ee318..e564a9a 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -285,7 +285,7 @@ again:
+ 		put_page(page);
+ 		/* serialize against __split_huge_page_splitting() */
+ 		local_irq_disable();
+-		if (likely(__get_user_pages_fast(address, 1, 1, &page) == 1)) {
++		if (likely(__get_user_pages_fast(address, 1, !ro, &page) == 1)) {
+ 			page_head = compound_head(page);
+ 			/*
+ 			 * page_head is valid pointer but we must pin
 -- 
 1.8.3.2
 
