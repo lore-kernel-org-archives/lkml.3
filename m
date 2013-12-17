@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab3LQW3w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:29:52 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:63365 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283Ab3LQW3u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:29:50 -0500
+	id S1754690Ab3LQWbt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:31:49 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:50296 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752020Ab3LQWbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 17:31:47 -0500
+Date: Tue, 17 Dec 2013 17:31:36 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7] mm: page_alloc: Use zone node IDs to approximate
+ locality
+Message-ID: <20131217223136.GI21724@cmpxchg.org>
+References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
+ <1386943807-29601-4-git-send-email-mgorman@suse.de>
+ <20131216202507.GZ21724@cmpxchg.org>
+ <20131217111352.GZ11295@suse.de>
+ <20131217153829.GC21724@cmpxchg.org>
+ <20131217160808.GF11295@suse.de>
+ <20131217201147.GH21724@cmpxchg.org>
+ <20131217210340.GJ11295@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20131217210403.GA1196@katana>
-References: <20131217023745.24573.3660.sendpatchset@w520>
-	<20131217023804.24573.82351.sendpatchset@w520>
-	<20131217210403.GA1196@katana>
-Date: Wed, 18 Dec 2013 07:29:48 +0900
-Message-ID: <CANqRtoRn--Ze3ayoag71iYTKXEG1eNa8qyXEAJ7vCZhRo5yHPw@mail.gmail.com>
-Subject: Re: [PATCH 02/05 v2] pinctrl: sh-pfc: r7s72100 base support
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131217210340.GJ11295@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+On Tue, Dec 17, 2013 at 09:03:40PM +0000, Mel Gorman wrote:
+> On Tue, Dec 17, 2013 at 03:11:47PM -0500, Johannes Weiner wrote:
+> > On Tue, Dec 17, 2013 at 04:08:08PM +0000, Mel Gorman wrote:
+> > > On Tue, Dec 17, 2013 at 10:38:29AM -0500, Johannes Weiner wrote:
+> > > > On Tue, Dec 17, 2013 at 11:13:52AM +0000, Mel Gorman wrote:
+> > > > > On Mon, Dec 16, 2013 at 03:25:07PM -0500, Johannes Weiner wrote:
+> > > > > > On Fri, Dec 13, 2013 at 02:10:03PM +0000, Mel Gorman wrote:
+> > > > > > > zone_local is using node_distance which is a more expensive call than
+> > > > > > > necessary. On x86, it's another function call in the allocator fast path
+> > > > > > > and increases cache footprint. This patch makes the assumption zones on a
+> > > > > > > local node will share the same node ID. The necessary information should
+> > > > > > > already be cache hot.
+> > > > > > > 
+> > > > > > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > > > > > > ---
+> > > > > > >  mm/page_alloc.c | 2 +-
+> > > > > > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > > > > > 
+> > > > > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > > > > > index 64020eb..fd9677e 100644
+> > > > > > > --- a/mm/page_alloc.c
+> > > > > > > +++ b/mm/page_alloc.c
+> > > > > > > @@ -1816,7 +1816,7 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
+> > > > > > >  
+> > > > > > >  static bool zone_local(struct zone *local_zone, struct zone *zone)
+> > > > > > >  {
+> > > > > > > -	return node_distance(local_zone->node, zone->node) == LOCAL_DISTANCE;
+> > > > > > > +	return zone_to_nid(zone) == numa_node_id();
+> > > > > > 
+> > > > > > Why numa_node_id()?  We pass in the preferred zone as @local_zone:
+> > > > > > 
+> > > > > 
+> > > > > Initially because I was thinking "local node" and numa_node_id() is a
+> > > > > per-cpu variable that should be cheap to access and in some cases
+> > > > > cache-hot as the top-level gfp API calls numa_node_id().
+> > > > > 
+> > > > > Thinking about it more though it still makes sense because the preferred
+> > > > > zone is not necessarily local. If the allocation request requires ZONE_DMA32
+> > > > > and the local node does not have that zone then preferred zone is on a
+> > > > > remote node.
+> > > > 
+> > > > Don't we treat everything in relation to the preferred zone?
+> > > 
+> > > Usually yes, but this time we really care about whether the memory is
+> > > local or remote. It makes sense to me as it is and struggle to see an
+> > > advantage of expressing it in terms of the preferred zone. Minimally
+> > > zone_local would need to be renamed if it could return true for a remote
+> > > zone and I see no advantage in doing that.
+> > 
+> > What the function tests for is whether any given zone is close
+> > enough/local to the given preferred zone such that we can allocate
+> > from it without having to invoke zone_reclaim_mode.
+> > 
+> 
+> Fine. The helper should then be renamed to zone_preferred_node because
+> it's no longer about being local.
 
-On Wed, Dec 18, 2013 at 6:04 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> Hi,
->
->> +#define _P_DATA(bank, pin, name, sfx)                                        \
->> +     PINMUX_DATA(name##_DATA, name##_PMC_0, name##_PIPC_0,           \
->> +                 name##_PIBC_1, name##_PBDC_1)
->> +
->> +#define _P_FN(n, fn, pfcae, pfce, pfc)                                       \
->> +     PINMUX_DATA(n##_MARK_FN##fn, n##_PMC_1, n##_PIPC_1,             \
->> +                 n##_PFCAE_##pfcae, n##_PFCE_##pfce, n##_PFC_##pfc)
->
-> I need to apply this patch, otherwise my i2c pinmuxing fails?
-
-Thanks. It looks to me like the _P_FN() bits would be mainly needed.
-Can you try to omit the _P_DATA() portion and check if it is still
-behaving as expected?
-
-Cheers,
-
-/ magnus
+Fair enough!
