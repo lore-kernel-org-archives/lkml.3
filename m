@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344Ab3LQPLg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:11:36 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:35476 "EHLO gloria.sntech.de"
+	id S1754378Ab3LQPN0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 10:13:26 -0500
+Received: from bitsync.net ([80.83.126.10]:38987 "EHLO bitsync.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752543Ab3LQPLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:11:34 -0500
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] rtc: hym8563: include clkout code only if COMMON_CLK active
-Date: Tue, 17 Dec 2013 16:11:30 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com
+	id S1753325Ab3LQPNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 10:13:25 -0500
+X-Greylist: delayed 347 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Dec 2013 10:13:25 EST
+Message-ID: <52B068B7.4070304@bitsync.net>
+Date: Tue, 17 Dec 2013 16:07:35 +0100
+From: Zlatko Calusic <zcalusic@bitsync.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Mel Gorman <mgorman@suse.de>
+CC: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/7] Configurable fair allocation zone policy v2r6
+References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
+In-Reply-To: <1386943807-29601-1-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201312171611.30526.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The contents of clk-provide.h, struct clk_hw etc, are only available
-if CONFIG_COMMON_CLK is selected. Therefore IS_ENABLED(COMMON_CLK) is
-not sufficient and real preprocessor conditions are necessary to
-keep the code in question from being compiled on non-COMMON_CLK systems.
+On 13.12.2013 15:10, Mel Gorman wrote:
+> Kicked this another bit today. It's still a bit half-baked but it restores
+> the historical performance and leaves the door open at the end for playing
+> nice with distributing file pages between nodes. Finishing this series
+> depends on whether we are going to make the remote node behaviour of the
+> fair zone allocation policy configurable or redefine MPOL_LOCAL. I'm in
+> favour of the configurable option because the default can be redefined and
+> tested while giving users a "compat" mode if we discover the new default
+> behaviour sucks for some workload.
+>
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
- drivers/rtc/rtc-hym8563.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+I'll start a 5-day test of this patchset in a few hours, unless you can 
+send an updated one in the meantime. I intend to test it on a rather 
+boring 4GB x86_64 machine that before Johannes' work had lots of trouble 
+balancing zones. Would you recommend to use the default settings, i.e. 
+don't mess with tunables at this point?
 
-diff --git a/drivers/rtc/rtc-hym8563.c b/drivers/rtc/rtc-hym8563.c
-index 841392c..b56e3d3 100644
---- a/drivers/rtc/rtc-hym8563.c
-+++ b/drivers/rtc/rtc-hym8563.c
-@@ -87,7 +87,9 @@ struct hym8563 {
- 	struct i2c_client	*client;
- 	struct rtc_device	*rtc;
- 	bool			valid;
-+#ifdef CONFIG_COMMON_CLK
- 	struct clk_hw		clkout_hw;
-+#endif
- };
- 
- /*
-@@ -290,6 +292,7 @@ static const struct rtc_class_ops hym8563_rtc_ops = {
-  * Handling of the clkout
-  */
- 
-+#ifdef CONFIG_COMMON_CLK
- #define clkout_hw_to_hym8563(_hw) container_of(_hw, struct hym8563, clkout_hw)
- 
- static int clkout_rates[] = {
-@@ -423,6 +426,7 @@ static struct clk *hym8563_clkout_register_clk(struct hym8563 *hym8563)
- 
- 	return clk;
- }
-+#endif
- 
- /*
-  * The alarm interrupt is implemented as a level-low interrupt in the
-@@ -565,8 +569,9 @@ static int hym8563_probe(struct i2c_client *client,
- 	if (IS_ERR(hym8563->rtc))
- 		return PTR_ERR(hym8563->rtc);
- 
--	if (IS_ENABLED(CONFIG_COMMON_CLK))
--		hym8563_clkout_register_clk(hym8563);
-+#ifdef CONFIG_COMMON_CLK
-+	hym8563_clkout_register_clk(hym8563);
-+#endif
- 
- 	return 0;
- }
+Regards,
 -- 
-1.7.10.4
+Zlatko
 
