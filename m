@@ -1,73 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab3LQW2T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:28:19 -0500
-Received: from ozlabs.org ([203.10.76.45]:34947 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752003Ab3LQW2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:28:18 -0500
-Date: Wed, 18 Dec 2013 09:28:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Heiko =?UTF-8?B?U3TDvGJuZXI=?= <heiko@sntech.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com
-Subject: Re: [PATCH] rtc: hym8563: include clkout code only if COMMON_CLK
- active
-Message-Id: <20131218092810.b63c31277c6ee61af2bf6614@canb.auug.org.au>
-In-Reply-To: <201312171611.30526.heiko@sntech.de>
-References: <201312171611.30526.heiko@sntech.de>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+	id S1754649Ab3LQW3Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:29:16 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:49568 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752283Ab3LQW3O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 17:29:14 -0500
+Date: Tue, 17 Dec 2013 17:29:13 -0500 (EST)
+Message-Id: <20131217.172913.872882830371558349.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__18_Dec_2013_09_28_10_+1100_nyG0vksjTBQdG3HN"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 17 Dec 2013 14:29:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__18_Dec_2013_09_28_10_+1100_nyG0vksjTBQdG3HN
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Heiko,
+A quick batch of fixes, including the annoying bad lock stack
+problem introduced by udp_sk_rx_dst_set() locking change:
 
-On Tue, 17 Dec 2013 16:11:30 +0100 Heiko St=C3=BCbner <heiko@sntech.de> wro=
-te:
->
-> The contents of clk-provide.h, struct clk_hw etc, are only available
-> if CONFIG_COMMON_CLK is selected. Therefore IS_ENABLED(COMMON_CLK) is
-> not sufficient and real preprocessor conditions are necessary to
-> keep the code in question from being compiled on non-COMMON_CLK systems.
->=20
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+1) Use xchg() instead of sk_dst_lock() in udp_sk_rx_dst_set(), from
+   Eric Dumazet.
 
-I will add this to the akpm-current merge today (unless Andrew beats me to =
-it).
+2) qlcnic bug fixes from Himanshu Madhani and Manish Chopra.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+3) Update IPSEC MAINTAINERS entry, from Steffen Klassert.
 
---Signature=_Wed__18_Dec_2013_09_28_10_+1100_nyG0vksjTBQdG3HN
-Content-Type: application/pgp-signature
+4) Administrative neigh entry changes should generate netlink
+   notifications the same as event generated ones.  From Bob
+   Gilligan.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+5) Netfilter SYNPROXY fixes from Patrick McHardy.
 
-iQIcBAEBCAAGBQJSsM//AAoJEMDTa8Ir7ZwVbIMP/3OG9Hw/IZGdQjuWklZmd3mT
-qpBpdxl/O7H8hRHcRI4akj1i4Aco5klJ3LcWSnVrQPYs3v8YUEMN8c/5sy6ib3X0
-OXMYSl2waw4+vSYLYURE5xpyPfqIEt04DPwPaYyCFte6NNQdNtIiXtUi/0mqeP9n
-K7t0BUntS+u/7bQjGt6jGEyLf18WE4D6NuuH/eedHkid4WHM/S/kK6+tuwdrViuB
-lfcJnubMeuHyPuDdVzHh8+q3h8+4iA+iCwasRlGTtByp5huQAy6Ol0GQ54ql++/G
-8bHwlSPvKqSg3X5cBCoWwwZRcpjq29s/2jFCXSEzIQRVdRuOdFO7tHeCvIPV6adV
-x2YzhZMGLaX33BeWdxOCDghWoSNPtC3JJCT9lxYFJ4u91+kKuBu6Pg2KqwQ7qWYF
-b53g/6Pxxguk3ehndcHyFB7uLqOQlC5GjvAdUdTfYIiUQvf3cVtLgtbvVAF0X0Ta
-6oLQDQqmJf9mYlIQDAn8U2CKAFU/cLRxalYVVIiRXzYHv2ATboJ2dA10QoCS+0PM
-LesEk0QautHgNlguLLC2O88oV1TP8RWqiDGMz8MD9GLkA7bE6zXESwhaY2zRQ3Ww
-6Lw2RId8LVXu4Rjn+KXEtXSVc8lmyXCqVBnx2ciBVOd/O8Rehxgj245HfdHfLHgz
-dYe04gR3ZXA5cehN3K8t
-=6fSO
------END PGP SIGNATURE-----
+6) Netfilter nft_reject endianness fixes from Eric Leblond.
 
---Signature=_Wed__18_Dec_2013_09_28_10_+1100_nyG0vksjTBQdG3HN--
+Please pull, thanks a lot!
+
+The following changes since commit 319e2e3f63c348a9b66db4667efa73178e18b17d:
+
+  Linux 3.13-rc4 (2013-12-15 12:31:33 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to 781069279f049508274db63bfb352e8583e5c977:
+
+  Merge branch 'fixes-for-3.13' of git://gitorious.org/linux-can/linux-can (2013-12-17 17:21:30 -0500)
+
+----------------------------------------------------------------
+
+Alexey Khoroshilov (1):
+      can: ems_usb: fix urb leaks on failure paths
+
+Bob Gilligan (1):
+      neigh: Netlink notification for administrative NUD state change
+
+David S. Miller (3):
+      Merge branch 'master' of git://git.kernel.org/.../pablo/nf
+      Merge branch 'qlcnic'
+      Merge branch 'fixes-for-3.13' of git://gitorious.org/linux-can/linux-can
+
+Eric Dumazet (1):
+      udp: ipv4: do not use sk_dst_lock from softirq context
+
+Eric Leblond (1):
+      netfilter: nft_reject: fix endianness in dump function
+
+Hannes Frederic Sowa (1):
+      ipv4: improve documentation of ip_no_pmtu_disc
+
+Himanshu Madhani (4):
+      qlcnic: Fix usage of netif_tx_{wake, stop} api during link change.
+      qlcnic: Fix diagnostic test for all adapters.
+      qlcnic: Fix TSS/RSS ring validation logic.
+      qlcnic: Fix TSS/RSS validation for 83xx/84xx series adapter.
+
+Jason Wang (1):
+      netvsc: don't flush peers notifying work during setting mtu
+
+Manish Chopra (2):
+      qlcnic: Fix memory allocation
+      qlcnic: Allow firmware dump collection when auto firmware recovery is disabled
+
+Manish chopra (2):
+      qlcnic: Fix mailbox processing during diagnostic test
+      qlcnic: Dump mailbox registers when mailbox command times out.
+
+Marc Kleine-Budde (1):
+      can: peak_usb: fix mem leak in pcan_usb_pro_init()
+
+Patrick McHardy (1):
+      netfilter: SYNPROXY target: restrict to INPUT/FORWARD
+
+Sasha Levin (1):
+      net: unix: allow bind to fail on mutex lock
+
+Steffen Klassert (1):
+      MAINTAINERS: Update the IPsec maintainer entry
+
+Wei Yongjun (1):
+      xen-netback: fix fragments error handling in checksum_setup_ip()
+
+wangweidong (1):
+      sctp: loading sctp when load sctp_probe
+
+ Documentation/networking/ip-sysctl.txt                |  8 +++++--
+ MAINTAINERS                                           | 11 +++++++++-
+ drivers/net/can/usb/ems_usb.c                         |  3 ++-
+ drivers/net/can/usb/peak_usb/pcan_usb_pro.c           |  3 +++
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c   | 47 ++++++++++++++++++----------------------
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.h   |  1 +
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_init.c | 65 ++++++++++++++++++++++++++++++++++---------------------
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_ethtool.c   | 19 +++++++---------
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c        | 10 ++-------
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c      |  2 +-
+ drivers/net/hyperv/netvsc_drv.c                       |  1 -
+ drivers/net/xen-netback/netback.c                     |  3 +++
+ net/core/neighbour.c                                  |  1 +
+ net/ipv4/netfilter/ipt_SYNPROXY.c                     |  1 +
+ net/ipv4/netfilter/nft_reject_ipv4.c                  |  2 +-
+ net/ipv4/udp.c                                        | 13 ++++-------
+ net/ipv6/netfilter/ip6t_SYNPROXY.c                    |  1 +
+ net/sctp/probe.c                                      | 17 ++++++++++++++-
+ net/unix/af_unix.c                                    |  8 +++++--
+ 19 files changed, 127 insertions(+), 89 deletions(-)
