@@ -1,147 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab3LQNF7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:05:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55071 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751279Ab3LQNF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:05:57 -0500
-Date: Tue, 17 Dec 2013 14:05:55 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.13-rc breaks MEMCG_SWAP
-Message-ID: <20131217130555.GC28991@dhcp22.suse.cz>
-References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
- <52AEC989.4080509@huawei.com>
- <20131216095345.GB23582@dhcp22.suse.cz>
- <20131216104042.GC23582@dhcp22.suse.cz>
- <20131216163530.GH32509@htj.dyndns.org>
- <20131216171937.GG26797@dhcp22.suse.cz>
- <20131216172143.GJ32509@htj.dyndns.org>
- <alpine.LNX.2.00.1312161718001.2037@eggly.anvils>
- <52AFC163.5010507@huawei.com>
+	id S1751430Ab3LQNHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:07:04 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36720 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302Ab3LQNHA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 08:07:00 -0500
+Date: Tue, 17 Dec 2013 13:06:53 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, linux-doc@vger.kernel.org,
+        vpalatin@chromium.org, nicolas.ferre@atmel.com, plagnioj@jcrosoft.com,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Message-ID: <20131217130653.GA3185@sirena.org.uk>
+References: <1387258597-21866-1-git-send-email-wenyou.yang@atmel.com>
+ <1387258597-21866-2-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RDizm8Chn3JVD4e1"
 Content-Disposition: inline
-In-Reply-To: <52AFC163.5010507@huawei.com>
+In-Reply-To: <1387258597-21866-2-git-send-email-wenyou.yang@atmel.com>
+X-Cookie: Yow!  I threw up on my window!
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3 v2] regulator: act8865: add PMIC act8865 driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 17-12-13 11:13:39, Li Zefan wrote:
-[...]
-> From: Li Zefan <lizefan@huawei.com>
-> Date: Tue, 17 Dec 2013 10:45:09 +0800
-> Subject: [PATCH] cgroup: don't recycle cgroup id until all csses' have been destroyed
-> 
-> Hugh reported this bug:
-> 
-> > CONFIG_MEMCG_SWAP is broken in 3.13-rc.  Try something like this:
-> >
-> > mkdir -p /tmp/tmpfs /tmp/memcg
-> > mount -t tmpfs -o size=1G tmpfs /tmp/tmpfs
-> > mount -t cgroup -o memory memcg /tmp/memcg
-> > mkdir /tmp/memcg/old
-> > echo 512M >/tmp/memcg/old/memory.limit_in_bytes
-> > echo $$ >/tmp/memcg/old/tasks
-> > cp /dev/zero /tmp/tmpfs/zero 2>/dev/null
-> > echo $$ >/tmp/memcg/tasks
-> > rmdir /tmp/memcg/old
-> > sleep 1	# let rmdir work complete
-> > mkdir /tmp/memcg/new
-> > umount /tmp/tmpfs
-> > dmesg | grep WARNING
-> > rmdir /tmp/memcg/new
-> > umount /tmp/memcg
-> >
-> > Shows lots of WARNING: CPU: 1 PID: 1006 at kernel/res_counter.c:91
-> >                            res_counter_uncharge_locked+0x1f/0x2f()
-> >
-> > Breakage comes from 34c00c319ce7 ("memcg: convert to use cgroup id").
-> >
-> > The lifetime of a cgroup id is different from the lifetime of the
-> > css id it replaced: memsw's css_get()s do nothing to hold on to the
-> > old cgroup id, it soon gets recycled to a new cgroup, which then
-> > mysteriously inherits the old's swap, without any charge for it.
-> 
-> Instead of removing cgroup id right after all the csses have been
-> offlined, we should do that after csses have been destroyed.
-> 
-> To make sure an invalid css pointer won't be returned after the css
-> is destroyed, make sure css_from_id() returns NULL in this case.
 
-OK, so this will postpone idr_remove to css_free and until then
-mem_cgroup_lookup finds a correct memcg. This will work as well.
-It is basically the same thing we had with css_id AFAIR.
+--RDizm8Chn3JVD4e1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Originally I thought this wouldn't be possible because of the comment
-above idr_remove for some reason.
+On Tue, Dec 17, 2013 at 01:36:35PM +0800, Wenyou Yang wrote:
+>  Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 
-> Reported-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+Much better.  Still a few small issues though.
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> +/* ACt8865 voltage table */
+> +static const u32 act8865_voltages_table[] = {
 
-> ---
->  kernel/cgroup.c | 18 ++++++++++--------
->  1 file changed, 10 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index c36d906..769b5bb 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -868,6 +868,15 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
->  		struct cgroup *cgrp = dentry->d_fsdata;
->  
->  		BUG_ON(!(cgroup_is_dead(cgrp)));
+This is the wrong type for a voltage table but it looks like it
+shouldn't be a voltage table at all - this looks like it should be
+mapped as linear ranges.
+
+> +static struct regulator_ops act8865_ops = {
+> +	.list_voltage		= regulator_list_voltage_table,
+> +	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+> +	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+> +	.enable			= regulator_enable_regmap,
+> +	.disable		= regulator_disable_regmap,
+> +	.is_enabled		= regulator_is_enabled_regmap,
+> +	.set_suspend_voltage	= act8865_set_suspend_voltage,
+> +	.set_suspend_enable	= regulator_enable_regmap,
+> +	.set_suspend_disable	= regulator_disable_regmap,
+> +};
+
+This is missing a map_voltage() operation.
+
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id act8865_dt_ids[] = {
+> +	{ .compatible = "active-semi,act8865" },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(of, act8865_dt_ids);
+
+active-semi needs adding to vendor-prefixes.txt.
+
+> +	np = of_find_node_by_name(dev->of_node, "regulators");
+> +	if (!np) {
+> +		dev_err(dev, "missing 'regulators' subnode in DT\n");
+> +		return -EINVAL;
+> +	}
 > +
-> +		/*
-> +		 * We should remove the cgroup object from idr before its
-> +		 * grace period starts, so we won't be looking up a cgroup
-> +		 * while the cgroup is being freed.
-> +		 */
-> +		idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
-> +		cgrp->id = -1;
+> +	for (i = 0; i < ARRAY_SIZE(rmatch); i++)
+> +		rmatch[i].name = act8865_reg[i].name;
 > +
->  		call_rcu(&cgrp->rcu_head, cgroup_free_rcu);
->  	} else {
->  		struct cfent *cfe = __d_cfe(dentry);
-> @@ -4104,6 +4113,7 @@ static void css_release(struct percpu_ref *ref)
->  	struct cgroup_subsys_state *css =
->  		container_of(ref, struct cgroup_subsys_state, refcnt);
->  
-> +	rcu_assign_pointer(css->cgroup->subsys[css->ss->subsys_id], NULL);
->  	call_rcu(&css->rcu_head, css_free_rcu_fn);
->  }
->  
-> @@ -4545,14 +4555,6 @@ static void cgroup_destroy_css_killed(struct cgroup *cgrp)
->  	/* delete this cgroup from parent->children */
->  	list_del_rcu(&cgrp->sibling);
->  
-> -	/*
-> -	 * We should remove the cgroup object from idr before its grace
-> -	 * period starts, so we won't be looking up a cgroup while the
-> -	 * cgroup is being freed.
-> -	 */
-> -	idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
-> -	cgrp->id = -1;
-> -
->  	dput(d);
->  
->  	set_bit(CGRP_RELEASABLE, &parent->flags);
-> -- 
-> 1.8.0.2
-> 
-> 
-> 
-> 
+> +	matched = of_regulator_match(dev, np, rmatch, ARRAY_SIZE(rmatch));
+> +	if (matched <= 0)
+> +		return matched;
 
--- 
-Michal Hocko
-SUSE Labs
+You should register all regulators the device has regardless of how many
+have parameters configured in the DT so that the settings can be read
+back for diagnostic purposes.
+
+> +	if (dev->of_node && !pdata) {
+> +		const struct of_device_id *id;
+> +		struct act8865_platform_data pdata_of;
+> +
+> +		id = of_match_device(of_match_ptr(act8865_dt_ids), dev);
+> +		if (!id)
+> +			return -ENODEV;
+> +
+> +		ret = act8865_pdata_from_dt(dev, of_node, &pdata_of);
+> +		if (ret < 0)
+> +			return ret;
+> +
+> +		pdata = &pdata_of;
+> +	} else {
+> +		memset(of_node, 0, sizeof(of_node));
+> +	}
+
+What's this memset() for?
+
+> +		rdev[i] = devm_regulator_register(&client->dev,
+> +						&act8865_reg[i], &config);
+
+> +err_unregister:
+> +	while (--i >= 0)
+> +		regulator_unregister(rdev[i]);
+
+The whole purpose of devm_ APIs is to avoid the need to explicitly
+unregister, you shouldn't need to call regulator_unregister() at all.
+
+--RDizm8Chn3JVD4e1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSsExqAAoJELSic+t+oim9uMYP/2byL2Xwf2oP3YFayc3tid/D
+bjbab+roy8KWUlLTUzYjTZvdNA04PIe/yikVDMTN/YhtKJsN8RxA9XrO1nGl5wFq
+uNKWOOHIpydGT5otZngzLn0FJwBSEdALzg4wihbSTqR0UszaQnOSB2ZefH9aozG+
+hsRGIMVulU1VX8vhDeGvGL8fzRMv17WEFqmhGusB5FaaG9kuGIHJ7j60tmhX/9TP
+6H2vFyb3+i9ids33cdhNhD4KWBxYr++yF0nVu6daq1iJl+P/lrgL6PzafB3pHbgY
++PhywXTRsG8NJgmhDCyYLwDw0eK/Dw633wck7uC5bgWZN0cY9DJyYNggwbMDvzTO
+PC4+EFNmo1w5iCKCieSUDWUr8zwQMJ+T/PKrOS0TyrXHey2XOPDgj4ZJaC06mldg
+25qlTi93ZvXByp7IBvTCoruu4Ne0b8qcj3r3emMFwLVwTD/HBFBTc4KfelkpmStS
+ZsxVQmR0vaVz9bq/7hWG7rkNbXy7bqvFgAYEHPtj9SMstQbmH3rzgFs2WK+Ks2eP
+hjyGu74FjAu9ZN/GUR8WwtzqDeOY7qp8FqASvIGN6Tz5sjhm06iFLsfqq3SlOwj7
+OsWMQkAilX8CpVrDkPHQrcyya7qBcVVZM7I72Iatr5nf7o2cBi4r9Tj+yuTuSK1g
+qtey7jJI8dw+Z2/MGjte
+=5CPN
+-----END PGP SIGNATURE-----
+
+--RDizm8Chn3JVD4e1--
