@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab3LQQyd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 11:54:33 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:57938 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753455Ab3LQQyb (ORCPT
+	id S1754655Ab3LQQ5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:57:33 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:53414 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754002Ab3LQQ5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 11:54:31 -0500
+	Tue, 17 Dec 2013 11:57:32 -0500
+Date: Tue, 17 Dec 2013 17:57:28 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [Query] Ticks happen in pair for NO_HZ_FULL cores ?
+Message-ID: <20131217165726.GA18689@localhost.localdomain>
+References: <CAKohponch=o3nBKTmakA87OiN=HbgnEwJUL23mGkjQiNoJWjWw@mail.gmail.com>
+ <20131211132212.GA7862@localhost.localdomain>
+ <CAKohponKxw8F6djaXaw0MEzGRWGTSQ=peiYuTGBCOHE0VaJR5Q@mail.gmail.com>
+ <87wqj34eqs.fsf@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20131217160455.GG18680@sgi.com>
-References: <20131212180037.GA134240@sgi.com> <20131213214437.6fdbf7f2.akpm@linux-foundation.org>
- <20131216171214.GA15663@sgi.com> <CALCETrW9uGYzckWg3Wcsu-VV-vbXxUCr+Dv0kXqE5VMKopjn+A@mail.gmail.com>
- <20131217160455.GG18680@sgi.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 17 Dec 2013 08:54:10 -0800
-Message-ID: <CALCETrX_B0D+XyYD8P6mfS4uqty1vzYpOmR-0Mx-yee=wtyR8g@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] Change how we determine when to hand out THPs
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87wqj34eqs.fsf@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 8:04 AM, Alex Thorlton <athorlton@sgi.com> wrote:
-> On Mon, Dec 16, 2013 at 05:43:40PM -0800, Andy Lutomirski wrote:
->> On Mon, Dec 16, 2013 at 9:12 AM, Alex Thorlton <athorlton@sgi.com> wrote:
->> >> Please cc Andrea on this.
->> >
->> > I'm going to clean up a few small things for a v2 pretty soon, I'll be
->> > sure to cc Andrea there.
->> >
->> >> > My proposed solution to the problem is to allow users to set a
->> >> > threshold at which THPs will be handed out.  The idea here is that, when
->> >> > a user faults in a page in an area where they would usually be handed a
->> >> > THP, we pull 512 pages off the free list, as we would with a regular
->> >> > THP, but we only fault in single pages from that chunk, until the user
->> >> > has faulted in enough pages to pass the threshold we've set.  Once they
->> >> > pass the threshold, we do the necessary work to turn our 512 page chunk
->> >> > into a proper THP.  As it stands now, if the user tries to fault in
->> >> > pages from different nodes, we completely give up on ever turning a
->> >> > particular chunk into a THP, and just fault in the 4K pages as they're
->> >> > requested.  We may want to make this tunable in the future (i.e. allow
->> >> > them to fault in from only 2 different nodes).
->> >>
->> >> OK.  But all 512 pages reside on the same node, yes?  Whereas with thp
->> >> disabled those 512 pages would have resided closer to the CPUs which
->> >> instantiated them.
->> >
->> > As it stands right now, yes, since we're pulling a 512 page contiguous
->> > chunk off the free list, everything from that chunk will reside on the
->> > same node, but as I (stupidly) forgot to mention in my original e-mail,
->> > one piece I have yet to add is the functionality to put the remaining
->> > unfaulted pages from our chunk *back* on the free list after we give up
->> > on handing out a THP.  Once this is in there, things will behave more
->> > like they do when THP is turned completely off, i.e. pages will get
->> > faulted in closer to the CPU that first referenced them once we give up
->> > on handing out the THP.
->>
->> This sounds like it's almost the worst possible behavior wrt avoiding
->> memory fragmentation.  If userspace mmaps a very large region and then
->> starts accessing it randomly, it will allocate a bunch of contiguous
->> 512-page regions, claim one page from each, and return the other 511
->> pages to the free list.  Memory is now maximally fragmented from the
->> point of view of future THP allocations.
->
-> Maybe I'm missing the point here to some degree, but the way I think
-> about this is that if we trigger the behavior to return the pages to the
-> free list, we don't *want* future THP allocations in that range of
-> memory for the current process anyways.  So, having the memory be
-> fragmented from the point of view of future THP allocations isn't an
-> issue.
->
+On Tue, Dec 17, 2013 at 08:35:39AM -0800, Kevin Hilman wrote:
+> Viresh Kumar <viresh.kumar@linaro.org> writes:
+> 
+> > Sorry for the delay, was on holidays..
+> >
+> > On 11 December 2013 18:52, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> >> On Tue, Dec 03, 2013 at 01:57:37PM +0530, Viresh Kumar wrote:
+> >>> - again got arch_timer interrupt after 5 ms (HZ=200)
+> >>
+> >> Right, looking at the details, the 2nd interrupt is caused by workqueue delayed
+> >> work bdi writeback.
+> >
+> > I am not that great at reading traces or kernelshark output, but I
+> > still feel I haven't
+> > seen anything wrong. And I wasn't talking about the delayed workqueue here..
+> >
+> > I am looking at the trace I attached with kernelshark after filtering
+> > out CPU0 events:
+> > - Event 41, timestamp: 159.891973
+> > - it ends at event 56, timestamp: 159.892043
+> 
+> For future reference, for generating email friendly trace output for
+> discussion like this, you can use something like:
+> 
+>    trace-cmd report --cpu=1 trace.dat
+> 
+> > And after that the next event comes after 5 Seconds.
+> >
+> > And so I was talking for the Event 41.
+> 
+> That first event (Event 41) is an interrupt, and comes from the
+> scheduler tick.  The tick is happening because the writeback workqueue
+> just ran and we're not in NO_HZ mode.
+> 
+> However, as soon as that IRQ (and resulting softirqs) are finished, we
+> enter NO_HZ mode again.  But as you mention, it only lasts for ~5 sec
+> when the timer fires again.  Once again, it fires because of the
+> writeback workqueue, and soon therafter it switches back to NO_HZ mode
+> again.
+> 
+> So the solution to avoid this jitter on the NO_HZ CPU is to set the
+> affinity of the writeback workqueue to CPU0:
+> 
+>   # pin the writeback workqueue to CPU0
+>   echo 1 > /sys/bus/workqueue/devices/writeback/cpumask
 
-Except that you're causing a problem for the whole system because one
-process is triggering the "hugepages aren't helpful" heuristic.
+Very interesting trick, I'm going to add it to my dyntick-testing suite.
 
---Andy
-
-> - Alex
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Thanks!
