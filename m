@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab3LQUGB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:06:01 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:51846 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657Ab3LQUF6 (ORCPT
+	id S1753766Ab3LQUG3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:06:29 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:58059 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477Ab3LQUG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:05:58 -0500
-Message-ID: <52B0AEA3.6000608@gmail.com>
-Date: Tue, 17 Dec 2013 12:05:55 -0800
+	Tue, 17 Dec 2013 15:06:26 -0500
+Message-ID: <52B0AEAD.6050604@gmail.com>
+Date: Tue, 17 Dec 2013 12:06:05 -0800
 From: Rajat Jain <rajatjain.linux@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
@@ -19,62 +19,71 @@ To: Bjorn Helgaas <bhelgaas@google.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yhlu.kernel@gmail.com>
 CC: Guenter Roeck <groeck@juniper.net>, Rajat Jain <rajatjain@juniper.net>,
         Rajat Jain <rajatxjain@gmail.com>
-Subject: [PATCH v3 3/8] pciehp: Enable link state change notifications
+Subject: [PATCH v3 4/8] pciehp: Don't disable the link permanently, during
+ removal
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enabled the Link state notifications unconditionaly. Enable the
-presence detection notification only if attention button is absent.
-This was discussed at this thread:
-http://marc.info/?t=138611014300001&r=1&w=2
+We need future link up events for hot-add, thus don't disable
+the link permanently during device removal. Also, remove the static
+functions that are now left unused.
 
 Signed-off-by: Rajat Jain <rajatjain@juniper.net>
 Signed-off-by: Guenter Roeck <groeck@juniper.net>
 ---
-v3: * created by splitting the patch v2 [2/4]
-    * Disable presence detect notification, when ATTN BTN is present
+v3: no change, created by splitting the patch v2 [2/4]
 v2: (non existent)
 v1: (non existent)
 
- drivers/pci/hotplug/pciehp_hpc.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ drivers/pci/hotplug/pciehp_hpc.c |   18 ------------------
+ 1 file changed, 18 deletions(-)
 
 diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
-index 1e9f814..b45b568 100644
+index b45b568..ab12555 100644
 --- a/drivers/pci/hotplug/pciehp_hpc.c
 +++ b/drivers/pci/hotplug/pciehp_hpc.c
-@@ -723,9 +723,17 @@ int pcie_enable_notification(struct controller *ctrl)
- 	 * when it is cleared in the interrupt service routine, and
- 	 * next power fault detected interrupt was notified again.
- 	 */
--	cmd = PCI_EXP_SLTCTL_PDCE;
-+
-+	/*
-+	 * Always enable link events: thus link-up and link-down shall
-+	 * always be treated as hotplug and unplug respectively. Enable
-+	 * presence detect only if Attention Button is not present.
-+	 */
-+	cmd = PCI_EXP_SLTCTL_DLLSCE;
- 	if (ATTN_BUTTN(ctrl))
- 		cmd |= PCI_EXP_SLTCTL_ABPE;
-+	else
-+		cmd |= PCI_EXP_SLTCTL_PDCE;
- 	if (MRL_SENS(ctrl))
- 		cmd |= PCI_EXP_SLTCTL_MRLSCE;
- 	if (!pciehp_poll_mode)
-@@ -733,7 +741,8 @@ int pcie_enable_notification(struct controller *ctrl)
+@@ -278,11 +278,6 @@ static void pcie_wait_link_active(struct controller *ctrl)
+ 	__pcie_wait_link_active(ctrl, true);
+ }
  
- 	mask = (PCI_EXP_SLTCTL_PDCE | PCI_EXP_SLTCTL_ABPE |
- 		PCI_EXP_SLTCTL_MRLSCE | PCI_EXP_SLTCTL_PFDE |
--		PCI_EXP_SLTCTL_HPIE | PCI_EXP_SLTCTL_CCIE);
-+		PCI_EXP_SLTCTL_HPIE | PCI_EXP_SLTCTL_CCIE |
-+		PCI_EXP_SLTCTL_DLLSCE);
+-static void pcie_wait_link_not_active(struct controller *ctrl)
+-{
+-	__pcie_wait_link_active(ctrl, false);
+-}
+-
+ static bool pci_bus_check_dev(struct pci_bus *bus, int devfn)
+ {
+ 	u32 l;
+@@ -383,11 +378,6 @@ static int pciehp_link_enable(struct controller *ctrl)
+ 	return __pciehp_link_set(ctrl, true);
+ }
  
- 	if (pcie_write_cmd(ctrl, cmd, mask)) {
- 		ctrl_err(ctrl, "Cannot enable software notification\n");
+-static int pciehp_link_disable(struct controller *ctrl)
+-{
+-	return __pciehp_link_set(ctrl, false);
+-}
+-
+ int pciehp_get_attention_status(struct slot *slot, u8 *status)
+ {
+ 	struct controller *ctrl = slot->ctrl;
+@@ -620,14 +610,6 @@ int pciehp_power_off_slot(struct slot * slot)
+ 	u16 cmd_mask;
+ 	int retval;
+ 
+-	/* Disable the link at first */
+-	pciehp_link_disable(ctrl);
+-	/* wait the link is down */
+-	if (ctrl->link_active_reporting)
+-		pcie_wait_link_not_active(ctrl);
+-	else
+-		msleep(1000);
+-
+ 	slot_cmd = POWER_OFF;
+ 	cmd_mask = PCI_EXP_SLTCTL_PCC;
+ 	retval = pcie_write_cmd(ctrl, slot_cmd, cmd_mask);
 -- 
 1.7.9.5
 
