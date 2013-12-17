@@ -1,146 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab3LQJVd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 04:21:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49709 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750949Ab3LQJVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 04:21:30 -0500
-Date: Tue, 17 Dec 2013 09:21:25 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alex Shi <alex.shi@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
-        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
- range flush v2
-Message-ID: <20131217092124.GV11295@suse.de>
-References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
- <CA+55aFyNAigQqBk07xLpf0nkhZ_x-QkBYG8otRzsqg_8A2eg-Q@mail.gmail.com>
- <20131215155539.GM11295@suse.de>
- <20131216102439.GA21624@gmail.com>
- <20131216125923.GS11295@suse.de>
- <20131216134449.GA3034@gmail.com>
+	id S1752737Ab3LQJWu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 04:22:50 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:33205 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab3LQJWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 04:22:47 -0500
+Date: Tue, 17 Dec 2013 14:51:55 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        josh@joshtriplett.org, devel@acpica.org
+Subject: [PATCH 05/11] drivers: acpi: Include appropriate header file in
+ utstate.c
+Message-ID: <c8f6f6fbcd7de593a726d091f5d0f6a245f6e0f7.1387271324.git.rashika.kheria@gmail.com>
+References: <c676af6619fc5a84208740bfc7edcf56bb78ed4e.1387271324.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131216134449.GA3034@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <c676af6619fc5a84208740bfc7edcf56bb78ed4e.1387271324.git.rashika.kheria@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 02:44:49PM +0100, Ingo Molnar wrote:
-> 
-> * Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > > Whatever we did right in v3.4 we want to do in v3.13 as well - or 
-> > > at least understand it.
-> > 
-> > Also agreed. I started a bisection before answering this mail. It 
-> > would be cooler and potentially faster to figure it out from direct 
-> > analysis but bisection is reliable and less guesswork.
-> 
-> Trying to guess can potentially last a _lot_ longer than a generic, 
-> no-assumptions bisection ...
-> 
+Include appropriate header file acutils.h in acpica/utstate.c because
+function acpi_ut_create_pkg_state_and_push() has its prototype declaration
+in acutils.h. Also, encloses the function in acpica/utstate.c in ifdef
+condition of ACPI_FUTURE_USAGE.
 
-Indeed. In this case, it would have taken me a while to find the correct
-problem because I would consider the affected area to be relatively stable.
+This eliminates the following warning in utstate.c:
+drivers/acpi/acpica/utstate.c:64:1: warning: no previous prototype for ‘acpi_ut_create_pkg_state_and_push’ [-Wmissing-prototypes]
 
-> <SNIP>
->
-> Does the benchmark execute a fixed amount of transactions per thread? 
-> 
-
-Yes.
-
-> That might artificially increase the numeric regression: with more 
-> threads it 'magnifies' any unfairness effects because slower threads 
-> will become slower, faster threads will become faster, as the thread 
-> count increases.
-> 
-> [ That in itself is somewhat artificial, because real workloads tend 
->   to balance between threads dynamically and don't insist on keeping 
->   the fastest threads idle near the end of a run. It does not
->   invalidate the complaint about the unfairness itself, obviously. ]
-> 
-
-I was wrong about fairness. The first bisection found that cache hotness
-was a more important factor due to a small mistake made in 3.13-rc1
-
----8<---
-sched: Assign correct scheduling domain to sd_llc
-
-Commit 42eb088e (sched: Avoid NULL dereference on sd_busy) corrected a NULL
-dereference on sd_busy but the fix also altered what scheduling domain it
-used for sd_llc. One impact of this is that a task selecting a runqueue may
-consider idle CPUs that are not cache siblings as candidates for running.
-Tasks are then running on CPUs that are not cache hot.
-
-This was found through bisection where ebizzy threads were not seeing equal
-performance and it looked like a scheduling fairness issue. This patch
-mitigates but does not completely fix the problem on all machines tested
-implying there may be an additional bug or a common root cause. Here are
-the average range of performance seen by individual ebizzy threads. It
-was tested on top of candidate patches related to x86 TLB range flushing.
-
-4-core machine
-                    3.13.0-rc3            3.13.0-rc3
-                       vanilla            fixsd-v3r3
-Mean   1        0.00 (  0.00%)        0.00 (  0.00%)
-Mean   2        0.34 (  0.00%)        0.10 ( 70.59%)
-Mean   3        1.29 (  0.00%)        0.93 ( 27.91%)
-Mean   4        7.08 (  0.00%)        0.77 ( 89.12%)
-Mean   5      193.54 (  0.00%)        2.14 ( 98.89%)
-Mean   6      151.12 (  0.00%)        2.06 ( 98.64%)
-Mean   7      115.38 (  0.00%)        2.04 ( 98.23%)
-Mean   8      108.65 (  0.00%)        1.92 ( 98.23%)
-
-8-core machine
-Mean   1         0.00 (  0.00%)        0.00 (  0.00%)
-Mean   2         0.40 (  0.00%)        0.21 ( 47.50%)
-Mean   3        23.73 (  0.00%)        0.89 ( 96.25%)
-Mean   4        12.79 (  0.00%)        1.04 ( 91.87%)
-Mean   5        13.08 (  0.00%)        2.42 ( 81.50%)
-Mean   6        23.21 (  0.00%)       69.46 (-199.27%)
-Mean   7        15.85 (  0.00%)      101.72 (-541.77%)
-Mean   8       109.37 (  0.00%)       19.13 ( 82.51%)
-Mean   12      124.84 (  0.00%)       28.62 ( 77.07%)
-Mean   16      113.50 (  0.00%)       24.16 ( 78.71%)
-
-It's eliminated for one machine and reduced for another.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- kernel/sched/core.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/acpi/acpica/utstate.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index e85cda2..a848254 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4902,6 +4902,7 @@ DEFINE_PER_CPU(struct sched_domain *, sd_asym);
- static void update_top_cache_domain(int cpu)
- {
- 	struct sched_domain *sd;
-+	struct sched_domain *busy_sd = NULL;
- 	int id = cpu;
- 	int size = 1;
+diff --git a/drivers/acpi/acpica/utstate.c b/drivers/acpi/acpica/utstate.c
+index 03c4c2f..0920d23 100644
+--- a/drivers/acpi/acpica/utstate.c
++++ b/drivers/acpi/acpica/utstate.c
+@@ -43,6 +43,7 @@
  
-@@ -4909,9 +4910,9 @@ static void update_top_cache_domain(int cpu)
- 	if (sd) {
- 		id = cpumask_first(sched_domain_span(sd));
- 		size = cpumask_weight(sched_domain_span(sd));
--		sd = sd->parent; /* sd_busy */
-+		busy_sd = sd->parent; /* sd_busy */
- 	}
--	rcu_assign_pointer(per_cpu(sd_busy, cpu), sd);
-+	rcu_assign_pointer(per_cpu(sd_busy, cpu), busy_sd);
+ #include <acpi/acpi.h>
+ #include "accommon.h"
++#include "acutils.h"
  
- 	rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
- 	per_cpu(sd_llc_size, cpu) = size;
+ #define _COMPONENT          ACPI_UTILITIES
+ ACPI_MODULE_NAME("utstate")
+@@ -60,6 +61,7 @@ ACPI_MODULE_NAME("utstate")
+  * DESCRIPTION: Create a new state and push it
+  *
+  ******************************************************************************/
++#ifdef  ACPI_FUTURE_USAGE
+ acpi_status
+ acpi_ut_create_pkg_state_and_push(void *internal_object,
+ 				  void *external_object,
+@@ -79,6 +81,7 @@ acpi_ut_create_pkg_state_and_push(void *internal_object,
+ 	acpi_ut_push_generic_state(state_list, state);
+ 	return (AE_OK);
+ }
++#endif
+ 
+ /*******************************************************************************
+  *
+-- 
+1.7.9.5
+
