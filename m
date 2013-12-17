@@ -1,117 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab3LQRry (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 12:47:54 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:52086 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754625Ab3LQRrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 12:47:53 -0500
-Date: Tue, 17 Dec 2013 11:47:59 -0600
-From: Alex Thorlton <athorlton@sgi.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [RFC PATCH 0/3] Change how we determine when to hand out THPs
-Message-ID: <20131217174759.GL18680@sgi.com>
-References: <20131212180037.GA134240@sgi.com>
- <20131213214437.6fdbf7f2.akpm@linux-foundation.org>
- <20131216171214.GA15663@sgi.com>
- <CALCETrW9uGYzckWg3Wcsu-VV-vbXxUCr+Dv0kXqE5VMKopjn+A@mail.gmail.com>
- <20131217160455.GG18680@sgi.com>
- <CALCETrX_B0D+XyYD8P6mfS4uqty1vzYpOmR-0Mx-yee=wtyR8g@mail.gmail.com>
+	id S1755183Ab3LQRuA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 12:50:00 -0500
+Received: from mga02.intel.com ([134.134.136.20]:20837 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753453Ab3LQRt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 12:49:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,502,1384329600"; 
+   d="scan'208";a="453744916"
+From: "Moore, Robert" <robert.moore@intel.com>
+To: Rashika Kheria <rashika.kheria@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Zheng, Lv" <lv.zheng@intel.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>,
+        "devel@acpica.org" <devel@acpica.org>
+Subject: RE: [PATCH 05/11] drivers: acpi: Include appropriate header file in
+ utstate.c
+Thread-Topic: [PATCH 05/11] drivers: acpi: Include appropriate header file
+ in utstate.c
+Thread-Index: AQHO+wmPgCEknuPds0u3DO++aD9Ek5pYpnUw
+Date: Tue, 17 Dec 2013 17:35:46 +0000
+Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E37C7B99F5@ORSMSX103.amr.corp.intel.com>
+References: <c676af6619fc5a84208740bfc7edcf56bb78ed4e.1387271324.git.rashika.kheria@gmail.com>
+ <c8f6f6fbcd7de593a726d091f5d0f6a245f6e0f7.1387271324.git.rashika.kheria@gmail.com>
+In-Reply-To: <c8f6f6fbcd7de593a726d091f5d0f6a245f6e0f7.1387271324.git.rashika.kheria@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrX_B0D+XyYD8P6mfS4uqty1vzYpOmR-0Mx-yee=wtyR8g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBHHo7Xj002945
 
-On Tue, Dec 17, 2013 at 08:54:10AM -0800, Andy Lutomirski wrote:
-> On Tue, Dec 17, 2013 at 8:04 AM, Alex Thorlton <athorlton@sgi.com> wrote:
-> > On Mon, Dec 16, 2013 at 05:43:40PM -0800, Andy Lutomirski wrote:
-> >> On Mon, Dec 16, 2013 at 9:12 AM, Alex Thorlton <athorlton@sgi.com> wrote:
-> >> >> Please cc Andrea on this.
-> >> >
-> >> > I'm going to clean up a few small things for a v2 pretty soon, I'll be
-> >> > sure to cc Andrea there.
-> >> >
-> >> >> > My proposed solution to the problem is to allow users to set a
-> >> >> > threshold at which THPs will be handed out.  The idea here is that, when
-> >> >> > a user faults in a page in an area where they would usually be handed a
-> >> >> > THP, we pull 512 pages off the free list, as we would with a regular
-> >> >> > THP, but we only fault in single pages from that chunk, until the user
-> >> >> > has faulted in enough pages to pass the threshold we've set.  Once they
-> >> >> > pass the threshold, we do the necessary work to turn our 512 page chunk
-> >> >> > into a proper THP.  As it stands now, if the user tries to fault in
-> >> >> > pages from different nodes, we completely give up on ever turning a
-> >> >> > particular chunk into a THP, and just fault in the 4K pages as they're
-> >> >> > requested.  We may want to make this tunable in the future (i.e. allow
-> >> >> > them to fault in from only 2 different nodes).
-> >> >>
-> >> >> OK.  But all 512 pages reside on the same node, yes?  Whereas with thp
-> >> >> disabled those 512 pages would have resided closer to the CPUs which
-> >> >> instantiated them.
-> >> >
-> >> > As it stands right now, yes, since we're pulling a 512 page contiguous
-> >> > chunk off the free list, everything from that chunk will reside on the
-> >> > same node, but as I (stupidly) forgot to mention in my original e-mail,
-> >> > one piece I have yet to add is the functionality to put the remaining
-> >> > unfaulted pages from our chunk *back* on the free list after we give up
-> >> > on handing out a THP.  Once this is in there, things will behave more
-> >> > like they do when THP is turned completely off, i.e. pages will get
-> >> > faulted in closer to the CPU that first referenced them once we give up
-> >> > on handing out the THP.
-> >>
-> >> This sounds like it's almost the worst possible behavior wrt avoiding
-> >> memory fragmentation.  If userspace mmaps a very large region and then
-> >> starts accessing it randomly, it will allocate a bunch of contiguous
-> >> 512-page regions, claim one page from each, and return the other 511
-> >> pages to the free list.  Memory is now maximally fragmented from the
-> >> point of view of future THP allocations.
-> >
-> > Maybe I'm missing the point here to some degree, but the way I think
-> > about this is that if we trigger the behavior to return the pages to the
-> > free list, we don't *want* future THP allocations in that range of
-> > memory for the current process anyways.  So, having the memory be
-> > fragmented from the point of view of future THP allocations isn't an
-> > issue.
-> >
+I'm not sure what version of ACPICA you are looking at, but in the master git tree for ACPICA, the file accommon.h includes "acutils.h".
+
+> -----Original Message-----
+> From: Rashika Kheria [mailto:rashika.kheria@gmail.com]
+> Sent: Tuesday, December 17, 2013 1:22 AM
+> To: linux-kernel@vger.kernel.org
+> Cc: Moore, Robert; Zheng, Lv; Wysocki, Rafael J; Len Brown; linux-
+> acpi@vger.kernel.org; josh@joshtriplett.org; devel@acpica.org
+> Subject: [PATCH 05/11] drivers: acpi: Include appropriate header file in
+> utstate.c
 > 
-> Except that you're causing a problem for the whole system because one
-> process is triggering the "hugepages aren't helpful" heuristic.
+> Include appropriate header file acutils.h in acpica/utstate.c because
+> function acpi_ut_create_pkg_state_and_push() has its prototype declaration
+> in acutils.h. Also, encloses the function in acpica/utstate.c in ifdef
+> condition of ACPI_FUTURE_USAGE.
+> 
+> This eliminates the following warning in utstate.c:
+> drivers/acpi/acpica/utstate.c:64:1: warning: no previous prototype for
+> â€˜acpi_ut_create_pkg_state_and_pushâ€™ [-Wmissing-prototypes]
+> 
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> ---
+>  drivers/acpi/acpica/utstate.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/acpi/acpica/utstate.c b/drivers/acpi/acpica/utstate.c
+> index 03c4c2f..0920d23 100644
+> --- a/drivers/acpi/acpica/utstate.c
+> +++ b/drivers/acpi/acpica/utstate.c
+> @@ -43,6 +43,7 @@
+> 
+>  #include <acpi/acpi.h>
+>  #include "accommon.h"
+> +#include "acutils.h"
+> 
+>  #define _COMPONENT          ACPI_UTILITIES
+>  ACPI_MODULE_NAME("utstate")
+> @@ -60,6 +61,7 @@ ACPI_MODULE_NAME("utstate")
+>   * DESCRIPTION: Create a new state and push it
+>   *
+> 
+> **************************************************************************
+> ****/
+> +#ifdef  ACPI_FUTURE_USAGE
+>  acpi_status
+>  acpi_ut_create_pkg_state_and_push(void *internal_object,
+>  				  void *external_object,
+> @@ -79,6 +81,7 @@ acpi_ut_create_pkg_state_and_push(void *internal_object,
+>  	acpi_ut_push_generic_state(state_list, state);
+>  	return (AE_OK);
+>  }
+> +#endif
+> 
+> 
+> /*************************************************************************
+> ******
+>   *
+> --
+> 1.7.9.5
 
-I do see where you're coming from here.  Do you have any good tests
-that can cause this type of memory fragmentation that I might be able to
-take a look at, to see how we might combat that issue in this case?
-It seems like something that could occur anyways, but my patch would
-create a situation where it could become a problem much more quickly.
-
-Also, just a side note, I see this being more of a problem on a smaller
-system, where swap is enabled.  However, on larger systems where swap is
-turned off, I think that this scenario might be a bit tougher to hit.  I
-understand that we don't want to hurt the average small system in favor
-of large ones, but that's why we leave it as a tunable and leave it up
-to the system administrator to decide whether or not this is appropriate
-to enable.
-
-- Alex
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
