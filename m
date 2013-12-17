@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab3LQNwD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:52:03 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:35418 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753948Ab3LQNwA (ORCPT
+	id S1754057Ab3LQNwB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:52:01 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:56971 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753974Ab3LQNv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:52:00 -0500
-Date: Tue, 17 Dec 2013 13:51:56 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linux EFI <linux-efi@vger.kernel.org>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Young <dyoung@redhat.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 3/3] efi: Make efi virtual runtime map passing more robust
-Message-ID: <20131217135156.GC3145@console-pimps.org>
-References: <1387236997-26975-1-git-send-email-bp@alien8.de>
- <1387236997-26975-4-git-send-email-bp@alien8.de>
- <20131217121024.GB3145@console-pimps.org>
- <20131217134006.GC30592@pd.tnic>
+	Tue, 17 Dec 2013 08:51:59 -0500
+Date: Tue, 17 Dec 2013 13:51:53 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 1/5] regulator: s5m8767: Add symbols for hard-coded
+ DVS_RAMP register
+Message-ID: <20131217135153.GI19810@lee--X1>
+References: <1387286601-21646-1-git-send-email-k.kozlowski@samsung.com>
+ <1387286601-21646-2-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131217134006.GC30592@pd.tnic>
+In-Reply-To: <1387286601-21646-2-git-send-email-k.kozlowski@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Dec, at 02:40:06PM, Borislav Petkov wrote:
-> On Tue, Dec 17, 2013 at 12:10:24PM +0000, Matt Fleming wrote:
-> > You sunk my i386 battleship,
-> > 
-> > /home/build/git/efi/arch/x86/platform/efi/efi.c:824:24: error: ‘struct real_mode_header’ has no member named ‘trampoline_pgd’
-> > make[4]: *** [arch/x86/platform/efi/efi.o] Error 1
-> > make[3]: *** [arch/x86/platform/efi] Error 2
+> Add symbols for hard-coded values of BUCK_RAMP field in DVS_RAMP
+> register. This simplifies a little the code as register update is called
+> only once.
 > 
-> Right, this is a recurring issue with the trampoline_pgd. What do you
-> prefer: an #ifdef CONFIG_X86_64 or a separate function in efi_$(BITS).c?
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> ---
+>  drivers/regulator/s5m8767.c         |   22 ++++++++++------------
+>  include/linux/mfd/samsung/s5m8767.h |   15 +++++++++++++++
+>  2 files changed, 25 insertions(+), 12 deletions(-)
 
-Couldn't we do the mapping in efi_setup_page_tables() if we pass
-__pa(new_memmap) and 1 << new_memmap_shift as arguments?
+<snip>
+
+> diff --git a/include/linux/mfd/samsung/s5m8767.h b/include/linux/mfd/samsung/s5m8767.h
+> index 9198377ee859..2ab0b0f03641 100644
+> --- a/include/linux/mfd/samsung/s5m8767.h
+> +++ b/include/linux/mfd/samsung/s5m8767.h
+> @@ -186,4 +186,19 @@ enum s5m8767_regulators {
+>  #define S5M8767_ENCTRL_SHIFT		6
+>  #define S5M8767_ENCTRL_MASK		(0x3 << S5M8767_ENCTRL_SHIFT)
+>  
+> +/*
+> + * Values for BUCK_RAMP field in DVS_RAMP register, matching raw values
+> + * in mV/us.
+> + */
+> +enum s5m8767_dvs_buck_ramp_values {
+> +	S5M8767_DVS_BUCK_RAMP_5		= 0x4,
+> +	S5M8767_DVS_BUCK_RAMP_10	= 0x9,
+> +	S5M8767_DVS_BUCK_RAMP_12_5	= 0xb,
+> +	S5M8767_DVS_BUCK_RAMP_25	= 0xd,
+> +	S5M8767_DVS_BUCK_RAMP_50	= 0xe,
+> +	S5M8767_DVS_BUCK_RAMP_100	= 0xf,
+> +};
+
+Why do these have to be enums?
+
+> +#define S5M8767_DVS_BUCK_RAMP_SHIFT	4
+> +#define S5M8767_DVS_BUCK_RAMP_MASK	(0xf << S5M8767_DVS_BUCK_RAMP_SHIFT)
+> +
+>  #endif /* __LINUX_MFD_S5M8767_H */
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
