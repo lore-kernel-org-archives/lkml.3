@@ -1,94 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab3LQJ2g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 04:28:36 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:8391 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab3LQJ2d (ORCPT
+	id S1752837Ab3LQJ2t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 04:28:49 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:41422 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab3LQJ2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 04:28:33 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7f6f6d000005b3b-3e-52b0193f3e6e
-Content-transfer-encoding: 8BIT
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Sangbeom Kim <sbkim73@samsung.com>, linux-kernel@vger.kernel.org
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH mfd-next] mfd: max14577 and sec: add PM_SLEEP dependency to
- suspend/resume
-Date: Tue, 17 Dec 2013 10:28:25 +0100
-Message-id: <1387272505-4621-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t/xy7r2khuCDK7tFbV4/cLQ4v7Xo4wW
-	l3fNYbM43c1qcXHFFyaLrXuvsjuweTTeuMHmcefaHjaPeScDPfq2rGL0+LxJLoA1issmJTUn
-	syy1SN8ugSvjWd9OtoL7/BVt5xeyNTCu4e1i5OSQEDCRODR7MyOELSZx4d56ti5GLg4hgaWM
-	Ekt2nWECSfAKCEr8mHyPpYuRg4NZQF7iyKVskDCzgLrEpHmLmCHq+5gk9jU1s4Mk2ASMJTYv
-	XwI2SESgj1Fi2cp5bBAdMRJP3m4H2yYMZN/e1swMYrMIqEr0NsxmAlnAK+AmcaK7AMSUEFCQ
-	mDPJZgIj3ywkV8xCuGIWkisWMDKvYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/dxAgJ0K87GJce
-	szrEKMDBqMTDe2DZ+iAh1sSy4srcQ4wSHMxKIrwsBUAh3pTEyqrUovz4otKc1OJDjEwcnFIN
-	jKlPbXyvmD1o0mFre6m3YOP9WcXndqfe3MP8TzcnfoISp6tnmaKo0PvZu2ZYSvDGCmixRwe0
-	WM2bP8PH512/g/8Rhzuyn8yUKySk5M+nyAXu0r/3PJmjwDlzk8zKNSYz5hozPVzVnHfx+NmY
-	P1uWuh35Lv+7cfOjDUa3vpmqcgeLnBMSeJu/QomlOCPRUIu5qDgRADeFgekuAgAA
+	Tue, 17 Dec 2013 04:28:41 -0500
+Date: Tue, 17 Dec 2013 14:58:31 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-acpi@vger.kernel.org, josh@joshtriplett.org
+Subject: [PATCH 07/11] drivers: acpi: Include appropriate header file in
+ pci_link.c
+Message-ID: <a8a439a6a00b03ab0df484dc157155034126736b.1387271324.git.rashika.kheria@gmail.com>
+References: <c676af6619fc5a84208740bfc7edcf56bb78ed4e.1387271324.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <c676af6619fc5a84208740bfc7edcf56bb78ed4e.1387271324.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CONFIG_PM_SLEEP dependency to suspend and resume functions of
-max14577 MFD driver and sec-core.c code.
+Includes appropriate header file internal.h in pci_link.c
+because function acpi_pci_link_init() has its prototype declaration in
+internal.h.
 
-This fixes the warnings:
-drivers/mfd/max14577.c:176:12: warning: ‘max14577_suspend’ defined but not used [-Wunused-function]
-drivers/mfd/max14577.c:199:12: warning: ‘max14577_resume’ defined but not used [-Wunused-function]
-drivers/mfd/sec-core.c:347:12: warning: ‘sec_pmic_suspend’ defined but not used [-Wunused-function]
-drivers/mfd/sec-core.c:369:12: warning: ‘sec_pmic_resume’ defined but not used [-Wunused-function]
+This eliminates the following warning in pci_link.c:
+drivers/acpi/pci_link.c:874:13: warning: no previous prototype for ‘acpi_pci_link_init’ [-Wmissing-prototypes]
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/mfd/max14577.c |    2 ++
- drivers/mfd/sec-core.c |    2 ++
- 2 files changed, 4 insertions(+)
+ drivers/acpi/pci_link.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-index a5e1c370c609..1018a6644469 100644
---- a/drivers/mfd/max14577.c
-+++ b/drivers/mfd/max14577.c
-@@ -173,6 +173,7 @@ static const struct i2c_device_id max14577_i2c_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, max14577_i2c_id);
+diff --git a/drivers/acpi/pci_link.c b/drivers/acpi/pci_link.c
+index 2652a61..447c329 100644
+--- a/drivers/acpi/pci_link.c
++++ b/drivers/acpi/pci_link.c
+@@ -42,6 +42,7 @@
  
-+#ifdef CONFIG_PM_SLEEP
- static int max14577_suspend(struct device *dev)
- {
- 	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-@@ -208,6 +209,7 @@ static int max14577_resume(struct device *dev)
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
++#include "internal.h"
  
- 	return 0;
- }
-+#endif /* CONFIG_PM_SLEEP */
- 
- static struct of_device_id max14577_dt_match[] = {
- 	{ .compatible = "maxim,max14577", },
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index 56615af42a28..455e3a8fb95d 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -343,6 +343,7 @@ static int sec_pmic_remove(struct i2c_client *i2c)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM_SLEEP
- static int sec_pmic_suspend(struct device *dev)
- {
- 	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-@@ -377,6 +378,7 @@ static int sec_pmic_resume(struct device *dev)
- 
- 	return 0;
- }
-+#endif /* CONFIG_PM_SLEEP */
- 
- static SIMPLE_DEV_PM_OPS(sec_pmic_pm_ops, sec_pmic_suspend, sec_pmic_resume);
+ #define PREFIX "ACPI: "
  
 -- 
 1.7.9.5
