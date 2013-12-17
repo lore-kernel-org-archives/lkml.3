@@ -1,68 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab3LQWyB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:54:01 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:43293 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161Ab3LQWx6 (ORCPT
+	id S1753281Ab3LQWyW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:54:22 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:55470 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752346Ab3LQWvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:53:58 -0500
-Message-ID: <52B0D5F9.5030208@oracle.com>
-Date: Tue, 17 Dec 2013 17:53:45 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>
-CC: Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/18] mm: numa: Avoid unnecessary disruption of NUMA
- hinting during migration
-References: <1386690695-27380-1-git-send-email-mgorman@suse.de> <1386690695-27380-11-git-send-email-mgorman@suse.de>
-In-Reply-To: <1386690695-27380-11-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 17 Dec 2013 17:51:44 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: [PATCH 06/13] nohz: Introduce full dynticks' default timekeeping target
+Date: Tue, 17 Dec 2013 23:51:25 +0100
+Message-Id: <1387320692-28460-7-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
+References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+When a full dynticks CPU wakes up while the whole rest of the system
+is idle, we need to wake up the CPU in charge of the timekeeping duty
+handling.
 
-On 12/10/2013 10:51 AM, Mel Gorman wrote:
-> +
-> +	/* mmap_sem prevents this happening but warn if that changes */
-> +	WARN_ON(pmd_trans_migrating(pmd));
-> +
+As of today, the CPU that maintains this duty is CPU 0 when
+CONFIG_NO_HZ_FULL=y. So referring to tick_do_timer_cpu like we
+currently do is correct. But this behaviour is subject to change
+in the future because we want to balance the timekeeping duty over all
+the CPUs outside the full dynticks range.
 
-I seem to be hitting this warning with latest -next kernel:
+As such we now need to define a default timekeeping CPU which receives
+the timekeeping wakeup IPIs and which can't be offlined so that it's
+guaranteed to always be present for full dynticks CPUs housekeeping.
 
-[ 1704.594807] WARNING: CPU: 28 PID: 35287 at mm/huge_memory.c:887 copy_huge_pmd+0x145/
-0x3a0()
-[ 1704.597258] Modules linked in:
-[ 1704.597844] CPU: 28 PID: 35287 Comm: trinity-main Tainted: G        W    3.13.0-rc4-
-next-20131217-sasha-00013-ga878504-dirty #4149
-[ 1704.599924]  0000000000000377e delta! pid slot 27 [36258]: old:2 now:537927697 diff:
-537927695 ffff8803593ddb90 ffffffff8439501c ffffffff854722c1
-[ 1704.604846]  0000000000000000 ffff8803593ddbd0 ffffffff8112f8ac ffff8803593ddbe0
-[ 1704.606391]  ffff88034bc137f0 ffff880e41677000 8000000b47c009e4 ffff88034a638000
-[ 1704.608008] Call Trace:
-[ 1704.608511]  [<ffffffff8439501c>] dump_stack+0x52/0x7f
-[ 1704.609699]  [<ffffffff8112f8ac>] warn_slowpath_common+0x8c/0xc0
-[ 1704.612617]  [<ffffffff8112f8fa>] warn_slowpath_null+0x1a/0x20
-[ 1704.614043]  [<ffffffff812b91c5>] copy_huge_pmd+0x145/0x3a0
-[ 1704.615587]  [<ffffffff8127e032>] copy_page_range+0x3f2/0x560
-[ 1704.616869]  [<ffffffff81199ef1>] ? rwsem_wake+0x51/0x70
-[ 1704.617942]  [<ffffffff8112cf59>] dup_mmap+0x2c9/0x3d0
-[ 1704.619146]  [<ffffffff8112d54d>] dup_mm+0xad/0x150
-[ 1704.620051]  [<ffffffff8112e178>] copy_process+0xa68/0x12e0
-[ 1704.622976]  [<ffffffff81194eda>] ? __lock_release+0x1da/0x1f0
-[ 1704.624234]  [<ffffffff8112eee6>] do_fork+0x96/0x270
-[ 1704.624975]  [<ffffffff81249465>] ? context_tracking_user_exit+0x195/0x1d0
-[ 1704.626427]  [<ffffffff811930ed>] ? trace_hardirqs_on+0xd/0x10
-[ 1704.627681]  [<ffffffff8112f0d6>] SyS_clone+0x16/0x20
-[ 1704.628833]  [<ffffffff843a6309>] stub_clone+0x69/0x90
-[ 1704.629672]  [<ffffffff843a6150>] ? tracesys+0xdd/0xe2
+So lets stick to CPU 0 for this purpose. It's convenient because
+rejecting any other CPU's offlining request may result in suspend
+failure.
 
+We can optimize this solution later by adaptively sending the IPI
+to a potential timekeeping CPU that is already running a non idle task.
 
-Thanks,
-Sasha
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Alex Shi <alex.shi@linaro.org>
+Cc: Kevin Hilman <khilman@linaro.org>
+---
+ include/linux/tick.h     | 16 ++++++++++++++++
+ kernel/rcu/tree_plugin.h |  4 ++--
+ kernel/time/tick-sched.c |  2 +-
+ 3 files changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index cf2fd34..af98d2c 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -180,6 +180,22 @@ static inline bool tick_nohz_full_cpu(int cpu)
+ }
+ 
+ /**
++ * tick_timekeeping_default_cpu - seek timekeeping default CPU
++
++ * @return the default target which we send an IPI to
++ * when a full dynticks CPU wakes up and exits from full
++ * system idle state.
++ *
++ * This target is always CPU 0 in full dynticks environment.
++ * If we were to pick up any other CPU, that would result in suspend
++ * failures due to rejected offlining request.
++ */
++static inline int tick_timekeeping_default_cpu(void)
++{
++	return 0;
++}
++
++/**
+  * tick_timeeping_cpu - check if a CPU is elligble to handle timekeeping duty
+  * @cpu:	the cpu to check
+  *
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 84d90c8..1795265 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2488,7 +2488,7 @@ void rcu_sysidle_force_exit(void)
+ 				      oldstate, RCU_SYSIDLE_NOT);
+ 		if (oldstate == newoldstate &&
+ 		    oldstate == RCU_SYSIDLE_FULL_NOTED) {
+-			smp_send_reschedule(tick_do_timer_cpu);
++			smp_send_reschedule(tick_timekeeping_default_cpu());
+ 			return; /* We cleared it, done! */
+ 		}
+ 		oldstate = newoldstate;
+@@ -2597,7 +2597,7 @@ static bool is_sysidle_rcu_state(struct rcu_state *rsp)
+  */
+ static void rcu_bind_gp_kthread(void)
+ {
+-	int cpu = ACCESS_ONCE(tick_do_timer_cpu);
++	int cpu = tick_timekeeping_default_cpu();
+ 
+ 	if (cpu < 0 || cpu >= nr_cpu_ids)
+ 		return;
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index ea0d411..9a91c31 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -305,7 +305,7 @@ static int tick_nohz_cpu_down_callback(struct notifier_block *nfb,
+ 		 * If we handle the timekeeping duty for full dynticks CPUs,
+ 		 * we can't safely shutdown that CPU.
+ 		 */
+-		if (tick_nohz_full_running && tick_do_timer_cpu == cpu)
++		if (tick_nohz_full_running && tick_timekeeping_default_cpu() == cpu)
+ 			return NOTIFY_BAD;
+ 		break;
+ 	}
+-- 
+1.8.3.1
+
