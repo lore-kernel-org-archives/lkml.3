@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab3LQNA6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:00:58 -0500
-Received: from smtp5.epfl.ch ([128.178.224.8]:50594 "EHLO smtp5.epfl.ch"
+	id S1753674Ab3LQNAy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:00:54 -0500
+Received: from smtp5.epfl.ch ([128.178.224.8]:50542 "EHLO smtp5.epfl.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753352Ab3LQNA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:00:56 -0500
+	id S1753520Ab3LQNAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 08:00:52 -0500
 From: Florian Vaussard <florian.vaussard@epfl.ch>
 To: Joerg Roedel <joro@8bytes.org>, Tony Lindgren <tony@atomide.com>,
         =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>
@@ -19,9 +19,9 @@ Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         iommu@lists.linux-foundation.org, devicetree@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 6/7] ARM: OMAP2+: Remove legacy data from hwmod for omap3 isp iommu
-Date: Tue, 17 Dec 2013 13:53:37 +0100
-Message-Id: <1387284818-28739-7-git-send-email-florian.vaussard@epfl.ch>
+Subject: [PATCH 2/7] iommu/omap: omap_iommu_attach() should return ENODEV, not NULL
+Date: Tue, 17 Dec 2013 13:53:33 +0100
+Message-Id: <1387284818-28739-3-git-send-email-florian.vaussard@epfl.ch>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1387284818-28739-1-git-send-email-florian.vaussard@epfl.ch>
 References: <1387284818-28739-1-git-send-email-florian.vaussard@epfl.ch>
@@ -29,40 +29,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The data are now passed using the devicetree.
+omap_iommu_attach() returns NULL or ERR_PTR in case of error, but
+omap_iommu_attach_dev() only checks for IS_ERR. Thus a NULL return value (in
+case driver_find_device fails) will cause the kernel to panic when
+omap_iommu_attach_dev() dereferences the pointer.
+
+In such case, omap_iommu_attach() should return ENODEV, not NULL.
 
 Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
 ---
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c | 8 --------
- 1 file changed, 8 deletions(-)
+ drivers/iommu/omap-iommu.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-index 0477131..6dccd46 100644
---- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-@@ -2469,15 +2469,8 @@ static struct omap_hwmod_class omap3xxx_mmu_hwmod_class = {
+diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+index ee83bcc..385bf5e 100644
+--- a/drivers/iommu/omap-iommu.c
++++ b/drivers/iommu/omap-iommu.c
+@@ -863,7 +863,7 @@ static int device_match_by_alias(struct device *dev, void *data)
+  **/
+ static struct omap_iommu *omap_iommu_attach(const char *name, u32 *iopgd)
+ {
+-	int err = -ENOMEM;
++	int err = -ENODEV;
+ 	struct device *dev;
+ 	struct omap_iommu *obj;
  
- /* mmu isp */
+@@ -871,7 +871,7 @@ static struct omap_iommu *omap_iommu_attach(const char *name, u32 *iopgd)
+ 				(void *)name,
+ 				device_match_by_alias);
+ 	if (!dev)
+-		return NULL;
++		return ERR_PTR(err);
  
--static struct omap_mmu_dev_attr mmu_isp_dev_attr = {
--	.da_start	= 0x0,
--	.da_end		= 0xfffff000,
--	.nr_tlb_entries = 8,
--};
--
- static struct omap_hwmod omap3xxx_mmu_isp_hwmod;
- 
--
- /* l4_core -> mmu isp */
- static struct omap_hwmod_ocp_if omap3xxx_l4_core__mmu_isp = {
- 	.master		= &omap3xxx_l4_core_hwmod,
-@@ -2489,7 +2482,6 @@ static struct omap_hwmod omap3xxx_mmu_isp_hwmod = {
- 	.name		= "mmu_isp",
- 	.class		= &omap3xxx_mmu_hwmod_class,
- 	.main_clk	= "cam_ick",
--	.dev_attr	= &mmu_isp_dev_attr,
- 	.flags		= HWMOD_NO_IDLEST,
- };
+ 	obj = to_iommu(dev);
  
 -- 
 1.8.1.2
