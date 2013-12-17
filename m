@@ -1,143 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab3LQCO5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 21:14:57 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:46011 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab3LQCO4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 21:14:56 -0500
-Date: Mon, 16 Dec 2013 20:14:16 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Apelete Seketeli <apelete@seketeli.net>
-CC: Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH 3/3] usb: musb: fix setting JZ4740 gadget periphal mode
- on reset
-Message-ID: <20131217021416.GA21787@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1386992918-1531-1-git-send-email-apelete@seketeli.net>
- <1386992918-1531-4-git-send-email-apelete@seketeli.net>
- <20131216212056.GE12896@saruman.home>
- <20131217013100.GX4581@hermes>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/04w6evG8XlLl3ft"
-Content-Disposition: inline
-In-Reply-To: <20131217013100.GX4581@hermes>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752628Ab3LQCQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 21:16:26 -0500
+Received: from ozlabs.org ([203.10.76.45]:56445 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752365Ab3LQCQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 21:16:25 -0500
+Date: Tue, 17 Dec 2013 13:16:15 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alasdair G Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>
+Subject: linux-next: manual merge of the device-mapper tree with the block
+ tree
+Message-Id: <20131217131615.ad900aa79aadfdef3509b4ec@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__17_Dec_2013_13_16_15_+1100_Htl/tmtVzlet17+M"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---/04w6evG8XlLl3ft
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Tue__17_Dec_2013_13_16_15_+1100_Htl/tmtVzlet17+M
+Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Hi all,
 
-On Tue, Dec 17, 2013 at 02:31:00AM +0100, Apelete Seketeli wrote:
-> On 16-Dec-13, Felipe Balbi wrote:
-> > On Sat, Dec 14, 2013 at 04:48:38AM +0100, Apelete Seketeli wrote:
-> > > JZ4740 USB Device Controller is not OTG compatible and does not have =
-DEVCTL
-> > > register in silicon.
-> > >=20
-> > > During ethernet-over-usb transactions, on reset, musb driver tries to
-> > > read from DEVCTL and consequently sets device as host (A-Device)
-> > > instead of peripheral (B-Device), which makes it a composite device to
-> > > the USB gadget driver.
-> > > This induces a kernel panic during power down where the USB gadget
-> > > driver does a null pointer dereference when trying to access the
-> > > composite device configuration.
-> > >=20
-> > > On reset, do not rely on DEVCTL value for setting gadget peripheral
-> > > mode: hardcode it instead to B-Device.
-> > >=20
-> > > Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
-> > > ---
-> > >  drivers/usb/musb/musb_gadget.c |    9 +++++++++
-> > >  1 file changed, 9 insertions(+)
-> > >=20
-> > > diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_g=
-adget.c
-> > > index 32fb057..b4bea7a 100644
-> > > --- a/drivers/usb/musb/musb_gadget.c
-> > > +++ b/drivers/usb/musb/musb_gadget.c
-> > > @@ -2119,6 +2119,14 @@ __acquires(musb->lock)
-> > >  	/* Normal reset, as B-Device;
-> > >  	 * or else after HNP, as A-Device
-> > >  	 */
-> > > +#if defined(CONFIG_USB_MUSB_JZ4740) || defined(CONFIG_USB_MUSB_JZ474=
-0_MODULE)
-> >=20
-> > NAK, no ifdefs in this driver. Pass a quirk flag through platform_data
-> > or something similar.
->=20
-> I get that, makes sense to me, but problem is the driver has to read a
-> valid value from DEVCTL hardware register when musb_g_reset() is
-> called, and I do not see how this can be achieved through
-> platform_data.
+Today's linux-next merge of the device-mapper tree got a conflict in
+drivers/md/dm-thin.c between commit 4f024f3797c4 ("block: Abstract out
+bvec iterator") from the block tree and commit 1d8b40855c42 ("dm thin:
+requeue bios to DM core if may_requeue_bios and in read-only mode") from
+the device-mapper tree.
 
-why not ?
-
-	/*
-	 * JZ4740 UDC Controller is not OTG compatible as does not
-	 * have a DEVCTL register in silicon. Due to that, we must
-	 * NOT rely on that register for setting peripheral mode.
-	 */
-	if (unlikely(musb->quirk_broken_devctl)) {
-		musb->xceiv->state =3D OTG_STATE_B_PERIPHERAL;
-		musb->g_is_a_peripheral =3D 0;
-	else if (devctl & MUSB_DEVCTL_BDEVICE) {
-		musb->xceiv->state =3D OTG_STATE_B_PERIPHERAL;
-		musb->g_is_a_peripheral =3D 0;
-	} else {
-		musb->xceiv->state =3D OTG_STATE_A_PERIPHERAL;
-		musb->g_is_a_peripheral =3D 1;
-	}
-
-> Is it ok to use ifdefs in musb_regs.h to add specific hardware
-> register indexes for JZ4740 instead ?
-
-you guys changed the register file ? Why ? Is my pain not enough
-already ? :-p
-
-> I am actually thinking about fooling the musb driver into reading a
-> valid value from another register instead of DEVCTL.
-
-which register would that be ? If the register file is different, we
-need to find a way to support it, but you gotta fix a few other things
-first before I look into that, I don't want to see any more hacks and
-ifdeffery hell around this driver. It's already painful enough to
-support all HW variants it already supports.
-
-cheers
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
 --=20
-balbi
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---/04w6evG8XlLl3ft
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --cc drivers/md/dm-thin.c
+index 357eb272dbd9,dde2b1eddbce..000000000000
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@@ -1262,8 -1260,8 +1266,8 @@@ static void process_bio_read_only(struc
+  	r =3D dm_thin_find_block(tc->td, block, 1, &lookup_result);
+  	switch (r) {
+  	case 0:
+ -		if (lookup_result.shared && (rw =3D=3D WRITE) && bio->bi_size)
+ +		if (lookup_result.shared && (rw =3D=3D WRITE) && bio->bi_iter.bi_size)
+- 			bio_io_error(bio);
++ 			handle_unserviceable_bio(tc->pool, bio);
+  		else {
+  			inc_all_io_entry(tc->pool, bio);
+  			remap_and_issue(tc, bio, lookup_result.block);
+
+--Signature=_Tue__17_Dec_2013_13_16_15_+1100_Htl/tmtVzlet17+M
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSr7N4AAoJEIaOsuA1yqRElcMQAKonHq9qcg2Nq9r7EzkL+Gwn
-yz02yp24bd/EVDG2VE5nfRIXD4GxygAmg6zVEciAaOqHSBl/AVLmzjaTT//+8zFd
-TITA7Khi7MzIKKISZ09osJVpeEWY9nGb9fEBEOl0c9QWPE2gZ7FnGmKBTN3v8dI6
-VGlrzBlHet47/7ssATMv/vAAOmcl6gcFRTsyt+3OZkovgM+j3tDzgZ3rHriB5auj
-1iiPjc6+6VgfIPucb7XYyCMAxT/QZMDGHisrMIC/FipN+mLGc1/C/vXEbXfMGZEd
-5zpJqYuUACcvSD8P04u4xbSfKUffPRZ0zQMdN2YvyZ5gMKpO96tlw1r6N46jiS02
-odyuHQrRobqe2sZE4bRqLmjibyNPdDR6tpNIl9wWi5uWVaYVjlAgOP4G8Jdfvna7
-uqmvL+50KMN97ZpH3LDaiCWjeB+h+s8/Ky2ZLrHAaxx1xco03N6AoLE1kvJsMJDR
-OgDghhoF+rN9aCRRb4DA8MuIs/D1y1EcbEOQNmlKhqe0A2n5raMH5Ht/uMLKzStI
-Av8Yji3r7+ELPpbGTl3CUlsT6M4nuNjQ9oadkRKVpyAxa9eQvHcJ7PUMMm78vGMm
-1c7CNDa8iclTvEIsbwmd55f5wxdGGEgwRuIBEfXymdVlR+K1sRbzzgo66Bd+OsTX
-RM454wLlICp4GIaT2IKd
-=vseH
+iQIcBAEBCAAGBQJSr7PzAAoJEMDTa8Ir7ZwV/FIP/j+AlaIUqzIJTPEp7kyKM0uF
+Pw/WRRtrY7uwEZQ9Lj29ZY0v7Ee5SDMypEgYZXYeCHOlNceJtqkNhT43d12+yNvU
+Vrk3Na2OZRWrmazJ64cgWu6WVTy4qO/u4sVY2zoM9JtVtllZUGqNt+rlkq/cSnjv
+6j8SrltOpOIiYnkPn59OAP5Fd/m+tgH2UaTXhdO8G3i0+2nVQTx8FSHtff0fS0tm
+AcxkWvlmuzqZcf4Te4w1XxryJpSGcEy3pKP/aF/CjBniPLbLM+YWKRv0MYwBAXPq
+TzrfsWUBsVS3rjJZKYriwhCeCVpTAYPrHUD2+GAUEbC28E9cMn6yCZdJw8Q3ZX2C
+wBDsxha3ZBwyIlcIaaNw4XB6IwMszsRV4PFkIwL1xbJyyoUWbzF7QktNvJKmiHyt
+bsJLWu2/3QrB8SWgX3Xl+T+WxAq9MkPYrojsM2ZXR+cTjVM/ZXG3NxQFsDKy+rHU
+yF9+Is6zs9S6KULyD3BD4CxOsNY0VNXNeap3MFLLY1RB1xWtA0pAJK+5Fv8o/Kkq
+sKNT3T/6lTjTK5MTMVZPhhsGbV6BBu4R8hPlsyqipvU1l32vh1GwwrB2fQA7t+S4
+6OrPKxPhee0o+3j88groh3EDFZWjGabJCrskIItQ7hW+qjk9jgCMKatCwLB8y5DJ
+E+ausk6q8Qs9JAZ1W80p
+=VXE4
 -----END PGP SIGNATURE-----
 
---/04w6evG8XlLl3ft--
+--Signature=_Tue__17_Dec_2013_13_16_15_+1100_Htl/tmtVzlet17+M--
