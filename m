@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab3LQQUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 11:20:53 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:53071 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443Ab3LQQUU (ORCPT
+	id S1754610Ab3LQQWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:22:45 -0500
+Received: from 9.mo3.mail-out.ovh.net ([87.98.184.141]:41282 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753626Ab3LQQWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 11:20:20 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-sctp@vger.kernel.org
-Cc: Neil Horman <nhorman@tuxdriver.com>,
+	Tue, 17 Dec 2013 11:22:43 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Landley <rob@landley.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 1/2] printk: Add a DEPRECATED macro
-Date: Tue, 17 Dec 2013 11:19:58 -0500
-Message-Id: <1387297199-14363-2-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1387297199-14363-1-git-send-email-nhorman@tuxdriver.com>
-References: <1387205049-22752-1-git-send-email-nhorman@tuxdriver.com>
- <1387297199-14363-1-git-send-email-nhorman@tuxdriver.com>
-X-Spam-Score: -2.9 (--)
+        Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-serial@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+Subject: [PATCH v2] tty/serial: at91: document clock properties
+Date: Tue, 17 Dec 2013 17:22:20 +0100
+Message-Id: <1387297340-8198-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387296121-7558-1-git-send-email-b.brezillon@overkiz.com>
+References: <1387296121-7558-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 8813825947638397026
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sctp has several points in its setsockopt path in which it issues deprecation
-warnings.  It seems like it might be handy to macrotize such a warning so other
-subsystems can use it easily
+Document the clock properties required by the at91 usart driver.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org
-
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 ---
-Change Notes:
+Changes since v1:
+ - fix commit message
 
-v3)
-* Convert to using a string prefix rather than a specific pr_ macro
----
- include/linux/printk.h | 7 +++++++
+ .../devicetree/bindings/serial/atmel-usart.txt     |    7 +++++++
  1 file changed, 7 insertions(+)
 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 6949258..26fb95c 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -88,6 +88,13 @@ struct va_format {
- #define HW_ERR		"[Hardware Error]: "
+diff --git a/Documentation/devicetree/bindings/serial/atmel-usart.txt b/Documentation/devicetree/bindings/serial/atmel-usart.txt
+index 2191dcb..9c5d19a 100644
+--- a/Documentation/devicetree/bindings/serial/atmel-usart.txt
++++ b/Documentation/devicetree/bindings/serial/atmel-usart.txt
+@@ -6,6 +6,9 @@ Required properties:
+   additional mode or an USART new feature.
+ - reg: Should contain registers location and length
+ - interrupts: Should contain interrupt
++- clock-names: tuple listing input clock names.
++	Required elements: "usart"
++- clocks: phandles to input clocks.
  
- /*
-+ * DEPRECATED
-+ * Add this to a message whenever you want to warn user space about the use
-+ * of a deprecated aspect of an API so they can stop using it
-+ */
-+#define DEPRECATED	"[Deprecated]: "
-+
-+/*
-  * Dummy printk for disabled debugging statements to use whilst maintaining
-  * gcc's format and side-effect checking.
-  */
+ Optional properties:
+ - atmel,use-dma-rx: use of PDC or DMA for receiving data
+@@ -26,6 +29,8 @@ Example:
+ 		compatible = "atmel,at91sam9260-usart";
+ 		reg = <0xfff8c000 0x4000>;
+ 		interrupts = <7>;
++		clocks = <&usart0_clk>;
++		clock-names = "usart";
+ 		atmel,use-dma-rx;
+ 		atmel,use-dma-tx;
+ 	};
+@@ -35,6 +40,8 @@ Example:
+ 		compatible = "atmel,at91sam9260-usart";
+ 		reg = <0xf001c000 0x100>;
+ 		interrupts = <12 4 5>;
++		clocks = <&usart0_clk>;
++		clock-names = "usart";
+ 		atmel,use-dma-rx;
+ 		atmel,use-dma-tx;
+ 		dmas = <&dma0 2 0x3>,
 -- 
-1.8.3.1
+1.7.9.5
 
