@@ -1,69 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab3LQKXS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 05:23:18 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:36686 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab3LQKXQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 05:23:16 -0500
-Message-ID: <52B02598.5060004@ti.com>
-Date: Tue, 17 Dec 2013 12:21:12 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752099Ab3LQKZV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 05:25:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51324 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750929Ab3LQKZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 05:25:19 -0500
+Date: Tue, 17 Dec 2013 11:25:17 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.13-rc breaks MEMCG_SWAP
+Message-ID: <20131217102517.GA28991@dhcp22.suse.cz>
+References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils>
+ <20131216162042.GC26797@dhcp22.suse.cz>
+ <alpine.LNX.2.00.1312161742540.2037@eggly.anvils>
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
-        <dwmw2@infradead.org>
-Subject: Re: [PATCH v3 1/9] mtd: nand: davinci: fix driver registration
-References: <1386264358-9738-1-git-send-email-ivan.khoronzhuk@ti.com> <1386264358-9738-2-git-send-email-ivan.khoronzhuk@ti.com> <20131217092449.GL12034@norris-Latitude-E6410>
-In-Reply-To: <20131217092449.GL12034@norris-Latitude-E6410>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1312161742540.2037@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2013 11:24 AM, Brian Norris wrote:
-> On Thu, Dec 05, 2013 at 07:25:49PM +0200, Ivan Khoronzhuk wrote:
->> --- a/drivers/mtd/nand/davinci_nand.c
->> +++ b/drivers/mtd/nand/davinci_nand.c
->> @@ -877,6 +877,7 @@ static int __exit nand_davinci_remove(struct platform_device *pdev)
->>   }
->>   
->>   static struct platform_driver nand_davinci_driver = {
->> +	.probe		= nand_davinci_probe,
->>   	.remove		= __exit_p(nand_davinci_remove),
+On Mon 16-12-13 18:26:18, Hugh Dickins wrote:
+> On Mon, 16 Dec 2013, Michal Hocko wrote:
+> > On Mon 16-12-13 00:36:05, Hugh Dickins wrote:
+[...]
+> > > +/**
+> > > + * swap_cgroup_reassign - assign all old entries to new (before old is freed).
+> > > + * @old: id of emptied memcg whose entries are now to be reassigned
+> > > + * @new: id of parent memcg to which those entries are to be assigned
+> > > + *
+> > > + * Returns number of entries reassigned, for debugging or for statistics.
+> > > + */
+> > > +long swap_cgroup_reassign(unsigned short old, unsigned short new)
+> > > +{
+> > > +	long reassigned = 0;
+> > > +	int type;
+> > > +
+> > > +	for (type = 0; type < MAX_SWAPFILES; type++) {
+> > > +		struct swap_cgroup_ctrl *ctrl = &swap_cgroup_ctrl[type];
+> > > +		unsigned long idx;
+> > > +
+> > > +		for (idx = 0; idx < ACCESS_ONCE(ctrl->length); idx++) {
+> > > +			struct swap_cgroup *sc, *scend;
+> > > +
+> > > +			spin_lock(&swap_cgroup_lock);
+> > > +			if (idx >= ACCESS_ONCE(ctrl->length))
+> > > +				goto unlock;
+> > > +			sc = page_address(ctrl->map[idx]);
+> > > +			for (scend = sc + SC_PER_PAGE; sc < scend; sc++) {
+> > > +				if (sc->id != old)
+> > > +					continue;
+> > 
+> > Is this safe? What prevents from race when id is set to old?
 > 
-> I believe you need to drop the __exit_p() here. And now that you're
-> using module_platform_driver(), you need to drop the __init and __exit
-> from the probe() and remove() routines, to avoid section mismatch
-> warnings.
-> 
->>   	.driver		= {
->>   		.name	= "davinci_nand",
-> 
-> So on second thought, please resubmit the series with the requested
-> changes.
-> 
-> Thanks,
-> Brian
-> 
+> I am assuming that when this is called, we shall not be making any
+> new charges to old (if you see what I mean :) - this is called after
+> mem_cgroup_reparent_charges() (the main call - I've not yet wrapped
+> my head around Hannes's later safety-net call; perhaps these patches
+> would even make that one redundant - dunno).
 
-Thanks, Brian.
-Do you want me to drop it in stand alone patch or in this one?
+I have to think about this some more. I was playing with an alternative
+fix for this race and few trace points shown me that the races are quite
+common.
 
+Anyway, wouldn't be it easier to take the lock for a batch of sc's and
+then release it followed by cond_resched? Doing 1024 of iterations
+doesn't sound too bad to me (we would take the lock 2 times for 4k pages).
+
+> Quite a lot is made simpler by the fact that we do not need to call
+> this from mem_cgroup_force_empty(), with all the races that would
+> entail: there was never any attempt to move these swap charges before,
+> so it's a pleasure not to have to deal with that possibility now.
+>
+> > > +				spin_lock(&ctrl->lock);
+> > > +				if (sc->id == old) {
+> > 
+> > Also it seems that compiler is free to optimize this test away, no?
+> > You need ACCESS_ONCE here as well, I guess.
+> 
+> Oh dear, you're asking me to read again through memory-barriers.txt
+> (Xmas 2013 edition), and come to a conclusion.  I think this pattern
+> of test outside spinlock, spinlock, test again inside spinlock is
+> used in very many places, without any ACCESS_ONCE.  I'll have to
+> go and search through the precedents.
+> 
+> I've probably brought this upon myself with the ACCESS_ONCE(ctrl->length)
+> a few lines above, which I added at a late stage to match the one above
+> it; but now I'm arguing that's unnecessary.
+
+Yeah, that triggered the red flag ;)
+
+> One of the problems with ACCESS_ONCE is that one easily falls into
+> a mistaken state in which it seems to be necessary everywhere;
+> but that illusion must be resisted.
+> 
+> The spinlock should make it unnecessary, but I'll have to muse on
+> semi-permeable membranes, osmosis, stuff like that.
+
+OK, I have checked that and you are right. ACCESS_ONCE is not needed.
+Compiler is not allowed to optimize across barrier() which is a part of
+spin_lock. So this should be ok.
+[...]
 -- 
-Regards,
-Ivan Khoronzhuk
+Michal Hocko
+SUSE Labs
