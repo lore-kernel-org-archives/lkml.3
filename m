@@ -1,93 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751240Ab3LQFNo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 00:13:44 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35058 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750977Ab3LQFNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 00:13:42 -0500
-Date: Mon, 16 Dec 2013 23:13:02 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Anton Tikhomirov <av.tikhomirov@samsung.com>
-Subject: Re: linux-next: build failure after merge of the usb-gadget tree
-Message-ID: <20131217051302.GB22740@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20131209145803.4aba29ca2eba4444070e43ce@canb.auug.org.au>
- <20131209041152.GC20608@saruman.home>
- <20131217153625.744ebbe433f3d624d11af2bb@canb.auug.org.au>
- <20131217050822.GA22658@saruman.home>
+	id S1751493Ab3LQFPY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 00:15:24 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:56729 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab3LQFPW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 00:15:22 -0500
+Message-ID: <52AFDDE6.2020600@linaro.org>
+Date: Mon, 16 Dec 2013 21:15:18 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7iMSBzlTiPOCCT2k"
-Content-Disposition: inline
-In-Reply-To: <20131217050822.GA22658@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, stable <stable@vger.kernel.org>
+Subject: Re: [RFC][PATCH 3/5] timekeeping: Avoid possible deadlock from clock_was_set_delayed
+References: <1386789098-17391-1-git-send-email-john.stultz@linaro.org> <1386789098-17391-4-git-send-email-john.stultz@linaro.org> <52A9E5B2.8040702@oracle.com> <52AA014B.6000301@oracle.com> <52AA0798.1050709@linaro.org> <52AA08EB.1080703@oracle.com> <52AA0AD2.5030307@linaro.org>
+In-Reply-To: <52AA0AD2.5030307@linaro.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---7iMSBzlTiPOCCT2k
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/12/2013 11:13 AM, John Stultz wrote:
+> On 12/12/2013 11:05 AM, Sasha Levin wrote:
+>> On 12/12/2013 01:59 PM, John Stultz wrote:
+>>> On 12/12/2013 10:32 AM, Sasha Levin wrote:
+>>>> On 12/12/2013 11:34 AM, Sasha Levin wrote:
+>>>>> On 12/11/2013 02:11 PM, John Stultz wrote:
+>>>>>> As part of normal operaions, the hrtimer subsystem frequently calls
+>>>>>> into the timekeeping code, creating a locking order of
+>>>>>>     hrtimer locks -> timekeeping locks
+>>>>>>
+>>>>>> clock_was_set_delayed() was suppoed to allow us to avoid deadlocks
+>>>>>> between the timekeeping the hrtimer subsystem, so that we could
+>>>>>> notify the hrtimer subsytem the time had changed while holding
+>>>>>> the timekeeping locks. This was done by scheduling delayed work
+>>>>>> that would run later once we were out of the timekeeing code.
+>>>>>>
+>>>>>> But unfortunately the lock chains are complex enoguh that in
+>>>>>> scheduling delayed work, we end up eventually trying to grab
+>>>>>> an hrtimer lock.
+>>>>>>
+>>>>>> Sasha Levin noticed this in testing when the new seqlock lockdep
+>>>>>> enablement triggered the following (somewhat abrieviated) message:
+>>>>> [snip]
+>>>>>
+>>>>> This seems to work for me, I don't see the lockdep spew anymore.
+>>>>>
+>>>>>       Tested-by: Sasha Levin <sasha.levin@oracle.com>
+>>>> I think I spoke too soon.
+>>>>
+>>>> It took way more time to reproduce than previously, but I got:
+>>>>
+>>>>
+>>>> -> #1 (&(&pool->lock)->rlock){-.-...}:
+>>>> [ 1195.578519]        [<ffffffff81194803>] validate_chain+0x6c3/0x7b0
+>>>> [ 1195.578519]        [<ffffffff81194d9d>] __lock_acquire+0x4ad/0x580
+>>>> [ 1195.578519]        [<ffffffff81194ff2>] lock_acquire+0x182/0x1d0
+>>>> [ 1195.578519]        [<ffffffff843b0760>] _raw_spin_lock+0x40/0x80
+>>>> [ 1195.578519]        [<ffffffff81153e0e>] __queue_work+0x14e/0x3f0
+>>>> [ 1195.578519]        [<ffffffff81154168>] queue_work_on+0x98/0x120
+>>>> [ 1195.578519]        [<ffffffff81161351>]
+>>>> clock_was_set_delayed+0x21/0x30
+>>>> [ 1195.578519]        [<ffffffff811c4b41>] do_adjtimex+0x111/0x160
+>>>> [ 1195.578519]        [<ffffffff811360e3>] SYSC_adjtimex+0x43/0x80
+>>>> [ 1195.578519]        [<ffffffff8113612e>] SyS_adjtimex+0xe/0x10
+>>>> [ 1195.578519]        [<ffffffff843baed0>] tracesys+0xdd/0xe2
+>>>> [ 1195.578519]
+>>> Are you sure you have that patch applied?
+>>>
+>>> With it we shouldn't be calling clock_was_set_delayed() from
+>>> do_adjtimex().
+>> Hm, It seems that there's a conflict there that wasn't resolved
+>> properly. Does this patch
+>> depend on anything else that's not currently in -next?
+> Oh yes, sorry, I didn't cc you on the entire patch set. Apologies!
+>
+> You'll probably want to grab the two previous patches:
+> https://lkml.org/lkml/2013/12/11/479
+> https://lkml.org/lkml/2013/12/11/758
 
-hi,
+Just wanted to follow up here. Did you happen to get a chance to try to
+reproduce w/ the three patch patchset?
 
-On Mon, Dec 16, 2013 at 11:08:22PM -0600, Felipe Balbi wrote:
-> > > On Mon, Dec 09, 2013 at 02:58:03PM +1100, Stephen Rothwell wrote:
-> > > >=20
-> > > > After merging the usb-gadget tree, today's linux-next build (x86_64
-> > > > allmodconfig) failed like this:
-> > > >=20
-> > > > drivers/built-in.o: In function `otg_set_state':
-> > > > (.text+0x14f7de): undefined reference to `usb_bus_start_enum'
-> > > >=20
-> > > > CONFIG_USB is 'm' in this build.
-> > > >=20
-> > > > I am not sure what changed to cause this, maybe e1d2e31975e1 ("usb:=
- phy:
-> > > > Add OTG FSM configuration option")?
-> > > >=20
-> > > > I have used the usb-gadget tree from next-20131206 for today.
-> > >=20
-> > > I see what caused it, will fix it up with a patch which should probab=
-ly
-> > > be backported a few kernels back. Thanks for letting me know.
-> >=20
-> > I am still getting this error ...
->=20
-> Fix is in Greg's queue, not sure if it has reached mainline, yet. Will
-> check when I wake up.
+I'm hoping to submit them to Ingo tomorrow, and want to make sure I've
+got your tested-by.
 
-just checked, it's not there. Pinged Greg.
+thanks
+-john
 
-
---=20
-balbi
-
---7iMSBzlTiPOCCT2k
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSr91eAAoJEIaOsuA1yqRETnoP/0svIZHENns+4NkDYRyIjpQl
-y8l7YvB4BIqZ7zbxP7EDRIjJfuS1QnX+Js80kWMx69i8TOxuLPHbXK2I3FQXCkZ9
-NdB7Zd5Fbbast24+szlSvxiRm8y99tyi9hNiINkvyGpIIKdBzpJdt5HAnhXj/asT
-OhoviDOl+Rty3jMJlSY5+ccsIeoGUjtOoETpKkjwhcKPj63fjG01571FNIz9SmI+
-ffhAUNnpG9SbdIG2ox37vQIsU2Uc+r7srROXRvqMaOZ0TI1K/EE8+iIVFIdfSAaW
-KueiVDTx6+05lOIfhaIxABZFAkKsupkJgMYvOiXT5z6wl52ibzdDLEhbJX6HaaWn
-KGsvX7Cl8uhJi47UPWK1hMsSI12bH8Kz7LWmO5f/HXFGc3nhrvP7CjfrBaEWmHiC
-PgOAwo+42LyqH+sfym+70SgvUp2vOh/ELgzDB3rZ+ZxFqB1NZ/C8W6ABGhAr+REk
-DkCiuSN2FzNl0Dh0drLkvMfF4SDjoZo89jgePt4fTUsGTi3jmdENUo83QYVCx+hh
-Av1BBUY3Cuu1bTrbbRS25I0+/voldeWE7OeO2zgMi6ZjFtRyELnGy+gMFdWamSoE
-2TbjxV9fxfsEf9rlnWXa6DQ/Q8TPkk2fGYeam8pcFhZV+S/Wy4toOJX5mTvMqOVR
-ioWL/BX+zdCBZeuFoArc
-=94H5
------END PGP SIGNATURE-----
-
---7iMSBzlTiPOCCT2k--
