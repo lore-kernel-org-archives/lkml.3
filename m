@@ -1,120 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab3LQSGo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:06:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32180 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755339Ab3LQSGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:06:42 -0500
-Date: Tue, 17 Dec 2013 19:06:03 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: PATCH? introduce get_compound_page (Was: process 'stuck' at exit)
-Message-ID: <20131217180603.GC5441@redhat.com>
-References: <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de>
- <20131211175615.GA24546@redhat.com>
- <20131211191855.GA32485@redhat.com>
- <20131213151035.GE5408@redhat.com>
- <20131213162240.GA11762@redhat.com>
- <20131213173406.GG5408@redhat.com>
- <20131216183618.GA28252@redhat.com>
- <20131216201952.GE21218@redhat.com>
- <20131216204626.GA8152@redhat.com>
- <20131217165335.GA24799@redhat.com>
+	id S1755264Ab3LQSGc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:06:32 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:46033 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361Ab3LQSGa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 13:06:30 -0500
+Date: Tue, 17 Dec 2013 12:57:42 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Panella <stefano.panella@citrix.com>, x86@kernel.org,
+        bhelgaas@google.com, joro@8bytes.org, iommu@lists.linux-foundation.org,
+        dwmw2@infradead.org, shuah.khan@hp.com, akpm@linux-foundation.org
+Cc: gregkh@linuxfoundation.org, maarten.lankhorst@canonical.com,
+        mingo@kernel.org, stefano.stabellini@eu.citrix.com,
+        zoltan.kiss@citrix.com, joe@perches.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xen.org
+Subject: Re: [RFC] dma-mapping: dma_alloc_coherent_mask return dma_addr_t
+Message-ID: <20131217175742.GA24093@phenom.dumpdata.com>
+References: <1386691537-10319-1-git-send-email-stefano.panella@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131217165335.GA24799@redhat.com>
+In-Reply-To: <1386691537-10319-1-git-send-email-stefano.panella@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 05:53:35PM +0100, Oleg Nesterov wrote:
-> On 12/16, Oleg Nesterov wrote:
-> >
-> > On 12/16, Andrea Arcangeli wrote:
-> > >
-> > > On Mon, Dec 16, 2013 at 07:36:18PM +0100, Oleg Nesterov wrote:
-> > > >
-> > > > And compound_lock_irqsave() looks racy even after get_page_unless_zero().
-> > > >
-> > > > For example, suppose that page_head was already freed and then re-allocated
-> > > > as (say) alloc_pages(__GFP_COMP, 1). get_page_unless_zero() can succeed right
-> > > > after prep_new_page() does set_page_refcounted(). Now, can't compound_lock()
-> > > > race with the non-atomic prep_compound_page()->__SetPageHead() ?
-> > >
-> > > Yes. We need to change to:
-> > >
-> > > 	if (order && (gfp_flags & __GFP_COMP))
-> > > 		prep_compound_page(page, order);
-> > > 	smp_wmb();
-> > > 	/* as the compound_lock can be taken after it's refcounted */
-> > > 	set_page_refcounted(page);
-> > >
-> > > __SetPageHead uses bts asm insn so literally only a "lock" prefix is
-> > > missing in a assembly instruction. So the race window is incredibly
-> > > small, but it must be fixed indeed. This also puts set_page_refcounted
-> > > as the last action of buffered_rmqueue so there shouldn't be any other
-> > > issues like this left in the page allocation code.
-> > >
-> > > Can you reorder set_page_refcount in your v2?
-> >
-> > OK. I'll try to make something on Wednesday.
+On Tue, Dec 10, 2013 at 04:05:37PM +0000, Stefano Panella wrote:
+> When running a 32bit kernel there are still some pci devices
+> capable of 64bit addressing (eg. sound/pci/hda/hda_intel.c)
 > 
-> Yes, I will, but...
+> If these drivers are setting:
 > 
-> I can't stop thinking about another change. What if we simply change
-> __split_huge_page_refcount() to also do compound_lock/unlock(page_tail)
-> in a main loop?
+> dev->coherent_dma_mask = 0xFFFFFFFFFFFFFFFF
 > 
-> This way we can greatly simplify get/put_page paths, we can rely on
-> compound_lock(sub-page) and avoid get_page_unless_zero(page_head).
-> Yes, this will make _split a bit slower, but PG_compound_lock should
-> not be contended? And we should change page_tail->flags carefully, but
-> this looks simple.
+> why dma_alloc_coherent_mask is returning unsigned long instead
+> of dma_addr_t resulting in truncation of the dma_mask to 32bit
+> if running a 32bit kernel?
+
+Ooops.
 > 
-> Or this is not possible/desirable?
+> There are some examples where the dma_alloc_coherent running
+> 32bit kernel can return a machine address bigger than 32bit.
+> 
+> This can be true in particular if running  the 32bit kernel as a
+> pv dom0 under the Xen Hypervisor or PAE on bare metal.
+> 
+> In both cases it would be good if dma_alloc_coherent could return
+> a machine address bigger than 32bit so more constrained 32bit address
+> space could be used by devices not 64bit capable.
+> 
+> I am proposing this patch to eliminate this limitation but I agree
+> that there might be some more reasons to do it in the current way of
+> which I am not awere.
+> 
+> This is why I am just asking for a RFC.
+> 
+> The current patch apply to v3.13-rc3-74-g6c843f5
 
-That would be 512 nested spinlocks instead of 1, last time I did
-something like that in mm_take_all_locks people weren't too pleased as
-it started firing lockdeps complains too. Generally I try to avoid
-taking too many locks nested if I can.
+This looks to be already done for other parts of the kernel, see:
+commit 364230b9952143eb2062dc071e919fb751540ae8
+Author: Rob Herring <rob.herring@calxeda.com>
+Date:   Thu Aug 1 15:29:29 2013 -0500
 
-mm_take_all_locks is fine because it only runs when you register an mm
-into a device driver, so it is a very rare event and not performance
-critical at all, it is a slow path by all means (only runs when you
-start a virtual machine or start X with nvidia etc..). So it is not a
-concern. split_huge_page to the contrary could run in a flood if
-you're unlucky. split_huge_page is needed not just to handle non-THP
-aware paths that mostly disappeared by now, but also when you truncate
-a vma so that a THP doesn't fit in it anymore. So it's up to userland
-how frequently it needs to run.
+    ARM: use phys_addr_t for DMA zone sizes
+    
+commit 6d7d5da7d75c6df676c8b72d32b02ff024438f0c
+Author: Magnus Damm <damm@opensource.se>
+Date:   Tue Oct 22 17:59:54 2013 +0100
 
-I think it's reasonable to consider it though, but then it's not
-guaranteed that a put_page on a THP tail is more frequent than
-split_huge_page. Keep in mind we do the get_page_unless_zero to
-stabilize the head to take the compound_lock on it, only for the
-tails, never for the heads. So this restricts it to _only_ the
-put_page following a gup_fast. Only gup_fast can ever take a reference
-on the tail pages of a THP. Nothing else can.
+    ARM: 7864/1: Handle 64-bit memory in case of 32-bit phys_addr_t
 
-I intend to add the foll_flags to gup_fast parameter so we remove
-FOLL_GET from it in the KVM page fault to avoid doing atomic_inc
-immediately followed by atomic_dec when establishing sptes. So the
-only transient mappings that cannot be converted to pin-less
-mmu_notifier will have to run put_page in gup_fast.
+mmit dbd3fc3345390a989a033427aa915a0dfb62149f
+Author: Bjorn Helgaas <bhelgaas@google.com>
+Date:   Mon Dec 10 11:24:42 2012 -0700
 
-In short you're only going to help O_DIRECT with that change, and
-removing 1 locked op for every 4k written to disk may not offset the
-cost of 511 locked ops in split_huge_page.
+    PCI: Use phys_addr_t for physical ROM address
 
-Still worth thinking about it, but not obvious win in my view (plus
-the lockdep trouble with taking too many locks nested). Comments welcome.
+commit 7e6735c3578e76c270a2797225a4214176ba13ef
+Author: Cyril Chemparathy <cyril@ti.com>
+Date:   Wed Sep 12 14:05:58 2012 -0400
 
-Thanks!
-Andrea
+    /dev/mem: use phys_addr_t for physical addresses
+
+Where the phys_addr_t is used instead of unsigned long. This is
+doing it for the dma_addr_t.
+
+So I think this is the correct thing to do. We should CC more
+people thought.
+> 
+> Signed-off-by: Stefano Panella <stefano.panella@citrix.com>
+> ---
+>  Documentation/DMA-API.txt          |    5 ++---
+>  arch/x86/include/asm/dma-mapping.h |    8 ++++----
+>  arch/x86/kernel/pci-dma.c          |    2 +-
+>  drivers/xen/swiotlb-xen.c          |    6 +++---
+>  4 files changed, 10 insertions(+), 11 deletions(-)
+> 
+> diff --git a/Documentation/DMA-API.txt b/Documentation/DMA-API.txt
+> index e865279..483458b 100644
+> --- a/Documentation/DMA-API.txt
+> +++ b/Documentation/DMA-API.txt
+> @@ -33,9 +33,8 @@ to make sure to flush the processor's write buffers before telling
+>  devices to read that memory.)
+>  
+>  This routine allocates a region of <size> bytes of consistent memory.
+> -It also returns a <dma_handle> which may be cast to an unsigned
+> -integer the same width as the bus and used as the physical address
+> -base of the region.
+> +It also returns a <dma_handle> which should be used as the physical 
+> +address base of the region.
+>  
+>  Returns: a pointer to the allocated region (in the processor's virtual
+>  address space) or NULL if the allocation failed.
+> diff --git a/arch/x86/include/asm/dma-mapping.h b/arch/x86/include/asm/dma-mapping.h
+> index 808dae6..6357810 100644
+> --- a/arch/x86/include/asm/dma-mapping.h
+> +++ b/arch/x86/include/asm/dma-mapping.h
+> @@ -100,10 +100,10 @@ dma_cache_sync(struct device *dev, void *vaddr, size_t size,
+>  	flush_write_buffers();
+>  }
+>  
+> -static inline unsigned long dma_alloc_coherent_mask(struct device *dev,
+> -						    gfp_t gfp)
+> +static inline dma_addr_t dma_alloc_coherent_mask(struct device *dev,
+> +						 gfp_t gfp)
+>  {
+> -	unsigned long dma_mask = 0;
+> +	dma_addr_t dma_mask = 0;
+>  
+>  	dma_mask = dev->coherent_dma_mask;
+>  	if (!dma_mask)
+> @@ -114,7 +114,7 @@ static inline unsigned long dma_alloc_coherent_mask(struct device *dev,
+>  
+>  static inline gfp_t dma_alloc_coherent_gfp_flags(struct device *dev, gfp_t gfp)
+>  {
+> -	unsigned long dma_mask = dma_alloc_coherent_mask(dev, gfp);
+> +	dma_addr_t dma_mask = dma_alloc_coherent_mask(dev, gfp);
+>  
+>  	if (dma_mask <= DMA_BIT_MASK(24))
+>  		gfp |= GFP_DMA;
+> diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+> index 872079a..a061f7b 100644
+> --- a/arch/x86/kernel/pci-dma.c
+> +++ b/arch/x86/kernel/pci-dma.c
+> @@ -90,7 +90,7 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
+>  				 dma_addr_t *dma_addr, gfp_t flag,
+>  				 struct dma_attrs *attrs)
+>  {
+> -	unsigned long dma_mask;
+> +	dma_addr_t dma_mask;
+>  	struct page *page;
+>  	unsigned int count = PAGE_ALIGN(size) >> PAGE_SHIFT;
+>  	dma_addr_t addr;
+> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> index 1eac073..6f75599 100644
+> --- a/drivers/xen/swiotlb-xen.c
+> +++ b/drivers/xen/swiotlb-xen.c
+> @@ -54,10 +54,10 @@
+>   */
+>  
+>  #ifndef CONFIG_X86
+> -static unsigned long dma_alloc_coherent_mask(struct device *dev,
+> -					    gfp_t gfp)
+> +static dma_addr_t dma_alloc_coherent_mask(struct device *dev,
+> +					  gfp_t gfp)
+>  {
+> -	unsigned long dma_mask = 0;
+> +	dma_addr_t dma_mask = 0;
+>  
+>  	dma_mask = dev->coherent_dma_mask;
+>  	if (!dma_mask)
+> -- 
+> 1.7.9.5
+> 
