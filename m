@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab3LQBQv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 20:16:51 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:6270 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab3LQBQu (ORCPT
+	id S1752336Ab3LQBWv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 20:22:51 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:36772 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab3LQBWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 20:16:50 -0500
-Message-ID: <1387242704.21140.44.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 0/3] EFI memmap fix
-From: Toshi Kani <toshi.kani@hp.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linux EFI <linux-efi@vger.kernel.org>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Young <dyoung@redhat.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Date: Mon, 16 Dec 2013 18:11:44 -0700
-In-Reply-To: <1387236997-26975-1-git-send-email-bp@alien8.de>
-References: <1387236997-26975-1-git-send-email-bp@alien8.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	Mon, 16 Dec 2013 20:22:50 -0500
+Message-ID: <52AFA766.9070804@linaro.org>
+Date: Mon, 16 Dec 2013 17:22:46 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Colin Cross <ccross@android.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [RFC][PATCH 3/3] staging: ion: Avoid using rt_mutexes directly.
+References: <1387229564-19517-1-git-send-email-john.stultz@linaro.org>	<1387229564-19517-4-git-send-email-john.stultz@linaro.org> <CAMbhsRQOWKWBjQJWndr57Cz_Xf0EeU8jNMJOyiOEBHFRf=Tt=Q@mail.gmail.com>
+In-Reply-To: <CAMbhsRQOWKWBjQJWndr57Cz_Xf0EeU8jNMJOyiOEBHFRf=Tt=Q@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-17 at 00:36 +0100, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> Hi guys,
-> 
-> this is the result of Toshi and me debugging a #GP on one of his big HP
-> boxes sporting UEFI. Each commit message should be self-explanatory so
-> please look there.
-> 
-> This has more or less an RFC nature thus I'm sending it now to collect
-> feedback. It is going to wait in the EFI queue anyway after the kexec
-> stuff gets sorted out first.
-> 
-> Comments and suggestions as always are very much appreciated.
-> 
-> Thanks.
-> 
-> Borislav Petkov (3):
->   x86, ptdump: Add the functionality to dump an arbitrary pagetable
->   efi: Dump the EFI page table
->   efi: Make efi virtual runtime map passing more robust
-> 
->  arch/x86/include/asm/pgtable.h |  3 +-
->  arch/x86/mm/dump_pagetables.c  | 77 ++++++++++++++++++++++++++++--------------
->  arch/x86/platform/efi/efi.c    | 68 ++++++++++++++++++++++++++++++++-----
->  3 files changed, 112 insertions(+), 36 deletions(-)
-> 
+On 12/16/2013 04:17 PM, Colin Cross wrote:
+> The lock is only used to protect the heap's free_list and
+> free_list_size members, and is not held for any long or sleeping
+> operations.  Converting to a spinlock should prevent priority
+> inversion without using the rt_mutex.  I'd also rename it to free_lock
+> to so it doesn't get used as a general heap lock.
 
-Thanks for the quick turnaround!  For the series:
+Hrm.. So at least a trivial conversion to use spinlocks doesn't quite
+work out, as we call ion_buffer_destroy() in ion_heap_freelist_drain()
+while holding the lock, and that calls all sorts of not safe stuff.
 
-Tested-by: Toshi Kani <toshi.kani@hp.com>
+I'll spend some more time looking at it later tonight, but let me know
+if you have an approach for this case in mind.
 
-Toshi
+thanks
+-john
 
