@@ -1,76 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab3LQN6y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 08:58:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59327 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268Ab3LQN6w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 08:58:52 -0500
+	id S1754215Ab3LQN7N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 08:59:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37118 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752987Ab3LQN7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 08:59:11 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <5287D78D.4070601@linux.com>
+References: <5287D78D.4070601@linux.com>
+To: Levente Kurusa <levex@linux.com>
+Cc: dhowells@redhat.com, AFS list <linux-afs@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] afs: dir: remove unused label out_skip
 Date: Tue, 17 Dec 2013 13:58:44 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Dave Chinner <david@fromorbit.com>, Josh Boyer <jwboyer@fedoraproject.org>,
-        Kees Cook <keescook@google.com>,
-        Dwight Engen <dwight.engen@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, Brian Foster <bfoster@redhat.com>,
-        Dave Chinner <dchinner@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
-        Ben Myers <bpm@sgi.com>, xfs@oss.sgi.com, stable@vger.kernel.org
-Subject: Re: XFS security fix never sent to -stable?
-Message-ID: <20131217135844.GD5044@hercules>
-References: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
- <20131209121534.GE4278@hercules>
- <CA+5PVA4ychvLEi1ZZ6rYy2=5-wZAbQ_a-aoy8=1w3+tr-pt3Fg@mail.gmail.com>
- <20131209235523.GW31386@dastard>
- <20131210075621.GA30135@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131210075621.GA30135@kroah.com>
+Message-ID: <31119.1387288724@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 11:56:21PM -0800, Greg Kroah-Hartman wrote:
-> On Tue, Dec 10, 2013 at 10:55:23AM +1100, Dave Chinner wrote:
-> > [cc xfs list, cc stable@vger.kernel.org]
-> > 
-> > On Mon, Dec 09, 2013 at 08:17:09AM -0500, Josh Boyer wrote:
-> > > On Mon, Dec 9, 2013 at 7:15 AM, Luis Henriques
-> > > <luis.henriques@canonical.com> wrote:
-> > > > On Thu, Dec 05, 2013 at 04:35:50PM -0800, Kees Cook wrote:
-> > > >> Hi,
-> > > >>
-> > > >> It looks like 8c567a7fab6e086a0284eee2db82348521e7120c ("xfs: add
-> > > >> capability check to free eofblocks ioctl") is a security fix that was
-> > > >> never sent to -stable? From what I can see, it was introduced in 3.8
-> > > >> by 8ca149de80478441352a8622ea15fae7de703ced ("xfs: add
-> > > >> XFS_IOC_FREE_EOFBLOCKS ioctl").
-> > > >>
-> > > >> I don't see this in the 3.8.y tree. Should it be added there and newer?
-> > > >
-> > > > Thanks Kees, I'm queuing it for the 3.11 kernel.
-> > > 
-> > > There's also this one:
-> > > 
-> > > http://thread.gmane.org/gmane.comp.file-systems.xfs.general/57654
-> > > 
-> > > It fixes CVE-2013-6382
-> > 
-> > First I've heard about it there being a CVE for that bug. Since when
-> > has it been considered best practice to publish CVEs without first
-> > (or ever) directly contacting the relevant upstream developers?
-> > 
-> > But, regardless of how broken I think the CVE process is, commit
-> > 071c529 ("xfs: underflow bug in xfs_attrlist_by_handle()") should be
-> > picked up by the stable kernels.
+Levente Kurusa <levex@linux.com> wrote:
+
+> The out_skip label is not used, so remove it.
 > 
-> I don't see that commit in Linus's tree, is it not there yet?
+> Signed-off-by: Levente Kurusa <levex@linux.com>
 
-This commit is now in Linus's:
-
-31978b5 xfs: underflow bug in xfs_attrlist_by_handle()
-
-Cheers,
---
-Luis
+Applied.
