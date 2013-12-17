@@ -1,363 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab3LQUCX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:02:23 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:50279 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752451Ab3LQUCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 15:02:21 -0500
-Date: Tue, 17 Dec 2013 15:02:10 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/6] Configurable fair allocation zone policy v3
-Message-ID: <20131217200210.GG21724@cmpxchg.org>
-References: <1387298904-8824-1-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
+	id S1752973Ab3LQUCj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:02:39 -0500
+Received: from mo-p04-ob.rzone.de ([81.169.146.177]:42193 "EHLO
+	mo-p04-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451Ab3LQUCg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 15:02:36 -0500
+X-Greylist: delayed 357 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Dec 2013 15:02:35 EST
+X-RZG-CLASS-ID: mo04
+X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat4gNPppw==
+Subject: Re: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION GTM601 during RING indication
+Mime-Version: 1.0 (Apple Message framework v1085)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387298904-8824-1-git-send-email-mgorman@suse.de>
+From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+In-Reply-To: <1387222829.2156.51.camel@dcbw.foobar.com>
+Date: Tue, 17 Dec 2013 20:56:33 +0100
+Cc: Jan Dumon <j.dumon@option.com>, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Belisko Marek <marek.belisko@gmail.com>, e.verdonck@option.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <174CD81C-6425-4560-A3FA-3BFAA83BA770@goldelico.com>
+References: <B1808224-5850-41E3-9A8F-0F350F84FF89@goldelico.com> <541AADAC-7D20-4410-90FC-3E354B0C1457@goldelico.com> <1387222829.2156.51.camel@dcbw.foobar.com>
+To: Dan Williams <dcbw@redhat.com>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+Hi Dan,
 
-On Tue, Dec 17, 2013 at 04:48:18PM +0000, Mel Gorman wrote:
-> This series is currently untested and is being posted to sync up discussions
-> on the treatment of page cache pages, particularly the sysv part. I have
-> not thought it through in detail but postings patches is the easiest way
-> to highlight where I think a problem might be.
->
-> Changelog since v2
-> o Drop an accounting patch, behaviour is deliberate
-> o Special case tmpfs and shmem pages for discussion
+Am 16.12.2013 um 20:40 schrieb Dan Williams:
+
+> On Fri, 2013-12-13 at 15:43 +0100, Dr. H. Nikolaus Schaller wrote:
+>> Hi,
+>> 
+>> Am 02.10.2013 um 09:00 schrieb Dr. H. Nikolaus Schaller:
+>> 
+>>> Hi Jan,
+>>> 
+>>> we are using a GTM601 modem (Firmware 1.7) for a while and have spotted an
+>>> issue that under some conditions the modem sends a packed wIndex over USB
+>>> that is rejected by the hso driver making troubles afterwards. Not rejecting makes
+>>> it work fine.
+>>> 
+>>> BR,
+>>> Nikolaus Schaller
+>>> 
+>>> ---
+>>> 
+>>> From f5c7e15b61f2ce4fe3105ff914f6bfaf5d74af0d Mon Sep 17 00:00:00 2001
+>>> From: "H. Nikolaus Schaller" <hns@goldelico.com>
+>>> Date: Thu, 15 Nov 2012 14:40:57 +0100
+>>> Subject: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION
+>>> GTM601 during RING indication
+>>> 
+>>> It has been observed that the GTM601 with 1.7 firmware sometimes sends a value
+>>> wIndex that has bit 0x04 set instead of being reset as the code expects. So we
+>>> mask it for the error check.
+>>> 
+>>> See http://lists.goldelico.com/pipermail/gta04-owner/2012-February/001643.html
+>>> 
+>>> Signed-off-by: NeilBrown <neilb@suse.de>
+>>> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.de>
+>>> ---
+>>> drivers/net/usb/hso.c |    3 ++-
+>>> 1 files changed, 2 insertions(+), 1 deletions(-)
+>>> 
+>>> diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
+>>> index cba1d46..d146e26 100644
+>>> --- a/drivers/net/usb/hso.c
+>>> +++ b/drivers/net/usb/hso.c
+>>> @@ -1503,7 +1503,8 @@ static void tiocmget_intr_callback(struct urb *urb)
+>>> 	if (serial_state_notification->bmRequestType != BM_REQUEST_TYPE ||
+>>> 	    serial_state_notification->bNotification != B_NOTIFICATION ||
+>>> 	    le16_to_cpu(serial_state_notification->wValue) != W_VALUE ||
+>>> -	    le16_to_cpu(serial_state_notification->wIndex) != W_INDEX ||
+>>> +	    (le16_to_cpu(serial_state_notification->wIndex) & ~0x4) !=
+>>> +		W_INDEX ||
+>>> 	    le16_to_cpu(serial_state_notification->wLength) != W_LENGTH) {
+>>> 		dev_warn(&usb->dev,
+>>> 			 "hso received invalid serial state notification\n");
+>>> -- 
+>>> 1.7.7.4
+>>> 
+>>> 
+>> 
+>> I have found this (better) proposal by OPTION, but wonder what did happen to it.
+>> It neither shows in mainline 3.13-rc nor linux-next:
+>> 
+>> https://lkml.org/lkml/2013/10/9/263
 > 
-> Changelog since v1
-> o Fix lot of brain damage in the configurable policy patch
-> o Yoink a page cache annotation patch
-> o Only account batch pages against allocations eligible for the fair policy
-> o Add patch that default distributes file pages on remote nodes
+> Likely because nobody formally submitted the patch with a signed-off-by,
+> which indicates their intent that the patch is tested, correct, and can
+> be merged to the kernel.
+
+Ok, I see. I just wasn't aware of the proposal at all since I missed the discussion
+and wasn't on CC.
+
+Therefore I have added Eric to the CC.
+
 > 
-> Commit 81c0a2bb ("mm: page_alloc: fair zone allocator policy") solved a
-> bug whereby new pages could be reclaimed before old pages because of how
-> the page allocator and kswapd interacted on the per-zone LRU lists.
-
-Not just that, it was about ensuring predictable cache replacement and
-maximizing the cache's effectiveness.  This implicitely fixed the
-kswapd interaction bug, but that was not the sole reason (I realize
-that the original changelog is incomplete and I apologize for that).
-
-I have had offline discussions with Andrea back then and his first
-suggestion was too to make this a zone fairness placement that is
-exclusive to the local node, but eventually he agreed that the problem
-applies just as much on the global level and that we should apply
-fairness throughout the system as long as we honor zone_reclaim_mode
-and hard bindings.  During our discussions now, it turned out that
-zone_reclaim_mode is a terrible predictor for preferred locality, but
-we also more or less agreed that the locality issues in the first
-place are not really applicable to cache loads dominated by IO cost.
-
-So I think the main discrepancy between the original patch and what we
-truly want is that aging fairness is really only relevant for actual
-cache backed by secondary storage, because cache replacement is an
-ongoing operation that involves IO.  As opposed to memory types that
-involve IO only in extreme cases (anon, tmpfs, shmem) or no IO at all
-(slab, kernel allocations), in which case we prefer NUMA locality.
-
-> Unfortunately a side-effect missed during review was that it's now very
-> easy to allocate remote memory on NUMA machines. The problem is that
-> it is not a simple case of just restoring local allocation policies as
-> there are genuine reasons why global page aging may be prefereable. It's
-> still a major change to default behaviour so this patch makes the policy
-> configurable and sets what I think is a sensible default.
+> I looked at this today, and I'm left wondering how any port other than
+> HSO_PORT_MODEM can get the notification via tiocmget_intr_callback().
+> "serial->tiocmget" is only created for HSO_PORT_MODEM serial ports (see
+> hso_create_bulk_serial_device()):
 > 
-> The patches are on top of some NUMA balancing patches currently in -mm.
-> It's untested and posted to discuss patches 4 and 6.
+> 	if ((port & HSO_PORT_MASK) == HSO_PORT_MODEM) {
+> 		num_urbs = 2;
+> 		serial->tiocmget = kzalloc(sizeof(struct hso_tiocmget),
+> 					   GFP_KERNEL);
+> 
+> and the code in tiocmget_intr_callback() does this:
+> 
+> 	tiocmget = serial->tiocmget;
+> 	if (!tiocmget)
+> 		return;
+> 
+> which should mean that only a HSO_PORT_MODEM will ever process the
+> notification.  Further, the tiocmget interrupt URB is only created and
+> submitted if serial->tiocmget != NULL, so only HSO_PORT_MODEM should
+> ever be calling into tiocmget_intr_callback().
 
-It might be easier in dealing with -stable if we start with the
-critical fix(es) to restore sane functionality as much and as compact
-as possible and then place the cleanups on top?
+Ok, that looks plausible.
 
-In my local tree, I have the following as the first patch:
+> 
+> So I think Eric's patch is actually wrong because it will *always* pass
+> the new check.
+> 
+> The original code had the correct intention, but the original code was
+> obviously wrong for newer devices where the port layout is read from
+> firmware and not from static tables, and thus for recent devices where
+> the modem interface is not USB interface #2.
 
----
-From: Johannes Weiner <hannes@cmpxchg.org>
-Subject: [patch] mm: page_alloc: restrict fair allocator policy to page cache
+This explains why we did run into the problem with the GTM601.
 
-81c0a2bb515f ("mm: page_alloc: fair zone allocator policy") was merged
-in order to ensure predictable page cache replacement and to maximize
-the cache's effectiveness of reducing IO regardless of zone or node
-topology.
+> 
+> Can you confirm/deny that the 'modem' interface for your GTM601 is USB
+> interface #6?  For example, my Icon 452 has the following USB interface
+> layout:
+> 
+> 0: Diag
+> 1: GPS
+> 2: GPS control
+> 3: Application
+> 4: Control
+> 5: Network
+> 6: Modem
+> 
+> So like the GTM601, I would expect any RING notifications to appear for
+> wIndex=0x06.
 
-However, it was overzealous in round-robin placing every type of
-allocation over all allowable nodes, instead of preferring locality,
-which resulted in severe regressions on certain NUMA workloads that
-have nothing to do with page cache.
+Interestingly I see:
 
-This patch drastically reduces the impact of the original change by
-having the round-robin placement policy only apply to page cache
-backed by secondary storage, and no longer to anonymous memory, shmem,
-tmpfs, slab allocations.
+0: Diagnostic
+1: GPS
+2: GPS Control
+3: Application
+4: Control
+5: Modem
 
-This still changes the long-standing behavior of page cache adhering
-to the configured memory policy and preferring local allocations per
-default, so make it configurable in case somebody relies on it.
-However, we also expect the majority of users to prefer maximium cache
-effectiveness and a predictable replacement behavior over memory
-locality, so reflect this in the default setting of the sysctl.
----
- Documentation/sysctl/vm.txt             | 21 +++++++++++++++++
- Documentation/vm/numa_memory_policy.txt |  8 +++++++
- include/linux/gfp.h                     |  4 +++-
- include/linux/pagemap.h                 |  2 +-
- include/linux/swap.h                    |  2 ++
- kernel/sysctl.c                         |  8 +++++++
- mm/filemap.c                            |  2 ++
- mm/page_alloc.c                         | 41 +++++++++++++++++++++++++--------
- 8 files changed, 76 insertions(+), 12 deletions(-)
+I.e. there is no Network interface. Originally we did focus on /dev/ttyHS3
+to access the Application interface, but people reported that it is not stable
+or always so. Therefore we have some udev rule to add symbolic names
+(e.g. /dev/ttyHS_Application):
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 1fbd4eb7b64a..50d250f7470f 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -38,6 +38,7 @@ Currently, these files are in /proc/sys/vm:
- - memory_failure_early_kill
- - memory_failure_recovery
- - min_free_kbytes
-+- pagecache_mempolicy_mode
- - min_slab_ratio
- - min_unmapped_ratio
- - mmap_min_addr
-@@ -404,6 +405,26 @@ Setting this too high will OOM your machine instantly.
- 
- =============================================================
- 
-+pagecache_mempolicy_mode:
-+
-+This is available only on NUMA kernels.
-+
-+Per default, the configured memory policy is applicable to anonymous
-+memory, shmem, tmpfs, etc., whereas pagecache is allocated in an
-+interleaving fashion over all allowed nodes (hardbindings and
-+zone_reclaim_mode excluded).
-+
-+The assumption is that, when it comes to pagecache, users generally
-+prefer predictable replacement behavior regardless of NUMA topology
-+and maximizing the cache's effectiveness in reducing IO over memory
-+locality.
-+
-+This behavior can be changed by enabling pagecache_mempolicy_mode, in
-+which case page cache allocations will be placed according to the
-+configured memory policy (Documentation/vm/numa_memory_policy.txt).
-+
-+=============================================================
-+
- min_slab_ratio:
- 
- This is available only on NUMA kernels.
-diff --git a/Documentation/vm/numa_memory_policy.txt b/Documentation/vm/numa_memory_policy.txt
-index 4e7da6543424..64d48b6378db 100644
---- a/Documentation/vm/numa_memory_policy.txt
-+++ b/Documentation/vm/numa_memory_policy.txt
-@@ -16,6 +16,14 @@ programming interface that a NUMA-aware application can take advantage of.  When
- both cpusets and policies are applied to a task, the restrictions of the cpuset
- takes priority.  See "MEMORY POLICIES AND CPUSETS" below for more details.
- 
-+Note that, per default, the memory policies as described below apply to process
-+memory and shmem/tmpfs/ramfs only.  Pagecache backed by secondary storage will
-+be interleaved fairly over all allowable nodes (respecting hardbindings and
-+zone_reclaim_mode) in order to maximize the cache's effectiveness in reducing IO
-+and to ensure predictable cache replacement.  Special setups that require
-+pagecache to adhere to the configured memory policy can change this behavior by
-+enabling pagecache_mempolicy_mode (see Documentation/sysctl/vm.txt).
-+
- MEMORY POLICY CONCEPTS
- 
- Scope of Memory Policies
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 9b4dd491f7e8..f69e4cb78ccf 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -35,6 +35,7 @@ struct vm_area_struct;
- #define ___GFP_NO_KSWAPD	0x400000u
- #define ___GFP_OTHER_NODE	0x800000u
- #define ___GFP_WRITE		0x1000000u
-+#define ___GFP_PAGECACHE	0x2000000u
- /* If the above are modified, __GFP_BITS_SHIFT may need updating */
- 
- /*
-@@ -92,6 +93,7 @@ struct vm_area_struct;
- #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
- #define __GFP_KMEMCG	((__force gfp_t)___GFP_KMEMCG) /* Allocation comes from a memcg-accounted resource */
- #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
-+#define __GFP_PAGECACHE ((__force gfp_t)___GFP_PAGECACHE)   /* Page cache allocation */
- 
- /*
-  * This may seem redundant, but it's a way of annotating false positives vs.
-@@ -99,7 +101,7 @@ struct vm_area_struct;
-  */
- #define __GFP_NOTRACK_FALSE_POSITIVE (__GFP_NOTRACK)
- 
--#define __GFP_BITS_SHIFT 25	/* Room for N __GFP_FOO bits */
-+#define __GFP_BITS_SHIFT 26	/* Room for N __GFP_FOO bits */
- #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
- 
- /* This equals 0, but use constants in case they ever change */
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index e3dea75a078b..bda48453af8e 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -221,7 +221,7 @@ extern struct page *__page_cache_alloc(gfp_t gfp);
- #else
- static inline struct page *__page_cache_alloc(gfp_t gfp)
- {
--	return alloc_pages(gfp, 0);
-+	return alloc_pages(gfp | __GFP_PAGECACHE, 0);
- }
- #endif
- 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 46ba0c6c219f..3458994b0881 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -320,11 +320,13 @@ extern unsigned long vm_total_pages;
- 
- #ifdef CONFIG_NUMA
- extern int zone_reclaim_mode;
-+extern int pagecache_mempolicy_mode;
- extern int sysctl_min_unmapped_ratio;
- extern int sysctl_min_slab_ratio;
- extern int zone_reclaim(struct zone *, gfp_t, unsigned int);
- #else
- #define zone_reclaim_mode 0
-+#define pagecache_mempolicy_mode 0
- static inline int zone_reclaim(struct zone *z, gfp_t mask, unsigned int order)
- {
- 	return 0;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 34a604726d0b..a8c56c1dc98e 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1359,6 +1359,14 @@ static struct ctl_table vm_table[] = {
- 		.extra1		= &zero,
- 	},
- 	{
-+		.procname	= "pagecache_mempolicy_mode",
-+		.data		= &pagecache_mempolicy_mode,
-+		.maxlen		= sizeof(pagecache_mempolicy_mode),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+		.extra1		= &zero,
-+	},
-+	{
- 		.procname	= "min_unmapped_ratio",
- 		.data		= &sysctl_min_unmapped_ratio,
- 		.maxlen		= sizeof(sysctl_min_unmapped_ratio),
-diff --git a/mm/filemap.c b/mm/filemap.c
-index b7749a92021c..5bb922506906 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -517,6 +517,8 @@ struct page *__page_cache_alloc(gfp_t gfp)
- 	int n;
- 	struct page *page;
- 
-+	gfp |= __GFP_PAGECACHE;
-+
- 	if (cpuset_do_page_mem_spread()) {
- 		unsigned int cpuset_mems_cookie;
- 		do {
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 580a5f075ed0..b28370932950 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1547,7 +1547,15 @@ again:
- 					  get_pageblock_migratetype(page));
- 	}
- 
-+	/*
-+	 * All allocations eat into the round-robin batch, even
-+	 * allocations that are not subject to round-robin placement
-+	 * themselves.  This makes sure that allocations that ARE
-+	 * subject to round-robin placement compensate for the
-+	 * allocations that aren't, to have equal placement overall.
-+	 */
- 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
-+
- 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
- 	zone_statistics(preferred_zone, zone, gfp_flags);
- 	local_irq_restore(flags);
-@@ -1699,6 +1707,15 @@ bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
- 
- #ifdef CONFIG_NUMA
- /*
-+ * pagecache_mempolicy_mode - whether page cache should honor the
-+ * configured memory policy and allocate from the zonelist in order of
-+ * preference, or whether it should be interleaved fairly over all
-+ * allowed zones in the given zonelist to maximize cache effects and
-+ * ensure predictable cache replacement.
-+ */
-+int pagecache_mempolicy_mode __read_mostly;
-+
-+/*
-  * zlc_setup - Setup for "zonelist cache".  Uses cached zone data to
-  * skip over zones that are not allowed by the cpuset, or that have
-  * been recently (in last second) found to be nearly full.  See further
-@@ -1816,7 +1833,7 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
- 
- static bool zone_local(struct zone *local_zone, struct zone *zone)
- {
--	return node_distance(local_zone->node, zone->node) == LOCAL_DISTANCE;
-+	return local_zone->node == zone->node;
- }
- 
- static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
-@@ -1908,22 +1925,25 @@ zonelist_scan:
- 		if (unlikely(alloc_flags & ALLOC_NO_WATERMARKS))
- 			goto try_this_zone;
- 		/*
--		 * Distribute pages in proportion to the individual
--		 * zone size to ensure fair page aging.  The zone a
--		 * page was allocated in should have no effect on the
--		 * time the page has in memory before being reclaimed.
-+		 * Distribute page cache pages in proportion to the
-+		 * individual zone size to ensure fair page aging.
-+		 * The zone a page was allocated in should have no
-+		 * effect on the time the page has in memory before
-+		 * being reclaimed.
- 		 *
--		 * When zone_reclaim_mode is enabled, try to stay in
--		 * local zones in the fastpath.  If that fails, the
-+		 * When pagecache_mempolicy_mode or zone_reclaim_mode
-+		 * is enabled, try to allocate from zones within the
-+		 * preferred node in the fastpath.  If that fails, the
- 		 * slowpath is entered, which will do another pass
- 		 * starting with the local zones, but ultimately fall
- 		 * back to remote zones that do not partake in the
- 		 * fairness round-robin cycle of this zonelist.
- 		 */
--		if (alloc_flags & ALLOC_WMARK_LOW) {
-+		if ((alloc_flags & ALLOC_WMARK_LOW) &&
-+		    (gfp_mask & __GFP_PAGECACHE)) {
- 			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
- 				continue;
--			if (zone_reclaim_mode &&
-+			if ((zone_reclaim_mode || pagecache_mempolicy_mode) &&
- 			    !zone_local(preferred_zone, zone))
- 				continue;
- 		}
-@@ -2390,7 +2410,8 @@ static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
- 		 * thrash fairness information for zones that are not
- 		 * actually part of this zonelist's round-robin cycle.
- 		 */
--		if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
-+		if ((zone_reclaim_mode || pagecache_mempolicy_mode) &&
-+		    !zone_local(preferred_zone, zone))
- 			continue;
- 		mod_zone_page_state(zone, NR_ALLOC_BATCH,
- 				    high_wmark_pages(zone) -
--- 
-1.8.4.2
+http://git.goldelico.com/?p=gta04-kernel.git;a=blob;f=GTA04/udev-rules/hso.rules;hb=HEAD
+
+So I think the assignment is not even always the same on the same device.
+
+And I am a little puzzled why we do see the wIndex == 6 if it is the interface
+number. Maybe it happens only in some scenario where the Modem becomes
+interface #6.
+
+> 
+> Does the following patch fix the problem for you?
+
+I will try but need a little time to setup a test scenario (because I need to trigger
+RING indications) and will then report.
+
+BR,
+Nikolaus
+
+> 
+> Dan
+> 
+> ---
+> diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
+> index 86292e6..1c7bdeb 100644
+> --- a/drivers/net/usb/hso.c
+> +++ b/drivers/net/usb/hso.c
+> @@ -181,15 +181,14 @@ enum rx_ctrl_state{
+> 	RX_SENT,
+> 	RX_PENDING
+> };
+> 
+> #define BM_REQUEST_TYPE (0xa1)
+> #define B_NOTIFICATION  (0x20)
+> #define W_VALUE         (0x0)
+> -#define W_INDEX         (0x2)
+> #define W_LENGTH        (0x2)
+> 
+> #define B_OVERRUN       (0x1<<6)
+> #define B_PARITY        (0x1<<5)
+> #define B_FRAMING       (0x1<<4)
+> #define B_RING_SIGNAL   (0x1<<3)
+> #define B_BREAK         (0x1<<2)
+> @@ -1483,31 +1482,38 @@ static void tiocmget_intr_callback(struct urb *urb)
+> 	struct hso_serial *serial = urb->context;
+> 	struct hso_tiocmget *tiocmget;
+> 	int status = urb->status;
+> 	u16 UART_state_bitmap, prev_UART_state_bitmap;
+> 	struct uart_icount *icount;
+> 	struct hso_serial_state_notification *serial_state_notification;
+> 	struct usb_device *usb;
+> +	int if_num;
+> 
+> 	/* Sanity checks */
+> 	if (!serial)
+> 		return;
+> 	if (status) {
+> 		handle_usb_error(status, __func__, serial->parent);
+> 		return;
+> 	}
+> +
+> +	/* tiocmget is only supported on HSO_PORT_MODEM */
+> 	tiocmget = serial->tiocmget;
+> 	if (!tiocmget)
+> 		return;
+> +	BUG_ON((serial->parent->port_spec & HSO_PORT_MASK) != HSO_PORT_MODEM);
+> +
+> 	usb = serial->parent->usb;
+> +	if_num = serial->parent->interface->altsetting->desc.bInterfaceNumber;
+> +
+> 	serial_state_notification = &tiocmget->serial_state_notification;
+> 	if (serial_state_notification->bmRequestType != BM_REQUEST_TYPE ||
+> 	    serial_state_notification->bNotification != B_NOTIFICATION ||
+> 	    le16_to_cpu(serial_state_notification->wValue) != W_VALUE ||
+> -	    le16_to_cpu(serial_state_notification->wIndex) != W_INDEX ||
+> +	    le16_to_cpu(serial_state_notification->wIndex) != if_num ||
+> 	    le16_to_cpu(serial_state_notification->wLength) != W_LENGTH) {
+> 		dev_warn(&usb->dev,
+> 			 "hso received invalid serial state notification\n");
+> 		DUMP(serial_state_notification,
+> 		     sizeof(struct hso_serial_state_notification));
+> 	} else {
+> 
+> 
 
