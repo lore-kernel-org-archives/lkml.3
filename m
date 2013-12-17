@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab3LQSQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:16:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:32991 "EHLO
+	id S932334Ab3LQSQq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:16:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:32984 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932260Ab3LQSQJ (ORCPT
+	with ESMTP id S932281Ab3LQSQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:16:09 -0500
+	Tue, 17 Dec 2013 13:16:06 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Ben Myers <bpm@sgi.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Kees Cook <keescook@google.com>,
+Cc: Jim Quinlan <jim2101024@gmail.com>, linux-mips@linux-mips.org,
+        cernekee@gmail.com, Ralf Baechle <ralf@linux-mips.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 103/103] xfs: underflow bug in xfs_attrlist_by_handle()
-Date: Tue, 17 Dec 2013 18:13:32 +0000
-Message-Id: <1387304012-23805-104-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 102/103] MIPS: DMA: For BMIPS5000 cores flush region just like non-coherent R10000
+Date: Tue, 17 Dec 2013 18:13:31 +0000
+Message-Id: <1387304012-23805-103-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -29,56 +28,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Jim Quinlan <jim2101024@gmail.com>
 
-commit 31978b5cc66b8ba8a7e8eef60b12395d41b7b890 upstream.
+commit f86f55d3ad21b21b736bdeb29bee0f0937b77138 upstream.
 
-If we allocate less than sizeof(struct attrlist) then we end up
-corrupting memory or doing a ZERO_PTR_SIZE dereference.
+The BMIPS5000 (Zephyr) processor utilizes instruction speculation. A
+stale misprediction address in either the JTB or the CRS may trigger
+a prefetch inside a region that is currently being used by a DMA engine,
+which is not IO-coherent.  This prefetch will fetch a line into the
+scache, and that line will soon become stale (ie wrong) during/after the
+DMA.  Mayhem ensues.
 
-This can only be triggered with CAP_SYS_ADMIN.
+In dma-default.c, the r10000 is handled as a special case in the same way
+that we want to handle Zephyr.  So we generalize the exception cases into
+a function, and include Zephyr as one of the processors that needs this
+special care.
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Kees Cook <keescook@google.com>
+Signed-off-by: Jim Quinlan <jim2101024@gmail.com>
+Cc: linux-mips@linux-mips.org
+Cc: cernekee@gmail.com
+Patchwork: https://patchwork.linux-mips.org/patch/5776/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/xfs/xfs_ioctl.c   | 3 ++-
- fs/xfs/xfs_ioctl32.c | 3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ arch/mips/mm/dma-default.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
-index 3a05a41..c03f47d 100644
---- a/fs/xfs/xfs_ioctl.c
-+++ b/fs/xfs/xfs_ioctl.c
-@@ -398,7 +398,8 @@ xfs_attrlist_by_handle(
- 		return -XFS_ERROR(EPERM);
- 	if (copy_from_user(&al_hreq, arg, sizeof(xfs_fsop_attrlist_handlereq_t)))
- 		return -XFS_ERROR(EFAULT);
--	if (al_hreq.buflen > XATTR_LIST_MAX)
-+	if (al_hreq.buflen < sizeof(struct attrlist) ||
-+	    al_hreq.buflen > XATTR_LIST_MAX)
- 		return -XFS_ERROR(EINVAL);
+diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+index 3fab204..0eea2d2 100644
+--- a/arch/mips/mm/dma-default.c
++++ b/arch/mips/mm/dma-default.c
+@@ -30,16 +30,20 @@ static inline struct page *dma_addr_to_page(struct device *dev,
+ }
  
- 	/*
-diff --git a/fs/xfs/xfs_ioctl32.c b/fs/xfs/xfs_ioctl32.c
-index c4f2da0..2859665 100644
---- a/fs/xfs/xfs_ioctl32.c
-+++ b/fs/xfs/xfs_ioctl32.c
-@@ -359,7 +359,8 @@ xfs_compat_attrlist_by_handle(
- 	if (copy_from_user(&al_hreq, arg,
- 			   sizeof(compat_xfs_fsop_attrlist_handlereq_t)))
- 		return -XFS_ERROR(EFAULT);
--	if (al_hreq.buflen > XATTR_LIST_MAX)
-+	if (al_hreq.buflen < sizeof(struct attrlist) ||
-+	    al_hreq.buflen > XATTR_LIST_MAX)
- 		return -XFS_ERROR(EINVAL);
+ /*
++ * The affected CPUs below in 'cpu_needs_post_dma_flush()' can
++ * speculatively fill random cachelines with stale data at any time,
++ * requiring an extra flush post-DMA.
++ *
+  * Warning on the terminology - Linux calls an uncached area coherent;
+  * MIPS terminology calls memory areas with hardware maintained coherency
+  * coherent.
+  */
+-
+-static inline int cpu_is_noncoherent_r10000(struct device *dev)
++static inline int cpu_needs_post_dma_flush(struct device *dev)
+ {
+ 	return !plat_device_is_coherent(dev) &&
+ 	       (current_cpu_type() == CPU_R10000 ||
+-	       current_cpu_type() == CPU_R12000);
++		current_cpu_type() == CPU_R12000 ||
++		current_cpu_type() == CPU_BMIPS5000);
+ }
  
- 	/*
+ static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
+@@ -209,7 +213,7 @@ static inline void __dma_sync(struct page *page,
+ static void mips_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
+ 	size_t size, enum dma_data_direction direction, struct dma_attrs *attrs)
+ {
+-	if (cpu_is_noncoherent_r10000(dev))
++	if (cpu_needs_post_dma_flush(dev))
+ 		__dma_sync(dma_addr_to_page(dev, dma_addr),
+ 			   dma_addr & ~PAGE_MASK, size, direction);
+ 
+@@ -260,7 +264,7 @@ static void mips_dma_unmap_sg(struct device *dev, struct scatterlist *sg,
+ static void mips_dma_sync_single_for_cpu(struct device *dev,
+ 	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction)
+ {
+-	if (cpu_is_noncoherent_r10000(dev))
++	if (cpu_needs_post_dma_flush(dev))
+ 		__dma_sync(dma_addr_to_page(dev, dma_handle),
+ 			   dma_handle & ~PAGE_MASK, size, direction);
+ }
+@@ -281,7 +285,7 @@ static void mips_dma_sync_sg_for_cpu(struct device *dev,
+ 
+ 	/* Make sure that gcc doesn't leave the empty loop body.  */
+ 	for (i = 0; i < nelems; i++, sg++) {
+-		if (cpu_is_noncoherent_r10000(dev))
++		if (cpu_needs_post_dma_flush(dev))
+ 			__dma_sync(sg_page(sg), sg->offset, sg->length,
+ 				   direction);
+ 	}
 -- 
 1.8.3.2
 
