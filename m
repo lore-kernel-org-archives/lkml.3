@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab3LQU5V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 15:57:21 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:20036 "EHLO
+	id S1754727Ab3LQU5U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 15:57:20 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:20038 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab3LQUvz (ORCPT
+	with ESMTP id S1753117Ab3LQUvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Dec 2013 15:51:55 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -12,108 +12,197 @@ To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
         boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
         mukesh.rathor@oracle.com, jbeulich@suse.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v11 12/12] xen/pvh: Support ParaVirtualized Hardware extensions.
-Date: Tue, 17 Dec 2013 15:51:43 -0500
-Message-Id: <1387313503-31362-13-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH v11 03/12] xen/pvh: Early bootup changes in PV code.
+Date: Tue, 17 Dec 2013 15:51:34 -0500
+Message-Id: <1387313503-31362-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
 References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mukesh Rathor <mukesh.rathor@oracle.com>
 
-PVH allows PV linux guest to utilize hardware extended capabilities,
-such as running MMU updates in a HVM container.
+In the bootup code for PVH we can trap cpuid via vmexit, so don't
+need to use emulated prefix call. We also check for vector callback
+early on, as it is a required feature. PVH also runs at default kernel
+IOPL.
 
-The Xen side defines PVH as (from docs/misc/pvh-readme.txt,
-with modifications):
-
-"* the guest uses auto translate:
- - p2m is managed by Xen
- - pagetables are owned by the guest
- - mmu_update hypercall not available
-* it uses event callback and not vlapic emulation,
-* IDT is native, so set_trap_table hcall is also N/A for a PVH guest.
-
-For a full list of hcalls supported for PVH, see pvh_hypercall64_table
-in arch/x86/hvm/hvm.c in xen.  From the ABI prespective, it's mostly a
-PV guest with auto translate, although it does use hvm_op for setting
-callback vector."
-
-Use .ascii and .asciz to define xen feature string. Note, the PVH
-string must be in a single line (not multiple lines with \) to keep the
-assembler from putting null char after each string before \.
-This patch allows it to be configured and enabled.
-
-Lastly remove some of the scaffolding.
+Finally, pure PV settings are moved to a separate function that are
+only called for pure PV, ie, pv with pvmmu. They are also #ifdef
+with CONFIG_XEN_PVMMU.
 
 Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/Kconfig    | 8 ++++++++
- arch/x86/xen/xen-head.S | 8 +++++++-
- include/xen/xen.h       | 3 +--
- 3 files changed, 16 insertions(+), 3 deletions(-)
+ arch/x86/xen/enlighten.c | 63 +++++++++++++++++++++++++++++++++---------------
+ arch/x86/xen/setup.c     | 18 +++++++++-----
+ 2 files changed, 56 insertions(+), 25 deletions(-)
 
-diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-index 1a3c765..161cc34 100644
---- a/arch/x86/xen/Kconfig
-+++ b/arch/x86/xen/Kconfig
-@@ -51,3 +51,11 @@ config XEN_DEBUG_FS
- 	  Enable statistics output and various tuning options in debugfs.
- 	  Enabling this option may incur a significant performance overhead.
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index fa6ade7..3b21c82 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -46,6 +46,7 @@
+ #include <xen/hvm.h>
+ #include <xen/hvc-console.h>
+ #include <xen/acpi.h>
++#include <xen/features.h>
  
-+config XEN_PVH
-+	bool "Support for running as a PVH guest"
-+	depends on X86_64 && XEN && XEN_PVHVM
-+	default n
-+	help
-+	   This option enables support for running as a PVH guest (PV guest
-+	   using hardware extensions) under a suitably capable hypervisor.
-+	   If unsure, say N.
-diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
-index 7faed58..56f42c0 100644
---- a/arch/x86/xen/xen-head.S
-+++ b/arch/x86/xen/xen-head.S
-@@ -13,6 +13,12 @@
- #include <xen/interface/elfnote.h>
- #include <asm/xen/interface.h>
+ #include <asm/paravirt.h>
+ #include <asm/apic.h>
+@@ -262,8 +263,9 @@ static void __init xen_banner(void)
+ 	struct xen_extraversion extra;
+ 	HYPERVISOR_xen_version(XENVER_extraversion, &extra);
  
-+#ifdef CONFIG_XEN_PVH
-+#define PVH_FEATURES_STR  "|writable_descriptor_tables|auto_translated_physmap|supervisor_mode_kernel|hvm_callback_vector"
-+#else
-+#define PVH_FEATURES_STR  ""
-+#endif
+-	printk(KERN_INFO "Booting paravirtualized kernel on %s\n",
+-	       pv_info.name);
++	pr_info("Booting paravirtualized kernel %son %s\n",
++		xen_feature(XENFEAT_auto_translated_physmap) ?
++			"with PVH extensions " : "", pv_info.name);
+ 	printk(KERN_INFO "Xen version: %d.%d%s%s\n",
+ 	       version >> 16, version & 0xffff, extra.extraversion,
+ 	       xen_feature(XENFEAT_mmu_pt_update_preserve_ad) ? " (preserve-AD)" : "");
+@@ -331,12 +333,15 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
+ 		break;
+ 	}
+ 
+-	asm(XEN_EMULATE_PREFIX "cpuid"
+-		: "=a" (*ax),
+-		  "=b" (*bx),
+-		  "=c" (*cx),
+-		  "=d" (*dx)
+-		: "0" (*ax), "2" (*cx));
++	if (xen_pvh_domain())
++		native_cpuid(ax, bx, cx, dx);
++	else
++		asm(XEN_EMULATE_PREFIX "cpuid"
++			: "=a" (*ax),
++			"=b" (*bx),
++			"=c" (*cx),
++			"=d" (*dx)
++			: "0" (*ax), "2" (*cx));
+ 
+ 	*bx &= maskebx;
+ 	*cx &= maskecx;
+@@ -1420,6 +1425,19 @@ static void __init xen_setup_stackprotector(void)
+ 	pv_cpu_ops.load_gdt = xen_load_gdt;
+ }
+ 
++static void __init xen_pvh_early_guest_init(void)
++{
++	if (xen_feature(XENFEAT_hvm_callback_vector))
++		xen_have_vector_callback = 1;
 +
- 	__INIT
- ENTRY(startup_xen)
- 	cld
-@@ -95,7 +101,7 @@ NEXT_HYPERCALL(arch_6)
- #endif
- 	ELFNOTE(Xen, XEN_ELFNOTE_ENTRY,          _ASM_PTR startup_xen)
- 	ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, _ASM_PTR hypercall_page)
--	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .asciz "!writable_page_tables|pae_pgdir_above_4gb")
-+	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .ascii "!writable_page_tables|pae_pgdir_above_4gb"; .asciz PVH_FEATURES_STR)
- 	ELFNOTE(Xen, XEN_ELFNOTE_PAE_MODE,       .asciz "yes")
- 	ELFNOTE(Xen, XEN_ELFNOTE_LOADER,         .asciz "generic")
- 	ELFNOTE(Xen, XEN_ELFNOTE_L1_MFN_VALID,
-diff --git a/include/xen/xen.h b/include/xen/xen.h
-index 1d6a237..a248002 100644
---- a/include/xen/xen.h
-+++ b/include/xen/xen.h
-@@ -29,8 +29,7 @@ extern enum xen_domain_type xen_domain_type;
- #define xen_initial_domain()	(0)
- #endif	/* CONFIG_XEN_DOM0 */
++#ifdef CONFIG_X86_32
++	if (xen_feature(XENFEAT_auto_translated_physmap)) {
++		xen_raw_printk("ERROR: 32bit PVH guests are not supported\n");
++		BUG();
++	}
++#endif
++}
++
+ /* First C function to be called on Xen boot */
+ asmlinkage void __init xen_start_kernel(void)
+ {
+@@ -1431,13 +1449,18 @@ asmlinkage void __init xen_start_kernel(void)
  
--#ifdef CONFIG_XEN_PVHVM
--/* Temporarily under XEN_PVHVM, but will be under CONFIG_XEN_PVH */
-+#ifdef CONFIG_XEN_PVH
- #include <xen/features.h>
- #define xen_pvh_domain() (xen_pv_domain() && \
- 			  xen_feature(XENFEAT_auto_translated_physmap) && \
+ 	xen_domain_type = XEN_PV_DOMAIN;
+ 
++	xen_setup_features();
++	xen_pvh_early_guest_init();
+ 	xen_setup_machphys_mapping();
+ 
+ 	/* Install Xen paravirt ops */
+ 	pv_info = xen_info;
+ 	pv_init_ops = xen_init_ops;
+-	pv_cpu_ops = xen_cpu_ops;
+ 	pv_apic_ops = xen_apic_ops;
++	if (xen_pvh_domain())
++		pv_cpu_ops.cpuid = xen_cpuid;
++	else
++		pv_cpu_ops = xen_cpu_ops;
+ 
+ 	x86_init.resources.memory_setup = xen_memory_setup;
+ 	x86_init.oem.arch_setup = xen_arch_setup;
+@@ -1469,8 +1492,6 @@ asmlinkage void __init xen_start_kernel(void)
+ 	/* Work out if we support NX */
+ 	x86_configure_nx();
+ 
+-	xen_setup_features();
+-
+ 	/* Get mfn list */
+ 	if (!xen_feature(XENFEAT_auto_translated_physmap))
+ 		xen_build_dynamic_phys_to_machine();
+@@ -1548,14 +1569,18 @@ asmlinkage void __init xen_start_kernel(void)
+ 	/* set the limit of our address space */
+ 	xen_reserve_top();
+ 
+-	/* We used to do this in xen_arch_setup, but that is too late on AMD
+-	 * were early_cpu_init (run before ->arch_setup()) calls early_amd_init
+-	 * which pokes 0xcf8 port.
+-	 */
+-	set_iopl.iopl = 1;
+-	rc = HYPERVISOR_physdev_op(PHYSDEVOP_set_iopl, &set_iopl);
+-	if (rc != 0)
+-		xen_raw_printk("physdev_op failed %d\n", rc);
++	/* PVH: runs at default kernel iopl of 0 */
++	if (!xen_pvh_domain()) {
++		/*
++		 * We used to do this in xen_arch_setup, but that is too late
++		 * on AMD were early_cpu_init (run before ->arch_setup()) calls
++		 * early_amd_init which pokes 0xcf8 port.
++		 */
++		set_iopl.iopl = 1;
++		rc = HYPERVISOR_physdev_op(PHYSDEVOP_set_iopl, &set_iopl);
++		if (rc != 0)
++			xen_raw_printk("physdev_op failed %d\n", rc);
++	}
+ 
+ #ifdef CONFIG_X86_32
+ 	/* set up basic CPUID stuff */
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 68c054f..2137c51 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -563,16 +563,13 @@ void xen_enable_nmi(void)
+ 		BUG();
+ #endif
+ }
+-void __init xen_arch_setup(void)
++void __init xen_pvmmu_arch_setup(void)
+ {
+-	xen_panic_handler_init();
+-
+ 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_4gb_segments);
+ 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_writable_pagetables);
+ 
+-	if (!xen_feature(XENFEAT_auto_translated_physmap))
+-		HYPERVISOR_vm_assist(VMASST_CMD_enable,
+-				     VMASST_TYPE_pae_extended_cr3);
++	HYPERVISOR_vm_assist(VMASST_CMD_enable,
++			     VMASST_TYPE_pae_extended_cr3);
+ 
+ 	if (register_callback(CALLBACKTYPE_event, xen_hypervisor_callback) ||
+ 	    register_callback(CALLBACKTYPE_failsafe, xen_failsafe_callback))
+@@ -581,6 +578,15 @@ void __init xen_arch_setup(void)
+ 	xen_enable_sysenter();
+ 	xen_enable_syscall();
+ 	xen_enable_nmi();
++}
++
++/* This function is not called for HVM domains */
++void __init xen_arch_setup(void)
++{
++	xen_panic_handler_init();
++	if (!xen_feature(XENFEAT_auto_translated_physmap))
++		xen_pvmmu_arch_setup();
++
+ #ifdef CONFIG_ACPI
+ 	if (!(xen_start_info->flags & SIF_INITDOMAIN)) {
+ 		printk(KERN_INFO "ACPI in unprivileged domain disabled\n");
 -- 
 1.8.3.1
 
