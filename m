@@ -1,59 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab3LQPfk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:35:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17169 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754216Ab3LQPfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:35:39 -0500
-Date: Tue, 17 Dec 2013 16:36:11 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] pid: change task_struct::pid to read-only
-Message-ID: <20131217153611.GA18321@redhat.com>
-References: <8aa73d2b884439496f87d5f34c12ba9b4b40f7e5.1377032086.git.rgb@redhat.com> <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com>
+	id S1754551Ab3LQPhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 10:37:34 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:34754 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754201Ab3LQPhc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 10:37:32 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 64.17.244.34
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+UebocCLbbMtZ40h9jJ60Y
+Date: Tue, 17 Dec 2013 07:37:27 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Tomasz Figa <t.figa@samsung.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH] regulator: Start using standard gpios property and
+ deprecate some custom properties
+Message-ID: <20131217153727.GI26293@atomide.com>
+References: <1386965234-26461-1-git-send-email-tony@atomide.com>
+ <20131216183615.GK3185@sirena.org.uk>
+ <20131216194023.GE26293@atomide.com>
+ <20131216201102.GP3185@sirena.org.uk>
+ <20131216210512.GF26293@atomide.com>
+ <20131216214057.GG3185@sirena.org.uk>
+ <20131216230622.GH26293@atomide.com>
+ <20131216233737.GL3185@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20131216233737.GL3185@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16, Richard Guy Briggs wrote:
->
-> task->pid is only ever assigned once (well ok, twice).  For system health and
-> secure logging confidence, make it const to make it much more intentional when
-> it is being changed.
+* Mark Brown <broonie@kernel.org> [131216 15:39]:
+> On Mon, Dec 16, 2013 at 03:06:22PM -0800, Tony Lindgren wrote:
+> > * Mark Brown <broonie@kernel.org> [131216 13:42]:
+> > > On Mon, Dec 16, 2013 at 01:05:13PM -0800, Tony Lindgren wrote:
+> 
+> > > > Personally I don't see any value for a regulator describing the names of
+> > > > the GPIOs in the binding, it's really up to the driver to make sense of
+> > > > them. Especially if there are one or more similar GPIOs. We're not
+> 
+> > > Devices like PMICs frequently have a *lot* of possible pin functions
+> > > some of which can get mapped onto GPIOs (in either direction), many of
+> > > which are going to be fixed by system design and generally all muxed
+> > > onto a much smaller set of physical pins.  If you try to specify those
+> 
+> > That's why PMICs usually show up as GPIO controllers. And if a regulator
+> > needs to use those GPIOs, it should most likely just use the standard
+> > "gpios" property.
+> 
+> No, that's a different thing - the PMIC will typically be able to use
+> some pins as GPIOs so most expose a GPIO controller.  The functions that
+> are an issue here are things like voltage selection, voltage transition
+> completion status, sleep mode, enable control or whatever that may need
+> to be tied to the SoC for interaction (usually not just limited to the
+> regulator bit either).  A lot of these things get done either to bypass
+> register I/O or because they are used as part of power up/down
+> sequencing and need to be done by hardware.  
+> 
+> If there's any overlap it's with pinctrl though you still need to map
+> the connected functions to any software controllable GPIOs they're
+> connected to.
 
-Hmm. I am a bit suprized you decided to constify task->pid, but OK.
+OK. Maybe the best way to deal with that is to have the driver specific
+regmap (gpiomap? :) configuration describe that? And then the driver
+GPIO configuration is picked up just based on the compatible flags and
+the gpios property?
+ 
+> > > > I don't think there should be any named GPIOs. If we want names, then
+> > > > the GPIO usage should be possible to group quite easily rather than create
+> > > > a new property for everything. Something like "enable-gpio" comes to mind.
+> 
+> > > I don't understand the difference between your suggestion and named
+> > > GPIOs.
+> 
+> > What I'm trying to say is let's not let drivers invent their random
+> > *-gpio[s] property as those essentially creates new kernel ABIs that
+> > we're stuck with.
+> 
+> > Instead, let's try to use standard properties where possible like
+> > "gpios" and "enable-gpios", "cs-gpios" and so on.
+> 
+> Oh, OK.  Yes, standardisation of the names has benefits though for some
+> of the features (especially voltage selection) the implementation gets
+> rather chip specific and there are also advantages in having the DT
+> binding correspond to the chip documentation.
+> 
+> Things that really are very standard probably ought to be being done by
+> the core anyway (like we've done with all the factoring out of standard
+> voltage map and regmap operations).
 
-And we can do the same with task->signal, this can actually help to generate
-a better code, probably.
+Agreed. And a lot of that can be configured automatically based on the
+compatible property.
 
->  	if (!thread_group_leader(tsk)) {
->  		struct task_struct *leader = tsk->group_leader;
-> +		/* tast_struct::pid is const pid_t, hence the ugly cast */
-> +		pid_t *pid_p = (pid_t*)&(tsk->pid);
->
->  		sig->notify_count = -1;	/* for exit_notify() */
->  		for (;;) {
-> @@ -950,7 +952,7 @@ static int de_thread(struct task_struct *tsk)
->  		 * Note: The old leader also uses this pid until release_task
->  		 *       is called.  Odd but simple and correct.
->  		 */
-> -		tsk->pid = leader->pid;
-> +		*pid_p = leader->pid;
+Regards,
 
-Well, imho this (and de_thread) looks a bit ugly. Perhaps we should add
-something like
-
-	#define ASSIGN_CONST(l, r)      (*(typeof(r) *)&(l) = (r))
-
-into compiler.h ?
-
-Oleg.
-
+Tony
