@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab3LQQd6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 11:33:58 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:34336 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630Ab3LQQd4 convert rfc822-to-8bit (ORCPT
+	id S1754669Ab3LQQew (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 11:34:52 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:44045 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752800Ab3LQQeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 11:33:56 -0500
-X-Originating-IP: 50.43.14.201
-Date: Tue, 17 Dec 2013 08:33:47 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Michael Buesch <m@bues.ch>,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] drivers: ssb: Remove unused function
- ssb_sdio_func_to_bus() in main.c
-Message-ID: <20131217163347.GB737@leaf>
-References: <20131217121314.GA27839@rashika>
+	Tue, 17 Dec 2013 11:34:50 -0500
+Message-ID: <52B07D25.4090901@linaro.org>
+Date: Tue, 17 Dec 2013 08:34:45 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131217121314.GA27839@rashika>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+To: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, stable <stable@vger.kernel.org>
+Subject: Re: [RFC][PATCH 3/5] timekeeping: Avoid possible deadlock from clock_was_set_delayed
+References: <1386789098-17391-1-git-send-email-john.stultz@linaro.org> <1386789098-17391-4-git-send-email-john.stultz@linaro.org> <52A9E5B2.8040702@oracle.com> <52AA014B.6000301@oracle.com> <52AA0798.1050709@linaro.org> <52AA08EB.1080703@oracle.com> <52AA0AD2.5030307@linaro.org> <52AFDDE6.2020600@linaro.org> <52AFF20F.5070202@oracle.com>
+In-Reply-To: <52AFF20F.5070202@oracle.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 05:43:14PM +0530, Rashika Kheria wrote:
-> Remove unused function ssb_sdio_func_to_bus() in main.c.
-> 
-> This eliminates the following warning in main.c:
-> drivers/ssb/main.c:94:17: warning: no previous prototype for ‘ssb_sdio_func_to_bus’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+On 12/16/2013 10:41 PM, Sasha Levin wrote:
+> On 12/17/2013 12:15 AM, John Stultz wrote:
+>>
+>> Just wanted to follow up here. Did you happen to get a chance to try to
+>> reproduce w/ the three patch patchset?
+>>
+>> I'm hoping to submit them to Ingo tomorrow, and want to make sure I've
+>> got your tested-by.
+>
+> Oh yeah, have been running it ever since, haven't seen the issue
+> reproduce.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Great! I'll add your tested-by line, if that's ok.
 
->  drivers/ssb/main.c |   19 -------------------
->  1 file changed, 19 deletions(-)
-> 
-> diff --git a/drivers/ssb/main.c b/drivers/ssb/main.c
-> index 32a811d..8138952 100644
-> --- a/drivers/ssb/main.c
-> +++ b/drivers/ssb/main.c
-> @@ -90,25 +90,6 @@ found:
->  }
->  #endif /* CONFIG_SSB_PCMCIAHOST */
->  
-> -#ifdef CONFIG_SSB_SDIOHOST
-> -struct ssb_bus *ssb_sdio_func_to_bus(struct sdio_func *func)
-> -{
-> -	struct ssb_bus *bus;
-> -
-> -	ssb_buses_lock();
-> -	list_for_each_entry(bus, &buses, list) {
-> -		if (bus->bustype == SSB_BUSTYPE_SDIO &&
-> -		    bus->host_sdio == func)
-> -			goto found;
-> -	}
-> -	bus = NULL;
-> -found:
-> -	ssb_buses_unlock();
-> -
-> -	return bus;
-> -}
-> -#endif /* CONFIG_SSB_SDIOHOST */
-> -
->  int ssb_for_each_bus_call(unsigned long data,
->  			  int (*func)(struct ssb_bus *bus, unsigned long data))
->  {
-> -- 
-> 1.7.9.5
-> 
+thanks
+-john
+
