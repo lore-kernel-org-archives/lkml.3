@@ -1,99 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab3LQXVH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 18:21:07 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:38167 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab3LQXVE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 18:21:04 -0500
-Date: Tue, 17 Dec 2013 15:21:00 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH 05/13] rcu: Fix unraised IPI to timekeeping CPU
-Message-ID: <20131217232100.GC19211@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
- <1387320692-28460-6-git-send-email-fweisbec@gmail.com>
+	id S1751934Ab3LQXYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 18:24:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39442 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751122Ab3LQXYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 18:24:24 -0500
+Date: Tue, 17 Dec 2013 23:24:19 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7] mm: page_alloc: Make zone distribution page aging
+ policy configurable
+Message-ID: <20131217232419.GM11295@suse.de>
+References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
+ <1386943807-29601-6-git-send-email-mgorman@suse.de>
+ <20131216204215.GA21724@cmpxchg.org>
+ <20131217152954.GA24067@suse.de>
+ <20131217155435.GE21724@cmpxchg.org>
+ <20131217161420.GG11295@suse.de>
+ <20131217174302.GF21724@cmpxchg.org>
+ <20131217212216.GK11295@suse.de>
+ <20131217225716.GJ21724@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1387320692-28460-6-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <20131217225716.GJ21724@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121723-9332-0000-0000-000002874779
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 11:51:24PM +0100, Frederic Weisbecker wrote:
-> The plan with full system idle detection is to allow the timekeeper
-> to sleep when all full dynticks CPUs are sleeping.
+On Tue, Dec 17, 2013 at 05:57:16PM -0500, Johannes Weiner wrote:
+> On Tue, Dec 17, 2013 at 09:22:16PM +0000, Mel Gorman wrote:
+> > On Tue, Dec 17, 2013 at 12:43:02PM -0500, Johannes Weiner wrote:
+> > > > > > When looking at this closer I found that sysv is a weird exception. It's
+> > > > > > file-backed as far as most of the VM is concerned but looks anonymous to
+> > > > > > most applications that care. That and MAP_SHARED anonymous pages should
+> > > > > > not be treated like files but we still want tmpfs to be treated as
+> > > > > > files. Details will be in the changelog of the next series.
+> > > > > 
+> > > > > In what sense is it seen as file-backed?
+> > > > 
+> > > > sysv and anonymous pages are backed by an internal shmem mount point. In
+> > > > lots of respects, it's looks like a file and quacks like a file but I expect
+> > > > developers think of it being anonmous and chunks of the VM treats it like
+> > > > it's anonymous. tmpfs uses the same paths and they get treated similar to
+> > > > the VM as anon but users may think that tmpfs should be subject to the
+> > > > fair allocation zone policy "because they're files." It's a sufficently
+> > > > weird case that any action we take there should be deliberate. It'll be
+> > > > a bit clearer when I post the patch that special cases this.
+> > > 
+> > > The line I see here is mostly derived from performance expectations.
+> > > 
+> > > People and programs expect anon, shmem/tmpfs etc. to be fast and avoid
+> > > their reclaim at great costs, so they size this part of their workload
+> > > according to memory size and locality.  Filesystem cache (on-disk) on
+> > > the other hand is expected to be slow on the first fault and after it
+> > > has been displaced by other data, but the kernel is mostly expected to
+> > > maximize the caching effects in a predictable manner.
+> > > 
+> > 
+> > Part of their performance expectations is that memory referenced from the
+> > local node will be allocated locally. Consider NUMA-aware applications that
+> > partition their data usage appropriately and share that data between threads
+> > using processes and shared memory (some MPI implementations). They have
+> > an expectation that the memory will be local and a further expectation
+> > that it will not be reclaimed because they sized it appropriately.
+> > Automatically interleaving such memory by default will be surprising to
+> > NUMA aware applications even if NUMA-oblivious applications benefit.
 > 
-> Then when a full dynticks CPU wakes up while the whole system is idle,
-> it sends an IPI to the timekeeping CPU which then restarts its tick
-> and polls on its timekeeping duty on behalf of all other CPUs in the
-> system.
-> 
-> But we are using rcu_kick_nohz_cpu() to raise this IPI, which is wrong
-> because this function is used to kick full dynticks CPUs when they run
-> in the kernel for too long without reporting a quiescent state. And
-> this function ignores targets that are not full dynticks, like our
-> timekeeper.
-> 
-> To fix this, use the smp_send_reschedule() function directly.
-
-I guess the fact that you needed some change is reassuring.  You know
-the old saying, "no bugs, no users".  ;-)
-
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Alex Shi <alex.shi@linaro.org>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> ---
->  kernel/rcu/tree_plugin.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index 08004da..84d90c8 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -2488,7 +2488,7 @@ void rcu_sysidle_force_exit(void)
->  				      oldstate, RCU_SYSIDLE_NOT);
->  		if (oldstate == newoldstate &&
->  		    oldstate == RCU_SYSIDLE_FULL_NOTED) {
-> -			rcu_kick_nohz_cpu(tick_do_timer_cpu);
-> +			smp_send_reschedule(tick_do_timer_cpu);
-
-Hmmm...
-
-We haven't done any sort of wakeup, and tick_nohz_full_cpu() should
-return false for tick_do_timer_cpu, and I don't see that we have
-done anything to make got_nohz_idle_kick() return true.
-
-So the idea is that the fact of the interrupt is sufficient, and
-the target CPU will figure out that it must turn its scheduling-clock
-interrupt when returning from interrupt?
-
-Or is something else going on here?
-
-							Thanx, Paul
-
->  			return; /* We cleared it, done! */
->  		}
->  		oldstate = newoldstate;
-> -- 
-> 1.8.3.1
+> That's exactly why I want to exclude any type of data that is
+> typically sized to memory capacity.  Are we talking past each other?
 > 
 
+No, we're not but I'm concerned that your treatment of shmem ends up
+being inconsistent. Your proposal to me has two choices
+
+a) leave it alone. We get proper behaviour for MAP_SHARED anonymous and
+   sysv but tmpfs is different to every other filesystem
+b) interleave shmem. tmpfs is consistent with other filesystems but
+   MAP_SHARED anonymous and sysv is surprising
+
+> > Similarly, the pagecache sysctl is documented to affect files, at least
+> > that's how I wrote it. It's inconsistent to explain that as "the sysctl
+> > control files, except for tmpfs ones because ...... whatever".
+> 
+> I documented it as affecting by secondary storage cache.
+> 
+
+That is very subtle and a bit weird to me. Arguably tmpfs is also driven
+by secondary storage where storage happens to be swap. It's still "files
+except for tmpfs files beacuse they're special". That's why I'm
+uncomfortable with it.
+
+> > > The round-robin policy makes the displacement predictable (think of
+> > > the aging artifacts here where random pages do not get displaced
+> > > reliably because they ended up on remote nodes) and it avoids IO by
+> > > maximizing memory utilization.
+> > > 
+> > > I.e. it improves behavior associated with a cache, but I don't expect
+> > > shmem/tmpfs to be typically used as a disk cache.  I could be wrong
+> > > about that, but I figure if you need named shared memory that is
+> > > bigger than your memory capacity (the point where your tmpfs would
+> > > actually turn into a disk cache), you'd be better of using a more
+> > > efficient on-disk filesystem.
+> > 
+> > I am concerned with semantics like "all files except tmpfs files" or
+> > alternatively regressing performance of NUMA-aware applications and their
+> > use of MAP_SHARED and sysv.
+> 
+> I'm really not following.  MAP_SHARED, sysv, shmem, tmpfs, whatever is
+> entirely unaffected by my proposal. 
+
+I understand, it's the tmpfs different to every filesystem I'm not happy
+with. From a VM perspective it makes some sense but from a user
+perspective it just looks weird.
+
+> I never claimed "all files except
+> tmpfs".  It's about what backs the data, which what makes a difference
+> in people's performance expectation, which makes a difference in how
+> they size the workloads.
+> 
+
+So potentially applications have to stat the file they are mapping if they
+want to understand what memory policy applies.
+
+> Tmpfs files that may overflow into swap on heavy memory pressure have
+> an entirely different trade-off than actual cache that is continuously
+> replaced as part of its size management, and in that sense they are
+> much closer to anon and sysv shared memory. 
+
+Again, from a VM perspective I understand what you're suggesting but
+from an application perspective that is mapping files, it's a tricky
+interface.
+
+In terms of restoring historical behaviour in 3.12 and for 3.13 I think my
+approach is the more conservative and least surprising to users. We can bash
+out whether to default remote interleaving or special case tmpfs in 3.14.
+
+-- 
+Mel Gorman
+SUSE Labs
