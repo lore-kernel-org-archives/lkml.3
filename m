@@ -1,84 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab3LQWu3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:50:29 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46932 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab3LQWu2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:50:28 -0500
-Date: Tue, 17 Dec 2013 22:50:02 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: lgirdwood@gmail.com, alsa-devel@alsa-project.org, tiwai@suse.de,
-        perex@perex.cz, linux-kernel@vger.kernel.org
-Message-ID: <20131217225002.GR28455@sirena.org.uk>
-References: <1386842368-19951-1-git-send-email-Guangyu.Chen@freescale.com>
+	id S1752238Ab3LQWum (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:50:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2367 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752173Ab3LQWul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 17:50:41 -0500
+Date: Tue, 17 Dec 2013 20:50:23 -0200
+From: Rafael Aquini <aquini@redhat.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Greg Thelen <gthelen@google.com>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [PATCH] ipc: introduce ipc_valid_object() helper to sort out
+ IPC_RMID races
+Message-ID: <20131217225023.GD31827@localhost.localdomain>
+References: <e70c06876f986f0ac7f2f104bab50edff4a524a0.1387302999.git.aquini@redhat.com>
+ <1387315669.2797.21.camel@buesod1.americas.hpqcorp.net>
+ <20131217214653.GC31827@localhost.localdomain>
+ <1387318682.2797.25.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y/XsGip80ttrIE8G"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386842368-19951-1-git-send-email-Guangyu.Chen@freescale.com>
-X-Cookie: Haste makes waste.
+In-Reply-To: <1387318682.2797.25.camel@buesod1.americas.hpqcorp.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] ASoC: fsl: imx-wm8962: Grant hw_params/free()
- permission to control FLL
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 17, 2013 at 02:18:02PM -0800, Davidlohr Bueso wrote:
+> On Tue, 2013-12-17 at 19:46 -0200, Rafael Aquini wrote:
+> > On Tue, Dec 17, 2013 at 01:27:49PM -0800, Davidlohr Bueso wrote:
+> > > Ccing Manfred.
+> > > 
+> > > On Tue, 2013-12-17 at 17:03 -0200, Rafael Aquini wrote:
+> > > > After the locking semantics for the SysV IPC API got improved, a couple of
+> > > > IPC_RMID race windows were opened because we ended up dropping the
+> > > > 'kern_ipc_perm.deleted' check performed way down in ipc_lock().
+> > > > The spotted races got sorted out by re-introducing the old test within
+> > > > the racy critical sections.
+> > > > 
+> > > > This patch introduces ipc_valid_object() to consolidate the way we cope with
+> > > > IPC_RMID races by using the same abstraction across the API implementation.
+> > > 
+> > > This is certainly a good function to have. Some comments below.
+> > > 
+> [...]
+> > > > 
+> > > >  		shm_file = shp->shm_file;
+> > > > -
+> > > > -		/* check if shm_destroy() is tearing down shp */
+> > > > -		if (shm_file == NULL) {
+> > > > -			err = -EIDRM;
+> > > > -			goto out_unlock0;
+> > > > -		}
+> > > 
+> > > Ok, this seems safe, we can always rely on .deleted for validity since
+> > > shm_destroy() ends up calling shm_rmid() which sets .deleted. So this
+> > > change is really moving what we're checking against just a few
+> > > instructions later.
+> > >
+> > 
+> > Yep, I did change it cause it seems that there's no reason to delay the return
+> > condition if we raced with shm_destroy(), anyways.
+> >  
+> 
+> Right, but I was referring to moving what we consider as valid.
+> 
+> static void shm_destroy(struct ipc_namespace *ns, struct shmid_kernel *shp)
+> {
+> 	struct file *shm_file;
+> 
+> 	shm_file = shp->shm_file;
+> 	shp->shm_file = NULL;   <--- we currently use this.
+> 	ns->shm_tot -= (shp->shm_segsz + PAGE_SIZE - 1) >> PAGE_SHIFT;
+> 	shm_rmid(ns, shp); <--- with your patch we now use this.
+> 	shm_unlock(shp);
+> 	...
+> }
+> 
+> ... and it makes since since shm was the only one not using .deleted for
+> RMID racing checks.
+>
 
---y/XsGip80ttrIE8G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Oh, I see. As a matter of fact, what made shm to start using a different check
+than kern_ipc_perm.deleted, as you points out, was the follwoing commit:
+---8<--
+commit a399b29dfbaaaf91162b2dc5a5875dd51bbfa2a1
+Author: Greg Thelen <gthelen@google.com>
+Date:   Thu Nov 21 14:32:00 2013 -0800
 
-On Thu, Dec 12, 2013 at 05:59:28PM +0800, Nicolin Chen wrote:
+    ipc,shm: fix shm_file deletion races
+--->8---
 
-> +	mask = WM8962_MIXINL_TO_HPMIXL_MASK | WM8962_MIXINR_TO_HPMIXL_MASK |
-> +		WM8962_IN4L_TO_HPMIXL_MASK | WM8962_IN4R_TO_HPMIXL_MASK;
-> +	bypass |= snd_soc_read(codec, WM8962_HEADPHONE_MIXER_1) & mask;
-> +	bypass |= snd_soc_read(codec, WM8962_HEADPHONE_MIXER_2) & mask;
-> +	bypass |= snd_soc_read(codec, WM8962_SPEAKER_MIXER_1) & mask;
-> +	bypass |= snd_soc_read(codec, WM8962_SPEAKER_MIXER_2) & mask;
-> +
-> +	/* Don't diable FLL if running multi-substreams or analogue bypass */
-> +	if (codec_dai->active != 1 || bypass)
-> +		return 0;
+Although it closes the spotted race properly, Greg's commit also implies that (by the
+way it works the race around) the race has always been there, which is not true. 
+OTOH, I didn't propose reverting Greg's commit because I thought the changes 
+it introduced to shm_destroy() might come handy to help one spotting similar races, 
+if they eventually pop out in the future.
+(a cleanup patch can be sent later, if that hunk is not regarded as useful anymore)
 
-I don't think this works with the power down delay we do on playback -
-the DAI will go inactive when closed but we'll still have the CODEC
-active and using its clocks until the power down time has elapsed if
-it's a playback DAI.  Trying to reclock the device while active is at
-best risky, even if it's muted.
-
-I do think refcounting from both here and the bias level changes is
-going to be the most robust thing, that'd also avoid the need to peer
-into the CODEC register map.
-
---y/XsGip80ttrIE8G
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSsNUXAAoJELSic+t+oim9V88P/3rwuQnBlOpXwwt7LcF/1C/l
-XKrfJCgaFntjyhyejM/J4WrWaZBIURiAFxDNN7SdOnyjMb9vE7j09YALASB364Af
-DgdLQ7baElnnX4MAXjR0R2fDsu1PfOPSSSaepMh73yS2NzrD66KMlPY4y2HVmM+Y
-XGzYXeyeytpBLr6QaaYYMTeX+b01EJ8VzmrN4JhE2Y7fHRlgZHrtusDj5catzSoz
-QsJaZgTj/e0TIV9oGeTOJGFcpwbAyiv1ZlNyIaOvmSjIsDfmWSmtsyfqgK66ZdV7
-cEDJi4/KGZwP7Hk3ZTOpbBmouFOzgW+WWf8oRCNUZbb8wcecd6u0Ix0QUCl3L4dr
-tcD7f+l2iiR4U0wji8jX9PdDOQpI8J01puPZlLYpVoUE1WGhWTQREh5LyqG+Zo2W
-s/OzdG2GAw3sEJ6FFtOr3/KgvnjYT7mT+l5ukBRKq20BI/JQ0SAAipnbbaS+lVGo
-rtJfd76xN+4f3IYohxs3RWGn9f/3SIb2Pf/6HrhwcdfbpbN41CITLV18WBjivI54
-IEQG+aVIvgYmNd5zz/Gz0y3TGNK7j5kPW13+z4qvrquFbXW+888PCiVfzJlF7Vf2
-LWFn6tm8CA0W5je3MZdvRsIGGai55pKRaHcgHW3JQev7GUJxRZdB7MCjScI0mJ+W
-KT7UcbYeU6jHSv3IclFJ
-=er9B
------END PGP SIGNATURE-----
-
---y/XsGip80ttrIE8G--
+Thanks!
+-- Rafael
