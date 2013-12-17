@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304Ab3LQPDj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:03:39 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:35818 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754133Ab3LQPDf (ORCPT
+	id S1754353Ab3LQPFz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 10:05:55 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:63378 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753354Ab3LQPFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:03:35 -0500
-Date: Tue, 17 Dec 2013 15:03:28 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 2/5] regulator: s5m8767: Do not use sec_reg* regmap
- helpers
-Message-ID: <20131217150328.GB32283@lee--X1>
-References: <1387286601-21646-1-git-send-email-k.kozlowski@samsung.com>
- <1387286601-21646-3-git-send-email-k.kozlowski@samsung.com>
+	Tue, 17 Dec 2013 10:05:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1387286601-21646-3-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131011124551.GF2917@hansolo.jdub.homelinux.org>
+References: <20131011124551.GF2917@hansolo.jdub.homelinux.org>
+Date: Tue, 17 Dec 2013 10:05:53 -0500
+X-Google-Sender-Auth: U4rhSab0oecm4vPhoxNeHfQt9p0
+Message-ID: <CA+5PVA7k8F8tEOz1p4O1Mh9xP3xuixPrwYtPQfvA3o7mmwb_MA@mail.gmail.com>
+Subject: Re: [PATCH] cpupower: Fix segfault due to incorrect getopt_long arugments
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Dominik Brodowski <linux@dominikbrodowski.net>,
+        Thomas Renninger <trenn@suse.de>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Dec 2013, Krzysztof Kozlowski wrote:
+On Fri, Oct 11, 2013 at 8:45 AM, Josh Boyer <jwboyer@redhat.com> wrote:
+> If a user calls 'cpupower set --perf-bias 15', the process will end with a
+> SIGSEGV in libc because cpupower-set passes a NULL optarg to the atoi call.
+> This is because the getopt_long structure currently has all of the options
+> as having an optional_argument when they really have a required argument.
+> We change the structure to use required_argument to match the short options
+> and it resolves the issue.
+>
+> This fixes https://bugzilla.redhat.com/show_bug.cgi?id=1000439
+>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
 
-> Replace calls to sec_reg* helpers with direct usage of regmap API. The
-> sec_reg* helpers are error-prone as they mix u8 with unsigned int and
-> order of some of parameters (val and mask in sec_reg_update()).
-> 
-> Also the helpers do not give any way of useful abstraction as they just
-> call corresponding regmap function.
-> 
-> This patch replaces:
->  - sec_reg_read() with regmap_read(),
->  - sec_reg_write() with regmap_write(),
->  - sec_reg_update() with regmap_update_bits().
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Ping?  I sent this 2 months ago and never got a reply.  We're still
+carrying it in Fedora.
+
+josh
+
 > ---
->  drivers/regulator/s5m8767.c |   71 +++++++++++++++++++++++++------------------
->  1 file changed, 41 insertions(+), 30 deletions(-)
-> 
-
-Mark,
-
-As this is heavily reliant on the previous patch, feel free to
-take it through the Regulator tree.
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>  tools/power/cpupower/utils/cpupower-set.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/tools/power/cpupower/utils/cpupower-set.c b/tools/power/cpupower/utils/cpupower-set.c
+> index dc4de37..bcf1d2f 100644
+> --- a/tools/power/cpupower/utils/cpupower-set.c
+> +++ b/tools/power/cpupower/utils/cpupower-set.c
+> @@ -18,9 +18,9 @@
+>  #include "helpers/bitmask.h"
+>
+>  static struct option set_opts[] = {
+> -       { .name = "perf-bias",  .has_arg = optional_argument,   .flag = NULL,   .val = 'b'},
+> -       { .name = "sched-mc",   .has_arg = optional_argument,   .flag = NULL,   .val = 'm'},
+> -       { .name = "sched-smt",  .has_arg = optional_argument,   .flag = NULL,   .val = 's'},
+> +       { .name = "perf-bias",  .has_arg = required_argument,   .flag = NULL,   .val = 'b'},
+> +       { .name = "sched-mc",   .has_arg = required_argument,   .flag = NULL,   .val = 'm'},
+> +       { .name = "sched-smt",  .has_arg = required_argument,   .flag = NULL,   .val = 's'},
+>         { },
+>  };
+>
+> --
+> 1.8.3.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
