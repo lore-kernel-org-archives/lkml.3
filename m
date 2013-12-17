@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab3LQSN6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:13:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60706 "EHLO
+	id S1756408Ab3LQSnd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:43:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60742 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755400Ab3LQSNy (ORCPT
+	with ESMTP id S1755443Ab3LQSN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:13:54 -0500
+	Tue, 17 Dec 2013 13:13:58 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andreas Henriksson <andreas@fatal.se>,
+Cc: Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 002/103] net: Fix "ip rule delete table 256"
-Date: Tue, 17 Dec 2013 18:11:51 +0000
-Message-Id: <1387304012-23805-3-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 013/103] net: core: Always propagate flag changes to interfaces
+Date: Tue, 17 Dec 2013 18:12:02 +0000
+Message-Id: <1387304012-23805-14-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -28,44 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Henriksson <andreas@fatal.se>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-commit 13eb2ab2d33c57ebddc57437a7d341995fc9138c upstream.
+commit d2615bf450694c1302d86b9cc8a8958edfe4c3a4 upstream.
 
-When trying to delete a table >= 256 using iproute2 the local table
-will be deleted.
-The table id is specified as a netlink attribute when it needs more then
-8 bits and iproute2 then sets the table field to RT_TABLE_UNSPEC (0).
-Preconditions to matching the table id in the rule delete code
-doesn't seem to take the "table id in netlink attribute" into condition
-so the frh_get_table helper function never gets to do its job when
-matching against current rule.
-Use the helper function twice instead of peaking at the table value directly.
+The following commit:
+    b6c40d68ff6498b7f63ddf97cf0aa818d748dee7
+    net: only invoke dev->change_rx_flags when device is UP
 
-Originally reported at: http://bugs.debian.org/724783
+tried to fix a problem with VLAN devices and promiscuouse flag setting.
+The issue was that VLAN device was setting a flag on an interface that
+was down, thus resulting in bad promiscuity count.
+This commit blocked flag propagation to any device that is currently
+down.
 
-Reported-by: Nicolas HICHER <nhicher@avencall.com>
-Signed-off-by: Andreas Henriksson <andreas@fatal.se>
+A later commit:
+    deede2fabe24e00bd7e246eb81cd5767dc6fcfc7
+    vlan: Don't propagate flag changes on down interfaces
+
+fixed VLAN code to only propagate flags when the VLAN interface is up,
+thus fixing the same issue as above, only localized to VLAN.
+
+The problem we have now is that if we have create a complex stack
+involving multiple software devices like bridges, bonds, and vlans,
+then it is possible that the flags would not propagate properly to
+the physical devices.  A simple examle of the scenario is the
+following:
+
+  eth0----> bond0 ----> bridge0 ---> vlan50
+
+If bond0 or eth0 happen to be down at the time bond0 is added to
+the bridge, then eth0 will never have promisc mode set which is
+currently required for operation as part of the bridge.  As a
+result, packets with vlan50 will be dropped by the interface.
+
+The only 2 devices that implement the special flag handling are
+VLAN and DSA and they both have required code to prevent incorrect
+flag propagation.  As a result we can remove the generic solution
+introduced in b6c40d68ff6498b7f63ddf97cf0aa818d748dee7 and leave
+it to the individual devices to decide whether they will block
+flag propagation or not.
+
+Reported-by: Stefan Priebe <s.priebe@profihost.ag>
+Suggested-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/fib_rules.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/core/dev.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
-index 72cceb7..d660ad4 100644
---- a/net/core/fib_rules.c
-+++ b/net/core/fib_rules.c
-@@ -443,7 +443,8 @@ static int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
- 		if (frh->action && (frh->action != rule->action))
- 			continue;
+diff --git a/net/core/dev.c b/net/core/dev.c
+index a0eaa60..3fb7c7c 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4445,7 +4445,7 @@ static void dev_change_rx_flags(struct net_device *dev, int flags)
+ {
+ 	const struct net_device_ops *ops = dev->netdev_ops;
  
--		if (frh->table && (frh_get_table(frh, tb) != rule->table))
-+		if (frh_get_table(frh, tb) &&
-+		    (frh_get_table(frh, tb) != rule->table))
- 			continue;
+-	if ((dev->flags & IFF_UP) && ops->ndo_change_rx_flags)
++	if (ops->ndo_change_rx_flags)
+ 		ops->ndo_change_rx_flags(dev, flags);
+ }
  
- 		if (tb[FRA_PRIORITY] &&
 -- 
 1.8.3.2
 
