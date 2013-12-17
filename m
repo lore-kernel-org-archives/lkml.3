@@ -1,122 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab3LQAgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 19:36:35 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:63453 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab3LQAgd (ORCPT
+	id S1752131Ab3LQAhQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 19:37:16 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:45041 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551Ab3LQAhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 19:36:33 -0500
+	Mon, 16 Dec 2013 19:37:14 -0500
+Message-ID: <52AF9CB7.90003@linaro.org>
+Date: Mon, 16 Dec 2013 16:37:11 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVQUsvYuRJQyvbyCkGjwwaKsgF2b8wTzi-KV4vex7Y5mg@mail.gmail.com>
-References: <1386658484-15774-1-git-send-email-yinghai@kernel.org>
-	<1386658484-15774-5-git-send-email-yinghai@kernel.org>
-	<20131216082329.GA4926@yanx>
-	<CAE9FiQWONC84f35_Jyvs=nwXdj4QWCBdokOgiFWDgWSSpcf_NA@mail.gmail.com>
-	<CAE9FiQVQUsvYuRJQyvbyCkGjwwaKsgF2b8wTzi-KV4vex7Y5mg@mail.gmail.com>
-Date: Mon, 16 Dec 2013 16:36:32 -0800
-X-Google-Sender-Auth: PeLNbzTRulW1qVDbuLN2lVqJ-dU
-Message-ID: <CAE9FiQV8kJZz0oaiZOvfWce_bu+8nZB2Qtw7KjLeASTkwUrjug@mail.gmail.com>
-Subject: Re: [PATCH v4 4/5] PCI: Try best to allocate pref mmio 64bit above 4g
-From: Yinghai Lu <yinghai@kernel.org>
-To: Guo Chao <yan@linux.vnet.ibm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=001a11c2190ac42cd204edb01efb
+To: Colin Cross <ccross@android.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        kbuild test robot <fengguang.wu@intel.com>
+Subject: Re: [RFC][PATCH 2/3] staging: ion: Fix possible null pointer dereference
+References: <1387229564-19517-1-git-send-email-john.stultz@linaro.org>	<1387229564-19517-3-git-send-email-john.stultz@linaro.org> <CAMbhsRRMMMreYzLMZHxjrRrKj0rZdS5SjLNbpGUuW93mg+Q65w@mail.gmail.com>
+In-Reply-To: <CAMbhsRRMMMreYzLMZHxjrRrKj0rZdS5SjLNbpGUuW93mg+Q65w@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c2190ac42cd204edb01efb
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Mon, Dec 16, 2013 at 1:36 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Dec 16, 2013 at 10:13 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->>>
->>> 64-bit non-prefetchable BARs are missed from caculation in the scheme,
->>> causing assign failed eventually.
-
->>>
->>> Will you figure out a better way to cover them or just add a 'type3' parameter?
+On 12/16/2013 04:26 PM, Colin Cross wrote:
+> On Mon, Dec 16, 2013 at 1:32 PM, John Stultz <john.stultz@linaro.org> wrote:
+>> The kbuild test robot reported:
+>>
+>> drivers/staging/android/ion/ion_system_heap.c:122 alloc_largest_available() error: potential null dereference 'info'.  (kmalloc returns null)
+>>
+>> Where the pointer returned from kmalloc goes unchecked for failure.
+>>
+>> This patch adds a simple check for a null return, and handles the error.
+>>
+>> XXX: Not sure if continue or 'return NULL' is the right thing to do.
+> Returning NULL is fine, there is no reason the kmalloc is going to
+> succeed if it retries, and it will just have to allocate more of them
+> if it starts fulfilling the allocation with smaller order chunks.
 >
-> Looks like we have add type3 for that case.
+> Allocating the struct before entering the loop might make error handling easier.
 
-please check attached delta patch.
+Ok, I had actually done that in my first pass, but then got worried the
+allocation/free might have extra overhead in the case where the pool is
+exhausted, so I stuck with the existing pattern. But if that's not a
+common state, then I agree, it does make the handling simpler.
 
-Thanks
+I'll rework this and re-submit. Thanks for the feedback!
 
-Yinghai
-
---001a11c2190ac42cd204edb01efb
-Content-Type: text/x-patch; charset=US-ASCII; name="pref_mem_64_only_fix_non_pref.patch"
-Content-Disposition: attachment; 
-	filename="pref_mem_64_only_fix_non_pref.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hpaf81mr0
-
-LS0tCiBkcml2ZXJzL3BjaS9zZXR1cC1idXMuYyB8ICAgMTcgKysrKysrKysrKystLS0tLS0KIGRy
-aXZlcnMvcGNpL3NldHVwLXJlcy5jIHwgICAgOCArKysrKystLQogMiBmaWxlcyBjaGFuZ2VkLCAx
-NyBpbnNlcnRpb25zKCspLCA4IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJz
-L3BjaS9zZXR1cC1idXMuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL3Bj
-aS9zZXR1cC1idXMuYworKysgbGludXgtMi42L2RyaXZlcnMvcGNpL3NldHVwLWJ1cy5jCkBAIC05
-MTYsNiArOTE2LDcgQEAgc3RhdGljIGlubGluZSByZXNvdXJjZV9zaXplX3QgY2FsY3VsYXRlXwog
-ICovCiBzdGF0aWMgaW50IHBidXNfc2l6ZV9tZW0oc3RydWN0IHBjaV9idXMgKmJ1cywgdW5zaWdu
-ZWQgbG9uZyBtYXNrLAogCQkJIHVuc2lnbmVkIGxvbmcgdHlwZSwgdW5zaWduZWQgbG9uZyB0eXBl
-MiwKKwkJCSB1bnNpZ25lZCBsb25nIHR5cGUzLAogCQkJIHJlc291cmNlX3NpemVfdCBtaW5fc2l6
-ZSwgcmVzb3VyY2Vfc2l6ZV90IGFkZF9zaXplLAogCQkJIHN0cnVjdCBsaXN0X2hlYWQgKnJlYWxs
-b2NfaGVhZCkKIHsKQEAgLTk0Niw3ICs5NDcsOCBAQCBzdGF0aWMgaW50IHBidXNfc2l6ZV9tZW0o
-c3RydWN0IHBjaV9idXMKIAkJCXJlc291cmNlX3NpemVfdCByX3NpemU7CiAKIAkJCWlmIChyLT5w
-YXJlbnQgfHwgKChyLT5mbGFncyAmIG1hc2spICE9IHR5cGUgJiYKLQkJCQkJICAoci0+ZmxhZ3Mg
-JiBtYXNrKSAhPSB0eXBlMikpCisJCQkJCSAgKHItPmZsYWdzICYgbWFzaykgIT0gdHlwZTIgJiYK
-KwkJCQkJICAoci0+ZmxhZ3MgJiBtYXNrKSAhPSB0eXBlMykpCiAJCQkJY29udGludWU7CiAJCQly
-X3NpemUgPSByZXNvdXJjZV9zaXplKHIpOwogI2lmZGVmIENPTkZJR19QQ0lfSU9WCkBAIC0xMTE5
-LDcgKzExMjEsNyBAQCB2b2lkIF9fcmVmIF9fcGNpX2J1c19zaXplX2JyaWRnZXMoc3RydWN0CiAJ
-CQlzdHJ1Y3QgbGlzdF9oZWFkICpyZWFsbG9jX2hlYWQpCiB7CiAJc3RydWN0IHBjaV9kZXYgKmRl
-djsKLQl1bnNpZ25lZCBsb25nIG1hc2ssIHByZWZtYXNrLCB0eXBlMiA9IDA7CisJdW5zaWduZWQg
-bG9uZyBtYXNrLCBwcmVmbWFzaywgdHlwZTIgPSAwLCB0eXBlMyA9IDA7CiAJcmVzb3VyY2Vfc2l6
-ZV90IGFkZGl0aW9uYWxfbWVtX3NpemUgPSAwLCBhZGRpdGlvbmFsX2lvX3NpemUgPSAwOwogCXN0
-cnVjdCByZXNvdXJjZSAqYl9yZXM7CiAKQEAgLTExNzEsMjYgKzExNzMsMjkgQEAgdm9pZCBfX3Jl
-ZiBfX3BjaV9idXNfc2l6ZV9icmlkZ2VzKHN0cnVjdAogCQlwcmVmbWFzayA9IElPUkVTT1VSQ0Vf
-TUVNIHwgSU9SRVNPVVJDRV9QUkVGRVRDSDsKIAkJaWYgKGJfcmVzWzJdLmZsYWdzICYgSU9SRVNP
-VVJDRV9NRU1fNjQpIHsKIAkJCXByZWZtYXNrIHw9IElPUkVTT1VSQ0VfTUVNXzY0OwotCQkJaWYg
-KHBidXNfc2l6ZV9tZW0oYnVzLCBwcmVmbWFzaywgcHJlZm1hc2ssIHByZWZtYXNrLAorCQkJaWYg
-KHBidXNfc2l6ZV9tZW0oYnVzLCBwcmVmbWFzaywgcHJlZm1hc2ssCisJCQkJICBwcmVmbWFzaywg
-cHJlZm1hc2ssCiAJCQkJICByZWFsbG9jX2hlYWQgPyAwIDogYWRkaXRpb25hbF9tZW1fc2l6ZSwK
-IAkJCQkgIGFkZGl0aW9uYWxfbWVtX3NpemUsIHJlYWxsb2NfaGVhZCkpIHsKIAkJCQkJLyogU3Vj
-Y2Vzcywgc2l6ZSBub24tcHJlZjY0IG9ubHkuICovCiAJCQkJCW1hc2sgPSBwcmVmbWFzazsKIAkJ
-CQkJdHlwZTIgPSBwcmVmbWFzayAmIH5JT1JFU09VUkNFX01FTV82NDsKKwkJCQkJdHlwZTMgPSBw
-cmVmbWFzayAmIH5JT1JFU09VUkNFX1BSRUZFVENIOwogCQkJfQogCQl9CiAJCWlmICghdHlwZTIp
-IHsKIAkJCXByZWZtYXNrICY9IH5JT1JFU09VUkNFX01FTV82NDsKLQkJCWlmIChwYnVzX3NpemVf
-bWVtKGJ1cywgcHJlZm1hc2ssIHByZWZtYXNrLCBwcmVmbWFzaywKKwkJCWlmIChwYnVzX3NpemVf
-bWVtKGJ1cywgcHJlZm1hc2ssIHByZWZtYXNrLAorCQkJCQkgcHJlZm1hc2ssIHByZWZtYXNrLAog
-CQkJCQkgcmVhbGxvY19oZWFkID8gMCA6IGFkZGl0aW9uYWxfbWVtX3NpemUsCiAJCQkJCSBhZGRp
-dGlvbmFsX21lbV9zaXplLCByZWFsbG9jX2hlYWQpKSB7CiAJCQkJLyogU3VjY2Vzcywgc2l6ZSBu
-b24tcHJlZmV0Y2ggb25seS4gKi8KIAkJCQltYXNrID0gcHJlZm1hc2s7CiAJCQl9IGVsc2UKIAkJ
-CQlhZGRpdGlvbmFsX21lbV9zaXplICs9IGFkZGl0aW9uYWxfbWVtX3NpemU7Ci0JCQl0eXBlMiA9
-IElPUkVTT1VSQ0VfTUVNOworCQkJdHlwZTIgPSB0eXBlMyA9IElPUkVTT1VSQ0VfTUVNOwogCQl9
-Ci0JCXBidXNfc2l6ZV9tZW0oYnVzLCBtYXNrLCBJT1JFU09VUkNFX01FTSwgdHlwZTIsCisJCXBi
-dXNfc2l6ZV9tZW0oYnVzLCBtYXNrLCBJT1JFU09VUkNFX01FTSwgdHlwZTIsIHR5cGUzLAogCQkJ
-CXJlYWxsb2NfaGVhZCA/IDAgOiBhZGRpdGlvbmFsX21lbV9zaXplLAogCQkJCWFkZGl0aW9uYWxf
-bWVtX3NpemUsIHJlYWxsb2NfaGVhZCk7CiAJCWJyZWFrOwpJbmRleDogbGludXgtMi42L2RyaXZl
-cnMvcGNpL3NldHVwLXJlcy5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMv
-cGNpL3NldHVwLXJlcy5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9wY2kvc2V0dXAtcmVzLmMKQEAg
-LTIxMiw3ICsyMTIsOCBAQCBzdGF0aWMgaW50IF9fcGNpX2Fzc2lnbl9yZXNvdXJjZShzdHJ1Y3QK
-IAkJCQkgICAgIHBjaWJpb3NfYWxpZ25fcmVzb3VyY2UsIGRldik7CiAKIAlpZiAocmV0IDwgMCAm
-JgotCSAgICAocmVzLT5mbGFncyAmIChJT1JFU09VUkNFX1BSRUZFVENIIHwgSU9SRVNPVVJDRV9N
-RU1fNjQpKSkgeworCSAgICAocmVzLT5mbGFncyAmIChJT1JFU09VUkNFX1BSRUZFVENIIHwgSU9S
-RVNPVVJDRV9NRU1fNjQpKSA9PQorCSAgICAgKElPUkVTT1VSQ0VfUFJFRkVUQ0ggfCBJT1JFU09V
-UkNFX01FTV82NCkpIHsKIAkJLyoKIAkJICogVGhhdCBmYWlsZWQuCiAJCSAqCkBAIC0yMjMsMTIg
-KzIyNCwxNSBAQCBzdGF0aWMgaW50IF9fcGNpX2Fzc2lnbl9yZXNvdXJjZShzdHJ1Y3QKIAkJCQkJ
-ICAgICBwY2liaW9zX2FsaWduX3Jlc291cmNlLCBkZXYpOwogCX0KIAotCWlmIChyZXQgPCAwICYm
-IChyZXMtPmZsYWdzICYgSU9SRVNPVVJDRV9QUkVGRVRDSCkpIHsKKwlpZiAocmV0IDwgMCAmJgor
-CSAgICAocmVzLT5mbGFncyAmIChJT1JFU09VUkNFX1BSRUZFVENIIHwgSU9SRVNPVVJDRV9NRU1f
-NjQpKSkgewogCQkvKgogCQkgKiBUaGF0IGZhaWxlZC4KIAkJICoKIAkJICogQnV0IGEgcHJlZmV0
-Y2hpbmcgYXJlYSBjYW4gaGFuZGxlIGEgbm9uLXByZWZldGNoaW5nCiAJCSAqIHdpbmRvdyAoaXQg
-d2lsbCBqdXN0IG5vdCBwZXJmb3JtIGFzIHdlbGwpLgorCQkgKgorCQkgKiBBbHNvIGNhbiBwdXQg
-NjRiaXQgdW5kZXIgMzJiaXQgcmFuZ2UuIChiZWxvdyA0ZykuCiAJCSAqLwogCQlyZXQgPSBwY2lf
-YnVzX2FsbG9jX3Jlc291cmNlKGJ1cywgcmVzLCBzaXplLCBhbGlnbiwgbWluLCAwLAogCQkJCQkg
-ICAgIHBjaWJpb3NfYWxpZ25fcmVzb3VyY2UsIGRldik7Cg==
---001a11c2190ac42cd204edb01efb--
+thanks
+-john
