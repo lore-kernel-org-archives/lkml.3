@@ -1,84 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106Ab3LQJ5A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 04:57:00 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:13561 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab3LQJ45 (ORCPT
+	id S1753133Ab3LQJ6B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 04:58:01 -0500
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:42471 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751332Ab3LQJ55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 04:56:57 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7fc96d000006cd4-63-52b01fe74bb8
-Content-transfer-encoding: 8BIT
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mike Turquette <mturquette@linaro.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Stephen Warren <swarren@nvidia.com>, Tomasz Figa <t.figa@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] clk: exynos: File scope reg_save array should depend on
- PM_SLEEP
-Date: Tue, 17 Dec 2013 10:56:39 +0100
-Message-id: <1387274199-470-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOLMWRmVeSWpSXmKPExsVy+t/xa7rP5TcEGXTckLN4N+8Fs8XrF4YW
-	vQuusllsenyN1eLyrjlsFjPO72OyeDrhIpvF75vf2SxO/ulltPhxppvF4sb0FlaL9TNeszjw
-	eFzu62Xy6Nl5htHjzrU9bB6bl9R79Da/Y/Po27KK0ePzJrkA9igum5TUnMyy1CJ9uwSujN6H
-	sQV/uCqmb1jP1sA4j7OLkZNDQsBE4sHChUwQtpjEhXvr2boYuTiEBJYySqx62QKW4BUQlPgx
-	+R5LFyMHB7OAvMSRS9kgYWYBdYlJ8xYxg9hCAn1MEh1bUkFsNgFjic3Ll4DNERG4xCzxZed9
-	VpCEsECwxIYekAWcHCwCqhLne/6xQMx3lTi8cAsjyHwJAQWJOZNsJjDyzkKyeRbC5llINi9g
-	ZF7FKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERLYX3YwLj5mdYhRgINRiYd3x/z1QUKsiWXF
-	lbmHGCU4mJVEeFkKgEK8KYmVValF+fFFpTmpxYcYmTg4pRoYY3RMm6z7n2vn/9lRdUGJr3WP
-	yzXjT6d01lnOZrTau65jj/irSVW5vL/bG+7J3Jc8p3qhd5/Q9f5fPW94/KJdMha/rZzvw73p
-	/xm3Bdfq7R+WdBxQTJmxaXL0iwtZPhtX7Z6xa+v709XsG5+YKhZv4t9SMtngMMfMa4Wrl20T
-	nrnw4sZ1O0SWNSmxFGckGmoxFxUnAgDxl/69SgIAAA==
+	Tue, 17 Dec 2013 04:57:57 -0500
+Message-ID: <52B01FF2.8010801@st.com>
+Date: Tue, 17 Dec 2013 09:57:06 +0000
+From: Angus Clark <angus.clark@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100312 Lightning/1.0b2pre Shredder/3.0.1
+MIME-Version: 1.0
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <dwmw2@infradead.org>,
+        <linus.walleij@linaro.org>, <linux-mtd@lists.infradead.org>,
+        Angus CLARK <angus.clark@st.com>
+Subject: Re: [PATCH v3 11/36] mtd: st_spi_fsm: Search for preferred FSM message
+ sequence configurations
+References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org> <1385727565-25794-12-git-send-email-lee.jones@linaro.org> <20131211010636.GH27149@ld-irv-0074.broadcom.com>
+In-Reply-To: <20131211010636.GH27149@ld-irv-0074.broadcom.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.65.49.178]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move reg_save[] into CONFIG_PM_SLEEP dependency block as it is used only
-by suspend and resume functions.
+On 12/11/2013 01:06 AM, Brian Norris wrote:
+> This process sounds very much like something that is needed for other
+> controllers: a way to match controller capabilties with the opcodes
+> supported by the flash. 
 
-This fixes the warning on CONFIG_PM_SLEEP=n:
-drivers/clk/samsung/clk-exynos-audss.c:29:22: warning: ‘reg_save’ defined but not used [-Wunused-variable]
+Yes, I think this should be a primary aim of any 'spi-nor' framework".
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/clk/samsung/clk-exynos-audss.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+> But it still isn't quite flexible enough for
+> others, because it doesn't try to abstract the selection criteria -- it
+> just uses lists that you presorted
 
-diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
-index 39b40aaede2b..68e515d093d8 100644
---- a/drivers/clk/samsung/clk-exynos-audss.c
-+++ b/drivers/clk/samsung/clk-exynos-audss.c
-@@ -26,17 +26,17 @@ static struct clk_onecell_data clk_data;
- #define ASS_CLK_DIV 0x4
- #define ASS_CLK_GATE 0x8
- 
-+/* list of all parent clock list */
-+static const char *mout_audss_p[] = { "fin_pll", "fout_epll" };
-+static const char *mout_i2s_p[] = { "mout_audss", "cdclk0", "sclk_audio0" };
-+
-+#ifdef CONFIG_PM_SLEEP
- static unsigned long reg_save[][2] = {
- 	{ASS_CLK_SRC,  0},
- 	{ASS_CLK_DIV,  0},
- 	{ASS_CLK_GATE, 0},
- };
- 
--/* list of all parent clock list */
--static const char *mout_audss_p[] = { "fin_pll", "fout_epll" };
--static const char *mout_i2s_p[] = { "mout_audss", "cdclk0", "sclk_audio0" };
--
--#ifdef CONFIG_PM_SLEEP
- static int exynos_audss_clk_suspend(void)
- {
- 	int i;
--- 
-1.7.9.5
+Sure, the implementation here is very specific to the st_spi_fsm controller.
+However, until there is something better or more generic available, I am not
+sure what else to suggest.  Selecting a configuration based on a presorted list
+is probably a reasonable strategy though; READ_1_4_4 is more efficient that
+READ_1_1_4, and READ_1_1_4 is more efficient than READ_1_1_2 etc.
+
+>> +/* Search for preferred configuration based on available flags */
+>> +static struct seq_rw_config *
+>> +stfsm_search_seq_rw_configs(struct stfsm *fsm,
+>> +			    struct seq_rw_config cfgs[])
+>> +{
+>> +	struct seq_rw_config *config;
+>> +	int flags = fsm->info->flags;
+>> +
+>> +	for (config = cfgs; cfgs->cmd != 0; config++)
+> 
+> This becomes an infinite loop if you can't find a matching config. You
+> probably meant 'config->cmd != 0':
+> 
+
+I will leave Lee to defend himself on this one ;-)
+
+>> +/* Parameters to configure a READ or WRITE FSM sequence */
+>> +struct seq_rw_config {
+>> +	uint8_t		mode_data;	/* MODE data */
+> 
+> What does this represent? As far as I can see, all the configurations
+> you provide so far have this entry as 0x00.
+> 
+>> +	uint8_t		mode_cycles;	/* No. of MODE cycles */
+> 
+> What are MODE cycles? (Sorry if these are dumb questions.)
+
+Mode data cyles are similar to dummy cycles, except they also transmit some
+extended information on how the device should perform the transfer.  For
+example, Spansion devices use mode data to enter/exit a "continuous read mode"
+where subsequent read operations do not need to issue the read command, just
+supply an address (and further mode/dummy cycles).  In practice, we have only
+used this particular mode during testing; our boot-controller dislikes any form
+of statefull mode!
+
+> 
+>> +	uint8_t		dummy_cycles;	/* No. of DUMMY cycles */
+>> +};
+> 
+> Several pieces of this sequence struct seems suspiciously similar to
+> what would be needed by several other controllers, while the remaining
+> pieces don't seem to be so special that they cannot be configured
+> beneath a SPI NOR framework. I'm becoming less convinced that your
+> controller/driver is as unique as you say it is.
+
+Other controllers/drivers would certainly benefit from something similar.
+However, I thought the point was that no such framework exists at present and
+any spi-nor proposal is going to take time to mature.  In the meantime,
+integrating the st_spi_fsm driver would provide another example of H/W that
+needs to be supported by a spi-nor framework, and maybe give a few ideas along
+the way.
+
+Cheers,
+
+Angus
 
