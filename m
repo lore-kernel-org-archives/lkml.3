@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab3LQLSq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 06:18:46 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40150 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab3LQLSp (ORCPT
+	id S1752896Ab3LQLTH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 06:19:07 -0500
+Received: from 9.mo3.mail-out.ovh.net ([87.98.184.141]:38527 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752742Ab3LQLTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 06:18:45 -0500
-Date: Tue, 17 Dec 2013 11:18:16 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: lars@metafoo.de, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20131217111816.GN3185@sirena.org.uk>
-References: <1387264600-14225-1-git-send-email-Li.Xiubo@freescale.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oMYUQGQaTbnds07l"
-Content-Disposition: inline
-In-Reply-To: <1387264600-14225-1-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: Yow!  I threw up on my window!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: dmaengine: Add config parameter NULL check.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Tue, 17 Dec 2013 06:19:05 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Landley <rob@landley.net>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+Subject: [PATCH] spi/atmel: document clock properties
+Date: Tue, 17 Dec 2013 12:01:34 +0100
+Message-Id: <1387278095-5118-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 3397121494371301474
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrleejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrleejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Document the clock properties required by the spi-atmel driver.
 
---oMYUQGQaTbnds07l
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ .../devicetree/bindings/spi/spi_atmel.txt          |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-On Tue, Dec 17, 2013 at 03:16:40PM +0800, Xiubo Li wrote:
-> Because the "ASoC: dmaengine-pcm: Provide default config" has provided
-> us one defualt config of DMA. When using this, the config parameter of
-> devm_snd_dmaengine_pcm_register() will be NULL, so here we need to have
-> a check before using it.
+diff --git a/Documentation/devicetree/bindings/spi/spi_atmel.txt b/Documentation/devicetree/bindings/spi/spi_atmel.txt
+index 07e04cd..4f8184d 100644
+--- a/Documentation/devicetree/bindings/spi/spi_atmel.txt
++++ b/Documentation/devicetree/bindings/spi/spi_atmel.txt
+@@ -5,6 +5,9 @@ Required properties:
+ - reg: Address and length of the register set for the device
+ - interrupts: Should contain spi interrupt
+ - cs-gpios: chipselects
++- clock-names: tuple listing input clock names.
++	Required elements: "spi_clk"
++- clocks: phandles to input clocks.
+ 
+ Example:
+ 
+@@ -14,6 +17,8 @@ spi1: spi@fffcc000 {
+ 	interrupts = <13 4 5>;
+ 	#address-cells = <1>;
+ 	#size-cells = <0>;
++	clocks = <&spi1_clk>;
++	clock-names = "spi_clk";
+ 	cs-gpios = <&pioB 3 0>;
+ 	status = "okay";
+ 
+-- 
+1.7.9.5
 
-Applied, thanks.
-
---oMYUQGQaTbnds07l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSsDL0AAoJELSic+t+oim979YP/jeJcXPbJHMfVQngwCz5l9rt
-vGK27S1M2fDu2S/RCD5l2GUioc7iuz068N8K96/CHjbsv3kazotaPgK4G3KCRW9G
-HqbdzXV1DW0taqhdKFOAEjwZwMPOW//i6I2+DSiRdtN9wqPDoRieM20OwUZTOgeB
-HZHiOH42YY5p09AmJHCW87NFWAvGcA5xT8J4btKRtG+sxM9Ps0EJRxZT/a3MvgrM
-Oc1cgJTKsVWvZUDXAmepvH7ZgO14nKodfoUQQP4SNUUYSPfrtStMzeBVck+GuX7B
-o/0LwAYY0Q7qf5H5Nmv/K6CsUPm5lBg/tRt9LNqXj5LP2wOBOo80bYUS+P+XMIq+
-TGnJy6n0ydZBriR9wMRurWhZjHqd48zqabF2UVZmdgeR6RRToDlJTexCgpmAsMj9
-UNozTqdnVd2n7QsdPLAAq4e+27jlMKDRoHw8vysr3J4Z2wVWrpl64XLQNyH4xux2
-MIOIc2EDcXsZGVt2NfArkhyxooqDsbVkcpz0uubdLJVOLl6pIs8xrkcpyVQbSd6g
-W/gptQKmh1GSiBDijO1a0RKLPUD4aq7rMdmRfOEc4Fi5FUQilmPUjerqdKDIxKs1
-fFBpKA76y4mLeENvlGnTysfnAvS1RsJhdEW2up+hfv7+uGfZwWgez/6433FYtNHW
-AelZ/XjDXKazQXdgcc9C
-=8huy
------END PGP SIGNATURE-----
-
---oMYUQGQaTbnds07l--
