@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab3LQPvb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:51:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32324 "EHLO mx1.redhat.com"
+	id S1755222Ab3LQPvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 10:51:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35914 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755169Ab3LQPv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:51:26 -0500
+	id S1754789Ab3LQPvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 10:51:35 -0500
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mark Salter <msalter@redhat.com>,
@@ -20,69 +20,75 @@ Cc: Mark Salter <msalter@redhat.com>,
         sparclinux@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
         Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         x86@kernel.org
-Subject: [PATCH v2 00/10] Kconfig: cleanup SERIO_I8042 dependencies
-Date: Tue, 17 Dec 2013 10:48:43 -0500
-Message-Id: <1387295333-24684-1-git-send-email-msalter@redhat.com>
+Subject: [PATCH v2 10/10] Kconfig: cleanup SERIO_I8042 dependencies
+Date: Tue, 17 Dec 2013 10:48:53 -0500
+Message-Id: <1387295333-24684-11-git-send-email-msalter@redhat.com>
+In-Reply-To: <1387295333-24684-1-git-send-email-msalter@redhat.com>
+References: <1387295333-24684-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series removes the messy dependencies from SERIO_I8042
-by having it depend on one variable (ARCH_MAY_HAVE_PC_SERIO) and
-having architectures which need it select that variable in
-arch/*/Kconfig.
-
+Remove messy dependencies from SERIO_I8042 by having it depend on one
+Kconfig symbol (ARCH_MIGHT_HAVE_PC_SERIO) and having architectures
+which need it select ARCH_MIGHT_HAVE_PC_SERIO in arch/*/Kconfig.
 New architectures are unlikely to need SERIO_I8042, so this avoids
-having an ever growing list of architectures to exclude. If an
-architecture without i8042 support isn't excluded through the
-dependency list for SERIO_I8042 or through explicit disabling in
-a config, it will likely panic on boot with something similar to
-this (from arm64):
+having an ever growing list of architectures to exclude.
 
-[   27.426181] [<ffffffc000403b1c>] i8042_flush+0x88/0x10c
-[   27.426251] [<ffffffc00084cc2c>] i8042_init+0x58/0xe8
-[   27.426320] [<ffffffc000080bec>] do_one_initcall+0xc4/0x14c
-[   27.426404] [<ffffffc000820970>] kernel_init_freeable+0x1a4/0x244
-[   27.426480] [<ffffffc0005a894c>] kernel_init+0x18/0x148
-[   27.426561] Code: d2800c82 f2bf7c02 f2dff7e2 f2ffffe2 (39400042) 
-[   27.426789] ---[ end trace ac076843cf0f383e ]---
-[   27.426875] Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+Signed-off-by: Mark Salter <msalter@redhat.com>
+Acked-by: "H. Peter Anvin" <hpa@zytor.com>
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Richard Henderson <rth@twiddle.net>
+CC: linux-alpha@vger.kernel.org
+CC: Russell King <linux@arm.linux.org.uk>
+CC: linux-arm-kernel@lists.infradead.org
+CC: Tony Luck <tony.luck@intel.com>
+CC: Fenghua Yu <fenghua.yu@intel.com>
+CC: linux-ia64@vger.kernel.org
+CC: linux-mips@linux-mips.org
+CC: Paul Mackerras <paulus@samba.org>
+CC: linuxppc-dev@lists.ozlabs.org
+CC: Paul Mundt <lethal@linux-sh.org>
+CC: linux-sh@vger.kernel.org
+CC: "David S. Miller" <davem@davemloft.net>
+CC: sparclinux@vger.kernel.org
+CC: Guan Xuetao <gxt@mprc.pku.edu.cn>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: x86@kernel.org
+---
+ drivers/input/serio/Kconfig | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-This is v2 of the patch series. Changes from version 1:
-
-  o Added acks. arm, ia64, and sh are only ones without acks.
-  o Moved select of ARCH_MIGHT_HAVE_PC_SERIO to board-specific
-    Kconfigs for arm and sh.
-    
-A tree with these patches is at:
-
-   git://github.com/mosalter/linux.git (serio-i8042-v2 branch)
-
-
-Mark Salter (10):
-  alpha: select ARCH_MIGHT_HAVE_PC_SERIO
-  arm: select ARCH_MIGHT_HAVE_PC_SERIO
-  ia64: select ARCH_MIGHT_HAVE_PC_SERIO
-  mips: select ARCH_MIGHT_HAVE_PC_SERIO
-  powerpc: select ARCH_MIGHT_HAVE_PC_SERIO
-  sh: select ARCH_MIGHT_HAVE_PC_SERIO for SH_CAYMAN
-  sparc: select ARCH_MIGHT_HAVE_PC_SERIO
-  unicore32: select ARCH_MIGHT_HAVE_PC_SERIO
-  x86: select ARCH_MIGHT_HAVE_PC_SERIO
-  Kconfig: cleanup SERIO_I8042 dependencies
-
- arch/alpha/Kconfig               |  1 +
- arch/arm/mach-footbridge/Kconfig |  1 +
- arch/ia64/Kconfig                |  1 +
- arch/mips/Kconfig                |  1 +
- arch/powerpc/Kconfig             |  1 +
- arch/sh/boards/Kconfig           |  1 +
- arch/sparc/Kconfig               |  1 +
- arch/unicore32/Kconfig           |  1 +
- arch/x86/Kconfig                 |  1 +
- drivers/input/serio/Kconfig      | 11 ++++++++---
- 10 files changed, 17 insertions(+), 3 deletions(-)
-
+diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
+index 8541f94..1f5cec2 100644
+--- a/drivers/input/serio/Kconfig
++++ b/drivers/input/serio/Kconfig
+@@ -16,14 +16,19 @@ config SERIO
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called serio.
+ 
++config ARCH_MIGHT_HAVE_PC_SERIO
++	bool
++	help
++	  Select this config option from the architecture Kconfig if
++	  the architecture might use a PC serio device (i8042) to
++          communicate with keyboard, mouse, etc.
++
+ if SERIO
+ 
+ config SERIO_I8042
+ 	tristate "i8042 PC Keyboard controller"
+ 	default y
+-	depends on !PARISC && (!ARM || FOOTBRIDGE_HOST) && \
+-		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN && !S390 && \
+-		   !ARC
++	depends on ARCH_MIGHT_HAVE_PC_SERIO
+ 	help
+ 	  i8042 is the chip over which the standard AT keyboard and PS/2
+ 	  mouse are connected to the computer. If you use these devices,
 -- 
 1.8.3.1
 
