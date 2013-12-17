@@ -1,132 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab3LQX1V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 18:27:21 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:58673 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab3LQX1T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 18:27:19 -0500
-Date: Tue, 17 Dec 2013 15:27:14 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH 03/13] rcu: Exclude all potential timekeepers from
- sysidle detection
-Message-ID: <20131217232714.GD19211@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
- <1387320692-28460-4-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387320692-28460-4-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121723-1344-0000-0000-000004360A2E
+	id S1752055Ab3LQX3R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 18:29:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60517 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751007Ab3LQX3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 18:29:15 -0500
+From: Rafael Aquini <aquini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Rik van Riel <riel@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: [PATCH v2] ipc: introduce ipc_valid_object() helper to sort out IPC_RMID races
+Date: Tue, 17 Dec 2013 21:28:45 -0200
+Message-Id: <9710122c2aa978165609c0940e2087b074cd26ea.1387322182.git.aquini@redhat.com>
+In-Reply-To: <e70c06876f986f0ac7f2f104bab50edff4a524a0.1387302999.git.aquini@redhat.com>
+References: <e70c06876f986f0ac7f2f104bab50edff4a524a0.1387302999.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 11:51:22PM +0100, Frederic Weisbecker wrote:
-> The purpose of the full system idle detection is to notify the CPU
-> handling the timekeeping when the rest of the system is idle so that it
-> can sleep when nobody needs the jiffies nor GTOD to be maintained.
-> 
-> Now this machinery excludes CPU 0 itself from the range of the idle
-> detection because if CPU 0 has any non-idle task to execute, it is going
-> to restart its own tick since it's guaranteed to be outside the full
-> dynticks range. And as it is the only eligible timekeeper when
-> CONFIG_NO_HZ_FULL=y anyway, it can handle the timekeeping duty for
-> and by itself.
-> 
-> Still we also plan to extend the timekeepers affinity and allow every CPU
-> outside the full dynticks range to handle the timekeeping duty, not just
-> CPU 0.
-> 
-> So once we reach that step, we can state that all CPUs that are not
-> full dynticks can be excluded from the full system idle detection,
-> simply because those CPUs share the same property than CPU 0 today. When
-> a non full dynticks CPU needs to run some busy task, it restarts its
-> tick and handles the timekeeping duty for its own needs as is currently
-> done under CONFIG_NO_HZ_IDLE=y.
-> 
-> To prepare for this support in the sysidle detection, we can use the
-> tick_timekeeping_cpu() API which checks if a CPU is allowed to handle
-> timekeeping duty. If so we can conclude that it's not full dynticks and
-> it can maintain timekeeping by itself and as such it can be excluded
-> from the sysidle detection.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Alex Shi <alex.shi@linaro.org>
-> Cc: Kevin Hilman <khilman@linaro.org>
+After the locking semantics for the SysV IPC API got improved, a couple of
+IPC_RMID race windows were opened because we ended up dropping the
+'kern_ipc_perm.deleted' check performed way down in ipc_lock().
+The spotted races got sorted out by re-introducing the old test within
+the racy critical sections.
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+This patch introduces ipc_valid_object() to consolidate the way we cope with
+IPC_RMID races by using the same abstraction across the API implementation.
 
-A few comments below as well.
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Greg Thelen <gthelen@google.com>
+---
+Changelog:
+* v2:
+ - drop assert_spin_locked() from ipc_valid_object() for less overhead
+ - extend ipc_valid_object() usage in sem.c (not spotted checkpoints)
+ - keep the received ACKs
 
-> ---
->  kernel/rcu/tree_plugin.h | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index 6abb03d..08004da 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
+ ipc/msg.c  |  7 ++++---
+ ipc/sem.c  | 16 ++++++++--------
+ ipc/shm.c  | 16 ++++++++--------
+ ipc/util.h | 12 ++++++++++++
+ 4 files changed, 32 insertions(+), 19 deletions(-)
 
-The rcu_sysidle_force_exit() function uses tick_do_timer_cpu, but
-presumably needs to continue doing so in order to whack the right
-CPU over the head.  I am happy to defer worrying about the interaction
-with multiple timekeeping CPUs for the moment.  ;-)
-
-> @@ -2539,7 +2539,7 @@ static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq)
->  	 * invoke rcu_sysidle_force_exit() directly if it does anything
->  	 * more than take a scheduling-clock interrupt.
->  	 */
-> -	if (smp_processor_id() == tick_do_timer_cpu)
-> +	if (tick_timekeeping_cpu(smp_processor_id()))
->  		return;
-> 
->  	/* Update system-idle state: We are clearly no longer fully idle! */
-> @@ -2563,10 +2563,10 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
->  	 * is an offline or the timekeeping CPU, nothing to do.
->  	 */
->  	if (!*isidle || rdp->rsp != rcu_sysidle_state ||
-> -	    cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
-> +	    cpu_is_offline(rdp->cpu) || tick_timekeeping_cpu(rdp->cpu))
->  		return;
->  	if (rcu_gp_in_progress(rdp->rsp))
-> -		WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
-> +		WARN_ON_ONCE(!tick_timekeeping_cpu(smp_processor_id()));
-> 
->  	/* Pick up current idle and NMI-nesting counter and check. */
->  	cur = atomic_read(&rdtp->dynticks_idle);
-
-The rcu_bind_gp_kthread() uses tick_do_timer_cpu to figure out where
-to run.  Is there some CPU mask that it should use instead once there
-can be multiple timekeeping CPUs?
-
-> @@ -2729,7 +2729,7 @@ bool rcu_sys_is_idle(void)
->  	static struct rcu_sysidle_head rsh;
->  	int rss = ACCESS_ONCE(full_sysidle_state);
-> 
-> -	if (WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu))
-> +	if (WARN_ON_ONCE(!tick_timekeeping_cpu(smp_processor_id())))
->  		return false;
-> 
->  	/* Handle small-system case by doing a full scan of CPUs. */
-> -- 
-> 1.8.3.1
-> 
+diff --git a/ipc/msg.c b/ipc/msg.c
+index 558aa91..8983ea5 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -696,7 +696,7 @@ long do_msgsnd(int msqid, long mtype, void __user *mtext,
+ 			goto out_unlock0;
+ 
+ 		/* raced with RMID? */
+-		if (msq->q_perm.deleted) {
++		if (!ipc_valid_object(&msq->q_perm)) {
+ 			err = -EIDRM;
+ 			goto out_unlock0;
+ 		}
+@@ -731,7 +731,8 @@ long do_msgsnd(int msqid, long mtype, void __user *mtext,
+ 		ipc_lock_object(&msq->q_perm);
+ 
+ 		ipc_rcu_putref(msq, ipc_rcu_free);
+-		if (msq->q_perm.deleted) {
++		/* raced with RMID? */
++		if (!ipc_valid_object(&msq->q_perm)) {
+ 			err = -EIDRM;
+ 			goto out_unlock0;
+ 		}
+@@ -909,7 +910,7 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp, int msgfl
+ 		ipc_lock_object(&msq->q_perm);
+ 
+ 		/* raced with RMID? */
+-		if (msq->q_perm.deleted) {
++		if (!ipc_valid_object(&msq->q_perm)) {
+ 			msg = ERR_PTR(-EIDRM);
+ 			goto out_unlock0;
+ 		}
+diff --git a/ipc/sem.c b/ipc/sem.c
+index db9d241..ed0057a 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -1282,7 +1282,7 @@ static int semctl_setval(struct ipc_namespace *ns, int semid, int semnum,
+ 
+ 	sem_lock(sma, NULL, -1);
+ 
+-	if (sma->sem_perm.deleted) {
++	if (!ipc_valid_object(&sma->sem_perm)) {
+ 		sem_unlock(sma, -1);
+ 		rcu_read_unlock();
+ 		return -EIDRM;
+@@ -1342,7 +1342,7 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+ 		int i;
+ 
+ 		sem_lock(sma, NULL, -1);
+-		if (sma->sem_perm.deleted) {
++		if (!ipc_valid_object(&sma->sem_perm)) {
+ 			err = -EIDRM;
+ 			goto out_unlock;
+ 		}
+@@ -1361,7 +1361,7 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+ 
+ 			rcu_read_lock();
+ 			sem_lock_and_putref(sma);
+-			if (sma->sem_perm.deleted) {
++			if (!ipc_valid_object(&sma->sem_perm)) {
+ 				err = -EIDRM;
+ 				goto out_unlock;
+ 			}
+@@ -1409,7 +1409,7 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+ 		}
+ 		rcu_read_lock();
+ 		sem_lock_and_putref(sma);
+-		if (sma->sem_perm.deleted) {
++		if (!ipc_valid_object(&sma->sem_perm)) {
+ 			err = -EIDRM;
+ 			goto out_unlock;
+ 		}
+@@ -1435,7 +1435,7 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
+ 		goto out_rcu_wakeup;
+ 
+ 	sem_lock(sma, NULL, -1);
+-	if (sma->sem_perm.deleted) {
++	if (!ipc_valid_object(&sma->sem_perm)) {
+ 		err = -EIDRM;
+ 		goto out_unlock;
+ 	}
+@@ -1699,7 +1699,7 @@ static struct sem_undo *find_alloc_undo(struct ipc_namespace *ns, int semid)
+ 	/* step 3: Acquire the lock on semaphore array */
+ 	rcu_read_lock();
+ 	sem_lock_and_putref(sma);
+-	if (sma->sem_perm.deleted) {
++	if (!ipc_valid_object(&sma->sem_perm)) {
+ 		sem_unlock(sma, -1);
+ 		rcu_read_unlock();
+ 		kfree(new);
+@@ -1846,7 +1846,7 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
+ 
+ 	error = -EIDRM;
+ 	locknum = sem_lock(sma, sops, nsops);
+-	if (sma->sem_perm.deleted)
++	if (!ipc_valid_object(&sma->sem_perm))
+ 		goto out_unlock_free;
+ 	/*
+ 	 * semid identifiers are not unique - find_alloc_undo may have
+@@ -2068,7 +2068,7 @@ void exit_sem(struct task_struct *tsk)
+ 
+ 		sem_lock(sma, NULL, -1);
+ 		/* exit_sem raced with IPC_RMID, nothing to do */
+-		if (sma->sem_perm.deleted) {
++		if (!ipc_valid_object(&sma->sem_perm)) {
+ 			sem_unlock(sma, -1);
+ 			rcu_read_unlock();
+ 			continue;
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 7a51443..1bc68f1 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -975,6 +975,13 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
+ 			goto out_unlock1;
+ 
+ 		ipc_lock_object(&shp->shm_perm);
++
++		/* check if shm_destroy() is tearing down shp */
++		if (!ipc_valid_object(&shp->shm_perm)) {
++			err = -EIDRM;
++			goto out_unlock0;
++		}
++
+ 		if (!ns_capable(ns->user_ns, CAP_IPC_LOCK)) {
+ 			kuid_t euid = current_euid();
+ 			if (!uid_eq(euid, shp->shm_perm.uid) &&
+@@ -989,13 +996,6 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
+ 		}
+ 
+ 		shm_file = shp->shm_file;
+-
+-		/* check if shm_destroy() is tearing down shp */
+-		if (shm_file == NULL) {
+-			err = -EIDRM;
+-			goto out_unlock0;
+-		}
+-
+ 		if (is_file_hugepages(shm_file))
+ 			goto out_unlock0;
+ 
+@@ -1116,7 +1116,7 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+ 	ipc_lock_object(&shp->shm_perm);
+ 
+ 	/* check if shm_destroy() is tearing down shp */
+-	if (shp->shm_file == NULL) {
++	if (!ipc_valid_object(&shp->shm_perm)) {
+ 		ipc_unlock_object(&shp->shm_perm);
+ 		err = -EIDRM;
+ 		goto out_unlock;
+diff --git a/ipc/util.h b/ipc/util.h
+index 59d78aa..071ed58 100644
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -185,6 +185,18 @@ static inline void ipc_unlock(struct kern_ipc_perm *perm)
+ 	rcu_read_unlock();
+ }
+ 
++/*
++ * ipc_valid_object() - helper to sort out IPC_RMID races for codepaths
++ * where the respective ipc_ids.rwsem is not being held down.
++ * Checks whether the ipc object is still around or if it's gone already, as
++ * ipc_rmid() may have already freed the ID while the ipc lock was spinning.
++ * Needs to be called with kern_ipc_perm.lock held.
++ */
++static inline bool ipc_valid_object(struct kern_ipc_perm *perm)
++{
++	return perm->deleted == 0;
++}
++
+ struct kern_ipc_perm *ipc_obtain_object_check(struct ipc_ids *ids, int id);
+ int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
+ 			struct ipc_ops *ops, struct ipc_params *params);
+-- 
+1.8.3.1
 
