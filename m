@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215Ab3LQSlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 13:41:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60787 "EHLO
+	id S932530Ab3LQSlu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 13:41:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60785 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755515Ab3LQSOJ (ORCPT
+	with ESMTP id S1755513Ab3LQSOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 13:14:09 -0500
+	Tue, 17 Dec 2013 13:14:08 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+Cc: Tom Herbert <therbert@google.com>, Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
+        Shawn Landden <shawn@churchofgit.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 020/103] net: clamp ->msg_namelen instead of returning an error
-Date: Tue, 17 Dec 2013 18:12:09 +0000
-Message-Id: <1387304012-23805-21-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 019/103] net: update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST
+Date: Tue, 17 Dec 2013 18:12:08 +0000
+Message-Id: <1387304012-23805-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
 References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com>
@@ -28,56 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Shawn Landden <shawn@churchofgit.com>
 
-commit db31c55a6fb245fdbb752a2ca4aefec89afabb06 upstream.
+commit d3f7d56a7a4671d395e8af87071068a195257bf6 upstream.
 
-If kmsg->msg_namelen > sizeof(struct sockaddr_storage) then in the
-original code that would lead to memory corruption in the kernel if you
-had audit configured.  If you didn't have audit configured it was
-harmless.
+Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
+added an internal flag MSG_SENDPAGE_NOTLAST, similar to
+MSG_MORE.
 
-There are some programs such as beta versions of Ruby which use too
-large of a buffer and returning an error code breaks them.  We should
-clamp the ->msg_namelen value instead.
+algif_hash, algif_skcipher, and udp used MSG_MORE from tcp_sendpages()
+and need to see the new flag as identical to MSG_MORE.
 
-Fixes: 1661bf364ae9 ("net: heap overflow in __audit_sockaddr()")
-Reported-by: Eric Wong <normalperson@yhbt.net>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Tested-by: Eric Wong <normalperson@yhbt.net>
-Acked-by: Eric Dumazet <edumazet@google.com>
+This fixes sendfile() on AF_ALG.
+
+v3: also fix udp
+
+Cc: Tom Herbert <therbert@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
+Original-patch: Richard Weinberger <richard@nod.at>
+Signed-off-by: Shawn Landden <shawn@churchofgit.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/compat.c | 2 +-
- net/socket.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ crypto/algif_hash.c     | 3 +++
+ crypto/algif_skcipher.c | 3 +++
+ net/ipv4/udp.c          | 3 +++
+ 3 files changed, 9 insertions(+)
 
-diff --git a/net/compat.c b/net/compat.c
-index b4afcb4..1d223d5 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -72,7 +72,7 @@ int get_compat_msghdr(struct msghdr *kmsg, struct compat_msghdr __user *umsg)
- 	    __get_user(kmsg->msg_flags, &umsg->msg_flags))
- 		return -EFAULT;
- 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
--		return -EINVAL;
-+		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
- 	kmsg->msg_name = compat_ptr(tmp1);
- 	kmsg->msg_iov = compat_ptr(tmp2);
- 	kmsg->msg_control = compat_ptr(tmp3);
-diff --git a/net/socket.c b/net/socket.c
-index 5febb56..b04050a 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -1907,7 +1907,7 @@ static int copy_msghdr_from_user(struct msghdr *kmsg,
- 	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
- 		return -EFAULT;
- 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
--		return -EINVAL;
-+		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
- 	return 0;
- }
+diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
+index ef5356c..8502462 100644
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -114,6 +114,9 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
+ 	struct hash_ctx *ctx = ask->private;
+ 	int err;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	lock_sock(sk);
+ 	sg_init_table(ctx->sgl.sg, 1);
+ 	sg_set_page(ctx->sgl.sg, page, size, offset);
+diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
+index 6a6dfc0..a19c027 100644
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -378,6 +378,9 @@ static ssize_t skcipher_sendpage(struct socket *sock, struct page *page,
+ 	struct skcipher_sg_list *sgl;
+ 	int err = -EINVAL;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	lock_sock(sk);
+ 	if (!ctx->more && ctx->used)
+ 		goto unlock;
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index de3033a..fb9ebe9 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1040,6 +1040,9 @@ int udp_sendpage(struct sock *sk, struct page *page, int offset,
+ 	struct udp_sock *up = udp_sk(sk);
+ 	int ret;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	if (!up->pending) {
+ 		struct msghdr msg = {	.msg_flags = flags|MSG_MORE };
  
 -- 
 1.8.3.2
