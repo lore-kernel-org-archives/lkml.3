@@ -1,183 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859Ab3LQLpR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 06:45:17 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50828 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751090Ab3LQLpQ (ORCPT
+	id S1753063Ab3LQLrw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 06:47:52 -0500
+Received: from mga02.intel.com ([134.134.136.20]:38510 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750839Ab3LQLru convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 06:45:16 -0500
-Date: Tue, 17 Dec 2013 11:44:58 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: "jean.pihet@linaro.org" <jean.pihet@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Arnaldo <acme@ghostprotocols.net>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 2/3] ARM64: perf: wire up perf_regs and unwind support
-Message-ID: <20131217114458.GC7602@mudshark.cambridge.arm.com>
-References: <1387212562-8128-1-git-send-email-y>
- <52af2f26.41590e0a.0251.ffffd953@mx.google.com>
+	Tue, 17 Dec 2013 06:47:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,501,1384329600"; 
+   d="scan'208,223";a="453562445"
+From: "Du, ChangbinX" <changbinx.du@intel.com>
+To: "balbi@ti.com" <balbi@ti.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] usb/gadget: should use u16 type variable to store MaxPower
+Thread-Topic: [PATCH] usb/gadget: should use u16 type variable to store
+ MaxPower
+Thread-Index: Ac77HaASzkUEUvjTSnG27++wi7REow==
+Date: Tue, 17 Dec 2013 11:47:42 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A01A2B920@SHSMSX103.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52af2f26.41590e0a.0251.ffffd953@mx.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 04:49:21PM +0000, jean.pihet@linaro.org wrote:
-> From: Jean Pihet <jean.pihet@linaro.org>
-> 
-> This patch hooks in the perf_regs and libunwind code for ARM64.
-> The tools/perf/arch/arm64 is created; it contains the arch specific
-> code for DWARF unwinding.
-> 
-> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-> Cc: Will Deacon <will.deacon@arm.com>
-> ---
->  tools/perf/arch/arm64/Makefile            |  7 +++
->  tools/perf/arch/arm64/include/perf_regs.h | 88 +++++++++++++++++++++++++++++++
->  tools/perf/arch/arm64/util/dwarf-regs.c   | 81 ++++++++++++++++++++++++++++
->  tools/perf/arch/arm64/util/unwind.c       | 82 ++++++++++++++++++++++++++++
->  tools/perf/config/Makefile                |  8 ++-
->  5 files changed, 265 insertions(+), 1 deletion(-)
->  create mode 100644 tools/perf/arch/arm64/Makefile
->  create mode 100644 tools/perf/arch/arm64/include/perf_regs.h
->  create mode 100644 tools/perf/arch/arm64/util/dwarf-regs.c
->  create mode 100644 tools/perf/arch/arm64/util/unwind.c
+>From 7e827a0d300e084f74c65122baa5e3193f9a7f18 Mon Sep 17 00:00:00 2001
+From: "Du, Changbin" <changbinx.du@intel.com>
+Date: Mon, 16 Dec 2013 20:32:13 +0800
+Subject: [PATCH] usb/gadget: should use u16 type variable to store MaxPower
 
-[...]
+The MaxPower field is of u16 type. So using u8 type variable can break
+data (high byte lost).
 
-> diff --git a/tools/perf/arch/arm64/include/perf_regs.h b/tools/perf/arch/arm64/include/perf_regs.h
-> new file mode 100644
-> index 0000000..a8a9683
-> --- /dev/null
-> +++ b/tools/perf/arch/arm64/include/perf_regs.h
-> @@ -0,0 +1,88 @@
-> +#ifndef ARCH_PERF_REGS_H
-> +#define ARCH_PERF_REGS_H
-> +
-> +#include <stdlib.h>
-> +#include "../../util/types.h"
-> +#include <asm/perf_regs.h>
-> +
-> +#define PERF_REGS_MASK	((1ULL << PERF_REG_ARM_MAX) - 1)
-> +#define PERF_REG_IP	PERF_REG_ARM_PC
-> +#define PERF_REG_SP	PERF_REG_ARM_SP
-> +
-> +static inline const char *perf_reg_name(int id)
-> +{
-> +	switch (id) {
-> +	case PERF_REG_ARM_X0:
-> +		return "x0";
-> +	case PERF_REG_ARM_X1:
-> +		return "x1";
+Signed-off-by: Du, Changbin <changbinx.du@intel.com>
+---
+ drivers/usb/gadget/composite.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-[...]
-
-> +	case PERF_REG_ARM_X28:
-> +		return "x28";
-> +	case PERF_REG_ARM_FP:
-> +		return "fp";
-
-Again, I'd just treat this as x29. There's nothing special about the frame
-pointer as far as the hardware/architecture is concerned. GAS won't even
-accept it as a register name.
-
-> +	case PERF_REG_ARM_SP:
-> +		return "sp";
-> +	case PERF_REG_ARM_LR:
-> +		return "lr";
-> +	case PERF_REG_ARM_PC:
-> +		return "pc";
-> +	default:
-> +		return NULL;
-> +	}
-> +
-> +	return NULL;
-> +}
-> +
-> +#endif /* ARCH_PERF_REGS_H */
-> diff --git a/tools/perf/arch/arm64/util/dwarf-regs.c b/tools/perf/arch/arm64/util/dwarf-regs.c
-> new file mode 100644
-> index 0000000..23d319e
-> --- /dev/null
-> +++ b/tools/perf/arch/arm64/util/dwarf-regs.c
-> @@ -0,0 +1,81 @@
-> +/*
-> + * Mapping of DWARF debug register numbers into register names.
-> + *
-> + * Copyright (C) 2010 Will Deacon, ARM Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <stddef.h>
-> +#include <dwarf-regs.h>
-> +
-> +struct pt_regs_dwarfnum {
-> +	const char *name;
-> +	unsigned int dwarfnum;
-> +};
-> +
-> +#define STR(s) #s
-> +#define REG_DWARFNUM_NAME(r, num) {.name = r, .dwarfnum = num}
-> +#define GPR_DWARFNUM_NAME(num) \
-> +	{.name = STR(%r##num), .dwarfnum = num}
-
-Surely you want 'x' instead of 'r'?
-
-> +#define REG_DWARFNUM_END {.name = NULL, .dwarfnum = 0}
-> +
-> +/*
-> + * Reference:
-> + * http://infocenter.arm.com/help/topic/com.arm.doc.ihi0057b/IHI0057B_aadwarf64.pdf
-
-So, according to that document...
-
-> + */
-> +static const struct pt_regs_dwarfnum regdwarfnum_table[] = {
-> +	GPR_DWARFNUM_NAME(0),
-> +	GPR_DWARFNUM_NAME(1),
-> +	GPR_DWARFNUM_NAME(2),
-> +	GPR_DWARFNUM_NAME(3),
-> +	GPR_DWARFNUM_NAME(4),
-> +	GPR_DWARFNUM_NAME(5),
-> +	GPR_DWARFNUM_NAME(6),
-> +	GPR_DWARFNUM_NAME(7),
-> +	GPR_DWARFNUM_NAME(8),
-> +	GPR_DWARFNUM_NAME(9),
-> +	GPR_DWARFNUM_NAME(10),
-> +	GPR_DWARFNUM_NAME(11),
-> +	GPR_DWARFNUM_NAME(12),
-> +	GPR_DWARFNUM_NAME(13),
-> +	GPR_DWARFNUM_NAME(14),
-> +	GPR_DWARFNUM_NAME(15),
-> +	GPR_DWARFNUM_NAME(16),
-> +	GPR_DWARFNUM_NAME(17),
-> +	GPR_DWARFNUM_NAME(18),
-> +	GPR_DWARFNUM_NAME(19),
-> +	GPR_DWARFNUM_NAME(20),
-> +	GPR_DWARFNUM_NAME(21),
-> +	GPR_DWARFNUM_NAME(22),
-> +	GPR_DWARFNUM_NAME(23),
-> +	GPR_DWARFNUM_NAME(24),
-> +	GPR_DWARFNUM_NAME(25),
-> +	GPR_DWARFNUM_NAME(26),
-> +	GPR_DWARFNUM_NAME(27),
-> +	GPR_DWARFNUM_NAME(28),
-> +	REG_DWARFNUM_NAME("%fp", 29),
-> +	REG_DWARFNUM_NAME("%lr", 30),
-> +	REG_DWARFNUM_NAME("%sp", 31),
-> +	REG_DWARFNUM_NAME("%pc", 32),
-
-...register name 32 is `Reserved'. I don't think we should be using it here.
-In fact, the PC isn't even described in that spec. Do we need to expose it
-here?
-
-Will
+diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+index 2018ba1..8a34173 100644
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -1714,7 +1714,7 @@ composite_resume(struct usb_gadget *gadget)
+ {
+ 	struct usb_composite_dev	*cdev = get_gadget_data(gadget);
+ 	struct usb_function		*f;
+-	u8				maxpower;
++	u16				maxpower;
+ 
+ 	/* REVISIT:  should we have config level
+ 	 * suspend/resume callbacks?
+-- 
+1.8.3.2
