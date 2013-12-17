@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab3LQGLk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 01:11:40 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:43120 "EHLO
+	id S1752529Ab3LQGMS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 01:12:18 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:64901 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878Ab3LQGLi (ORCPT
+	with ESMTP id S1750953Ab3LQGLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 01:11:38 -0500
-X-AuditID: 9c93017e-b7c17ae000003961-32-52afeb1878e7
+	Tue, 17 Dec 2013 01:11:39 -0500
+X-AuditID: 9c93017e-b7c17ae000003961-37-52afeb18c8ef
 From: Minchan Kim <minchan@kernel.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org,
         Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 0/5] zram/zsmalloc copyright and maintainers
-Date: Tue, 17 Dec 2013 15:11:58 +0900
-Message-Id: <1387260723-15817-1-git-send-email-minchan@kernel.org>
+Subject: [PATCH 2/5] zram: add copyright
+Date: Tue, 17 Dec 2013 15:12:00 +0900
+Message-Id: <1387260723-15817-3-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387260723-15817-1-git-send-email-minchan@kernel.org>
+References: <1387260723-15817-1-git-send-email-minchan@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I and Nitin discussed how to maintain zsmalloc and zram.
-Nitin wanted me to maintain zram because he doesn't have enough
-bandwidth to quickly handle any issues that might arise and
-I have maintained zram/zsmalloc during last two years so he
-will be listed as co-maintainer.
+Add my copyright to the zram source code which I maintain.
 
-Minchan Kim (5):
-  zram: remove old private project comment
-  zram: add copyright
-  zsmalloc: add copyright
-  zram: add zram maintainers
-  zsmalloc: add maintainers
+Cc: Nitin Gupta <ngupta@vflare.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ drivers/block/zram/zram_drv.c |    1 +
+ drivers/block/zram/zram_drv.h |    1 +
+ 2 files changed, 2 insertions(+)
 
- Documentation/blockdev/zram.txt |    6 ------
- MAINTAINERS                     |   16 ++++++++++++++++
- drivers/block/zram/Kconfig      |    1 -
- drivers/block/zram/zram_drv.c   |    2 +-
- drivers/block/zram/zram_drv.h   |    2 +-
- include/linux/zsmalloc.h        |    1 +
- mm/zsmalloc.c                   |    1 +
- 7 files changed, 20 insertions(+), 9 deletions(-)
-
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 134d605836ca..f9711c520269 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -2,6 +2,7 @@
+  * Compressed RAM block device
+  *
+  * Copyright (C) 2008, 2009, 2010  Nitin Gupta
++ *               2012, 2013 Minchan Kim
+  *
+  * This code is released using a dual license strategy: BSD/GPL
+  * You can choose the licence that better fits your requirements.
+diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+index 92f70e8f457c..0e46953c08e9 100644
+--- a/drivers/block/zram/zram_drv.h
++++ b/drivers/block/zram/zram_drv.h
+@@ -2,6 +2,7 @@
+  * Compressed RAM block device
+  *
+  * Copyright (C) 2008, 2009, 2010  Nitin Gupta
++ *               2012, 2013 Minchan Kim
+  *
+  * This code is released using a dual license strategy: BSD/GPL
+  * You can choose the licence that better fits your requirements.
 -- 
 1.7.9.5
 
