@@ -1,116 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab3LQWcs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:32:48 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:63105 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754461Ab3LQWcq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:32:46 -0500
-Date: Tue, 17 Dec 2013 17:32:44 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Miao Xie <miaox@cn.fujitsu.com>,
-        stable <stable@vger.kernel.org>
-Subject: [GIT PULL] ftrace: Initialize the ftrace profiler for each possible
- cpu
-Message-ID: <20131217173244.79a44103@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1754782Ab3LQWdL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:33:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52006 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754160Ab3LQWdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 17:33:09 -0500
+Message-ID: <1387319587.30327.18.camel@bling.home>
+Subject: Re: [PATCH 3/3] pci: Add Virtual Channel to save/restore support
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Don Dutile <ddutile@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 17 Dec 2013 15:33:07 -0700
+In-Reply-To: <CAErSpo6TH7QghPMhDxrohEz5rUtSiQEh_VR66f+jckPUWjey0g@mail.gmail.com>
+References: <20131210183339.26294.14581.stgit@bling.home>
+	 <20131210184845.26294.81385.stgit@bling.home>
+	 <20131217004815.GA4781@google.com> <1387318331.30327.16.camel@bling.home>
+	 <CAErSpo6TH7QghPMhDxrohEz5rUtSiQEh_VR66f+jckPUWjey0g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-12-17 at 15:24 -0700, Bjorn Helgaas wrote:
+> On Tue, Dec 17, 2013 at 3:12 PM, Alex Williamson
+> <alex.williamson@redhat.com> wrote:
+> > On Mon, 2013-12-16 at 17:48 -0700, Bjorn Helgaas wrote:
+> >> On Tue, Dec 10, 2013 at 11:48:45AM -0700, Alex Williamson wrote:
+> 
+> >> > +static void pci_vc_load_arb_table(struct pci_dev *dev, int pos)
+> >> > +{
+> >> > +   u32 ctrl;
+> >> > +
+> >> > +   pci_read_config_dword(dev, pos + PCI_VC_PORT_CTRL, &ctrl);
+> >> > +   pci_write_config_dword(dev, pos + PCI_VC_PORT_CTRL, ctrl | 1);
+> >> > +   if (pci_wait_for_pending(dev, pos + PCI_VC_PORT_STATUS, 1))
+> 
+> >> spec says these are 16-bit registers; shouldn't these be "word" accesses?
+> >
+> > The control registers are 32-bit, the status registers are 16-bit.
+> > pci_wait_for_pending uses word access.
+> 
+> The "VC Resource Control Registers" at offset 14h + (n * 0Ch) are 32
+> bits, but I was referring to the PCI_VC_PORT_CTRL accesses, sorry I
+> didn't make that clear.  I'm looking at 7.11.4 "Port VC Control
+> Register" at offset 12 (0Ch), and that one looks like 16 bits to me.
 
-Linus,
+Indeed it is.  Will fix.  Thanks,
 
-This fixes a long standing bug in the ftrace profiler.
-The problem is that the profiler only initializes the online
-CPUs, and not possible CPUs. This causes issues if the user takes
-CPUs online or offline while the profiler is running.
+Alex
 
-If we online a CPU after starting the profiler, we lose all the
-trace information on the CPU going online.
-
-If we offline a CPU after running a test and start a new test, it
-will not clear the old data from that CPU.
-
-This bug causes incorrect data to be reported to the user if they
-online or offline CPUs during the profiling.
-
-Please pull the latest trace-fixes-v3.13-rc2 tree, which can be found at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-trace-fixes-v3.13-rc2
-
-Tag SHA1: bf7af594d3f90d7715db2b19b2579cf88fac0a58
-Head SHA1: c4602c1c818bd6626178d6d3fcc152d9f2f48ac0
-
-
-Miao Xie (1):
-      ftrace: Initialize the ftrace profiler for each possible cpu
-
-----
- kernel/trace/ftrace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
----------------------------
-commit c4602c1c818bd6626178d6d3fcc152d9f2f48ac0
-Author: Miao Xie <miaox@cn.fujitsu.com>
-Date:   Mon Dec 16 15:20:01 2013 +0800
-
-    ftrace: Initialize the ftrace profiler for each possible cpu
-    
-    Ftrace currently initializes only the online CPUs. This implementation has
-    two problems:
-    - If we online a CPU after we enable the function profile, and then run the
-      test, we will lose the trace information on that CPU.
-      Steps to reproduce:
-      # echo 0 > /sys/devices/system/cpu/cpu1/online
-      # cd <debugfs>/tracing/
-      # echo <some function name> >> set_ftrace_filter
-      # echo 1 > function_profile_enabled
-      # echo 1 > /sys/devices/system/cpu/cpu1/online
-      # run test
-    - If we offline a CPU before we enable the function profile, we will not clear
-      the trace information when we enable the function profile. It will trouble
-      the users.
-      Steps to reproduce:
-      # cd <debugfs>/tracing/
-      # echo <some function name> >> set_ftrace_filter
-      # echo 1 > function_profile_enabled
-      # run test
-      # cat trace_stat/function*
-      # echo 0 > /sys/devices/system/cpu/cpu1/online
-      # echo 0 > function_profile_enabled
-      # echo 1 > function_profile_enabled
-      # cat trace_stat/function*
-      # run test
-      # cat trace_stat/function*
-    
-    So it is better that we initialize the ftrace profiler for each possible cpu
-    every time we enable the function profile instead of just the online ones.
-    
-    Link: http://lkml.kernel.org/r/1387178401-10619-1-git-send-email-miaox@cn.fujitsu.com
-    
-    Cc: stable@vger.kernel.org # 2.6.31+
-    Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 0e9f9ea..72a0f81 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -775,7 +775,7 @@ static int ftrace_profile_init(void)
- 	int cpu;
- 	int ret = 0;
- 
--	for_each_online_cpu(cpu) {
-+	for_each_possible_cpu(cpu) {
- 		ret = ftrace_profile_init_cpu(cpu);
- 		if (ret)
- 			break;
