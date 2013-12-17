@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689Ab3LQBwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 20:52:23 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:52538 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab3LQBwW (ORCPT
+	id S1752188Ab3LQCBz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 21:01:55 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:34059 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab3LQCBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 20:52:22 -0500
+	Mon, 16 Dec 2013 21:01:53 -0500
+Date: Mon, 16 Dec 2013 18:01:51 -0800
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 6/7] Input: pmic8xxx-keypad - Migrate to devm_* APIs
+Message-ID: <20131217020151.GB31766@codeaurora.org>
+References: <1386718996-3733-1-git-send-email-sboyd@codeaurora.org>
+ <1386718996-3733-7-git-send-email-sboyd@codeaurora.org>
+ <20131216153726.GB8884@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <1387133834-31966-3-git-send-email-tixxdz@opendz.org>
-References: <1387133834-31966-1-git-send-email-tixxdz@opendz.org> <1387133834-31966-3-git-send-email-tixxdz@opendz.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 16 Dec 2013 17:52:01 -0800
-Message-ID: <CALCETrUPz=v4AeRsOobj9JY+evDbjKib0P32O0NjdvrVQumijw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] procfs: make /proc/*/pagemap 0400
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131216153726.GB8884@core.coreip.homeip.net>
+jrom: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: sboyd@codeaurora.org (spamassassin system account)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 15, 2013 at 10:57 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> The /proc/*/pagemap contain sensitive information and currently its
-> mode is 0444. Change this to 0400, so the VFS will prevent unprivileged
-> processes from getting file descriptors on arbitrary privileged
-> /proc/*/pagemap files.
->
+On 12/16, Dmitry Torokhov wrote:
+> On Tue, Dec 10, 2013 at 03:43:15PM -0800, Stephen Boyd wrote:
+> > -
+> > -static int pmic8xxx_kp_remove(struct platform_device *pdev)
+> > -{
+> > -	struct pmic8xxx_kp *kp = platform_get_drvdata(pdev);
+> > -
+> > -	device_init_wakeup(&pdev->dev, 0);
+> 
+> Why are we removing restoring wakeup capable state?
+> 
 
-Looks good.
+It's the only thing blocking removal of the remove callback and
+as the driver is being unbound it didn't seem like we cared about
+the state of the wakeup of the device. I greped the kernel tree
+and I couldn't see a consistent pattern where driver probe was
+setting the flag and driver remove was clearing it. Do we need to
+keep it?
 
-Acked-by: Andy Lutomirski <luto@amacapital.net>
-
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Cc: Kees Cook <keescook@chromium.org>
-> Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
-> ---
->  fs/proc/base.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/fs/proc/base.c b/fs/proc/base.c
-> index e69df4b..081d055 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -2616,7 +2616,7 @@ static const struct pid_entry tgid_base_stuff[] = {
->  #ifdef CONFIG_PROC_PAGE_MONITOR
->         REG("clear_refs", S_IWUSR, proc_clear_refs_operations),
->         REG("smaps",      S_IRUGO, proc_pid_smaps_operations),
-> -       REG("pagemap",    S_IRUGO, proc_pagemap_operations),
-> +       REG("pagemap",    S_IRUSR, proc_pagemap_operations),
->  #endif
->  #ifdef CONFIG_SECURITY
->         DIR("attr",       S_IRUGO|S_IXUGO, proc_attr_dir_inode_operations, proc_attr_dir_operations),
-> @@ -2954,7 +2954,7 @@ static const struct pid_entry tid_base_stuff[] = {
->  #ifdef CONFIG_PROC_PAGE_MONITOR
->         REG("clear_refs", S_IWUSR, proc_clear_refs_operations),
->         REG("smaps",     S_IRUGO, proc_tid_smaps_operations),
-> -       REG("pagemap",    S_IRUGO, proc_pagemap_operations),
-> +       REG("pagemap",    S_IRUSR, proc_pagemap_operations),
->  #endif
->  #ifdef CONFIG_SECURITY
->         DIR("attr",      S_IRUGO|S_IXUGO, proc_attr_dir_inode_operations, proc_attr_dir_operations),
-> --
-> 1.7.11.7
->
-
-
+> > -	free_irq(kp->key_stuck_irq, kp);
+> > -	free_irq(kp->key_sense_irq, kp);
+> > -	input_unregister_device(kp->input);
+> > -	kfree(kp);
+> > -
+> > -	return 0;
+> >  }
+> >  
+> >  #ifdef CONFIG_PM_SLEEP
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
