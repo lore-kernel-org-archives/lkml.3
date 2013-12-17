@@ -1,259 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab3LQC0j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 21:26:39 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:44078 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510Ab3LQC0g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 21:26:36 -0500
-Date: Mon, 16 Dec 2013 18:26:18 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Michal Hocko <mhocko@suse.cz>
-cc: Hugh Dickins <hughd@google.com>, Li Zefan <lizefan@huawei.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.13-rc breaks MEMCG_SWAP
-In-Reply-To: <20131216162042.GC26797@dhcp22.suse.cz>
-Message-ID: <alpine.LNX.2.00.1312161742540.2037@eggly.anvils>
-References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils> <20131216162042.GC26797@dhcp22.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752600Ab3LQC2r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 21:28:47 -0500
+Received: from ozlabs.org ([203.10.76.45]:47500 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751738Ab3LQC2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Dec 2013 21:28:45 -0500
+Date: Tue, 17 Dec 2013 13:28:38 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Ball <cjb@laptop.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dong Aisheng <b29396@freescale.com>
+Subject: Re: linux-next: build failure after merge of the mmc tree
+Message-Id: <20131217132838.cc16a4dbac2f4d3218bbed1d@canb.auug.org.au>
+In-Reply-To: <20131213125716.f432c59bf8782a489400a5a7@canb.auug.org.au>
+References: <20131213125716.f432c59bf8782a489400a5a7@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__17_Dec_2013_13_28_38_+1100_4_imMTusJeo.Q8Qw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Dec 2013, Michal Hocko wrote:
-> On Mon 16-12-13 00:36:05, Hugh Dickins wrote:
-> [...]
-> 
-> OK, I went through the patch and it looks good except for suspicious
-> ctrl->lock handling in swap_cgroup_reassign (see below). I am just
-> suggesting to split it into 4 parts
+--Signature=_Tue__17_Dec_2013_13_28_38_+1100_4_imMTusJeo.Q8Qw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks a lot for studying it, and responding so quickly.
-As I remark in reply to Tejun, I'm not nearly so keen on this
-approach as you are, and would prefer something short and sweet
-from the cgroup end, at least for now; but let's go through your
-comments, to keep both options open until we're surer.
+Hi Chris,
 
-> 
-> * swap_cgroup_mutex -> swap_cgroup_lock
-> * swapon cleanup
-> * drop irqsave when taking ctrl->lock
-> * mem_cgroup_reparent_swap
-> 
-> but I will leave the split up to you. Just make sure that the fix is a
-> separate patch, please.
+ping?
 
-Yes indeed, some split like that, maybe even more pieces.  The difficult
-part is the ordering: for going into 3.13, we'd prefer a small fix first
-and cleanup to follow after in 3.14, but it will be hard to force myself
-not to do the cleanup ones first, and until getting down to it I won't
-recall how much of the cleanup was essential e.g. to avoid lock ordering
-problems or long lock hold times, perhaps.
+On Fri, 13 Dec 2013 12:57:16 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> After merging the mmc tree, today's linux-next build (arm
+> multi_v7_defconfig) failed like this:
+>=20
+> ERROR (phandle_references): Reference to non-existent node or label "pinc=
+trl_usdhc4_1"
+>=20
+> ERROR: Input tree has errors, aborting (use -f to force output)
+> make[2]: *** [arch/arm/boot/dts/imx6dl-sabresd.dtb] Error 2
+> ERROR (phandle_references): Reference to non-existent node or label "pinc=
+trl_usdhc4_1"
+>=20
+> ERROR: Input tree has errors, aborting (use -f to force output)
+> make[2]: *** [arch/arm/boot/dts/imx6q-sabresd.dtb] Error 2
+>=20
+> Caused by commit fc4fafac9656 ("ARM: dts: sabresd: add usdhc4 support").
+>=20
+> I have used the mmc tree from next-20131212 for today.
 
-> 
-> [...]
-> > --- 3.13-rc4/mm/page_cgroup.c	2013-02-18 15:58:34.000000000 -0800
-> > +++ linux/mm/page_cgroup.c	2013-12-15 14:34:36.312485960 -0800
-> > @@ -322,7 +322,8 @@ void __meminit pgdat_page_cgroup_init(st
-> >  
-> >  #ifdef CONFIG_MEMCG_SWAP
-> >  
-> > -static DEFINE_MUTEX(swap_cgroup_mutex);
-> > +static DEFINE_SPINLOCK(swap_cgroup_lock);
-> > +
-> 
-> This one is worth a separate patch IMO.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Agreed.
+--Signature=_Tue__17_Dec_2013_13_28_38_+1100_4_imMTusJeo.Q8Qw
+Content-Type: application/pgp-signature
 
-> 
-> >  struct swap_cgroup_ctrl {
-> >  	struct page **map;
-> >  	unsigned long length;
-> > @@ -353,14 +354,11 @@ struct swap_cgroup {
-> >  /*
-> >   * allocate buffer for swap_cgroup.
-> >   */
-> > -static int swap_cgroup_prepare(int type)
-> > +static int swap_cgroup_prepare(struct swap_cgroup_ctrl *ctrl)
-> >  {
-> >  	struct page *page;
-> > -	struct swap_cgroup_ctrl *ctrl;
-> >  	unsigned long idx, max;
-> >  
-> > -	ctrl = &swap_cgroup_ctrl[type];
-> > -
-> >  	for (idx = 0; idx < ctrl->length; idx++) {
-> >  		page = alloc_page(GFP_KERNEL | __GFP_ZERO);
-> >  		if (!page)
-> 
-> This with swap_cgroup_swapon should be in a separate patch as a cleanup.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Agreed.
+iQIcBAEBCAAGBQJSr7baAAoJEMDTa8Ir7ZwVqEMP/AseTyBC5UxhbSbXbGZ1UU7O
+BmWZiMFMZ6/bfLwyzzGaD8ahyhtkoBpOBGjzDZkX/GVDx6InPTNe2+4cki2MAQyD
+P429RqPmu7a/SJ66ex9I4vcaXZ5FoQOWhVcOyyZ+IDL3fKlZb9UDyRxjlr9nUhkP
+yA72xjhRXfGTtf8fd2lCt2T+dxjYr707lZFZ9vci/iDBKW9farBgEQXdc37s2zOP
+jn5aSuOMrmjpJmj4XhjpOajhizEK/RBIYLpt3VoEjxhtBkR17PnWUZXtHYgE25iJ
+IdsQ2yzzgZge8hscssEQVhQD7YgkmO9IWSGZCakOFDdZA2Hcmdh+nkX5PMrt5TQF
+QWdk9c7VBKh3FdqNbT7c3BYh2DTCqfEQd5na+rNnsfiuKLRv9jKPQ2f7mDXviGeR
+xrCy3U5qKU+wyWET0ComidW8q8F0Xcbt/F1IL6fHx5xXoCgWjD5ALoPqXoHYb5l0
+pDzHs1E2QxJPTGE313U/mvoRoJOTwdmbLNzfdJjYMpKkKzQC9wg+kghGhNAF95Kb
+Ah7j79EPXjk43/4ZE262YL8B7CTTRUkEqLqIC5w8JiI4f5rw+tJzIxK+LrD2qSke
+w7hw1RHKrg7CcOK5mipwpvY5sSkktP+HUEzoJyIO/mTff4/cDwPaU34KH0O6z+ni
+CvV93EpYTSSdJNaQ5yfP
+=PS1r
+-----END PGP SIGNATURE-----
 
-> 
-> > @@ -407,18 +405,17 @@ unsigned short swap_cgroup_cmpxchg(swp_e
-> >  {
-> >  	struct swap_cgroup_ctrl *ctrl;
-> >  	struct swap_cgroup *sc;
-> > -	unsigned long flags;
-> >  	unsigned short retval;
-> >  
-> >  	sc = lookup_swap_cgroup(ent, &ctrl);
-> >  
-> > -	spin_lock_irqsave(&ctrl->lock, flags);
-> > +	spin_lock(&ctrl->lock);
-> >  	retval = sc->id;
-> >  	if (retval == old)
-> >  		sc->id = new;
-> >  	else
-> >  		retval = 0;
-> > -	spin_unlock_irqrestore(&ctrl->lock, flags);
-> > +	spin_unlock(&ctrl->lock);
-> >  	return retval;
-> >  }
-> >  
-> > @@ -435,14 +432,13 @@ unsigned short swap_cgroup_record(swp_en
-> >  	struct swap_cgroup_ctrl *ctrl;
-> >  	struct swap_cgroup *sc;
-> >  	unsigned short old;
-> > -	unsigned long flags;
-> >  
-> >  	sc = lookup_swap_cgroup(ent, &ctrl);
-> >  
-> > -	spin_lock_irqsave(&ctrl->lock, flags);
-> > +	spin_lock(&ctrl->lock);
-> >  	old = sc->id;
-> >  	sc->id = id;
-> > -	spin_unlock_irqrestore(&ctrl->lock, flags);
-> > +	spin_unlock(&ctrl->lock);
-> >  
-> >  	return old;
-> >  }
-> 
-> I would prefer these two in a separate patch as well. I have no idea why
-> these were IRQ aware as this was never needed AFAICS.
-> e9e58a4ec3b10 is not very specific...
-
-Agreed.  Yes, I couldn't work out any justification for the _irqsave
-variants, and preferred to avoid that clutter rather than add to it.
-
-> 
-> > @@ -451,19 +447,60 @@ unsigned short swap_cgroup_record(swp_en
-> >   * lookup_swap_cgroup_id - lookup mem_cgroup id tied to swap entry
-> >   * @ent: swap entry to be looked up.
-> >   *
-> > - * Returns CSS ID of mem_cgroup at success. 0 at failure. (0 is invalid ID)
-> > + * Returns ID of mem_cgroup at success. 0 at failure. (0 is invalid ID)
-> >   */
-> >  unsigned short lookup_swap_cgroup_id(swp_entry_t ent)
-> >  {
-> >  	return lookup_swap_cgroup(ent, NULL)->id;
-> >  }
-> >  
-> > +/**
-> > + * swap_cgroup_reassign - assign all old entries to new (before old is freed).
-> > + * @old: id of emptied memcg whose entries are now to be reassigned
-> > + * @new: id of parent memcg to which those entries are to be assigned
-> > + *
-> > + * Returns number of entries reassigned, for debugging or for statistics.
-> > + */
-> > +long swap_cgroup_reassign(unsigned short old, unsigned short new)
-> > +{
-> > +	long reassigned = 0;
-> > +	int type;
-> > +
-> > +	for (type = 0; type < MAX_SWAPFILES; type++) {
-> > +		struct swap_cgroup_ctrl *ctrl = &swap_cgroup_ctrl[type];
-> > +		unsigned long idx;
-> > +
-> > +		for (idx = 0; idx < ACCESS_ONCE(ctrl->length); idx++) {
-> > +			struct swap_cgroup *sc, *scend;
-> > +
-> > +			spin_lock(&swap_cgroup_lock);
-> > +			if (idx >= ACCESS_ONCE(ctrl->length))
-> > +				goto unlock;
-> > +			sc = page_address(ctrl->map[idx]);
-> > +			for (scend = sc + SC_PER_PAGE; sc < scend; sc++) {
-> > +				if (sc->id != old)
-> > +					continue;
-> 
-> Is this safe? What prevents from race when id is set to old?
-
-I am assuming that when this is called, we shall not be making any
-new charges to old (if you see what I mean :) - this is called after
-mem_cgroup_reparent_charges() (the main call - I've not yet wrapped
-my head around Hannes's later safety-net call; perhaps these patches
-would even make that one redundant - dunno).
-
-Quite a lot is made simpler by the fact that we do not need to call
-this from mem_cgroup_force_empty(), with all the races that would
-entail: there was never any attempt to move these swap charges before,
-so it's a pleasure not to have to deal with that possibility now.
-
-> 
-> > +				spin_lock(&ctrl->lock);
-> > +				if (sc->id == old) {
-> 
-> Also it seems that compiler is free to optimize this test away, no?
-> You need ACCESS_ONCE here as well, I guess.
-
-Oh dear, you're asking me to read again through memory-barriers.txt
-(Xmas 2013 edition), and come to a conclusion.  I think this pattern
-of test outside spinlock, spinlock, test again inside spinlock is
-used in very many places, without any ACCESS_ONCE.  I'll have to
-go and search through the precedents.
-
-I've probably brought this upon myself with the ACCESS_ONCE(ctrl->length)
-a few lines above, which I added at a late stage to match the one above
-it; but now I'm arguing that's unnecessary.
-
-One of the problems with ACCESS_ONCE is that one easily falls into
-a mistaken state in which it seems to be necessary everywhere;
-but that illusion must be resisted.
-
-The spinlock should make it unnecessary, but I'll have to muse on
-semi-permeable membranes, osmosis, stuff like that.
-
-> 
-> > +					sc->id = new;
-> > +					reassigned++;
-> > +				}
-> > +				spin_unlock(&ctrl->lock);
-> > +			}
-> > +unlock:
-> > +			spin_unlock(&swap_cgroup_lock);
-> > +			cond_resched();
-> > +		}
-> > +	}
-> > +	return reassigned;
-> > +}
-> > +
-> >  int swap_cgroup_swapon(int type, unsigned long max_pages)
-> >  {
-> >  	void *array;
-> >  	unsigned long array_size;
-> >  	unsigned long length;
-> > -	struct swap_cgroup_ctrl *ctrl;
-> > +	struct swap_cgroup_ctrl ctrl;
-> >  
-> >  	if (!do_swap_account)
-> >  		return 0;
-> [...]
-> -- 
-> Michal Hocko
-> SUSE Labs
-
-Thanks: let's see if Tejun and Zefan can come up with something
-simpler than this at their end.  If we do all decide that this
-swap_cgroup_reassign() kind of change is desirable, it would still
-be better to make it later on as a cleanup than rush it in now.
-
-Hugh
+--Signature=_Tue__17_Dec_2013_13_28_38_+1100_4_imMTusJeo.Q8Qw--
