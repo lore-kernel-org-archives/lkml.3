@@ -1,155 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab3LQWxq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 17:53:46 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:42954 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454Ab3LQWvs (ORCPT
+	id S1753235Ab3LQWyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:54:01 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:43293 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161Ab3LQWx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 17:51:48 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 09/13] nohz: Allow timekeeper's tick to stop when all full dynticks CPUs are idle
-Date: Tue, 17 Dec 2013 23:51:28 +0100
-Message-Id: <1387320692-28460-10-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
-References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
+	Tue, 17 Dec 2013 17:53:58 -0500
+Message-ID: <52B0D5F9.5030208@oracle.com>
+Date: Tue, 17 Dec 2013 17:53:45 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+CC: Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 10/18] mm: numa: Avoid unnecessary disruption of NUMA
+ hinting during migration
+References: <1386690695-27380-1-git-send-email-mgorman@suse.de> <1386690695-27380-11-git-send-email-mgorman@suse.de>
+In-Reply-To: <1386690695-27380-11-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When all full dynticks CPUs are idle, as detected by RCU's sysidle
-detection, there is no need to keep the timekeeping CPU's tick alive
-anymore. So lets shut it down when we meet this favourable state. The
-timekeeper will be notified with an IPI if any full dynticks CPU
-wakes up.
+Hi Mel,
 
-Also, since we plan to allow every CPUs outside the full dynticks range
-to handle the timekeeping duty, lets also allow the timekeeping duty
-to be balanced. The only requirement is that the last timekeeper can't
-shut down its idle tick further than 1 jiffie until some other CPU
-takes its duty or until all full dynticks CPUs go to sleep.
+On 12/10/2013 10:51 AM, Mel Gorman wrote:
+> +
+> +	/* mmap_sem prevents this happening but warn if that changes */
+> +	WARN_ON(pmd_trans_migrating(pmd));
+> +
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Alex Shi <alex.shi@linaro.org>
-Cc: Kevin Hilman <khilman@linaro.org>
----
- kernel/time/tick-sched.c | 67 ++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 50 insertions(+), 17 deletions(-)
+I seem to be hitting this warning with latest -next kernel:
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 0d2d774..527b501 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -192,6 +192,49 @@ static bool can_stop_full_tick(void)
- 	return true;
- }
- 
-+/*
-+ * Fetch max deferment for the current clockevent source until it overflows.
-+ * Also in full dynticks environment, make sure the current timekeeper
-+ * stays periodic until some other CPU can take its timekeeping duty
-+ * or until all full dynticks go to sleep.
-+ */
-+static u64 tick_timekeeping_max_deferment(struct tick_sched *ts)
-+{
-+	int cpu;
-+	u64 ret = KTIME_MAX;
-+
-+	/*
-+	 * Fast path for full dynticks off-case: skip to
-+	 * clockevent max deferment
-+	 */
-+	if (!tick_nohz_full_enabled())
-+		return timekeeping_max_deferment();
-+
-+	cpu = smp_processor_id();
-+
-+	/* Full dynticks CPU don't take timekeeping duty */
-+	if (!tick_timekeeping_cpu(cpu))
-+		return timekeeping_max_deferment();
-+
-+	/*
-+	 * If we are the timekeeper and all full dynticks CPUs are idle,
-+	 * then we can finally sleep.
-+	 */
-+	if (tick_do_timer_cpu == cpu ||
-+	    (tick_do_timer_cpu == TICK_DO_TIMER_NONE &&	ts->do_timer_last == 1)) {
-+		if (!rcu_sys_is_idle()) {
-+			/*
-+			 * Stop tick for 1 jiffy. In practice we stay periodic
-+			 * but that let us possibly delegate our timekeeping duty
-+			 * to stop the tick for real in the future.
-+			 */
-+			ret = tick_period.tv64;
-+		}
-+	}
-+
-+	return min_t(u64, ret, timekeeping_max_deferment());
-+}
-+
- static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now);
- 
- /*
-@@ -352,7 +395,12 @@ void __init tick_nohz_init(void)
- 	cpulist_scnprintf(nohz_full_buf, sizeof(nohz_full_buf), tick_nohz_full_mask);
- 	pr_info("NO_HZ: Full dynticks CPUs: %s.\n", nohz_full_buf);
- }
--#endif
-+# else /* CONFIG_NO_HZ_FULL */
-+static u64 tick_timekeeping_max_deferment(struct tick_sched *ts)
-+{
-+	return timekeeping_max_deferment();
-+}
-+#endif /* CONFIG_NO_HZ_FULL */
- 
- /*
-  * NOHZ - aka dynamic tick functionality
-@@ -532,7 +580,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
- 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
- 	u64 time_delta;
- 
--	time_delta = timekeeping_max_deferment();
-+	time_delta = tick_timekeeping_max_deferment(ts);
- 
- 	/* Read jiffies and the time when jiffies were updated last */
- 	do {
-@@ -726,21 +774,6 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
- 		return false;
- 	}
- 
--	if (tick_nohz_full_enabled()) {
--		/*
--		 * Keep the tick alive to guarantee timekeeping progression
--		 * if there are full dynticks CPUs around
--		 */
--		if (tick_do_timer_cpu == cpu)
--			return false;
--		/*
--		 * Boot safety: make sure the timekeeping duty has been
--		 * assigned before entering dyntick-idle mode,
--		 */
--		if (tick_do_timer_cpu == TICK_DO_TIMER_NONE)
--			return false;
--	}
--
- 	return true;
- }
- 
--- 
-1.8.3.1
+[ 1704.594807] WARNING: CPU: 28 PID: 35287 at mm/huge_memory.c:887 copy_huge_pmd+0x145/
+0x3a0()
+[ 1704.597258] Modules linked in:
+[ 1704.597844] CPU: 28 PID: 35287 Comm: trinity-main Tainted: G        W    3.13.0-rc4-
+next-20131217-sasha-00013-ga878504-dirty #4149
+[ 1704.599924]  0000000000000377e delta! pid slot 27 [36258]: old:2 now:537927697 diff:
+537927695 ffff8803593ddb90 ffffffff8439501c ffffffff854722c1
+[ 1704.604846]  0000000000000000 ffff8803593ddbd0 ffffffff8112f8ac ffff8803593ddbe0
+[ 1704.606391]  ffff88034bc137f0 ffff880e41677000 8000000b47c009e4 ffff88034a638000
+[ 1704.608008] Call Trace:
+[ 1704.608511]  [<ffffffff8439501c>] dump_stack+0x52/0x7f
+[ 1704.609699]  [<ffffffff8112f8ac>] warn_slowpath_common+0x8c/0xc0
+[ 1704.612617]  [<ffffffff8112f8fa>] warn_slowpath_null+0x1a/0x20
+[ 1704.614043]  [<ffffffff812b91c5>] copy_huge_pmd+0x145/0x3a0
+[ 1704.615587]  [<ffffffff8127e032>] copy_page_range+0x3f2/0x560
+[ 1704.616869]  [<ffffffff81199ef1>] ? rwsem_wake+0x51/0x70
+[ 1704.617942]  [<ffffffff8112cf59>] dup_mmap+0x2c9/0x3d0
+[ 1704.619146]  [<ffffffff8112d54d>] dup_mm+0xad/0x150
+[ 1704.620051]  [<ffffffff8112e178>] copy_process+0xa68/0x12e0
+[ 1704.622976]  [<ffffffff81194eda>] ? __lock_release+0x1da/0x1f0
+[ 1704.624234]  [<ffffffff8112eee6>] do_fork+0x96/0x270
+[ 1704.624975]  [<ffffffff81249465>] ? context_tracking_user_exit+0x195/0x1d0
+[ 1704.626427]  [<ffffffff811930ed>] ? trace_hardirqs_on+0xd/0x10
+[ 1704.627681]  [<ffffffff8112f0d6>] SyS_clone+0x16/0x20
+[ 1704.628833]  [<ffffffff843a6309>] stub_clone+0x69/0x90
+[ 1704.629672]  [<ffffffff843a6150>] ? tracesys+0xdd/0xe2
 
+
+Thanks,
+Sasha
