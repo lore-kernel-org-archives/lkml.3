@@ -1,63 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab3LQMub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 07:50:31 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:62654 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab3LQMu1 (ORCPT
+	id S1753967Ab3LQMus (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 07:50:48 -0500
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:63399 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab3LQMur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 07:50:27 -0500
-From: Laszlo Papp <lpapp@kde.org>
-To: sameo@linux.intel.com, lee.jones@linaro.org
-Cc: linux-kernel@vger.kernel.org, Laszlo Papp <lpapp@kde.org>
-Subject: [PATCH] mfd: max8997: Enforce mfd_add_devices() return value check
-Date: Tue, 17 Dec 2013 12:45:50 +0000
-Message-Id: <1387284350-28524-1-git-send-email-lpapp@kde.org>
-X-Mailer: git-send-email 1.8.5.1
+	Tue, 17 Dec 2013 07:50:47 -0500
+Date: Tue, 17 Dec 2013 07:50:42 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jens Axboe <axboe@kernel.dk>
+Cc: tomaz.solc@tablix.org, aaron.lu@intel.com, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: [PATCH v2] libata, freezer: avoid block device removal while system
+ is frozen
+Message-ID: <20131217125042.GF29989@htj.dyndns.org>
+References: <20131213174932.GA27070@htj.dyndns.org>
+ <20131213185237.GD27070@htj.dyndns.org>
+ <20131213204034.GE27070@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131213204034.GE27070@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original author provided a random return value check which is
-redundant and seemingly floating. This patch not only relocates
-the check so it is more clearly associated with the invokation of
-mfd_add_devices(), but provides a store for the error value. We
-also print a meaningful message on error before returning.
+Hello,
 
-Signed-off-by: Laszlo Papp <lpapp@kde.org>
+Rafael, if you're okay with the workaround, I'll route it through
+libata/for-3.13-fixes.
+
+Thanks.
+------- 8< -------
+Freezable kthreads and workqueues are fundamentally problematic in
+that they effectively introduce a big kernel lock widely used in the
+kernel and have already been the culprit of several deadlock
+scenarios.  This is the latest occurrence.
+
+During resume, libata rescans all the ports and revalidates all
+pre-existing devices.  If it determines that a device has gone
+missing, the device is removed from the system which involves
+invalidating block device and flushing bdi while holding driver core
+layer locks.  Unfortunately, this can race with the rest of device
+resume.  Because freezable kthreads and workqueues are thawed after
+device resume is complete and block device removal depends on
+freezable workqueues and kthreads (e.g. bdi_wq, jbd2) to make
+progress, this can lead to deadlock - block device removal can't
+proceed because kthreads are frozen and kthreads can't be thawed
+because device resume is blocked behind block device removal.
+
+839a8e8660b6 ("writeback: replace custom worker pool implementation
+with unbound workqueue") made this particular deadlock scenario more
+visible but the underlying problem has always been there - the
+original forker task and jbd2 are freezable too.  In fact, this is
+highly likely just one of many possible deadlock scenarios given that
+freezer behaves as a big kernel lock and we don't have any debug
+mechanism around it.
+
+I believe the right thing to do is getting rid of freezable kthreads
+and workqueues.  This is something fundamentally broken.  For now,
+implement a funny workaround in libata - just avoid doing block device
+hot[un]plug while the system is frozen.  Kernel engineering at its
+finest.  :(
+
+v2: Add EXPORT_SYMBOL_GPL(pm_freezing) for cases where libata is built
+    as a module.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Tomaž Šolc <tomaz.solc@tablix.org>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=62801
+Link: http://lkml.kernel.org/r/20131213174932.GA27070@htj.dyndns.org
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: stable@vger.kernel.org
 ---
- drivers/mfd/max8997.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/ata/libata-scsi.c |   19 +++++++++++++++++++
+ kernel/freezer.c          |    6 ++++++
+ 2 files changed, 25 insertions(+)
 
-diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
-index 791aea3..ace1a2b 100644
---- a/drivers/mfd/max8997.c
-+++ b/drivers/mfd/max8997.c
-@@ -227,19 +227,19 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
- 	pm_runtime_set_active(max8997->dev);
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -3871,6 +3871,25 @@ void ata_scsi_hotplug(struct work_struct
+ 		return;
+ 	}
  
- 	max8997_irq_init(max8997);
--
--	mfd_add_devices(max8997->dev, -1, max8997_devs,
-+	ret = mfd_add_devices(max8997->dev, -1, max8997_devs,
- 			ARRAY_SIZE(max8997_devs),
- 			NULL, 0, NULL);
-+	if (ret < 0) {
-+		dev_err(max8997->dev, "cannot add mfd cells\n");
-+		goto err_mfd;
-+	}
++	/*
++	 * XXX - UGLY HACK
++	 *
++	 * The core suspend/resume path is fundamentally broken due to
++	 * freezable kthreads and workqueue and may deadlock if a block
++	 * device gets removed while resume is in progress.  I don't know
++	 * what the solution is short of removing freezable kthreads and
++	 * workqueues altogether.
++	 *
++	 * The following is an ugly hack to avoid kicking off device
++	 * removal while freezer is active.  This is a joke but does avoid
++	 * this particular deadlock scenario.
++	 *
++	 * https://bugzilla.kernel.org/show_bug.cgi?id=62801
++	 * http://marc.info/?l=linux-kernel&m=138695698516487
++	 */
++	while (pm_freezing)
++		msleep(100);
++
+ 	DPRINTK("ENTER\n");
+ 	mutex_lock(&ap->scsi_scan_mutex);
  
- 	/*
- 	 * TODO: enable others (flash, muic, rtc, battery, ...) and
- 	 * check the return value
- 	 */
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -19,6 +19,12 @@ EXPORT_SYMBOL(system_freezing_cnt);
+ bool pm_freezing;
+ bool pm_nosig_freezing;
  
--	if (ret < 0)
--		goto err_mfd;
--
- 	/* MAX8997 has a power button input. */
- 	device_init_wakeup(max8997->dev, pdata->wakeup);
++/*
++ * Temporary export for the deadlock workaround in ata_scsi_hotplug().
++ * Remove once the hack becomes unnecessary.
++ */
++EXPORT_SYMBOL_GPL(pm_freezing);
++
+ /* protects freezing and frozen transitions */
+ static DEFINE_SPINLOCK(freezer_lock);
  
--- 
-1.8.5.1
-
