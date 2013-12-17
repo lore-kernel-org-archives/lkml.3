@@ -1,261 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135Ab3LQGAK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 01:00:10 -0500
-Received: from ozlabs.org ([203.10.76.45]:50306 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751118Ab3LQGAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 01:00:08 -0500
-Date: Tue, 17 Dec 2013 16:59:56 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
+	id S1751638Ab3LQGLj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 01:11:39 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:64901 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab3LQGLi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 01:11:38 -0500
+X-AuditID: 9c93017e-b7c17ae000003961-36-52afeb186379
+From: Minchan Kim <minchan@kernel.org>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Heiko Stuebner <heiko@sntech.de>
-Subject: linux-next: build failure after merge of the final tree
-Message-Id: <20131217165956.b5c92af06a83392e8bfb5d46@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__17_Dec_2013_16_59_56_+1100_tv=u5lnbm+nyB0ft"
+Cc: Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH 1/5] zram: remove old private project comment
+Date: Tue, 17 Dec 2013 15:11:59 +0900
+Message-Id: <1387260723-15817-2-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387260723-15817-1-git-send-email-minchan@kernel.org>
+References: <1387260723-15817-1-git-send-email-minchan@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_Dec_2013_16_59_56_+1100_tv=u5lnbm+nyB0ft
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch removes old private compcache project address so
+upcoming patches should be sent to LKML because we Linux kernel
+community will take care.
 
-Hi all,
+Cc: Nitin Gupta <ngupta@vflare.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ Documentation/blockdev/zram.txt |    6 ------
+ drivers/block/zram/Kconfig      |    1 -
+ drivers/block/zram/zram_drv.c   |    1 -
+ drivers/block/zram/zram_drv.h   |    1 -
+ 4 files changed, 9 deletions(-)
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+index 765d790ae831..2eccddffa6c8 100644
+--- a/Documentation/blockdev/zram.txt
++++ b/Documentation/blockdev/zram.txt
+@@ -1,8 +1,6 @@
+ zram: Compressed RAM based block devices
+ ----------------------------------------
+ 
+-Project home: http://compcache.googlecode.com/
+-
+ * Introduction
+ 
+ The zram module creates RAM based block devices named /dev/zram<id>
+@@ -69,9 +67,5 @@ Following shows a typical sequence of steps for using zram.
+ 	resets the disksize to zero. You must set the disksize again
+ 	before reusing the device.
+ 
+-Please report any problems at:
+- - Mailing list: linux-mm-cc at laptop dot org
+- - Issue tracker: http://code.google.com/p/compcache/issues/list
+-
+ Nitin Gupta
+ ngupta@vflare.org
+diff --git a/drivers/block/zram/Kconfig b/drivers/block/zram/Kconfig
+index 983314c41349..3450be850399 100644
+--- a/drivers/block/zram/Kconfig
++++ b/drivers/block/zram/Kconfig
+@@ -14,7 +14,6 @@ config ZRAM
+ 	  disks and maybe many more.
+ 
+ 	  See zram.txt for more information.
+-	  Project home: <https://compcache.googlecode.com/>
+ 
+ config ZRAM_DEBUG
+ 	bool "Compressed RAM block device debug support"
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 108f2733106d..134d605836ca 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -9,7 +9,6 @@
+  * Released under the terms of 3-clause BSD License
+  * Released under the terms of GNU General Public License Version 2.0
+  *
+- * Project home: http://compcache.googlecode.com
+  */
+ 
+ #define KMSG_COMPONENT "zram"
+diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+index d8f6596513c3..92f70e8f457c 100644
+--- a/drivers/block/zram/zram_drv.h
++++ b/drivers/block/zram/zram_drv.h
+@@ -9,7 +9,6 @@
+  * Released under the terms of 3-clause BSD License
+  * Released under the terms of GNU General Public License Version 2.0
+  *
+- * Project home: http://compcache.googlecode.com
+  */
+ 
+ #ifndef _ZRAM_DRV_H_
+-- 
+1.7.9.5
 
-drivers/rtc/rtc-hym8563.c:90:17: error: field 'clkout_hw' has incomplete ty=
-pe
-  struct clk_hw  clkout_hw;
-                 ^
-In file included from include/asm-generic/bug.h:13:0,
-                 from arch/powerpc/include/asm/bug.h:127,
-                 from include/linux/bug.h:4,
-                 from include/linux/thread_info.h:11,
-                 from include/asm-generic/preempt.h:4,
-                 from arch/powerpc/include/generated/asm/preempt.h:1,
-                 from include/linux/preempt.h:18,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:35,
-                 from include/linux/time.h:5,
-                 from include/linux/stat.h:18,
-                 from include/linux/module.h:10,
-                 from drivers/rtc/rtc-hym8563.c:20:
-drivers/rtc/rtc-hym8563.c: In function 'hym8563_clkout_recalc_rate':
-include/linux/kernel.h:801:48: warning: initialization from incompatible po=
-inter type [enabled by default]
-  const typeof( ((type *)0)->member ) *__mptr =3D (ptr); \
-                                                ^
-drivers/rtc/rtc-hym8563.c:293:35: note: in expansion of macro 'container_of'
- #define clkout_hw_to_hym8563(_hw) container_of(_hw, struct hym8563, clkout=
-_hw)
-                                   ^
-drivers/rtc/rtc-hym8563.c:305:28: note: in expansion of macro 'clkout_hw_to=
-_hym8563'
-  struct hym8563 *hym8563 =3D clkout_hw_to_hym8563(hw);
-                            ^
-include/linux/kernel.h:801:48: warning: (near initialization for 'hym8563')=
- [enabled by default]
-  const typeof( ((type *)0)->member ) *__mptr =3D (ptr); \
-                                                ^
-drivers/rtc/rtc-hym8563.c:293:35: note: in expansion of macro 'container_of'
- #define clkout_hw_to_hym8563(_hw) container_of(_hw, struct hym8563, clkout=
-_hw)
-                                   ^
-drivers/rtc/rtc-hym8563.c:305:28: note: in expansion of macro 'clkout_hw_to=
-_hym8563'
-  struct hym8563 *hym8563 =3D clkout_hw_to_hym8563(hw);
-                            ^
-drivers/rtc/rtc-hym8563.c: In function 'hym8563_clkout_set_rate':
-include/linux/kernel.h:801:48: warning: initialization from incompatible po=
-inter type [enabled by default]
-  const typeof( ((type *)0)->member ) *__mptr =3D (ptr); \
-                                                ^
-drivers/rtc/rtc-hym8563.c:293:35: note: in expansion of macro 'container_of'
- #define clkout_hw_to_hym8563(_hw) container_of(_hw, struct hym8563, clkout=
-_hw)
-                                   ^
-drivers/rtc/rtc-hym8563.c:331:28: note: in expansion of macro 'clkout_hw_to=
-_hym8563'
-  struct hym8563 *hym8563 =3D clkout_hw_to_hym8563(hw);
-                            ^
-include/linux/kernel.h:801:48: warning: (near initialization for 'hym8563')=
- [enabled by default]
-  const typeof( ((type *)0)->member ) *__mptr =3D (ptr); \
-                                                ^
-drivers/rtc/rtc-hym8563.c:293:35: note: in expansion of macro 'container_of'
- #define clkout_hw_to_hym8563(_hw) container_of(_hw, struct hym8563, clkout=
-_hw)
-                                   ^
-drivers/rtc/rtc-hym8563.c:331:28: note: in expansion of macro 'clkout_hw_to=
-_hym8563'
-  struct hym8563 *hym8563 =3D clkout_hw_to_hym8563(hw);
-                            ^
-drivers/rtc/rtc-hym8563.c: In function 'hym8563_clkout_control':
-include/linux/kernel.h:801:48: warning: initialization from incompatible po=
-inter type [enabled by default]
-  const typeof( ((type *)0)->member ) *__mptr =3D (ptr); \
-                                                ^
-drivers/rtc/rtc-hym8563.c:293:35: note: in expansion of macro 'container_of'
- #define clkout_hw_to_hym8563(_hw) container_of(_hw, struct hym8563, clkout=
-_hw)
-                                   ^
-drivers/rtc/rtc-hym8563.c:352:28: note: in expansion of macro 'clkout_hw_to=
-_hym8563'
-  struct hym8563 *hym8563 =3D clkout_hw_to_hym8563(hw);
-                            ^
-include/linux/kernel.h:801:48: warning: (near initialization for 'hym8563')=
- [enabled by default]
-  const typeof( ((type *)0)->member ) *__mptr =3D (ptr); \
-                                                ^
-drivers/rtc/rtc-hym8563.c:293:35: note: in expansion of macro 'container_of'
- #define clkout_hw_to_hym8563(_hw) container_of(_hw, struct hym8563, clkout=
-_hw)
-                                   ^
-drivers/rtc/rtc-hym8563.c:352:28: note: in expansion of macro 'clkout_hw_to=
-_hym8563'
-  struct hym8563 *hym8563 =3D clkout_hw_to_hym8563(hw);
-                            ^
-drivers/rtc/rtc-hym8563.c: In function 'hym8563_clkout_is_prepared':
-include/linux/kernel.h:801:48: warning: initialization from incompatible po=
-inter type [enabled by default]
-  const typeof( ((type *)0)->member ) *__mptr =3D (ptr); \
-                                                ^
-drivers/rtc/rtc-hym8563.c:293:35: note: in expansion of macro 'container_of'
- #define clkout_hw_to_hym8563(_hw) container_of(_hw, struct hym8563, clkout=
-_hw)
-                                   ^
-drivers/rtc/rtc-hym8563.c:379:28: note: in expansion of macro 'clkout_hw_to=
-_hym8563'
-  struct hym8563 *hym8563 =3D clkout_hw_to_hym8563(hw);
-                            ^
-include/linux/kernel.h:801:48: warning: (near initialization for 'hym8563')=
- [enabled by default]
-  const typeof( ((type *)0)->member ) *__mptr =3D (ptr); \
-                                                ^
-drivers/rtc/rtc-hym8563.c:293:35: note: in expansion of macro 'container_of'
- #define clkout_hw_to_hym8563(_hw) container_of(_hw, struct hym8563, clkout=
-_hw)
-                                   ^
-drivers/rtc/rtc-hym8563.c:379:28: note: in expansion of macro 'clkout_hw_to=
-_hym8563'
-  struct hym8563 *hym8563 =3D clkout_hw_to_hym8563(hw);
-                            ^
-drivers/rtc/rtc-hym8563.c: At top level:
-drivers/rtc/rtc-hym8563.c:389:14: error: variable 'hym8563_clkout_ops' has =
-initializer but incomplete type
- const struct clk_ops hym8563_clkout_ops =3D {
-              ^
-drivers/rtc/rtc-hym8563.c:390:2: error: unknown field 'prepare' specified i=
-n initializer
-  .prepare =3D hym8563_clkout_prepare,
-  ^
-drivers/rtc/rtc-hym8563.c:390:2: warning: excess elements in struct initial=
-izer [enabled by default]
-drivers/rtc/rtc-hym8563.c:390:2: warning: (near initialization for 'hym8563=
-_clkout_ops') [enabled by default]
-drivers/rtc/rtc-hym8563.c:391:2: error: unknown field 'unprepare' specified=
- in initializer
-  .unprepare =3D hym8563_clkout_unprepare,
-  ^
-drivers/rtc/rtc-hym8563.c:391:2: warning: excess elements in struct initial=
-izer [enabled by default]
-drivers/rtc/rtc-hym8563.c:391:2: warning: (near initialization for 'hym8563=
-_clkout_ops') [enabled by default]
-drivers/rtc/rtc-hym8563.c:392:2: error: unknown field 'is_prepared' specifi=
-ed in initializer
-  .is_prepared =3D hym8563_clkout_is_prepared,
-  ^
-drivers/rtc/rtc-hym8563.c:392:2: warning: excess elements in struct initial=
-izer [enabled by default]
-drivers/rtc/rtc-hym8563.c:392:2: warning: (near initialization for 'hym8563=
-_clkout_ops') [enabled by default]
-drivers/rtc/rtc-hym8563.c:393:2: error: unknown field 'recalc_rate' specifi=
-ed in initializer
-  .recalc_rate =3D hym8563_clkout_recalc_rate,
-  ^
-drivers/rtc/rtc-hym8563.c:393:2: warning: excess elements in struct initial=
-izer [enabled by default]
-drivers/rtc/rtc-hym8563.c:393:2: warning: (near initialization for 'hym8563=
-_clkout_ops') [enabled by default]
-drivers/rtc/rtc-hym8563.c:394:2: error: unknown field 'round_rate' specifie=
-d in initializer
-  .round_rate =3D hym8563_clkout_round_rate,
-  ^
-drivers/rtc/rtc-hym8563.c:394:2: warning: excess elements in struct initial=
-izer [enabled by default]
-drivers/rtc/rtc-hym8563.c:394:2: warning: (near initialization for 'hym8563=
-_clkout_ops') [enabled by default]
-drivers/rtc/rtc-hym8563.c:395:2: error: unknown field 'set_rate' specified =
-in initializer
-  .set_rate =3D hym8563_clkout_set_rate,
-  ^
-drivers/rtc/rtc-hym8563.c:395:2: warning: excess elements in struct initial=
-izer [enabled by default]
-drivers/rtc/rtc-hym8563.c:395:2: warning: (near initialization for 'hym8563=
-_clkout_ops') [enabled by default]
-drivers/rtc/rtc-hym8563.c: In function 'hym8563_clkout_register_clk':
-drivers/rtc/rtc-hym8563.c:403:23: error: storage size of 'init' isn't known
-  struct clk_init_data init;
-                       ^
-drivers/rtc/rtc-hym8563.c:413:15: error: 'CLK_IS_ROOT' undeclared (first us=
-e in this function)
-  init.flags =3D CLK_IS_ROOT;
-               ^
-drivers/rtc/rtc-hym8563.c:413:15: note: each undeclared identifier is repor=
-ted only once for each function it appears in
-drivers/rtc/rtc-hym8563.c:419:2: error: implicit declaration of function 'c=
-lk_register' [-Werror=3Dimplicit-function-declaration]
-  clk =3D clk_register(&client->dev, &hym8563->clkout_hw);
-  ^
-drivers/rtc/rtc-hym8563.c:422:3: error: implicit declaration of function 'o=
-f_clk_add_provider' [-Werror=3Dimplicit-function-declaration]
-   of_clk_add_provider(node, of_clk_src_simple_get, clk);
-   ^
-drivers/rtc/rtc-hym8563.c:422:29: error: 'of_clk_src_simple_get' undeclared=
- (first use in this function)
-   of_clk_add_provider(node, of_clk_src_simple_get, clk);
-                             ^
-drivers/rtc/rtc-hym8563.c:403:23: warning: unused variable 'init' [-Wunused=
--variable]
-  struct clk_init_data init;
-                       ^
-
-Caused by commit 34ef6d7fe467 ("rtc: add hym8563 rtc-driver") from the
-akpm-current tree.  Probably some missing include(s).
-
-I just reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__17_Dec_2013_16_59_56_+1100_tv=u5lnbm+nyB0ft
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSr+hhAAoJEMDTa8Ir7ZwVvrwP/j/MxdI3eqp7XylwJn5AXXg1
-i1MmV02Je5L1Wusv0CpluCNsbzIaaXZijK7OfDNRlXrv7Qg1pCQA1Jlw+vFf16jG
-KZkcyqLJ/hth9jsgoE2LEnUlXb6Z/7p5dvK3SuJxNQ4fyO1KiUztvmeCmJovy91p
-qcKM0fzskoo9Lm0rfmPgvN1Jei4gReSok60fC9ldoCn7mDgE5ZjkvLgg/k0P460e
-p4YeGEFXckYvOO/Q500Za8TVFJ2oPdsOWBgP//4zEf0hj7PJDVtlP4QvSBlolyrX
-Vs6B0hrnbMWhz0Rki2mfy1tK5wl2QuFqXMThq3yW3Nh4L7cj/RiC0yI8t1h+Ep4b
-I+AbAds+uWNGK73eicTX46baDbF28GhtOMw91At4epq3ESwUSJa6o8SMjZ/HfA1+
-bJuGmFWWndX+2/k9jQEk0FSbaJEZnKrxRLziilALEISdIjid3lfM0QJMnRZojOAR
-ZFD5U4ba7g+O/apAm444niZuscAPmThlJSs99+wuolv6Io/bj7Bt/6ocB9WFJioQ
-AA8Tgag9LlRCuSakU0A5fzOi+hcnPdzWrW9YeN9BiryZAJtVKuuAn6Iuq43uRCHl
-ABY123l9XhA5Yg7d9//9fy/Y+EfyAtmhcbThehmQAqju4uBmJirn/Lm8jcOMvvVL
-OROj5rn8OwxY7vdrIVD6
-=x6Xw
------END PGP SIGNATURE-----
-
---Signature=_Tue__17_Dec_2013_16_59_56_+1100_tv=u5lnbm+nyB0ft--
