@@ -1,97 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab3LQMVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 07:21:15 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:51382 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751090Ab3LQMVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 07:21:13 -0500
-Message-ID: <52B04140.1060709@ti.com>
-Date: Tue, 17 Dec 2013 14:19:12 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753146Ab3LQM0E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 07:26:04 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:43996 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914Ab3LQM0A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 07:26:00 -0500
+Date: Tue, 17 Dec 2013 13:24:33 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Xiubo Li <Li.Xiubo@freescale.com>, mark.rutland@arm.com,
+        s.hauer@pengutronix.de, galak@codeaurora.org, swarren@wwwdotorg.org,
+        t.figa@samsung.com, grant.likely@linaro.org, matt.porter@linaro.org,
+        rob@landley.net, tomasz.figa@gmail.com, ian.campbell@citrix.com,
+        pawel.moll@arm.com, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, Alison Wang <b18965@freescale.com>,
+        Jingchang Lu <b35083@freescale.com>
+Subject: Re: [PATCHv7 1/4] pwm: Add Freescale FTM PWM driver support
+Message-ID: <20131217122431.GA17210@ulmo.nvidia.com>
+References: <1386925027-16288-1-git-send-email-Li.Xiubo@freescale.com>
+ <1386925027-16288-2-git-send-email-Li.Xiubo@freescale.com>
+ <20131217111020.GF13823@ulmo.nvidia.com>
+ <20131217115136.GT4360@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
-        <dwmw2@infradead.org>
-Subject: Re: [PATCH v3 7/9] mtd: nand: davinci: adjust DT properties to MTD
- generic
-References: <1386264358-9738-1-git-send-email-ivan.khoronzhuk@ti.com> <1386264358-9738-8-git-send-email-ivan.khoronzhuk@ti.com> <20131217085027.GK12034@norris-Latitude-E6410>
-In-Reply-To: <20131217085027.GK12034@norris-Latitude-E6410>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EeQfGwPcQSOJBaQU"
+Content-Disposition: inline
+In-Reply-To: <20131217115136.GT4360@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2013 10:50 AM, Brian Norris wrote:
-> On Thu, Dec 05, 2013 at 07:25:55PM +0200, Ivan Khoronzhuk wrote:
->> --- a/drivers/mtd/nand/davinci_nand.c
->> +++ b/drivers/mtd/nand/davinci_nand.c
->> @@ -558,6 +557,8 @@ static struct davinci_nand_pdata
->>   			"ti,davinci-mask-chipsel", &prop))
->>   			pdata->mask_chipsel = prop;
->>   		if (!of_property_read_string(pdev->dev.of_node,
->> +			"nand-ecc-mode", &mode) ||
-> 
-> Is it possible to use the of_get_nand_ecc_mode() helper? It's
-> unfortunate that davinci_nand had to use custom bindings in the first
-> place, making this more difficult... So I can take this patch as-is.
-> 
 
-Yes, I will do nothing for that
+--EeQfGwPcQSOJBaQU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> +		    !of_property_read_string(pdev->dev.of_node,
->>   			"ti,davinci-ecc-mode", &mode)) {
->>   			if (!strncmp("none", mode, 4))
->>   				pdata->ecc_mode = NAND_ECC_NONE;
->> @@ -570,11 +571,15 @@ static struct davinci_nand_pdata
->>   			"ti,davinci-ecc-bits", &prop))
->>   			pdata->ecc_bits = prop;
->>   		if (!of_property_read_u32(pdev->dev.of_node,
->> +			"nand-bus-width", &prop) ||
-> 
-> Similar story here, with of_get_nand_bus_width().
-> 
+On Tue, Dec 17, 2013 at 11:51:36AM +0000, Russell King - ARM Linux wrote:
+> On Tue, Dec 17, 2013 at 12:10:22PM +0100, Thierry Reding wrote:
+> > On Fri, Dec 13, 2013 at 04:57:04PM +0800, Xiubo Li wrote:
+> > > +static inline u32 fsl_pwm_readl(struct fsl_pwm_chip *fpc,
+> > > +		const void __iomem *addr)
+> > > +{
+> > > +	u32 val;
+> > > +
+> > > +	val =3D __raw_readl(addr);
+> > > +
+> > > +	if (likely(fpc->big_endian))
+> >=20
+> > The likely() probably isn't very useful in this case. But if you want to
+> > keep it, it should at least be reversed, since little-endian is actually
+> > the default (you have to specify the big-endian property to activate the
+> > big endian mode).
+> >=20
+> > > +		val =3D be32_to_cpu(val);
+> > > +	else
+> > > +		val =3D le32_to_cpu(val);
+>=20
+> This will also cause sparse errors, because when sparse is enabled, these
+> expect __le32 or __be32 arguments, not u32.
+>=20
+> > > +	rmb();
+> >=20
+> > I'd prefer the rmb() to follow the __raw_readl() immediately to make the
+> > relationship more explicit.
+>=20
+> A better question to ask is: why is this barrier here?  What memory
+> ordering operations is it trying to serialise?
 
-It seems for bus width I can replace it on:
+I suppose that this was done so that the accesses would essentially
+remain the same as those performed by readl() and writel().
 
-prop = of_get_nand_bus_width(pdev->dev.of_node);
-if ( 0 < prop || !of_property_read_u32(pdev->dev.of_node,
-	     "ti,davinci-nand-buswidth", &prop))
-     if (prop == 16)
-	     pdata->options |= NAND_BUSWIDTH_16;
+> > > +static inline void fsl_pwm_writel(struct fsl_pwm_chip *fpc,
+> > > +		u32 val, void __iomem *addr)
+> > > +{
+> > > +	wmb();
+> > > +	if (likely(fpc->big_endian))
+> > > +		val =3D cpu_to_be32(val);
+> > > +	else
+> > > +		val =3D cpu_to_le32(val);
+> > > +
+> > > +	__raw_writel(val, addr);
+> >=20
+> > Same here. wmb() should precede __raw_writel() immediately.
+>=20
+> Same comments here - what memory operations is the wmb() trying to
+> serialise?  Does this PWM driver somehow end up doing DMA?
 
+Not that I can see. But if my understanding is correct, not using the
+barriers would allow the compiler and CPU to reorder accesses, and by
+that cause the register accesses to potentially happen in the wrong
+order.
 
->> +		    !of_property_read_u32(pdev->dev.of_node,
->>   			"ti,davinci-nand-buswidth", &prop))
->>   			if (prop == 16)
->>   				pdata->options |= NAND_BUSWIDTH_16;
->> -		if (of_find_property(pdev->dev.of_node,
->> -			"ti,davinci-nand-use-bbt", &len))
->> +		if (of_property_read_bool(pdev->dev.of_node,
->> +			"nand-on-flash-bbt") ||
->> +		    of_property_read_bool(pdev->dev.of_node,
->> +			"ti,davinci-nand-use-bbt"))
->>   			pdata->bbt_options = NAND_BBT_USE_FLASH;
->>   	}
->>   
-> 
-> Brian
-> 
+Thierry
 
+--EeQfGwPcQSOJBaQU
+Content-Type: application/pgp-signature
 
--- 
-Regards,
-Ivan Khoronzhuk
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSsEJ/AAoJEN0jrNd/PrOh6QEQAJb58rcRQgVI2UQHM6qCZSBy
+bByBcbU1zixwi6nwpaTt8rUtw9RaqNEf847ri0nn0my2o99dG7TSJN77eEEN8gAL
+A/4nftKABUEtKHnu2aWiqPn/8rpLbp9m/p6KCgbc/X+6grlk9jPYa3uIQS1nKzSh
++20bMgMHsgH/Isuy5wTQyC/uUzEcHakpQXB2y1KyzjAJ8KjwYBx+g8UWr4Tfv76t
+sP5oQ0QOe65lQIMrTVygnq40gV3OBVIPG47UHUOu24TSP8pBZyTGcQaawLwaWaRU
+XQdfLqPzqOhChA2fb+vKOdFugYeS9BCrPiIb1OtkS2pIuz4FxUx1QWR5t97YiL+K
+PV29hLTmJSOTQPFa7k0zBOs7YfFO/uhSGhxJ0TNGji+F9P6IIpQ4O5qNz7WazZZO
+Jg9evXMvntpF9/GhecUK5U+l6RqEui4L/fu51oGS9VtCLQciKDP7hKkljayeR3wO
+rYTE43MnICdJNcDbh5XxPDVLutUzs+PGcYCcv/8tzeoNglwY5yyvf1I1F4tw3zVq
+azqjBxnlikEgINFr66ifbkQ2693x+GrIIXUs1sLLLSspCMYzSuQrxVuP06YM5N9O
+eZV3B1EmAJNrP/6Z9KCmxFxR6nvWohIYSld3PG+8c1dWlEaAKJuuX8LflZmyFV5c
+qxlvXDnfWDg3wTt7E8V2
+=nk4r
+-----END PGP SIGNATURE-----
+
+--EeQfGwPcQSOJBaQU--
