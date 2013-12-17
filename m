@@ -1,264 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918Ab3LQPte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:49:34 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:50313 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754872Ab3LQPta (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:49:30 -0500
-From: David Herrmann <dh.herrmann@gmail.com>
-To: linux-input@vger.kernel.org
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        linux-kernel@vger.kernel.org, input-tools@lists.freedesktop.org,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH 4/4] Input: add motion-tracking ABS_* bits and docs
-Date: Tue, 17 Dec 2013 16:48:54 +0100
-Message-Id: <1387295334-1744-5-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 1.8.5.1
-In-Reply-To: <1387295334-1744-1-git-send-email-dh.herrmann@gmail.com>
-References: <1387295334-1744-1-git-send-email-dh.herrmann@gmail.com>
+	id S1754993Ab3LQPt5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 10:49:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7778 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753477Ab3LQPtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 10:49:53 -0500
+From: Mark Salter <msalter@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Salter <msalter@redhat.com>, Richard Henderson <rth@twiddle.net>,
+        linux-alpha@vger.kernel.org
+Subject: [PATCH v2 01/10] alpha: select ARCH_MIGHT_HAVE_PC_SERIO
+Date: Tue, 17 Dec 2013 10:48:44 -0500
+Message-Id: <1387295333-24684-2-git-send-email-msalter@redhat.com>
+In-Reply-To: <1387295333-24684-1-git-send-email-msalter@redhat.com>
+References: <1387295333-24684-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Motion sensors are getting quite common in mobile devices. To avoid
-returning accelerometer data via ABS_X/Y/Z and irritating the Xorg
-mouse-driver, this adds separate ABS_* bits for that.
+Architectures which might use an i8042 for serial IO to keyboard,
+mouse, etc should select ARCH_MIGHT_HAVE_PC_SERIO.
 
-This is needed if gaming devices want to report their normal data plus
-accelerometer/gyro data. Usually, ABS_X/Y are already used by analog
-sticks, so need separate definitions, anyway.
-
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Mark Salter <msalter@redhat.com>
+Acked-by: Matt Turner <mattst88@gmail.com>
+CC: Richard Henderson <rth@twiddle.net>
+CC: linux-alpha@vger.kernel.org
 ---
- Documentation/input/gamepad.txt         |   7 ++
- Documentation/input/motion-tracking.txt | 149 ++++++++++++++++++++++++++++++++
- include/linux/mod_devicetable.h         |   2 +-
- include/uapi/linux/input.h              |   9 +-
- 4 files changed, 165 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/input/motion-tracking.txt
+ arch/alpha/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/input/gamepad.txt b/Documentation/input/gamepad.txt
-index 196dc42..eeda685 100644
---- a/Documentation/input/gamepad.txt
-+++ b/Documentation/input/gamepad.txt
-@@ -57,6 +57,9 @@ Most gamepads have the following features:
-   - Rumble
-     Many devices provide force-feedback features. But are mostly just
-     simple rumble motors.
-+  - Motion-tracking
-+    Gamepads may include motion-tracking sensors like accelerometers and
-+    gyroscopes.
- 
- 3. Detection
- ~~~~~~~~~~~~
-@@ -153,5 +156,9 @@ Menu-Pad:
- Rumble:
-   Rumble is adverticed as FF_RUMBLE.
- 
-+Motion-tracking:
-+  Motion-tracking is defined in ./Documentation/input/motion-tracking.txt and
-+  gamepads shall comply to the rules defined there.
-+
- ----------------------------------------------------------------------------
-   Written 2013 by David Herrmann <dh.herrmann@gmail.com>
-diff --git a/Documentation/input/motion-tracking.txt b/Documentation/input/motion-tracking.txt
-new file mode 100644
-index 0000000..0885c9a
---- /dev/null
-+++ b/Documentation/input/motion-tracking.txt
-@@ -0,0 +1,149 @@
-+                           Motion Tracking API
-+----------------------------------------------------------------------------
-+
-+1. Intro
-+~~~~~~~~
-+Motion tracking devices produce device motion events generated from an
-+accelerometer, gyroscope or compass. This data can be returned to user-space
-+via input events. This document defines how this data is reported.
-+
-+2. Devices
-+~~~~~~~~~~
-+In this document, a "device" is one of:
-+ - accelerometer
-+ - gyroscope
-+ - compass
-+
-+These devices returned their information via different APIs in the past. To
-+unify them and define a common API, a set of input evdev codes was created. Old
-+drivers might continue using their API, but developers are encouraged to use
-+the input evdev API for new drivers.
-+
-+2.1 Axes
-+~~~~~~~~
-+Movement data is usually returned as absolute data for the 3 axes of a device.
-+In this context, the three axes are defined as:
-+ - X: Axis goes from the left to the right side of the device
-+ - Y: Axis goes from the bottom to the top of the device
-+ - Z: Axis goes from the back to the front of the device
-+
-+The front of a device is the side faced to the user. For a mobile-phone it
-+would be the screen. For devices without a screen, the front is usually the
-+side with the most buttons on it.
-+
-+                           Example: Mobile-Phone
-+  +-------------------------------------------------------------------------+
-+  |                      TOP                                                |
-+  |                                                                         |
-+  |                                                                         |
-+  |          +---------------------------+                                  |
-+  |          |\  ________________________ \      .__                        |
-+  |          \ \ \                       \ \     |\                         |
-+  |           \ \ \              __       \ \      \                   RIGHT|
-+  |            \ \ \              /|       \ \      \__                     |
-+  |             \ \ \          __/          \ \     |\                      |
-+  |              \ \ \          /|           \ \      \ (Y Axis)            |
-+  |               \ \ \      __/  (Z axis)    \ \      \__                  |
-+  |                \ \ \      /|               \ \     |\                   |
-+  | LEFT            \ \ \    /                  \ \      \                  |
-+  |                  \ \ \         FRONT         \ \      \                 |
-+  |                   \ \ \                       \ \                       |
-+  |                    \ \ \_______________________\ \                      |
-+  |                     \ \             ___           \                     |
-+  |                     /\ \            \__\           \                    |
-+  |                  __/  \ +---------------------------+                   |
-+  |                   /|   \|___________________________|                   |
-+  |                  / BACK                                                 |
-+  |                                      (X axis)                           |
-+  |                        ------->------->------->------->                 |
-+  |                                                                         |
-+  |                                                                         |
-+  |                                         BOTTOM                          |
-+  +-------------------------------------------------------------------------+
-+
-+Rotation-data is reported as clock-wise rotation on an axis. For a given axes,
-+the reported rotation would be:
-+                                          ___
-+                                            /|
-+                                           / | (axis)
-+                                          /
-+                                    .-**-.
-+                                   /    / \
-+                                  |    / \ | /
-+                                   \  /   \|/  (clock-wise rotation)
-+                                     /
-+                                    /
-+                                   /
-+
-+2.2 Calibration
-+~~~~~~~~~~~~~~~
-+Motion sensors are often highly sensitive and need precise calibration. Users
-+are adviced to perform neutral-point calibration themselves or to implement a
-+state-machine to normalize input data automatically.
-+
-+Kernel devices may perform their own calibration and/or normalization. However,
-+this is usually sparse and, if implemented, transparent to the user.
-+
-+There is currently no way to feed calibration data into the kernel in a generic
-+way. Proposals welcome!
-+
-+2.3 Units
-+~~~~~~~~~
-+(NOTE: This section describes an experimental API. Currently, no device complies
-+to these rules so this might change in the future.)
-+
-+Reported data shall be returned as:
-+ - Acceleration: 1/1000 m per s^2
-+ - Rotation: 1/1000 degree per second
-+
-+However, for most devices the reported units are unknown (more precisely: no
-+one has the time to measure them and figure them out). Therefore, user-space
-+shall use abs-minimum and abs-maximum to calculate relative data and use that
-+instead. Devices which return wrong units may be fixed in the future to comply
-+to these rules.
-+
-+3.1 Accelerometer
-+~~~~~~~~~~~~~~~~~
-+Accelerometers measure movement acceleration of devices. Any combination of the
-+three available axes can be used. Usually, all three are supported.
-+
-+Data is provided as absolute acceleration. A positive integer defines the
-+acceleration in the direction of an axis. A negative integer defines
-+acceleration in the opposite direction.
-+
-+The evdev ABS codes used are:
-+ - ABS_ACCEL_X: X axis
-+ - ABS_ACCEL_Y: Y axis
-+ - ABS_ACCEL_Z: Z axis
-+
-+3.2 Gyroscope
-+~~~~~~~~~~~~~
-+A gyroscope measures rotational speed (*not* acceleration!). Any combination of
-+the three available axes can be used. Usually, all three are supported.
-+
-+Data is provided as absolute speed. A positive integer defines the rotational
-+speed in clock-wise order around a given axis. A negative integer defines it in
-+counter-clock-wise order.
-+
-+The evdev ABS codes used are:
-+ - ABS_GYRO_X: X axis (also: Pitch)
-+ - ABS_GYRO_Y: Y axis (also: Roll)
-+ - ABS_GYRO_Z: Z axis (also: Azimuth/Yaw)
-+
-+3.3 Compass
-+~~~~~~~~~~~
-+(NOTE: No compass device currently uses the evdev input subsystem. Thus, this
-+API is only a proposal, it hasn't been implemented, yet.)
-+
-+A compass measures the ambient magnetic field of the three defined axes. This
-+makes the data self-contained and independent of the current device position.
-+Any combination of the three axes can be used. Usually all three are supported,
-+otherwise, it's not really useful as a compass.
-+
-+Proposed evdev ABS codes are:
-+ - ABS_COMPASS_X: X axis
-+ - ABS_COMPASS_Y: Y axis
-+ - ABS_COMPASS_Z: Z axis
-+
-+----------------------------------------------------------------------------
-+  Written 2013 by David Herrmann <dh.herrmann@gmail.com>
-diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
-index 45e9214..329aa30 100644
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@ -277,7 +277,7 @@ struct pcmcia_device_id {
- #define INPUT_DEVICE_ID_KEY_MIN_INTERESTING	0x71
- #define INPUT_DEVICE_ID_KEY_MAX		0x2ff
- #define INPUT_DEVICE_ID_REL_MAX		0x0f
--#define INPUT_DEVICE_ID_ABS_MAX		0x3f
-+#define INPUT_DEVICE_ID_ABS_MAX		0x4f
- #define INPUT_DEVICE_ID_MSC_MAX		0x07
- #define INPUT_DEVICE_ID_LED_MAX		0x0f
- #define INPUT_DEVICE_ID_SND_MAX		0x07
-diff --git a/include/uapi/linux/input.h b/include/uapi/linux/input.h
-index 1856461..e4c3596 100644
---- a/include/uapi/linux/input.h
-+++ b/include/uapi/linux/input.h
-@@ -869,12 +869,19 @@ struct input_keymap_entry {
- #define ABS_MAX			0x3f
- #define ABS_CNT			(ABS_MAX+1)
- 
-+#define ABS_ACCEL_X		0x40	/* Accelerometer X axis */
-+#define ABS_ACCEL_Y		0x41	/* Accelerometer Y axis */
-+#define ABS_ACCEL_Z		0x42	/* Accelerometer Z axis */
-+#define ABS_GYRO_X		0x43	/* Gyroscope X axis */
-+#define ABS_GYRO_Y		0x44	/* Gyroscope Y axis */
-+#define ABS_GYRO_Z		0x45	/* Gyroscope Z axis */
-+
- /*
-  * Due to API restrictions the legacy evdev API only supports ABS values up to
-  * ABS_MAX/CNT. Use the extended *ABS2 ioctls to operate on any ABS values in
-  * between ABS_MAX and ABS_MAX2.
-  */
--#define ABS_MAX2		0x3f
-+#define ABS_MAX2		0x4f
- #define ABS_CNT2		(ABS_MAX2+1)
- 
- /*
+diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
+index d39dc9b..7ce5ce5 100644
+--- a/arch/alpha/Kconfig
++++ b/arch/alpha/Kconfig
+@@ -2,6 +2,7 @@ config ALPHA
+ 	bool
+ 	default y
+ 	select ARCH_MIGHT_HAVE_PC_PARPORT
++	select ARCH_MIGHT_HAVE_PC_SERIO
+ 	select HAVE_AOUT
+ 	select HAVE_IDE
+ 	select HAVE_OPROFILE
 -- 
-1.8.5.1
+1.8.3.1
 
