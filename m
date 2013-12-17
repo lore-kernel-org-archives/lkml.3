@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab3LQJOm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 04:14:42 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:54333 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995Ab3LQJOk (ORCPT
+	id S1752826Ab3LQJPR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 04:15:17 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:42277 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433Ab3LQJPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 04:14:40 -0500
+	Tue, 17 Dec 2013 04:15:15 -0500
+Date: Tue, 17 Dec 2013 14:45:00 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-acpi@vger.kernel.org, josh@joshtriplett.org
+Subject: [PATCH 02/11] drivers: acpi: Include appropriate header file in nvs.c
+Message-ID: <1e397a06259f56042ec90d55fbf7423fc3bdca92.1387271324.git.rashika.kheria@gmail.com>
+References: <c676af6619fc5a84208740bfc7edcf56bb78ed4e.1387271324.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1387226379-25919-1-git-send-email-geert@linux-m68k.org>
-References: <1387226379-25919-1-git-send-email-geert@linux-m68k.org>
-Date: Tue, 17 Dec 2013 10:14:39 +0100
-X-Google-Sender-Auth: u3Z0UnkGLwoB2ifiS2a-k66VIxU
-Message-ID: <CAMuHMdUiLoVfOzffofbcZTM3ibWSXiVQiPrHzc_zYPDFhAnC=g@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.13-rc4
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <c676af6619fc5a84208740bfc7edcf56bb78ed4e.1387271324.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 9:39 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.13-rc4[1]  to v3.13-rc3[3], the summaries are:
->   - build errors: +2/-8
+Include header file internal.h in nvs.c because functions
+suspend_nvs_free(), suspend_nvs_alloc(), suspend_nvs_save() and
+suspend_nvs_restore() have their prototype declaration in internal.h.
 
-Nothing serious or not yet known:
+This eliminates the following warnings in nvs.c:
+drivers/acpi/nvs.c:128:6: warning: no previous prototype for ‘suspend_nvs_free’ [-Wmissing-prototypes]
+drivers/acpi/nvs.c:152:5: warning: no previous prototype for ‘suspend_nvs_alloc’ [-Wmissing-prototypes]
+drivers/acpi/nvs.c:169:5: warning: no previous prototype for ‘suspend_nvs_save’ [-Wmissing-prototypes]
+drivers/acpi/nvs.c:201:6: warning: no previous prototype for ‘suspend_nvs_restore’ [-Wmissing-prototypes]
 
-  + /scratch/kisskb/src/drivers/regulator/s2mps11.c: error: 'struct
-sec_pmic_dev' has no member named 'regmap':  => 441:23
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/acpi/nvs.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-cris-allyesconfig, sh-allyesconfig, s390-allyesconfig, powerpc-allyesconfig
+diff --git a/drivers/acpi/nvs.c b/drivers/acpi/nvs.c
+index 386a9fe..5841914 100644
+--- a/drivers/acpi/nvs.c
++++ b/drivers/acpi/nvs.c
+@@ -13,6 +13,7 @@
+ #include <linux/slab.h>
+ #include <linux/acpi.h>
+ #include <linux/acpi_io.h>
++#include "internal.h"
+ 
+ /* ACPI NVS regions, APEI may use it */
+ 
+-- 
+1.7.9.5
 
-  + error: No rule to make target include/config/auto.conf:  => N/A
-
-powerpc-randconfig
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/6993/ (118 out of 120 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/6964/ (119 out of 120 configs)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
