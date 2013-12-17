@@ -1,120 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab3LQXbK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 18:31:10 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:37309 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab3LQXbI (ORCPT
+	id S1752560Ab3LQXcA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 18:32:00 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:60346 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751231Ab3LQXb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 18:31:08 -0500
+	Tue, 17 Dec 2013 18:31:58 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlMIAJrdsFJ5LHyk/2dsb2JhbABZgwqDPLBwhVCBHhd0giUBAQEEOhwjEAgDGAklDwUlAyETiAPJZRcWjnwHgyOBEwSYFZIVgW2BUiiBLCM
+Date: Wed, 18 Dec 2013 10:31:52 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, Nigel Cunningham <nigel@tuxonice.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system
+ suspend/hibernation
+Message-ID: <20131217233152.GC20579@dastard>
+References: <201201281445.49377.rjw@sisk.pl>
+ <201202172159.15396.rjw@sisk.pl>
+ <CA+5PVA50UA1oP1jKgnQjHh8APp=cNWREw3bkfrkV1OW_Tg1g+A@mail.gmail.com>
+ <201205252113.50900.rjw@sisk.pl>
+ <CA+5PVA5GWsTdNky-K1-hu5_R55hdKfr-Oa26HpX=FdA1cRZsbQ@mail.gmail.com>
+ <CA+5PVA7vsZPd9eXwN-Q+d8c9+0bAmVdr698vv+LFyrn+3iFOMA@mail.gmail.com>
+ <20131217230843.GA2911@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-In-Reply-To: <2184496.xEujhTLELy@avalon>
-References: <20131127074122.18314.48522.sendpatchset@w520>
-	<2184496.xEujhTLELy@avalon>
-Date: Wed, 18 Dec 2013 08:31:06 +0900
-Message-ID: <CANqRtoTuev8Z0ZgNwWdvuPbLPdfkT2S6MmKYokA15KPVV_ZiQg@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: sh-pfc: Initial r7s72100 support
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131217230843.GA2911@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+On Wed, Dec 18, 2013 at 12:08:43AM +0100, Pavel Machek wrote:
+> Hi!
+> 
+> > >>> Did this patch ever wind up going anywhere?  Fedora has it sitting in
+> > >>> our tree with a comment that says "rebase" and I don't see it in the
+> > >>> linux-next tree at all.
+> > >>>
+> > >>> Did if fall through the cracks or was it NAKed somewhere?
+> > >>
+> > >> No, it wasn't in principle. There were some comments I haven't addressed yet.
+> > >
+> > > Dredging up a really old thread, sorry.
+> > >
+> > > We're still carrying this patch along in Fedora.  Should we drop it at
+> > > this point, or is it still eventually going to head upstream?
+> 
+> I'd say drop.
 
-Here are some replies to your comments, my apologies for the delay.
+I disagree - given the problem it is resolving leads to silent
+filesystem corruption, this patch should be considered somewhat of a
+priority to push...
 
-On Wed, Nov 27, 2013 at 7:54 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Magnus,
->
-> Thank you for the patch.
->
-> On Wednesday 27 November 2013 16:41:22 Magnus Damm wrote:
->> From: Magnus Damm <damm@opensource.se>
->>
->> Add r7s72100 PINCTRL support via sh-pfc. At this point this code
->> provides enough support to allow use together with the gpio-rz
->> driver. Incremental per-device patches will in the future be
->> submitted on top of this base patch to allow PINCTRL enablement
->> for each individual device.
->>
->> Signed-off-by: Magnus Damm <damm@opensource.se>
->> ---
->>
->>  drivers/pinctrl/sh-pfc/Kconfig        |    5
->>  drivers/pinctrl/sh-pfc/Makefile       |    1
->>  drivers/pinctrl/sh-pfc/core.c         |    9 +
->>  drivers/pinctrl/sh-pfc/core.h         |    1
->>  drivers/pinctrl/sh-pfc/pfc-r7s72100.c |  166 ++++++++++++++++++++++++++++++
->>  5 files changed, 182 insertions(+)
->
-> [snip]
->
->> --- /dev/null
->> +++ work/drivers/pinctrl/sh-pfc/pfc-r7s72100.c        2013-11-27
-> 15:20:28.000000000
->> +0900 @@ -0,0 +1,166 @@
->
-> [snip]
->
->> +#define RZ_PORT_PIN(bank, pin) (((bank) * 16) + (pin))
->
-> Could you move this below closer to the location where it will be used, right
-> after the pinmux_pins array ?
+Cheers,
 
-Yes, I did in V2. I still prefer to have it in the GPIO header so it
-can be shared between PFC and GPIO.
-
->> +#define PORT_P_1(bank, pin, fn, sfx) fn(bank, pin, P_##bank##_##pin, sfx)
->
-> I'm tempted to call the pins GP_ instead of P_ to be able to reuse the
-> existing macros. On the other hand I suppose the datasheet uses P, not GP.
-> What's your opinion on that ?
-
-The data sheet is using P so I prefer to stick to that. Also,
-regarding code sharing, I think it makes sense to move the 16-bit
-register support to a shared location when more than one SoC will use
-it. For now this SoC is the only user so we may as well keep it here
-for now.
-
->> +     PINMUX_FUNCTION_BEGIN,
->> +     P_ALL(PMC_0), P_ALL(PMC_1),
->> +     P_ALL(PFC_0), P_ALL(PFC_1),
->> +     P_ALL(PFCE_0), P_ALL(PFCE_1),
->> +     P_ALL(PFCAE_0), P_ALL(PFCAE_1),
->> +     P_ALL(PIBC_0), P_ALL(PIBC_1),
->> +     P_ALL(PBDC_0), P_ALL(PBDC_1),
->> +     P_ALL(PIPC_0), P_ALL(PIPC_1),
->> +     PINMUX_FUNCTION_END,
->
-> Only the PMC_1 and PFC* registers seem to be used in your later patches. What
-> are the other registers for ? Shouldn't they be omitted if unused ?
-
-Um, all registers expect PIPC were used in this version unless I'm
-mistaken. I started using PIPC to V2 but that turned out to cause
-issues with the I2C pin functions.
-
->> +#define _P_ALL(n) CPU_ALL_PORT(n, unused)
->> +
->> +#define _P_GPIO(bank, _pin, _name, sfx)                                      \
->> +     [(bank * 16) + _pin] = {                                        \
->> +             .pin = (bank * 16) + _pin,                              \
->> +             .name = __stringify(_name),                             \
->> +             .enum_id = _name##_DATA,                                \
->> +     }
->
-> What about renaming _GP_GPIO to _GP_GPIO32 in sh_pfc.h, and move this macro to
-> that header, calling it _GP_GPIO16 ?
-
-Done as a separate patch in the V2 patch series.
-
-Thanks,
-
-/ magnus
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
