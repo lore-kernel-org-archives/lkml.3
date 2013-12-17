@@ -1,66 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297Ab3LQOza (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 09:55:30 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:23508 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab3LQOz2 (ORCPT
+	id S1754172Ab3LQO6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 09:58:55 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:33250 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab3LQO6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 09:55:28 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19ruteO26b+v2F7gpuyEe/TNaKS4dnAOto=
-X-DKIM: OpenDKIM Filter v2.0.1 titan F12204F4D56
-Date: Tue, 17 Dec 2013 09:55:18 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] irqchip: mvebu: fixes for v3.13
-Message-ID: <20131217145518.GK2609@titan.lakedaemon.net>
+	Tue, 17 Dec 2013 09:58:53 -0500
+Date: Tue, 17 Dec 2013 14:58:46 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 1/5] regulator: s5m8767: Add symbols for hard-coded
+ DVS_RAMP register
+Message-ID: <20131217145846.GA32283@lee--X1>
+References: <1387286601-21646-1-git-send-email-k.kozlowski@samsung.com>
+ <1387286601-21646-2-git-send-email-k.kozlowski@samsung.com>
+ <20131217135153.GI19810@lee--X1>
+ <1387289193.13191.9.camel@AMDC1943>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1387289193.13191.9.camel@AMDC1943>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+On Tue, 17 Dec 2013, Krzysztof Kozlowski wrote:
 
-Here's a couple of small fixes for the armada-370-xp driver.  These have
-been in -next for 3 days now.
+> On Tue, 2013-12-17 at 13:51 +0000, Lee Jones wrote:
+> > > Add symbols for hard-coded values of BUCK_RAMP field in DVS_RAMP
+> > > register. This simplifies a little the code as register update is called
+> > > only once.
+> > > 
+> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > > Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> > > Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> > > ---
+> > >  drivers/regulator/s5m8767.c         |   22 ++++++++++------------
+> > >  include/linux/mfd/samsung/s5m8767.h |   15 +++++++++++++++
+> > >  2 files changed, 25 insertions(+), 12 deletions(-)
+> > 
+> > <snip>
+> > 
+> > > diff --git a/include/linux/mfd/samsung/s5m8767.h b/include/linux/mfd/samsung/s5m8767.h
+> > > index 9198377ee859..2ab0b0f03641 100644
+> > > --- a/include/linux/mfd/samsung/s5m8767.h
+> > > +++ b/include/linux/mfd/samsung/s5m8767.h
+> > > @@ -186,4 +186,19 @@ enum s5m8767_regulators {
+> > >  #define S5M8767_ENCTRL_SHIFT		6
+> > >  #define S5M8767_ENCTRL_MASK		(0x3 << S5M8767_ENCTRL_SHIFT)
+> > >  
+> > > +/*
+> > > + * Values for BUCK_RAMP field in DVS_RAMP register, matching raw values
+> > > + * in mV/us.
+> > > + */
+> > > +enum s5m8767_dvs_buck_ramp_values {
+> > > +	S5M8767_DVS_BUCK_RAMP_5		= 0x4,
+> > > +	S5M8767_DVS_BUCK_RAMP_10	= 0x9,
+> > > +	S5M8767_DVS_BUCK_RAMP_12_5	= 0xb,
+> > > +	S5M8767_DVS_BUCK_RAMP_25	= 0xd,
+> > > +	S5M8767_DVS_BUCK_RAMP_50	= 0xe,
+> > > +	S5M8767_DVS_BUCK_RAMP_100	= 0xf,
+> > > +};
+> > 
+> > Why do these have to be enums?
+> 
+> There is no special need. I chose enum because it is a kind of
+> enumeration of all valid values for BUCK_RAMP field (valid according to
+> datasheet). If you prefer #define then I'll change it.
 
-thx,
+I'm not fussed enough to make you resubmit.
 
-Jason.
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-
-The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
-
-  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
-
-are available in the git repository at:
-
-  git://git.infradead.org/linux-mvebu.git tags/mvebu-irqchip-fixes-3.13
-
-for you to fetch changes up to c7f7bd4a136e4b02dd2a66bf95aec545bd93e8db:
-
-  irqchip: armada-370-xp: fix MSI race condition (2013-12-13 16:34:40 +0000)
-
-----------------------------------------------------------------
-mvebu irqchip fixes for v3.13
-
- - armada-370-xp
-    - fix races is MSI and IPI
-
-----------------------------------------------------------------
-Lior Amsalem (2):
-      irqchip: armada-370-xp: fix IPI race condition
-      irqchip: armada-370-xp: fix MSI race condition
-
- drivers/irqchip/irq-armada-370-xp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
