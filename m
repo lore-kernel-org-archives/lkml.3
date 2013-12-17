@@ -1,128 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab3LQCYu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 21:24:50 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50891 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751329Ab3LQCYs convert rfc822-to-8bit (ORCPT
+	id S1752693Ab3LQC0j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 21:26:39 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:44078 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab3LQC0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 21:24:48 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
-        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] libata, freezer: avoid block device removal while system is frozen
-Date: Tue, 17 Dec 2013 03:38:05 +0100
-Message-ID: <2427190.pZk9AIZAjc@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131213204034.GE27070@htj.dyndns.org>
-References: <20131213174932.GA27070@htj.dyndns.org> <20131213185237.GD27070@htj.dyndns.org> <20131213204034.GE27070@htj.dyndns.org>
+	Mon, 16 Dec 2013 21:26:36 -0500
+Date: Mon, 16 Dec 2013 18:26:18 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Michal Hocko <mhocko@suse.cz>
+cc: Hugh Dickins <hughd@google.com>, Li Zefan <lizefan@huawei.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.13-rc breaks MEMCG_SWAP
+In-Reply-To: <20131216162042.GC26797@dhcp22.suse.cz>
+Message-ID: <alpine.LNX.2.00.1312161742540.2037@eggly.anvils>
+References: <alpine.LNX.2.00.1312160025200.2785@eggly.anvils> <20131216162042.GC26797@dhcp22.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 13, 2013 03:40:34 PM Tejun Heo wrote:
-> Hello,
+On Mon, 16 Dec 2013, Michal Hocko wrote:
+> On Mon 16-12-13 00:36:05, Hugh Dickins wrote:
+> [...]
 > 
-> So, this is the laughable workaround that I came up with.  Seriously,
-> this is tragic.  :(
-> 
-> Thanks.
-> 
-> ------- 8< -------
-> Freezable kthreads and workqueues are fundamentally problematic in
-> that they effectively introduce a big kernel lock widely used in the
-> kernel and have already been the culprit of several deadlock
-> scenarios.  This is the latest occurrence.
+> OK, I went through the patch and it looks good except for suspicious
+> ctrl->lock handling in swap_cgroup_reassign (see below). I am just
+> suggesting to split it into 4 parts
 
-OK, so I'm too tired now to go through all that, but I'll look at it tomorrow.
+Thanks a lot for studying it, and responding so quickly.
+As I remark in reply to Tejun, I'm not nearly so keen on this
+approach as you are, and would prefer something short and sweet
+from the cgroup end, at least for now; but let's go through your
+comments, to keep both options open until we're surer.
 
-The rule of thumb is to get rid of freezable kernel threads in the first
-place if possible anyway if they are causing problems to happen.
+> 
+> * swap_cgroup_mutex -> swap_cgroup_lock
+> * swapon cleanup
+> * drop irqsave when taking ctrl->lock
+> * mem_cgroup_reparent_swap
+> 
+> but I will leave the split up to you. Just make sure that the fix is a
+> separate patch, please.
 
-Thanks!
+Yes indeed, some split like that, maybe even more pieces.  The difficult
+part is the ordering: for going into 3.13, we'd prefer a small fix first
+and cleanup to follow after in 3.14, but it will be hard to force myself
+not to do the cleanup ones first, and until getting down to it I won't
+recall how much of the cleanup was essential e.g. to avoid lock ordering
+problems or long lock hold times, perhaps.
 
-> During resume, libata rescans all the ports and revalidates all
-> pre-existing devices.  If it determines that a device has gone
-> missing, the device is removed from the system which involves
-> invalidating block device and flushing bdi while holding driver core
-> layer locks.  Unfortunately, this can race with the rest of device
-> resume.  Because freezable kthreads and workqueues are thawed after
-> device resume is complete and block device removal depends on
-> freezable workqueues and kthreads (e.g. bdi_wq, jbd2) to make
-> progress, this can lead to deadlock - block device removal can't
-> proceed because kthreads are frozen and kthreads can't be thawed
-> because device resume is blocked behind block device removal.
 > 
-> 839a8e8660b6 ("writeback: replace custom worker pool implementation
-> with unbound workqueue") made this particular deadlock scenario more
-> visible but the underlying problem has always been there - the
-> original forker task and jbd2 are freezable too.  In fact, this is
-> highly likely just one of many possible deadlock scenarios given that
-> freezer behaves as a big kernel lock and we don't have any debug
-> mechanism around it.
+> [...]
+> > --- 3.13-rc4/mm/page_cgroup.c	2013-02-18 15:58:34.000000000 -0800
+> > +++ linux/mm/page_cgroup.c	2013-12-15 14:34:36.312485960 -0800
+> > @@ -322,7 +322,8 @@ void __meminit pgdat_page_cgroup_init(st
+> >  
+> >  #ifdef CONFIG_MEMCG_SWAP
+> >  
+> > -static DEFINE_MUTEX(swap_cgroup_mutex);
+> > +static DEFINE_SPINLOCK(swap_cgroup_lock);
+> > +
 > 
-> I believe the right thing to do is getting rid of freezable kthreads
-> and workqueues.  This is something fundamentally broken.  For now,
-> implement a funny workaround in libata - just avoid doing block device
-> hot[un]plug while the system is frozen.  Kernel engineering at its
-> finest.  :(
+> This one is worth a separate patch IMO.
+
+Agreed.
+
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Tomaž Šolc <tomaz.solc@tablix.org>
-> Link: https://bugzilla.kernel.org/show_bug.cgi?id=62801
-> Link: http://lkml.kernel.org/r/20131213174932.GA27070@htj.dyndns.org
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Len Brown <len.brown@intel.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: stable@vger.kernel.org
-> ---
->  drivers/ata/libata-scsi.c |   19 +++++++++++++++++++
->  1 file changed, 19 insertions(+)
+> >  struct swap_cgroup_ctrl {
+> >  	struct page **map;
+> >  	unsigned long length;
+> > @@ -353,14 +354,11 @@ struct swap_cgroup {
+> >  /*
+> >   * allocate buffer for swap_cgroup.
+> >   */
+> > -static int swap_cgroup_prepare(int type)
+> > +static int swap_cgroup_prepare(struct swap_cgroup_ctrl *ctrl)
+> >  {
+> >  	struct page *page;
+> > -	struct swap_cgroup_ctrl *ctrl;
+> >  	unsigned long idx, max;
+> >  
+> > -	ctrl = &swap_cgroup_ctrl[type];
+> > -
+> >  	for (idx = 0; idx < ctrl->length; idx++) {
+> >  		page = alloc_page(GFP_KERNEL | __GFP_ZERO);
+> >  		if (!page)
 > 
-> diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-> index ab58556..60a01d3 100644
-> --- a/drivers/ata/libata-scsi.c
-> +++ b/drivers/ata/libata-scsi.c
-> @@ -3872,6 +3872,25 @@ void ata_scsi_hotplug(struct work_struct *work)
->  		return;
->  	}
->  
-> +	/*
-> +	 * XXX - UGLY HACK
-> +	 *
-> +	 * The core suspend/resume path is fundamentally broken due to
-> +	 * freezable kthreads and workqueue and may deadlock if a block
-> +	 * device gets removed while resume is in progress.  I don't know
-> +	 * what the solution is short of removing freezable kthreads and
-> +	 * workqueues altogether.
-> +	 *
-> +	 * The following is an ugly hack to avoid kicking off device
-> +	 * removal while freezer is active.  This is a joke but does avoid
-> +	 * this particular deadlock scenario.
-> +	 *
-> +	 * https://bugzilla.kernel.org/show_bug.cgi?id=62801
-> +	 * http://marc.info/?l=linux-kernel&m=138695698516487
-> +	 */
-> +	while (pm_freezing)
-> +		msleep(100);
-> +
->  	DPRINTK("ENTER\n");
->  	mutex_lock(&ap->scsi_scan_mutex);
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> This with swap_cgroup_swapon should be in a separate patch as a cleanup.
+
+Agreed.
+
+> 
+> > @@ -407,18 +405,17 @@ unsigned short swap_cgroup_cmpxchg(swp_e
+> >  {
+> >  	struct swap_cgroup_ctrl *ctrl;
+> >  	struct swap_cgroup *sc;
+> > -	unsigned long flags;
+> >  	unsigned short retval;
+> >  
+> >  	sc = lookup_swap_cgroup(ent, &ctrl);
+> >  
+> > -	spin_lock_irqsave(&ctrl->lock, flags);
+> > +	spin_lock(&ctrl->lock);
+> >  	retval = sc->id;
+> >  	if (retval == old)
+> >  		sc->id = new;
+> >  	else
+> >  		retval = 0;
+> > -	spin_unlock_irqrestore(&ctrl->lock, flags);
+> > +	spin_unlock(&ctrl->lock);
+> >  	return retval;
+> >  }
+> >  
+> > @@ -435,14 +432,13 @@ unsigned short swap_cgroup_record(swp_en
+> >  	struct swap_cgroup_ctrl *ctrl;
+> >  	struct swap_cgroup *sc;
+> >  	unsigned short old;
+> > -	unsigned long flags;
+> >  
+> >  	sc = lookup_swap_cgroup(ent, &ctrl);
+> >  
+> > -	spin_lock_irqsave(&ctrl->lock, flags);
+> > +	spin_lock(&ctrl->lock);
+> >  	old = sc->id;
+> >  	sc->id = id;
+> > -	spin_unlock_irqrestore(&ctrl->lock, flags);
+> > +	spin_unlock(&ctrl->lock);
+> >  
+> >  	return old;
+> >  }
+> 
+> I would prefer these two in a separate patch as well. I have no idea why
+> these were IRQ aware as this was never needed AFAICS.
+> e9e58a4ec3b10 is not very specific...
+
+Agreed.  Yes, I couldn't work out any justification for the _irqsave
+variants, and preferred to avoid that clutter rather than add to it.
+
+> 
+> > @@ -451,19 +447,60 @@ unsigned short swap_cgroup_record(swp_en
+> >   * lookup_swap_cgroup_id - lookup mem_cgroup id tied to swap entry
+> >   * @ent: swap entry to be looked up.
+> >   *
+> > - * Returns CSS ID of mem_cgroup at success. 0 at failure. (0 is invalid ID)
+> > + * Returns ID of mem_cgroup at success. 0 at failure. (0 is invalid ID)
+> >   */
+> >  unsigned short lookup_swap_cgroup_id(swp_entry_t ent)
+> >  {
+> >  	return lookup_swap_cgroup(ent, NULL)->id;
+> >  }
+> >  
+> > +/**
+> > + * swap_cgroup_reassign - assign all old entries to new (before old is freed).
+> > + * @old: id of emptied memcg whose entries are now to be reassigned
+> > + * @new: id of parent memcg to which those entries are to be assigned
+> > + *
+> > + * Returns number of entries reassigned, for debugging or for statistics.
+> > + */
+> > +long swap_cgroup_reassign(unsigned short old, unsigned short new)
+> > +{
+> > +	long reassigned = 0;
+> > +	int type;
+> > +
+> > +	for (type = 0; type < MAX_SWAPFILES; type++) {
+> > +		struct swap_cgroup_ctrl *ctrl = &swap_cgroup_ctrl[type];
+> > +		unsigned long idx;
+> > +
+> > +		for (idx = 0; idx < ACCESS_ONCE(ctrl->length); idx++) {
+> > +			struct swap_cgroup *sc, *scend;
+> > +
+> > +			spin_lock(&swap_cgroup_lock);
+> > +			if (idx >= ACCESS_ONCE(ctrl->length))
+> > +				goto unlock;
+> > +			sc = page_address(ctrl->map[idx]);
+> > +			for (scend = sc + SC_PER_PAGE; sc < scend; sc++) {
+> > +				if (sc->id != old)
+> > +					continue;
+> 
+> Is this safe? What prevents from race when id is set to old?
+
+I am assuming that when this is called, we shall not be making any
+new charges to old (if you see what I mean :) - this is called after
+mem_cgroup_reparent_charges() (the main call - I've not yet wrapped
+my head around Hannes's later safety-net call; perhaps these patches
+would even make that one redundant - dunno).
+
+Quite a lot is made simpler by the fact that we do not need to call
+this from mem_cgroup_force_empty(), with all the races that would
+entail: there was never any attempt to move these swap charges before,
+so it's a pleasure not to have to deal with that possibility now.
+
+> 
+> > +				spin_lock(&ctrl->lock);
+> > +				if (sc->id == old) {
+> 
+> Also it seems that compiler is free to optimize this test away, no?
+> You need ACCESS_ONCE here as well, I guess.
+
+Oh dear, you're asking me to read again through memory-barriers.txt
+(Xmas 2013 edition), and come to a conclusion.  I think this pattern
+of test outside spinlock, spinlock, test again inside spinlock is
+used in very many places, without any ACCESS_ONCE.  I'll have to
+go and search through the precedents.
+
+I've probably brought this upon myself with the ACCESS_ONCE(ctrl->length)
+a few lines above, which I added at a late stage to match the one above
+it; but now I'm arguing that's unnecessary.
+
+One of the problems with ACCESS_ONCE is that one easily falls into
+a mistaken state in which it seems to be necessary everywhere;
+but that illusion must be resisted.
+
+The spinlock should make it unnecessary, but I'll have to muse on
+semi-permeable membranes, osmosis, stuff like that.
+
+> 
+> > +					sc->id = new;
+> > +					reassigned++;
+> > +				}
+> > +				spin_unlock(&ctrl->lock);
+> > +			}
+> > +unlock:
+> > +			spin_unlock(&swap_cgroup_lock);
+> > +			cond_resched();
+> > +		}
+> > +	}
+> > +	return reassigned;
+> > +}
+> > +
+> >  int swap_cgroup_swapon(int type, unsigned long max_pages)
+> >  {
+> >  	void *array;
+> >  	unsigned long array_size;
+> >  	unsigned long length;
+> > -	struct swap_cgroup_ctrl *ctrl;
+> > +	struct swap_cgroup_ctrl ctrl;
+> >  
+> >  	if (!do_swap_account)
+> >  		return 0;
+> [...]
+> -- 
+> Michal Hocko
+> SUSE Labs
+
+Thanks: let's see if Tejun and Zefan can come up with something
+simpler than this at their end.  If we do all decide that this
+swap_cgroup_reassign() kind of change is desirable, it would still
+be better to make it later on as a cleanup than rush it in now.
+
+Hugh
