@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab3LQAR7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Dec 2013 19:17:59 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:56481 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab3LQAR5 (ORCPT
+	id S1752197Ab3LQASY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Dec 2013 19:18:24 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:54403 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab3LQASX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Dec 2013 19:17:57 -0500
+	Mon, 16 Dec 2013 19:18:23 -0500
 MIME-Version: 1.0
-In-Reply-To: <1387229564-19517-4-git-send-email-john.stultz@linaro.org>
-References: <1387229564-19517-1-git-send-email-john.stultz@linaro.org>
-	<1387229564-19517-4-git-send-email-john.stultz@linaro.org>
-Date: Mon, 16 Dec 2013 16:17:57 -0800
-X-Google-Sender-Auth: XUrhZeOvUIVRiKpuoFUDQbUCX90
-Message-ID: <CAMbhsRQOWKWBjQJWndr57Cz_Xf0EeU8jNMJOyiOEBHFRf=Tt=Q@mail.gmail.com>
-Subject: Re: [RFC][PATCH 3/3] staging: ion: Avoid using rt_mutexes directly.
-From: Colin Cross <ccross@android.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+Date: Mon, 16 Dec 2013 16:18:22 -0800
+Message-ID: <CAMe9rOquPtWEro0GQ=Z95pZJ=c7GGkSHynjN4FbiB4p445x-Ng@mail.gmail.com>
+Subject: [PATCH 1/2] Use __kernel_long_t/__kernel_ulong_t in x86-64 stat.h
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=001a1133056ac711c004edafdd69
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 1:32 PM, John Stultz <john.stultz@linaro.org> wrote:
-> RT_MUTEXES can be configured out of the kernel, causing compile
-> problems with ION.
->
-> Since there is no documentation as to why directly using rt_mutexes
-> is necessary (and very few drivers directly use rt_mutexes), simply
-> convert the ion_heap lock to a normal mutex.
+--001a1133056ac711c004edafdd69
+Content-Type: text/plain; charset=ISO-8859-1
 
-rt_mutexes were added with the deferred freeing feature.  Heaps need
-to return zeroed memory to userspace, but zeroing the memory on every
-allocation was causing performance issues.  We added a SCHED_IDLE
-thread to zero memory in the background after freeing, but locking the
-heap from the SCHED_IDLE thread might block a high priority allocation
-thread for a long time.
+Both x32 and x86-64 use the same stat system call interface.  But x32
+long is 32-bit.  This patch changes x86 uapi <asm/stat.h> to use
+ __kernel_long_t/__kernel_ulong_t in x86-64 stat.
 
-The lock is only used to protect the heap's free_list and
-free_list_size members, and is not held for any long or sleeping
-operations.  Converting to a spinlock should prevent priority
-inversion without using the rt_mutex.  I'd also rename it to free_lock
-to so it doesn't get used as a general heap lock.
+-- 
+H.J.
+
+--001a1133056ac711c004edafdd69
+Content-Type: text/plain; charset=US-ASCII; 
+	name="0001-Use-__kernel_long_t-__kernel_ulong_t-in-x86-64-stat..patch"
+Content-Disposition: attachment; 
+	filename="0001-Use-__kernel_long_t-__kernel_ulong_t-in-x86-64-stat..patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hpaekerk0
+
+RnJvbSBhZTczNDM5Mjk3Y2M0YTJjZjRiNGY1ODBkNWU4M2ZhYmNmYTJhMzE2IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiAiSC5KLiBMdSIgPGhqbC50b29sc0BnbWFpbC5jb20+CkRhdGU6
+IE1vbiwgMTYgRGVjIDIwMTMgMTY6MDk6NTEgLTA4MDAKU3ViamVjdDogW1BBVENIIDEvMl0gVXNl
+IF9fa2VybmVsX2xvbmdfdC9fX2tlcm5lbF91bG9uZ190IGluIHg4Ni02NCBzdGF0LmgKCkJvdGgg
+eDMyIGFuZCB4ODYtNjQgdXNlIHRoZSBzYW1lIHN0YXQgc3lzdGVtIGNhbGwgaW50ZXJmYWNlLiAg
+QnV0IHgzMgpsb25nIGlzIDMyLWJpdC4gIFRoaXMgcGF0Y2ggY2hhbmdlcyB4ODYgdWFwaSA8YXNt
+L3N0YXQuaD4gdG8gdXNlCiBfX2tlcm5lbF9sb25nX3QvX19rZXJuZWxfdWxvbmdfdCBpbiB4ODYt
+NjQgc3RhdC4KCkguSi4KLS0KU2lnbmVkLW9mZi1ieTogSC5KLiBMdSA8aGpsLnRvb2xzQGdtYWls
+LmNvbT4KLS0tCiBhcmNoL3g4Ni9pbmNsdWRlL3VhcGkvYXNtL3N0YXQuaCB8IDQyICsrKysrKysr
+KysrKysrKysrKysrKy0tLS0tLS0tLS0tLS0tLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCAyMiBpbnNl
+cnRpb25zKCspLCAyMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9pbmNsdWRl
+L3VhcGkvYXNtL3N0YXQuaCBiL2FyY2gveDg2L2luY2x1ZGUvdWFwaS9hc20vc3RhdC5oCmluZGV4
+IDdiM2RkYzMuLmJjMDNlYjUgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2luY2x1ZGUvdWFwaS9hc20v
+c3RhdC5oCisrKyBiL2FyY2gveDg2L2luY2x1ZGUvdWFwaS9hc20vc3RhdC5oCkBAIC0xLDYgKzEs
+OCBAQAogI2lmbmRlZiBfQVNNX1g4Nl9TVEFUX0gKICNkZWZpbmUgX0FTTV9YODZfU1RBVF9ICiAK
+KyNpbmNsdWRlIDxhc20vcG9zaXhfdHlwZXMuaD4KKwogI2RlZmluZSBTVEFUX0hBVkVfTlNFQyAx
+CiAKICNpZmRlZiBfX2kzODZfXwpAQCAtNzgsMjYgKzgwLDI2IEBAIHN0cnVjdCBzdGF0NjQgewog
+I2Vsc2UgLyogX19pMzg2X18gKi8KIAogc3RydWN0IHN0YXQgewotCXVuc2lnbmVkIGxvbmcJc3Rf
+ZGV2OwotCXVuc2lnbmVkIGxvbmcJc3RfaW5vOwotCXVuc2lnbmVkIGxvbmcJc3Rfbmxpbms7Ci0K
+LQl1bnNpZ25lZCBpbnQJc3RfbW9kZTsKLQl1bnNpZ25lZCBpbnQJc3RfdWlkOwotCXVuc2lnbmVk
+IGludAlzdF9naWQ7Ci0JdW5zaWduZWQgaW50CV9fcGFkMDsKLQl1bnNpZ25lZCBsb25nCXN0X3Jk
+ZXY7Ci0JbG9uZwkJc3Rfc2l6ZTsKLQlsb25nCQlzdF9ibGtzaXplOwotCWxvbmcJCXN0X2Jsb2Nr
+czsJLyogTnVtYmVyIDUxMi1ieXRlIGJsb2NrcyBhbGxvY2F0ZWQuICovCi0KLQl1bnNpZ25lZCBs
+b25nCXN0X2F0aW1lOwotCXVuc2lnbmVkIGxvbmcJc3RfYXRpbWVfbnNlYzsKLQl1bnNpZ25lZCBs
+b25nCXN0X210aW1lOwotCXVuc2lnbmVkIGxvbmcJc3RfbXRpbWVfbnNlYzsKLQl1bnNpZ25lZCBs
+b25nCXN0X2N0aW1lOwotCXVuc2lnbmVkIGxvbmcgICBzdF9jdGltZV9uc2VjOwotCWxvbmcJCV9f
+dW51c2VkWzNdOworCV9fa2VybmVsX3Vsb25nX3QJc3RfZGV2OworCV9fa2VybmVsX3Vsb25nX3QJ
+c3RfaW5vOworCV9fa2VybmVsX3Vsb25nX3QJc3Rfbmxpbms7CisKKwl1bnNpZ25lZCBpbnQJCXN0
+X21vZGU7CisJdW5zaWduZWQgaW50CQlzdF91aWQ7CisJdW5zaWduZWQgaW50CQlzdF9naWQ7CisJ
+dW5zaWduZWQgaW50CQlfX3BhZDA7CisJX19rZXJuZWxfdWxvbmdfdAlzdF9yZGV2OworCV9fa2Vy
+bmVsX2xvbmdfdAkJc3Rfc2l6ZTsKKwlfX2tlcm5lbF9sb25nX3QJCXN0X2Jsa3NpemU7CisJX19r
+ZXJuZWxfbG9uZ190CQlzdF9ibG9ja3M7CS8qIE51bWJlciA1MTItYnl0ZSBibG9ja3MgYWxsb2Nh
+dGVkLiAqLworCisJX19rZXJuZWxfdWxvbmdfdAlzdF9hdGltZTsKKwlfX2tlcm5lbF91bG9uZ190
+CXN0X2F0aW1lX25zZWM7CisJX19rZXJuZWxfdWxvbmdfdAlzdF9tdGltZTsKKwlfX2tlcm5lbF91
+bG9uZ190CXN0X210aW1lX25zZWM7CisJX19rZXJuZWxfdWxvbmdfdAlzdF9jdGltZTsKKwlfX2tl
+cm5lbF91bG9uZ190CXN0X2N0aW1lX25zZWM7CisJX19rZXJuZWxfbG9uZ190CQlfX3VudXNlZFsz
+XTsKIH07CiAKIC8qIFdlIGRvbid0IG5lZWQgdG8gbWVtc2V0IHRoZSB3aG9sZSB0aGluZyBqdXN0
+IHRvIGluaXRpYWxpemUgdGhlIHBhZGRpbmcgKi8KLS0gCjEuOC4zLjEKCg==
+--001a1133056ac711c004edafdd69--
