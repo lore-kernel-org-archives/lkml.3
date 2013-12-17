@@ -1,68 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506Ab3LQPTG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 10:19:06 -0500
-Received: from 7.mo3.mail-out.ovh.net ([46.105.57.200]:58769 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753509Ab3LQPTE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 10:19:04 -0500
-X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Dec 2013 10:19:04 EST
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Landley <rob@landley.net>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [PATCH] drivers/misc: atmel-ssc: document clock properties
-Date: Tue, 17 Dec 2013 16:01:47 +0100
-Message-Id: <1387292507-6606-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 7454583285183641698
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1754267Ab3LQP37 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 10:29:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58318 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753129Ab3LQP35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 10:29:57 -0500
+Date: Tue, 17 Dec 2013 15:29:54 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7] mm: page_alloc: Make zone distribution page aging
+ policy configurable
+Message-ID: <20131217152954.GA24067@suse.de>
+References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
+ <1386943807-29601-6-git-send-email-mgorman@suse.de>
+ <20131216204215.GA21724@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131216204215.GA21724@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the clock properties required by the atmel-ssc driver.
+On Mon, Dec 16, 2013 at 03:42:15PM -0500, Johannes Weiner wrote:
+> On Fri, Dec 13, 2013 at 02:10:05PM +0000, Mel Gorman wrote:
+> > Commit 81c0a2bb ("mm: page_alloc: fair zone allocator policy") solved a
+> > bug whereby new pages could be reclaimed before old pages because of
+> > how the page allocator and kswapd interacted on the per-zone LRU lists.
+> > Unfortunately it was missed during review that a consequence is that
+> > we also round-robin between NUMA nodes. This is bad for two reasons
+> > 
+> > 1. It alters the semantics of MPOL_LOCAL without telling anyone
+> > 2. It incurs an immediate remote memory performance hit in exchange
+> >    for a potential performance gain when memory needs to be reclaimed
+> >    later
+> > 
+> > No cookies for the reviewers on this one.
+> > 
+> > This patch makes the behaviour of the fair zone allocator policy
+> > configurable.  By default it will only distribute pages that are going
+> > to exist on the LRU between zones local to the allocating process. This
+> > preserves the historical semantics of MPOL_LOCAL.
+> > 
+> > By default, slab pages are not distributed between zones after this patch is
+> > applied. It can be argued that they should get similar treatment but they
+> > have different lifecycles to LRU pages, the shrinkers are not zone-aware
+> > and the interaction between the page allocator and kswapd is different
+> > for slabs. If it turns out to be an almost universal win, we can change
+> > the default.
+> > 
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  Documentation/sysctl/vm.txt |  32 ++++++++++++++
+> >  include/linux/mmzone.h      |   2 +
+> >  include/linux/swap.h        |   2 +
+> >  kernel/sysctl.c             |   8 ++++
+> >  mm/page_alloc.c             | 102 ++++++++++++++++++++++++++++++++++++++------
+> >  5 files changed, 134 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+> > index 1fbd4eb..8eaa562 100644
+> > --- a/Documentation/sysctl/vm.txt
+> > +++ b/Documentation/sysctl/vm.txt
+> > @@ -56,6 +56,7 @@ Currently, these files are in /proc/sys/vm:
+> >  - swappiness
+> >  - user_reserve_kbytes
+> >  - vfs_cache_pressure
+> > +- zone_distribute_mode
+> >  - zone_reclaim_mode
+> >  
+> >  ==============================================================
+> > @@ -724,6 +725,37 @@ causes the kernel to prefer to reclaim dentries and inodes.
+> >  
+> >  ==============================================================
+> >  
+> > +zone_distribute_mode
+> > +
+> > +Pages allocation and reclaim are managed on a per-zone basis. When the
+> > +system needs to reclaim memory, candidate pages are selected from these
+> > +per-zone lists.  Historically, a potential consequence was that recently
+> > +allocated pages were considered reclaim candidates. From a zone-local
+> > +perspective, page aging was preserved but from a system-wide perspective
+> > +there was an age inversion problem.
+> > +
+> > +A similar problem occurs on a node level where young pages may be reclaimed
+> > +from the local node instead of allocating remote memory. Unforuntately, the
+> > +cost of accessing remote nodes is higher so the system must choose by default
+> > +between favouring page aging or node locality. zone_distribute_mode controls
+> > +how the system will distribute page ages between zones.
+> > +
+> > +0	= Never round-robin based on age
+> 
+> I think we should be very conservative with the userspace interface we
+> export on a mechanism we are obviously just figuring out.
+> 
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- .../devicetree/bindings/misc/atmel-ssc.txt         |    5 +++++
- 1 file changed, 5 insertions(+)
+And we have a proposal on how to limit this. I'll be layering another
+patch on top and removes this interface again. That will allows us to
+rollback one patch and still have a usable interface if necessary.
 
-diff --git a/Documentation/devicetree/bindings/misc/atmel-ssc.txt b/Documentation/devicetree/bindings/misc/atmel-ssc.txt
-index a45ae08..60960b2 100644
---- a/Documentation/devicetree/bindings/misc/atmel-ssc.txt
-+++ b/Documentation/devicetree/bindings/misc/atmel-ssc.txt
-@@ -6,6 +6,9 @@ Required properties:
- 	- atmel,at91sam9g45-ssc: support dma transfer
- - reg: Should contain SSC registers location and length
- - interrupts: Should contain SSC interrupt
-+- clock-names: tuple listing input clock names.
-+	Required elements: "pclk"
-+- clocks: phandles to input clocks.
- 
- 
- Required properties for devices compatible with "atmel,at91sam9g45-ssc":
-@@ -20,6 +23,8 @@ ssc0: ssc@fffbc000 {
- 	compatible = "atmel,at91rm9200-ssc";
- 	reg = <0xfffbc000 0x4000>;
- 	interrupts = <14 4 5>;
-+	clocks = <&ssc0_clk>;
-+	clock-names = "pclk";
- };
- 
- - DMA transfer:
+> > +Otherwise the values are ORed together
+> > +
+> > +1	= Distribute anon pages between zones local to the allocating node
+> > +2	= Distribute file pages between zones local to the allocating node
+> > +4	= Distribute slab pages between zones local to the allocating node
+> 
+> Zone fairness within a node does not affect mempolicy or remote
+> reference costs.  Is there a reason to have this configurable?
+> 
+
+Symmetry
+
+> > +The following three flags effectively alter MPOL_DEFAULT, be careful.
+> > +
+> > +8	= Distribute anon pages between zones remote to the allocating node
+> > +16	= Distribute file pages between zones remote to the allocating node
+> > +32	= Distribute slab pages between zones remote to the allocating node
+> 
+> Yes, it's conceivable that somebody might want to disable remote
+> distribution because of the extra references.
+> 
+> But at this point, I'd much rather back out anon and slab distribution
+> entirely, it was a mistake to include them.
+> 
+> That would leave us with a single knob to disable remote page cache
+> placement.
+> 
+
+When looking at this closer I found that sysv is a weird exception. It's
+file-backed as far as most of the VM is concerned but looks anonymous to
+most applications that care. That and MAP_SHARED anonymous pages should
+not be treated like files but we still want tmpfs to be treated as
+files. Details will be in the changelog of the next series.
+
 -- 
-1.7.9.5
-
+Mel Gorman
+SUSE Labs
