@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab3LQV6D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 16:58:03 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:48274 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733Ab3LQV6A (ORCPT
+	id S1754208Ab3LQWAM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 17:00:12 -0500
+Received: from sw.attotech.com ([208.69.85.34]:21159 "EHLO
+	NOTESERV1.attotech.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751219Ab3LQWAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 16:58:00 -0500
+	Tue, 17 Dec 2013 17:00:10 -0500
+X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Dec 2013 17:00:10 EST
+Message-ID: <52B0C5DC.3000407@attotech.com>
+Date: Tue, 17 Dec 2013 16:45:00 -0500
+From: Bradley Grove <bgrove@attotech.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1387312137.30327.11.camel@bling.home>
-References: <20131210183339.26294.14581.stgit@bling.home> <20131210184845.26294.81385.stgit@bling.home>
- <20131217180322.GA12482@google.com> <1387312137.30327.11.camel@bling.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 17 Dec 2013 14:57:39 -0700
-Message-ID: <CAErSpo653fTtNkMk9gNkXsCVgFuVPnJmhFw5rO6ytefbDSSEyA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] pci: Add Virtual Channel to save/restore support
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Don Dutile <ddutile@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Kees Cook <keescook@chromium.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Bradley Grove <linuxdrivers@attotech.com>, linux-scsi@vger.kernel.org
+Subject: Re: [RESEND][PATCH] scsi: esas2r: fix potential format string flaw
+References: <20131217182733.GA16202@www.outflux.net>
+In-Reply-To: <20131217182733.GA16202@www.outflux.net>
+X-MIMETrack: Itemize by SMTP Server on NOTESERV2/SERV/ATTO(Release 9.0|March 08, 2013) at
+ 12/17/2013 04:45:05 PM,
+	Serialize by Router on NOTESERV1/SERV/ATTO(Release 9.0|March 08, 2013) at
+ 12/17/2013 05:00:09 PM,
+	Serialize complete at 12/17/2013 05:00:09 PM
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 1:28 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> On Tue, 2013-12-17 at 11:03 -0700, Bjorn Helgaas wrote:
->> On Tue, Dec 10, 2013 at 11:48:45AM -0700, Alex Williamson wrote:
->> >...
->> > +   pci_read_config_dword(dev->bus->self, pos2 + PCI_VC_PORT_REG1, &reg1);
->> > +   evcc = reg1 & PCI_VC_REG1_EVCC;
->>
->> I think PCI_VC_PORT_REG1 and PCI_VC_PORT_REG2 are mis-named and should be
->> changed to CAP1 and CAP2 or similar.  Almost everything here is a
->> "register."
+Acked-by: Bradley Grove <bgrove@attotech.com>
+
+
+On 12/17/2013 01:27 PM, Kees Cook wrote:
+> This makes sure format strings cannot leak into the printk call via the
+> constructed buffer.
 >
-> That's true, but it matches the name in the spec: "Port VC Capability
-> Register 1/2".  Thanks,
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>   drivers/scsi/esas2r/esas2r_log.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/scsi/esas2r/esas2r_log.c b/drivers/scsi/esas2r/esas2r_log.c
+> index 9bf285df58dd..61fc19d296bd 100644
+> --- a/drivers/scsi/esas2r/esas2r_log.c
+> +++ b/drivers/scsi/esas2r/esas2r_log.c
+> @@ -171,7 +171,7 @@ static int esas2r_log_master(const long level,
+>   		if (strlen(event_buffer) < buflen)
+>   			strcat(buffer, "\n");
+>
+> -		printk(event_buffer);
+> +		printk("%s", event_buffer);
+>
+>   		spin_unlock_irqrestore(&event_buffer_lock, flags);
+>   	}
+>
 
-Sure, but we use PCI_EXP_DEVCAP for the "Device Capabilities
-Register," PCI_EXP_DEVCTL for the "Device Control Register," etc.  All
-I'm saying is that "REG" doesn't convey as much information as "CAP."
-
-Bjorn
