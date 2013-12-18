@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab3LROLK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 09:11:10 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:50031 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491Ab3LROLG (ORCPT
+	id S1754814Ab3LROLp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 09:11:45 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:47779 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243Ab3LROLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 09:11:06 -0500
-X-IronPort-AV: E=Sophos;i="4.95,508,1384300800"; 
-   d="scan'208";a="83493635"
-Date: Wed, 18 Dec 2013 14:10:32 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
-        <mukesh.rathor@oracle.com>, <jbeulich@suse.com>
-Subject: Re: [Xen-devel] [PATCH v11 01/12] xen/p2m: Check for auto-xlat when
- doing mfn_to_local_pfn.
-In-Reply-To: <1387313503-31362-2-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.02.1312181410010.8667@kaball.uk.xensource.com>
-References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com> <1387313503-31362-2-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 18 Dec 2013 09:11:44 -0500
+Date: Wed, 18 Dec 2013 15:11:25 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
+ tracing units
+Message-ID: <20131218141125.GT21999@twins.programming.kicks-ass.net>
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1386765443-26966-5-git-send-email-alexander.shishkin@linux.intel.com>
+ <20131217161126.GL13532@twins.programming.kicks-ass.net>
+ <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131218133439.GR21999@twins.programming.kicks-ass.net>
+ <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> From: Mukesh Rathor <mukesh.rathor@oracle.com>
+On Wed, Dec 18, 2013 at 04:01:04PM +0200, Alexander Shishkin wrote:
+> > Why don't you start by explaining _why_ you need a second stream to
+> > begin with?
 > 
-> Most of the functions in page.h are prefaced with
-> 	if (xen_feature(XENFEAT_auto_translated_physmap))
-> 		return mfn;
-> 
-> Except the mfn_to_local_pfn. At a first sight, the function
-> should work without this patch - as the 'mfn_to_mfn' has
-> a similar check. But there are no such check in the
-> 'get_phys_to_machine' function - so we would crash in there.
-> 
-> This fixes it by following the convention of having the
-> check for auto-xlat in these static functions.
-> 
-> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Oh, I'm sure I've explained it earlier ([1], [2])
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+See, I didn't read 0 because that information gets lost and patches
+should be self explanatory, and i didn't get to the Intel driver yet
+because well, I got stuck in the generic code.
 
+> but why not. The data
+> in the second stream is generated at a rate which is hundreds of
+> megabytes per second per core. Decoding this data is ~1000 times slower
+> than generating it. Ergo, can't be done in kernel, needs to be exported
+> as-is to userspace for later retreival and decoding. Doing it via perf
+> stream means an extra copy, which at these rates is a waste. Ergo, a
+> second buffer.
 
->  arch/x86/include/asm/xen/page.h | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-> index b913915..4a092cc 100644
-> --- a/arch/x86/include/asm/xen/page.h
-> +++ b/arch/x86/include/asm/xen/page.h
-> @@ -167,7 +167,12 @@ static inline xpaddr_t machine_to_phys(xmaddr_t machine)
->   */
->  static inline unsigned long mfn_to_local_pfn(unsigned long mfn)
->  {
-> -	unsigned long pfn = mfn_to_pfn(mfn);
-> +	unsigned long pfn;
-> +
-> +	if (xen_feature(XENFEAT_auto_translated_physmap))
-> +		return mfn;
-> +
-> +	pfn = mfn_to_pfn(mfn);
->  	if (get_phys_to_machine(pfn) != mfn)
->  		return -1; /* force !pfn_valid() */
->  	return pfn;
-> -- 
-> 1.8.3.1
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
-> 
+Still confused, if you cannot copy it into one buffer, then why can you
+copy it into a second buffer?
+
