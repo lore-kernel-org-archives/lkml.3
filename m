@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab3LRWIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:08:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35971 "EHLO
+	id S1755511Ab3LRWJP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:09:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35967 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753022Ab3LRVMI (ORCPT
+	with ESMTP id S1753068Ab3LRVMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:08 -0500
+	Wed, 18 Dec 2013 16:12:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [PATCH 3.10 32/78] media: af9035: fix broken I2C and USB I/O
-Date: Wed, 18 Dec 2013 13:11:00 -0800
-Message-Id: <20131218211112.815397660@linuxfoundation.org>
+        Christian Engelmayer <christian.engelmayer@frequentis.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.10 31/78] Input: usbtouchscreen - separate report and transmit buffer size handling
+Date: Wed, 18 Dec 2013 13:10:59 -0800
+Message-Id: <20131218211112.787788082@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -29,53 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: Christian Engelmayer <christian.engelmayer@frequentis.com>
 
-commit 9323297dc0ea9141f8099e474657391bb3ad98f8 upstream.
+commit 4ef38351d770cc421f4a0c7a849fd13207fc5741 upstream.
 
-There was three small buffer len calculation bugs which caused
-driver non-working. These are coming from recent commit:
-commit 7760e148350bf6df95662bc0db3734e9d991cb03
-[media] af9035: Don't use dynamic static allocation
+This patch supports the separate handling of the USB transfer buffer length
+and the length of the buffer used for multi packet support. For devices
+supporting multiple report or diagnostic packets, the USB transfer size is now
+limited to the USB endpoints wMaxPacketSize - otherwise it defaults to the
+configured report packet size as before.
 
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+This fixes an issue where event reporting can be delayed for an arbitrary
+time for multi packet devices. For instance the report size for eGalax devices
+is defined to the 16 byte maximum diagnostic packet size as opposed to the 5
+byte report packet size. In case the driver requests 16 byte from the USB
+interrupt endpoint, the USB host controller driver needs to split up the
+request into 2 accesses according to the endpoints wMaxPacketSize of 8 byte.
+When the first transfer is answered by the eGalax device with not less than
+the full 8 byte requested, the host controller has got no way of knowing
+whether the touch controller has got additional data queued and will issue
+the second transfer. If per example a liftoff event finishes at such a
+wMaxPacketSize boundary, the data will not be available to the usbtouch driver
+until a further event is triggered and transfered to the host. From user
+perspective the BTN_TOUCH release event in this case is stuck until the next
+touch down event.
+
+Signed-off-by: Christian Engelmayer <christian.engelmayer@frequentis.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/dvb-usb-v2/af9035.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/input/touchscreen/usbtouchscreen.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
---- a/drivers/media/usb/dvb-usb-v2/af9035.c
-+++ b/drivers/media/usb/dvb-usb-v2/af9035.c
-@@ -130,7 +130,7 @@ static int af9035_wr_regs(struct dvb_usb
+--- a/drivers/input/touchscreen/usbtouchscreen.c
++++ b/drivers/input/touchscreen/usbtouchscreen.c
+@@ -106,6 +106,7 @@ struct usbtouch_device_info {
+ struct usbtouch_usb {
+ 	unsigned char *data;
+ 	dma_addr_t data_dma;
++	int data_size;
+ 	unsigned char *buffer;
+ 	int buf_len;
+ 	struct urb *irq;
+@@ -1521,7 +1522,7 @@ static int usbtouch_reset_resume(struct
+ static void usbtouch_free_buffers(struct usb_device *udev,
+ 				  struct usbtouch_usb *usbtouch)
  {
- 	u8 wbuf[MAX_XFER_SIZE];
- 	u8 mbox = (reg >> 16) & 0xff;
--	struct usb_req req = { CMD_MEM_WR, mbox, sizeof(wbuf), wbuf, 0, NULL };
-+	struct usb_req req = { CMD_MEM_WR, mbox, 6 + len, wbuf, 0, NULL };
+-	usb_free_coherent(udev, usbtouch->type->rept_size,
++	usb_free_coherent(udev, usbtouch->data_size,
+ 			  usbtouch->data, usbtouch->data_dma);
+ 	kfree(usbtouch->buffer);
+ }
+@@ -1566,7 +1567,20 @@ static int usbtouch_probe(struct usb_int
+ 	if (!type->process_pkt)
+ 		type->process_pkt = usbtouch_process_pkt;
  
- 	if (6 + len > sizeof(wbuf)) {
- 		dev_warn(&d->udev->dev, "%s: i2c wr: len=%d is too big!\n",
-@@ -237,7 +237,7 @@ static int af9035_i2c_master_xfer(struct
- 		} else {
- 			/* I2C */
- 			u8 buf[MAX_XFER_SIZE];
--			struct usb_req req = { CMD_I2C_RD, 0, sizeof(buf),
-+			struct usb_req req = { CMD_I2C_RD, 0, 5 + msg[0].len,
- 					buf, msg[1].len, msg[1].buf };
+-	usbtouch->data = usb_alloc_coherent(udev, type->rept_size,
++	usbtouch->data_size = type->rept_size;
++	if (type->get_pkt_len) {
++		/*
++		 * When dealing with variable-length packets we should
++		 * not request more than wMaxPacketSize bytes at once
++		 * as we do not know if there is more data coming or
++		 * we filled exactly wMaxPacketSize bytes and there is
++		 * nothing else.
++		 */
++		usbtouch->data_size = min(usbtouch->data_size,
++					  usb_endpoint_maxp(endpoint));
++	}
++
++	usbtouch->data = usb_alloc_coherent(udev, usbtouch->data_size,
+ 					    GFP_KERNEL, &usbtouch->data_dma);
+ 	if (!usbtouch->data)
+ 		goto out_free;
+@@ -1626,12 +1640,12 @@ static int usbtouch_probe(struct usb_int
+ 	if (usb_endpoint_type(endpoint) == USB_ENDPOINT_XFER_INT)
+ 		usb_fill_int_urb(usbtouch->irq, udev,
+ 			 usb_rcvintpipe(udev, endpoint->bEndpointAddress),
+-			 usbtouch->data, type->rept_size,
++			 usbtouch->data, usbtouch->data_size,
+ 			 usbtouch_irq, usbtouch, endpoint->bInterval);
+ 	else
+ 		usb_fill_bulk_urb(usbtouch->irq, udev,
+ 			 usb_rcvbulkpipe(udev, endpoint->bEndpointAddress),
+-			 usbtouch->data, type->rept_size,
++			 usbtouch->data, usbtouch->data_size,
+ 			 usbtouch_irq, usbtouch);
  
- 			if (5 + msg[0].len > sizeof(buf)) {
-@@ -273,8 +273,8 @@ static int af9035_i2c_master_xfer(struct
- 		} else {
- 			/* I2C */
- 			u8 buf[MAX_XFER_SIZE];
--			struct usb_req req = { CMD_I2C_WR, 0, sizeof(buf), buf,
--					0, NULL };
-+			struct usb_req req = { CMD_I2C_WR, 0, 5 + msg[0].len,
-+					buf, 0, NULL };
- 
- 			if (5 + msg[0].len > sizeof(buf)) {
- 				dev_warn(&d->udev->dev,
+ 	usbtouch->irq->dev = udev;
 
 
