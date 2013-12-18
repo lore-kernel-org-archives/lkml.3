@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab3LROJu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 09:09:50 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:42185 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619Ab3LROJs (ORCPT
+	id S1754796Ab3LROLK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 09:11:10 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:50031 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab3LROLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 09:09:48 -0500
-Date: Wed, 18 Dec 2013 06:09:45 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: rydberg@euromail.se, jcbian@pixcir.com.cn, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/9] Input: pixcir_i2c_ts: Add register definitions
-Message-ID: <20131218140945.GB28504@core.coreip.homeip.net>
-References: <1387358480-8313-1-git-send-email-rogerq@ti.com>
- <1387358480-8313-3-git-send-email-rogerq@ti.com>
+	Wed, 18 Dec 2013 09:11:06 -0500
+X-IronPort-AV: E=Sophos;i="4.95,508,1384300800"; 
+   d="scan'208";a="83493635"
+Date: Wed, 18 Dec 2013 14:10:32 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <mukesh.rathor@oracle.com>, <jbeulich@suse.com>
+Subject: Re: [Xen-devel] [PATCH v11 01/12] xen/p2m: Check for auto-xlat when
+ doing mfn_to_local_pfn.
+In-Reply-To: <1387313503-31362-2-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1312181410010.8667@kaball.uk.xensource.com>
+References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com> <1387313503-31362-2-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387358480-8313-3-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 02:51:13PM +0530, Roger Quadros wrote:
-> Add power and interrupt register definitions.
+On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> From: Mukesh Rathor <mukesh.rathor@oracle.com>
 > 
-
-Please fold into the next patch that uses these definitions.
-
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
-> ---
->  include/linux/input/pixcir_ts.h | 42 +++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 42 insertions(+)
+> Most of the functions in page.h are prefaced with
+> 	if (xen_feature(XENFEAT_auto_translated_physmap))
+> 		return mfn;
 > 
-> diff --git a/include/linux/input/pixcir_ts.h b/include/linux/input/pixcir_ts.h
-> index b34ff7e..f17c192 100644
-> --- a/include/linux/input/pixcir_ts.h
-> +++ b/include/linux/input/pixcir_ts.h
-> @@ -1,6 +1,48 @@
->  #ifndef	_PIXCIR_I2C_TS_H
->  #define	_PIXCIR_I2C_TS_H
->  
-> +/*
-> + * Register map
-> + */
-> +#define PIXCIR_REG_POWER_MODE	51
-> +#define PIXCIR_REG_INT_MODE	52
+> Except the mfn_to_local_pfn. At a first sight, the function
+> should work without this patch - as the 'mfn_to_mfn' has
+> a similar check. But there are no such check in the
+> 'get_phys_to_machine' function - so we would crash in there.
+> 
+> This fixes it by following the convention of having the
+> check for auto-xlat in these static functions.
+> 
+> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+
+>  arch/x86/include/asm/xen/page.h | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+> index b913915..4a092cc 100644
+> --- a/arch/x86/include/asm/xen/page.h
+> +++ b/arch/x86/include/asm/xen/page.h
+> @@ -167,7 +167,12 @@ static inline xpaddr_t machine_to_phys(xmaddr_t machine)
+>   */
+>  static inline unsigned long mfn_to_local_pfn(unsigned long mfn)
+>  {
+> -	unsigned long pfn = mfn_to_pfn(mfn);
+> +	unsigned long pfn;
 > +
-> +/*
-> + * Power modes:
-> + * active: max scan speed
-> + * idle: lower scan speed with automatic transition to active on touch
-> + * halt: datasheet says sleep but this is more like halt as the chip
-> + *       clocks are cut and it can only be brought out of this mode
-> + *	 using the RESET pin.
-> + */
-> +enum pixcir_power_mode {
-> +	PIXCIR_POWER_ACTIVE,
-> +	PIXCIR_POWER_IDLE,
-> +	PIXCIR_POWER_HALT,
-> +};
+> +	if (xen_feature(XENFEAT_auto_translated_physmap))
+> +		return mfn;
 > +
-> +#define PIXCIR_POWER_MODE_MASK	0x03
-> +#define PIXCIR_POWER_ALLOW_IDLE (1UL << 2)
-> +
-> +/*
-> + * Interrupt modes:
-> + * periodical: interrupt is asserted periodicaly
-> + * diff coordinates: interrupt is asserted when coordinates change
-> + * level on touch: interrupt level asserted during touch
-> + * pulse on touch: interrupt pulse asserted druing touch
-> + *
-> + */
-> +enum pixcir_int_mode {
-> +	PIXCIR_INT_PERIODICAL,
-> +	PIXCIR_INT_DIFF_COORD,
-> +	PIXCIR_INT_LEVEL_TOUCH,
-> +	PIXCIR_INT_PULSE_TOUCH,
-> +};
-> +
-> +#define PIXCIR_INT_MODE_MASK	0x03
-> +#define PIXCIR_INT_ENABLE	(1UL << 3)
-> +#define PIXCIR_INT_POL_HIGH	(1UL << 2)
-> +
->  struct pixcir_ts_platform_data {
->  	int (*attb_read_val)(void);
->  	unsigned int x_size;	/* X axis resolution */
+> +	pfn = mfn_to_pfn(mfn);
+>  	if (get_phys_to_machine(pfn) != mfn)
+>  		return -1; /* force !pfn_valid() */
+>  	return pfn;
 > -- 
-> 1.8.3.2
+> 1.8.3.1
 > 
-
--- 
-Dmitry
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
+> 
