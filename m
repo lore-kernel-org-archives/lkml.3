@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab3LRThJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 14:37:09 -0500
-Received: from a6-209.smtp-out.eu-west-1.amazonses.com ([54.240.6.209]:52441
-	"EHLO a6-209.smtp-out.eu-west-1.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751995Ab3LRThI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 14:37:08 -0500
-X-Greylist: delayed 739 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Dec 2013 14:37:07 EST
-Date: Wed, 18 Dec 2013 19:24:46 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Dave Chinner <dchinner@redhat.com>
-cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [fs] inode_lru_isolate(): Move counter increment into spinlock
- section
-Message-ID: <00000143072add16-956bfa6c-d7d5-4df9-aabc-05a904a0edc4-000000@email.amazonses.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752124Ab3LRTid (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 14:38:33 -0500
+Received: from mga11.intel.com ([192.55.52.93]:31819 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751805Ab3LRTib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 14:38:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,508,1384329600"; 
+   d="scan'208";a="452185866"
+From: Andi Kleen <andi@firstfloor.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch\@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "the arch\/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] qrwlock: A queue read/write lock implementation
+References: <1385147087-26588-1-git-send-email-Waiman.Long@hp.com>
+	<1385147087-26588-2-git-send-email-Waiman.Long@hp.com>
+	<20131217192128.GA15969@linux.vnet.ibm.com>
+	<CA+55aFzNSZCKnuEm+CDWUN2G4bfrN+HafX8r13NcfT2tJ4h-jw@mail.gmail.com>
+Date: Wed, 18 Dec 2013 11:38:29 -0800
+In-Reply-To: <CA+55aFzNSZCKnuEm+CDWUN2G4bfrN+HafX8r13NcfT2tJ4h-jw@mail.gmail.com>
+	(Linus Torvalds's message of "Tue, 17 Dec 2013 11:27:29 -0800")
+Message-ID: <878uvilzka.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.12.18-54.240.6.209
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The counter increment in inode_lru_isolate is happening after
-spinlocks have been dropped with preemption on using __count_vm_events
-making counter increment races possible.
+Linus Torvalds <torvalds@linux-foundation.org> writes:
+>
+> In this case, we seem to want the xadd() semantics. I guess we can use
+> "atomic_add_return(val,&atomic)-val" and just assume that the compiler
+> gets it right (with the addition and the subtraction cancelling out).
 
-Move the counter increments to be done when the spinlock is
-reacquired later so that the counter can be safely incremented.
+It can't, as we use inline assembler. 
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+In theory it could with __sync_* or __atomic_* intrinsics but we
+traditionally don't use them as they don't support patchable LOCK
 
-Index: linux/fs/inode.c
-===================================================================
---- linux.orig/fs/inode.c	2013-12-18 13:14:43.211693438 -0600
-+++ linux/fs/inode.c	2013-12-18 13:15:58.489266129 -0600
-@@ -715,21 +715,21 @@ inode_lru_isolate(struct list_head *item
- 	}
+(maybe it would be time to get rid of the patchable LOCK though?)
 
- 	if (inode_has_buffers(inode) || inode->i_data.nrpages) {
-+		unsigned long reap = 0;
- 		__iget(inode);
- 		spin_unlock(&inode->i_lock);
- 		spin_unlock(lru_lock);
- 		if (remove_inode_buffers(inode)) {
--			unsigned long reap;
- 			reap = invalidate_mapping_pages(&inode->i_data, 0, -1);
--			if (current_is_kswapd())
--				__count_vm_events(KSWAPD_INODESTEAL, reap);
--			else
--				__count_vm_events(PGINODESTEAL, reap);
- 			if (current->reclaim_state)
- 				current->reclaim_state->reclaimed_slab += reap;
- 		}
- 		iput(inode);
- 		spin_lock(lru_lock);
-+		if (current_is_kswapd())
-+			__count_vm_events(KSWAPD_INODESTEAL, reap);
-+		else
-+			__count_vm_events(PGINODESTEAL, reap);
- 		return LRU_RETRY;
- 	}
+-Andi
 
+-- 
+ak@linux.intel.com -- Speaking for myself only
