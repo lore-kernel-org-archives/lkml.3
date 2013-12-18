@@ -1,157 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361Ab3LRAwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 19:52:39 -0500
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:42030 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab3LRAwi convert rfc822-to-8bit (ORCPT
+	id S1752649Ab3LRAyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 19:54:39 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:14051 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab3LRAyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 19:52:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFw_C=U0BSb8b=SPiN-5b+=dT28_R7PKHrEyy-T+FeL0Ww@mail.gmail.com>
-References: <alpine.DEB.2.00.1312180026340.10386@skynet.skynet.ie>
-	<CA+55aFw_C=U0BSb8b=SPiN-5b+=dT28_R7PKHrEyy-T+FeL0Ww@mail.gmail.com>
-Date: Wed, 18 Dec 2013 10:52:35 +1000
-Message-ID: <CAPM=9tx7r5k6insqJbSJA_PeQJS2xpW85Gwnz0yjZ6OmsqX4Gw@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Airlie <airlied@linux.ie>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 17 Dec 2013 19:54:35 -0500
+X-AuditID: cbfee68e-b7fb46d00000186a-a2-52b0f24abb4a
+From: Anton Tikhomirov <av.tikhomirov@samsung.com>
+To: "'Kamil Debski'" <k.debski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: kyungmin.park@samsung.com, kishon@ti.com,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
+        gautam.vivek@samsung.com, mat.krawczuk@gmail.com,
+        yulgon.kim@samsung.com, p.paneri@samsung.com, jg1.han@samsung.com,
+        galak@codeaurora.org, matt.porter@linaro.org
+References: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
+ <1386246579-25141-4-git-send-email-k.debski@samsung.com>
+ <006a01cef551$7fb4e240$7f1ea6c0$%tikhomirov@samsung.com>
+ <02d201cefb2b$9e04e710$da0eb530$%debski@samsung.com>
+In-reply-to: <02d201cefb2b$9e04e710$da0eb530$%debski@samsung.com>
+Subject: RE: [PATCH v4 3/9] phy: Add new Exynos USB PHY driver
+Date: Wed, 18 Dec 2013 09:54:33 +0900
+Message-id: <001701cefb8b$b78a8ea0$269fabe0$%tikhomirov@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=Windows-1252
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7xtb/TcbT2JoEKQI6IBVag+SxyjgDmHfwwAXcg4IAAF/4yMA==
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFKsWRmVeSWpSXmKPExsVy+t8zQ12vTxuCDBp/sljMP3KO1aL/zUJW
+	i7YrB9ktLi+8xGrx4/UFNosLT3vYLM42vQGK7ZrDZjHj/D4mi0XLWpkt1h65y25xtv82m8XE
+	pmnsFue3dDJZHH7TzmqxfsZrFouOswfZHQQ9Lvf1MnnsnHWX3ePOtT1sHn1bVjF6HL+xncnj
+	8ya5ALYoLpuU1JzMstQifbsEroz/234xFhxgrzj2fD9jA+ML1i5GTg4JAROJRfPOQdliEhfu
+	rWfrYuTiEBJYxigx7dFMJpiiy8feMkMkFjFKLJ49kxkkISTwj1Fix/wAEJtNwEji5cGNYEUi
+	AksZJb7PgShiFrjNJHHnhS9E90dGibc328HGcgo4Smy7t5oFxBYWsJM4v72LEcRmEVCVaGy4
+	zAZi8wq4SMzd+poVwhaU+DH5HgvEUD2Jj39uM0LY8hKb14CcxwF0qrrEo7+6IGERASeJ530/
+	oErEJSY9eMgOcoOEwAEOieWrFrBC7BKQ+Db5EAtEr6zEpgPMEB9LShxccYNlAqPELCSbZyHZ
+	PAvJ5llIVixgZFnFKJpakFxQnJReZKRXnJhbXJqXrpecn7uJEZIu+nYw3jxgfYgxGWj9RGYp
+	0eR8YLrJK4k3NDYzsjA1MTU2Mrc0I01YSZx30cOkICGB9MSS1OzU1ILUovii0pzU4kOMTByc
+	Ug2MuufPCKyYeu9kod8Wp4Sk3kuRDZb/w8+Y8F3e0dK/d3Ubm9KWuRoJjgp7vYJbmCKzG/uf
+	ObVtXTX385wgGZ6HeX+OCs/0E8/uZTb9WuhiM9PpjIZNrsRy1lvX7pk8vrlqOU+/x9WySoad
+	L4UyHs/5vlrVpD+Uh+fhosDKi9VKOkfMomfx8BcrsRRnJBpqMRcVJwIA8D6EWi0DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOKsWRmVeSWpSXmKPExsVy+t9jAV3PTxuCDNbstLGYf+Qcq0X/m4Ws
+	Fm1XDrJbXF54idXix+sLbBYXnvawWZxtegMU2zWHzWLG+X1MFouWtTJbrD1yl93ibP9tNouJ
+	TdPYLc5v6WSyOPymndVi/YzXLBYdZw+yOwh6XO7rZfLYOesuu8eda3vYPPq2rGL0OH5jO5PH
+	501yAWxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6Z
+	OUDnKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgz/m/7xVhwgL3i2PP9
+	jA2ML1i7GDk5JARMJC4fe8sMYYtJXLi3nq2LkYtDSGARo8Ti2TPBEkIC/xgldswPALHZBIwk
+	Xh7cyAxSJCKwlFHi+xyIImaB20wSd174QnR/ZJR4e7OdCSTBKeAose3eahYQW1jATuL89i5G
+	EJtFQFWiseEyG4jNK+AiMXfra1YIW1Dix+R7LBBD9SQ+/rnNCGHLS2xeA3IqB9Cp6hKP/uqC
+	hEUEnCSe9/2AKhGXmPTgIfsERqFZSCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rqFecmFtc
+	mpeul5yfu4kRnIyeSe1gXNlgcYhRgINRiYeXY/b6ICHWxLLiytxDjBIczEoivDvvbQgS4k1J
+	rKxKLcqPLyrNSS0+xJgM9OhEZinR5HxgoswriTc0NjEzsjQyszAyMTcnTVhJnPdAq3WgkEB6
+	YklqdmpqQWoRzBYmDk6pBkYLs39fQ7j2fI3W2mdixxVROCdk6/UMtXzbSEG9u4t+50VkCN6V
+	sOOXZSldciJ0vdP+nNP+105P0/mc7nfzH8O790Vnbyh5bBbfv27ups26efbdoVylLKlhEr8s
+	ZTgervo60yooT+P78+dJE75GG1wvDQmYuD6au9umKDcs6Z/ur82XGRQneCixFGckGmoxFxUn
+	AgAKrD+bigMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 10:42 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Dec 17, 2013 at 4:33 PM, Dave Airlie <airlied@linux.ie> wrote:
->>
->> are available in the git repository at:
->>
->>   git://people.freedesktop.org/~airlied/linux
->
-> Nope.
->
-> I assume you meant the 'drm-fixes' branch, but you didn't actually
-> *say* that, and when I pull it I don't get the same diffstat you
-> claim, so I'm unpulling it and waiting for you to verify and
-> double-check.
->
+Hi Kamil,
 
-ouch, sorry - my push failed and then I failed, here's the correct one.
+> Hi Anton,
+> 
+> > From: Anton Tikhomirov [mailto:av.tikhomirov@samsung.com]
+> > Sent: Tuesday, December 10, 2013 3:43 AM
+> >
+> > Hi Kamil,
+> >
+> > Same USB2.0 PHY may be used by several HCDs, for example EHCI and
+> OHCI.
+> > Consider the situation, when EHCI stops using the PHY and calls
+> > power_off, then OHCI becomes non-operational. In other words, PHY
+> > power_on and power_off calls must be balanced.
+> >
+> > Shall we handle it in your driver? (usage count?)
+> 
+> Please look in the drivers/phy/phy-core.c file. Usage count is handled
+> there - see phy_power_on and phy_power_off functions. I understand that
+> after both EHCI and OHCI power on the phy, the usage count is 2. So
+> powering off one of them (EHCI for instance) the usage count is still
+> 1, so the OHCI should still work properly.
 
-The following changes since commit 9538e10086bd1301fe915683b1ba0a1de66d7483:
+Oops, sorry, missed that.
 
-  Merge git://www.linux-watchdog.org/linux-watchdog (2013-12-10 11:30:10 -0800)
+> 
+> [snip]
+> 
+> Best wishes,
+> --
+> Kamil Debski
+> Samsung R&D Institute Poland
 
-are available in the git repository at:
-
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 49d45a31b71d7d9da74485922bdb63faf3dc9684:
-
-  drm/edid: add quirk for BPC in Samsung NP700G7A-S01PL notebook
-(2013-12-17 14:18:16 +1000)
-
-----------------------------------------------------------------
-Alex Deucher (4):
-      drm/radeon: Fix sideport problems on certain RS690 boards
-      drm/radeon/cik: plug in missing blit callback
-      drm/radeon: add missing display tiling setup for oland
-      Revert "drm/radeon: Implement radeon_pci_shutdown"
-
-Ben Widawsky (7):
-      drm/i915/bdw: Add BDW to ULT macro
-      drm/i915/bdw: GEN8 backlight support
-      drm/i915/bdw: Do gen6 style reset for gen8
-      drm/i915/bdw: Free correct number of ppgtt pages
-      drm/i915/bdw: Add comment about gen8 HWS PGA
-      drm/i915/bdw: Limit GTT to 2GB
-      drm/i915/bdw: PIPE_[BC] I[ME]R moved to powerwell
-
-Chris Wilson (3):
-      drm/i915: Do not clobber config status after a forced restore of hw state
-      drm/i915: Hold mutex across i915_gem_release
-      drm/i915: Repeat eviction search after idling the GPU
-
-Christian König (1):
-      drm/radeon: fix typo in cik_copy_dma
-
-Daniel Vetter (3):
-      drm/i915: fix pm init ordering
-      drm/i915: Fix use-after-free in do_switch
-      drm/i915: don't update the dri1 breadcrumb with modesetting
-
-Dave Airlie (6):
-      Merge branch 'bdw-fixes' of
-git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
-      Merge tag 'drm-intel-fixes-2013-12-11' of
-git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
-      Merge branch 'drm-tda998x-3.12-fixes' of
-git://ftp.arm.linux.org.uk/~rmk/linux-cubox into drm-fixes
-      Merge branch 'drm-fixes-3.13' of
-git://people.freedesktop.org/~agd5f/linux into drm-fixes
-      Merge branch 'vmwgfx-fixes-3.13' of
-git://people.freedesktop.org/~thomash/linux into drm-fixes
-      Merge branch 'ttm-fixes-3.13' of
-git://people.freedesktop.org/~thomash/linux into drm-next
-
-Ilia Mirkin (2):
-      drm: don't double-free on driver load error
-      drm/nouveau: only runtime suspend by default in optimus configuration
-
-Jakob Bornecrantz (1):
-      drm/vmwgfx: Add max surface memory param
-
-Martin Andersson (1):
-      drm/radeon/dpm: Fix hwmon crash
-
-Rafał Miłecki (1):
-      drm/edid: add quirk for BPC in Samsung NP700G7A-S01PL notebook
-
-Russell King (4):
-      DRM: Armada: implement lastclose() for fbhelper
-      DRM: Armada: destroy framebuffer after helper
-      DRM: Armada: fix printing of phys_addr_t/dma_addr_t
-      DRM: Armada: prime refcounting bug fix
-
-Thomas Hellstrom (1):
-      drm/ttm: Fix accesses through vmas with only partial coverage
-
-Ville Syrjälä (2):
-      drm/i915: Take modeset locks around intel_modeset_setup_hw_state()
-      drm/i915: Skip clock checks on BDW
-
- drivers/gpu/drm/armada/armada_drm.h     |  1 +
- drivers/gpu/drm/armada/armada_drv.c     |  7 ++++++-
- drivers/gpu/drm/armada/armada_fbdev.c   | 20 +++++++++++++++-----
- drivers/gpu/drm/armada/armada_gem.c     |  7 ++++---
- drivers/gpu/drm/drm_edid.c              |  8 ++++++++
- drivers/gpu/drm/drm_stub.c              |  6 +++---
- drivers/gpu/drm/i915/i915_dma.c         | 20 +++++++++++---------
- drivers/gpu/drm/i915/i915_drv.c         |  1 +
- drivers/gpu/drm/i915/i915_drv.h         |  9 ++++++---
- drivers/gpu/drm/i915/i915_gem_context.c | 16 ++++++++++++----
- drivers/gpu/drm/i915/i915_gem_evict.c   | 14 +++++++++++---
- drivers/gpu/drm/i915/i915_gem_gtt.c     |  9 +++++++--
- drivers/gpu/drm/i915/intel_display.c    |  7 ++++---
- drivers/gpu/drm/i915/intel_drv.h        |  1 +
- drivers/gpu/drm/i915/intel_panel.c      | 26 +++++++++++++++++++++++---
- drivers/gpu/drm/i915/intel_pm.c         | 29 +++++++++++++++++++++++++++--
- drivers/gpu/drm/i915/intel_ringbuffer.c |  1 +
- drivers/gpu/drm/i915/intel_uncore.c     |  1 +
- drivers/gpu/drm/nouveau/nouveau_drm.c   |  6 ++++++
- drivers/gpu/drm/radeon/atombios_crtc.c  |  4 +++-
- drivers/gpu/drm/radeon/cik_sdma.c       |  2 +-
- drivers/gpu/drm/radeon/radeon_asic.c    |  4 ++--
- drivers/gpu/drm/radeon/radeon_drv.c     | 10 ----------
- drivers/gpu/drm/radeon/radeon_pm.c      |  6 ++----
- drivers/gpu/drm/radeon/rs690.c          | 10 ++++++++++
- drivers/gpu/drm/ttm/ttm_bo_vm.c         |  6 +++---
- drivers/gpu/drm/vmwgfx/vmwgfx_ioctl.c   |  3 +++
- include/uapi/drm/vmwgfx_drm.h           |  1 +
- 28 files changed, 173 insertions(+), 62 deletions(-)
