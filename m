@@ -1,297 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255Ab3LRWoz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:44:55 -0500
-Received: from leo.clearchain.com ([199.73.29.74]:56498 "EHLO
-	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab3LRWoy (ORCPT
+	id S1751210Ab3LRWzv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:55:51 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:54301 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab3LRWzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 17:44:54 -0500
-X-Greylist: delayed 1196 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Dec 2013 17:44:53 EST
-Date: Thu, 19 Dec 2013 08:27:32 +1000
-From: Peter Hutterer <peter.hutterer@who-t.net>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: linux-input@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        linux-kernel@vger.kernel.org, input-tools@lists.freedesktop.org
-Subject: Re: [PATCH 1/4] Input: uinput: add full absinfo support
-Message-ID: <20131218222732.GA6315@yabbi.redhat.com>
-References: <1387295334-1744-1-git-send-email-dh.herrmann@gmail.com>
- <1387295334-1744-2-git-send-email-dh.herrmann@gmail.com>
+	Wed, 18 Dec 2013 17:55:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387295334-1744-2-git-send-email-dh.herrmann@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.2.7 (mail.clearchain.com [127.0.0.1]); Thu, 19 Dec 2013 08:54:47 +1030 (CST)
+In-Reply-To: <20131218215718.GV19211@linux.vnet.ibm.com>
+References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
+ <52B102BB.1050907@linaro.org> <20131218174355.GA19788@localhost.localdomain>
+ <52B213D1.1000104@mit.edu> <20131218214930.GU19211@linux.vnet.ibm.com>
+ <CALCETrU7N5L36PRv-vwLDfpRwb8GF+9+fw74-YdaYAfJQPbU3w@mail.gmail.com> <20131218215718.GV19211@linux.vnet.ibm.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 18 Dec 2013 14:55:29 -0800
+Message-ID: <CALCETrXs=PnH3u5Fo6dwj5_TNMfs_A41q2hJGhbogJJn4jFOjw@mail.gmail.com>
+Subject: Re: [RFC PATCH 00/13] nohz: Use sysidle detection to let the
+ timekeeper sleep
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Alex Shi <alex.shi@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 04:48:51PM +0100, David Herrmann wrote:
-> We currently lack support for abs-resolution and abs-value parameters
-> during uinput ABS initialization. Furthermore, our parsers don't allow
-> growing ABS_CNT values. Therefore, introduce uinput_user_dev2.
-> 
-> User-space is free to write uinput_user_dev2 objects instead of
-> uinput_user_dev legacy objects now. If the kernel lacks support for it,
-> our comparison for "count != sizeof(struct uinput_user_dev)" will catch
-> this and return EINVAL. User-space shall retry with the legacy mode then.
-> 
-> Internally, we transform the legacy object into uinput_user_dev2 and then
-> handle both the same way.
-> 
-> The new uinput_user_dev2 object has multiple new features:
->  - abs payload now has "value" and "resolution" parameters as part of the
->    switch to "struct input_absinfo". We simply copy these over.
->  - Our parser allows growing ABS_CNT. We automatically detect the payload
->    size of the caller, thus, calculating the ABS_CNT the program was
->    compiled with.
->  - A "version" field to denote the uinput-version used. This is required
->    to properly support changing "struct input_user_dev2" changes in the
->    future. Due to the dynamic ABS_CNT support, we cannot simply add new
->    fields, as we cannot deduce the structure size from the user-space
->    given size. Thus, we need the "version" field to allow changing the
->    object and properly detecting it in our write() handler.
-> 
-> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-> ---
->  drivers/input/misc/uinput.c | 142 ++++++++++++++++++++++++++++++++------------
->  include/uapi/linux/uinput.h |   9 +++
->  2 files changed, 114 insertions(+), 37 deletions(-)
-> 
-> diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
-> index 7728359..927ad9a 100644
-> --- a/drivers/input/misc/uinput.c
-> +++ b/drivers/input/misc/uinput.c
-> @@ -358,14 +358,16 @@ static int uinput_allocate_device(struct uinput_device *udev)
->  }
->  
->  static int uinput_setup_device(struct uinput_device *udev,
-> -			       const char __user *buffer, size_t count)
-> +			       struct uinput_user_dev2 *user_dev2,
-> +			       size_t abscnt)
->  {
-> -	struct uinput_user_dev	*user_dev;
->  	struct input_dev	*dev;
->  	int			i;
->  	int			retval;
-> +	struct input_absinfo	*abs;
->  
-> -	if (count != sizeof(struct uinput_user_dev))
-> +	/* Ensure name is filled in */
-> +	if (!user_dev2->name[0])
->  		return -EINVAL;
->  
->  	if (!udev->dev) {
-> @@ -375,37 +377,27 @@ static int uinput_setup_device(struct uinput_device *udev,
->  	}
->  
->  	dev = udev->dev;
-> -
-> -	user_dev = memdup_user(buffer, sizeof(struct uinput_user_dev));
-> -	if (IS_ERR(user_dev))
-> -		return PTR_ERR(user_dev);
-> -
-> -	udev->ff_effects_max = user_dev->ff_effects_max;
-> -
-> -	/* Ensure name is filled in */
-> -	if (!user_dev->name[0]) {
-> -		retval = -EINVAL;
-> -		goto exit;
-> -	}
-> +	udev->ff_effects_max = user_dev2->ff_effects_max;
->  
->  	kfree(dev->name);
-> -	dev->name = kstrndup(user_dev->name, UINPUT_MAX_NAME_SIZE,
-> +	dev->name = kstrndup(user_dev2->name, UINPUT_MAX_NAME_SIZE,
->  			     GFP_KERNEL);
-> -	if (!dev->name) {
-> -		retval = -ENOMEM;
-> -		goto exit;
-> -	}
-> -
-> -	dev->id.bustype	= user_dev->id.bustype;
-> -	dev->id.vendor	= user_dev->id.vendor;
-> -	dev->id.product	= user_dev->id.product;
-> -	dev->id.version	= user_dev->id.version;
-> +	if (!dev->name)
-> +		return -ENOMEM;
->  
-> -	for (i = 0; i < ABS_CNT; i++) {
-> -		input_abs_set_max(dev, i, user_dev->absmax[i]);
-> -		input_abs_set_min(dev, i, user_dev->absmin[i]);
-> -		input_abs_set_fuzz(dev, i, user_dev->absfuzz[i]);
-> -		input_abs_set_flat(dev, i, user_dev->absflat[i]);
-> +	dev->id.bustype = user_dev2->id.bustype;
-> +	dev->id.vendor = user_dev2->id.vendor;
-> +	dev->id.product = user_dev2->id.product;
-> +	dev->id.version = user_dev2->id.version;
-> +
-> +	for (i = 0; i < abscnt; i++) {
-> +		abs = &user_dev2->abs[i];
+On Wed, Dec 18, 2013 at 1:57 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Wed, Dec 18, 2013 at 01:53:18PM -0800, Andy Lutomirski wrote:
+>> On Wed, Dec 18, 2013 at 1:49 PM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>> > On Wed, Dec 18, 2013 at 01:29:53PM -0800, Andy Lutomirski wrote:
+>> >> On 12/18/2013 09:43 AM, Frederic Weisbecker wrote:
+>> >> > On Wed, Dec 18, 2013 at 10:04:43AM +0800, Alex Shi wrote:
+>> >> >> On 12/18/2013 06:51 AM, Frederic Weisbecker wrote:
+>> >> >>> So this is what this series brings, more details following:
+>> >> >>>
+>> >> >>> * Some code, naming and whitespace cleanups
+>> >> >>>
+>> >> >>> * Allow all CPUs outside the nohz_full range to handle the timekeeping
+>> >> >>>   duty, not just CPU 0. Balancing the timekeeping duty should improve
+>> >> >>>   powersavings.
+>> >> >>
+>> >> >> If the system just has one nohz_full cpu running, it will need another
+>> >> >> cpu to do timerkeeper job. Then the system roughly needs 2 cpu living.
+>> >> >> From powersaving POV, that is not good compare to normal nohz idle.
+>> >> >
+>> >> > Sure, but everything has a tradeoff :)
+>> >> >
+>> >> > We could theoretically run with the timekeeper purely idle if the other
+>> >> > CPU in full dynticks mode runs in userspace for a long while and seldom
+>> >> > do syscalls and faults. Timekeeping could be updated on kernel/user
+>> >> > boundaries in this case without much impact on performances.
+>> >> >
+>> >> > But then there is one strict condition for that: it can't read the timeofday
+>> >> > through the vdso but only through a syscall.
+>> >>
+>> >> Where's your ambition? :)
+>> >>
+>> >> If the vdso timing functions could see that it's been too long since a
+>> >> real timekeeping update, they could fall back to a syscall.  Otherwise,
+>> >> they could using rdtsc or whatever is in use.
+>> >
+>> > One objection to that approach in the past has been that it injects
+>> > avoidable latency into the worker CPUs.  I suppose that you could argue
+>> > that the cache misses due to a timekeeping-CPU update are not free, but
+>> > then again, the syscall is likely to also incur a few cache misses as
+>> > well.
+>> >
+>> > I bet that the timekeeping-CPU approach wins, but it would be cool to
+>> > see you prove me wrong.
+>>
+>> There's already some (very vague) discussion about having a scheduled
+>> time at which the clock frequency and/or offset will change, and this
+>> wouldn't be a huge departure from that.  The goal there is to avoid
+>> waiting for timekeeping if vclock_gettime runs concurrently with an
+>> update, but the same approach could apply here (albeit with one extra
+>> branch).
+>>
+>> Anyway, syscalls aren't *that* expensive.
+>
+> Like I said, it would be cool to see you prove me wrong, but that will
+> need to be with patches and performance results rather than rhetoric.
 
-minor nit: I'd just declare abs here.
+Fair enough.  Don't hold your breath.  (And certainly don't take this
+as an objection to these patches.)
 
-> +		input_abs_set_val(dev, i, abs->value);
-> +		input_abs_set_max(dev, i, abs->maximum);
-> +		input_abs_set_min(dev, i, abs->minimum);
-> +		input_abs_set_fuzz(dev, i, abs->fuzz);
-> +		input_abs_set_flat(dev, i, abs->flat);
-> +		input_abs_set_res(dev, i, abs->resolution);
->  	}
->  
->  	/* check if absmin/absmax/absfuzz/absflat are filled as
-> @@ -413,7 +405,7 @@ static int uinput_setup_device(struct uinput_device *udev,
->  	if (test_bit(EV_ABS, dev->evbit)) {
->  		retval = uinput_validate_absbits(dev);
->  		if (retval < 0)
-> -			goto exit;
-> +			return retval;
->  		if (test_bit(ABS_MT_SLOT, dev->absbit)) {
->  			int nslot = input_abs_get_max(dev, ABS_MT_SLOT) + 1;
->  			input_mt_init_slots(dev, nslot, 0);
-> @@ -423,11 +415,84 @@ static int uinput_setup_device(struct uinput_device *udev,
->  	}
->  
->  	udev->state = UIST_SETUP_COMPLETE;
-> -	retval = count;
-> +	return 0;
-> +}
-> +
-> +static int uinput_setup_device1(struct uinput_device *udev,
-> +				const char __user *buffer, size_t count)
-> +{
-> +	struct uinput_user_dev	*user_dev;
-> +	struct uinput_user_dev2	*user_dev2;
-> +	int			i;
-> +	int			retval;
-> +
-> +	if (count != sizeof(struct uinput_user_dev))
-> +		return -EINVAL;
-> +
-> +	user_dev = memdup_user(buffer, sizeof(struct uinput_user_dev));
-> +	if (IS_ERR(user_dev))
-> +		return PTR_ERR(user_dev);
-> +
-> +	user_dev2 = kmalloc(sizeof(*user_dev2), GFP_KERNEL);
-> +	if (!user_dev2) {
-> +		kfree(user_dev);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	user_dev2->version = UINPUT_VERSION;
-> +	memcpy(user_dev2->name, user_dev->name, UINPUT_MAX_NAME_SIZE);
-> +	memcpy(&user_dev2->id, &user_dev->id, sizeof(struct input_id));
-
-you copy the id bits one-by-one into the input_dev but you memcpy it here.
-is this intentional?
-
-> +	user_dev2->ff_effects_max = user_dev->ff_effects_max;
-> +
-> +	for (i = 0; i < ABS_CNT; ++i) {
-> +		user_dev2->abs[i].value = 0;
-> +		user_dev2->abs[i].maximum = user_dev->absmax[i];
-> +		user_dev2->abs[i].minimum = user_dev->absmin[i];
-> +		user_dev2->abs[i].fuzz = user_dev->absfuzz[i];
-> +		user_dev2->abs[i].flat = user_dev->absflat[i];
-> +		user_dev2->abs[i].resolution = 0;
-> +	}
-> +
-> +	retval = uinput_setup_device(udev, user_dev2, ABS_CNT);
->  
-> - exit:
->  	kfree(user_dev);
-> -	return retval;
-> +	kfree(user_dev2);
-> +
-> +	return retval ? retval : count;
-> +}
-> +
-> +static int uinput_setup_device2(struct uinput_device *udev,
-> +			       const char __user *buffer, size_t count)
-> +{
-> +	struct uinput_user_dev2	*user_dev2;
-> +	int			retval;
-> +	size_t			off, abscnt, max;
-> +
-> +	/* The first revision of "uinput_user_dev2" is bigger than
-> +	 * "uinput_user_dev" and growing. Disallow any smaller payloads. */
-> +	if (count <= sizeof(struct uinput_user_dev))
-> +		return -EINVAL;
-> +
-> +	/* rough check to avoid huge kernel space allocations */
-> +	max = ABS_CNT * sizeof(*user_dev2->abs) + sizeof(*user_dev2);
-> +	if (count > max)
-> +		return -EINVAL;
-> +
-> +	user_dev2 = memdup_user(buffer, count);
-> +	if (IS_ERR(user_dev2))
-> +		return PTR_ERR(user_dev2);
-> +
-> +	if (user_dev2->version > UINPUT_VERSION) {
-> +		retval = -EINVAL;
-> +	} else {
-> +		off = offsetof(struct uinput_user_dev2, abs);
-> +		abscnt = (count - off) / sizeof(*user_dev2->abs);
-> +		retval = uinput_setup_device(udev, user_dev2, abscnt);
-> +	}
-> +
-
-I really wish uinput would be a bit easier to debug than just returning
--EINVAL when it's not happy. having said that, the only errno that would
-remotely make sense is -ERANGE for count > max and even that is a bit meh.
-
-Reviewed-by: Peter Hutterer <peter.hutterer@who-t.net>
-
-Cheers,
-   Peter
-
-
-
-
-> +	kfree(user_dev2);
-> +
-> +	return retval ? retval : count;
->  }
->  
->  static ssize_t uinput_inject_events(struct uinput_device *udev,
-> @@ -469,9 +534,12 @@ static ssize_t uinput_write(struct file *file, const char __user *buffer,
->  	if (retval)
->  		return retval;
->  
-> -	retval = udev->state == UIST_CREATED ?
-> -			uinput_inject_events(udev, buffer, count) :
-> -			uinput_setup_device(udev, buffer, count);
-> +	if (udev->state == UIST_CREATED)
-> +		retval = uinput_inject_events(udev, buffer, count);
-> +	else if (count <= sizeof(struct uinput_user_dev))
-> +		retval = uinput_setup_device1(udev, buffer, count);
-> +	else
-> +		retval = uinput_setup_device2(udev, buffer, count);
->  
->  	mutex_unlock(&udev->mutex);
->  
-> diff --git a/include/uapi/linux/uinput.h b/include/uapi/linux/uinput.h
-> index fe46431..c2e8710 100644
-> --- a/include/uapi/linux/uinput.h
-> +++ b/include/uapi/linux/uinput.h
-> @@ -134,4 +134,13 @@ struct uinput_user_dev {
->  	__s32 absfuzz[ABS_CNT];
->  	__s32 absflat[ABS_CNT];
->  };
-> +
-> +struct uinput_user_dev2 {
-> +	__u8 version;
-> +	char name[UINPUT_MAX_NAME_SIZE];
-> +	struct input_id id;
-> +	__u32 ff_effects_max;
-> +	struct input_absinfo abs[ABS_CNT];
-> +};
-> +
->  #endif /* _UAPI__UINPUT_H_ */
-> -- 
-> 1.8.5.1
-> 
+--Andy
