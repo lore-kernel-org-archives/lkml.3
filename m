@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753097Ab3LRDyK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 22:54:10 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:49108 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753041Ab3LRDyH (ORCPT
+	id S1752931Ab3LRD4x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 22:56:53 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:47797 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab3LRD4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 22:54:07 -0500
-Date: Tue, 17 Dec 2013 22:54:06 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.4.74-rt92
-Message-ID: <20131217225406.3fd62e60@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Tue, 17 Dec 2013 22:56:51 -0500
+Message-ID: <52B11CB8.6070609@linux.vnet.ibm.com>
+Date: Wed, 18 Dec 2013 09:25:36 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Michael Ellerman <mpe@ellerman.id.au>
+CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, mikey@neuling.org,
+        ak@linux.intel.com, eranian@google.com, acme@ghostprotocols.net,
+        sukadev@linux.vnet.ibm.com, mingo@kernel.org
+Subject: Re: [PATCH V4 09/10] power8, perf: Change BHRB branch filter configuration
+References: <20131209062147.51F822C00C5@ozlabs.org> <52AAC356.1000308@linux.vnet.ibm.com> <1387325285.19507.1.camel@concordia>
+In-Reply-To: <1387325285.19507.1.camel@concordia>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121803-8256-0000-0000-00000A9CEB85
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/18/2013 05:38 AM, Michael Ellerman wrote:
+> On Fri, 2013-12-13 at 13:50 +0530, Anshuman Khandual wrote:
+>> On 12/09/2013 11:51 AM, Michael Ellerman wrote:
+>>>
+>>> As I said in my comments on version 3 which you ignored:
+>>>
+>>>     I think it would be clearer if we actually checked for the possibilities we
+>>>     allow and let everything else fall through, eg:
+>>>
+>>> Â Â Â Â Â Â Â Â /* Ignore user/kernel/hv bits */
+>>> Â Â Â Â Â Â Â Â branch_sample_type &= ~PERF_SAMPLE_BRANCH_PLM_ALL;
+>>>
+>>> Â Â Â Â Â Â Â Â if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY)
+>>> Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â return 0;
+>>>
+>>> Â Â Â Â Â Â Â Â if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY_CALL)
+>>> Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â return POWER8_MMCRA_IFM1;
+>>> Â 
+>>> Â Â Â Â Â Â Â Â if (branch_sample_type == PERF_SAMPLE_BRANCH_COND)
+>>> Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â return POWER8_MMCRA_IFM3;
+>>> Â Â Â Â Â Â Â Â 
+>>> Â Â Â Â Â Â Â Â return -1;
+>>>
+>>
+>> Hey Michael,
+>>
+>> This patch only adds support for the PERF_SAMPLE_BRANCH_COND filter, if the
+>> over all code flow does not clearly suggest that all combinations of any of
+>> these HW filters are invalid, then we can go with one more patch to clean
+>> that up before or after this patch but not here in this patch. Finally the
+>> code section here will look something like this. Does it sound good ?
+> 
+> Better, but not quite.
+> 
+>> static u64 power8_bhrb_filter_map(u64 branch_sample_type)
+>> {
+>>         u64 pmu_bhrb_filter = 0;
+>>
+>>         /* BHRB and regular PMU events share the same privilege state
+>>          * filter configuration. BHRB is always recorded along with a
+>>          * regular PMU event. As the privilege state filter is handled
+>>          * in the basic PMC configuration of the accompanying regular
+>>          * PMU event, we ignore any separate BHRB specific request.
+>>          */
+>>
+>>         /* Ignore user, kernel, hv bits */
+>>         branch_sample_type &= ~PERF_SAMPLE_BRANCH_PLM_ALL;
+>>
+>>         if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY)
+>>                 return pmu_bhrb_filter;
+> 
+> return 0;
+> 
+>>
+>>
+>>         if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY_CALL) {
+>>                 pmu_bhrb_filter |= POWER8_MMCRA_IFM1;
+>>                 return pmu_bhrb_filter;
+> 
+> return POWER8_MMCRA_IFM1;
+> 
+>>         }
+>>
+>>         if (branch_sample_type == PERF_SAMPLE_BRANCH_COND) {
+>>                 pmu_bhrb_filter |= POWER8_MMCRA_IFM3;
+>>                 return pmu_bhrb_filter;
+> 
+> return POWER8_MMCRA_IFM3;
+> 
+>>         }
+>>
+>>         /* Every thing else is unsupported */
+>>         return -1;
+>> }
+> 
 
-Dear RT Folks,
-
-I'm pleased to announce the 3.4.74-rt92 stable release.
-
-
-This release is just an update to the new stable 3.4.74 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.4-rt
-  Head SHA1: cfc23e00c070e50b700233591d8e81c46c18885a
-
-
-Or to build 3.4.74-rt92 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.74.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.74-rt92.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
+Okay, will take these changes into another patch before adding conditional branch
+filter here.
 
