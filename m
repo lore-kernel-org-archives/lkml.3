@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab3LRVML (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:12:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35945 "EHLO
+	id S1755140Ab3LRWHL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:07:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35993 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752973Ab3LRVMC (ORCPT
+	with ESMTP id S1753113Ab3LRVML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:02 -0500
+	Wed, 18 Dec 2013 16:12:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Julius Werner <jwerner@chromium.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.10 26/78] usb: hub: Use correct reset for wedged USB3 devices that are NOTATTACHED
-Date: Wed, 18 Dec 2013 13:10:54 -0800
-Message-Id: <20131218211112.646679083@linuxfoundation.org>
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 36/78] ath9k: Fix QuickDrop usage
+Date: Wed, 18 Dec 2013 13:11:04 -0800
+Message-Id: <20131218211112.925607538@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -29,37 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julius Werner <jwerner@chromium.org>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit 2d51f3cd11f414c56a87dc018196b85fd50b04a4 upstream.
+commit 93c1cfbe598f72cfa7be49e4a7d2a1d482e15119 upstream.
 
-This patch adds a check for USB_STATE_NOTATTACHED to the
-hub_port_warm_reset_required() workaround for ports that end up in
-Compliance Mode in hub_events() when trying to decide which reset
-function to use. Trying to call usb_reset_device() with a NOTATTACHED
-device will just fail and leave the port broken.
+Bit 5 in the miscConfiguration field of the base EEPROM
+header denotes whether QuickDrop is enabled or not. Fix
+the incorrect usage of BIT(1) and also make sure that
+this is done only for the required chips.
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -4808,8 +4808,9 @@ static void hub_events(void)
- 					hub->ports[i - 1]->child;
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -3937,18 +3937,20 @@ static void ar9003_hw_quick_drop_apply(s
+ 	int quick_drop;
+ 	s32 t[3], f[3] = {5180, 5500, 5785};
  
- 				dev_dbg(hub_dev, "warm reset port %d\n", i);
--				if (!udev || !(portstatus &
--						USB_PORT_STAT_CONNECTION)) {
-+				if (!udev ||
-+				    !(portstatus & USB_PORT_STAT_CONNECTION) ||
-+				    udev->state == USB_STATE_NOTATTACHED) {
- 					status = hub_port_reset(hub, i,
- 							NULL, HUB_BH_RESET_TIME,
- 							true);
+-	if (!(pBase->miscConfiguration & BIT(1)))
++	if (!(pBase->miscConfiguration & BIT(4)))
+ 		return;
+ 
+-	if (freq < 4000)
+-		quick_drop = eep->modalHeader2G.quick_drop;
+-	else {
+-		t[0] = eep->base_ext1.quick_drop_low;
+-		t[1] = eep->modalHeader5G.quick_drop;
+-		t[2] = eep->base_ext1.quick_drop_high;
+-		quick_drop = ar9003_hw_power_interpolate(freq, f, t, 3);
++	if (AR_SREV_9300(ah) || AR_SREV_9580(ah) || AR_SREV_9340(ah)) {
++		if (freq < 4000) {
++			quick_drop = eep->modalHeader2G.quick_drop;
++		} else {
++			t[0] = eep->base_ext1.quick_drop_low;
++			t[1] = eep->modalHeader5G.quick_drop;
++			t[2] = eep->base_ext1.quick_drop_high;
++			quick_drop = ar9003_hw_power_interpolate(freq, f, t, 3);
++		}
++		REG_RMW_FIELD(ah, AR_PHY_AGC, AR_PHY_AGC_QUICK_DROP, quick_drop);
+ 	}
+-	REG_RMW_FIELD(ah, AR_PHY_AGC, AR_PHY_AGC_QUICK_DROP, quick_drop);
+ }
+ 
+ static void ar9003_hw_txend_to_xpa_off_apply(struct ath_hw *ah, bool is2ghz)
 
 
