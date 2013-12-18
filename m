@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab3LRVtU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:49:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36215 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753573Ab3LRVM4 (ORCPT
+	id S1755710Ab3LRVtg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:49:36 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:34700 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754003Ab3LRVte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:56 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.12 013/118] ARM: 7912/1: check stack pointer in get_wchan
-Date: Wed, 18 Dec 2013 13:10:50 -0800
-Message-Id: <20131218211219.842645835@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
-References: <20131218211219.461663463@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Wed, 18 Dec 2013 16:49:34 -0500
+Date: Wed, 18 Dec 2013 13:49:30 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Alex Shi <alex.shi@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [RFC PATCH 00/13] nohz: Use sysidle detection to let the
+ timekeeper sleep
+Message-ID: <20131218214930.GU19211@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
+ <52B102BB.1050907@linaro.org>
+ <20131218174355.GA19788@localhost.localdomain>
+ <52B213D1.1000104@mit.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B213D1.1000104@mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121821-0928-0000-0000-000004D393AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Dec 18, 2013 at 01:29:53PM -0800, Andy Lutomirski wrote:
+> On 12/18/2013 09:43 AM, Frederic Weisbecker wrote:
+> > On Wed, Dec 18, 2013 at 10:04:43AM +0800, Alex Shi wrote:
+> >> On 12/18/2013 06:51 AM, Frederic Weisbecker wrote:
+> >>> So this is what this series brings, more details following:
+> >>>
+> >>> * Some code, naming and whitespace cleanups
+> >>>
+> >>> * Allow all CPUs outside the nohz_full range to handle the timekeeping
+> >>>   duty, not just CPU 0. Balancing the timekeeping duty should improve
+> >>>   powersavings.
+> >>
+> >> If the system just has one nohz_full cpu running, it will need another
+> >> cpu to do timerkeeper job. Then the system roughly needs 2 cpu living.
+> >> From powersaving POV, that is not good compare to normal nohz idle.
+> > 
+> > Sure, but everything has a tradeoff :)
+> > 
+> > We could theoretically run with the timekeeper purely idle if the other
+> > CPU in full dynticks mode runs in userspace for a long while and seldom
+> > do syscalls and faults. Timekeeping could be updated on kernel/user
+> > boundaries in this case without much impact on performances.
+> > 
+> > But then there is one strict condition for that: it can't read the timeofday
+> > through the vdso but only through a syscall.
+> 
+> Where's your ambition? :)
+> 
+> If the vdso timing functions could see that it's been too long since a
+> real timekeeping update, they could fall back to a syscall.  Otherwise,
+> they could using rdtsc or whatever is in use.
 
-------------------
+One objection to that approach in the past has been that it injects
+avoidable latency into the worker CPUs.  I suppose that you could argue
+that the cache misses due to a timekeeping-CPU update are not free, but
+then again, the syscall is likely to also incur a few cache misses as
+well.
 
-From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+I bet that the timekeeping-CPU approach wins, but it would be cool to
+see you prove me wrong.
 
-commit 1b15ec7a7427d4188ba91b9bbac696250a059d22 upstream.
-
-get_wchan() is lockless. Task may wakeup at any time and change its own stack,
-thus each next stack frame may be overwritten and filled with random stuff.
-
-/proc/$pid/stack interface had been disabled for non-current tasks, see [1]
-But 'wchan' still allows to trigger stack frame unwinding on volatile stack.
-
-This patch fixes oops in unwind_frame() by adding stack pointer validation on
-each step (as x86 code do), unwind_frame() already checks frame pointer.
-
-Also I've found another report of this oops on stackoverflow (irony).
-
-Link: http://www.spinics.net/lists/arm-kernel/msg110589.html [1]
-Link: http://stackoverflow.com/questions/18479894/unwind-frame-cause-a-kernel-paging-error
-
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/kernel/process.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -404,6 +404,7 @@ EXPORT_SYMBOL(dump_fpu);
- unsigned long get_wchan(struct task_struct *p)
- {
- 	struct stackframe frame;
-+	unsigned long stack_page;
- 	int count = 0;
- 	if (!p || p == current || p->state == TASK_RUNNING)
- 		return 0;
-@@ -412,9 +413,11 @@ unsigned long get_wchan(struct task_stru
- 	frame.sp = thread_saved_sp(p);
- 	frame.lr = 0;			/* recovered from the stack */
- 	frame.pc = thread_saved_pc(p);
-+	stack_page = (unsigned long)task_stack_page(p);
- 	do {
--		int ret = unwind_frame(&frame);
--		if (ret < 0)
-+		if (frame.sp < stack_page ||
-+		    frame.sp >= stack_page + THREAD_SIZE ||
-+		    unwind_frame(&frame) < 0)
- 			return 0;
- 		if (!in_sched_functions(frame.pc))
- 			return frame.pc;
-
+							Thanx, Paul
 
