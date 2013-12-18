@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab3LRVvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:51:23 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55890 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755561Ab3LRVvV (ORCPT
+	id S1752740Ab3LRVvq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:51:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36186 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753463Ab3LRVMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:51:21 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Tejun Heo <tj@kernel.org>
-Cc: Nigel Cunningham <nigel@nigelcunningham.com.au>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
-        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] libata, freezer: avoid block device removal while system is frozen
-Date: Wed, 18 Dec 2013 23:04:40 +0100
-Message-ID: <1735137.dNmBz0IqxU@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131218214128.GB8218@mtj.dyndns.org>
-References: <20131213174932.GA27070@htj.dyndns.org> <20131218213936.GA8218@mtj.dyndns.org> <20131218214128.GB8218@mtj.dyndns.org>
+	Wed, 18 Dec 2013 16:12:50 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: [PATCH 3.10 76/78] Btrfs: fix hole check in log_one_extent
+Date: Wed, 18 Dec 2013 13:11:44 -0800
+Message-Id: <20131218211114.043754152@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
+References: <20131218211111.903835960@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 18, 2013 04:41:28 PM Tejun Heo wrote:
-> On Wed, Dec 18, 2013 at 04:39:36PM -0500, Tejun Heo wrote:
-> > Yeah, we can just rip out the whole freezer support and let the
-> > caller's pm notification hooks implement it by doing
-> > 
-> > 	workqueue_set_max_active(wq, 0);
-> > 	flush_workqueue(wq);
-> 
-> Oops, the above doesn't work but I can trivially add a new interface
-> for this.  Something which waits for the max_active to drop below the
-> newly set level before returning.
-> 
-> 	workqueue_set_max_active_and_wait(wq, 0);
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-If you add that, I can convert the PM workqueue to using it and then
-we can go through all of the existing users and make similar changes - or
-just make them non-freezable if there's no good reason for freezing those
-particular ones.
+------------------
 
-Thanks,
-Rafael
+From: Josef Bacik <jbacik@fusionio.com>
+
+commit ed9e8af88e2551aaa6bf51d8063a2493e2d71597 upstream.
+
+I added an assert to make sure we were looking up aligned offsets for csums and
+I tripped it when running xfstests.  This is because log_one_extent was checking
+if block_start == 0 for a hole instead of EXTENT_MAP_HOLE.  This worked out fine
+in practice it seems, but it adds a lot of extra work that is uneeded.  With
+this fix I'm no longer tripping my assert.  Thanks,
+
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/btrfs/tree-log.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/fs/btrfs/tree-log.c
++++ b/fs/btrfs/tree-log.c
+@@ -3314,7 +3314,7 @@ static int log_one_extent(struct btrfs_t
+ 		btrfs_set_token_file_extent_type(leaf, fi,
+ 						 BTRFS_FILE_EXTENT_REG,
+ 						 &token);
+-		if (em->block_start == 0)
++		if (em->block_start == EXTENT_MAP_HOLE)
+ 			skip_csum = true;
+ 	}
+ 
+
 
