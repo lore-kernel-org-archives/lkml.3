@@ -1,167 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab3LRVJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:09:58 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:50385 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752687Ab3LRVJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:09:56 -0500
-Date: Wed, 18 Dec 2013 16:06:17 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/6] Configurable fair allocation zone policy v4
-Message-ID: <20131218210617.GC20038@cmpxchg.org>
-References: <1387395723-25391-1-git-send-email-mgorman@suse.de>
+	id S1752574Ab3LRVJL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:09:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35821 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab3LRVJJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 16:09:09 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ian Abbott <abbotti@mev.co.uk>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [PATCH 3.4 27/31] staging: comedi: pcmuio: fix possible NULL deref on detach
+Date: Wed, 18 Dec 2013 13:08:35 -0800
+Message-Id: <20131218210523.549723497@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20131218210522.790152625@linuxfoundation.org>
+References: <20131218210522.790152625@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387395723-25391-1-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 07:41:57PM +0000, Mel Gorman wrote:
-> This is still a work in progress. I know Johannes is maintaining his own
-> patch which takes a different approach and has different priorities. Michal
-> Hocko has raised concerns potentially affecting both. I'm releasing this so
-> there is a basis of comparison with Johannes' patch. It's not necessarily
-> the final shape of what we want to merge but the test results highlight
-> the current behaviour has regressed performance for basic workloads.
-> 
-> A big concern is the semantics and tradeoffs of the tunable are quite
-> involved.  Basically no matter what workload you get right, there will be
-> a workload that will be wrong. This might indicate that this really needs
-> to be controlled via memory policies or some means of detecting online
-> which policy should be used on a per-process basis.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-I'm more and more agreeing with this.  As I stated in my answer to
-Michal, I may have seen this too black and white and the flipside of
-the coin as not important enough.
+------------------
 
-But it really does point to a mempolicy.  As long as we can agree on a
-default that makes most sense for users, there is no harm in offering
-a choice.  E.g. aging artifacts are simply irrelevant without reclaim
-going on, so a workload that mostly avoids it can benefit from a
-placement policy that strives for locality without any downsides.
+From: Ian Abbott <abbotti@mev.co.uk>
 
-> By default, this series does *not* interleave pagecache across nodes but
-> it will interleave between local zones.
-> 
-> Changelog since V3
-> o Add documentation
-> o Bring tunable in line with Johannes
-> o Common code when deciding to update the batch count and skip zones
-> 
-> Changelog since v2
-> o Drop an accounting patch, behaviour is deliberate
-> o Special case tmpfs and shmem pages for discussion
-> 
-> Changelog since v1
-> o Fix lot of brain damage in the configurable policy patch
-> o Yoink a page cache annotation patch
-> o Only account batch pages against allocations eligible for the fair policy
-> o Add patch that default distributes file pages on remote nodes
-> 
-> Commit 81c0a2bb ("mm: page_alloc: fair zone allocator policy") solved a
-> bug whereby new pages could be reclaimed before old pages because of how
-> the page allocator and kswapd interacted on the per-zone LRU lists.
-> 
-> Unfortunately a side-effect missed during review was that it's now very
-> easy to allocate remote memory on NUMA machines. The problem is that
-> it is not a simple case of just restoring local allocation policies as
-> there are genuine reasons why global page aging may be prefereable. It's
-> still a major change to default behaviour so this patch makes the policy
-> configurable and sets what I think is a sensible default.
+commit 2fd2bdfccae61efe18f6b92b6a45fbf936d75b48 upstream.
 
-I wrote this to Michal, too: as 3.12 was only recently released and
-its NUMA placement quite broken, I doubt that people running NUMA
-machines already rely on this aspect of global page cache placement.
+pcmuio_detach() is called by the comedi core even if pcmuio_attach()
+returned an error, so `dev->private` might be `NULL`.  Check for that
+before dereferencing it.
 
-We should be able to restrict placement fairness to node-local zones
-exclusively for 3.12-stable and possibly for 3.13, depending on how
-fast we can agree on the interface.
+Also, as pointed out by Dan Carpenter, there is no need to check the
+pointer passed to `kfree()` is non-NULL, so remove that check.
 
-I would prefer fixing the worst first so that we don't have to rush a
-user interface in order to keep global cache aging, which nobody knows
-exists yet.  But that part is simply not ready, so let's revert it.
-And then place any subsequent attempts of implementing this for NUMA
-on top of it, without depending on them for 3.12-stable and 3.13.
-
-The following fix should produce the same outcomes on your tests:
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
-From: Johannes Weiner <hannes@cmpxchg.org>
-Subject: [patch] mm: page_alloc: revert NUMA aspect of fair allocation
- policy
+ drivers/staging/comedi/drivers/pcmuio.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-81c0a2bb ("mm: page_alloc: fair zone allocator policy") meant to bring
-aging fairness among zones in system, but it was overzealous and badly
-regressed basic workloads on NUMA systems.
+--- a/drivers/staging/comedi/drivers/pcmuio.c
++++ b/drivers/staging/comedi/drivers/pcmuio.c
+@@ -464,13 +464,13 @@ static int pcmuio_detach(struct comedi_d
+ 	if (dev->iobase)
+ 		release_region(dev->iobase, ASIC_IOSIZE * thisboard->num_asics);
+ 
+-	for (i = 0; i < MAX_ASICS; ++i) {
+-		if (devpriv->asics[i].irq)
+-			free_irq(devpriv->asics[i].irq, dev);
+-	}
+-
+-	if (devpriv && devpriv->sprivs)
++	if (devpriv) {
++		for (i = 0; i < MAX_ASICS; ++i) {
++			if (devpriv->asics[i].irq)
++				free_irq(devpriv->asics[i].irq, dev);
++		}
+ 		kfree(devpriv->sprivs);
++	}
+ 
+ 	return 0;
+ }
 
-Due to the way kswapd and page allocator interacts, we still want to
-make sure that all zones in any given node are used equally for all
-allocations to maximize memory utilization and prevent thrashing on
-the highest zone in the node.
-
-While the same principle applies to NUMA nodes - memory utilization is
-obviously improved by spreading allocations throughout all nodes -
-remote references can be costly and so many workloads prefer locality
-over memory utilization.  The original change assumed that
-zone_reclaim_mode would be a good enough predictor for that, but it
-turned out to be as indicative as a coin flip.
-
-Revert the NUMA aspect of the fairness until we can find a proper way
-to make it configurable and agree on a sane default.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: <stable@kernel.org> # 3.12
----
- mm/page_alloc.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index dd886fac451a..c5939317984f 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1919,18 +1919,17 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
- 		 * page was allocated in should have no effect on the
- 		 * time the page has in memory before being reclaimed.
- 		 *
--		 * When zone_reclaim_mode is enabled, try to stay in
--		 * local zones in the fastpath.  If that fails, the
--		 * slowpath is entered, which will do another pass
--		 * starting with the local zones, but ultimately fall
--		 * back to remote zones that do not partake in the
--		 * fairness round-robin cycle of this zonelist.
-+		 * Try to stay in local zones in the fastpath.  If
-+		 * that fails, the slowpath is entered, which will do
-+		 * another pass starting with the local zones, but
-+		 * ultimately fall back to remote zones that do not
-+		 * partake in the fairness round-robin cycle of this
-+		 * zonelist.
- 		 */
- 		if (alloc_flags & ALLOC_WMARK_LOW) {
- 			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
- 				continue;
--			if (zone_reclaim_mode &&
--			    !zone_local(preferred_zone, zone))
-+			if (!zone_local(preferred_zone, zone))
- 				continue;
- 		}
- 		/*
-@@ -2396,7 +2395,7 @@ static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
- 		 * thrash fairness information for zones that are not
- 		 * actually part of this zonelist's round-robin cycle.
- 		 */
--		if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
-+		if (!zone_local(preferred_zone, zone))
- 			continue;
- 		mod_zone_page_state(zone, NR_ALLOC_BATCH,
- 				    high_wmark_pages(zone) -
--- 
-1.8.4.2
 
