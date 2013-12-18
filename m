@@ -1,162 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab3LRQ4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 11:56:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59273 "EHLO mx2.suse.de"
+	id S1755517Ab3LRQ4H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 11:56:07 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:45109 "EHLO mxout1.idt.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755495Ab3LRQ4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754808Ab3LRQ4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Dec 2013 11:56:05 -0500
-Date: Wed, 18 Dec 2013 17:56:03 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/6] slab: cleanup kmem_cache_create_memcg()
-Message-ID: <20131218165603.GB31080@dhcp22.suse.cz>
-References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
+X-Greylist: delayed 1009 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Dec 2013 11:56:01 EST
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Rashika Kheria <rashika.kheria@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Matt Porter <mporter@kernel.crashing.org>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>
+Subject: RE: [PATCH 3/3] drivers: rapidio: Remove unused function
+ rio_remove_sysfs_dev_files() in rio-sysfs.c
+Thread-Topic: [PATCH 3/3] drivers: rapidio: Remove unused function
+ rio_remove_sysfs_dev_files() in rio-sysfs.c
+Thread-Index: AQHO+MuBQJLfuOSZH06uk9t+zFnrm5paKTGQ
+Date: Wed, 18 Dec 2013 16:38:57 +0000
+Message-ID: <8D983423E7EDF846BB3056827B8CC5D14BED3206@corpmail1.na.ads.idt.com>
+References: <8522e3b2fefdb6625e9d7ae651cfa2dfd4733293.1386926041.git.rashika.kheria@gmail.com>
+ <63f565ae73de586db2277390618fa781535a55f9.1386926041.git.rashika.kheria@gmail.com>
+In-Reply-To: <63f565ae73de586db2277390618fa781535a55f9.1386926041.git.rashika.kheria@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.165.140.50]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBIGuUQD011915
 
-On Wed 18-12-13 17:16:52, Vladimir Davydov wrote:
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Glauber Costa <glommer@gmail.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-
-Dunno, is this really better to be worth the code churn?
-
-It even makes the generated code tiny bit bigger:
-text    data     bss     dec     hex filename
-4355     171     236    4762    129a mm/slab_common.o.after
-4342     171     236    4749    128d mm/slab_common.o.before
-
-Or does it make the further changes much more easier? Be explicit in the
-patch description if so.
-
-> ---
->  mm/slab_common.c |   66 +++++++++++++++++++++++++++---------------------------
->  1 file changed, 33 insertions(+), 33 deletions(-)
+On Sat, Dec 14, 2013 at 7:53 AM Rashika Kheria wrote:
+> Subject: [PATCH 3/3] drivers: rapidio: Remove unused function
+> rio_remove_sysfs_dev_files() in rio-sysfs.c
 > 
-> diff --git a/mm/slab_common.c b/mm/slab_common.c
-> index 0b7bb39..5d6f743 100644
-> --- a/mm/slab_common.c
-> +++ b/mm/slab_common.c
-> @@ -176,8 +176,9 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
->  	get_online_cpus();
->  	mutex_lock(&slab_mutex);
->  
-> -	if (!kmem_cache_sanity_check(memcg, name, size) == 0)
-> -		goto out_locked;
-> +	err = kmem_cache_sanity_check(memcg, name, size);
-> +	if (err)
-> +		goto out_unlock;
->  
->  	/*
->  	 * Some allocators will constraint the set of valid flags to a subset
-> @@ -189,45 +190,41 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
->  
->  	s = __kmem_cache_alias(memcg, name, size, align, flags, ctor);
->  	if (s)
-> -		goto out_locked;
-> +		goto out_unlock;
->  
->  	s = kmem_cache_zalloc(kmem_cache, GFP_KERNEL);
-> -	if (s) {
-> -		s->object_size = s->size = size;
-> -		s->align = calculate_alignment(flags, align, size);
-> -		s->ctor = ctor;
-> -
-> -		if (memcg_register_cache(memcg, s, parent_cache)) {
-> -			kmem_cache_free(kmem_cache, s);
-> -			err = -ENOMEM;
-> -			goto out_locked;
-> -		}
-> +	if (!s) {
-> +		err = -ENOMEM;
-> +		goto out_unlock;
-> +	}
->  
-> -		s->name = kstrdup(name, GFP_KERNEL);
-> -		if (!s->name) {
-> -			kmem_cache_free(kmem_cache, s);
-> -			err = -ENOMEM;
-> -			goto out_locked;
-> -		}
-> +	s->object_size = s->size = size;
-> +	s->align = calculate_alignment(flags, align, size);
-> +	s->ctor = ctor;
->  
-> -		err = __kmem_cache_create(s, flags);
-> -		if (!err) {
-> -			s->refcount = 1;
-> -			list_add(&s->list, &slab_caches);
-> -			memcg_cache_list_add(memcg, s);
-> -		} else {
-> -			kfree(s->name);
-> -			kmem_cache_free(kmem_cache, s);
-> -		}
-> -	} else
-> +	s->name = kstrdup(name, GFP_KERNEL);
-> +	if (!s->name) {
->  		err = -ENOMEM;
-> +		goto out_free_cache;
-> +	}
-> +
-> +	err = memcg_register_cache(memcg, s, parent_cache);
-> +	if (err)
-> +		goto out_free_cache;
->  
-> -out_locked:
-> +	err = __kmem_cache_create(s, flags);
-> +	if (err)
-> +		goto out_free_cache;
-> +
-> +	s->refcount = 1;
-> +	list_add(&s->list, &slab_caches);
-> +	memcg_cache_list_add(memcg, s);
-> +
-> +out_unlock:
->  	mutex_unlock(&slab_mutex);
->  	put_online_cpus();
->  
->  	if (err) {
-> -
->  		if (flags & SLAB_PANIC)
->  			panic("kmem_cache_create: Failed to create slab '%s'. Error %d\n",
->  				name, err);
-> @@ -236,11 +233,14 @@ out_locked:
->  				name, err);
->  			dump_stack();
->  		}
-> -
->  		return NULL;
->  	}
-> -
->  	return s;
-> +
-> +out_free_cache:
-> +	kfree(s->name);
-> +	kmem_cache_free(kmem_cache, s);
-> +	goto out_unlock;
->  }
->  
->  struct kmem_cache *
-> -- 
-> 1.7.10.4
+> This patch removes the function rio_remove_sysfs_dev_files() in rio-
+> sysfs.c because it is unused.
 > 
 
--- 
-Michal Hocko
-SUSE Labs
+This function will be in use after RapidIO hot plug is added. This work in progress now.
+To avoid bringing it back later I prefer to keep it. 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
