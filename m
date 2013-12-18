@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184Ab3LRVY4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:24:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36552 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754429Ab3LRVOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754420Ab3LRVOB (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 18 Dec 2013 16:14:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36527 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752634Ab3LRVN7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 16:13:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.12 091/118] dm thin: re-establish read-only state when switching to fail mode
-Date: Wed, 18 Dec 2013 13:12:08 -0800
-Message-Id: <20131218211222.031885653@linuxfoundation.org>
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.12 046/118] Partially revert "mtd: nand: pxa3xx: Introduce marvell,armada370-nand compatible string"
+Date: Wed, 18 Dec 2013 13:11:23 -0800
+Message-Id: <20131218211220.776260544@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -28,36 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-commit 5383ef3a929a1366e2ced45cd6d74be7aa2a2281 upstream.
+commit 9c59ac616137fb62f6cb3f1219201b09cbcf30be upstream.
 
-If the thin-pool transitioned to fail mode and the thin-pool's table
-were reloaded for some reason: the new table's default pool mode would
-be read-write, though it will transition to fail mode during resume.
+This partially reverts c0f3b8643a6fa2461d70760ec49d21d2b031d611.
 
-When the pool mode transitions directly from PM_WRITE to PM_FAIL we need
-to re-establish the intermediate read-only state in both the metadata
-and persistent-data block manager (as is usually done with the normal
-pool mode transition sequence: PM_WRITE -> PM_READ_ONLY -> PM_FAIL).
+The "armada370-nand" compatible support is not complete, and it was mistake
+to add it. Revert it and postpone the support until the infrastructure is
+in place.
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mtd/nand/pxa3xx_nand.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -1400,6 +1400,7 @@ static void set_pool_mode(struct pool *p
- 	case PM_FAIL:
- 		DMERR("%s: switching pool to failure mode",
- 		      dm_device_name(pool->pool_md));
-+		dm_pool_metadata_read_only(pool->pmd);
- 		pool->process_bio = process_bio_fail;
- 		pool->process_discard = process_bio_fail;
- 		pool->process_prepared_mapping = process_prepared_mapping_fail;
+--- a/drivers/mtd/nand/pxa3xx_nand.c
++++ b/drivers/mtd/nand/pxa3xx_nand.c
+@@ -1241,10 +1241,6 @@ static struct of_device_id pxa3xx_nand_d
+ 		.compatible = "marvell,pxa3xx-nand",
+ 		.data       = (void *)PXA3XX_NAND_VARIANT_PXA,
+ 	},
+-	{
+-		.compatible = "marvell,armada370-nand",
+-		.data       = (void *)PXA3XX_NAND_VARIANT_ARMADA370,
+-	},
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, pxa3xx_nand_dt_ids);
 
 
