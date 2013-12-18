@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab3LRWGD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:06:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36008 "EHLO
+	id S1755073Ab3LRWGt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:06:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35997 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024Ab3LRVMO (ORCPT
+	with ESMTP id S1752973Ab3LRVMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:14 -0500
+	Wed, 18 Dec 2013 16:12:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 06/78] ALSA: hda - Mute all aamix inputs as default
-Date: Wed, 18 Dec 2013 13:10:34 -0800
-Message-Id: <20131218211112.085509327@linuxfoundation.org>
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 37/78] ath9k: Fix XLNA bias strength
+Date: Wed, 18 Dec 2013 13:11:05 -0800
+Message-Id: <20131218211112.953114616@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -28,61 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit ebb93c057dda376414fbc499ad6ace9b527dff5a upstream.
+commit a1783a7b0846fc6414483e6caf646db72023fffd upstream.
 
-Not all channels have been initialized, so far, especially when aamix
-NID itself doesn't have amps but its leaves have.  This patch fixes
-these holes.  Otherwise you might get unexpected loopback inputs,
-e.g. from surround channels.
+The EEPROM parameter to determine whether the bias
+strength values for XLNA have to be applied is part
+of the miscConfiguration field and not featureEnable.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_generic.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -4222,6 +4222,26 @@ static unsigned int snd_hda_gen_path_pow
- 	return AC_PWRST_D3;
- }
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -3990,7 +3990,7 @@ static void ar9003_hw_xlna_bias_strength
+ 	struct ar9300_eeprom *eep = &ah->eeprom.ar9300_eep;
+ 	u8 bias;
  
-+/* mute all aamix inputs initially; parse up to the first leaves */
-+static void mute_all_mixer_nid(struct hda_codec *codec, hda_nid_t mix)
-+{
-+	int i, nums;
-+	const hda_nid_t *conn;
-+	bool has_amp;
-+
-+	nums = snd_hda_get_conn_list(codec, mix, &conn);
-+	has_amp = nid_has_mute(codec, mix, HDA_INPUT);
-+	for (i = 0; i < nums; i++) {
-+		if (has_amp)
-+			snd_hda_codec_amp_stereo(codec, mix,
-+						 HDA_INPUT, i,
-+						 0xff, HDA_AMP_MUTE);
-+		else if (nid_has_volume(codec, conn[i], HDA_OUTPUT))
-+			snd_hda_codec_amp_stereo(codec, conn[i],
-+						 HDA_OUTPUT, 0,
-+						 0xff, HDA_AMP_MUTE);
-+	}
-+}
+-	if (!(eep->baseEepHeader.featureEnable & 0x40))
++	if (!(eep->baseEepHeader.miscConfiguration & 0x40))
+ 		return;
  
- /*
-  * Parse the given BIOS configuration and set up the hda_gen_spec
-@@ -4360,6 +4380,10 @@ int snd_hda_gen_parse_auto_config(struct
- 		}
- 	}
- 
-+	/* mute all aamix input initially */
-+	if (spec->mixer_nid)
-+		mute_all_mixer_nid(codec, spec->mixer_nid);
-+
-  dig_only:
- 	parse_digital(codec);
- 
+ 	if (!AR_SREV_9300(ah))
 
 
