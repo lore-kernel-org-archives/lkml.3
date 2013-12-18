@@ -1,154 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab3LRMMW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 07:12:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40880 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751474Ab3LRMMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 07:12:20 -0500
-Date: Wed, 18 Dec 2013 13:11:00 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Borislav Petkov <bp@suse.de>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        Robert Richter <rric@kernel.org>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/10] perf/core improvements and refactorings
-Message-ID: <20131218121100.GB4146@krava.brq.redhat.com>
-References: <1387313531-14629-1-git-send-email-acme@infradead.org>
- <20131218101323.GA20360@gmail.com>
+	id S1753914Ab3LRMM3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 07:12:29 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45153 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753795Ab3LRMM0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 07:12:26 -0500
+Date: Wed, 18 Dec 2013 13:12:04 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 05/13] rcu: Fix unraised IPI to timekeeping CPU
+Message-ID: <20131218121204.GS13532@twins.programming.kicks-ass.net>
+References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
+ <1387320692-28460-6-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131218101323.GA20360@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1387320692-28460-6-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 11:13:23AM +0100, Ingo Molnar wrote:
-> 
-> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> 
-> > From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> > 
-> > Hi Ingo,
-> > 
-> > 	Please consider pulling,
-> > 
-> > Regards,
-> > 
-> > - Arnaldo
-> > 
-> > The following changes since commit b283d2f3b74bc98174e8453c0be41dfcda3cae1b:
-> > 
-> >   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-12-16 14:52:03 +0100)
-> > 
-> > are available in the git repository at:
-> > 
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> > 
-> > for you to fetch changes up to f23b24f1bf90b56cfaeb2a1c9b77c46efe8916a6:
-> > 
-> >   tools lib traceevent: Get rid of die() in some string conversion functions (2013-12-17 16:51:49 -0300)
-> > 
-> > ----------------------------------------------------------------
-> > perf/core improvements and refactorings:
-> > 
-> > New features:
-> > 
-> > . In perf timechart:
-> > 	- Add backtrace support to CPU info
-> > 	. Print pid along the name
-> > 	. Add support for CPU topology
-> > 	. Add new option --highlight'ing threads, be it by name or,
-> > 	  if a numeric value is provided, that run more than given duration.
-> >   From Stanislav Fomichev.
-> > 
-> > Refactorings:
-> > 
-> > . Rename some struct DSO binary_type related members and methods,
-> >   to clarify its purpose and need for differentiation from symtab_type,
-> >   i.e. one is about the files .text, CFI, etc, i.e. its binary contents,
-> >   and the other is about where the symbol table came from.
-> > 
-> > . Convert to new topic libraries, starting with an API one (sysfs, debugfs,
-> >   etc), renaming liblk in the process, from Borislav Petkov.
-> > 
-> > . Get rid of some more panic() like error handling in libtraceevent,
-> >   from Namhyung Kim.
-> > 
-> > Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > 
-> > ----------------------------------------------------------------
-> > Arnaldo Carvalho de Melo (3):
-> >       perf symbols: Remove needless static binary_type array
-> >       perf symbols: Clarify method to get DSO binary_type filename
-> >       perf symbols: Use consistent name for the DSO binary type member
-> > 
-> > Borislav Petkov (1):
-> >       tools/: Convert to new topic libraries
-> > 
-> > Namhyung Kim (1):
-> >       tools lib traceevent: Get rid of die() in some string conversion functions
-> > 
-> > Stanislav Fomichev (5):
-> >       perf timechart: Add backtrace support to CPU info
-> >       perf timechart: Print pid along the name
-> >       perf timechart: Get number of CPUs from perf header
-> >       perf timechart: Add support for topology
-> >       perf timechart: Add --highlight option
-> > 
-> >  tools/Makefile                              |  12 +--
-> >  tools/lib/{lk => api}/Makefile              |  18 ++--
-> >  tools/lib/{lk => api/fs}/debugfs.c          |   0
-> >  tools/lib/{lk => api/fs}/debugfs.h          |   6 +-
-> >  tools/lib/traceevent/parse-filter.c         |  67 ++++--------
-> >  tools/perf/Documentation/perf-timechart.txt |  16 +++
-> >  tools/perf/Makefile.perf                    |  33 +++---
-> >  tools/perf/builtin-kvm.c                    |   2 +-
-> >  tools/perf/builtin-probe.c                  |   2 +-
-> >  tools/perf/builtin-timechart.c              |  79 ++++++++++++--
-> >  tools/perf/perf.c                           |   2 +-
-> >  tools/perf/tests/parse-events.c             |   2 +-
-> >  tools/perf/util/dso.c                       |  24 ++---
-> >  tools/perf/util/dso.h                       |  14 +--
-> >  tools/perf/util/evlist.c                    |   2 +-
-> >  tools/perf/util/evsel.c                     |   2 +-
-> >  tools/perf/util/parse-events.c              |   2 +-
-> >  tools/perf/util/probe-event.c               |   2 +-
-> >  tools/perf/util/setup.py                    |   4 +-
-> >  tools/perf/util/svghelper.c                 | 159 ++++++++++++++++++++++++++--
-> >  tools/perf/util/svghelper.h                 |   6 +-
-> >  tools/perf/util/symbol.c                    |  12 +--
-> >  tools/perf/util/trace-event-info.c          |   2 +-
-> >  tools/perf/util/util.h                      |   2 +-
-> >  tools/vm/Makefile                           |  14 +--
-> >  tools/vm/page-types.c                       |   2 +-
-> >  26 files changed, 344 insertions(+), 142 deletions(-)
-> >  rename tools/lib/{lk => api}/Makefile (66%)
-> >  rename tools/lib/{lk => api/fs}/debugfs.c (100%)
-> >  rename tools/lib/{lk => api/fs}/debugfs.h (86%)
-> 
-> Pulled, thanks Arnaldo!
-> 
-> While testing this I noticed that the trace-plugins related build 
-> system messages spam, which I reported a week ago, is still there:
+On Tue, Dec 17, 2013 at 11:51:24PM +0100, Frederic Weisbecker wrote:
+> -			rcu_kick_nohz_cpu(tick_do_timer_cpu);
+> +			smp_send_reschedule(tick_do_timer_cpu);
 
-sry for delay.. I'm on it ;-)
+Hurm.. so I don't really like this (same for the other patches doing the
+similar change).
 
-jirka
+Why not have a function called: wake_time_keeper_cpu(), and have that do
+the right thing?
+
+Also, afaict, all you want is that remote cpu to run
+tick_nohz_full_check(), right?
+
+So why are you (ab)using the scheduler_ipi for this at all? Why not have
+something like:
+
+static DEFINE_PER_CPU(struct call_single_data, nohz_full_csd);
+
+int init_nohz_full(void)
+{
+	int cpu;
+
+	for_each_possible_cpu(cpu) {
+		struct call_single_data *csd = &per_cpu(nohz_full_csd, cpu);
+
+		csd->flags = 0;
+		csd->func = &tick_nohz_full_check;
+		csd->info = NULL;
+	}
+
+	return 0;
+}
+
+void wake_time_keeper_cpu(void)
+{
+	int cpu = pick_timekeeper_cpu();
+	struct single_call_data *csd = &per_cpu(nohz_full_csd, cpu);
+
+	__smp_call_function_single(cpu, csd, 0);
+}
