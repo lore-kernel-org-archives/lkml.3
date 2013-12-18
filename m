@@ -1,89 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab3LRVfP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:35:15 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55818 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754954Ab3LRVfM (ORCPT
+	id S1755135Ab3LRVfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:35:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36387 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024Ab3LRVNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:35:12 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Tejun Heo <tj@kernel.org>
-Cc: Nigel Cunningham <nigel@nigelcunningham.com.au>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
-        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] libata, freezer: avoid block device removal while system is frozen
-Date: Wed, 18 Dec 2013 22:48:31 +0100
-Message-ID: <3767261.syB7gLdVqQ@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131218111726.GB3808@htj.dyndns.org>
-References: <20131213174932.GA27070@htj.dyndns.org> <4108657.rimrPRbHDY@vostro.rjw.lan> <20131218111726.GB3808@htj.dyndns.org>
+	Wed, 18 Dec 2013 16:13:30 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Janak Desai <Janak.Desai@gtri.gatech.edu>,
+        Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.12 054/118] selinux: handle TCP SYN-ACK packets correctly in selinux_ip_postroute()
+Date: Wed, 18 Dec 2013 13:11:31 -0800
+Message-Id: <20131218211220.995326851@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
+References: <20131218211219.461663463@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 18, 2013 06:17:26 AM Tejun Heo wrote:
-> Hello, Rafael.
-> 
-> On Wed, Dec 18, 2013 at 01:35:13AM +0100, Rafael J. Wysocki wrote:
-> > So do I understand correctly that you're talking about kernel threads/worqueues
-> > freezing below?
-> 
-> Yeap, I'm strictly talking about kernel freezables.
-> 
-> > > So, are you saying it's really about giving device drivers easy way to
-> > > implement suspend/resume?
-> > 
-> > Well, that's a side effect rather than a recommeded interface.  A *few* pieces
-> > of code need to freeze kernel threads/workqueues, but they should know who they
-> > are and they really really should know *why* they need that (the above-mentioned
-> > runtime PM workqueue is one example).  The rest is just doing that because they
-> > can, which may not be entirely reasonable (or because they did that in the past
-> > and the original author is not responsive and everyone else does not dare to try
-> > removing that).
-> 
-> I see.  In the long term, I think the right thing to do is making the
-> freezer interface more specific so that only the ones which actually
-> need it do so explicitly.  Right now, kernel freezables are
-> conceptually at a very high level - it's a global task attribute and a
-> major knob in workqueue.  I suppose most of that is historical but by
-> perpetuating the model we're encouraging misuse of freezer in large
-> swaths of the kernel.  Even in this specific case, both writeback and
-> jbd workers have no fundamental reason to be freezable and yet
-> they're, eventually developing into totally unnecessary deadlocks.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-You're right, but I'm not sure how we can make the interface for workqueues
-more specific, for example.  I guess we can simply drop create_freezable_workqueue()
-so that whoever wants to create a freezable workqueue has to use the right
-combination of flags.  Can we make it more specific than that?
+------------------
 
-BTW, pm_start_workqueue(), which is a legitimate user, doesn't even use that macro. :-)
+From: Paul Moore <pmoore@redhat.com>
 
-> > They were a lot more of that to start with really.  We removed quite a number
-> > of try_to_freeze() instances from the kernel a few years ago, but apparently
-> > people are taking shortcuts.
-> 
-> Great, so we're at least headed towards the right direction.
-> 
-> > The rule should be to require patch submitters to put in comments explaining
-> > why they need their kernel threads/workqueues to be freezable and generally
-> > there should be no such things in drivers.
-> 
-> I'm not so sure whether that's something which can be effectively
-> enforced given the current high visibility and confusion around
-> freezer.  I think the only way to get this under control is weed out
-> the current spurious users actively, deprecate the existing interface
-> and switch the real ones to something a lot more specific.
+commit 446b802437f285de68ffb8d6fac3c44c3cab5b04 upstream.
 
-That'd be fine by me modulo the above remarks.
+In selinux_ip_postroute() we perform access checks based on the
+packet's security label.  For locally generated traffic we get the
+packet's security label from the associated socket; this works in all
+cases except for TCP SYN-ACK packets.  In the case of SYN-ACK packet's
+the correct security label is stored in the connection's request_sock,
+not the server's socket.  Unfortunately, at the point in time when
+selinux_ip_postroute() is called we can't query the request_sock
+directly, we need to recreate the label using the same logic that
+originally labeled the associated request_sock.
 
-Thanks,
-Rafael
+See the inline comments for more explanation.
+
+Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
+Tested-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ security/selinux/hooks.c |   68 ++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 53 insertions(+), 15 deletions(-)
+
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -3806,6 +3806,30 @@ static int selinux_skb_peerlbl_sid(struc
+ 	return 0;
+ }
+ 
++/**
++ * selinux_conn_sid - Determine the child socket label for a connection
++ * @sk_sid: the parent socket's SID
++ * @skb_sid: the packet's SID
++ * @conn_sid: the resulting connection SID
++ *
++ * If @skb_sid is valid then the user:role:type information from @sk_sid is
++ * combined with the MLS information from @skb_sid in order to create
++ * @conn_sid.  If @skb_sid is not valid then then @conn_sid is simply a copy
++ * of @sk_sid.  Returns zero on success, negative values on failure.
++ *
++ */
++static int selinux_conn_sid(u32 sk_sid, u32 skb_sid, u32 *conn_sid)
++{
++	int err = 0;
++
++	if (skb_sid != SECSID_NULL)
++		err = security_sid_mls_copy(sk_sid, skb_sid, conn_sid);
++	else
++		*conn_sid = sk_sid;
++
++	return err;
++}
++
+ /* socket security operations */
+ 
+ static int socket_sockcreate_sid(const struct task_security_struct *tsec,
+@@ -4412,7 +4436,7 @@ static int selinux_inet_conn_request(str
+ 	struct sk_security_struct *sksec = sk->sk_security;
+ 	int err;
+ 	u16 family = sk->sk_family;
+-	u32 newsid;
++	u32 connsid;
+ 	u32 peersid;
+ 
+ 	/* handle mapped IPv4 packets arriving via IPv6 sockets */
+@@ -4422,16 +4446,11 @@ static int selinux_inet_conn_request(str
+ 	err = selinux_skb_peerlbl_sid(skb, family, &peersid);
+ 	if (err)
+ 		return err;
+-	if (peersid == SECSID_NULL) {
+-		req->secid = sksec->sid;
+-		req->peer_secid = SECSID_NULL;
+-	} else {
+-		err = security_sid_mls_copy(sksec->sid, peersid, &newsid);
+-		if (err)
+-			return err;
+-		req->secid = newsid;
+-		req->peer_secid = peersid;
+-	}
++	err = selinux_conn_sid(sksec->sid, peersid, &connsid);
++	if (err)
++		return err;
++	req->secid = connsid;
++	req->peer_secid = peersid;
+ 
+ 	return selinux_netlbl_inet_conn_request(req, family);
+ }
+@@ -4805,12 +4824,12 @@ static unsigned int selinux_ip_postroute
+ 	if (!secmark_active && !peerlbl_active)
+ 		return NF_ACCEPT;
+ 
+-	/* if the packet is being forwarded then get the peer label from the
+-	 * packet itself; otherwise check to see if it is from a local
+-	 * application or the kernel, if from an application get the peer label
+-	 * from the sending socket, otherwise use the kernel's sid */
+ 	sk = skb->sk;
+ 	if (sk == NULL) {
++		/* Without an associated socket the packet is either coming
++		 * from the kernel or it is being forwarded; check the packet
++		 * to determine which and if the packet is being forwarded
++		 * query the packet directly to determine the security label. */
+ 		if (skb->skb_iif) {
+ 			secmark_perm = PACKET__FORWARD_OUT;
+ 			if (selinux_skb_peerlbl_sid(skb, family, &peer_sid))
+@@ -4819,7 +4838,26 @@ static unsigned int selinux_ip_postroute
+ 			secmark_perm = PACKET__SEND;
+ 			peer_sid = SECINITSID_KERNEL;
+ 		}
++	} else if (sk->sk_state == TCP_LISTEN) {
++		/* Locally generated packet but the associated socket is in the
++		 * listening state which means this is a SYN-ACK packet.  In
++		 * this particular case the correct security label is assigned
++		 * to the connection/request_sock but unfortunately we can't
++		 * query the request_sock as it isn't queued on the parent
++		 * socket until after the SYN-ACK packet is sent; the only
++		 * viable choice is to regenerate the label like we do in
++		 * selinux_inet_conn_request().  See also selinux_ip_output()
++		 * for similar problems. */
++		u32 skb_sid;
++		struct sk_security_struct *sksec = sk->sk_security;
++		if (selinux_skb_peerlbl_sid(skb, family, &skb_sid))
++			return NF_DROP;
++		if (selinux_conn_sid(sksec->sid, skb_sid, &peer_sid))
++			return NF_DROP;
++		secmark_perm = PACKET__SEND;
+ 	} else {
++		/* Locally generated packet, fetch the security label from the
++		 * associated socket. */
+ 		struct sk_security_struct *sksec = sk->sk_security;
+ 		peer_sid = sksec->sid;
+ 		secmark_perm = PACKET__SEND;
+
 
