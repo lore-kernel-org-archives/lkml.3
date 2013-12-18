@@ -1,153 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab3LRPcc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 10:32:32 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:39205 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755069Ab3LRPca (ORCPT
+	id S1755393Ab3LRPcx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 10:32:53 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:3601 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754679Ab3LRPcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 10:32:30 -0500
-Message-ID: <1387380741.2797.27.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2 0/4] futex: Wakeup optimizations
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, dvhart@linux.intel.com, peterz@infradead.org,
-        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, scott.norton@hp.com,
-        tom.vaden@hp.com, aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
-Date: Wed, 18 Dec 2013 07:32:21 -0800
-In-Reply-To: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
-References: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Wed, 18 Dec 2013 10:32:52 -0500
+Date: Wed, 18 Dec 2013 16:32:34 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Cc: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:HARDWARE MONITORING" <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] [PATCH V1] fix adc to voltage calculation in
+ da9052  power driver
+Message-ID: <20131218163234.714a166c@endymion.delvare>
+In-Reply-To: <201312181524.rBIFOv96017094@swsrvapps-02.lan>
+References: <201312181524.rBIFOv96017094@swsrvapps-02.lan>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping? 
+On Wed, 18 Dec 2013 15:21:13 +0000, Anthony Olech wrote:
+> The ADC resolution of the PMIC is 10-bits, this means that the maximum
+> possible value is 1023 and not the 1024 as in the code.
 
-If no one has any objections, could this patchset be picked up?
+The conversion from register value to mV depends on the ADC's LSB, not
+its range. So the maximum value which can be represented is irrelevant.
 
-Thanks,
-Davidlohr
-
-On Tue, 2013-12-03 at 01:45 -0800, Davidlohr Bueso wrote:
-> Changes from v1 [https://lkml.org/lkml/2013/11/22/525]:
->  - Removed patch "futex: Check for pi futex_q only once".
 > 
->  - Cleaned up ifdefs for larger hash table.
+> Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+> ---
+> This patch is relative to linux-next repository tag next-20131218
 > 
->  - Added a doc patch from tglx that describes the futex 
->    ordering guarantees.
+>  drivers/power/da9052-battery.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
->  - Improved the lockless plist check for the wake calls.
->    Based on the community feedback, the necessary abstractions
->    and barriers are added to maintain ordering guarantees.
->    Code documentation is also updated.
-> 
->  - Removed patch "sched,futex: Provide delayed wakeup list".
->    Based on feedback from PeterZ, I will look into this as
->    a separate issue once the other patches are settled.
+> diff --git a/drivers/power/da9052-battery.c b/drivers/power/da9052-battery.c
+> index f8f4c0f..8f0f259 100644
+> --- a/drivers/power/da9052-battery.c
+> +++ b/drivers/power/da9052-battery.c
+> @@ -178,7 +178,7 @@ struct da9052_battery {
 >  
-> 
-> We have been dealing with a customer database workload on large
-> 12Tb, 240 core 16 socket NUMA system that exhibits high amounts 
-> of contention on some of the locks that serialize internal futex 
-> data structures. This workload specially suffers in the wakeup 
-> paths, where waiting on the corresponding hb->lock can account for 
-> up to ~60% of the time. The result of such calls can mostly be 
-> classified as (i) nothing to wake up and (ii) wakeup large amount 
-> of tasks.
-> 
-> Before these patches are applied, we can see this pathological behavior:
-> 
->  37.12%  826174  xxx  [kernel.kallsyms] [k] _raw_spin_lock
->             --- _raw_spin_lock
->              |
->              |--97.14%-- futex_wake
->              |          do_futex
->              |          sys_futex
->              |          system_call_fastpath
->              |          |
->              |          |--99.70%-- 0x7f383fbdea1f
->              |          |           yyy
-> 
->  43.71%  762296  xxx  [kernel.kallsyms] [k] _raw_spin_lock
->             --- _raw_spin_lock
->              |
->              |--53.74%-- futex_wake
->              |          do_futex
->              |          sys_futex
->              |          system_call_fastpath
->              |          |
->              |          |--99.40%-- 0x7fe7d44a4c05
->              |          |           zzz
->              |--45.90%-- futex_wait_setup
->              |          futex_wait
->              |          do_futex
->              |          sys_futex
->              |          system_call_fastpath
->              |          0x7fe7ba315789
->              |          syscall
-> 
-> 
-> With these patches, contention is practically non existent:
-> 
->  0.10%     49   xxx  [kernel.kallsyms]   [k] _raw_spin_lock
->                --- _raw_spin_lock
->                 |
->                 |--76.06%-- futex_wait_setup
->                 |          futex_wait
->                 |          do_futex
->                 |          sys_futex
->                 |          system_call_fastpath
->                 |          |
->                 |          |--99.90%-- 0x7f3165e63789
->                 |          |          syscall|
->                            ...
->                 |--6.27%-- futex_wake
->                 |          do_futex
->                 |          sys_futex
->                 |          system_call_fastpath
->                 |          |
->                 |          |--54.56%-- 0x7f317fff2c05
->                 ...
-> 
-> Patch 1 is a cleanup.
-> 
-> Patch 2 addresses the well known issue of the global hash table.
-> By creating a larger and NUMA aware table, we can reduce the false
-> sharing and collisions, thus reducing the chance of different futexes 
-> using hb->lock.
-> 
-> Patch 3 documents the futex ordering guarantees.
-> 
-> Patch 4 reduces contention on the corresponding hb->lock by not trying to
-> acquire it if there are no blocked tasks in the waitqueue.
-> This particularly deals with point (i) above, where we see that it is not
-> uncommon for up to 90% of wakeup calls end up returning 0, indicating that no
-> tasks were woken.
-> 
-> This patchset has also been tested on smaller systems for a variety of
-> benchmarks, including java workloads, kernel builds and custom bang-the-hell-out-of
-> hb locks programs. So far, no functional or performance regressions have been seen.
-> Furthermore, no issues were found when running the different tests in the futextest 
-> suite: http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/
-> 
-> This patchset applies on top of Linus' tree as of v3.13-rc2 (2e7babfa).
-> 
-> Special thanks to Scott Norton, Tom Vanden, Mark Ray and Aswin Chandramouleeswaran
-> for help presenting, debugging and analyzing the data.
-> 
->   futex: Misc cleanups
->   futex: Larger hash table
->   futex: Document ordering guarantees
->   futex: Avoid taking hb lock if nothing to wakeup
-> 
->  kernel/futex.c | 230 ++++++++++++++++++++++++++++++++++++++++++++++++---------
->  1 file changed, 194 insertions(+), 36 deletions(-)
-> 
+>  static inline int volt_reg_to_mV(int value)
+>  {
+> -	return ((value * 1000) / 512) + 2500;
+> +	return DIV_ROUND_CLOSEST(value * 2000, 1023) + 2500;
+>  }
+>  
+>  static inline int ichg_reg_to_mA(int value)
 
 
+-- 
+Jean Delvare
