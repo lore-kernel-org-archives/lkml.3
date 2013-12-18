@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496Ab3LRVyG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:54:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36149 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753429Ab3LRVMn (ORCPT
+	id S1755617Ab3LRVyS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:54:18 -0500
+Received: from mail-gg0-f178.google.com ([209.85.161.178]:64817 "EHLO
+	mail-gg0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753429Ab3LRVyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:43 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH 3.10 68/78] staging: comedi: pcmuio: fix possible NULL deref on detach
-Date: Wed, 18 Dec 2013 13:11:36 -0800
-Message-Id: <20131218211113.820729544@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
-References: <20131218211111.903835960@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Wed, 18 Dec 2013 16:54:13 -0500
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Dec 2013 16:54:13 EST
+From: Len Brown <lenb@kernel.org>
+To: x86@kernel.org
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, <stable@vger.kernel.org>
+Subject: [PATCH] x86 idle: repair large-server 50-watt idle-power regression
+Date: Wed, 18 Dec 2013 16:44:57 -0500
+Message-Id: <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.8.5.1.19.gdaad3aa
+Reply-To: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+From: Len Brown <len.brown@intel.com>
 
-------------------
+Linux 3.10 changed the timing of how thread_info->flags is touched:
 
-From: Ian Abbott <abbotti@mev.co.uk>
+	x86: Use generic idle loop
+	(7d1a941731fabf27e5fb6edbebb79fe856edb4e5)
 
-commit 2fd2bdfccae61efe18f6b92b6a45fbf936d75b48 upstream.
+This caused Intel NHM-EX and WSM-EX servers to experience a large number
+of immediate MONITOR/MWAIT break wakeups, which caused cpuidle to demote
+from deep C-states to shallow C-states, which caused these platforms
+to experience a significant increase in idle power.
 
-pcmuio_detach() is called by the comedi core even if pcmuio_attach()
-returned an error, so `dev->private` might be `NULL`.  Check for that
-before dereferencing it.
+Note that this issue was already present before the commit above,
+however, it wasn't seen often enough to be noticed in power measurements.
 
-Also, as pointed out by Dan Carpenter, there is no need to check the
-pointer passed to `kfree()` is non-NULL, so remove that check.
+Here we extend an errata workaround from the Core2 EX "Dunnington"
+to extend to NHM-EX and WSM-EX, to prevent these immediate
+returns from MWAIT, reducing idle power on these platforms.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+While only acpi_idle ran on Dunnington, intel_idle
+may also run on these two newer systems.
+As of today, there are no other models that are known
+to need this tweak.
 
+ref: https://lkml.org/lkml/2013/12/7/22
+Signed-off-by: Len Brown <len.brown@intel.com>
+Cc: <stable@vger.kernel.org> # 3.12.x, 3.11.x, 3.10.x
 ---
- drivers/staging/comedi/drivers/pcmuio.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ arch/x86/kernel/cpu/intel.c | 3 ++-
+ drivers/idle/intel_idle.c   | 3 +++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/drivers/pcmuio.c
-+++ b/drivers/staging/comedi/drivers/pcmuio.c
-@@ -935,12 +935,13 @@ static void pcmuio_detach(struct comedi_
- 	struct pcmuio_private *devpriv = dev->private;
- 	int i;
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index dc1ec0d..ea04b34 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -387,7 +387,8 @@ static void init_intel(struct cpuinfo_x86 *c)
+ 			set_cpu_cap(c, X86_FEATURE_PEBS);
+ 	}
  
--	for (i = 0; i < MAX_ASICS; ++i) {
--		if (devpriv->asics[i].irq)
--			free_irq(devpriv->asics[i].irq, dev);
--	}
--	if (devpriv && devpriv->sprivs)
-+	if (devpriv) {
-+		for (i = 0; i < MAX_ASICS; ++i) {
-+			if (devpriv->asics[i].irq)
-+				free_irq(devpriv->asics[i].irq, dev);
-+		}
- 		kfree(devpriv->sprivs);
-+	}
- 	comedi_legacy_detach(dev);
- }
+-	if (c->x86 == 6 && c->x86_model == 29 && cpu_has_clflush)
++	if (c->x86 == 6 && cpu_has_clflush &&
++	    (c->x86_model == 29 || c->x86_model == 46 || c->x86_model == 47))
+ 		set_cpu_cap(c, X86_FEATURE_CLFLUSH_MONITOR);
  
-
+ #ifdef CONFIG_X86_64
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index 92d1206..f80b700 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -377,6 +377,9 @@ static int intel_idle(struct cpuidle_device *dev,
+ 
+ 	if (!current_set_polling_and_test()) {
+ 
++		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
++			clflush((void *)&current_thread_info()->flags);
++
+ 		__monitor((void *)&current_thread_info()->flags, 0, 0);
+ 		smp_mb();
+ 		if (!need_resched())
+-- 
+1.8.5.1.19.gdaad3aa
 
