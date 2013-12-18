@@ -1,77 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab3LRBE1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 20:04:27 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64848 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750875Ab3LRBE0 (ORCPT
+	id S1752223Ab3LRBEl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 20:04:41 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:43058 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001Ab3LRBEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 20:04:26 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>
-Subject: Re: linux-next: build failure after merge of the pm tree
-Date: Wed, 18 Dec 2013 02:17:38 +0100
-Message-ID: <3421207.2WIkp69pe3@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131218120026.aa6c48feca3e24c59b5bf4c3@canb.auug.org.au>
-References: <20131218120026.aa6c48feca3e24c59b5bf4c3@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart2597279.Dcx8d1QEKD"; micalg="pgp-sha256"; protocol="application/pgp-signature"
+	Tue, 17 Dec 2013 20:04:38 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH v3] staging: ion: Avoid using rt_mutexes directly
+Date: Tue, 17 Dec 2013 17:04:29 -0800
+Message-Id: <1387328669-26785-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <CAMbhsRRSyrnG_XMHAyNyx4ApwQGOsn0uv2E3TVWDtV-WptzpyQ@mail.gmail.com>
+References: <CAMbhsRRSyrnG_XMHAyNyx4ApwQGOsn0uv2E3TVWDtV-WptzpyQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+RT_MUTEXES can be configured out of the kernel, causing compile
+problems with ION.
 
---nextPart2597279.Dcx8d1QEKD
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To quote Colin:
+"rt_mutexes were added with the deferred freeing feature.  Heaps need
+to return zeroed memory to userspace, but zeroing the memory on every
+allocation was causing performance issues.  We added a SCHED_IDLE
+thread to zero memory in the background after freeing, but locking the
+heap from the SCHED_IDLE thread might block a high priority allocation
+thread for a long time.
 
-On Wednesday, December 18, 2013 12:00:26 PM Stephen Rothwell wrote:
-> Hi Rafael,
-> 
-> After merging the pm tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> drivers/acpi/nvs.c:15:27: fatal error: linux/acpi_io.h: No such file or directory
->  #include <linux/acpi_io.h>
->                            ^
-> 
-> Caused by commit a99493647c1a ("Merge branch 'acpi-cleanup' into
-> linux-next") which incorrectly reintroduced the include of
-> linux/acpi_io.h.
-> 
-> I have used the pm tree from next-20131217 for today.
+The lock is only used to protect the heap's free_list and
+free_list_size members, and is not held for any long or sleeping
+operations.  Converting to a spinlock should prevent priority
+inversion without using the rt_mutex.  I'd also rename it to free_lock
+to so it doesn't get used as a general heap lock."
 
-Sorry for the breakage, I messed up a conflict resolution.  It should be
-fixed now in my tree FWIW.
+Thus this patch converts the rt_mutex usage to a spinlock and
+renames the lock free_lock to be more clear as to its use.
 
-Thanks,
-Rafael
+I also had to change a bit of logic in ion_heap_freelist_drain()
+to safely avoid list corruption.
 
---nextPart2597279.Dcx8d1QEKD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
+Cc: Colin Cross <ccross@android.com>
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Reported-by: Jim Davis <jim.epost@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Changes from v2:
+- Modified while loop to be more clear, per Colin's suggestion
 
-iQIcBAABCAAGBQJSsPe4AAoJEILEb/54YlRxeDsQAIn6YDAqyYwCg9hYNvMg1lTA
-VDjC1nen0B92inSCCwX5m2PxqYp+e7f4UxTS3IwdpeMYvar2xFBELJBG8jy5QL1S
-DO3VuHoeNgAczrJYq7iyPKodl65PI1r5/y/eCUau7sEgtCut+NO/6PoFRZ7SgcTk
-lpvshIUtJFK+rfnLpFQaX8zafUZ2rfro5rEoFvzEF8L213gHRoOunlMLRTqtCYkB
-TRtik3cVqrqRtG/u5pk/vBkpx+Psv31IYNVYj3YsnvfsGjzAL2lG+Kc/TCeCFoGc
-hP3E45/T2d4WDkNzmzeRtmuR08o+oyrtXitY16iE3LXKq/Yi2CwOx0vA/HDCAdyb
-PZyoLwOA2zXv0P9tn2K6RVn4Dy6qJ21IxtGq1qAmYkT+4xl2kbSph3QVsTxKG2uT
-3NCadUpGNHVhnh64ZWQjfp6GQC/YarpC4aUS/kPWVTcgYjeuZOMLRBOrtGydSdxt
-3nFikaoOctEVLvviyamFJORavtxepb4Lh4VruQvzw5xJII1jN67xHEBB1ky+DYr4
-3NLETpNOlY4xczBxwkLVzxowHskXQBZH4hM5dV7T3pq5uaeKwtRv3cLSjQi3Gpsz
-I+l3wJYIJX7vS9z/YCrKdAUw3M+pAC8Cr/EQcNU1Hq4V2pZyf6RVo16btzm9n6yL
-wjz7O2nGPcwmJD51DxqE
-=H7DY
------END PGP SIGNATURE-----
 
---nextPart2597279.Dcx8d1QEKD--
+ drivers/staging/android/ion/ion_heap.c | 28 ++++++++++++++++------------
+ drivers/staging/android/ion/ion_priv.h |  2 +-
+ 2 files changed, 17 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/staging/android/ion/ion_heap.c b/drivers/staging/android/ion/ion_heap.c
+index 9cf5622..296c74f 100644
+--- a/drivers/staging/android/ion/ion_heap.c
++++ b/drivers/staging/android/ion/ion_heap.c
+@@ -160,10 +160,10 @@ int ion_heap_pages_zero(struct page *page, size_t size, pgprot_t pgprot)
+ 
+ void ion_heap_freelist_add(struct ion_heap *heap, struct ion_buffer *buffer)
+ {
+-	rt_mutex_lock(&heap->lock);
++	spin_lock(&heap->free_lock);
+ 	list_add(&buffer->list, &heap->free_list);
+ 	heap->free_list_size += buffer->size;
+-	rt_mutex_unlock(&heap->lock);
++	spin_unlock(&heap->free_lock);
+ 	wake_up(&heap->waitqueue);
+ }
+ 
+@@ -171,34 +171,38 @@ size_t ion_heap_freelist_size(struct ion_heap *heap)
+ {
+ 	size_t size;
+ 
+-	rt_mutex_lock(&heap->lock);
++	spin_lock(&heap->free_lock);
+ 	size = heap->free_list_size;
+-	rt_mutex_unlock(&heap->lock);
++	spin_unlock(&heap->free_lock);
+ 
+ 	return size;
+ }
+ 
+ size_t ion_heap_freelist_drain(struct ion_heap *heap, size_t size)
+ {
+-	struct ion_buffer *buffer, *tmp;
++	struct ion_buffer *buffer;
+ 	size_t total_drained = 0;
+ 
+ 	if (ion_heap_freelist_size(heap) == 0)
+ 		return 0;
+ 
+-	rt_mutex_lock(&heap->lock);
++	spin_lock(&heap->free_lock);
+ 	if (size == 0)
+ 		size = heap->free_list_size;
+ 
+-	list_for_each_entry_safe(buffer, tmp, &heap->free_list, list) {
++	while (!list_empty(&heap->free_list)) {
+ 		if (total_drained >= size)
+ 			break;
++		buffer = list_first_entry(&heap->free_list, struct ion_buffer,
++					  list);
+ 		list_del(&buffer->list);
+ 		heap->free_list_size -= buffer->size;
+ 		total_drained += buffer->size;
++		spin_unlock(&heap->free_lock);
+ 		ion_buffer_destroy(buffer);
++		spin_lock(&heap->free_lock);
+ 	}
+-	rt_mutex_unlock(&heap->lock);
++	spin_unlock(&heap->free_lock);
+ 
+ 	return total_drained;
+ }
+@@ -213,16 +217,16 @@ static int ion_heap_deferred_free(void *data)
+ 		wait_event_freezable(heap->waitqueue,
+ 				     ion_heap_freelist_size(heap) > 0);
+ 
+-		rt_mutex_lock(&heap->lock);
++		spin_lock(&heap->free_lock);
+ 		if (list_empty(&heap->free_list)) {
+-			rt_mutex_unlock(&heap->lock);
++			spin_unlock(&heap->free_lock);
+ 			continue;
+ 		}
+ 		buffer = list_first_entry(&heap->free_list, struct ion_buffer,
+ 					  list);
+ 		list_del(&buffer->list);
+ 		heap->free_list_size -= buffer->size;
+-		rt_mutex_unlock(&heap->lock);
++		spin_unlock(&heap->free_lock);
+ 		ion_buffer_destroy(buffer);
+ 	}
+ 
+@@ -235,7 +239,7 @@ int ion_heap_init_deferred_free(struct ion_heap *heap)
+ 
+ 	INIT_LIST_HEAD(&heap->free_list);
+ 	heap->free_list_size = 0;
+-	rt_mutex_init(&heap->lock);
++	spin_lock_init(&heap->free_lock);
+ 	init_waitqueue_head(&heap->waitqueue);
+ 	heap->task = kthread_run(ion_heap_deferred_free, heap,
+ 				 "%s", heap->name);
+diff --git a/drivers/staging/android/ion/ion_priv.h b/drivers/staging/android/ion/ion_priv.h
+index fc8a4c3..d986739 100644
+--- a/drivers/staging/android/ion/ion_priv.h
++++ b/drivers/staging/android/ion/ion_priv.h
+@@ -159,7 +159,7 @@ struct ion_heap {
+ 	struct shrinker shrinker;
+ 	struct list_head free_list;
+ 	size_t free_list_size;
+-	struct rt_mutex lock;
++	spinlock_t free_lock;
+ 	wait_queue_head_t waitqueue;
+ 	struct task_struct *task;
+ 	int (*debug_show)(struct ion_heap *heap, struct seq_file *, void *);
+-- 
+1.8.3.2
 
