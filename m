@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700Ab3LRVNE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:13:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36228 "EHLO
+	id S1754899Ab3LRVre (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:47:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36244 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630Ab3LRVM6 (ORCPT
+	with ESMTP id S1753666Ab3LRVNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:58 -0500
+	Wed, 18 Dec 2013 16:13:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.12 016/118] KVM: Improve create VCPU parameter (CVE-2013-4587)
-Date: Wed, 18 Dec 2013 13:10:53 -0800
-Message-Id: <20131218211219.932202152@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Roger Lucas <vt8231@hiddenengine.co.uk>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [PATCH 3.12 020/118] hwmon: Prevent some divide by zeros in FAN_TO_REG()
+Date: Wed, 18 Dec 2013 13:10:57 -0800
+Message-Id: <20131218211220.044115134@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -28,37 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Honig <ahonig@google.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 338c7dbadd2671189cec7faf64c84d01071b3f96 upstream.
+commit 3806b45ba4655147a011df03242cc197ab986c43 upstream.
 
-In multiple functions the vcpu_id is used as an offset into a bitfield.  Ag
-malicious user could specify a vcpu_id greater than 255 in order to set or
-clear bits in kernel memory.  This could be used to elevate priveges in the
-kernel.  This patch verifies that the vcpu_id provided is less than 255.
-The api documentation already specifies that the vcpu_id must be less than
-max_vcpus, but this is currently not checked.
+The "rpm * div" operations can overflow here, so this patch adds an
+upper limit to rpm to prevent that.  Jean Delvare helped me with this
+patch.
 
-Reported-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Roger Lucas <vt8231@hiddenengine.co.uk>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- virt/kvm/kvm_main.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/hwmon/lm78.c    |    2 ++
+ drivers/hwmon/sis5595.c |    2 ++
+ drivers/hwmon/vt8231.c  |    2 +-
+ 3 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1893,6 +1893,9 @@ static int kvm_vm_ioctl_create_vcpu(stru
- 	int r;
- 	struct kvm_vcpu *vcpu, *v;
+--- a/drivers/hwmon/lm78.c
++++ b/drivers/hwmon/lm78.c
+@@ -94,6 +94,8 @@ static inline u8 FAN_TO_REG(long rpm, in
+ {
+ 	if (rpm <= 0)
+ 		return 255;
++	if (rpm > 1350000)
++		return 1;
+ 	return clamp_val((1350000 + rpm * div / 2) / (rpm * div), 1, 254);
+ }
  
-+	if (id >= KVM_MAX_VCPUS)
-+		return -EINVAL;
-+
- 	vcpu = kvm_arch_vcpu_create(kvm, id);
- 	if (IS_ERR(vcpu))
- 		return PTR_ERR(vcpu);
+--- a/drivers/hwmon/sis5595.c
++++ b/drivers/hwmon/sis5595.c
+@@ -141,6 +141,8 @@ static inline u8 FAN_TO_REG(long rpm, in
+ {
+ 	if (rpm <= 0)
+ 		return 255;
++	if (rpm > 1350000)
++		return 1;
+ 	return clamp_val((1350000 + rpm * div / 2) / (rpm * div), 1, 254);
+ }
+ 
+--- a/drivers/hwmon/vt8231.c
++++ b/drivers/hwmon/vt8231.c
+@@ -145,7 +145,7 @@ static const u8 regtempmin[] = { 0x3a, 0
+  */
+ static inline u8 FAN_TO_REG(long rpm, int div)
+ {
+-	if (rpm == 0)
++	if (rpm <= 0 || rpm > 1310720)
+ 		return 0;
+ 	return clamp_val(1310720 / (rpm * div), 1, 255);
+ }
 
 
