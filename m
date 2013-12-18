@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab3LROP5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 09:15:57 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:38738 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753705Ab3LROPy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 09:15:54 -0500
-Date: Wed, 18 Dec 2013 06:15:49 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH 03/13] rcu: Exclude all potential timekeepers from
- sysidle detection
-Message-ID: <20131218141549.GN19211@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
- <1387320692-28460-4-git-send-email-fweisbec@gmail.com>
- <20131217232714.GD19211@linux.vnet.ibm.com>
- <20131217234913.GB18689@localhost.localdomain>
- <20131218114318.GR13532@twins.programming.kicks-ass.net>
+	id S1754651Ab3LROSJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 09:18:09 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:50346 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753705Ab3LROSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 09:18:08 -0500
+Date: Wed, 18 Dec 2013 09:17:58 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/6] Configurable fair allocation zone policy v3
+Message-ID: <20131218141758.GL21724@cmpxchg.org>
+References: <1387298904-8824-1-git-send-email-mgorman@suse.de>
+ <20131217200210.GG21724@cmpxchg.org>
+ <20131218061750.GK21724@cmpxchg.org>
+ <52B1A781.50002@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131218114318.GR13532@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121814-0928-0000-0000-000004CE103A
+In-Reply-To: <52B1A781.50002@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 12:43:18PM +0100, Peter Zijlstra wrote:
-> On Wed, Dec 18, 2013 at 12:49:15AM +0100, Frederic Weisbecker wrote:
-> > That's to start simple as CPU 0 can't be offlined.
+On Wed, Dec 18, 2013 at 08:47:45AM -0500, Rik van Riel wrote:
+> On 12/18/2013 01:17 AM, Johannes Weiner wrote:
 > 
-> Yes it can, see CONFIG_BOOTPARAM_HOTPLUG_CPU0
+> > Updated version with your tmpfs __GFP_PAGECACHE parts added and
+> > documentation, changelog updated as necessary.  I remain unconvinced
+> > that tmpfs pages should be round-robined, but I agree with you that it
+> > is the conservative change to do for 3.12 and 3.12 and we can figure
+> > out the rest later.  I sure hope that this doesn't drive most people
+> > on NUMA to disable pagecache interleaving right away as I expect most
+> > tmpfs workloads to see little to no reclaim and prefer locality... :/
+> 
+> Actually, I suspect most tmpfs heavy workloads will be things like
+> databases with shared memory segments. Those tend to benefit from
+> having all of the system's memory bandwidth available. The worker
+> threads/processes tend to live all over the system, too...
 
-Ah, and cpu0_hotplug boot parameter even if CONFIG_BOOTPARAM_HOTPLUG_CPU0=n.
-
-Good to know!
-
-							Thanx, Paul
-
+Shared memory segments are explicitely excluded from the interleaving,
+though.  The distinction is between the internal tmpfs mount that sysv
+shmem uses (mempolicy) and tmpfs mounts that use the actual filesystem
+interface (pagecache interleave).
