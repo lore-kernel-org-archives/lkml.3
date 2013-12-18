@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab3LRVLA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:11:00 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:51305 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696Ab3LRVK7 (ORCPT
+	id S1752816Ab3LRVLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:11:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35825 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab3LRVJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:10:59 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sergei Ianovich <ynvich@gmail.com>
-Subject: Re: [PATCH v2 00/16] ARM: support for ICP DAS LP-8x4x (with dts)
-Date: Wed, 18 Dec 2013 22:10:30 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Daniel Mack <zonque@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-References: <1386543229-1542-1-git-send-email-ynvich@gmail.com> <201312182150.39037.arnd@arndb.de> <1387400193.31516.10.camel@host5.omatika.ru>
-In-Reply-To: <1387400193.31516.10.camel@host5.omatika.ru>
+	Wed, 18 Dec 2013 16:09:10 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH 3.4 28/31] staging: comedi: ssv_dnp: use comedi_dio_update_state()
+Date: Wed, 18 Dec 2013 13:08:36 -0800
+Message-Id: <20131218210523.579088418@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20131218210522.790152625@linuxfoundation.org>
+References: <20131218210522.790152625@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312182210.30544.arnd@arndb.de>
-X-Provags-ID: V02:K0:pE0jcB8DyELn+ok4C4bF43WM6jET0nKTJVkXGq6g0Jr
- MJAQB5CMmetkt7w/CkziWnPIlEVonpuyM1OgnzEdazRU/hDytn
- CfeATM6gwHPCsllHroF+tZHhJnJYInthpVPDYO75kVTl01Xr5c
- 08aZ0gm7qosYP6lIvsT+srZdFMZovvFXPaFb1LR4hmWDwcT+fU
- wMmevbWv4RyMEyYbpt79wm4QMPZM0eE3ZOY4h1qg0V/8DQTNwu
- Nyt8yLgo9j8HgHmGsrwB3xeynWRwFigXEVqXYGHACYqdp5UyK8
- hxmZ/+U8/qH/jf5bWT4KZYlJWOGZn6uwVmJHWdeY6tY2XtmL5K
- Q3tUYEjxD+o8FcxPfkG4=
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 18 December 2013, Sergei Ianovich wrote:
-> > Hmm, this is a bit tricky then. I think it would be best to not
-> > use "simple-bus" then, to allow migrating the other platforms later,
-> > but that will be a little more work. Maybe you can register a trivial
-> > driver in the platform code that only calls of_platform_populate on
-> > the device for now?
-> 
-> Could we postpone this until someone needs this functionality?
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-We have to be sure that any device tree files you write now can remain
-compatible with future kernels if we add it later. My reasoning at first
-was that this wouldn't work if we had to change the "compatible" string
-for the bus node, but after re-thinking it now I believe that it's fine.
+------------------
 
-You would still be able to boot a kernel with an old dts file on a new
-kernel if it just contains a "simple-bus" node here, as long as it doesn't
-need any boot-time setup at the bus controller. We can change the dts
-file later if we need to add this functionality, which would break booting
-old kernels with the new dts files, which isn't much of a problem in
-general.
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-	Arnd
+commit f6b316bcd8c421acd6fa5a6e18b4c846ecb9d965 upstream.
+
+Use comedi_dio_update_state() to handle the boilerplate code to update
+the subdevice s->state.
+
+Also, fix a bug where the state of the channels is returned in data[0].
+The comedi core expects it to be returned in data[1].
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/staging/comedi/drivers/ssv_dnp.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/drivers/staging/comedi/drivers/ssv_dnp.c
++++ b/drivers/staging/comedi/drivers/ssv_dnp.c
+@@ -251,11 +251,11 @@ static int dnp_dio_insn_bits(struct come
+ 
+ 	/* on return, data[1] contains the value of the digital input lines. */
+ 	outb(PADR, CSCIR);
+-	data[0] = inb(CSCDR);
++	data[1] = inb(CSCDR);
+ 	outb(PBDR, CSCIR);
+-	data[0] += inb(CSCDR) << 8;
++	data[1] += inb(CSCDR) << 8;
+ 	outb(PCDR, CSCIR);
+-	data[0] += ((inb(CSCDR) & 0xF0) << 12);
++	data[1] += ((inb(CSCDR) & 0xF0) << 12);
+ 
+ 	return 2;
+ 
+
+
