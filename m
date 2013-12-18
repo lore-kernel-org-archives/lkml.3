@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab3LRSiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 13:38:51 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:50485 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755348Ab3LRSit (ORCPT
+	id S1755798Ab3LRSj0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 13:39:26 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:55553 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab3LRSjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 13:38:49 -0500
-Date: Wed, 18 Dec 2013 10:38:46 -0800
+	Wed, 18 Dec 2013 13:39:24 -0500
+Date: Wed, 18 Dec 2013 10:39:19 -0800
 From: josh@joshtriplett.org
 To: Rashika Kheria <rashika.kheria@gmail.com>
 Cc: linux-kernel@vger.kernel.org,
         "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
-Subject: Re: [PATCH 2/4] drivers: target: Mark function as static in
- target_core_iblock.c
-Message-ID: <20131218183846.GB24229@cloud>
+        Hannes Reinecke <hare@suse.de>, Andy Grover <agrover@redhat.com>,
+        Joern Engel <joern@logfs.org>, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org
+Subject: Re: [PATCH 3/4] drivers: target: Mark functions as static in
+ tcm_loop.c
+Message-ID: <20131218183919.GC24229@cloud>
 References: <1a63603bc5ff05147c419a301d59b135cd0c8406.1387390091.git.rashika.kheria@gmail.com>
- <bf4be9c01bc63fc3092132de26196a5a0ed8857d.1387390091.git.rashika.kheria@gmail.com>
+ <6d957ed9181ac274d13385db204db100b0ef8416.1387390091.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <bf4be9c01bc63fc3092132de26196a5a0ed8857d.1387390091.git.rashika.kheria@gmail.com>
+In-Reply-To: <6d957ed9181ac274d13385db204db100b0ef8416.1387390091.git.rashika.kheria@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 11:56:44PM +0530, Rashika Kheria wrote:
-> Mark function iblock_get_write_cache() as static in target_core_iblock.c
-> because it is not used outside this file.
+On Thu, Dec 19, 2013 at 12:02:54AM +0530, Rashika Kheria wrote:
+> Mark functions tcm_loop_make_naa_tpg(), tcm_loop_drop_naa_tpg(),
+> tcm_loop_make_scsi_hba() and tcm_loop_drop_scsi_hba() as static in
+> loopback/tcm_loop.c because they are not used outside this file.
 > 
-> This eliminates the following warning in target_core_iblock.c:
-> drivers/target/target_core_iblock.c:766:6: warning: no previous prototype for ‘iblock_get_write_cache’ [-Wmissing-prototypes]
+> This eliminates the following warning in loopback/tcm_loop.c:
+> drivers/target/loopback/tcm_loop.c:1231:25: warning: no previous prototype for ‘tcm_loop_make_naa_tpg’ [-Wmissing-prototypes]
+> drivers/target/loopback/tcm_loop.c:1276:6: warning: no previous prototype for ‘tcm_loop_drop_naa_tpg’ [-Wmissing-prototypes]
+> drivers/target/loopback/tcm_loop.c:1308:16: warning: no previous prototype for ‘tcm_loop_make_scsi_hba’ [-Wmissing-prototypes]
+> drivers/target/loopback/tcm_loop.c:1378:6: warning: no previous prototype for ‘tcm_loop_drop_scsi_hba’ [-Wmissing-prototypes]
 > 
 > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
->  drivers/target/target_core_iblock.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/target/loopback/tcm_loop.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
 > 
-> diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-> index c87959f..15d9121 100644
-> --- a/drivers/target/target_core_iblock.c
-> +++ b/drivers/target/target_core_iblock.c
-> @@ -763,7 +763,7 @@ iblock_parse_cdb(struct se_cmd *cmd)
->  	return sbc_parse_cdb(cmd, &iblock_sbc_ops);
+> diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
+> index 1b41e67..763ee45 100644
+> --- a/drivers/target/loopback/tcm_loop.c
+> +++ b/drivers/target/loopback/tcm_loop.c
+> @@ -1228,7 +1228,7 @@ static struct configfs_attribute *tcm_loop_tpg_attrs[] = {
+>  
+>  /* Start items for tcm_loop_naa_cit */
+>  
+> -struct se_portal_group *tcm_loop_make_naa_tpg(
+> +static struct se_portal_group *tcm_loop_make_naa_tpg(
+>  	struct se_wwn *wwn,
+>  	struct config_group *group,
+>  	const char *name)
+> @@ -1273,7 +1273,7 @@ struct se_portal_group *tcm_loop_make_naa_tpg(
+>  	return &tl_tpg->tl_se_tpg;
 >  }
 >  
-> -bool iblock_get_write_cache(struct se_device *dev)
-> +static bool iblock_get_write_cache(struct se_device *dev)
+> -void tcm_loop_drop_naa_tpg(
+> +static void tcm_loop_drop_naa_tpg(
+>  	struct se_portal_group *se_tpg)
 >  {
->  	struct iblock_dev *ib_dev = IBLOCK_DEV(dev);
->  	struct block_device *bd = ib_dev->ibd_bd;
+>  	struct se_wwn *wwn = se_tpg->se_tpg_wwn;
+> @@ -1305,7 +1305,7 @@ void tcm_loop_drop_naa_tpg(
+>  
+>  /* Start items for tcm_loop_cit */
+>  
+> -struct se_wwn *tcm_loop_make_scsi_hba(
+> +static struct se_wwn *tcm_loop_make_scsi_hba(
+>  	struct target_fabric_configfs *tf,
+>  	struct config_group *group,
+>  	const char *name)
+> @@ -1375,7 +1375,7 @@ out:
+>  	return ERR_PTR(ret);
+>  }
+>  
+> -void tcm_loop_drop_scsi_hba(
+> +static void tcm_loop_drop_scsi_hba(
+>  	struct se_wwn *wwn)
+>  {
+>  	struct tcm_loop_hba *tl_hba = container_of(wwn,
 > -- 
 > 1.7.9.5
 > 
