@@ -1,70 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005Ab3LRQsN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 11:48:13 -0500
-Received: from mail-db8lp0186.outbound.messaging.microsoft.com ([213.199.154.186]:26365
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753388Ab3LRQsJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 11:48:09 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(z579ehzbb2dI98dI9371Ic89bh1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h906i1155h)
-Date: Wed, 18 Dec 2013 08:47:52 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH v2 3/9] clocksource/cadence_ttc: Store timer frequency in
- driver data
-References: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com>
- <1385514296-26702-4-git-send-email-soren.brinkmann@xilinx.com>
- <5cff3201-db97-4061-a686-bf79ac17d4fe@CO1EHSMHS006.ehs.local>
- <52B1B6FF.7000400@linaro.org>
+	id S1755249Ab3LRQtR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 11:49:17 -0500
+Received: from mga09.intel.com ([134.134.136.24]:20093 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752583Ab3LRQtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 11:49:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,508,1384329600"; 
+   d="scan'208";a="454326447"
+Date: Wed, 18 Dec 2013 21:19:55 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
+Cc: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] dma: dw: Add suspend and resume handling for PCI mode
+ DW_DMAC.
+Message-ID: <20131218154955.GF16227@intel.com>
+References: <1386684373-24753-1-git-send-email-chiau.ee.chew@intel.com>
+ <20131210101025.GF29580@intel.com>
+ <1386676582.1871.137.camel@smile>
+ <604BF5F4C5D71041942BC7E84ED659EA01520785@PGSMSX103.gar.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52B1B6FF.7000400@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <ce29829b-3727-46ba-8c46-54273ce04745@DB8EHSMHS003.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <604BF5F4C5D71041942BC7E84ED659EA01520785@PGSMSX103.gar.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Mon, Dec 16, 2013 at 01:51:47PM +0530, Chew, Chiau Ee wrote:
+> Vinod,
+Please do *NOT* top post
 
-On Wed, Dec 18, 2013 at 03:53:51PM +0100, Daniel Lezcano wrote:
-> On 12/17/2013 08:21 PM, Sören Brinkmann wrote:
-> >Hi Daniel,
-> >
-> >On Tue, Nov 26, 2013 at 05:04:50PM -0800, Soren Brinkmann wrote:
-> >>It is not allowed to call clk_get_rate() from interrupt context. To
-> >>avoid such calls the timer input frequency is stored in the driver's
-> >>data struct which makes it accessible to the driver in any context.
-> >>
-> >>Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> >>Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> >
-> >I doubt that we'll resolve all issues with this series before the
-> >holidays or even the next merge window. Could you take this patch into
-> >your tree for 3.14? It is not directly related to the cpufreq work and
-> >fixes an actual issue that triggers a kernel WARN under some condition
-> >(I missed preserving the details and the trace). That would take the
-> >easy stuff out of the way and we can focus on the more controversial
-> >changes.
+Please fix your MUA to wrap lines with 80chars. I have fix below to make it
+readble...
+
+> As mentioned by Andy, we are using *_noirq  verion of suspend/resume PM
+> callback whereby the callbacks would be executed after IRQ handlers have been
+> disabled. If using SET_SYSTEM_SLEEP_PM_OPS, it would be the normal
+> suspend/resume PM callback. Looking at the Desginware DMAC platform code
+> (drivers/dma/dw/platform.c), it is using the *_noirq suspend/resume PM
+> callback. Is it advisable to use the normal suspend/resume PM callback instead
+> of *_noirq suspend/PM callback? 
+
+i dont see a reason why we need the noirq versions
+
+--
+~Vinod
+
 > 
-> You are asking to take it for 3.14 but shouldn't it go as a 3.13 fix ?
+> Thanks,
+> Chiau Ee
+> 
+> -----Original Message-----
+> From: Shevchenko, Andriy 
+> Sent: Tuesday, December 10, 2013 7:57 PM
+> To: Koul, Vinod
+> Cc: Chew, Chiau Ee; Viresh Kumar; Andy Shevchenko; Williams, Dan J; dmaengine@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] dma: dw: Add suspend and resume handling for PCI mode DW_DMAC.
+> 
+> On Tue, 2013-12-10 at 15:40 +0530, Vinod Koul wrote:
+> > On Tue, Dec 10, 2013 at 10:06:13PM +0800, Chew Chiau Ee wrote:
+> > > From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+> > > 
+> > > This is to disable/enable DW_DMAC hw during suspend/resume.
+> > > 
+> > > Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+> > > Acked-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > > ---
+> > >  drivers/dma/dw/pci.c |   33 +++++++++++++++++++++++++++++++++
+> > >  1 files changed, 33 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/drivers/dma/dw/pci.c b/drivers/dma/dw/pci.c index 
+> > > e89fc24..97bc3a2 100644
+> > > --- a/drivers/dma/dw/pci.c
+> > > +++ b/drivers/dma/dw/pci.c
+> > > @@ -75,6 +75,36 @@ static void dw_pci_remove(struct pci_dev *pdev)
+> > >  		dev_warn(&pdev->dev, "can't remove device properly: %d\n", ret);  
+> > > }
+> > >  
+> > > +#ifdef CONFIG_PM_SLEEP
+> > > +
+> > > +static int dw_pci_suspend_noirq(struct device *dev) {
+> > > +	struct pci_dev *pci = to_pci_dev(dev);
+> > > +	struct dw_dma_chip *chip = pci_get_drvdata(pci);
+> > > +
+> > > +	return dw_dma_suspend(chip);
+> > > +};
+> > > +
+> > > +static int dw_pci_resume_noirq(struct device *dev) {
+> > > +	struct pci_dev *pci = to_pci_dev(dev);
+> > > +	struct dw_dma_chip *chip = pci_get_drvdata(pci);
+> > > +
+> > > +	return dw_dma_resume(chip);
+> > > +};
+> > > +
+> > > +#else /* !CONFIG_PM_SLEEP */
+> > > +
+> > > +#define dw_pci_suspend_noirq	NULL
+> > > +#define dw_pci_resume_noirq	NULL
+> > > +
+> > > +#endif /* !CONFIG_PM_SLEEP */
+> > How about SET_SYSTEM_SLEEP_PM_OPS instead?
+> 
+> So, we are using *_noirq versions of the functions here. What happened when we switch to normal ones? Any side effects?
+> 
+> > 
+> > --
+> > ~Vinod
+> > > +
+> > > +static const struct dev_pm_ops dw_pci_dev_pm_ops = {
+> > > +	.suspend_noirq = dw_pci_suspend_noirq,
+> > > +	.resume_noirq = dw_pci_resume_noirq, };
+> > > +
+> > >  static DEFINE_PCI_DEVICE_TABLE(dw_pci_id_table) = {
+> > >  	/* Medfield */
+> > >  	{ PCI_VDEVICE(INTEL, 0x0827), (kernel_ulong_t)&dw_pci_pdata }, @@ 
+> > > -92,6 +122,9 @@ static struct pci_driver dw_pci_driver = {
+> > >  	.id_table	= dw_pci_id_table,
+> > >  	.probe		= dw_pci_probe,
+> > >  	.remove		= dw_pci_remove,
+> > > +	.driver	= {
+> > > +		.pm	= &dw_pci_dev_pm_ops,
+> > > +	},
+> > >  };
+> > >  
+> > >  module_pci_driver(dw_pci_driver);
+> > > --
+> > > 1.7.4.4
+> > > 
+> > 
+> 
+> --
+> Andy Shevchenko <andriy.shevchenko@intel.com> Intel Finland Oy
 
-That's also an option. As I remember, the patch fixes a kernel WARN. The
-system still seemed operational though. Up to you whether this is
-considered severe enough for the 3.13 series. I'm happy either way.
-
-	Sören
-
-
+-- 
