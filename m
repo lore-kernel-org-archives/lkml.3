@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab3LRMlc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 07:41:32 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:45453 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab3LRMlb (ORCPT
+	id S1754103Ab3LRMl4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 07:41:56 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:63005 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754055Ab3LRMly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 07:41:31 -0500
-Date: Wed, 18 Dec 2013 04:41:26 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Zach Brown <zab@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-Message-ID: <20131218124126.GA15328@infradead.org>
-References: <1378919210-10372-1-git-send-email-zab@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378919210-10372-1-git-send-email-zab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 18 Dec 2013 07:41:54 -0500
+From: Matias Bjorling <m@bjorling.me>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, Matias Bjorling <m@bjorling.me>
+Subject: [PATCH 0/3] null_blk: documentation, refactor and warning
+Date: Wed, 18 Dec 2013 13:41:41 +0100
+Message-Id: <1387370504-30853-1-git-send-email-m@bjorling.me>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 10:06:47AM -0700, Zach Brown wrote:
-> When I first started on this stuff I followed the lead of previous
-> work and added a new syscall for the copy operation:
-> 
-> https://lkml.org/lkml/2013/5/14/618
-> 
-> Towards the end of that thread Eric Wong asked why we didn't just
-> extend splice.  I immediately replied with some dumb dismissive
-> answer.  Once I sat down and looked at it, though, it does make a
-> lot of sense.  So good job, Eric.  +10 Dummie points for me.
-> 
-> Extending splice avoids all the noise of adding a new syscall and
-> naturally falls back to buffered copying as that's what the direct
-> splice path does for sendfile() today.
+Hi Jens,
 
-Given the convolute mess that the splice code already is I'd rather
-prefer not overloading it even further.
+I took the liberty to write up some documentation for the blk_null driver.
 
-Instead I'd make the sendfile code path that already works different
-in practice separate first, and then generalize it to a copy chunk
-syscall using the same code path.
+Additionally, factored the init code paths to use the standard error return
+codes. Shuffled some code to aid sharing between the block-layer instantiations.
+And at last added a warning when submit_queues parameter is ignored.
 
-We can still fall back to the splice code as a fallback if no option
-is provided as a last resort, but I think making the splice code handle
-even more totally different cases is the wrong direction.
+Thanks,
+Matias
+
+Matias Bjorling (3):
+  null_blk: documentation
+  null_blk: refactor init and init errors code paths
+  null_blk: warning on ignored submit_queues param
+
+ Documentation/block/null_blk.txt | 71 ++++++++++++++++++++++++++++++++++++++++
+ drivers/block/null_blk.c         | 66 +++++++++++++++++++++++--------------
+ 2 files changed, 112 insertions(+), 25 deletions(-)
+ create mode 100644 Documentation/block/null_blk.txt
+
+-- 
+1.8.3.2
 
