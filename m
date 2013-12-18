@@ -1,94 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab3LRTp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 14:45:57 -0500
-Received: from vserver.eikelenboom.it ([84.200.39.61]:50643 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab3LRTpz (ORCPT
+	id S1752193Ab3LRTqm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 14:46:42 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57585 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab3LRTqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 14:45:55 -0500
-Date: Wed, 18 Dec 2013 20:45:46 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <4610721898.20131218204546@eikelenboom.it>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-CC: Johannes Berg <johannes@sipsolutions.net>,
-        Arend van Spriel <arend@broadcom.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Julian Calaby <julian.calaby@gmail.com>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Avinash Patil <avinashapatil@gmail.com>
-Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
-In-Reply-To: <20131218194328.GE5705@cerro.do-not-panic.com>
-References: <19210260274.20131216135644@eikelenboom.it> <CAGRGNgXHemM2FfnXgW5RbzhFT+9SfUfVkjdysK3+=_u3hWSacw@mail.gmail.com> <1534126119.20131217104548@eikelenboom.it> <387552477.20131217213319@eikelenboom.it> <20131217212709.GB5624@decadent.org.uk> <1254825772.20131217224914@eikelenboom.it> <CA+55aFxQg6=MAWEkEGz64Hz8OawvPyX=fpBOjY8cGBL5XgB9WQ@mail.gmail.com> <52B167F6.5060209@broadcom.com> <1387358785.4694.9.camel@jlt4.sipsolutions.net> <133955103.20131218114845@eikelenboom.it> <20131218194328.GE5705@cerro.do-not-panic.com>
+	Wed, 18 Dec 2013 14:46:40 -0500
+Date: Wed, 18 Dec 2013 20:46:15 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] qrwlock: A queue read/write lock implementation
+Message-ID: <20131218194615.GG16438@laptop.programming.kicks-ass.net>
+References: <1385147087-26588-1-git-send-email-Waiman.Long@hp.com>
+ <1385147087-26588-2-git-send-email-Waiman.Long@hp.com>
+ <20131217192128.GA15969@linux.vnet.ibm.com>
+ <CA+55aFzNSZCKnuEm+CDWUN2G4bfrN+HafX8r13NcfT2tJ4h-jw@mail.gmail.com>
+ <878uvilzka.fsf@tassilo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <878uvilzka.fsf@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 18, 2013 at 11:38:29AM -0800, Andi Kleen wrote:
+> (maybe it would be time to get rid of the patchable LOCK though?)
 
-Wednesday, December 18, 2013, 8:43:28 PM, you wrote:
-
-> On Wed, Dec 18, 2013 at 11:48:45AM +0100, Sander Eikelenboom wrote:
->> 
->> Wednesday, December 18, 2013, 10:26:25 AM, you wrote:
->> 
->> > Hi all,
->> 
->> > We really should be asking Luis to look at this who hasn't yet chimed
->> > in, presumably because he's between jobs (and travelling IIRC)
->> 
->> > On Wed, 2013-12-18 at 10:16 +0100, Arend van Spriel wrote:
->> >> On 12/17/2013 11:06 PM, Linus Torvalds wrote:
->> >> > We have literally had this *exact* same issue with firmware loading.
->> >> > Network drivers shouldn't try to load firmware at module load time.
->> >> > Same deal.
->> >> 
->> >> It is kind of a chicken and egg problem for (wireless) networking
->> >> drivers. To get IFF_UP from the network layer you have to register a
->> >> netdevice. For wireless drivers this means you have to register a wiphy
->> >> device with cfg80211 which flags capabilities and optionally are custom
->> >> regulatory domain. That information depends on the device and firmware
->> >> used. And there we have a full circle.
->> 
->> > This is all really beside the point.
->> 
->> > For this CRDA information, the kernel never actually *waits* for it, so
->> > in the case that there's no reply, it uses the built-in world domain. So
->> > it's not like request_firmware(), which will block boot forever, but
->> > it's also not like request_firmware_nowait() which will eventually time
->> > out and come back with an error if userspace isn't handling it (though
->> > now that firmware loading is built in ...)
->> 
->> > The issue is that it uses the built-in data *forever*, and what Sander
->> > said was "or it will block forever" but just meant that it never was
->> > able to do any further updates.
->> 
->> > It *doesn't* actually block the boot process or such. Everything Linus
->> > said is true but seems to have been written in understanding "blocks" as
->> > "blocking the boot process", rather than "blocking further updates".
->> 
->> > Regardless of this, even blocking further updates is a really bad idea.
->> > There are a few ways to handle this, but I'll let Luis poke at that.
->> 
->> Your description is correct, sorry if I was not clear.
-
-> We have a timeout handler for this, I'll check to see what's going on
-> by trying to reproduce on my end. Are you using wireless-testing ?
-
-Originally 3.13-rc4, after that i tried with 3.13-rc4 with wireless-next pulled on top of it
-(since there were major changes to reg.c) but the problem occurs with both.
-
-
->   Luis
-
-
+With the argument that Intel simply doesn't ship UP chips anymore, with
+the exception of quark which should probably run custom UP kernels due
+to size constraints anyway?
