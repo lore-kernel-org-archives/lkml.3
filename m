@@ -1,254 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab3LRNQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 08:16:10 -0500
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:27145 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab3LRNQI convert rfc822-to-8bit (ORCPT
+	id S1754587Ab3LRNRM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 08:17:12 -0500
+Received: from relay.parallels.com ([195.214.232.42]:54273 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754441Ab3LRNRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 08:16:08 -0500
-X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat9g9Pvw+WM
-X-RZG-CLASS-ID: mo00
-Subject: Re: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION GTM601 during RING indication
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-In-Reply-To: <1387319242.28943.42.camel@dcbw.local>
-Date: Wed, 18 Dec 2013 14:16:02 +0100
-Cc: Jan Dumon <j.dumon@option.com>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Belisko Marek <marek.belisko@gmail.com>, e.verdonck@option.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <54ED5542-6C9E-4AC6-90CC-ED77972D8CB1@goldelico.com>
-References: <B1808224-5850-41E3-9A8F-0F350F84FF89@goldelico.com> <541AADAC-7D20-4410-90FC-3E354B0C1457@goldelico.com> <1387222829.2156.51.camel@dcbw.foobar.com> <174CD81C-6425-4560-A3FA-3BFAA83BA770@goldelico.com> <1387319242.28943.42.camel@dcbw.local>
-To: Dan Williams <dcbw@redhat.com>
-X-Mailer: Apple Mail (2.1085)
+	Wed, 18 Dec 2013 08:17:06 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 6/6] memcg, slab: RCU protect memcg_params for root caches
+Date: Wed, 18 Dec 2013 17:16:57 +0400
+Message-ID: <be8f2fede0fbc45496c06f7bc6cc2272b9b81cc4.1387372122.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+We update root cache's memcg_params whenever we need to grow the
+memcg_caches array to accommodate all kmem-active memory cgroups.
+Currently we free the old version immediately then, which can lead to
+use-after-free, because the memcg_caches array is accessed lock-free.
+This patch fixes this by making memcg_params RCU-protected.
 
-Am 17.12.2013 um 23:27 schrieb Dan Williams:
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Glauber Costa <glommer@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ include/linux/slab.h |    5 ++++-
+ mm/memcontrol.c      |   15 ++++++++-------
+ mm/slab.h            |    8 +++++++-
+ 3 files changed, 19 insertions(+), 9 deletions(-)
 
-> On Tue, 2013-12-17 at 20:56 +0100, Dr. H. Nikolaus Schaller wrote:
->> Hi Dan,
->> 
->> Am 16.12.2013 um 20:40 schrieb Dan Williams:
->> 
->>> On Fri, 2013-12-13 at 15:43 +0100, Dr. H. Nikolaus Schaller wrote:
->>>> Hi,
->>>> 
->>>> Am 02.10.2013 um 09:00 schrieb Dr. H. Nikolaus Schaller:
->>>> 
->>>>> Hi Jan,
->>>>> 
->>>>> we are using a GTM601 modem (Firmware 1.7) for a while and have spotted an
->>>>> issue that under some conditions the modem sends a packed wIndex over USB
->>>>> that is rejected by the hso driver making troubles afterwards. Not rejecting makes
->>>>> it work fine.
->>>>> 
->>>>> BR,
->>>>> Nikolaus Schaller
->>>>> 
->>>>> ---
->>>>> 
->>>>> From f5c7e15b61f2ce4fe3105ff914f6bfaf5d74af0d Mon Sep 17 00:00:00 2001
->>>>> From: "H. Nikolaus Schaller" <hns@goldelico.com>
->>>>> Date: Thu, 15 Nov 2012 14:40:57 +0100
->>>>> Subject: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION
->>>>> GTM601 during RING indication
->>>>> 
->>>>> It has been observed that the GTM601 with 1.7 firmware sometimes sends a value
->>>>> wIndex that has bit 0x04 set instead of being reset as the code expects. So we
->>>>> mask it for the error check.
->>>>> 
->>>>> See http://lists.goldelico.com/pipermail/gta04-owner/2012-February/001643.html
->>>>> 
->>>>> Signed-off-by: NeilBrown <neilb@suse.de>
->>>>> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.de>
->>>>> ---
->>>>> drivers/net/usb/hso.c |    3 ++-
->>>>> 1 files changed, 2 insertions(+), 1 deletions(-)
->>>>> 
->>>>> diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
->>>>> index cba1d46..d146e26 100644
->>>>> --- a/drivers/net/usb/hso.c
->>>>> +++ b/drivers/net/usb/hso.c
->>>>> @@ -1503,7 +1503,8 @@ static void tiocmget_intr_callback(struct urb *urb)
->>>>> 	if (serial_state_notification->bmRequestType != BM_REQUEST_TYPE ||
->>>>> 	    serial_state_notification->bNotification != B_NOTIFICATION ||
->>>>> 	    le16_to_cpu(serial_state_notification->wValue) != W_VALUE ||
->>>>> -	    le16_to_cpu(serial_state_notification->wIndex) != W_INDEX ||
->>>>> +	    (le16_to_cpu(serial_state_notification->wIndex) & ~0x4) !=
->>>>> +		W_INDEX ||
->>>>> 	    le16_to_cpu(serial_state_notification->wLength) != W_LENGTH) {
->>>>> 		dev_warn(&usb->dev,
->>>>> 			 "hso received invalid serial state notification\n");
->>>>> -- 
->>>>> 1.7.7.4
->>>>> 
->>>>> 
->>>> 
->>>> I have found this (better) proposal by OPTION, but wonder what did happen to it.
->>>> It neither shows in mainline 3.13-rc nor linux-next:
->>>> 
->>>> https://lkml.org/lkml/2013/10/9/263
->>> 
->>> Likely because nobody formally submitted the patch with a signed-off-by,
->>> which indicates their intent that the patch is tested, correct, and can
->>> be merged to the kernel.
->> 
->> Ok, I see. I just wasn't aware of the proposal at all since I missed the discussion
->> and wasn't on CC.
->> 
->> Therefore I have added Eric to the CC.
->> 
->>> 
->>> I looked at this today, and I'm left wondering how any port other than
->>> HSO_PORT_MODEM can get the notification via tiocmget_intr_callback().
->>> "serial->tiocmget" is only created for HSO_PORT_MODEM serial ports (see
->>> hso_create_bulk_serial_device()):
->>> 
->>> 	if ((port & HSO_PORT_MASK) == HSO_PORT_MODEM) {
->>> 		num_urbs = 2;
->>> 		serial->tiocmget = kzalloc(sizeof(struct hso_tiocmget),
->>> 					   GFP_KERNEL);
->>> 
->>> and the code in tiocmget_intr_callback() does this:
->>> 
->>> 	tiocmget = serial->tiocmget;
->>> 	if (!tiocmget)
->>> 		return;
->>> 
->>> which should mean that only a HSO_PORT_MODEM will ever process the
->>> notification.  Further, the tiocmget interrupt URB is only created and
->>> submitted if serial->tiocmget != NULL, so only HSO_PORT_MODEM should
->>> ever be calling into tiocmget_intr_callback().
->> 
->> Ok, that looks plausible.
->> 
->>> 
->>> So I think Eric's patch is actually wrong because it will *always* pass
->>> the new check.
->>> 
->>> The original code had the correct intention, but the original code was
->>> obviously wrong for newer devices where the port layout is read from
->>> firmware and not from static tables, and thus for recent devices where
->>> the modem interface is not USB interface #2.
->> 
->> This explains why we did run into the problem with the GTM601.
->> 
->>> 
->>> Can you confirm/deny that the 'modem' interface for your GTM601 is USB
->>> interface #6?  For example, my Icon 452 has the following USB interface
->>> layout:
->>> 
->>> 0: Diag
->>> 1: GPS
->>> 2: GPS control
->>> 3: Application
->>> 4: Control
->>> 5: Network
->>> 6: Modem
->>> 
->>> So like the GTM601, I would expect any RING notifications to appear for
->>> wIndex=0x06.
->> 
->> Interestingly I see:
->> 
->> 0: Diagnostic
->> 1: GPS
->> 2: GPS Control
->> 3: Application
->> 4: Control
->> 5: Modem
->> 
->> I.e. there is no Network interface. Originally we did focus on /dev/ttyHS3
-> 
-> How are you determining the number here?  Are you using:
-> 
-> cat /sys/class/tty/ttyHS_Modem/device/bInterfaceNumber
-> 
-> to determine the actual USB interface number associated with the Modem
-> port?  Or are you going off the pre-udev-rename ttyHSx numbers?
-
-Ah, I did use
-
-root@gta04:~#  ls -d /sys/class/tty/ttyHS*; cat /sys/class/tty/ttyHS*/hsotype
-/sys/class/tty/ttyHS0  /sys/class/tty/ttyHS1  /sys/class/tty/ttyHS2  /sys/class/tty/ttyHS3  /sys/class/tty/ttyHS4  /sys/class/tty/ttyHS5
-Diagnostic
-GPS
-GPS Control
-Application
-Control
-Modem
-
-With bInterfaceNumber I get
-
-root@gta04:~# cat /sys/class/tty/ttyHS*/device/bInterfaceNumber
-00
-01
-02
-03
-04
-06
-
-So the Modem is indeed interface 06 and there is just no ttyHS_Network.
-
-> 
->> to access the Application interface, but people reported that it is not stable
->> or always so. Therefore we have some udev rule to add symbolic names
->> (e.g. /dev/ttyHS_Application):
->> 
->> http://git.goldelico.com/?p=gta04-kernel.git;a=blob;f=GTA04/udev-rules/hso.rules;hb=HEAD
->> 
->> So I think the assignment is not even always the same on the same device.
-> 
-> The assignment will always be the same on the same device *and the same
-> firmware*.  That is because the hso driver asks the firmware for the
-> port layout, and that is what is put into the 'hsotype' file in sysfs
-> that the udev rules use.  So if your telephony/WWAN stack is using the
-> udev symbolic links or reading 'hsotype' directly, you can be assured
-> that ttyHS_Modem is always the port you should be using for PPP.
-> 
->> And I am a little puzzled why we do see the wIndex == 6 if it is the interface
->> number. Maybe it happens only in some scenario where the Modem becomes
->> interface #6.
-> 
-> I'm still not convinced that that it isn't #6 until we agree on how
-> we're figuring that out :)  I may well assume to little of you, so
-> forgive me if you are actually reporting the real USB interface # of the
-> ports.  But I've seen too many people confuse the tty numbers with USB
-> interface numbers, so I must ask.
-
-Yes, I did the mistake as you describe...
-
-> 
->>> 
->>> Does the following patch fix the problem for you?
->> 
->> I will try but need a little time to setup a test scenario (because I need to trigger
->> RING indications) and will then report.
-> 
-> Here's a RING on the 452 with Modem @ usbif #6:
-> 
-> [65808.711323] tiocmget_intr_callback: W_INDEX 0006
-> [65808.711330] tiocmget_intr_callback: UART bits 000a
-> [65808.711333] tiocmget_intr_callback: Modem ifnum 06
-> 
-> and B_TX_CARRIER notification with GIO322 with Modem @ usbif #2:
-> 
-> [66029.365441] tiocmget_intr_callback: W_INDEX 0002
-> [66029.365444] tiocmget_intr_callback: UART bits 0002
-> [66029.365445] tiocmget_intr_callback: Modem ifnum 02
-
-Hm. I didn't see these messages (on 3.12). How do I enable them?
-
-BTW: the RING (or +CRING:) text messages do appear on the Application port,
-while the NO CARRIER after ATA and ending the call appears on
-the Modem port.
-
-BR,
-Nikolaus
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 1e2f4fe..f7e5649 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -528,7 +528,10 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+ struct memcg_cache_params {
+ 	bool is_root_cache;
+ 	union {
+-		struct kmem_cache *memcg_caches[0];
++		struct {
++			struct rcu_head rcu_head;
++			struct kmem_cache *memcg_caches[0];
++		};
+ 		struct {
+ 			struct mem_cgroup *memcg;
+ 			struct list_head list;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index ad8de6a..379fc5f 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3142,18 +3142,17 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+ 
+ 	if (num_groups > memcg_limited_groups_array_size) {
+ 		int i;
++		struct memcg_cache_params *new_params;
+ 		ssize_t size = memcg_caches_array_size(num_groups);
+ 
+ 		size *= sizeof(void *);
+ 		size += offsetof(struct memcg_cache_params, memcg_caches);
+ 
+-		s->memcg_params = kzalloc(size, GFP_KERNEL);
+-		if (!s->memcg_params) {
+-			s->memcg_params = cur_params;
++		new_params = kzalloc(size, GFP_KERNEL);
++		if (!new_params)
+ 			return -ENOMEM;
+-		}
+ 
+-		s->memcg_params->is_root_cache = true;
++		new_params->is_root_cache = true;
+ 
+ 		/*
+ 		 * There is the chance it will be bigger than
+@@ -3167,7 +3166,7 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+ 		for (i = 0; i < memcg_limited_groups_array_size; i++) {
+ 			if (!cur_params->memcg_caches[i])
+ 				continue;
+-			s->memcg_params->memcg_caches[i] =
++			new_params->memcg_caches[i] =
+ 						cur_params->memcg_caches[i];
+ 		}
+ 
+@@ -3180,7 +3179,9 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+ 		 * bigger than the others. And all updates will reset this
+ 		 * anyway.
+ 		 */
+-		kfree(cur_params);
++		rcu_assign_pointer(s->memcg_params, new_params);
++		if (cur_params)
++			kfree_rcu(cur_params, rcu_head);
+ 	}
+ 	return 0;
+ }
+diff --git a/mm/slab.h b/mm/slab.h
+index 1d8b53f..53b81a9 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -164,10 +164,16 @@ static inline struct kmem_cache *
+ cache_from_memcg_idx(struct kmem_cache *s, int idx)
+ {
+ 	struct kmem_cache *cachep;
++	struct memcg_cache_params *params;
+ 
+ 	if (!s->memcg_params)
+ 		return NULL;
+-	cachep = s->memcg_params->memcg_caches[idx];
++
++	rcu_read_lock();
++	params = rcu_dereference(s->memcg_params);
++	cachep = params->memcg_caches[idx];
++	rcu_read_unlock();
++
+ 	smp_read_barrier_depends();	/* see memcg_register_cache() */
+ 	return cachep;
+ }
+-- 
+1.7.10.4
 
