@@ -1,175 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751954Ab3LRTX4 (ORCPT <rfc822;w@1wt.eu>);
+	id S1752103Ab3LRTX7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 14:23:59 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50752 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab3LRTX4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Dec 2013 14:23:56 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:50369 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750872Ab3LRTXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 14:23:55 -0500
-Date: Wed, 18 Dec 2013 14:20:15 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/6] Configurable fair allocation zone policy v3
-Message-ID: <20131218192015.GA20038@cmpxchg.org>
-References: <1387298904-8824-1-git-send-email-mgorman@suse.de>
- <20131217200210.GG21724@cmpxchg.org>
- <20131218145111.GA27510@dhcp22.suse.cz>
- <20131218151846.GM21724@cmpxchg.org>
- <20131218162050.GB27510@dhcp22.suse.cz>
+Date: Wed, 18 Dec 2013 19:23:44 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Lee Jones <lee.jones@linaro.org>
+Message-ID: <20131218192344.GO31886@sirena.org.uk>
+References: <1386329534-14186-1-git-send-email-k.kozlowski@samsung.com>
+ <1386329534-14186-3-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XMHqbYJb993HXwLR"
 Content-Disposition: inline
-In-Reply-To: <20131218162050.GB27510@dhcp22.suse.cz>
+In-Reply-To: <1386329534-14186-3-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v7 2/3] regulator: max14577: Add regulator driver for
+ Maxim 14577
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 05:20:50PM +0100, Michal Hocko wrote:
-> On Wed 18-12-13 10:18:46, Johannes Weiner wrote:
-> > On Wed, Dec 18, 2013 at 03:51:11PM +0100, Michal Hocko wrote:
-> > > On Tue 17-12-13 15:02:10, Johannes Weiner wrote:
-> > > [...]
-> > > > +pagecache_mempolicy_mode:
-> > > > +
-> > > > +This is available only on NUMA kernels.
-> > > > +
-> > > > +Per default, the configured memory policy is applicable to anonymous
-> > > > +memory, shmem, tmpfs, etc., whereas pagecache is allocated in an
-> > > > +interleaving fashion over all allowed nodes (hardbindings and
-> > > > +zone_reclaim_mode excluded).
-> > > > +
-> > > > +The assumption is that, when it comes to pagecache, users generally
-> > > > +prefer predictable replacement behavior regardless of NUMA topology
-> > > > +and maximizing the cache's effectiveness in reducing IO over memory
-> > > > +locality.
-> > > 
-> > > Isn't page spreading (PF_SPREAD_PAGE) intended to do the same thing
-> > > semantically? The setting is per-cpuset rather than global which makes
-> > > it harder to use but essentially it tries to distribute page cache pages
-> > > across all the nodes.
-> > >
-> > > This is really getting confusing. We have zone_reclaim_mode to keep
-> > > memory local in general, pagecache_mempolicy_mode to keep page cache
-> > > local and PF_SPREAD_PAGE to spread the page cache around nodes.
 
-You are right that the user interface we are exposing is kind of
-cruddy and I'm less and less convinced that this is the right
-direction.
+--XMHqbYJb993HXwLR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > zone_reclaim_mode is a global setting to go through great lengths to
-> > stay on local nodes, intended to be used depending on the hardware,
-> > not the workload.
-> > 
-> > Mempolicy on the other hand is to optimize placement for maximum
-> > locality depending on access patterns of a workload or even just the
-> > subset of a workload.  I'm trying to change whether this applies to
-> > page cache (due to different locality / cache effectiveness tradeoff)
-> > and we want to provide pagecache_mempolicy_mode to revert in the field
-> > in case this is a mistake.
-> > 
-> > PF_SPREAD_PAGE becomes implied per default and should eventually be
-> > removed.
-> 
-> I guess many loads do not care about page cache locality and the default
-> spreading would be OK for them but what about those that do care?
+On Fri, Dec 06, 2013 at 12:32:13PM +0100, Krzysztof Kozlowski wrote:
+> MAX14577 chip is a multi-function device which includes MUIC,
+> charger and voltage regulator. The driver is located in drivers/mfd.
 
-Mel suggested that the page cache spreading be implemented as just
-another memory policy and I rejected it on the grounds that we have
-can have strange aging artifacts if it's not the default.
+Applied, thanks.
 
-But you are right that there might be usecases that really have high
-cache locality and don't incur any reclaim.  The aging artifacts are
-non-existent to them but they would care about the NUMA locality.
+--XMHqbYJb993HXwLR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-And basically, the same aging artifacts apply to anon e.g., just that
-the trade-off balance is different, as reclaim is much less common.
-And we do offer interleaving for anon as well.  So the situation is
-not all that different that I had myself convinced it would be...
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-So the more I'm thinking about it, the more I'm leaning towards making
-it a mempolicy after all, provided that we can set a sane default.
+iQIcBAEBAgAGBQJSsfY9AAoJELSic+t+oim9adQP/3blzLFS3925w6BUWS8dfhaQ
+/Ym06Wtc5JBMLr7h07XJsMVer/Yj4kWi1Il6KA8gzjY3kxAhMYlZhoX8gacxj1BW
+cu+I8rePvCzvTV5haOZDJkH24LBCggbfdzwV7LRqfyJUkWVDC5561j+L/W/v9Vm7
+zBU/IRsLkPRBzcunhOBRI+zia08pc9m48nQPxGyRG4Tj0mU+4bCLW/9CI9pKVTA3
+a3+h+hoyVmHNo1N5ktJeVe/dEWC+JL3ZWALaLj5t9NO9MV9hV4JJ9a+fNqmte0dB
+Yt2PBFl+JR24xMTcHpusQZ8UXLlN2AdQIGaqgWUOAzzwmL3a64h94huTQeDhWo/t
+I0vlLPwZ5LyiAlWPXnDEDyWTiUrKdTGE5qMcwRBr29CSxVBcHy3X8LAHEmQvZPs7
+LPwLkVSjS9S0XnAAWpbU5FzzRRysASQ7RgMjMupTIvbvwMvWAAbVpItOef7hWdX5
+JlAugExgkCmclWQx4A5anaj+S5GvP6Oc3nvpZ1IirnsY4956+7Wsc30fkE9j9+GU
+77UZ9yeX6rDogQ8ulusPdSs4OeOzX3EmT8JdxftyuxlDxHQKCxKWvoDNnN3ST4B3
+0ZQAYTJRPOvQBdRIHZbxLv4yQp3XF1onSsWpOG4IVhodQbHkXCrf5H2pT4qgve2X
+EsjAtGJ3bFox2S++FaNa
+=JFJ5
+-----END PGP SIGNATURE-----
 
-Maybe we can make the new default a hybrid policy that keeps anon,
-shmem, slab, kernel, etc. local but interleaves pagecache.  This
-should make sense to most usecases while providing the ability for
-custom placement policies per-process or per-VMA without having to
-make the decision on a global level or through an unusual interface.
-
-> Currently we have a per-process (cpuset in fact) flag but this will
-> change it to all or nothing. Is this really a good step?
-> Btw. I do not mind having PF_SPREAD_PAGE enabled by default.
-
-I don't want to muck around with cpusets too much, tbh...  but I agree
-that the behavior of PF_SPREAD_PAGE should be the default.  Except it
-should honor zone_reclaim_mode and round-robin nodes that are within
-RECLAIM_DISTANCE of the local one.
-
-I will have spotty access to internet starting tomorrow night until
-New Year's.  Is there a chance we can maybe revert the NUMA aspects of
-the original patch for now and leave it as a node-local zone fairness
-thing?  The NUMA behavior was so broken on 3.12 that I doubt that
-people have come to rely on the cache fairness on such machines in
-that one release.  So we should be able to release 3.12-stable and
-3.13 with node-local zone fairness without regressing anybody, and
-then give the NUMA aspect of it another try in 3.14.
-
-Something like the following should restore NUMA behavior while still
-fixing the kswapd vs. page allocator interaction bug of thrashing on
-the highest zone.  PS: zone_local() is in a CONFIG_NUMA block, which
-is why accessing zone->node is safe :-)
-
----
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index dd886fac451a..317ea747d2cd 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1822,7 +1822,7 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
- 
- static bool zone_local(struct zone *local_zone, struct zone *zone)
- {
--	return node_distance(local_zone->node, zone->node) == LOCAL_DISTANCE;
-+	return local_zone->node == zone->node;
- }
- 
- static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
-@@ -1919,18 +1919,17 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
- 		 * page was allocated in should have no effect on the
- 		 * time the page has in memory before being reclaimed.
- 		 *
--		 * When zone_reclaim_mode is enabled, try to stay in
--		 * local zones in the fastpath.  If that fails, the
--		 * slowpath is entered, which will do another pass
--		 * starting with the local zones, but ultimately fall
--		 * back to remote zones that do not partake in the
--		 * fairness round-robin cycle of this zonelist.
-+		 * Try to stay in local zones in the fastpath.  If
-+		 * that fails, the slowpath is entered, which will do
-+		 * another pass starting with the local zones, but
-+		 * ultimately fall back to remote zones that do not
-+		 * partake in the fairness round-robin cycle of this
-+		 * zonelist.
- 		 */
- 		if (alloc_flags & ALLOC_WMARK_LOW) {
- 			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
- 				continue;
--			if (zone_reclaim_mode &&
--			    !zone_local(preferred_zone, zone))
-+			if (!zone_local(preferred_zone, zone))
- 				continue;
- 		}
- 		/*
-@@ -2396,7 +2395,7 @@ static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
- 		 * thrash fairness information for zones that are not
- 		 * actually part of this zonelist's round-robin cycle.
- 		 */
--		if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
-+		if (!zone_local(preferred_zone, zone))
- 			continue;
- 		mod_zone_page_state(zone, NR_ALLOC_BATCH,
- 				    high_wmark_pages(zone) -
-
-
+--XMHqbYJb993HXwLR--
