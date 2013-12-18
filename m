@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978Ab3LRQnx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 11:43:53 -0500
-Received: from mga11.intel.com ([192.55.52.93]:25150 "EHLO mga11.intel.com"
+	id S1755046Ab3LRQon (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 11:44:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59074 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751896Ab3LRQnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 11:43:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,508,1384329600"; 
-   d="scan'208";a="452083489"
-Date: Wed, 18 Dec 2013 21:14:48 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
-        Dave Jiang <dave.jiang@intel.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, dmaengine@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: Re: [PATCH 1/2] drivers: dma: Mark functions as static in dma_v3.c
-Message-ID: <20131218154448.GD16227@intel.com>
-References: <dba654dc34646dda2998dbf7b08d7ce3c160ff8c.1387188138.git.rashika.kheria@gmail.com>
+	id S1752031Ab3LRQol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 11:44:41 -0500
+Date: Wed, 18 Dec 2013 17:44:38 +0100
+From: Jan Kara <jack@suse.cz>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, Jens Axboe <jaxboe@fusionio.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Use lockless lists for smp_call_function_single()
+Message-ID: <20131218164438.GA31692@quack.suse.cz>
+References: <1387380302-29552-1-git-send-email-jack@suse.cz>
+ <20131218153644.GA16049@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <dba654dc34646dda2998dbf7b08d7ce3c160ff8c.1387188138.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131218153644.GA16049@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 03:40:40PM +0530, Rashika Kheria wrote:
-> Mark the functions ioat3_prep_xor_val(), ioat3_prep_pq_val() and
-> ioat3_prep_pqxor_val() as static in dma_v3.c because they are not used
-> outside this file.
+On Wed 18-12-13 07:36:44, Christoph Hellwig wrote:
+> On Wed, Dec 18, 2013 at 04:24:59PM +0100, Jan Kara wrote:
+> >   Hello,
+> > 
+> >   these three patches make smp_call_function_single() use lockless lists and
+> > cleanup abuse of csd.list in the block layer. I have some use for lockless
+> > smp_call_function_single() in printk code and that's why I've picked up
+> > Christoph's patch. Jens, can you have a look at the series please?
 > 
-> This eliminates the following warnings in dma_v3.c:
-> drivers/dma/ioat/dma_v3.c:741:1: warning: no previous prototype for ‘ioat3_prep_xor_val’ [-Wmissing-prototypes]
-> drivers/dma/ioat/dma_v3.c:1092:1: warning: no previous prototype for ‘ioat3_prep_pq_val’ [-Wmissing-prototypes]
-> drivers/dma/ioat/dma_v3.c:1134:1: warning: no previous prototype for ‘ioat3_prep_pqxor_val’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> seconded.  Also I think your two cleanups should go before my patch.
+  Fair enough, I'll reorder the patches in the series and resend.
 
-Acked-by: Vinod Koul <vinod.koul@intel.com>
+> I'll also dust up my other patch to use __smp_call_function_single
+> directly in the block layer once we make progress on these.
 
---
-~Vinod
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
