@@ -1,75 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab3LRQBL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 11:01:11 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:34712 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754829Ab3LRQBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 11:01:10 -0500
-X-IronPort-AV: E=Sophos;i="4.95,508,1384300800"; 
-   d="scan'208";a="85791945"
-Message-ID: <1387382463.28680.52.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH v11 02/12] xen/pvh: Define what an PVH guest
- is.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <linux-kernel@vger.kernel.org>, <david.vrabel@citrix.com>,
-        <jbeulich@suse.com>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>
-Date: Wed, 18 Dec 2013 16:01:03 +0000
-In-Reply-To: <alpine.DEB.2.02.1312181453110.8667@kaball.uk.xensource.com>
-References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
-	 <1387313503-31362-3-git-send-email-konrad.wilk@oracle.com>
-	 <alpine.DEB.2.02.1312181421260.8667@kaball.uk.xensource.com>
-	 <alpine.DEB.2.02.1312181453110.8667@kaball.uk.xensource.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1752251Ab3LRQHX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 11:07:23 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:49051 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab3LRQHV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 11:07:21 -0500
+Date: Wed, 18 Dec 2013 10:06:11 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
+CC: <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>,
+        <kgene.kim@samsung.com>, <linux-usb@vger.kernel.org>,
+        <sarah.a.sharp@linux.intel.com>, <balbi@ti.com>,
+        <gautam.vivek@samsung.com>, <joshi@samsung.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+Subject: Re: [RFC 5/5] usb: dwc3: enable async suspend/resume
+Message-ID: <20131218160611.GC4970@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1387363174-25942-1-git-send-email-yuvaraj.cd@samsung.com>
+ <1387363174-25942-5-git-send-email-yuvaraj.cd@samsung.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DiL7RhKs8rK9YGuF"
+Content-Disposition: inline
+In-Reply-To: <1387363174-25942-5-git-send-email-yuvaraj.cd@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-12-18 at 14:55 +0000, Stefano Stabellini wrote:
-> On Wed, 18 Dec 2013, Stefano Stabellini wrote:
-> > On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > > 
-> > > Which is a PV guest with auto page translation enabled
-> > > and with vector callback. It is a cross between PVHVM and PV.
-> > > 
-> > > The Xen side defines PVH as (from docs/misc/pvh-readme.txt,
-> > > with modifications):
-> > > 
-> > > "* the guest uses auto translate:
-> > >  - p2m is managed by Xen
-> > >  - pagetables are owned by the guest
-> > >  - mmu_update hypercall not available
-> > > * it uses event callback and not vlapic emulation,
-> > > * IDT is native, so set_trap_table hcall is also N/A for a PVH guest.
-> > > 
-> > > For a full list of hcalls supported for PVH, see pvh_hypercall64_table
-> > > in arch/x86/hvm/hvm.c in xen.  From the ABI prespective, it's mostly a
-> > > PV guest with auto translate, although it does use hvm_op for setting
-> > > callback vector."
-> > > 
-> > > We don't have yet a Kconfig entry setup as we do not
-> > > have all the parts ready for it - so we piggyback
-> > > on the PVHVM config option. This scaffolding will
-> > > be removed later.
-> > > 
-> > > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > 
-> > Could you please add an "&& CONFIG_X86"?
-> 
-> On second thought, given that it is just temporary and that PVHVM is not
-> defined on ARM, it could be OK. But maybe it is worth adding a small
-> comment on the fact that this is an x86-only option.
+--DiL7RhKs8rK9YGuF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I wonder if it should be CONFIG_XEN_X86_{PVH,PVHVM} instead?
+On Wed, Dec 18, 2013 at 04:09:34PM +0530, Yuvaraj Kumar C D wrote:
+> From: Andrew Bresticker <abrestic@chromium.org>
+>=20
+> In addition to enabling async suspend/resume on the xhci-plat device,
+> we must enable it for the dwc3 device (the parent of xhci-plat) in order
+> to make the full USB stack resume asynchronously.  Like the xhci-plat,
+> ehci-s5p, and ohci-exynos drivers, there are no outside dependencies
+> which would make resuming the dwc3 driver asynchronously unsafe.
+>=20
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> Reviewed-by: Julius Werner <jwerner@chromium.org>
+> Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+> ---
+>  drivers/usb/dwc3/core.c |    2 ++
+>  1 file changed, 2 insertions(+)
+>=20
+> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> index 59bb8d2..9c8a273 100644
+> --- a/drivers/usb/dwc3/core.c
+> +++ b/drivers/usb/dwc3/core.c
+> @@ -586,6 +586,8 @@ static int dwc3_probe(struct platform_device *pdev)
+> =20
+>  	pm_runtime_allow(dev);
+> =20
+> +	device_enable_async_suspend(dev);
 
+how has this series been tested ? Let me rephrase this: was this series
+tested at all ? Note that if we are in gadget mode, we will disable
+physical endpoints 0 and 1, which will break USB communication requiring
+a new enumeration later. On top of that, for versions of the core which
+are configured without hibernation support - in fact for all cores
+currently, since we don't have hibernation support implemented in this
+driver -, we will loose communication with the far end (be it a host or
+a device).
 
+You mention there are no external dependencies to make async suspend
+work on this driver, but that's far from the truth. As it is today, this
+driver needs a lot of work to learn about all the details about all
+different versions of this IP when it comes to supporting async PM.
+
+I suppose this was tested with 500 other out-of-tree patches and you
+simply cherry-picked this patch to send upstream ? Am I right ? It
+certainly looks like it.
+
+Please let us know how has this been tested ? Did you run USB30CV ? Did
+you make sure to run through USB Certification interoperability tests ?
+
+Did you leave some stress test running for weeks before sending this
+patch out ? Is Exynos 5 working fine out of mainline ?
+
+cheers
+
+--=20
+balbi
+
+--DiL7RhKs8rK9YGuF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSscfzAAoJEIaOsuA1yqREggMP/jTPmI/Y6HfD6DFMR+6Yd99e
+cov+LuHmFFc12YOhTs3JwRjXKlzmSqGEFaEtLqGSiias3d6jlsB9EpAXW9sfRCJQ
+tc0vy6YhxouL8Jr66hN9dT3NOCEZkzl5ytFZ7sHW96a4hzbjuuv7QJamKfF02eNq
+s7kaFYak+IdKL1wHqM5yiDfuR36bnzqcgNgPWPGcFOhyZ+pCFl7qYZAyXA9m2iuo
+sPS/rZtCNui8bEkqg11YqaTzYxHIhm732Elho3DTIxb5vNMgeNiozvcxIyj82OWD
+rKFS9PuRRaHyo+ye3DaejDuOGtZS9cNV+msCPzQVLgmnDk19tl/0xpS26AQJvNbr
+u1F2/Nv0sPkUEioiENceS7jWMF8FYfcNPiIz63wzb+dw1Px6lkcmZwRBTtbVy6kk
+C6MB1rk0CWrAZiZl0NHVvShwriR3gO02NET77jQOfN/mNfj7qFh6s89+CDGkCQn3
+eyVKjCLZdmkjulcTQ94ukOtOjuE7FGSbEOHwJYdiq77SEgzATL95kQc0DujnCMxF
+Ka6lQqNEiREN/ghi0cl++Sg/X6l1lGEAA3PhLGQItZ3QaQuTBUCJmzkk83gmj9z3
+6XV3nrAiQhCAV8TuEN6AgVlr0nRhr1/K31VBjFRR6THC08ue6bszkSVErkjB/IvJ
+BDbSaTorpy6ry2gMBuct
+=kszb
+-----END PGP SIGNATURE-----
+
+--DiL7RhKs8rK9YGuF--
