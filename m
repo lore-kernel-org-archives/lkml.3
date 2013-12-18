@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab3LRKdn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 05:33:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44746 "EHLO
+	id S1754386Ab3LRKeF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 05:34:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44720 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234Ab3LRKdk (ORCPT
+	with ESMTP id S1752189Ab3LRKdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 05:33:40 -0500
-Date: Wed, 18 Dec 2013 02:32:58 -0800
-From: tip-bot for Wanpeng Li <tipbot@zytor.com>
-Message-ID: <tip-de1b301a19754778ddd9f908d266ffe1c010b2cf@git.kernel.org>
+	Wed, 18 Dec 2013 05:33:19 -0500
+Date: Wed, 18 Dec 2013 02:32:39 -0800
+From: tip-bot for Will Deacon <tipbot@zytor.com>
+Message-ID: <tip-9450d14fb959336803e5209119eb422b667b96aa@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        liwanp@linux.vnet.ibm.com, peterz@infradead.org,
-        n-horiguchi@ah.jp.nec.com, riel@redhat.com, akpm@linux-foundation.org,
-        mgorman@suse.de, tglx@linutronix.de, rientjes@google.com
+        will.deacon@arm.com, peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        liwanp@linux.vnet.ibm.com, peterz@infradead.org,
-        n-horiguchi@ah.jp.nec.com, riel@redhat.com, akpm@linux-foundation.org,
-        mgorman@suse.de, tglx@linutronix.de, rientjes@google.com
-In-Reply-To: <1386833006-6600-2-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1386833006-6600-2-git-send-email-liwanp@linux.vnet.ibm.com>
+        will.deacon@arm.com, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <1385560479-11014-2-git-send-email-will.deacon@arm.com>
+References: <1385560479-11014-2-git-send-email-will.deacon@arm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/numa:
-  Use wrapper function task_node to get node which task is on
-Git-Commit-ID: de1b301a19754778ddd9f908d266ffe1c010b2cf
+Subject: [tip:perf/core] Revert "ARM: 7556/1: perf:
+  fix updated event period in response to PERF_EVENT_IOC_PERIOD"
+Git-Commit-ID: 9450d14fb959336803e5209119eb422b667b96aa
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,68 +28,45 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 18 Dec 2013 02:33:04 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 18 Dec 2013 02:32:45 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  de1b301a19754778ddd9f908d266ffe1c010b2cf
-Gitweb:     http://git.kernel.org/tip/de1b301a19754778ddd9f908d266ffe1c010b2cf
-Author:     Wanpeng Li <liwanp@linux.vnet.ibm.com>
-AuthorDate: Thu, 12 Dec 2013 15:23:24 +0800
+Commit-ID:  9450d14fb959336803e5209119eb422b667b96aa
+Gitweb:     http://git.kernel.org/tip/9450d14fb959336803e5209119eb422b667b96aa
+Author:     Will Deacon <will.deacon@arm.com>
+AuthorDate: Wed, 27 Nov 2013 13:54:39 +0000
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 17 Dec 2013 15:24:39 +0100
+CommitDate: Tue, 17 Dec 2013 15:21:35 +0100
 
-sched/numa: Use wrapper function task_node to get node which task is on
+Revert "ARM: 7556/1: perf: fix updated event period in response to PERF_EVENT_IOC_PERIOD"
 
-Use wrapper function task_node to get node which task is on.
+This reverts commit 3581fe0ef37ce12ac7a4f74831168352ae848edc.
 
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
+Fixes to the handling of PERF_EVENT_IOC_PERIOD in the core code mean
+we no longer have to play this horrible game.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1386833006-6600-2-git-send-email-liwanp@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/1385560479-11014-2-git-send-email-will.deacon@arm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/debug.c | 2 +-
- kernel/sched/fair.c  | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/kernel/perf_event.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 5c34d18..374fe04 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -139,7 +139,7 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
- 		0LL, 0LL, 0LL, 0L, 0LL, 0L, 0LL, 0L);
- #endif
- #ifdef CONFIG_NUMA_BALANCING
--	SEQ_printf(m, " %d", cpu_to_node(task_cpu(p)));
-+	SEQ_printf(m, " %d", task_node(p));
- #endif
- #ifdef CONFIG_CGROUP_SCHED
- 	SEQ_printf(m, " %s", task_group_path(task_group(p)));
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index fcb6c17..ebdb08b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1202,7 +1202,7 @@ static int task_numa_migrate(struct task_struct *p)
- 	 * elsewhere, so there is no point in (re)trying.
- 	 */
- 	if (unlikely(!sd)) {
--		p->numa_preferred_nid = cpu_to_node(task_cpu(p));
-+		p->numa_preferred_nid = task_node(p);
- 		return -EINVAL;
- 	}
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index bc3f2ef..789d846 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -99,10 +99,6 @@ int armpmu_event_set_period(struct perf_event *event)
+ 	s64 period = hwc->sample_period;
+ 	int ret = 0;
  
-@@ -1269,7 +1269,7 @@ static void numa_migrate_preferred(struct task_struct *p)
- 	p->numa_migrate_retry = jiffies + HZ;
- 
- 	/* Success if task is already running on preferred CPU */
--	if (cpu_to_node(task_cpu(p)) == p->numa_preferred_nid)
-+	if (task_node(p) == p->numa_preferred_nid)
- 		return;
- 
- 	/* Otherwise, try migrate to a CPU on the preferred node */
+-	/* The period may have been changed by PERF_EVENT_IOC_PERIOD */
+-	if (unlikely(period != hwc->last_period))
+-		left = period - (hwc->last_period - left);
+-
+ 	if (unlikely(left <= -period)) {
+ 		left = period;
+ 		local64_set(&hwc->period_left, left);
