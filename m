@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab3LRV5q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:57:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36110 "EHLO
+	id S1756042Ab3LRV6A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:58:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36105 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353Ab3LRVMe (ORCPT
+	with ESMTP id S1753351Ab3LRVMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Dec 2013 16:12:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.10 58/78] dm bufio: initialize read-only module parameters
-Date: Wed, 18 Dec 2013 13:11:26 -0800
-Message-Id: <20131218211113.533366411@linuxfoundation.org>
+        David Sterba <dsterba@suse.cz>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.10 57/78] btrfs: call mnt_drop_write after interrupted subvol deletion
+Date: Wed, 18 Dec 2013 13:11:25 -0800
+Message-Id: <20131218211113.505890623@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -29,45 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: David Sterba <dsterba@suse.cz>
 
-commit 4cb57ab4a2e61978f3a9b7d4f53988f30d61c27f upstream.
+commit e43f998e47bae27e37e159915625e8d4b130153b upstream.
 
-Some module parameters in dm-bufio are read-only. These parameters
-inform the user about memory consumption. They are not supposed to be
-changed by the user.
+If btrfs_ioctl_snap_destroy blocks on the mutex and the process is
+killed, mnt_write count is unbalanced and leads to unmountable
+filesystem.
 
-However, despite being read-only, these parameters can be set on
-modprobe or insmod command line, for example:
-modprobe dm-bufio current_allocated_bytes=12345
-
-The kernel doesn't expect that these variables can be non-zero at module
-initialization and if the user sets them, it results in BUG.
-
-This patch initializes the variables in the module init routine, so that
-user-supplied values are ignored.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: David Sterba <dsterba@suse.cz>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-bufio.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ fs/btrfs/ioctl.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -1660,6 +1660,11 @@ static int __init dm_bufio_init(void)
- {
- 	__u64 mem;
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -2093,7 +2093,7 @@ static noinline int btrfs_ioctl_snap_des
  
-+	dm_bufio_allocated_kmem_cache = 0;
-+	dm_bufio_allocated_get_free_pages = 0;
-+	dm_bufio_allocated_vmalloc = 0;
-+	dm_bufio_current_allocated = 0;
-+
- 	memset(&dm_bufio_caches, 0, sizeof dm_bufio_caches);
- 	memset(&dm_bufio_cache_names, 0, sizeof dm_bufio_cache_names);
- 
+ 	err = mutex_lock_killable_nested(&dir->i_mutex, I_MUTEX_PARENT);
+ 	if (err == -EINTR)
+-		goto out;
++		goto out_drop_write;
+ 	dentry = lookup_one_len(vol_args->name, parent, namelen);
+ 	if (IS_ERR(dentry)) {
+ 		err = PTR_ERR(dentry);
+@@ -2235,6 +2235,7 @@ out_dput:
+ 	dput(dentry);
+ out_unlock_dir:
+ 	mutex_unlock(&dir->i_mutex);
++out_drop_write:
+ 	mnt_drop_write_file(file);
+ out:
+ 	kfree(vol_args);
 
 
