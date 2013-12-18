@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab3LRWHL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:07:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35993 "EHLO
+	id S1756175Ab3LRWHt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:07:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35984 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113Ab3LRVML (ORCPT
+	with ESMTP id S1752976Ab3LRVMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:11 -0500
+	Wed, 18 Dec 2013 16:12:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 36/78] ath9k: Fix QuickDrop usage
-Date: Wed, 18 Dec 2013 13:11:04 -0800
-Message-Id: <20131218211112.925607538@linuxfoundation.org>
+        Linus Pizunski <linus@narrativeteam.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 34/78] drivers/rtc/rtc-at91rm9200.c: correct alarm over day/month wrap
+Date: Wed, 18 Dec 2013 13:11:02 -0800
+Message-Id: <20131218211112.870887420@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -29,54 +31,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Linus Pizunski <linus@narrativeteam.com>
 
-commit 93c1cfbe598f72cfa7be49e4a7d2a1d482e15119 upstream.
+commit eb3c227289840eed95ddfb0516046f08d8993940 upstream.
 
-Bit 5 in the miscConfiguration field of the base EEPROM
-header denotes whether QuickDrop is enabled or not. Fix
-the incorrect usage of BIT(1) and also make sure that
-this is done only for the required chips.
+Update month and day of month to the alarm month/day instead of current
+day/month when setting the RTC alarm mask.
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Linus Pizunski <linus@narrativeteam.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |   20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
+ drivers/rtc/rtc-at91rm9200.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-@@ -3937,18 +3937,20 @@ static void ar9003_hw_quick_drop_apply(s
- 	int quick_drop;
- 	s32 t[3], f[3] = {5180, 5500, 5785};
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -221,6 +221,8 @@ static int at91_rtc_setalarm(struct devi
  
--	if (!(pBase->miscConfiguration & BIT(1)))
-+	if (!(pBase->miscConfiguration & BIT(4)))
- 		return;
+ 	at91_alarm_year = tm.tm_year;
  
--	if (freq < 4000)
--		quick_drop = eep->modalHeader2G.quick_drop;
--	else {
--		t[0] = eep->base_ext1.quick_drop_low;
--		t[1] = eep->modalHeader5G.quick_drop;
--		t[2] = eep->base_ext1.quick_drop_high;
--		quick_drop = ar9003_hw_power_interpolate(freq, f, t, 3);
-+	if (AR_SREV_9300(ah) || AR_SREV_9580(ah) || AR_SREV_9340(ah)) {
-+		if (freq < 4000) {
-+			quick_drop = eep->modalHeader2G.quick_drop;
-+		} else {
-+			t[0] = eep->base_ext1.quick_drop_low;
-+			t[1] = eep->modalHeader5G.quick_drop;
-+			t[2] = eep->base_ext1.quick_drop_high;
-+			quick_drop = ar9003_hw_power_interpolate(freq, f, t, 3);
-+		}
-+		REG_RMW_FIELD(ah, AR_PHY_AGC, AR_PHY_AGC_QUICK_DROP, quick_drop);
- 	}
--	REG_RMW_FIELD(ah, AR_PHY_AGC, AR_PHY_AGC_QUICK_DROP, quick_drop);
- }
- 
- static void ar9003_hw_txend_to_xpa_off_apply(struct ath_hw *ah, bool is2ghz)
++	tm.tm_mon = alrm->time.tm_mon;
++	tm.tm_mday = alrm->time.tm_mday;
+ 	tm.tm_hour = alrm->time.tm_hour;
+ 	tm.tm_min = alrm->time.tm_min;
+ 	tm.tm_sec = alrm->time.tm_sec;
 
 
