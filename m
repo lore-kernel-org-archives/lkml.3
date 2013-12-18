@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab3LRVJA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:09:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35767 "EHLO
+	id S932086Ab3LRWRZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:17:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35791 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752313Ab3LRVI6 (ORCPT
+	with ESMTP id S1752404Ab3LRVJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:08:58 -0500
+	Wed, 18 Dec 2013 16:09:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Blaise Gassend <blaise@suitabletech.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.4 20/31] mac80211: dont attempt to reorder multicast frames
-Date: Wed, 18 Dec 2013 13:08:28 -0800
-Message-Id: <20131218210523.360582625@linuxfoundation.org>
+        Roger Quadros <rogerq@ti.com>, Paul Walmsley <paul@pwsan.com>
+Subject: [PATCH 3.4 04/31] ARM: OMAP3: hwmod data: Dont prevent RESET of USB Host module
+Date: Wed, 18 Dec 2013 13:08:12 -0800
+Message-Id: <20131218210522.915983651@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218210522.790152625@linuxfoundation.org>
 References: <20131218210522.790152625@linuxfoundation.org>
@@ -29,36 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Roger Quadros <rogerq@ti.com>
 
-commit 051a41fa4ee14f5c39668f0980973b9a195de560 upstream.
+commit 7f4d3641e2548d1ac5dee837ff434df668a2810c upstream.
 
-Multicast frames can't be transmitted as part of an aggregation
-session (such a session couldn't even be set up) so don't try to
-reorder them. Trying to do so would cause the reorder to stop
-working correctly since multicast QoS frames (as transmitted by
-the Aruba APs this was found with) would cause sequence number
-confusion in the buffer.
+Unlike what the comment states, errata i660 does not state that we
+can't RESET the USB host module. Instead it states that RESET is the
+only way to recover from a deadlock situation.
 
-Reported-by: Blaise Gassend <blaise@suitabletech.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+RESET ensures that the module is in a known good state irrespective
+of what bootloader does with the module, so it must be done at boot.
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Tested-by: Tomi Valkeinen <tomi.valkeinen@ti.com> # Panda, BeagleXM
+Fixes: de231388cb80 ("ARM: OMAP: USB: EHCI and OHCI hwmod structures for OMAP3")
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |   13 +++----------
+ 1 file changed, 3 insertions(+), 10 deletions(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -763,7 +763,8 @@ static void ieee80211_rx_reorder_ampdu(s
- 	u16 sc;
- 	u8 tid, ack_policy;
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -3347,7 +3347,8 @@ static struct omap_hwmod_class_sysconfig
+ 	.syss_offs	= 0x0014,
+ 	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_CLOCKACTIVITY |
+ 			   SYSC_HAS_SIDLEMODE | SYSC_HAS_ENAWAKEUP |
+-			   SYSC_HAS_SOFTRESET | SYSC_HAS_AUTOIDLE),
++			   SYSC_HAS_SOFTRESET | SYSC_HAS_AUTOIDLE |
++			   SYSS_HAS_RESET_STATUS),
+ 	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
+ 			   MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
+ 	.sysc_fields	= &omap_hwmod_sysc_type1,
+@@ -3465,15 +3466,7 @@ static struct omap_hwmod omap3xxx_usb_ho
+ 	 * hence HWMOD_SWSUP_MSTANDBY
+ 	 */
  
--	if (!ieee80211_is_data_qos(hdr->frame_control))
-+	if (!ieee80211_is_data_qos(hdr->frame_control) ||
-+	    is_multicast_ether_addr(hdr->addr1))
- 		goto dont_reorder;
+-	/*
+-	 * During system boot; If the hwmod framework resets the module
+-	 * the module will have smart idle settings; which can lead to deadlock
+-	 * (above Errata Id:i660); so, dont reset the module during boot;
+-	 * Use HWMOD_INIT_NO_RESET.
+-	 */
+-
+-	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY |
+-			  HWMOD_INIT_NO_RESET,
++	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+ };
  
- 	/*
+ /*
 
 
