@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080Ab3LRGji (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 01:39:38 -0500
-Received: from ozlabs.org ([203.10.76.45]:60172 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab3LRGjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 01:39:37 -0500
-Date: Wed, 18 Dec 2013 17:39:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>
-Subject: linux-next: build warning after merge of the target-updates tree
-Message-Id: <20131218173930.56f758971ca1939cbc3e67ec@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__18_Dec_2013_17_39_30_+1100_VXSR.XynMKLT07Re"
+	id S1753171Ab3LRGkE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 01:40:04 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:39546 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab3LRGkB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 01:40:01 -0500
+Date: Wed, 18 Dec 2013 12:09:53 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, josh@joshtriplett.org
+Subject: [PATCH] drivers: base: Add prototype declaration in memory.c
+Message-ID: <20131218063953.GA3180@rashika>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__18_Dec_2013_17_39_30_+1100_VXSR.XynMKLT07Re
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Add the prototype declaration of function memory_block_size_bytes() in
+memory.c.
 
-Hi Nicholas,
+This eliminates the following warning in memory.c:
+drivers/base/memory.c:87:1: warning: no previous prototype for ‘memory_block_size_bytes’ [-Wmissing-prototypes]
 
-After merging the target-updates tree, today's linux-next build (x86_64
-allmodconfig) produced this warning:
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/base/memory.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-drivers/target/target_core_alua.c: In function 'core_alua_state_lba_depende=
-nt':
-drivers/target/target_core_alua.c:473:6: warning: suggest parentheses aroun=
-d operand of '!' or change '&' to '&&' or '!' to '~' [-Wparentheses]
-  if (!cmd->se_cmd_flags & SCF_SCSI_DATA_CDB)
-      ^
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index bece691..cfa03de 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -83,6 +83,7 @@ static void memory_block_release(struct device *dev)
+ 	kfree(mem);
+ }
+ 
++unsigned long __weak memory_block_size_bytes(void);
+ unsigned long __weak memory_block_size_bytes(void)
+ {
+ 	return MIN_MEMORY_BLOCK_SIZE;
+-- 
+1.7.9.5
 
-Introduced by commit 923aacab87ba ("target_core_alua: Referrals
-infrastructure").
---=20
-Cheers,
-Stephen Rothwell <sfr@canb.auug.org.au>
-
---Signature=_Wed__18_Dec_2013_17_39_30_+1100_VXSR.XynMKLT07Re
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSsUMmAAoJEMDTa8Ir7ZwV3ycP/0L+RcFpmpTnsK0xpwhMXPwp
-1YuP2hl7FgXSnh4M55usZJjla9tJG23qncUA3QTkBV8oWPGd0BNlDPFXmbN0wPdg
-Bji4mz5+f8R5FYVouimlcmHEDGDhv9NxoGuaY01gOr0BgHlnZYBuLHa4MsC8EDkr
-4Oxwjs2Fh/Op07nswlw4r+6IwH+h5TEP2Q+eykljulw5P3+uUDDigJyfJC7A67/U
-/2O9n9G4668qJnKqm3CPNMMYvmBJVt3BVjMYNwWEg0mm3hT/rqCH27wQRN65xMga
-aiS1j3nj0RgTYYW8RWWGp8WYojEs5fI6TyCl0sydI7At1u/lrG+9UZiyyxACpHwe
-Ffwl5XtuYzuA11K81Wtakm67957RUqI6kcSIrwviTqqso1NzZhpSxfvYpksJWydQ
-Yg5HNxlCBxJEfELTKk/YA7lQ+4HF07IYFev4ielUCKKEAZGJGvlqj0G++xqDlWAb
-cC76jDYDQOVYe58ppnQeW5FENdGLk+Ijf2JMo+33Qsc96uHmpnjP6WtA9CTlunsp
-6SCF9nAODAo2Ke1CpNjfeqkAeJSTI7fUgX0PknfckFQXKm7wrYsXIFHIDqjl5tCo
-B9PJia8QC6E0SR/EtUSon5nq1lRSkPVWl6OLre5yzmzXHHMwMz03lW+aC3PKsCZv
-e+LEEONflTIhD6CpbBu2
-=PB2h
------END PGP SIGNATURE-----
-
---Signature=_Wed__18_Dec_2013_17_39_30_+1100_VXSR.XynMKLT07Re--
