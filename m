@@ -1,53 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab3LRVlg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:41:36 -0500
-Received: from mail-gg0-f170.google.com ([209.85.161.170]:51474 "EHLO
-	mail-gg0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790Ab3LRVld (ORCPT
+	id S1755833Ab3LRVky (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:40:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36341 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898Ab3LRVNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:41:33 -0500
-Date: Wed, 18 Dec 2013 16:41:28 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Nigel Cunningham <nigel@nigelcunningham.com.au>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
-        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] libata, freezer: avoid block device removal while system
- is frozen
-Message-ID: <20131218214128.GB8218@mtj.dyndns.org>
-References: <20131213174932.GA27070@htj.dyndns.org>
- <4108657.rimrPRbHDY@vostro.rjw.lan>
- <20131218111726.GB3808@htj.dyndns.org>
- <3767261.syB7gLdVqQ@vostro.rjw.lan>
- <20131218213936.GA8218@mtj.dyndns.org>
+	Wed, 18 Dec 2013 16:13:21 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, Olof Johansson <olof@lixom.net>
+Subject: [PATCH 3.12 009/118] ARM: highbank: handle soft poweroff and reset key events
+Date: Wed, 18 Dec 2013 13:10:46 -0800
+Message-Id: <20131218211219.729485755@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
+References: <20131218211219.461663463@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131218213936.GA8218@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 04:39:36PM -0500, Tejun Heo wrote:
-> Yeah, we can just rip out the whole freezer support and let the
-> caller's pm notification hooks implement it by doing
-> 
-> 	workqueue_set_max_active(wq, 0);
-> 	flush_workqueue(wq);
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Oops, the above doesn't work but I can trivially add a new interface
-for this.  Something which waits for the max_active to drop below the
-newly set level before returning.
+------------------
 
-	workqueue_set_max_active_and_wait(wq, 0);
+From: Rob Herring <rob.herring@calxeda.com>
 
-Thanks.
+commit 3843114856728075d0a80e7151197c19fb3a9e08 upstream.
 
--- 
-tejun
+Graceful reboot and poweroff via IPMI commands to the management
+processor don't work. Power and reset keys are events from the
+management processor which are generated via IPC messages. Passing
+the keys to userspace does not work as neither acpid nor a desktop
+environment are present.
+
+This adds a notifier handler for the IPC messages so the kernel can
+handle the key events directly and IPMI graceful shutdown will work.
+
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm/mach-highbank/highbank.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+--- a/arch/arm/mach-highbank/highbank.c
++++ b/arch/arm/mach-highbank/highbank.c
+@@ -17,12 +17,15 @@
+ #include <linux/clkdev.h>
+ #include <linux/clocksource.h>
+ #include <linux/dma-mapping.h>
++#include <linux/input.h>
+ #include <linux/io.h>
+ #include <linux/irqchip.h>
++#include <linux/mailbox.h>
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+ #include <linux/of_address.h>
++#include <linux/reboot.h>
+ #include <linux/amba/bus.h>
+ #include <linux/clk-provider.h>
+ 
+@@ -153,6 +156,24 @@ static struct notifier_block highbank_pl
+ 	.notifier_call = highbank_platform_notifier,
+ };
+ 
++static int hb_keys_notifier(struct notifier_block *nb, unsigned long event, void *data)
++{
++	u32 key = *(u32 *)data;
++
++	if (event != 0x1000)
++		return 0;
++
++	if (key == KEY_POWER)
++		orderly_poweroff(false);
++	else if (key == 0xffff)
++		ctrl_alt_del();
++
++	return 0;
++}
++static struct notifier_block hb_keys_nb = {
++	.notifier_call = hb_keys_notifier,
++};
++
+ static void __init highbank_init(void)
+ {
+ 	pm_power_off = highbank_power_off;
+@@ -161,6 +182,8 @@ static void __init highbank_init(void)
+ 	bus_register_notifier(&platform_bus_type, &highbank_platform_nb);
+ 	bus_register_notifier(&amba_bustype, &highbank_amba_nb);
+ 
++	pl320_ipc_register_notifier(&hb_keys_nb);
++
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ }
+ 
+
+
