@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab3LRVjH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:39:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36359 "EHLO
+	id S1755757Ab3LRVj3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:39:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36354 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890Ab3LRVNZ (ORCPT
+	with ESMTP id S1753922Ab3LRVNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:25 -0500
+	Wed, 18 Dec 2013 16:13:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 3.12 047/118] iommu/arm-smmu: use mutex instead of spinlock for locking page tables
-Date: Wed, 18 Dec 2013 13:11:24 -0800
-Message-Id: <20131218211220.804383618@linuxfoundation.org>
+        Christian Engelmayer <christian.engelmayer@frequentis.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.12 038/118] Input: usbtouchscreen - separate report and transmit buffer size handling
+Date: Wed, 18 Dec 2013 13:11:15 -0800
+Message-Id: <20131218211220.550145725@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -28,154 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Christian Engelmayer <christian.engelmayer@frequentis.com>
 
-commit a44a9791e778d9ccda50d5534028ed4057a9a45b upstream.
+commit 4ef38351d770cc421f4a0c7a849fd13207fc5741 upstream.
 
-When creating IO mappings, we lazily allocate our page tables using the
-standard, non-atomic allocator functions. This presents us with a
-problem, since our page tables are protected with a spinlock.
+This patch supports the separate handling of the USB transfer buffer length
+and the length of the buffer used for multi packet support. For devices
+supporting multiple report or diagnostic packets, the USB transfer size is now
+limited to the USB endpoints wMaxPacketSize - otherwise it defaults to the
+configured report packet size as before.
 
-This patch reworks the smmu_domain lock to use a mutex instead of a
-spinlock. iova_to_phys is then reworked so that it only reads the page
-tables, and can run in a lockless fashion, leaving the mutex to guard
-against concurrent mapping threads.
+This fixes an issue where event reporting can be delayed for an arbitrary
+time for multi packet devices. For instance the report size for eGalax devices
+is defined to the 16 byte maximum diagnostic packet size as opposed to the 5
+byte report packet size. In case the driver requests 16 byte from the USB
+interrupt endpoint, the USB host controller driver needs to split up the
+request into 2 accesses according to the endpoints wMaxPacketSize of 8 byte.
+When the first transfer is answered by the eGalax device with not less than
+the full 8 byte requested, the host controller has got no way of knowing
+whether the touch controller has got additional data queued and will issue
+the second transfer. If per example a liftoff event finishes at such a
+wMaxPacketSize boundary, the data will not be available to the usbtouch driver
+until a further event is triggered and transfered to the host. From user
+perspective the BTN_TOUCH release event in this case is stuck until the next
+touch down event.
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Christian Engelmayer <christian.engelmayer@frequentis.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/arm-smmu.c |   62 +++++++++++++++++++----------------------------
- 1 file changed, 26 insertions(+), 36 deletions(-)
+ drivers/input/touchscreen/usbtouchscreen.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
---- a/drivers/iommu/arm-smmu.c
-+++ b/drivers/iommu/arm-smmu.c
-@@ -392,7 +392,7 @@ struct arm_smmu_domain {
- 	struct arm_smmu_cfg		root_cfg;
- 	phys_addr_t			output_mask;
- 
--	spinlock_t			lock;
-+	struct mutex			lock;
- };
- 
- static DEFINE_SPINLOCK(arm_smmu_devices_lock);
-@@ -897,7 +897,7 @@ static int arm_smmu_domain_init(struct i
- 		goto out_free_domain;
- 	smmu_domain->root_cfg.pgd = pgd;
- 
--	spin_lock_init(&smmu_domain->lock);
-+	mutex_init(&smmu_domain->lock);
- 	domain->priv = smmu_domain;
- 	return 0;
- 
-@@ -1134,7 +1134,7 @@ static int arm_smmu_attach_dev(struct io
- 	 * Sanity check the domain. We don't currently support domains
- 	 * that cross between different SMMU chains.
- 	 */
--	spin_lock(&smmu_domain->lock);
-+	mutex_lock(&smmu_domain->lock);
- 	if (!smmu_domain->leaf_smmu) {
- 		/* Now that we have a master, we can finalise the domain */
- 		ret = arm_smmu_init_domain_context(domain, dev);
-@@ -1149,7 +1149,7 @@ static int arm_smmu_attach_dev(struct io
- 			dev_name(device_smmu->dev));
- 		goto err_unlock;
- 	}
--	spin_unlock(&smmu_domain->lock);
-+	mutex_unlock(&smmu_domain->lock);
- 
- 	/* Looks ok, so add the device to the domain */
- 	master = find_smmu_master(smmu_domain->leaf_smmu, dev->of_node);
-@@ -1159,7 +1159,7 @@ static int arm_smmu_attach_dev(struct io
- 	return arm_smmu_domain_add_master(smmu_domain, master);
- 
- err_unlock:
--	spin_unlock(&smmu_domain->lock);
-+	mutex_unlock(&smmu_domain->lock);
- 	return ret;
- }
- 
-@@ -1388,7 +1388,7 @@ static int arm_smmu_handle_mapping(struc
- 	if (paddr & ~output_mask)
- 		return -ERANGE;
- 
--	spin_lock(&smmu_domain->lock);
-+	mutex_lock(&smmu_domain->lock);
- 	pgd += pgd_index(iova);
- 	end = iova + size;
- 	do {
-@@ -1404,7 +1404,7 @@ static int arm_smmu_handle_mapping(struc
- 	} while (pgd++, iova != end);
- 
- out_unlock:
--	spin_unlock(&smmu_domain->lock);
-+	mutex_unlock(&smmu_domain->lock);
- 
- 	/* Ensure new page tables are visible to the hardware walker */
- 	if (smmu->features & ARM_SMMU_FEAT_COHERENT_WALK)
-@@ -1443,44 +1443,34 @@ static size_t arm_smmu_unmap(struct iomm
- static phys_addr_t arm_smmu_iova_to_phys(struct iommu_domain *domain,
- 					 dma_addr_t iova)
+--- a/drivers/input/touchscreen/usbtouchscreen.c
++++ b/drivers/input/touchscreen/usbtouchscreen.c
+@@ -106,6 +106,7 @@ struct usbtouch_device_info {
+ struct usbtouch_usb {
+ 	unsigned char *data;
+ 	dma_addr_t data_dma;
++	int data_size;
+ 	unsigned char *buffer;
+ 	int buf_len;
+ 	struct urb *irq;
+@@ -1521,7 +1522,7 @@ static int usbtouch_reset_resume(struct
+ static void usbtouch_free_buffers(struct usb_device *udev,
+ 				  struct usbtouch_usb *usbtouch)
  {
--	pgd_t *pgd;
--	pud_t *pud;
--	pmd_t *pmd;
--	pte_t *pte;
-+	pgd_t *pgdp, pgd;
-+	pud_t pud;
-+	pmd_t pmd;
-+	pte_t pte;
- 	struct arm_smmu_domain *smmu_domain = domain->priv;
- 	struct arm_smmu_cfg *root_cfg = &smmu_domain->root_cfg;
--	struct arm_smmu_device *smmu = root_cfg->smmu;
- 
--	spin_lock(&smmu_domain->lock);
--	pgd = root_cfg->pgd;
--	if (!pgd)
--		goto err_unlock;
-+	pgdp = root_cfg->pgd;
-+	if (!pgdp)
-+		return 0;
- 
--	pgd += pgd_index(iova);
--	if (pgd_none_or_clear_bad(pgd))
--		goto err_unlock;
-+	pgd = *(pgdp + pgd_index(iova));
-+	if (pgd_none(pgd))
-+		return 0;
- 
--	pud = pud_offset(pgd, iova);
--	if (pud_none_or_clear_bad(pud))
--		goto err_unlock;
-+	pud = *pud_offset(&pgd, iova);
-+	if (pud_none(pud))
-+		return 0;
- 
--	pmd = pmd_offset(pud, iova);
--	if (pmd_none_or_clear_bad(pmd))
--		goto err_unlock;
-+	pmd = *pmd_offset(&pud, iova);
-+	if (pmd_none(pmd))
-+		return 0;
- 
--	pte = pmd_page_vaddr(*pmd) + pte_index(iova);
-+	pte = *(pmd_page_vaddr(pmd) + pte_index(iova));
- 	if (pte_none(pte))
--		goto err_unlock;
--
--	spin_unlock(&smmu_domain->lock);
--	return __pfn_to_phys(pte_pfn(*pte)) | (iova & ~PAGE_MASK);
-+		return 0;
- 
--err_unlock:
--	spin_unlock(&smmu_domain->lock);
--	dev_warn(smmu->dev,
--		 "invalid (corrupt?) page tables detected for iova 0x%llx\n",
--		 (unsigned long long)iova);
--	return -EINVAL;
-+	return __pfn_to_phys(pte_pfn(pte)) | (iova & ~PAGE_MASK);
+-	usb_free_coherent(udev, usbtouch->type->rept_size,
++	usb_free_coherent(udev, usbtouch->data_size,
+ 			  usbtouch->data, usbtouch->data_dma);
+ 	kfree(usbtouch->buffer);
  }
+@@ -1566,7 +1567,20 @@ static int usbtouch_probe(struct usb_int
+ 	if (!type->process_pkt)
+ 		type->process_pkt = usbtouch_process_pkt;
  
- static int arm_smmu_domain_has_cap(struct iommu_domain *domain,
+-	usbtouch->data = usb_alloc_coherent(udev, type->rept_size,
++	usbtouch->data_size = type->rept_size;
++	if (type->get_pkt_len) {
++		/*
++		 * When dealing with variable-length packets we should
++		 * not request more than wMaxPacketSize bytes at once
++		 * as we do not know if there is more data coming or
++		 * we filled exactly wMaxPacketSize bytes and there is
++		 * nothing else.
++		 */
++		usbtouch->data_size = min(usbtouch->data_size,
++					  usb_endpoint_maxp(endpoint));
++	}
++
++	usbtouch->data = usb_alloc_coherent(udev, usbtouch->data_size,
+ 					    GFP_KERNEL, &usbtouch->data_dma);
+ 	if (!usbtouch->data)
+ 		goto out_free;
+@@ -1626,12 +1640,12 @@ static int usbtouch_probe(struct usb_int
+ 	if (usb_endpoint_type(endpoint) == USB_ENDPOINT_XFER_INT)
+ 		usb_fill_int_urb(usbtouch->irq, udev,
+ 			 usb_rcvintpipe(udev, endpoint->bEndpointAddress),
+-			 usbtouch->data, type->rept_size,
++			 usbtouch->data, usbtouch->data_size,
+ 			 usbtouch_irq, usbtouch, endpoint->bInterval);
+ 	else
+ 		usb_fill_bulk_urb(usbtouch->irq, udev,
+ 			 usb_rcvbulkpipe(udev, endpoint->bEndpointAddress),
+-			 usbtouch->data, type->rept_size,
++			 usbtouch->data, usbtouch->data_size,
+ 			 usbtouch_irq, usbtouch);
+ 
+ 	usbtouch->irq->dev = udev;
 
 
