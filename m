@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284Ab3LRWBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:01:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36068 "EHLO
+	id S1756122Ab3LRWCG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:02:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36048 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266Ab3LRVM1 (ORCPT
+	with ESMTP id S1753243Ab3LRVMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:27 -0500
+	Wed, 18 Dec 2013 16:12:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Sunil K. Pandey" <sunil.k.pandey@intel.com>,
-        "Kevin B. Smith" <kevin.b.smith@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.10 49/78] x86, build, icc: Remove uninitialized_var() from compiler-intel.h
-Date: Wed, 18 Dec 2013 13:11:17 -0800
-Message-Id: <20131218211113.284037246@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.10 45/78] drm/radeon: program DCE2 audio dto just like DCE3
+Date: Wed, 18 Dec 2013 13:11:13 -0800
+Message-Id: <20131218211113.174050245@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -30,36 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 503cf95c061a0551eb684da364509297efbe55d9 upstream.
+commit 55d4e020fb8ddd3896a8cd3351028f5c3a2c4bd3 upstream.
 
-When compiling with icc, <linux/compiler-gcc.h> ends up included
-because the icc environment defines __GNUC__.  Thus, we neither need
-nor want to have this macro defined in both compiler-gcc.h and
-compiler-intel.h, and the fact that they are inconsistent just makes
-the compiler spew warnings.
+Seems to work like the DCE3 version despite what
+the register spec says.
 
-Reported-by: Sunil K. Pandey <sunil.k.pandey@intel.com>
-Cc: Kevin B. Smith <kevin.b.smith@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-0mbwou1zt7pafij09b897lg3@git.kernel.org
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=71975
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/compiler-intel.h |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/gpu/drm/radeon/r600_hdmi.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/include/linux/compiler-intel.h
-+++ b/include/linux/compiler-intel.h
-@@ -28,8 +28,6 @@
+--- a/drivers/gpu/drm/radeon/r600_hdmi.c
++++ b/drivers/gpu/drm/radeon/r600_hdmi.c
+@@ -279,9 +279,9 @@ void r600_audio_set_dto(struct drm_encod
+ 			WREG32(DCCG_AUDIO_DTO1_MODULE, clock * 100);
+ 			WREG32(DCCG_AUDIO_DTO_SELECT, 1); /* select DTO1 */
+ 		}
+-	} else if (ASIC_IS_DCE3(rdev)) {
++	} else {
+ 		/* according to the reg specs, this should DCE3.2 only, but in
+-		 * practice it seems to cover DCE3.0/3.1 as well.
++		 * practice it seems to cover DCE2.0/3.0/3.1 as well.
+ 		 */
+ 		if (dig->dig_encoder == 0) {
+ 			WREG32(DCCG_AUDIO_DTO0_PHASE, base_rate * 100);
+@@ -292,10 +292,6 @@ void r600_audio_set_dto(struct drm_encod
+ 			WREG32(DCCG_AUDIO_DTO1_MODULE, clock * 100);
+ 			WREG32(DCCG_AUDIO_DTO_SELECT, 1); /* select DTO1 */
+ 		}
+-	} else {
+-		/* according to the reg specs, this should be DCE2.0 and DCE3.0/3.1 */
+-		WREG32(AUDIO_DTO, AUDIO_DTO_PHASE(base_rate / 10) |
+-		       AUDIO_DTO_MODULE(clock / 10));
+ 	}
+ }
  
- #endif
- 
--#define uninitialized_var(x) x
--
- #ifndef __HAVE_BUILTIN_BSWAP16__
- /* icc has this, but it's called _bswap16 */
- #define __HAVE_BUILTIN_BSWAP16__
 
 
