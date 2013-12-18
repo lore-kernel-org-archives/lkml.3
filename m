@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab3LRVJU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:09:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35846 "EHLO
+	id S1752645Ab3LRVJR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:09:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35835 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab3LRVJO (ORCPT
+	with ESMTP id S1752585Ab3LRVJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:09:14 -0500
+	Wed, 18 Dec 2013 16:09:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.4 25/31] dm table: fail dm_table_create on dm_round_up overflow
-Date: Wed, 18 Dec 2013 13:08:33 -0800
-Message-Id: <20131218210523.495744441@linuxfoundation.org>
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 30/31] hpfs: fix warnings when the filesystem fills up
+Date: Wed, 18 Dec 2013 13:08:38 -0800
+Message-Id: <20131218210523.638553832@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218210522.790152625@linuxfoundation.org>
 References: <20131218210522.790152625@linuxfoundation.org>
@@ -29,38 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
 
-commit 5b2d06576c5410c10d95adfd5c4d8b24de861d87 upstream.
+commit bbd465df73f0d8ba41b8a0732766a243d0f5b356 upstream.
 
-The dm_round_up function may overflow to zero.  In this case,
-dm_table_create() must fail rather than go on to allocate an empty array
-with alloc_targets().
+This patch fixes warnings due to missing lock on write error path.
 
-This fixes a possible memory corruption that could be caused by passing
-too large a number in "param->target_count".
+  WARNING: at fs/hpfs/hpfs_fn.h:353 hpfs_truncate+0x75/0x80 [hpfs]()
+  Hardware name: empty
+  Pid: 26563, comm: dd Tainted: P           O 3.9.4 #12
+  Call Trace:
+    hpfs_truncate+0x75/0x80 [hpfs]
+    hpfs_write_begin+0x84/0x90 [hpfs]
+    _hpfs_bmap+0x10/0x10 [hpfs]
+    generic_file_buffered_write+0x121/0x2c0
+    __generic_file_aio_write+0x1c7/0x3f0
+    generic_file_aio_write+0x7c/0x100
+    do_sync_write+0x98/0xd0
+    hpfs_file_write+0xd/0x50 [hpfs]
+    vfs_write+0xa2/0x160
+    sys_write+0x51/0xa0
+    page_fault+0x22/0x30
+    system_call_fastpath+0x1a/0x1f
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-table.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ fs/hpfs/file.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-table.c
-+++ b/drivers/md/dm-table.c
-@@ -215,6 +215,11 @@ int dm_table_create(struct dm_table **re
+--- a/fs/hpfs/file.c
++++ b/fs/hpfs/file.c
+@@ -116,9 +116,12 @@ static int hpfs_write_begin(struct file
+ 				hpfs_get_block,
+ 				&hpfs_i(mapping->host)->mmu_private);
+ 	if (unlikely(ret)) {
+-		loff_t isize = mapping->host->i_size;
++		loff_t isize;
++		hpfs_lock(mapping->host->i_sb);
++		isize = mapping->host->i_size;
+ 		if (pos + len > isize)
+ 			vmtruncate(mapping->host, isize);
++		hpfs_unlock(mapping->host->i_sb);
+ 	}
  
- 	num_targets = dm_round_up(num_targets, KEYS_PER_NODE);
- 
-+	if (!num_targets) {
-+		kfree(t);
-+		return -ENOMEM;
-+	}
-+
- 	if (alloc_targets(t, num_targets)) {
- 		kfree(t);
- 		t = NULL;
+ 	return ret;
 
 
