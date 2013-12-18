@@ -1,96 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab3LRQzG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 11:55:06 -0500
-Received: from mga09.intel.com ([134.134.136.24]:53808 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752786Ab3LRQzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 11:55:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,508,1384329600"; 
-   d="scan'208";a="454329223"
-Date: Wed, 18 Dec 2013 21:25:44 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Alexander Popov <a13xp0p0v88@gmail.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
-        Anatolij Gustschin <agust@denx.de>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] dmaengine: remove obsolete comment reference to
- dma_data_direction
-Message-ID: <20131218155544.GH16227@intel.com>
-References: <1386742022-2995-1-git-send-email-a13xp0p0v88@gmail.com>
- <20131214132027.GH26910@book.gsilab.sittig.org>
+	id S1755158Ab3LRQz0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 11:55:26 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:40088 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755014Ab3LRQzY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 11:55:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131214132027.GH26910@book.gsilab.sittig.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131218154045.GC16227@intel.com>
+References: <1385408365-8072-1-git-send-email-jason@lakedaemon.net>
+	<20131128055706.GM8834@intel.com>
+	<20131209235035.GA11632@n2100.arm.linux.org.uk>
+	<20131210101331.GG29580@intel.com>
+	<20131210111449.GY4360@n2100.arm.linux.org.uk>
+	<CAPcyv4gAazGS_m6KNfF2_kY3CDzYkvpBQ=kcnPH-pBvcJ0HjAw@mail.gmail.com>
+	<CAPcyv4iNOqHSQXj_PTmG-iHajnmHoPhLeFvnnK-JtNykf2W3Ew@mail.gmail.com>
+	<20131218154045.GC16227@intel.com>
+Date: Wed, 18 Dec 2013 08:55:23 -0800
+Message-ID: <CAPcyv4hiGg6J0sAEy6N=HRsLg_B9PGOc=khaTNR80==pDfNQzQ@mail.gmail.com>
+Subject: Re: [PATCH] dma: mv_xor: remove mv_desc_get_dest_addr()
+From: Dan Williams <dan.j.williams@intel.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 14, 2013 at 02:20:27PM +0100, Gerhard Sittig wrote:
-> On Wed, Dec 11, 2013 at 10:07 +0400, Alexander Popov wrote:
-> > 
-> > enum dma_transfer_direction is currently used
-> > in struct dma_slave_config, so update the comment
-> > 
-> > Signed-off-by: Alexander Popov <a13xp0p0v88@gmail.com>
-> > ---
-> >  include/linux/dmaengine.h | 5 ++---
-> >  1 file changed, 2 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> > index 41cf0c3..bd6b882 100644
-> > --- a/include/linux/dmaengine.h
-> > +++ b/include/linux/dmaengine.h
-> > @@ -305,9 +305,8 @@ enum dma_slave_buswidth {
-> >  /**
-> >   * struct dma_slave_config - dma slave channel runtime config
-> >   * @direction: whether the data shall go in or out on this slave
-> > - * channel, right now. DMA_TO_DEVICE and DMA_FROM_DEVICE are
-> > - * legal values, DMA_BIDIRECTIONAL is not acceptable since we
-> > - * need to differentiate source and target addresses.
-> > + * channel, right now. DMA_MEM_TO_DEV and DMA_DEV_TO_MEM are
-> > + * legal values.
-> >   * @src_addr: this is the physical address where DMA slave data
-> >   * should be read (RX), if the source is memory this argument is
-> >   * ignored.
-> 
-> While I agree with the change to the comment text, I'd put the
-> description of the patch differently.
-> 
-> You are not removing an obsolete reference, but you are fixing an
-> erroneous comment.  It's not that dma_data_direction would have
-> become obsolete, instead it's that dma_slave_config was
-> documented wrongly.  The previous comment used the wrong data
-> type for one of its members and thus discussed inappropriate
-> values out of the type's domain.  Maybe "fix incorrect kerneldoc
-> for struct dma_slave_config" or something similar could be a
-> better title.  Especially for those who read the log later and
-> neither have the patch nor its description at hand.
-comment was apt when it was created, it wanst updated at the time of conversion!
+On Wed, Dec 18, 2013 at 7:40 AM, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Thu, Dec 12, 2013 at 11:00:05PM -0800, Dan Williams wrote:
+>> On Wed, Dec 11, 2013 at 1:10 AM, Dan Williams <dan.j.williams@intel.com> wrote:
+>> > On Tue, Dec 10, 2013 at 3:14 AM, Russell King - ARM Linux
+>> > <linux@arm.linux.org.uk> wrote:
+>> >> On Tue, Dec 10, 2013 at 03:43:31PM +0530, Vinod Koul wrote:
+>> >>> On Mon, Dec 09, 2013 at 11:50:35PM +0000, Russell King - ARM Linux wrote:
+>> >>> > On Thu, Nov 28, 2013 at 11:27:06AM +0530, Vinod Koul wrote:
+>> >>> > > + Dan
+>> >>> > >
+>> >>> > > On Mon, Nov 25, 2013 at 07:39:25PM +0000, Jason Cooper wrote:
+>> >>> > > > The following commit:
+>> >>> > > >
+>> >>> > > >   54f8d501e842 dmaengine: remove DMA unmap from drivers
+>> >>> > > >
+>> >>> > > > removed the last caller to mv_desc_get_dest_addr(), creating the
+>> >>> > > > warning:
+>> >>> > > >
+>> >>> > > >   drivers/dma/mv_xor.c:57:12: warning: 'mv_desc_get_dest_addr' defined
+>> >>> > > >   but not used [-Wunused-function]
+>> >>> > > >
+>> >>> > > > Remove it.
+>> >>> > > >
+>> >>> > > > Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+>> >>> > > Acked-by: Vinod Koul <vinod.koul@intel.com>
+>> >>> > >
+>> >>> > > This should go thru Dan's tree
+>> >>> >
+>> >>> > So what's happening with this patch?  I don't see it in -rc yet.
+>> >>> Dan has applied this to his next. So this should show us in next rc1
+>> >>
+>> >> Wrong answer.  This is a compile regression introduced in the last merge
+>> >> window, it should be going into an -rc kernel.
+>> >
+>> > Vinod, if your fixes branch is ready I'll take it along with the rest
+>> > of the regression fixes to Linus.
+> Sorry I wasnt well last week, so I just managed to send the PULL on friday
+> morning. Wasnt sure if Linus will cut rc on friday or later, so sent it!
+
+Ok, glad you are feeling better.
+
+>>
+>> Ok, I see you sent dma-slave/fixes up, I'll follow up with the rest:
+> Okay, did you manage to send it? If not I may have few (i think at least 1 more)
+>
+
+Patchwork id(s)?  I want to send it it today.
+
+I was busy tracking down a data corruption report with net_dma.
 
 --
-~Vinod
-> 
-> And you might improve the description's body.  Something like
-> "the 'direction' member of 'struct dma_slave_config' is of data
-> type 'enum dma_transfer_direction', so update the 'struct
-> dma_slave_config' kerneldoc to refer to appropriate values" or
-> similar.
-> 
-> 
-> virtually yours
-> Gerhard Sittig
-> -- 
-> DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-> HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
-> Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
-> --
-> To unsubscribe from this list: send the line "unsubscribe dmaengine" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
+Dan
