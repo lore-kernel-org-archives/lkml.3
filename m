@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab3LRMPh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 07:15:37 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50280 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752555Ab3LRMPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 07:15:35 -0500
-Message-ID: <52B1915A.7060309@ti.com>
-Date: Wed, 18 Dec 2013 17:43:14 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753255Ab3LRMWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 07:22:04 -0500
+Received: from host.colocrossing.com ([172.245.7.190]:53327 "EHLO
+	smtp7.170bc.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474Ab3LRMWD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 07:22:03 -0500
+X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Dec 2013 07:22:03 EST
+Date: Wed, 18 Dec 2013 20:15:34 +0800
+From: "Iris" <ky7@smtp7.170bc.com>
+Reply-To: alina@tjdekay.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Re:HDPE LDPE PVC
+Message-ID: <201312182015348134639@smtp7.170bc.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-To: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>, <dwmw2@infradead.org>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>, <rob@landley.net>,
-        <linux@arm.linux.org.uk>, <mark.rutland@arm.com>,
-        <devicetree@vger.kernel.org>, <grygorii.strashko@ti.com>,
-        <pawel.moll@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <galak@kernel.crashing.org>,
-        <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>, <computersforpeace@gmail.com>
-Subject: Re: [PATCH v3] ARM: davinci: aemif: get rid of davinci-nand driver
- dependency on aemif
-References: <1386267092-18615-1-git-send-email-ivan.khoronzhuk@ti.com> <52B18C44.2000305@ti.com>
-In-Reply-To: <52B18C44.2000305@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBICMYZV010083
 
-On Wednesday 18 December 2013 05:21 PM, ivan.khoronzhuk wrote:
-> Hi, Sekhar
-> 
-> This patch is based on "Reuse davinci-nand driver for Keystone arch" series.
-> The series has passed review at https://lkml.org/lkml/2013/12/17/241
-> and can be found at http://git.infradead.org/l2-mtd.git
-> 
-> This patch can be still applied on top of the series without conflicts. 
-> 
-> Can you please pick up the $subject patch if you are OK with it?
+Dear Sir,
 
-I have no problems with the patch and can pick it too, but need ack from
-MTD maintainer (David) as it touches drivers/mtd/ too.
+Good day!
 
-David,
-
-If you do not have the patch, we can resend it.
+We had dealing plastic raw materials for many years . And supplied high quality different grade HDPE/LDPE/PP/PET to our old and new customers.
+  
+Should any of the items be of interest to you, please let me know. We shall be glad to give you our lowest quotations upon receipt of your detailed requirements.
 
 Thanks,
-Sekhar
+Iris
+Email: iris20111207@hotmail.com
+Skype:iris.song12ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
