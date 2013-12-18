@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab3LRO53 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 09:57:29 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:16846 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754712Ab3LRO5P (ORCPT
+	id S1755129Ab3LRO7G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 09:59:06 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:23810 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754913Ab3LRO7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 09:57:15 -0500
-X-AuditID: cbfec7f4-b7fc96d000006cd4-0c-52b1b7c99c7a
-Message-id: <1387378632.1433.4.camel@AMDC1943>
-Subject: Re: [PATCH 4/5] regulator: s5m8767: Use GPIO for controlling Buck9/eMMC
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Date: Wed, 18 Dec 2013 15:57:12 +0100
-In-reply-to: <20131218134720.GU28455@sirena.org.uk>
-References: <1387286601-21646-1-git-send-email-k.kozlowski@samsung.com>
- <1387286601-21646-5-git-send-email-k.kozlowski@samsung.com>
- <20131218134720.GU28455@sirena.org.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNIsWRmVeSWpSXmKPExsVy+t/xy7ont28MMmj/Y2rRcDXEYurDJ2wW
-	84+cY7Xof7OQ1eLAnx2MFuderWS0ONv0ht3i/tejjBbfrnQwWSxsW8JicXnXHDaLtUfuslss
-	vX6RyWLC9LUsFodXHGCyWPdyOovFyT+9jBanu1ktLq74wmRxbMYSRgcRjzXz1jB6LPh8hd3j
-	cl8vk8fOWXfZPVYu/8LmsWlVJ5vHq9UzWT3uXNvD5jHvZKBH35ZVjB6fN8kFcEdx2aSk5mSW
-	pRbp2yVwZTy/181W8IClYsLXjWwNjHeZuxg5OSQETCRmr2hhhbDFJC7cW88GYgsJLGWU+H9C
-	uYuRC8j+zChxdHsfWIJXQE9i4t1FYM3CAgEST+5tBLPZBIwlNi9fAlYjIqAscfX7XhaQZmaB
-	B6wS7ccugRWxCKhKzP51mh3E5gRq2PrmDBPEhnWMEgcPfgDrZhZQl5g0bxHUeUoSu9s72SHi
-	8hKb17xlhrhCUOLH5HssExgFZiFpmYWkbBaSsgWMzKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLz
-	czcxQiL0yw7GxcesDjEKcDAq8fAu8NkYJMSaWFZcmXuIUYKDWUmEV2grUIg3JbGyKrUoP76o
-	NCe1+BAjEwenVANjuZb4zq4JYnoHxX2diwJKu16ULtn+XfnOyfe21kUNV/cGPVqbG3n59Rm1
-	esk1ITyZQe+efH7vsPGG9L1ZKyyE7TsnrsopyHt9rOPl9ohDk+T/zNq53szu0a6L6fc5Hx/4
-	P1nRX+lxnrj58umTH6jZ5nQy7l1Ra/9Yb99SCZYlradW/O3RkmW9osRSnJFoqMVcVJwIAH8Q
-	TASuAgAA
+	Wed, 18 Dec 2013 09:59:04 -0500
+Date: Wed, 18 Dec 2013 09:57:54 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        mukesh.rathor@oracle.com, jbeulich@suse.com
+Subject: Re: [Xen-devel] [PATCH v11 02/12] xen/pvh: Define what an PVH guest
+ is.
+Message-ID: <20131218145754.GB4934@phenom.dumpdata.com>
+References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
+ <1387313503-31362-3-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1312181421260.8667@kaball.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1312181421260.8667@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-12-18 at 13:47 +0000, Mark Brown wrote:
-> On Tue, Dec 17, 2013 at 02:23:20PM +0100, Krzysztof Kozlowski wrote:
+On Wed, Dec 18, 2013 at 02:22:35PM +0000, Stefano Stabellini wrote:
+> On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> > From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > 
+> > Which is a PV guest with auto page translation enabled
+> > and with vector callback. It is a cross between PVHVM and PV.
+> > 
+> > The Xen side defines PVH as (from docs/misc/pvh-readme.txt,
+> > with modifications):
+> > 
+> > "* the guest uses auto translate:
+> >  - p2m is managed by Xen
+> >  - pagetables are owned by the guest
+> >  - mmu_update hypercall not available
+> > * it uses event callback and not vlapic emulation,
+> > * IDT is native, so set_trap_table hcall is also N/A for a PVH guest.
+> > 
+> > For a full list of hcalls supported for PVH, see pvh_hypercall64_table
+> > in arch/x86/hvm/hvm.c in xen.  From the ABI prespective, it's mostly a
+> > PV guest with auto translate, although it does use hvm_op for setting
+> > callback vector."
+> > 
+> > We don't have yet a Kconfig entry setup as we do not
+> > have all the parts ready for it - so we piggyback
+> > on the PVHVM config option. This scaffolding will
+> > be removed later.
+> > 
+> > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > 
-> > +static int s5m8767_reg_gpio_is_enabled(struct regulator_dev *rdev)
-> > +{
-> > +	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
-> > +	int val;
-> > +
-> > +	if (!s5m8767->buck9_uses_gpio)
-> > +		return s5m8767_reg_is_enabled(rdev);
-> > +
-> > +	val = gpio_get_value(s5m8767->buck9_gpio);
-> > +
-> > +	return val == 1;
-> > +}
+> Could you please add an "&& CONFIG_X86"?
+
+I think that CONFIG_XEN_PVHVM is only X86 anyhow.
+
+And the XEN_PVH is going to be X86 as well - so it would always
+be turned off on ARM.
+
+I can of course add it in - but it might not neccessary?
 > 
-> Don't open code this, use the core GPIO handling - see ena_gpio.
-
-OK, I'll rewrite the patch.
-
-Best regards,
-Krzysztof
-
+> 
+> >  include/xen/xen.h | 9 +++++++++
+> >  1 file changed, 9 insertions(+)
+> > 
+> > diff --git a/include/xen/xen.h b/include/xen/xen.h
+> > index a74d436..1d6a237 100644
+> > --- a/include/xen/xen.h
+> > +++ b/include/xen/xen.h
+> > @@ -29,4 +29,13 @@ extern enum xen_domain_type xen_domain_type;
+> >  #define xen_initial_domain()	(0)
+> >  #endif	/* CONFIG_XEN_DOM0 */
+> >  
+> > +#ifdef CONFIG_XEN_PVHVM
+> > +/* Temporarily under XEN_PVHVM, but will be under CONFIG_XEN_PVH */
+> > +#include <xen/features.h>
+> > +#define xen_pvh_domain() (xen_pv_domain() && \
+> > +			  xen_feature(XENFEAT_auto_translated_physmap) && \
+> > +			  xen_have_vector_callback)
+> > +#else
+> > +#define xen_pvh_domain()	(0)
+> > +#endif
+> >  #endif	/* _XEN_XEN_H */
+> > -- 
+> > 1.8.3.1
+> > 
+> > 
+> > _______________________________________________
+> > Xen-devel mailing list
+> > Xen-devel@lists.xen.org
+> > http://lists.xen.org/xen-devel
+> > 
