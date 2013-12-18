@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab3LRDdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 22:33:16 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:48262 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465Ab3LRDdP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 22:33:15 -0500
-Message-ID: <52B11765.8030005@oracle.com>
-Date: Tue, 17 Dec 2013 22:32:53 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752782Ab3LRDfa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 22:35:30 -0500
+Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:55878
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751950Ab3LRDf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 22:35:29 -0500
+Message-ID: <1387337708.3140.31.camel@snotra.buserror.net>
+Subject: Re: [v3][PATCH 3/8] book3e/kexec/kdump: enable kexec for kernel
+From: Scott Wood <scottwood@freescale.com>
+To: Tiejun Chen <tiejun.chen@windriver.com>
+CC: <benh@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Tue, 17 Dec 2013 21:35:08 -0600
+In-Reply-To: <1373357007-30785-4-git-send-email-tiejun.chen@windriver.com>
+References: <1373357007-30785-1-git-send-email-tiejun.chen@windriver.com>
+	 <1373357007-30785-4-git-send-email-tiejun.chen@windriver.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Michel Lespinasse <walken@google.com>, Bob Liu <bob.liu@oracle.com>,
-        npiggin@suse.de, kosaki.motohiro@jp.fujitsu.com, riel@redhat.com,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/mlock: fix BUG_ON unlocked page for nolinear VMAs
-References: <1387267550-8689-1-git-send-email-liwanp@linux.vnet.ibm.com> <52b1138b.0201430a.19a8.605dSMTPIN_ADDED_BROKEN@mx.google.com> <20131218032329.GA6044@hacker.(null)>
-In-Reply-To: <20131218032329.GA6044@hacker.(null)>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
+X-ClientProxiedBy: BLUPR05CA005.namprd05.prod.outlook.com (10.255.219.163)
+ To DM2PR03MB399.namprd03.prod.outlook.com (10.141.84.148)
+X-Forefront-PRVS: 0064B3273C
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(199002)(51704005)(24454002)(377424004)(189002)(76796001)(80976001)(65816001)(76786001)(80022001)(83322001)(19580405001)(74706001)(79102001)(81686001)(54316002)(81342001)(62966002)(19580395003)(23676002)(87286001)(56776001)(87976001)(74366001)(47776003)(77982001)(90146001)(63696002)(89996001)(69226001)(50466002)(81542001)(50986001)(47736001)(56816005)(47976001)(49866001)(4396001)(50226001)(88136002)(31966008)(74662001)(47446002)(74502001)(51856001)(46102001)(83072002)(85852003)(77096001)(77156001)(74876001)(87266001)(76482001)(85306002)(59766001)(42186004)(53806001)(33646001)(81816001)(32563001)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB399;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];CLIP:2601:2:5800:3f7:12bf:48ff:fe84:c9a0;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2013 10:23 PM, Wanpeng Li wrote:
-> -			mlock_vma_page(page);   /* no-op if already mlocked */
-> -			if (page == check_page)
-> +			if (page != check_page && trylock_page(page)) {
-> +				mlock_vma_page(page);   /* no-op if already mlocked */
-> +				unlock_page(page);
-> +			} else if (page == check_page) {
-> +				mlock_vma_page(page);  /* no-op if already mlocked */
->   				ret = SWAP_MLOCK;
-> +			}
+On Tue, 2013-07-09 at 16:03 +0800, Tiejun Chen wrote:
+> We need to active KEXEC for book3e and bypass or convert non-book3e stuff
+> in kexec coverage.
+> 
+> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+> ---
+>  arch/powerpc/Kconfig                   |    2 +-
+>  arch/powerpc/kernel/machine_kexec_64.c |  148 ++++++++++++++++++--------------
+>  arch/powerpc/kernel/misc_64.S          |    6 ++
+>  3 files changed, 89 insertions(+), 67 deletions(-)
+> 
+> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+> index 5374776..d945435 100644
+> --- a/arch/powerpc/Kconfig
+> +++ b/arch/powerpc/Kconfig
+> @@ -357,7 +357,7 @@ config ARCH_ENABLE_MEMORY_HOTREMOVE
+>  
+>  config KEXEC
+>  	bool "kexec system call"
+> -	depends on (PPC_BOOK3S || FSL_BOOKE || (44x && !SMP))
+> +	depends on (PPC_BOOK3S || FSL_BOOKE || (44x && !SMP)) || PPC_BOOK3E
 
-Previously, if page != check_page and the page was locked, we'd call mlock_vma_page()
-anyways. With this change, we don't. In fact, we'll just skip that entire block not doing
-anything.
+Please remove the outher parentheses, and especially don't put
+PPC_BOOK3E on the outside of them when there's no reason to group the
+other items together.
 
-If that's something that's never supposed to happen, can we add a
+> @@ -367,6 +301,87 @@ void default_machine_kexec(struct kimage *image)
+>  	/* NOTREACHED */
+>  }
+>  
+> +#ifdef CONFIG_PPC_BOOK3E
+> +int default_machine_kexec_prepare(struct kimage *image)
+> +{
+> +	int i;
+> +	/*
+> +	 * Since we use the kernel fault handlers and paging code to
+> +	 * handle the virtual mode, we must make sure no destination
+> +	 * overlaps kernel static data or bss.
+> +	 */
+> +	for (i = 0; i < image->nr_segments; i++)
+> +		if (image->segment[i].mem < __pa(_end))
+> +			return -ETXTBSY;
+> +	return 0;
 
-	VM_BUG_ON(page != check_page && PageLocked(page))
+Factor out this common code rather than duplicate it.
 
-Just to cover this new code path?
+-Scott
 
 
-Thanks,
-Sasha
