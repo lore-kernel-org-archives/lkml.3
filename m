@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab3LRVNB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:13:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36223 "EHLO
+	id S1754951Ab3LRVrv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:47:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36240 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418Ab3LRVM5 (ORCPT
+	with ESMTP id S1753663Ab3LRVNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:57 -0500
+	Wed, 18 Dec 2013 16:13:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Gmeiner <christian.gmeiner@gmail.com>,
-        Will Deacon <will.deacon@arm.com>, Jon Medhurst <tixy@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.12 015/118] ARM: 7917/1: cacheflush: correctly limit range of memory region being flushed
-Date: Wed, 18 Dec 2013 13:10:52 -0800
-Message-Id: <20131218211219.899085789@linuxfoundation.org>
+        Lars Bull <larsbull@google.com>, Gleb Natapov <gleb@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.12 019/118] KVM: x86: fix guest-initiated crash with x2apic (CVE-2013-6376)
+Date: Wed, 18 Dec 2013 13:10:56 -0800
+Message-Id: <20131218211220.016253580@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -30,38 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Medhurst <tixy@linaro.org>
+From: Gleb Natapov <gleb@redhat.com>
 
-commit b31459adeab018b297541e288ac88873011da82a upstream.
+commit 17d68b763f09a9ce824ae23eb62c9efc57b69271 upstream.
 
-The __do_cache_op function operates with a 'chunk' size of one page
-but fails to limit the size of the final chunk so as to not exceed
-the specified memory region. Fix this.
+A guest can cause a BUG_ON() leading to a host kernel crash.
+When the guest writes to the ICR to request an IPI, while in x2apic
+mode the following things happen, the destination is read from
+ICR2, which is a register that the guest can control.
 
-Reported-by: Christian Gmeiner <christian.gmeiner@gmail.com>
-Tested-by: Christian Gmeiner <christian.gmeiner@gmail.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+kvm_irq_delivery_to_apic_fast uses the high 16 bits of ICR2 as the
+cluster id.  A BUG_ON is triggered, which is a protection against
+accessing map->logical_map with an out-of-bounds access and manages
+to avoid that anything really unsafe occurs.
+
+The logic in the code is correct from real HW point of view. The problem
+is that KVM supports only one cluster with ID 0 in clustered mode, but
+the code that has the bug does not take this into account.
+
+Reported-by: Lars Bull <larsbull@google.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/traps.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/kvm/lapic.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -503,9 +503,10 @@ static inline int
- __do_cache_op(unsigned long start, unsigned long end)
- {
- 	int ret;
--	unsigned long chunk = PAGE_SIZE;
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -143,6 +143,8 @@ static inline int kvm_apic_id(struct kvm
+ 	return (kvm_apic_get_reg(apic, APIC_ID) >> 24) & 0xff;
+ }
  
- 	do {
-+		unsigned long chunk = min(PAGE_SIZE, end - start);
++#define KVM_X2APIC_CID_BITS 0
 +
- 		if (signal_pending(current)) {
- 			struct thread_info *ti = current_thread_info();
- 
+ static void recalculate_apic_map(struct kvm *kvm)
+ {
+ 	struct kvm_apic_map *new, *old = NULL;
+@@ -180,7 +182,8 @@ static void recalculate_apic_map(struct
+ 		if (apic_x2apic_mode(apic)) {
+ 			new->ldr_bits = 32;
+ 			new->cid_shift = 16;
+-			new->cid_mask = new->lid_mask = 0xffff;
++			new->cid_mask = (1 << KVM_X2APIC_CID_BITS) - 1;
++			new->lid_mask = 0xffff;
+ 		} else if (kvm_apic_sw_enabled(apic) &&
+ 				!new->cid_mask /* flat mode */ &&
+ 				kvm_apic_get_reg(apic, APIC_DFR) == APIC_DFR_CLUSTER) {
 
 
