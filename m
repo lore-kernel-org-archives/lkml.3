@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab3LRVN0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:13:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36331 "EHLO
+	id S1753930Ab3LRVNY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:13:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36320 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab3LRVNS (ORCPT
+	with ESMTP id S1753890Ab3LRVNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:18 -0500
+	Wed, 18 Dec 2013 16:13:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 005/118] ALSA: hda - Add static DAC/pin mapping for AD1986A codec
-Date: Wed, 18 Dec 2013 13:10:42 -0800
-Message-Id: <20131218211219.617592164@linuxfoundation.org>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.12 034/118] usb: musb: musb_cppi41: factor most of cppi41_dma_callback() into cppi41_trans_done()
+Date: Wed, 18 Dec 2013 13:11:11 -0800
+Message-Id: <20131218211220.439451714@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -28,110 +29,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit 3690739b013504d33fe9348dd45f6b126aa370fb upstream.
+commit d373a8534d5e1e7a350e40d3c11961a7cd8d530b upstream.
 
-AD1986A codec is a pretty old codec and has really many hidden
-restrictions.  One of such is that each DAC is dedicated to certain
-pin although there are possible connections.  Currently, the generic
-parser tries to assign individual DACs as much as possible, and this
-lead to two bad situations: connections where the sound actually
-doesn't work, and connections conflicting other channels.
+This patch moves most of the logic in cppi41_dma_callback() into
+cppi41_trans_done() where it can be called from another function.
+Instead of computing "transferred" (the number of bytes transferred in
+the last transaction) in cppi41_trans_done() the member
+"cppi41_channel->prog_len" is now set to 0 if the transfer as a whole
+can be considered as done. If it is != 0 then the next iteration is
+assumed.
+This is a preparation for a workaround.
 
-We may fix this by trying to find the best connections more harder,
-but as of now, it's easier to give some hints for paired DAC/pin
-connections and honor them if available, since such a hint is needed
-only for specific codecs (right now only AD1986A, and there will be
-unlikely any others in future).
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64971
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66621
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_generic.c  |   23 ++++++++++++++++++++++-
- sound/pci/hda/hda_generic.h  |    3 +++
- sound/pci/hda/patch_analog.c |   10 ++++++++++
- 3 files changed, 35 insertions(+), 1 deletion(-)
+ drivers/usb/musb/musb_cppi41.c |   59 +++++++++++++++++++++++++----------------
+ 1 file changed, 36 insertions(+), 23 deletions(-)
 
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -474,6 +474,20 @@ static void invalidate_nid_path(struct h
- 	memset(path, 0, sizeof(*path));
+--- a/drivers/usb/musb/musb_cppi41.c
++++ b/drivers/usb/musb/musb_cppi41.c
+@@ -96,31 +96,15 @@ static void update_rx_toggle(struct cppi
+ 	cppi41_channel->usb_toggle = toggle;
  }
  
-+/* return a DAC if paired to the given pin by codec driver */
-+static hda_nid_t get_preferred_dac(struct hda_codec *codec, hda_nid_t pin)
-+{
-+	struct hda_gen_spec *spec = codec->spec;
-+	const hda_nid_t *list = spec->preferred_dacs;
+-static void cppi41_dma_callback(void *private_data)
++static void cppi41_dma_callback(void *private_data);
 +
-+	if (!list)
-+		return 0;
-+	for (; *list; list += 2)
-+		if (*list == pin)
-+			return list[1];
-+	return 0;
++static void cppi41_trans_done(struct dma_channel *channel)
+ {
+-	struct dma_channel *channel = private_data;
+ 	struct cppi41_dma_channel *cppi41_channel = channel->private_data;
+ 	struct musb_hw_ep *hw_ep = cppi41_channel->hw_ep;
+ 	struct musb *musb = hw_ep->musb;
+-	unsigned long flags;
+-	struct dma_tx_state txstate;
+-	u32 transferred;
+ 
+-	spin_lock_irqsave(&musb->lock, flags);
+-
+-	dmaengine_tx_status(cppi41_channel->dc, cppi41_channel->cookie,
+-			&txstate);
+-	transferred = cppi41_channel->prog_len - txstate.residue;
+-	cppi41_channel->transferred += transferred;
+-
+-	dev_dbg(musb->controller, "DMA transfer done on hw_ep=%d bytes=%d/%d\n",
+-		hw_ep->epnum, cppi41_channel->transferred,
+-		cppi41_channel->total_len);
+-
+-	update_rx_toggle(cppi41_channel);
+-
+-	if (cppi41_channel->transferred == cppi41_channel->total_len ||
+-			transferred < cppi41_channel->packet_sz) {
++	if (!cppi41_channel->prog_len) {
+ 
+ 		/* done, complete */
+ 		cppi41_channel->channel.actual_len =
+@@ -150,10 +134,8 @@ static void cppi41_dma_callback(void *pr
+ 				remain_bytes,
+ 				direction,
+ 				DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+-		if (WARN_ON(!dma_desc)) {
+-			spin_unlock_irqrestore(&musb->lock, flags);
++		if (WARN_ON(!dma_desc))
+ 			return;
+-		}
+ 
+ 		dma_desc->callback = cppi41_dma_callback;
+ 		dma_desc->callback_param = channel;
+@@ -166,6 +148,37 @@ static void cppi41_dma_callback(void *pr
+ 			musb_writew(epio, MUSB_RXCSR, csr);
+ 		}
+ 	}
 +}
 +
- /* look for an empty DAC slot */
- static hda_nid_t look_for_dac(struct hda_codec *codec, hda_nid_t pin,
- 			      bool is_digital)
-@@ -1192,7 +1206,14 @@ static int try_assign_dacs(struct hda_co
- 			continue;
- 		}
- 
--		dacs[i] = look_for_dac(codec, pin, false);
-+		dacs[i] = get_preferred_dac(codec, pin);
-+		if (dacs[i]) {
-+			if (is_dac_already_used(codec, dacs[i]))
-+				badness += bad->shared_primary;
-+		}
++static void cppi41_dma_callback(void *private_data)
++{
++	struct dma_channel *channel = private_data;
++	struct cppi41_dma_channel *cppi41_channel = channel->private_data;
++	struct musb_hw_ep *hw_ep = cppi41_channel->hw_ep;
++	struct musb *musb = hw_ep->musb;
++	unsigned long flags;
++	struct dma_tx_state txstate;
++	u32 transferred;
 +
-+		if (!dacs[i])
-+			dacs[i] = look_for_dac(codec, pin, false);
- 		if (!dacs[i] && !i) {
- 			/* try to steal the DAC of surrounds for the front */
- 			for (j = 1; j < num_outs; j++) {
---- a/sound/pci/hda/hda_generic.h
-+++ b/sound/pci/hda/hda_generic.h
-@@ -249,6 +249,9 @@ struct hda_gen_spec {
- 	const struct badness_table *main_out_badness;
- 	const struct badness_table *extra_out_badness;
- 
-+	/* preferred pin/DAC pairs; an array of paired NIDs */
-+	const hda_nid_t *preferred_dacs;
++	spin_lock_irqsave(&musb->lock, flags);
 +
- 	/* loopback mixing mode */
- 	bool aamix_mode;
++	dmaengine_tx_status(cppi41_channel->dc, cppi41_channel->cookie,
++			&txstate);
++	transferred = cppi41_channel->prog_len - txstate.residue;
++	cppi41_channel->transferred += transferred;
++
++	dev_dbg(musb->controller, "DMA transfer done on hw_ep=%d bytes=%d/%d\n",
++		hw_ep->epnum, cppi41_channel->transferred,
++		cppi41_channel->total_len);
++
++	update_rx_toggle(cppi41_channel);
++
++	if (cppi41_channel->transferred == cppi41_channel->total_len ||
++			transferred < cppi41_channel->packet_sz)
++		cppi41_channel->prog_len = 0;
++
++	cppi41_trans_done(channel);
++
+ 	spin_unlock_irqrestore(&musb->lock, flags);
+ }
  
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -324,6 +324,14 @@ static int patch_ad1986a(struct hda_code
- {
- 	int err;
- 	struct ad198x_spec *spec;
-+	static hda_nid_t preferred_pairs[] = {
-+		0x1a, 0x03,
-+		0x1b, 0x03,
-+		0x1c, 0x04,
-+		0x1d, 0x05,
-+		0x1e, 0x03,
-+		0
-+	};
- 
- 	err = alloc_ad_spec(codec);
- 	if (err < 0)
-@@ -344,6 +352,8 @@ static int patch_ad1986a(struct hda_code
- 	 * So, let's disable the shared stream.
- 	 */
- 	spec->gen.multiout.no_share_stream = 1;
-+	/* give fixed DAC/pin pairs */
-+	spec->gen.preferred_dacs = preferred_pairs;
- 
- 	/* AD1986A can't manage the dynamic pin on/off smoothly */
- 	spec->gen.auto_mute_via_amp = 1;
 
 
