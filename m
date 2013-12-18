@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab3LRVNg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:13:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36401 "EHLO
+	id S1755165Ab3LRVeD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:34:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36407 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069Ab3LRVNe (ORCPT
+	with ESMTP id S1754085Ab3LRVNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:34 -0500
+	Wed, 18 Dec 2013 16:13:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Blaise Gassend <blaise@suitabletech.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.12 057/118] mac80211: dont attempt to reorder multicast frames
-Date: Wed, 18 Dec 2013 13:11:34 -0800
-Message-Id: <20131218211221.077675111@linuxfoundation.org>
+        Ujjal Roy <royujjal@gmail.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 059/118] mwifiex: fix memory leak issue for ibss join
+Date: Wed, 18 Dec 2013 13:11:36 -0800
+Message-Id: <20131218211221.132234990@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,36 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Ujjal Roy <royujjal@gmail.com>
 
-commit 051a41fa4ee14f5c39668f0980973b9a195de560 upstream.
+commit 517543fd72d577dde2ebd9505dc4abf26d589f9a upstream.
 
-Multicast frames can't be transmitted as part of an aggregation
-session (such a session couldn't even be set up) so don't try to
-reorder them. Trying to do so would cause the reorder to stop
-working correctly since multicast QoS frames (as transmitted by
-the Aruba APs this was found with) would cause sequence number
-confusion in the buffer.
+For IBSS join if the requested SSID matches current SSID,
+it returns without freeing the allocated beacon IE buffer.
 
-Reported-by: Blaise Gassend <blaise@suitabletech.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Ujjal Roy <royujjal@gmail.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/mwifiex/sta_ioctl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -911,7 +911,8 @@ static void ieee80211_rx_reorder_ampdu(s
- 	u16 sc;
- 	u8 tid, ack_policy;
+--- a/drivers/net/wireless/mwifiex/sta_ioctl.c
++++ b/drivers/net/wireless/mwifiex/sta_ioctl.c
+@@ -319,8 +319,8 @@ int mwifiex_bss_start(struct mwifiex_pri
+ 		if (bss_desc && bss_desc->ssid.ssid_len &&
+ 		    (!mwifiex_ssid_cmp(&priv->curr_bss_params.bss_descriptor.
+ 				       ssid, &bss_desc->ssid))) {
+-			kfree(bss_desc);
+-			return 0;
++			ret = 0;
++			goto done;
+ 		}
  
--	if (!ieee80211_is_data_qos(hdr->frame_control))
-+	if (!ieee80211_is_data_qos(hdr->frame_control) ||
-+	    is_multicast_ether_addr(hdr->addr1))
- 		goto dont_reorder;
- 
- 	/*
+ 		/* Exit Adhoc mode first */
 
 
