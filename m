@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab3LRV3u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:29:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36457 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754227Ab3LRVNp (ORCPT
+	id S1755433Ab3LRVaA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:30:00 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:53365 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754227Ab3LRV35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:45 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Sunil K. Pandey" <sunil.k.pandey@intel.com>,
-        "Kevin B. Smith" <kevin.b.smith@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.12 070/118] x86, build, icc: Remove uninitialized_var() from compiler-intel.h
-Date: Wed, 18 Dec 2013 13:11:47 -0800
-Message-Id: <20131218211221.435757666@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
-References: <20131218211219.461663463@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Wed, 18 Dec 2013 16:29:57 -0500
+Message-ID: <52B213D1.1000104@mit.edu>
+Date: Wed, 18 Dec 2013 13:29:53 -0800
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Frederic Weisbecker <fweisbec@gmail.com>, Alex Shi <alex.shi@linaro.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [RFC PATCH 00/13] nohz: Use sysidle detection to let the timekeeper
+ sleep
+References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com> <52B102BB.1050907@linaro.org> <20131218174355.GA19788@localhost.localdomain>
+In-Reply-To: <20131218174355.GA19788@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On 12/18/2013 09:43 AM, Frederic Weisbecker wrote:
+> On Wed, Dec 18, 2013 at 10:04:43AM +0800, Alex Shi wrote:
+>> On 12/18/2013 06:51 AM, Frederic Weisbecker wrote:
+>>> So this is what this series brings, more details following:
+>>>
+>>> * Some code, naming and whitespace cleanups
+>>>
+>>> * Allow all CPUs outside the nohz_full range to handle the timekeeping
+>>>   duty, not just CPU 0. Balancing the timekeeping duty should improve
+>>>   powersavings.
+>>
+>> If the system just has one nohz_full cpu running, it will need another
+>> cpu to do timerkeeper job. Then the system roughly needs 2 cpu living.
+>> From powersaving POV, that is not good compare to normal nohz idle.
+> 
+> Sure, but everything has a tradeoff :)
+> 
+> We could theoretically run with the timekeeper purely idle if the other
+> CPU in full dynticks mode runs in userspace for a long while and seldom
+> do syscalls and faults. Timekeeping could be updated on kernel/user
+> boundaries in this case without much impact on performances.
+> 
+> But then there is one strict condition for that: it can't read the timeofday
+> through the vdso but only through a syscall.
 
-------------------
+Where's your ambition? :)
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+If the vdso timing functions could see that it's been too long since a
+real timekeeping update, they could fall back to a syscall.  Otherwise,
+they could using rdtsc or whatever is in use.
 
-commit 503cf95c061a0551eb684da364509297efbe55d9 upstream.
-
-When compiling with icc, <linux/compiler-gcc.h> ends up included
-because the icc environment defines __GNUC__.  Thus, we neither need
-nor want to have this macro defined in both compiler-gcc.h and
-compiler-intel.h, and the fact that they are inconsistent just makes
-the compiler spew warnings.
-
-Reported-by: Sunil K. Pandey <sunil.k.pandey@intel.com>
-Cc: Kevin B. Smith <kevin.b.smith@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-0mbwou1zt7pafij09b897lg3@git.kernel.org
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/linux/compiler-intel.h |    2 --
- 1 file changed, 2 deletions(-)
-
---- a/include/linux/compiler-intel.h
-+++ b/include/linux/compiler-intel.h
-@@ -28,8 +28,6 @@
- 
- #endif
- 
--#define uninitialized_var(x) x
--
- #ifndef __HAVE_BUILTIN_BSWAP16__
- /* icc has this, but it's called _bswap16 */
- #define __HAVE_BUILTIN_BSWAP16__
-
-
+--Andy
