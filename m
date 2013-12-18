@@ -1,77 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab3LRJSp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 04:18:45 -0500
-Received: from mga01.intel.com ([192.55.52.88]:33322 "EHLO mga01.intel.com"
+	id S1753346Ab3LRJUk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 04:20:40 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40208 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab3LRJSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 04:18:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,506,1384329600"; 
-   d="scan'208";a="446205942"
-From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-To: Arend van Spriel <arend@broadcom.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Sander Eikelenboom <linux@eikelenboom.it>
-CC: Ben Hutchings <ben@decadent.org.uk>,
-        Julian Calaby <julian.calaby@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Avinash Patil <avinashapatil@gmail.com>
-Subject: RE: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't
- work.
-Thread-Topic: [cfg80211 / iwlwifi] setting wireless regulatory domain
- doesn't work.
-Thread-Index: AQHOzCmvoZApyQQAYE2ZI4JJ6vL7x5pPb9/1///kR4CAABUhAIAABbUAgAAD2wCAAAcAgIAABQQAgAAHwgCAB2GbAIAABGmAgAAWDwCAAN/TAIAAfSkAgAC06oCAAA8LgIAABisAgAAEtwCAALtYAIAAIcYQ
-Date: Wed, 18 Dec 2013 09:18:39 +0000
-Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB303D23ABD@HASMSX103.ger.corp.intel.com>
-References: <1342235583.20131211182804@eikelenboom.it>
-	<CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com>
-	<871324710.20131211191104@eikelenboom.it>
-	<CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com>
-	<1937118387.20131216122200@eikelenboom.it>	<52AEE60B.6030509@broadcom.com>
-	<19210260274.20131216135644@eikelenboom.it>
-	<CAGRGNgXHemM2FfnXgW5RbzhFT+9SfUfVkjdysK3+=_u3hWSacw@mail.gmail.com>
-	<1534126119.20131217104548@eikelenboom.it>
-	<387552477.20131217213319@eikelenboom.it>
-	<20131217212709.GB5624@decadent.org.uk>
-	<1254825772.20131217224914@eikelenboom.it>
- <CA+55aFxQg6=MAWEkEGz64Hz8OawvPyX=fpBOjY8cGBL5XgB9WQ@mail.gmail.com>
- <52B167F6.5060209@broadcom.com>
-In-Reply-To: <52B167F6.5060209@broadcom.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.12]
-Content-Type: text/plain; charset="utf-8"
+	id S1753239Ab3LRJUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 04:20:35 -0500
+Message-ID: <52B168A5.4010202@ti.com>
+Date: Wed, 18 Dec 2013 14:49:33 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
+To: Sricharan R <r.sricharan@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
+        <galak@codeaurora.org>, <rob.herring@calxeda.com>,
+        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>
+Subject: Re: [PATCH V5 0/4] DRIVERS: IRQCHIP: Add support for crossbar IP
+References: <1386066445-28245-1-git-send-email-r.sricharan@ti.com>
+In-Reply-To: <1386066445-28245-1-git-send-email-r.sricharan@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBI9Ionu008922
 
+Hi Thomas,
+
+On Tuesday 03 December 2013 03:57 PM, Sricharan R wrote:
+> Some socs have a large number of interrupts requests to service
+> the needs of its many peripherals and subsystems. All of the interrupt
+> requests lines from the subsystems are not needed at the same
+> time, so they have to be muxed to the controllers appropriately.
+> In such places a interrupt controllers are preceded by an
+> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
+> requests to the controller inputs.
 > 
-> On 12/17/2013 11:06 PM, Linus Torvalds wrote:
-> > We have literally had this *exact* same issue with firmware loading.
-> > Network drivers shouldn't try to load firmware at module load time.
-> > Same deal.
+> This series models the peripheral interrupts that can be routed through
+> the crossbar to the GIC as 'routable-irqs'. The routable irqs are added
+> in a separate linear domain inside the GIC. The registered routable domain's
+> callback are invoked as a part of the GIC's callback, which in turn should
+> allocate a free irq line and configure the IP accordingly. So every peripheral
+> in the dts files mentions the fixed crossbar number as its interrupt. A free
+> gic line for that gets allocated and configured when the peripheral interrupts
+> are mapped.
 > 
-> It is kind of a chicken and egg problem for (wireless) networking drivers. To
-> get IFF_UP from the network layer you have to register a netdevice. For
-> wireless drivers this means you have to register a wiphy device with cfg80211
-> which flags capabilities and optionally are custom regulatory domain. That
-> information depends on the device and firmware used. And there we have a
-> full circle.
+> The minimal crossbar driver to track and allocate free GIC lines and configure the
+> crossbar is added here, along with the DT bindings.
+> 
+> V5:
+>    Addressed a comment from Mark Rutland <mark.rutland@arm.com>,
+>    updated tags and rebased on 3.13-rc2
+> 
+> V4:
+>    Addressed a couple of comments and split the DTS file updates in to
+>    a separate series.
+> 
+> V3:
+>    Addressed few more comments from Thomas Gleixner <tglx@linutronix.de>
+> 
+>    Rebased patches 3,4,5,7 which updates the DTS file on top of below branch
+> 	   git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
+> 	   for_3.13/dts
+> 
+>    Rebased patches 1,2,6 on top of 3.12 mainline
+>    Updated Commit tags
+> 
+> V2:
+>    Addressed Thomas Gleixner <tglx@linutronix.de> comments and
+>    Kumar Gala <galak@codeaurora.org>
+> 
+>    Split updating the DRA7.dtsi file for adding the routable-irqs
+> 
+> Previous discussions that led to this is at
+> 	https://lkml.org/lkml/2013/9/18/540
+> 
+> The V1,V2,V3,V4 post of these patches is at
+>       [V1]  https://lkml.org/lkml/2013/9/30/283
+>       [V2]  http://www.spinics.net/lists/linux-omap/msg99540.html
+>       [V3]  http://www.kernelhub.org/?msg=356470&p=2
+>       [V4]  http://www.spinics.net/lists/linux-doc/msg16726.html
+> 
+> Sricharan R (4):
+>   DRIVERS: IRQCHIP: IRQ-GIC: Add support for routable irqs
+>   DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar IP
+>   ARM: OMAP4+: Correct Wakeup-gen code to use physical irq number
+>   ARM: DRA: Enable Crossbar IP support for DRA7XX
+> 
+>  Documentation/devicetree/bindings/arm/gic.txt      |    6 +
+>  .../devicetree/bindings/arm/omap/crossbar.txt      |   27 +++
+>  arch/arm/mach-omap2/Kconfig                        |    1 +
+>  arch/arm/mach-omap2/omap-wakeupgen.c               |    4 +-
+>  arch/arm/mach-omap2/omap4-common.c                 |    2 +
+>  drivers/irqchip/Kconfig                            |    8 +
+>  drivers/irqchip/Makefile                           |    1 +
+>  drivers/irqchip/irq-crossbar.c                     |  208 ++++++++++++++++++++
+>  drivers/irqchip/irq-gic.c                          |   81 +++++++-
+>  include/linux/irqchip/arm-gic.h                    |    7 +-
+>  include/linux/irqchip/irq-crossbar.h               |   11 ++
+>  11 files changed, 343 insertions(+), 13 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
+>  create mode 100644 drivers/irqchip/irq-crossbar.c
+>  create mode 100644 include/linux/irqchip/irq-crossbar.h
 > 
 
-To solve this - iwlwifi uses request_firmware_nowait. Its doc reads:
+I have addressed all the comments on this series, can this be merged now ?
 
-"Asynchronous variant of request_firmware for user contexts: - sleep for as small periods as possible since it may increase kernel boot time of built-in device drivers requesting firmware in their ->probe methods, if gfp is GFP_KERNEL."
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Regards,
+ Sricharan
