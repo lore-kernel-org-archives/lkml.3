@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab3LRWAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:00:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36082 "EHLO
+	id S1755892Ab3LRWBA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:01:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36071 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367Ab3LRVM3 (ORCPT
+	with ESMTP id S1753277Ab3LRVM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:29 -0500
+	Wed, 18 Dec 2013 16:12:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [PATCH 3.10 52/78] media: af9033: fix broken I2C
-Date: Wed, 18 Dec 2013 13:11:20 -0800
-Message-Id: <20131218211113.366573304@linuxfoundation.org>
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.10 50/78] media: saa7164: fix return value check in saa7164_initdev()
+Date: Wed, 18 Dec 2013 13:11:18 -0800
+Message-Id: <20131218211113.311900150@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -29,49 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit d18a88b1f535d627412b2a265d71b2f7d464860e upstream.
+commit 89f4d45b2752df5d222b5f63919ce59e2d8afaf4 upstream.
 
-Driver did not work anymore since I2C has gone broken due
-to recent commit:
-commit 37ebaf6891ee81687bb558e8375c0712d8264ed8
-[media] dvb-frontends: Don't use dynamic static allocation
+In case of error, the function kthread_run() returns ERR_PTR()
+and never returns NULL. The NULL test in the return value check
+should be replaced with IS_ERR().
 
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/af9033.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/media/pci/saa7164/saa7164-core.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/media/dvb-frontends/af9033.c
-+++ b/drivers/media/dvb-frontends/af9033.c
-@@ -170,18 +170,18 @@ static int af9033_rd_reg_mask(struct af9
- static int af9033_wr_reg_val_tab(struct af9033_state *state,
- 		const struct reg_val *tab, int tab_len)
- {
-+#define MAX_TAB_LEN 212
- 	int ret, i, j;
--	u8 buf[MAX_XFER_SIZE];
-+	u8 buf[1 + MAX_TAB_LEN];
-+
-+	dev_dbg(&state->i2c->dev, "%s: tab_len=%d\n", __func__, tab_len);
+--- a/drivers/media/pci/saa7164/saa7164-core.c
++++ b/drivers/media/pci/saa7164/saa7164-core.c
+@@ -1348,9 +1348,11 @@ static int saa7164_initdev(struct pci_de
+ 		if (fw_debug) {
+ 			dev->kthread = kthread_run(saa7164_thread_function, dev,
+ 				"saa7164 debug");
+-			if (!dev->kthread)
++			if (IS_ERR(dev->kthread)) {
++				dev->kthread = NULL;
+ 				printk(KERN_ERR "%s() Failed to create "
+ 					"debug kernel thread\n", __func__);
++			}
+ 		}
  
- 	if (tab_len > sizeof(buf)) {
--		dev_warn(&state->i2c->dev,
--			 "%s: i2c wr len=%d is too big!\n",
--			 KBUILD_MODNAME, tab_len);
-+		dev_warn(&state->i2c->dev, "%s: tab len %d is too big\n",
-+				KBUILD_MODNAME, tab_len);
- 		return -EINVAL;
- 	}
- 
--	dev_dbg(&state->i2c->dev, "%s: tab_len=%d\n", __func__, tab_len);
--
- 	for (i = 0, j = 0; i < tab_len; i++) {
- 		buf[j] = tab[i].val;
- 
+ 	} /* != BOARD_UNKNOWN */
 
 
