@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab3LRFV7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 00:21:59 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:54370 "EHLO
+	id S1753133Ab3LRFV5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 00:21:57 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:63059 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab3LRFVb (ORCPT
+	with ESMTP id S1751249Ab3LRFVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 00:21:31 -0500
-X-AuditID: 9c93017d-b7c5eae000004296-23-52b130d8170c
+	Wed, 18 Dec 2013 00:21:32 -0500
+X-AuditID: 9c93017d-b7c5eae000004296-29-52b130d9a62e
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Arun Sharma <asharma@fb.com>,
         Jiri Olsa <jolsa@redhat.com>, Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 06/18] perf hists: Add support for accumulated stat of hist entry
-Date: Wed, 18 Dec 2013 14:21:14 +0900
-Message-Id: <1387344086-12744-7-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 08/18] perf hists: Accumulate hist entry stat based on the callchain
+Date: Wed, 18 Dec 2013 14:21:16 +0900
+Message-Id: <1387344086-12744-9-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
 References: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
@@ -28,107 +28,192 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Maintain accumulated stat information in hist_entry->stat_acc if
-symbol_conf.cumulate_callchain is set.  Fields in ->stat_acc have same
-vaules initially, and will be updated as callchain is processed later.
+Call __hists__add_entry() for each callchain node to get an
+accumulated stat for an entry.  Introduce new cumulative_iter ops to
+process them properly.
 
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c   | 18 ++++++++++++++++++
- tools/perf/util/sort.h   |  1 +
- tools/perf/util/symbol.h |  1 +
- 3 files changed, 20 insertions(+)
+ tools/perf/builtin-report.c | 136 +++++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/ui/stdio/hist.c  |   2 +-
+ 2 files changed, 136 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 1f84314546a2..6dfa1b48a1a9 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -238,6 +238,8 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
- 		return true;
- 
- 	he_stat__decay(&he->stat);
-+	if (symbol_conf.cumulate_callchain)
-+		he_stat__decay(he->stat_acc);
- 
- 	if (!he->filtered)
- 		hists->stats.total_period -= prev_period - he->stat.period;
-@@ -285,6 +287,15 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 	if (he != NULL) {
- 		*he = *template;
- 
-+		if (symbol_conf.cumulate_callchain) {
-+			he->stat_acc = malloc(sizeof(he->stat));
-+			if (he->stat_acc == NULL) {
-+				free(he);
-+				return NULL;
-+			}
-+			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
-+		}
-+
- 		if (he->ms.map)
- 			he->ms.map->referenced = true;
- 
-@@ -296,6 +307,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 			 */
- 			he->branch_info = malloc(sizeof(*he->branch_info));
- 			if (he->branch_info == NULL) {
-+				free(he->stat_acc);
- 				free(he);
- 				return NULL;
- 			}
-@@ -368,6 +380,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 
- 		if (!cmp) {
- 			he_stat__add_period(&he->stat, period, weight);
-+			if (symbol_conf.cumulate_callchain)
-+				he_stat__add_period(he->stat_acc, period, weight);
- 
- 			/*
- 			 * This mem info was allocated from machine__resolve_mem
-@@ -404,6 +418,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 	rb_insert_color(&he->rb_node_in, hists->entries_in);
- out:
- 	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
-+	if (symbol_conf.cumulate_callchain)
-+		he_stat__add_cpumode_period(he->stat_acc, al->cpumode, period);
- 	return he;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 4e4572b47e04..3bc48e410d06 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -398,6 +398,130 @@ iter_finish_normal_entry(struct add_entry_iter *iter, struct addr_location *al)
+ 	return err;
  }
  
-@@ -503,6 +519,8 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
++static int
++iter_prepare_cumulative_entry(struct add_entry_iter *iter,
++			      struct machine *machine __maybe_unused,
++			      struct perf_evsel *evsel,
++			      struct addr_location *al __maybe_unused,
++			      struct perf_sample *sample)
++{
++	callchain_cursor_commit(&callchain_cursor);
++
++	iter->evsel = evsel;
++	iter->sample = sample;
++	return 0;
++}
++
++static int
++iter_add_single_cumulative_entry(struct add_entry_iter *iter,
++				 struct addr_location *al)
++{
++	struct perf_evsel *evsel = iter->evsel;
++	struct perf_sample *sample = iter->sample;
++	struct hist_entry *he;
++	int err = 0;
++
++	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
++				sample->period, sample->weight,
++				sample->transaction, true);
++	if (he == NULL)
++		return -ENOMEM;
++
++	/*
++	 * This is for putting parents upward during output resort iff
++	 * only a child gets sampled.  See hist_entry__sort_on_period().
++	 */
++	he->callchain->max_depth = PERF_MAX_STACK_DEPTH + 1;
++
++	/*
++	 * Only in the TUI browser we are doing integrated annotation,
++	 * so we don't allocated the extra space needed because the stdio
++	 * code will not use it.
++	 */
++	if (sort__has_sym && he->ms.sym && use_browser == 1) {
++		struct annotation *notes = symbol__annotation(he->ms.sym);
++
++		assert(evsel != NULL);
++
++		if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
++			return -ENOMEM;
++
++		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
++	}
++
++	return err;
++}
++
++static int
++iter_next_cumulative_entry(struct add_entry_iter *iter,
++			   struct addr_location *al)
++{
++	struct callchain_cursor_node *node;
++
++	node = callchain_cursor_current(&callchain_cursor);
++	if (node == NULL)
++		return 0;
++
++	al->map = node->map;
++	al->sym = node->sym;
++	if (node->map)
++		al->addr = node->map->map_ip(node->map, node->ip);
++	else
++		al->addr = node->ip;
++
++	if (iter->rep->hide_unresolved && al->sym == NULL)
++		return 0;
++
++	callchain_cursor_advance(&callchain_cursor);
++	return 1;
++}
++
++static int
++iter_add_next_cumulative_entry(struct add_entry_iter *iter,
++			       struct addr_location *al)
++{
++	struct perf_evsel *evsel = iter->evsel;
++	struct perf_sample *sample = iter->sample;
++	struct hist_entry *he;
++	int err = 0;
++
++	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
++				sample->period, sample->weight,
++				sample->transaction, false);
++	if (he == NULL)
++		return -ENOMEM;
++
++	/*
++	 * Only in the TUI browser we are doing integrated annotation,
++	 * so we don't allocated the extra space needed because the stdio
++	 * code will not use it.
++	 */
++	if (sort__has_sym && he->ms.sym && use_browser == 1) {
++		struct annotation *notes = symbol__annotation(he->ms.sym);
++
++		assert(evsel != NULL);
++
++		if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
++			return -ENOMEM;
++
++		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
++	}
++	return err;
++}
++
++static int
++iter_finish_cumulative_entry(struct add_entry_iter *iter,
++			     struct addr_location *al __maybe_unused)
++{
++	struct perf_evsel *evsel = iter->evsel;
++	struct perf_sample *sample = iter->sample;
++
++	evsel->hists.stats.total_period += sample->period;
++	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
++
++	return 0;
++}
++
+ static struct add_entry_iter mem_iter = {
+ 	.prepare_entry 		= iter_prepare_mem_entry,
+ 	.add_single_entry 	= iter_add_single_mem_entry,
+@@ -422,6 +546,14 @@ static struct add_entry_iter normal_iter = {
+ 	.finish_entry 		= iter_finish_normal_entry,
+ };
  
- 		if (!cmp) {
- 			he_stat__add_stat(&iter->stat, &he->stat);
-+			if (symbol_conf.cumulate_callchain)
-+				he_stat__add_stat(iter->stat_acc, he->stat_acc);
++static struct add_entry_iter cumulative_iter = {
++	.prepare_entry 		= iter_prepare_cumulative_entry,
++	.add_single_entry 	= iter_add_single_cumulative_entry,
++	.next_entry 		= iter_next_cumulative_entry,
++	.add_next_entry 	= iter_add_next_cumulative_entry,
++	.finish_entry 		= iter_finish_cumulative_entry,
++};
++
+ static int
+ perf_evsel__add_entry(struct perf_evsel *evsel, struct addr_location *al,
+ 		      struct perf_sample *sample, struct machine *machine,
+@@ -487,7 +619,9 @@ static int process_sample_event(struct perf_tool *tool,
+ 	else if (rep->mem_mode == 1) {
+ 		iter = &mem_iter;
+ 		iter->priv = event;
+-	} else
++	} else if (symbol_conf.cumulate_callchain)
++		iter = &cumulative_iter;
++	else
+ 		iter = &normal_iter;
  
- 			if (symbol_conf.use_callchain) {
- 				callchain_cursor_reset(&callchain_cursor);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 43e5ff42a609..309f2838a1b4 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -81,6 +81,7 @@ struct hist_entry {
- 		struct list_head head;
- 	} pairs;
- 	struct he_stat		stat;
-+	struct he_stat		*stat_acc;
- 	struct map_symbol	ms;
- 	struct thread		*thread;
- 	struct comm		*comm;
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 8a9d910c5345..66f429633804 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -92,6 +92,7 @@ struct symbol_conf {
- 			show_nr_samples,
- 			show_total_period,
- 			use_callchain,
-+			cumulate_callchain,
- 			exclude_other,
- 			show_cpu_utilization,
- 			initialized,
+ 	if (al.map != NULL)
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index c244cb524ef2..4c4986e809d8 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -364,7 +364,7 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+ 
+ 	ret = fprintf(fp, "%s\n", bf);
+ 
+-	if (symbol_conf.use_callchain)
++	if (symbol_conf.use_callchain && !symbol_conf.cumulate_callchain)
+ 		ret += hist_entry__callchain_fprintf(he, hists, fp);
+ 
+ 	return ret;
 -- 
 1.7.11.7
 
