@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506Ab3LRWTz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:19:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35752 "EHLO
+	id S1755748Ab3LRWU1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:20:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35740 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752218Ab3LRVIy (ORCPT
+	with ESMTP id S1752165Ab3LRVIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:08:54 -0500
+	Wed, 18 Dec 2013 16:08:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Pizunski <linus@narrativeteam.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 17/31] drivers/rtc/rtc-at91rm9200.c: correct alarm over day/month wrap
-Date: Wed, 18 Dec 2013 13:08:25 -0800
-Message-Id: <20131218210523.279811491@linuxfoundation.org>
+        Gustavo Zacarias <gustavo@zacarias.com.ar>
+Subject: [PATCH 3.4 14/31] USB: serial: option: blacklist interface 1 for Huawei E173s-6
+Date: Wed, 18 Dec 2013 13:08:22 -0800
+Message-Id: <20131218210523.199017463@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218210522.790152625@linuxfoundation.org>
 References: <20131218210522.790152625@linuxfoundation.org>
@@ -31,33 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Pizunski <linus@narrativeteam.com>
+From: Gustavo Zacarias <gustavo@zacarias.com.ar>
 
-commit eb3c227289840eed95ddfb0516046f08d8993940 upstream.
+commit 8f173e22abf2258ddfa73f46eadbb6a6c29f1631 upstream.
 
-Update month and day of month to the alarm month/day instead of current
-day/month when setting the RTC alarm mask.
+Interface 1 on this device isn't for option to bind to otherwise an oops
+on usb_wwan with log flooding will happen when accessing the port:
 
-Signed-off-by: Linus Pizunski <linus@narrativeteam.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+tty_release: ttyUSB1: read/write wait queue active!
+
+It doesn't seem to respond to QMI if it's added to qmi_wwan so don't add
+it there - it's likely used by the card reader.
+
+Signed-off-by: Gustavo Zacarias <gustavo@zacarias.com.ar>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-at91rm9200.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/option.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/rtc/rtc-at91rm9200.c
-+++ b/drivers/rtc/rtc-at91rm9200.c
-@@ -162,6 +162,8 @@ static int at91_rtc_setalarm(struct devi
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -85,6 +85,7 @@ static void option_instat_callback(struc
+ #define HUAWEI_PRODUCT_K4505			0x1464
+ #define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_K4605			0x14C6
++#define HUAWEI_PRODUCT_E173S6			0x1C07
  
- 	at91_alarm_year = tm.tm_year;
- 
-+	tm.tm_mon = alrm->time.tm_mon;
-+	tm.tm_mday = alrm->time.tm_mday;
- 	tm.tm_hour = alrm->time.tm_hour;
- 	tm.tm_min = alrm->time.tm_min;
- 	tm.tm_sec = alrm->time.tm_sec;
+ #define QUANTA_VENDOR_ID			0x0408
+ #define QUANTA_PRODUCT_Q101			0xEA02
+@@ -586,6 +587,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173S6, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E1750, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
 
 
