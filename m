@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab3LRVNm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:13:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36404 "EHLO
+	id S1754259Ab3LRVNs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:13:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36439 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab3LRVNe (ORCPT
+	with ESMTP id S1754187Ab3LRVNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:34 -0500
+	Wed, 18 Dec 2013 16:13:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.12 058/118] iwlwifi: mvm: check sta_id/drain values in debugfs
-Date: Wed, 18 Dec 2013 13:11:35 -0800
-Message-Id: <20131218211221.104599746@linuxfoundation.org>
+        Paul Mackerras <paulus@samba.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Hong H. Pham" <hong.pham@windriver.com>
+Subject: [PATCH 3.12 040/118] powerpc: Fix PTE page address mismatch in pgtable ctor/dtor
+Date: Wed, 18 Dec 2013 13:11:17 -0800
+Message-Id: <20131218211220.605478793@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,36 +31,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: "Hong H. Pham" <hong.pham@windriver.com>
 
-commit 60765a47a433d54e4744c285ad127f182dcd80aa upstream.
+commit cf77ee54362a245f9a01f240adce03a06c05eb68 upstream.
 
-The station ID must be valid, if it's out of range then
-the array access may crash. Validate the station ID to
-the array length, and also validate the drain value even
-if that doesn't matter all that much.
+In pte_alloc_one(), pgtable_page_ctor() is passed an address that has
+not been converted by page_address() to the newly allocated PTE page.
 
-Fixes: 8ca151b568b6 ("iwlwifi: add the MVM driver")
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+When the PTE is freed, __pte_free_tlb() calls pgtable_page_dtor()
+with an address to the PTE page that has been converted by page_address().
+The mismatch in the PTE's page address causes pgtable_page_dtor() to access
+invalid memory, so resources for that PTE (such as the page lock) is not
+properly cleaned up.
+
+On PPC32, only SMP kernels are affected.
+
+On PPC64, only SMP kernels with 4K page size are affected.
+
+This bug was introduced by commit d614bb041209fd7cb5e4b35e11a7b2f6ee8f62b8
+"powerpc: Move the pte free routines from common header".
+
+On a preempt-rt kernel, a spinlock is dynamically allocated for each
+PTE in pgtable_page_ctor().  When the PTE is freed, calling
+pgtable_page_dtor() with a mismatched page address causes a memory leak,
+as the pointer to the PTE's spinlock is bogus.
+
+On mainline, there isn't any immediately obvious symptoms, but the
+problem still exists here.
+
+Fixes: d614bb041209fd7c "powerpc: Move the pte free routes from common header"
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Hong H. Pham <hong.pham@windriver.com>
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/debugfs.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/powerpc/include/asm/pgalloc-32.h |    6 ++----
+ arch/powerpc/include/asm/pgalloc-64.h |    6 ++----
+ 2 files changed, 4 insertions(+), 8 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/debugfs.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/debugfs.c
-@@ -119,6 +119,10 @@ static ssize_t iwl_dbgfs_sta_drain_write
+--- a/arch/powerpc/include/asm/pgalloc-32.h
++++ b/arch/powerpc/include/asm/pgalloc-32.h
+@@ -84,10 +84,8 @@ static inline void pgtable_free_tlb(stru
+ static inline void __pte_free_tlb(struct mmu_gather *tlb, pgtable_t table,
+ 				  unsigned long address)
+ {
+-	struct page *page = page_address(table);
+-
+ 	tlb_flush_pgtable(tlb, address);
+-	pgtable_page_dtor(page);
+-	pgtable_free_tlb(tlb, page, 0);
++	pgtable_page_dtor(table);
++	pgtable_free_tlb(tlb, page_address(table), 0);
+ }
+ #endif /* _ASM_POWERPC_PGALLOC_32_H */
+--- a/arch/powerpc/include/asm/pgalloc-64.h
++++ b/arch/powerpc/include/asm/pgalloc-64.h
+@@ -144,11 +144,9 @@ static inline void pgtable_free_tlb(stru
+ static inline void __pte_free_tlb(struct mmu_gather *tlb, pgtable_t table,
+ 				  unsigned long address)
+ {
+-	struct page *page = page_address(table);
+-
+ 	tlb_flush_pgtable(tlb, address);
+-	pgtable_page_dtor(page);
+-	pgtable_free_tlb(tlb, page, 0);
++	pgtable_page_dtor(table);
++	pgtable_free_tlb(tlb, page_address(table), 0);
+ }
  
- 	if (sscanf(buf, "%d %d", &sta_id, &drain) != 2)
- 		return -EINVAL;
-+	if (sta_id < 0 || sta_id >= IWL_MVM_STATION_COUNT)
-+		return -EINVAL;
-+	if (drain < 0 || drain > 1)
-+		return -EINVAL;
- 
- 	mutex_lock(&mvm->mutex);
- 
+ #else /* if CONFIG_PPC_64K_PAGES */
 
 
