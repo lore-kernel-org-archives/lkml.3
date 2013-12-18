@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab3LRLLy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 06:11:54 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44007 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753780Ab3LRLLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 06:11:51 -0500
-Message-ID: <52B18265.5090404@ti.com>
-Date: Wed, 18 Dec 2013 13:09:25 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753910Ab3LRLMk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 06:12:40 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:37383 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405Ab3LRLMi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 06:12:38 -0500
+Date: Wed, 18 Dec 2013 11:12:32 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: sameo@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: Re: Simple MFD driver example
+Message-ID: <20131218111232.GE14274@lee--X1>
+References: <CAOMwXhN5UfR=Y8V3i=A2zSCv7V9sRDd0Z+D1AQFahvRS-mV5Fw@mail.gmail.com>
+ <20131216082556.GE18769@lee--X1>
+ <CAOMwXhN8fG8YbU53A_U_MyMTyGWfV7NCCtr2a5oCbHdB0iqqmA@mail.gmail.com>
+ <20131216150514.GN18769@lee--X1>
+ <CAOMwXhMn5W76Dp=EFNHaknXCqZ4q4e7fphgtttx+8U=1Fc_DMQ@mail.gmail.com>
+ <20131216164844.GS18769@lee--X1>
+ <CAOMwXhPLNVKbRqR2tPQc758zLsh0Lg0D6JUf2yrf+ZosJVANAw@mail.gmail.com>
+ <20131218091609.GB14274@lee--X1>
+ <CAOMwXhOSpnEiDoyXNPmy0Gt1tLiwdzGRqoseKqtAUogLEfkCZQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
-        <dwmw2@infradead.org>
-Subject: Re: [PATCH v4 0/9] Reuse davinci-nand driver for Keystone arch
-References: <1387285155-19182-1-git-send-email-ivan.khoronzhuk@ti.com> <20131218071457.GB5551@norris-Latitude-E6410>
-In-Reply-To: <20131218071457.GB5551@norris-Latitude-E6410>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOMwXhOSpnEiDoyXNPmy0Gt1tLiwdzGRqoseKqtAUogLEfkCZQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 09:14 AM, Brian Norris wrote:
-> On Tue, Dec 17, 2013 at 02:59:06PM +0200, Ivan Khoronzhuk wrote:
->> This series contains fixes and updates of Davinci nand driver in
->> order to reuse it for Keystone platform.
->>
->> v3..v4:
->> - mtd: nand: davinci: fix driver registration
->> 	dropped __init/__exit/__exit_p as module_platform_driver() is used
->> - mtd: nand: davinci: adjust DT properties to MTD generic
->> 	used of_get_nand_bus_width() helper
->> - mtd: nand: davinci: don't request AEMIF address range
->> 	added comment at code change
->
-> Pushed the series to l2-mtd.git. Thanks!
->
-> Brian
->
+> The MAX6650/6651 chip has multiple functionality:
+> 
+> * fan/hwmon
+> 
+> * gpio
+> 
+> * alarm, etc.
+> 
+> What you eventually see in hwmon is only a subset of all the features
+> the IC provides. You may want to read this thread:
+> https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg536509.html
 
-Thanks
+Okay, so the best thing to do is send out the entire patch-set at
+once, CC'ing each of the maintainers on every patch so we can all see
+how this thing fits together.
+
+Don't forget to create a cover-letter and each patch should be
+in-reply to the cover letter. If you haven't done this before,
+practise by sending it to yourself until it looks correct rather than
+spamming the list.
+
+It should look like this on this list:
+
+[PATCH 00/03] Subject ...
+ |-> [PATCH 01/03] mfd: Description ...
+ |-> [PATCH 02/03] hwmon: Description ...
+ |-> [PATCH 03/03] gpio: Description ...
+
 
 -- 
-Regards,
-Ivan Khoronzhuk
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
