@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab3LRVao (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:30:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36453 "EHLO
+	id S1755085Ab3LRVbB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:31:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36448 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207Ab3LRVNp (ORCPT
+	with ESMTP id S1751813Ab3LRVNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:45 -0500
+	Wed, 18 Dec 2013 16:13:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Kevin B. Smith" <kevin.b.smith@intel.com>,
-        "Sunil K. Pandey" <sunil.k.pandey@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. J. Lu" <hjl.tools@gmail.com>
-Subject: [PATCH 3.12 069/118] x86, build: Pass in additional -mno-mmx, -mno-sse options
-Date: Wed, 18 Dec 2013 13:11:46 -0800
-Message-Id: <20131218211221.408017956@linuxfoundation.org>
+        Cliff Wickman <cpw@sgi.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.12 068/118] x86/UV: Fix NULL pointer dereference in uv_flush_tlb_others() if the nobau boot option is used
+Date: Wed, 18 Dec 2013 13:11:45 -0800
+Message-Id: <20131218211221.380254523@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -31,111 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: cpw <cpw@sgi.com>
 
-commit 8b3b005d675726e38bc504d2e35a991e55819155 upstream.
+commit 3eae49ca8954f958b2001ab5643ef302cb7b67c7 upstream.
 
-In checkin
+The SGI UV tlb shootdown code panics the system with a NULL
+pointer deference if 'nobau' is specified on the boot
+commandline.
 
-    5551a34e5aea x86-64, build: Always pass in -mno-sse
+uv_flush_tlb_other() gets called for every flush, whether the
+BAU is disabled or not.  It should not be keeping the s_enters
+statistic while the BAU is disabled.
 
-we unconditionally added -mno-sse to the main build, to keep newer
-compilers from generating SSE instructions from autovectorization.
-However, this did not extend to the special environments
-(arch/x86/boot, arch/x86/boot/compressed, and arch/x86/realmode/rm).
-Add -mno-sse to the compiler command line for these environments, and
-add -mno-mmx to all the environments as well, as we don't want a
-compiler to generate MMX code either.
+The panic occurs because during initialization
+init_per_cpu_tunables() does not set the bcp->statp pointer if
+'nobau' was specified.
 
-This patch also removes a $(cc-option) call for -m32, since we have
-long since stopped supporting compilers too old for the -m32 option,
-and in fact hardcode it in other places in the Makefiles.
-
-Reported-by: Kevin B. Smith <kevin.b.smith@intel.com>
-Cc: Sunil K. Pandey <sunil.k.pandey@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: H. J. Lu <hjl.tools@gmail.com>
-Link: http://lkml.kernel.org/n/tip-j21wzqv790q834n7yc6g80j1@git.kernel.org
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Link: http://lkml.kernel.org/r/E1VnzBi-0005yF-MU@eag09.americas.sgi.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/Makefile                 |    8 ++++----
- arch/x86/boot/Makefile            |    6 +++---
- arch/x86/boot/compressed/Makefile |    1 +
- arch/x86/realmode/rm/Makefile     |    3 ++-
- 4 files changed, 10 insertions(+), 8 deletions(-)
+ arch/x86/platform/uv/tlb_uv.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -31,8 +31,8 @@ ifeq ($(CONFIG_X86_32),y)
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -1070,12 +1070,13 @@ const struct cpumask *uv_flush_tlb_other
+ 	unsigned long status;
  
-         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
+ 	bcp = &per_cpu(bau_control, cpu);
+-	stat = bcp->statp;
+-	stat->s_enters++;
  
--        # Don't autogenerate SSE instructions
--	KBUILD_CFLAGS += -mno-sse
-+        # Don't autogenerate MMX or SSE instructions
-+        KBUILD_CFLAGS += -mno-mmx -mno-sse
+ 	if (bcp->nobau)
+ 		return cpumask;
  
-         # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
-         # with nonstandard options
-@@ -60,8 +60,8 @@ else
-         KBUILD_AFLAGS += -m64
-         KBUILD_CFLAGS += -m64
- 
--        # Don't autogenerate SSE instructions
--	KBUILD_CFLAGS += -mno-sse
-+        # Don't autogenerate MMX or SSE instructions
-+        KBUILD_CFLAGS += -mno-mmx -mno-sse
- 
- 	# Use -mpreferred-stack-boundary=3 if supported.
- 	KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
---- a/arch/x86/boot/Makefile
-+++ b/arch/x86/boot/Makefile
-@@ -53,18 +53,18 @@ $(obj)/cpustr.h: $(obj)/mkcpustr FORCE
- 
- # How to compile the 16-bit code.  Note we always compile for -march=i386,
- # that way we can complain to the user if the CPU is insufficient.
--KBUILD_CFLAGS	:= $(USERINCLUDE) -g -Os -D_SETUP -D__KERNEL__ \
-+KBUILD_CFLAGS	:= $(USERINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ \
- 		   -DDISABLE_BRANCH_PROFILING \
- 		   -Wall -Wstrict-prototypes \
- 		   -march=i386 -mregparm=3 \
- 		   -include $(srctree)/$(src)/code16gcc.h \
- 		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
-+		   -mno-mmx -mno-sse \
- 		   $(call cc-option, -ffreestanding) \
- 		   $(call cc-option, -fno-toplevel-reorder,\
--			$(call cc-option, -fno-unit-at-a-time)) \
-+		   $(call cc-option, -fno-unit-at-a-time)) \
- 		   $(call cc-option, -fno-stack-protector) \
- 		   $(call cc-option, -mpreferred-stack-boundary=2)
--KBUILD_CFLAGS	+= $(call cc-option, -m32)
- KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
- GCOV_PROFILE := n
- 
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -13,6 +13,7 @@ KBUILD_CFLAGS += -DDISABLE_BRANCH_PROFIL
- cflags-$(CONFIG_X86_32) := -march=i386
- cflags-$(CONFIG_X86_64) := -mcmodel=small
- KBUILD_CFLAGS += $(cflags-y)
-+KBUILD_CFLAGS += -mno-mmx -mno-sse
- KBUILD_CFLAGS += $(call cc-option,-ffreestanding)
- KBUILD_CFLAGS += $(call cc-option,-fno-stack-protector)
- 
---- a/arch/x86/realmode/rm/Makefile
-+++ b/arch/x86/realmode/rm/Makefile
-@@ -73,9 +73,10 @@ KBUILD_CFLAGS	:= $(LINUXINCLUDE) -m32 -g
- 		   -march=i386 -mregparm=3 \
- 		   -include $(srctree)/$(src)/../../boot/code16gcc.h \
- 		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
-+		   -mno-mmx -mno-sse \
- 		   $(call cc-option, -ffreestanding) \
- 		   $(call cc-option, -fno-toplevel-reorder,\
--			$(call cc-option, -fno-unit-at-a-time)) \
-+		   $(call cc-option, -fno-unit-at-a-time)) \
- 		   $(call cc-option, -fno-stack-protector) \
- 		   $(call cc-option, -mpreferred-stack-boundary=2)
- KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
++	stat = bcp->statp;
++	stat->s_enters++;
++
+ 	if (bcp->busy) {
+ 		descriptor_status =
+ 			read_lmmr(UVH_LB_BAU_SB_ACTIVATION_STATUS_0);
 
 
