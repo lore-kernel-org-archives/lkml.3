@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab3LRRco (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 12:32:44 -0500
-Received: from mga09.intel.com ([134.134.136.24]:26205 "EHLO mga09.intel.com"
+	id S1755341Ab3LRRc6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 12:32:58 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:46851 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754628Ab3LRRcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 12:32:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,508,1384329600"; 
-   d="scan'208";a="426739881"
-Date: Wed, 18 Dec 2013 22:03:36 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] dma: mv_xor: remove mv_desc_get_dest_addr()
-Message-ID: <20131218163336.GO16227@intel.com>
-References: <1385408365-8072-1-git-send-email-jason@lakedaemon.net>
- <20131128055706.GM8834@intel.com>
- <20131209235035.GA11632@n2100.arm.linux.org.uk>
- <20131210101331.GG29580@intel.com>
- <20131210111449.GY4360@n2100.arm.linux.org.uk>
- <CAPcyv4gAazGS_m6KNfF2_kY3CDzYkvpBQ=kcnPH-pBvcJ0HjAw@mail.gmail.com>
- <CAPcyv4iNOqHSQXj_PTmG-iHajnmHoPhLeFvnnK-JtNykf2W3Ew@mail.gmail.com>
- <20131218154045.GC16227@intel.com>
- <CAPcyv4hiGg6J0sAEy6N=HRsLg_B9PGOc=khaTNR80==pDfNQzQ@mail.gmail.com>
+	id S1753388Ab3LRRc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 12:32:57 -0500
+X-IronPort-AV: E=Sophos;i="4.95,508,1384300800"; 
+   d="scan'208";a="85837492"
+Date: Wed, 18 Dec 2013 17:32:22 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, <david.vrabel@citrix.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] allow xenfb initialization for hvm guests
+In-Reply-To: <20131218152719.GI4934@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1312181730290.8667@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1312171738550.8667@kaball.uk.xensource.com> <1387367482.27441.123.camel@kazak.uk.xensource.com> <20131218151422.GF4934@phenom.dumpdata.com> <alpine.DEB.2.02.1312181517400.8667@kaball.uk.xensource.com>
+ <20131218152719.GI4934@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPcyv4hiGg6J0sAEy6N=HRsLg_B9PGOc=khaTNR80==pDfNQzQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 08:55:23AM -0800, Dan Williams wrote:
-> >> > Vinod, if your fixes branch is ready I'll take it along with the rest
-> >> > of the regression fixes to Linus.
-> > Sorry I wasnt well last week, so I just managed to send the PULL on friday
-> > morning. Wasnt sure if Linus will cut rc on friday or later, so sent it!
+On Wed, 18 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> On Wed, Dec 18, 2013 at 03:18:45PM +0000, Stefano Stabellini wrote:
+> > On Wed, 18 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> > > On Wed, Dec 18, 2013 at 11:51:22AM +0000, Ian Campbell wrote:
+> > > > On Tue, 2013-12-17 at 17:53 +0000, Stefano Stabellini wrote:
+> > > > > There is no reasons why an HVM guest shouldn't be allowed to use xenfb.
+> > > > > As a matter of fact ARM guests, HVM from Linux POV, can use xenfb.
+> > > > > Given that no Xen toolstacks configure a xenfb backend for x86 HVM
+> > > > > guests, they are not affected.
+> > > > 
+> > > > and if a toolstack did I think it would be reasonable to expect the
+> > > > kernel to at least try and drive it!
+> > > > 
+> > > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > > 
+> > > > Acked-by: Ian Campbell <ian.campbell@citrix.com>
+> > > 
+> > > I think David Vrabel is going to Nack it unless there is a test-case.
+> > > 
+> > > I am saying that because in his previous statement for Wei's multi-page
+> > > patches was that if there are no users (or at least no test-cases) then
+> > > it should not be part of the kernel.
+> > 
+> > Well there is one: ARM. There isn't one on x86.
+> > 
+> > http://marc.info/?l=xen-devel&m=138730150806639&w=2
 > 
-> Ok, glad you are feeling better.
-Thanks
+> Ah I missed that. I think that this particular patch can wait till the
+> next merge window?
 
-> 
-> >>
-> >> Ok, I see you sent dma-slave/fixes up, I'll follow up with the rest:
-> > Okay, did you manage to send it? If not I may have few (i think at least 1 more)
-> >
-> 
-> Patchwork id(s)?  I want to send it it today.
+Surely it can wait.
 
-3266451, I have acked it!
 
---
-~Vinod
+> Would it make sense to have the XenFB also work on x86? Is it difficult
+> to make it work on it?
 
--- 
+The issue is that you need stdvga anyway in order to boot and xenfb is
+not much better than stdvga after all (except that it doesn't require
+QEMU's pc machine emulator).
