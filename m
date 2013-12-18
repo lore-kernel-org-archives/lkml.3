@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab3LRNxd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 08:53:33 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40627 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab3LRNxc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 08:53:32 -0500
-Date: Wed, 18 Dec 2013 13:53:08 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <20131218135308.GV28455@sirena.org.uk>
-References: <1386033532-25431-1-git-send-email-matthew.garrett@nebula.com>
+	id S1754411Ab3LROCE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 09:02:04 -0500
+Received: from mga01.intel.com ([192.55.52.88]:51269 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753170Ab3LROCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 09:02:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,508,1384329600"; 
+   d="scan'208";a="446324228"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
+In-Reply-To: <20131218133439.GR21999@twins.programming.kicks-ass.net>
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-5-git-send-email-alexander.shishkin@linux.intel.com> <20131217161126.GL13532@twins.programming.kicks-ass.net> <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com> <20131218133439.GR21999@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Wed, 18 Dec 2013 16:01:04 +0200
+Message-ID: <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L6+lUPd1XOsaFBch"
-Content-Disposition: inline
-In-Reply-To: <1386033532-25431-1-git-send-email-matthew.garrett@nebula.com>
-X-Cookie: Haste makes waste.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] Remove unnecessarily gendered language
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Peter Zijlstra <peterz@infradead.org> writes:
 
---L6+lUPd1XOsaFBch
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Wed, Dec 18, 2013 at 03:23:41PM +0200, Alexander Shishkin wrote:
+>> Peter Zijlstra <peterz@infradead.org> writes:
+>> 
+>> > On Wed, Dec 11, 2013 at 02:36:16PM +0200, Alexander Shishkin wrote:
+>> >> Instruction tracing PMUs are capable of recording a log of instruction
+>> >> execution flow on a cpu core, which can be useful for profiling and crash
+>> >> analysis. This patch adds itrace infrastructure for perf events and the
+>> >> rest of the kernel to use.
+>> >> 
+>> >> Since such PMUs can produce copious amounts of trace data, it may be
+>> >> impractical to process it inside the kernel in real time, but instead export
+>> >> raw trace streams to userspace for subsequent analysis. Thus, itrace PMUs
+>> >> may export their trace buffers, which can be mmap()ed to userspace from a
+>> >> perf event fd with a PERF_EVENT_ITRACE_OFFSET offset. To that end, perf
+>> >> is extended to work with multiple ring buffers per event, reusing the
+>> >> ring_buffer code in an attempt to reduce complexity.
+>> >
+>> > Please read the thread here: https://lkml.org/lkml/2008/12/4/64
+>> >
+>> > On my thoughts of this creative mmap() usage.
+>> 
+>> That's unfortunate, it made sense to me. But let's then have a look at
+>> the alternative approaches. Bearing in mind that it is crucial for us to
+>> export trace buffers to userspace as opposed to processing the trace
+>> data in the kernel, the fact that we still need the normal perf data
+>> stream and your dislike for mmap trickery, we need two separate file
+>> descriptors: one for the perf data and one for the trace data.
+>
+> Why don't you start by explaining _why_ you need a second stream to
+> begin with?
 
-On Mon, Dec 02, 2013 at 08:18:52PM -0500, Matthew Garrett wrote:
+Oh, I'm sure I've explained it earlier ([1], [2]), but why not. The data
+in the second stream is generated at a rate which is hundreds of
+megabytes per second per core. Decoding this data is ~1000 times slower
+than generating it. Ergo, can't be done in kernel, needs to be exported
+as-is to userspace for later retreival and decoding. Doing it via perf
+stream means an extra copy, which at these rates is a waste. Ergo, a
+second buffer.
 
->  sound/soc/fsl/fsl_dma.c                            |  2 +-
->  sound/soc/mxs/mxs-saif.c                           | 10 ++++----
+[1] https://lkml.org/lkml/2013/12/11/213
+[2] https://lkml.org/lkml/2013/12/11/358
 
-I applied these chunks of the patch, thanks.
-
---L6+lUPd1XOsaFBch
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSsajBAAoJELSic+t+oim9j+MP/26fTMEZcyPfRGxkHLa3T1mA
-c0MEBFi/9HyOClVm+qeQcIJiHmx3UwPr53k5i3AggHM2bK51LWHOy8Zzu9MTfOmJ
-fLOxNYrKWjYAlQEic1GLx2+cGJ4kGWWS7FNFxBIpRZVMwSMvoMmTTACM5u+vMukN
-lAOdEAkovOzmGoVNSuf2b7VRyNwzZoVejWADQN2mv6DOIJIhibxEPgrd8atYNyi5
-4p4WMXetI0warHIQdgjae+ASpASRRIvq/dkMEsVZhxjC6amXOXVJJ+e5ssoKens5
-3voqBPkDsG2M3PgSdZUzHY/JgSJiDwCUTKHrwG3EvA7KbBF2K6n9eI4hiC5AW9Jz
-ZmqzzHFC0+FTQpU2I9oXQXLJBXSM725ZIGczpqN36RSDSMb/k5ATrn++dz6EQbRZ
-n1B25lpc2ZsC2j+gNhrK1WB79FUlj3STbYhi8ZvWFsuZ1KDHHP0exmaDExTrexjh
-LnV1lYj9rK44K2GKplvblHodmiPQliA9oK5oW1C9OH/mM2JRtTRASOOsM+GhcgcR
-hNyjyJ8okass/AgLjuCPHEgzNHlk8BPaGH/uhmU1toM2WQd5B0styINdOFtAJY4A
-1HAjXrMQbgHr1ezRWQGsQJkUk/wZuj0RMszfL3xZ9qqzE1kZqOS9mqokKtILJlF5
-sMCzHwFg6oJuDuKRwsag
-=dNav
------END PGP SIGNATURE-----
-
---L6+lUPd1XOsaFBch--
+Regards,
+--
+Alex
