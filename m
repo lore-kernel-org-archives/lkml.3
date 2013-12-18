@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab3LRSXH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 13:23:07 -0500
-Received: from mxout1.idt.com ([157.165.5.25]:49382 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755289Ab3LRSXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 13:23:05 -0500
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: Rashika Kheria <rashika.kheria@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Matt Porter <mporter@kernel.crashing.org>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>
-Subject: RE: [PATCH 2/3] drivers: rapidio: Include appropriate header file
- in rio-driver.c
-Thread-Topic: [PATCH 2/3] drivers: rapidio: Include appropriate header file
- in rio-driver.c
-Thread-Index: AQHO+Msg9s8PpNV+YkKTmJH0smjz05paSmgg
-Date: Wed, 18 Dec 2013 18:22:55 +0000
-Message-ID: <8D983423E7EDF846BB3056827B8CC5D14BED3278@corpmail1.na.ads.idt.com>
-References: <8522e3b2fefdb6625e9d7ae651cfa2dfd4733293.1386926041.git.rashika.kheria@gmail.com>
- <955c21bd0ce986e1e616f8f912a57568421f5078.1386926041.git.rashika.kheria@gmail.com>
-In-Reply-To: <955c21bd0ce986e1e616f8f912a57568421f5078.1386926041.git.rashika.kheria@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.165.140.50]
-Content-Type: text/plain; charset="utf-8"
+	id S1755669Ab3LRSYn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 13:24:43 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:40097 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031Ab3LRSYl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 13:24:41 -0500
+Date: Wed, 18 Dec 2013 23:54:32 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org, josh@joshtriplett.org
+Subject: [PATCH 1/4] drivers: target: Move prototype declaration of function
+ to header file target_core_pr.h
+Message-ID: <1a63603bc5ff05147c419a301d59b135cd0c8406.1387390091.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBIINDwo012742
 
-On Sat, Dec 14, 2013 at 7:50AM, Rashika Kheria wrote:
-> Subject: [PATCH 2/3] drivers: rapidio: Include appropriate header file
-> in rio-driver.c
-> 
-> This patch includes the header file linux/rio_drv.h in rio-driver.c
-> because functions rio_dev_get(), rio_dev_put(), rio_register_driver()
-> and rio_unregister_driver() have their prototype declarations in
-> linux/rio_drv.h.
-> 
-> Thus, it also eliminates the following warnings in rio-driver.c:
-> 
-> drivers/rapidio/rio-driver.c:57:17: warning: no previous prototype for
-> â€˜rio_dev_getâ€™ [-Wmissing-prototypes]
-> drivers/rapidio/rio-driver.c:74:6: warning: no previous prototype for
-> â€˜rio_dev_putâ€™ [-Wmissing-prototypes]
-> drivers/rapidio/rio-driver.c:143:5: warning: no previous prototype for
-> â€˜rio_register_driverâ€™ [-Wmissing-prototypes]
-> drivers/rapidio/rio-driver.c:162:6: warning: no previous prototype for
-> â€˜rio_unregister_driverâ€™ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> ---
->  drivers/rapidio/rio-driver.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/rapidio/rio-driver.c b/drivers/rapidio/rio-
-> driver.c
-> index c9ae692..df73419 100644
-> --- a/drivers/rapidio/rio-driver.c
-> +++ b/drivers/rapidio/rio-driver.c
-> @@ -13,6 +13,7 @@
->  #include <linux/init.h>
->  #include <linux/module.h>
->  #include <linux/rio.h>
-> +#include <linux/rio_drv.h>
->  #include <linux/rio_ids.h>
-> 
->  #include "rio.h"
-> --
-> 1.7.9.5
+Move prototype declaration of function
+spc_parse_naa_6h_vendor_specific() from target_core_xcopy.c to header
+file target_core_pr.h because it is used by more than one file.
 
-Acked-by: Alexandre Bounine <alexandre.bounine@idt.com>
+This eliminates the following warning in target_core_spc.c:
+drivers/target/target_core_spc.c:138:6: warning: no previous prototype for â€˜spc_parse_naa_6h_vendor_specificâ€™ [-Wmissing-prototypes]
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+---
+ drivers/target/target_core_pr.h    |    5 +++++
+ drivers/target/target_core_xcopy.c |    4 ----
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/target/target_core_pr.h b/drivers/target/target_core_pr.h
+index ed75cdd..2ee2936 100644
+--- a/drivers/target/target_core_pr.h
++++ b/drivers/target/target_core_pr.h
+@@ -43,6 +43,11 @@
+ #define PR_APTPL_MAX_IPORT_LEN			256
+ #define PR_APTPL_MAX_TPORT_LEN			256
+ 
++/*
++ *  Function defined in target_core_spc.c
++ */
++void spc_parse_naa_6h_vendor_specific(struct se_device *, unsigned char *);
++
+ extern struct kmem_cache *t10_pr_reg_cache;
+ 
+ extern void core_pr_dump_initiator_port(struct t10_pr_registration *,
+diff --git a/drivers/target/target_core_xcopy.c b/drivers/target/target_core_xcopy.c
+index 6b88a99..669c536 100644
+--- a/drivers/target/target_core_xcopy.c
++++ b/drivers/target/target_core_xcopy.c
+@@ -40,10 +40,6 @@
+ 
+ static struct workqueue_struct *xcopy_wq = NULL;
+ /*
+- * From target_core_spc.c
+- */
+-extern void spc_parse_naa_6h_vendor_specific(struct se_device *, unsigned char *);
+-/*
+  * From target_core_device.c
+  */
+ extern struct mutex g_device_mutex;
+-- 
+1.7.9.5
+
