@@ -1,100 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab3LRRD3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 12:03:29 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:1168 "EHLO SMTP02.CITRIX.COM"
+	id S1754948Ab3LRRGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 12:06:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59419 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752754Ab3LRRD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 12:03:28 -0500
-X-IronPort-AV: E=Sophos;i="4.95,508,1384300800"; 
-   d="scan'208";a="83578149"
-Message-ID: <1387386205.28680.74.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH v11 02/12] xen/pvh: Define what an PVH guest
- is.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <jbeulich@suse.com>,
-        <david.vrabel@citrix.com>
-Date: Wed, 18 Dec 2013 17:03:25 +0000
-In-Reply-To: <20131218165807.GB4630@phenom.dumpdata.com>
-References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
-	 <1387313503-31362-3-git-send-email-konrad.wilk@oracle.com>
-	 <alpine.DEB.2.02.1312181421260.8667@kaball.uk.xensource.com>
-	 <alpine.DEB.2.02.1312181453110.8667@kaball.uk.xensource.com>
-	 <1387382463.28680.52.camel@kazak.uk.xensource.com>
-	 <20131218165807.GB4630@phenom.dumpdata.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1751930Ab3LRRGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 12:06:51 -0500
+Date: Wed, 18 Dec 2013 18:06:49 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/6] memcg, slab: kmem_cache_create_memcg(): free memcg
+ params on error
+Message-ID: <20131218170649.GC31080@dhcp22.suse.cz>
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
+ <9420ad797a2cfa14c23ad1ba6db615a2a51ffee0.1387372122.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9420ad797a2cfa14c23ad1ba6db615a2a51ffee0.1387372122.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-12-18 at 11:58 -0500, Konrad Rzeszutek Wilk wrote:
-> On Wed, Dec 18, 2013 at 04:01:03PM +0000, Ian Campbell wrote:
-> > On Wed, 2013-12-18 at 14:55 +0000, Stefano Stabellini wrote:
-> > > On Wed, 18 Dec 2013, Stefano Stabellini wrote:
-> > > > On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> > > > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > > > > 
-> > > > > Which is a PV guest with auto page translation enabled
-> > > > > and with vector callback. It is a cross between PVHVM and PV.
-> > > > > 
-> > > > > The Xen side defines PVH as (from docs/misc/pvh-readme.txt,
-> > > > > with modifications):
-> > > > > 
-> > > > > "* the guest uses auto translate:
-> > > > >  - p2m is managed by Xen
-> > > > >  - pagetables are owned by the guest
-> > > > >  - mmu_update hypercall not available
-> > > > > * it uses event callback and not vlapic emulation,
-> > > > > * IDT is native, so set_trap_table hcall is also N/A for a PVH guest.
-> > > > > 
-> > > > > For a full list of hcalls supported for PVH, see pvh_hypercall64_table
-> > > > > in arch/x86/hvm/hvm.c in xen.  From the ABI prespective, it's mostly a
-> > > > > PV guest with auto translate, although it does use hvm_op for setting
-> > > > > callback vector."
-> > > > > 
-> > > > > We don't have yet a Kconfig entry setup as we do not
-> > > > > have all the parts ready for it - so we piggyback
-> > > > > on the PVHVM config option. This scaffolding will
-> > > > > be removed later.
-> > > > > 
-> > > > > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > > > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > > 
-> > > > Could you please add an "&& CONFIG_X86"?
-> > > 
-> > > On second thought, given that it is just temporary and that PVHVM is not
-> > > defined on ARM, it could be OK. But maybe it is worth adding a small
-> > > comment on the fact that this is an x86-only option.
-> > 
-> > I wonder if it should be CONFIG_XEN_X86_{PVH,PVHVM} instead?
-> 
-> Originally it was CONFIG_XEN_X86_PVH but I figured it would be pointless
-> as most of the changes were in arch/x86 and that is by default x86.
-> 
-> And then once that work is stabilized, ARM can kind of do the same thing - have
-> an CONFIG_XEN_PVH that would (hopefully) have the same ABI as x86 PVH?
-> 
-> Thought, you kind of already do PVH in spirit. Is that what you were
-> alluding too? As ARM already boots in PV and the page table manipulations
-> are done by the hardware.
-> 
-> ?
+On Wed 18-12-13 17:16:53, Vladimir Davydov wrote:
+> Plus, rename memcg_register_cache() to memcg_init_cache_params(),
+> because it actually does not register the cache anywhere, but simply
+> initialize kmem_cache::memcg_params.
 
-The Zen answer is that an ARM guest is neither PV nor HVM nor PVHVM.
-It's a bit like PVH but is different also (it's further towards the H
-end of the spectrum than even PVH).
+I've almost missed this is a memory leak fix.
+I do not mind renaming and the name but wouldn't
+memcg_alloc_cache_params suit better?
 
-I'm keen to avoid using these x86 specific terms to widely to refer to
-ARM guests, because it leads to confusion.
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Glauber Costa <glommer@gmail.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  include/linux/memcontrol.h |   13 +++++++++----
+>  mm/memcontrol.c            |    9 +++++++--
+>  mm/slab_common.c           |    3 ++-
+>  3 files changed, 18 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index b3e7a66..b357ae3 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -497,8 +497,9 @@ void __memcg_kmem_commit_charge(struct page *page,
+>  void __memcg_kmem_uncharge_pages(struct page *page, int order);
+>  
+>  int memcg_cache_id(struct mem_cgroup *memcg);
+> -int memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *s,
+> -			 struct kmem_cache *root_cache);
+> +int memcg_init_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+> +			    struct kmem_cache *root_cache);
+> +void memcg_free_cache_params(struct kmem_cache *s);
+>  void memcg_release_cache(struct kmem_cache *cachep);
+>  void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep);
+>  
+> @@ -641,12 +642,16 @@ static inline int memcg_cache_id(struct mem_cgroup *memcg)
+>  }
+>  
+>  static inline int
+> -memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *s,
+> -		     struct kmem_cache *root_cache)
+> +memcg_init_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+> +			struct kmem_cache *root_cache)
+>  {
+>  	return 0;
+>  }
+>  
+> +static inline void memcg_free_cache_params(struct kmem_cache *s);
+> +{
+> +}
+> +
+>  static inline void memcg_release_cache(struct kmem_cache *cachep)
+>  {
+>  }
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index bf5e894..e6ad6ff 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3195,8 +3195,8 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+>  	return 0;
+>  }
+>  
+> -int memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *s,
+> -			 struct kmem_cache *root_cache)
+> +int memcg_init_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+> +			    struct kmem_cache *root_cache)
+>  {
+>  	size_t size;
+>  
+> @@ -3224,6 +3224,11 @@ int memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *s,
+>  	return 0;
+>  }
+>  
+> +void memcg_free_cache_params(struct kmem_cache *s)
+> +{
+> +	kfree(s->memcg_params);
+> +}
+> +
+>  void memcg_release_cache(struct kmem_cache *s)
+>  {
+>  	struct kmem_cache *root;
+> diff --git a/mm/slab_common.c b/mm/slab_common.c
+> index 5d6f743..62712fe 100644
+> --- a/mm/slab_common.c
+> +++ b/mm/slab_common.c
+> @@ -208,7 +208,7 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+>  		goto out_free_cache;
+>  	}
+>  
+> -	err = memcg_register_cache(memcg, s, parent_cache);
+> +	err = memcg_init_cache_params(memcg, s, parent_cache);
+>  	if (err)
+>  		goto out_free_cache;
+>  
+> @@ -238,6 +238,7 @@ out_unlock:
+>  	return s;
+>  
+>  out_free_cache:
+> +	memcg_free_cache_params(s);
+>  	kfree(s->name);
+>  	kmem_cache_free(kmem_cache, s);
+>  	goto out_unlock;
+> -- 
+> 1.7.10.4
+> 
 
-Ian.
-
+-- 
+Michal Hocko
+SUSE Labs
