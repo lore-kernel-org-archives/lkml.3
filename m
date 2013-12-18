@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab3LRRc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 12:32:58 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:46851 "EHLO SMTP.CITRIX.COM"
+	id S1755390Ab3LRRdF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 12:33:05 -0500
+Received: from mga01.intel.com ([192.55.52.88]:5856 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753388Ab3LRRc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 12:32:57 -0500
-X-IronPort-AV: E=Sophos;i="4.95,508,1384300800"; 
-   d="scan'208";a="85837492"
-Date: Wed, 18 Dec 2013 17:32:22 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, <david.vrabel@citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] allow xenfb initialization for hvm guests
-In-Reply-To: <20131218152719.GI4934@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1312181730290.8667@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1312171738550.8667@kaball.uk.xensource.com> <1387367482.27441.123.camel@kazak.uk.xensource.com> <20131218151422.GF4934@phenom.dumpdata.com> <alpine.DEB.2.02.1312181517400.8667@kaball.uk.xensource.com>
- <20131218152719.GI4934@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753242Ab3LRRdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 12:33:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,508,1384329600"; 
+   d="scan'208";a="452117158"
+Date: Wed, 18 Dec 2013 22:01:01 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Andriy Shevchenko <andriy.shevchenko@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH v2] dma: pl330: ensure DMA descriptors are
+ zero-initialised
+Message-ID: <20131218163101.GN16227@intel.com>
+References: <1386007290-13987-1-git-send-email-will.deacon@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386007290-13987-1-git-send-email-will.deacon@arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> On Wed, Dec 18, 2013 at 03:18:45PM +0000, Stefano Stabellini wrote:
-> > On Wed, 18 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> > > On Wed, Dec 18, 2013 at 11:51:22AM +0000, Ian Campbell wrote:
-> > > > On Tue, 2013-12-17 at 17:53 +0000, Stefano Stabellini wrote:
-> > > > > There is no reasons why an HVM guest shouldn't be allowed to use xenfb.
-> > > > > As a matter of fact ARM guests, HVM from Linux POV, can use xenfb.
-> > > > > Given that no Xen toolstacks configure a xenfb backend for x86 HVM
-> > > > > guests, they are not affected.
-> > > > 
-> > > > and if a toolstack did I think it would be reasonable to expect the
-> > > > kernel to at least try and drive it!
-> > > > 
-> > > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > > 
-> > > > Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> > > 
-> > > I think David Vrabel is going to Nack it unless there is a test-case.
-> > > 
-> > > I am saying that because in his previous statement for Wei's multi-page
-> > > patches was that if there are no users (or at least no test-cases) then
-> > > it should not be part of the kernel.
-> > 
-> > Well there is one: ARM. There isn't one on x86.
-> > 
-> > http://marc.info/?l=xen-devel&m=138730150806639&w=2
+On Mon, Dec 02, 2013 at 06:01:30PM +0000, Will Deacon wrote:
+> I see the following splat with 3.13-rc1 when attempting to perform DMA:
 > 
-> Ah I missed that. I think that this particular patch can wait till the
-> next merge window?
+> [  253.004516] Alignment trap: not handling instruction e1902f9f at [<c0204b40>]
+> [  253.004583] Unhandled fault: alignment exception (0x221) at 0xdfdfdfd7
+> [  253.004646] Internal error: : 221 [#1] PREEMPT SMP ARM
+> [  253.004691] Modules linked in: dmatest(+) [last unloaded: dmatest]
+> [  253.004798] CPU: 0 PID: 671 Comm: kthreadd Not tainted 3.13.0-rc1+ #2
+> [  253.004864] task: df9b0900 ti: df03e000 task.ti: df03e000
+> [  253.004937] PC is at dmaengine_unmap_put+0x14/0x34
+> [  253.005010] LR is at pl330_tasklet+0x3c8/0x550
+> [  253.005087] pc : [<c0204b44>]    lr : [<c0207478>]    psr: a00e0193
+> [  253.005087] sp : df03fe48  ip : 00000000  fp : df03bf18
+> [  253.005178] r10: bf00e108  r9 : 00000001  r8 : 00000000
+> [  253.005245] r7 : df837040  r6 : dfb41800  r5 : df837048  r4 : df837000
+> [  253.005316] r3 : dfdfdfcf  r2 : dfb41f80  r1 : df837048  r0 : dfdfdfd7
+> [  253.005384] Flags: NzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+> [  253.005459] Control: 30c5387d  Table: 9fb9ba80  DAC: fffffffd
+> [  253.005520] Process kthreadd (pid: 671, stack limit = 0xdf03e248)
+> 
+> This is due to desc->txd.unmap containing garbage (uninitialised memory).
+> 
+> Rather than add another dummy initialisation to _init_desc, instead
+> ensure that the descriptors are zero-initialised during allocation and
+> remove the dummy, per-field initialisation.
+> 
+> Cc: Andriy Shevchenko <andriy.shevchenko@intel.com>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
 
-Surely it can wait.
+Acked-by: Vinod Koul <vinod.koul@intel.com>
 
+--
+~Vinod
+> ---
+>  drivers/dma/pl330.c | 5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> index 98641eaca080..769f865b71db 100644
+> --- a/drivers/dma/pl330.c
+> +++ b/drivers/dma/pl330.c
+> @@ -2492,12 +2492,9 @@ static dma_cookie_t pl330_tx_submit(struct dma_async_tx_descriptor *tx)
+>  
+>  static inline void _init_desc(struct dma_pl330_desc *desc)
+>  {
+> -	desc->pchan = NULL;
+>  	desc->req.x = &desc->px;
+>  	desc->req.token = desc;
+>  	desc->rqcfg.swap = SWAP_NO;
+> -	desc->rqcfg.privileged = 0;
+> -	desc->rqcfg.insnaccess = 0;
+>  	desc->rqcfg.scctl = SCCTRL0;
+>  	desc->rqcfg.dcctl = DCCTRL0;
+>  	desc->req.cfg = &desc->rqcfg;
+> @@ -2517,7 +2514,7 @@ static int add_desc(struct dma_pl330_dmac *pdmac, gfp_t flg, int count)
+>  	if (!pdmac)
+>  		return 0;
+>  
+> -	desc = kmalloc(count * sizeof(*desc), flg);
+> +	desc = kcalloc(count, sizeof(*desc), flg);
+>  	if (!desc)
+>  		return 0;
+>  
+> -- 
+> 1.8.2.2
+> 
 
-> Would it make sense to have the XenFB also work on x86? Is it difficult
-> to make it work on it?
-
-The issue is that you need stdvga anyway in order to boot and xenfb is
-not much better than stdvga after all (except that it doesn't require
-QEMU's pc machine emulator).
+-- 
