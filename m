@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab3LRVTC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:19:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36636 "EHLO
+	id S1755069Ab3LRVT3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:19:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36633 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626Ab3LRVOS (ORCPT
+	with ESMTP id S1754616Ab3LRVOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:14:18 -0500
+	Wed, 18 Dec 2013 16:14:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Giuseppe Fierro <giuseppe@fierro.org>,
-        Filipe David Borba Manana <fdmanana@gmail.com>,
         Josef Bacik <jbacik@fusionio.com>,
         Chris Mason <chris.mason@fusionio.com>
-Subject: [PATCH 3.12 110/118] Btrfs: fix incorrect inode acl reset
-Date: Wed, 18 Dec 2013 13:12:27 -0800
-Message-Id: <20131218211222.574541717@linuxfoundation.org>
+Subject: [PATCH 3.12 109/118] Btrfs: fix hole check in log_one_extent
+Date: Wed, 18 Dec 2013 13:12:26 -0800
+Message-Id: <20131218211222.547101607@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -31,72 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Filipe David Borba Manana <fdmanana@gmail.com>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit 8185554d3eb09d23a805456b6fa98dcbb34aa518 upstream.
+commit ed9e8af88e2551aaa6bf51d8063a2493e2d71597 upstream.
 
-When a directory has a default ACL and a subdirectory is created
-under that directory, btrfs_init_acl() is called when the
-subdirectory's inode is created to initialize the inode's ACL
-(inherited from the parent directory) but it was clearing the ACL
-from the inode after setting it if posix_acl_create() returned
-success, instead of clearing it only if it returned an error.
+I added an assert to make sure we were looking up aligned offsets for csums and
+I tripped it when running xfstests.  This is because log_one_extent was checking
+if block_start == 0 for a hole instead of EXTENT_MAP_HOLE.  This worked out fine
+in practice it seems, but it adds a lot of extra work that is uneeded.  With
+this fix I'm no longer tripping my assert.  Thanks,
 
-To reproduce this issue:
-
-$ mkfs.btrfs -f /dev/loop0
-$ mount /dev/loop0 /mnt
-$ mkdir /mnt/acl
-$ setfacl -d --set u::rwx,g::rwx,o::- /mnt/acl
-$ getfacl /mnt/acl
-user::rwx
-group::rwx
-other::r-x
-default:user::rwx
-default:group::rwx
-default:other::---
-
-$ mkdir /mnt/acl/dir1
-$ getfacl /mnt/acl/dir1
-user::rwx
-group::rwx
-other::---
-
-After unmounting and mounting again the filesystem, fgetacl returned the
-expected ACL:
-
-$ umount /mnt/acl
-$ mount /dev/loop0 /mnt
-$ getfacl /mnt/acl/dir1
-user::rwx
-group::rwx
-other::---
-default:user::rwx
-default:group::rwx
-default:other::---
-
-Meaning that the underlying xattr was persisted.
-
-Reported-by: Giuseppe Fierro <giuseppe@fierro.org>
-Signed-off-by: Filipe David Borba Manana <fdmanana@gmail.com>
 Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/acl.c |    2 +-
+ fs/btrfs/tree-log.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/btrfs/acl.c
-+++ b/fs/btrfs/acl.c
-@@ -229,7 +229,7 @@ int btrfs_init_acl(struct btrfs_trans_ha
- 		if (ret > 0) {
- 			/* we need an acl */
- 			ret = btrfs_set_acl(trans, inode, acl, ACL_TYPE_ACCESS);
--		} else {
-+		} else if (ret < 0) {
- 			cache_no_acl(inode);
- 		}
- 	} else {
+--- a/fs/btrfs/tree-log.c
++++ b/fs/btrfs/tree-log.c
+@@ -3375,7 +3375,7 @@ static int log_one_extent(struct btrfs_t
+ 		btrfs_set_token_file_extent_type(leaf, fi,
+ 						 BTRFS_FILE_EXTENT_REG,
+ 						 &token);
+-		if (em->block_start == 0)
++		if (em->block_start == EXTENT_MAP_HOLE)
+ 			skip_csum = true;
+ 	}
+ 
 
 
