@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab3LRWEU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:04:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36033 "EHLO
+	id S1753184Ab3LRVMQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:12:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36006 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab3LRVMU (ORCPT
+	with ESMTP id S1753155Ab3LRVMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:20 -0500
+	Wed, 18 Dec 2013 16:12:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Blaise Gassend <blaise@suitabletech.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 41/78] mac80211: dont attempt to reorder multicast frames
-Date: Wed, 18 Dec 2013 13:11:09 -0800
-Message-Id: <20131218211113.063397487@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 05/78] ALSA: hda - Add static DAC/pin mapping for AD1986A codec
+Date: Wed, 18 Dec 2013 13:10:33 -0800
+Message-Id: <20131218211112.056395873@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -29,36 +28,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 051a41fa4ee14f5c39668f0980973b9a195de560 upstream.
+commit 3690739b013504d33fe9348dd45f6b126aa370fb upstream.
 
-Multicast frames can't be transmitted as part of an aggregation
-session (such a session couldn't even be set up) so don't try to
-reorder them. Trying to do so would cause the reorder to stop
-working correctly since multicast QoS frames (as transmitted by
-the Aruba APs this was found with) would cause sequence number
-confusion in the buffer.
+AD1986A codec is a pretty old codec and has really many hidden
+restrictions.  One of such is that each DAC is dedicated to certain
+pin although there are possible connections.  Currently, the generic
+parser tries to assign individual DACs as much as possible, and this
+lead to two bad situations: connections where the sound actually
+doesn't work, and connections conflicting other channels.
 
-Reported-by: Blaise Gassend <blaise@suitabletech.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+We may fix this by trying to find the best connections more harder,
+but as of now, it's easier to give some hints for paired DAC/pin
+connections and honor them if available, since such a hint is needed
+only for specific codecs (right now only AD1986A, and there will be
+unlikely any others in future).
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64971
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66621
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/hda/hda_generic.c  |   23 ++++++++++++++++++++++-
+ sound/pci/hda/hda_generic.h  |    3 +++
+ sound/pci/hda/patch_analog.c |   10 ++++++++++
+ 3 files changed, 35 insertions(+), 1 deletion(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -864,7 +864,8 @@ static void ieee80211_rx_reorder_ampdu(s
- 	u16 sc;
- 	u8 tid, ack_policy;
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -468,6 +468,20 @@ static void invalidate_nid_path(struct h
+ 	memset(path, 0, sizeof(*path));
+ }
  
--	if (!ieee80211_is_data_qos(hdr->frame_control))
-+	if (!ieee80211_is_data_qos(hdr->frame_control) ||
-+	    is_multicast_ether_addr(hdr->addr1))
- 		goto dont_reorder;
++/* return a DAC if paired to the given pin by codec driver */
++static hda_nid_t get_preferred_dac(struct hda_codec *codec, hda_nid_t pin)
++{
++	struct hda_gen_spec *spec = codec->spec;
++	const hda_nid_t *list = spec->preferred_dacs;
++
++	if (!list)
++		return 0;
++	for (; *list; list += 2)
++		if (*list == pin)
++			return list[1];
++	return 0;
++}
++
+ /* look for an empty DAC slot */
+ static hda_nid_t look_for_dac(struct hda_codec *codec, hda_nid_t pin,
+ 			      bool is_digital)
+@@ -1134,7 +1148,14 @@ static int try_assign_dacs(struct hda_co
+ 			continue;
+ 		}
  
- 	/*
+-		dacs[i] = look_for_dac(codec, pin, false);
++		dacs[i] = get_preferred_dac(codec, pin);
++		if (dacs[i]) {
++			if (is_dac_already_used(codec, dacs[i]))
++				badness += bad->shared_primary;
++		}
++
++		if (!dacs[i])
++			dacs[i] = look_for_dac(codec, pin, false);
+ 		if (!dacs[i] && !i) {
+ 			/* try to steal the DAC of surrounds for the front */
+ 			for (j = 1; j < num_outs; j++) {
+--- a/sound/pci/hda/hda_generic.h
++++ b/sound/pci/hda/hda_generic.h
+@@ -241,6 +241,9 @@ struct hda_gen_spec {
+ 	const struct badness_table *main_out_badness;
+ 	const struct badness_table *extra_out_badness;
+ 
++	/* preferred pin/DAC pairs; an array of paired NIDs */
++	const hda_nid_t *preferred_dacs;
++
+ 	/* loopback mixing mode */
+ 	bool aamix_mode;
+ 
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -1227,6 +1227,14 @@ static int ad1986a_parse_auto_config(str
+ {
+ 	int err;
+ 	struct ad198x_spec *spec;
++	static hda_nid_t preferred_pairs[] = {
++		0x1a, 0x03,
++		0x1b, 0x03,
++		0x1c, 0x04,
++		0x1d, 0x05,
++		0x1e, 0x03,
++		0
++	};
+ 
+ 	err = alloc_ad_spec(codec);
+ 	if (err < 0)
+@@ -1247,6 +1255,8 @@ static int ad1986a_parse_auto_config(str
+ 	 * So, let's disable the shared stream.
+ 	 */
+ 	spec->gen.multiout.no_share_stream = 1;
++	/* give fixed DAC/pin pairs */
++	spec->gen.preferred_dacs = preferred_pairs;
+ 
+ 	snd_hda_pick_fixup(codec, NULL, ad1986a_fixup_tbl, ad1986a_fixups);
+ 	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PRE_PROBE);
 
 
