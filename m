@@ -1,107 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab3LRMB7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 07:01:59 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:51175 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab3LRMB5 (ORCPT
+	id S1753668Ab3LRMHh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 07:07:37 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:37311 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539Ab3LRMHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 07:01:57 -0500
+	Wed, 18 Dec 2013 07:07:36 -0500
+Date: Wed, 18 Dec 2013 07:07:32 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jens Axboe <axboe@kernel.dk>
+Cc: tomaz.solc@tablix.org, aaron.lu@intel.com, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: [PATCH v3] libata, freezer: avoid block device removal while system
+ is frozen
+Message-ID: <20131218120732.GB4324@htj.dyndns.org>
+References: <20131213174932.GA27070@htj.dyndns.org>
+ <20131213185237.GD27070@htj.dyndns.org>
+ <20131213204034.GE27070@htj.dyndns.org>
+ <20131217125042.GF29989@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <20131218115913.GG14274@lee--X1>
-References: <20131216150514.GN18769@lee--X1>
-	<CAOMwXhMn5W76Dp=EFNHaknXCqZ4q4e7fphgtttx+8U=1Fc_DMQ@mail.gmail.com>
-	<20131216164844.GS18769@lee--X1>
-	<CAOMwXhPLNVKbRqR2tPQc758zLsh0Lg0D6JUf2yrf+ZosJVANAw@mail.gmail.com>
-	<20131218091609.GB14274@lee--X1>
-	<CAOMwXhOSpnEiDoyXNPmy0Gt1tLiwdzGRqoseKqtAUogLEfkCZQ@mail.gmail.com>
-	<20131218111232.GE14274@lee--X1>
-	<CAOMwXhNMrnLEDUHrPqH1rgbFDgNPWmhCr2dPUNhdhfmdPTcGfg@mail.gmail.com>
-	<20131218113449.GF14274@lee--X1>
-	<CAOMwXhNEcHgObYPYCXrb_4FiDYBVhK1HQuKEj40jittgrcvJfw@mail.gmail.com>
-	<20131218115913.GG14274@lee--X1>
-Date: Wed, 18 Dec 2013 12:01:57 +0000
-X-Google-Sender-Auth: 1cM4148-FUlvw_0RK4hgwdZ3g6k
-Message-ID: <CAOMwXhOhiKhGdCJ==gT-zhz7GSXh9k4B=E8RRK6ZfQ0ZZRZw2A@mail.gmail.com>
-Subject: Re: Simple MFD driver example
-From: Laszlo Papp <lpapp@kde.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: sameo@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131217125042.GF29989@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 11:59 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Wed, 18 Dec 2013, Laszlo Papp wrote:
->
->> On Wed, Dec 18, 2013 at 11:34 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> >> >> What you eventually see in hwmon is only a subset of all the features
->> >> >> the IC provides. You may want to read this thread:
->> >> >> https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg536509.html
->> >> >
->> >> > Okay, so the best thing to do is send out the entire patch-set at
->> >> > once, CC'ing each of the maintainers on every patch so we can all see
->> >> > how this thing fits together.
->> >>
->> >> Well, I am not even sure currently where to head with the MFD bits and
->> >> its children subdevices currently....
->> >>
->> >> I would appreciate any direction. Yesterday, I was told on IRC, I
->> >> would need to switch from i2c to platform drivers for the hwmon and
->> >> gpio parts, but looking at some existing mfd driver code and their
->> >> children drivers, I do not see it like that.
->> >>
->> >> I have already sent out the gpio driver yesterday which works fine on
->> >> its own: http://www.spinics.net/lists/kernel/msg1655805.html
->> >
->> > This is going to need a lot of work.
->> >
->> > Did you run the patch through `./scripts/checkpatch.pl` before
->> > submitting?
->>
->> Of course, there has been zero errors and warnings. Eventually, I even
->> ran the Lindent. Actual feedback is welcome for sure.
->
-> I barely have enough time to review my own subsystem, let alone
-> others. Linus will do a great job in this regard.
->
->> >> Could you please guide me into the right direction what I need to
->> >> change once we have standalone drivers, and they should be glued
->> >> together? I thought adding an abstraction with the mfd layer would be
->> >> sufficient, but apparently, that is not enough.
->> >>
->> >> Practically speaking, I am confused since if I needed to change the
->> >> existing drivers, that means I could potentially break the interface
->> >> for the existing users if the drivers stop working on their own, but
->> >> then again, I am such a newbie that I would greatly appreciate some
->> >> pointers.
->> >
->> > The MFD subsystem is quite simple to use. I'm taken aback that this is
->> > your major stumbling block. Read though the mfd_add_device(s)() calls
->> > to see what it expects. The rest is childs play.
->>
->> Yeah, I have taken, but that does not still explain the consistency I
->> mentioned above. Some children do not conform the "platform" driver
->> suggestion I was told.
->>
->> Also, what about the actual MFD code submitted? Anything to modify in
->> there? Could you please comment on that, or is the direction of it
->> good enough for me to submit it as a real patch at this stage?
->
-> Submit them all as I requested before and we will do a proper review.
->
-> Copy and pasting patches into conversation emails isn't the correct
-> method to use.
+Freezable kthreads and workqueues are fundamentally problematic in
+that they effectively introduce a big kernel lock widely used in the
+kernel and have already been the culprit of several deadlock
+scenarios.  This is the latest occurrence.
 
-Well, I am at the designing phase, and I am not even sure it is so far
-OK. I am just trying to discuss the idea and direction, not the
-implementation details yet. Not that I already wasted some time by not
-asking before implementing stuff. See the previous hwmon patch for
-details. I really do not want to waste more time if possible. It costs
-a lot. :)
+During resume, libata rescans all the ports and revalidates all
+pre-existing devices.  If it determines that a device has gone
+missing, the device is removed from the system which involves
+invalidating block device and flushing bdi while holding driver core
+layer locks.  Unfortunately, this can race with the rest of device
+resume.  Because freezable kthreads and workqueues are thawed after
+device resume is complete and block device removal depends on
+freezable workqueues and kthreads (e.g. bdi_wq, jbd2) to make
+progress, this can lead to deadlock - block device removal can't
+proceed because kthreads are frozen and kthreads can't be thawed
+because device resume is blocked behind block device removal.
 
-... but if you do not see design issues with it, then I will submit
-the implementation for review and fixes, thanks.
+839a8e8660b6 ("writeback: replace custom worker pool implementation
+with unbound workqueue") made this particular deadlock scenario more
+visible but the underlying problem has always been there - the
+original forker task and jbd2 are freezable too.  In fact, this is
+highly likely just one of many possible deadlock scenarios given that
+freezer behaves as a big kernel lock and we don't have any debug
+mechanism around it.
+
+I believe the right thing to do is getting rid of freezable kthreads
+and workqueues.  This is something fundamentally broken.  For now,
+implement a funny workaround in libata - just avoid doing block device
+hot[un]plug while the system is frozen.  Kernel engineering at its
+finest.  :(
+
+v2: Add EXPORT_SYMBOL_GPL(pm_freezing) for cases where libata is built
+    as a module.
+
+v3: Comment updated and polling interval changed to 10ms as suggested
+    by Rafael.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Tomaž Šolc <tomaz.solc@tablix.org>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=62801
+Link: http://lkml.kernel.org/r/20131213174932.GA27070@htj.dyndns.org
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/ata/libata-scsi.c |   19 +++++++++++++++++++
+ kernel/freezer.c          |    6 ++++++
+ 2 files changed, 25 insertions(+)
+
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index db6dfcf..f519868 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -3871,6 +3871,25 @@ void ata_scsi_hotplug(struct work_struct *work)
+ 		return;
+ 	}
+ 
++	/*
++	 * XXX - UGLY HACK
++	 *
++	 * The block layer suspend/resume path is fundamentally broken due
++	 * to freezable kthreads and workqueue and may deadlock if a block
++	 * device gets removed while resume is in progress.  I don't know
++	 * what the solution is short of removing freezable kthreads and
++	 * workqueues altogether.
++	 *
++	 * The following is an ugly hack to avoid kicking off device
++	 * removal while freezer is active.  This is a joke but does avoid
++	 * this particular deadlock scenario.
++	 *
++	 * https://bugzilla.kernel.org/show_bug.cgi?id=62801
++	 * http://marc.info/?l=linux-kernel&m=138695698516487
++	 */
++	while (pm_freezing)
++		msleep(10);
++
+ 	DPRINTK("ENTER\n");
+ 	mutex_lock(&ap->scsi_scan_mutex);
+ 
+diff --git a/kernel/freezer.c b/kernel/freezer.c
+index b462fa1..aa6a8aa 100644
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -19,6 +19,12 @@ EXPORT_SYMBOL(system_freezing_cnt);
+ bool pm_freezing;
+ bool pm_nosig_freezing;
+ 
++/*
++ * Temporary export for the deadlock workaround in ata_scsi_hotplug().
++ * Remove once the hack becomes unnecessary.
++ */
++EXPORT_SYMBOL_GPL(pm_freezing);
++
+ /* protects freezing and frozen transitions */
+ static DEFINE_SPINLOCK(freezer_lock);
+ 
