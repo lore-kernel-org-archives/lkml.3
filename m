@@ -1,143 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab3LRQtR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 11:49:17 -0500
-Received: from mga09.intel.com ([134.134.136.24]:20093 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752583Ab3LRQtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 11:49:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,508,1384329600"; 
-   d="scan'208";a="454326447"
-Date: Wed, 18 Dec 2013 21:19:55 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
-Cc: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dma: dw: Add suspend and resume handling for PCI mode
- DW_DMAC.
-Message-ID: <20131218154955.GF16227@intel.com>
-References: <1386684373-24753-1-git-send-email-chiau.ee.chew@intel.com>
- <20131210101025.GF29580@intel.com>
- <1386676582.1871.137.camel@smile>
- <604BF5F4C5D71041942BC7E84ED659EA01520785@PGSMSX103.gar.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <604BF5F4C5D71041942BC7E84ED659EA01520785@PGSMSX103.gar.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755036Ab3LRQxS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 11:53:18 -0500
+Received: from www.linutronix.de ([62.245.132.108]:46179 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600Ab3LRQxO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 11:53:14 -0500
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 2/5] mfd: ti_am335x_tscadc: make am335x_tsc_se_update() local
+Date: Wed, 18 Dec 2013 17:52:54 +0100
+Message-Id: <1387385577-24447-3-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.8.5.1
+In-Reply-To: <1387385577-24447-1-git-send-email-bigeasy@linutronix.de>
+References: <1387385577-24447-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 01:51:47PM +0530, Chew, Chiau Ee wrote:
-> Vinod,
-Please do *NOT* top post
+since the "recent" changes, am335x_tsc_se_update() has no longer any
+users outside of this file so make it local.
 
-Please fix your MUA to wrap lines with 80chars. I have fix below to make it
-readble...
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/mfd/ti_am335x_tscadc.c       | 3 +--
+ include/linux/mfd/ti_am335x_tscadc.h | 1 -
+ 2 files changed, 1 insertion(+), 3 deletions(-)
 
-> As mentioned by Andy, we are using *_noirq  verion of suspend/resume PM
-> callback whereby the callbacks would be executed after IRQ handlers have been
-> disabled. If using SET_SYSTEM_SLEEP_PM_OPS, it would be the normal
-> suspend/resume PM callback. Looking at the Desginware DMAC platform code
-> (drivers/dma/dw/platform.c), it is using the *_noirq suspend/resume PM
-> callback. Is it advisable to use the normal suspend/resume PM callback instead
-> of *_noirq suspend/PM callback? 
-
-i dont see a reason why we need the noirq versions
-
---
-~Vinod
-
-> 
-> Thanks,
-> Chiau Ee
-> 
-> -----Original Message-----
-> From: Shevchenko, Andriy 
-> Sent: Tuesday, December 10, 2013 7:57 PM
-> To: Koul, Vinod
-> Cc: Chew, Chiau Ee; Viresh Kumar; Andy Shevchenko; Williams, Dan J; dmaengine@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] dma: dw: Add suspend and resume handling for PCI mode DW_DMAC.
-> 
-> On Tue, 2013-12-10 at 15:40 +0530, Vinod Koul wrote:
-> > On Tue, Dec 10, 2013 at 10:06:13PM +0800, Chew Chiau Ee wrote:
-> > > From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> > > 
-> > > This is to disable/enable DW_DMAC hw during suspend/resume.
-> > > 
-> > > Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> > > Acked-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > > ---
-> > >  drivers/dma/dw/pci.c |   33 +++++++++++++++++++++++++++++++++
-> > >  1 files changed, 33 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/drivers/dma/dw/pci.c b/drivers/dma/dw/pci.c index 
-> > > e89fc24..97bc3a2 100644
-> > > --- a/drivers/dma/dw/pci.c
-> > > +++ b/drivers/dma/dw/pci.c
-> > > @@ -75,6 +75,36 @@ static void dw_pci_remove(struct pci_dev *pdev)
-> > >  		dev_warn(&pdev->dev, "can't remove device properly: %d\n", ret);  
-> > > }
-> > >  
-> > > +#ifdef CONFIG_PM_SLEEP
-> > > +
-> > > +static int dw_pci_suspend_noirq(struct device *dev) {
-> > > +	struct pci_dev *pci = to_pci_dev(dev);
-> > > +	struct dw_dma_chip *chip = pci_get_drvdata(pci);
-> > > +
-> > > +	return dw_dma_suspend(chip);
-> > > +};
-> > > +
-> > > +static int dw_pci_resume_noirq(struct device *dev) {
-> > > +	struct pci_dev *pci = to_pci_dev(dev);
-> > > +	struct dw_dma_chip *chip = pci_get_drvdata(pci);
-> > > +
-> > > +	return dw_dma_resume(chip);
-> > > +};
-> > > +
-> > > +#else /* !CONFIG_PM_SLEEP */
-> > > +
-> > > +#define dw_pci_suspend_noirq	NULL
-> > > +#define dw_pci_resume_noirq	NULL
-> > > +
-> > > +#endif /* !CONFIG_PM_SLEEP */
-> > How about SET_SYSTEM_SLEEP_PM_OPS instead?
-> 
-> So, we are using *_noirq versions of the functions here. What happened when we switch to normal ones? Any side effects?
-> 
-> > 
-> > --
-> > ~Vinod
-> > > +
-> > > +static const struct dev_pm_ops dw_pci_dev_pm_ops = {
-> > > +	.suspend_noirq = dw_pci_suspend_noirq,
-> > > +	.resume_noirq = dw_pci_resume_noirq, };
-> > > +
-> > >  static DEFINE_PCI_DEVICE_TABLE(dw_pci_id_table) = {
-> > >  	/* Medfield */
-> > >  	{ PCI_VDEVICE(INTEL, 0x0827), (kernel_ulong_t)&dw_pci_pdata }, @@ 
-> > > -92,6 +122,9 @@ static struct pci_driver dw_pci_driver = {
-> > >  	.id_table	= dw_pci_id_table,
-> > >  	.probe		= dw_pci_probe,
-> > >  	.remove		= dw_pci_remove,
-> > > +	.driver	= {
-> > > +		.pm	= &dw_pci_dev_pm_ops,
-> > > +	},
-> > >  };
-> > >  
-> > >  module_pci_driver(dw_pci_driver);
-> > > --
-> > > 1.7.4.4
-> > > 
-> > 
-> 
-> --
-> Andy Shevchenko <andriy.shevchenko@intel.com> Intel Finland Oy
-
+diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
+index 88718ab..67d0eb4 100644
+--- a/drivers/mfd/ti_am335x_tscadc.c
++++ b/drivers/mfd/ti_am335x_tscadc.c
+@@ -48,11 +48,10 @@ static const struct regmap_config tscadc_regmap_config = {
+ 	.val_bits = 32,
+ };
+ 
+-void am335x_tsc_se_update(struct ti_tscadc_dev *tsadc)
++static void am335x_tsc_se_update(struct ti_tscadc_dev *tsadc)
+ {
+ 	tscadc_writel(tsadc, REG_SE, tsadc->reg_se_cache);
+ }
+-EXPORT_SYMBOL_GPL(am335x_tsc_se_update);
+ 
+ void am335x_tsc_se_set(struct ti_tscadc_dev *tsadc, u32 val)
+ {
+diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
+index d498d98f..1fe7219 100644
+--- a/include/linux/mfd/ti_am335x_tscadc.h
++++ b/include/linux/mfd/ti_am335x_tscadc.h
+@@ -176,7 +176,6 @@ static inline struct ti_tscadc_dev *ti_tscadc_dev_get(struct platform_device *p)
+ 	return *tscadc_dev;
+ }
+ 
+-void am335x_tsc_se_update(struct ti_tscadc_dev *tsadc);
+ void am335x_tsc_se_set(struct ti_tscadc_dev *tsadc, u32 val);
+ void am335x_tsc_se_clr(struct ti_tscadc_dev *tsadc, u32 val);
+ 
 -- 
+1.8.5.1
+
