@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab3LRVnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:43:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36850 "EHLO
+	id S1754248Ab3LRVn7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:43:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36310 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753826Ab3LRVnS (ORCPT
+	with ESMTP id S1753807Ab3LRVNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:43:18 -0500
-Date: Wed, 18 Dec 2013 13:43:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>, Sasha Levin <sasha.levin@oracle.com>,
-        Michel Lespinasse <walken@google.com>, Bob Liu <bob.liu@oracle.com>,
-        npiggin@suse.de, kosaki.motohiro@jp.fujitsu.com, riel@redhat.com,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/mlock: fix BUG_ON unlocked page for nolinear VMAs
-Message-Id: <20131218134316.977d5049209d9278e1dad225@linux-foundation.org>
-In-Reply-To: <52b1699f.87293c0a.75d1.34d3SMTPIN_ADDED_BROKEN@mx.google.com>
-References: <1387267550-8689-1-git-send-email-liwanp@linux.vnet.ibm.com>
-	<52b1138b.0201430a.19a8.605dSMTPIN_ADDED_BROKEN@mx.google.com>
-	<20131218032329.GA6044@hacker.(null)>
-	<52B11765.8030005@oracle.com>
-	<52b120a5.a3b2440a.3acf.ffffd7c3SMTPIN_ADDED_BROKEN@mx.google.com>
-	<52B166CF.6080300@suse.cz>
-	<52b1699f.87293c0a.75d1.34d3SMTPIN_ADDED_BROKEN@mx.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Dec 2013 16:13:13 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.12 032/118] usb: gadget: composite: reset delayed_status on reset_config
+Date: Wed, 18 Dec 2013 13:11:09 -0800
+Message-Id: <20131218211220.384416919@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
+References: <20131218211219.461663463@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Dec 2013 17:23:03 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> >>diff --git a/mm/rmap.c b/mm/rmap.c
-> >>index 55c8b8d..1e24813 100644
-> >>--- a/mm/rmap.c
-> >>+++ b/mm/rmap.c
-> >>@@ -1347,6 +1347,7 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
-> >>  	unsigned long end;
-> >>  	int ret = SWAP_AGAIN;
-> >>  	int locked_vma = 0;
-> >>+	int we_locked = 0;
-> >>
-> >>  	address = (vma->vm_start + cursor) & CLUSTER_MASK;
-> >>  	end = address + CLUSTER_SIZE;
-> >>@@ -1385,9 +1386,15 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
-> >>  		BUG_ON(!page || PageAnon(page));
-> >>
-> >>  		if (locked_vma) {
-> >>-			mlock_vma_page(page);   /* no-op if already mlocked */
-> >>-			if (page == check_page)
-> >>+			if (page != check_page) {
-> >>+				we_locked = trylock_page(page);
-> >
-> >If it's not us who has the page already locked, but somebody else, he
-> >might unlock it at this point and then the BUG_ON in mlock_vma_page()
-> >will trigger again.
+------------------
 
-yes, this patch is pretty weak.
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-> Any better idea is appreciated. ;-)
+commit 2bac51a1827a18821150ed8c9f9752c02f9c2b02 upstream.
 
-Remove the BUG_ON() from mlock_vma_page()?  Why was it added?
-isolate_lru_page() and putback_lru_page() and *might* require
-the page be locked, but I don't immediately see issues?
+The delayed_status value is used to keep track of status response
+packets on ep0. It needs to be reset or the set_config function would
+still delay the answer, if the usb device got unplugged while waiting
+for setup_continue to be called.
+
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/gadget/composite.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -593,6 +593,7 @@ static void reset_config(struct usb_comp
+ 		bitmap_zero(f->endpoints, 32);
+ 	}
+ 	cdev->config = NULL;
++	cdev->delayed_status = 0;
+ }
+ 
+ static int set_config(struct usb_composite_dev *cdev,
+
+
