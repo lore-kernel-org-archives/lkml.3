@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab3LRCPu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 21:15:50 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:39893 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab3LRCPs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 21:15:48 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <hui.geng@huawei.com>, Wang Guoli <andy.wangguoli@huawei.com>,
-        <stable@vger.kernel.org>
-Subject: [PATCH] jffs2: unlock f->sem on error in jffs2_new_inode()
-Date: Wed, 18 Dec 2013 10:14:54 +0800
-Message-ID: <1387332894-33977-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+	id S1752010Ab3LRCTt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 21:19:49 -0500
+Received: from ozlabs.org ([203.10.76.45]:60786 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750875Ab3LRCTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 21:19:48 -0500
+Date: Wed, 18 Dec 2013 13:19:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Anjali Singhai Jain <anjali.singhai@intel.com>
+Subject: Re: linux-next: manual merge of the net-next tree with Linus' tree
+Message-Id: <20131218131939.edf8a9f73b9af441773afe0d@canb.auug.org.au>
+In-Reply-To: <1387331769.2330.12.camel@jtkirshe-mobl>
+References: <20131218124657.f573d9ae178ea37fa971456d@canb.auug.org.au>
+	<1387331769.2330.12.camel@jtkirshe-mobl>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__18_Dec_2013_13_19_39_+1100_si/N.VWoid.nhb5M"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wang Guoli <andy.wangguoli@huawei.com>
+--Signature=_Wed__18_Dec_2013_13_19_39_+1100_si/N.VWoid.nhb5M
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If jffs2_new_inode() succeeds, it returns with f->sem held, and
-the caller is responsible for releasing the lock. If it fails,
-it still returns with the lock held, but the caller won't release
-the lock, which will lead to deadlock.
+Hi Jeff,
 
-Fix it by releasing the lock in jffs2_new_inode() on error.
+On Tue, 17 Dec 2013 17:56:09 -0800 Jeff Kirsher <jeffrey.t.kirsher@intel.co=
+m> wrote:
+>
+> Your fix is fine, what I have in my tree is the following, so if you
+> want to modify your change so that the resultant code looks like this:
+>=20
+>         struct rtnl_link_stats64 *vsi_stats =3D
+> i40e_get_vsi_stats_struct(vsi);
+>         int i;
+>  =20
+>         if (test_bit(__I40E_DOWN, &vsi->state))
+>                return stats;
+>=20
+>         if (!vsi->tx_rings)
+>                return stats;
+>  =20
+>         rcu_read_lock();
+>         for (i =3D 0; i < vsi->num_queue_pairs; i++) {
 
-Cc: <stable@vger.kernel.org> # 2.6.34+
-Signed-off-by: Wang Guoli <andy.wangguoli@huawei.com>
----
- fs/jffs2/fs.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+OK, I updated my rerere cache, so it will look like that tomorrow.
 
-diff --git a/fs/jffs2/fs.c b/fs/jffs2/fs.c
-index 09b3ed4..2b91675 100644
---- a/fs/jffs2/fs.c
-+++ b/fs/jffs2/fs.c
-@@ -456,12 +456,14 @@ struct inode *jffs2_new_inode (struct inode *dir_i, umode_t mode, struct jffs2_r
- 	   The umask is only applied if there's no default ACL */
- 	ret = jffs2_init_acl_pre(dir_i, inode, &mode);
- 	if (ret) {
--	    make_bad_inode(inode);
--	    iput(inode);
--	    return ERR_PTR(ret);
-+		mutex_unlock(&f->sem);
-+		make_bad_inode(inode);
-+		iput(inode);
-+		return ERR_PTR(ret);
- 	}
- 	ret = jffs2_do_new_inode (c, f, mode, ri);
- 	if (ret) {
-+		mutex_unlock(&f->sem);
- 		make_bad_inode(inode);
- 		iput(inode);
- 		return ERR_PTR(ret);
-@@ -478,6 +480,7 @@ struct inode *jffs2_new_inode (struct inode *dir_i, umode_t mode, struct jffs2_r
- 	inode->i_size = 0;
- 
- 	if (insert_inode_locked(inode) < 0) {
-+		mutex_unlock(&f->sem);
- 		make_bad_inode(inode);
- 		iput(inode);
- 		return ERR_PTR(-EINVAL);
--- 
-1.8.4
+Thanks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Wed__18_Dec_2013_13_19_39_+1100_si/N.VWoid.nhb5M
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSsQZAAAoJEMDTa8Ir7ZwV+JkP/1yvYRsnrFJ8fvbV/pHw0Frg
+Vzrg346SDmNFlDoXWijiJ4a1mwfLFho0rL/I3BBzsCHk3xXuMBtnobNqR1hFPK2e
+DC7dylfpgWu4efYQEl1ttPY0chxjQA9TaU4Ym3GrL41MSGtkQy9NG5x9drr7o2p+
+b0vKKdXvuDUG68J6OMBuahlHVUMExUXYTf3r2teLFpn9QdGA5GC7eowdFF+7lxSg
+tiOBRHJ0/im0wgDO2BZTMKPlqk43eZdbp6VXPfJDnPGacyXYkWPEvDBnVOeZBbha
+mAleG1EX/2YaICWgiybiM32UK+FYK4+1G+Osi7FkydQfecCZDPcxv9zWRqdUeOJe
+8eyqUQU81FjrAZBiwY6yVwvR/ARy4WKk2Hz8Gpumt44mRQza4neUhDDgEfGb38J/
+h/ovMk00IVK95YgOu/H1jtnd3Y8Rxk6mf63D5PUbyBIXe/p6lGIa4agnyt5imZO9
+VzSuu6foKiM0d+o1KhacVu+FOFD4W/jbaQc8N8KcsLqBZYU9AIbpskIbmz4lYfMT
+nxMCkPGzmLB1pmgHKAIG6fn3n/3UyKGkDLUMs7NTt54IJM59xuxYEMjcedC9ph8H
+C9QE2X0lQOU9XeTD8zlxcIyUF/p2X/3vzdTy3a8NVAphvn2ivYh9Z7Zh2gELfW1R
+mFUK1Qw5iQOcE6Ahron0
+=w193
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__18_Dec_2013_13_19_39_+1100_si/N.VWoid.nhb5M--
