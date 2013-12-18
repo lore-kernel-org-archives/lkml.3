@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab3LRVMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:12:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35953 "EHLO
+	id S1753152Ab3LRVMN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:12:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35958 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020Ab3LRVMD (ORCPT
+	with ESMTP id S1753024Ab3LRVME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:03 -0500
+	Wed, 18 Dec 2013 16:12:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.10 28/78] usb: gadget: composite: reset delayed_status on reset_config
-Date: Wed, 18 Dec 2013 13:10:56 -0800
-Message-Id: <20131218211112.705429718@linuxfoundation.org>
+        Gustavo Zacarias <gustavo@zacarias.com.ar>
+Subject: [PATCH 3.10 29/78] USB: serial: option: blacklist interface 1 for Huawei E173s-6
+Date: Wed, 18 Dec 2013 13:10:57 -0800
+Message-Id: <20131218211112.732804160@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -29,32 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Gustavo Zacarias <gustavo@zacarias.com.ar>
 
-commit 2bac51a1827a18821150ed8c9f9752c02f9c2b02 upstream.
+commit 8f173e22abf2258ddfa73f46eadbb6a6c29f1631 upstream.
 
-The delayed_status value is used to keep track of status response
-packets on ep0. It needs to be reset or the set_config function would
-still delay the answer, if the usb device got unplugged while waiting
-for setup_continue to be called.
+Interface 1 on this device isn't for option to bind to otherwise an oops
+on usb_wwan with log flooding will happen when accessing the port:
 
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+tty_release: ttyUSB1: read/write wait queue active!
+
+It doesn't seem to respond to QMI if it's added to qmi_wwan so don't add
+it there - it's likely used by the card reader.
+
+Signed-off-by: Gustavo Zacarias <gustavo@zacarias.com.ar>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/composite.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/option.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -593,6 +593,7 @@ static void reset_config(struct usb_comp
- 		bitmap_zero(f->endpoints, 32);
- 	}
- 	cdev->config = NULL;
-+	cdev->delayed_status = 0;
- }
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -85,6 +85,7 @@ static void option_instat_callback(struc
+ #define HUAWEI_PRODUCT_K4505			0x1464
+ #define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_K4605			0x14C6
++#define HUAWEI_PRODUCT_E173S6			0x1C07
  
- static int set_config(struct usb_composite_dev *cdev,
+ #define QUANTA_VENDOR_ID			0x0408
+ #define QUANTA_PRODUCT_Q101			0xEA02
+@@ -572,6 +573,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173S6, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E1750, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
 
 
