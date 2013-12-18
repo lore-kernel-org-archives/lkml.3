@@ -1,67 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab3LRSvP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 13:51:15 -0500
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:36296 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755480Ab3LRSvN (ORCPT
+	id S1755563Ab3LRSzB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 13:55:01 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:50246 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755061Ab3LRSy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 13:51:13 -0500
-Message-ID: <52B1EE96.9000708@hp.com>
-Date: Wed, 18 Dec 2013 13:51:02 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Wed, 18 Dec 2013 13:54:58 -0500
+Date: Wed, 18 Dec 2013 19:54:46 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <116277577.20131218195446@eikelenboom.it>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+CC: "Berg, Johannes" <johannes.berg@intel.com>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
+In-Reply-To: <20131218182910.GA5705@cerro.do-not-panic.com>
+References: <792757788.20131023142849@eikelenboom.it> <1819533168.20131211161710@eikelenboom.it> <CAB=NE6V-RSnqbAC-0tfYK=WGJLp1aPC2UpFDurs49h+wXr9UfQ@mail.gmail.com> <1818324675.20131211175350@eikelenboom.it> <CAB=NE6Wf=T0bGLSYPDyb=-fMAVnGcbGkeaBiNrzwV-Lpxr6VZg@mail.gmail.com> <1342235583.20131211182804@eikelenboom.it> <CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com> <871324710.20131211191104@eikelenboom.it> <CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com> <1937118387.20131216122200@eikelenboom.it> <20131218182910.GA5705@cerro.do-not-panic.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] qrwlock: A queue read/write lock implementation
-References: <1385147087-26588-1-git-send-email-Waiman.Long@hp.com> <1385147087-26588-2-git-send-email-Waiman.Long@hp.com> <20131217192128.GA15969@linux.vnet.ibm.com> <CA+55aFzNSZCKnuEm+CDWUN2G4bfrN+HafX8r13NcfT2tJ4h-jw@mail.gmail.com>
-In-Reply-To: <CA+55aFzNSZCKnuEm+CDWUN2G4bfrN+HafX8r13NcfT2tJ4h-jw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2013 02:27 PM, Linus Torvalds wrote:
-> On Tue, Dec 17, 2013 at 11:21 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com>  wrote:
->> Looks like xadd() is x86-specific, but this is common code.  One
->> approach would be to do xadd() for other arches, another approach
->> would be to make .rw be an atomic_t rather than a u32.  Making it
->> be atomic_t is probably easiest.  (The cmpxchg()s would then need
->> to be atomic_cmpxchg().)
-> Note that "xadd()" has different semantics from "atomic_add_return()".
->
-> xadd() returns the original value, while atomic_add_return() returns
-> the result of the addition.
->
-> In this case, we seem to want the xadd() semantics. I guess we can use
-> "atomic_add_return(val,&atomic)-val" and just assume that the compiler
-> gets it right (with the addition and the subtraction cancelling out).
-> Or maybe we should have a "atomic_add_return_original()" with xadd
-> semantics?
->
->                 Linus
 
-I will use the atomic_add_return() for the combined count. Actually what 
-the code is looking for in the returned value is the state of the writer 
-byte. So it doesn't really matter if _QR_BIAS has or hasn't been added 
-to the count.
+Wednesday, December 18, 2013, 7:29:10 PM, you wrote:
 
--Longman
+> On Mon, Dec 16, 2013 at 12:22:00PM +0100, Sander Eikelenboom wrote:
+>> 
+>> Wednesday, December 11, 2013, 7:38:50 PM, you wrote:
+>> 
+>> > On Wed, Dec 11, 2013 at 7:11 PM, Sander Eikelenboom
+>> > <linux@eikelenboom.it> wrote:
+>> >>
+>> >> Wednesday, December 11, 2013, 6:53:07 PM, you wrote:
+>> >>
+>> >>> The best way to address all this is by automatic region awareness and
+>> >>> doing the right thing on devices, this however requires good
+>> >>> architecture / calibration data  / etc and all that needs to be
+>> >>> verified by the system integrators, and finally they need to be
+>> >>> certified. If you want to hack your firmware and software go at it,
+>> >>> just be aware there are reasons for things.
+>> >>
+>> >> Well the general problem seems to be "we don't trust the user" so we FORCE him to the lowest
+>> >> common denominator (without a way to overrule that) so he is forced to operate *well* within the law.
+>> 
+>> > Its simply stupid to have the user be involved, period, the fact that
+>> > a user would be involved should only be for testing or helping
+>> > compliance for a busted device, development, research and obviously
+>> > hacking. Linux allows all these but by default a device with firmware
+>> > and a custom regdomain that will barf if you try to use a channel that
+>> > is not allowed is a restriction in firmware. Feel free to reverse
+>> > engineer that if you don't like it but it just won't be supported or
+>> > go upstream. Now, the common denominator is generally optimized for
+>> > best performance as well so you shouldn't have to do anything, and for
+>> > APs -- this is typically carefully crafted for a region, also highly
+>> > optimized.
+>> 
+>> >>>>> It doesn't seem like you are getting your original requests getting
+>> >>>>> processed, so I don't think CRDA is passing it. Can you verify running
+>> >>>>> from CRDA code:
+>> >>>>
+>> >>>> They don't get processed unless i remove the return from the code as i indicated.
+>> >>>> If i remove that return it processes the request.
+>> >>>>
+>> >>>>> ./regdbdump /usr/lib/crda/regulatory.bin
+>> >>>>
+>> >>>> Although it's in a different location on Debian, /lib/crda/regulatory.bin
+>> >>>> the dump seems fine.
+>> >>
+>> >>> OK thanks. Can you send a patch of what exact change you made, it was
+>> >>> unclear from the paste you made.
+>> >>
+>> >>> diff -u file.c.orig file.c
+>> >>
+>> >> Well i just did a pull from wireless-next, to try Avinash Patil's patch.
+>> >> net/wireless/reg.c had already changed much so i couldn't apply his patch without.
+>> >>
+>> >> With his patch it sets the regulatory domain, although as now expected i still can not use channels 12 and 13 yet,
+>> >> probably due to those firmware restrictions.
+>> 
+>> > Its unclear what results you got, and yeah if the device is restricted
+>> > then its just the fw telling the driver its channels and you can't use
+>> > them. That's it. You won't be able to override information then unless
+>> > you hack the firmware
+>> 
+>> Ping ?
+>> 
+>> Is there anymore information you need to *fix* the problem ?
+
+> I was away on Travel back home, and will soon be traveling to
+> visit family so e-mail replies will be delayed, I'll jump on this
+> thread now but in short:
+
+> You are confusing the main issue you reported (cannot override regulatory)
+> as a software issue rather than a firmware issue with intel firmware, you are
+> also making claims and making people believe things work in different ways
+> (I'll clarify things there, proper regulatory support without CRDA works, CRDA
+> is just a helper, we also do have a timeout on requests). Lastly there is one
+> issue that may be a software issue but I cannot reproduce which I am
+> interested in getting down to the bottom to.
+
+To hopefully save you some time ...
+
+I would suggest reading the thread from bottom to top ;-)
+
+A summary .. it's now limited to:
+
+Problem:    Not being able to set the regulator domain with userspace tools after boot although CRDA works.
+Condition:  This only occurs when i build the modules in, when i use loadable modules all is fine.
+What seems to happen:
+            - This seems to be due to the fact that when the modules are built-in the modules are initialized *before* the root-filesystem is mounted.
+            - Since the root-filesystem isn't mounted, the CRDA is also not accessible.
+            - The world regulatory domain is now set and the boot continues, but somehow the request keeps pending doesn't seem to be cleared.
+            - *All* subsequent requests to change the regulatory domain, also when the CRDA has become accessible, also keep pending because that first request (at boot) was never fullfilled (or cleared)
+
+And IMHO that's a bug.
+
+> I'll dive into the different things now.
+
+>   Luis
+
+
