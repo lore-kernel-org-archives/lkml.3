@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab3LRLe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 06:34:56 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:63269 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab3LRLez (ORCPT
+	id S1753617Ab3LRLhI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 06:37:08 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43973 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab3LRLhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 06:34:55 -0500
-Date: Wed, 18 Dec 2013 11:34:49 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: sameo@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: Re: Simple MFD driver example
-Message-ID: <20131218113449.GF14274@lee--X1>
-References: <20131216082556.GE18769@lee--X1>
- <CAOMwXhN8fG8YbU53A_U_MyMTyGWfV7NCCtr2a5oCbHdB0iqqmA@mail.gmail.com>
- <20131216150514.GN18769@lee--X1>
- <CAOMwXhMn5W76Dp=EFNHaknXCqZ4q4e7fphgtttx+8U=1Fc_DMQ@mail.gmail.com>
- <20131216164844.GS18769@lee--X1>
- <CAOMwXhPLNVKbRqR2tPQc758zLsh0Lg0D6JUf2yrf+ZosJVANAw@mail.gmail.com>
- <20131218091609.GB14274@lee--X1>
- <CAOMwXhOSpnEiDoyXNPmy0Gt1tLiwdzGRqoseKqtAUogLEfkCZQ@mail.gmail.com>
- <20131218111232.GE14274@lee--X1>
- <CAOMwXhNMrnLEDUHrPqH1rgbFDgNPWmhCr2dPUNhdhfmdPTcGfg@mail.gmail.com>
+	Wed, 18 Dec 2013 06:37:05 -0500
+Date: Wed, 18 Dec 2013 12:36:51 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        David Miller <davem@davemloft.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, netdev@vger.kernel.org,
+        Linux-Next <linux-next@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        ffusco@redhat.com, dborkman@redhat.com, tgraf@redhat.com,
+        Joe Perches <joe@perches.com>
+Subject: Re: linux-next: build failure after merge of the net-next tree
+Message-ID: <20131218113651.GQ3694@twins.programming.kicks-ass.net>
+References: <20131218125643.8ff140371e1f8c306327d354@canb.auug.org.au>
+ <20131217.212145.893665929052097867.davem@davemloft.net>
+ <20131217.213033.1019416869378407851.davem@davemloft.net>
+ <CAMuHMdUi4GQYR2p7enikEkTq1s-5YwirTzmo_tS0JwiE=dVmYw@mail.gmail.com>
+ <20131218101523.GP13532@twins.programming.kicks-ass.net>
+ <CAMuHMdXHiKe6fjEHu0GrSVMAmvKuX9wOUdC2MW3uSjRAU5tnWA@mail.gmail.com>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B74A4@saturn3.aculab.com>
+ <20131218113324.GA30183@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMwXhNMrnLEDUHrPqH1rgbFDgNPWmhCr2dPUNhdhfmdPTcGfg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131218113324.GA30183@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> What you eventually see in hwmon is only a subset of all the features
-> >> the IC provides. You may want to read this thread:
-> >> https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg536509.html
-> >
-> > Okay, so the best thing to do is send out the entire patch-set at
-> > once, CC'ing each of the maintainers on every patch so we can all see
-> > how this thing fits together.
+On Wed, Dec 18, 2013 at 12:33:24PM +0100, Peter Zijlstra wrote:
+> On Wed, Dec 18, 2013 at 11:07:34AM -0000, David Laight wrote:
+> > > > And sort(1) is annoying in that it doesn't do in-place sort; you'll end
+> > > > up with empty files if you try the naive thing.
+> > > >
+> > > > Worse most of those Kbuild files include other random garbage, which
+> > > > makes automated sorting harder still.
+> > > >
+> > > > So unless there's a sane and easy way to keep it sorted; I'm going to
+> > > > ignore that rule.
+> > > 
+> > > Not keeping them sorted causes merge conflicts and duplicate/missing
+> > > entries.
 > 
-> Well, I am not even sure currently where to head with the MFD bits and
-> its children subdevices currently....
-> 
-> I would appreciate any direction. Yesterday, I was told on IRC, I
-> would need to switch from i2c to platform drivers for the hwmon and
-> gpio parts, but looking at some existing mfd driver code and their
-> children drivers, I do not see it like that.
-> 
-> I have already sent out the gpio driver yesterday which works fine on
-> its own: http://www.spinics.net/lists/kernel/msg1655805.html
+> Surely sorting doesn't cure missing entries. Also sorting can at most
+> reduce merge conflicts, not take them out entirely.
 
-This is going to need a lot of work.
+In fact, manually editing these files carries a far greater risk of
+causing missing entries than sorting could possibly cure.
 
-Did you run the patch through `./scripts/checkpatch.pl` before
-submitting?
-
-> Could you please guide me into the right direction what I need to
-> change once we have standalone drivers, and they should be glued
-> together? I thought adding an abstraction with the mfd layer would be
-> sufficient, but apparently, that is not enough.
-> 
-> Practically speaking, I am confused since if I needed to change the
-> existing drivers, that means I could potentially break the interface
-> for the existing users if the drivers stop working on their own, but
-> then again, I am such a newbie that I would greatly appreciate some
-> pointers.
-
-The MFD subsystem is quite simple to use. I'm taken aback that this is
-your major stumbling block. Read though the mfd_add_device(s)() calls
-to see what it expects. The rest is childs play.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Also, missing entires isn't much of a problem to begin with, compilers
+are rather good at finding the problem.
