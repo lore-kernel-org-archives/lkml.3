@@ -1,95 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab3LRJ1L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 04:27:11 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28950 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942Ab3LRJ1G (ORCPT
+	id S1753742Ab3LRJ0l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 04:26:41 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:34220 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843Ab3LRJWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 04:27:06 -0500
-Message-ID: <52B166ED.7020508@huawei.com>
-Date: Wed, 18 Dec 2013 17:12:13 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 18 Dec 2013 04:22:08 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <dmitry.torokhov@gmail.com>
+CC: <rydberg@euromail.se>, <jcbian@pixcir.com.cn>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH 1/9] Input: pixcir_i2c_ts: Add device tree support
+Date: Wed, 18 Dec 2013 14:51:12 +0530
+Message-ID: <1387358480-8313-2-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387358480-8313-1-git-send-email-rogerq@ti.com>
+References: <1387358480-8313-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, <kaber@trash.net>, <xemul@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>, <ebiederm@xmission.com>,
-        <herbert@gondor.apana.org.au>
-CC: <edumazet@google.com>, <fbl@redhat.com>, <ebiederm@xmission.com>,
-        <jeff@garzik.org>, <peterz@infradead.org>, <honkiko@gmail.com>,
-        <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        "Huang Qiang" <h.huangqiang@huawei.com>,
-        Wengmeiling <wengmeiling.weng@huawei.com>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <daniel.wagner@bmw-carit.de>, <nhorman@tuxdriver.com>
-Subject: Re: cgroup filter on physics interface can't control container
-References: <52A52BBF.6030105@huawei.com> <52A9A97F.20902@huawei.com>
-In-Reply-To: <52A9A97F.20902@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hello guys,
+Provide device tree support and binding information.
+Change platform data parameters from x/y_max to x/y_size..
 
-I said before "we can save sk_classid before skb_scrub_packet and
-restore it after that"  since skb->sk had been freed in
-skb_scrub_packet(), so it is not reasonable. yes?
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
+---
+ .../bindings/input/touchscreen/pixcir_i2c_ts.txt   | 26 ++++++++
+ drivers/input/touchscreen/pixcir_i2c_ts.c          | 77 ++++++++++++++++++++--
+ include/linux/input/pixcir_ts.h                    |  5 +-
+ 3 files changed, 101 insertions(+), 7 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
 
-I have another idea.
-commit:f84517253(cls_cgroup: Store classid in struct sock) introduces
-sk_classid and put it in skb->sk pointer.  can we put sk_classid form
-struct sock to struct sk_buff? then sk_classid will not be affected
-by dev_forward_skb()->skb_scrub_packet() ?
-
-any comment are welcome!
-
-
-thanks,
-Libo
-
-
-On 2013/12/12 20:18, Libo Chen wrote:
-> ping...
-> 
-> On 2013/12/9 10:32, Libo Chen wrote:
->> hello network hackers,
->>
->> 	A linux container was builded with veth pair(veth0 inside container, veth1 outside container),
->>
->> the config as below:
->>
->>   lxc.network.type = veth
->>   lxc.network.flags = up
->>   lxc.network.link = br0  // base on eth0
->>   lxc.network.name = eth0
->>   lxc.network.ipv4 = 128.5.130.26/24
->>
->> then I use tc command with cgroup filter on veth0, it works well. But when setting on eth0, it doesn`t work.
->>
->> The reason is dev_forward_skb() in veth_xmit will call skb_scrub_packet and clean all information including skb->sk
->> in the skb, so if cls_cgroup_classify is working in serving softirq state, it will return failer, see below:
->>
->> 	if (in_serving_softirq()) {
->> 		/* If there is an sk_classid we'll use that. */
->> 		if (!skb->sk)
->> 			return -1;
->> 		classid = skb->sk->sk_classid;
->> 	}
->>
->>
->> Qdisc with cgroup filter on physics interface can not control a container network, it is disappointed.
->>
->> we can save sk_classid before skb_scrub_packet and restore it after that. Is it reasonable?  or any way to achieve this?
->>
->> thanks,
->> Libo
->>
-> 
-
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt b/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
+new file mode 100644
+index 0000000..c0b0b270
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
+@@ -0,0 +1,26 @@
++* Pixcir I2C touchscreen controllers
++
++Required properties:
++- compatible: must be "pixcir,pixcir_ts"
++- reg: I2C address of the chip
++- interrupts: interrupt to which the chip is connected
++- attb-gpio: GPIO connected to the ATTB line of the chip
++- x-size: horizontal resolution of touchscreen
++- y-size: vertical resolution of touchscreen
++
++Example:
++
++	i2c@00000000 {
++		/* ... */
++
++		pixcir_ts@5c {
++			compatible = "pixcir,pixcir_ts";
++			reg = <0x5c>;
++			interrupts = <2 0>;
++			attb-gpio = <&gpf 2 0 2>;
++			x-size = <800>;
++			y-size = <600>;
++		};
++
++		/* ... */
++	};
+diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
+index 6cc6b36..3a447c9 100644
+--- a/drivers/input/touchscreen/pixcir_i2c_ts.c
++++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
+@@ -24,6 +24,10 @@
+ #include <linux/i2c.h>
+ #include <linux/input.h>
+ #include <linux/input/pixcir_ts.h>
++#include <linux/gpio.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/of_device.h>
+ 
+ struct pixcir_i2c_ts_data {
+ 	struct i2c_client *client;
+@@ -125,15 +129,65 @@ static int pixcir_i2c_ts_resume(struct device *dev)
+ static SIMPLE_DEV_PM_OPS(pixcir_dev_pm_ops,
+ 			 pixcir_i2c_ts_suspend, pixcir_i2c_ts_resume);
+ 
++#if defined(CONFIG_OF)
++static const struct of_device_id pixcir_of_match[];
++
++static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
++{
++	struct pixcir_ts_platform_data *pdata;
++	struct device_node *np = dev->of_node;
++	const struct of_device_id *match;
++
++	match = of_match_device(of_match_ptr(pixcir_of_match), dev);
++	if (!match)
++		return ERR_PTR(-EINVAL);
++
++	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return ERR_PTR(-ENOMEM);
++
++	pdata->gpio_attb = of_get_named_gpio(np, "attb-gpio", 0);
++	if (!gpio_is_valid(pdata->gpio_attb))
++		dev_err(dev, "Failed to get ATTB GPIO\n");
++
++	if (of_property_read_u32(np, "x-size", &pdata->x_size)) {
++		dev_err(dev, "Failed to get x-size property\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	if (of_property_read_u32(np, "y-size", &pdata->y_size)) {
++		dev_err(dev, "Failed to get y-size property\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	dev_dbg(dev, "%s: x %d, y %d, gpio %d\n", __func__,
++				pdata->x_size, pdata->y_size, pdata->gpio_attb);
++
++	return pdata;
++}
++#else
++static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
++{
++	return NULL;
++}
++#endif
++
+ static int pixcir_i2c_ts_probe(struct i2c_client *client,
+ 					 const struct i2c_device_id *id)
+ {
+ 	const struct pixcir_ts_platform_data *pdata = client->dev.platform_data;
++	struct device *dev = &client->dev;
++	struct device_node *np = dev->of_node;
+ 	struct pixcir_i2c_ts_data *tsdata;
+ 	struct input_dev *input;
+ 	int error;
+ 
+-	if (!pdata) {
++	if (np) {
++		pdata = pixcir_parse_dt(dev);
++		if (IS_ERR(pdata))
++			return PTR_ERR(pdata);
++
++	} else if (!pdata) {
+ 		dev_err(&client->dev, "platform data not defined\n");
+ 		return -EINVAL;
+ 	}
+@@ -157,10 +211,14 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
+ 	__set_bit(EV_KEY, input->evbit);
+ 	__set_bit(EV_ABS, input->evbit);
+ 	__set_bit(BTN_TOUCH, input->keybit);
+-	input_set_abs_params(input, ABS_X, 0, pdata->x_max, 0, 0);
+-	input_set_abs_params(input, ABS_Y, 0, pdata->y_max, 0, 0);
+-	input_set_abs_params(input, ABS_MT_POSITION_X, 0, pdata->x_max, 0, 0);
+-	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, pdata->y_max, 0, 0);
++	input_set_abs_params(input, ABS_X,
++					0, pdata->x_size - 1, 0, 0);
++	input_set_abs_params(input, ABS_Y,
++					0, pdata->y_size - 1, 0, 0);
++	input_set_abs_params(input, ABS_MT_POSITION_X,
++					0, pdata->x_size - 1, 0, 0);
++	input_set_abs_params(input, ABS_MT_POSITION_Y,
++					0, pdata->y_size - 1, 0, 0);
+ 
+ 	input_set_drvdata(input, tsdata);
+ 
+@@ -211,11 +269,20 @@ static const struct i2c_device_id pixcir_i2c_ts_id[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, pixcir_i2c_ts_id);
+ 
++#if defined(CONFIG_OF)
++static const struct of_device_id pixcir_of_match[] = {
++	{ .compatible = "pixcir,pixcir_ts", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, pixcir_of_match);
++#endif
++
+ static struct i2c_driver pixcir_i2c_ts_driver = {
+ 	.driver = {
+ 		.owner	= THIS_MODULE,
+ 		.name	= "pixcir_ts",
+ 		.pm	= &pixcir_dev_pm_ops,
++		.of_match_table = of_match_ptr(pixcir_of_match),
+ 	},
+ 	.probe		= pixcir_i2c_ts_probe,
+ 	.remove		= pixcir_i2c_ts_remove,
+diff --git a/include/linux/input/pixcir_ts.h b/include/linux/input/pixcir_ts.h
+index 7163d91..b34ff7e 100644
+--- a/include/linux/input/pixcir_ts.h
++++ b/include/linux/input/pixcir_ts.h
+@@ -3,8 +3,9 @@
+ 
+ struct pixcir_ts_platform_data {
+ 	int (*attb_read_val)(void);
+-	int x_max;
+-	int y_max;
++	unsigned int x_size;	/* X axis resolution */
++	unsigned int y_size;	/* Y axis resolution */
++	int gpio_attb;		/* GPIO connected to ATTB line */
+ };
+ 
+ #endif
+-- 
+1.8.3.2
 
