@@ -1,249 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab3LREEG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 23:04:06 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:49049 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472Ab3LREED (ORCPT
+	id S1752859Ab3LREGn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 23:06:43 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:55546
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751996Ab3LREGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 23:04:03 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rBI42rCD027593, This message is accepted by code: ctloc85258
-Message-ID: <52B11EF6.3060606@realsil.com.cn>
-Date: Wed, 18 Dec 2013 12:05:10 +0800
-From: micky <micky_ching@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 17 Dec 2013 23:06:40 -0500
+X-Forefront-Antispam-Report: CIP:157.56.240.101;KIP:(null);UIP:(null);IPV:NLI;H:BL2PRD0510HT002.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(z579ehz98dI9371I154dI1443I542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2fh109h2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah224fh1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1fe8h1ff5h2216h22d0h2336h9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(10009001)(377454003)(51874003)(189002)(24454002)(199002)(51704005)(54534003)(13464003)(46102001)(83072002)(74662001)(31966008)(51856001)(47446002)(74502001)(74876001)(85852003)(53806001)(81542001)(56816005)(69226001)(50986001)(47976001)(47736001)(49866001)(4396001)(2656002)(33646001)(87936001)(81816001)(63696002)(87266001)(85306002)(74316001)(76482001)(77982001)(79102001)(59766001)(81686001)(54316002)(76786001)(65816001)(76796001)(76576001)(80976001)(66066001)(80022001)(83322001)(19580405001)(81342001)(74366001)(56776001)(54356001)(74706001)(19580395003)(90146001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR05MB669;H:DM2PR05MB671.namprd05.prod.outlook.com;CLIP:66.129.239.12;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+From: Rajat Jain <rajatjain@juniper.net>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        Rajat Jain <rajatjain.linux@gmail.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Y@jasper.es" <Y@jasper.es>
+Subject: RE: [PATCH v3 4/8] pciehp: Don't disable the link permanently,
+ during removal
+Thread-Topic: [PATCH v3 4/8] pciehp: Don't disable the link permanently,
+ during removal
+Thread-Index: AQHO+2O+glESpPkjFkO6kKuv5WeLEZpZIsOAgAAgqXCAAAt5AIAABqxw
+Date: Wed, 18 Dec 2013 04:06:07 +0000
+Message-ID: <7324b9d8069446db85352ccad59c87ae@DM2PR05MB671.namprd05.prod.outlook.com>
+References: <52B0AEAD.6050604@gmail.com> <20131218010207.GC15119@google.com>
+ <41c1723da4454cdca6503418746a5ca7@DM2PR05MB671.namprd05.prod.outlook.com>
+ <20131218034004.GA22858@roeck-us.net>
+In-Reply-To: <20131218034004.GA22858@roeck-us.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [66.129.239.12]
+x-forefront-prvs: 0064B3273C
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Francis Moreau <francis.moro@gmail.com>, wwang <wei_wang@realsil.com.cn>,
-        Samuel Ortiz <sameo@linux.intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Jingoo Han <jg1.han@samsung.com>,
-        "'Chris Ball'" <cjb@laptop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "'Borislav Petkov'" <bp@alien8.de>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-References: <20131117195358.GO27323@pd.tnic> <4523614.I5MBhorHFt@vostro.rjw.lan> <5292FF5D.1050304@gmail.com> <1821758.2MoNI3h1Mv@vostro.rjw.lan> <52985041.5050000@gmail.com> <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de> <5299FF38.7060203@gmail.com> <alpine.DEB.2.02.1312021145190.30673@ionos.tec.linutronix.de> <alpine.DEB.2.02.1312021219090.30673@ionos.tec.linutronix.de> <529D92D6.8050409@gmail.com> <20131209221721.GB8612@zurbaran> <52A670E4.5050501@realsil.com.cn> <52A674E0.2080407@realsil.com.cn> <52B00547.8030904@gmail.com>
-In-Reply-To: <52B00547.8030904@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.29.41.103]
+X-OriginatorOrg: juniper.net
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBI46nPC007330
 
-Hi:
 
-It seems that the card-reader was removed during suspend or resume, is 
-that right? or did you removed by hand?
-I want to know with Thomas' patch, after resume, is the card-reader and 
-card-reader driver still exist?
-if not exist, I also want to know which function called first, 
-rtsx_pci_resume or rtsx_pci_remove, can you determine it?
-And IRQ16 seems not handled by rtsx_pci driver, so with Thomas' patch, 
-is there still some go wrong?
 
-so much questions, but it may help us find out the bug. thanks.
+> -----Original Message-----
+> From: Guenter Roeck [mailto:groeck7@gmail.com] On Behalf Of Guenter
+> Roeck
+> Sent: Tuesday, December 17, 2013 7:40 PM
+> To: Rajat Jain
+> Cc: Bjorn Helgaas; Rajat Jain; Kenji Kaneshige; Alex Williamson; Yijing
+> Wang; linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org;
+> Y@jasper.es
+> Subject: Re: [PATCH v3 4/8] pciehp: Don't disable the link permanently,
+> during removal
+> 
+> On Wed, Dec 18, 2013 at 03:20:58AM +0000, Rajat Jain wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> > >
+> > > [+cc yinghai@kernel.org (seems to be Yinghai's preferred email]
+> > >
+> > > On Tue, Dec 17, 2013 at 12:06:05PM -0800, Rajat Jain wrote:
+> > > > We need future link up events for hot-add, thus don't disable the
+> > > > link permanently during device removal. Also, remove the static
+> > > > functions that are now left unused.
+> > >
+> > > The changelog should mention that this reverts part of 2debd9289997
+> > > ("PCI:
+> > > pciehp: Disable/enable link during slot power off/on").
+> >
+> > Sure, I'll add that.
+> >
+> > >
+> > > Yinghai, can you tell us whether this is an issue on your systems?
+> > >
+> >
+> > Thanks in advance Yinghai.
+> >
+> > Actually I did not understand the original problem and the solution in
+> > the first place (so I also do not understand how might disabling of
+> > presence detect notification help). If you can give more details on
+> > the original problem that shall be great. Here is what I understood
+> from the commit log:
+> >
+> > The believe the HW looks like this:
+> >
+> > PCIe port <----> Repeater <----> Device.
+> >
+> > An in addition there is the presence detect pin that is connected
+> > directly from The port to the device. Now, when the device is plugged
+> > out, the pin indicates No presence. But are you saying the PCIe link
+> from port to repeater is still up?
+> >
+> > Part of log:
+> > ====================================
+> >     ...
+> >     It turns out the root complex is continually trying to train the
+> link to
+> >     the repeater because the repeater has not been reset.
+> >
+> >     This patch will disable the link at removal time to allow the
+> repeater
+> >     to be reset properly.
+> >     ...
+> > ====================================
+> >
+> > 1) I did not understand why would port try to retrain to the link in
+> > either cases - Whether the link to the repeater is up or not?
+> >
+> > 2) When no link is seen, is THAT what causes repeater to go down and
+> > hence solve the Problem?
+> >
+> > 3) I'd expect you'd continuously get "adapter not present" messages if
+> > some how The driver was trying to add the device. But I did not
+> > understand where did "adapter present" messages came from?
+> >
+> > Sorry, but I guess I am totally confused now. I'll probably go to
+> > sleep :-)
+> >
+> 
+> What, that early ? :-)
 
-Best Regards.
+I was up until 3 AM last night. "git" (or the ignorance of it) keeps me busy I guess :-)
 
-On 12/17/2013 04:03 PM, Francis Moreau wrote:
-> Hi,
->
-> On 12/10/2013 02:56 AM, micky wrote:
->> Hi Francis:
->> On 12/10/2013 09:39 AM, wwang wrote:
->>> which is based on Thomas' patch.
->> Can you help us test this patch, we disable irq while suspend here.
-> This patch doesn't seem to help, it still oops:
->
-> [   29.843910] ------------[ cut here ]------------
-> [   29.843917] WARNING: CPU: 0 PID: 53 at lib/debugobjects.c:260
-> debug_print_object+0x83/0xa0()
-> [   29.843921] ODEBUG: free active (active state 0) object type:
-> timer_list hint: delayed_work_timer_fn+0x0/0x20
-> [   29.843972] Modules linked in: x86_pkg_temp_thermal intel_powerclamp
-> coretemp kvm_intel kvm rtsx_pci_ms i915 i2c_algo_bit intel_agp intel_gtt
-> memstick iTCO_wdt drm_kms_helper crc32c_intel video drm r8169 mei_me mii
-> thermal agpgart mei wmi iTCO_vendor_support ac i2c_i801 i2c_core battery
-> evdev button shpchp lpc_ich mperf processor serio_raw microcode ext4
-> crc16 mbcache jbd2 sr_mod cdrom sd_mod usb_storage rtsx_pci_sdmmc
-> mmc_core ahci libahci libata scsi_mod ehci_pci xhci_hcd ehci_hcd
-> rtsx_pci usbcore usb_common
-> [   29.844004] CPU: 0 PID: 53 Comm: kworker/0:1 Not tainted
-> 3.11.0-rc2-ARCH #66
-> [   29.844006] Hardware name: CLEVO CO.                        W55xEU
->                         /W55xEU                          , BIOS 4.6.5
-> 03/05/2013
-> [   29.844010] Workqueue: kacpi_hotplug hotplug_event_work
-> [   29.844012]  0000000000000009 ffff880407a95a18 ffffffff81459fe9
-> ffff880407a95a60
-> [   29.844014]  ffff880407a95a50 ffffffff8104dc7d ffff880406b896b8
-> ffffffff81836fc0
-> [   29.844017]  ffffffff81701358 ffffffff81b2f9b0 0000000000000003
-> ffff880407a95ab0
-> [   29.844019] Call Trace:
-> [   29.844024]  [<ffffffff81459fe9>] dump_stack+0x54/0x8d
-> [   29.844027]  [<ffffffff8104dc7d>] warn_slowpath_common+0x7d/0xa0
-> [   29.844029]  [<ffffffff8104dcec>] warn_slowpath_fmt+0x4c/0x50
-> [   29.844032]  [<ffffffff81261433>] debug_print_object+0x83/0xa0
-> [   29.844034]  [<ffffffff8106b820>] ? queue_work_on+0x50/0x50
-> [   29.844037]  [<ffffffff81261c2b>] __debug_check_no_obj_freed+0x1fb/0x240
-> [   29.844044]  [<ffffffffa00d8989>] ? rtsx_pci_remove+0x119/0x1d0
-> [rtsx_pci]
-> [   29.844046]  [<ffffffff81262619>] debug_check_no_obj_freed+0x19/0x20
-> [   29.844049]  [<ffffffff8116f861>] kfree+0x191/0x210
-> [   29.844054]  [<ffffffff813819e0>] ? pcibios_disable_device+0x20/0x30
-> [   29.844066]  [<ffffffffa00d8989>] ? rtsx_pci_remove+0x119/0x1d0
-> [rtsx_pci]
-> [   29.844071]  [<ffffffffa00d8989>] rtsx_pci_remove+0x119/0x1d0 [rtsx_pci]
-> [   29.844075]  [<ffffffff8128004b>] pci_device_remove+0x3b/0xb0
-> [   29.844079]  [<ffffffff8132c92f>] __device_release_driver+0x7f/0xf0
-> [   29.844082]  [<ffffffff8132c9c3>] device_release_driver+0x23/0x30
-> [   29.844084]  [<ffffffff8132c194>] bus_remove_device+0xf4/0x170
-> [   29.844087]  [<ffffffff81328c55>] device_del+0x135/0x1d0
-> [   29.844089]  [<ffffffff8127ae24>] pci_stop_bus_device+0x94/0xa0
-> [   29.844091]  [<ffffffff8127af32>]
-> pci_stop_and_remove_bus_device+0x12/0x20
-> [   29.844094]  [<ffffffff81297466>] disable_slot+0x76/0xd0
-> [   29.844096]  [<ffffffff81297568>] acpiphp_check_bridge+0xa8/0xd0
-> [   29.844099]  [<ffffffff81297c8a>] hotplug_event+0xfa/0x210
-> [   29.844101]  [<ffffffff81297dc7>] hotplug_event_work+0x27/0x60
-> [   29.844104]  [<ffffffff8106c178>] process_one_work+0x178/0x470
-> [   29.844106]  [<ffffffff8106cb91>] worker_thread+0x121/0x3a0
-> [   29.844109]  [<ffffffff8106ca70>] ? manage_workers.isra.21+0x2b0/0x2b0
-> [   29.844111]  [<ffffffff81073a50>] kthread+0xc0/0xd0
-> [   29.844114]  [<ffffffff81073990>] ? kthread_create_on_node+0x120/0x120
-> [   29.844117]  [<ffffffff814688ec>] ret_from_fork+0x7c/0xb0
-> [   29.844119]  [<ffffffff81073990>] ? kthread_create_on_node+0x120/0x120
-> [   29.844120] ---[ end trace ed9751fe6c0cd9e3 ]---
-> [   29.844137] kobject: '0000:03:00.0' (ffff880407a010a8):
-> kobject_uevent_env
-> [   29.844150] kobject: '0000:03:00.0' (ffff880407a010a8):
-> fill_kobj_path: path = '/devices/pci0000:00/0000:00:1c.3/0000:03:00.0'
-> [   29.844162] kobject: '0000:03:00.0' (ffff880407a010a8): kobject_cleanup
-> [   29.844164] kobject: '0000:03:00.0' (ffff880407a010a8): calling ktype
-> release
-> [   29.844166] kobject: '0000:03:00.0': free name
-> [   29.844367] kobject: 'rx-0' (ffff8804067ae010): kobject_cleanup
-> [   29.844370] kobject: 'rx-0' (ffff8804067ae010): auto cleanup 'remove'
-> event
-> [   29.844371] kobject: 'rx-0' (ffff8804067ae010): kobject_uevent_env
-> [   29.844374] kobject: 'rx-0' (ffff8804067ae010): fill_kobj_path: path
-> = '/devices/pci0000:00/0000:00:1c.3/0000:03:00.2/net/enp3s0f2/queues/rx-0'
-> [   29.844379] kobject: 'rx-0' (ffff8804067ae010): auto cleanup kobject_del
-> [   29.844383] kobject: 'rx-0' (ffff8804067ae010): calling ktype release
-> [   29.844384] kobject: 'rx-0': free name
-> [   29.844389] kobject: 'tx-0' (ffff880407205e18): kobject_cleanup
-> [   29.844390] kobject: 'tx-0' (ffff880407205e18): auto cleanup 'remove'
-> event
-> [   29.844391] kobject: 'tx-0' (ffff880407205e18): kobject_uevent_env
-> [   29.844393] kobject: 'tx-0' (ffff880407205e18): fill_kobj_path: path
-> = '/devices/pci0000:00/0000:00:1c.3/0000:03:00.2/net/enp3s0f2/queues/tx-0'
-> [   29.844396] kobject: 'tx-0' (ffff880407205e18): auto cleanup kobject_del
-> [   29.844398] kobject: 'tx-0' (ffff880407205e18): calling ktype release
-> [   29.844399] kobject: 'tx-0': free name
-> [   29.844400] kobject: 'queues' (ffff880406216c78): kobject_cleanup
-> [   29.844401] kobject: 'queues' (ffff880406216c78): auto cleanup
-> kobject_del
-> [   29.844403] kobject: 'queues' (ffff880406216c78): calling ktype release
-> [   29.844404] kobject: 'queues' (ffff880406216c78): kset_release
-> [   29.844405] kobject: 'queues': free name
-> [   29.844438] kobject: 'enp3s0f2' (ffff880406be2410): kobject_uevent_env
-> [   29.844440] kobject: 'enp3s0f2' (ffff880406be2410): fill_kobj_path:
-> path = '/devices/pci0000:00/0000:00:1c.3/0000:03:00.2/net/enp3s0f2'
-> [   29.844445] kobject: 'net' (ffff880406216cc0): kobject_cleanup
-> [   29.844446] kobject: 'net' (ffff880406216cc0): auto cleanup kobject_del
-> [   29.844447] kobject: 'net' (ffff880406216cc0): calling ktype release
-> [   29.844448] kobject: 'net': free name
-> [   29.890009] kobject: '44' (ffff880407327408): kobject_cleanup
-> [   29.890014] kobject: '44' (ffff880407327408): calling ktype release
-> [   29.890015] kobject: '44': free name
-> [   29.890018] kobject: 'msi_irqs' (ffff880406216d38): kobject_cleanup
-> [   29.890019] kobject: 'msi_irqs' (ffff880406216d38): auto cleanup
-> kobject_del
-> [   29.890022] kobject: 'msi_irqs' (ffff880406216d38): calling ktype release
-> [   29.890024] kobject: 'msi_irqs' (ffff880406216d38): kset_release
-> [   29.890026] kobject: 'msi_irqs': free name
-> [   29.890121] kobject: 'enp3s0f2' (ffff880406be2410): kobject_cleanup
-> [   29.890123] kobject: 'enp3s0f2' (ffff880406be2410): calling ktype release
-> [   29.890127] kobject: 'enp3s0f2': free name
-> [   29.899887] kobject: '0000:03:00.2' (ffff880407a020a8):
-> kobject_uevent_env
-> [   29.899892] kobject: '0000:03:00.2' (ffff880407a020a8):
-> fill_kobj_path: path = '/devices/pci0000:00/0000:00:1c.3/0000:03:00.2'
-> [   29.899914] kobject: '0000:03:00.2' (ffff880407a020a8): kobject_cleanup
-> [   29.899915] kobject: '0000:03:00.2' (ffff880407a020a8): calling ktype
-> release
-> [   29.899918] kobject: '0000:03:00.2': free name
-> [   29.899966] kobject: 'device:10' (ffff8804079731f0): kobject_uevent_env
-> [   29.899969] kobject: 'device:10' (ffff8804079731f0): fill_kobj_path:
-> path = '/devices/LNXSYSTM:00/device:00/PNP0A08:00/device:0f/device:10'
-> [   29.899976] ACPI: Device does not support D3cold
-> [   29.899978] kobject: 'device:10' (ffff8804079731f0): kobject_cleanup
-> [   29.899979] kobject: 'device:10' (ffff8804079731f0): calling ktype
-> release
-> [   29.899982] kobject: 'device:10': free name
-> [   29.900025] kobject: 'device:11' (ffff8804079739f0): kobject_uevent_env
-> [   29.900028] kobject: 'device:11' (ffff8804079739f0): fill_kobj_path:
-> path = '/devices/LNXSYSTM:00/device:00/PNP0A08:00/device:0f/device:11'
-> [   29.900033] ACPI: Device does not support D3cold
-> [   29.900035] kobject: 'device:11' (ffff8804079739f0): kobject_cleanup
-> [   29.900036] kobject: 'device:11' (ffff8804079739f0): calling ktype
-> release
-> [   29.900038] kobject: 'device:11': free name
-> [   29.900105] kobject: 'device:12' (ffff8804079741f0): kobject_uevent_env
-> [   29.900106] kobject: 'device:12' (ffff8804079741f0): fill_kobj_path:
-> path = '/devices/LNXSYSTM:00/device:00/PNP0A08:00/device:0f/device:12'
-> [   29.900112] ACPI: Device does not support D3cold
-> [   29.900114] kobject: 'device:12' (ffff8804079741f0): kobject_cleanup
-> [   29.900114] kobject: 'device:12' (ffff8804079741f0): calling ktype
-> release
-> [   29.900117] kobject: 'device:12': free name
-> [   29.900163] kobject: 'device:14' (ffff8804079751f0): kobject_uevent_env
-> [   29.900164] kobject: 'device:14' (ffff8804079751f0): fill_kobj_path:
-> path = '/devices/LNXSYSTM:00/device:00/PNP0A08:00/device:13/device:14'
-> [   29.900171] ACPI: Device does not support D3cold
-> [   29.900174] kobject: 'device:14' (ffff8804079751f0): kobject_cleanup
-> [   29.900175] kobject: 'device:14' (ffff8804079751f0): calling ktype
-> release
-> [   29.900178] kobject: 'device:14': free name
-> [   30.404233] irq 16: nobody cared (try booting with the "irqpoll" option)
-> [   30.404272] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W
-> 3.11.0-rc2-ARCH #66
-> [   30.404274] Hardware name: CLEVO CO.                        W55xEU
->                         /W55xEU                          , BIOS 4.6.5
-> 03/05/2013
-> [   30.404275]  ffff8804078bd38c ffff88041e203e48 ffffffff81459fe9
-> ffff8804078bd300
-> [   30.404278]  ffff88041e203e70 ffffffff810d8632 ffff8804078bd300
-> 0000000000000010
-> [   30.404280]  0000000000000000 ffff88041e203eb0 ffffffff810d8a58
-> ffffffff8136a882
-> [   30.404282] Call Trace:
-> [   30.404284]  <IRQ>  [<ffffffff81459fe9>] dump_stack+0x54/0x8d
-> [   30.404293]  [<ffffffff810d8632>] __report_bad_irq+0x32/0xd0
-> [   30.404296]  [<ffffffff810d8a58>] note_interrupt+0x138/0x1f0
-> [   30.404299]  [<ffffffff8136a882>] ? cpuidle_enter_state+0x52/0xc0
-> [   30.404302]  [<ffffffff810d6439>] handle_irq_event_percpu+0xf9/0x250
-> [   30.404304]  [<ffffffff810d65cd>] handle_irq_event+0x3d/0x60
-> [   30.404306]  [<ffffffff810d95ca>] handle_fasteoi_irq+0x5a/0x100
-> [   30.404309]  [<ffffffff81004a6e>] handle_irq+0x1e/0x30
-> [   30.404312]  [<ffffffff8146aafd>] do_IRQ+0x4d/0xc0
-> [   30.404314]  [<ffffffff8146116d>] common_interrupt+0x6d/0x6d
-> [   30.404315]  <EOI>  [<ffffffff8136a882>] ? cpuidle_enter_state+0x52/0xc0
-> [   30.404319]  [<ffffffff8136a878>] ? cpuidle_enter_state+0x48/0xc0
-> [   30.404321]  [<ffffffff8136a9b9>] cpuidle_idle_call+0xc9/0x280
-> [   30.404325]  [<ffffffff8100bf6e>] arch_cpu_idle+0xe/0x30
-> [   30.404328]  [<ffffffff810a1287>] cpu_startup_entry+0x257/0x2d0
-> [   30.404330]  [<ffffffff8144d404>] rest_init+0x84/0x90
-> [   30.404333]  [<ffffffff818d9ee1>] start_kernel+0x414/0x420
-> [   30.404335]  [<ffffffff818d98d6>] ? repair_env_string+0x5c/0x5c
-> [   30.404337]  [<ffffffff818d9120>] ? early_idt_handlers+0x120/0x120
-> [   30.404339]  [<ffffffff818d95be>] x86_64_start_reservations+0x2a/0x2c
-> [   30.404342]  [<ffffffff818d96c8>] x86_64_start_kernel+0x108/0x117
-> [   30.404343] handlers:
-> [   30.404363] [<ffffffffa00168f0>] usb_hcd_irq [usbcore]
-> [   30.404383] Disabling IRQ #16
-> .
->
+> 
+> I think we may have a similar setup on some of our boards. Maybe we can
+> reproduce the situation (after we understand what exactly it is and how
+> to trigger it).
+> 
+> Related to this patch set, I learned today that our Space product uses
+> mpt2sas.
+> Just in case we need one for testing reset functionality.
+> 
+> Guenter
+> 
 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
