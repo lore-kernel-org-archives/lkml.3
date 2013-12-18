@@ -1,63 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab3LRVaA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:30:00 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:53365 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754227Ab3LRV35 (ORCPT
+	id S1754815Ab3LRVao (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:30:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36453 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754207Ab3LRVNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:29:57 -0500
-Message-ID: <52B213D1.1000104@mit.edu>
-Date: Wed, 18 Dec 2013 13:29:53 -0800
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 18 Dec 2013 16:13:45 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Kevin B. Smith" <kevin.b.smith@intel.com>,
+        "Sunil K. Pandey" <sunil.k.pandey@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. J. Lu" <hjl.tools@gmail.com>
+Subject: [PATCH 3.12 069/118] x86, build: Pass in additional -mno-mmx, -mno-sse options
+Date: Wed, 18 Dec 2013 13:11:46 -0800
+Message-Id: <20131218211221.408017956@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
+References: <20131218211219.461663463@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>, Alex Shi <alex.shi@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [RFC PATCH 00/13] nohz: Use sysidle detection to let the timekeeper
- sleep
-References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com> <52B102BB.1050907@linaro.org> <20131218174355.GA19788@localhost.localdomain>
-In-Reply-To: <20131218174355.GA19788@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 09:43 AM, Frederic Weisbecker wrote:
-> On Wed, Dec 18, 2013 at 10:04:43AM +0800, Alex Shi wrote:
->> On 12/18/2013 06:51 AM, Frederic Weisbecker wrote:
->>> So this is what this series brings, more details following:
->>>
->>> * Some code, naming and whitespace cleanups
->>>
->>> * Allow all CPUs outside the nohz_full range to handle the timekeeping
->>>   duty, not just CPU 0. Balancing the timekeeping duty should improve
->>>   powersavings.
->>
->> If the system just has one nohz_full cpu running, it will need another
->> cpu to do timerkeeper job. Then the system roughly needs 2 cpu living.
->> From powersaving POV, that is not good compare to normal nohz idle.
-> 
-> Sure, but everything has a tradeoff :)
-> 
-> We could theoretically run with the timekeeper purely idle if the other
-> CPU in full dynticks mode runs in userspace for a long while and seldom
-> do syscalls and faults. Timekeeping could be updated on kernel/user
-> boundaries in this case without much impact on performances.
-> 
-> But then there is one strict condition for that: it can't read the timeofday
-> through the vdso but only through a syscall.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Where's your ambition? :)
+------------------
 
-If the vdso timing functions could see that it's been too long since a
-real timekeeping update, they could fall back to a syscall.  Otherwise,
-they could using rdtsc or whatever is in use.
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
---Andy
+commit 8b3b005d675726e38bc504d2e35a991e55819155 upstream.
+
+In checkin
+
+    5551a34e5aea x86-64, build: Always pass in -mno-sse
+
+we unconditionally added -mno-sse to the main build, to keep newer
+compilers from generating SSE instructions from autovectorization.
+However, this did not extend to the special environments
+(arch/x86/boot, arch/x86/boot/compressed, and arch/x86/realmode/rm).
+Add -mno-sse to the compiler command line for these environments, and
+add -mno-mmx to all the environments as well, as we don't want a
+compiler to generate MMX code either.
+
+This patch also removes a $(cc-option) call for -m32, since we have
+long since stopped supporting compilers too old for the -m32 option,
+and in fact hardcode it in other places in the Makefiles.
+
+Reported-by: Kevin B. Smith <kevin.b.smith@intel.com>
+Cc: Sunil K. Pandey <sunil.k.pandey@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: H. J. Lu <hjl.tools@gmail.com>
+Link: http://lkml.kernel.org/n/tip-j21wzqv790q834n7yc6g80j1@git.kernel.org
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/Makefile                 |    8 ++++----
+ arch/x86/boot/Makefile            |    6 +++---
+ arch/x86/boot/compressed/Makefile |    1 +
+ arch/x86/realmode/rm/Makefile     |    3 ++-
+ 4 files changed, 10 insertions(+), 8 deletions(-)
+
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -31,8 +31,8 @@ ifeq ($(CONFIG_X86_32),y)
+ 
+         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
+ 
+-        # Don't autogenerate SSE instructions
+-	KBUILD_CFLAGS += -mno-sse
++        # Don't autogenerate MMX or SSE instructions
++        KBUILD_CFLAGS += -mno-mmx -mno-sse
+ 
+         # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
+         # with nonstandard options
+@@ -60,8 +60,8 @@ else
+         KBUILD_AFLAGS += -m64
+         KBUILD_CFLAGS += -m64
+ 
+-        # Don't autogenerate SSE instructions
+-	KBUILD_CFLAGS += -mno-sse
++        # Don't autogenerate MMX or SSE instructions
++        KBUILD_CFLAGS += -mno-mmx -mno-sse
+ 
+ 	# Use -mpreferred-stack-boundary=3 if supported.
+ 	KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -53,18 +53,18 @@ $(obj)/cpustr.h: $(obj)/mkcpustr FORCE
+ 
+ # How to compile the 16-bit code.  Note we always compile for -march=i386,
+ # that way we can complain to the user if the CPU is insufficient.
+-KBUILD_CFLAGS	:= $(USERINCLUDE) -g -Os -D_SETUP -D__KERNEL__ \
++KBUILD_CFLAGS	:= $(USERINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ \
+ 		   -DDISABLE_BRANCH_PROFILING \
+ 		   -Wall -Wstrict-prototypes \
+ 		   -march=i386 -mregparm=3 \
+ 		   -include $(srctree)/$(src)/code16gcc.h \
+ 		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
++		   -mno-mmx -mno-sse \
+ 		   $(call cc-option, -ffreestanding) \
+ 		   $(call cc-option, -fno-toplevel-reorder,\
+-			$(call cc-option, -fno-unit-at-a-time)) \
++		   $(call cc-option, -fno-unit-at-a-time)) \
+ 		   $(call cc-option, -fno-stack-protector) \
+ 		   $(call cc-option, -mpreferred-stack-boundary=2)
+-KBUILD_CFLAGS	+= $(call cc-option, -m32)
+ KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
+ GCOV_PROFILE := n
+ 
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -13,6 +13,7 @@ KBUILD_CFLAGS += -DDISABLE_BRANCH_PROFIL
+ cflags-$(CONFIG_X86_32) := -march=i386
+ cflags-$(CONFIG_X86_64) := -mcmodel=small
+ KBUILD_CFLAGS += $(cflags-y)
++KBUILD_CFLAGS += -mno-mmx -mno-sse
+ KBUILD_CFLAGS += $(call cc-option,-ffreestanding)
+ KBUILD_CFLAGS += $(call cc-option,-fno-stack-protector)
+ 
+--- a/arch/x86/realmode/rm/Makefile
++++ b/arch/x86/realmode/rm/Makefile
+@@ -73,9 +73,10 @@ KBUILD_CFLAGS	:= $(LINUXINCLUDE) -m32 -g
+ 		   -march=i386 -mregparm=3 \
+ 		   -include $(srctree)/$(src)/../../boot/code16gcc.h \
+ 		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
++		   -mno-mmx -mno-sse \
+ 		   $(call cc-option, -ffreestanding) \
+ 		   $(call cc-option, -fno-toplevel-reorder,\
+-			$(call cc-option, -fno-unit-at-a-time)) \
++		   $(call cc-option, -fno-unit-at-a-time)) \
+ 		   $(call cc-option, -fno-stack-protector) \
+ 		   $(call cc-option, -mpreferred-stack-boundary=2)
+ KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
+
+
