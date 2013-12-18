@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858Ab3LRUSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 15:18:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43099 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751223Ab3LRUSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 15:18:49 -0500
-Date: Wed, 18 Dec 2013 21:19:41 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: John Johansen <john.johansen@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] apparmor: remove the "task" arg from
-	may_change_ptraced_domain()
-Message-ID: <20131218201940.GA9694@redhat.com>
-References: <20131218194338.GB23692@madcap2.tricolour.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131218194338.GB23692@madcap2.tricolour.ca>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751661Ab3LRUXn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 15:23:43 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:63360 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751126Ab3LRUXm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 15:23:42 -0500
+Date: Wed, 18 Dec 2013 15:23:38 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 10/17] tracing/probes: Move 'symbol' fetch method to
+ kprobes
+Message-ID: <20131218152338.56c10937@gandalf.local.home>
+In-Reply-To: <1387168336-13213-11-git-send-email-namhyung@kernel.org>
+References: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
+	<1387168336-13213-11-git-send-email-namhyung@kernel.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18, Richard Guy Briggs wrote:
->
-> Bcc: rgb@redhat.com
-> Subject: Re: [PATCH] apparmor: remove the "task" arg from
->  may_change_ptraced_domain()
-> Reply-To:
-> In-Reply-To: <20130926132519.GY13968@madcap2.tricolour.ca>
+On Mon, 16 Dec 2013 13:32:09 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
 
-The subject is empty ;) I changed it to match the above.
+> index 5395d37e5e72..adc9ac70fd3c 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -115,6 +115,14 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
+>  #define fetch_stack_string_size	NULL
+>  
+>  
+> +/* uprobes don't support symbol fetch methods */
 
-> On 13/09/26, Richard Guy Briggs wrote:
-> > On Tue, Sep 24, 2013 at 06:44:42PM +0200, Oleg Nesterov wrote:
-> > > On 09/23, Richard Guy Briggs wrote:
-> > > >
-> > > > On Mon, Sep 16, 2013 at 04:20:35PM +0200, Oleg Nesterov wrote:
-> > > > > Unless task == current ptrace_parent(task) is not safe even under
-> > > > > rcu_read_lock() and most of the current users are not right.
-> > > >
-> > > > Could you point to an explanation of this?
-> > >
-> > > If this task exits before rcu_read_lock() ->parent can point to the
-> > > already freed/reused memory.
-> >
-> > Ok, understood.  So even though the task may have exited, the task
-> > struct pointer is still valid, but not the contents of the task struct
-> > to which it points.
->
-> [The thread also relates to the patch
-> 	"pid: get ppid pid_t of task in init_pid_ns safely"
-> in which sys_getppid() (which appears safe) is replaced with something that
-> references the init_pid_ns rather than current's pid_ns.]
->
-> So, in the general case, that call is not safe, and we should at least
-> remove the task_struct argument.
+"uprobes does not support symbol fetch methods"
 
-I changed my mind, please see the recent discussion with Paul:
+-- Steve
 
-	http://marc.info/?t=138626281900001
-
-instead we should document why ptrace_parent() is safe without pid_alive().
-
-I hope that the change in apparmor was fine anyway.
-
-
-Otherwise I can't understand your email, at least right now... I do not
-know how/where audit uses parent/real_parent.
-
-But yes, unless tsk == current, the usage of tsk->*parent is not safe even
-under rcu_read_lock() unless you verify that this task was not unhashed.
-
-ptrace_parent() is safe because it checks ->ptrace. Previously I thought
-we should not rely on this, but the additional pid_alive() looks ugly so
-it would be better to simply document this. I'll send the patch.
-
-Oleg.
+> +#define fetch_symbol_u8			NULL
+> +#define fetch_symbol_u16		NULL
+> +#define fetch_symbol_u32		NULL
+> +#define fetch_symbol_u64		NULL
+> +#define fetch_symbol_string		NULL
+> +#define fetch_symbol_string_size	NULL
+> +
+>  /* Fetch type information table */
+>  const struct fetch_type uprobes_fetch_type_table[] = {
+>  	/* Special types */
 
