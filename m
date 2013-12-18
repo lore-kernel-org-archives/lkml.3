@@ -1,134 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654Ab3LRTnu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 14:43:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24099 "EHLO mx1.redhat.com"
+	id S1752666Ab3LRToY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 14:44:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33998 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751870Ab3LRTns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 14:43:48 -0500
-Date: Wed, 18 Dec 2013 14:43:38 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: John Johansen <john.johansen@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org
-Message-ID: <20131218194338.GB23692@madcap2.tricolour.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752134Ab3LRTmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 14:42:09 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 3/6] mm: page_alloc: Break out zone page aging distribution into its own helper
+Date: Wed, 18 Dec 2013 19:42:00 +0000
+Message-Id: <1387395723-25391-4-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1387395723-25391-1-git-send-email-mgorman@suse.de>
+References: <1387395723-25391-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bcc: rgb@redhat.com
-Subject: Re: [PATCH] apparmor: remove the "task" arg from
- may_change_ptraced_domain()
-Reply-To: 
-In-Reply-To: <20130926132519.GY13968@madcap2.tricolour.ca>
+This patch moves the decision on whether to round-robin allocations between
+zones and nodes into its own helper functions. It'll make some later patches
+easier to understand and it will be automatically inlined.
 
-On 13/09/26, Richard Guy Briggs wrote:
-> On Tue, Sep 24, 2013 at 06:44:42PM +0200, Oleg Nesterov wrote:
-> > On 09/23, Richard Guy Briggs wrote:
-> > >
-> > > On Mon, Sep 16, 2013 at 04:20:35PM +0200, Oleg Nesterov wrote:
-> > > > Unless task == current ptrace_parent(task) is not safe even under
-> > > > rcu_read_lock() and most of the current users are not right.
-> > >
-> > > Could you point to an explanation of this?
-> > 
-> > If this task exits before rcu_read_lock() ->parent can point to the
-> > already freed/reused memory.
-> 
-> Ok, understood.  So even though the task may have exited, the task
-> struct pointer is still valid, but not the contents of the task struct
-> to which it points.
+Cc: <stable@kernel.org> # 3.12
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/page_alloc.c | 63 ++++++++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 42 insertions(+), 21 deletions(-)
 
-[The thread also relates to the patch
-	"pid: get ppid pid_t of task in init_pid_ns safely"
-in which sys_getppid() (which appears safe) is replaced with something that
-references the init_pid_ns rather than current's pid_ns.]
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 61e9e8c..2cd694c 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1880,6 +1880,42 @@ static inline void init_zone_allows_reclaim(int nid)
+ #endif	/* CONFIG_NUMA */
+ 
+ /*
++ * Distribute pages in proportion to the individual zone size to ensure fair
++ * page aging.  The zone a page was allocated in should have no effect on the
++ * time the page has in memory before being reclaimed.
++ * 
++ * Returns true if this zone should be skipped to spread the page ages to
++ * other zones.
++ */
++static bool zone_distribute_age(gfp_t gfp_mask, struct zone *preferred_zone,
++				struct zone *zone, int alloc_flags)
++{
++	/* Only round robin in the allocator fast path */
++	if (!(alloc_flags & ALLOC_WMARK_LOW))
++		return false;
++
++	/* Only round robin pages likely to be LRU or reclaimable slab */
++	if (!(gfp_mask & GFP_MOVABLE_MASK))
++		return false;
++
++	/* Distribute to the next zone if this zone has exhausted its batch */
++	if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
++		return true;
++
++	/*
++	 * When zone_reclaim_mode is enabled, try to stay in local zones in the
++	 * fastpath.  If that fails, the slowpath is entered, which will do
++	 * another pass starting with the local zones, but ultimately fall back
++	 * back to remote zones that do not partake in the fairness round-robin
++	 * cycle of this zonelist.
++	 */
++	if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
++		return true;
++
++	return false;
++}
++
++/*
+  * get_page_from_freelist goes through the zonelist trying to allocate
+  * a page.
+  */
+@@ -1915,27 +1951,12 @@ zonelist_scan:
+ 		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
+ 		if (unlikely(alloc_flags & ALLOC_NO_WATERMARKS))
+ 			goto try_this_zone;
+-		/*
+-		 * Distribute pages in proportion to the individual
+-		 * zone size to ensure fair page aging.  The zone a
+-		 * page was allocated in should have no effect on the
+-		 * time the page has in memory before being reclaimed.
+-		 *
+-		 * When zone_reclaim_mode is enabled, try to stay in
+-		 * local zones in the fastpath.  If that fails, the
+-		 * slowpath is entered, which will do another pass
+-		 * starting with the local zones, but ultimately fall
+-		 * back to remote zones that do not partake in the
+-		 * fairness round-robin cycle of this zonelist.
+-		 */
+-		if ((alloc_flags & ALLOC_WMARK_LOW) &&
+-		    (gfp_mask & GFP_MOVABLE_MASK)) {
+-			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+-				continue;
+-			if (zone_reclaim_mode &&
+-			    !zone_local(preferred_zone, zone))
+-				continue;
+-		}
++
++		/* Distribute pages to ensure fair page aging */
++		if (zone_distribute_age(gfp_mask, preferred_zone, zone,
++					alloc_flags))
++			continue;
++
+ 		/*
+ 		 * When allocating a page cache page for writing, we
+ 		 * want to get it from a zone that is within its dirty
+-- 
+1.8.4
 
-So, in the general case, that call is not safe, and we should at least
-remove the task_struct argument.
-
-Analysing the calling tree, I see that most callers just call with
-"current" anyways.  (Read this tree as "is called by" with the provided
-"struct task_struct *".)
-
-audit_log_task_info(?)
-        audit_log_link_denied(current)
-        audit_log_exit(?)
-		__audit_free(?)
-			audit_free(?)
-                		do_exit(current)
-        		        copy_process(?)
-					[see below]
-        ima_audit_measurement(current)
-audit_filter_rules(?)
-        audit_filter_task(?)
-                audit_alloc(?)
-			copy_process(?)
-				p->real_parent is copy of current->real_parent
-        audit_filter_syscall(?)
-                audit_get_context(?)
-                __audit_syscall_entry(current)
-        audit_filter_inode_name(?)
-                audit_filter_inodes(?)
-                        audit_update_watch(current)
-                        audit_get_context(?)
-                                __audit_free(?)
-                                        audit_free(?)
-                                                do_exit(current)
-                                                copy_process(?)
-							[see below]
-                                __audit_syscall_exit(current)
-
-So looking further at copy_process()... 
-
-	copy_flags() looks weird.  The clone_flags parameter is not used.  The
-	existing flags (copied from the parent in dup_task_struct()) are
-	massaged, removing PF_SUPERPRIV and PF_WQ_WORKER and adding
-	PF_FORKNOEXEC.
-
-	copy_process() passes an identical copy of "current" to audit_alloc()
-	(as far as task_struct::real_parent is concerned).
-
-	copy_process() passes an identical copy of "current" to audit_free()
-	(as far as task_struct::real_parent is concerned) in all cases
-	*except* if the original process has a signal_pending() and
-	copy_process() was called without CLONE_PARENT or CLONE_THREAD, in
-	which case tsk->real_parent is actually current.
-
-	In fact, the actions listed in the true clause of:
-		"if (clone_flags & (CLONE_PARENT|CLONE_THREAD))"
-	look redundant.
-
-So, can audit_log_task_info() and audit_filter_rules() be fixed to be called
-without the task_struct pointer and just use current->real_parent directly?
-How do we check for the case where there was a signal pending it and
-tsk->real_parent now equals "current"?
-
-> > (in the long term we should probably clear
-> >  ->parent/real_parent/group_leader/more in __unhash_process(), but
-> >  lets not discuss this right now ;)
-> 
-> ...so that the contents are valid in a task struct of a task that has
-> exited.
-
-The assumptions made above include that sys_getppid() was safe all along.
-
-> Thanks for the (more obvious to me now) explanation.
-> 
-> > Oleg.
-> 
-> - RGB
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
