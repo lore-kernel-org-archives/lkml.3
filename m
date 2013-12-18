@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab3LRVdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:33:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36416 "EHLO
+	id S1755522Ab3LRVdk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:33:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36413 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754114Ab3LRVNh (ORCPT
+	with ESMTP id S1754110Ab3LRVNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:37 -0500
+	Wed, 18 Dec 2013 16:13:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sunil K Pandey <sunil.k.pandey@intel.com>,
-        Kevin B Smith <kevin.b.smith@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 061/118] igb: Fix for issue where values could be too high for udelay function.
-Date: Wed, 18 Dec 2013 13:11:38 -0800
-Message-Id: <20131218211221.187622299@linuxfoundation.org>
+Subject: [PATCH 3.12 060/118] net: allwinner: emac: Add missing free_irq
+Date: Wed, 18 Dec 2013 13:11:37 -0800
+Message-Id: <20131218211221.159858900@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -33,39 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Carolyn Wyborny <carolyn.wyborny@intel.com>
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-commit df29df92adda751ac04ca5149d30014b5199db81 upstream.
+commit e9c56f8d2f851fb6d6ce6794c0f5463b862a878e upstream.
 
-This patch changes the igb_phy_has_link function to check the value of the
-parameter before deciding to use udelay or mdelay in order to be sure that
-the value is not too high for udelay function.
+The sun4i-emac driver uses devm_request_irq at .ndo_open time, but relies on
+the managed device mechanism to actually free it. This causes an issue whenever
+someone wants to restart the interface, the interrupt still being held, and not
+yet released.
 
-Signed-off-by: Sunil K Pandey <sunil.k.pandey@intel.com>
-Signed-off-by: Kevin B Smith <kevin.b.smith@intel.com>
-Signed-off-by: Carolyn Wyborny <carolyn.wyborny@intel.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Fall back to using the regular request_irq at .ndo_open time, and introduce a
+free_irq during .ndo_stop.
+
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/igb/e1000_phy.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/allwinner/sun4i-emac.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/intel/igb/e1000_phy.c
-+++ b/drivers/net/ethernet/intel/igb/e1000_phy.c
-@@ -1730,7 +1730,10 @@ s32 igb_phy_has_link(struct e1000_hw *hw
- 			 * ownership of the resources, wait and try again to
- 			 * see if they have relinquished the resources yet.
- 			 */
--			udelay(usec_interval);
-+			if (usec_interval >= 1000)
-+				mdelay(usec_interval/1000);
-+			else
-+				udelay(usec_interval);
- 		}
- 		ret_val = hw->phy.ops.read_reg(hw, PHY_STATUS, &phy_status);
- 		if (ret_val)
+--- a/drivers/net/ethernet/allwinner/sun4i-emac.c
++++ b/drivers/net/ethernet/allwinner/sun4i-emac.c
+@@ -717,8 +717,7 @@ static int emac_open(struct net_device *
+ 	if (netif_msg_ifup(db))
+ 		dev_dbg(db->dev, "enabling %s\n", dev->name);
+ 
+-	if (devm_request_irq(db->dev, dev->irq, &emac_interrupt,
+-			     0, dev->name, dev))
++	if (request_irq(dev->irq, &emac_interrupt, 0, dev->name, dev))
+ 		return -EAGAIN;
+ 
+ 	/* Initialize EMAC board */
+@@ -774,6 +773,8 @@ static int emac_stop(struct net_device *
+ 
+ 	emac_shutdown(ndev);
+ 
++	free_irq(ndev->irq, ndev);
++
+ 	return 0;
+ }
+ 
 
 
