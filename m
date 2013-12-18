@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab3LRPMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 10:12:23 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49227 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754959Ab3LRPMW (ORCPT
+	id S1755132Ab3LRPPb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 10:15:31 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:32736 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754919Ab3LRPPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 10:12:22 -0500
-Date: Wed, 18 Dec 2013 16:11:58 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH 05/13] rcu: Fix unraised IPI to timekeeping CPU
-Message-ID: <20131218151158.GV21999@twins.programming.kicks-ass.net>
-References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
- <1387320692-28460-6-git-send-email-fweisbec@gmail.com>
- <20131217232100.GC19211@linux.vnet.ibm.com>
- <20131218141348.GA18464@localhost.localdomain>
- <20131218142240.GP19211@linux.vnet.ibm.com>
- <20131218145610.GE18464@localhost.localdomain>
+	Wed, 18 Dec 2013 10:15:30 -0500
+Date: Wed, 18 Dec 2013 10:14:22 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>, david.vrabel@citrix.com
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] allow xenfb initialization for hvm guests
+Message-ID: <20131218151422.GF4934@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1312171738550.8667@kaball.uk.xensource.com>
+ <1387367482.27441.123.camel@kazak.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131218145610.GE18464@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1387367482.27441.123.camel@kazak.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 03:56:12PM +0100, Frederic Weisbecker wrote:
-> Because scheduler_ipi() conditionally calls irq_enter() and irq_exit()
-> (I wonder if that's a good idea btw, is that here to deal with spurious
-> scheduler IPIs of some sort?)
+On Wed, Dec 18, 2013 at 11:51:22AM +0000, Ian Campbell wrote:
+> On Tue, 2013-12-17 at 17:53 +0000, Stefano Stabellini wrote:
+> > There is no reasons why an HVM guest shouldn't be allowed to use xenfb.
+> > As a matter of fact ARM guests, HVM from Linux POV, can use xenfb.
+> > Given that no Xen toolstacks configure a xenfb backend for x86 HVM
+> > guests, they are not affected.
+> 
+> and if a toolstack did I think it would be reasonable to expect the
+> kernel to at least try and drive it!
+> 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> 
+> Acked-by: Ian Campbell <ian.campbell@citrix.com>
 
-No its because the traditional scheduler IPI did all the work from the
-interrupt return path -- and like the comment in there says, for many of
-the IPIs that's still true.
+I think David Vrabel is going to Nack it unless there is a test-case.
 
-So going through the architectures and making all scheduler_ipi callers
-do irq_enter/exit would actually make them slower.
+I am saying that because in his previous statement for Wei's multi-page
+patches was that if there are no users (or at least no test-cases) then
+it should not be part of the kernel.
