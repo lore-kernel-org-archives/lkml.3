@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab3LRVMv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:12:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36164 "EHLO
+	id S1753374Ab3LRVMh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:12:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36092 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418Ab3LRVMp (ORCPT
+	with ESMTP id S1753327Ab3LRVMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:45 -0500
+	Wed, 18 Dec 2013 16:12:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, Guenter Roeck <linux@roeck-us.net>,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: [PATCH 3.10 71/78] sc1200_wdt: Fix oops
-Date: Wed, 18 Dec 2013 13:11:39 -0800
-Message-Id: <20131218211113.904606538@linuxfoundation.org>
+        Michael Piko <michael@piko.com.au>, Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.10 54/78] media: af9035: add [0413:6a05] Leadtek WinFast DTV Dongle Dual
+Date: Wed, 18 Dec 2013 13:11:22 -0800
+Message-Id: <20131218211113.421284474@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -29,37 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan <gnomes@lxorguk.ukuu.org.uk>
+From: Antti Palosaari <crope@iki.fi>
 
-commit dace8bbfccfd9e4fcccfffcfbd82881fda3e756f upstream.
+commit 0c413d10515feae02cee967b31bb8afea8aa0d29 upstream.
 
-If loaded with isapnp = 0 the driver explodes. This is catching
-people out now and then. What should happen in the working case is
-a complete mystery and the code appears terminally confused, but we
-can at least make the error path work properly.
+It is IT9135 dual design.
+Thanks to Michael Piko for reporting that!
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-Partially-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=53991
+Reported-by: Michael Piko <michael@piko.com.au>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/watchdog/sc1200wdt.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/media/usb/dvb-usb-v2/af9035.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/watchdog/sc1200wdt.c
-+++ b/drivers/watchdog/sc1200wdt.c
-@@ -409,8 +409,9 @@ static int __init sc1200wdt_init(void)
- #if defined CONFIG_PNP
- 	/* now that the user has specified an IO port and we haven't detected
- 	 * any devices, disable pnp support */
-+	if (isapnp)
-+		pnp_unregister_driver(&scl200wdt_pnp_driver);
- 	isapnp = 0;
--	pnp_unregister_driver(&scl200wdt_pnp_driver);
- #endif
- 
- 	if (!request_region(io, io_len, SC1200_MODULE_NAME)) {
+--- a/drivers/media/usb/dvb-usb-v2/af9035.c
++++ b/drivers/media/usb/dvb-usb-v2/af9035.c
+@@ -1512,6 +1512,8 @@ static const struct usb_device_id af9035
+ 	/* XXX: that same ID [0ccd:0099] is used by af9015 driver too */
+ 	{ DVB_USB_DEVICE(USB_VID_TERRATEC, 0x0099,
+ 		&af9035_props, "TerraTec Cinergy T Stick Dual RC (rev. 2)", NULL) },
++	{ DVB_USB_DEVICE(USB_VID_LEADTEK, 0x6a05,
++		&af9035_props, "Leadtek WinFast DTV Dongle Dual", NULL) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(usb, af9035_id_table);
 
 
