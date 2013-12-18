@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab3LRWZD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:25:03 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:44332 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068Ab3LRWY6 (ORCPT
+	id S1751661Ab3LRWdS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:33:18 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:7620 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751072Ab3LRWdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 17:24:58 -0500
+	Wed, 18 Dec 2013 17:33:17 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AogHAHwhslJ5LHyk/2dsb2JhbABZgwqDPLEUhV2BHBd0giUBAQEEOhwjEAgDGAklDwUlAyETiAPKbxaOfAeENgSYFYpMh0mBbYFSKA
+Date: Thu, 19 Dec 2013 09:33:13 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: arno <arno@disconnect.de>
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+Subject: Re: [XFS BUG] xfs_growfs: XFS_IOC_FSGROWFSDATA xfsctl failed:
+ Structure needs cleaning
+Message-ID: <20131218223312.GP31386@dastard>
+References: <52B1B89A.8030401@disconnect.de>
 MIME-Version: 1.0
-In-Reply-To: <52B1C17B.6060500@linaro.org>
-References: <20131217101212.17491.56898.sendpatchset@w520>
-	<52B1C17B.6060500@linaro.org>
-Date: Thu, 19 Dec 2013 07:24:56 +0900
-Message-ID: <CANqRtoS=x_Yyk-ixcx73kAFFVoKYNe-1bf=RQ-Nq8TGPNnqssA@mail.gmail.com>
-Subject: Re: [PATCH v5 00/03] clocksource: Consolidate SH and ARM
- mach-shmobile Kconfig bits
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        John Stultz <john.stultz@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B1B89A.8030401@disconnect.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Wed, Dec 18, 2013 at 04:00:42PM +0100, arno wrote:
+> Hello,
+> 
+> (Please keep me in CC, I'm not subscribed)
+> 
+> Just got "xfs_growfs: XFS_IOC_FSGROWFSDATA xfsctl failed: Structure
+> needs cleaning" when trying to grow a logical Volume. Sorry, I lost the
+> xfs_growfs output.
+> 
+> After collecting some info, I ran xfs_repair, and that seemed to fix it,
+> so no harm done. After fixing, the FS had the new, increased size, if
+> that matters.
 
-On Thu, Dec 19, 2013 at 12:38 AM, Daniel Lezcano
-<daniel.lezcano@linaro.org> wrote:
-> On 12/17/2013 11:12 AM, Magnus Damm wrote:
->>
->> clocksource: Consolidate SH and ARM mach-shmobile Kconfig bits (v5)
->>
->> [PATCH v5 01/03] clocksource: Add Kconfig entries for CMT, MTU2, TMU and
->> STI
->> [PATCH v5 02/03] ARM: shmobile: Remove CMT, TMU and STI Kconfig entries
->> [PATCH v5 03/03] sh: Remove Kconfig entries for TMU, CMT and MTU2
->>
->> This is V5 of the SH and ARM mach-shmobile clocksource Kconfig
->> consolidation series.
->>
->> By sharing Kconfig entires in drivers/clocksource/Kconfig we
->> can get rid of duplicated bits that do not belong under arch/.
->>
->> With this series applied it is possible to build the timer
->> drivers for CMT, MTU2, TMU and STI in case of SH or ARM. The timer
->> drivers are automatically selected by default. It is also possible
->> to select and/or deselect freely when COMPILE_TEST has been selected.
->>
->> Many thanks to Olof, John, Daniel and Arnd for feedback!
->>
->> Changes since V4:
->>   - Use SYS_SUPPORTS_SH/EM to avoid name space pollution, thanks Olof!
->>   - Remove old SH entries for SYS_SUPPORTS_xxx, use above SH prefix
->> instead
->>
->> Changes since V3:
->>   - Updated patch 1/3 with more detailed help texts
->>   - Updated patch 2/3 to fit latest renesas-devel tag, see below
->>   - Included acks from John Stultz for patch 2/3 and 3/3
->>
->> Signed-off-by: Magnus Damm <damm@opensource.se>
->> ---
->>
->>   Written against renesas.git tag renesas-devel-v3.13-rc3-20131214v2
->
->
-> Do you want me to take the patchset ? If so, could you respin it against
-> timers/core ?
+This isn't the first time you've grown the filesystem, is it?
 
-That would be great, thanks! I will respin it!
+On older kernels, growfs could leave trailing garbage in the new
+secondary superblocks it created. This was fixed in kernel v3.8 by
+commit:
+
+1375cb6 xfs: growfs: don't read garbage for new secondary superblocks
+
+This garbage is detected by other changes made in v3.8 that verify
+the secondary superblocks as they are read.
+
+9802182 xfs: verify superblocks as they are read from disk
+
+So if you grew the filesystem on a kernel older than v3.8, growing
+it again on a v3.8+ kernel will detect the superblock corruption and
+throw this error.
+
+xfs_repair was recently fixed to detect the garbage in secondary
+superblocks and zero it:
+
+cbd7508 xfs_repair: zero out unused parts of superblocks
+
+So what you need to do is run xfs_repair built from the development
+git tree and run it on your filesystem. That will remove the garbage
+from the superblocks and make this problem go away forever.
 
 Cheers,
 
-/ magnus
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
