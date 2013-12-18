@@ -1,84 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab3LRLRd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 06:17:33 -0500
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:57516 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934Ab3LRLRa (ORCPT
+	id S1752923Ab3LRL2G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 06:28:06 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:46943 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751241Ab3LRL2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 06:17:30 -0500
-Date: Wed, 18 Dec 2013 06:17:26 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Nigel Cunningham <nigel@nigelcunningham.com.au>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
-        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] libata, freezer: avoid block device removal while system
- is frozen
-Message-ID: <20131218111726.GB3808@htj.dyndns.org>
-References: <20131213174932.GA27070@htj.dyndns.org>
- <8951916.gd5Uu6GpK1@vostro.rjw.lan>
- <20131217123457.GD29989@htj.dyndns.org>
- <4108657.rimrPRbHDY@vostro.rjw.lan>
+	Wed, 18 Dec 2013 06:28:04 -0500
+X-Sasl-enc: xP5Ei+Mm3buVFh7ItCPemYELB5EhqANyQLQ9NVNmBvF6 1387366082
+Date: Wed, 18 Dec 2013 09:27:59 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: linux-kernel@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net
+Subject: Re: [ibm-acpi-devel] [PATCH] video: backlight: Remove backlight
+ sysfs uevent
+Message-ID: <20131218112759.GA29631@khazad-dum.debian.net>
+References: <20131112005628.GA2914@khazad-dum.debian.net>
+ <1384990859.20536.4.camel@x230>
+ <20131121114332.GA23710@khazad-dum.debian.net>
+ <20131121143326.GA19773@srcf.ucam.org>
+ <20131122113601.GB27196@khazad-dum.debian.net>
+ <20131122171556.GA15680@srcf.ucam.org>
+ <20131124004015.GA19499@khazad-dum.debian.net>
+ <20131124010257.GA6376@srcf.ucam.org>
+ <20131124035311.GC19499@khazad-dum.debian.net>
+ <20131215235336.49d49a25.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4108657.rimrPRbHDY@vostro.rjw.lan>
+In-Reply-To: <20131215235336.49d49a25.akpm@linux-foundation.org>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Rafael.
-
-On Wed, Dec 18, 2013 at 01:35:13AM +0100, Rafael J. Wysocki wrote:
-> So do I understand correctly that you're talking about kernel threads/worqueues
-> freezing below?
-
-Yeap, I'm strictly talking about kernel freezables.
-
-> > So, are you saying it's really about giving device drivers easy way to
-> > implement suspend/resume?
+On Sun, 15 Dec 2013, Andrew Morton wrote:
+> On Sun, 24 Nov 2013 01:53:11 -0200 Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
+> > On Sun, 24 Nov 2013, Matthew Garrett wrote:
+> > > On Sat, Nov 23, 2013 at 10:40:15PM -0200, Henrique de Moraes Holschuh wrote:
+> > > > On Fri, 22 Nov 2013, Matthew Garrett wrote:
+> > > > > We have userspace that relies on uevents of type 
+> > > > > BACKLIGHT_UPDATE_HOTKEY. I don't know that we have userspace that relies 
+> > > > > on uevents of type BACKLIGHT_UPDATE_SYSFS.
+> > > > 
+> > > > Any OSD application would have to rely on both uevent types, or it is broken
+> > > > (and to test that, just write a level to sysfs and watch the OSD app fail to
+> > > > tell you about the backlight level change...)
+> > > 
+> > > Right, OSDs are supposed to respond to keypresses, not arbitrary changes 
+> > > of backlight. If the user's just echoed 8 into brightness, they know 
+> > > they set the brightness to 8 - they don't need an OSD to tell them that. 
+> > 
+> > It is not just the user that sets the brightness.
+> > 
+> > Still, if you're sure that all userspace users react only to the hotkey type
+> > of event, removing the sysfs one won't break anything any further.
+> > 
+> > But it will be *really* annoying the day we revisit this because someone
+> > started abusing the hotkey uevent and we have to deploy a proper fix (rate
+> > limiting or switching to a proper event report interface that doesn't use
+> > uevents).
+> > 
+> > > BACKLIGHT_UPDATE_HOTKEY is when the firmware itself has changed the 
+> > > brightness in response to a keypress, and so reporting the keypress 
+> > > would result in additional backlight changes.
+> > 
+> > Yeah, I know that bug quite well, thinkpads were the first victims of
+> > idiotic feedback event loops caused by braindead userspace.
 > 
-> Well, that's a side effect rather than a recommeded interface.  A *few* pieces
-> of code need to freeze kernel threads/workqueues, but they should know who they
-> are and they really really should know *why* they need that (the above-mentioned
-> runtime PM workqueue is one example).  The rest is just doing that because they
-> can, which may not be entirely reasonable (or because they did that in the past
-> and the original author is not responsive and everyone else does not dare to try
-> removing that).
+> I'm not seeing a lot of consensus here and afaict the v2 patch:
+> 
+> --- a/drivers/video/backlight/backlight.c~drivers-video-backlight-backlightc-remove-backlight-sysfs-uevent
+> +++ a/drivers/video/backlight/backlight.c
+> @@ -175,8 +175,6 @@ static ssize_t brightness_store(struct d
+>  	}
+>  	mutex_unlock(&bd->ops_lock);
+>  
+> -	backlight_generate_event(bd, BACKLIGHT_UPDATE_SYSFS);
+> -
+>  	return rc;
+>  }
+>  static DEVICE_ATTR_RW(brightness);
+> 
+> will still break userspace which relies on BACKLIGHT_UPDATE_SYSFS
+> uevents.  I see no way we can guarantee that there is no such userspace
+> so the patch is worrying.
+> 
+> Should we instead be looking for a way of avoiding this risk?  Say, add
+> a new knob which people can set if they don't want to generate this
+> event?  Ugly, but that's the price we pay for mucking it up originally.
 
-I see.  In the long term, I think the right thing to do is making the
-freezer interface more specific so that only the ones which actually
-need it do so explicitly.  Right now, kernel freezables are
-conceptually at a very high level - it's a global task attribute and a
-major knob in workqueue.  I suppose most of that is historical but by
-perpetuating the model we're encouraging misuse of freezer in large
-swaths of the kernel.  Even in this specific case, both writeback and
-jbd workers have no fundamental reason to be freezable and yet
-they're, eventually developing into totally unnecessary deadlocks.
-
-> They were a lot more of that to start with really.  We removed quite a number
-> of try_to_freeze() instances from the kernel a few years ago, but apparently
-> people are taking shortcuts.
-
-Great, so we're at least headed towards the right direction.
-
-> The rule should be to require patch submitters to put in comments explaining
-> why they need their kernel threads/workqueues to be freezable and generally
-> there should be no such things in drivers.
-
-I'm not so sure whether that's something which can be effectively
-enforced given the current high visibility and confusion around
-freezer.  I think the only way to get this under control is weed out
-the current spurious users actively, deprecate the existing interface
-and switch the real ones to something a lot more specific.
-
-Thanks.
+Well, either that, or a smart rate limiter with a sane default.  It could
+well be configurable to suppress all events, for the benefit of embedded
+devices.
 
 -- 
-tejun
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
