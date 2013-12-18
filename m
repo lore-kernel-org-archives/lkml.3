@@ -1,211 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab3LRJ0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 04:26:41 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:34220 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab3LRJWI (ORCPT
+	id S1753193Ab3LRJ37 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 04:29:59 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:64808 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab3LRJ35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 04:22:08 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <dmitry.torokhov@gmail.com>
-CC: <rydberg@euromail.se>, <jcbian@pixcir.com.cn>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 1/9] Input: pixcir_i2c_ts: Add device tree support
-Date: Wed, 18 Dec 2013 14:51:12 +0530
-Message-ID: <1387358480-8313-2-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387358480-8313-1-git-send-email-rogerq@ti.com>
-References: <1387358480-8313-1-git-send-email-rogerq@ti.com>
+	Wed, 18 Dec 2013 04:29:57 -0500
+Date: Wed, 18 Dec 2013 10:29:41 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: cirrusdrmfb broken with simplefb
+Message-ID: <20131218092941.GA19210@gmail.com>
+References: <s5hlhzik3kk.wl%tiwai@suse.de>
+ <CANq1E4TFKDduy71jCXy+8CMS1_OFxWEpsHY3AA0RUJPW4VE8hg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANq1E4TFKDduy71jCXy+8CMS1_OFxWEpsHY3AA0RUJPW4VE8hg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide device tree support and binding information.
-Change platform data parameters from x/y_max to x/y_size..
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
----
- .../bindings/input/touchscreen/pixcir_i2c_ts.txt   | 26 ++++++++
- drivers/input/touchscreen/pixcir_i2c_ts.c          | 77 ++++++++++++++++++++--
- include/linux/input/pixcir_ts.h                    |  5 +-
- 3 files changed, 101 insertions(+), 7 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
+* David Herrmann <dh.herrmann@gmail.com> wrote:
 
-diff --git a/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt b/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
-new file mode 100644
-index 0000000..c0b0b270
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
-@@ -0,0 +1,26 @@
-+* Pixcir I2C touchscreen controllers
-+
-+Required properties:
-+- compatible: must be "pixcir,pixcir_ts"
-+- reg: I2C address of the chip
-+- interrupts: interrupt to which the chip is connected
-+- attb-gpio: GPIO connected to the ATTB line of the chip
-+- x-size: horizontal resolution of touchscreen
-+- y-size: vertical resolution of touchscreen
-+
-+Example:
-+
-+	i2c@00000000 {
-+		/* ... */
-+
-+		pixcir_ts@5c {
-+			compatible = "pixcir,pixcir_ts";
-+			reg = <0x5c>;
-+			interrupts = <2 0>;
-+			attb-gpio = <&gpf 2 0 2>;
-+			x-size = <800>;
-+			y-size = <600>;
-+		};
-+
-+		/* ... */
-+	};
-diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
-index 6cc6b36..3a447c9 100644
---- a/drivers/input/touchscreen/pixcir_i2c_ts.c
-+++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
-@@ -24,6 +24,10 @@
- #include <linux/i2c.h>
- #include <linux/input.h>
- #include <linux/input/pixcir_ts.h>
-+#include <linux/gpio.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
-+#include <linux/of_device.h>
- 
- struct pixcir_i2c_ts_data {
- 	struct i2c_client *client;
-@@ -125,15 +129,65 @@ static int pixcir_i2c_ts_resume(struct device *dev)
- static SIMPLE_DEV_PM_OPS(pixcir_dev_pm_ops,
- 			 pixcir_i2c_ts_suspend, pixcir_i2c_ts_resume);
- 
-+#if defined(CONFIG_OF)
-+static const struct of_device_id pixcir_of_match[];
-+
-+static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
-+{
-+	struct pixcir_ts_platform_data *pdata;
-+	struct device_node *np = dev->of_node;
-+	const struct of_device_id *match;
-+
-+	match = of_match_device(of_match_ptr(pixcir_of_match), dev);
-+	if (!match)
-+		return ERR_PTR(-EINVAL);
-+
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		return ERR_PTR(-ENOMEM);
-+
-+	pdata->gpio_attb = of_get_named_gpio(np, "attb-gpio", 0);
-+	if (!gpio_is_valid(pdata->gpio_attb))
-+		dev_err(dev, "Failed to get ATTB GPIO\n");
-+
-+	if (of_property_read_u32(np, "x-size", &pdata->x_size)) {
-+		dev_err(dev, "Failed to get x-size property\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	if (of_property_read_u32(np, "y-size", &pdata->y_size)) {
-+		dev_err(dev, "Failed to get y-size property\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	dev_dbg(dev, "%s: x %d, y %d, gpio %d\n", __func__,
-+				pdata->x_size, pdata->y_size, pdata->gpio_attb);
-+
-+	return pdata;
-+}
-+#else
-+static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
-+{
-+	return NULL;
-+}
-+#endif
-+
- static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 					 const struct i2c_device_id *id)
- {
- 	const struct pixcir_ts_platform_data *pdata = client->dev.platform_data;
-+	struct device *dev = &client->dev;
-+	struct device_node *np = dev->of_node;
- 	struct pixcir_i2c_ts_data *tsdata;
- 	struct input_dev *input;
- 	int error;
- 
--	if (!pdata) {
-+	if (np) {
-+		pdata = pixcir_parse_dt(dev);
-+		if (IS_ERR(pdata))
-+			return PTR_ERR(pdata);
-+
-+	} else if (!pdata) {
- 		dev_err(&client->dev, "platform data not defined\n");
- 		return -EINVAL;
- 	}
-@@ -157,10 +211,14 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 	__set_bit(EV_KEY, input->evbit);
- 	__set_bit(EV_ABS, input->evbit);
- 	__set_bit(BTN_TOUCH, input->keybit);
--	input_set_abs_params(input, ABS_X, 0, pdata->x_max, 0, 0);
--	input_set_abs_params(input, ABS_Y, 0, pdata->y_max, 0, 0);
--	input_set_abs_params(input, ABS_MT_POSITION_X, 0, pdata->x_max, 0, 0);
--	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, pdata->y_max, 0, 0);
-+	input_set_abs_params(input, ABS_X,
-+					0, pdata->x_size - 1, 0, 0);
-+	input_set_abs_params(input, ABS_Y,
-+					0, pdata->y_size - 1, 0, 0);
-+	input_set_abs_params(input, ABS_MT_POSITION_X,
-+					0, pdata->x_size - 1, 0, 0);
-+	input_set_abs_params(input, ABS_MT_POSITION_Y,
-+					0, pdata->y_size - 1, 0, 0);
- 
- 	input_set_drvdata(input, tsdata);
- 
-@@ -211,11 +269,20 @@ static const struct i2c_device_id pixcir_i2c_ts_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, pixcir_i2c_ts_id);
- 
-+#if defined(CONFIG_OF)
-+static const struct of_device_id pixcir_of_match[] = {
-+	{ .compatible = "pixcir,pixcir_ts", },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, pixcir_of_match);
-+#endif
-+
- static struct i2c_driver pixcir_i2c_ts_driver = {
- 	.driver = {
- 		.owner	= THIS_MODULE,
- 		.name	= "pixcir_ts",
- 		.pm	= &pixcir_dev_pm_ops,
-+		.of_match_table = of_match_ptr(pixcir_of_match),
- 	},
- 	.probe		= pixcir_i2c_ts_probe,
- 	.remove		= pixcir_i2c_ts_remove,
-diff --git a/include/linux/input/pixcir_ts.h b/include/linux/input/pixcir_ts.h
-index 7163d91..b34ff7e 100644
---- a/include/linux/input/pixcir_ts.h
-+++ b/include/linux/input/pixcir_ts.h
-@@ -3,8 +3,9 @@
- 
- struct pixcir_ts_platform_data {
- 	int (*attb_read_val)(void);
--	int x_max;
--	int y_max;
-+	unsigned int x_size;	/* X axis resolution */
-+	unsigned int y_size;	/* Y axis resolution */
-+	int gpio_attb;		/* GPIO connected to ATTB line */
- };
- 
- #endif
--- 
-1.8.3.2
+> Hi
+> 
+> On Wed, Dec 18, 2013 at 8:42 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> > Hi,
+> >
+> > with the recent enablement of simplefb on x86, cirrusdrmfb on QEMU/KVM
+> > gets broken now, as reported at:
+> >     https://bugzilla.novell.com/show_bug.cgi?id=855821
+> >
+> > The cirrus VGA resource is reserved at first as "BOOTFB" in
+> > arch/x86/kernel/sysfb_simplefb.c, which is taken by simplefb platform
+> > device.  This resource is, however, never released until the platform
+> > device is destroyed, and the framebuffer switching doesn't trigger
+> > it.  It calls fb's destroy callback, at most.  Then, cirrus driver
+> > tries to assign the resource, fails and gives up, resulting in a
+> > complete blank screen.
+> >
+> > The same problem should exist on other KMS drivers like mgag200 or
+> > ast, not only cirrus.  Intel graphics doesn't hit this problem just
+> > because the reserved iomem by BOOTFB isn't required by i915 driver.
+> >
+> > The patch below is a quick attempt to solve the issue.  It adds a new
+> > API function for releasing resources of platform_device, and call it
+> > in destroy op of simplefb.  But, forcibly releasing resources of a
+> > parent device doesn't sound like a correct design.  We may take such
+> > as a band aid, but definitely need a more fundamental fix.
+> >
+> > Any thoughts?
+> 
+> That bug always existed, simplefb is just the first driver to hit it 
+> (vesafb/efifb didn't use resources). I'm aware of the issue but as a 
+> workaround you can simply disable CONFIG_X86_SYSFB. That restores 
+> the old behavior.
 
+This looks like a regression, so we'll either need a fix or we'll have 
+to mark CONFIG_X86_SYSFB as CONFIG_BROKEN.
+
+> As a proper fix, I'd propose something like:
+>   dev = platform_find_device("platform-framebuffer");
+>   platform_remove_device(dev);
+> 
+> And we wrap this as:
+>   sysfb_remove_framebuffers()
+> in arch/x86/kernel/sysfb.c
+> 
+> This should cause a ->remove() event for the platform-driver and
+> correctly release the resources. Comments?
+> I will try to write a patch and send it later.
+
+A fix would be awesome.
+
+Thanks,
+
+	Ingo
