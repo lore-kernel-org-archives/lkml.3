@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab3LRVhE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:37:04 -0500
-Received: from seketeli.net ([91.121.166.71]:43300 "EHLO ms.seketeli.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754866Ab3LRVhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:37:01 -0500
-From: Apelete Seketeli <apelete@seketeli.net>
-To: linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] Add defconfig for Ben NanoNote
-Date: Wed, 18 Dec 2013 22:36:58 +0100
-Message-Id: <1387402619-22921-1-git-send-email-apelete@seketeli.net>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755659Ab3LRVhb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:37:31 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:44356 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754669Ab3LRVh2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 16:37:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131218192005.GA8340@redhat.com>
+References: <20131218191913.GA6464@redhat.com>
+	<20131218192005.GA8340@redhat.com>
+Date: Wed, 18 Dec 2013 13:37:27 -0800
+X-Google-Sender-Auth: sYsEDm5S-ZEKnzvL5wtoU3QdN5s
+Message-ID: <CA+55aFyVNDFY87V2TZ9ViS7TUMyH7n88g-V=CdB5_c9+=M+fNQ@mail.gmail.com>
+Subject: Re: [PATCH -mm 6/7] mm: thp: introduce get_lock_thp_head()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Dec 18, 2013 at 11:20 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> Both __put_page_tail() and __get_page_tail() need to carefully
+> take a reference on page_head, take compound_lock() and recheck
+> PageTail(page) under this lock.
 
-Following a few patches sent to the linux-usb mailing list to add USB
-support for the Ingenic JZ4740 MIPS SoC found in the Ben Nanonote,
-here is patch that adds defconfig for the aforementioned device.
+Btw I suspect this is just disgustingly expensive, and I don't think
+there's a really good reason for it.
 
-Ben NanoNote is a handheld computer built by the Qi-Hardware community
-and is already supported in the kernel, albeit missing a defconfig
-file until now.
+May I suggest:
 
-Changes were rebased on top of Ralf Baechle's Linux MIPS master
-branch, built and tested on device successfully.
+ - getting rid of the PG_compound_lock bit-lock
 
-The following changes since commit a9b766365f58654af3b7d0a8f4e3504ccde26c23:
+   bitlocks are expensive and unfair, and don't even get lockdep checking
 
-  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux
+ - replace it with a (small, say 32-256 entries) array of hashed sequence locks
 
-are available in the git repository at:
+ - just hash based on the "struct page" pointer, and teach this code
+to do a read_seqcount_begin/read_seqcount_retry sequence instead for
+the page lookup.
 
-  git://seketeli.fr/~apelete/linux-mips.git ben-config
+I think you can get rid of all the irq disables too, and the sequence
+lock should be pure memory reads for the read-case that we care about.
 
-Apelete Seketeli (1):
-  mips: qi_lb60: add defconfig for Ben NanoNote
+Hmm? This is obviously orthogonal to your series, I just reacted to
+seeing that bitlock thing that needs atomics for both locking and
+unlocking and the irq disable, and just generally looks like the worst
+possible way to do these things.
 
- arch/mips/configs/qi_lb60_defconfig |  188 +++++++++++++++++++++++++++++++++++
- 1 file changed, 188 insertions(+)
- create mode 100644 arch/mips/configs/qi_lb60_defconfig
-
--- 
-1.7.10.4
-
+              Linus
