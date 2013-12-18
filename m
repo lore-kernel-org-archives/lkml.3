@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab3LRKen (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 05:34:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44816 "EHLO
+	id S1754351Ab3LRKeE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 05:34:04 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44784 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459Ab3LRKeZ (ORCPT
+	with ESMTP id S1754303Ab3LRKeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 05:34:25 -0500
-Date: Wed, 18 Dec 2013 02:33:45 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-2lkbqrn23uc2uvnn9w9in379@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de
+	Wed, 18 Dec 2013 05:34:00 -0500
+Date: Wed, 18 Dec 2013 02:33:27 -0800
+From: tip-bot for Chuansheng Liu <tipbot@zytor.com>
+Message-ID: <tip-91f30a17024ff0d8345e11228af33ee938b13426@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, chuansheng.liu@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, chuansheng.liu@intel.com
+In-Reply-To: <1386136693.3650.48.camel@cliu38-desktop-build>
+References: <1386136693.3650.48.camel@cliu38-desktop-build>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols:
-  Use consistent name for the DSO binary type member
-Git-Commit-ID: 5f70619d67b99310be9aaf850293b7fd7f31d160
+Subject: [tip:core/locking] mutexes:
+  Give more informative mutex warning in the !lock->owner case
+Git-Commit-ID: 91f30a17024ff0d8345e11228af33ee938b13426
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,151 +32,60 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 18 Dec 2013 02:33:51 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 18 Dec 2013 02:33:32 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5f70619d67b99310be9aaf850293b7fd7f31d160
-Gitweb:     http://git.kernel.org/tip/5f70619d67b99310be9aaf850293b7fd7f31d160
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 17 Dec 2013 16:14:07 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 17 Dec 2013 16:34:08 -0300
+Commit-ID:  91f30a17024ff0d8345e11228af33ee938b13426
+Gitweb:     http://git.kernel.org/tip/91f30a17024ff0d8345e11228af33ee938b13426
+Author:     Chuansheng Liu <chuansheng.liu@intel.com>
+AuthorDate: Wed, 4 Dec 2013 13:58:13 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 17 Dec 2013 15:35:10 +0100
 
-perf symbols: Use consistent name for the DSO binary type member
+mutexes: Give more informative mutex warning in the !lock->owner case
 
-It was called "data_type", but in this context "data" is way too vague,
-it could mean the "data" ELF segment, or something else.
+When mutex debugging is enabled and an imbalanced mutex_unlock()
+is called, we get the following, slightly confusing warning:
 
-Since we have dso__read_binary_type_filename() and the values this field
-receives are all DSO__BINARY_TYPE_<FOO> we may as well call it
-"binary_type" for consistency sake.
+  [  364.208284] DEBUG_LOCKS_WARN_ON(lock->owner != current)
 
-It also seems more appropriate since it determines if we can do
-operations like annotation and DWARF unwinding, that needs more than
-just the symtab, requiring access to ELF text segments, CFI ELF
-sections, etc.
+But in that case the warning is due to an imbalanced mutex_unlock() call,
+and the lock->owner is NULL - so the message is misleading.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-2lkbqrn23uc2uvnn9w9in379@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+So improve the message by testing for this case specifically:
+
+   DEBUG_LOCKS_WARN_ON(!lock->owner)
+
+Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1386136693.3650.48.camel@cliu38-desktop-build
+[ Improved the changelog, changed the patch to use !lock->owner consistently. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/util/dso.c    | 10 +++++-----
- tools/perf/util/dso.h    | 10 +++++-----
- tools/perf/util/symbol.c |  8 ++++----
- 3 files changed, 14 insertions(+), 14 deletions(-)
+ kernel/locking/mutex-debug.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index eef1662..4ddeecb 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -148,7 +148,7 @@ static int open_dso(struct dso *dso, struct machine *machine)
- 	if (machine)
- 		root_dir = machine->root_dir;
+diff --git a/kernel/locking/mutex-debug.c b/kernel/locking/mutex-debug.c
+index 7e3443f..faf6f5b 100644
+--- a/kernel/locking/mutex-debug.c
++++ b/kernel/locking/mutex-debug.c
+@@ -75,7 +75,12 @@ void debug_mutex_unlock(struct mutex *lock)
+ 		return;
  
--	if (dso__read_binary_type_filename(dso, dso->data_type,
-+	if (dso__read_binary_type_filename(dso, dso->binary_type,
- 					    root_dir, name, PATH_MAX)) {
- 		free(name);
- 		return -EINVAL;
-@@ -168,19 +168,19 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
- 	};
- 	int i = 0;
- 
--	if (dso->data_type != DSO_BINARY_TYPE__NOT_FOUND)
-+	if (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND)
- 		return open_dso(dso, machine);
- 
- 	do {
- 		int fd;
- 
--		dso->data_type = binary_type_data[i++];
-+		dso->binary_type = binary_type_data[i++];
- 
- 		fd = open_dso(dso, machine);
- 		if (fd >= 0)
- 			return fd;
- 
--	} while (dso->data_type != DSO_BINARY_TYPE__NOT_FOUND);
-+	} while (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND);
- 
- 	return -EINVAL;
+ 	DEBUG_LOCKS_WARN_ON(lock->magic != lock);
+-	DEBUG_LOCKS_WARN_ON(lock->owner != current);
++
++	if (!lock->owner)
++		DEBUG_LOCKS_WARN_ON(!lock->owner);
++	else
++		DEBUG_LOCKS_WARN_ON(lock->owner != current);
++
+ 	DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
+ 	mutex_clear_owner(lock);
  }
-@@ -475,7 +475,7 @@ struct dso *dso__new(const char *name)
- 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
- 		dso->cache = RB_ROOT;
- 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
--		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
-+		dso->binary_type = DSO_BINARY_TYPE__NOT_FOUND;
- 		dso->loaded = 0;
- 		dso->rel = 0;
- 		dso->sorted_by_name = 0;
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index aa33847..cd7d6f0 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -83,7 +83,7 @@ struct dso {
- 	enum dso_kernel_type	kernel;
- 	enum dso_swap_type	needs_swap;
- 	enum dso_binary_type	symtab_type;
--	enum dso_binary_type	data_type;
-+	enum dso_binary_type	binary_type;
- 	u8		 adjust_symbols:1;
- 	u8		 has_build_id:1;
- 	u8		 has_srcline:1;
-@@ -159,14 +159,14 @@ size_t dso__fprintf(struct dso *dso, enum map_type type, FILE *fp);
- 
- static inline bool dso__is_vmlinux(struct dso *dso)
- {
--	return dso->data_type == DSO_BINARY_TYPE__VMLINUX ||
--	       dso->data_type == DSO_BINARY_TYPE__GUEST_VMLINUX;
-+	return dso->binary_type == DSO_BINARY_TYPE__VMLINUX ||
-+	       dso->binary_type == DSO_BINARY_TYPE__GUEST_VMLINUX;
- }
- 
- static inline bool dso__is_kcore(struct dso *dso)
- {
--	return dso->data_type == DSO_BINARY_TYPE__KCORE ||
--	       dso->data_type == DSO_BINARY_TYPE__GUEST_KCORE;
-+	return dso->binary_type == DSO_BINARY_TYPE__KCORE ||
-+	       dso->binary_type == DSO_BINARY_TYPE__GUEST_KCORE;
- }
- 
- void dso__free_a2l(struct dso *dso);
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 9ee4b80..923d000 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1089,9 +1089,9 @@ static int dso__load_kcore(struct dso *dso, struct map *map,
- 	 * dso__data_read_addr().
- 	 */
- 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
--		dso->data_type = DSO_BINARY_TYPE__GUEST_KCORE;
-+		dso->binary_type = DSO_BINARY_TYPE__GUEST_KCORE;
- 	else
--		dso->data_type = DSO_BINARY_TYPE__KCORE;
-+		dso->binary_type = DSO_BINARY_TYPE__KCORE;
- 	dso__set_long_name(dso, strdup(kcore_filename), true);
- 
- 	close(fd);
-@@ -1368,9 +1368,9 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
- 
- 	if (err > 0) {
- 		if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
--			dso->data_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
-+			dso->binary_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
- 		else
--			dso->data_type = DSO_BINARY_TYPE__VMLINUX;
-+			dso->binary_type = DSO_BINARY_TYPE__VMLINUX;
- 		dso__set_long_name(dso, vmlinux, vmlinux_allocated);
- 		dso__set_loaded(dso, map->type);
- 		pr_debug("Using %s for symbols\n", symfs_vmlinux);
