@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab3LRVpD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:45:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36280 "EHLO
+	id S1751948Ab3LRVpb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:45:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36277 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753753Ab3LRVNI (ORCPT
+	with ESMTP id S1753741Ab3LRVNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:08 -0500
+	Wed, 18 Dec 2013 16:13:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chang Liu <cl91tp@gmail.com>, Khalid Aziz <khalid.aziz@oracle.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: [PATCH 3.12 027/118] PCI: Disable Bus Master only on kexec reboot
-Date: Wed, 18 Dec 2013 13:11:04 -0800
-Message-Id: <20131218211220.245673428@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.12 026/118] iwlwifi: pcie: fix interrupt coalescing for 7260 / 3160
+Date: Wed, 18 Dec 2013 13:11:03 -0800
+Message-Id: <20131218211220.218504522@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -30,97 +29,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Khalid Aziz <khalid.aziz@oracle.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 4fc9bbf98fd66f879e628d8537ba7c240be2b58e upstream.
+commit 6960a059b2c618f32fe549f13287b3d2278c09e9 upstream.
 
-Add a flag to tell the PCI subsystem that kernel is shutting down in
-preparation to kexec a kernel.  Add code in PCI subsystem to use this flag
-to clear Bus Master bit on PCI devices only in case of kexec reboot.
+We changed the timeout for the interrupt coealescing for
+calibration, but that wasn't effective since we changed
+that value back before loading the firmware. Since
+calibrations are notification from firmware and not Rx
+packets, this doesn't change anyway - the firmware will
+fire an interrupt straight away regardless of the interrupt
+coalescing value.
+Also, a HW issue has been discovered in 7000 devices series.
+The work around is to disable the new interrupt coalescing
+timeout feature - do this by setting bit 31 in
+CSR_INT_COALESCING.
+This has been fixed in 7265 which means that we can't rely
+on the device family and must have a hint in the iwl_cfg
+structure.
 
-This fixes a power-off problem on Acer Aspire V5-573G and likely other
-machines and avoids any other issues caused by clearing Bus Master bit on
-PCI devices in normal shutdown path.  The problem was introduced by
-b566a22c2332 ("PCI: disable Bus Master on PCI device shutdown").
-
-This patch is based on discussion at
-http://marc.info/?l=linux-pci&m=138425645204355&w=2
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=63861
-Reported-by: Chang Liu <cl91tp@gmail.com>
-Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Konstantin Khlebnikov <koct9i@gmail.com>
+Fixes: 99cd47142399 ("iwlwifi: add 7000 series device configuration")
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci-driver.c |   12 +++++++++---
- include/linux/kexec.h    |    3 +++
- kernel/kexec.c           |    4 ++++
- 3 files changed, 16 insertions(+), 3 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-7000.c   |    7 +++++++
+ drivers/net/wireless/iwlwifi/iwl-config.h |    3 +++
+ drivers/net/wireless/iwlwifi/iwl-csr.h    |    5 +----
+ drivers/net/wireless/iwlwifi/pcie/rx.c    |    4 ++++
+ drivers/net/wireless/iwlwifi/pcie/trans.c |    3 ---
+ 5 files changed, 15 insertions(+), 7 deletions(-)
 
---- a/drivers/pci/pci-driver.c
-+++ b/drivers/pci/pci-driver.c
-@@ -19,6 +19,7 @@
- #include <linux/cpu.h>
- #include <linux/pm_runtime.h>
- #include <linux/suspend.h>
-+#include <linux/kexec.h>
- #include "pci.h"
+--- a/drivers/net/wireless/iwlwifi/iwl-7000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-7000.c
+@@ -125,6 +125,7 @@ const struct iwl_cfg iwl7260_2ac_cfg = {
+ 	.ht_params = &iwl7000_ht_params,
+ 	.nvm_ver = IWL7260_NVM_VERSION,
+ 	.nvm_calib_ver = IWL7260_TX_POWER_VERSION,
++	.host_interrupt_operation_mode = true,
+ };
  
- struct pci_dynid {
-@@ -388,12 +389,17 @@ static void pci_device_shutdown(struct d
- 	pci_msi_shutdown(pci_dev);
- 	pci_msix_shutdown(pci_dev);
+ const struct iwl_cfg iwl7260_2ac_cfg_high_temp = {
+@@ -135,6 +136,7 @@ const struct iwl_cfg iwl7260_2ac_cfg_hig
+ 	.nvm_ver = IWL7260_NVM_VERSION,
+ 	.nvm_calib_ver = IWL7260_TX_POWER_VERSION,
+ 	.high_temp = true,
++	.host_interrupt_operation_mode = true,
+ };
  
-+#ifdef CONFIG_KEXEC
- 	/*
--	 * Turn off Bus Master bit on the device to tell it to not
--	 * continue to do DMA. Don't touch devices in D3cold or unknown states.
-+	 * If this is a kexec reboot, turn off Bus Master bit on the
-+	 * device to tell it to not continue to do DMA. Don't touch
-+	 * devices in D3cold or unknown states.
-+	 * If it is not a kexec reboot, firmware will hit the PCI
-+	 * devices with big hammer and stop their DMA any way.
- 	 */
--	if (pci_dev->current_state <= PCI_D3hot)
-+	if (kexec_in_progress && (pci_dev->current_state <= PCI_D3hot))
- 		pci_clear_master(pci_dev);
-+#endif
+ const struct iwl_cfg iwl7260_2n_cfg = {
+@@ -144,6 +146,7 @@ const struct iwl_cfg iwl7260_2n_cfg = {
+ 	.ht_params = &iwl7000_ht_params,
+ 	.nvm_ver = IWL7260_NVM_VERSION,
+ 	.nvm_calib_ver = IWL7260_TX_POWER_VERSION,
++	.host_interrupt_operation_mode = true,
+ };
+ 
+ const struct iwl_cfg iwl7260_n_cfg = {
+@@ -153,6 +156,7 @@ const struct iwl_cfg iwl7260_n_cfg = {
+ 	.ht_params = &iwl7000_ht_params,
+ 	.nvm_ver = IWL7260_NVM_VERSION,
+ 	.nvm_calib_ver = IWL7260_TX_POWER_VERSION,
++	.host_interrupt_operation_mode = true,
+ };
+ 
+ const struct iwl_cfg iwl3160_2ac_cfg = {
+@@ -162,6 +166,7 @@ const struct iwl_cfg iwl3160_2ac_cfg = {
+ 	.ht_params = &iwl7000_ht_params,
+ 	.nvm_ver = IWL3160_NVM_VERSION,
+ 	.nvm_calib_ver = IWL3160_TX_POWER_VERSION,
++	.host_interrupt_operation_mode = true,
+ };
+ 
+ const struct iwl_cfg iwl3160_2n_cfg = {
+@@ -171,6 +176,7 @@ const struct iwl_cfg iwl3160_2n_cfg = {
+ 	.ht_params = &iwl7000_ht_params,
+ 	.nvm_ver = IWL3160_NVM_VERSION,
+ 	.nvm_calib_ver = IWL3160_TX_POWER_VERSION,
++	.host_interrupt_operation_mode = true,
+ };
+ 
+ const struct iwl_cfg iwl3160_n_cfg = {
+@@ -180,6 +186,7 @@ const struct iwl_cfg iwl3160_n_cfg = {
+ 	.ht_params = &iwl7000_ht_params,
+ 	.nvm_ver = IWL3160_NVM_VERSION,
+ 	.nvm_calib_ver = IWL3160_TX_POWER_VERSION,
++	.host_interrupt_operation_mode = true,
+ };
+ 
+ MODULE_FIRMWARE(IWL7260_MODULE_FIRMWARE(IWL7260_UCODE_API_OK));
+--- a/drivers/net/wireless/iwlwifi/iwl-config.h
++++ b/drivers/net/wireless/iwlwifi/iwl-config.h
+@@ -207,6 +207,8 @@ struct iwl_eeprom_params {
+  * @rx_with_siso_diversity: 1x1 device with rx antenna diversity
+  * @internal_wimax_coex: internal wifi/wimax combo device
+  * @high_temp: Is this NIC is designated to be in high temperature.
++ * @host_interrupt_operation_mode: device needs host interrupt operation
++ *	mode set
+  *
+  * We enable the driver to be backward compatible wrt. hardware features.
+  * API differences in uCode shouldn't be handled here but through TLVs
+@@ -235,6 +237,7 @@ struct iwl_cfg {
+ 	enum iwl_led_mode led_mode;
+ 	const bool rx_with_siso_diversity;
+ 	const bool internal_wimax_coex;
++	const bool host_interrupt_operation_mode;
+ 	bool high_temp;
+ };
+ 
+--- a/drivers/net/wireless/iwlwifi/iwl-csr.h
++++ b/drivers/net/wireless/iwlwifi/iwl-csr.h
+@@ -463,14 +463,11 @@
+  * the CSR_INT_COALESCING is an 8 bit register in 32-usec unit
+  *
+  * default interrupt coalescing timer is 64 x 32 = 2048 usecs
+- * default interrupt coalescing calibration timer is 16 x 32 = 512 usecs
+  */
+ #define IWL_HOST_INT_TIMEOUT_MAX	(0xFF)
+ #define IWL_HOST_INT_TIMEOUT_DEF	(0x40)
+ #define IWL_HOST_INT_TIMEOUT_MIN	(0x0)
+-#define IWL_HOST_INT_CALIB_TIMEOUT_MAX	(0xFF)
+-#define IWL_HOST_INT_CALIB_TIMEOUT_DEF	(0x10)
+-#define IWL_HOST_INT_CALIB_TIMEOUT_MIN	(0x0)
++#define IWL_HOST_INT_OPER_MODE		BIT(31)
+ 
+ /*****************************************************************************
+  *                        7000/3000 series SHR DTS addresses                 *
+--- a/drivers/net/wireless/iwlwifi/pcie/rx.c
++++ b/drivers/net/wireless/iwlwifi/pcie/rx.c
+@@ -489,6 +489,10 @@ static void iwl_pcie_rx_hw_init(struct i
+ 
+ 	/* Set interrupt coalescing timer to default (2048 usecs) */
+ 	iwl_write8(trans, CSR_INT_COALESCING, IWL_HOST_INT_TIMEOUT_DEF);
++
++	/* W/A for interrupt coalescing bug in 7260 and 3160 */
++	if (trans->cfg->host_interrupt_operation_mode)
++		iwl_set_bit(trans, CSR_INT_COALESCING, IWL_HOST_INT_OPER_MODE);
  }
  
- #ifdef CONFIG_PM
---- a/include/linux/kexec.h
-+++ b/include/linux/kexec.h
-@@ -198,6 +198,9 @@ extern u32 vmcoreinfo_note[VMCOREINFO_NO
- extern size_t vmcoreinfo_size;
- extern size_t vmcoreinfo_max_size;
+ static void iwl_pcie_rx_init_rxb_lists(struct iwl_rxq *rxq)
+--- a/drivers/net/wireless/iwlwifi/pcie/trans.c
++++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
+@@ -276,9 +276,6 @@ static int iwl_pcie_nic_init(struct iwl_
+ 	spin_lock_irqsave(&trans_pcie->irq_lock, flags);
+ 	iwl_pcie_apm_init(trans);
  
-+/* flag to track if kexec reboot is in progress */
-+extern bool kexec_in_progress;
-+
- int __init parse_crashkernel(char *cmdline, unsigned long long system_ram,
- 		unsigned long long *crash_size, unsigned long long *crash_base);
- int parse_crashkernel_high(char *cmdline, unsigned long long system_ram,
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -47,6 +47,9 @@ u32 vmcoreinfo_note[VMCOREINFO_NOTE_SIZE
- size_t vmcoreinfo_size;
- size_t vmcoreinfo_max_size = sizeof(vmcoreinfo_data);
+-	/* Set interrupt coalescing calibration timer to default (512 usecs) */
+-	iwl_write8(trans, CSR_INT_COALESCING, IWL_HOST_INT_CALIB_TIMEOUT_DEF);
+-
+ 	spin_unlock_irqrestore(&trans_pcie->irq_lock, flags);
  
-+/* Flag to indicate we are going to kexec a new kernel */
-+bool kexec_in_progress = false;
-+
- /* Location of the reserved area for the crash kernel */
- struct resource crashk_res = {
- 	.name  = "Crash kernel",
-@@ -1675,6 +1678,7 @@ int kernel_kexec(void)
- 	} else
- #endif
- 	{
-+		kexec_in_progress = true;
- 		kernel_restart_prepare(NULL);
- 		printk(KERN_EMERG "Starting new kernel\n");
- 		machine_shutdown();
+ 	iwl_pcie_set_pwr(trans, false);
 
 
