@@ -1,72 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab3LRCHW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 21:07:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52630 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052Ab3LRCHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 21:07:20 -0500
-Date: Wed, 18 Dec 2013 10:06:27 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
-Subject: Re: [PATCH v5 10/14] efi: only print saved efi runtime maps instead
- of all memmap ranges for kexec
-Message-ID: <20131218020627.GA3917@dhcp-16-126.nay.redhat.com>
-References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
- <1386582147-9802-11-git-send-email-dyoung@redhat.com>
- <20131213160150.GE32329@pd.tnic>
- <20131216020010.GC3754@dhcp-16-126.nay.redhat.com>
- <20131216113324.GB4922@pd.tnic>
- <20131217063436.GF6751@dhcp-16-126.nay.redhat.com>
- <20131217155844.GG30592@pd.tnic>
+	id S1752304Ab3LRCI3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 21:08:29 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:63577 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949Ab3LRCI1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 21:08:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131217155844.GG30592@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52B02206.6030709@redhat.com>
+References: <1387265182-27312-1-git-send-email-zwu.kernel@gmail.com>
+	<52B0100A.3030002@redhat.com>
+	<CAEH94LhM5WWLEETv-n0cYs4wv+Hw4pC7-c+b5cKqRxdx2XywNw@mail.gmail.com>
+	<52B02206.6030709@redhat.com>
+Date: Wed, 18 Dec 2013 10:08:26 +0800
+Message-ID: <CAEH94LjyVOopKUJ+yJV97UF6J8akohSbqqZN6g+m_1EyfWNTUw@mail.gmail.com>
+Subject: Re: [RFC PATCH] net, tun: remove the flow cache
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/13 at 04:58pm, Borislav Petkov wrote:
-> On Tue, Dec 17, 2013 at 02:34:36PM +0800, Dave Young wrote:
-> > They are moved to efi.c efi_setup_init(), I'm not sure if I expained
-> > clear enough, in current code parse_efi_setup only accept one argument
-> > phys_addr so I will mapping it with sizeof(struct setup_data) to
-> > get the payload size then get the nr_efi_runtime_map. This is a
-> > simplification from the old implementation.
-> >
-> > Based on current implementation, yes, I can add back another argument
-> > data_len to avoid the 1st mapping thus I can print efi memmap as you
-> > said.
-> >
-> > In this way I need export another extern for the data_len though.
-> 
-> Well, think about it: do you want to do the memremap/unmap a second time
-> *just* to print the memmap in the efi kernel or do you want to do the
-> memremap/unmap only once and do the work once?
-> 
-> If you say you don't care about speed and wasting cycles then I'm
-> certainly fine with that as I've spent more time hinting at the
-> performance aspect than I'd like to.
+On Tue, Dec 17, 2013 at 6:05 PM, Jason Wang <jasowang@redhat.com> wrote:
+> On 12/17/2013 05:13 PM, Zhi Yong Wu wrote:
+>> On Tue, Dec 17, 2013 at 4:49 PM, Jason Wang <jasowang@redhat.com> wrote:
+>>> > On 12/17/2013 03:26 PM, Zhi Yong Wu wrote:
+>>>> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>>>> >>
+>>>> >> The flow cache is an extremely broken concept, and it usually brings up
+>>>> >> growth issues and DoS attacks, so this patch is trying to remove it from
+>>>> >> the tuntap driver, and insteadly use a simpler way for its flow control.
+>>> >
+>>> > NACK.
+>>> >
+>>> > This single function revert does not make sense to me. Since:
+>> IIRC, the tuntap flow cache is only used to save the mapping of skb
+>> packet <-> queue index. My idea only save the queue index in skb_buff
+>> early when skb buffer is filled, not in flow cache as the current
+>> code. This method is actually more simpler and completely doesn't need
+>> any flow cache.
+>
+> Nope. Flow caches record the flow to queues mapping like what most
+> multiqueue nic does. The only difference is tun record it silently while
+> most nic needs driver to tell the mapping.
+Just check virtio specs, i seem to miss the fact that flow cache
+enable packet steering in mq mode, thanks for your comments. But i
+have some concerns about some of your comments.
+>
+> What your patch does is:
+> - set the queue mapping of skb during tun_get_user(). But most drivers
+> using XPS or processor id to select the real tx queue. So the real txq
+> depends on the cpu that vhost or qemu is running. This setting does not
+Doesn't those drivers invoke netdev_pick_tx() or its counterpart to
+select real tx queue? e.g. tun_select_queue(). or can you say it with
+an example?
+Moreover, how do those drivers know which cpu vhost or qemu is running on?
+> have any effect in fact.
+> - the queue mapping of skb were fetched during tun_select_queue(). This
+> value is usually set by a multiqueue nic to record which hardware rxq
+> was this packet came.
+ah? Can you let me know where a mq nic controller set it?
+>
+> Can you explain how your patch works exactly?
+You have understood it.
+>>> >
+>>> > - You in fact removes the flow steering function in tun. We definitely
+>>> > need something like this to unbreak the TCP performance in a multiqueue
+>> I don't think it will downgrade the TCP perf even in mq guest, but my
+>> idea maybe has better TCP perf, because it doesn't have any cache
+>> table lookup, etc.
+>
+> Did you test and compare the performance numbers? Did you run profiler
+> to see how much does the lookup cost?
+No, As i jus said above, i miss that flow cache can enable packet
+steering. But Did you do related perf testing? To be honest, i am
+wondering how much perf the packet steering can improve. Actually it
+also injects a lot of cache lookup cost.
+>>> > guest. Please have a look at the virtio-net driver / virtio sepc for
+>>> > more information.
+>>> > - The total number of flow caches were limited to 4096, so there's no
+>>> > DoS or growth issue.
+>> Can you check why the ipv4 routing cache is removed? maybe i miss
+>> something, if yes, pls correct me. :)
+>
+> The main differences is that the flow caches were best effort. Tun can
+> not store all flows to queue mapping, and even a hardware nic can not do
+> this. If a packet misses the flow cache, it's safe to distribute it
+> randomly or through another method. So the limitation just work.
+Exactly, we can know this from tun_select_queue().
+>
+> Could you please explain the DoS or growth issue you meet here?
+>>> > - The only issue is scalability, but fixing this is not easy. We can
+>>> > just use arrays/indirection table like RSS instead of hash buckets, it
+>>> > saves some time in linear search but has other issues like collision
+>>> > - I've also had a RFC of using aRFS in the past, it also has several
+>>> > drawbacks such as busy looping in the networking hotspot.
+>>> >
+>>> > So in conclusion, we need flow steering in tun, just removing current
+>>> > method does not help. The proper way is to expose several different
+>>> > methods to user and let user to choose the preferable mechanism like
+>>> > packet.
+>> By the way, let us look at what other networking guys think of this,
+>> such as MST, dave, etc. :)
+>>
+>
+> Of course.
 
-For these non critical path I would prefer the code which should be easier to 
-be understood. But yes I have managed to work out what you want in latest
-version. Of course I appreciate your time for reviewing those patches.
-Thanks.
 
-> 
-> > What do you mean about NOPARSE, do you want another function name like
-> > save_efi_setup()?
-> 
-> -ENOPARSE means I cannot parse what you said above.
 
-Ok.
+-- 
+Regards,
 
-Thanks
-Dave
+Zhi Yong Wu
