@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab3LRVNc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:13:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36384 "EHLO
+	id S1755139Ab3LRVev (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:34:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36391 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab3LRVNa (ORCPT
+	with ESMTP id S1753894Ab3LRVNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:30 -0500
+	Wed, 18 Dec 2013 16:13:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Janak Desai <Janak.Desai@gtri.gatech.edu>,
-        Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.12 053/118] selinux: handle TCP SYN-ACK packets correctly in selinux_ip_output()
-Date: Wed, 18 Dec 2013 13:11:30 -0800
-Message-Id: <20131218211220.968138222@linuxfoundation.org>
+        Bob Copeland <me@bobcopeland.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.12 055/118] Revert "mac80211: allow disable power save in mesh"
+Date: Wed, 18 Dec 2013 13:11:32 -0800
+Message-Id: <20131218211221.023028144@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,83 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Bob Copeland <me@bobcopeland.com>
 
-commit 47180068276a04ed31d24fe04c673138208b07a9 upstream.
+commit 2d3db210860f1df099a35b1dd54cca35454e0361 upstream.
 
-In selinux_ip_output() we always label packets based on the parent
-socket.  While this approach works in almost all cases, it doesn't
-work in the case of TCP SYN-ACK packets when the correct label is not
-the label of the parent socket, but rather the label of the larval
-socket represented by the request_sock struct.
+This reverts commit ee1f668136b2fb6640ee2d54c2a525ea41f98211.
 
-Unfortunately, since the request_sock isn't queued on the parent
-socket until *after* the SYN-ACK packet is sent, we can't lookup the
-request_sock to determine the correct label for the packet; at this
-point in time the best we can do is simply pass/NF_ACCEPT the packet.
-It must be said that simply passing the packet without any explicit
-labeling action, while far from ideal, is not terrible as the SYN-ACK
-packet will inherit any IP option based labeling from the initial
-connection request so the label *should* be correct and all our
-access controls remain in place so we shouldn't have to worry about
-information leaks.
+The aformentioned commit added a check to allow
+'iw wlan0 set power_save off' to work for mesh interfaces.
 
-Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
-Tested-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+However, this is problematic because it also allows
+'iw wlan0 set power_save on', which will crash in short order
+because all of the subsequent code manipulates sdata->u.mgd.
+
+The power-saving states for mesh interfaces can be manipulated
+through the mesh config, e.g:
+'iw wlan0 set mesh_param mesh_power_save=active' (which,
+despite the name, actualy disables power saving since the
+setting refers to the type of sleep the interface undergoes).
+
+Fixes: ee1f668136b2 ("mac80211: allow disable power save in mesh")
+Signed-off-by: Bob Copeland <me@bobcopeland.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/hooks.c |   25 +++++++++++++++++++++++--
- 1 file changed, 23 insertions(+), 2 deletions(-)
+ net/mac80211/cfg.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -53,6 +53,7 @@
- #include <net/ip.h>		/* for local_port_range[] */
- #include <net/sock.h>
- #include <net/tcp.h>		/* struct or_callable used in sock_rcv_skb */
-+#include <net/inet_connection_sock.h>
- #include <net/net_namespace.h>
- #include <net/netlabel.h>
- #include <linux/uaccess.h>
-@@ -4690,6 +4691,7 @@ static unsigned int selinux_ipv6_forward
- static unsigned int selinux_ip_output(struct sk_buff *skb,
- 				      u16 family)
- {
-+	struct sock *sk;
- 	u32 sid;
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -2386,8 +2386,7 @@ static int ieee80211_set_power_mgmt(stru
+ 	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+ 	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
  
- 	if (!netlbl_enabled())
-@@ -4698,8 +4700,27 @@ static unsigned int selinux_ip_output(st
- 	/* we do this in the LOCAL_OUT path and not the POST_ROUTING path
- 	 * because we want to make sure we apply the necessary labeling
- 	 * before IPsec is applied so we can leverage AH protection */
--	if (skb->sk) {
--		struct sk_security_struct *sksec = skb->sk->sk_security;
-+	sk = skb->sk;
-+	if (sk) {
-+		struct sk_security_struct *sksec;
-+
-+		if (sk->sk_state == TCP_LISTEN)
-+			/* if the socket is the listening state then this
-+			 * packet is a SYN-ACK packet which means it needs to
-+			 * be labeled based on the connection/request_sock and
-+			 * not the parent socket.  unfortunately, we can't
-+			 * lookup the request_sock yet as it isn't queued on
-+			 * the parent socket until after the SYN-ACK is sent.
-+			 * the "solution" is to simply pass the packet as-is
-+			 * as any IP option based labeling should be copied
-+			 * from the initial connection request (in the IP
-+			 * layer).  it is far from ideal, but until we get a
-+			 * security label in the packet itself this is the
-+			 * best we can do. */
-+			return NF_ACCEPT;
-+
-+		/* standard practice, label using the parent socket */
-+		sksec = sk->sk_security;
- 		sid = sksec->sid;
- 	} else
- 		sid = SECINITSID_KERNEL;
+-	if (sdata->vif.type != NL80211_IFTYPE_STATION &&
+-	    sdata->vif.type != NL80211_IFTYPE_MESH_POINT)
++	if (sdata->vif.type != NL80211_IFTYPE_STATION)
+ 		return -EOPNOTSUPP;
+ 
+ 	if (!(local->hw.flags & IEEE80211_HW_SUPPORTS_PS))
 
 
