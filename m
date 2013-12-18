@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab3LRVMQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:12:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36006 "EHLO
+	id S1754387Ab3LRWEp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:04:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36028 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753155Ab3LRVMO (ORCPT
+	with ESMTP id S1753189Ab3LRVMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:14 -0500
+	Wed, 18 Dec 2013 16:12:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 05/78] ALSA: hda - Add static DAC/pin mapping for AD1986A codec
-Date: Wed, 18 Dec 2013 13:10:33 -0800
-Message-Id: <20131218211112.056395873@linuxfoundation.org>
+        Bob Copeland <me@bobcopeland.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 40/78] Revert "mac80211: allow disable power save in mesh"
+Date: Wed, 18 Dec 2013 13:11:08 -0800
+Message-Id: <20131218211113.036052737@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -28,110 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Bob Copeland <me@bobcopeland.com>
 
-commit 3690739b013504d33fe9348dd45f6b126aa370fb upstream.
+commit 2d3db210860f1df099a35b1dd54cca35454e0361 upstream.
 
-AD1986A codec is a pretty old codec and has really many hidden
-restrictions.  One of such is that each DAC is dedicated to certain
-pin although there are possible connections.  Currently, the generic
-parser tries to assign individual DACs as much as possible, and this
-lead to two bad situations: connections where the sound actually
-doesn't work, and connections conflicting other channels.
+This reverts commit ee1f668136b2fb6640ee2d54c2a525ea41f98211.
 
-We may fix this by trying to find the best connections more harder,
-but as of now, it's easier to give some hints for paired DAC/pin
-connections and honor them if available, since such a hint is needed
-only for specific codecs (right now only AD1986A, and there will be
-unlikely any others in future).
+The aformentioned commit added a check to allow
+'iw wlan0 set power_save off' to work for mesh interfaces.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64971
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66621
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+However, this is problematic because it also allows
+'iw wlan0 set power_save on', which will crash in short order
+because all of the subsequent code manipulates sdata->u.mgd.
+
+The power-saving states for mesh interfaces can be manipulated
+through the mesh config, e.g:
+'iw wlan0 set mesh_param mesh_power_save=active' (which,
+despite the name, actualy disables power saving since the
+setting refers to the type of sleep the interface undergoes).
+
+Fixes: ee1f668136b2 ("mac80211: allow disable power save in mesh")
+Signed-off-by: Bob Copeland <me@bobcopeland.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_generic.c  |   23 ++++++++++++++++++++++-
- sound/pci/hda/hda_generic.h  |    3 +++
- sound/pci/hda/patch_analog.c |   10 ++++++++++
- 3 files changed, 35 insertions(+), 1 deletion(-)
+ net/mac80211/cfg.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -468,6 +468,20 @@ static void invalidate_nid_path(struct h
- 	memset(path, 0, sizeof(*path));
- }
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -2356,8 +2356,7 @@ static int ieee80211_set_power_mgmt(stru
+ 	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+ 	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
  
-+/* return a DAC if paired to the given pin by codec driver */
-+static hda_nid_t get_preferred_dac(struct hda_codec *codec, hda_nid_t pin)
-+{
-+	struct hda_gen_spec *spec = codec->spec;
-+	const hda_nid_t *list = spec->preferred_dacs;
-+
-+	if (!list)
-+		return 0;
-+	for (; *list; list += 2)
-+		if (*list == pin)
-+			return list[1];
-+	return 0;
-+}
-+
- /* look for an empty DAC slot */
- static hda_nid_t look_for_dac(struct hda_codec *codec, hda_nid_t pin,
- 			      bool is_digital)
-@@ -1134,7 +1148,14 @@ static int try_assign_dacs(struct hda_co
- 			continue;
- 		}
+-	if (sdata->vif.type != NL80211_IFTYPE_STATION &&
+-	    sdata->vif.type != NL80211_IFTYPE_MESH_POINT)
++	if (sdata->vif.type != NL80211_IFTYPE_STATION)
+ 		return -EOPNOTSUPP;
  
--		dacs[i] = look_for_dac(codec, pin, false);
-+		dacs[i] = get_preferred_dac(codec, pin);
-+		if (dacs[i]) {
-+			if (is_dac_already_used(codec, dacs[i]))
-+				badness += bad->shared_primary;
-+		}
-+
-+		if (!dacs[i])
-+			dacs[i] = look_for_dac(codec, pin, false);
- 		if (!dacs[i] && !i) {
- 			/* try to steal the DAC of surrounds for the front */
- 			for (j = 1; j < num_outs; j++) {
---- a/sound/pci/hda/hda_generic.h
-+++ b/sound/pci/hda/hda_generic.h
-@@ -241,6 +241,9 @@ struct hda_gen_spec {
- 	const struct badness_table *main_out_badness;
- 	const struct badness_table *extra_out_badness;
- 
-+	/* preferred pin/DAC pairs; an array of paired NIDs */
-+	const hda_nid_t *preferred_dacs;
-+
- 	/* loopback mixing mode */
- 	bool aamix_mode;
- 
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -1227,6 +1227,14 @@ static int ad1986a_parse_auto_config(str
- {
- 	int err;
- 	struct ad198x_spec *spec;
-+	static hda_nid_t preferred_pairs[] = {
-+		0x1a, 0x03,
-+		0x1b, 0x03,
-+		0x1c, 0x04,
-+		0x1d, 0x05,
-+		0x1e, 0x03,
-+		0
-+	};
- 
- 	err = alloc_ad_spec(codec);
- 	if (err < 0)
-@@ -1247,6 +1255,8 @@ static int ad1986a_parse_auto_config(str
- 	 * So, let's disable the shared stream.
- 	 */
- 	spec->gen.multiout.no_share_stream = 1;
-+	/* give fixed DAC/pin pairs */
-+	spec->gen.preferred_dacs = preferred_pairs;
- 
- 	snd_hda_pick_fixup(codec, NULL, ad1986a_fixup_tbl, ad1986a_fixups);
- 	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PRE_PROBE);
+ 	if (!(local->hw.flags & IEEE80211_HW_SUPPORTS_PS))
 
 
