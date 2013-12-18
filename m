@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab3LRVgu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:36:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36372 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753966Ab3LRVN1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:27 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.12 050/118] ath9k: Fix XLNA bias strength
-Date: Wed, 18 Dec 2013 13:11:27 -0800
-Message-Id: <20131218211220.886997984@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
-References: <20131218211219.461663463@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1755624Ab3LRVhE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:37:04 -0500
+Received: from seketeli.net ([91.121.166.71]:43300 "EHLO ms.seketeli.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754866Ab3LRVhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 16:37:01 -0500
+From: Apelete Seketeli <apelete@seketeli.net>
+To: linux-mips@linux-mips.org
+Cc: linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] Add defconfig for Ben NanoNote
+Date: Wed, 18 Dec 2013 22:36:58 +0100
+Message-Id: <1387402619-22921-1-git-send-email-apelete@seketeli.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Hello,
 
-------------------
+Following a few patches sent to the linux-usb mailing list to add USB
+support for the Ingenic JZ4740 MIPS SoC found in the Ben Nanonote,
+here is patch that adds defconfig for the aforementioned device.
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Ben NanoNote is a handheld computer built by the Qi-Hardware community
+and is already supported in the kernel, albeit missing a defconfig
+file until now.
 
-commit a1783a7b0846fc6414483e6caf646db72023fffd upstream.
+Changes were rebased on top of Ralf Baechle's Linux MIPS master
+branch, built and tested on device successfully.
 
-The EEPROM parameter to determine whether the bias
-strength values for XLNA have to be applied is part
-of the miscConfiguration field and not featureEnable.
+The following changes since commit a9b766365f58654af3b7d0a8f4e3504ccde26c23:
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux
 
----
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+are available in the git repository at:
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-@@ -4019,7 +4019,7 @@ static void ar9003_hw_xlna_bias_strength
- 	struct ar9300_eeprom *eep = &ah->eeprom.ar9300_eep;
- 	u8 bias;
- 
--	if (!(eep->baseEepHeader.featureEnable & 0x40))
-+	if (!(eep->baseEepHeader.miscConfiguration & 0x40))
- 		return;
- 
- 	if (!AR_SREV_9300(ah))
+  git://seketeli.fr/~apelete/linux-mips.git ben-config
 
+Apelete Seketeli (1):
+  mips: qi_lb60: add defconfig for Ben NanoNote
+
+ arch/mips/configs/qi_lb60_defconfig |  188 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 188 insertions(+)
+ create mode 100644 arch/mips/configs/qi_lb60_defconfig
+
+-- 
+1.7.10.4
 
