@@ -1,120 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab3LRAfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 19:35:50 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:13551 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751810Ab3LRAft (ORCPT
+	id S1751901Ab3LRAiz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 19:38:55 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63890 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750875Ab3LRAix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 19:35:49 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlMIAPbssFJ5LHyk/2dsb2JhbABZgwqDPLBthVCBHxd0giUBAQEEJxMcIxAIAw4KCSUPBSUDIROIA8llFxaOfAeDI4ETBJgVkhWDPyiBLCM
-Date: Wed, 18 Dec 2013 11:35:10 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        tomaz.solc@tablix.org, aaron.lu@intel.com,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: Writeback threads and freezable
-Message-ID: <20131218003510.GD20579@dastard>
-References: <20131213174932.GA27070@htj.dyndns.org>
- <20131214015343.GP31386@dastard>
- <20131214202324.GA4020@htj.dyndns.org>
- <20131216035652.GY31386@dastard>
- <20131216125124.GC32509@htj.dyndns.org>
- <20131216125604.GD32509@htj.dyndns.org>
+	Tue, 17 Dec 2013 19:38:53 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
+        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system suspend/hibernation
+Date: Wed, 18 Dec 2013 01:52:10 +0100
+Message-ID: <8515354.2dTerOA9sd@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CA+5PVA7vsZPd9eXwN-Q+d8c9+0bAmVdr698vv+LFyrn+3iFOMA@mail.gmail.com>
+References: <201201281445.49377.rjw@sisk.pl> <CA+5PVA5GWsTdNky-K1-hu5_R55hdKfr-Oa26HpX=FdA1cRZsbQ@mail.gmail.com> <CA+5PVA7vsZPd9eXwN-Q+d8c9+0bAmVdr698vv+LFyrn+3iFOMA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131216125604.GD32509@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 07:56:04AM -0500, Tejun Heo wrote:
-> On Mon, Dec 16, 2013 at 07:51:24AM -0500, Tejun Heo wrote:
-> > On Mon, Dec 16, 2013 at 02:56:52PM +1100, Dave Chinner wrote:
-> > > > What are you suggesting?  Implementing separate warm and hot unplug
-> > > > paths?  That makes no sense whatsoever.  Device hot unplug is just a
-> > > > sub operation of general device unplug which should be able to succeed
-> > > > whether the underlying device is failing IOs or not.
-> > > 
-> > > I don't care. Trying to issue IO from an an IO error handling path
-> > > where the device has just been removed is fundamentally broken.
-> > 
-> > What?  Have you even read the original message?  IO error handling
-> > path isn't issuing the IO here.  The hot unplug operation is
-> > completely asynchronous to the IO path.  What's dead locking is not
-> > the filesystem and IO path but device driver layer and hot unplug
-> > path.  IOs are not stalled.
+On Tuesday, December 17, 2013 11:04:46 AM Josh Boyer wrote:
+> On Tue, Dec 17, 2013 at 11:03 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> > On Fri, May 25, 2012 at 3:13 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> On Friday, May 25, 2012, Josh Boyer wrote:
+> >>> On Fri, Feb 17, 2012 at 3:59 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >>> >> commit b94887bbc0621e1e8402e7f0ec4bc3adf46c9a6e
+> >>> >> Author: Rafael J. Wysocki <rjw@sisk.pl>
+> >>> >> Date:   Fri Feb 17 12:42:08 2012 -0500
+> >>> >>
+> >>> >>     Freeze all filesystems during system suspend and (kernel-driven)
+> >>> >>     hibernation by calling freeze_supers() for all superblocks and thaw
+> >>> >>     them during the subsequent resume with the help of thaw_supers().
+> >>> >>
+> >>> >>     This makes filesystems stay in a consistent state in case something
+> >>> >>     goes wrong between system suspend (or hibernation) and the subsequent
+> >>> >>     resume (e.g. journal replays won't be necessary in those cases).  In
+> >>> >>     particular, this should help to solve a long-standing issue that, in
+> >>> >>     some cases, during resume from hibernation the boot loader causes the
+> >>> >>     journal to be replied for the filesystem containing the kernel image
+> >>> >>     and/or initrd causing it to become inconsistent with the information
+> >>> >>     stored in the hibernation image.
+> >>> >>
+> >>> >>     The user-space-driven hibernation (s2disk) is not covered by this
+> >>> >>     change, because the freezing of filesystems prevents s2disk from
+> >>> >>     accessing device special files it needs to do its job.
+> >>> >>
+> >>> >>     This change is based on earlier work by Nigel Cunningham.
+> >>> >>
+> >>> >>     Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> >>> >>
+> >>> >>     Rebased to 3.3-rc3 by Josh Boyer <jwboyer@redhat.com>
+> >>>
+> >>> Did this patch ever wind up going anywhere?  Fedora has it sitting in
+> >>> our tree with a comment that says "rebase" and I don't see it in the
+> >>> linux-next tree at all.
+> >>>
+> >>> Did if fall through the cracks or was it NAKed somewhere?
+> >>
+> >> No, it wasn't in principle. There were some comments I haven't addressed yet.
+> >
+> > Dredging up a really old thread, sorry.
+> >
+> > We're still carrying this patch along in Fedora.  Should we drop it at
+> > this point, or is it still eventually going to head upstream?
 > 
-> In fact, this deadlock can be reproduced without hotunplug at all.  If
-> you initiate warm unplug and warm unplugging races with suspend/resume
-> cycle, it'll behave exactly the same - the IOs from flushing in that
-> scenario would succeed but IOs failing or not has *NOTHING* to do with
-> this deadlock.  It'd still happen.  It's freezer behaving as a giant
-> lock and other locks of course getting dragged into giant dependency
-> loop.  Can you please at least *try* to understand what's going on
-> before throwing strong assertions?
+> Fixed Rafael's email address.  (Double sorry.)
 
-Sure I understand the problem. Part of that dependency loop is
-caused by filesystem re-entrancy from the hot unplug code.
-Regardless of this /specific freezer problem/, that filesystem
-re-entrancy path is *never OK* during a hot-unplug event and it
-needs to be fixed.
+No biggie.
 
-Perhaps the function "invalidate_partition()" is badly named. To
-state the obvious, fsync != invalidation. What it does is:
+I just hadn't got sufficient response for that patch at the time it was
+submitted, so I guess it would be good to resubmit it.  Please feel free to
+do that if you want.
 
-	1. sync filesystem
-	2. shrink the dcache
-	3. invalidates inodes and kills dirty inodes
-	4. invalidates block device (removes cached bdev pages)
+Thanks!
 
-Basically, the first step is "flush", the remainder is "invalidate".
-
-Indeed, step 3 throws away dirty inodes, so why on earth would we
-even bother with step 1 to try to clean them in the first place?
-IOWs, the flush is irrelevant in the hot-unplug case as it will
-fail to flush stuff, and then we just throw the stuff we
-failed to write away.
-
-But in attempting to flush all the dirty data and metadata, we can
-cause all sorts of other potential re-entrancy based deadlocks due
-to attempting to issue IO. Whether they be freezer based or through
-IO error handling triggering device removal or some other means, it
-is irrelevant - it is the flush that causes all the problems.
-
-We need to either get rid of the flush on device failure/hot-unplug,
-or turn it into a callout for the superblock to take an appropriate
-action (e.g. shutting down the filesystem) rather than trying to
-issue IO. i.e. allow the filesystem to take appropriate action of
-shutting down the filesystem and invalidating it's caches.
-
-Indeed, in XFS there's several other caches that could contain dirty
-metadata that isn't invalidated by invalidate_partition(), and so
-unless the filesystem is shut down it can continue to try to issue
-IO on those buffers to the removed device until the filesystem is
-shutdown or unmounted.
-
-Seriously, Tejun, the assumption that invalidate_partition() knows
-enough about filesystems to safely "invalidate" them is just broken.
-These days, filesystems often reference multiple block devices, and
-so the way hotplug currently treats them as "one device, one
-filesystem" is also fundamentally wrong.
-
-So there's many ways in which the hot-unplug code is broken in it's
-use of invalidate_partition(), the least of which is the
-dependencies caused by re-entrancy. We really need a
-"sb->shutdown()" style callout as step one in the above process, not
-fsync_bdev().
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
