@@ -1,250 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab3LROJY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 09:09:24 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:62554 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170Ab3LROJW (ORCPT
+	id S1754779Ab3LROJu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 09:09:50 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:42185 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754619Ab3LROJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 09:09:22 -0500
-Date: Wed, 18 Dec 2013 06:09:18 -0800
+	Wed, 18 Dec 2013 09:09:48 -0500
+Date: Wed, 18 Dec 2013 06:09:45 -0800
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 To: Roger Quadros <rogerq@ti.com>
 Cc: rydberg@euromail.se, jcbian@pixcir.com.cn, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/9] Input: pixcir_i2c_ts: Add device tree support
-Message-ID: <20131218140918.GA28504@core.coreip.homeip.net>
+Subject: Re: [PATCH 2/9] Input: pixcir_i2c_ts: Add register definitions
+Message-ID: <20131218140945.GB28504@core.coreip.homeip.net>
 References: <1387358480-8313-1-git-send-email-rogerq@ti.com>
- <1387358480-8313-2-git-send-email-rogerq@ti.com>
+ <1387358480-8313-3-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1387358480-8313-2-git-send-email-rogerq@ti.com>
+In-Reply-To: <1387358480-8313-3-git-send-email-rogerq@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
-
-On Wed, Dec 18, 2013 at 02:51:12PM +0530, Roger Quadros wrote:
-> Provide device tree support and binding information.
-> Change platform data parameters from x/y_max to x/y_size..
-
-I'd rather keep them as they were.
-
+On Wed, Dec 18, 2013 at 02:51:13PM +0530, Roger Quadros wrote:
+> Add power and interrupt register definitions.
 > 
+
+Please fold into the next patch that uses these definitions.
+
 > Signed-off-by: Roger Quadros <rogerq@ti.com>
 > Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
 > ---
->  .../bindings/input/touchscreen/pixcir_i2c_ts.txt   | 26 ++++++++
->  drivers/input/touchscreen/pixcir_i2c_ts.c          | 77 ++++++++++++++++++++--
->  include/linux/input/pixcir_ts.h                    |  5 +-
->  3 files changed, 101 insertions(+), 7 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
+>  include/linux/input/pixcir_ts.h | 42 +++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 42 insertions(+)
 > 
-> diff --git a/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt b/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
-> new file mode 100644
-> index 0000000..c0b0b270
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
-> @@ -0,0 +1,26 @@
-> +* Pixcir I2C touchscreen controllers
-> +
-> +Required properties:
-> +- compatible: must be "pixcir,pixcir_ts"
-> +- reg: I2C address of the chip
-> +- interrupts: interrupt to which the chip is connected
-> +- attb-gpio: GPIO connected to the ATTB line of the chip
-> +- x-size: horizontal resolution of touchscreen
-> +- y-size: vertical resolution of touchscreen
-> +
-> +Example:
-> +
-> +	i2c@00000000 {
-> +		/* ... */
-> +
-> +		pixcir_ts@5c {
-> +			compatible = "pixcir,pixcir_ts";
-> +			reg = <0x5c>;
-> +			interrupts = <2 0>;
-> +			attb-gpio = <&gpf 2 0 2>;
-> +			x-size = <800>;
-> +			y-size = <600>;
-> +		};
-> +
-> +		/* ... */
-> +	};
-> diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
-> index 6cc6b36..3a447c9 100644
-> --- a/drivers/input/touchscreen/pixcir_i2c_ts.c
-> +++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
-> @@ -24,6 +24,10 @@
->  #include <linux/i2c.h>
->  #include <linux/input.h>
->  #include <linux/input/pixcir_ts.h>
-> +#include <linux/gpio.h>
-> +#include <linux/of.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/of_device.h>
->  
->  struct pixcir_i2c_ts_data {
->  	struct i2c_client *client;
-> @@ -125,15 +129,65 @@ static int pixcir_i2c_ts_resume(struct device *dev)
->  static SIMPLE_DEV_PM_OPS(pixcir_dev_pm_ops,
->  			 pixcir_i2c_ts_suspend, pixcir_i2c_ts_resume);
->  
-> +#if defined(CONFIG_OF)
-
-#ifdef is preferred for simple conditions.
-
-> +static const struct of_device_id pixcir_of_match[];
-> +
-> +static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
-> +{
-> +	struct pixcir_ts_platform_data *pdata;
-> +	struct device_node *np = dev->of_node;
-> +	const struct of_device_id *match;
-> +
-> +	match = of_match_device(of_match_ptr(pixcir_of_match), dev);
-> +	if (!match)
-> +		return ERR_PTR(-EINVAL);
-
-Why do you need an explicit match here?
-
-> +
-> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> +	if (!pdata)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	pdata->gpio_attb = of_get_named_gpio(np, "attb-gpio", 0);
-> +	if (!gpio_is_valid(pdata->gpio_attb))
-> +		dev_err(dev, "Failed to get ATTB GPIO\n");
-> +
-> +	if (of_property_read_u32(np, "x-size", &pdata->x_size)) {
-> +		dev_err(dev, "Failed to get x-size property\n");
-> +		return ERR_PTR(-EINVAL);
-> +	}
-> +
-> +	if (of_property_read_u32(np, "y-size", &pdata->y_size)) {
-> +		dev_err(dev, "Failed to get y-size property\n");
-> +		return ERR_PTR(-EINVAL);
-> +	}
-> +
-> +	dev_dbg(dev, "%s: x %d, y %d, gpio %d\n", __func__,
-> +				pdata->x_size, pdata->y_size, pdata->gpio_attb);
-> +
-> +	return pdata;
-> +}
-> +#else
-> +static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
-> +{
-> +	return NULL;
-
-This should be
-
-	return ERR_PTR(-EINVAL);
-
-since you test it with IS_ERR() later.
-
-> +}
-> +#endif
-> +
->  static int pixcir_i2c_ts_probe(struct i2c_client *client,
->  					 const struct i2c_device_id *id)
->  {
->  	const struct pixcir_ts_platform_data *pdata = client->dev.platform_data;
-> +	struct device *dev = &client->dev;
-> +	struct device_node *np = dev->of_node;
->  	struct pixcir_i2c_ts_data *tsdata;
->  	struct input_dev *input;
->  	int error;
->  
-> -	if (!pdata) {
-> +	if (np) {
-> +		pdata = pixcir_parse_dt(dev);
-> +		if (IS_ERR(pdata))
-> +			return PTR_ERR(pdata);
-
-We should be favoring kernel-provided platform data if it is pesent even
-if there is dt-data available. This way user can override firmware,m if
-needed.
-
-> +
-> +	} else if (!pdata) {
->  		dev_err(&client->dev, "platform data not defined\n");
->  		return -EINVAL;
->  	}
-> @@ -157,10 +211,14 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
->  	__set_bit(EV_KEY, input->evbit);
->  	__set_bit(EV_ABS, input->evbit);
->  	__set_bit(BTN_TOUCH, input->keybit);
-> -	input_set_abs_params(input, ABS_X, 0, pdata->x_max, 0, 0);
-> -	input_set_abs_params(input, ABS_Y, 0, pdata->y_max, 0, 0);
-> -	input_set_abs_params(input, ABS_MT_POSITION_X, 0, pdata->x_max, 0, 0);
-> -	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, pdata->y_max, 0, 0);
-> +	input_set_abs_params(input, ABS_X,
-> +					0, pdata->x_size - 1, 0, 0);
-> +	input_set_abs_params(input, ABS_Y,
-> +					0, pdata->y_size - 1, 0, 0);
-> +	input_set_abs_params(input, ABS_MT_POSITION_X,
-> +					0, pdata->x_size - 1, 0, 0);
-> +	input_set_abs_params(input, ABS_MT_POSITION_Y,
-> +					0, pdata->y_size - 1, 0, 0);
->  
->  	input_set_drvdata(input, tsdata);
->  
-> @@ -211,11 +269,20 @@ static const struct i2c_device_id pixcir_i2c_ts_id[] = {
->  };
->  MODULE_DEVICE_TABLE(i2c, pixcir_i2c_ts_id);
->  
-> +#if defined(CONFIG_OF)
-> +static const struct of_device_id pixcir_of_match[] = {
-> +	{ .compatible = "pixcir,pixcir_ts", },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, pixcir_of_match);
-> +#endif
-
-#ifdef is preferred for simple conditions.
-
-> +
->  static struct i2c_driver pixcir_i2c_ts_driver = {
->  	.driver = {
->  		.owner	= THIS_MODULE,
->  		.name	= "pixcir_ts",
->  		.pm	= &pixcir_dev_pm_ops,
-> +		.of_match_table = of_match_ptr(pixcir_of_match),
->  	},
->  	.probe		= pixcir_i2c_ts_probe,
->  	.remove		= pixcir_i2c_ts_remove,
 > diff --git a/include/linux/input/pixcir_ts.h b/include/linux/input/pixcir_ts.h
-> index 7163d91..b34ff7e 100644
+> index b34ff7e..f17c192 100644
 > --- a/include/linux/input/pixcir_ts.h
 > +++ b/include/linux/input/pixcir_ts.h
-> @@ -3,8 +3,9 @@
+> @@ -1,6 +1,48 @@
+>  #ifndef	_PIXCIR_I2C_TS_H
+>  #define	_PIXCIR_I2C_TS_H
 >  
+> +/*
+> + * Register map
+> + */
+> +#define PIXCIR_REG_POWER_MODE	51
+> +#define PIXCIR_REG_INT_MODE	52
+> +
+> +/*
+> + * Power modes:
+> + * active: max scan speed
+> + * idle: lower scan speed with automatic transition to active on touch
+> + * halt: datasheet says sleep but this is more like halt as the chip
+> + *       clocks are cut and it can only be brought out of this mode
+> + *	 using the RESET pin.
+> + */
+> +enum pixcir_power_mode {
+> +	PIXCIR_POWER_ACTIVE,
+> +	PIXCIR_POWER_IDLE,
+> +	PIXCIR_POWER_HALT,
+> +};
+> +
+> +#define PIXCIR_POWER_MODE_MASK	0x03
+> +#define PIXCIR_POWER_ALLOW_IDLE (1UL << 2)
+> +
+> +/*
+> + * Interrupt modes:
+> + * periodical: interrupt is asserted periodicaly
+> + * diff coordinates: interrupt is asserted when coordinates change
+> + * level on touch: interrupt level asserted during touch
+> + * pulse on touch: interrupt pulse asserted druing touch
+> + *
+> + */
+> +enum pixcir_int_mode {
+> +	PIXCIR_INT_PERIODICAL,
+> +	PIXCIR_INT_DIFF_COORD,
+> +	PIXCIR_INT_LEVEL_TOUCH,
+> +	PIXCIR_INT_PULSE_TOUCH,
+> +};
+> +
+> +#define PIXCIR_INT_MODE_MASK	0x03
+> +#define PIXCIR_INT_ENABLE	(1UL << 3)
+> +#define PIXCIR_INT_POL_HIGH	(1UL << 2)
+> +
 >  struct pixcir_ts_platform_data {
 >  	int (*attb_read_val)(void);
-> -	int x_max;
-> -	int y_max;
-> +	unsigned int x_size;	/* X axis resolution */
-> +	unsigned int y_size;	/* Y axis resolution */
-> +	int gpio_attb;		/* GPIO connected to ATTB line */
->  };
-
-OK, it looks like the series were split awkwardly: you are defining data
-that is used by follow-up patches and its purpose is unclear when
-reviewing patch-by-patch. I'd recommend rearranging so that DT support
-patch is the very last in the series.
-
->  
->  #endif
+>  	unsigned int x_size;	/* X axis resolution */
 > -- 
 > 1.8.3.2
 > 
-
-Thanks.
 
 -- 
 Dmitry
