@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485Ab3LRVJH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:09:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35780 "EHLO
+	id S1755607Ab3LRWPh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:15:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35811 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752330Ab3LRVJA (ORCPT
+	with ESMTP id S1752330Ab3LRVJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:09:00 -0500
+	Wed, 18 Dec 2013 16:09:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.4 23/31] dm bufio: initialize read-only module parameters
-Date: Wed, 18 Dec 2013 13:08:31 -0800
-Message-Id: <20131218210523.441140055@linuxfoundation.org>
+        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Dave Chinner <dchinner@redhat.com>, Ben Myers <bpm@sgi.com>
+Subject: [PATCH 3.4 09/31] xfs: underflow bug in xfs_attrlist_by_handle()
+Date: Wed, 18 Dec 2013 13:08:17 -0800
+Message-Id: <20131218210523.060189630@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218210522.790152625@linuxfoundation.org>
 References: <20131218210522.790152625@linuxfoundation.org>
@@ -29,45 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 4cb57ab4a2e61978f3a9b7d4f53988f30d61c27f upstream.
+commit 31978b5cc66b8ba8a7e8eef60b12395d41b7b890 upstream.
 
-Some module parameters in dm-bufio are read-only. These parameters
-inform the user about memory consumption. They are not supposed to be
-changed by the user.
+If we allocate less than sizeof(struct attrlist) then we end up
+corrupting memory or doing a ZERO_PTR_SIZE dereference.
 
-However, despite being read-only, these parameters can be set on
-modprobe or insmod command line, for example:
-modprobe dm-bufio current_allocated_bytes=12345
+This can only be triggered with CAP_SYS_ADMIN.
 
-The kernel doesn't expect that these variables can be non-zero at module
-initialization and if the user sets them, it results in BUG.
-
-This patch initializes the variables in the module init routine, so that
-user-supplied values are ignored.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-bufio.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ fs/xfs/xfs_ioctl.c   |    3 ++-
+ fs/xfs/xfs_ioctl32.c |    3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -1642,6 +1642,11 @@ static int __init dm_bufio_init(void)
- {
- 	__u64 mem;
+--- a/fs/xfs/xfs_ioctl.c
++++ b/fs/xfs/xfs_ioctl.c
+@@ -400,7 +400,8 @@ xfs_attrlist_by_handle(
+ 		return -XFS_ERROR(EPERM);
+ 	if (copy_from_user(&al_hreq, arg, sizeof(xfs_fsop_attrlist_handlereq_t)))
+ 		return -XFS_ERROR(EFAULT);
+-	if (al_hreq.buflen > XATTR_LIST_MAX)
++	if (al_hreq.buflen < sizeof(struct attrlist) ||
++	    al_hreq.buflen > XATTR_LIST_MAX)
+ 		return -XFS_ERROR(EINVAL);
  
-+	dm_bufio_allocated_kmem_cache = 0;
-+	dm_bufio_allocated_get_free_pages = 0;
-+	dm_bufio_allocated_vmalloc = 0;
-+	dm_bufio_current_allocated = 0;
-+
- 	memset(&dm_bufio_caches, 0, sizeof dm_bufio_caches);
- 	memset(&dm_bufio_cache_names, 0, sizeof dm_bufio_cache_names);
+ 	/*
+--- a/fs/xfs/xfs_ioctl32.c
++++ b/fs/xfs/xfs_ioctl32.c
+@@ -361,7 +361,8 @@ xfs_compat_attrlist_by_handle(
+ 	if (copy_from_user(&al_hreq, arg,
+ 			   sizeof(compat_xfs_fsop_attrlist_handlereq_t)))
+ 		return -XFS_ERROR(EFAULT);
+-	if (al_hreq.buflen > XATTR_LIST_MAX)
++	if (al_hreq.buflen < sizeof(struct attrlist) ||
++	    al_hreq.buflen > XATTR_LIST_MAX)
+ 		return -XFS_ERROR(EINVAL);
  
+ 	/*
 
 
