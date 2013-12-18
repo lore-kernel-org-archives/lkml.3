@@ -1,133 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab3LRBgY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 20:36:24 -0500
-Received: from m59-178.qiye.163.com ([123.58.178.59]:37616 "EHLO
-	m59-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab3LRBgW (ORCPT
+	id S1751858Ab3LRBil (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 20:38:41 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:42113 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab3LRBik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 20:36:22 -0500
-Message-ID: <52B0FC0D.8070007@ubuntukylin.com>
-Date: Wed, 18 Dec 2013 09:36:13 +0800
-From: Li Wang <liwang@ubuntukylin.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Tue, 17 Dec 2013 20:38:40 -0500
+Date: Wed, 18 Dec 2013 01:38:35 +0000
+From: "Carlos R. Mafra" <crmafra@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, intel-gfx@lists.freedesktop.org
+Subject: 3.13.0-rc4+: Warning at drivers/gpu/drm/i915/intel_display.c
+Message-ID: <20131218013835.GA6448@rMBP.site>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, Sage Weil <sage@inktank.com>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Yunchuan Wen <yunchuanwen@ubuntukylin.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Li Zefan <lizefan@huawei.com>,
-        Matthew Wilcox <matthew@wil.cx>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/5] VFS: Directory level cache cleaning
-References: <cover.1387205337.git.liwang@ubuntukylin.com> <20131217220503.GA20579@dastard>
-In-Reply-To: <20131217220503.GA20579@dastard>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUpLVU9LQkJCQkNPTE9KSUpKV1kJDhceCFlBWS
-	grPSQrOigoJDI1JDM#Oj8#KUFLVUtANiMkIj4oJDI1JDM#Oj8#KUFLVUtAKy8pJCI#KCQyNSQzPj
-	o*PilBS1VLQDg0LjUvKSIkODVBS1VLQCk#PDI0NSQ6KDI6QUtVS0ArKTQtMjU4PiQzLjU6NUFLVU
-	tAPyI1OjYyOCQyKyQ1NCQyNSQzPjo*PilBS1VLQCk#OjckMiskMjUkKTk3JDI1JDM#Oj8#KUFKSV
-	VLQDYuNy8yJCk4Ky8kPzI9PT4pPjUvJDI1JDM#Oj8#KUFJVUtAMiskLzQ*OiIkODUvJEskSktLQU
-	tVS0AyKyROJDYyNS4vPiQ4NS8kSyRKS0FLVUtAMiskSiQ2MjUuLz4kODUvJEskSktBS1VLQDIrJE
-	okMzQuKSQ4NS8kSyRKS0tBS1VLQDIrJEhLJDYyNS4vPiQ4NS8kSyROS0FLVUtAPTUkNjoiJE9KQi
-	QzNzEkSiRLQ0tIS09BS1VISEA9NSQzNC8kMzcxJEtMS05LT0FLVUtAPSskKT4kPSwkMzcxJEtDS0
-	hLTUFWTFVOQCguOSQ#QUpVTk5APTUkKC45JD41LDQpPygkMzcxJEpLS0lLSkFLVUlDQD01JD0pPj
-	4kMzcxJEtMS05LT0FKVUxOWQY+
-X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSENM
-	SEhLTkxOTklIVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
-	QU1KTUw3V1kSC1lBWU1KVUpDTFVOT1VCWQY+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both 'drop_caches' and 'vfs_cache_pressure' do coarse granularity
-control. Sometimes these do not help much for those performance
-sensitive applications. General and simple algorithms are good
-regarding its application independence and working for normal
-situations. However, since applications have the most knowledge
-about the things they are doing, they can always do better if
-they are given a chance. I think that is why compiler have
-directives, such as __inline__,__align__, cpu cache provides
-__prefetch__ etc. Similarly, I think we had better endow the
-applications more abilities to manipulate the metadata/page cache.
-This is potentially beneficial to avoid performance degradation
-due to cache thrashing.
 
-'drop_caches' may not be the expected way to go, since its intention
-is for debugging. 'fadvise' is originally proposed at this purpose,
-I think we may start with making 'fadvise' could handle directory level
-page cache cleaning.
+I've been using an external monitor with my retina Macbook and sometimes I see
+the warning below. I think it happens when I unplug the monitor from the
+thunderbolt port (I use a converter to VGA).
 
-On 2013/12/18 6:05, Dave Chinner wrote:
-> On Mon, Dec 16, 2013 at 07:00:04AM -0800, Li Wang wrote:
->> Currently, Linux only support file system wide VFS
->> cache (dentry cache and page cache) cleaning through
->> '/proc/sys/vm/drop_caches'. Sometimes this is less
->> flexible. The applications may know exactly whether
->> the metadata and data will be referenced or not in future,
->> a desirable mechanism is to enable applications to
->> reclaim the memory of unused cache entries at a finer
->> granularity - directory level. This enables applications
->> to keep hot metadata and data (to be referenced in the
->> future) in the cache, and kick unused out to avoid
->> cache thrashing. Another advantage is it is more flexible
->> for debugging.
->>
->> This patch extend the 'drop_caches' interface to
->> support directory level cache cleaning and has a complete
->> backward compatibility. '{1,2,3}' keeps the same semantics
->> as before. Besides, "{1,2,3}:DIRECTORY_PATH_NAME" is allowed
->> to recursively clean the caches under DIRECTORY_PATH_NAME.
->> For example, 'echo 1:/home/foo/jpg > /proc/sys/vm/drop_caches'
->> will clean the page caches of the files inside 'home/foo/jpg'.
->>
->> It is easy to demonstrate the advantage of directory level
->> cache cleaning. We use a virtual machine configured with
->> an Intel(R) Xeon(R) 8-core CPU E5506 @ 2.13GHz, and with 1GB
->> memory.  Three directories named '1', '2' and '3' are created,
->> with each containing 180000 – 280000 files. The test program
->> opens all files in a directory and then tries the next directory.
->> The order for accessing the directories is '1', '2', '3',
->> '1'.
->>
->> The time on accessing '1' on the second time is measured
->> with/without cache cleaning, under different file counts.
->> With cache cleaning, we clean all cache entries of files
->> in '2' before accessing the files in '3'. The results
->> are as follows (in seconds),
->
-> This sounds like a highly contrived test case. There is no reason
-> why dentry cache access time would change going from 180k to 280k
-> files in 3 directories unless you're right at the memory pressure
-> balance point in terms of cache sizing.
->
->> Note: by default, VFS will move those unreferenced inodes
->> into a global LRU list rather than freeing them, for this
->> experiment, we modified iput() to force to free inode as well,
->> this behavior and related codes are left for further discussion,
->> thus not reflected in this patch)
->>
->> Number of files:   180000 200000 220000 240000 260000
->> Without cleaning:  2.165  6.977  10.032 11.571 13.443
->> With cleaning:     1.949  1.906  2.336  2.918  3.651
->>
->> When the number of files is 180000 in each directory,
->> the metadata cache is large enough to buffer all entries
->> of three directories, so re-accessing '1' will hit in
->> the cache, regardless of whether '2' cleaned up or not.
->> As the number of files increases, the cache can now only
->> buffer two+ directories. Accessing '3' will result in some
->> entries of '1' to be evicted (due to LRU). When re-accessing '1',
->> some entries need be reloaded from disk, which is time-consuming.
->
-> Ok, so exactly as I thought - your example working set is slightly
-> larger than what the cache holds. Hence what you are describing is
-> a cache reclaim threshold effect: something you can avoid with
-> /proc/sys/vm/vfs_cache_pressure.
->
-> Cheers,
->
-> Dave.
->
+[10906.327043] ------------[ cut here ]------------
+[10906.327059] WARNING: CPU: 3 PID: 643 at /home/mafra/linux-2.6/drivers/gpu/drm/i915/intel_display.c:9212 intel_modeset_check_state+0x618/0x760()
+[10906.327062] encoder's hw state doesn't match sw tracking (expected 1, found 0)
+[ 7529.213883] waiting module removal not supported: please upgrade
+[10906.327064] Modules linked in: b43 mac80211 cfg80211 ssb rfkill ctr ccm uvcvideo videobuf2_core videobuf2_vmalloc videobuf2_memops snd_hda_codec_hdmi snd_hda_codec_cirrus arc4 snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_timer snd_page_alloc bcm5974 rtc_cmos [last unloaded: ssb]
+[10906.327094] CPU: 3 PID: 643 Comm: Xorg Not tainted 3.13.0-rc4+ #32
+[10906.327096] Hardware name: Apple Inc. MacBookPro10,2/Mac-AFD8A9D944EA4843, BIOS MBP102.88Z.0106.B01.1208311637 08/31/2012
+[10906.327099]  0000000000000009 ffff880082d7bac8 ffffffff8169b7e1 0000000000000007
+[10906.327105]  ffff880082d7bb18 ffff880082d7bb08 ffffffff8104d382 ffff880082d7bb18
+[10906.327109]  0000000000000001 ffff880264618328 ffff880264618000 ffff8802600f0800
+[10906.327114] Call Trace:
+[10906.327123]  [<ffffffff8169b7e1>] dump_stack+0x4e/0x71
+[10906.327131]  [<ffffffff8104d382>] warn_slowpath_common+0x82/0xb0
+[10906.327135]  [<ffffffff8104d451>] warn_slowpath_fmt+0x41/0x50
+[10906.327140]  [<ffffffff8142b478>] intel_modeset_check_state+0x618/0x760
+[10906.327146]  [<ffffffff8142b5e0>] intel_set_mode+0x20/0x30
+[10906.327151]  [<ffffffff8142bdcb>] intel_crtc_set_config+0x7db/0x9d0
+[10906.327158]  [<ffffffff813e13ad>] drm_mode_set_config_internal+0x5d/0xe0
+[10906.327163]  [<ffffffff813e391f>] drm_mode_setcrtc+0xff/0x590
+[10906.327170]  [<ffffffff813d4a69>] drm_ioctl+0x509/0x630
+[10906.327175]  [<ffffffff813e3820>] ? drm_mode_setplane+0x3b0/0x3b0
+[10906.327181]  [<ffffffff811454ee>] do_vfs_ioctl+0x7e/0x510
+[10906.327189]  [<ffffffff81134979>] ? ____fput+0x9/0x10
+[10906.327193]  [<ffffffff81145a11>] SyS_ioctl+0x91/0xb0
+[10906.327198]  [<ffffffff81133ddd>] ? SyS_writev+0x4d/0xc0
+[10906.327204]  [<ffffffff816a43e6>] system_call_fastpath+0x1a/0x1f
+[10906.327207] ---[ end trace 1d89c5dbe70372e7 ]---
+[10906.327235] [drm:intel_pipe_config_compare] *ERROR* mismatch in has_dp_encoder (expected 1, found 0)
+[10906.327236] ------------[ cut here ]------------
+[10906.327242] WARNING: CPU: 3 PID: 643 at /home/mafra/linux-2.6/drivers/gpu/drm/i915/intel_display.c:9285 check_crtc_state+0x225/0x300()
+[10906.327244] pipe state doesn't match!
+[10906.327245] Modules linked in: b43 mac80211 cfg80211 ssb rfkill ctr ccm uvcvideo videobuf2_core videobuf2_vmalloc videobuf2_memops snd_hda_codec_hdmi snd_hda_codec_cirrus arc4 snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_timer snd_page_alloc bcm5974 rtc_cmos [last unloaded: ssb]
+[10906.327265] CPU: 3 PID: 643 Comm: Xorg Tainted: G        W    3.13.0-rc4+ #32
+[10906.327267] Hardware name: Apple Inc. MacBookPro10,2/Mac-AFD8A9D944EA4843, BIOS MBP102.88Z.0106.B01.1208311637 08/31/2012
+[10906.327269]  0000000000000009 ffff880082d7b7f8 ffffffff8169b7e1 0000000000000007
+[10906.327273]  ffff880082d7b848 ffff880082d7b838 ffffffff8104d382 ffff880082d7b810
+[10906.327277]  ffff8802601746e0 ffff880082d7b8d8 ffff880264618000 ffff880260174000
+[10906.327281] Call Trace:
+[10906.327285]  [<ffffffff8169b7e1>] dump_stack+0x4e/0x71
+[10906.327289]  [<ffffffff8104d382>] warn_slowpath_common+0x82/0xb0
+[10906.327293]  [<ffffffff8104d451>] warn_slowpath_fmt+0x41/0x50
+[10906.327298]  [<ffffffff8141d8d5>] check_crtc_state+0x225/0x300
+[10906.327305]  [<ffffffff810a6ccd>] ? __module_text_address+0xd/0x60
+[10906.327312]  [<ffffffff8142b105>] intel_modeset_check_state+0x2a5/0x760
+[10906.327318]  [<ffffffff8142b5e0>] intel_set_mode+0x20/0x30
+[10906.327323]  [<ffffffff8142bdcb>] intel_crtc_set_config+0x7db/0x9d0
+[10906.327328]  [<ffffffff813e13ad>] drm_mode_set_config_internal+0x5d/0xe0
+[10906.327333]  [<ffffffff813e391f>] drm_mode_setcrtc+0xff/0x590
+[10906.327338]  [<ffffffff813d4a69>] drm_ioctl+0x509/0x630
+[10906.327343]  [<ffffffff813e3820>] ? drm_mode_setplane+0x3b0/0x3b0
+[10906.327347]  [<ffffffff811454ee>] do_vfs_ioctl+0x7e/0x510
+[10906.327352]  [<ffffffff81134979>] ? ____fput+0x9/0x10
+[10906.327356]  [<ffffffff81145a11>] SyS_ioctl+0x91/0xb0
+[10906.327361]  [<ffffffff81133ddd>] ? SyS_writev+0x4d/0xc0
+[10906.327365]  [<ffffffff816a43e6>] system_call_fastpath+0x1a/0x1f
+[10906.327368] ---[ end trace 1d89c5dbe70372e8 ]---
+
+My config contains these options
+
+CONFIG_DRM=y
+CONFIG_DRM_KMS_HELPER=y
+CONFIG_DRM_KMS_FB_HELPER=y
+CONFIG_DRM_I915=y
+CONFIG_DRM_I915_KMS=y
+CONFIG_DRM_I915_FBDEV=y
+
+and I should be able to upload the full config somewhere if necessary.
+
+I'm happy to provide any other information.
