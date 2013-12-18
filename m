@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab3LRKs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 05:48:59 -0500
-Received: from vserver.eikelenboom.it ([84.200.39.61]:47113 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab3LRKs5 (ORCPT
+	id S1752862Ab3LRLGo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 06:06:44 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:59653 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab3LRLGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 05:48:57 -0500
-Date: Wed, 18 Dec 2013 11:48:45 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <133955103.20131218114845@eikelenboom.it>
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: Arend van Spriel <arend@broadcom.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Julian Calaby <julian.calaby@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+	Wed, 18 Dec 2013 06:06:41 -0500
+Date: Wed, 18 Dec 2013 11:06:31 +0000
+From: Mark Brown <broonie@kernel.org>
+To: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Avinash Patil <avinashapatil@gmail.com>
-Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
-In-Reply-To: <1387358785.4694.9.camel@jlt4.sipsolutions.net>
-References: <1342235583.20131211182804@eikelenboom.it> <CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com> <871324710.20131211191104@eikelenboom.it> <CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com> <1937118387.20131216122200@eikelenboom.it> <52AEE60B.6030509@broadcom.com> <19210260274.20131216135644@eikelenboom.it> <CAGRGNgXHemM2FfnXgW5RbzhFT+9SfUfVkjdysK3+=_u3hWSacw@mail.gmail.com> <1534126119.20131217104548@eikelenboom.it> <387552477.20131217213319@eikelenboom.it> <20131217212709.GB5624@decadent.org.uk> <1254825772.20131217224914@eikelenboom.it> <CA+55aFxQg6=MAWEkEGz64Hz8OawvPyX=fpBOjY8cGBL5XgB9WQ@mail.gmail.com> <52B167F6.5060209@broadcom.com> (sfid-20131218_101718_355278_E8533498) <1387358785.4694.9.camel@jlt4.sipsolutions.net>
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "vpalatin@chromium.org" <vpalatin@chromium.org>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Message-ID: <20131218110631.GD28455@sirena.org.uk>
+References: <1387258597-21866-1-git-send-email-wenyou.yang@atmel.com>
+ <1387258597-21866-2-git-send-email-wenyou.yang@atmel.com>
+ <20131217130653.GA3185@sirena.org.uk>
+ <B256D81BAE5131468A838E5D7A24364172F18381@penmbx01>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9hzSyicXuByfNYJd"
+Content-Disposition: inline
+In-Reply-To: <B256D81BAE5131468A838E5D7A24364172F18381@penmbx01>
+X-Cookie: Haste makes waste.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3 v2] regulator: act8865: add PMIC act8865 driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Wednesday, December 18, 2013, 10:26:25 AM, you wrote:
+--9hzSyicXuByfNYJd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Hi all,
+On Wed, Dec 18, 2013 at 03:11:12AM +0000, Yang, Wenyou wrote:
 
-> We really should be asking Luis to look at this who hasn't yet chimed
-> in, presumably because he's between jobs (and travelling IIRC)
+> > This is the wrong type for a voltage table but it looks like it
+> > shouldn't be a voltage table at all - this looks like it should be
+> > mapped as linear ranges.
 
-> On Wed, 2013-12-18 at 10:16 +0100, Arend van Spriel wrote:
->> On 12/17/2013 11:06 PM, Linus Torvalds wrote:
->> > We have literally had this *exact* same issue with firmware loading.
->> > Network drivers shouldn't try to load firmware at module load time.
->> > Same deal.
->> 
->> It is kind of a chicken and egg problem for (wireless) networking
->> drivers. To get IFF_UP from the network layer you have to register a
->> netdevice. For wireless drivers this means you have to register a wiphy
->> device with cfg80211 which flags capabilities and optionally are custom
->> regulatory domain. That information depends on the device and firmware
->> used. And there we have a full circle.
+> Change it, using unsigned int.
 
-> This is all really beside the point.
+> It is not linear, can't be mapped as linear range. so using voltage table.
 
-> For this CRDA information, the kernel never actually *waits* for it, so
-> in the case that there's no reply, it uses the built-in world domain. So
-> it's not like request_firmware(), which will block boot forever, but
-> it's also not like request_firmware_nowait() which will eventually time
-> out and come back with an error if userspace isn't handling it (though
-> now that firmware loading is built in ...)
+No, linear ranges with a plural - look at regulator_map_voltage_linear_range.
 
-> The issue is that it uses the built-in data *forever*, and what Sander
-> said was "or it will block forever" but just meant that it never was
-> able to do any further updates.
+--9hzSyicXuByfNYJd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> It *doesn't* actually block the boot process or such. Everything Linus
-> said is true but seems to have been written in understanding "blocks" as
-> "blocking the boot process", rather than "blocking further updates".
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-> Regardless of this, even blocking further updates is a really bad idea.
-> There are a few ways to handle this, but I'll let Luis poke at that.
+iQIcBAEBAgAGBQJSsYG0AAoJELSic+t+oim9VWUP/iMcMCHe4G6e7P/vth4syRMT
+Y0UteAes4W9+QxKBg9qasjD6c8ENWuuynXUG+WcOjkE5hmRW6unY9CsZxgPSk7Vh
+aWHIeVTdjkQ+BtqmgyKD/9y3PAPPW/FRkh5eKxSFn5Yj/qgi5Z2E/bIRAEiJ1OtO
+PuZxqsmXOgGO/FqWG9Z2yC059goU/ieH0N/aTsCzgCrFM3KQKhwOqvq1IYlIusbe
+GcL/IrW8Hly01scYaClNIw0cSb7xaLMEuul0Q4QXmX+8wW6LG0qCjPI5hCSkWgl3
+KaFP6Z+ol3gU7xYljKBQYtGwlBneP+ir8tIw/o4+bENWRNToUoO6ZYp8xJfuAS98
+uRKhYSA2Rud4CQRRfOx47g1+scUw7vlJdCmDwRU/EDvNsBBZXyjTPDRig0chZMBw
+MyBQC1fiOpVOQsmZ5bgcxl3SgacXsHU4Q7+is4uVFmpLLoK544/7caEXB7gVy19g
+nimkd3JyshmRQu9xiii+Q3QqSbM5yFcbaqvOskqPmmHWgtzYY7erm2iL4v1EdpS/
+pf2ro0Gljs7O98PZjy3AGhshf3L2VGYndCOL4lzJb1uRt42PrAjCLu+t16VbzBS3
+SEN4efeTuxc5TQ5FTxPpKPIJTCRlnKm93uJT//+3LW2jth51LITeylZSCC42L+ET
+yCkrkStaXRHOhYZ/TVwG
+=735m
+-----END PGP SIGNATURE-----
 
-Your description is correct, sorry if I was not clear.
-
---
-Sander
-
-> johannes
-
-
-
+--9hzSyicXuByfNYJd--
