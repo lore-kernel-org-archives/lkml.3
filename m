@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab3LRWBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:01:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36071 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277Ab3LRVM2 (ORCPT
+	id S1756105Ab3LRWBH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:01:07 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:62629 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750961Ab3LRWBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:28 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 50/78] media: saa7164: fix return value check in saa7164_initdev()
-Date: Wed, 18 Dec 2013 13:11:18 -0800
-Message-Id: <20131218211113.311900150@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
-References: <20131218211111.903835960@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Wed, 18 Dec 2013 17:01:05 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
+        tomaz.solc@tablix.org, aaron.lu@intel.com,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: Writeback threads and freezable
+Date: Wed, 18 Dec 2013 23:14:24 +0100
+Message-ID: <1639602.dY4DbMiF4F@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20131218114343.GA4324@htj.dyndns.org>
+References: <20131213174932.GA27070@htj.dyndns.org> <20131218003510.GD20579@dastard> <20131218114343.GA4324@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wednesday, December 18, 2013 06:43:43 AM Tejun Heo wrote:
 
-------------------
+[...]
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> If filesystems need an indication that the underlying device is no
+> longer functional, please go ahead and add it, but please keep in mind
+> all these are completely asynchronous.  Nothing guarantees you that
+> such events would happen in any specific order.  IOW, you can be at
+> *ANY* point in your warm unplug path and the device is hot unplugged,
+> which essentially forces all the code paths to be ready for the worst,
+> and that's exactly why there isn't much effort in trying to separate
+> out warm and hot unplug paths.
 
-commit 89f4d45b2752df5d222b5f63919ce59e2d8afaf4 upstream.
+Yes.  Devices can go away at any point without notice.  Even PCI devices
+that have never been assumed to be hot-removable.  Any piece of code in the
+kernel needs to be prepared to deal with such situations.
 
-In case of error, the function kthread_run() returns ERR_PTR()
-and never returns NULL. The NULL test in the return value check
-should be replaced with IS_ERR().
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/media/pci/saa7164/saa7164-core.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
---- a/drivers/media/pci/saa7164/saa7164-core.c
-+++ b/drivers/media/pci/saa7164/saa7164-core.c
-@@ -1348,9 +1348,11 @@ static int saa7164_initdev(struct pci_de
- 		if (fw_debug) {
- 			dev->kthread = kthread_run(saa7164_thread_function, dev,
- 				"saa7164 debug");
--			if (!dev->kthread)
-+			if (IS_ERR(dev->kthread)) {
-+				dev->kthread = NULL;
- 				printk(KERN_ERR "%s() Failed to create "
- 					"debug kernel thread\n", __func__);
-+			}
- 		}
- 
- 	} /* != BOARD_UNKNOWN */
-
-
+Thanks,
+Rafael
