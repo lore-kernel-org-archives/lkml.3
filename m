@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab3LRJQS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 04:16:18 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:57806 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab3LRJQO (ORCPT
+	id S1753728Ab3LRJQr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 04:16:47 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:22669 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab3LRJQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 04:16:14 -0500
-Date: Wed, 18 Dec 2013 09:16:09 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: sameo@linux.intel.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Simple MFD driver example
-Message-ID: <20131218091609.GB14274@lee--X1>
-References: <CAOMwXhN5UfR=Y8V3i=A2zSCv7V9sRDd0Z+D1AQFahvRS-mV5Fw@mail.gmail.com>
- <20131216082556.GE18769@lee--X1>
- <CAOMwXhN8fG8YbU53A_U_MyMTyGWfV7NCCtr2a5oCbHdB0iqqmA@mail.gmail.com>
- <20131216150514.GN18769@lee--X1>
- <CAOMwXhMn5W76Dp=EFNHaknXCqZ4q4e7fphgtttx+8U=1Fc_DMQ@mail.gmail.com>
- <20131216164844.GS18769@lee--X1>
- <CAOMwXhPLNVKbRqR2tPQc758zLsh0Lg0D6JUf2yrf+ZosJVANAw@mail.gmail.com>
+	Wed, 18 Dec 2013 04:16:43 -0500
+X-IronPort-AV: E=Sophos;i="4.95,506,1384329600"; 
+   d="scan'208";a="3702356"
+Message-ID: <52B167F6.5060209@broadcom.com>
+Date: Wed, 18 Dec 2013 10:16:38 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMwXhPLNVKbRqR2tPQc758zLsh0Lg0D6JUf2yrf+ZosJVANAw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Sander Eikelenboom <linux@eikelenboom.it>
+CC: Ben Hutchings <ben@decadent.org.uk>,
+        Julian Calaby <julian.calaby@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Avinash Patil <avinashapatil@gmail.com>
+Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't
+ work.
+References: <1342235583.20131211182804@eikelenboom.it>	<CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com>	<871324710.20131211191104@eikelenboom.it>	<CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com>	<1937118387.20131216122200@eikelenboom.it>	<52AEE60B.6030509@broadcom.com>	<19210260274.20131216135644@eikelenboom.it>	<CAGRGNgXHemM2FfnXgW5RbzhFT+9SfUfVkjdysK3+=_u3hWSacw@mail.gmail.com>	<1534126119.20131217104548@eikelenboom.it>	<387552477.20131217213319@eikelenboom.it>	<20131217212709.GB5624@decadent.org.uk>	<1254825772.20131217224914@eikelenboom.it> <CA+55aFxQg6=MAWEkEGz64Hz8OawvPyX=fpBOjY8cGBL5XgB9WQ@mail.gmail.com>
+In-Reply-To: <CA+55aFxQg6=MAWEkEGz64Hz8OawvPyX=fpBOjY8cGBL5XgB9WQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Dec 16, 2013 at 4:48 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> > There isn't any documentation that would help you I fear. I'm trying
-> > to help you, but you haven't answered my previous question.
-> 
-> I did intend to answer your question when I was writing that I would
-> send some code. See it at the bottom of the email.
-> 
-> > Do you have a datasheet for the device that you're trying to enable?
-> 
-> datasheets.maximintegrated.com/en/ds/MAX6650-MAX6651.pdf
+On 12/17/2013 11:06 PM, Linus Torvalds wrote:
+> We have literally had this *exact* same issue with firmware loading.
+> Network drivers shouldn't try to load firmware at module load time.
+> Same deal.
 
-What has alluded you to the fact that this is an MFD device?
+It is kind of a chicken and egg problem for (wireless) networking
+drivers. To get IFF_UP from the network layer you have to register a
+netdevice. For wireless drivers this means you have to register a wiphy
+device with cfg80211 which flags capabilities and optionally are custom
+regulatory domain. That information depends on the device and firmware
+used. And there we have a full circle.
 
-a) It doesn't look like one to me
-
-b) This device looks like it's already supported in Mainline
-
-> hwmon is already available in the kernel (for which my simple patch
-> was rejected). I have just sent out a gpio driver for the gpio bits,
-> and see the mfd driver code below.
-
-I'm not sure why it was rejected, but the MAX6651 already looks
-supported to me in:
-  drivers/hwmon/max6650.c.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards,
+Arend
