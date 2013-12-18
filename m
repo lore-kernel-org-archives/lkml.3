@@ -1,163 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab3LRVNb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:13:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36325 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715Ab3LRVNU (ORCPT
+	id S1755564Ab3LRVfP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:35:15 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55818 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754954Ab3LRVfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:20 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH 3.12 008/118] ARM: pxa: tosa: fix keys mapping
-Date: Wed, 18 Dec 2013 13:10:45 -0800
-Message-Id: <20131218211219.701681211@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
-References: <20131218211219.461663463@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Wed, 18 Dec 2013 16:35:12 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: Nigel Cunningham <nigel@nigelcunningham.com.au>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
+        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] libata, freezer: avoid block device removal while system is frozen
+Date: Wed, 18 Dec 2013 22:48:31 +0100
+Message-ID: <3767261.syB7gLdVqQ@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20131218111726.GB3808@htj.dyndns.org>
+References: <20131213174932.GA27070@htj.dyndns.org> <4108657.rimrPRbHDY@vostro.rjw.lan> <20131218111726.GB3808@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Wednesday, December 18, 2013 06:17:26 AM Tejun Heo wrote:
+> Hello, Rafael.
+> 
+> On Wed, Dec 18, 2013 at 01:35:13AM +0100, Rafael J. Wysocki wrote:
+> > So do I understand correctly that you're talking about kernel threads/worqueues
+> > freezing below?
+> 
+> Yeap, I'm strictly talking about kernel freezables.
+> 
+> > > So, are you saying it's really about giving device drivers easy way to
+> > > implement suspend/resume?
+> > 
+> > Well, that's a side effect rather than a recommeded interface.  A *few* pieces
+> > of code need to freeze kernel threads/workqueues, but they should know who they
+> > are and they really really should know *why* they need that (the above-mentioned
+> > runtime PM workqueue is one example).  The rest is just doing that because they
+> > can, which may not be entirely reasonable (or because they did that in the past
+> > and the original author is not responsive and everyone else does not dare to try
+> > removing that).
+> 
+> I see.  In the long term, I think the right thing to do is making the
+> freezer interface more specific so that only the ones which actually
+> need it do so explicitly.  Right now, kernel freezables are
+> conceptually at a very high level - it's a global task attribute and a
+> major knob in workqueue.  I suppose most of that is historical but by
+> perpetuating the model we're encouraging misuse of freezer in large
+> swaths of the kernel.  Even in this specific case, both writeback and
+> jbd workers have no fundamental reason to be freezable and yet
+> they're, eventually developing into totally unnecessary deadlocks.
 
-------------------
+You're right, but I'm not sure how we can make the interface for workqueues
+more specific, for example.  I guess we can simply drop create_freezable_workqueue()
+so that whoever wants to create a freezable workqueue has to use the right
+combination of flags.  Can we make it more specific than that?
 
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+BTW, pm_start_workqueue(), which is a legitimate user, doesn't even use that macro. :-)
 
-commit 506cac15ac86f204b83e3cfccde73eeb4e7c5f34 upstream.
+> > They were a lot more of that to start with really.  We removed quite a number
+> > of try_to_freeze() instances from the kernel a few years ago, but apparently
+> > people are taking shortcuts.
+> 
+> Great, so we're at least headed towards the right direction.
+> 
+> > The rule should be to require patch submitters to put in comments explaining
+> > why they need their kernel threads/workqueues to be freezable and generally
+> > there should be no such things in drivers.
+> 
+> I'm not so sure whether that's something which can be effectively
+> enforced given the current high visibility and confusion around
+> freezer.  I think the only way to get this under control is weed out
+> the current spurious users actively, deprecate the existing interface
+> and switch the real ones to something a lot more specific.
 
-When converting from tosa-keyboard driver to matrix keyboard, tosa keys
-received extra 1 column shift. Replace that with correct values to make
-keyboard work again.
+That'd be fine by me modulo the above remarks.
 
-Fixes: f69a6548c9d5 ('[ARM] pxa/tosa: make use of the matrix keypad driver')
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/mach-pxa/tosa.c |  102 +++++++++++++++++++++++------------------------
- 1 file changed, 51 insertions(+), 51 deletions(-)
-
---- a/arch/arm/mach-pxa/tosa.c
-+++ b/arch/arm/mach-pxa/tosa.c
-@@ -425,57 +425,57 @@ static struct platform_device tosa_power
-  * Tosa Keyboard
-  */
- static const uint32_t tosakbd_keymap[] = {
--	KEY(0, 2, KEY_W),
--	KEY(0, 6, KEY_K),
--	KEY(0, 7, KEY_BACKSPACE),
--	KEY(0, 8, KEY_P),
--	KEY(1, 1, KEY_Q),
--	KEY(1, 2, KEY_E),
--	KEY(1, 3, KEY_T),
--	KEY(1, 4, KEY_Y),
--	KEY(1, 6, KEY_O),
--	KEY(1, 7, KEY_I),
--	KEY(1, 8, KEY_COMMA),
--	KEY(2, 1, KEY_A),
--	KEY(2, 2, KEY_D),
--	KEY(2, 3, KEY_G),
--	KEY(2, 4, KEY_U),
--	KEY(2, 6, KEY_L),
--	KEY(2, 7, KEY_ENTER),
--	KEY(2, 8, KEY_DOT),
--	KEY(3, 1, KEY_Z),
--	KEY(3, 2, KEY_C),
--	KEY(3, 3, KEY_V),
--	KEY(3, 4, KEY_J),
--	KEY(3, 5, TOSA_KEY_ADDRESSBOOK),
--	KEY(3, 6, TOSA_KEY_CANCEL),
--	KEY(3, 7, TOSA_KEY_CENTER),
--	KEY(3, 8, TOSA_KEY_OK),
--	KEY(3, 9, KEY_LEFTSHIFT),
--	KEY(4, 1, KEY_S),
--	KEY(4, 2, KEY_R),
--	KEY(4, 3, KEY_B),
--	KEY(4, 4, KEY_N),
--	KEY(4, 5, TOSA_KEY_CALENDAR),
--	KEY(4, 6, TOSA_KEY_HOMEPAGE),
--	KEY(4, 7, KEY_LEFTCTRL),
--	KEY(4, 8, TOSA_KEY_LIGHT),
--	KEY(4, 10, KEY_RIGHTSHIFT),
--	KEY(5, 1, KEY_TAB),
--	KEY(5, 2, KEY_SLASH),
--	KEY(5, 3, KEY_H),
--	KEY(5, 4, KEY_M),
--	KEY(5, 5, TOSA_KEY_MENU),
--	KEY(5, 7, KEY_UP),
--	KEY(5, 11, TOSA_KEY_FN),
--	KEY(6, 1, KEY_X),
--	KEY(6, 2, KEY_F),
--	KEY(6, 3, KEY_SPACE),
--	KEY(6, 4, KEY_APOSTROPHE),
--	KEY(6, 5, TOSA_KEY_MAIL),
--	KEY(6, 6, KEY_LEFT),
--	KEY(6, 7, KEY_DOWN),
--	KEY(6, 8, KEY_RIGHT),
-+	KEY(0, 1, KEY_W),
-+	KEY(0, 5, KEY_K),
-+	KEY(0, 6, KEY_BACKSPACE),
-+	KEY(0, 7, KEY_P),
-+	KEY(1, 0, KEY_Q),
-+	KEY(1, 1, KEY_E),
-+	KEY(1, 2, KEY_T),
-+	KEY(1, 3, KEY_Y),
-+	KEY(1, 5, KEY_O),
-+	KEY(1, 6, KEY_I),
-+	KEY(1, 7, KEY_COMMA),
-+	KEY(2, 0, KEY_A),
-+	KEY(2, 1, KEY_D),
-+	KEY(2, 2, KEY_G),
-+	KEY(2, 3, KEY_U),
-+	KEY(2, 5, KEY_L),
-+	KEY(2, 6, KEY_ENTER),
-+	KEY(2, 7, KEY_DOT),
-+	KEY(3, 0, KEY_Z),
-+	KEY(3, 1, KEY_C),
-+	KEY(3, 2, KEY_V),
-+	KEY(3, 3, KEY_J),
-+	KEY(3, 4, TOSA_KEY_ADDRESSBOOK),
-+	KEY(3, 5, TOSA_KEY_CANCEL),
-+	KEY(3, 6, TOSA_KEY_CENTER),
-+	KEY(3, 7, TOSA_KEY_OK),
-+	KEY(3, 8, KEY_LEFTSHIFT),
-+	KEY(4, 0, KEY_S),
-+	KEY(4, 1, KEY_R),
-+	KEY(4, 2, KEY_B),
-+	KEY(4, 3, KEY_N),
-+	KEY(4, 4, TOSA_KEY_CALENDAR),
-+	KEY(4, 5, TOSA_KEY_HOMEPAGE),
-+	KEY(4, 6, KEY_LEFTCTRL),
-+	KEY(4, 7, TOSA_KEY_LIGHT),
-+	KEY(4, 9, KEY_RIGHTSHIFT),
-+	KEY(5, 0, KEY_TAB),
-+	KEY(5, 1, KEY_SLASH),
-+	KEY(5, 2, KEY_H),
-+	KEY(5, 3, KEY_M),
-+	KEY(5, 4, TOSA_KEY_MENU),
-+	KEY(5, 6, KEY_UP),
-+	KEY(5, 10, TOSA_KEY_FN),
-+	KEY(6, 0, KEY_X),
-+	KEY(6, 1, KEY_F),
-+	KEY(6, 2, KEY_SPACE),
-+	KEY(6, 3, KEY_APOSTROPHE),
-+	KEY(6, 4, TOSA_KEY_MAIL),
-+	KEY(6, 5, KEY_LEFT),
-+	KEY(6, 6, KEY_DOWN),
-+	KEY(6, 7, KEY_RIGHT),
- };
- 
- static struct matrix_keymap_data tosakbd_keymap_data = {
-
+Thanks,
+Rafael
 
