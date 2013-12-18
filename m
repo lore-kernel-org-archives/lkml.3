@@ -1,56 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049Ab3LRWoG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:44:06 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:57404 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab3LRWoD (ORCPT
+	id S1752255Ab3LRWoz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:44:55 -0500
+Received: from leo.clearchain.com ([199.73.29.74]:56498 "EHLO
+	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab3LRWoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 17:44:03 -0500
-Date: Wed, 18 Dec 2013 17:43:59 -0500 (EST)
-Message-Id: <20131218.174359.2230195267384857675.davem@davemloft.net>
-To: richardcochran@gmail.com
-Cc: rashika.kheria@gmail.com, linux-kernel@vger.kernel.org,
-        dvhart@linux.intel.com, joe@perches.com,
-        andriy.shevchenko@linux.intel.com, vfalico@redhat.com,
-        netdev@vger.kernel.org, josh@joshtriplett.org
-Subject: Re: [PATCH] drivers: ptp: Include new header file in ptp_pch.c
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20131216085839.GA8303@netboy>
-References: <1387140255-11797-1-git-send-email-rashika.kheria@gmail.com>
-	<20131216085839.GA8303@netboy>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 18 Dec 2013 14:44:03 -0800 (PST)
+	Wed, 18 Dec 2013 17:44:54 -0500
+X-Greylist: delayed 1196 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Dec 2013 17:44:53 EST
+Date: Thu, 19 Dec 2013 08:27:32 +1000
+From: Peter Hutterer <peter.hutterer@who-t.net>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: linux-input@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        linux-kernel@vger.kernel.org, input-tools@lists.freedesktop.org
+Subject: Re: [PATCH 1/4] Input: uinput: add full absinfo support
+Message-ID: <20131218222732.GA6315@yabbi.redhat.com>
+References: <1387295334-1744-1-git-send-email-dh.herrmann@gmail.com>
+ <1387295334-1744-2-git-send-email-dh.herrmann@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387295334-1744-2-git-send-email-dh.herrmann@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.2.7 (mail.clearchain.com [127.0.0.1]); Thu, 19 Dec 2013 08:54:47 +1030 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Cochran <richardcochran@gmail.com>
-Date: Mon, 16 Dec 2013 09:58:40 +0100
-
-> On Mon, Dec 16, 2013 at 02:14:15AM +0530, Rashika Kheria wrote:
->> ---
->>  drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h    |    9 ---------
->>  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   |    1 +
->>  drivers/ptp/ptp_pch.c                              |    1 +
->>  include/linux/ptp_pch.h                            |   16 ++++++++++++++++
->>  4 files changed, 18 insertions(+), 9 deletions(-)
->>  create mode 100644 include/linux/ptp_pch.h
+On Tue, Dec 17, 2013 at 04:48:51PM +0100, David Herrmann wrote:
+> We currently lack support for abs-resolution and abs-value parameters
+> during uinput ABS initialization. Furthermore, our parsers don't allow
+> growing ABS_CNT values. Therefore, introduce uinput_user_dev2.
 > 
-> Instead of adding a random driver header into include/linux, I would
-> prefer that you just move the ptp_pch.c from drivers/ptp to
-> drivers/net/ethernet/oki-semi/pch_gbe. Then you can just include
-> pch_gbe.h directly.
+> User-space is free to write uinput_user_dev2 objects instead of
+> uinput_user_dev legacy objects now. If the kernel lacks support for it,
+> our comparison for "count != sizeof(struct uinput_user_dev)" will catch
+> this and return EINVAL. User-space shall retry with the legacy mode then.
+> 
+> Internally, we transform the legacy object into uinput_user_dev2 and then
+> handle both the same way.
+> 
+> The new uinput_user_dev2 object has multiple new features:
+>  - abs payload now has "value" and "resolution" parameters as part of the
+>    switch to "struct input_absinfo". We simply copy these over.
+>  - Our parser allows growing ABS_CNT. We automatically detect the payload
+>    size of the caller, thus, calculating the ABS_CNT the program was
+>    compiled with.
+>  - A "version" field to denote the uinput-version used. This is required
+>    to properly support changing "struct input_user_dev2" changes in the
+>    future. Due to the dynamic ABS_CNT support, we cannot simply add new
+>    fields, as we cannot deduce the structure size from the user-space
+>    given size. Thus, we need the "version" field to allow changing the
+>    object and properly detecting it in our write() handler.
+> 
+> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+> ---
+>  drivers/input/misc/uinput.c | 142 ++++++++++++++++++++++++++++++++------------
+>  include/uapi/linux/uinput.h |   9 +++
+>  2 files changed, 114 insertions(+), 37 deletions(-)
+> 
+> diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
+> index 7728359..927ad9a 100644
+> --- a/drivers/input/misc/uinput.c
+> +++ b/drivers/input/misc/uinput.c
+> @@ -358,14 +358,16 @@ static int uinput_allocate_device(struct uinput_device *udev)
+>  }
+>  
+>  static int uinput_setup_device(struct uinput_device *udev,
+> -			       const char __user *buffer, size_t count)
+> +			       struct uinput_user_dev2 *user_dev2,
+> +			       size_t abscnt)
+>  {
+> -	struct uinput_user_dev	*user_dev;
+>  	struct input_dev	*dev;
+>  	int			i;
+>  	int			retval;
+> +	struct input_absinfo	*abs;
+>  
+> -	if (count != sizeof(struct uinput_user_dev))
+> +	/* Ensure name is filled in */
+> +	if (!user_dev2->name[0])
+>  		return -EINVAL;
+>  
+>  	if (!udev->dev) {
+> @@ -375,37 +377,27 @@ static int uinput_setup_device(struct uinput_device *udev,
+>  	}
+>  
+>  	dev = udev->dev;
+> -
+> -	user_dev = memdup_user(buffer, sizeof(struct uinput_user_dev));
+> -	if (IS_ERR(user_dev))
+> -		return PTR_ERR(user_dev);
+> -
+> -	udev->ff_effects_max = user_dev->ff_effects_max;
+> -
+> -	/* Ensure name is filled in */
+> -	if (!user_dev->name[0]) {
+> -		retval = -EINVAL;
+> -		goto exit;
+> -	}
+> +	udev->ff_effects_max = user_dev2->ff_effects_max;
+>  
+>  	kfree(dev->name);
+> -	dev->name = kstrndup(user_dev->name, UINPUT_MAX_NAME_SIZE,
+> +	dev->name = kstrndup(user_dev2->name, UINPUT_MAX_NAME_SIZE,
+>  			     GFP_KERNEL);
+> -	if (!dev->name) {
+> -		retval = -ENOMEM;
+> -		goto exit;
+> -	}
+> -
+> -	dev->id.bustype	= user_dev->id.bustype;
+> -	dev->id.vendor	= user_dev->id.vendor;
+> -	dev->id.product	= user_dev->id.product;
+> -	dev->id.version	= user_dev->id.version;
+> +	if (!dev->name)
+> +		return -ENOMEM;
+>  
+> -	for (i = 0; i < ABS_CNT; i++) {
+> -		input_abs_set_max(dev, i, user_dev->absmax[i]);
+> -		input_abs_set_min(dev, i, user_dev->absmin[i]);
+> -		input_abs_set_fuzz(dev, i, user_dev->absfuzz[i]);
+> -		input_abs_set_flat(dev, i, user_dev->absflat[i]);
+> +	dev->id.bustype = user_dev2->id.bustype;
+> +	dev->id.vendor = user_dev2->id.vendor;
+> +	dev->id.product = user_dev2->id.product;
+> +	dev->id.version = user_dev2->id.version;
+> +
+> +	for (i = 0; i < abscnt; i++) {
+> +		abs = &user_dev2->abs[i];
 
-I think this begs an even more fundamental question, why isn't the PTP
-driver abstraction providing the necessary methods and interfaces so
-that pch_gbe doesn't have to call into the ptp_pch.c code directly?
+minor nit: I'd just declare abs here.
 
-Moving ptp_pch.c elsehwere is not desirable, it's a PTP driver so
-it belongs under drivers/ptp.
+> +		input_abs_set_val(dev, i, abs->value);
+> +		input_abs_set_max(dev, i, abs->maximum);
+> +		input_abs_set_min(dev, i, abs->minimum);
+> +		input_abs_set_fuzz(dev, i, abs->fuzz);
+> +		input_abs_set_flat(dev, i, abs->flat);
+> +		input_abs_set_res(dev, i, abs->resolution);
+>  	}
+>  
+>  	/* check if absmin/absmax/absfuzz/absflat are filled as
+> @@ -413,7 +405,7 @@ static int uinput_setup_device(struct uinput_device *udev,
+>  	if (test_bit(EV_ABS, dev->evbit)) {
+>  		retval = uinput_validate_absbits(dev);
+>  		if (retval < 0)
+> -			goto exit;
+> +			return retval;
+>  		if (test_bit(ABS_MT_SLOT, dev->absbit)) {
+>  			int nslot = input_abs_get_max(dev, ABS_MT_SLOT) + 1;
+>  			input_mt_init_slots(dev, nslot, 0);
+> @@ -423,11 +415,84 @@ static int uinput_setup_device(struct uinput_device *udev,
+>  	}
+>  
+>  	udev->state = UIST_SETUP_COMPLETE;
+> -	retval = count;
+> +	return 0;
+> +}
+> +
+> +static int uinput_setup_device1(struct uinput_device *udev,
+> +				const char __user *buffer, size_t count)
+> +{
+> +	struct uinput_user_dev	*user_dev;
+> +	struct uinput_user_dev2	*user_dev2;
+> +	int			i;
+> +	int			retval;
+> +
+> +	if (count != sizeof(struct uinput_user_dev))
+> +		return -EINVAL;
+> +
+> +	user_dev = memdup_user(buffer, sizeof(struct uinput_user_dev));
+> +	if (IS_ERR(user_dev))
+> +		return PTR_ERR(user_dev);
+> +
+> +	user_dev2 = kmalloc(sizeof(*user_dev2), GFP_KERNEL);
+> +	if (!user_dev2) {
+> +		kfree(user_dev);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	user_dev2->version = UINPUT_VERSION;
+> +	memcpy(user_dev2->name, user_dev->name, UINPUT_MAX_NAME_SIZE);
+> +	memcpy(&user_dev2->id, &user_dev->id, sizeof(struct input_id));
 
-Someone who understands all of these components needs to sort this
-out cleanly, this patch isn't it.
+you copy the id bits one-by-one into the input_dev but you memcpy it here.
+is this intentional?
+
+> +	user_dev2->ff_effects_max = user_dev->ff_effects_max;
+> +
+> +	for (i = 0; i < ABS_CNT; ++i) {
+> +		user_dev2->abs[i].value = 0;
+> +		user_dev2->abs[i].maximum = user_dev->absmax[i];
+> +		user_dev2->abs[i].minimum = user_dev->absmin[i];
+> +		user_dev2->abs[i].fuzz = user_dev->absfuzz[i];
+> +		user_dev2->abs[i].flat = user_dev->absflat[i];
+> +		user_dev2->abs[i].resolution = 0;
+> +	}
+> +
+> +	retval = uinput_setup_device(udev, user_dev2, ABS_CNT);
+>  
+> - exit:
+>  	kfree(user_dev);
+> -	return retval;
+> +	kfree(user_dev2);
+> +
+> +	return retval ? retval : count;
+> +}
+> +
+> +static int uinput_setup_device2(struct uinput_device *udev,
+> +			       const char __user *buffer, size_t count)
+> +{
+> +	struct uinput_user_dev2	*user_dev2;
+> +	int			retval;
+> +	size_t			off, abscnt, max;
+> +
+> +	/* The first revision of "uinput_user_dev2" is bigger than
+> +	 * "uinput_user_dev" and growing. Disallow any smaller payloads. */
+> +	if (count <= sizeof(struct uinput_user_dev))
+> +		return -EINVAL;
+> +
+> +	/* rough check to avoid huge kernel space allocations */
+> +	max = ABS_CNT * sizeof(*user_dev2->abs) + sizeof(*user_dev2);
+> +	if (count > max)
+> +		return -EINVAL;
+> +
+> +	user_dev2 = memdup_user(buffer, count);
+> +	if (IS_ERR(user_dev2))
+> +		return PTR_ERR(user_dev2);
+> +
+> +	if (user_dev2->version > UINPUT_VERSION) {
+> +		retval = -EINVAL;
+> +	} else {
+> +		off = offsetof(struct uinput_user_dev2, abs);
+> +		abscnt = (count - off) / sizeof(*user_dev2->abs);
+> +		retval = uinput_setup_device(udev, user_dev2, abscnt);
+> +	}
+> +
+
+I really wish uinput would be a bit easier to debug than just returning
+-EINVAL when it's not happy. having said that, the only errno that would
+remotely make sense is -ERANGE for count > max and even that is a bit meh.
+
+Reviewed-by: Peter Hutterer <peter.hutterer@who-t.net>
+
+Cheers,
+   Peter
+
+
+
+
+> +	kfree(user_dev2);
+> +
+> +	return retval ? retval : count;
+>  }
+>  
+>  static ssize_t uinput_inject_events(struct uinput_device *udev,
+> @@ -469,9 +534,12 @@ static ssize_t uinput_write(struct file *file, const char __user *buffer,
+>  	if (retval)
+>  		return retval;
+>  
+> -	retval = udev->state == UIST_CREATED ?
+> -			uinput_inject_events(udev, buffer, count) :
+> -			uinput_setup_device(udev, buffer, count);
+> +	if (udev->state == UIST_CREATED)
+> +		retval = uinput_inject_events(udev, buffer, count);
+> +	else if (count <= sizeof(struct uinput_user_dev))
+> +		retval = uinput_setup_device1(udev, buffer, count);
+> +	else
+> +		retval = uinput_setup_device2(udev, buffer, count);
+>  
+>  	mutex_unlock(&udev->mutex);
+>  
+> diff --git a/include/uapi/linux/uinput.h b/include/uapi/linux/uinput.h
+> index fe46431..c2e8710 100644
+> --- a/include/uapi/linux/uinput.h
+> +++ b/include/uapi/linux/uinput.h
+> @@ -134,4 +134,13 @@ struct uinput_user_dev {
+>  	__s32 absfuzz[ABS_CNT];
+>  	__s32 absflat[ABS_CNT];
+>  };
+> +
+> +struct uinput_user_dev2 {
+> +	__u8 version;
+> +	char name[UINPUT_MAX_NAME_SIZE];
+> +	struct input_id id;
+> +	__u32 ff_effects_max;
+> +	struct input_absinfo abs[ABS_CNT];
+> +};
+> +
+>  #endif /* _UAPI__UINPUT_H_ */
+> -- 
+> 1.8.5.1
+> 
