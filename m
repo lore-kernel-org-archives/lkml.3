@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab3LRVNi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:13:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36399 "EHLO
+	id S1755479Ab3LRVce (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:32:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36423 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab3LRVNd (ORCPT
+	with ESMTP id S1753999Ab3LRVNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:33 -0500
+	Wed, 18 Dec 2013 16:13:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [PATCH 3.12 039/118] media: af9035: fix broken I2C and USB I/O
-Date: Wed, 18 Dec 2013 13:11:16 -0800
-Message-Id: <20131218211220.578015597@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.12 063/118] drm/radeon: fix typo in fetching mpll params
+Date: Wed, 18 Dec 2013 13:11:40 -0800
+Message-Id: <20131218211221.242751539@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,53 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 9323297dc0ea9141f8099e474657391bb3ad98f8 upstream.
+commit 180f805f4f03b2894701f9831b4e96a308330b22 upstream.
 
-There was three small buffer len calculation bugs which caused
-driver non-working. These are coming from recent commit:
-commit 7760e148350bf6df95662bc0db3734e9d991cb03
-[media] af9035: Don't use dynamic static allocation
+Copy-paste typo.  Value should be 0-2, not 0-1.
 
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Noticed-by: Sylvain BERTRAND <sylware@legeek.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/dvb-usb-v2/af9035.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/usb/dvb-usb-v2/af9035.c
-+++ b/drivers/media/usb/dvb-usb-v2/af9035.c
-@@ -131,7 +131,7 @@ static int af9035_wr_regs(struct dvb_usb
- {
- 	u8 wbuf[MAX_XFER_SIZE];
- 	u8 mbox = (reg >> 16) & 0xff;
--	struct usb_req req = { CMD_MEM_WR, mbox, sizeof(wbuf), wbuf, 0, NULL };
-+	struct usb_req req = { CMD_MEM_WR, mbox, 6 + len, wbuf, 0, NULL };
- 
- 	if (6 + len > sizeof(wbuf)) {
- 		dev_warn(&d->udev->dev, "%s: i2c wr: len=%d is too big!\n",
-@@ -238,7 +238,7 @@ static int af9035_i2c_master_xfer(struct
- 		} else {
- 			/* I2C */
- 			u8 buf[MAX_XFER_SIZE];
--			struct usb_req req = { CMD_I2C_RD, 0, sizeof(buf),
-+			struct usb_req req = { CMD_I2C_RD, 0, 5 + msg[0].len,
- 					buf, msg[1].len, msg[1].buf };
- 
- 			if (5 + msg[0].len > sizeof(buf)) {
-@@ -274,8 +274,8 @@ static int af9035_i2c_master_xfer(struct
- 		} else {
- 			/* I2C */
- 			u8 buf[MAX_XFER_SIZE];
--			struct usb_req req = { CMD_I2C_WR, 0, sizeof(buf), buf,
--					0, NULL };
-+			struct usb_req req = { CMD_I2C_WR, 0, 5 + msg[0].len,
-+					buf, 0, NULL };
- 
- 			if (5 + msg[0].len > sizeof(buf)) {
- 				dev_warn(&d->udev->dev,
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -2918,7 +2918,7 @@ int radeon_atom_get_memory_pll_dividers(
+ 			mpll_param->dll_speed = args.ucDllSpeed;
+ 			mpll_param->bwcntl = args.ucBWCntl;
+ 			mpll_param->vco_mode =
+-				(args.ucPllCntlFlag & MPLL_CNTL_FLAG_VCO_MODE_MASK) ? 1 : 0;
++				(args.ucPllCntlFlag & MPLL_CNTL_FLAG_VCO_MODE_MASK);
+ 			mpll_param->yclk_sel =
+ 				(args.ucPllCntlFlag & MPLL_CNTL_FLAG_BYPASS_DQ_PLL) ? 1 : 0;
+ 			mpll_param->qdr =
 
 
