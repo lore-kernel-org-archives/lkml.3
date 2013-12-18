@@ -1,129 +1,407 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751259Ab3LRGRi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 01:17:38 -0500
-Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:6061 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750975Ab3LRGRg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 01:17:36 -0500
-X-Forefront-Antispam-Report: CIP:157.56.240.101;KIP:(null);UIP:(null);IPV:NLI;H:BL2PRD0510HT005.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(z579ehz98dI9371Ic89bh542I1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz8275ch1de098h8275bh1de097hz2fh109h2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah224fh1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1fe8h1ff5h2216h22d0h2336h9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(10009001)(13464003)(164054003)(189002)(199002)(24454002)(51704005)(377454003)(76786001)(85852003)(87266001)(76796001)(33646001)(83072002)(63696002)(76576001)(85306002)(53806001)(90146001)(31966008)(51856001)(54356001)(76482001)(56816005)(65816001)(80022001)(46102001)(47446002)(19580395003)(74662001)(83322001)(74502001)(19580405001)(66066001)(81816001)(77982001)(59766001)(74316001)(81686001)(74366001)(69226001)(56776001)(54316002)(79102001)(87936001)(2656002)(74876001)(74706001)(80976001)(47736001)(49866001)(81342001)(4396001)(81542001)(47976001)(50986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR05MB527;H:DM2PR05MB671.namprd05.prod.outlook.com;CLIP:66.129.239.12;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-From: Rajat Jain <rajatjain@juniper.net>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        Rajat Jain <rajatjain.linux@gmail.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Guenter Roeck <groeck@juniper.net>, Rajat Jain <rajatxjain@gmail.com>
-Subject: RE: [PATCH v3 4/8] pciehp: Don't disable the link permanently,
- during removal
-Thread-Topic: [PATCH v3 4/8] pciehp: Don't disable the link permanently,
- during removal
-Thread-Index: AQHO+2O+glESpPkjFkO6kKuv5WeLEZpZIsOAgAAgqXCAACXDAIAADsVg
-Date: Wed, 18 Dec 2013 06:17:28 +0000
-Message-ID: <0c18891f0a754978a3015c9b3b50df93@DM2PR05MB671.namprd05.prod.outlook.com>
-References: <52B0AEAD.6050604@gmail.com>	<20131218010207.GC15119@google.com>
-	<41c1723da4454cdca6503418746a5ca7@DM2PR05MB671.namprd05.prod.outlook.com>
- <CAE9FiQVGQ8THfMBfEhaOnjbrdaRn+5CRoUoGZuVvRcZcAKqW_A@mail.gmail.com>
-In-Reply-To: <CAE9FiQVGQ8THfMBfEhaOnjbrdaRn+5CRoUoGZuVvRcZcAKqW_A@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [66.129.239.12]
-x-forefront-prvs: 0064B3273C
-Content-Type: text/plain; charset="utf-8"
+	id S1752790Ab3LRGSM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 01:18:12 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:50324 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752296Ab3LRGSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 01:18:01 -0500
+Date: Wed, 18 Dec 2013 01:17:50 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/6] Configurable fair allocation zone policy v3
+Message-ID: <20131218061750.GK21724@cmpxchg.org>
+References: <1387298904-8824-1-git-send-email-mgorman@suse.de>
+ <20131217200210.GG21724@cmpxchg.org>
 MIME-Version: 1.0
-X-OriginatorOrg: juniper.net
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131217200210.GG21724@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBI6IGJe007828
 
-
-> -----Original Message-----
-> From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of
+On Tue, Dec 17, 2013 at 03:02:10PM -0500, Johannes Weiner wrote:
+> Hi Mel,
 > 
-> On Tue, Dec 17, 2013 at 7:20 PM, Rajat Jain <rajatjain@juniper.net>
-> wrote:
+> On Tue, Dec 17, 2013 at 04:48:18PM +0000, Mel Gorman wrote:
+> > This series is currently untested and is being posted to sync up discussions
+> > on the treatment of page cache pages, particularly the sysv part. I have
+> > not thought it through in detail but postings patches is the easiest way
+> > to highlight where I think a problem might be.
 > >
-> > Actually I did not understand the original problem and the solution in
-> > the first place (so I also do not understand how might disabling of
-> > presence detect notification help). If you can give more details on
-> > the original problem that shall be great. Here is what I understood
-> from the commit log:
-> >
-> > The believe the HW looks like this:
-> >
-> > PCIe port <----> Repeater <----> Device.
-> >
-> > An in addition there is the presence detect pin that is connected
-> > directly from The port to the device. Now, when the device is plugged
-> > out, the pin indicates No presence. But are you saying the PCIe link
-> from port to repeater is still up?
+> > Changelog since v2
+> > o Drop an accounting patch, behaviour is deliberate
+> > o Special case tmpfs and shmem pages for discussion
+> > 
+> > Changelog since v1
+> > o Fix lot of brain damage in the configurable policy patch
+> > o Yoink a page cache annotation patch
+> > o Only account batch pages against allocations eligible for the fair policy
+> > o Add patch that default distributes file pages on remote nodes
+> > 
+> > Commit 81c0a2bb ("mm: page_alloc: fair zone allocator policy") solved a
+> > bug whereby new pages could be reclaimed before old pages because of how
+> > the page allocator and kswapd interacted on the per-zone LRU lists.
 > 
-> After the card is removed from the slot.
+> Not just that, it was about ensuring predictable cache replacement and
+> maximizing the cache's effectiveness.  This implicitely fixed the
+> kswapd interaction bug, but that was not the sole reason (I realize
+> that the original changelog is incomplete and I apologize for that).
 > 
-> PCIe port try to retrain the link to repeater, like the link will keep
-> up and down.
-
-I still did not understand the why would the PCIe port try to do so. Are you
-Saying the repeater keeps on flapping the link? Nevertheless, I assume it is
-due to some repeater bug (that you mention below) that I do not need to
-understand.
-
+> I have had offline discussions with Andrea back then and his first
+> suggestion was too to make this a zone fairness placement that is
+> exclusive to the local node, but eventually he agreed that the problem
+> applies just as much on the global level and that we should apply
+> fairness throughout the system as long as we honor zone_reclaim_mode
+> and hard bindings.  During our discussions now, it turned out that
+> zone_reclaim_mode is a terrible predictor for preferred locality, but
+> we also more or less agreed that the locality issues in the first
+> place are not really applicable to cache loads dominated by IO cost.
 > 
-> so the presence bit will keep report one card present and not present.
-> that present bit should be OR of inband input and outband input.
-> We check the outband input and it always report correctly.
-
-Just a suggestion for a work around. I checked the manual of the PCIe switch
-we use in our system (IDT 89HPES48H12G2), and it is possible at least in this
-switch to control whether or not in-band is considered. An internal configuration
-register says:
-
-Presence Detect Control. This field controls the manner in which
-presence of an adapter in a slot is reported to the hot-plug controller
-associated with a downstream switch port.
-0x0 - (both) Presence of an adapter in the slot is reported as the
-logical ‚ÄúOR‚Äù of the receiver detect mechanism and the hotplug
-presence detect input (PxPDN).
-0x1 - (signal) Presence of an adapter in the slot is reported as the
-state of the hot-plug presence detect input (PxPDN).
-0x2 - (always) When selected, this mode always informs the hotplug
-controller that an adapter is present.
-0x3 - (never) When selected, this mode always informs the hotplug
-controller that an adapter is not present.
-
-May be some similar config may be present in the switch or the CPU that you use.
-
-Just a random thought.
-
+> So I think the main discrepancy between the original patch and what we
+> truly want is that aging fairness is really only relevant for actual
+> cache backed by secondary storage, because cache replacement is an
+> ongoing operation that involves IO.  As opposed to memory types that
+> involve IO only in extreme cases (anon, tmpfs, shmem) or no IO at all
+> (slab, kernel allocations), in which case we prefer NUMA locality.
 > 
-> According to HW guys and Intel, that should be bug of repeater.
-
-Well, in that case I doubt if the patch will solve the problem. I think
-Most likely the "card present / not present" messages may be replaced
-By "link-up / link-down" messages. But I'd appreciate your testing.
-
-Thanks,
-
-Rajat
-
+> > Unfortunately a side-effect missed during review was that it's now very
+> > easy to allocate remote memory on NUMA machines. The problem is that
+> > it is not a simple case of just restoring local allocation policies as
+> > there are genuine reasons why global page aging may be prefereable. It's
+> > still a major change to default behaviour so this patch makes the policy
+> > configurable and sets what I think is a sensible default.
+> > 
+> > The patches are on top of some NUMA balancing patches currently in -mm.
+> > It's untested and posted to discuss patches 4 and 6.
 > 
-> Disable the link from pcie to repeater, likely to reset the repeater....
+> It might be easier in dealing with -stable if we start with the
+> critical fix(es) to restore sane functionality as much and as compact
+> as possible and then place the cleanups on top?
 > 
-> Thanks
-> 
-> Yinghai
-> 
+> In my local tree, I have the following as the first patch:
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Updated version with your tmpfs __GFP_PAGECACHE parts added and
+documentation, changelog updated as necessary.  I remain unconvinced
+that tmpfs pages should be round-robined, but I agree with you that it
+is the conservative change to do for 3.12 and 3.12 and we can figure
+out the rest later.  I sure hope that this doesn't drive most people
+on NUMA to disable pagecache interleaving right away as I expect most
+tmpfs workloads to see little to no reclaim and prefer locality... :/
+
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm: page_alloc: restrict fair allocator policy to pagecache
+
+81c0a2bb515f ("mm: page_alloc: fair zone allocator policy") was merged
+in order to ensure predictable pagecache replacement and to maximize
+the cache's effectiveness of reducing IO regardless of zone or node
+topology.
+
+However, it was overzealous in round-robin placing every type of
+allocation over all allowable nodes, instead of preferring locality,
+which resulted in severe regressions on certain NUMA workloads that
+have nothing to do with pagecache.
+
+This patch drastically reduces the impact of the original change by
+having the round-robin placement policy only apply to pagecache
+allocations and no longer to anonymous memory, shmem, slab and other
+types of kernel allocations.
+
+This still changes the long-standing behavior of pagecache adhering to
+the configured memory policy and preferring local allocations per
+default, so make it configurable in case somebody relies on it.
+However, we also expect the majority of users to prefer maximium cache
+effectiveness and a predictable replacement behavior over memory
+locality, so reflect this in the default setting of the sysctl.
+
+No-signoff-without-Mel's
+Cc: <stable@kernel.org> # 3.12
+---
+ Documentation/sysctl/vm.txt             | 20 ++++++++++++++++
+ Documentation/vm/numa_memory_policy.txt |  7 ++++++
+ include/linux/gfp.h                     |  4 +++-
+ include/linux/pagemap.h                 |  2 +-
+ include/linux/swap.h                    |  2 ++
+ kernel/sysctl.c                         |  8 +++++++
+ mm/filemap.c                            |  2 ++
+ mm/page_alloc.c                         | 41 +++++++++++++++++++++++++--------
+ mm/shmem.c                              | 14 +++++++++++
+ 9 files changed, 88 insertions(+), 12 deletions(-)
+
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index 1fbd4eb7b64a..308c342f62ad 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -38,6 +38,7 @@ Currently, these files are in /proc/sys/vm:
+ - memory_failure_early_kill
+ - memory_failure_recovery
+ - min_free_kbytes
++- pagecache_mempolicy_mode
+ - min_slab_ratio
+ - min_unmapped_ratio
+ - mmap_min_addr
+@@ -404,6 +405,25 @@ Setting this too high will OOM your machine instantly.
+ 
+ =============================================================
+ 
++pagecache_mempolicy_mode:
++
++This is available only on NUMA kernels.
++
++Per default, pagecache is allocated in an interleaving fashion over
++all allowed nodes (hardbindings and zone_reclaim_mode excluded),
++regardless of the selected memory policy.
++
++The assumption is that, when it comes to pagecache, users generally
++prefer predictable replacement behavior regardless of NUMA topology
++and maximizing the cache's effectiveness in reducing IO over memory
++locality.
++
++This behavior can be changed by enabling pagecache_mempolicy_mode, in
++which case page cache allocations will be placed according to the
++configured memory policy (Documentation/vm/numa_memory_policy.txt).
++
++=============================================================
++
+ min_slab_ratio:
+ 
+ This is available only on NUMA kernels.
+diff --git a/Documentation/vm/numa_memory_policy.txt b/Documentation/vm/numa_memory_policy.txt
+index 4e7da6543424..72247e565908 100644
+--- a/Documentation/vm/numa_memory_policy.txt
++++ b/Documentation/vm/numa_memory_policy.txt
+@@ -16,6 +16,13 @@ programming interface that a NUMA-aware application can take advantage of.  When
+ both cpusets and policies are applied to a task, the restrictions of the cpuset
+ takes priority.  See "MEMORY POLICIES AND CPUSETS" below for more details.
+ 
++Note that, per default, the memory policies do not apply to pagecache.  Instead
++it will be interleaved fairly over all allowable nodes (respecting hardbindings
++and zone_reclaim_mode) in order to maximize the cache's effectiveness in
++reducing IO and to ensure predictable cache replacement.  Special setups that
++require pagecache to adhere to the configured memory policy can change this
++behavior by enabling pagecache_mempolicy_mode (see Documentation/sysctl/vm.txt).
++
+ MEMORY POLICY CONCEPTS
+ 
+ Scope of Memory Policies
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 9b4dd491f7e8..f69e4cb78ccf 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -35,6 +35,7 @@ struct vm_area_struct;
+ #define ___GFP_NO_KSWAPD	0x400000u
+ #define ___GFP_OTHER_NODE	0x800000u
+ #define ___GFP_WRITE		0x1000000u
++#define ___GFP_PAGECACHE	0x2000000u
+ /* If the above are modified, __GFP_BITS_SHIFT may need updating */
+ 
+ /*
+@@ -92,6 +93,7 @@ struct vm_area_struct;
+ #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
+ #define __GFP_KMEMCG	((__force gfp_t)___GFP_KMEMCG) /* Allocation comes from a memcg-accounted resource */
+ #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
++#define __GFP_PAGECACHE ((__force gfp_t)___GFP_PAGECACHE)   /* Page cache allocation */
+ 
+ /*
+  * This may seem redundant, but it's a way of annotating false positives vs.
+@@ -99,7 +101,7 @@ struct vm_area_struct;
+  */
+ #define __GFP_NOTRACK_FALSE_POSITIVE (__GFP_NOTRACK)
+ 
+-#define __GFP_BITS_SHIFT 25	/* Room for N __GFP_FOO bits */
++#define __GFP_BITS_SHIFT 26	/* Room for N __GFP_FOO bits */
+ #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
+ 
+ /* This equals 0, but use constants in case they ever change */
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index e3dea75a078b..bda48453af8e 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -221,7 +221,7 @@ extern struct page *__page_cache_alloc(gfp_t gfp);
+ #else
+ static inline struct page *__page_cache_alloc(gfp_t gfp)
+ {
+-	return alloc_pages(gfp, 0);
++	return alloc_pages(gfp | __GFP_PAGECACHE, 0);
+ }
+ #endif
+ 
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 46ba0c6c219f..3458994b0881 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -320,11 +320,13 @@ extern unsigned long vm_total_pages;
+ 
+ #ifdef CONFIG_NUMA
+ extern int zone_reclaim_mode;
++extern int pagecache_mempolicy_mode;
+ extern int sysctl_min_unmapped_ratio;
+ extern int sysctl_min_slab_ratio;
+ extern int zone_reclaim(struct zone *, gfp_t, unsigned int);
+ #else
+ #define zone_reclaim_mode 0
++#define pagecache_mempolicy_mode 0
+ static inline int zone_reclaim(struct zone *z, gfp_t mask, unsigned int order)
+ {
+ 	return 0;
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 34a604726d0b..a8c56c1dc98e 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1359,6 +1359,14 @@ static struct ctl_table vm_table[] = {
+ 		.extra1		= &zero,
+ 	},
+ 	{
++		.procname	= "pagecache_mempolicy_mode",
++		.data		= &pagecache_mempolicy_mode,
++		.maxlen		= sizeof(pagecache_mempolicy_mode),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++		.extra1		= &zero,
++	},
++	{
+ 		.procname	= "min_unmapped_ratio",
+ 		.data		= &sysctl_min_unmapped_ratio,
+ 		.maxlen		= sizeof(sysctl_min_unmapped_ratio),
+diff --git a/mm/filemap.c b/mm/filemap.c
+index b7749a92021c..5bb922506906 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -517,6 +517,8 @@ struct page *__page_cache_alloc(gfp_t gfp)
+ 	int n;
+ 	struct page *page;
+ 
++	gfp |= __GFP_PAGECACHE;
++
+ 	if (cpuset_do_page_mem_spread()) {
+ 		unsigned int cpuset_mems_cookie;
+ 		do {
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 580a5f075ed0..f7c0ecb5bb8b 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1547,7 +1547,15 @@ again:
+ 					  get_pageblock_migratetype(page));
+ 	}
+ 
++	/*
++	 * All allocations eat into the round-robin batch, even
++	 * allocations that are not subject to round-robin placement
++	 * themselves.  This makes sure that allocations that ARE
++	 * subject to round-robin placement compensate for the
++	 * allocations that aren't, to have equal placement overall.
++	 */
+ 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
++
+ 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
+ 	zone_statistics(preferred_zone, zone, gfp_flags);
+ 	local_irq_restore(flags);
+@@ -1699,6 +1707,15 @@ bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
+ 
+ #ifdef CONFIG_NUMA
+ /*
++ * pagecache_mempolicy_mode - whether pagecache allocations should
++ * honor the configured memory policy and allocate from the zonelist
++ * in order of preference, or whether they should interleave fairly
++ * over all allowed zones in the given zonelist to maximize cache
++ * effects and ensure predictable cache replacement.
++ */
++int pagecache_mempolicy_mode __read_mostly;
++
++/*
+  * zlc_setup - Setup for "zonelist cache".  Uses cached zone data to
+  * skip over zones that are not allowed by the cpuset, or that have
+  * been recently (in last second) found to be nearly full.  See further
+@@ -1816,7 +1833,7 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
+ 
+ static bool zone_local(struct zone *local_zone, struct zone *zone)
+ {
+-	return node_distance(local_zone->node, zone->node) == LOCAL_DISTANCE;
++	return local_zone->node == zone->node;
+ }
+ 
+ static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
+@@ -1908,22 +1925,25 @@ zonelist_scan:
+ 		if (unlikely(alloc_flags & ALLOC_NO_WATERMARKS))
+ 			goto try_this_zone;
+ 		/*
+-		 * Distribute pages in proportion to the individual
+-		 * zone size to ensure fair page aging.  The zone a
+-		 * page was allocated in should have no effect on the
+-		 * time the page has in memory before being reclaimed.
++		 * Distribute pagecache pages in proportion to the
++		 * individual zone size to ensure fair page aging.
++		 * The zone a page was allocated in should have no
++		 * effect on the time the page has in memory before
++		 * being reclaimed.
+ 		 *
+-		 * When zone_reclaim_mode is enabled, try to stay in
+-		 * local zones in the fastpath.  If that fails, the
++		 * When pagecache_mempolicy_mode or zone_reclaim_mode
++		 * is enabled, try to allocate from zones within the
++		 * preferred node in the fastpath.  If that fails, the
+ 		 * slowpath is entered, which will do another pass
+ 		 * starting with the local zones, but ultimately fall
+ 		 * back to remote zones that do not partake in the
+ 		 * fairness round-robin cycle of this zonelist.
+ 		 */
+-		if (alloc_flags & ALLOC_WMARK_LOW) {
++		if ((alloc_flags & ALLOC_WMARK_LOW) &&
++		    (gfp_mask & __GFP_PAGECACHE)) {
+ 			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+ 				continue;
+-			if (zone_reclaim_mode &&
++			if ((zone_reclaim_mode || pagecache_mempolicy_mode) &&
+ 			    !zone_local(preferred_zone, zone))
+ 				continue;
+ 		}
+@@ -2390,7 +2410,8 @@ static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
+ 		 * thrash fairness information for zones that are not
+ 		 * actually part of this zonelist's round-robin cycle.
+ 		 */
+-		if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
++		if ((zone_reclaim_mode || pagecache_mempolicy_mode) &&
++		    !zone_local(preferred_zone, zone))
+ 			continue;
+ 		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+ 				    high_wmark_pages(zone) -
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 8297623fcaed..02d7a9c03463 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -929,6 +929,17 @@ static struct page *shmem_swapin(swp_entry_t swap, gfp_t gfp,
+ 	return page;
+ }
+ 
++/* Fugly method of distinguishing sysv/MAP_SHARED anon from tmpfs */
++static bool shmem_inode_on_tmpfs(struct shmem_inode_info *info)
++{
++	/* If no internal shm_mount then it must be tmpfs */
++	if (IS_ERR(shm_mnt))
++		return true;
++
++	/* Consider it to be tmpfs if the superblock is not the internal mount */
++	return info->vfs_inode.i_sb != shm_mnt->mnt_sb;
++}
++
+ static struct page *shmem_alloc_page(gfp_t gfp,
+ 			struct shmem_inode_info *info, pgoff_t index)
+ {
+@@ -942,6 +953,9 @@ static struct page *shmem_alloc_page(gfp_t gfp,
+ 	pvma.vm_ops = NULL;
+ 	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, index);
+ 
++	if (shmem_inode_on_tmpfs(info))
++		gfp |= __GFP_PAGECACHE;
++
+ 	page = alloc_page_vma(gfp, &pvma, 0);
+ 
+ 	/* Drop reference taken by mpol_shared_policy_lookup() */
+-- 
+1.8.4.2
+
