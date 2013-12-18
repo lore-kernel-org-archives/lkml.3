@@ -1,104 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab3LRON4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 09:13:56 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:58445 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753400Ab3LRONz (ORCPT
+	id S1754835Ab3LROON (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 09:14:13 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:59296 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754108Ab3LROOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 09:13:55 -0500
-Date: Wed, 18 Dec 2013 15:13:52 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH 05/13] rcu: Fix unraised IPI to timekeeping CPU
-Message-ID: <20131218141348.GA18464@localhost.localdomain>
-References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
- <1387320692-28460-6-git-send-email-fweisbec@gmail.com>
- <20131217232100.GC19211@linux.vnet.ibm.com>
+	Wed, 18 Dec 2013 09:14:11 -0500
+Date: Wed, 18 Dec 2013 06:14:08 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: rydberg@euromail.se, jcbian@pixcir.com.cn, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 3/9] Input: pixcir_i2c_ts: Initialize interrupt mode and
+ power mode
+Message-ID: <20131218141408.GC28504@core.coreip.homeip.net>
+References: <1387358480-8313-1-git-send-email-rogerq@ti.com>
+ <1387358480-8313-4-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131217232100.GC19211@linux.vnet.ibm.com>
+In-Reply-To: <1387358480-8313-4-git-send-email-rogerq@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 03:21:00PM -0800, Paul E. McKenney wrote:
-> On Tue, Dec 17, 2013 at 11:51:24PM +0100, Frederic Weisbecker wrote:
-> > The plan with full system idle detection is to allow the timekeeper
-> > to sleep when all full dynticks CPUs are sleeping.
-> > 
-> > Then when a full dynticks CPU wakes up while the whole system is idle,
-> > it sends an IPI to the timekeeping CPU which then restarts its tick
-> > and polls on its timekeeping duty on behalf of all other CPUs in the
-> > system.
-> > 
-> > But we are using rcu_kick_nohz_cpu() to raise this IPI, which is wrong
-> > because this function is used to kick full dynticks CPUs when they run
-> > in the kernel for too long without reporting a quiescent state. And
-> > this function ignores targets that are not full dynticks, like our
-> > timekeeper.
-> > 
-> > To fix this, use the smp_send_reschedule() function directly.
-> 
-> I guess the fact that you needed some change is reassuring.  You know
-> the old saying, "no bugs, no users".  ;-)
+On Wed, Dec 18, 2013 at 02:51:14PM +0530, Roger Quadros wrote:
+> +
+> +static int pixcir_stop(struct pixcir_i2c_ts_data *ts)
+> +{
+> +	struct device *dev = &ts->client->dev;
+> +	int ret;
+> +
+> +	/* disable interrupt generation */
+> +	ret = pixcir_int_enable(ts, 0);
+> +	if (ret) {
+> +		dev_err(dev, "Failed to disable interrupt generation\n");
+> +		return ret;
+> +	}
+> +
+> +	disable_irq(ts->client->irq);
 
-;-)
+Why do you need to disable IRQ? If you disable interrupt generation in
+the chip I think you only need to call synchronize_irq() to make sure
+it's completed if it happens to be running. Also you need to move the
+code:
 
-> 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: John Stultz <john.stultz@linaro.org>
-> > Cc: Alex Shi <alex.shi@linaro.org>
-> > Cc: Kevin Hilman <khilman@linaro.org>
-> > ---
-> >  kernel/rcu/tree_plugin.h | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> > index 08004da..84d90c8 100644
-> > --- a/kernel/rcu/tree_plugin.h
-> > +++ b/kernel/rcu/tree_plugin.h
-> > @@ -2488,7 +2488,7 @@ void rcu_sysidle_force_exit(void)
-> >  				      oldstate, RCU_SYSIDLE_NOT);
-> >  		if (oldstate == newoldstate &&
-> >  		    oldstate == RCU_SYSIDLE_FULL_NOTED) {
-> > -			rcu_kick_nohz_cpu(tick_do_timer_cpu);
-> > +			smp_send_reschedule(tick_do_timer_cpu);
-> 
-> Hmmm...
-> 
-> We haven't done any sort of wakeup, and tick_nohz_full_cpu() should
-> return false for tick_do_timer_cpu, and I don't see that we have
-> done anything to make got_nohz_idle_kick() return true.
-> 
-> So the idea is that the fact of the interrupt is sufficient, and
-> the target CPU will figure out that it must turn its scheduling-clock
-> interrupt when returning from interrupt?
+	tsdata->exiting = true;
+	mb();
 
-Exactly, the interrupt alone is sufficient and the tick is reevaluated
-on irq_exit().
+here from pixcir_i2c_ts_remove() to make sure handler exits promptly.
 
-> 
-> Or is something else going on here?
-> 
-> 							Thanx, Paul
-> 
-> >  			return; /* We cleared it, done! */
-> >  		}
-> >  		oldstate = newoldstate;
-> > -- 
-> > 1.8.3.1
-> > 
-> 
+You will also need to reset tsdata->exiting in your start method.
+
+Thanks.
+
+-- 
+Dmitry
