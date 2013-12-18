@@ -1,182 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab3LRIVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 03:21:30 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:48702 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514Ab3LRIV2 (ORCPT
+	id S1752314Ab3LRIdv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 03:33:51 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:41285 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab3LRIds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 03:21:28 -0500
+	Wed, 18 Dec 2013 03:33:48 -0500
 MIME-Version: 1.0
-In-Reply-To: <s5hlhzik3kk.wl%tiwai@suse.de>
-References: <s5hlhzik3kk.wl%tiwai@suse.de>
-Date: Wed, 18 Dec 2013 09:21:28 +0100
-Message-ID: <CANq1E4TFKDduy71jCXy+8CMS1_OFxWEpsHY3AA0RUJPW4VE8hg@mail.gmail.com>
-Subject: Re: cirrusdrmfb broken with simplefb
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20131217.213033.1019416869378407851.davem@davemloft.net>
+References: <20131218125643.8ff140371e1f8c306327d354@canb.auug.org.au>
+	<20131217.212145.893665929052097867.davem@davemloft.net>
+	<20131217.213033.1019416869378407851.davem@davemloft.net>
+Date: Wed, 18 Dec 2013 09:33:47 +0100
+X-Google-Sender-Auth: TBuizDxJ1NTQz8tYA2RgynqHF60
+Message-ID: <CAMuHMdUi4GQYR2p7enikEkTq1s-5YwirTzmo_tS0JwiE=dVmYw@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the net-next tree
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Miller <davem@davemloft.net>, Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ffusco@redhat.com, dborkman@redhat.com, tgraf@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Wed, Dec 18, 2013 at 3:30 AM, David Miller <davem@davemloft.net> wrote:
+> diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
+> index f01fb50..a73a8e2 100644
+> --- a/arch/alpha/include/asm/Kbuild
+> +++ b/arch/alpha/include/asm/Kbuild
+> @@ -4,3 +4,4 @@ generic-y += clkdev.h
+>  generic-y += exec.h
+>  generic-y += trace_clock.h
+>  generic-y += preempt.h
+> +generic-y += hash.h
 
-On Wed, Dec 18, 2013 at 8:42 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> Hi,
->
-> with the recent enablement of simplefb on x86, cirrusdrmfb on QEMU/KVM
-> gets broken now, as reported at:
->     https://bugzilla.novell.com/show_bug.cgi?id=855821
->
-> The cirrus VGA resource is reserved at first as "BOOTFB" in
-> arch/x86/kernel/sysfb_simplefb.c, which is taken by simplefb platform
-> device.  This resource is, however, never released until the platform
-> device is destroyed, and the framebuffer switching doesn't trigger
-> it.  It calls fb's destroy callback, at most.  Then, cirrus driver
-> tries to assign the resource, fails and gives up, resulting in a
-> complete blank screen.
->
-> The same problem should exist on other KMS drivers like mgag200 or
-> ast, not only cirrus.  Intel graphics doesn't hit this problem just
-> because the reserved iomem by BOOTFB isn't required by i915 driver.
->
-> The patch below is a quick attempt to solve the issue.  It adds a new
-> API function for releasing resources of platform_device, and call it
-> in destroy op of simplefb.  But, forcibly releasing resources of a
-> parent device doesn't sound like a correct design.  We may take such
-> as a band aid, but definitely need a more fundamental fix.
->
-> Any thoughts?
+Please keep them sorted.
 
-That bug always existed, simplefb is just the first driver to hit it
-(vesafb/efifb didn't use resources). I'm aware of the issue but as a
-workaround you can simply disable CONFIG_X86_SYSFB. That restores the
-old behavior.
+Yes, Peter violated that too, when adding preempt.h.
 
-As a proper fix, I'd propose something like:
-  dev = platform_find_device("platform-framebuffer");
-  platform_remove_device(dev);
+Thanks!
 
-And we wrap this as:
-  sysfb_remove_framebuffers()
-in arch/x86/kernel/sysfb.c
+Gr{oetje,eeting}s,
 
-This should cause a ->remove() event for the platform-driver and
-correctly release the resources. Comments?
-I will try to write a patch and send it later.
+                        Geert
 
-Thanks
-David
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
->
-> thanks,
->
-> Takashi
->
-> ---
-> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> index 3a94b79..f939236 100644
-> --- a/drivers/base/platform.c
-> +++ b/drivers/base/platform.c
-> @@ -267,6 +267,23 @@ int platform_device_add_data(struct platform_device *pdev, const void *data,
->  }
->  EXPORT_SYMBOL_GPL(platform_device_add_data);
->
-> +static void do_release_resources(struct platform_device *pdev, int nums)
-> +{
-> +       int i;
-> +
-> +       for (i = 0; i < nums; i++) {
-> +               struct resource *r = &pdev->resource[i];
-> +               unsigned long type = resource_type(r);
-> +
-> +               if (type == IORESOURCE_MEM || type == IORESOURCE_IO)
-> +                       release_resource(r);
-> +       }
-> +
-> +       kfree(pdev->resource);
-> +       pdev->resource = NULL;
-> +       pdev->num_resources = 0;
-> +}
-> +
->  /**
->   * platform_device_add - add a platform device to device hierarchy
->   * @pdev: platform device we're adding
-> @@ -342,13 +359,7 @@ int platform_device_add(struct platform_device *pdev)
->                 pdev->id = PLATFORM_DEVID_AUTO;
->         }
->
-> -       while (--i >= 0) {
-> -               struct resource *r = &pdev->resource[i];
-> -               unsigned long type = resource_type(r);
-> -
-> -               if (type == IORESOURCE_MEM || type == IORESOURCE_IO)
-> -                       release_resource(r);
-> -       }
-> +       do_release_resources(pdev, i - 1);
->
->   err_out:
->         return ret;
-> @@ -365,8 +376,6 @@ EXPORT_SYMBOL_GPL(platform_device_add);
->   */
->  void platform_device_del(struct platform_device *pdev)
->  {
-> -       int i;
-> -
->         if (pdev) {
->                 device_del(&pdev->dev);
->
-> @@ -375,17 +384,17 @@ void platform_device_del(struct platform_device *pdev)
->                         pdev->id = PLATFORM_DEVID_AUTO;
->                 }
->
-> -               for (i = 0; i < pdev->num_resources; i++) {
-> -                       struct resource *r = &pdev->resource[i];
-> -                       unsigned long type = resource_type(r);
-> -
-> -                       if (type == IORESOURCE_MEM || type == IORESOURCE_IO)
-> -                               release_resource(r);
-> -               }
-> +               do_release_resources(pdev, pdev->num_resources);
->         }
->  }
->  EXPORT_SYMBOL_GPL(platform_device_del);
->
-> +void platform_device_release_resources(struct platform_device *pdev)
-> +{
-> +       do_release_resources(pdev, pdev->num_resources);
-> +}
-> +EXPORT_SYMBOL_GPL(platform_device_release_resources);
-> +
->  /**
->   * platform_device_register - add a platform-level device
->   * @pdev: platform device we're adding
-> diff --git a/drivers/video/simplefb.c b/drivers/video/simplefb.c
-> index 210f3a0..fbf5e89 100644
-> --- a/drivers/video/simplefb.c
-> +++ b/drivers/video/simplefb.c
-> @@ -70,6 +70,7 @@ static void simplefb_destroy(struct fb_info *info)
->  {
->         if (info->screen_base)
->                 iounmap(info->screen_base);
-> +       platform_device_release_resources(to_platform_device(info->device));
->  }
->
->  static struct fb_ops simplefb_ops = {
-> diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-> index 16f6654..7cc1f54 100644
-> --- a/include/linux/platform_device.h
-> +++ b/include/linux/platform_device.h
-> @@ -42,6 +42,7 @@ struct platform_device {
->
->  extern int platform_device_register(struct platform_device *);
->  extern void platform_device_unregister(struct platform_device *);
-> +extern void platform_device_release_resources(struct platform_device *pdev);
->
->  extern struct bus_type platform_bus_type;
->  extern struct device platform_bus;
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
