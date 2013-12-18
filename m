@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab3LRAOT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 19:14:19 -0500
-Received: from home.keithp.com ([63.227.221.253]:52950 "EHLO keithp.com"
+	id S1752791Ab3LRAPg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 19:15:36 -0500
+Received: from mga09.intel.com ([134.134.136.24]:19458 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751813Ab3LRAOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 19:14:18 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH] drm/intel: Only smash VGA SR01 register if intel is default VGA device
-In-Reply-To: <20131217185742.GP22448@nuc-i3427.alporthouse.com>
-References: <1387300330-8844-1-git-send-email-keithp@keithp.com> <20131217172740.GM22448@nuc-i3427.alporthouse.com> <86bo0fs5or.fsf@miki.keithp.com> <20131217185742.GP22448@nuc-i3427.alporthouse.com>
-User-Agent: Notmuch/0.16 (http://notmuchmail.org) Emacs/23.4.1 (i486-pc-linux-gnu)
-Date: Tue, 17 Dec 2013 16:14:11 -0800
-Message-ID: <868uvjrp64.fsf@miki.keithp.com>
+	id S1751806Ab3LRAPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 19:15:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,504,1384329600"; 
+   d="scan'208";a="426322920"
+Subject: [PATCH 0/3] net_dma removal and a new dma-debug check
+From: Dan Williams <dan.j.williams@intel.com>
+To: netdev@vger.kernel.org
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 17 Dec 2013 16:15:33 -0800
+Message-ID: <20131218001312.7847.9917.stgit@viggo.jf.intel.com>
+User-Agent: StGit/0.17.1-3-g7cb9
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+NET_DMA violates the expectation of the dma-mapping api by allowing the
+cpu to touch receive buffer memory while dma is active.  If this
+activity triggers a copy-on-write event the application may see missing
+data as the dma completes to the old mapping.
 
-Chris Wilson <chris@chris-wilson.co.uk> writes:
+[PATCH 1/3] net_dma: mark broken
+Detail the failure and provide a small one-liner for -stable
 
-> Ok, so as no vgaarb_clients have yet been registered and so the call to
-> grab the IO resource does not actually disable VGA IO routing to the
-> nvidia card.
+[PATCH 2/3] net_dma: remove
+Mark the tcp_dma_copybreak sysctl as removed and remove the rest of the
+implementation
 
-Yikes! This explains a lot.
+[PATCH 3/3] dma debug: flag copy-on-write events to pages undergoing dma
+Extend dma-debug to catch this condition in the future.
 
-> If you care to update the changelog to explain the problem is that
-> vgaarb is ineffective before all clients are registered, then I think
-> this is a good temporary hack. It should be possible for vgaarb to mark
-> resources as locked if the device is interpretting IO access and has no
-> method for disabling the IO grab (and then a vga_tryget() check here).
+Looking to take this through the dmaengine tree with a netdev ack.
 
-Sounds like vgaarb should not assume that all devices using VGA are
-registered drivers. That also sounds like a significantly harder fix.
+---
 
-If SR01 is required before disabling VGA, then perhaps we should not
-disable VGA at all in this case though. That sounds safer, although if
-VGA was enabled, it will suck a bit more power?
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIVAwUBUrDo09siGmkAAAARAQizyBAAkpzPhAIC3btkcJzA10q1+/CX0Xjlbknq
-ZTkKh/09/IiYwxEp3vBZvXMnPtG4Vy+O6C/C0a360x672j49QIkeG6/IWZwcHLgO
-eObAKEiQOaKG55G1etYf/Sj541gV9MIH0VnjCDlzKh7s15lUgfoT2ZMTvFHKF9lt
-q0vzTRegphX1x5i7HtWdF/tEci5dgL8XvpV86+xDDUHoQbA1lhAkEzq+FFcMy3+8
-ic67DQU9mexUse41R30pvKJDYenQRznHSBEEWxuz/8YSH1sgGC2LsMsRxI6sUQCT
-gX4MKdRFVkPZ6/ahrAIICQVcokdaEPW2zVPEG6dcZQic9WzzVHphBEtzvsUeSGad
-putqhcZlaXln0C3HVf9NU4R6YVMLuyyEDdcrtXuc9AxO8CaETGJ9GkkCAKLbKk4h
-jncqQ7qc2edeMVpjDk8pZtmDEf1C1+7omYSRb6GgNeCoSsM6OZlU8lTdCa+9ehBk
-YbhIWA30Cgp5pJhV3WoJTUm/oiVqGxujoog0QuOSCc2cYD7d+WRBatL8GxGJoWOS
-3/vMtIN52pn74+xesdQff05IIkXdunQPwOoCkczC2XhMyQOqF3UsieVXIH75yQO7
-rXo17mn1xY1tM7dZXC/0/zVIFXjlc5BrtHM2XgWmHdU51IaXW912qpZLXf7u8k+k
-FzoMovwq/bA=
-=ECkU
------END PGP SIGNATURE-----
---=-=-=--
+ Documentation/ABI/removed/net_dma      |    8 +
+ Documentation/networking/ip-sysctl.txt |    6 -
+ drivers/dma/Kconfig                    |   11 -
+ drivers/dma/Makefile                   |    1 
+ drivers/dma/dmaengine.c                |  104 ------------
+ drivers/dma/ioat/dma.c                 |    1 
+ drivers/dma/ioat/dma.h                 |    7 -
+ drivers/dma/ioat/dma_v2.c              |    1 
+ drivers/dma/ioat/dma_v3.c              |    1 
+ drivers/dma/iovlock.c                  |  280 --------------------------------
+ include/linux/dma-debug.h              |    6 +
+ include/linux/dmaengine.h              |   22 ---
+ include/linux/skbuff.h                 |    7 -
+ include/linux/tcp.h                    |    7 -
+ include/net/netdma.h                   |   32 ----
+ include/net/sock.h                     |   18 --
+ include/net/tcp.h                      |    7 -
+ kernel/sysctl_binary.c                 |    1 
+ lib/dma-debug.c                        |  130 +++++++++++++--
+ mm/memory.c                            |    3 
+ net/core/Makefile                      |    1 
+ net/core/dev.c                         |   10 -
+ net/core/sock.c                        |    6 -
+ net/core/user_dma.c                    |  131 ---------------
+ net/dccp/proto.c                       |    4 
+ net/ipv4/sysctl_net_ipv4.c             |    9 -
+ net/ipv4/tcp.c                         |  147 ++---------------
+ net/ipv4/tcp_input.c                   |   61 -------
+ net/ipv4/tcp_ipv4.c                    |   18 --
+ net/ipv6/tcp_ipv6.c                    |   13 -
+ net/llc/af_llc.c                       |   10 +
+ 31 files changed, 161 insertions(+), 902 deletions(-)
+ create mode 100644 Documentation/ABI/removed/net_dma
+ delete mode 100644 drivers/dma/iovlock.c
+ delete mode 100644 include/net/netdma.h
+ delete mode 100644 net/core/user_dma.c
