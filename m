@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798Ab3LRSj0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 13:39:26 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:55553 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923Ab3LRSjY (ORCPT
+	id S1755813Ab3LRSkT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 13:40:19 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:34412 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755242Ab3LRSkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 13:39:24 -0500
-Date: Wed, 18 Dec 2013 10:39:19 -0800
+	Wed, 18 Dec 2013 13:40:17 -0500
+Date: Wed, 18 Dec 2013 10:40:14 -0800
 From: josh@joshtriplett.org
 To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Hannes Reinecke <hare@suse.de>, Andy Grover <agrover@redhat.com>,
-        Joern Engel <joern@logfs.org>, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org
-Subject: Re: [PATCH 3/4] drivers: target: Mark functions as static in
- tcm_loop.c
-Message-ID: <20131218183919.GC24229@cloud>
-References: <1a63603bc5ff05147c419a301d59b135cd0c8406.1387390091.git.rashika.kheria@gmail.com>
- <6d957ed9181ac274d13385db204db100b0ef8416.1387390091.git.rashika.kheria@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] drivers: thermal: Mark function as static in
+ x86_pkg_temp_thermal.c
+Message-ID: <20131218184014.GD24229@cloud>
+References: <20131218174602.GA27918@rashika>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <6d957ed9181ac274d13385db204db100b0ef8416.1387390091.git.rashika.kheria@gmail.com>
+In-Reply-To: <20131218174602.GA27918@rashika>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 12:02:54AM +0530, Rashika Kheria wrote:
-> Mark functions tcm_loop_make_naa_tpg(), tcm_loop_drop_naa_tpg(),
-> tcm_loop_make_scsi_hba() and tcm_loop_drop_scsi_hba() as static in
-> loopback/tcm_loop.c because they are not used outside this file.
+On Wed, Dec 18, 2013 at 11:16:02PM +0530, Rashika Kheria wrote:
+> Mark function sys_set_trip_temp() as static in x86_pkg_temp_thermal.c
+> because it is not used outside this file.
 > 
-> This eliminates the following warning in loopback/tcm_loop.c:
-> drivers/target/loopback/tcm_loop.c:1231:25: warning: no previous prototype for ‘tcm_loop_make_naa_tpg’ [-Wmissing-prototypes]
-> drivers/target/loopback/tcm_loop.c:1276:6: warning: no previous prototype for ‘tcm_loop_drop_naa_tpg’ [-Wmissing-prototypes]
-> drivers/target/loopback/tcm_loop.c:1308:16: warning: no previous prototype for ‘tcm_loop_make_scsi_hba’ [-Wmissing-prototypes]
-> drivers/target/loopback/tcm_loop.c:1378:6: warning: no previous prototype for ‘tcm_loop_drop_scsi_hba’ [-Wmissing-prototypes]
+> This eliminates the following warning in x86_pkg_temp_thermal.c:
+> drivers/thermal/x86_pkg_temp_thermal.c:218:5: warning: no previous prototype for ‘sys_set_trip_temp’ [-Wmissing-prototypes]
 > 
 > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
->  drivers/target/loopback/tcm_loop.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+>  drivers/thermal/x86_pkg_temp_thermal.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
-> index 1b41e67..763ee45 100644
-> --- a/drivers/target/loopback/tcm_loop.c
-> +++ b/drivers/target/loopback/tcm_loop.c
-> @@ -1228,7 +1228,7 @@ static struct configfs_attribute *tcm_loop_tpg_attrs[] = {
->  
->  /* Start items for tcm_loop_naa_cit */
->  
-> -struct se_portal_group *tcm_loop_make_naa_tpg(
-> +static struct se_portal_group *tcm_loop_make_naa_tpg(
->  	struct se_wwn *wwn,
->  	struct config_group *group,
->  	const char *name)
-> @@ -1273,7 +1273,7 @@ struct se_portal_group *tcm_loop_make_naa_tpg(
->  	return &tl_tpg->tl_se_tpg;
+> diff --git a/drivers/thermal/x86_pkg_temp_thermal.c b/drivers/thermal/x86_pkg_temp_thermal.c
+> index 7722cb9..972e1c7 100644
+> --- a/drivers/thermal/x86_pkg_temp_thermal.c
+> +++ b/drivers/thermal/x86_pkg_temp_thermal.c
+> @@ -215,7 +215,7 @@ static int sys_get_trip_temp(struct thermal_zone_device *tzd,
+>  	return 0;
 >  }
 >  
-> -void tcm_loop_drop_naa_tpg(
-> +static void tcm_loop_drop_naa_tpg(
->  	struct se_portal_group *se_tpg)
+> -int sys_set_trip_temp(struct thermal_zone_device *tzd, int trip,
+> +static int sys_set_trip_temp(struct thermal_zone_device *tzd, int trip,
+>  							unsigned long temp)
 >  {
->  	struct se_wwn *wwn = se_tpg->se_tpg_wwn;
-> @@ -1305,7 +1305,7 @@ void tcm_loop_drop_naa_tpg(
->  
->  /* Start items for tcm_loop_cit */
->  
-> -struct se_wwn *tcm_loop_make_scsi_hba(
-> +static struct se_wwn *tcm_loop_make_scsi_hba(
->  	struct target_fabric_configfs *tf,
->  	struct config_group *group,
->  	const char *name)
-> @@ -1375,7 +1375,7 @@ out:
->  	return ERR_PTR(ret);
->  }
->  
-> -void tcm_loop_drop_scsi_hba(
-> +static void tcm_loop_drop_scsi_hba(
->  	struct se_wwn *wwn)
->  {
->  	struct tcm_loop_hba *tl_hba = container_of(wwn,
+>  	u32 l, h;
 > -- 
 > 1.7.9.5
 > 
