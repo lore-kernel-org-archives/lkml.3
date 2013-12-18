@@ -1,60 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab3LRAEy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 19:04:54 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:39909 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab3LRAEw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 19:04:52 -0500
-Date: Tue, 17 Dec 2013 16:04:48 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Hyun Kwon <hyunk@xilinx.com>
-Subject: Re: [PATCH v5] clk: si570: Add a driver for SI570 oscillators
-Message-ID: <20131218000448.GA9857@roeck-us.net>
-References: <1379806839-13762-1-git-send-email-soren.brinkmann@xilinx.com>
- <b625092b-682c-4072-85a6-9f9d7f378ec0@VA3EHSMHS043.ehs.local>
- <20131002231751.4343.81234@quantum>
- <52AC8857.8070504@roeck-us.net>
- <20131217234340.23538.9631@quantum>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+	id S1752039Ab3LRAIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 19:08:11 -0500
+Received: from ozlabs.org ([203.10.76.45]:60303 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750950Ab3LRAIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 19:08:09 -0500
+Message-ID: <1387325285.19507.1.camel@concordia>
+Subject: Re: [PATCH V4 09/10] power8, perf: Change BHRB branch filter
+ configuration
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, mikey@neuling.org,
+        ak@linux.intel.com, eranian@google.com, acme@ghostprotocols.net,
+        sukadev@linux.vnet.ibm.com, mingo@kernel.org
+Date: Wed, 18 Dec 2013 11:08:05 +1100
+In-Reply-To: <52AAC356.1000308@linux.vnet.ibm.com>
+References: <20131209062147.51F822C00C5@ozlabs.org>
+	 <52AAC356.1000308@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131217234340.23538.9631@quantum>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 03:43:40PM -0800, Mike Turquette wrote:
-> Quoting Guenter Roeck (2013-12-14 08:33:27)
-> > On 10/02/2013 04:17 PM, Mike Turquette wrote:
-> > > Quoting S�ren Brinkmann (2013-10-02 10:20:38)
-> > >> Hi Mike,
-> > >>
-> > >> could you please comment on this/apply it to clk-next?
-> > >
-> > > It looks good and is in the queue. Will show up in clk-next in a few
-> > > days.
-> > >
-> > Hi Mike,
+On Fri, 2013-12-13 at 13:50 +0530, Anshuman Khandual wrote:
+> On 12/09/2013 11:51 AM, Michael Ellerman wrote:
 > > 
-> > trying again ... what happened with this driver ? Any reason for not pushing it after all ?
+> > As I said in my comments on version 3 which you ignored:
+> > 
+> >     I think it would be clearer if we actually checked for the possibilities we
+> >     allow and let everything else fall through, eg:
+> > 
+> > Â Â Â Â Â Â Â Â /* Ignore user/kernel/hv bits */
+> > Â Â Â Â Â Â Â Â branch_sample_type &= ~PERF_SAMPLE_BRANCH_PLM_ALL;
+> > 
+> > Â Â Â Â Â Â Â Â if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY)
+> > Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â return 0;
+> > 
+> > Â Â Â Â Â Â Â Â if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY_CALL)
+> > Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â return POWER8_MMCRA_IFM1;
+> > Â 
+> > Â Â Â Â Â Â Â Â if (branch_sample_type == PERF_SAMPLE_BRANCH_COND)
+> > Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â return POWER8_MMCRA_IFM3;
+> > Â Â Â Â Â Â Â Â 
+> > Â Â Â Â Â Â Â Â return -1;
+> > 
 > 
-> This got reverted with several other patches right before 3.12 dropped.
-> Unfortunately clk-next broke linux-next two days before 3.12 came out
-> and I had to revert to a known good state, excluding this driver.
+> Hey Michael,
 > 
-> I've added it back to clk-next now towards 3.13. Sorry for the
-> inconvenience.
-> 
-No problem. Thanks a lot for the update.
+> This patch only adds support for the PERF_SAMPLE_BRANCH_COND filter, if the
+> over all code flow does not clearly suggest that all combinations of any of
+> these HW filters are invalid, then we can go with one more patch to clean
+> that up before or after this patch but not here in this patch. Finally the
+> code section here will look something like this. Does it sound good ?
 
-Guenter
+Better, but not quite.
+
+> static u64 power8_bhrb_filter_map(u64 branch_sample_type)
+> {
+>         u64 pmu_bhrb_filter = 0;
+> 
+>         /* BHRB and regular PMU events share the same privilege state
+>          * filter configuration. BHRB is always recorded along with a
+>          * regular PMU event. As the privilege state filter is handled
+>          * in the basic PMC configuration of the accompanying regular
+>          * PMU event, we ignore any separate BHRB specific request.
+>          */
+> 
+>         /* Ignore user, kernel, hv bits */
+>         branch_sample_type &= ~PERF_SAMPLE_BRANCH_PLM_ALL;
+> 
+>         if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY)
+>                 return pmu_bhrb_filter;
+
+return 0;
+
+> 
+> 
+>         if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY_CALL) {
+>                 pmu_bhrb_filter |= POWER8_MMCRA_IFM1;
+>                 return pmu_bhrb_filter;
+
+return POWER8_MMCRA_IFM1;
+
+>         }
+> 
+>         if (branch_sample_type == PERF_SAMPLE_BRANCH_COND) {
+>                 pmu_bhrb_filter |= POWER8_MMCRA_IFM3;
+>                 return pmu_bhrb_filter;
+
+return POWER8_MMCRA_IFM3;
+
+>         }
+> 
+>         /* Every thing else is unsupported */
+>         return -1;
+> }
+
+cheers
+
+
