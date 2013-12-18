@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab3LRPzp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 10:55:45 -0500
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:29320 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754070Ab3LRPzo (ORCPT
+	id S1754774Ab3LRP6P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 10:58:15 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:64772 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754204Ab3LRP6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 10:55:44 -0500
-Message-ID: <52B1C57E.7000901@akamai.com>
-Date: Wed, 18 Dec 2013 10:55:42 -0500
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Wed, 18 Dec 2013 10:58:14 -0500
+Date: Wed, 18 Dec 2013 16:58:10 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 05/13] rcu: Fix unraised IPI to timekeeping CPU
+Message-ID: <20131218155808.GG18464@localhost.localdomain>
+References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
+ <1387320692-28460-6-git-send-email-fweisbec@gmail.com>
+ <20131217232100.GC19211@linux.vnet.ibm.com>
+ <20131218141348.GA18464@localhost.localdomain>
+ <20131218142240.GP19211@linux.vnet.ibm.com>
+ <20131218145610.GE18464@localhost.localdomain>
+ <20131218151158.GV21999@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>, Steven Rostedt <rostedt@goodmis.org>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Andrew Jones <drjones@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v6 7/7] jump_label: use defined macros instead of hard-coding
- for better readability
-References: <1386691433-6827-1-git-send-email-liuj97@gmail.com>	<1386691433-6827-8-git-send-email-liuj97@gmail.com> <20131213112019.751f7946@gandalf.local.home> <52AD8E10.2010904@gmail.com>
-In-Reply-To: <52AD8E10.2010904@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131218151158.GV21999@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2013 06:10 AM, Jiang Liu wrote:
-> On 12/14/2013 12:20 AM, Steven Rostedt wrote:
->> On Wed, 11 Dec 2013 00:03:53 +0800
->> Jiang Liu <liuj97@gmail.com> wrote:
->>
->>> Use macro JUMP_LABEL_TRUE_BRANCH instead of hard-coding for better
->>> readability.
->> Looks good, just a little nit. (see below)
->>
->>> Signed-off-by: Jiang Liu <liuj97@gmail.com>
->>> ---
->>>  include/linux/jump_label.h | 15 ++++++++++-----
-> ...
->>> @@ -123,9 +126,11 @@ extern void static_key_slow_dec(struct static_key *key);
->>>  extern void jump_label_apply_nops(struct module *mod);
->>>  
->>>  #define STATIC_KEY_INIT_TRUE ((struct static_key) \
->>> -	{ .enabled = ATOMIC_INIT(1), .entries = (void *)1 })
->>> +	{ .enabled = ATOMIC_INIT(1), \
->>> +	  .entries = (void *)JUMP_LABEL_TYPE_TRUE_BRANCH })
->>>  #define STATIC_KEY_INIT_FALSE ((struct static_key) \
->>> -	{ .enabled = ATOMIC_INIT(0), .entries = (void *)0 })
->>> +	{ .enabled = ATOMIC_INIT(0), \
->>> +	  .entries = (void *)JUMP_LABEL_TYPE_FALSE_BRANCH })
->> Can we prettify the backslashes like:
->>
->> #define STATIC_KEY_INIT_TRUE ((struct static_key)		\
->> 	{ .enabled = ATOMIC_INIT(1),				\
->> 	  .entries = (void *)JUMP_LABEL_TYPE_TRUE_BRANCH })
->> #define STATIC_KEY_INIT_FALSE ((struct static_key)		\
->> 	{ .enabled = ATOMIC_INIT(0),				\
->> 	  .entries = (void *)JUMP_LABEL_TYPE_FALSE_BRANCH })
->>
->>
->> Other than that.
->>
->> Acked-by: Steven Rostedt <rostedt@goodmis.org>
-> Thanks Steve.
-> Will make this change.
+On Wed, Dec 18, 2013 at 04:11:58PM +0100, Peter Zijlstra wrote:
+> On Wed, Dec 18, 2013 at 03:56:12PM +0100, Frederic Weisbecker wrote:
+> > Because scheduler_ipi() conditionally calls irq_enter() and irq_exit()
+> > (I wonder if that's a good idea btw, is that here to deal with spurious
+> > scheduler IPIs of some sort?)
+> 
+> No its because the traditional scheduler IPI did all the work from the
+> interrupt return path -- and like the comment in there says, for many of
+> the IPIs that's still true.
+> 
+> So going through the architectures and making all scheduler_ipi callers
+> do irq_enter/exit would actually make them slower.
 
-Works for me too, feel free to add:
+Fair point!
 
-Acked-by: Jason Baron <jbaron@akamai.com>
-
-Thanks,
-
--Jason
-
+Thanks.
