@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab3LRVOg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:14:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36660 "EHLO
+	id S1754765Ab3LRVP1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:15:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36694 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752610Ab3LRVOX (ORCPT
+	with ESMTP id S1754756Ab3LRVOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:14:23 -0500
+	Wed, 18 Dec 2013 16:14:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ma Jianpeng <majianpeng@gmail.com>, Liu Bo <bo.li.liu@oracle.com>,
-        Miao Xie <miaox@cn.fujitsu.com>, Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [PATCH 3.12 115/118] Btrfs: fix lockdep error in async commit
-Date: Wed, 18 Dec 2013 13:12:32 -0800
-Message-Id: <20131218211222.713676831@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.12 081/118] dm snapshot: avoid snapshot space leak on crash
+Date: Wed, 18 Dec 2013 13:11:58 -0800
+Message-Id: <20131218211221.738154711@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -30,84 +29,194 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Bo <bo.li.liu@oracle.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit b1a06a4b574996692b72b742bf6e6aa0c711a948 upstream.
+commit 230c83afdd9cd384348475bea1e14b80b3b6b1b8 upstream.
 
-Lockdep complains about btrfs's async commit:
+There is a possible leak of snapshot space in case of crash.
 
-[ 2372.462171] [ BUG: bad unlock balance detected! ]
-[ 2372.462191] 3.12.0+ #32 Tainted: G        W
-[ 2372.462209] -------------------------------------
-[ 2372.462228] ceph-osd/14048 is trying to release lock (sb_internal) at:
-[ 2372.462275] [<ffffffffa022cb10>] btrfs_commit_transaction_async+0x1b0/0x2a0 [btrfs]
-[ 2372.462305] but there are no more locks to release!
-[ 2372.462324]
-[ 2372.462324] other info that might help us debug this:
-[ 2372.462349] no locks held by ceph-osd/14048.
-[ 2372.462367]
-[ 2372.462367] stack backtrace:
-[ 2372.462386] CPU: 2 PID: 14048 Comm: ceph-osd Tainted: G        W    3.12.0+ #32
-[ 2372.462414] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS 080015  11/09/2011
-[ 2372.462455]  ffffffffa022cb10 ffff88007490fd28 ffffffff816f094a ffff8800378aa320
-[ 2372.462491]  ffff88007490fd50 ffffffff810adf4c ffff8800378aa320 ffff88009af97650
-[ 2372.462526]  ffffffffa022cb10 ffff88007490fd88 ffffffff810b01ee ffff8800898c0000
-[ 2372.462562] Call Trace:
-[ 2372.462584]  [<ffffffffa022cb10>] ? btrfs_commit_transaction_async+0x1b0/0x2a0 [btrfs]
-[ 2372.462619]  [<ffffffff816f094a>] dump_stack+0x45/0x56
-[ 2372.462642]  [<ffffffff810adf4c>] print_unlock_imbalance_bug+0xec/0x100
-[ 2372.462677]  [<ffffffffa022cb10>] ? btrfs_commit_transaction_async+0x1b0/0x2a0 [btrfs]
-[ 2372.462710]  [<ffffffff810b01ee>] lock_release+0x18e/0x210
-[ 2372.462742]  [<ffffffffa022cb36>] btrfs_commit_transaction_async+0x1d6/0x2a0 [btrfs]
-[ 2372.462783]  [<ffffffffa025a7ce>] btrfs_ioctl_start_sync+0x3e/0xc0 [btrfs]
-[ 2372.462822]  [<ffffffffa025f1d3>] btrfs_ioctl+0x4c3/0x1f70 [btrfs]
-[ 2372.462849]  [<ffffffff812c0321>] ? avc_has_perm+0x121/0x1b0
-[ 2372.462873]  [<ffffffff812c0224>] ? avc_has_perm+0x24/0x1b0
-[ 2372.462897]  [<ffffffff8107ecc8>] ? sched_clock_cpu+0xa8/0x100
-[ 2372.462922]  [<ffffffff8117b145>] do_vfs_ioctl+0x2e5/0x4e0
-[ 2372.462946]  [<ffffffff812c19e6>] ? file_has_perm+0x86/0xa0
-[ 2372.462969]  [<ffffffff8117b3c1>] SyS_ioctl+0x81/0xa0
-[ 2372.462991]  [<ffffffff817045a4>] tracesys+0xdd/0xe2
+The reason for space leaking is that chunks in the snapshot device are
+allocated sequentially, but they are finished (and stored in the metadata)
+out of order, depending on the order in which copying finished.
 
-====================================================
+For example, supposed that the metadata contains the following records
+SUPERBLOCK
+METADATA (blocks 0 ... 250)
+DATA 0
+DATA 1
+DATA 2
+...
+DATA 250
 
-It's because that we don't do the right thing when checking if it's ok to
-tell lockdep that we're trying to release the rwsem.
+Now suppose that you allocate 10 new data blocks 251-260. Suppose that
+copying of these blocks finish out of order (block 260 finished first
+and the block 251 finished last). Now, the snapshot device looks like
+this:
+SUPERBLOCK
+METADATA (blocks 0 ... 250, 260, 259, 258, 257, 256)
+DATA 0
+DATA 1
+DATA 2
+...
+DATA 250
+DATA 251
+DATA 252
+DATA 253
+DATA 254
+DATA 255
+METADATA (blocks 255, 254, 253, 252, 251)
+DATA 256
+DATA 257
+DATA 258
+DATA 259
+DATA 260
 
-If the trans handle's type is TRANS_ATTACH, we won't acquire the freeze rwsem, but
-as TRANS_ATTACH fits the check (trans < TRANS_JOIN_NOLOCK), we'll release the freeze
-rwsem, which makes lockdep complains a lot.
+Now, if the machine crashes after writing the first metadata block but
+before writing the second metadata block, the space for areas DATA 250-255
+is leaked, it contains no valid data and it will never be used in the
+future.
 
-Reported-by: Ma Jianpeng <majianpeng@gmail.com>
-Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
-Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+This patch makes dm-snapshot complete exceptions in the same order they
+were allocated, thus fixing this bug.
+
+Note: when backporting this patch to the stable kernel, change the version
+field in the following way:
+* if version in the stable kernel is {1, 11, 1}, change it to {1, 12, 0}
+* if version in the stable kernel is {1, 10, 0} or {1, 10, 1}, change it
+  to {1, 10, 2}
+Userspace reads the version to determine if the bug was fixed, so the
+version change is needed.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/transaction.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/dm-snap.c |   71 +++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 64 insertions(+), 7 deletions(-)
 
---- a/fs/btrfs/transaction.c
-+++ b/fs/btrfs/transaction.c
-@@ -1453,7 +1453,7 @@ static void do_async_commit(struct work_
- 	 * We've got freeze protection passed with the transaction.
- 	 * Tell lockdep about it.
+--- a/drivers/md/dm-snap.c
++++ b/drivers/md/dm-snap.c
+@@ -66,6 +66,18 @@ struct dm_snapshot {
+ 
+ 	atomic_t pending_exceptions_count;
+ 
++	/* Protected by "lock" */
++	sector_t exception_start_sequence;
++
++	/* Protected by kcopyd single-threaded callback */
++	sector_t exception_complete_sequence;
++
++	/*
++	 * A list of pending exceptions that completed out of order.
++	 * Protected by kcopyd single-threaded callback.
++	 */
++	struct list_head out_of_order_list;
++
+ 	mempool_t *pending_pool;
+ 
+ 	struct dm_exception_table pending;
+@@ -173,6 +185,14 @@ struct dm_snap_pending_exception {
  	 */
--	if (ac->newtrans->type < TRANS_JOIN_NOLOCK)
-+	if (ac->newtrans->type & __TRANS_FREEZABLE)
- 		rwsem_acquire_read(
- 		     &ac->root->fs_info->sb->s_writers.lock_map[SB_FREEZE_FS-1],
- 		     0, 1, _THIS_IP_);
-@@ -1494,7 +1494,7 @@ int btrfs_commit_transaction_async(struc
- 	 * Tell lockdep we've released the freeze rwsem, since the
- 	 * async commit thread will be the one to unlock it.
+ 	int started;
+ 
++	/* There was copying error. */
++	int copy_error;
++
++	/* A sequence number, it is used for in-order completion. */
++	sector_t exception_sequence;
++
++	struct list_head out_of_order_entry;
++
+ 	/*
+ 	 * For writing a complete chunk, bypassing the copy.
  	 */
--	if (trans->type < TRANS_JOIN_NOLOCK)
-+	if (ac->newtrans->type & __TRANS_FREEZABLE)
- 		rwsem_release(
- 			&root->fs_info->sb->s_writers.lock_map[SB_FREEZE_FS-1],
- 			1, _THIS_IP_);
+@@ -1094,6 +1114,9 @@ static int snapshot_ctr(struct dm_target
+ 	s->valid = 1;
+ 	s->active = 0;
+ 	atomic_set(&s->pending_exceptions_count, 0);
++	s->exception_start_sequence = 0;
++	s->exception_complete_sequence = 0;
++	INIT_LIST_HEAD(&s->out_of_order_list);
+ 	init_rwsem(&s->lock);
+ 	INIT_LIST_HEAD(&s->list);
+ 	spin_lock_init(&s->pe_lock);
+@@ -1443,6 +1466,19 @@ static void commit_callback(void *contex
+ 	pending_complete(pe, success);
+ }
+ 
++static void complete_exception(struct dm_snap_pending_exception *pe)
++{
++	struct dm_snapshot *s = pe->snap;
++
++	if (unlikely(pe->copy_error))
++		pending_complete(pe, 0);
++
++	else
++		/* Update the metadata if we are persistent */
++		s->store->type->commit_exception(s->store, &pe->e,
++						 commit_callback, pe);
++}
++
+ /*
+  * Called when the copy I/O has finished.  kcopyd actually runs
+  * this code so don't block.
+@@ -1452,13 +1488,32 @@ static void copy_callback(int read_err,
+ 	struct dm_snap_pending_exception *pe = context;
+ 	struct dm_snapshot *s = pe->snap;
+ 
+-	if (read_err || write_err)
+-		pending_complete(pe, 0);
++	pe->copy_error = read_err || write_err;
+ 
+-	else
+-		/* Update the metadata if we are persistent */
+-		s->store->type->commit_exception(s->store, &pe->e,
+-						 commit_callback, pe);
++	if (pe->exception_sequence == s->exception_complete_sequence) {
++		s->exception_complete_sequence++;
++		complete_exception(pe);
++
++		while (!list_empty(&s->out_of_order_list)) {
++			pe = list_entry(s->out_of_order_list.next,
++					struct dm_snap_pending_exception, out_of_order_entry);
++			if (pe->exception_sequence != s->exception_complete_sequence)
++				break;
++			s->exception_complete_sequence++;
++			list_del(&pe->out_of_order_entry);
++			complete_exception(pe);
++		}
++	} else {
++		struct list_head *lh;
++		struct dm_snap_pending_exception *pe2;
++
++		list_for_each_prev(lh, &s->out_of_order_list) {
++			pe2 = list_entry(lh, struct dm_snap_pending_exception, out_of_order_entry);
++			if (pe2->exception_sequence < pe->exception_sequence)
++				break;
++		}
++		list_add(&pe->out_of_order_entry, lh);
++	}
+ }
+ 
+ /*
+@@ -1553,6 +1608,8 @@ __find_pending_exception(struct dm_snaps
+ 		return NULL;
+ 	}
+ 
++	pe->exception_sequence = s->exception_start_sequence++;
++
+ 	dm_insert_exception(&s->pending, &pe->e);
+ 
+ 	return pe;
+@@ -2192,7 +2249,7 @@ static struct target_type origin_target
+ 
+ static struct target_type snapshot_target = {
+ 	.name    = "snapshot",
+-	.version = {1, 11, 1},
++	.version = {1, 12, 0},
+ 	.module  = THIS_MODULE,
+ 	.ctr     = snapshot_ctr,
+ 	.dtr     = snapshot_dtr,
 
 
