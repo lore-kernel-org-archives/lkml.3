@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752280Ab3LRVI4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:08:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35748 "EHLO
+	id S1756491Ab3LRWTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:19:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35760 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207Ab3LRVIx (ORCPT
+	with ESMTP id S1752251Ab3LRVI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:08:53 -0500
+	Wed, 18 Dec 2013 16:08:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Engelmayer <christian.engelmayer@frequentis.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.4 16/31] Input: usbtouchscreen - separate report and transmit buffer size handling
-Date: Wed, 18 Dec 2013 13:08:24 -0800
-Message-Id: <20131218210523.252469477@linuxfoundation.org>
+        Janak Desai <Janak.Desai@gtri.gatech.edu>,
+        Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.4 19/31] selinux: handle TCP SYN-ACK packets correctly in selinux_ip_postroute()
+Date: Wed, 18 Dec 2013 13:08:27 -0800
+Message-Id: <20131218210523.333442239@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218210522.790152625@linuxfoundation.org>
 References: <20131218210522.790152625@linuxfoundation.org>
@@ -29,94 +29,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Engelmayer <christian.engelmayer@frequentis.com>
+From: Paul Moore <pmoore@redhat.com>
 
-commit 4ef38351d770cc421f4a0c7a849fd13207fc5741 upstream.
+commit 446b802437f285de68ffb8d6fac3c44c3cab5b04 upstream.
 
-This patch supports the separate handling of the USB transfer buffer length
-and the length of the buffer used for multi packet support. For devices
-supporting multiple report or diagnostic packets, the USB transfer size is now
-limited to the USB endpoints wMaxPacketSize - otherwise it defaults to the
-configured report packet size as before.
+In selinux_ip_postroute() we perform access checks based on the
+packet's security label.  For locally generated traffic we get the
+packet's security label from the associated socket; this works in all
+cases except for TCP SYN-ACK packets.  In the case of SYN-ACK packet's
+the correct security label is stored in the connection's request_sock,
+not the server's socket.  Unfortunately, at the point in time when
+selinux_ip_postroute() is called we can't query the request_sock
+directly, we need to recreate the label using the same logic that
+originally labeled the associated request_sock.
 
-This fixes an issue where event reporting can be delayed for an arbitrary
-time for multi packet devices. For instance the report size for eGalax devices
-is defined to the 16 byte maximum diagnostic packet size as opposed to the 5
-byte report packet size. In case the driver requests 16 byte from the USB
-interrupt endpoint, the USB host controller driver needs to split up the
-request into 2 accesses according to the endpoints wMaxPacketSize of 8 byte.
-When the first transfer is answered by the eGalax device with not less than
-the full 8 byte requested, the host controller has got no way of knowing
-whether the touch controller has got additional data queued and will issue
-the second transfer. If per example a liftoff event finishes at such a
-wMaxPacketSize boundary, the data will not be available to the usbtouch driver
-until a further event is triggered and transfered to the host. From user
-perspective the BTN_TOUCH release event in this case is stuck until the next
-touch down event.
+See the inline comments for more explanation.
 
-Signed-off-by: Christian Engelmayer <christian.engelmayer@frequentis.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
+Tested-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/touchscreen/usbtouchscreen.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ security/selinux/hooks.c |   68 ++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 53 insertions(+), 15 deletions(-)
 
---- a/drivers/input/touchscreen/usbtouchscreen.c
-+++ b/drivers/input/touchscreen/usbtouchscreen.c
-@@ -106,6 +106,7 @@ struct usbtouch_device_info {
- struct usbtouch_usb {
- 	unsigned char *data;
- 	dma_addr_t data_dma;
-+	int data_size;
- 	unsigned char *buffer;
- 	int buf_len;
- 	struct urb *irq;
-@@ -1474,7 +1475,7 @@ static int usbtouch_reset_resume(struct
- static void usbtouch_free_buffers(struct usb_device *udev,
- 				  struct usbtouch_usb *usbtouch)
- {
--	usb_free_coherent(udev, usbtouch->type->rept_size,
-+	usb_free_coherent(udev, usbtouch->data_size,
- 			  usbtouch->data, usbtouch->data_dma);
- 	kfree(usbtouch->buffer);
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -3734,6 +3734,30 @@ static int selinux_skb_peerlbl_sid(struc
+ 	return 0;
  }
-@@ -1519,7 +1520,20 @@ static int usbtouch_probe(struct usb_int
- 	if (!type->process_pkt)
- 		type->process_pkt = usbtouch_process_pkt;
  
--	usbtouch->data = usb_alloc_coherent(udev, type->rept_size,
-+	usbtouch->data_size = type->rept_size;
-+	if (type->get_pkt_len) {
-+		/*
-+		 * When dealing with variable-length packets we should
-+		 * not request more than wMaxPacketSize bytes at once
-+		 * as we do not know if there is more data coming or
-+		 * we filled exactly wMaxPacketSize bytes and there is
-+		 * nothing else.
-+		 */
-+		usbtouch->data_size = min(usbtouch->data_size,
-+					  usb_endpoint_maxp(endpoint));
-+	}
++/**
++ * selinux_conn_sid - Determine the child socket label for a connection
++ * @sk_sid: the parent socket's SID
++ * @skb_sid: the packet's SID
++ * @conn_sid: the resulting connection SID
++ *
++ * If @skb_sid is valid then the user:role:type information from @sk_sid is
++ * combined with the MLS information from @skb_sid in order to create
++ * @conn_sid.  If @skb_sid is not valid then then @conn_sid is simply a copy
++ * of @sk_sid.  Returns zero on success, negative values on failure.
++ *
++ */
++static int selinux_conn_sid(u32 sk_sid, u32 skb_sid, u32 *conn_sid)
++{
++	int err = 0;
 +
-+	usbtouch->data = usb_alloc_coherent(udev, usbtouch->data_size,
- 					    GFP_KERNEL, &usbtouch->data_dma);
- 	if (!usbtouch->data)
- 		goto out_free;
-@@ -1578,12 +1592,12 @@ static int usbtouch_probe(struct usb_int
- 	if (usb_endpoint_type(endpoint) == USB_ENDPOINT_XFER_INT)
- 		usb_fill_int_urb(usbtouch->irq, udev,
- 			 usb_rcvintpipe(udev, endpoint->bEndpointAddress),
--			 usbtouch->data, type->rept_size,
-+			 usbtouch->data, usbtouch->data_size,
- 			 usbtouch_irq, usbtouch, endpoint->bInterval);
- 	else
- 		usb_fill_bulk_urb(usbtouch->irq, udev,
- 			 usb_rcvbulkpipe(udev, endpoint->bEndpointAddress),
--			 usbtouch->data, type->rept_size,
-+			 usbtouch->data, usbtouch->data_size,
- 			 usbtouch_irq, usbtouch);
++	if (skb_sid != SECSID_NULL)
++		err = security_sid_mls_copy(sk_sid, skb_sid, conn_sid);
++	else
++		*conn_sid = sk_sid;
++
++	return err;
++}
++
+ /* socket security operations */
  
- 	usbtouch->irq->dev = udev;
+ static int socket_sockcreate_sid(const struct task_security_struct *tsec,
+@@ -4355,7 +4379,7 @@ static int selinux_inet_conn_request(str
+ 	struct sk_security_struct *sksec = sk->sk_security;
+ 	int err;
+ 	u16 family = sk->sk_family;
+-	u32 newsid;
++	u32 connsid;
+ 	u32 peersid;
+ 
+ 	/* handle mapped IPv4 packets arriving via IPv6 sockets */
+@@ -4365,16 +4389,11 @@ static int selinux_inet_conn_request(str
+ 	err = selinux_skb_peerlbl_sid(skb, family, &peersid);
+ 	if (err)
+ 		return err;
+-	if (peersid == SECSID_NULL) {
+-		req->secid = sksec->sid;
+-		req->peer_secid = SECSID_NULL;
+-	} else {
+-		err = security_sid_mls_copy(sksec->sid, peersid, &newsid);
+-		if (err)
+-			return err;
+-		req->secid = newsid;
+-		req->peer_secid = peersid;
+-	}
++	err = selinux_conn_sid(sksec->sid, peersid, &connsid);
++	if (err)
++		return err;
++	req->secid = connsid;
++	req->peer_secid = peersid;
+ 
+ 	return selinux_netlbl_inet_conn_request(req, family);
+ }
+@@ -4723,12 +4742,12 @@ static unsigned int selinux_ip_postroute
+ 	if (!secmark_active && !peerlbl_active)
+ 		return NF_ACCEPT;
+ 
+-	/* if the packet is being forwarded then get the peer label from the
+-	 * packet itself; otherwise check to see if it is from a local
+-	 * application or the kernel, if from an application get the peer label
+-	 * from the sending socket, otherwise use the kernel's sid */
+ 	sk = skb->sk;
+ 	if (sk == NULL) {
++		/* Without an associated socket the packet is either coming
++		 * from the kernel or it is being forwarded; check the packet
++		 * to determine which and if the packet is being forwarded
++		 * query the packet directly to determine the security label. */
+ 		if (skb->skb_iif) {
+ 			secmark_perm = PACKET__FORWARD_OUT;
+ 			if (selinux_skb_peerlbl_sid(skb, family, &peer_sid))
+@@ -4737,7 +4756,26 @@ static unsigned int selinux_ip_postroute
+ 			secmark_perm = PACKET__SEND;
+ 			peer_sid = SECINITSID_KERNEL;
+ 		}
++	} else if (sk->sk_state == TCP_LISTEN) {
++		/* Locally generated packet but the associated socket is in the
++		 * listening state which means this is a SYN-ACK packet.  In
++		 * this particular case the correct security label is assigned
++		 * to the connection/request_sock but unfortunately we can't
++		 * query the request_sock as it isn't queued on the parent
++		 * socket until after the SYN-ACK packet is sent; the only
++		 * viable choice is to regenerate the label like we do in
++		 * selinux_inet_conn_request().  See also selinux_ip_output()
++		 * for similar problems. */
++		u32 skb_sid;
++		struct sk_security_struct *sksec = sk->sk_security;
++		if (selinux_skb_peerlbl_sid(skb, family, &skb_sid))
++			return NF_DROP;
++		if (selinux_conn_sid(sksec->sid, skb_sid, &peer_sid))
++			return NF_DROP;
++		secmark_perm = PACKET__SEND;
+ 	} else {
++		/* Locally generated packet, fetch the security label from the
++		 * associated socket. */
+ 		struct sk_security_struct *sksec = sk->sk_security;
+ 		peer_sid = sksec->sid;
+ 		secmark_perm = PACKET__SEND;
 
 
