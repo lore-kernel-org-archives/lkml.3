@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab3LRS7T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 13:59:19 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:40152 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566Ab3LRS7Q (ORCPT
+	id S1755785Ab3LRTAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 14:00:42 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:62060 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755083Ab3LRTAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 13:59:16 -0500
-Date: Wed, 18 Dec 2013 10:59:10 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, aswin@hp.com,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] qrwlock: A queue read/write lock implementation
-Message-ID: <20131218185910.GS19211@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1385147087-26588-1-git-send-email-Waiman.Long@hp.com>
- <1385147087-26588-2-git-send-email-Waiman.Long@hp.com>
- <20131217192128.GA15969@linux.vnet.ibm.com>
- <52B1ED2D.3020000@hp.com>
+	Wed, 18 Dec 2013 14:00:41 -0500
+Message-ID: <52B1F0D4.3040502@colorfullife.com>
+Date: Wed, 18 Dec 2013 20:00:36 +0100
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B1ED2D.3020000@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121818-0928-0000-0000-000004908833
+To: Rafael Aquini <aquini@redhat.com>, Davidlohr Bueso <davidlohr@hp.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Greg Thelen <gthelen@google.com>
+Subject: Re: [PATCH v2] ipc: introduce ipc_valid_object() helper to sort out
+ IPC_RMID races
+References: <e70c06876f986f0ac7f2f104bab50edff4a524a0.1387302999.git.aquini@redhat.com> <9710122c2aa978165609c0940e2087b074cd26ea.1387322182.git.aquini@redhat.com> <52B190F1.9050505@colorfullife.com> <20131218125059.GF19025@localhost.localdomain> <1387381587.2797.33.camel@buesod1.americas.hpqcorp.net> <20131218173442.GA16621@localhost.localdomain>
+In-Reply-To: <20131218173442.GA16621@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 01:45:01PM -0500, Waiman Long wrote:
-> On 12/17/2013 02:21 PM, Paul E. McKenney wrote:
+Hi Rafael,
 
-[ . . . ]
+On 12/18/2013 06:34 PM, Rafael Aquini wrote:
+> Folks,
+>
+> Before I re-submit the v3 with the commentary changes requested, I'm pasting
+> here what I'm planning to amend to v2 patch:
+> ---
+> diff --git a/ipc/sem.c b/ipc/sem.c
+> index ed0057a..23379b6 100644
+> --- a/ipc/sem.c
+> +++ b/ipc/sem.c
+> @@ -1846,6 +1846,14 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __u
+>   
+>          error = -EIDRM;
+>          locknum = sem_lock(sma, sops, nsops);
+> +       /*
+> +        * We eventually might perform the following check in a lockless
+> +        * fashion here, considering ipc_valid_object() locking constraints.
+> +        * If nsops == 1 and there's no contention for sem_perm.lock, then
+> +        * only a per-semaphore lock is held and it's OK to go on the check
+> +        * below. More details on the fine grained locking scheme entangled
+> +        * here, and why it's RMID race safe on comments at sem_lock()
+> +        */
+>          if (!ipc_valid_object(&sma->sem_perm))
+>                  goto out_unlock_free;
+>          /*
+> diff --git a/ipc/util.h b/ipc/util.h
+> index 071ed58..d05b708 100644
+> --- a/ipc/util.h
+> +++ b/ipc/util.h
+> @@ -190,7 +190,8 @@ static inline void ipc_unlock(struct kern_ipc_perm *perm)
+>    * where the respective ipc_ids.rwsem is not being held down.
+>    * Checks whether the ipc object is still around or if it's gone already, as
+>    * ipc_rmid() may have already freed the ID while the ipc lock was spinning.
+> - * Needs to be called with kern_ipc_perm.lock held.
+> + * Needs to be called with kern_ipc_perm.lock held -- exception made for one
+> + * checkpoint case at sys_semtimedop() as noted in code commentary.
+>    */
+>   static inline bool ipc_valid_object(struct kern_ipc_perm *perm)
+>   {
+> ---
+>
+> Do we need to change somthing else?
+> Looking forward your thoughts!
+Acked-by: Manfred Spraul <manfred@colorfullife.com>
 
-> >>+	signal_next(lock,&node);
-> >Good, this allows multiple readers to acquire the lock concurrently,
-> >give or take memory latency compared to critical-section duration.
-> >When the first writer shows up, it presumably spins on the lock word.
-> >
-> 
-> Yes, that was the intention. The first writer that shows up will
-> block succeeding readers from getting the lock.
-> 
-> BTW, what was the status of the TSO memory barrier patch? This patch
-> has some partial dependency it.
-
-I am hoping that it makes it into -tip soon, as I also have a patch that
-depends on it.
-
-							Thanx, Paul
-
+--
+     Manfred
