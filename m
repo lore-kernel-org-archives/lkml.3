@@ -1,108 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab3LRFVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 00:21:53 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:56165 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab3LRFVb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 00:21:31 -0500
-X-AuditID: 9c93017d-b7c5eae000004296-22-52b130d8dfa8
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Arun Sharma <asharma@fb.com>,
-        Jiri Olsa <jolsa@redhat.com>, Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 05/18] perf hists: Convert hist entry functions to use struct he_stat
-Date: Wed, 18 Dec 2013 14:21:13 +0900
-Message-Id: <1387344086-12744-6-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
-References: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	id S1753534Ab3LRF0z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 00:26:55 -0500
+Received: from mga09.intel.com ([134.134.136.24]:51715 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752650Ab3LRF0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 00:26:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,505,1384329600"; 
+   d="scan'208";a="446106865"
+Subject: TTY/n_gsm: Removing the wrong tty_unlock/lock() in
+ gsm_dlci_release()
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: gregkh@linuxfoundation.org, jslaby@suse.cz
+Cc: linux-kernel@vger.kernel.org, chao.bi@intel.com, chuansheng.liu@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Dec 2013 13:30:11 +0800
+Message-ID: <1387344611.3650.56.camel@cliu38-desktop-build>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
 
-hist_entry__add_cpumode_period() and hist_entry__decay() are dealing
-with hist_entry's stat fields only.  So make them use the struct
-directly.
+Commit 4d9b109060f690f5c835(tty: Prevent deadlock in n_gsm driver)
+tried to close all the virtual ports synchronously before closing the
+phycial ports, so the tty_vhangup() is used.
 
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+But the tty_unlock/lock() is wrong:
+tty_release
+ tty_ldisc_release
+  tty_lock_pair(tty, o_tty)  < == Here the tty is for physical port
+  tty_ldisc_kill
+    gsmld_close
+      gsm_cleanup_mux
+        gsm_dlci_release
+          tty = tty_port_tty_get(&dlci->port)
+                            < == Here the tty(s) are for virtual port
+
+They are different ttys, so before tty_vhangup(virtual tty), do not need
+to call the tty_unlock(virtual tty) at all which causes unbalanced unlock
+warning.
+
+When enabling mutex debugging option, we will hit the below warning also:
+[   99.276903] =====================================
+[   99.282172] [ BUG: bad unlock balance detected! ]
+[   99.287442] 3.10.20-261976-gaec5ba0 #44 Tainted: G           O
+[   99.293972] -------------------------------------
+[   99.299240] mmgr/152 is trying to release lock (&tty->legacy_mutex) at:
+[   99.306693] [<c1b2dcad>] mutex_unlock+0xd/0x10
+[   99.311669] but there are no more locks to release!
+[   99.317131]
+[   99.317131] other info that might help us debug this:
+[   99.324440] 3 locks held by mmgr/152:
+[   99.328542]  #0:  (&tty->legacy_mutex/1){......}, at: [<c1b30ab0>] tty_lock_nested+0x40/0x90
+[   99.338116]  #1:  (&tty->ldisc_mutex){......}, at: [<c15dbd02>] tty_ldisc_kill+0x22/0xd0
+[   99.347284]  #2:  (&gsm->mutex){......}, at: [<c15e3d83>] gsm_cleanup_mux+0x73/0x170
+[   99.356060]
+[   99.356060] stack backtrace:
+[   99.360932] CPU: 0 PID: 152 Comm: mmgr Tainted: G           O 3.10.20-261976-gaec5ba0 #44
+[   99.370086]  ef4a4de0 ef4a4de0 ef4c1d98 c1b27b91 ef4c1db8 c1292655 c1dd10f5 c1b2dcad
+[   99.378921]  c1b2dcad ef4a4de0 ef4a528c ffffffff ef4c1dfc c12930dd 00000246 00000000
+[   99.387754]  00000000 00000000 c15e1926 00000000 00000001 ddfa7530 00000003 c1b2dcad
+[   99.396588] Call Trace:
+[   99.399326]  [<c1b27b91>] dump_stack+0x16/0x18
+[   99.404307]  [<c1292655>] print_unlock_imbalance_bug+0xe5/0xf0
+[   99.410840]  [<c1b2dcad>] ? mutex_unlock+0xd/0x10
+[   99.416110]  [<c1b2dcad>] ? mutex_unlock+0xd/0x10
+[   99.421382]  [<c12930dd>] lock_release_non_nested+0x1cd/0x210
+[   99.427818]  [<c15e1926>] ? gsm_destroy_network+0x36/0x130
+[   99.433964]  [<c1b2dcad>] ? mutex_unlock+0xd/0x10
+[   99.439235]  [<c12931a2>] lock_release+0x82/0x1c0
+[   99.444505]  [<c1b2dcad>] ? mutex_unlock+0xd/0x10
+[   99.449776]  [<c1b2dcad>] ? mutex_unlock+0xd/0x10
+[   99.455047]  [<c1b2dc2f>] __mutex_unlock_slowpath+0x5f/0xd0
+[   99.461288]  [<c1b2dcad>] mutex_unlock+0xd/0x10
+[   99.466365]  [<c1b30bb1>] tty_unlock+0x21/0x50
+[   99.471345]  [<c15e3dd1>] gsm_cleanup_mux+0xc1/0x170
+[   99.476906]  [<c15e44d2>] gsmld_close+0x52/0x90
+[   99.481983]  [<c15db905>] tty_ldisc_close.isra.1+0x35/0x50
+[   99.488127]  [<c15dbd0c>] tty_ldisc_kill+0x2c/0xd0
+[   99.493494]  [<c15dc7af>] tty_ldisc_release+0x2f/0x50
+[   99.499152]  [<c15d572c>] tty_release+0x37c/0x4b0
+[   99.504424]  [<c1b2dcad>] ? mutex_unlock+0xd/0x10
+[   99.509695]  [<c1b2dcad>] ? mutex_unlock+0xd/0x10
+[   99.514967]  [<c1372f6e>] ? eventpoll_release_file+0x7e/0x90
+[   99.521307]  [<c1335849>] __fput+0xd9/0x200
+[   99.525996]  [<c133597d>] ____fput+0xd/0x10
+[   99.530685]  [<c125c731>] task_work_run+0x81/0xb0
+[   99.535957]  [<c12019e9>] do_notify_resume+0x49/0x70
+[   99.541520]  [<c1b30dc4>] work_notifysig+0x29/0x31
+[   99.546897] ------------[ cut here ]------------
+
+So here we can call tty_vhangup() directly which is for virtual port.
+
+Reviewed-by: Chao Bi <chao.bi@intel.com>
+Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
 ---
- tools/perf/util/hist.c | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ drivers/tty/n_gsm.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 63234e37583c..1f84314546a2 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -182,21 +182,21 @@ void hists__output_recalc_col_len(struct hists *hists, int max_rows)
+diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+index c0f76da..8187ae6 100644
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -1704,11 +1704,8 @@ static void gsm_dlci_release(struct gsm_dlci *dlci)
+ 		gsm_destroy_network(dlci);
+ 		mutex_unlock(&dlci->mutex);
+ 
+-		/* tty_vhangup needs the tty_lock, so unlock and
+-		   relock after doing the hangup. */
+-		tty_unlock(tty);
+ 		tty_vhangup(tty);
+-		tty_lock(tty);
++
+ 		tty_port_tty_set(&dlci->port, NULL);
+ 		tty_kref_put(tty);
  	}
- }
- 
--static void hist_entry__add_cpumode_period(struct hist_entry *he,
--					   unsigned int cpumode, u64 period)
-+static void he_stat__add_cpumode_period(struct he_stat *he_stat,
-+					unsigned int cpumode, u64 period)
- {
- 	switch (cpumode) {
- 	case PERF_RECORD_MISC_KERNEL:
--		he->stat.period_sys += period;
-+		he_stat->period_sys += period;
- 		break;
- 	case PERF_RECORD_MISC_USER:
--		he->stat.period_us += period;
-+		he_stat->period_us += period;
- 		break;
- 	case PERF_RECORD_MISC_GUEST_KERNEL:
--		he->stat.period_guest_sys += period;
-+		he_stat->period_guest_sys += period;
- 		break;
- 	case PERF_RECORD_MISC_GUEST_USER:
--		he->stat.period_guest_us += period;
-+		he_stat->period_guest_us += period;
- 		break;
- 	default:
- 		break;
-@@ -223,10 +223,10 @@ static void he_stat__add_stat(struct he_stat *dest, struct he_stat *src)
- 	dest->weight		+= src->weight;
- }
- 
--static void hist_entry__decay(struct hist_entry *he)
-+static void he_stat__decay(struct he_stat *he_stat)
- {
--	he->stat.period = (he->stat.period * 7) / 8;
--	he->stat.nr_events = (he->stat.nr_events * 7) / 8;
-+	he_stat->period = (he_stat->period * 7) / 8;
-+	he_stat->nr_events = (he_stat->nr_events * 7) / 8;
- 	/* XXX need decay for weight too? */
- }
- 
-@@ -237,7 +237,7 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
- 	if (prev_period == 0)
- 		return true;
- 
--	hist_entry__decay(he);
-+	he_stat__decay(&he->stat);
- 
- 	if (!he->filtered)
- 		hists->stats.total_period -= prev_period - he->stat.period;
-@@ -403,7 +403,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 	rb_link_node(&he->rb_node_in, parent, p);
- 	rb_insert_color(&he->rb_node_in, hists->entries_in);
- out:
--	hist_entry__add_cpumode_period(he, al->cpumode, period);
-+	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
- 	return he;
- }
- 
 -- 
-1.7.11.7
+1.7.9.5
+
+
 
