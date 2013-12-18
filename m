@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab3LRVOP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:14:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36609 "EHLO
+	id S1754704Ab3LRVOX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:14:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36626 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547Ab3LRVOM (ORCPT
+	with ESMTP id S1754547Ab3LRVOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:14:12 -0500
+	Wed, 18 Dec 2013 16:14:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH 3.12 103/118] NFSv4 wait on recovery for async session errors
-Date: Wed, 18 Dec 2013 13:12:20 -0800
-Message-Id: <20131218211222.362948750@linuxfoundation.org>
+        Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: [PATCH 3.12 107/118] Btrfs: reset intwrite on transaction abort
+Date: Wed, 18 Dec 2013 13:12:24 -0800
+Message-Id: <20131218211222.485388776@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,73 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Adamson <andros@netapp.com>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit 4a82fd7c4e78a1b7a224f9ae8bb7e1fd95f670e0 upstream.
+commit e0228285a8cad70e4b7b4833cc650e36ecd8de89 upstream.
 
-When the state manager is processing the NFS4CLNT_DELEGRETURN flag, session
-draining is off, but DELEGRETURN can still get a session error.
-The async handler calls nfs4_schedule_session_recovery returns -EAGAIN, and
-the DELEGRETURN done then restarts the RPC task in the prepare state.
-With the state manager still processing the NFS4CLNT_DELEGRETURN flag with
-session draining off, these DELEGRETURNs will cycle with errors filling up the
-session slots.
+If we abort a transaction in the middle of a commit we weren't undoing the
+intwrite locking.  This patch fixes that problem.
 
-This prevents OPEN reclaims (from nfs_delegation_claim_opens) required by the
-NFS4CLNT_DELEGRETURN state manager processing from completing, hanging the
-state manager in the __rpc_wait_for_completion_task in nfs4_run_open_task
-as seen in this kernel thread dump:
-
-kernel: 4.12.32.53-ma D 0000000000000000     0  3393      2 0x00000000
-kernel: ffff88013995fb60 0000000000000046 ffff880138cc5400 ffff88013a9df140
-kernel: ffff8800000265c0 ffffffff8116eef0 ffff88013fc10080 0000000300000001
-kernel: ffff88013a4ad058 ffff88013995ffd8 000000000000fbc8 ffff88013a4ad058
-kernel: Call Trace:
-kernel: [<ffffffff8116eef0>] ? cache_alloc_refill+0x1c0/0x240
-kernel: [<ffffffffa0358110>] ? rpc_wait_bit_killable+0x0/0xa0 [sunrpc]
-kernel: [<ffffffffa0358152>] rpc_wait_bit_killable+0x42/0xa0 [sunrpc]
-kernel: [<ffffffff8152914f>] __wait_on_bit+0x5f/0x90
-kernel: [<ffffffffa0358110>] ? rpc_wait_bit_killable+0x0/0xa0 [sunrpc]
-kernel: [<ffffffff815291f8>] out_of_line_wait_on_bit+0x78/0x90
-kernel: [<ffffffff8109b520>] ? wake_bit_function+0x0/0x50
-kernel: [<ffffffffa035810d>] __rpc_wait_for_completion_task+0x2d/0x30 [sunrpc]
-kernel: [<ffffffffa040d44c>] nfs4_run_open_task+0x11c/0x160 [nfs]
-kernel: [<ffffffffa04114e7>] nfs4_open_recover_helper+0x87/0x120 [nfs]
-kernel: [<ffffffffa0411646>] nfs4_open_recover+0xc6/0x150 [nfs]
-kernel: [<ffffffffa040cc6f>] ? nfs4_open_recoverdata_alloc+0x2f/0x60 [nfs]
-kernel: [<ffffffffa0414e1a>] nfs4_open_delegation_recall+0x6a/0xa0 [nfs]
-kernel: [<ffffffffa0424020>] nfs_end_delegation_return+0x120/0x2e0 [nfs]
-kernel: [<ffffffff8109580f>] ? queue_work+0x1f/0x30
-kernel: [<ffffffffa0424347>] nfs_client_return_marked_delegations+0xd7/0x110 [nfs]
-kernel: [<ffffffffa04225d8>] nfs4_run_state_manager+0x548/0x620 [nfs]
-kernel: [<ffffffffa0422090>] ? nfs4_run_state_manager+0x0/0x620 [nfs]
-kernel: [<ffffffff8109b0f6>] kthread+0x96/0xa0
-kernel: [<ffffffff8100c20a>] child_rip+0xa/0x20
-kernel: [<ffffffff8109b060>] ? kthread+0x0/0xa0
-kernel: [<ffffffff8100c200>] ? child_rip+0x0/0x20
-
-The state manager can not therefore process the DELEGRETURN session errors.
-Change the async handler to wait for recovery on session errors.
-
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ fs/btrfs/transaction.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4752,8 +4752,7 @@ nfs4_async_handle_error(struct rpc_task
- 			dprintk("%s ERROR %d, Reset session\n", __func__,
- 				task->tk_status);
- 			nfs4_schedule_session_recovery(clp->cl_session, task->tk_status);
--			task->tk_status = 0;
--			return -EAGAIN;
-+			goto wait_on_recovery;
- #endif /* CONFIG_NFS_V4_1 */
- 		case -NFS4ERR_DELAY:
- 			nfs_inc_server_stats(server, NFSIOS_DELAY);
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -1552,6 +1552,8 @@ static void cleanup_transaction(struct b
+ 		root->fs_info->running_transaction = NULL;
+ 	spin_unlock(&root->fs_info->trans_lock);
+ 
++	if (trans->type & __TRANS_FREEZABLE)
++		sb_end_intwrite(root->fs_info->sb);
+ 	put_transaction(cur_trans);
+ 	put_transaction(cur_trans);
+ 
 
 
