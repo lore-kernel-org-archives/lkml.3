@@ -1,132 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab3LRMHh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 07:07:37 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:37311 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab3LRMHg (ORCPT
+	id S1753347Ab3LRMLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 07:11:35 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:59508 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab3LRMLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 07:07:36 -0500
-Date: Wed, 18 Dec 2013 07:07:32 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jens Axboe <axboe@kernel.dk>
-Cc: tomaz.solc@tablix.org, aaron.lu@intel.com, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH v3] libata, freezer: avoid block device removal while system
- is frozen
-Message-ID: <20131218120732.GB4324@htj.dyndns.org>
-References: <20131213174932.GA27070@htj.dyndns.org>
- <20131213185237.GD27070@htj.dyndns.org>
- <20131213204034.GE27070@htj.dyndns.org>
- <20131217125042.GF29989@htj.dyndns.org>
+	Wed, 18 Dec 2013 07:11:33 -0500
+Message-ID: <52B190F1.9050505@colorfullife.com>
+Date: Wed, 18 Dec 2013 13:11:29 +0100
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131217125042.GF29989@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rafael Aquini <aquini@redhat.com>, linux-kernel@vger.kernel.org
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Rik van Riel <riel@redhat.com>,
+        Greg Thelen <gthelen@google.com>
+Subject: Re: [PATCH v2] ipc: introduce ipc_valid_object() helper to sort out
+ IPC_RMID races
+References: <e70c06876f986f0ac7f2f104bab50edff4a524a0.1387302999.git.aquini@redhat.com> <9710122c2aa978165609c0940e2087b074cd26ea.1387322182.git.aquini@redhat.com>
+In-Reply-To: <9710122c2aa978165609c0940e2087b074cd26ea.1387322182.git.aquini@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Freezable kthreads and workqueues are fundamentally problematic in
-that they effectively introduce a big kernel lock widely used in the
-kernel and have already been the culprit of several deadlock
-scenarios.  This is the latest occurrence.
+On 12/18/2013 12:28 AM, Rafael Aquini wrote:
+> After the locking semantics for the SysV IPC API got improved, a couple of
+> IPC_RMID race windows were opened because we ended up dropping the
+> 'kern_ipc_perm.deleted' check performed way down in ipc_lock().
+> The spotted races got sorted out by re-introducing the old test within
+> the racy critical sections.
+>
+> This patch introduces ipc_valid_object() to consolidate the way we cope with
+> IPC_RMID races by using the same abstraction across the API implementation.
+>
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Acked-by: Greg Thelen <gthelen@google.com>
+> ---
+> Changelog:
+> * v2:
+>   - drop assert_spin_locked() from ipc_valid_object() for less overhead
+a) sysv ipc is lockless whereever possible, without writing to any 
+shared cachelines.
+Therefore my first reaction was: No, please leave the assert in. It will 
+help us to catch bugs.
 
-During resume, libata rescans all the ports and revalidates all
-pre-existing devices.  If it determines that a device has gone
-missing, the device is removed from the system which involves
-invalidating block device and flushing bdi while holding driver core
-layer locks.  Unfortunately, this can race with the rest of device
-resume.  Because freezable kthreads and workqueues are thawed after
-device resume is complete and block device removal depends on
-freezable workqueues and kthreads (e.g. bdi_wq, jbd2) to make
-progress, this can lead to deadlock - block device removal can't
-proceed because kthreads are frozen and kthreads can't be thawed
-because device resume is blocked behind block device removal.
+b) then I noticed: the assert would be a bug, the comment in front of 
+ipc_valid_object() that the caller must hold _perm.lock is wrong:
+> @@ -1846,7 +1846,7 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
+>   
+>   	error = -EIDRM;
+>   	locknum = sem_lock(sma, sops, nsops);
+> -	if (sma->sem_perm.deleted)
+> +	if (!ipc_valid_object(&sma->sem_perm))
+>   		goto out_unlock_free;
+simple semtimedop() operation do not acquire sem_perm.lock, they only 
+acquire the per-semaphore lock and check that sem_perm.lock is not held. 
+This is sufficient to prevent races with RMID.
 
-839a8e8660b6 ("writeback: replace custom worker pool implementation
-with unbound workqueue") made this particular deadlock scenario more
-visible but the underlying problem has always been there - the
-original forker task and jbd2 are freezable too.  In fact, this is
-highly likely just one of many possible deadlock scenarios given that
-freezer behaves as a big kernel lock and we don't have any debug
-mechanism around it.
+Could you update the comment?
+[...]
+> @@ -1116,7 +1116,7 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+>   	ipc_lock_object(&shp->shm_perm);
+>   
+>   	/* check if shm_destroy() is tearing down shp */
+> -	if (shp->shm_file == NULL) {
+> +	if (!ipc_valid_object(&shp->shm_perm)) {
+>   		ipc_unlock_object(&shp->shm_perm);
+>   		err = -EIDRM;
+>   		goto out_unlock;
+Please mention the change from "shm_file == NULL" to perm.deleted in the 
+changelog.
+With regards to the impact of this change: No idea, I've never worked on 
+the shm code.
 
-I believe the right thing to do is getting rid of freezable kthreads
-and workqueues.  This is something fundamentally broken.  For now,
-implement a funny workaround in libata - just avoid doing block device
-hot[un]plug while the system is frozen.  Kernel engineering at its
-finest.  :(
-
-v2: Add EXPORT_SYMBOL_GPL(pm_freezing) for cases where libata is built
-    as a module.
-
-v3: Comment updated and polling interval changed to 10ms as suggested
-    by Rafael.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Tomaž Šolc <tomaz.solc@tablix.org>
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=62801
-Link: http://lkml.kernel.org/r/20131213174932.GA27070@htj.dyndns.org
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: stable@vger.kernel.org
----
- drivers/ata/libata-scsi.c |   19 +++++++++++++++++++
- kernel/freezer.c          |    6 ++++++
- 2 files changed, 25 insertions(+)
-
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index db6dfcf..f519868 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3871,6 +3871,25 @@ void ata_scsi_hotplug(struct work_struct *work)
- 		return;
- 	}
- 
-+	/*
-+	 * XXX - UGLY HACK
-+	 *
-+	 * The block layer suspend/resume path is fundamentally broken due
-+	 * to freezable kthreads and workqueue and may deadlock if a block
-+	 * device gets removed while resume is in progress.  I don't know
-+	 * what the solution is short of removing freezable kthreads and
-+	 * workqueues altogether.
-+	 *
-+	 * The following is an ugly hack to avoid kicking off device
-+	 * removal while freezer is active.  This is a joke but does avoid
-+	 * this particular deadlock scenario.
-+	 *
-+	 * https://bugzilla.kernel.org/show_bug.cgi?id=62801
-+	 * http://marc.info/?l=linux-kernel&m=138695698516487
-+	 */
-+	while (pm_freezing)
-+		msleep(10);
-+
- 	DPRINTK("ENTER\n");
- 	mutex_lock(&ap->scsi_scan_mutex);
- 
-diff --git a/kernel/freezer.c b/kernel/freezer.c
-index b462fa1..aa6a8aa 100644
---- a/kernel/freezer.c
-+++ b/kernel/freezer.c
-@@ -19,6 +19,12 @@ EXPORT_SYMBOL(system_freezing_cnt);
- bool pm_freezing;
- bool pm_nosig_freezing;
- 
-+/*
-+ * Temporary export for the deadlock workaround in ata_scsi_hotplug().
-+ * Remove once the hack becomes unnecessary.
-+ */
-+EXPORT_SYMBOL_GPL(pm_freezing);
-+
- /* protects freezing and frozen transitions */
- static DEFINE_SPINLOCK(freezer_lock);
- 
+--
+     Manfred
