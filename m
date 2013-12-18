@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab3LRWD5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:03:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36037 "EHLO
+	id S1755382Ab3LRWEU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:04:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36033 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab3LRVMU (ORCPT
+	with ESMTP id S1753200Ab3LRVMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Dec 2013 16:12:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.10 42/78] iwlwifi: mvm: check sta_id/drain values in debugfs
-Date: Wed, 18 Dec 2013 13:11:10 -0800
-Message-Id: <20131218211113.091336216@linuxfoundation.org>
+        Blaise Gassend <blaise@suitabletech.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 41/78] mac80211: dont attempt to reorder multicast frames
+Date: Wed, 18 Dec 2013 13:11:09 -0800
+Message-Id: <20131218211113.063397487@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -31,34 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johannes Berg <johannes.berg@intel.com>
 
-commit 60765a47a433d54e4744c285ad127f182dcd80aa upstream.
+commit 051a41fa4ee14f5c39668f0980973b9a195de560 upstream.
 
-The station ID must be valid, if it's out of range then
-the array access may crash. Validate the station ID to
-the array length, and also validate the drain value even
-if that doesn't matter all that much.
+Multicast frames can't be transmitted as part of an aggregation
+session (such a session couldn't even be set up) so don't try to
+reorder them. Trying to do so would cause the reorder to stop
+working correctly since multicast QoS frames (as transmitted by
+the Aruba APs this was found with) would cause sequence number
+confusion in the buffer.
 
-Fixes: 8ca151b568b6 ("iwlwifi: add the MVM driver")
+Reported-by: Blaise Gassend <blaise@suitabletech.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/debugfs.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/mac80211/rx.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/debugfs.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/debugfs.c
-@@ -119,6 +119,10 @@ static ssize_t iwl_dbgfs_sta_drain_write
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -864,7 +864,8 @@ static void ieee80211_rx_reorder_ampdu(s
+ 	u16 sc;
+ 	u8 tid, ack_policy;
  
- 	if (sscanf(buf, "%d %d", &sta_id, &drain) != 2)
- 		return -EINVAL;
-+	if (sta_id < 0 || sta_id >= IWL_MVM_STATION_COUNT)
-+		return -EINVAL;
-+	if (drain < 0 || drain > 1)
-+		return -EINVAL;
+-	if (!ieee80211_is_data_qos(hdr->frame_control))
++	if (!ieee80211_is_data_qos(hdr->frame_control) ||
++	    is_multicast_ether_addr(hdr->addr1))
+ 		goto dont_reorder;
  
- 	mutex_lock(&mvm->mutex);
- 
+ 	/*
 
 
