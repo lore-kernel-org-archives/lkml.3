@@ -1,222 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018Ab3LRV5L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:57:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36113 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360Ab3LRVMf (ORCPT
+	id S1756024Ab3LRV51 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:57:27 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:48164 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360Ab3LRV5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:35 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.10 59/78] dm snapshot: avoid snapshot space leak on crash
-Date: Wed, 18 Dec 2013 13:11:27 -0800
-Message-Id: <20131218211113.567131987@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
-References: <20131218211111.903835960@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Wed, 18 Dec 2013 16:57:23 -0500
+Date: Wed, 18 Dec 2013 13:57:19 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Alex Shi <alex.shi@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [RFC PATCH 00/13] nohz: Use sysidle detection to let the
+ timekeeper sleep
+Message-ID: <20131218215718.GV19211@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
+ <52B102BB.1050907@linaro.org>
+ <20131218174355.GA19788@localhost.localdomain>
+ <52B213D1.1000104@mit.edu>
+ <20131218214930.GU19211@linux.vnet.ibm.com>
+ <CALCETrU7N5L36PRv-vwLDfpRwb8GF+9+fw74-YdaYAfJQPbU3w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrU7N5L36PRv-vwLDfpRwb8GF+9+fw74-YdaYAfJQPbU3w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121821-0928-0000-0000-000004D3A14E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Dec 18, 2013 at 01:53:18PM -0800, Andy Lutomirski wrote:
+> On Wed, Dec 18, 2013 at 1:49 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Wed, Dec 18, 2013 at 01:29:53PM -0800, Andy Lutomirski wrote:
+> >> On 12/18/2013 09:43 AM, Frederic Weisbecker wrote:
+> >> > On Wed, Dec 18, 2013 at 10:04:43AM +0800, Alex Shi wrote:
+> >> >> On 12/18/2013 06:51 AM, Frederic Weisbecker wrote:
+> >> >>> So this is what this series brings, more details following:
+> >> >>>
+> >> >>> * Some code, naming and whitespace cleanups
+> >> >>>
+> >> >>> * Allow all CPUs outside the nohz_full range to handle the timekeeping
+> >> >>>   duty, not just CPU 0. Balancing the timekeeping duty should improve
+> >> >>>   powersavings.
+> >> >>
+> >> >> If the system just has one nohz_full cpu running, it will need another
+> >> >> cpu to do timerkeeper job. Then the system roughly needs 2 cpu living.
+> >> >> From powersaving POV, that is not good compare to normal nohz idle.
+> >> >
+> >> > Sure, but everything has a tradeoff :)
+> >> >
+> >> > We could theoretically run with the timekeeper purely idle if the other
+> >> > CPU in full dynticks mode runs in userspace for a long while and seldom
+> >> > do syscalls and faults. Timekeeping could be updated on kernel/user
+> >> > boundaries in this case without much impact on performances.
+> >> >
+> >> > But then there is one strict condition for that: it can't read the timeofday
+> >> > through the vdso but only through a syscall.
+> >>
+> >> Where's your ambition? :)
+> >>
+> >> If the vdso timing functions could see that it's been too long since a
+> >> real timekeeping update, they could fall back to a syscall.  Otherwise,
+> >> they could using rdtsc or whatever is in use.
+> >
+> > One objection to that approach in the past has been that it injects
+> > avoidable latency into the worker CPUs.  I suppose that you could argue
+> > that the cache misses due to a timekeeping-CPU update are not free, but
+> > then again, the syscall is likely to also incur a few cache misses as
+> > well.
+> >
+> > I bet that the timekeeping-CPU approach wins, but it would be cool to
+> > see you prove me wrong.
+> 
+> There's already some (very vague) discussion about having a scheduled
+> time at which the clock frequency and/or offset will change, and this
+> wouldn't be a huge departure from that.  The goal there is to avoid
+> waiting for timekeeping if vclock_gettime runs concurrently with an
+> update, but the same approach could apply here (albeit with one extra
+> branch).
+> 
+> Anyway, syscalls aren't *that* expensive.
 
-------------------
+Like I said, it would be cool to see you prove me wrong, but that will
+need to be with patches and performance results rather than rhetoric.
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+> Alternatively, couldn't workloads like this just turn off NTP?
 
-commit 230c83afdd9cd384348475bea1e14b80b3b6b1b8 upstream.
+Some probably could, but others need accurate time.
 
-There is a possible leak of snapshot space in case of crash.
-
-The reason for space leaking is that chunks in the snapshot device are
-allocated sequentially, but they are finished (and stored in the metadata)
-out of order, depending on the order in which copying finished.
-
-For example, supposed that the metadata contains the following records
-SUPERBLOCK
-METADATA (blocks 0 ... 250)
-DATA 0
-DATA 1
-DATA 2
-...
-DATA 250
-
-Now suppose that you allocate 10 new data blocks 251-260. Suppose that
-copying of these blocks finish out of order (block 260 finished first
-and the block 251 finished last). Now, the snapshot device looks like
-this:
-SUPERBLOCK
-METADATA (blocks 0 ... 250, 260, 259, 258, 257, 256)
-DATA 0
-DATA 1
-DATA 2
-...
-DATA 250
-DATA 251
-DATA 252
-DATA 253
-DATA 254
-DATA 255
-METADATA (blocks 255, 254, 253, 252, 251)
-DATA 256
-DATA 257
-DATA 258
-DATA 259
-DATA 260
-
-Now, if the machine crashes after writing the first metadata block but
-before writing the second metadata block, the space for areas DATA 250-255
-is leaked, it contains no valid data and it will never be used in the
-future.
-
-This patch makes dm-snapshot complete exceptions in the same order they
-were allocated, thus fixing this bug.
-
-Note: when backporting this patch to the stable kernel, change the version
-field in the following way:
-* if version in the stable kernel is {1, 11, 1}, change it to {1, 12, 0}
-* if version in the stable kernel is {1, 10, 0} or {1, 10, 1}, change it
-  to {1, 10, 2}
-Userspace reads the version to determine if the bug was fixed, so the
-version change is needed.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/dm-snap.c |   71 +++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 64 insertions(+), 7 deletions(-)
-
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -66,6 +66,18 @@ struct dm_snapshot {
- 
- 	atomic_t pending_exceptions_count;
- 
-+	/* Protected by "lock" */
-+	sector_t exception_start_sequence;
-+
-+	/* Protected by kcopyd single-threaded callback */
-+	sector_t exception_complete_sequence;
-+
-+	/*
-+	 * A list of pending exceptions that completed out of order.
-+	 * Protected by kcopyd single-threaded callback.
-+	 */
-+	struct list_head out_of_order_list;
-+
- 	mempool_t *pending_pool;
- 
- 	struct dm_exception_table pending;
-@@ -173,6 +185,14 @@ struct dm_snap_pending_exception {
- 	 */
- 	int started;
- 
-+	/* There was copying error. */
-+	int copy_error;
-+
-+	/* A sequence number, it is used for in-order completion. */
-+	sector_t exception_sequence;
-+
-+	struct list_head out_of_order_entry;
-+
- 	/*
- 	 * For writing a complete chunk, bypassing the copy.
- 	 */
-@@ -1094,6 +1114,9 @@ static int snapshot_ctr(struct dm_target
- 	s->valid = 1;
- 	s->active = 0;
- 	atomic_set(&s->pending_exceptions_count, 0);
-+	s->exception_start_sequence = 0;
-+	s->exception_complete_sequence = 0;
-+	INIT_LIST_HEAD(&s->out_of_order_list);
- 	init_rwsem(&s->lock);
- 	INIT_LIST_HEAD(&s->list);
- 	spin_lock_init(&s->pe_lock);
-@@ -1443,6 +1466,19 @@ static void commit_callback(void *contex
- 	pending_complete(pe, success);
- }
- 
-+static void complete_exception(struct dm_snap_pending_exception *pe)
-+{
-+	struct dm_snapshot *s = pe->snap;
-+
-+	if (unlikely(pe->copy_error))
-+		pending_complete(pe, 0);
-+
-+	else
-+		/* Update the metadata if we are persistent */
-+		s->store->type->commit_exception(s->store, &pe->e,
-+						 commit_callback, pe);
-+}
-+
- /*
-  * Called when the copy I/O has finished.  kcopyd actually runs
-  * this code so don't block.
-@@ -1452,13 +1488,32 @@ static void copy_callback(int read_err,
- 	struct dm_snap_pending_exception *pe = context;
- 	struct dm_snapshot *s = pe->snap;
- 
--	if (read_err || write_err)
--		pending_complete(pe, 0);
-+	pe->copy_error = read_err || write_err;
- 
--	else
--		/* Update the metadata if we are persistent */
--		s->store->type->commit_exception(s->store, &pe->e,
--						 commit_callback, pe);
-+	if (pe->exception_sequence == s->exception_complete_sequence) {
-+		s->exception_complete_sequence++;
-+		complete_exception(pe);
-+
-+		while (!list_empty(&s->out_of_order_list)) {
-+			pe = list_entry(s->out_of_order_list.next,
-+					struct dm_snap_pending_exception, out_of_order_entry);
-+			if (pe->exception_sequence != s->exception_complete_sequence)
-+				break;
-+			s->exception_complete_sequence++;
-+			list_del(&pe->out_of_order_entry);
-+			complete_exception(pe);
-+		}
-+	} else {
-+		struct list_head *lh;
-+		struct dm_snap_pending_exception *pe2;
-+
-+		list_for_each_prev(lh, &s->out_of_order_list) {
-+			pe2 = list_entry(lh, struct dm_snap_pending_exception, out_of_order_entry);
-+			if (pe2->exception_sequence < pe->exception_sequence)
-+				break;
-+		}
-+		list_add(&pe->out_of_order_entry, lh);
-+	}
- }
- 
- /*
-@@ -1553,6 +1608,8 @@ __find_pending_exception(struct dm_snaps
- 		return NULL;
- 	}
- 
-+	pe->exception_sequence = s->exception_start_sequence++;
-+
- 	dm_insert_exception(&s->pending, &pe->e);
- 
- 	return pe;
-@@ -2192,7 +2249,7 @@ static struct target_type origin_target
- 
- static struct target_type snapshot_target = {
- 	.name    = "snapshot",
--	.version = {1, 11, 1},
-+	.version = {1, 12, 0},
- 	.module  = THIS_MODULE,
- 	.ctr     = snapshot_ctr,
- 	.dtr     = snapshot_dtr,
-
+							Thanx, Paul
 
