@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab3LRJHy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 04:07:54 -0500
-Received: from mga09.intel.com ([134.134.136.24]:15650 "EHLO mga09.intel.com"
+	id S1753306Ab3LRJHv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 04:07:51 -0500
+Received: from mga11.intel.com ([192.55.52.93]:45788 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752586Ab3LRJGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 04:06:54 -0500
+	id S1752172Ab3LRJGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 04:06:39 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,506,1384329600"; 
-   d="scan'208";a="446200500"
+   d="scan'208";a="446200403"
 From: Lv Zheng <lv.zheng@intel.com>
 To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Len Brown <len.brown@intel.com>
 Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
         <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [RFC PATCH 09/15] ACPICA: Linux: Add stub support for Linux specific variables and functions.
-Date: Wed, 18 Dec 2013 17:06:44 +0800
-Message-Id: <0f86540cd2b61cd4d6d5086849d6b619d76d9d1d.1387336613.git.lv.zheng@intel.com>
+Subject: [RFC PATCH 07/15] ACPICA: OSL: Add configurability mechanism for external APIs.
+Date: Wed, 18 Dec 2013 17:06:32 +0800
+Message-Id: <7a34a516c788198e290cad55e5904bb39c16590b.1387336613.git.lv.zheng@intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <cover.1387336613.git.lv.zheng@intel.com>
 References: <cover.1387336613.git.lv.zheng@intel.com>
@@ -24,134 +24,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are global variables and functions not upstreamed to the ACPICA code
-base.  Such symbols still can referenced by external users as they are
-listed in the acpixf.h.  This patch uses ACPI_GLOBAL and
-ACPI_EXTERNAL_RETURN_STATUS mechanism to add stub support for such symbols.
+OSPMs like Linux trend to include all header files but leave empty inline
+stub functions for a feature that is not configured during build.
+This patch adds wrappers mechanism to be used around ACPICA external
+interfaces to facilitate OSPM with such configurability.
+This patch doesn't include code for Linux to use this mechanism.
+
+Note that in order to the reduce the difficulties caused by the source code
+differences between Linux and ACPICA upstream of maintaining large
+ACPI_EXTERNAL_RETURN_x macro updates, actual ACPI_EXTERNAL_RETURN_x macro
+usages are done and split into other commits.
+
+ACPICA commits will be linuxized by the scripts. If there were divergences
+in the middle of a diff block, the linuxized diff block should require
+human intervention to be performed to make it possible to apply the
+linuxized commit into Linux source tree.  Sometime such human intervention
+will be very difficult as the linuxized commits will be messed up in
+addition to the normal line offsettings by the patch/diff based utilities.
+Lv Zheng.
 
 Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 ---
- arch/ia64/kernel/acpi.c         |    1 -
- arch/x86/kernel/acpi/boot.c     |    1 -
- drivers/acpi/bus.c              |    3 ---
- include/acpi/acpixf.h           |   23 ++++++++++++++---------
- include/acpi/platform/aclinux.h |    3 +++
- 5 files changed, 17 insertions(+), 14 deletions(-)
+ include/acpi/acpixf.h           |   33 ++++++++++++++++++++++++++++++---
+ include/acpi/platform/aclinux.h |   13 +++++++++++++
+ 2 files changed, 43 insertions(+), 3 deletions(-)
 
-diff --git a/arch/ia64/kernel/acpi.c b/arch/ia64/kernel/acpi.c
-index 59d52e3..28dc6ba 100644
---- a/arch/ia64/kernel/acpi.c
-+++ b/arch/ia64/kernel/acpi.c
-@@ -61,7 +61,6 @@
- 
- #define PREFIX			"ACPI: "
- 
--u32 acpi_rsdt_forced;
- unsigned int acpi_cpei_override;
- unsigned int acpi_cpei_phys_cpuid;
- 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 6c0b43b..c83a974 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -46,7 +46,6 @@
- 
- #include "sleep.h" /* To include x86_acpi_suspend_lowlevel */
- static int __initdata acpi_force = 0;
--u32 acpi_rsdt_forced;
- int acpi_disabled;
- EXPORT_SYMBOL(acpi_disabled);
- 
-diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-index 2c38ae2..68d3e70 100644
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -429,9 +429,6 @@ static int __init acpi_bus_init_irq(void)
- 	return 0;
- }
- 
--u8 acpi_gbl_permanent_mmap;
--
--
- void __init acpi_early_init(void)
- {
- 	acpi_status status;
 diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-index 8f32dfe..1e93ef6 100644
+index 08a1fdb..ed6c53b 100644
 --- a/include/acpi/acpixf.h
 +++ b/include/acpi/acpixf.h
-@@ -53,9 +53,6 @@
- #include <acpi/actbl.h>
- #include <acpi/acbuffer.h>
+@@ -95,6 +95,33 @@ extern u32 acpi_rsdt_forced;
  
--extern u8 acpi_gbl_permanent_mmap;
--extern u32 acpi_rsdt_forced;
--
- /*
-  * Ensure that the globals are actually defined and initialized only once.
-  *
-@@ -235,6 +232,10 @@ ACPI_GLOBAL(u8, acpi_gbl_reduced_hardware)
- ACPI_INIT_GLOBAL(u8, acpi_gbl_no_resource_disassembly, FALSE)
-  ACPI_INIT_GLOBAL(u8, acpi_gbl_ignore_noop_operator, FALSE)
  #endif
+ 
++/* ACPICA prototypes */
 +
-+ACPI_GLOBAL(u8, acpi_gbl_permanent_mmap)
-+ACPI_GLOBAL(u32, acpi_rsdt_forced)
++#ifndef ACPI_EXTERNAL_RETURN_STATUS
++#define ACPI_EXTERNAL_RETURN_STATUS(prototype) \
++	prototype;
++#endif
 +
- /*
-  * Hardware-reduced prototypes. All interfaces that use these macros will
-  * be configured out of the ACPICA build if the ACPI_REDUCED_HARDWARE flag
-@@ -361,7 +362,7 @@ ACPI_EXTERNAL_RETURN_STATUS(acpi_status __init acpi_reallocate_root_table(void))
- ACPI_EXTERNAL_RETURN_STATUS(acpi_status __init
- 			    acpi_find_root_pointer(acpi_size * rsdp_address))
++#ifndef ACPI_EXTERNAL_RETURN_OK
++#define ACPI_EXTERNAL_RETURN_OK(prototype) \
++	prototype;
++#endif
++
++#ifndef ACPI_EXTERNAL_RETURN_VOID
++#define ACPI_EXTERNAL_RETURN_VOID(prototype) \
++	prototype;
++#endif
++
++#ifndef ACPI_EXTERNAL_RETURN_UINT32
++#define ACPI_EXTERNAL_RETURN_UINT32(prototype) \
++	prototype;
++#endif
++
++#ifndef ACPI_EXTERNAL_RETURN_PTR
++#define ACPI_EXTERNAL_RETURN_PTR(prototype) \
++	prototype;
++#endif
++
+ /* Public globals, available from outside ACPICA subsystem */
  
--acpi_status acpi_unload_table_id(acpi_owner_id id);
-+ACPI_EXTERNAL_RETURN_STATUS(acpi_status acpi_unload_table_id(acpi_owner_id id))
- 
- ACPI_EXTERNAL_RETURN_STATUS(acpi_status
- 			    acpi_get_table_header(acpi_string signature,
-@@ -369,10 +370,12 @@ ACPI_EXTERNAL_RETURN_STATUS(acpi_status
- 						  struct acpi_table_header
- 						  *out_table_header))
- 
--acpi_status
--acpi_get_table_with_size(acpi_string signature,
--	       u32 instance, struct acpi_table_header **out_table,
--	       acpi_size *tbl_size);
-+ACPI_EXTERNAL_RETURN_STATUS(acpi_status
-+			    acpi_get_table_with_size(acpi_string signature,
-+						     u32 instance,
-+						     struct acpi_table_header
-+						     **out_table,
-+						     acpi_size *tbl_size))
- 
- ACPI_EXTERNAL_RETURN_STATUS(acpi_status
- 			     acpi_get_table(acpi_string signature, u32 instance,
-@@ -477,7 +480,9 @@ ACPI_EXTERNAL_RETURN_STATUS(acpi_status
- 			    acpi_get_type(acpi_handle object,
- 					  acpi_object_type * out_type))
- 
--acpi_status acpi_get_id(acpi_handle object, acpi_owner_id * out_type);
-+ACPI_EXTERNAL_RETURN_STATUS(acpi_status
-+			    acpi_get_id(acpi_handle object,
-+					acpi_owner_id * out_type))
- 
- ACPI_EXTERNAL_RETURN_STATUS(acpi_status
- 			    acpi_get_parent(acpi_handle object,
+ /*****************************************************************************
+@@ -215,11 +242,11 @@ ACPI_INIT_GLOBAL(u8, acpi_gbl_no_resource_disassembly, FALSE)
+  */
+ #if (!ACPI_REDUCED_HARDWARE)
+ #define ACPI_HW_DEPENDENT_RETURN_STATUS(prototype) \
+-	prototype;
++	ACPI_EXTERNAL_RETURN_STATUS(prototype)
+ #define ACPI_HW_DEPENDENT_RETURN_OK(prototype) \
+-	prototype;
++	ACPI_EXTERNAL_RETURN_OK(prototype)
+ #define ACPI_HW_DEPENDENT_RETURN_VOID(prototype) \
+-	prototype;
++	ACPI_EXTERNAL_RETURN_VOID(prototype)
+ #else
+ #define ACPI_HW_DEPENDENT_RETURN_STATUS(prototype) \
+ 	static ACPI_INLINE prototype {return(AE_NOT_CONFIGURED);}
 diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
-index 12ef8be..b1ddf5c 100644
+index 45df524..12ef8be 100644
 --- a/include/acpi/platform/aclinux.h
 +++ b/include/acpi/platform/aclinux.h
-@@ -133,6 +133,9 @@
- #define acpi_dbg_level                      ACPI_DEBUG_DEFAULT
- #define acpi_dbg_layer                      ACPI_COMPONENT_DEFAULT
+@@ -100,6 +100,19 @@
+ #define ACPI_INIT_GLOBAL(t,a,b)
+ #define ACPI_GLOBAL_FADT
  
-+#define acpi_gbl_permanent_mmap             FALSE
-+#define acpi_rsdt_forced                    FALSE
++/* External interface for __KERNEL__, stub is needed */
 +
- /* Helpers to protect acpi_gbl_FADT accesses */
++#define ACPI_EXTERNAL_RETURN_STATUS(prototype) \
++	static ACPI_INLINE prototype {return(AE_NOT_CONFIGURED);}
++#define ACPI_EXTERNAL_RETURN_OK(prototype) \
++	static ACPI_INLINE prototype {return(AE_OK);}
++#define ACPI_EXTERNAL_RETURN_VOID(prototype) \
++	static ACPI_INLINE prototype {return;}
++#define ACPI_EXTERNAL_RETURN_UINT32(prototype) \
++	static ACPI_INLINE prototype {return(0);}
++#define ACPI_EXTERNAL_RETURN_PTR(prototype) \
++	static ACPI_INLINE prototype {return(NULL);}
++
+ /* Immediates to protect global variables accesses */
  
- #define acpi_get_fadt_revision()    0
+ #define acpi_current_gpe_count              0
 -- 
 1.7.10.4
 
