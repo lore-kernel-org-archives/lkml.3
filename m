@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350Ab3LRCuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 21:50:14 -0500
-Received: from ozlabs.org ([203.10.76.45]:37136 "EHLO ozlabs.org"
+	id S1752280Ab3LRCyl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 21:54:41 -0500
+Received: from mga02.intel.com ([134.134.136.20]:5157 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354Ab3LRCuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 21:50:13 -0500
-Date: Wed, 18 Dec 2013 13:50:05 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?IlZpbGxlIFN5cmrDpGzDpCI=?= 
-	<ville.syrjala@linux.intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: linux-next: manual merge of the drm-intel tree with Linus' tree
-Message-Id: <20131218135005.188890e525e7722cf9f528ba@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__18_Dec_2013_13_50_05_+1100_79cpD+cyJiW+gaIo"
+	id S1751231Ab3LRCyj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 21:54:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,504,1384329600"; 
+   d="scan'208";a="426378655"
+From: "Skidmore, Donald C" <donald.c.skidmore@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        Neil Horman <nhorman@tuxdriver.com>
+Subject: RE: linux-next: build warning in Linus' tree
+Thread-Topic: linux-next: build warning in Linus' tree
+Thread-Index: AQHO+3sJv7Hxk+uDHkOiaiqJHf11XppZQP2A
+Date: Wed, 18 Dec 2013 02:54:37 +0000
+Message-ID: <F6FB0E698C9B3143BDF729DF2228664685D5839F@ORSMSX110.amr.corp.intel.com>
+References: <20131218095203.aceb7cfffffa16907feb9af7@canb.auug.org.au>
+In-Reply-To: <20131218095203.aceb7cfffffa16907feb9af7@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__18_Dec_2013_13_50_05_+1100_79cpD+cyJiW+gaIo
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
 
-Today's linux-next merge of the drm-intel tree got a conflict in
-drivers/gpu/drm/i915/intel_pm.c between commit fec8cba306f9 ("drm/i915:
-use crtc_htotal in watermark calculations to match fastboot v2") from
-Linus' tree and commit 96f90c5421aa ("drm/i915: Move ILK/SNB/IVB over to
-the HSW WM code") from the drm-intel tree.
+> -----Original Message-----
+> From: netdev-owner@vger.kernel.org [mailto:netdev-
+> owner@vger.kernel.org] On Behalf Of Stephen Rothwell
+> Sent: Tuesday, December 17, 2013 2:52 PM
+> To: David Miller; netdev@vger.kernel.org
+> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Fastabend,
+> John R; Neil Horman
+> Subject: linux-next: build warning in Linus' tree
+> 
+> Hi all,
+> 
+> While building Linus' tree, today's linux-next build (powerpc
+> ppc64_defconfig) produced this warning:
+> 
+> drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c: In function
+> 'ixgbe_pci_sriov_disable':
+> drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c:294:6: warning: unused
+> variable 'current_flags' [-Wunused-variable]
+>   u32 current_flags = adapter->flags;
+>       ^
+> 
+> Introduced by commit 2a47fa45d4df ("ixgbe: enable l2 forwarding
+> acceleration for macvlans") which was merged before v3.13-rc1.
+> 
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-I fixed it up (I just removed the code removed by the drm-intel tree
-patch) and can carry the fix as necessary (no action is required).
 
---=20
-Cheers,
-Stephen Rothwell <sfr@canb.auug.org.au>
+Hey Stephen,
 
---Signature=_Wed__18_Dec_2013_13_50_05_+1100_79cpD+cyJiW+gaIo
-Content-Type: application/pgp-signature
+Thanks for letting us know about this.   As it turns out we already have a patch to fix this in our internal tree (Jeff K's) just waiting final validation.  It shouldn't be long before he submits it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Thanks again,
+-Don Skidmore <donald.c.skidmore@intel.com>
 
-iQIcBAEBCAAGBQJSsQ1hAAoJEMDTa8Ir7ZwVfHoP/RbQ+BYot/o34XL+Wkf+qlDF
-opnqdcQK8kSh5WYLNC+3GUPVIlpVABhrYrVCRD5jRZfYm+05hdN26vMY0TyKGx3u
-HlarEIY7SvM4b4MRVapmZ1FlvKRtnUP7yJxgIgxHnCbIOfKXKY/D9SzGij3U6lLJ
-m4MHEvHSFgutH2YZvSjAq1uj5gY9GNZVNosBUr3Ol+tauoVvYtSLoUbdCUdAnCFT
-yjF7md3l6x7ChTsueHCWf5IzUThi1XQH38rBO8ZMncZUOUZZZvLK1ZGmBoDgZoA6
-KPLolrppeasSvF1UKns1glI+v5Cq1lkq+OMYVfJYmR9F9s7JBubKUDS5OpqBPFF1
-rb6eBXQx76aVrMS5h6z9TZl1DxkmgFQ2+bBKdt22UiSu0eXN6+t+WxNqmonMNCt0
-uLlx3RskTkxTJxwVDBU/XhlapzbAnKWe0SQMZJ+hrbngg37WU8+sbov85bH9XiKq
-I6Ekal126spCKJEUTYE52Kn4RY0SOXRsby5iBz23FG1TAzsdvhhcmIItdNu1sAMG
-L7j+b2e6g2Eqr/6xkg9wdY6wbT7NwN9JpnirzguKKqNZWkEDzuZosV66GCX5WvWX
-MXOjCiI9X4l7+FLbudvbeGZCDnsPFqt5X44i9z5lDh6HASxjXy9n3Z9LrG+rjM2L
-hB/hg1YMBLkrqS/fhWe5
-=XuMk
------END PGP SIGNATURE-----
-
---Signature=_Wed__18_Dec_2013_13_50_05_+1100_79cpD+cyJiW+gaIo--
