@@ -1,96 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab3LRBDI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 20:03:08 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53957 "HELO
+	id S1752026Ab3LRBE1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 20:04:27 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64848 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752432Ab3LRBDG (ORCPT
+	with SMTP id S1750875Ab3LRBE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 20:03:06 -0500
+	Tue, 17 Dec 2013 20:04:26 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system suspend/hibernation
-Date: Wed, 18 Dec 2013 02:16:24 +0100
-Message-ID: <1894234.3Ripn7cUXR@vostro.rjw.lan>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>
+Subject: Re: linux-next: build failure after merge of the pm tree
+Date: Wed, 18 Dec 2013 02:17:38 +0100
+Message-ID: <3421207.2WIkp69pe3@vostro.rjw.lan>
 User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CA+5PVA4g_gG_1w5R_2BQU328BJ59Cq8xiv_BXomXz3FDhFSCzw@mail.gmail.com>
-References: <201201281445.49377.rjw@sisk.pl> <8515354.2dTerOA9sd@vostro.rjw.lan> <CA+5PVA4g_gG_1w5R_2BQU328BJ59Cq8xiv_BXomXz3FDhFSCzw@mail.gmail.com>
+In-Reply-To: <20131218120026.aa6c48feca3e24c59b5bf4c3@canb.auug.org.au>
+References: <20131218120026.aa6c48feca3e24c59b5bf4c3@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; boundary="nextPart2597279.Dcx8d1QEKD"; micalg="pgp-sha256"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 17, 2013 08:00:55 PM Josh Boyer wrote:
-> On Tue, Dec 17, 2013 at 7:52 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Tuesday, December 17, 2013 11:04:46 AM Josh Boyer wrote:
-> >> On Tue, Dec 17, 2013 at 11:03 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
-> >> > On Fri, May 25, 2012 at 3:13 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> >> On Friday, May 25, 2012, Josh Boyer wrote:
-> >> >>> On Fri, Feb 17, 2012 at 3:59 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> >>> >> commit b94887bbc0621e1e8402e7f0ec4bc3adf46c9a6e
-> >> >>> >> Author: Rafael J. Wysocki <rjw@sisk.pl>
-> >> >>> >> Date:   Fri Feb 17 12:42:08 2012 -0500
-> >> >>> >>
-> >> >>> >>     Freeze all filesystems during system suspend and (kernel-driven)
-> >> >>> >>     hibernation by calling freeze_supers() for all superblocks and thaw
-> >> >>> >>     them during the subsequent resume with the help of thaw_supers().
-> >> >>> >>
-> >> >>> >>     This makes filesystems stay in a consistent state in case something
-> >> >>> >>     goes wrong between system suspend (or hibernation) and the subsequent
-> >> >>> >>     resume (e.g. journal replays won't be necessary in those cases).  In
-> >> >>> >>     particular, this should help to solve a long-standing issue that, in
-> >> >>> >>     some cases, during resume from hibernation the boot loader causes the
-> >> >>> >>     journal to be replied for the filesystem containing the kernel image
-> >> >>> >>     and/or initrd causing it to become inconsistent with the information
-> >> >>> >>     stored in the hibernation image.
-> >> >>> >>
-> >> >>> >>     The user-space-driven hibernation (s2disk) is not covered by this
-> >> >>> >>     change, because the freezing of filesystems prevents s2disk from
-> >> >>> >>     accessing device special files it needs to do its job.
-> >> >>> >>
-> >> >>> >>     This change is based on earlier work by Nigel Cunningham.
-> >> >>> >>
-> >> >>> >>     Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> >> >>> >>
-> >> >>> >>     Rebased to 3.3-rc3 by Josh Boyer <jwboyer@redhat.com>
-> >> >>>
-> >> >>> Did this patch ever wind up going anywhere?  Fedora has it sitting in
-> >> >>> our tree with a comment that says "rebase" and I don't see it in the
-> >> >>> linux-next tree at all.
-> >> >>>
-> >> >>> Did if fall through the cracks or was it NAKed somewhere?
-> >> >>
-> >> >> No, it wasn't in principle. There were some comments I haven't addressed yet.
-> >> >
-> >> > Dredging up a really old thread, sorry.
-> >> >
-> >> > We're still carrying this patch along in Fedora.  Should we drop it at
-> >> > this point, or is it still eventually going to head upstream?
-> >>
-> >> Fixed Rafael's email address.  (Double sorry.)
-> >
-> > No biggie.
-> >
-> > I just hadn't got sufficient response for that patch at the time it was
-> > submitted, so I guess it would be good to resubmit it.  Please feel free to
-> > do that if you want.
+
+--nextPart2597279.Dcx8d1QEKD
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
+
+On Wednesday, December 18, 2013 12:00:26 PM Stephen Rothwell wrote:
+> Hi Rafael,
 > 
-> You want me to resend a patch you authored back to you?  I mean, I can
-> do that but it seems a bit strange.  All I did was rebase what you
-> wrote to a newer kernel version.
+> After merging the pm tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> drivers/acpi/nvs.c:15:27: fatal error: linux/acpi_io.h: No such file or directory
+>  #include <linux/acpi_io.h>
+>                            ^
+> 
+> Caused by commit a99493647c1a ("Merge branch 'acpi-cleanup' into
+> linux-next") which incorrectly reintroduced the include of
+> linux/acpi_io.h.
+> 
+> I have used the pm tree from next-20131217 for today.
 
-Well, you can send it to me in private then and I'll resubmit. :-)
-
-I just don't have any recent version of it handy.
+Sorry for the breakage, I messed up a conflict resolution.  It should be
+fixed now in my tree FWIW.
 
 Thanks,
 Rafael
+
+--nextPart2597279.Dcx8d1QEKD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAABCAAGBQJSsPe4AAoJEILEb/54YlRxeDsQAIn6YDAqyYwCg9hYNvMg1lTA
+VDjC1nen0B92inSCCwX5m2PxqYp+e7f4UxTS3IwdpeMYvar2xFBELJBG8jy5QL1S
+DO3VuHoeNgAczrJYq7iyPKodl65PI1r5/y/eCUau7sEgtCut+NO/6PoFRZ7SgcTk
+lpvshIUtJFK+rfnLpFQaX8zafUZ2rfro5rEoFvzEF8L213gHRoOunlMLRTqtCYkB
+TRtik3cVqrqRtG/u5pk/vBkpx+Psv31IYNVYj3YsnvfsGjzAL2lG+Kc/TCeCFoGc
+hP3E45/T2d4WDkNzmzeRtmuR08o+oyrtXitY16iE3LXKq/Yi2CwOx0vA/HDCAdyb
+PZyoLwOA2zXv0P9tn2K6RVn4Dy6qJ21IxtGq1qAmYkT+4xl2kbSph3QVsTxKG2uT
+3NCadUpGNHVhnh64ZWQjfp6GQC/YarpC4aUS/kPWVTcgYjeuZOMLRBOrtGydSdxt
+3nFikaoOctEVLvviyamFJORavtxepb4Lh4VruQvzw5xJII1jN67xHEBB1ky+DYr4
+3NLETpNOlY4xczBxwkLVzxowHskXQBZH4hM5dV7T3pq5uaeKwtRv3cLSjQi3Gpsz
+I+l3wJYIJX7vS9z/YCrKdAUw3M+pAC8Cr/EQcNU1Hq4V2pZyf6RVo16btzm9n6yL
+wjz7O2nGPcwmJD51DxqE
+=H7DY
+-----END PGP SIGNATURE-----
+
+--nextPart2597279.Dcx8d1QEKD--
 
