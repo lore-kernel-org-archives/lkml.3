@@ -1,58 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab3LROLp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 09:11:45 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47779 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753243Ab3LROLo (ORCPT
+	id S1754644Ab3LRON4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 09:13:56 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:58445 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753400Ab3LRONz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 09:11:44 -0500
-Date: Wed, 18 Dec 2013 15:11:25 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
- tracing units
-Message-ID: <20131218141125.GT21999@twins.programming.kicks-ass.net>
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1386765443-26966-5-git-send-email-alexander.shishkin@linux.intel.com>
- <20131217161126.GL13532@twins.programming.kicks-ass.net>
- <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218133439.GR21999@twins.programming.kicks-ass.net>
- <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com>
+	Wed, 18 Dec 2013 09:13:55 -0500
+Date: Wed, 18 Dec 2013 15:13:52 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 05/13] rcu: Fix unraised IPI to timekeeping CPU
+Message-ID: <20131218141348.GA18464@localhost.localdomain>
+References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
+ <1387320692-28460-6-git-send-email-fweisbec@gmail.com>
+ <20131217232100.GC19211@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131217232100.GC19211@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 04:01:04PM +0200, Alexander Shishkin wrote:
-> > Why don't you start by explaining _why_ you need a second stream to
-> > begin with?
+On Tue, Dec 17, 2013 at 03:21:00PM -0800, Paul E. McKenney wrote:
+> On Tue, Dec 17, 2013 at 11:51:24PM +0100, Frederic Weisbecker wrote:
+> > The plan with full system idle detection is to allow the timekeeper
+> > to sleep when all full dynticks CPUs are sleeping.
+> > 
+> > Then when a full dynticks CPU wakes up while the whole system is idle,
+> > it sends an IPI to the timekeeping CPU which then restarts its tick
+> > and polls on its timekeeping duty on behalf of all other CPUs in the
+> > system.
+> > 
+> > But we are using rcu_kick_nohz_cpu() to raise this IPI, which is wrong
+> > because this function is used to kick full dynticks CPUs when they run
+> > in the kernel for too long without reporting a quiescent state. And
+> > this function ignores targets that are not full dynticks, like our
+> > timekeeper.
+> > 
+> > To fix this, use the smp_send_reschedule() function directly.
 > 
-> Oh, I'm sure I've explained it earlier ([1], [2])
+> I guess the fact that you needed some change is reassuring.  You know
+> the old saying, "no bugs, no users".  ;-)
 
-See, I didn't read 0 because that information gets lost and patches
-should be self explanatory, and i didn't get to the Intel driver yet
-because well, I got stuck in the generic code.
+;-)
 
-> but why not. The data
-> in the second stream is generated at a rate which is hundreds of
-> megabytes per second per core. Decoding this data is ~1000 times slower
-> than generating it. Ergo, can't be done in kernel, needs to be exported
-> as-is to userspace for later retreival and decoding. Doing it via perf
-> stream means an extra copy, which at these rates is a waste. Ergo, a
-> second buffer.
+> 
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: John Stultz <john.stultz@linaro.org>
+> > Cc: Alex Shi <alex.shi@linaro.org>
+> > Cc: Kevin Hilman <khilman@linaro.org>
+> > ---
+> >  kernel/rcu/tree_plugin.h | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> > index 08004da..84d90c8 100644
+> > --- a/kernel/rcu/tree_plugin.h
+> > +++ b/kernel/rcu/tree_plugin.h
+> > @@ -2488,7 +2488,7 @@ void rcu_sysidle_force_exit(void)
+> >  				      oldstate, RCU_SYSIDLE_NOT);
+> >  		if (oldstate == newoldstate &&
+> >  		    oldstate == RCU_SYSIDLE_FULL_NOTED) {
+> > -			rcu_kick_nohz_cpu(tick_do_timer_cpu);
+> > +			smp_send_reschedule(tick_do_timer_cpu);
+> 
+> Hmmm...
+> 
+> We haven't done any sort of wakeup, and tick_nohz_full_cpu() should
+> return false for tick_do_timer_cpu, and I don't see that we have
+> done anything to make got_nohz_idle_kick() return true.
+> 
+> So the idea is that the fact of the interrupt is sufficient, and
+> the target CPU will figure out that it must turn its scheduling-clock
+> interrupt when returning from interrupt?
 
-Still confused, if you cannot copy it into one buffer, then why can you
-copy it into a second buffer?
+Exactly, the interrupt alone is sufficient and the tick is reevaluated
+on irq_exit().
 
+> 
+> Or is something else going on here?
+> 
+> 							Thanx, Paul
+> 
+> >  			return; /* We cleared it, done! */
+> >  		}
+> >  		oldstate = newoldstate;
+> > -- 
+> > 1.8.3.1
+> > 
+> 
