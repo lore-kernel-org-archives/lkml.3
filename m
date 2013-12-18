@@ -1,120 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304Ab3LRCI3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 21:08:29 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:63577 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab3LRCI1 (ORCPT
+	id S1751825Ab3LRCPu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 21:15:50 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:39893 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab3LRCPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 21:08:27 -0500
+	Tue, 17 Dec 2013 21:15:48 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <hui.geng@huawei.com>, Wang Guoli <andy.wangguoli@huawei.com>,
+        <stable@vger.kernel.org>
+Subject: [PATCH] jffs2: unlock f->sem on error in jffs2_new_inode()
+Date: Wed, 18 Dec 2013 10:14:54 +0800
+Message-ID: <1387332894-33977-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-In-Reply-To: <52B02206.6030709@redhat.com>
-References: <1387265182-27312-1-git-send-email-zwu.kernel@gmail.com>
-	<52B0100A.3030002@redhat.com>
-	<CAEH94LhM5WWLEETv-n0cYs4wv+Hw4pC7-c+b5cKqRxdx2XywNw@mail.gmail.com>
-	<52B02206.6030709@redhat.com>
-Date: Wed, 18 Dec 2013 10:08:26 +0800
-Message-ID: <CAEH94LjyVOopKUJ+yJV97UF6J8akohSbqqZN6g+m_1EyfWNTUw@mail.gmail.com>
-Subject: Re: [RFC PATCH] net, tun: remove the flow cache
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: netdev@vger.kernel.org, linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 6:05 PM, Jason Wang <jasowang@redhat.com> wrote:
-> On 12/17/2013 05:13 PM, Zhi Yong Wu wrote:
->> On Tue, Dec 17, 2013 at 4:49 PM, Jason Wang <jasowang@redhat.com> wrote:
->>> > On 12/17/2013 03:26 PM, Zhi Yong Wu wrote:
->>>> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>>> >>
->>>> >> The flow cache is an extremely broken concept, and it usually brings up
->>>> >> growth issues and DoS attacks, so this patch is trying to remove it from
->>>> >> the tuntap driver, and insteadly use a simpler way for its flow control.
->>> >
->>> > NACK.
->>> >
->>> > This single function revert does not make sense to me. Since:
->> IIRC, the tuntap flow cache is only used to save the mapping of skb
->> packet <-> queue index. My idea only save the queue index in skb_buff
->> early when skb buffer is filled, not in flow cache as the current
->> code. This method is actually more simpler and completely doesn't need
->> any flow cache.
->
-> Nope. Flow caches record the flow to queues mapping like what most
-> multiqueue nic does. The only difference is tun record it silently while
-> most nic needs driver to tell the mapping.
-Just check virtio specs, i seem to miss the fact that flow cache
-enable packet steering in mq mode, thanks for your comments. But i
-have some concerns about some of your comments.
->
-> What your patch does is:
-> - set the queue mapping of skb during tun_get_user(). But most drivers
-> using XPS or processor id to select the real tx queue. So the real txq
-> depends on the cpu that vhost or qemu is running. This setting does not
-Doesn't those drivers invoke netdev_pick_tx() or its counterpart to
-select real tx queue? e.g. tun_select_queue(). or can you say it with
-an example?
-Moreover, how do those drivers know which cpu vhost or qemu is running on?
-> have any effect in fact.
-> - the queue mapping of skb were fetched during tun_select_queue(). This
-> value is usually set by a multiqueue nic to record which hardware rxq
-> was this packet came.
-ah? Can you let me know where a mq nic controller set it?
->
-> Can you explain how your patch works exactly?
-You have understood it.
->>> >
->>> > - You in fact removes the flow steering function in tun. We definitely
->>> > need something like this to unbreak the TCP performance in a multiqueue
->> I don't think it will downgrade the TCP perf even in mq guest, but my
->> idea maybe has better TCP perf, because it doesn't have any cache
->> table lookup, etc.
->
-> Did you test and compare the performance numbers? Did you run profiler
-> to see how much does the lookup cost?
-No, As i jus said above, i miss that flow cache can enable packet
-steering. But Did you do related perf testing? To be honest, i am
-wondering how much perf the packet steering can improve. Actually it
-also injects a lot of cache lookup cost.
->>> > guest. Please have a look at the virtio-net driver / virtio sepc for
->>> > more information.
->>> > - The total number of flow caches were limited to 4096, so there's no
->>> > DoS or growth issue.
->> Can you check why the ipv4 routing cache is removed? maybe i miss
->> something, if yes, pls correct me. :)
->
-> The main differences is that the flow caches were best effort. Tun can
-> not store all flows to queue mapping, and even a hardware nic can not do
-> this. If a packet misses the flow cache, it's safe to distribute it
-> randomly or through another method. So the limitation just work.
-Exactly, we can know this from tun_select_queue().
->
-> Could you please explain the DoS or growth issue you meet here?
->>> > - The only issue is scalability, but fixing this is not easy. We can
->>> > just use arrays/indirection table like RSS instead of hash buckets, it
->>> > saves some time in linear search but has other issues like collision
->>> > - I've also had a RFC of using aRFS in the past, it also has several
->>> > drawbacks such as busy looping in the networking hotspot.
->>> >
->>> > So in conclusion, we need flow steering in tun, just removing current
->>> > method does not help. The proper way is to expose several different
->>> > methods to user and let user to choose the preferable mechanism like
->>> > packet.
->> By the way, let us look at what other networking guys think of this,
->> such as MST, dave, etc. :)
->>
->
-> Of course.
+From: Wang Guoli <andy.wangguoli@huawei.com>
 
+If jffs2_new_inode() succeeds, it returns with f->sem held, and
+the caller is responsible for releasing the lock. If it fails,
+it still returns with the lock held, but the caller won't release
+the lock, which will lead to deadlock.
 
+Fix it by releasing the lock in jffs2_new_inode() on error.
 
+Cc: <stable@vger.kernel.org> # 2.6.34+
+Signed-off-by: Wang Guoli <andy.wangguoli@huawei.com>
+---
+ fs/jffs2/fs.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/fs/jffs2/fs.c b/fs/jffs2/fs.c
+index 09b3ed4..2b91675 100644
+--- a/fs/jffs2/fs.c
++++ b/fs/jffs2/fs.c
+@@ -456,12 +456,14 @@ struct inode *jffs2_new_inode (struct inode *dir_i, umode_t mode, struct jffs2_r
+ 	   The umask is only applied if there's no default ACL */
+ 	ret = jffs2_init_acl_pre(dir_i, inode, &mode);
+ 	if (ret) {
+-	    make_bad_inode(inode);
+-	    iput(inode);
+-	    return ERR_PTR(ret);
++		mutex_unlock(&f->sem);
++		make_bad_inode(inode);
++		iput(inode);
++		return ERR_PTR(ret);
+ 	}
+ 	ret = jffs2_do_new_inode (c, f, mode, ri);
+ 	if (ret) {
++		mutex_unlock(&f->sem);
+ 		make_bad_inode(inode);
+ 		iput(inode);
+ 		return ERR_PTR(ret);
+@@ -478,6 +480,7 @@ struct inode *jffs2_new_inode (struct inode *dir_i, umode_t mode, struct jffs2_r
+ 	inode->i_size = 0;
+ 
+ 	if (insert_inode_locked(inode) < 0) {
++		mutex_unlock(&f->sem);
+ 		make_bad_inode(inode);
+ 		iput(inode);
+ 		return ERR_PTR(-EINVAL);
 -- 
-Regards,
+1.8.4
 
-Zhi Yong Wu
