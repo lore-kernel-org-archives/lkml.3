@@ -1,56 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab3LRPQA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 10:16:00 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:35813 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754862Ab3LRPP7 (ORCPT
+	id S1755065Ab3LRPSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 10:18:18 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:48310 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754287Ab3LRPSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 10:15:59 -0500
-X-IronPort-AV: E=Sophos;i="4.95,508,1384300800"; 
-   d="scan'208";a="83525056"
-Date: Wed, 18 Dec 2013 15:15:19 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
-        <mukesh.rathor@oracle.com>, <jbeulich@suse.com>
-Subject: Re: [Xen-devel] [PATCH v11 08/12] xen/pvh: MMU changes for PVH
-In-Reply-To: <20131218151015.GE4934@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1312181514510.8667@kaball.uk.xensource.com>
-References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com> <1387313503-31362-9-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1312181442050.8667@kaball.uk.xensource.com> <20131218151015.GE4934@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+	Wed, 18 Dec 2013 10:18:16 -0500
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-watchdog@vger.kernel.org
+Cc: wim@iguana.be, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org, arnd@arndb.de,
+        linux@roeck-us.net, Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH] watchdog: mach-moxart: add restart handler
+Date: Wed, 18 Dec 2013 16:18:03 +0100
+Message-Id: <1387379883-16525-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> > > @@ -1834,6 +1845,9 @@ static void convert_pfn_mfn(void *v)
-> > >  	pte_t *pte = v;
-> > >  	int i;
-> > >  
-> > > +	if (xen_feature(XENFEAT_auto_translated_physmap))
-> > > +		return;
-> > > +
-> > >  	/* All levels are converted the same way, so just treat them
-> > >  	   as ptes. */
-> > >  	for (i = 0; i < PTRS_PER_PTE; i++)
-> > 
-> > This is getting pretty bad.
-> > Can we find a way to refactor xen_setup_kernel_pagetable so that we
-> > don't need all this? Maybe we need a new function?
-> 
-> Is it that bad? Doing a copy of xen_setup_kernel_pagetable just
-> for PVH strikes me as error prone. Having the checks in the
-> functions that xen_setup_kernel_pagetable is much easier and
-> nicer I think.
-> 
-> Maybe if we did a big 'if (xen_feature(XEN..)' inside of
-> xen_setup_kernel_pagetable that would be easier?
+mach-moxart lacks a separate register for reset; as a workaround,
+add a function that can be hooked to arm_pm_restart.
 
-Yes, that should make things clearer.
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
+
+Notes:
+    During review of this driver, the restart handler for moxart was
+    removed, and moved to platform code under arch/arm/mach-moxart/.
+    
+    Since then, new considerations arrived,
+    see replies from Arnd and Guenter:
+    
+    "[PATCH v4 1/2] ARM: mach-moxart: add MOXA ART SoC platform files"
+    http://lists.infradead.org/pipermail/linux-arm-kernel/2013-December/219175.html
+    
+    I can move this to a new power/restart driver, but first, I want to
+    hear what Wim or others think.
+    
+    Until there is a better solution, my motivation is that this uses
+    the watchdog. The way I see it, the problem is that there is no
+    separate register for reset, this was always a workaround for that.
+    
+    Applies to next-20131218
+
+ drivers/watchdog/moxart_wdt.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/drivers/watchdog/moxart_wdt.c b/drivers/watchdog/moxart_wdt.c
+index 4166e4d..4aa3a8a 100644
+--- a/drivers/watchdog/moxart_wdt.c
++++ b/drivers/watchdog/moxart_wdt.c
+@@ -19,6 +19,8 @@
+ #include <linux/watchdog.h>
+ #include <linux/moduleparam.h>
+ 
++#include <asm/system_misc.h>
++
+ #define REG_COUNT			0x4
+ #define REG_MODE			0x8
+ #define REG_ENABLE			0xC
+@@ -29,8 +31,17 @@ struct moxart_wdt_dev {
+ 	unsigned int clock_frequency;
+ };
+ 
++static struct moxart_wdt_dev *moxart_restart_ctx;
++
+ static int heartbeat;
+ 
++static void moxart_wdt_restart(enum reboot_mode reboot_mode, const char *cmd)
++{
++	writel(1, moxart_restart_ctx->base + REG_COUNT);
++	writel(0x5ab9, moxart_restart_ctx->base + REG_MODE);
++	writel(0x03, moxart_restart_ctx->base + REG_ENABLE);
++}
++
+ static int moxart_wdt_stop(struct watchdog_device *wdt_dev)
+ {
+ 	struct moxart_wdt_dev *moxart_wdt = watchdog_get_drvdata(wdt_dev);
+@@ -125,6 +136,9 @@ static int moxart_wdt_probe(struct platform_device *pdev)
+ 	if (err)
+ 		return err;
+ 
++	moxart_restart_ctx = moxart_wdt;
++	arm_pm_restart = moxart_wdt_restart;
++
+ 	dev_dbg(dev, "Watchdog enabled (heartbeat=%d sec, nowayout=%d)\n",
+ 		moxart_wdt->dev.timeout, nowayout);
+ 
+@@ -135,6 +149,7 @@ static int moxart_wdt_remove(struct platform_device *pdev)
+ {
+ 	struct moxart_wdt_dev *moxart_wdt = platform_get_drvdata(pdev);
+ 
++	arm_pm_restart = NULL;
+ 	moxart_wdt_stop(&moxart_wdt->dev);
+ 	watchdog_unregister_device(&moxart_wdt->dev);
+ 
+-- 
+1.8.2.1
+
