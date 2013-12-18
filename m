@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab3LRVTq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:19:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36623 "EHLO
+	id S1754779Ab3LRVUN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:20:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36617 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599Ab3LRVOP (ORCPT
+	with ESMTP id S1754578Ab3LRVOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:14:15 -0500
+	Wed, 18 Dec 2013 16:14:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [PATCH 3.12 106/118] Btrfs: do a full search everytime in btrfs_search_old_slot
-Date: Wed, 18 Dec 2013 13:12:23 -0800
-Message-Id: <20131218211222.458116379@linuxfoundation.org>
+        Veaceslav Falico <veaceslav@falico.eu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Richard Weinberger <richard@nod.at>,
+        Shawn Landden <shawnlandden@gmail.com>,
+        Tom Herbert <therbert@google.com>
+Subject: [PATCH 3.12 105/118] Revert "net: update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST"
+Date: Wed, 18 Dec 2013 13:12:22 -0800
+Message-Id: <20131218211222.425844984@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,57 +33,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+It turns out that commit: d3f7d56a7a4671d395e8af87071068a195257bf6 was
+applied to the tree twice, which didn't hurt anything, but it's good to
+fix this up.
 
-commit d4b4087c43cc00a196c5be57fac41f41309f1d56 upstream.
+Reported-by: Veaceslav Falico <veaceslav@falico.eu>
 
-While running some snashot aware defrag tests I noticed I was panicing every
-once and a while in key_search.  This is because of the optimization that says
-if we find a key at slot 0 it will be at slot 0 all the way down the rest of the
-tree.  This isn't the case for btrfs_search_old_slot since it will likely replay
-changes to a buffer if something has changed since we took our sequence number.
-So short circuit this optimization by setting prev_cmp to -1 every time we call
-key_search so we will do our normal binary search.  With this patch I am no
-longer seeing the panics I was seeing before.  Thanks,
-
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>
+Cc: Shawn Landden <shawnlandden@gmail.com>
+Cc: Tom Herbert <therbert@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/ctree.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ crypto/algif_hash.c     |    3 ---
+ crypto/algif_skcipher.c |    3 ---
+ net/ipv4/udp.c          |    3 ---
+ 3 files changed, 9 deletions(-)
 
---- a/fs/btrfs/ctree.c
-+++ b/fs/btrfs/ctree.c
-@@ -2758,7 +2758,7 @@ int btrfs_search_old_slot(struct btrfs_r
- 	int level;
- 	int lowest_unlock = 1;
- 	u8 lowest_level = 0;
--	int prev_cmp;
-+	int prev_cmp = -1;
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -117,9 +117,6 @@ static ssize_t hash_sendpage(struct sock
+ 	if (flags & MSG_SENDPAGE_NOTLAST)
+ 		flags |= MSG_MORE;
  
- 	lowest_level = p->lowest_level;
- 	WARN_ON(p->nodes[0] != NULL);
-@@ -2769,7 +2769,6 @@ int btrfs_search_old_slot(struct btrfs_r
- 	}
+-	if (flags & MSG_SENDPAGE_NOTLAST)
+-		flags |= MSG_MORE;
+-
+ 	lock_sock(sk);
+ 	sg_init_table(ctx->sgl.sg, 1);
+ 	sg_set_page(ctx->sgl.sg, page, size, offset);
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -381,9 +381,6 @@ static ssize_t skcipher_sendpage(struct
+ 	if (flags & MSG_SENDPAGE_NOTLAST)
+ 		flags |= MSG_MORE;
  
- again:
--	prev_cmp = -1;
- 	b = get_old_root(root, time_seq);
- 	level = btrfs_header_level(b);
- 	p->locks[level] = BTRFS_READ_LOCK;
-@@ -2787,6 +2786,11 @@ again:
- 		 */
- 		btrfs_unlock_up_safe(p, level + 1);
+-	if (flags & MSG_SENDPAGE_NOTLAST)
+-		flags |= MSG_MORE;
+-
+ 	lock_sock(sk);
+ 	if (!ctx->more && ctx->used)
+ 		goto unlock;
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1075,9 +1075,6 @@ int udp_sendpage(struct sock *sk, struct
+ 	if (flags & MSG_SENDPAGE_NOTLAST)
+ 		flags |= MSG_MORE;
  
-+		/*
-+		 * Since we can unwind eb's we want to do a real search every
-+		 * time.
-+		 */
-+		prev_cmp = -1;
- 		ret = key_search(b, key, level, &prev_cmp, &slot);
+-	if (flags & MSG_SENDPAGE_NOTLAST)
+-		flags |= MSG_MORE;
+-
+ 	if (!up->pending) {
+ 		struct msghdr msg = {	.msg_flags = flags|MSG_MORE };
  
- 		if (level != 0) {
 
 
