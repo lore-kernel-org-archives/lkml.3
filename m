@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab3LRVg2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:36:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36375 "EHLO
+	id S1755598Ab3LRVgu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:36:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36372 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980Ab3LRVN2 (ORCPT
+	with ESMTP id S1753966Ab3LRVN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:28 -0500
+	Wed, 18 Dec 2013 16:13:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Wunderlich <sw@simonwunderlich.de>,
-        Felix Fietkau <nbd@openwrt.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.12 051/118] ath9k: fix duration calculation for non-aggregated packets
-Date: Wed, 18 Dec 2013 13:11:28 -0800
-Message-Id: <20131218211220.913915648@linuxfoundation.org>
+Subject: [PATCH 3.12 050/118] ath9k: Fix XLNA bias strength
+Date: Wed, 18 Dec 2013 13:11:27 -0800
+Message-Id: <20131218211220.886997984@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -30,40 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit bbf807bc0697e577c137a5fffb30fca7c6a45da1 upstream.
+commit a1783a7b0846fc6414483e6caf646db72023fffd upstream.
 
-When not aggregating packets, fi->framelen should be passed in as length
-to calculate the duration. Before the tx path rework, ath_tx_fill_desc
-was called for either one aggregate, or one single frame, with the
-length of the packet or the aggregate as a parameter.
-After the rework, ath_tx_sched_aggr can pass a burst of single frames to
-ath_tx_fill_desc and sets len=0.
-Fix broken duration calculation by overriding the length in ath_tx_fill_desc
-before passing it to ath_buf_set_rate.
+The EEPROM parameter to determine whether the bias
+strength values for XLNA have to be applied is part
+of the miscConfiguration field and not featureEnable.
 
-Reported-by: Simon Wunderlich <sw@simonwunderlich.de>
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/xmit.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -1275,6 +1275,10 @@ static void ath_tx_fill_desc(struct ath_
- 				if (!rts_thresh || (len > rts_thresh))
- 					rts = true;
- 			}
-+
-+			if (!aggr)
-+				len = fi->framelen;
-+
- 			ath_buf_set_rate(sc, bf, &info, len, rts);
- 		}
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -4019,7 +4019,7 @@ static void ar9003_hw_xlna_bias_strength
+ 	struct ar9300_eeprom *eep = &ah->eeprom.ar9300_eep;
+ 	u8 bias;
  
+-	if (!(eep->baseEepHeader.featureEnable & 0x40))
++	if (!(eep->baseEepHeader.miscConfiguration & 0x40))
+ 		return;
+ 
+ 	if (!AR_SREV_9300(ah))
 
 
