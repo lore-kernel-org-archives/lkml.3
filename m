@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756422Ab3LRWR5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:17:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35775 "EHLO
+	id S1756445Ab3LRWSZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:18:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35771 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359Ab3LRVI7 (ORCPT
+	with ESMTP id S1752147Ab3LRVI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:08:59 -0500
+	Wed, 18 Dec 2013 16:08:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.4 22/31] x86, efi: Dont use (U)EFI time services on 32 bit
-Date: Wed, 18 Dec 2013 13:08:30 -0800
-Message-Id: <20131218210523.414362223@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.4 21/31] drm/radeon: fixup bad vram size on SI
+Date: Wed, 18 Dec 2013 13:08:29 -0800
+Message-Id: <20131218210523.387617993@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218210522.790152625@linuxfoundation.org>
 References: <20131218210522.790152625@linuxfoundation.org>
@@ -30,41 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <matthew.garrett@nebula.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 04bf9ba720fcc4fa313fa122b799ae0989b6cd50 upstream.
+commit 0ca223b029a261e82fb2f50c52eb85d510f4260e upstream.
 
-UEFI time services are often broken once we're in virtual mode. We were
-already refusing to use them on 64-bit systems, but it turns out that
-they're also broken on some 32-bit firmware, including the Dell Venue.
-Disable them for now, we can revisit once we have the 1:1 mappings code
-incorporated.
+Some boards seem to have garbage in the upper
+16 bits of the vram size register.  Check for
+this and clamp the size properly.  Fixes
+boards reporting bogus amounts of vram.
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-Link: http://lkml.kernel.org/r/1385754283-2464-1-git-send-email-matthew.garrett@nebula.com
-Cc: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/platform/efi/efi.c |    7 -------
- 1 file changed, 7 deletions(-)
+ drivers/gpu/drm/radeon/si.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -744,13 +744,6 @@ void __init efi_init(void)
- 
- 	set_bit(EFI_MEMMAP, &x86_efi_facility);
- 
--#ifdef CONFIG_X86_32
--	if (efi_is_native()) {
--		x86_platform.get_wallclock = efi_get_time;
--		x86_platform.set_wallclock = efi_set_rtc_mmss;
--	}
--#endif
--
- #if EFI_DEBUG
- 	print_efi_memmap();
- #endif
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -2479,8 +2479,15 @@ static int si_mc_init(struct radeon_devi
+ 	rdev->mc.aper_base = pci_resource_start(rdev->pdev, 0);
+ 	rdev->mc.aper_size = pci_resource_len(rdev->pdev, 0);
+ 	/* size in MB on si */
+-	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
+-	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
++	tmp = RREG32(CONFIG_MEMSIZE);
++	/* some boards may have garbage in the upper 16 bits */
++	if (tmp & 0xffff0000) {
++		DRM_INFO("Probable bad vram size: 0x%08x\n", tmp);
++		if (tmp & 0xffff)
++			tmp &= 0xffff;
++	}
++	rdev->mc.mc_vram_size = tmp * 1024ULL * 1024ULL;
++	rdev->mc.real_vram_size = rdev->mc.mc_vram_size;
+ 	rdev->mc.visible_vram_size = rdev->mc.aper_size;
+ 	si_vram_gtt_location(rdev, &rdev->mc);
+ 	radeon_update_bandwidth_info(rdev);
 
 
