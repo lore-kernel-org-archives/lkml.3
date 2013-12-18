@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab3LRVqd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:46:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36257 "EHLO
+	id S1754221Ab3LRVqb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:46:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36263 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703Ab3LRVNE (ORCPT
+	with ESMTP id S1753635Ab3LRVNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:04 -0500
+	Wed, 18 Dec 2013 16:13:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian Carnes <bmcarnes@gmail.com>, Jean Delvare <khali@linux-fr.org>
-Subject: [PATCH 3.12 022/118] hwmon: (w83l786ng) Fix fan speed control mode setting and reporting
-Date: Wed, 18 Dec 2013 13:10:59 -0800
-Message-Id: <20131218211220.108089332@linuxfoundation.org>
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.12 023/118] hwmon: (w83l768ng) Fix fan speed control range
+Date: Wed, 18 Dec 2013 13:11:00 -0800
+Message-Id: <20131218211220.135581229@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -28,43 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Carnes <bmcarnes@gmail.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit cf7559bc053471f32373d71d04a9aa19e0b48d59 upstream.
+commit 33a7ab91d509fa33b4bcd3ce0038cc80298050da upstream.
 
-The wrong mask is used, which causes some fan speed control modes
-(pwmX_enable) to be incorrectly reported, and some modes to be
-impossible to set.
+The W83L786NG stores the fan speed on 4 bits while the sysfs interface
+uses a 0-255 range. Thus the driver should scale the user input down
+to map it to the device range, and scale up the value read from the
+device before presenting it to the user. The reserved register nibble
+should be left unchanged.
 
-[JD: add subject and description.]
-
-Signed-off-by: Brian Carnes <bmcarnes@gmail.com>
 Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/w83l786ng.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/hwmon/w83l786ng.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
 --- a/drivers/hwmon/w83l786ng.c
 +++ b/drivers/hwmon/w83l786ng.c
-@@ -510,7 +510,7 @@ store_pwm_enable(struct device *dev, str
+@@ -481,9 +481,11 @@ store_pwm(struct device *dev, struct dev
+ 	if (err)
+ 		return err;
+ 	val = clamp_val(val, 0, 255);
++	val = DIV_ROUND_CLOSEST(val, 0x11);
+ 
  	mutex_lock(&data->update_lock);
- 	reg = w83l786ng_read_value(client, W83L786NG_REG_FAN_CFG);
- 	data->pwm_enable[nr] = val;
--	reg &= ~(0x02 << W83L786NG_PWM_ENABLE_SHIFT[nr]);
-+	reg &= ~(0x03 << W83L786NG_PWM_ENABLE_SHIFT[nr]);
- 	reg |= (val - 1) << W83L786NG_PWM_ENABLE_SHIFT[nr];
- 	w83l786ng_write_value(client, W83L786NG_REG_FAN_CFG, reg);
+-	data->pwm[nr] = val;
++	data->pwm[nr] = val * 0x11;
++	val |= w83l786ng_read_value(client, W83L786NG_REG_PWM[nr]) & 0xf0;
+ 	w83l786ng_write_value(client, W83L786NG_REG_PWM[nr], val);
  	mutex_unlock(&data->update_lock);
-@@ -776,7 +776,7 @@ static struct w83l786ng_data *w83l786ng_
- 			    ((pwmcfg >> W83L786NG_PWM_MODE_SHIFT[i]) & 1)
+ 	return count;
+@@ -777,8 +779,9 @@ static struct w83l786ng_data *w83l786ng_
  			    ? 0 : 1;
  			data->pwm_enable[i] =
--			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 2) + 1;
-+			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 3) + 1;
- 			data->pwm[i] = w83l786ng_read_value(client,
- 			    W83L786NG_REG_PWM[i]);
+ 			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 3) + 1;
+-			data->pwm[i] = w83l786ng_read_value(client,
+-			    W83L786NG_REG_PWM[i]);
++			data->pwm[i] =
++			    (w83l786ng_read_value(client, W83L786NG_REG_PWM[i])
++			     & 0x0f) * 0x11;
  		}
+ 
+ 
 
 
