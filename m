@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab3LRTn3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 14:43:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34001 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752047Ab3LRTmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 14:42:09 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 4/6] mm: page_alloc: Use zone node IDs to approximate locality
-Date: Wed, 18 Dec 2013 19:42:01 +0000
-Message-Id: <1387395723-25391-5-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1387395723-25391-1-git-send-email-mgorman@suse.de>
-References: <1387395723-25391-1-git-send-email-mgorman@suse.de>
+	id S1752622Ab3LRTnk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 14:43:40 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:55431 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab3LRTng (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 14:43:36 -0500
+Date: Wed, 18 Dec 2013 11:43:28 -0800
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        Arend van Spriel <arend@broadcom.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Julian Calaby <julian.calaby@gmail.com>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Avinash Patil <avinashapatil@gmail.com>
+Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't
+ work.
+Message-ID: <20131218194328.GE5705@cerro.do-not-panic.com>
+References: <19210260274.20131216135644@eikelenboom.it>
+ <CAGRGNgXHemM2FfnXgW5RbzhFT+9SfUfVkjdysK3+=_u3hWSacw@mail.gmail.com>
+ <1534126119.20131217104548@eikelenboom.it>
+ <387552477.20131217213319@eikelenboom.it>
+ <20131217212709.GB5624@decadent.org.uk>
+ <1254825772.20131217224914@eikelenboom.it>
+ <CA+55aFxQg6=MAWEkEGz64Hz8OawvPyX=fpBOjY8cGBL5XgB9WQ@mail.gmail.com>
+ <52B167F6.5060209@broadcom.com>
+ <1387358785.4694.9.camel@jlt4.sipsolutions.net>
+ <133955103.20131218114845@eikelenboom.it>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <133955103.20131218114845@eikelenboom.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zone_local is using node_distance which is a more expensive call than
-necessary. On x86, it's another function call in the allocator fast path
-and increases cache footprint. This patch makes the assumption zones on
-the preferred node will share the same node ID. The necessary information
-should already be cache hot.
+On Wed, Dec 18, 2013 at 11:48:45AM +0100, Sander Eikelenboom wrote:
+> 
+> Wednesday, December 18, 2013, 10:26:25 AM, you wrote:
+> 
+> > Hi all,
+> 
+> > We really should be asking Luis to look at this who hasn't yet chimed
+> > in, presumably because he's between jobs (and travelling IIRC)
+> 
+> > On Wed, 2013-12-18 at 10:16 +0100, Arend van Spriel wrote:
+> >> On 12/17/2013 11:06 PM, Linus Torvalds wrote:
+> >> > We have literally had this *exact* same issue with firmware loading.
+> >> > Network drivers shouldn't try to load firmware at module load time.
+> >> > Same deal.
+> >> 
+> >> It is kind of a chicken and egg problem for (wireless) networking
+> >> drivers. To get IFF_UP from the network layer you have to register a
+> >> netdevice. For wireless drivers this means you have to register a wiphy
+> >> device with cfg80211 which flags capabilities and optionally are custom
+> >> regulatory domain. That information depends on the device and firmware
+> >> used. And there we have a full circle.
+> 
+> > This is all really beside the point.
+> 
+> > For this CRDA information, the kernel never actually *waits* for it, so
+> > in the case that there's no reply, it uses the built-in world domain. So
+> > it's not like request_firmware(), which will block boot forever, but
+> > it's also not like request_firmware_nowait() which will eventually time
+> > out and come back with an error if userspace isn't handling it (though
+> > now that firmware loading is built in ...)
+> 
+> > The issue is that it uses the built-in data *forever*, and what Sander
+> > said was "or it will block forever" but just meant that it never was
+> > able to do any further updates.
+> 
+> > It *doesn't* actually block the boot process or such. Everything Linus
+> > said is true but seems to have been written in understanding "blocks" as
+> > "blocking the boot process", rather than "blocking further updates".
+> 
+> > Regardless of this, even blocking further updates is a really bad idea.
+> > There are a few ways to handle this, but I'll let Luis poke at that.
+> 
+> Your description is correct, sorry if I was not clear.
 
-Cc: <stable@kernel.org> # 3.12
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
----
- mm/page_alloc.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+We have a timeout handler for this, I'll check to see what's going on
+by trying to reproduce on my end. Are you using wireless-testing ?
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 2cd694c..5aeb2c6 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1822,9 +1822,10 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
- 	bitmap_zero(zlc->fullzones, MAX_ZONES_PER_ZONELIST);
- }
- 
--static bool zone_local(struct zone *local_zone, struct zone *zone)
-+/* Returns if the zone is is on the same node as the preferred node */
-+static bool zone_preferred_node(struct zone *preferred_zone, struct zone *zone)
- {
--	return node_distance(local_zone->node, zone->node) == LOCAL_DISTANCE;
-+	return zone_to_nid(preferred_zone) == zone_to_nid(zone);
- }
- 
- static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
-@@ -1864,7 +1865,7 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
- {
- }
- 
--static bool zone_local(struct zone *local_zone, struct zone *zone)
-+static bool zone_preferred_node(struct zone *preferred_zone, struct zone *zone)
- {
- 	return true;
- }
-@@ -1909,7 +1910,7 @@ static bool zone_distribute_age(gfp_t gfp_mask, struct zone *preferred_zone,
- 	 * back to remote zones that do not partake in the fairness round-robin
- 	 * cycle of this zonelist.
- 	 */
--	if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
-+	if (zone_reclaim_mode && !zone_preferred_node(preferred_zone, zone))
- 		return true;
- 
- 	return false;
-@@ -2420,7 +2421,7 @@ static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
- 		 * thrash fairness information for zones that are not
- 		 * actually part of this zonelist's round-robin cycle.
- 		 */
--		if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
-+		if (zone_reclaim_mode && !zone_preferred_node(preferred_zone, zone))
- 			continue;
- 		mod_zone_page_state(zone, NR_ALLOC_BATCH,
- 				    high_wmark_pages(zone) -
--- 
-1.8.4
-
+  Luis
