@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3LRFWN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 00:22:13 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:54467 "EHLO
+	id S1753403Ab3LRFWL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 00:22:11 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:63059 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab3LRFVc (ORCPT
+	with ESMTP id S1751316Ab3LRFVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 00:21:32 -0500
-X-AuditID: 9c93017d-b7c5eae000004296-30-52b130d9e97e
+	Wed, 18 Dec 2013 00:21:33 -0500
+X-AuditID: 9c93017d-b7c5eae000004296-38-52b130daae11
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Arun Sharma <asharma@fb.com>,
         Jiri Olsa <jolsa@redhat.com>, Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 12/18] perf ui/hist: Add support to accumulated hist stat
-Date: Wed, 18 Dec 2013 14:21:20 +0900
-Message-Id: <1387344086-12744-13-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 18/18] perf report: Add report.cumulate config option
+Date: Wed, 18 Dec 2013 14:21:26 +0900
+Message-Id: <1387344086-12744-19-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
 References: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
@@ -28,123 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Print accumulated stat of a hist entry if requested.
+Add report.cumulate config option for setting default value of
+callchain accumulation.  It affects the report output only if
+perf.data contains callchain info.
 
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+A user can write .perfconfig file like below to enable accumulation
+by default:
+
+  $ cat ~/.perfconfig
+  [report]
+  cumulate = true
+
+And it can be disabled through command line:
+
+  $ perf report --no-cumulate
+
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/hist.c   | 45 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/hist.h |  1 +
- 2 files changed, 46 insertions(+)
+ tools/perf/builtin-report.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 78f4c92e9b73..b365260645d3 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -129,6 +129,28 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- 			  scnprintf, true);					\
- }
- 
-+#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
-+static u64 he_get_acc_##_field(struct hist_entry *he)				\
-+{										\
-+	return he->stat_acc->_field;						\
-+}										\
-+										\
-+static int hpp__color_acc_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
-+			      struct perf_hpp *hpp, struct hist_entry *he) 	\
-+{										\
-+	return __hpp__fmt(hpp, he, he_get_acc_##_field, " %6.2f%%",		\
-+			  (hpp_snprint_fn)percent_color_snprintf, true);	\
-+}
-+
-+#define __HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
-+static int hpp__entry_acc_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,	\
-+			      struct perf_hpp *hpp, struct hist_entry *he) 	\
-+{										\
-+	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
-+	return __hpp__fmt(hpp, he, he_get_acc_##_field, fmt,			\
-+			  scnprintf, true);					\
-+}
-+
- #define __HPP_ENTRY_RAW_FN(_type, _field)					\
- static u64 he_get_raw_##_field(struct hist_entry *he)				\
- {										\
-@@ -148,17 +170,25 @@ __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
- __HPP_COLOR_PERCENT_FN(_type, _field)					\
- __HPP_ENTRY_PERCENT_FN(_type, _field)
- 
-+#define HPP_PERCENT_ACC_FNS(_type, _str, _field, _min_width, _unit_width)\
-+__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
-+__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
-+__HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
-+__HPP_ENTRY_ACC_PERCENT_FN(_type, _field)
-+
- #define HPP_RAW_FNS(_type, _str, _field, _min_width, _unit_width)	\
- __HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
- __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
- __HPP_ENTRY_RAW_FN(_type, _field)
- 
-+__HPP_HEADER_FN(overhead_self, "Self", 8, 8)
- 
- HPP_PERCENT_FNS(overhead, "Overhead", period, 8, 8)
- HPP_PERCENT_FNS(overhead_sys, "sys", period_sys, 8, 8)
- HPP_PERCENT_FNS(overhead_us, "usr", period_us, 8, 8)
- HPP_PERCENT_FNS(overhead_guest_sys, "guest sys", period_guest_sys, 9, 8)
- HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us, 9, 8)
-+HPP_PERCENT_ACC_FNS(overhead_acc, "Total", period, 8, 8)
- 
- HPP_RAW_FNS(samples, "Samples", nr_events, 12, 12)
- HPP_RAW_FNS(period, "Period", period, 12, 12)
-@@ -171,6 +201,14 @@ HPP_RAW_FNS(period, "Period", period, 12, 12)
- 		.entry	= hpp__entry_ ## _name		\
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 206947a52fa8..923ed2752209 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -71,6 +71,10 @@ static int perf_report_config(const char *var, const char *value, void *cb)
+ 		rep->min_percent = strtof(value, NULL);
+ 		return 0;
  	}
- 
-+#define HPP__COLOR_ACC_PRINT_FNS(_name)			\
-+	{						\
-+		.header	= hpp__header_ ## _name,	\
-+		.width	= hpp__width_ ## _name,		\
-+		.color	= hpp__color_acc_ ## _name,	\
-+		.entry	= hpp__entry_acc_ ## _name	\
++	if (!strcmp(var, "report.cumulate")) {
++		symbol_conf.cumulate_callchain = perf_config_bool(var, value);
++		return 0;
 +	}
-+
- #define HPP__PRINT_FNS(_name)				\
- 	{						\
- 		.header	= hpp__header_ ## _name,	\
-@@ -184,6 +222,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
- 	HPP__COLOR_PRINT_FNS(overhead_us),
- 	HPP__COLOR_PRINT_FNS(overhead_guest_sys),
- 	HPP__COLOR_PRINT_FNS(overhead_guest_us),
-+	HPP__COLOR_ACC_PRINT_FNS(overhead_acc),
- 	HPP__PRINT_FNS(samples),
- 	HPP__PRINT_FNS(period)
- };
-@@ -208,6 +247,12 @@ void perf_hpp__init(void)
- {
- 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
  
-+	if (symbol_conf.cumulate_callchain) {
-+		perf_hpp__format[PERF_HPP__OVERHEAD].header =
-+						hpp__header_overhead_self;
-+		perf_hpp__column_enable(PERF_HPP__OVERHEAD_ACC);
-+	}
-+
- 	if (symbol_conf.show_cpu_utilization) {
- 		perf_hpp__column_enable(PERF_HPP__OVERHEAD_SYS);
- 		perf_hpp__column_enable(PERF_HPP__OVERHEAD_US);
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 09e194a1e8f8..60134e79103d 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -160,6 +160,7 @@ enum {
- 	PERF_HPP__OVERHEAD_US,
- 	PERF_HPP__OVERHEAD_GUEST_SYS,
- 	PERF_HPP__OVERHEAD_GUEST_US,
-+	PERF_HPP__OVERHEAD_ACC,
- 	PERF_HPP__SAMPLES,
- 	PERF_HPP__PERIOD,
- 
+ 	return perf_default_config(var, value, cb);
+ }
 -- 
 1.7.11.7
 
