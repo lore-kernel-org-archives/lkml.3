@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab3LRQz0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 11:55:26 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:40088 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755014Ab3LRQzY (ORCPT
+	id S1755489Ab3LRQzu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 11:55:50 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52369 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808Ab3LRQzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 11:55:24 -0500
+	Wed, 18 Dec 2013 11:55:48 -0500
+Date: Wed, 18 Dec 2013 17:55:08 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com
+Subject: Re: [PATCH 09/13] sched: Add bandwidth management for sched_dl
+Message-ID: <20131218165508.GB30183@twins.programming.kicks-ass.net>
+References: <20131217122720.950475833@infradead.org>
+ <20131217123353.180539582@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20131218154045.GC16227@intel.com>
-References: <1385408365-8072-1-git-send-email-jason@lakedaemon.net>
-	<20131128055706.GM8834@intel.com>
-	<20131209235035.GA11632@n2100.arm.linux.org.uk>
-	<20131210101331.GG29580@intel.com>
-	<20131210111449.GY4360@n2100.arm.linux.org.uk>
-	<CAPcyv4gAazGS_m6KNfF2_kY3CDzYkvpBQ=kcnPH-pBvcJ0HjAw@mail.gmail.com>
-	<CAPcyv4iNOqHSQXj_PTmG-iHajnmHoPhLeFvnnK-JtNykf2W3Ew@mail.gmail.com>
-	<20131218154045.GC16227@intel.com>
-Date: Wed, 18 Dec 2013 08:55:23 -0800
-Message-ID: <CAPcyv4hiGg6J0sAEy6N=HRsLg_B9PGOc=khaTNR80==pDfNQzQ@mail.gmail.com>
-Subject: Re: [PATCH] dma: mv_xor: remove mv_desc_get_dest_addr()
-From: Dan Williams <dan.j.williams@intel.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131217123353.180539582@infradead.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 7:40 AM, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Thu, Dec 12, 2013 at 11:00:05PM -0800, Dan Williams wrote:
->> On Wed, Dec 11, 2013 at 1:10 AM, Dan Williams <dan.j.williams@intel.com> wrote:
->> > On Tue, Dec 10, 2013 at 3:14 AM, Russell King - ARM Linux
->> > <linux@arm.linux.org.uk> wrote:
->> >> On Tue, Dec 10, 2013 at 03:43:31PM +0530, Vinod Koul wrote:
->> >>> On Mon, Dec 09, 2013 at 11:50:35PM +0000, Russell King - ARM Linux wrote:
->> >>> > On Thu, Nov 28, 2013 at 11:27:06AM +0530, Vinod Koul wrote:
->> >>> > > + Dan
->> >>> > >
->> >>> > > On Mon, Nov 25, 2013 at 07:39:25PM +0000, Jason Cooper wrote:
->> >>> > > > The following commit:
->> >>> > > >
->> >>> > > >   54f8d501e842 dmaengine: remove DMA unmap from drivers
->> >>> > > >
->> >>> > > > removed the last caller to mv_desc_get_dest_addr(), creating the
->> >>> > > > warning:
->> >>> > > >
->> >>> > > >   drivers/dma/mv_xor.c:57:12: warning: 'mv_desc_get_dest_addr' defined
->> >>> > > >   but not used [-Wunused-function]
->> >>> > > >
->> >>> > > > Remove it.
->> >>> > > >
->> >>> > > > Signed-off-by: Jason Cooper <jason@lakedaemon.net>
->> >>> > > Acked-by: Vinod Koul <vinod.koul@intel.com>
->> >>> > >
->> >>> > > This should go thru Dan's tree
->> >>> >
->> >>> > So what's happening with this patch?  I don't see it in -rc yet.
->> >>> Dan has applied this to his next. So this should show us in next rc1
->> >>
->> >> Wrong answer.  This is a compile regression introduced in the last merge
->> >> window, it should be going into an -rc kernel.
->> >
->> > Vinod, if your fixes branch is ready I'll take it along with the rest
->> > of the regression fixes to Linus.
-> Sorry I wasnt well last week, so I just managed to send the PULL on friday
-> morning. Wasnt sure if Linus will cut rc on friday or later, so sent it!
+On Tue, Dec 17, 2013 at 01:27:29PM +0100, Peter Zijlstra wrote:
+> @@ -4381,6 +4592,13 @@ static int __migrate_task(struct task_st
+>  		goto fail;
+>  
+>  	/*
+> +	 * If p is -deadline, proceed only if there is enough
+> +	 * bandwidth available on dest_cpu
+> +	 */
+> +	if (unlikely(dl_task(p)) && !set_task_cpu_dl(p, dest_cpu))
+> +		goto fail;
+> +
+> +	/*
+>  	 * If we're not on a rq, the next wake-up will ensure we're
+>  	 * placed properly.
+>  	 */
 
-Ok, glad you are feeling better.
+I just noticed this one.. we can't do this.
 
->>
->> Ok, I see you sent dma-slave/fixes up, I'll follow up with the rest:
-> Okay, did you manage to send it? If not I may have few (i think at least 1 more)
->
+The reason we cannot do this is because:
 
-Patchwork id(s)?  I want to send it it today.
+  CPU_DYING -> migration_call() -> migrate_tasks() -> __migrate_task()
 
-I was busy tracking down a data corruption report with net_dma.
+cannot fail and hard assumes it _will_ move all tasks off of the dying
+cpu, failing this will break hotplug.
 
---
-Dan
+Also, I'm not entirely sure why this hunk exists. For GEDF we don't need
+this constraints AFAIK, as long as we guarantee we run the N earliest
+deadlines, it only matters what the total utilization (root domain wide)
+is, the per-cpu utilization is irrelevant.
+
+If the purpose is to fail hotplug because taking out the CPU would end
+up in over-subscription, then we need a DOWN_PREPARE handler.
+
+Dario, Juri?
