@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124Ab3LRTid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 14:38:33 -0500
-Received: from mga11.intel.com ([192.55.52.93]:31819 "EHLO mga11.intel.com"
+	id S1751758Ab3LRTkE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 14:40:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56424 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805Ab3LRTib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 14:38:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,508,1384329600"; 
-   d="scan'208";a="452185866"
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch\@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "the arch\/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	id S1751074Ab3LRTkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 14:40:01 -0500
+Date: Wed, 18 Dec 2013 20:40:25 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] qrwlock: A queue read/write lock implementation
-References: <1385147087-26588-1-git-send-email-Waiman.Long@hp.com>
-	<1385147087-26588-2-git-send-email-Waiman.Long@hp.com>
-	<20131217192128.GA15969@linux.vnet.ibm.com>
-	<CA+55aFzNSZCKnuEm+CDWUN2G4bfrN+HafX8r13NcfT2tJ4h-jw@mail.gmail.com>
-Date: Wed, 18 Dec 2013 11:38:29 -0800
-In-Reply-To: <CA+55aFzNSZCKnuEm+CDWUN2G4bfrN+HafX8r13NcfT2tJ4h-jw@mail.gmail.com>
-	(Linus Torvalds's message of "Tue, 17 Dec 2013 11:27:29 -0800")
-Message-ID: <878uvilzka.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm 7/7] mm: thp: introduce compound_head_put_tail(),
+	change get_futex_key() to use it
+Message-ID: <20131218194025.GA8797@redhat.com>
+References: <20131218191913.GA6464@redhat.com> <20131218192008.GA8343@redhat.com> <20131218192855.GE16438@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131218192855.GE16438@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+On 12/18, Peter Zijlstra wrote:
 >
-> In this case, we seem to want the xadd() semantics. I guess we can use
-> "atomic_add_return(val,&atomic)-val" and just assume that the compiler
-> gets it right (with the addition and the subtraction cancelling out).
+> On Wed, Dec 18, 2013 at 08:20:08PM +0100, Oleg Nesterov wrote:
+> > +struct page *compound_head_put_tail(struct page *page)
+> > +{
+> > +	struct page *page_head;
+> > +	unsigned long flags;
+> > +
+> > +	if (!PageTail(page))
+> > +		return page;
+> > +
+> > +	page_head = compound_trans_head(page);
+> > +
+> > +	if (!__compound_tail_refcounted(page_head)) {
+>
+> This barrier is missing a comment describing the ordering and the
+> pairing.
 
-It can't, as we use inline assembler. 
+Yes, and this function lacks other comments it needs, they should be
+copy-and-past'ed from the very similar __put_page_tail().
 
-In theory it could with __sync_* or __atomic_* intrinsics but we
-traditionally don't use them as they don't support patchable LOCK
+But I am going to unify them later if this series passes the review,
+can't the comments wait till then?
 
-(maybe it would be time to get rid of the patchable LOCK though?)
+OTOH, I won't mind to send v2 with the additional comment about this
+rmb() at least. Or perhaps I should simply add /* See the comments in
+__put_page_tail() */ into the new helper.
 
--Andi
+OK. But I'll wait for other reviews first.
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+Oleg.
+
