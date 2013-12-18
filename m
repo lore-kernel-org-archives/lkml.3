@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab3LRVwY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:52:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36176 "EHLO
+	id S1754360Ab3LRVwo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:52:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36170 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753494Ab3LRVMs (ORCPT
+	with ESMTP id S1753475Ab3LRVMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:48 -0500
+	Wed, 18 Dec 2013 16:12:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Veaceslav Falico <veaceslav@falico.eu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Richard Weinberger <richard@nod.at>,
-        Shawn Landden <shawnlandden@gmail.com>,
-        Tom Herbert <therbert@google.com>
-Subject: [PATCH 3.10 74/78] Revert "net: update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST"
-Date: Wed, 18 Dec 2013 13:11:42 -0800
-Message-Id: <20131218211113.989626427@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        David Miller <davem@davemloft.net>
+Subject: [PATCH 3.10 73/78] [PATCH linux-3.10.y] ip6tnl: fix use after free of fb_tnl_dev
+Date: Wed, 18 Dec 2013 13:11:41 -0800
+Message-Id: <20131218211113.960240003@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -33,60 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-It turns out that commit: d3f7d56a7a4671d395e8af87071068a195257bf6 was
-applied to the tree twice, which didn't hurt anything, but it's good to
-fix this up.
 
-Reported-by: Veaceslav Falico <veaceslav@falico.eu>
+The upstream commit bb8140947a24 ("ip6tnl: allow to use rtnl ops on fb tunnel")
+(backported into linux-3.10.y) left a bug which was fixed upstream by commit
+1e9f3d6f1c40 ("ip6tnl: fix use after free of fb_tnl_dev").
 
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: Shawn Landden <shawnlandden@gmail.com>
-Cc: Tom Herbert <therbert@google.com>
+The problem is a bit different in linux-3.10.y, because there is no x-netns
+support (upstream commit 0bd8762824e7 ("ip6tnl: add x-netns support")).
+When ip6_tunnel.ko is unloaded, FB device is deleted by rtnl_link_unregister()
+and then we try to delete it again in ip6_tnl_destroy_tunnels().
+
+This patch removes the second deletion.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Cc: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- crypto/algif_hash.c     |    3 ---
- crypto/algif_skcipher.c |    3 ---
- net/ipv4/udp.c          |    3 ---
- 3 files changed, 9 deletions(-)
+ net/ipv6/ip6_tunnel.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/crypto/algif_hash.c
-+++ b/crypto/algif_hash.c
-@@ -117,9 +117,6 @@ static ssize_t hash_sendpage(struct sock
- 	if (flags & MSG_SENDPAGE_NOTLAST)
- 		flags |= MSG_MORE;
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
+@@ -1711,8 +1711,6 @@ static void __net_exit ip6_tnl_destroy_t
+ 		}
+ 	}
  
--	if (flags & MSG_SENDPAGE_NOTLAST)
--		flags |= MSG_MORE;
--
- 	lock_sock(sk);
- 	sg_init_table(ctx->sgl.sg, 1);
- 	sg_set_page(ctx->sgl.sg, page, size, offset);
---- a/crypto/algif_skcipher.c
-+++ b/crypto/algif_skcipher.c
-@@ -381,9 +381,6 @@ static ssize_t skcipher_sendpage(struct
- 	if (flags & MSG_SENDPAGE_NOTLAST)
- 		flags |= MSG_MORE;
- 
--	if (flags & MSG_SENDPAGE_NOTLAST)
--		flags |= MSG_MORE;
--
- 	lock_sock(sk);
- 	if (!ctx->more && ctx->used)
- 		goto unlock;
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1073,9 +1073,6 @@ int udp_sendpage(struct sock *sk, struct
- 	if (flags & MSG_SENDPAGE_NOTLAST)
- 		flags |= MSG_MORE;
- 
--	if (flags & MSG_SENDPAGE_NOTLAST)
--		flags |= MSG_MORE;
--
- 	if (!up->pending) {
- 		struct msghdr msg = {	.msg_flags = flags|MSG_MORE };
+-	t = rtnl_dereference(ip6n->tnls_wc[0]);
+-	unregister_netdevice_queue(t->dev, &list);
+ 	unregister_netdevice_many(&list);
+ }
  
 
 
