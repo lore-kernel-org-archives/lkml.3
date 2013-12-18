@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab3LRV7z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:59:55 -0500
-Received: from mga11.intel.com ([192.55.52.93]:52053 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753302Ab3LRV7w convert rfc822-to-8bit (ORCPT
+	id S1754479Ab3LRWAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:00:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36082 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367Ab3LRVM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:59:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,509,1384329600"; 
-   d="scan'208";a="452256438"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Mark Salter <msalter@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Richard Henderson <rth@twiddle.net>,
-        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: RE: [PATCH v2 00/10] Kconfig: cleanup SERIO_I8042 dependencies
-Thread-Topic: [PATCH v2 00/10] Kconfig: cleanup SERIO_I8042 dependencies
-Thread-Index: AQHO+z/OuxcCzhfNTESZVWf9Hu2Bc5pagiFA
-Date: Wed, 18 Dec 2013 21:59:49 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31D8CDD5@ORSMSX106.amr.corp.intel.com>
-References: <1387295333-24684-1-git-send-email-msalter@redhat.com>
-In-Reply-To: <1387295333-24684-1-git-send-email-msalter@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Dec 2013 16:12:29 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [PATCH 3.10 52/78] media: af9033: fix broken I2C
+Date: Wed, 18 Dec 2013 13:11:20 -0800
+Message-Id: <20131218211113.366573304@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
+References: <20131218211111.903835960@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This is v2 of the patch series. Changes from version 1:
->
->  o Added acks. arm, ia64, and sh are only ones without acks.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-ia64 bits look OK
+------------------
 
-Acked-by: Tony Luck <tony.luck@intel.com>
+From: Antti Palosaari <crope@iki.fi>
+
+commit d18a88b1f535d627412b2a265d71b2f7d464860e upstream.
+
+Driver did not work anymore since I2C has gone broken due
+to recent commit:
+commit 37ebaf6891ee81687bb558e8375c0712d8264ed8
+[media] dvb-frontends: Don't use dynamic static allocation
+
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/media/dvb-frontends/af9033.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+--- a/drivers/media/dvb-frontends/af9033.c
++++ b/drivers/media/dvb-frontends/af9033.c
+@@ -170,18 +170,18 @@ static int af9033_rd_reg_mask(struct af9
+ static int af9033_wr_reg_val_tab(struct af9033_state *state,
+ 		const struct reg_val *tab, int tab_len)
+ {
++#define MAX_TAB_LEN 212
+ 	int ret, i, j;
+-	u8 buf[MAX_XFER_SIZE];
++	u8 buf[1 + MAX_TAB_LEN];
++
++	dev_dbg(&state->i2c->dev, "%s: tab_len=%d\n", __func__, tab_len);
+ 
+ 	if (tab_len > sizeof(buf)) {
+-		dev_warn(&state->i2c->dev,
+-			 "%s: i2c wr len=%d is too big!\n",
+-			 KBUILD_MODNAME, tab_len);
++		dev_warn(&state->i2c->dev, "%s: tab len %d is too big\n",
++				KBUILD_MODNAME, tab_len);
+ 		return -EINVAL;
+ 	}
+ 
+-	dev_dbg(&state->i2c->dev, "%s: tab_len=%d\n", __func__, tab_len);
+-
+ 	for (i = 0, j = 0; i < tab_len; i++) {
+ 		buf[j] = tab[i].val;
+ 
+
+
