@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab3LRUur (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 15:50:47 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:61840 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab3LRUup (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 15:50:45 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sergei Ianovich <ynvich@gmail.com>
-Subject: Re: [PATCH v2 00/16] ARM: support for ICP DAS LP-8x4x (with dts)
-Date: Wed, 18 Dec 2013 21:50:38 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Daniel Mack <zonque@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-References: <1386543229-1542-1-git-send-email-ynvich@gmail.com> <201312161856.11384.arnd@arndb.de> <1387226300.13062.161.camel@host5.omatika.ru>
-In-Reply-To: <1387226300.13062.161.camel@host5.omatika.ru>
+	id S1751993Ab3LRUvD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 15:51:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35208 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751942Ab3LRUvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 15:51:00 -0500
+Date: Wed, 18 Dec 2013 21:50:58 +0100
+From: Jan Kara <jack@suse.cz>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 2/3] block: Stop abusing rq->csd.list in blk-softirq
+Message-ID: <20131218205058.GC13685@quack.suse.cz>
+References: <1387387418-10005-1-git-send-email-jack@suse.cz>
+ <1387387418-10005-5-git-send-email-jack@suse.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312182150.39037.arnd@arndb.de>
-X-Provags-ID: V02:K0:+tKEwrJm6Cr+BaUfDQYdL3BqkOnTwj77dgoj/xOPU0K
- 11t9jDYQH7emhSdw5aiGJdrUKWq1GAUplbUqbJ/UdiKfbXK2tL
- mOmYNhBAu26yfDd83Fs5auQE+cCEICuWlBPeQR8aSD8NspW6sT
- kZCetp2QJm+toPF/VzlQjUoCNNp4SGKxWJtt9pTxNs6thTgSw2
- zWUQwzouYNv+0SESpYPryOBRtwES9ZlIKsBTzXBlkNXMYfgEdm
- g9nKyIRZVjgi3QkKD5GGB4BXwtXWWrQjfjhuJSlSU8Z61Zpt9h
- kjJOPID2iAj+C85pslcZ+h7A04TBvUvLe42UyASXfN34I/zVI2
- VLF4fMPT+EUsDQpp8mpU=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387387418-10005-5-git-send-email-jack@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 December 2013, Sergei Ianovich wrote:
-> On Mon, 2013-12-16 at 18:56 +0100, Arnd Bergmann wrote:
-> > Ok, I see. This sounds like some of the other platforms we have with
-> > external memory buses. If there is a chance that Linux ever has to
-> > program the per-CS settings into the bus controller, I would suggest
-> > to represent that as well as a separate node, like this
+On Wed 18-12-13 18:23:36, Jan Kara wrote:
+> Abusing rq->csd.list for a list of requests to complete is rather ugly.
+> Especially since using queuelist should be safe and much cleaner.
+  This is the correct patch 2/3.
+
+								Honza
 > 
-> This is a platform-specific bus (PXA27x). Should it go into pxa27x.dtsi
-> rather than machine dts?
-
-Yes, that was the idea.
-
-> > In case there is a driver for the extbus node, I would not make it
-> > "simple-bus" but instead add a separate compatible string to match
-> > the driver, and let that driver call of_platform_populate
-> > to probe the children after the bus is set up.
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  block/blk-softirq.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
 > 
-> There seems to be none at the moment. However, some machines need to
-> setup these partitions as a part of their initialization. So complete
-> migration to DT will require this driver.
+> diff --git a/block/blk-softirq.c b/block/blk-softirq.c
+> index 57790c1a97eb..7ea5534096d5 100644
+> --- a/block/blk-softirq.c
+> +++ b/block/blk-softirq.c
+> @@ -30,8 +30,8 @@ static void blk_done_softirq(struct softirq_action *h)
+>  	while (!list_empty(&local_list)) {
+>  		struct request *rq;
+>  
+> -		rq = list_entry(local_list.next, struct request, csd.list);
+> -		list_del_init(&rq->csd.list);
+> +		rq = list_entry(local_list.next, struct request, queuelist);
+> +		list_del_init(&rq->queuelist);
+>  		rq->q->softirq_done_fn(rq);
+>  	}
+>  }
+> @@ -45,9 +45,9 @@ static void trigger_softirq(void *data)
+>  
+>  	local_irq_save(flags);
+>  	list = this_cpu_ptr(&blk_cpu_done);
+> -	list_add_tail(&rq->csd.list, list);
+> +	list_add_tail(&rq->queuelist, list);
+>  
+> -	if (list->next == &rq->csd.list)
+> +	if (list->next == &rq->queuelist)
+>  		raise_softirq_irqoff(BLOCK_SOFTIRQ);
+>  
+>  	local_irq_restore(flags);
+> @@ -136,7 +136,7 @@ void __blk_complete_request(struct request *req)
+>  		struct list_head *list;
+>  do_local:
+>  		list = this_cpu_ptr(&blk_cpu_done);
+> -		list_add_tail(&req->csd.list, list);
+> +		list_add_tail(&req->queuelist, list);
+>  
+>  		/*
+>  		 * if the list only contains our just added request,
+> @@ -144,7 +144,7 @@ do_local:
+>  		 * entries there, someone already raised the irq but it
+>  		 * hasn't run yet.
+>  		 */
+> -		if (list->next == &req->csd.list)
+> +		if (list->next == &req->queuelist)
+>  			raise_softirq_irqoff(BLOCK_SOFTIRQ);
+>  	} else if (raise_blk_irq(ccpu, req))
+>  		goto do_local;
+> -- 
+> 1.8.1.4
 > 
-> In LP-8x4x case everything is setup by the bootloader. So "simple-bus"
-> works for me.
-
-Hmm, this is a bit tricky then. I think it would be best to not
-use "simple-bus" then, to allow migrating the other platforms later,
-but that will be a little more work. Maybe you can register a trivial
-driver in the platform code that only calls of_platform_populate on
-the device for now?
-
-	Arnd
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
