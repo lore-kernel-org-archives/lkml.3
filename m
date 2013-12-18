@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755024Ab3LRRL5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 12:11:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35137 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752600Ab3LRRL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 12:11:56 -0500
-Date: Wed, 18 Dec 2013 09:10:44 -0800
-From: Zach Brown <zab@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-Message-ID: <20131218171044.GK14533@lenny.home.zabbo.net>
-References: <1378919210-10372-1-git-send-email-zab@redhat.com>
- <20131218124126.GA15328@infradead.org>
+	id S1755215Ab3LRRNZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 12:13:25 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:39063 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753427Ab3LRRNX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 12:13:23 -0500
+X-Auth-Info: kUNsh7yj55uSFSTlEyvM963CPk5jUWrJslnU6f4oAhw=
+From: Marek Vasut <marex@denx.de>
+To: Luis Henriques <luis.henriques@canonical.com>
+Subject: Re: [PATCH 3.5 057/103] HID: add quirk for Freescale i.MX23 ROM recovery
+Date: Wed, 18 Dec 2013 18:13:20 +0100
+User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Jiri Kosina <jkosina@suse.cz>
+References: <1387304012-23805-1-git-send-email-luis.henriques@canonical.com> <201312172039.03504.marex@denx.de> <20131218161613.GC4452@hercules>
+In-Reply-To: <20131218161613.GC4452@hercules>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131218124126.GA15328@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312181813.20923.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 04:41:26AM -0800, Christoph Hellwig wrote:
-> On Wed, Sep 11, 2013 at 10:06:47AM -0700, Zach Brown wrote:
-> > When I first started on this stuff I followed the lead of previous
-> > work and added a new syscall for the copy operation:
-> > 
-> > https://lkml.org/lkml/2013/5/14/618
-> > 
-> > Towards the end of that thread Eric Wong asked why we didn't just
-> > extend splice.  I immediately replied with some dumb dismissive
-> > answer.  Once I sat down and looked at it, though, it does make a
-> > lot of sense.  So good job, Eric.  +10 Dummie points for me.
-> > 
-> > Extending splice avoids all the noise of adding a new syscall and
-> > naturally falls back to buffered copying as that's what the direct
-> > splice path does for sendfile() today.
+On Wednesday, December 18, 2013 at 05:16:13 PM, Luis Henriques wrote:
+> Hi Marek,
 > 
-> Given the convolute mess that the splice code already is I'd rather
-> prefer not overloading it even further.
+> On Tue, Dec 17, 2013 at 08:39:03PM +0100, Marek Vasut wrote:
+> > On Tuesday, December 17, 2013 at 07:12:46 PM, Luis Henriques wrote:
+> > > 3.5.7.28 -stable review patch.  If anyone has any objections, please
+> > > let me know.
+> > 
+> > Hi,
+> > 
+> > while I cannot test this anymore as I don't have these machines with
+> > ubuntu 12.04.3 available anymore (I won't do a distro war, don't worry
+> > :) ), I have two simple questions:
+> > 
+> > a) Will you be able to pick the other two patches from [1] ?
+> 
+> Sure, if you believe these 2 patches are applicable to the 3.5 extended
+> stable kernel, I can queue them for the next release.
 
-I agree after trying to weave the copy offloading API into the splice
-interface.  There are also weird cases that we haven't really discussed
-so far (preserving unwritten allocations between the copied files?) that
-would muddy the waters even further.
+Thank you!
 
-The further the APIs drift from each other, the more I'm prefering
-giving copy offloading its own clean syscall.  Even if the argument
-types superficially match the splice() ABI.
+> > b) Will these patches make it into ubuntu 12.03.n ?
+> 
+> Please note that this is the 3.5 extended stable kernel, not an Ubuntu
+> kernel -- it follows the same rules as the official stable kernels.
+> Eventually, this kernel release will be picked by the Ubuntu Quantal kernel
+> (which is based on 3.5).
 
-> We can still fall back to the splice code as a fallback if no option
-> is provided as a last resort, but I think making the splice code handle
-> even more totally different cases is the wrong direction.
+Sure, I am not an ubuntu expert so sorry about the misplaced question.
 
-I'm with you.  I'll have another version out sometime after the US
-holiday break.. say in a few weeks?
+> > I will have these machines available in january again, so I will be able
+> > to test.
+> > 
+> > Thank you!
+> > 
+> > [1] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1258332
+> > 
+> > Best regards,
+> > Marek Vasut
+> 
+> Cheers,
+> --
+> Luis
 
-- z
+Best regards,
+Marek Vasut
