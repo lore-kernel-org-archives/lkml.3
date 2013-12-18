@@ -1,125 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab3LRNRx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 08:17:53 -0500
-Received: from relay.parallels.com ([195.214.232.42]:54279 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754356Ab3LRNRG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 08:17:06 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3/6] memcg, slab: cleanup barrier usage when accessing memcg_caches
-Date: Wed, 18 Dec 2013 17:16:54 +0400
-Message-ID: <bd0a7ffc57e4a0b0c3d456c0cf8801e829e14717.1387372122.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
-References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
+	id S1753962Ab3LRNV7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 08:21:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21382 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751443Ab3LRNV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 08:21:58 -0500
+Date: Wed, 18 Dec 2013 14:23:49 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
+        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v4 9/9] PCI/MSI: Introduce pci_auto_enable_msi*() family
+ helpers
+Message-ID: <20131218132349.GA29552@dhcp-26-207.brq.redhat.com>
+References: <cover.1387140921.git.agordeev@redhat.com>
+ <bbf6f73ef3e16e5dfd7d41fc1e4412f641acb0f3.1387140921.git.agordeev@redhat.com>
+ <20131218003002.GA15119@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131218003002.GA15119@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First, in memcg_create_kmem_cache() we should issue the write barrier
-after the kmem_cache is initialized, but before storing the pointer to
-it in its parent's memcg_params.
+On Tue, Dec 17, 2013 at 05:30:02PM -0700, Bjorn Helgaas wrote:
 
-Second, we should always issue the read barrier after
-cache_from_memcg_idx() to conform with the write barrier.
+Hi Bjorn,
 
-Third, its better to use smp_* versions of barriers, because we don't
-need them on UP systems.
+Thank you for the review!
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Glauber Costa <glommer@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- mm/memcontrol.c |   24 ++++++++++--------------
- mm/slab.h       |    6 +++++-
- 2 files changed, 15 insertions(+), 15 deletions(-)
+Sorry for a heavy skipping - I just wanted to focus on a principal
+moment in your suggestion and then go on with the original note.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index e6ad6ff..e37fdb5 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3429,12 +3429,14 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
- 
- 	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
- 
--	cachep->memcg_params->memcg_caches[idx] = new_cachep;
- 	/*
--	 * the readers won't lock, make sure everybody sees the updated value,
--	 * so they won't put stuff in the queue again for no reason
-+	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
-+	 * barrier here to ensure nobody will see the kmem_cache partially
-+	 * initialized.
- 	 */
--	wmb();
-+	smp_wmb();
-+
-+	cachep->memcg_params->memcg_caches[idx] = new_cachep;
- out:
- 	mutex_unlock(&memcg_cache_mutex);
- 	return new_cachep;
-@@ -3573,7 +3575,7 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
- 					  gfp_t gfp)
- {
- 	struct mem_cgroup *memcg;
--	int idx;
-+	struct kmem_cache *memcg_cachep;
- 
- 	VM_BUG_ON(!cachep->memcg_params);
- 	VM_BUG_ON(!cachep->memcg_params->is_root_cache);
-@@ -3587,15 +3589,9 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
- 	if (!memcg_can_account_kmem(memcg))
- 		goto out;
- 
--	idx = memcg_cache_id(memcg);
--
--	/*
--	 * barrier to mare sure we're always seeing the up to date value.  The
--	 * code updating memcg_caches will issue a write barrier to match this.
--	 */
--	read_barrier_depends();
--	if (likely(cache_from_memcg_idx(cachep, idx))) {
--		cachep = cache_from_memcg_idx(cachep, idx);
-+	memcg_cachep = cache_from_memcg_idx(cachep, memcg_cache_id(memcg));
-+	if (likely(memcg_cachep)) {
-+		cachep = memcg_cachep;
- 		goto out;
- 	}
- 
-diff --git a/mm/slab.h b/mm/slab.h
-index 0859c42..1d8b53f 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -163,9 +163,13 @@ static inline const char *cache_name(struct kmem_cache *s)
- static inline struct kmem_cache *
- cache_from_memcg_idx(struct kmem_cache *s, int idx)
- {
-+	struct kmem_cache *cachep;
-+
- 	if (!s->memcg_params)
- 		return NULL;
--	return s->memcg_params->memcg_caches[idx];
-+	cachep = s->memcg_params->memcg_caches[idx];
-+	smp_read_barrier_depends();	/* see memcg_register_cache() */
-+	return cachep;
- }
- 
- static inline struct kmem_cache *memcg_root_cache(struct kmem_cache *s)
+> I only see five users of pci_enable_msi_block() (nvme, ath10k, wil6210,
+> ipr, vfio); we can easily convert those to use pci_enable_msi_range() and
+> then remove pci_enable_msi_block().
+
+> It would be good if pci_enable_msix() could be implemented in terms of
+> pci_enable_msix_range(nvec, nvec), with a little extra glue to handle the
+> positive return values.
+
+So you want to get rid of the tri-state "low-level" pci_enable_msi_block()
+and pci_enable_msix(), right? I believe we can not do this, since we need
+to support a non-standard hardware which (a) can not be asked any arbitrary
+number of vectors within a range and (b) needs extra magic to enable MSI
+operation.
+
+I.e. below is a snippet from a real device driver Mark Lord has sent in a
+previous conversation:
+
+        xx_disable_all_irqs(dev);
+        do {
+            	if (nvec < 2)
+                        xx_prep_for_1_msix_vector(dev);
+                else if (nvec < 4)
+                        xx_prep_for_2_msix_vectors(dev);
+                else if (nvec < 8)
+                        xx_prep_for_4_msix_vectors(dev);
+                else if (nvec < 16)
+                        xx_prep_for_8_msix_vectors(dev);
+                else
+                    	xx_prep_for_16_msix_vectors(dev);
+                nvec = pci_enable_msix(dev->pdev, dev->irqs, dev->num_vectors);
+       	} while (nvec > 0);
+
+The same probably could have been done with pci_enable_msix_range(nvec, nvec)
+call and checking for -ENOSPC errno, but IMO it would be less graceful and
+reliable, since -ENOSPC might come from anywhere.
+
+IOW, I believe we need to keep the door open for custom MSI-enablement (loop)
+implementations.
+
 -- 
-1.7.10.4
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
