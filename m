@@ -1,101 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab3LRO7G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 09:59:06 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:23810 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754913Ab3LRO7E (ORCPT
+	id S1755298Ab3LRO7u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 09:59:50 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:55906 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755083Ab3LRO7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 09:59:04 -0500
-Date: Wed, 18 Dec 2013 09:57:54 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        mukesh.rathor@oracle.com, jbeulich@suse.com
-Subject: Re: [Xen-devel] [PATCH v11 02/12] xen/pvh: Define what an PVH guest
- is.
-Message-ID: <20131218145754.GB4934@phenom.dumpdata.com>
-References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
- <1387313503-31362-3-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.02.1312181421260.8667@kaball.uk.xensource.com>
+	Wed, 18 Dec 2013 09:59:48 -0500
+Message-ID: <52B1B868.8010807@cogentembedded.com>
+Date: Wed, 18 Dec 2013 18:59:52 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312181421260.8667@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Apelete Seketeli <apelete@seketeli.net>, linux-usb@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH v2 1/3] mips: qi_lb60: add defconfig for Ben NanoNote
+References: <1387324561-21578-1-git-send-email-apelete@seketeli.net> <1387324561-21578-2-git-send-email-apelete@seketeli.net>
+In-Reply-To: <1387324561-21578-2-git-send-email-apelete@seketeli.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 02:22:35PM +0000, Stefano Stabellini wrote:
-> On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> > From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > 
-> > Which is a PV guest with auto page translation enabled
-> > and with vector callback. It is a cross between PVHVM and PV.
-> > 
-> > The Xen side defines PVH as (from docs/misc/pvh-readme.txt,
-> > with modifications):
-> > 
-> > "* the guest uses auto translate:
-> >  - p2m is managed by Xen
-> >  - pagetables are owned by the guest
-> >  - mmu_update hypercall not available
-> > * it uses event callback and not vlapic emulation,
-> > * IDT is native, so set_trap_table hcall is also N/A for a PVH guest.
-> > 
-> > For a full list of hcalls supported for PVH, see pvh_hypercall64_table
-> > in arch/x86/hvm/hvm.c in xen.  From the ABI prespective, it's mostly a
-> > PV guest with auto translate, although it does use hvm_op for setting
-> > callback vector."
-> > 
-> > We don't have yet a Kconfig entry setup as we do not
-> > have all the parts ready for it - so we piggyback
-> > on the PVHVM config option. This scaffolding will
-> > be removed later.
-> > 
-> > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> Could you please add an "&& CONFIG_X86"?
+Hello.
 
-I think that CONFIG_XEN_PVHVM is only X86 anyhow.
+On 18-12-2013 3:55, Apelete Seketeli wrote:
 
-And the XEN_PVH is going to be X86 as well - so it would always
-be turned off on ARM.
+> Add defconfig for the Ben NanoNote handheld computer which is built
+> around QI_LB60 board and Ingenic JZ4740 MIPS SoC.
 
-I can of course add it in - but it might not neccessary?
-> 
-> 
-> >  include/xen/xen.h | 9 +++++++++
-> >  1 file changed, 9 insertions(+)
-> > 
-> > diff --git a/include/xen/xen.h b/include/xen/xen.h
-> > index a74d436..1d6a237 100644
-> > --- a/include/xen/xen.h
-> > +++ b/include/xen/xen.h
-> > @@ -29,4 +29,13 @@ extern enum xen_domain_type xen_domain_type;
-> >  #define xen_initial_domain()	(0)
-> >  #endif	/* CONFIG_XEN_DOM0 */
-> >  
-> > +#ifdef CONFIG_XEN_PVHVM
-> > +/* Temporarily under XEN_PVHVM, but will be under CONFIG_XEN_PVH */
-> > +#include <xen/features.h>
-> > +#define xen_pvh_domain() (xen_pv_domain() && \
-> > +			  xen_feature(XENFEAT_auto_translated_physmap) && \
-> > +			  xen_have_vector_callback)
-> > +#else
-> > +#define xen_pvh_domain()	(0)
-> > +#endif
-> >  #endif	/* _XEN_XEN_H */
-> > -- 
-> > 1.8.3.1
-> > 
-> > 
-> > _______________________________________________
-> > Xen-devel mailing list
-> > Xen-devel@lists.xen.org
-> > http://lists.xen.org/xen-devel
-> > 
+> Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
+> ---
+>   arch/mips/configs/qi_lb60_defconfig |  188 +++++++++++++++++++++++++++++++++++
+>   1 file changed, 188 insertions(+)
+>   create mode 100644 arch/mips/configs/qi_lb60_defconfig
+
+    This should be sent to linux-mips@linux-mips.org and pushed thru the MIPS 
+tree. No need to send this patch to linux-usb.
+
+WBR, Sergei
+
