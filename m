@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab3LRVYh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:24:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36554 "EHLO
+	id S1755184Ab3LRVY4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:24:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36552 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752634Ab3LRVOC (ORCPT
+	with ESMTP id S1754429Ab3LRVOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:14:02 -0500
+	Wed, 18 Dec 2013 16:14:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.12 092/118] dm thin: allow pool in read-only mode to transition to read-write mode
-Date: Wed, 18 Dec 2013 13:12:09 -0800
-Message-Id: <20131218211222.059520187@linuxfoundation.org>
+Subject: [PATCH 3.12 091/118] dm thin: re-establish read-only state when switching to fail mode
+Date: Wed, 18 Dec 2013 13:12:08 -0800
+Message-Id: <20131218211222.031885653@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -30,122 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joe Thornber <ejt@redhat.com>
 
-commit 9b7aaa64f96f7ca280d75326fca42f42017b89ef upstream.
+commit 5383ef3a929a1366e2ced45cd6d74be7aa2a2281 upstream.
 
-A thin-pool may be in read-only mode because the pool's data or metadata
-space was exhausted.  To allow for recovery, by adding more space to the
-pool, we must allow a pool to transition from PM_READ_ONLY to PM_WRITE
-mode.  Otherwise, running out of space will render the pool permanently
-read-only.
+If the thin-pool transitioned to fail mode and the thin-pool's table
+were reloaded for some reason: the new table's default pool mode would
+be read-write, though it will transition to fail mode during resume.
+
+When the pool mode transitions directly from PM_WRITE to PM_FAIL we need
+to re-establish the intermediate read-only state in both the metadata
+and persistent-data block manager (as is usually done with the normal
+pool mode transition sequence: PM_WRITE -> PM_READ_ONLY -> PM_FAIL).
 
 Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin-metadata.c                 |    8 ++++++++
- drivers/md/dm-thin-metadata.h                 |    1 +
- drivers/md/dm-thin.c                          |   12 ++++++++++--
- drivers/md/persistent-data/dm-block-manager.c |    6 ++++++
- drivers/md/persistent-data/dm-block-manager.h |    7 ++++---
- 5 files changed, 29 insertions(+), 5 deletions(-)
+ drivers/md/dm-thin.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/md/dm-thin-metadata.c
-+++ b/drivers/md/dm-thin-metadata.c
-@@ -1697,6 +1697,14 @@ void dm_pool_metadata_read_only(struct d
- 	up_write(&pmd->root_lock);
- }
- 
-+void dm_pool_metadata_read_write(struct dm_pool_metadata *pmd)
-+{
-+	down_write(&pmd->root_lock);
-+	pmd->read_only = false;
-+	dm_bm_set_read_write(pmd->bm);
-+	up_write(&pmd->root_lock);
-+}
-+
- int dm_pool_register_metadata_threshold(struct dm_pool_metadata *pmd,
- 					dm_block_t threshold,
- 					dm_sm_threshold_fn fn,
---- a/drivers/md/dm-thin-metadata.h
-+++ b/drivers/md/dm-thin-metadata.h
-@@ -193,6 +193,7 @@ int dm_pool_resize_metadata_dev(struct d
-  * that nothing is changing.
-  */
- void dm_pool_metadata_read_only(struct dm_pool_metadata *pmd);
-+void dm_pool_metadata_read_write(struct dm_pool_metadata *pmd);
- 
- int dm_pool_register_metadata_threshold(struct dm_pool_metadata *pmd,
- 					dm_block_t threshold,
 --- a/drivers/md/dm-thin.c
 +++ b/drivers/md/dm-thin.c
-@@ -1425,6 +1425,7 @@ static void set_pool_mode(struct pool *p
- 		break;
- 
- 	case PM_WRITE:
-+		dm_pool_metadata_read_write(pool->pmd);
- 		pool->process_bio = process_bio;
- 		pool->process_discard = process_discard;
- 		pool->process_prepared_mapping = process_prepared_mapping;
-@@ -1641,12 +1642,19 @@ static int bind_control_target(struct po
- 	struct pool_c *pt = ti->private;
- 
- 	/*
--	 * We want to make sure that degraded pools are never upgraded.
-+	 * We want to make sure that a pool in PM_FAIL mode is never upgraded.
- 	 */
- 	enum pool_mode old_mode = pool->pf.mode;
- 	enum pool_mode new_mode = pt->adjusted_pf.mode;
- 
--	if (old_mode > new_mode)
-+	/*
-+	 * If we were in PM_FAIL mode, rollback of metadata failed.  We're
-+	 * not going to recover without a thin_repair.  So we never let the
-+	 * pool move out of the old mode.  On the other hand a PM_READ_ONLY
-+	 * may have been due to a lack of metadata or data space, and may
-+	 * now work (ie. if the underlying devices have been resized).
-+	 */
-+	if (old_mode == PM_FAIL)
- 		new_mode = old_mode;
- 
- 	pool->ti = ti;
---- a/drivers/md/persistent-data/dm-block-manager.c
-+++ b/drivers/md/persistent-data/dm-block-manager.c
-@@ -626,6 +626,12 @@ void dm_bm_set_read_only(struct dm_block
- }
- EXPORT_SYMBOL_GPL(dm_bm_set_read_only);
- 
-+void dm_bm_set_read_write(struct dm_block_manager *bm)
-+{
-+	bm->read_only = false;
-+}
-+EXPORT_SYMBOL_GPL(dm_bm_set_read_write);
-+
- u32 dm_bm_checksum(const void *data, size_t len, u32 init_xor)
- {
- 	return crc32c(~(u32) 0, data, len) ^ init_xor;
---- a/drivers/md/persistent-data/dm-block-manager.h
-+++ b/drivers/md/persistent-data/dm-block-manager.h
-@@ -108,9 +108,9 @@ int dm_bm_unlock(struct dm_block *b);
- int dm_bm_flush_and_unlock(struct dm_block_manager *bm,
- 			   struct dm_block *superblock);
- 
-- /*
--  * Request data be prefetched into the cache.
--  */
-+/*
-+ * Request data is prefetched into the cache.
-+ */
- void dm_bm_prefetch(struct dm_block_manager *bm, dm_block_t b);
- 
- /*
-@@ -125,6 +125,7 @@ void dm_bm_prefetch(struct dm_block_mana
-  * be returned if you do.
-  */
- void dm_bm_set_read_only(struct dm_block_manager *bm);
-+void dm_bm_set_read_write(struct dm_block_manager *bm);
- 
- u32 dm_bm_checksum(const void *data, size_t len, u32 init_xor);
- 
+@@ -1400,6 +1400,7 @@ static void set_pool_mode(struct pool *p
+ 	case PM_FAIL:
+ 		DMERR("%s: switching pool to failure mode",
+ 		      dm_device_name(pool->pool_md));
++		dm_pool_metadata_read_only(pool->pmd);
+ 		pool->process_bio = process_bio_fail;
+ 		pool->process_discard = process_bio_fail;
+ 		pool->process_prepared_mapping = process_prepared_mapping_fail;
 
 
