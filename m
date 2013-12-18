@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab3LRWM5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:12:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35903 "EHLO
+	id S1756316Ab3LRWNf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:13:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35893 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab3LRVLz (ORCPT
+	with ESMTP id S1752881Ab3LRVLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:11:55 -0500
+	Wed, 18 Dec 2013 16:11:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian Carnes <bmcarnes@gmail.com>, Jean Delvare <khali@linux-fr.org>
-Subject: [PATCH 3.10 19/78] hwmon: (w83l786ng) Fix fan speed control mode setting and reporting
-Date: Wed, 18 Dec 2013 13:10:47 -0800
-Message-Id: <20131218211112.446945568@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Roger Lucas <vt8231@hiddenengine.co.uk>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [PATCH 3.10 17/78] hwmon: Prevent some divide by zeros in FAN_TO_REG()
+Date: Wed, 18 Dec 2013 13:10:45 -0800
+Message-Id: <20131218211112.391854002@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -28,43 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Carnes <bmcarnes@gmail.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit cf7559bc053471f32373d71d04a9aa19e0b48d59 upstream.
+commit 3806b45ba4655147a011df03242cc197ab986c43 upstream.
 
-The wrong mask is used, which causes some fan speed control modes
-(pwmX_enable) to be incorrectly reported, and some modes to be
-impossible to set.
+The "rpm * div" operations can overflow here, so this patch adds an
+upper limit to rpm to prevent that.  Jean Delvare helped me with this
+patch.
 
-[JD: add subject and description.]
-
-Signed-off-by: Brian Carnes <bmcarnes@gmail.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Roger Lucas <vt8231@hiddenengine.co.uk>
 Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/w83l786ng.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/hwmon/lm78.c    |    2 ++
+ drivers/hwmon/sis5595.c |    2 ++
+ drivers/hwmon/vt8231.c  |    2 +-
+ 3 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/hwmon/w83l786ng.c
-+++ b/drivers/hwmon/w83l786ng.c
-@@ -510,7 +510,7 @@ store_pwm_enable(struct device *dev, str
- 	mutex_lock(&data->update_lock);
- 	reg = w83l786ng_read_value(client, W83L786NG_REG_FAN_CFG);
- 	data->pwm_enable[nr] = val;
--	reg &= ~(0x02 << W83L786NG_PWM_ENABLE_SHIFT[nr]);
-+	reg &= ~(0x03 << W83L786NG_PWM_ENABLE_SHIFT[nr]);
- 	reg |= (val - 1) << W83L786NG_PWM_ENABLE_SHIFT[nr];
- 	w83l786ng_write_value(client, W83L786NG_REG_FAN_CFG, reg);
- 	mutex_unlock(&data->update_lock);
-@@ -776,7 +776,7 @@ static struct w83l786ng_data *w83l786ng_
- 			    ((pwmcfg >> W83L786NG_PWM_MODE_SHIFT[i]) & 1)
- 			    ? 0 : 1;
- 			data->pwm_enable[i] =
--			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 2) + 1;
-+			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 3) + 1;
- 			data->pwm[i] = w83l786ng_read_value(client,
- 			    W83L786NG_REG_PWM[i]);
- 		}
+--- a/drivers/hwmon/lm78.c
++++ b/drivers/hwmon/lm78.c
+@@ -94,6 +94,8 @@ static inline u8 FAN_TO_REG(long rpm, in
+ {
+ 	if (rpm <= 0)
+ 		return 255;
++	if (rpm > 1350000)
++		return 1;
+ 	return clamp_val((1350000 + rpm * div / 2) / (rpm * div), 1, 254);
+ }
+ 
+--- a/drivers/hwmon/sis5595.c
++++ b/drivers/hwmon/sis5595.c
+@@ -141,6 +141,8 @@ static inline u8 FAN_TO_REG(long rpm, in
+ {
+ 	if (rpm <= 0)
+ 		return 255;
++	if (rpm > 1350000)
++		return 1;
+ 	return clamp_val((1350000 + rpm * div / 2) / (rpm * div), 1, 254);
+ }
+ 
+--- a/drivers/hwmon/vt8231.c
++++ b/drivers/hwmon/vt8231.c
+@@ -145,7 +145,7 @@ static const u8 regtempmin[] = { 0x3a, 0
+  */
+ static inline u8 FAN_TO_REG(long rpm, int div)
+ {
+-	if (rpm == 0)
++	if (rpm <= 0 || rpm > 1310720)
+ 		return 0;
+ 	return clamp_val(1310720 / (rpm * div), 1, 255);
+ }
 
 
