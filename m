@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942Ab3LRTQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 14:16:35 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56663 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755771Ab3LRTPk (ORCPT
+	id S1755967Ab3LRTRC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 14:17:02 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:5852 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755766Ab3LRTQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 14:15:40 -0500
-Message-Id: <20131218190806.370008594@infradead.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 18 Dec 2013 20:08:06 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: geert@linux-m68k.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, VICTORK@il.ibm.com, oleg@redhat.com,
-        anton@samba.org, benh@kernel.crashing.org, fweisbec@gmail.com,
-        mathieu.desnoyers@polymtl.ca, michael@ellerman.id.au,
-        mikey@neuling.org, linux@arm.linux.org.uk, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, tony.luck@intel.com,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 0/4] arch: Introduce smp_load_acquire() and smp_store_release()
+	Wed, 18 Dec 2013 14:16:59 -0500
+Date: Wed, 18 Dec 2013 14:16:56 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 0/2] localmodconfig / ALSA: hda - Have codecs be
+ disabled by localmodconfig
+Message-ID: <20131218141656.7dfae8fc@gandalf.local.home>
+In-Reply-To: <s5hd2kuj7yw.wl%tiwai@suse.de>
+References: <20131218173519.265509723@goodmis.org>
+	<s5hd2kuj7yw.wl%tiwai@suse.de>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 18 Dec 2013 20:05:11 +0100
+Takashi Iwai <tiwai@suse.de> wrote:
 
-This should hopefully be the last posting of this series -- people felt it
-needed one more mostly because last time I typoed the linux-kernel email
-address.
+ 
+> Well, as mentioned in the mail thread, I'm afraid that people don't
+> like to see yet doubled kconfig items just for workarounds by this
+> approach.  So it'd be likely better not to restrict but just let users
+> choose tristate.  I already submitted the patches (the same ones as
+> attached before) to alsa-devel ML.
 
-If there are no further comments, Ingo will merge these patches in the next few
-days.
+Sure, that's why I added the RFC.
 
----
+> 
+> Another thing we may add is a warning like:
+> 
+> ================================================================
+> config SND_HDA_CODEC_REALTEK
+> 	tristate "Build Realtek HD-audio codec support"
+> 	select SND_HDA_GENERIC
+> 	help
+> 	  Say Y or M here to include Realtek HD-audio codec support in
+> 	  snd-hda-intel driver, such as ALC880.
+> 
+> comment "Set to Y if you want auto-loading the codec driver"
+> 	depends on SND_HDA_CODEC_REALTEK && SND_HDA_INTEL != SND_HDA_CODEC_REALTEK
+> ================================================================
+> 
+> The comment won't break make localmodconfig, right?
 
-These patches introduce 2 new barrier primitives:
+Nope, it shouldn't affect localmodconfig at all.
 
-  smp_load_acquire(p)
-  smp_store_release(p, v)
+> This should be intuitive enough for avoiding pitfalls, I hope.
 
-See the first patch, which changes Documentation/memory-barriers.txt, to find
-the exact definitions of what an ACQUIRE/RELEASE barrier is -- previously known
-as LOCK/UNLOCK barriers.
+But the first patch still needs to be added. I'll just send that out by
+itself.
 
-The second patch moves the smp_mb__{before,after}_atomic_{dec,inc}() barriers
-to asm/atomic.h for arc and hexagon -- they were already there for all other archs.
+Thanks,
 
-This cleans up asm/barrier.h, and the third patch makes more agressive use of
-asm-generic/barrier.h to implement the simple cases.
-
-Then the fourth patch adds the new primitives.
-
-Previous versions were widely build tested -- this version is not, but it also
-not significantly different.
-
-These patches apply to:
-
-  tip/master
-
-
----
-Changes since the last version -- lkml.kernel.org/r/20131213145657.265414969@infradead.org
-
- - fixed linux-kernel email address
- - updated the Documentation patch
-
+-- Steve
