@@ -1,132 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab3LRTOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 14:14:44 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:44371 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083Ab3LRTOm (ORCPT
+	id S1755897Ab3LRTPo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 14:15:44 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56661 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755691Ab3LRTPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 14:14:42 -0500
-Message-ID: <52B1F41D.2020506@linaro.org>
-Date: Wed, 18 Dec 2013 11:14:37 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>, xen-devel@lists.xen.org,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH 2/3] timekeeping: Fix potential lost pv notification of
- time change
-References: <1387308457-25364-1-git-send-email-john.stultz@linaro.org> <1387308457-25364-3-git-send-email-john.stultz@linaro.org> <20131218100807.GC19319@gmail.com> <52B1ECF5.2000204@linaro.org>
-In-Reply-To: <52B1ECF5.2000204@linaro.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Dec 2013 14:15:39 -0500
+Message-Id: <20131218191222.971162775@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 18 Dec 2013 20:08:08 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: geert@linux-m68k.org, paulmck@linux.vnet.ibm.com,
+        torvalds@linux-foundation.org, VICTORK@il.ibm.com, oleg@redhat.com,
+        anton@samba.org, benh@kernel.crashing.org, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca, michael@ellerman.id.au,
+        mikey@neuling.org, linux@arm.linux.org.uk, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, tony.luck@intel.com,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 2/4] arch: Move smp_mb__{before,after}_atomic_{inc,dec}.h into asm/atomic.h
+References: <20131218190806.370008594@infradead.org>
+Content-Disposition: inline; filename=peterz-arch-move-atomic-barriers.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 10:44 AM, John Stultz wrote:
-> On 12/18/2013 02:08 AM, Ingo Molnar wrote:
->> * John Stultz <john.stultz@linaro.org> wrote:
->>
->>> In 780427f0e11 (Indicate that clock was set in the pvclock
->>> gtod notifier), logic was added to pass a CLOCK_WAS_SET
->>> notification to the pvclock notifier chain.
->>>
->>> While that patch added a action flag returned from
->>> accumulate_nsecs_to_secs(), it only uses the returned value
->>> in one location, and not in the logarithmic accumulation.
->>>
->>> This means if a leap second triggered during the logarithmic
->>> accumulation (which is most likely where it would happen),
->>> the notification that the clock was set would not make it to
->>> the pv notifiers.
->>>
->>> This patch extends the logarithmic_accumulation pass down
->>> that action flag so proper notification will occur.
->>>
->>> Cc: Sasha Levin <sasha.levin@oracle.com>
->>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>> Cc: Ingo Molnar <mingo@kernel.org>
->>> Cc: David Vrabel <david.vrabel@citrix.com>
->>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->>> Cc: Prarit Bhargava <prarit@redhat.com>
->>> Cc: Richard Cochran <richardcochran@gmail.com>
->>> Cc: <xen-devel@lists.xen.org>
->>> Cc: stable <stable@vger.kernel.org> #3.11+
->>> Signed-off-by: John Stultz <john.stultz@linaro.org>
->>> ---
->>>  kernel/time/timekeeping.c | 10 +++++-----
->>>  1 file changed, 5 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
->>> index 6bad3d9..998ec751 100644
->>> --- a/kernel/time/timekeeping.c
->>> +++ b/kernel/time/timekeeping.c
->>> @@ -1295,7 +1295,7 @@ static inline unsigned int accumulate_nsecs_to_secs(struct timekeeper *tk)
->>>   * Returns the unconsumed cycles.
->>>   */
->>>  static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
->>> -						u32 shift)
->>> +						u32 shift, unsigned int *action)
->> I have two complaints about this patch:
->>
->> 1)
->>
->> I think the 'action' name sucks because it's too obfuscated. It's only 
->> ever set to TK_CLOCK_WAS_SET, so why not name it more descriptively, 
->> i.e. 'clock_was_set'?
-> Sure, I was reusing the existing variables, but no issue changing the
-> name here too.
->
->
->> 2)
->>
->> Secondly, the proliferation of parameters passed around I think calls 
->> for a helper structure which would carry the (offset, shift, 
->> clock_was_set) triple:
->>
->> 	struct acc_params {
->> 		cycle_t		offset;
->> 		u32		shift;
->> 		bool		clock_was_set;
->> 	};
->>
->> And then passed down like this:
->>
->>>  static cycle_t logarithmic_accumulation(struct timekeeper *tk, struct acc_params *params)
->> Agreed?
-> Huh. Ok, I don't see the parameters structure likely being reused, so
-> this would be a special struct only for the logarithmic_accumulation() call?
+Move the barriers functions that depend on the atomic implementation
+into the atomic implementation.
 
-The other downside to this is it really doesn't improve the read-ability
-of the update_wall_clock function, since
-we end either end up changing all the offset, shift, action references
-to param.* (which besides being a bit ugly, feels like way too much
-change for an urgent patch). The alternative is to only pack the
-structure right before we call which is ok, but seems like extra overhead.
+Acked-by: Vineet Gupta <vgupta@synopsys.com> [for arch/arc bits]
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/arc/include/asm/atomic.h      |    5 +++++
+ arch/arc/include/asm/barrier.h     |    5 -----
+ arch/hexagon/include/asm/atomic.h  |    6 +++++-
+ arch/hexagon/include/asm/barrier.h |    4 ----
+ 4 files changed, 10 insertions(+), 10 deletions(-)
 
-Also passing the structure to the function makes it a little more
-difficult to understand, as you lose the clarity of which values are
-input-only and which values are modified or set by the function.
+--- a/arch/arc/include/asm/atomic.h
++++ b/arch/arc/include/asm/atomic.h
+@@ -190,6 +190,11 @@ static inline void atomic_clear_mask(uns
+ 
+ #endif /* !CONFIG_ARC_HAS_LLSC */
+ 
++#define smp_mb__before_atomic_dec()	barrier()
++#define smp_mb__after_atomic_dec()	barrier()
++#define smp_mb__before_atomic_inc()	barrier()
++#define smp_mb__after_atomic_inc()	barrier()
++
+ /**
+  * __atomic_add_unless - add unless the number is a given value
+  * @v: pointer of type atomic_t
+--- a/arch/arc/include/asm/barrier.h
++++ b/arch/arc/include/asm/barrier.h
+@@ -30,11 +30,6 @@
+ #define smp_wmb()       barrier()
+ #endif
+ 
+-#define smp_mb__before_atomic_dec()	barrier()
+-#define smp_mb__after_atomic_dec()	barrier()
+-#define smp_mb__before_atomic_inc()	barrier()
+-#define smp_mb__after_atomic_inc()	barrier()
+-
+ #define smp_read_barrier_depends()      do { } while (0)
+ 
+ #endif
+--- a/arch/hexagon/include/asm/atomic.h
++++ b/arch/hexagon/include/asm/atomic.h
+@@ -160,8 +160,12 @@ static inline int __atomic_add_unless(at
+ #define atomic_sub_and_test(i, v) (atomic_sub_return(i, (v)) == 0)
+ #define atomic_add_negative(i, v) (atomic_add_return(i, (v)) < 0)
+ 
+-
+ #define atomic_inc_return(v) (atomic_add_return(1, v))
+ #define atomic_dec_return(v) (atomic_sub_return(1, v))
+ 
++#define smp_mb__before_atomic_dec()	barrier()
++#define smp_mb__after_atomic_dec()	barrier()
++#define smp_mb__before_atomic_inc()	barrier()
++#define smp_mb__after_atomic_inc()	barrier()
++
+ #endif
+--- a/arch/hexagon/include/asm/barrier.h
++++ b/arch/hexagon/include/asm/barrier.h
+@@ -29,10 +29,6 @@
+ #define smp_read_barrier_depends()	barrier()
+ #define smp_wmb()			barrier()
+ #define smp_mb()			barrier()
+-#define smp_mb__before_atomic_dec()	barrier()
+-#define smp_mb__after_atomic_dec()	barrier()
+-#define smp_mb__before_atomic_inc()	barrier()
+-#define smp_mb__after_atomic_inc()	barrier()
+ 
+ /*  Set a value and use a memory barrier.  Used by the scheduler somewhere.  */
+ #define set_mb(var, value) \
 
-I do agree that some of recent changes (particularly the
-shadow-timekeeping logic) has caused the code to feel a bit hairy and
-has caused a number of these warts where we're passing extra arguments.
-I've not had the time to take a deep look and see how things could be
-re-factored to be a bit cleaner. But the code definitely needs some cleanup.
-
-
-I'll re-factor the action->clock_was_set bit for this (urgent) patch
-series, but I may want to push back on trying to do the logarithmic
-accumulation parameters structure change for 3.14.
-
-thanks
--john
 
