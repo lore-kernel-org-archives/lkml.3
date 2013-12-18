@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab3LRWD3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:03:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61491 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259Ab3LRWD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 17:03:26 -0500
-Date: Wed, 18 Dec 2013 17:03:14 -0500
-From: Rik van Riel <riel@redhat.com>
+	id S1756149Ab3LRWD5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:03:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36037 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753217Ab3LRVMU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 16:12:20 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Chao Yang <chayang@redhat.com>, linux-mm@kvack.org,
-        akpm@linux-foundation.org, aarcange@redhat.com, mgorman@suse.de,
-        Veaceslav Falico <vfalico@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        David Rientjes <rientjes@google.com>,
-        Michel Lespinasse <walken@google.com>, Michal Hocko <mhocko@suse.cz>
-Subject: [PATCH] mm,numa,THP: initialize hstate for THP page size
-Message-ID: <20131218170314.1e57bea7@cuia.bos.redhat.com>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.10 42/78] iwlwifi: mvm: check sta_id/drain values in debugfs
+Date: Wed, 18 Dec 2013 13:11:10 -0800
+Message-Id: <20131218211113.091336216@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
+References: <20131218211111.903835960@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When hugetlbfs is started with a non-default page size, it is
-possible that no hstate is initialized for the page sized used
-by transparent huge pages.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-This causes copy_huge_page to crash on a null pointer. Make
-sure we always have an hpage initialized for the page sized
-used by THP.
+------------------
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reported-by: Chao Yang <chayang@redhat.com>
+From: Johannes Berg <johannes.berg@intel.com>
+
+commit 60765a47a433d54e4744c285ad127f182dcd80aa upstream.
+
+The station ID must be valid, if it's out of range then
+the array access may crash. Validate the station ID to
+the array length, and also validate the drain value even
+if that doesn't matter all that much.
+
+Fixes: 8ca151b568b6 ("iwlwifi: add the MVM driver")
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- mm/huge_memory.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/net/wireless/iwlwifi/mvm/debugfs.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 5749bcf..583e9d3 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -624,6 +624,13 @@ static int __init hugepage_init(void)
- 		return -EINVAL;
- 	}
+--- a/drivers/net/wireless/iwlwifi/mvm/debugfs.c
++++ b/drivers/net/wireless/iwlwifi/mvm/debugfs.c
+@@ -119,6 +119,10 @@ static ssize_t iwl_dbgfs_sta_drain_write
  
-+	/*
-+	 * Make sure an hstate is initialized for our page size,
-+	 * even if hugetlbfs is using a non-default page size.
-+	 */
-+	if (!size_to_hstate(PMD_PAGE_SIZE))
-+		hugetlb_add_hstate(HUGETLB_PAGE_ORDER);
-+
- 	err = hugepage_init_sysfs(&hugepage_kobj);
- 	if (err)
- 		return err;
+ 	if (sscanf(buf, "%d %d", &sta_id, &drain) != 2)
+ 		return -EINVAL;
++	if (sta_id < 0 || sta_id >= IWL_MVM_STATION_COUNT)
++		return -EINVAL;
++	if (drain < 0 || drain > 1)
++		return -EINVAL;
+ 
+ 	mutex_lock(&mvm->mutex);
+ 
 
 
--- 
-All Rights Reversed
