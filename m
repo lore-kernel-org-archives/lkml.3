@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab3LRRfc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 12:35:32 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:44155 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754631Ab3LRRfb (ORCPT
+	id S1755470Ab3LRRfj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 12:35:39 -0500
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:61315 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755438Ab3LRRfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 12:35:31 -0500
-Message-ID: <52B1EAF6.6080905@cogentembedded.com>
-Date: Wed, 18 Dec 2013 21:35:34 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 18 Dec 2013 12:35:36 -0500
+Date: Wed, 18 Dec 2013 14:35:28 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Arun Sharma <asharma@fb.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 01/18] perf sort: Compare addresses if no symbol info
+Message-ID: <20131218173528.GA4819@ghostprotocols.net>
+References: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
+ <1387344086-12744-2-git-send-email-namhyung@kernel.org>
+ <20131218153849.GF4146@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Josh Triplett <josh@joshtriplett.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        linux-ide@vger.kernel.org
-Subject: Re: [PATCH 1/2] drivers: ide: Include appropriate header file in
- ide-cd_verbose.c
-References: <d24d7befadfbfb9501d0e873f13e39fd42ec893b.1387278225.git.rashika.kheria@gmail.com> <20131217111920.GA30592@pd.tnic> <20131217164403.GD1062@leaf> <20131217175451.GI30592@pd.tnic> <52B0A93E.7090503@cogentembedded.com> <20131217190610.GJ30592@pd.tnic>
-In-Reply-To: <20131217190610.GJ30592@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131218153849.GF4146@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2013 10:06 PM, Borislav Petkov wrote:
+Em Wed, Dec 18, 2013 at 04:38:49PM +0100, Jiri Olsa escreveu:
+> On Wed, Dec 18, 2013 at 02:21:09PM +0900, Namhyung Kim wrote:
+> > From: Namhyung Kim <namhyung.kim@lge.com>
+> > 
+> > If a hist entry doesn't have symbol information, compare it with its
+> > address.  Currently it only compares its level or whether it's NULL.
+> > This can lead to an undesired result like an overhead exceeds 100%
+> > especially when callchain accumulation is enabled by later patch.
+> > 
+> > Cc: Stephane Eranian <eranian@google.com>
+> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> > ---
+> >  tools/perf/util/sort.c | 11 ++++++++---
+> >  1 file changed, 8 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+> > index 8b0bb1f4494a..68a4fd2f505e 100644
+> > --- a/tools/perf/util/sort.c
+> > +++ b/tools/perf/util/sort.c
+> > @@ -161,6 +161,11 @@ struct sort_entry sort_dso = {
+> >  
+> >  /* --sort symbol */
+> >  
+> > +static int64_t _sort__addr_cmp(u64 left_ip, u64 right_ip)
+> > +{
+> > +	return (int64_t)(right_ip - left_ip);
+> > +}
+> > +
+> 
+> what's the reason for the leading '_' in the name?
 
->> You're right in your doubting: there are quite a lot of drivers used
->> by embedded platforms that nobody has bothered to convert to libata
->> thus far.
+Yeah, I'm curious as well, the convention is to only use double _ in
+front of functions when it does a little less than a function of the
+same name without such prefix, like locking, etc.
 
-> Hold on, what does that mean? IDE is back from the dead and used only
-> for embedded stuff?
-
-    Like jazz, IDE "is not dead, it just smells funny".
-
-> Or we force people to convert drivers to libata by *deleting* ide?
-
-    I hope not. To me, it would be a shame e.g. to delete more or less 
-well-designed IDE taskfile interface to the ad-hockery that libata has in its 
-place...
-
-> :-)
-
-WBR, Sergei
-
+- Arnaldo
+ 
+> otherwise:
+> 
+> Acked-by: Jiri Olsa <jolsa@redhat.com>
+> 
+> jirka
