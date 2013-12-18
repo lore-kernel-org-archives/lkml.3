@@ -1,359 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab3LRNe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 08:34:56 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:40713 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064Ab3LRNey (ORCPT
+	id S1754369Ab3LRNfH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 08:35:07 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:46985 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab3LRNfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 08:34:54 -0500
+	Wed, 18 Dec 2013 08:35:04 -0500
+Date: Wed, 18 Dec 2013 14:34:39 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
+ tracing units
+Message-ID: <20131218133439.GR21999@twins.programming.kicks-ass.net>
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1386765443-26966-5-git-send-email-alexander.shishkin@linux.intel.com>
+ <20131217161126.GL13532@twins.programming.kicks-ass.net>
+ <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <s5heh5aux8r.wl%tiwai@suse.de>
-References: <s5hk3f2v15r.wl%tiwai@suse.de>
-	<1387367283-20078-1-git-send-email-dh.herrmann@gmail.com>
-	<s5heh5aux8r.wl%tiwai@suse.de>
-Date: Wed, 18 Dec 2013 14:34:53 +0100
-Message-ID: <CANq1E4QZuB_iBcnfUd=Kr1LYqKUoWykriT0wyacZYjcjHcSFMw@mail.gmail.com>
-Subject: Re: [RFC] x86: sysfb: remove sysfb when probing real hw
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Wed, Dec 18, 2013 at 03:23:41PM +0200, Alexander Shishkin wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
+> 
+> > On Wed, Dec 11, 2013 at 02:36:16PM +0200, Alexander Shishkin wrote:
+> >> Instruction tracing PMUs are capable of recording a log of instruction
+> >> execution flow on a cpu core, which can be useful for profiling and crash
+> >> analysis. This patch adds itrace infrastructure for perf events and the
+> >> rest of the kernel to use.
+> >> 
+> >> Since such PMUs can produce copious amounts of trace data, it may be
+> >> impractical to process it inside the kernel in real time, but instead export
+> >> raw trace streams to userspace for subsequent analysis. Thus, itrace PMUs
+> >> may export their trace buffers, which can be mmap()ed to userspace from a
+> >> perf event fd with a PERF_EVENT_ITRACE_OFFSET offset. To that end, perf
+> >> is extended to work with multiple ring buffers per event, reusing the
+> >> ring_buffer code in an attempt to reduce complexity.
+> >
+> > Please read the thread here: https://lkml.org/lkml/2008/12/4/64
+> >
+> > On my thoughts of this creative mmap() usage.
+> 
+> That's unfortunate, it made sense to me. But let's then have a look at
+> the alternative approaches. Bearing in mind that it is crucial for us to
+> export trace buffers to userspace as opposed to processing the trace
+> data in the kernel, the fact that we still need the normal perf data
+> stream and your dislike for mmap trickery, we need two separate file
+> descriptors: one for the perf data and one for the trace data.
 
-On Wed, Dec 18, 2013 at 2:03 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Wed, 18 Dec 2013 12:48:03 +0100,
-> David Herrmann wrote:
->>
->> If we probe a real hw driver for graphics devices, we need to unload any
->> generic fallback driver like efifb/vesafb/simplefb on the system
->> framebuffer. This is currently done via remove_conflicting_framebuffers()
->> in fbmem.c. However, this only removes the fbdev driver, not the fake
->> platform devices underneath. This hasn't been a problem so far, as efifb
->> and vesafb didn't store any resources there. However, with simplefb this
->> changed.
->>
->> To correctly release the IORESOURCE_MEM resources of simple-framebuffer
->> platform devices, we need to unregister the underlying platform device
->> *before* probing any new hw driver. This patch adds sysfb_unregister() for
->> that purpose. It can be called from any context (except from the
->> platform-device ->remove callback path) and synchronously unloads any
->> global sysfb and prevents new sysfbs from getting registered. Thus, you
->> can call it even before any sysfb has been loaded.
->>
->> This also changes remove_conflicting_framebuffer() to call this helper
->> *before* trying it's fbdev heuristic to remove conflicting drivers.
->>
->> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
->> ---
->> Hi
->>
->> This is imho the clean version of Takashi's fix. However, it gets pretty huge. I
->> wouldn't object to marking CONFIG_X86_SYSFB broken in the stable series and get
->> this in for 3.14. Your call..
->>
->> This patch basically simulates an unplug event for system-framebuffers when
->> loading real hardware drivers. To trigger it, call sysfb_unregister(). You can
->> optionally pass an aperture-struct and primary-flag similar to
->> remove_conflicting_framebuffers(). If they're not passed, we remove it
->> unconditionally.
->>
->> Untested, but my kernel compiles are already running. If my tests succeed and
->> nobody has objections, I can resend it as proper PATCH and marked for stable.
->> And maybe split the fbmem and sysfb changes into two patches..
->>
->> Thanks
->> David
->>
->>  arch/x86/include/asm/sysfb.h     |  10 ++++
->>  arch/x86/kernel/sysfb.c          | 103 +++++++++++++++++++++++++++++++++++++--
->>  arch/x86/kernel/sysfb_simplefb.c |   5 +-
->>  drivers/video/fbmem.c            |  16 ++++++
->>  4 files changed, 128 insertions(+), 6 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/sysfb.h b/arch/x86/include/asm/sysfb.h
->> index 2aeb3e2..713bc17 100644
->> --- a/arch/x86/include/asm/sysfb.h
->> +++ b/arch/x86/include/asm/sysfb.h
->> @@ -11,6 +11,7 @@
->>   * any later version.
->>   */
->>
->> +#include <linux/fb.h>
->>  #include <linux/kernel.h>
->>  #include <linux/platform_data/simplefb.h>
->>  #include <linux/screen_info.h>
->> @@ -59,6 +60,15 @@ struct efifb_dmi_info {
->>       int flags;
->>  };
->>
->> +__init struct platform_device *sysfb_alloc(const char *name,
->> +                                        int id,
->> +                                        const struct resource *res,
->> +                                        unsigned int res_num,
->> +                                        const void *data,
->> +                                        size_t data_size);
->> +__init int sysfb_register(struct platform_device *dev);
->> +void sysfb_unregister(const struct apertures_struct *apert, bool primary);
->> +
->>  #ifdef CONFIG_EFI
->>
->>  extern struct efifb_dmi_info efifb_dmi_list[];
->> diff --git a/arch/x86/kernel/sysfb.c b/arch/x86/kernel/sysfb.c
->> index 193ec2c..3d4554e 100644
->> --- a/arch/x86/kernel/sysfb.c
->> +++ b/arch/x86/kernel/sysfb.c
->> @@ -33,11 +33,106 @@
->>  #include <linux/init.h>
->>  #include <linux/kernel.h>
->>  #include <linux/mm.h>
->> +#include <linux/mutex.h>
->>  #include <linux/platform_data/simplefb.h>
->>  #include <linux/platform_device.h>
->>  #include <linux/screen_info.h>
->>  #include <asm/sysfb.h>
->>
->> +static DEFINE_MUTEX(sysfb_lock);
->> +static struct platform_device *sysfb_dev;
->> +
->> +/* register @dev as sysfb; takes ownership over @dev */
->> +__init int sysfb_register(struct platform_device *dev)
->> +{
->> +     int r = 0;
->> +
->> +     mutex_lock(&sysfb_lock);
->> +     if (!sysfb_dev) {
->> +             r = platform_device_add(dev);
->> +             if (r < 0)
->> +                     put_device(&dev->dev);
->> +             else
->> +                     sysfb_dev = dev;
->> +     } else {
->> +             /* if there already is/was a sysfb, destroy @pd but return 0 */
->> +             platform_device_put(dev);
->> +     }
->> +     mutex_unlock(&sysfb_lock);
->> +
->> +     return r;
->> +}
->
->
-> Since sysfb_alloc() always follows sysfb_register() and they are
-> always coupled, we can simply combine both to one?
-
-We actually cannot call sysfb_register() for efi/vesa-framebuffer as
-they lack a ->remove() callback. I fixed that in v2. I will send a
-patch which adds ->remove() callbacks for vesafb and efifb later, but
-this shouldn't go into this fix.
-Furthermore, I think splitting them makes them easier to read.
-
-> Also, do we really need a mutex?  The functions in fbmem.c are already
-> in registeration_lock, so if this is called only from there, it should
-> be fine without an extra lock here.  So, the function can be
-> simplified like:
-
-They have to be called outside of the fb-mutex. We trigger the
-->remove() callback, which will call unregister_framebuffer() which
-will lock the fb-mutex => deadlock. And as
-remove_conflicting_framebuffers() can be called in parallel by many
-drivers, we need the lock in sysfb. We could use an
-atomic_test_and_dec(), but that might cause one removal to overtake
-the previous unregistration. Thus I added the mutex.
-
-Also note that with CONFIG_FB=n and the pending SimpleDRM driver, we
-will call sysfb_unregister() from outside of fbmem.c. If we depend on
-fbmem.c internal locks, we need to change it for 3.14/15 again.
-
-> int sysfb_register(const char *name, int id, const struct resource *res,
->                    unsigned int res_num, const void *data, size_t data_size)
-> {
->         struct platform_device *pdev;
->         if (sysfb_dev)
->                 return ret;
->         pdev = platform_device_register_resndata(....);
->         if (IS_ERR(pdev))
->                 return PTR_ERR(pdev);
->         sysfb_dev = pdev;
->         return 0;
-> }
->
->
->> +
->> +static bool sysfb_match(const struct apertures_struct *apert, bool primary)
->> +{
->> +     struct screen_info *si = &screen_info;
->> +     unsigned int i;
->> +     const struct aperture *a;
->> +
->> +     if (!apert || primary)
->> +             return true;
->> +
->> +     for (i = 0; i < apert->count; ++i) {
->> +             a = &apert->ranges[i];
->> +             if (a->base >= si->lfb_base &&
->> +                 a->base < si->lfb_base + ((u64)si->lfb_size << 16))
->> +                     return true;
->> +             if (si->lfb_base >= a->base &&
->> +                 si->lfb_base < a->base + a->size)
->> +                     return true;
->> +     }
->> +
->> +     return false;
->> +}
->> +
->> +/* unregister the sysfb and prevent new sysfbs from getting registered */
->> +void sysfb_unregister(const struct apertures_struct *apert, bool primary)
->> +{
->> +
->> +     mutex_lock(&sysfb_lock);
->> +     if (!IS_ERR(sysfb_dev)) {
->> +             if (sysfb_dev) {
->> +                     if (sysfb_match(apert, primary)) {
->> +                             platform_device_del(sysfb_dev);
->> +                             platform_device_put(sysfb_dev);
->> +                             sysfb_dev = ERR_PTR(-EALREADY);
->> +                     }
->> +             } else {
->> +                     sysfb_dev = ERR_PTR(-EALREADY);
->> +             }
->> +     }
->> +     mutex_unlock(&sysfb_lock);
->> +}
->
-> Simpler would be like:
->
-> void sysfb_unregister(const struct apertures_struct *apert, bool primary)
-> {
->         if (sysfb_dev && sysfb_match(apert, primary)) {
->                 platform_device_unregister(sysfb_dev);
->                 sysfb_dev = NULL;
->         }
-> }
-
-Nope, if sysfb_dev is NULL, I need to set it to ERR_PTR(-sth).
-Otherwise, imagine i915 getting loaded before sysfb_init(). It calls
-sysfb_unregister() without a registered sysfb and continues. A later
-sysfb_init() will then load sysfb anyway. With my code, this is
-prevented by setting sysfb_dev to ERR_PTR(-EALREADY).
-
-Maybe the device-init ordering prevents this, but I'm not entirely
-sure about this so lets be safe and have a strict ordering.
-
->
->> +
->> +__init struct platform_device *sysfb_alloc(const char *name,
->> +                                        int id,
->> +                                        const struct resource *res,
->> +                                        unsigned int res_num,
->> +                                        const void *data,
->> +                                        size_t data_size)
->> +{
->> +     struct platform_device *pd;
->> +     int ret;
->> +
->> +     pd = platform_device_alloc(name, id);
->> +     if (!pd)
->> +             return ERR_PTR(-ENOMEM);
->> +
->> +     ret = platform_device_add_resources(pd, res, res_num);
->> +     if (ret)
->> +             goto err;
->> +
->> +     ret = platform_device_add_data(pd, data, data_size);
->> +     if (ret)
->> +             goto err;
->> +
->> +     return pd;
->
-> I don't think we need to open-code this if we can use
-> platform_device_register_*() helper.
->
->
->> +
->> +err:
->> +     platform_device_put(pd);
->> +     return ERR_PTR(ret);
->> +}
->> +
->>  static __init int sysfb_init(void)
->>  {
->>       struct screen_info *si = &screen_info;
->> @@ -65,9 +160,11 @@ static __init int sysfb_init(void)
->>       else
->>               name = "platform-framebuffer";
->>
->> -     pd = platform_device_register_resndata(NULL, name, 0,
->> -                                            NULL, 0, si, sizeof(*si));
->> -     return IS_ERR(pd) ? PTR_ERR(pd) : 0;
->> +     pd = sysfb_alloc(name, 0, NULL, 0, si, sizeof(*si));
->> +     if (IS_ERR(pd))
->> +             return PTR_ERR(pd);
->> +
->> +     return sysfb_register(pd);
->>  }
->>
->>  /* must execute after PCI subsystem for EFI quirks */
->> diff --git a/arch/x86/kernel/sysfb_simplefb.c b/arch/x86/kernel/sysfb_simplefb.c
->> index 86179d4..8e7bd23 100644
->> --- a/arch/x86/kernel/sysfb_simplefb.c
->> +++ b/arch/x86/kernel/sysfb_simplefb.c
->> @@ -86,10 +86,9 @@ __init int create_simplefb(const struct screen_info *si,
->>       if (res.end <= res.start)
->>               return -EINVAL;
->>
->> -     pd = platform_device_register_resndata(NULL, "simple-framebuffer", 0,
->> -                                            &res, 1, mode, sizeof(*mode));
->> +     pd = sysfb_alloc("simple-framebuffer", 0, &res, 1, mode, sizeof(*mode));
->>       if (IS_ERR(pd))
->>               return PTR_ERR(pd);
->>
->> -     return 0;
->> +     return sysfb_register(pd);
->>  }
->> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
->> index 010d191..53e3894 100644
->> --- a/drivers/video/fbmem.c
->> +++ b/drivers/video/fbmem.c
->> @@ -35,6 +35,9 @@
->>
->>  #include <asm/fb.h>
->>
->> +#if IS_ENABLED(CONFIG_X86_SYSFB)
->> +#include <asm/sysfb.h>
->> +#endif
->>
->>      /*
->>       *  Frame buffer device initialization and setup routines
->> @@ -1604,6 +1607,14 @@ static void do_remove_conflicting_framebuffers(struct apertures_struct *a,
->>       }
->>  }
->>
->> +static void remove_conflicting_sysfb(const struct apertures_struct *apert,
->> +                                  bool primary)
->> +{
->> +#if IS_ENABLED(CONFIG_X86_SYSFB)
->> +     sysfb_unregister(apert, primary);
->> +#endif
->
-> I noticed that sysfb.c is built even without CONFIG_X86_SYSFB.
-> So this can be called even for non-sysfb case (which is also good to
-> release the unused platform_device).
->
-> That is, this (and the above) can be #ifdef CONFIG_X86 instead.
-
-Yepp, fixed.
-
-I will send v2 in a minute. I tested it on x86 with efifb+no-sysfb and
-simplefb+sysfb, both handovers worked fine.
-
-Thanks
-David
+Why don't you start by explaining _why_ you need a second stream to
+begin with?
