@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab3LRPiF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 10:38:05 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:37827 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754966Ab3LRPiC (ORCPT
+	id S1755370Ab3LRPig (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 10:38:36 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:63119 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754679Ab3LRPif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 10:38:02 -0500
-Message-ID: <52B1C143.8080301@oracle.com>
-Date: Wed, 18 Dec 2013 10:37:39 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 18 Dec 2013 10:38:35 -0500
+Message-ID: <52B1C17B.6060500@linaro.org>
+Date: Wed, 18 Dec 2013 16:38:35 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>, khlebnikov@openvz.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: mm: kernel BUG at include/linux/swapops.h:131!
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org
+CC: khilman@linaro.org, arnd@arndb.de, linux-sh@vger.kernel.org,
+        horms@verge.net.au, john.stultz@linaro.org, olof@lixom.net,
+        tglx@linutronix.de
+Subject: Re: [PATCH v5 00/03] clocksource: Consolidate SH and ARM mach-shmobile
+ Kconfig bits
+References: <20131217101212.17491.56898.sendpatchset@w520>
+In-Reply-To: <20131217101212.17491.56898.sendpatchset@w520>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 12/17/2013 11:12 AM, Magnus Damm wrote:
+> clocksource: Consolidate SH and ARM mach-shmobile Kconfig bits (v5)
+>
+> [PATCH v5 01/03] clocksource: Add Kconfig entries for CMT, MTU2, TMU and STI
+> [PATCH v5 02/03] ARM: shmobile: Remove CMT, TMU and STI Kconfig entries
+> [PATCH v5 03/03] sh: Remove Kconfig entries for TMU, CMT and MTU2
+>
+> This is V5 of the SH and ARM mach-shmobile clocksource Kconfig
+> consolidation series.
+>
+> By sharing Kconfig entires in drivers/clocksource/Kconfig we
+> can get rid of duplicated bits that do not belong under arch/.
+>
+> With this series applied it is possible to build the timer
+> drivers for CMT, MTU2, TMU and STI in case of SH or ARM. The timer
+> drivers are automatically selected by default. It is also possible
+> to select and/or deselect freely when COMPILE_TEST has been selected.
+>
+> Many thanks to Olof, John, Daniel and Arnd for feedback!
+>
+> Changes since V4:
+>   - Use SYS_SUPPORTS_SH/EM to avoid name space pollution, thanks Olof!
+>   - Remove old SH entries for SYS_SUPPORTS_xxx, use above SH prefix instead
+>
+> Changes since V3:
+>   - Updated patch 1/3 with more detailed help texts
+>   - Updated patch 2/3 to fit latest renesas-devel tag, see below
+>   - Included acks from John Stultz for patch 2/3 and 3/3
+>
+> Signed-off-by: Magnus Damm <damm@opensource.se>
+> ---
+>
+>   Written against renesas.git tag renesas-devel-v3.13-rc3-20131214v2
 
-While fuzzing with trinity inside a KVM tools guest running latest -next kernel, I've stumbled on 
-the following spew.
+Do you want me to take the patchset ? If so, could you respin it against 
+timers/core ?
 
-The code is in zap_pte_range():
+Thanks
+   -- Daniel
 
-                 if (!non_swap_entry(entry))
-                         rss[MM_SWAPENTS]--;
-                 else if (is_migration_entry(entry)) {
-                         struct page *page;
-
-                         page = migration_entry_to_page(entry);	<==== HERE
-
-                         if (PageAnon(page))
-                                 rss[MM_ANONPAGES]--;
-                         else
-                                 rss[MM_FILEPAGES]--;
+>
+>   arch/arm/mach-shmobile/Kconfig |   35 ++++++++----------
+>   arch/sh/Kconfig                |   76 ++++++++++++----------------------------
+>   drivers/clocksource/Kconfig    |   44 +++++++++++++++++++++++
+>   3 files changed, 84 insertions(+), 71 deletions(-)
+>
 
 
-[ 2622.589064] kernel BUG at include/linux/swapops.h:131!
-[ 2622.589064] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 2622.589064] Dumping ftrace buffer:
-[ 2622.589064]    (ftrace buffer empty)
-[ 2622.589064] Modules linked in:
-[ 2622.589064] CPU: 9 PID: 15984 Comm: trinity-child16 Tainted: G        W    3.13.0-rc
-4-next-20131217-sasha-00013-ga878504-dirty #4150
-[ 2622.589064] task: ffff88168346b000 ti: ffff8816561d8000 task.ti: ffff8816561d8000
-[ 2622.589064] RIP: 0010:[<ffffffff8127c730>]  [<ffffffff8127c730>] zap_pte_range+0x360
-/0x4a0
-[ 2622.589064] RSP: 0018:ffff8816561d9c18  EFLAGS: 00010246
-[ 2622.589064] RAX: ffffea00736a6600 RBX: ffff88200299d068 RCX: 0000000000000009
-[ 2622.589064] RDX: 022fffff80380000 RSI: ffffea0000000000 RDI: 3c00000001cda998
-[ 2622.589064] RBP: ffff8816561d9cb8 R08: 0000000000000000 R09: 0000000000000000
-[ 2622.589064] R10: 0000000000000001 R11: 0000000000000000 R12: 00007fc7ee20d000
-[ 2622.589064] R13: ffff8816561d9de8 R14: 000000039b53303c R15: 00007fc7ee29b000
-[ 2622.589064] FS:  00007fc7eeceb700(0000) GS:ffff882011a00000(0000) knlGS:000000000000
-0000
-[ 2622.589064] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 2622.589064] CR2: 000000000068c000 CR3: 0000000005c26000 CR4: 00000000000006e0
-[ 2622.589064] Stack:
-[ 2622.589064]  ffff8816561d9c58 0000000000000286 ffff88168327b060 ffff88168327b060
-[ 2622.589064]  00007fc700000160 ffff881667067b88 00000000c8f4b120 00ff88168327b060
-[ 2622.589064]  ffff88168327b060 ffff8820051a8600 0000000000000000 ffff88168327b000
-[ 2622.589064] Call Trace:
-[ 2622.589064]  [<ffffffff8127cc5e>] unmap_page_range+0x3ee/0x400
-[ 2622.589064]  [<ffffffff8127cd71>] unmap_single_vma+0x101/0x120
-[ 2622.589064]  [<ffffffff8127cdf1>] unmap_vmas+0x61/0xa0
-[ 2622.589064]  [<ffffffff81283980>] exit_mmap+0xd0/0x170
-[ 2622.589064]  [<ffffffff8112d430>] mmput+0x70/0xe0
-[ 2622.589064]  [<ffffffff8113144d>] exit_mm+0x18d/0x1a0
-[ 2622.589064]  [<ffffffff811defb5>] ? acct_collect+0x175/0x1b0
-[ 2622.589064]  [<ffffffff8113389f>] do_exit+0x24f/0x500
-[ 2622.589064]  [<ffffffff81133bf9>] do_group_exit+0xa9/0xe0
-[ 2622.589064]  [<ffffffff81133c47>] SyS_exit_group+0x17/0x20
-[ 2622.589064]  [<ffffffff843a6150>] tracesys+0xdd/0xe2
-[ 2622.589064] Code: 83 f8 1f 75 46 48 b8 ff ff ff ff ff ff ff 01 48 be 00 00 00 00 00 ea ff ff 48 
-21 f8 48 c1 e0 06 48 01 f0 48 8b 10 80 e2 01 75 0a <0f> 0b 66 0f 1f 44 00 00 eb fe f6 40 08 01 74 05 
-ff 4d c4 eb 0b
-[ 2622.589064] RIP  [<ffffffff8127c730>] zap_pte_range+0x360/0x4a0
-[ 2622.589064]  RSP <ffff8816561d9c18>
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
