@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab3LRO4V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 09:56:21 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:36119 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754612Ab3LRO4U (ORCPT
+	id S1755008Ab3LRO5Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 09:57:16 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:49662 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754693Ab3LRO5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 09:56:20 -0500
-Date: Wed, 18 Dec 2013 15:56:12 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH 05/13] rcu: Fix unraised IPI to timekeeping CPU
-Message-ID: <20131218145610.GE18464@localhost.localdomain>
-References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
- <1387320692-28460-6-git-send-email-fweisbec@gmail.com>
- <20131217232100.GC19211@linux.vnet.ibm.com>
- <20131218141348.GA18464@localhost.localdomain>
- <20131218142240.GP19211@linux.vnet.ibm.com>
+	Wed, 18 Dec 2013 09:57:14 -0500
+Date: Wed, 18 Dec 2013 09:56:02 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        mukesh.rathor@oracle.com, jbeulich@suse.com
+Subject: Re: [Xen-devel] [PATCH v11 11/12] xen/pvh: Disable PV code that does
+ not work with PVH.
+Message-ID: <20131218145602.GA4934@phenom.dumpdata.com>
+References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
+ <1387313503-31362-12-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1312181416230.8667@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131218142240.GP19211@linux.vnet.ibm.com>
+In-Reply-To: <alpine.DEB.2.02.1312181416230.8667@kaball.uk.xensource.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 06:22:40AM -0800, Paul E. McKenney wrote:
+On Wed, Dec 18, 2013 at 02:19:28PM +0000, Stefano Stabellini wrote:
+> On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> > From: Mukesh Rathor <mukesh.rathor@oracle.com>
 > > 
-> > Exactly, the interrupt alone is sufficient and the tick is reevaluated
-> > on irq_exit().
+> > As we do not have yet a mechanism for that.
+> > 
+> > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > 
-> But if that is the case, why do you need the change to scheduler_ipi()
-> in patch 07/13?  Just having received any sort of IPI should suffice.
+> Even though we don't even compile cpu_hotplug on ARM yet, I don't like
+> this change because it affects ARM guests too.
 
-Because scheduler_ipi() conditionally calls irq_enter() and irq_exit()
-(I wonder if that's a good idea btw, is that here to deal with spurious
-scheduler IPIs of some sort?)
+Perhaps then just #ifdef it with CONFIG_X86 for right now?
 
-And it's convenient because it can be called anywhere, even when irqs
-are disabled, unlike kernel/smp.c IPIs.
+> 
+> Please add a note about ARM guests in the FIXME line.
 
-But I agree it's kind of an abuse of scheduler_ipi() here. Well I'm going
-to develop that in my answers to Peter as he has concerns precisely about that.
-
-Thanks.
+Good idea. Is the offline/online part working in ARM? Or is that it
+has not been tested?
+> 
+> 
+> >  drivers/xen/cpu_hotplug.c | 4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/xen/cpu_hotplug.c b/drivers/xen/cpu_hotplug.c
+> > index cc6513a..cbb02af 100644
+> > --- a/drivers/xen/cpu_hotplug.c
+> > +++ b/drivers/xen/cpu_hotplug.c
+> > @@ -4,6 +4,7 @@
+> >  
+> >  #include <xen/xen.h>
+> >  #include <xen/xenbus.h>
+> > +#include <xen/features.h>
+> >  
+> >  #include <asm/xen/hypervisor.h>
+> >  #include <asm/cpu.h>
+> > @@ -102,7 +103,8 @@ static int __init setup_vcpu_hotplug_event(void)
+> >  	static struct notifier_block xsn_cpu = {
+> >  		.notifier_call = setup_cpu_watcher };
+> >  
+> > -	if (!xen_pv_domain())
+> > +	/* PVH TBD/FIXME: future work */
+> > +	if (!xen_pv_domain() || xen_feature(XENFEAT_auto_translated_physmap))
+> >  		return -ENODEV;
+> >  
+> >  	register_xenstore_notifier(&xsn_cpu);
+> 
