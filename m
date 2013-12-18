@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab3LRPS6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 10:18:58 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:50355 "EHLO zene.cmpxchg.org"
+	id S1755253Ab3LRPTV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 10:19:21 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:45993 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754878Ab3LRPS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 10:18:57 -0500
-Date: Wed, 18 Dec 2013 10:18:46 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/6] Configurable fair allocation zone policy v3
-Message-ID: <20131218151846.GM21724@cmpxchg.org>
-References: <1387298904-8824-1-git-send-email-mgorman@suse.de>
- <20131217200210.GG21724@cmpxchg.org>
- <20131218145111.GA27510@dhcp22.suse.cz>
+	id S1755094Ab3LRPTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 10:19:19 -0500
+X-IronPort-AV: E=Sophos;i="4.95,508,1384300800"; 
+   d="scan'208";a="85773757"
+Date: Wed, 18 Dec 2013 15:18:45 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Ian Campbell <Ian.Campbell@citrix.com>, <david.vrabel@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] allow xenfb initialization for hvm guests
+In-Reply-To: <20131218151422.GF4934@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1312181517400.8667@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1312171738550.8667@kaball.uk.xensource.com> <1387367482.27441.123.camel@kazak.uk.xensource.com> <20131218151422.GF4934@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131218145111.GA27510@dhcp22.suse.cz>
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 03:51:11PM +0100, Michal Hocko wrote:
-> On Tue 17-12-13 15:02:10, Johannes Weiner wrote:
-> [...]
-> > +pagecache_mempolicy_mode:
-> > +
-> > +This is available only on NUMA kernels.
-> > +
-> > +Per default, the configured memory policy is applicable to anonymous
-> > +memory, shmem, tmpfs, etc., whereas pagecache is allocated in an
-> > +interleaving fashion over all allowed nodes (hardbindings and
-> > +zone_reclaim_mode excluded).
-> > +
-> > +The assumption is that, when it comes to pagecache, users generally
-> > +prefer predictable replacement behavior regardless of NUMA topology
-> > +and maximizing the cache's effectiveness in reducing IO over memory
-> > +locality.
+On Wed, 18 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> On Wed, Dec 18, 2013 at 11:51:22AM +0000, Ian Campbell wrote:
+> > On Tue, 2013-12-17 at 17:53 +0000, Stefano Stabellini wrote:
+> > > There is no reasons why an HVM guest shouldn't be allowed to use xenfb.
+> > > As a matter of fact ARM guests, HVM from Linux POV, can use xenfb.
+> > > Given that no Xen toolstacks configure a xenfb backend for x86 HVM
+> > > guests, they are not affected.
+> > 
+> > and if a toolstack did I think it would be reasonable to expect the
+> > kernel to at least try and drive it!
+> > 
+> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > 
+> > Acked-by: Ian Campbell <ian.campbell@citrix.com>
 > 
-> Isn't page spreading (PF_SPREAD_PAGE) intended to do the same thing
-> semantically? The setting is per-cpuset rather than global which makes
-> it harder to use but essentially it tries to distribute page cache pages
-> across all the nodes.
->
-> This is really getting confusing. We have zone_reclaim_mode to keep
-> memory local in general, pagecache_mempolicy_mode to keep page cache
-> local and PF_SPREAD_PAGE to spread the page cache around nodes.
+> I think David Vrabel is going to Nack it unless there is a test-case.
+> 
+> I am saying that because in his previous statement for Wei's multi-page
+> patches was that if there are no users (or at least no test-cases) then
+> it should not be part of the kernel.
 
-zone_reclaim_mode is a global setting to go through great lengths to
-stay on local nodes, intended to be used depending on the hardware,
-not the workload.
+Well there is one: ARM. There isn't one on x86.
 
-Mempolicy on the other hand is to optimize placement for maximum
-locality depending on access patterns of a workload or even just the
-subset of a workload.  I'm trying to change whether this applies to
-page cache (due to different locality / cache effectiveness tradeoff)
-and we want to provide pagecache_mempolicy_mode to revert in the field
-in case this is a mistake.
-
-PF_SPREAD_PAGE becomes implied per default and should eventually be
-removed.
-
+http://marc.info/?l=xen-devel&m=138730150806639&w=2
