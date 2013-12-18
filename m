@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab3LRVXq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:23:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36571 "EHLO
+	id S1754458Ab3LRVOE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:14:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36533 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754470Ab3LRVOF (ORCPT
+	with ESMTP id S1754385Ab3LRVN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:14:05 -0500
+	Wed, 18 Dec 2013 16:13:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.12 096/118] HID: kye: Fix missing break in kye_report_fixup()
-Date: Wed, 18 Dec 2013 13:12:13 -0800
-Message-Id: <20131218211222.169733670@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Robin Gong <b38343@freescale.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.12 045/118] regulator: pfuze100: Fix address of FABID
+Date: Wed, 18 Dec 2013 13:11:22 -0800
+Message-Id: <20131218211220.749002425@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -28,34 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 0a5f99cfff2297f6c350b7f54878cbbf1b1253d5 upstream.
+commit a1b6fa85c639ad0d5447d1a5e7d1463bbe29fcd3 upstream.
 
-The change to support Genius Manticore Keyboard also changed behaviour
-for Genius Gx Imperator Keyboard, as there is no break between the
-cases.  This is presumably a mistake.
+According to the datasheet, the address of FABID is 0x4. Fix it.
 
-Reported by Coverity as CID 1134029.
-
-Fixes: 4a2c94c9b6c0 ('HID: kye: Add report fixup for Genius Manticore Keyboard')
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Robin Gong <b38343@freescale.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-kye.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/regulator/pfuze100-regulator.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hid/hid-kye.c
-+++ b/drivers/hid/hid-kye.c
-@@ -341,6 +341,7 @@ static __u8 *kye_report_fixup(struct hid
- 	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
- 		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
- 					"Genius Gx Imperator Keyboard");
-+		break;
- 	case USB_DEVICE_ID_GENIUS_MANTICORE:
- 		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
- 					"Genius Manticore Keyboard");
+--- a/drivers/regulator/pfuze100-regulator.c
++++ b/drivers/regulator/pfuze100-regulator.c
+@@ -38,7 +38,7 @@
+ 
+ #define PFUZE100_DEVICEID	0x0
+ #define PFUZE100_REVID		0x3
+-#define PFUZE100_FABID		0x3
++#define PFUZE100_FABID		0x4
+ 
+ #define PFUZE100_SW1ABVOL	0x20
+ #define PFUZE100_SW1CVOL	0x2e
 
 
