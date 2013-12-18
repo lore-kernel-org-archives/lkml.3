@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486Ab3LRHRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 02:17:48 -0500
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:56119 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751264Ab3LRHRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 02:17:47 -0500
-Message-ID: <52B14C10.4060709@cs.wisc.edu>
-Date: Wed, 18 Dec 2013 01:17:36 -0600
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
+	id S1752063Ab3LRHVW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 02:21:22 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:49301 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab3LRHVU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 02:21:20 -0500
+X-AuditID: 9c93017e-b7c17ae000003961-e7-52b14cedb344
+Date: Wed, 18 Dec 2013 16:21:17 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: possible regression on 3.13 when calling flush_dcache_page
+Message-ID: <20131218072117.GA2383@lge.com>
+References: <20131212143149.GI12099@ldesroches-Latitude-E6320>
+ <20131212143618.GJ12099@ldesroches-Latitude-E6320>
+ <20131213015909.GA8845@lge.com>
+ <20131216144343.GD9627@ldesroches-Latitude-E6320>
 MIME-Version: 1.0
-To: Vaughan Cao <vaughan.cao@oracle.com>
-CC: James.Bottomley@suse.de, open-iscsi@googlegroups.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iscsi: conn error (1020) each time iscsi session logout
-References: <1387349221-18501-1-git-send-email-vaughan.cao@oracle.com>
-In-Reply-To: <1387349221-18501-1-git-send-email-vaughan.cao@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131216144343.GD9627@ldesroches-Latitude-E6320>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 12:47 AM, Vaughan Cao wrote:
-> We do a normal login/logout process to iscsi server. iscsiadm report success,
-> but we always see the following error just before conn shutdown in dmesg.
+On Mon, Dec 16, 2013 at 03:43:43PM +0100, Ludovic Desroches wrote:
+> Hello,
 > 
-> Oct 15 05:30:09 vmhodtest019 iscsid: Connection1:0 to [target:
-> iqn.1986-03.com.sun:02:7b863a18-045a-cb04-c686-841f17df2f9c, portal:
-> 10.182.32.162,3260] through [iface: default] is operational now
-> Oct 15 05:30:42 vmhodtest019 kernel:  connection1:0: detected conn error
-> (1020)
-> Oct 15 05:30:42 vmhodtest019 iscsid: Connection1:0 to [target:
-> iqn.1986-03.com.sun:02:7b863a18-045a-cb04-c686-841f17df2f9c, portal:
-> 10.182.32.162,3260] through [iface: default] is shutdown.
+> On Fri, Dec 13, 2013 at 10:59:09AM +0900, Joonsoo Kim wrote:
+> > On Thu, Dec 12, 2013 at 03:36:19PM +0100, Ludovic Desroches wrote:
+> > > fix mmc mailing list address error
+> > > 
+> > > On Thu, Dec 12, 2013 at 03:31:50PM +0100, Ludovic Desroches wrote:
+> > > > Hi,
+> > > > 
+> > > > With v3.13-rc3 I have an error when the atmel-mci driver calls
+> > > > flush_dcache_page (log at the end of the message).
+> > > > 
+> > > > Since I didn't have it before, I did a git bisect and the commit introducing
+> > > > the error is the following one:
+> > > > 
+> > > > 106a74e slab: replace free and inuse in struct slab with newly introduced active
+> > > > 
+> > > > I don't know if this commit has introduced a bug or if it has revealed a bug
+> > > > in the atmel-mci driver.
+> > 
+> > Hello,
+> > 
+> > I think that this commit may not introduce a bug. This patch remove one
+> > variable on slab management structure and replace variable name. So there
+> > is no functional change.
+> > 
 > 
-> It's because iscsi_tcp module evaluates socket state in data_ready() callback,
->  and that detect the socket close. However, this socket close on target peer 
-> is in response to the logout request from initiator. So this is not an error 
-> that should be reported out. I quiesce it by checking session state and err 
-> value accordingly.
+> If I have reverted this patch and other ones you did on top of it and
+> the issue disappear.
+
+Hello,
+
+Could you give me your '/proc/slabinfo' before/after this commit (106a74e)?
+
+And how about testing with artificially increasing size of struct slab on
+top of this commit (106a74e)?
+
+I really wonder why the problem happens, because this doesn't cause any
+functional change as far as I know. Only side-effect from this patch is
+decreasing size of struct slab.
+
+Thanks.
+
+diff --git a/mm/slab.c b/mm/slab.c
+index 2ec2336..d2240fd 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -174,6 +174,7 @@ struct slab {
+        struct {
+                struct list_head list;
+                void *s_mem;            /* including colour offset */
++               unsigned int x;
+                unsigned int active;    /* num of objs active in slab */
+        };
+ };
+
 > 
-> Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
-> ---
->  drivers/scsi/libiscsi.c | 6 ++++++
->  1 file changed, 6 insertions(+)
+> > I doubt that side-effect of this patch reveals a bug in other place.
+> > Side-effect is reduced memory usage for slab management structure. It would
+> > makes some slabs have more objects with more density since slab management
+> > structure is sometimes on the page for objects. So if it diminishes, more
+> > objects can be in the page.
+> > 
+> > Anyway, I will look at it more. If you have any progress, please let me know.
 > 
-> diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-> index 415f2c0..84171ef 100644
-> --- a/drivers/scsi/libiscsi.c
-> +++ b/drivers/scsi/libiscsi.c
-> @@ -1360,6 +1360,12 @@ void iscsi_conn_failure(struct iscsi_conn *conn, enum iscsi_err err)
->  		spin_unlock_bh(&session->lock);
->  		return;
->  	}
-> +	/* Target closed the connection in response to logout */
-> +	if (session->state == ISCSI_STATE_LOGGING_OUT &&
-> +		err == ISCSI_ERR_TCP_CONN_CLOSE) {
-> +		spin_unlock_bh(&session->lock);
-> +		return;
-> +	}
->  
->  	if (conn->stop_stage == 0)
->  		session->state = ISCSI_STATE_FAILED;
-> 
-
-
-Someone just sent a patch for this.
-
-commit c712495e687e221b00bddae96247dbf6ffbc6200
-Author: Chris Leech <cleech@redhat.com>
-Date:   Thu Sep 26 09:09:44 2013 -0700
-
-    [SCSI] iscsi_tcp: consider session state in iscsi_sw_sk_state_check
-
-
+> No progress at the moment.
