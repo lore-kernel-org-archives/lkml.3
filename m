@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab3LRKf0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 05:35:26 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44796 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754323Ab3LRKeD (ORCPT
+	id S1754594Ab3LRKfo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 05:35:44 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:45987 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab3LRKfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 05:34:03 -0500
-Date: Wed, 18 Dec 2013 02:33:07 -0800
-From: tip-bot for Wanpeng Li <tipbot@zytor.com>
-Message-ID: <tip-82897b4fd3920ffd2456731d4f2ae1406558ef4c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        liwanp@linux.vnet.ibm.com, peterz@infradead.org,
-        n-horiguchi@ah.jp.nec.com, riel@redhat.com, akpm@linux-foundation.org,
-        mgorman@suse.de, tglx@linutronix.de, rientjes@google.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        liwanp@linux.vnet.ibm.com, peterz@infradead.org,
-        n-horiguchi@ah.jp.nec.com, riel@redhat.com, akpm@linux-foundation.org,
-        mgorman@suse.de, tglx@linutronix.de, rientjes@google.com
-In-Reply-To: <1386833006-6600-3-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1386833006-6600-3-git-send-email-liwanp@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/numa:
-  Use wrapper function task_faults_idx to calculate index in group_faults
-Git-Commit-ID: 82897b4fd3920ffd2456731d4f2ae1406558ef4c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 18 Dec 2013 05:35:42 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 18 Dec 2013 02:33:13 -0800 (PST)
+In-Reply-To: <20131218100553.GB3314@katana>
+References: <20131217023745.24573.3660.sendpatchset@w520>
+	<20131217023804.24573.82351.sendpatchset@w520>
+	<20131217210403.GA1196@katana>
+	<CANqRtoRn--Ze3ayoag71iYTKXEG1eNa8qyXEAJ7vCZhRo5yHPw@mail.gmail.com>
+	<20131218100553.GB3314@katana>
+Date: Wed, 18 Dec 2013 19:35:40 +0900
+Message-ID: <CANqRtoTXKkNvX3eq7NTZepn64XcRr9vj_EavLrk6HxKuTwv4-A@mail.gmail.com>
+Subject: Re: [PATCH 02/05 v2] pinctrl: sh-pfc: r7s72100 base support
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  82897b4fd3920ffd2456731d4f2ae1406558ef4c
-Gitweb:     http://git.kernel.org/tip/82897b4fd3920ffd2456731d4f2ae1406558ef4c
-Author:     Wanpeng Li <liwanp@linux.vnet.ibm.com>
-AuthorDate: Thu, 12 Dec 2013 15:23:25 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 17 Dec 2013 15:24:40 +0100
+On Wed, Dec 18, 2013 at 7:05 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+>
+>> >> +#define _P_DATA(bank, pin, name, sfx)                                        \
+>> >> +     PINMUX_DATA(name##_DATA, name##_PMC_0, name##_PIPC_0,           \
+>> >> +                 name##_PIBC_1, name##_PBDC_1)
+>> >> +
+>> >> +#define _P_FN(n, fn, pfcae, pfce, pfc)                                       \
+>> >> +     PINMUX_DATA(n##_MARK_FN##fn, n##_PMC_1, n##_PIPC_1,             \
+>> >> +                 n##_PFCAE_##pfcae, n##_PFCE_##pfce, n##_PFC_##pfc)
+>> >
+>> > I need to apply this patch, otherwise my i2c pinmuxing fails?
+>>
+>> Thanks. It looks to me like the _P_FN() bits would be mainly needed.
+>> Can you try to omit the _P_DATA() portion and check if it is still
+>> behaving as expected?
+>
+> Nope, doesn't work.
 
-sched/numa: Use wrapper function task_faults_idx to calculate index in group_faults
+Ok, thanks for checking!
 
-Use wrapper function task_faults_idx to calculate index in group_faults.
-
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>
-Link: http://lkml.kernel.org/r/1386833006-6600-3-git-send-email-liwanp@linux.vnet.ibm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/fair.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index ebdb08b..37892d7 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -921,7 +921,8 @@ static inline unsigned long group_faults(struct task_struct *p, int nid)
- 	if (!p->numa_group)
- 		return 0;
- 
--	return p->numa_group->faults[2*nid] + p->numa_group->faults[2*nid+1];
-+	return p->numa_group->faults[task_faults_idx(nid, 0)] +
-+		p->numa_group->faults[task_faults_idx(nid, 1)];
- }
- 
- /*
+/ magnus
