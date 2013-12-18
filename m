@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab3LRVkg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:40:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36346 "EHLO
+	id S1755849Ab3LRVkz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:40:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36328 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908Ab3LRVNW (ORCPT
+	with ESMTP id S1753891Ab3LRVNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:22 -0500
+	Wed, 18 Dec 2013 16:13:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Hans de Goede <hdegoede@redhat.com>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH 3.12 010/118] ARM: sun6i: dt: Fix interrupt trigger types
-Date: Wed, 18 Dec 2013 13:10:47 -0800
-Message-Id: <20131218211219.757570561@linuxfoundation.org>
+        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 007/118] ALSA: hda - hdmi: Fix IEC958 ctl indexes for some simple HDMI devices
+Date: Wed, 18 Dec 2013 13:10:44 -0800
+Message-Id: <20131218211219.673611778@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,109 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
-commit 6f97dc8d4663abed96fa30e3ea4a1d4cfd1c4276 upstream.
+commit c9a6338aecdb92f9d015ecc26d203e54250bebbb upstream.
 
-The Allwinner A31 uses the ARM GIC as its internal interrupts controller. The
-GIC can work on several interrupt triggers, and the A31 was actually setting it
-up to use a rising edge as a trigger, while it was actually a level high
-trigger, leading to some interrupts that would be completely ignored if the
-edge was missed.
+In case a single HDA card has both HDMI and S/PDIF outputs, the S/PDIF
+outputs will have their IEC958 controls created starting from index 16
+and the HDMI controls will be created starting from index 0.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Acked-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+However, HDMI simple_playback_build_controls() as used by old VIA and
+NVIDIA codecs incorrectly requests the IEC958 controls to be created
+with an S/PDIF type instead of HDMI.
+In case the card has other codecs that have HDMI outputs, the controls
+will be created with wrong index=16, causing them to e.g. be unreachable
+by the ALSA "hdmi" alias.
+
+Fix that by making simple_playback_build_controls() request controls
+with HDMI indexes.
+
+Not many cards have an affected configuration, but e.g. ASUS M3N78-VM
+contains an integrated NVIDIA HDA "card" with:
+- a VIA codec that has, among others, an S/PDIF pin incorrectly
+  labelled as an HDMI pin, and
+- an NVIDIA MCP7x HDMI codec.
+
+Reported-by: MysterX on #openelec
+Tested-by: MysterX on #openelec
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/sun6i-a31.dtsi |   27 +++++++++++++++------------
- 1 file changed, 15 insertions(+), 12 deletions(-)
+ sound/pci/hda/patch_hdmi.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/arm/boot/dts/sun6i-a31.dtsi
-+++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-@@ -193,7 +193,10 @@
- 		pio: pinctrl@01c20800 {
- 			compatible = "allwinner,sun6i-a31-pinctrl";
- 			reg = <0x01c20800 0x400>;
--			interrupts = <0 11 1>, <0 15 1>, <0 16 1>, <0 17 1>;
-+			interrupts = <0 11 4>,
-+				     <0 15 4>,
-+				     <0 16 4>,
-+				     <0 17 4>;
- 			clocks = <&apb1_gates 5>;
- 			gpio-controller;
- 			interrupt-controller;
-@@ -212,11 +215,11 @@
- 		timer@01c20c00 {
- 			compatible = "allwinner,sun4i-timer";
- 			reg = <0x01c20c00 0xa0>;
--			interrupts = <0 18 1>,
--				     <0 19 1>,
--				     <0 20 1>,
--				     <0 21 1>,
--				     <0 22 1>;
-+			interrupts = <0 18 4>,
-+				     <0 19 4>,
-+				     <0 20 4>,
-+				     <0 21 4>,
-+				     <0 22 4>;
- 			clocks = <&osc24M>;
- 		};
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -2085,8 +2085,9 @@ static int simple_playback_build_control
+ 	int err;
  
-@@ -228,7 +231,7 @@
- 		uart0: serial@01c28000 {
- 			compatible = "snps,dw-apb-uart";
- 			reg = <0x01c28000 0x400>;
--			interrupts = <0 0 1>;
-+			interrupts = <0 0 4>;
- 			reg-shift = <2>;
- 			reg-io-width = <4>;
- 			clocks = <&apb2_gates 16>;
-@@ -238,7 +241,7 @@
- 		uart1: serial@01c28400 {
- 			compatible = "snps,dw-apb-uart";
- 			reg = <0x01c28400 0x400>;
--			interrupts = <0 1 1>;
-+			interrupts = <0 1 4>;
- 			reg-shift = <2>;
- 			reg-io-width = <4>;
- 			clocks = <&apb2_gates 17>;
-@@ -248,7 +251,7 @@
- 		uart2: serial@01c28800 {
- 			compatible = "snps,dw-apb-uart";
- 			reg = <0x01c28800 0x400>;
--			interrupts = <0 2 1>;
-+			interrupts = <0 2 4>;
- 			reg-shift = <2>;
- 			reg-io-width = <4>;
- 			clocks = <&apb2_gates 18>;
-@@ -258,7 +261,7 @@
- 		uart3: serial@01c28c00 {
- 			compatible = "snps,dw-apb-uart";
- 			reg = <0x01c28c00 0x400>;
--			interrupts = <0 3 1>;
-+			interrupts = <0 3 4>;
- 			reg-shift = <2>;
- 			reg-io-width = <4>;
- 			clocks = <&apb2_gates 19>;
-@@ -268,7 +271,7 @@
- 		uart4: serial@01c29000 {
- 			compatible = "snps,dw-apb-uart";
- 			reg = <0x01c29000 0x400>;
--			interrupts = <0 4 1>;
-+			interrupts = <0 4 4>;
- 			reg-shift = <2>;
- 			reg-io-width = <4>;
- 			clocks = <&apb2_gates 20>;
-@@ -278,7 +281,7 @@
- 		uart5: serial@01c29400 {
- 			compatible = "snps,dw-apb-uart";
- 			reg = <0x01c29400 0x400>;
--			interrupts = <0 5 1>;
-+			interrupts = <0 5 4>;
- 			reg-shift = <2>;
- 			reg-io-width = <4>;
- 			clocks = <&apb2_gates 21>;
+ 	per_cvt = get_cvt(spec, 0);
+-	err = snd_hda_create_spdif_out_ctls(codec, per_cvt->cvt_nid,
+-					    per_cvt->cvt_nid);
++	err = snd_hda_create_dig_out_ctls(codec, per_cvt->cvt_nid,
++					  per_cvt->cvt_nid,
++					  HDA_PCM_TYPE_HDMI);
+ 	if (err < 0)
+ 		return err;
+ 	return simple_hdmi_build_jack(codec, 0);
 
 
