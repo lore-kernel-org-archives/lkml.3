@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704Ab3LRDi0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 22:38:26 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.246]:26617 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751465Ab3LRDiY convert rfc822-to-8bit (ORCPT
+	id S1752849Ab3LRDkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 22:40:09 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44323 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab3LRDkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 22:38:24 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+	Tue, 17 Dec 2013 22:40:07 -0500
+Date: Tue, 17 Dec 2013 19:40:04 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Rajat Jain <rajatjain@juniper.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Rajat Jain <rajatjain.linux@gmail.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "vpalatin@chromium.org" <vpalatin@chromium.org>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: RE: [PATCH 3/3 v2] ARM: dts: sama5d3xcm: add the regulator device
- node
-Thread-Topic: [PATCH 3/3 v2] ARM: dts: sama5d3xcm: add the regulator device
- node
-Thread-Index: AQHO+upDybADKfGWgU6rO2AhovoUCppXzcgAgAF6jYA=
-Date: Wed, 18 Dec 2013 03:15:10 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A24364172F1839C@penmbx01>
-References: <1387258597-21866-1-git-send-email-wenyou.yang@atmel.com>
- <1387258597-21866-4-git-send-email-wenyou.yang@atmel.com>
- <20131217123818.GV3185@sirena.org.uk>
-In-Reply-To: <20131217123818.GV3185@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        Y@jasper.es
+Subject: Re: [PATCH v3 4/8] pciehp: Don't disable the link permanently,
+ during removal
+Message-ID: <20131218034004.GA22858@roeck-us.net>
+References: <52B0AEAD.6050604@gmail.com>
+ <20131218010207.GC15119@google.com>
+ <41c1723da4454cdca6503418746a5ca7@DM2PR05MB671.namprd05.prod.outlook.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <41c1723da4454cdca6503418746a5ca7@DM2PR05MB671.namprd05.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@kernel.org]
-> Sent: Tuesday, December 17, 2013 8:38 PM
-> To: Yang, Wenyou
-> Cc: lgirdwood@gmail.com; linux-kernel@vger.kernel.org;
-> grant.likely@linaro.org; rob.herring@calxeda.com; linux-
-> doc@vger.kernel.org; vpalatin@chromium.org; Ferre, Nicolas;
-> plagnioj@jcrosoft.com; linux-arm-kernel@lists.infradead.org;
-> devicetree@vger.kernel.org
-> Subject: Re: [PATCH 3/3 v2] ARM: dts: sama5d3xcm: add the regulator
-> device node
+On Wed, Dec 18, 2013 at 03:20:58AM +0000, Rajat Jain wrote:
 > 
-> On Tue, Dec 17, 2013 at 01:36:37PM +0800, Wenyou Yang wrote:
 > 
-> > +						vcc_1v8_reg: DCDC_REG1 {
-> > +							regulator-name = "DCDC_REG1";
+> > -----Original Message-----
+> > From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> > 
+> > [+cc yinghai@kernel.org (seems to be Yinghai's preferred email]
+> > 
+> > On Tue, Dec 17, 2013 at 12:06:05PM -0800, Rajat Jain wrote:
+> > > We need future link up events for hot-add, thus don't disable the link
+> > > permanently during device removal. Also, remove the static functions
+> > > that are now left unused.
+> > 
+> > The changelog should mention that this reverts part of 2debd9289997
+> > ("PCI:
+> > pciehp: Disable/enable link during slot power off/on").
 > 
-> The whole point of naming the regulators is to help users read kernel
-> diagnostic output so the should normally be named after the supply in
-> the schematic.  If you're using the name of the supply on the PMIC you
-> can just omit it since that's the default anyway and it's not adding
-> extra information.  Use something like VCC_1V8.
-Thanks a lot.
-Change regulator-name with VCC_1V8, VCC_1V2 ... which named after the supply in the schematic.
+> Sure, I'll add that. 
+> 
+> > 
+> > Yinghai, can you tell us whether this is an issue on your systems?
+> >
+> 
+> Thanks in advance Yinghai. 
+> 
+> Actually I did not understand the original problem and the solution in the first
+> place (so I also do not understand how might disabling of presence detect notification
+> help). If you can give more details on the original problem that shall be great. Here
+> is what I understood from the commit log:
+> 
+> The believe the HW looks like this:
+> 
+> PCIe port <----> Repeater <----> Device.
+> 
+> An in addition there is the presence detect pin that is connected directly from
+> The port to the device. Now, when the device is plugged out, the pin indicates
+> No presence. But are you saying the PCIe link from port to repeater is still up?
+> 
+> Part of log:
+> ====================================
+>     ...
+>     It turns out the root complex is continually trying to train the link to
+>     the repeater because the repeater has not been reset.
+> 
+>     This patch will disable the link at removal time to allow the repeater
+>     to be reset properly.
+>     ...
+> ====================================
+> 
+> 1) I did not understand why would port try to retrain to the link in either cases -
+> Whether the link to the repeater is up or not?
+> 
+> 2) When no link is seen, is THAT what causes repeater to go down and hence solve the
+> Problem?
+> 
+> 3) I'd expect you'd continuously get "adapter not present" messages if some how
+> The driver was trying to add the device. But I did not understand where did
+> "adapter present" messages came from?
+> 
+> Sorry, but I guess I am totally confused now. I'll probably go to sleep :-) 
+> 
 
+What, that early ? :-)
 
-Best Regards,
-Wenyou Yang
+I think we may have a similar setup on some of our boards. Maybe we can
+reproduce the situation (after we understand what exactly it is and how to
+trigger it).
+
+Related to this patch set, I learned today that our Space product uses mpt2sas.
+Just in case we need one for testing reset functionality.
+
+Guenter
