@@ -1,176 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab3LRAdS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 19:33:18 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:60657 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab3LRAdQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 19:33:16 -0500
-Date: Tue, 17 Dec 2013 17:33:13 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
-        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v4 6/9] PCI/MSI: Factor out pci_get_msi_vec_count()
- interface
-Message-ID: <20131218003313.GB15119@google.com>
-References: <cover.1387140921.git.agordeev@redhat.com>
- <d0d8cd19befa8757faf7660fd3ae619945b2cde4.1387140921.git.agordeev@redhat.com>
+	id S1752749Ab3LRAeD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 19:34:03 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:40692 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752148Ab3LRAeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 19:34:01 -0500
+Date: Wed, 18 Dec 2013 00:33:56 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1312180026340.10386@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <d0d8cd19befa8757faf7660fd3ae619945b2cde4.1387140921.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-789885593-1387326836=:10386"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 09:34:59AM +0100, Alexander Gordeev wrote:
-> Device drivers can use this interface to obtain maximum number
-> of MSI interrupts the device supports and use that number i.e.
-> in a following call to pci_enable_msi_block() interface.
-> 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Reviewed-by: Tejun Heo <tj@kernel.org>
-> ---
->  Documentation/PCI/MSI-HOWTO.txt |   15 ++++++++++++++
->  drivers/pci/msi.c               |   41 +++++++++++++++++++++++++++++++-------
->  include/linux/pci.h             |    6 +++++
->  3 files changed, 54 insertions(+), 8 deletions(-)
-> 
-> diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
-> index a4d174e..c03b815 100644
-> --- a/Documentation/PCI/MSI-HOWTO.txt
-> +++ b/Documentation/PCI/MSI-HOWTO.txt
-> @@ -169,6 +169,21 @@ on any interrupt for which it previously called request_irq().
->  Failure to do so results in a BUG_ON(), leaving the device with
->  MSI enabled and thus leaking its vector.
->  
-> +4.2.5 pci_get_msi_vec_count
-> +
-> +int pci_get_msi_vec_count(struct pci_dev *dev)
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-What would you think of "pci_msi_vec_count()" or "pci_msi_vector_count()"
-instead?  The "get" doesn't really seem necessary, and we often use "get"
-to indicate acquiring a reference (though it's obvious that doesn't apply
-here).
+--29444707-789885593-1387326836=:10386
+Content-Type: TEXT/PLAIN; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 
-Bjorn
 
-> +This function could be used to retrieve the number of MSI vectors the
-> +device requested (via the Multiple Message Capable register). The MSI
-> +specification only allows the returned value to be a power of two,
-> +up to a maximum of 2^5 (32).
-> +
-> +If this function returns a negative number, it indicates the device is
-> +not capable of sending MSIs.
-> +
-> +If this function returns a positive number, it indicates the maximum
-> +number of MSI interrupt vectors that could be allocated.
-> +
->  4.3 Using MSI-X
->  
->  The MSI-X capability is much more flexible than the MSI capability.
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index c0e2259..8915edb 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -834,6 +834,31 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
->  }
->  
->  /**
-> + * pci_get_msi_vec_count - Return the number of MSI vectors a device can send
-> + * @dev: device to report about
-> + *
-> + * This function returns the number of MSI vectors a device requested via
-> + * Multiple Message Capable register. It returns a negative errno if the
-> + * device is not capable sending MSI interrupts. Otherwise, the call succeeds
-> + * and returns a power of two, up to a maximum of 2^5 (32), according to the
-> + * MSI specification.
-> + **/
-> +int pci_get_msi_vec_count(struct pci_dev *dev)
-> +{
-> +	int ret;
-> +	u16 msgctl;
-> +
-> +	if (!dev->msi_cap)
-> +		return -EINVAL;
-> +
-> +	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
-> +	ret = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(pci_get_msi_vec_count);
-> +
-> +/**
->   * pci_enable_msi_block - configure device's MSI capability structure
->   * @dev: device to configure
->   * @nvec: number of interrupts to configure
-> @@ -849,13 +874,13 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
->  int pci_enable_msi_block(struct pci_dev *dev, int nvec)
->  {
->  	int status, maxvec;
-> -	u16 msgctl;
->  
-> -	if (!dev->msi_cap || dev->current_state != PCI_D0)
-> +	if (dev->current_state != PCI_D0)
->  		return -EINVAL;
->  
-> -	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
-> -	maxvec = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
-> +	maxvec = pci_get_msi_vec_count(dev);
-> +	if (maxvec < 0)
-> +		return maxvec;
->  	if (nvec > maxvec)
->  		return maxvec;
->  
-> @@ -880,13 +905,13 @@ EXPORT_SYMBOL(pci_enable_msi_block);
->  int pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec)
->  {
->  	int ret, nvec;
-> -	u16 msgctl;
->  
-> -	if (!dev->msi_cap || dev->current_state != PCI_D0)
-> +	if (dev->current_state != PCI_D0)
->  		return -EINVAL;
->  
-> -	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
-> -	ret = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
-> +	ret = pci_get_msi_vec_count(dev);
-> +	if (ret < 0)
-> +		return ret;
->  
->  	if (maxvec)
->  		*maxvec = ret;
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 8cf7b15..997751d 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -1154,6 +1154,11 @@ struct msix_entry {
->  
->  
->  #ifndef CONFIG_PCI_MSI
-> +static inline int pci_get_msi_vec_count(struct pci_dev *dev)
-> +{
-> +	return -ENOSYS;
-> +}
-> +
->  static inline int pci_enable_msi_block(struct pci_dev *dev, int nvec)
->  {
->  	return -ENOSYS;
-> @@ -1195,6 +1200,7 @@ static inline int pci_msi_enabled(void)
->  	return 0;
->  }
->  #else
-> +int pci_get_msi_vec_count(struct pci_dev *dev);
->  int pci_enable_msi_block(struct pci_dev *dev, int nvec);
->  int pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec);
->  void pci_msi_shutdown(struct pci_dev *dev);
-> -- 
-> 1.7.7.6
-> 
+Definitely seems quieter this week,
+
+radeon, intel, intel broadwell, vmwgfx, ttm, armada, and a couple of core 
+fixes, one revert in radeon
+
+most of these are either going to stable or fixes for things introduced in 
+the merge window,
+
+Dave.
+
+The following changes since commit 9538e10086bd1301fe915683b1ba0a1de66d7483:
+
+  Merge git://www.linux-watchdog.org/linux-watchdog (2013-12-10 11:30:10 -0800)
+
+are available in the git repository at:
+
+
+  git://people.freedesktop.org/~airlied/linux 
+
+for you to fetch changes up to 49d45a31b71d7d9da74485922bdb63faf3dc9684:
+
+  drm/edid: add quirk for BPC in Samsung NP700G7A-S01PL notebook (2013-12-17 14:18:16 +1000)
+
+----------------------------------------------------------------
+Alex Deucher (4):
+      drm/radeon: Fix sideport problems on certain RS690 boards
+      drm/radeon/cik: plug in missing blit callback
+      drm/radeon: add missing display tiling setup for oland
+      Revert "drm/radeon: Implement radeon_pci_shutdown"
+
+Ben Widawsky (7):
+      drm/i915/bdw: Add BDW to ULT macro
+      drm/i915/bdw: GEN8 backlight support
+      drm/i915/bdw: Do gen6 style reset for gen8
+      drm/i915/bdw: Free correct number of ppgtt pages
+      drm/i915/bdw: Add comment about gen8 HWS PGA
+      drm/i915/bdw: Limit GTT to 2GB
+      drm/i915/bdw: PIPE_[BC] I[ME]R moved to powerwell
+
+Chris Wilson (3):
+      drm/i915: Do not clobber config status after a forced restore of hw state
+      drm/i915: Hold mutex across i915_gem_release
+      drm/i915: Repeat eviction search after idling the GPU
+
+Christian König (1):
+      drm/radeon: fix typo in cik_copy_dma
+
+Daniel Vetter (3):
+      drm/i915: fix pm init ordering
+      drm/i915: Fix use-after-free in do_switch
+      drm/i915: don't update the dri1 breadcrumb with modesetting
+
+Dave Airlie (6):
+      Merge branch 'bdw-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
+      Merge tag 'drm-intel-fixes-2013-12-11' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
+      Merge branch 'drm-tda998x-3.12-fixes' of git://ftp.arm.linux.org.uk/~rmk/linux-cubox into drm-fixes
+      Merge branch 'drm-fixes-3.13' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
+      Merge branch 'vmwgfx-fixes-3.13' of git://people.freedesktop.org/~thomash/linux into drm-fixes
+      Merge branch 'ttm-fixes-3.13' of git://people.freedesktop.org/~thomash/linux into drm-next
+
+Ilia Mirkin (2):
+      drm: don't double-free on driver load error
+      drm/nouveau: only runtime suspend by default in optimus configuration
+
+Jakob Bornecrantz (1):
+      drm/vmwgfx: Add max surface memory param
+
+Martin Andersson (1):
+      drm/radeon/dpm: Fix hwmon crash
+
+Rafa³ Mi³ecki (1):
+      drm/edid: add quirk for BPC in Samsung NP700G7A-S01PL notebook
+
+Russell King (4):
+      DRM: Armada: implement lastclose() for fbhelper
+      DRM: Armada: destroy framebuffer after helper
+      DRM: Armada: fix printing of phys_addr_t/dma_addr_t
+      DRM: Armada: prime refcounting bug fix
+
+Thomas Hellstrom (1):
+      drm/ttm: Fix accesses through vmas with only partial coverage
+
+Ville Syrjälä (2):
+      drm/i915: Take modeset locks around intel_modeset_setup_hw_state()
+      drm/i915: Skip clock checks on BDW
+
+ drivers/gpu/drm/armada/armada_drm.h     |  1 +
+ drivers/gpu/drm/armada/armada_drv.c     |  7 ++++++-
+ drivers/gpu/drm/armada/armada_fbdev.c   | 20 +++++++++++++++-----
+ drivers/gpu/drm/armada/armada_gem.c     |  7 ++++---
+ drivers/gpu/drm/drm_edid.c              |  8 ++++++++
+ drivers/gpu/drm/drm_stub.c              |  6 +++---
+ drivers/gpu/drm/i915/i915_dma.c         | 20 +++++++++++---------
+ drivers/gpu/drm/i915/i915_drv.c         |  1 +
+ drivers/gpu/drm/i915/i915_drv.h         |  9 ++++++---
+ drivers/gpu/drm/i915/i915_gem_context.c | 16 ++++++++++++----
+ drivers/gpu/drm/i915/i915_gem_evict.c   | 14 +++++++++++---
+ drivers/gpu/drm/i915/i915_gem_gtt.c     |  9 +++++++--
+ drivers/gpu/drm/i915/intel_display.c    |  7 ++++---
+ drivers/gpu/drm/i915/intel_drv.h        |  1 +
+ drivers/gpu/drm/i915/intel_panel.c      | 26 +++++++++++++++++++++++---
+ drivers/gpu/drm/i915/intel_pm.c         | 29 +++++++++++++++++++++++++++--
+ drivers/gpu/drm/i915/intel_ringbuffer.c |  1 +
+ drivers/gpu/drm/i915/intel_uncore.c     |  1 +
+ drivers/gpu/drm/nouveau/nouveau_drm.c   |  6 ++++++
+ drivers/gpu/drm/radeon/atombios_crtc.c  |  4 +++-
+ drivers/gpu/drm/radeon/cik_sdma.c       |  2 +-
+ drivers/gpu/drm/radeon/radeon_asic.c    |  4 ++--
+ drivers/gpu/drm/radeon/radeon_drv.c     | 10 ----------
+ drivers/gpu/drm/radeon/radeon_pm.c      |  6 ++----
+ drivers/gpu/drm/radeon/rs690.c          | 10 ++++++++++
+ drivers/gpu/drm/ttm/ttm_bo_vm.c         |  6 +++---
+ drivers/gpu/drm/vmwgfx/vmwgfx_ioctl.c   |  3 +++
+ include/uapi/drm/vmwgfx_drm.h           |  1 +
+ 28 files changed, 173 insertions(+), 62 deletions(-)
+--29444707-789885593-1387326836=:10386--
