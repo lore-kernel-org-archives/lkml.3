@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab3LRTlr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 14:41:47 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:49434 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872Ab3LRTlq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 14:41:46 -0500
-Message-ID: <52b1fa78.47cc0e0a.67ff.ffffcb29@mx.google.com>
-From: Silvan Jegen <s.jegen@gmail.com>
-Date: Wed, 18 Dec 2013 20:16:31 +0100
-Subject: [PATCH] Documentation: Fix trivial spelling mistake in efi-stub.txt
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
+	id S1752241Ab3LRTmL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 14:42:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33992 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752066Ab3LRTmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 14:42:07 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 2/6] mm: page_alloc: Document why NR_ALLOC_BATCH is always updated
+Date: Wed, 18 Dec 2013 19:41:59 +0000
+Message-Id: <1387395723-25391-3-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1387395723-25391-1-git-send-email-mgorman@suse.de>
+References: <1387395723-25391-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Silvan Jegen <s.jegen@gmail.com>
----
- Documentation/efi-stub.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-diff --git a/Documentation/efi-stub.txt b/Documentation/efi-stub.txt
-index 44e6bb6..c628788 100644
---- a/Documentation/efi-stub.txt
-+++ b/Documentation/efi-stub.txt
-@@ -20,7 +20,7 @@ The EFI boot stub is enabled with the CONFIG_EFI_STUB kernel option.
- **** How to install bzImage.efi
+Needs-signed-off
+---
+ mm/page_alloc.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index f861d02..61e9e8c 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1547,7 +1547,15 @@ again:
+ 					  get_pageblock_migratetype(page));
+ 	}
  
- The bzImage located in arch/x86/boot/bzImage must be copied to the EFI
--System Partiion (ESP) and renamed with the extension ".efi". Without
-+System Partition (ESP) and renamed with the extension ".efi". Without
- the extension the EFI firmware loader will refuse to execute it. It's
- not possible to execute bzImage.efi from the usual Linux file systems
- because EFI firmware doesn't have support for them.
++	/*
++	 * All allocations eat into the round-robin batch, even
++	 * allocations that are not subject to round-robin placement
++	 * themselves.  This makes sure that allocations that ARE
++	 * subject to round-robin placement compensate for the
++	 * allocations that aren't, to have equal placement overall.
++	 */
+ 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
++
+ 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
+ 	zone_statistics(preferred_zone, zone, gfp_flags);
+ 	local_irq_restore(flags);
 -- 
-1.8.5.1
+1.8.4
 
