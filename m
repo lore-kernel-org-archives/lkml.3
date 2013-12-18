@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab3LRLRU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 06:17:20 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:58431 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab3LRLRT (ORCPT
+	id S1753970Ab3LRLRZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 06:17:25 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:55004 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753934Ab3LRLRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 06:17:19 -0500
-Date: Wed, 18 Dec 2013 11:16:51 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org, grant.likely@linaro.org,
-        rob.herring@calxeda.com, linux-doc@vger.kernel.org,
-        vpalatin@chromium.org, nicolas.ferre@atmel.com, plagnioj@jcrosoft.com,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Message-ID: <20131218111651.GE28455@sirena.org.uk>
-References: <1387343691-18985-1-git-send-email-wenyou.yang@atmel.com>
- <1387343691-18985-2-git-send-email-wenyou.yang@atmel.com>
+	Wed, 18 Dec 2013 06:17:23 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Wo0oCZYLrer5S3Oe"
-Content-Disposition: inline
-In-Reply-To: <1387343691-18985-2-git-send-email-wenyou.yang@atmel.com>
-X-Cookie: Haste makes waste.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 1/3] regulator: act8865: add PMIC act8865 driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20131218111232.GE14274@lee--X1>
+References: <CAOMwXhN5UfR=Y8V3i=A2zSCv7V9sRDd0Z+D1AQFahvRS-mV5Fw@mail.gmail.com>
+	<20131216082556.GE18769@lee--X1>
+	<CAOMwXhN8fG8YbU53A_U_MyMTyGWfV7NCCtr2a5oCbHdB0iqqmA@mail.gmail.com>
+	<20131216150514.GN18769@lee--X1>
+	<CAOMwXhMn5W76Dp=EFNHaknXCqZ4q4e7fphgtttx+8U=1Fc_DMQ@mail.gmail.com>
+	<20131216164844.GS18769@lee--X1>
+	<CAOMwXhPLNVKbRqR2tPQc758zLsh0Lg0D6JUf2yrf+ZosJVANAw@mail.gmail.com>
+	<20131218091609.GB14274@lee--X1>
+	<CAOMwXhOSpnEiDoyXNPmy0Gt1tLiwdzGRqoseKqtAUogLEfkCZQ@mail.gmail.com>
+	<20131218111232.GE14274@lee--X1>
+Date: Wed, 18 Dec 2013 11:17:22 +0000
+X-Google-Sender-Auth: tc4OY5rGe9d2eGJhH9g0Ij4_fI8
+Message-ID: <CAOMwXhNMrnLEDUHrPqH1rgbFDgNPWmhCr2dPUNhdhfmdPTcGfg@mail.gmail.com>
+Subject: Re: Simple MFD driver example
+From: Laszlo Papp <lpapp@kde.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: sameo@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 18, 2013 at 11:12 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> The MAX6650/6651 chip has multiple functionality:
+>>
+>> * fan/hwmon
+>>
+>> * gpio
+>>
+>> * alarm, etc.
+>>
+>> What you eventually see in hwmon is only a subset of all the features
+>> the IC provides. You may want to read this thread:
+>> https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg536509.html
+>
+> Okay, so the best thing to do is send out the entire patch-set at
+> once, CC'ing each of the maintainers on every patch so we can all see
+> how this thing fits together.
 
---Wo0oCZYLrer5S3Oe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Well, I am not even sure currently where to head with the MFD bits and
+its children subdevices currently....
 
-On Wed, Dec 18, 2013 at 01:14:49PM +0800, Wenyou Yang wrote:
+I would appreciate any direction. Yesterday, I was told on IRC, I
+would need to switch from i2c to platform drivers for the hwmon and
+gpio parts, but looking at some existing mfd driver code and their
+children drivers, I do not see it like that.
 
-> +/* ACt8865 voltage table */
-> +static const unsigned int act8865_voltages_table[] = {
-> +	600000,		625000,		650000,		675000,
+I have already sent out the gpio driver yesterday which works fine on
+its own: http://www.spinics.net/lists/kernel/msg1655805.html
 
-Like I say you should be able to use regulator_map_voltage_linear_range().
+Could you please guide me into the right direction what I need to
+change once we have standalone drivers, and they should be glued
+together? I thought adding an abstraction with the mfd layer would be
+sufficient, but apparently, that is not enough.
 
---Wo0oCZYLrer5S3Oe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSsYQgAAoJELSic+t+oim9mGsP/RR8EpXKHh26nSE/3XCi8KJ0
-HqimjMSoVDvndMVh7aEqHlAMxFr0TH4bWx3p8FB03VoqKlIn9gm3u3SNRA0tAGQe
-jCMGWWzaotod+hAjyyXALpdJ0leZN1cvgf78tWM3rHqvmCt1YyZ96XvdHElmQfBI
-f2d/W5+3+v/gUtBuZ3duWaZitKJ5KmPGUPuMeTyWF3f622GFcvQuLyS0ekCnJU4z
-OMPbG8o8N8HQceaWsz2PrWrZVqQxUXMJYChqk7GG+lUHh4ryxVAskoHTRWXBJbO0
-57VlBrKkDYZN1c8iF8HF0I6QwFCDOk4Ti6Ae7JlKR5VKf8YdrjPFwoZUdJLvjp5q
-SiCYr6kKcVBGAlcHrV0jfTlaL+pSfxO+KF3o3qzeCwN0VWNjYOJ0PYTmhZLeEtfu
-oAR/DPVN1yj1SLOio/tkV/vMDd4nqXzBeS6/8iyHMlbzpxIOc6Lpnfqe9SrY++wY
-E7imqdkJJqD9Y8gznjksq9Eqv/m4+xBy6dN7ofa8XwBMTOTphdxKHFkTuVtIOKA5
-ulKW28uOO5zKegElr4dIejpynY0kPZcjSANZu7JGwlPJW+hIGGLvc6I7VusKzTXb
-6lyW3TnnwBrQbG6OgD3K8Y+izIzU73IfRQAh8fLQTwlgocU3imhqHMSQDZrghvOW
-G+bGnLjqqFLesJo2Wy1J
-=39iu
------END PGP SIGNATURE-----
-
---Wo0oCZYLrer5S3Oe--
+Practically speaking, I am confused since if I needed to change the
+existing drivers, that means I could potentially break the interface
+for the existing users if the drivers stop working on their own, but
+then again, I am such a newbie that I would greatly appreciate some
+pointers.
