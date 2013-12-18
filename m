@@ -1,164 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab3LRVnO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:43:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36315 "EHLO
+	id S1755898Ab3LRVnU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:43:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36850 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753826Ab3LRVNO (ORCPT
+	with ESMTP id S1753826Ab3LRVnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:14 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Laight <david.laight@aculab.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Mark Lord <mlord@pobox.com>
-Subject: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within a USB payload burst
-Date: Wed, 18 Dec 2013 13:11:10 -0800
-Message-Id: <20131218211220.412278148@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
-References: <20131218211219.461663463@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Wed, 18 Dec 2013 16:43:18 -0500
+Date: Wed, 18 Dec 2013 13:43:16 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>, Sasha Levin <sasha.levin@oracle.com>,
+        Michel Lespinasse <walken@google.com>, Bob Liu <bob.liu@oracle.com>,
+        npiggin@suse.de, kosaki.motohiro@jp.fujitsu.com, riel@redhat.com,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/mlock: fix BUG_ON unlocked page for nolinear VMAs
+Message-Id: <20131218134316.977d5049209d9278e1dad225@linux-foundation.org>
+In-Reply-To: <52b1699f.87293c0a.75d1.34d3SMTPIN_ADDED_BROKEN@mx.google.com>
+References: <1387267550-8689-1-git-send-email-liwanp@linux.vnet.ibm.com>
+	<52b1138b.0201430a.19a8.605dSMTPIN_ADDED_BROKEN@mx.google.com>
+	<20131218032329.GA6044@hacker.(null)>
+	<52B11765.8030005@oracle.com>
+	<52b120a5.a3b2440a.3acf.ffffd7c3SMTPIN_ADDED_BROKEN@mx.google.com>
+	<52B166CF.6080300@suse.cz>
+	<52b1699f.87293c0a.75d1.34d3SMTPIN_ADDED_BROKEN@mx.google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 18 Dec 2013 17:23:03 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
 
-------------------
+> >>diff --git a/mm/rmap.c b/mm/rmap.c
+> >>index 55c8b8d..1e24813 100644
+> >>--- a/mm/rmap.c
+> >>+++ b/mm/rmap.c
+> >>@@ -1347,6 +1347,7 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
+> >>  	unsigned long end;
+> >>  	int ret = SWAP_AGAIN;
+> >>  	int locked_vma = 0;
+> >>+	int we_locked = 0;
+> >>
+> >>  	address = (vma->vm_start + cursor) & CLUSTER_MASK;
+> >>  	end = address + CLUSTER_SIZE;
+> >>@@ -1385,9 +1386,15 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
+> >>  		BUG_ON(!page || PageAnon(page));
+> >>
+> >>  		if (locked_vma) {
+> >>-			mlock_vma_page(page);   /* no-op if already mlocked */
+> >>-			if (page == check_page)
+> >>+			if (page != check_page) {
+> >>+				we_locked = trylock_page(page);
+> >
+> >If it's not us who has the page already locked, but somebody else, he
+> >might unlock it at this point and then the BUG_ON in mlock_vma_page()
+> >will trigger again.
 
-From: David Laight <David.Laight@ACULAB.COM>
+yes, this patch is pretty weak.
 
-commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e upstream.
+> Any better idea is appreciated. ;-)
 
-Section 4.11.7.1 of rev 1.0 of the xhci specification states that a link TRB
-can only occur at a boundary between underlying USB frames (512 bytes for
-high speed devices).
-
-If this isn't done the USB frames aren't formatted correctly and, for example,
-the USB3 ethernet ax88179_178a card will stop sending (while still receiving)
-when running a netperf tcp transmit test with (say) and 8k buffer.
-
-This should be a candidate for stable, the ax88179_178a driver defaults to
-gso and tso enabled so it passes a lot of fragmented skb to the USB stack.
-
-Notes from Sarah:
-
-Discussion: http://marc.info/?l=linux-usb&m=138384509604981&w=2
-
-This patch fixes a long-standing xHCI driver bug that was revealed by a
-change in 3.12 in the usb-net driver.  Commit
-638c5115a794981441246fa8fa5d95c1875af5ba "USBNET: support DMA SG" added
-support to use bulk endpoint scatter-gather (urb->sg).  Only the USB
-ethernet drivers trigger this bug, because the mass storage driver sends
-sg list entries in page-sized chunks.
-
-This patch only fixes the issue for bulk endpoint scatter-gather.  The
-problem will still occur for periodic endpoints, because hosts will
-interpret no-op transfers as a request to skip a service interval, which
-is not what we want.
-
-Luckily, the USB core isn't set up for scatter-gather on isochronous
-endpoints, and no USB drivers use scatter-gather for interrupt
-endpoints.  Document this known limitation so that developers won't try
-to use urb->sg for interrupt endpoints until this issue is fixed.  The
-more comprehensive fix would be to allow link TRBs in the middle of the
-endpoint ring and revert this patch, but that fix would touch too much
-code to be allowed in for stable.
-
-This patch should be backported to kernels as old as 3.12, that contain
-the commit 638c5115a794981441246fa8fa5d95c1875af5ba "USBNET: support DMA
-SG".  Without this patch, the USB network device gets wedged, and stops
-sending packets.  Mark Lord confirms this patch fixes the regression:
-
-http://marc.info/?l=linux-netdev&m=138487107625966&w=2
-
-Signed-off-by: David Laight <david.laight@aculab.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Mark Lord <mlord@pobox.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/host/xhci-ring.c |   54 +++++++++++++++++++++++++++++++++++++++++--
- include/linux/usb.h          |    2 +
- 2 files changed, 54 insertions(+), 2 deletions(-)
-
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -2929,8 +2929,58 @@ static int prepare_ring(struct xhci_hcd
- 	}
- 
- 	while (1) {
--		if (room_on_ring(xhci, ep_ring, num_trbs))
--			break;
-+		if (room_on_ring(xhci, ep_ring, num_trbs)) {
-+			union xhci_trb *trb = ep_ring->enqueue;
-+			unsigned int usable = ep_ring->enq_seg->trbs +
-+					TRBS_PER_SEGMENT - 1 - trb;
-+			u32 nop_cmd;
-+
-+			/*
-+			 * Section 4.11.7.1 TD Fragments states that a link
-+			 * TRB must only occur at the boundary between
-+			 * data bursts (eg 512 bytes for 480M).
-+			 * While it is possible to split a large fragment
-+			 * we don't know the size yet.
-+			 * Simplest solution is to fill the trb before the
-+			 * LINK with nop commands.
-+			 */
-+			if (num_trbs == 1 || num_trbs <= usable || usable == 0)
-+				break;
-+
-+			if (ep_ring->type != TYPE_BULK)
-+				/*
-+				 * While isoc transfers might have a buffer that
-+				 * crosses a 64k boundary it is unlikely.
-+				 * Since we can't add NOPs without generating
-+				 * gaps in the traffic just hope it never
-+				 * happens at the end of the ring.
-+				 * This could be fixed by writing a LINK TRB
-+				 * instead of the first NOP - however the
-+				 * TRB_TYPE_LINK_LE32() calls would all need
-+				 * changing to check the ring length.
-+				 */
-+				break;
-+
-+			if (num_trbs >= TRBS_PER_SEGMENT) {
-+				xhci_err(xhci, "Too many fragments %d, max %d\n",
-+						num_trbs, TRBS_PER_SEGMENT - 1);
-+				return -ENOMEM;
-+			}
-+
-+			nop_cmd = cpu_to_le32(TRB_TYPE(TRB_TR_NOOP) |
-+					ep_ring->cycle_state);
-+			ep_ring->num_trbs_free -= usable;
-+			do {
-+				trb->generic.field[0] = 0;
-+				trb->generic.field[1] = 0;
-+				trb->generic.field[2] = 0;
-+				trb->generic.field[3] = nop_cmd;
-+				trb++;
-+			} while (--usable);
-+			ep_ring->enqueue = trb;
-+			if (room_on_ring(xhci, ep_ring, num_trbs))
-+				break;
-+		}
- 
- 		if (ep_ring == xhci->cmd_ring) {
- 			xhci_err(xhci, "Do not support expand command ring\n");
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
-@@ -1262,6 +1262,8 @@ typedef void (*usb_complete_t)(struct ur
-  * @sg: scatter gather buffer list, the buffer size of each element in
-  * 	the list (except the last) must be divisible by the endpoint's
-  * 	max packet size if no_sg_constraint isn't set in 'struct usb_bus'
-+ * 	(FIXME: scatter-gather under xHCI is broken for periodic transfers.
-+ * 	Do not use urb->sg for interrupt endpoints for now, only bulk.)
-  * @num_mapped_sgs: (internal) number of mapped sg entries
-  * @num_sgs: number of entries in the sg list
-  * @transfer_buffer_length: How big is transfer_buffer.  The transfer may
-
-
+Remove the BUG_ON() from mlock_vma_page()?  Why was it added?
+isolate_lru_page() and putback_lru_page() and *might* require
+the page be locked, but I don't immediately see issues?
