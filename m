@@ -1,86 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab3LRKhc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 05:37:32 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:47571 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab3LRKcW (ORCPT
+	id S1754174Ab3LRKiV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 05:38:21 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44556 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289Ab3LRKbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 05:32:22 -0500
+	Wed, 18 Dec 2013 05:31:18 -0500
+Date: Wed, 18 Dec 2013 02:30:45 -0800
+From: tip-bot for Stanislav Fomichev <tipbot@zytor.com>
+Message-ID: <tip-8b6dcca017aa53fe13066411a653b5997c158a2c@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
+        stfomichev@yandex-team.ru, artagnon@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, stfomichev@yandex-team.ru,
+        tglx@linutronix.de, artagnon@gmail.com
+In-Reply-To: <1385995056-20158-2-git-send-email-stfomichev@yandex-team.ru>
+References: <1385995056-20158-2-git-send-email-stfomichev@yandex-team.ru>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf timechart: Add backtrace support to CPU info
+Git-Commit-ID: 8b6dcca017aa53fe13066411a653b5997c158a2c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20131218101523.GP13532@twins.programming.kicks-ass.net>
-References: <20131218125643.8ff140371e1f8c306327d354@canb.auug.org.au>
-	<20131217.212145.893665929052097867.davem@davemloft.net>
-	<20131217.213033.1019416869378407851.davem@davemloft.net>
-	<CAMuHMdUi4GQYR2p7enikEkTq1s-5YwirTzmo_tS0JwiE=dVmYw@mail.gmail.com>
-	<20131218101523.GP13532@twins.programming.kicks-ass.net>
-Date: Wed, 18 Dec 2013 11:32:21 +0100
-X-Google-Sender-Auth: tUOmBOXKQjBO3H1-VafYQFFLKfA
-Message-ID: <CAMuHMdXHiKe6fjEHu0GrSVMAmvKuX9wOUdC2MW3uSjRAU5tnWA@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the net-next tree
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: David Miller <davem@davemloft.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ffusco@redhat.com, dborkman@redhat.com, tgraf@redhat.com,
-        Joe Perches <joe@perches.com>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 18 Dec 2013 02:30:51 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 11:15 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Dec 18, 2013 at 09:33:47AM +0100, Geert Uytterhoeven wrote:
->> On Wed, Dec 18, 2013 at 3:30 AM, David Miller <davem@davemloft.net> wrote:
->> > diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
->> > index f01fb50..a73a8e2 100644
->> > --- a/arch/alpha/include/asm/Kbuild
->> > +++ b/arch/alpha/include/asm/Kbuild
->> > @@ -4,3 +4,4 @@ generic-y += clkdev.h
->> >  generic-y += exec.h
->> >  generic-y += trace_clock.h
->> >  generic-y += preempt.h
->> > +generic-y += hash.h
->>
->> Please keep them sorted.
->>
->> Yes, Peter violated that too, when adding preempt.h.
->
-> So what I did was something like:
->
-> for i in arch/*/include/asm/Kbuild
-> do
->         echo "generic-y += preempt.h" >> $i
-> done
->
-> Whoever is going to hand edit all gazillion archs for changes like that?
+Commit-ID:  8b6dcca017aa53fe13066411a653b5997c158a2c
+Gitweb:     http://git.kernel.org/tip/8b6dcca017aa53fe13066411a653b5997c158a2c
+Author:     Stanislav Fomichev <stfomichev@yandex-team.ru>
+AuthorDate: Mon, 2 Dec 2013 18:37:33 +0400
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 16 Dec 2013 16:33:14 -0300
 
-So we need a script for that (adding Joe), that adds the "generic-y += ..."
-line to all architectures that don't have it yet, and don't provide their
-own version.
+perf timechart: Add backtrace support to CPU info
 
-> And sort(1) is annoying in that it doesn't do in-place sort; you'll end
-> up with empty files if you try the naive thing.
->
-> Worse most of those Kbuild files include other random garbage, which
-> makes automated sorting harder still.
->
-> So unless there's a sane and easy way to keep it sorted; I'm going to
-> ignore that rule.
+Add backtrace info to the CPU usage timechart.
 
-Not keeping them sorted causes merge conflicts and duplicate/missing
-entries.
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ramkumar Ramachandra <artagnon@gmail.com>
+Link: http://lkml.kernel.org/r/1385995056-20158-2-git-send-email-stfomichev@yandex-team.ru
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-timechart.c | 10 ++++++++--
+ tools/perf/util/svghelper.c    |  4 +++-
+ tools/perf/util/svghelper.h    |  2 +-
+ 3 files changed, 12 insertions(+), 4 deletions(-)
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 0bda620..d955095 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -837,8 +837,14 @@ static void draw_cpu_usage(struct timechart *tchart)
+ 		while (c) {
+ 			sample = c->samples;
+ 			while (sample) {
+-				if (sample->type == TYPE_RUNNING)
+-					svg_process(sample->cpu, sample->start_time, sample->end_time, "sample", c->comm);
++				if (sample->type == TYPE_RUNNING) {
++					svg_process(sample->cpu,
++						    sample->start_time,
++						    sample->end_time,
++						    "sample",
++						    c->comm,
++						    sample->backtrace);
++				}
+ 
+ 				sample = sample->next;
+ 			}
+diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
+index 8b79d3a..740f032 100644
+--- a/tools/perf/util/svghelper.c
++++ b/tools/perf/util/svghelper.c
+@@ -285,7 +285,7 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
+ 	fprintf(svgfile, "</g>\n");
+ }
+ 
+-void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name)
++void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name, const char *backtrace)
+ {
+ 	double width;
+ 
+@@ -295,6 +295,8 @@ void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name
+ 
+ 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), cpu2y(cpu));
+ 	fprintf(svgfile, "<title>%s %s</title>\n", name, time_to_string(end - start));
++	if (backtrace)
++		fprintf(svgfile, "<desc>Switched because:\n%s</desc>\n", backtrace);
+ 	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
+ 		time2pixels(end)-time2pixels(start), SLOT_MULT+SLOT_HEIGHT, type);
+ 	width = time2pixels(end)-time2pixels(start);
+diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
+index fad79ce..7db6ae9 100644
+--- a/tools/perf/util/svghelper.h
++++ b/tools/perf/util/svghelper.h
+@@ -11,7 +11,7 @@ extern void svg_waiting(int Yslot, int cpu, u64 start, u64 end, const char *back
+ extern void svg_cpu_box(int cpu, u64 max_frequency, u64 turbo_frequency);
+ 
+ 
+-extern void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name);
++extern void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name, const char *backtrace);
+ extern void svg_cstate(int cpu, u64 start, u64 end, int type);
+ extern void svg_pstate(int cpu, u64 start, u64 end, u64 freq);
+ 
