@@ -1,45 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368Ab3LRKbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 05:31:18 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:54670 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752534Ab3LRKbR (ORCPT
+	id S1753551Ab3LRKbU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 05:31:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44557 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173Ab3LRKbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 05:31:17 -0500
-Date: Wed, 18 Dec 2013 10:31:00 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: matt.fleming@intel.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] efi earlyprintk fix
-Message-ID: <20131218103100.GD3145@console-pimps.org>
-References: <20131103121647.GA4770@dhcp-16-126.nay.redhat.com>
- <20131104103739.GD21688@console-pimps.org>
- <20131104125853.GB5118@dhcp-16-126.nay.redhat.com>
- <20131218095256.GA3752@dhcp-16-126.nay.redhat.com>
+	Wed, 18 Dec 2013 05:31:18 -0500
+Date: Wed, 18 Dec 2013 02:30:54 -0800
+From: tip-bot for Stanislav Fomichev <tipbot@zytor.com>
+Message-ID: <tip-de996228dedc74d9e72b749bbc8225f5e2bf19d8@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
+        stfomichev@yandex-team.ru, artagnon@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, stfomichev@yandex-team.ru,
+        tglx@linutronix.de, artagnon@gmail.com
+In-Reply-To: <1385995056-20158-3-git-send-email-stfomichev@yandex-team.ru>
+References: <1385995056-20158-3-git-send-email-stfomichev@yandex-team.ru>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf timechart: Print pid along the name
+Git-Commit-ID: de996228dedc74d9e72b749bbc8225f5e2bf19d8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20131218095256.GA3752@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 18 Dec 2013 02:31:00 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Dec, at 05:52:56PM, Dave Young wrote:
-> > It's my laptop Thinkpad T420, the screen scolls very fast, I use boot_delay=500
-> > to verify it with my patch for moving boot_delay param an early param.
-> > 
-> > Even without boot_delay, there's always a line at bottom with only the prefix:
-> > "efi:"
-> 
-> Update about this issue:
-> With latest mainline tree + efi runtime patchset, above problem does not happen
-> any more (with and without boot_delay).
+Commit-ID:  de996228dedc74d9e72b749bbc8225f5e2bf19d8
+Gitweb:     http://git.kernel.org/tip/de996228dedc74d9e72b749bbc8225f5e2bf19d8
+Author:     Stanislav Fomichev <stfomichev@yandex-team.ru>
+AuthorDate: Mon, 2 Dec 2013 18:37:34 +0400
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 16 Dec 2013 16:33:57 -0300
 
-Thanks for the update.
+perf timechart: Print pid along the name
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Add PID to the figures of CPU usage timechart.
+
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ramkumar Ramachandra <artagnon@gmail.com>
+Link: http://lkml.kernel.org/r/1385995056-20158-3-git-send-email-stfomichev@yandex-team.ru
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-timechart.c | 1 +
+ tools/perf/util/svghelper.c    | 4 ++--
+ tools/perf/util/svghelper.h    | 2 +-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index d955095..99fe363 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -841,6 +841,7 @@ static void draw_cpu_usage(struct timechart *tchart)
+ 					svg_process(sample->cpu,
+ 						    sample->start_time,
+ 						    sample->end_time,
++						    p->pid,
+ 						    "sample",
+ 						    c->comm,
+ 						    sample->backtrace);
+diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
+index 740f032..927851d 100644
+--- a/tools/perf/util/svghelper.c
++++ b/tools/perf/util/svghelper.c
+@@ -285,7 +285,7 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
+ 	fprintf(svgfile, "</g>\n");
+ }
+ 
+-void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name, const char *backtrace)
++void svg_process(int cpu, u64 start, u64 end, int pid, const char *type, const char *name, const char *backtrace)
+ {
+ 	double width;
+ 
+@@ -294,7 +294,7 @@ void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name
+ 
+ 
+ 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), cpu2y(cpu));
+-	fprintf(svgfile, "<title>%s %s</title>\n", name, time_to_string(end - start));
++	fprintf(svgfile, "<title>%d %s running %s</title>\n", pid, name, time_to_string(end - start));
+ 	if (backtrace)
+ 		fprintf(svgfile, "<desc>Switched because:\n%s</desc>\n", backtrace);
+ 	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
+diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
+index 7db6ae9..8b77ca6 100644
+--- a/tools/perf/util/svghelper.h
++++ b/tools/perf/util/svghelper.h
+@@ -11,7 +11,7 @@ extern void svg_waiting(int Yslot, int cpu, u64 start, u64 end, const char *back
+ extern void svg_cpu_box(int cpu, u64 max_frequency, u64 turbo_frequency);
+ 
+ 
+-extern void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name, const char *backtrace);
++extern void svg_process(int cpu, u64 start, u64 end, int pid, const char *type, const char *name, const char *backtrace);
+ extern void svg_cstate(int cpu, u64 start, u64 end, int type);
+ extern void svg_pstate(int cpu, u64 start, u64 end, u64 freq);
+ 
