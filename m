@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab3LROjS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 09:39:18 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:56903 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041Ab3LROjQ (ORCPT
+	id S1754896Ab3LROjo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 09:39:44 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:45278 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754868Ab3LROjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 09:39:16 -0500
-Subject: Re: [RFC/PATCHSET 00/18] perf report: Add support to accumulate
- hist periods (v3)
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arun Sharma <asharma@fb.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-In-Reply-To: <52B17B14.5030101@fb.com>
-References: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
-	 <20131218094622.GA19240@gmail.com>  <52B17B14.5030101@fb.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 Dec 2013 23:39:09 +0900
-Message-ID: <1387377549.1717.14.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 8bit
+	Wed, 18 Dec 2013 09:39:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <52B187F5.7020105@nvidia.com>
+References: <1386229462-3474-1-git-send-email-bilhuang@nvidia.com>
+	<1386229462-3474-3-git-send-email-bilhuang@nvidia.com>
+	<CAKohponns4B+BPPum3EN6EuXx6U+6MzOa50gMdR1BNBtxMNf0Q@mail.gmail.com>
+	<52B02D04.4050905@nvidia.com>
+	<CAKohpom0n8P8goQnsgBnWJwyqCVv_FRX3xKvO1yFW0VUMpMW8w@mail.gmail.com>
+	<52B187F5.7020105@nvidia.com>
+Date: Wed, 18 Dec 2013 20:09:41 +0530
+Message-ID: <CAKohpokwhYC4FGnhpZPOGuJ2AM_7vygNk+3S+VpA_eXAexQX7g@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] cpufreq: tegra: Re-model Tegra cpufreq driver
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: bilhuang <bilhuang@nvidia.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arun,
+On 18 December 2013 17:03, bilhuang <bilhuang@nvidia.com> wrote:
+> cpufreq-cpu0 driver will call regulator_set_voltage_tol() directly according
+> to the pre-defined OPP freq/volt pairs, the regulator drivers could be
+> shared by other SoC so is not suitable to handle this, or do I
+> misunderstand?
 
-2013-12-18 (수), 16:08 +0530, Arun Sharma:
-> On 12/18/13 3:16 PM, Ingo Molnar wrote:
-> 
-> > My main complaint that any variation of 'cumulative' or 'cumulate' is
-> > a tongue-twister to users. I certainly won't be able to remember it
-> > and will have to call up the manpage every time I use it - which will
-> > be very annoying. I'd probably not use the feature much.
-> 
-> I can remember it, mainly because it's such an unusual word :)
-> Agree that we could use something simpler/easier to remember.
-> 
-> My other user space projects have been keeping me busy. But still very 
-> interested in this feature. Will test this patch series over the holidays.
-
-Thanks in advance for your test and feedback! :)
-Namhyung
-
-
+In case regulator's driver is shared, then you can probably add another
+virtual regulator for CPU which would have the special code you want.
