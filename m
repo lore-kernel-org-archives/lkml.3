@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748Ab3LRWU1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:20:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35740 "EHLO
+	id S1752140Ab3LRVIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:08:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35717 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab3LRVIw (ORCPT
+	with ESMTP id S1751805Ab3LRVIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:08:52 -0500
+	Wed, 18 Dec 2013 16:08:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gustavo Zacarias <gustavo@zacarias.com.ar>
-Subject: [PATCH 3.4 14/31] USB: serial: option: blacklist interface 1 for Huawei E173s-6
-Date: Wed, 18 Dec 2013 13:08:22 -0800
-Message-Id: <20131218210523.199017463@linuxfoundation.org>
+        Jim Quinlan <jim2101024@gmail.com>, linux-mips@linux-mips.org,
+        cernekee@gmail.com, Ralf Baechle <ralf@linux-mips.org>,
+        John Ulvr <julvr@broadcom.com>
+Subject: [PATCH 3.4 01/31] MIPS: DMA: For BMIPS5000 cores flush region just like non-coherent R10000
+Date: Wed, 18 Dec 2013 13:08:09 -0800
+Message-Id: <20131218210522.833580254@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218210522.790152625@linuxfoundation.org>
 References: <20131218210522.790152625@linuxfoundation.org>
@@ -28,43 +30,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gustavo Zacarias <gustavo@zacarias.com.ar>
+From: Jim Quinlan <jim2101024@gmail.com>
 
-commit 8f173e22abf2258ddfa73f46eadbb6a6c29f1631 upstream.
+commit f86f55d3ad21b21b736bdeb29bee0f0937b77138 upstream.
 
-Interface 1 on this device isn't for option to bind to otherwise an oops
-on usb_wwan with log flooding will happen when accessing the port:
+The BMIPS5000 (Zephyr) processor utilizes instruction speculation. A
+stale misprediction address in either the JTB or the CRS may trigger
+a prefetch inside a region that is currently being used by a DMA engine,
+which is not IO-coherent.  This prefetch will fetch a line into the
+scache, and that line will soon become stale (ie wrong) during/after the
+DMA.  Mayhem ensues.
 
-tty_release: ttyUSB1: read/write wait queue active!
+In dma-default.c, the r10000 is handled as a special case in the same way
+that we want to handle Zephyr.  So we generalize the exception cases into
+a function, and include Zephyr as one of the processors that needs this
+special care.
 
-It doesn't seem to respond to QMI if it's added to qmi_wwan so don't add
-it there - it's likely used by the card reader.
-
-Signed-off-by: Gustavo Zacarias <gustavo@zacarias.com.ar>
+Signed-off-by: Jim Quinlan <jim2101024@gmail.com>
+Cc: linux-mips@linux-mips.org
+Cc: cernekee@gmail.com
+Patchwork: https://patchwork.linux-mips.org/patch/5776/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: John Ulvr <julvr@broadcom.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/mips/mm/dma-default.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -85,6 +85,7 @@ static void option_instat_callback(struc
- #define HUAWEI_PRODUCT_K4505			0x1464
- #define HUAWEI_PRODUCT_K3765			0x1465
- #define HUAWEI_PRODUCT_K4605			0x14C6
-+#define HUAWEI_PRODUCT_E173S6			0x1C07
+--- a/arch/mips/mm/dma-default.c
++++ b/arch/mips/mm/dma-default.c
+@@ -30,16 +30,20 @@ static inline struct page *dma_addr_to_p
+ }
  
- #define QUANTA_VENDOR_ID			0x0408
- #define QUANTA_PRODUCT_Q101			0xEA02
-@@ -586,6 +587,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173S6, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E1750, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
+ /*
++ * The affected CPUs below in 'cpu_needs_post_dma_flush()' can
++ * speculatively fill random cachelines with stale data at any time,
++ * requiring an extra flush post-DMA.
++ *
+  * Warning on the terminology - Linux calls an uncached area coherent;
+  * MIPS terminology calls memory areas with hardware maintained coherency
+  * coherent.
+  */
+-
+-static inline int cpu_is_noncoherent_r10000(struct device *dev)
++static inline int cpu_needs_post_dma_flush(struct device *dev)
+ {
+ 	return !plat_device_is_coherent(dev) &&
+ 	       (current_cpu_type() == CPU_R10000 ||
+-	       current_cpu_type() == CPU_R12000);
++		current_cpu_type() == CPU_R12000 ||
++		current_cpu_type() == CPU_BMIPS5000);
+ }
+ 
+ static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
+@@ -209,7 +213,7 @@ static inline void __dma_sync(struct pag
+ static void mips_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
+ 	size_t size, enum dma_data_direction direction, struct dma_attrs *attrs)
+ {
+-	if (cpu_is_noncoherent_r10000(dev))
++	if (cpu_needs_post_dma_flush(dev))
+ 		__dma_sync(dma_addr_to_page(dev, dma_addr),
+ 			   dma_addr & ~PAGE_MASK, size, direction);
+ 
+@@ -260,7 +264,7 @@ static void mips_dma_unmap_sg(struct dev
+ static void mips_dma_sync_single_for_cpu(struct device *dev,
+ 	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction)
+ {
+-	if (cpu_is_noncoherent_r10000(dev))
++	if (cpu_needs_post_dma_flush(dev))
+ 		__dma_sync(dma_addr_to_page(dev, dma_handle),
+ 			   dma_handle & ~PAGE_MASK, size, direction);
+ }
+@@ -281,7 +285,7 @@ static void mips_dma_sync_sg_for_cpu(str
+ 
+ 	/* Make sure that gcc doesn't leave the empty loop body.  */
+ 	for (i = 0; i < nelems; i++, sg++) {
+-		if (cpu_is_noncoherent_r10000(dev))
++		if (cpu_needs_post_dma_flush(dev))
+ 			__dma_sync(sg_page(sg), sg->offset, sg->length,
+ 				   direction);
+ 	}
 
 
