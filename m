@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab3LRLMk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 06:12:40 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:37383 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab3LRLMi (ORCPT
+	id S1753908Ab3LRLRU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 06:17:20 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58431 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241Ab3LRLRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 06:12:38 -0500
-Date: Wed, 18 Dec 2013 11:12:32 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: sameo@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: Re: Simple MFD driver example
-Message-ID: <20131218111232.GE14274@lee--X1>
-References: <CAOMwXhN5UfR=Y8V3i=A2zSCv7V9sRDd0Z+D1AQFahvRS-mV5Fw@mail.gmail.com>
- <20131216082556.GE18769@lee--X1>
- <CAOMwXhN8fG8YbU53A_U_MyMTyGWfV7NCCtr2a5oCbHdB0iqqmA@mail.gmail.com>
- <20131216150514.GN18769@lee--X1>
- <CAOMwXhMn5W76Dp=EFNHaknXCqZ4q4e7fphgtttx+8U=1Fc_DMQ@mail.gmail.com>
- <20131216164844.GS18769@lee--X1>
- <CAOMwXhPLNVKbRqR2tPQc758zLsh0Lg0D6JUf2yrf+ZosJVANAw@mail.gmail.com>
- <20131218091609.GB14274@lee--X1>
- <CAOMwXhOSpnEiDoyXNPmy0Gt1tLiwdzGRqoseKqtAUogLEfkCZQ@mail.gmail.com>
+	Wed, 18 Dec 2013 06:17:19 -0500
+Date: Wed, 18 Dec 2013 11:16:51 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, linux-doc@vger.kernel.org,
+        vpalatin@chromium.org, nicolas.ferre@atmel.com, plagnioj@jcrosoft.com,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Message-ID: <20131218111651.GE28455@sirena.org.uk>
+References: <1387343691-18985-1-git-send-email-wenyou.yang@atmel.com>
+ <1387343691-18985-2-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Wo0oCZYLrer5S3Oe"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMwXhOSpnEiDoyXNPmy0Gt1tLiwdzGRqoseKqtAUogLEfkCZQ@mail.gmail.com>
+In-Reply-To: <1387343691-18985-2-git-send-email-wenyou.yang@atmel.com>
+X-Cookie: Haste makes waste.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 1/3] regulator: act8865: add PMIC act8865 driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The MAX6650/6651 chip has multiple functionality:
-> 
-> * fan/hwmon
-> 
-> * gpio
-> 
-> * alarm, etc.
-> 
-> What you eventually see in hwmon is only a subset of all the features
-> the IC provides. You may want to read this thread:
-> https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg536509.html
 
-Okay, so the best thing to do is send out the entire patch-set at
-once, CC'ing each of the maintainers on every patch so we can all see
-how this thing fits together.
+--Wo0oCZYLrer5S3Oe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Don't forget to create a cover-letter and each patch should be
-in-reply to the cover letter. If you haven't done this before,
-practise by sending it to yourself until it looks correct rather than
-spamming the list.
+On Wed, Dec 18, 2013 at 01:14:49PM +0800, Wenyou Yang wrote:
 
-It should look like this on this list:
+> +/* ACt8865 voltage table */
+> +static const unsigned int act8865_voltages_table[] = {
+> +	600000,		625000,		650000,		675000,
 
-[PATCH 00/03] Subject ...
- |-> [PATCH 01/03] mfd: Description ...
- |-> [PATCH 02/03] hwmon: Description ...
- |-> [PATCH 03/03] gpio: Description ...
+Like I say you should be able to use regulator_map_voltage_linear_range().
 
+--Wo0oCZYLrer5S3Oe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSsYQgAAoJELSic+t+oim9mGsP/RR8EpXKHh26nSE/3XCi8KJ0
+HqimjMSoVDvndMVh7aEqHlAMxFr0TH4bWx3p8FB03VoqKlIn9gm3u3SNRA0tAGQe
+jCMGWWzaotod+hAjyyXALpdJ0leZN1cvgf78tWM3rHqvmCt1YyZ96XvdHElmQfBI
+f2d/W5+3+v/gUtBuZ3duWaZitKJ5KmPGUPuMeTyWF3f622GFcvQuLyS0ekCnJU4z
+OMPbG8o8N8HQceaWsz2PrWrZVqQxUXMJYChqk7GG+lUHh4ryxVAskoHTRWXBJbO0
+57VlBrKkDYZN1c8iF8HF0I6QwFCDOk4Ti6Ae7JlKR5VKf8YdrjPFwoZUdJLvjp5q
+SiCYr6kKcVBGAlcHrV0jfTlaL+pSfxO+KF3o3qzeCwN0VWNjYOJ0PYTmhZLeEtfu
+oAR/DPVN1yj1SLOio/tkV/vMDd4nqXzBeS6/8iyHMlbzpxIOc6Lpnfqe9SrY++wY
+E7imqdkJJqD9Y8gznjksq9Eqv/m4+xBy6dN7ofa8XwBMTOTphdxKHFkTuVtIOKA5
+ulKW28uOO5zKegElr4dIejpynY0kPZcjSANZu7JGwlPJW+hIGGLvc6I7VusKzTXb
+6lyW3TnnwBrQbG6OgD3K8Y+izIzU73IfRQAh8fLQTwlgocU3imhqHMSQDZrghvOW
+G+bGnLjqqFLesJo2Wy1J
+=39iu
+-----END PGP SIGNATURE-----
+
+--Wo0oCZYLrer5S3Oe--
