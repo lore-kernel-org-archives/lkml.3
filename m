@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab3LRTQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 14:16:07 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56670 "EHLO
+	id S1755954Ab3LRTQg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 14:16:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56662 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755851Ab3LRTPm (ORCPT
+	with ESMTP id S1755707Ab3LRTPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 14:15:42 -0500
-Message-Id: <20131218191222.907131132@infradead.org>
+	Wed, 18 Dec 2013 14:15:39 -0500
+Message-Id: <20131218191223.040084011@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 18 Dec 2013 20:08:07 +0100
+Date: Wed, 18 Dec 2013 20:08:09 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: geert@linux-m68k.org, paulmck@linux.vnet.ibm.com,
@@ -19,465 +19,754 @@ Cc: geert@linux-m68k.org, paulmck@linux.vnet.ibm.com,
         mikey@neuling.org, linux@arm.linux.org.uk, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, tony.luck@intel.com,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 1/4] doc: Rename LOCK/UNLOCK to ACQUIRE/RELEASE
+Subject: [PATCH 3/4] arch: Clean up asm/barrier.h implementations using asm-generic/barrier.h
 References: <20131218190806.370008594@infradead.org>
-Content-Disposition: inline; filename=peterz-arch-Document-v2.patch
+Content-Disposition: inline; filename=peter_zijlstra-arch-generic-barrier.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The LOCK and UNLOCK barriers as described in our barrier document are
-generally known as ACQUIRE and RELEASE barriers in other literature.
+We're going to be adding a few new barrier primitives, and in order to
+avoid endless duplication make more agressive use of
+asm-generic/barrier.h.
 
-Since we plan to introduce the acquire and release nomenclature in
-generic kernel primitives we should amend the document to avoid
-confusion as to what an acquire/release means.
+Change the asm-generic/barrier.h such that it allows partial barrier
+definitions and fills out the rest with defaults.
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+There are a few architectures (m32r, m68k) that could probably
+do away with their barrier.h file entirely but are kept for now due to
+their unconventional nop() implementation.
+
 Cc: Michael Ellerman <michael@ellerman.id.au>
 Cc: Michael Neuling <mikey@neuling.org>
 Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Cc: Victor Kaplansky <VICTORK@il.ibm.com>
 Cc: Tony Luck <tony.luck@intel.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Suggested-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
 Reviewed-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- Documentation/memory-barriers.txt |  241 +++++++++++++++++++-------------------
- 1 file changed, 123 insertions(+), 118 deletions(-)
+ arch/alpha/include/asm/barrier.h      |   25 ++--------
+ arch/arc/include/asm/Kbuild           |    1 
+ arch/avr32/include/asm/barrier.h      |   17 ++-----
+ arch/blackfin/include/asm/barrier.h   |   18 -------
+ arch/cris/include/asm/Kbuild          |    1 
+ arch/cris/include/asm/barrier.h       |   25 ----------
+ arch/frv/include/asm/barrier.h        |    8 ---
+ arch/hexagon/include/asm/Kbuild       |    1 
+ arch/m32r/include/asm/barrier.h       |   80 ----------------------------------
+ arch/m68k/include/asm/barrier.h       |   14 -----
+ arch/microblaze/include/asm/Kbuild    |    1 
+ arch/microblaze/include/asm/barrier.h |   27 -----------
+ arch/mn10300/include/asm/Kbuild       |    1 
+ arch/mn10300/include/asm/barrier.h    |   37 ---------------
+ arch/parisc/include/asm/Kbuild        |    1 
+ arch/parisc/include/asm/barrier.h     |   35 --------------
+ arch/score/include/asm/Kbuild         |    1 
+ arch/score/include/asm/barrier.h      |   16 ------
+ arch/sh/include/asm/barrier.h         |   21 +-------
+ arch/sparc/include/asm/barrier_32.h   |   12 -----
+ arch/tile/include/asm/barrier.h       |   68 ----------------------------
+ arch/unicore32/include/asm/barrier.h  |   11 ----
+ arch/xtensa/include/asm/barrier.h     |    9 ---
+ include/asm-generic/barrier.h         |   42 ++++++++++++-----
+ 24 files changed, 58 insertions(+), 414 deletions(-)
 
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -381,39 +381,44 @@ VARIETIES OF MEMORY BARRIER
+--- a/arch/alpha/include/asm/barrier.h
++++ b/arch/alpha/include/asm/barrier.h
+@@ -3,33 +3,18 @@
  
- And a couple of implicit varieties:
+ #include <asm/compiler.h>
  
-- (5) LOCK operations.
-+ (5) ACQUIRE operations.
+-#define mb() \
+-__asm__ __volatile__("mb": : :"memory")
++#define mb()	__asm__ __volatile__("mb": : :"memory")
++#define rmb()	__asm__ __volatile__("mb": : :"memory")
++#define wmb()	__asm__ __volatile__("wmb": : :"memory")
  
-      This acts as a one-way permeable barrier.  It guarantees that all memory
--     operations after the LOCK operation will appear to happen after the LOCK
--     operation with respect to the other components of the system.
-+     operations after the ACQUIRE operation will appear to happen after the
-+     ACQUIRE operation with respect to the other components of the system.
-+     ACQUIRE operations include LOCK operations and smp_load_acquire()
-+     operations.
- 
--     Memory operations that occur before a LOCK operation may appear to happen
--     after it completes.
-+     Memory operations that occur before an ACQUIRE operation may appear to
-+     happen after it completes.
- 
--     A LOCK operation should almost always be paired with an UNLOCK operation.
-+     An ACQUIRE operation should almost always be paired with a RELEASE
-+     operation.
- 
- 
-- (6) UNLOCK operations.
-+ (6) RELEASE operations.
- 
-      This also acts as a one-way permeable barrier.  It guarantees that all
--     memory operations before the UNLOCK operation will appear to happen before
--     the UNLOCK operation with respect to the other components of the system.
-+     memory operations before the RELEASE operation will appear to happen
-+     before the RELEASE operation with respect to the other components of the
-+     system. RELEASE operations include UNLOCK operations and
-+     smp_store_release() operations.
- 
--     Memory operations that occur after an UNLOCK operation may appear to
-+     Memory operations that occur after a RELEASE operation may appear to
-      happen before it completes.
- 
--     The use of LOCK and UNLOCK operations generally precludes the need for
--     other sorts of memory barrier (but note the exceptions mentioned in the
--     subsection "MMIO write barrier").  In addition, an UNLOCK+LOCK pair
--     is -not- guaranteed to act as a full memory barrier.  However,
--     after a LOCK on a given lock variable, all memory accesses preceding any
--     prior UNLOCK on that same variable are guaranteed to be visible.
--     In other words, within a given lock variable's critical section,
--     all accesses of all previous critical sections for that lock variable
--     are guaranteed to have completed.
-+     The use of ACQUIRE and RELEASE operations generally precludes the need
-+     for other sorts of memory barrier (but note the exceptions mentioned in
-+     the subsection "MMIO write barrier").  In addition, a RELEASE+ACQUIRE
-+     pair is -not- guaranteed to act as a full memory barrier.  However, after
-+     an ACQUIRE on a given variable, all memory accesses preceding any prior
-+     RELEASE on that same variable are guaranteed to be visible.  In other
-+     words, within a given variable's critical section, all accesses of all
-+     previous critical sections for that variable are guaranteed to have
-+     completed.
- 
--     This means that LOCK acts as a minimal "acquire" operation and
--     UNLOCK acts as a minimal "release" operation.
-+     This means that ACQUIRE acts as a minimal "acquire" operation and
-+     RELEASE acts as a minimal "release" operation.
- 
- 
- Memory barriers are only required where there's a possibility of interaction
-@@ -1585,7 +1590,7 @@ CPU from reordering them.
- 	clear_bit( ... );
- 
-      This prevents memory operations before the clear leaking to after it.  See
--     the subsection on "Locking Functions" with reference to UNLOCK operation
-+     the subsection on "Locking Functions" with reference to RELEASE operation
-      implications.
- 
-      See Documentation/atomic_ops.txt for more information.  See the "Atomic
-@@ -1619,8 +1624,8 @@ provide more substantial guarantees, but
- of arch specific code.
- 
- 
--LOCKING FUNCTIONS
-------------------
-+ACQUIRING FUNCTIONS
-+-------------------
- 
- The Linux kernel has a number of locking constructs:
- 
-@@ -1631,106 +1636,106 @@ LOCKING FUNCTIONS
-  (*) R/W semaphores
-  (*) RCU
- 
--In all cases there are variants on "LOCK" operations and "UNLOCK" operations
-+In all cases there are variants on "ACQUIRE" operations and "RELEASE" operations
- for each construct.  These operations all imply certain barriers:
- 
-- (1) LOCK operation implication:
-+ (1) ACQUIRE operation implication:
- 
--     Memory operations issued after the LOCK will be completed after the LOCK
--     operation has completed.
-+     Memory operations issued after the ACQUIRE will be completed after the
-+     ACQUIRE operation has completed.
- 
--     Memory operations issued before the LOCK may be completed after the
--     LOCK operation has completed.  An smp_mb__before_spinlock(), combined
--     with a following LOCK, orders prior loads against subsequent stores
--     and stores and prior stores against subsequent stores.  Note that
--     this is weaker than smp_mb()!  The smp_mb__before_spinlock()
--     primitive is free on many architectures.
-+     Memory operations issued before the ACQUIRE may be completed after the
-+     ACQUIRE operation has completed.  An smp_mb__before_spinlock(), combined
-+     with a following ACQUIRE, orders prior loads against subsequent stores and
-+     stores and prior stores against subsequent stores.  Note that this is
-+     weaker than smp_mb()!  The smp_mb__before_spinlock() primitive is free on
-+     many architectures.
- 
-- (2) UNLOCK operation implication:
-+ (2) RELEASE operation implication:
- 
--     Memory operations issued before the UNLOCK will be completed before the
--     UNLOCK operation has completed.
-+     Memory operations issued before the RELEASE will be completed before the
-+     RELEASE operation has completed.
- 
--     Memory operations issued after the UNLOCK may be completed before the
--     UNLOCK operation has completed.
-+     Memory operations issued after the RELEASE may be completed before the
-+     RELEASE operation has completed.
- 
-- (3) LOCK vs LOCK implication:
-+ (3) ACQUIRE vs ACQUIRE implication:
- 
--     All LOCK operations issued before another LOCK operation will be completed
--     before that LOCK operation.
-+     All ACQUIRE operations issued before another ACQUIRE operation will be
-+     completed before that ACQUIRE operation.
- 
-- (4) LOCK vs UNLOCK implication:
-+ (4) ACQUIRE vs RELEASE implication:
- 
--     All LOCK operations issued before an UNLOCK operation will be completed
--     before the UNLOCK operation.
-+     All ACQUIRE operations issued before a RELEASE operation will be
-+     completed before the RELEASE operation.
- 
-- (5) Failed conditional LOCK implication:
-+ (5) Failed conditional ACQUIRE implication:
- 
--     Certain variants of the LOCK operation may fail, either due to being
--     unable to get the lock immediately, or due to receiving an unblocked
-+     Certain locking variants of the ACQUIRE operation may fail, either due to
-+     being unable to get the lock immediately, or due to receiving an unblocked
-      signal whilst asleep waiting for the lock to become available.  Failed
-      locks do not imply any sort of barrier.
- 
--[!] Note: one of the consequences of LOCKs and UNLOCKs being only one-way
--    barriers is that the effects of instructions outside of a critical section
--    may seep into the inside of the critical section.
+-#define rmb() \
+-__asm__ __volatile__("mb": : :"memory")
 -
--A LOCK followed by an UNLOCK may not be assumed to be full memory barrier
--because it is possible for an access preceding the LOCK to happen after the
--LOCK, and an access following the UNLOCK to happen before the UNLOCK, and the
--two accesses can themselves then cross:
-+[!] Note: one of the consequences of lock ACQUIREs and RELEASEs being only
-+one-way barriers is that the effects of instructions outside of a critical
-+section may seep into the inside of the critical section.
-+
-+An ACQUIRE followed by a RELEASE may not be assumed to be full memory barrier
-+because it is possible for an access preceding the ACQUIRE to happen after the
-+ACQUIRE, and an access following the RELEASE to happen before the RELEASE, and
-+the two accesses can themselves then cross:
- 
- 	*A = a;
--	LOCK M
--	UNLOCK M
-+	ACQUIRE M
-+	RELEASE M
- 	*B = b;
- 
- may occur as:
- 
--	LOCK M, STORE *B, STORE *A, UNLOCK M
-+	ACQUIRE M, STORE *B, STORE *A, RELEASE M
- 
--This same reordering can of course occur if the LOCK and UNLOCK are
--to the same lock variable, but only from the perspective of another
--CPU not holding that lock.
+-#define wmb() \
+-__asm__ __volatile__("wmb": : :"memory")
 -
--In short, an UNLOCK followed by a LOCK may -not- be assumed to be a full
--memory barrier because it is possible for a preceding UNLOCK to pass a
--later LOCK from the viewpoint of the CPU, but not from the viewpoint
-+This same reordering can of course occur if the lock's ACQUIRE and RELEASE are
-+to the same lock variable, but only from the perspective of another CPU not
-+holding that lock.
+-#define read_barrier_depends() \
+-__asm__ __volatile__("mb": : :"memory")
++#define read_barrier_depends() __asm__ __volatile__("mb": : :"memory")
+ 
+ #ifdef CONFIG_SMP
+ #define __ASM_SMP_MB	"\tmb\n"
+-#define smp_mb()	mb()
+-#define smp_rmb()	rmb()
+-#define smp_wmb()	wmb()
+-#define smp_read_barrier_depends()	read_barrier_depends()
+ #else
+ #define __ASM_SMP_MB
+-#define smp_mb()	barrier()
+-#define smp_rmb()	barrier()
+-#define smp_wmb()	barrier()
+-#define smp_read_barrier_depends()	do { } while (0)
+ #endif
+ 
+-#define set_mb(var, value) \
+-do { var = value; mb(); } while (0)
++#include <asm-generic/barrier.h>
+ 
+ #endif		/* __BARRIER_H */
+--- a/arch/arc/include/asm/Kbuild
++++ b/arch/arc/include/asm/Kbuild
+@@ -47,3 +47,4 @@ generic-y += user.h
+ generic-y += vga.h
+ generic-y += xor.h
+ generic-y += preempt.h
++generic-y += barrier.h
+--- a/arch/avr32/include/asm/barrier.h
++++ b/arch/avr32/include/asm/barrier.h
+@@ -8,22 +8,15 @@
+ #ifndef __ASM_AVR32_BARRIER_H
+ #define __ASM_AVR32_BARRIER_H
+ 
+-#define nop()			asm volatile("nop")
+-
+-#define mb()			asm volatile("" : : : "memory")
+-#define rmb()			mb()
+-#define wmb()			asm volatile("sync 0" : : : "memory")
+-#define read_barrier_depends()  do { } while(0)
+-#define set_mb(var, value)      do { var = value; mb(); } while(0)
++/*
++ * Weirdest thing ever.. no full barrier, but it has a write barrier!
++ */
++#define wmb()	asm volatile("sync 0" : : : "memory")
+ 
+ #ifdef CONFIG_SMP
+ # error "The AVR32 port does not support SMP"
+-#else
+-# define smp_mb()		barrier()
+-# define smp_rmb()		barrier()
+-# define smp_wmb()		barrier()
+-# define smp_read_barrier_depends() do { } while(0)
+ #endif
+ 
++#include <asm-generic/barrier.h>
+ 
+ #endif /* __ASM_AVR32_BARRIER_H */
+--- a/arch/blackfin/include/asm/barrier.h
++++ b/arch/blackfin/include/asm/barrier.h
+@@ -23,26 +23,10 @@
+ # define rmb()	do { barrier(); smp_check_barrier(); } while (0)
+ # define wmb()	do { barrier(); smp_mark_barrier(); } while (0)
+ # define read_barrier_depends()	do { barrier(); smp_check_barrier(); } while (0)
+-#else
+-# define mb()	barrier()
+-# define rmb()	barrier()
+-# define wmb()	barrier()
+-# define read_barrier_depends()	do { } while (0)
+ #endif
+ 
+-#else /* !CONFIG_SMP */
+-
+-#define mb()	barrier()
+-#define rmb()	barrier()
+-#define wmb()	barrier()
+-#define read_barrier_depends()	do { } while (0)
+-
+ #endif /* !CONFIG_SMP */
+ 
+-#define smp_mb()  mb()
+-#define smp_rmb() rmb()
+-#define smp_wmb() wmb()
+-#define set_mb(var, value) do { var = value; mb(); } while (0)
+-#define smp_read_barrier_depends()	read_barrier_depends()
++#include <asm-generic/barrier.h>
+ 
+ #endif /* _BLACKFIN_BARRIER_H */
+--- a/arch/cris/include/asm/Kbuild
++++ b/arch/cris/include/asm/Kbuild
+@@ -12,3 +12,4 @@ generic-y += trace_clock.h
+ generic-y += vga.h
+ generic-y += xor.h
+ generic-y += preempt.h
++generic-y += barrier.h
+--- a/arch/cris/include/asm/barrier.h
++++ /dev/null
+@@ -1,25 +0,0 @@
+-#ifndef __ASM_CRIS_BARRIER_H
+-#define __ASM_CRIS_BARRIER_H
+-
+-#define nop() __asm__ __volatile__ ("nop");
+-
+-#define barrier() __asm__ __volatile__("": : :"memory")
+-#define mb() barrier()
+-#define rmb() mb()
+-#define wmb() mb()
+-#define read_barrier_depends() do { } while(0)
+-#define set_mb(var, value)  do { var = value; mb(); } while (0)
+-
+-#ifdef CONFIG_SMP
+-#define smp_mb()        mb()
+-#define smp_rmb()       rmb()
+-#define smp_wmb()       wmb()
+-#define smp_read_barrier_depends()     read_barrier_depends()
+-#else
+-#define smp_mb()        barrier()
+-#define smp_rmb()       barrier()
+-#define smp_wmb()       barrier()
+-#define smp_read_barrier_depends()     do { } while(0)
+-#endif
+-
+-#endif /* __ASM_CRIS_BARRIER_H */
+--- a/arch/frv/include/asm/barrier.h
++++ b/arch/frv/include/asm/barrier.h
+@@ -17,13 +17,7 @@
+ #define mb()			asm volatile ("membar" : : :"memory")
+ #define rmb()			asm volatile ("membar" : : :"memory")
+ #define wmb()			asm volatile ("membar" : : :"memory")
+-#define read_barrier_depends()	do { } while (0)
+ 
+-#define smp_mb()			barrier()
+-#define smp_rmb()			barrier()
+-#define smp_wmb()			barrier()
+-#define smp_read_barrier_depends()	do {} while(0)
+-#define set_mb(var, value) \
+-	do { var = (value); barrier(); } while (0)
++#include <asm-generic/barrier.h>
+ 
+ #endif /* _ASM_BARRIER_H */
+--- a/arch/hexagon/include/asm/Kbuild
++++ b/arch/hexagon/include/asm/Kbuild
+@@ -54,3 +54,4 @@ generic-y += ucontext.h
+ generic-y += unaligned.h
+ generic-y += xor.h
+ generic-y += preempt.h
++generic-y += barrier.h
+--- a/arch/m32r/include/asm/barrier.h
++++ b/arch/m32r/include/asm/barrier.h
+@@ -11,84 +11,6 @@
+ 
+ #define nop()  __asm__ __volatile__ ("nop" : : )
+ 
+-/*
+- * Memory barrier.
+- *
+- * mb() prevents loads and stores being reordered across this point.
+- * rmb() prevents loads being reordered across this point.
+- * wmb() prevents stores being reordered across this point.
+- */
+-#define mb()   barrier()
+-#define rmb()  mb()
+-#define wmb()  mb()
+-
+-/**
+- * read_barrier_depends - Flush all pending reads that subsequents reads
+- * depend on.
+- *
+- * No data-dependent reads from memory-like regions are ever reordered
+- * over this barrier.  All reads preceding this primitive are guaranteed
+- * to access memory (but not necessarily other CPUs' caches) before any
+- * reads following this primitive that depend on the data return by
+- * any of the preceding reads.  This primitive is much lighter weight than
+- * rmb() on most CPUs, and is never heavier weight than is
+- * rmb().
+- *
+- * These ordering constraints are respected by both the local CPU
+- * and the compiler.
+- *
+- * Ordering is not guaranteed by anything other than these primitives,
+- * not even by data dependencies.  See the documentation for
+- * memory_barrier() for examples and URLs to more information.
+- *
+- * For example, the following code would force ordering (the initial
+- * value of "a" is zero, "b" is one, and "p" is "&a"):
+- *
+- * <programlisting>
+- *      CPU 0                           CPU 1
+- *
+- *      b = 2;
+- *      memory_barrier();
+- *      p = &b;                         q = p;
+- *                                      read_barrier_depends();
+- *                                      d = *q;
+- * </programlisting>
+- *
+- *
+- * because the read of "*q" depends on the read of "p" and these
+- * two reads are separated by a read_barrier_depends().  However,
+- * the following code, with the same initial values for "a" and "b":
+- *
+- * <programlisting>
+- *      CPU 0                           CPU 1
+- *
+- *      a = 2;
+- *      memory_barrier();
+- *      b = 3;                          y = b;
+- *                                      read_barrier_depends();
+- *                                      x = a;
+- * </programlisting>
+- *
+- * does not enforce ordering, since there is no data dependency between
+- * the read of "a" and the read of "b".  Therefore, on some CPUs, such
+- * as Alpha, "y" could be set to 3 and "x" to 0.  Use rmb()
+- * in cases like this where there are no data dependencies.
+- **/
+-
+-#define read_barrier_depends()	do { } while (0)
+-
+-#ifdef CONFIG_SMP
+-#define smp_mb()	mb()
+-#define smp_rmb()	rmb()
+-#define smp_wmb()	wmb()
+-#define smp_read_barrier_depends()	read_barrier_depends()
+-#define set_mb(var, value) do { (void) xchg(&var, value); } while (0)
+-#else
+-#define smp_mb()	barrier()
+-#define smp_rmb()	barrier()
+-#define smp_wmb()	barrier()
+-#define smp_read_barrier_depends()	do { } while (0)
+-#define set_mb(var, value) do { var = value; barrier(); } while (0)
+-#endif
++#include <asm-generic/barrier.h>
+ 
+ #endif /* _ASM_M32R_BARRIER_H */
+--- a/arch/m68k/include/asm/barrier.h
++++ b/arch/m68k/include/asm/barrier.h
+@@ -1,20 +1,8 @@
+ #ifndef _M68K_BARRIER_H
+ #define _M68K_BARRIER_H
+ 
+-/*
+- * Force strict CPU ordering.
+- * Not really required on m68k...
+- */
+ #define nop()		do { asm volatile ("nop"); barrier(); } while (0)
+-#define mb()		barrier()
+-#define rmb()		barrier()
+-#define wmb()		barrier()
+-#define read_barrier_depends()	((void)0)
+-#define set_mb(var, value)	({ (var) = (value); wmb(); })
+ 
+-#define smp_mb()	barrier()
+-#define smp_rmb()	barrier()
+-#define smp_wmb()	barrier()
+-#define smp_read_barrier_depends()	((void)0)
++#include <asm-generic/barrier.h>
+ 
+ #endif /* _M68K_BARRIER_H */
+--- a/arch/microblaze/include/asm/Kbuild
++++ b/arch/microblaze/include/asm/Kbuild
+@@ -4,3 +4,4 @@ generic-y += exec.h
+ generic-y += trace_clock.h
+ generic-y += syscalls.h
+ generic-y += preempt.h
++generic-y += barrier.h
+--- a/arch/microblaze/include/asm/barrier.h
++++ /dev/null
+@@ -1,27 +0,0 @@
+-/*
+- * Copyright (C) 2006 Atmark Techno, Inc.
+- *
+- * This file is subject to the terms and conditions of the GNU General Public
+- * License. See the file "COPYING" in the main directory of this archive
+- * for more details.
+- */
+-
+-#ifndef _ASM_MICROBLAZE_BARRIER_H
+-#define _ASM_MICROBLAZE_BARRIER_H
+-
+-#define nop()                  asm volatile ("nop")
+-
+-#define smp_read_barrier_depends()	do {} while (0)
+-#define read_barrier_depends()		do {} while (0)
+-
+-#define mb()			barrier()
+-#define rmb()			mb()
+-#define wmb()			mb()
+-#define set_mb(var, value)	do { var = value; mb(); } while (0)
+-#define set_wmb(var, value)	do { var = value; wmb(); } while (0)
+-
+-#define smp_mb()		mb()
+-#define smp_rmb()		rmb()
+-#define smp_wmb()		wmb()
+-
+-#endif /* _ASM_MICROBLAZE_BARRIER_H */
+--- a/arch/mn10300/include/asm/Kbuild
++++ b/arch/mn10300/include/asm/Kbuild
+@@ -3,3 +3,4 @@ generic-y += clkdev.h
+ generic-y += exec.h
+ generic-y += trace_clock.h
+ generic-y += preempt.h
++generic-y += barrier.h
+--- a/arch/mn10300/include/asm/barrier.h
++++ /dev/null
+@@ -1,37 +0,0 @@
+-/* MN10300 memory barrier definitions
+- *
+- * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
+- * Written by David Howells (dhowells@redhat.com)
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public Licence
+- * as published by the Free Software Foundation; either version
+- * 2 of the Licence, or (at your option) any later version.
+- */
+-#ifndef _ASM_BARRIER_H
+-#define _ASM_BARRIER_H
+-
+-#define nop()	asm volatile ("nop")
+-
+-#define mb()	asm volatile ("": : :"memory")
+-#define rmb()	mb()
+-#define wmb()	asm volatile ("": : :"memory")
+-
+-#ifdef CONFIG_SMP
+-#define smp_mb()	mb()
+-#define smp_rmb()	rmb()
+-#define smp_wmb()	wmb()
+-#define set_mb(var, value)  do { xchg(&var, value); } while (0)
+-#else  /* CONFIG_SMP */
+-#define smp_mb()	barrier()
+-#define smp_rmb()	barrier()
+-#define smp_wmb()	barrier()
+-#define set_mb(var, value)  do { var = value;  mb(); } while (0)
+-#endif /* CONFIG_SMP */
+-
+-#define set_wmb(var, value) do { var = value; wmb(); } while (0)
+-
+-#define read_barrier_depends()		do {} while (0)
+-#define smp_read_barrier_depends()	do {} while (0)
+-
+-#endif /* _ASM_BARRIER_H */
+--- a/arch/parisc/include/asm/Kbuild
++++ b/arch/parisc/include/asm/Kbuild
+@@ -5,3 +5,4 @@ generic-y += word-at-a-time.h auxvec.h u
+ 	  poll.h xor.h clkdev.h exec.h
+ generic-y += trace_clock.h
+ generic-y += preempt.h
++generic-y += barrier.h
+--- a/arch/parisc/include/asm/barrier.h
++++ /dev/null
+@@ -1,35 +0,0 @@
+-#ifndef __PARISC_BARRIER_H
+-#define __PARISC_BARRIER_H
+-
+-/*
+-** This is simply the barrier() macro from linux/kernel.h but when serial.c
+-** uses tqueue.h uses smp_mb() defined using barrier(), linux/kernel.h
+-** hasn't yet been included yet so it fails, thus repeating the macro here.
+-**
+-** PA-RISC architecture allows for weakly ordered memory accesses although
+-** none of the processors use it. There is a strong ordered bit that is
+-** set in the O-bit of the page directory entry. Operating systems that
+-** can not tolerate out of order accesses should set this bit when mapping
+-** pages. The O-bit of the PSW should also be set to 1 (I don't believe any
+-** of the processor implemented the PSW O-bit). The PCX-W ERS states that
+-** the TLB O-bit is not implemented so the page directory does not need to
+-** have the O-bit set when mapping pages (section 3.1). This section also
+-** states that the PSW Y, Z, G, and O bits are not implemented.
+-** So it looks like nothing needs to be done for parisc-linux (yet).
+-** (thanks to chada for the above comment -ggg)
+-**
+-** The __asm__ op below simple prevents gcc/ld from reordering
+-** instructions across the mb() "call".
+-*/
+-#define mb()		__asm__ __volatile__("":::"memory")	/* barrier() */
+-#define rmb()		mb()
+-#define wmb()		mb()
+-#define smp_mb()	mb()
+-#define smp_rmb()	mb()
+-#define smp_wmb()	mb()
+-#define smp_read_barrier_depends()	do { } while(0)
+-#define read_barrier_depends()		do { } while(0)
+-
+-#define set_mb(var, value)		do { var = value; mb(); } while (0)
+-
+-#endif /* __PARISC_BARRIER_H */
+--- a/arch/score/include/asm/Kbuild
++++ b/arch/score/include/asm/Kbuild
+@@ -5,3 +5,4 @@ generic-y += clkdev.h
+ generic-y += trace_clock.h
+ generic-y += xor.h
+ generic-y += preempt.h
++generic-y += barrier.h
+--- a/arch/score/include/asm/barrier.h
++++ /dev/null
+@@ -1,16 +0,0 @@
+-#ifndef _ASM_SCORE_BARRIER_H
+-#define _ASM_SCORE_BARRIER_H
+-
+-#define mb()		barrier()
+-#define rmb()		barrier()
+-#define wmb()		barrier()
+-#define smp_mb()	barrier()
+-#define smp_rmb()	barrier()
+-#define smp_wmb()	barrier()
+-
+-#define read_barrier_depends()		do {} while (0)
+-#define smp_read_barrier_depends()	do {} while (0)
+-
+-#define set_mb(var, value) 		do {var = value; wmb(); } while (0)
+-
+-#endif /* _ASM_SCORE_BARRIER_H */
+--- a/arch/sh/include/asm/barrier.h
++++ b/arch/sh/include/asm/barrier.h
+@@ -26,29 +26,14 @@
+ #if defined(CONFIG_CPU_SH4A) || defined(CONFIG_CPU_SH5)
+ #define mb()		__asm__ __volatile__ ("synco": : :"memory")
+ #define rmb()		mb()
+-#define wmb()		__asm__ __volatile__ ("synco": : :"memory")
++#define wmb()		mb()
+ #define ctrl_barrier()	__icbi(PAGE_OFFSET)
+-#define read_barrier_depends()	do { } while(0)
+ #else
+-#define mb()		__asm__ __volatile__ ("": : :"memory")
+-#define rmb()		mb()
+-#define wmb()		__asm__ __volatile__ ("": : :"memory")
+ #define ctrl_barrier()	__asm__ __volatile__ ("nop;nop;nop;nop;nop;nop;nop;nop")
+-#define read_barrier_depends()	do { } while(0)
+-#endif
+-
+-#ifdef CONFIG_SMP
+-#define smp_mb()	mb()
+-#define smp_rmb()	rmb()
+-#define smp_wmb()	wmb()
+-#define smp_read_barrier_depends()	read_barrier_depends()
+-#else
+-#define smp_mb()	barrier()
+-#define smp_rmb()	barrier()
+-#define smp_wmb()	barrier()
+-#define smp_read_barrier_depends()	do { } while(0)
+ #endif
+ 
+ #define set_mb(var, value) do { (void)xchg(&var, value); } while (0)
+ 
++#include <asm-generic/barrier.h>
 +
-+In short, a RELEASE followed by an ACQUIRE may -not- be assumed to be a full
-+memory barrier because it is possible for a preceding RELEASE to pass a
-+later ACQUIRE from the viewpoint of the CPU, but not from the viewpoint
- of the compiler.  Note that deadlocks cannot be introduced by this
--interchange because if such a deadlock threatened, the UNLOCK would
-+interchange because if such a deadlock threatened, the RELEASE would
- simply complete.
+ #endif /* __ASM_SH_BARRIER_H */
+--- a/arch/sparc/include/asm/barrier_32.h
++++ b/arch/sparc/include/asm/barrier_32.h
+@@ -1,15 +1,7 @@
+ #ifndef __SPARC_BARRIER_H
+ #define __SPARC_BARRIER_H
  
--If it is necessary for an UNLOCK-LOCK pair to produce a full barrier,
--the LOCK can be followed by an smp_mb__after_unlock_lock() invocation.
--This will produce a full barrier if either (a) the UNLOCK and the LOCK
--are executed by the same CPU or task, or (b) the UNLOCK and LOCK act
--on the same lock variable.  The smp_mb__after_unlock_lock() primitive
--is free on many architectures.  Without smp_mb__after_unlock_lock(),
--the critical sections corresponding to the UNLOCK and the LOCK can cross:
-+If it is necessary for a RELEASE-ACQUIRE pair to produce a full barrier, the
-+ACQUIRE can be followed by an smp_mb__after_unlock_lock() invocation.  This
-+will produce a full barrier if either (a) the RELEASE and the ACQUIRE are
-+executed by the same CPU or task, or (b) the RELEASE and ACQUIRE act on the
-+same variable.  The smp_mb__after_unlock_lock() primitive is free on many
-+architectures.  Without smp_mb__after_unlock_lock(), the critical sections
-+corresponding to the RELEASE and the ACQUIRE can cross:
+-/* XXX Change this if we ever use a PSO mode kernel. */
+-#define mb()	__asm__ __volatile__ ("" : : : "memory")
+-#define rmb()	mb()
+-#define wmb()	mb()
+-#define read_barrier_depends()	do { } while(0)
+-#define set_mb(__var, __value)  do { __var = __value; mb(); } while(0)
+-#define smp_mb()	__asm__ __volatile__("":::"memory")
+-#define smp_rmb()	__asm__ __volatile__("":::"memory")
+-#define smp_wmb()	__asm__ __volatile__("":::"memory")
+-#define smp_read_barrier_depends()	do { } while(0)
++#include <asm/processor.h> /* for nop() */
++#include <asm-generic/barrier.h>
  
- 	*A = a;
--	UNLOCK M
--	LOCK N
-+	RELEASE M
-+	ACQUIRE N
- 	*B = b;
+ #endif /* !(__SPARC_BARRIER_H) */
+--- a/arch/tile/include/asm/barrier.h
++++ b/arch/tile/include/asm/barrier.h
+@@ -22,59 +22,6 @@
+ #include <arch/spr_def.h>
+ #include <asm/timex.h>
  
- could occur as:
+-/*
+- * read_barrier_depends - Flush all pending reads that subsequents reads
+- * depend on.
+- *
+- * No data-dependent reads from memory-like regions are ever reordered
+- * over this barrier.  All reads preceding this primitive are guaranteed
+- * to access memory (but not necessarily other CPUs' caches) before any
+- * reads following this primitive that depend on the data return by
+- * any of the preceding reads.  This primitive is much lighter weight than
+- * rmb() on most CPUs, and is never heavier weight than is
+- * rmb().
+- *
+- * These ordering constraints are respected by both the local CPU
+- * and the compiler.
+- *
+- * Ordering is not guaranteed by anything other than these primitives,
+- * not even by data dependencies.  See the documentation for
+- * memory_barrier() for examples and URLs to more information.
+- *
+- * For example, the following code would force ordering (the initial
+- * value of "a" is zero, "b" is one, and "p" is "&a"):
+- *
+- * <programlisting>
+- *	CPU 0				CPU 1
+- *
+- *	b = 2;
+- *	memory_barrier();
+- *	p = &b;				q = p;
+- *					read_barrier_depends();
+- *					d = *q;
+- * </programlisting>
+- *
+- * because the read of "*q" depends on the read of "p" and these
+- * two reads are separated by a read_barrier_depends().  However,
+- * the following code, with the same initial values for "a" and "b":
+- *
+- * <programlisting>
+- *	CPU 0				CPU 1
+- *
+- *	a = 2;
+- *	memory_barrier();
+- *	b = 3;				y = b;
+- *					read_barrier_depends();
+- *					x = a;
+- * </programlisting>
+- *
+- * does not enforce ordering, since there is no data dependency between
+- * the read of "a" and the read of "b".  Therefore, on some CPUs, such
+- * as Alpha, "y" could be set to 3 and "x" to 0.  Use rmb()
+- * in cases like this where there are no data dependencies.
+- */
+-#define read_barrier_depends()	do { } while (0)
+-
+ #define __sync()	__insn_mf()
  
--	LOCK N, STORE *B, STORE *A, UNLOCK M
-+	ACQUIRE N, STORE *B, STORE *A, RELEASE M
+ #include <hv/syscall_public.h>
+@@ -125,20 +72,7 @@ mb_incoherent(void)
+ #define mb()		fast_mb()
+ #define iob()		fast_iob()
  
- With smp_mb__after_unlock_lock(), they cannot, so that:
+-#ifdef CONFIG_SMP
+-#define smp_mb()	mb()
+-#define smp_rmb()	rmb()
+-#define smp_wmb()	wmb()
+-#define smp_read_barrier_depends()	read_barrier_depends()
+-#else
+-#define smp_mb()	barrier()
+-#define smp_rmb()	barrier()
+-#define smp_wmb()	barrier()
+-#define smp_read_barrier_depends()	do { } while (0)
+-#endif
+-
+-#define set_mb(var, value) \
+-	do { var = value; mb(); } while (0)
++#include <asm-generic/barrier.h>
  
- 	*A = a;
--	UNLOCK M
--	LOCK N
-+	RELEASE M
-+	ACQUIRE N
- 	smp_mb__after_unlock_lock();
- 	*B = b;
+ #endif /* !__ASSEMBLY__ */
+ #endif /* _ASM_TILE_BARRIER_H */
+--- a/arch/unicore32/include/asm/barrier.h
++++ b/arch/unicore32/include/asm/barrier.h
+@@ -14,15 +14,6 @@
+ #define dsb() __asm__ __volatile__ ("" : : : "memory")
+ #define dmb() __asm__ __volatile__ ("" : : : "memory")
  
- will always occur as either of the following:
+-#define mb()				barrier()
+-#define rmb()				barrier()
+-#define wmb()				barrier()
+-#define smp_mb()			barrier()
+-#define smp_rmb()			barrier()
+-#define smp_wmb()			barrier()
+-#define read_barrier_depends()		do { } while (0)
+-#define smp_read_barrier_depends()	do { } while (0)
+-
+-#define set_mb(var, value)		do { var = value; smp_mb(); } while (0)
++#include <asm-generic/barrier.h>
  
--	STORE *A, UNLOCK, LOCK, STORE *B
--	STORE *A, LOCK, UNLOCK, STORE *B
-+	STORE *A, RELEASE, ACQUIRE, STORE *B
-+	STORE *A, ACQUIRE, RELEASE, STORE *B
+ #endif /* __UNICORE_BARRIER_H__ */
+--- a/arch/xtensa/include/asm/barrier.h
++++ b/arch/xtensa/include/asm/barrier.h
+@@ -9,21 +9,14 @@
+ #ifndef _XTENSA_SYSTEM_H
+ #define _XTENSA_SYSTEM_H
  
--If the UNLOCK and LOCK were instead both operating on the same lock
-+If the RELEASE and ACQUIRE were instead both operating on the same lock
- variable, only the first of these two alternatives can occur.
+-#define smp_read_barrier_depends() do { } while(0)
+-#define read_barrier_depends() do { } while(0)
+-
+ #define mb()  ({ __asm__ __volatile__("memw" : : : "memory"); })
+ #define rmb() barrier()
+ #define wmb() mb()
  
- Locks and semaphores may not provide any guarantee of ordering on UP compiled
-@@ -1745,33 +1750,33 @@ See also the section on "Inter-CPU locki
+ #ifdef CONFIG_SMP
+ #error smp_* not defined
+-#else
+-#define smp_mb()	barrier()
+-#define smp_rmb()	barrier()
+-#define smp_wmb()	barrier()
+ #endif
  
- 	*A = a;
- 	*B = b;
--	LOCK
-+	ACQUIRE
- 	*C = c;
- 	*D = d;
--	UNLOCK
-+	RELEASE
- 	*E = e;
- 	*F = f;
+-#define set_mb(var, value)	do { var = value; mb(); } while (0)
++#include <asm-generic/barrier.h>
  
- The following sequence of events is acceptable:
+ #endif /* _XTENSA_SYSTEM_H */
+--- a/include/asm-generic/barrier.h
++++ b/include/asm-generic/barrier.h
+@@ -1,4 +1,5 @@
+-/* Generic barrier definitions, based on MN10300 definitions.
++/*
++ * Generic barrier definitions, originally based on MN10300 definitions.
+  *
+  * It should be possible to use these on really simple architectures,
+  * but it serves more as a starting point for new ports.
+@@ -16,35 +17,50 @@
  
--	LOCK, {*F,*A}, *E, {*C,*D}, *B, UNLOCK
-+	ACQUIRE, {*F,*A}, *E, {*C,*D}, *B, RELEASE
+ #ifndef __ASSEMBLY__
  
- 	[+] Note that {*F,*A} indicates a combined access.
+-#define nop() asm volatile ("nop")
++#include <linux/compiler.h>
++
++#ifndef nop
++#define nop()	asm volatile ("nop")
++#endif
  
- But none of the following are:
+ /*
+- * Force strict CPU ordering.
+- * And yes, this is required on UP too when we're talking
+- * to devices.
++ * Force strict CPU ordering. And yes, this is required on UP too when we're
++ * talking to devices.
+  *
+- * This implementation only contains a compiler barrier.
++ * Fall back to compiler barriers if nothing better is provided.
+  */
  
--	{*F,*A}, *B,	LOCK, *C, *D,	UNLOCK, *E
--	*A, *B, *C,	LOCK, *D,	UNLOCK, *E, *F
--	*A, *B,		LOCK, *C,	UNLOCK, *D, *E, *F
--	*B,		LOCK, *C, *D,	UNLOCK, {*F,*A}, *E
-+	{*F,*A}, *B,	ACQUIRE, *C, *D,	RELEASE, *E
-+	*A, *B, *C,	ACQUIRE, *D,		RELEASE, *E, *F
-+	*A, *B,		ACQUIRE, *C,		RELEASE, *D, *E, *F
-+	*B,		ACQUIRE, *C, *D,	RELEASE, {*F,*A}, *E
+-#define mb()	asm volatile ("": : :"memory")
++#ifndef mb
++#define mb()	barrier()
++#endif
++
++#ifndef rmb
+ #define rmb()	mb()
+-#define wmb()	asm volatile ("": : :"memory")
++#endif
++
++#ifndef wmb
++#define wmb()	mb()
++#endif
++
++#ifndef read_barrier_depends
++#define read_barrier_depends()		do { } while (0)
++#endif
  
+ #ifdef CONFIG_SMP
+ #define smp_mb()	mb()
+ #define smp_rmb()	rmb()
+ #define smp_wmb()	wmb()
++#define smp_read_barrier_depends()	read_barrier_depends()
+ #else
+ #define smp_mb()	barrier()
+ #define smp_rmb()	barrier()
+ #define smp_wmb()	barrier()
++#define smp_read_barrier_depends()	do { } while (0)
+ #endif
  
+-#define set_mb(var, value)  do { var = value;  mb(); } while (0)
+-#define set_wmb(var, value) do { var = value; wmb(); } while (0)
+-
+-#define read_barrier_depends()		do {} while (0)
+-#define smp_read_barrier_depends()	do {} while (0)
++#ifndef set_mb
++#define set_mb(var, value)  do { (var) = (value); mb(); } while (0)
++#endif
  
- INTERRUPT DISABLING FUNCTIONS
- -----------------------------
- 
--Functions that disable interrupts (LOCK equivalent) and enable interrupts
--(UNLOCK equivalent) will act as compiler barriers only.  So if memory or I/O
-+Functions that disable interrupts (ACQUIRE equivalent) and enable interrupts
-+(RELEASE equivalent) will act as compiler barriers only.  So if memory or I/O
- barriers are required in such a situation, they must be provided from some
- other means.
- 
-@@ -1910,17 +1915,17 @@ MISCELLANEOUS FUNCTIONS
-  (*) schedule() and similar imply full memory barriers.
- 
- 
--=================================
--INTER-CPU LOCKING BARRIER EFFECTS
--=================================
-+===================================
-+INTER-CPU ACQUIRING BARRIER EFFECTS
-+===================================
- 
- On SMP systems locking primitives give a more substantial form of barrier: one
- that does affect memory access ordering on other CPUs, within the context of
- conflict on any particular lock.
- 
- 
--LOCKS VS MEMORY ACCESSES
--------------------------
-+ACQUIRES VS MEMORY ACCESSES
-+---------------------------
- 
- Consider the following: the system has a pair of spinlocks (M) and (Q), and
- three CPUs; then should the following sequence of events occur:
-@@ -1928,24 +1933,24 @@ Consider the following: the system has a
- 	CPU 1				CPU 2
- 	===============================	===============================
- 	ACCESS_ONCE(*A) = a;		ACCESS_ONCE(*E) = e;
--	LOCK M				LOCK Q
-+	ACQUIRE M			ACQUIRE Q
- 	ACCESS_ONCE(*B) = b;		ACCESS_ONCE(*F) = f;
- 	ACCESS_ONCE(*C) = c;		ACCESS_ONCE(*G) = g;
--	UNLOCK M			UNLOCK Q
-+	RELEASE M			RELEASE Q
- 	ACCESS_ONCE(*D) = d;		ACCESS_ONCE(*H) = h;
- 
- Then there is no guarantee as to what order CPU 3 will see the accesses to *A
- through *H occur in, other than the constraints imposed by the separate locks
- on the separate CPUs. It might, for example, see:
- 
--	*E, LOCK M, LOCK Q, *G, *C, *F, *A, *B, UNLOCK Q, *D, *H, UNLOCK M
-+	*E, ACQUIRE M, ACQUIRE Q, *G, *C, *F, *A, *B, RELEASE Q, *D, *H, RELEASE M
- 
- But it won't see any of:
- 
--	*B, *C or *D preceding LOCK M
--	*A, *B or *C following UNLOCK M
--	*F, *G or *H preceding LOCK Q
--	*E, *F or *G following UNLOCK Q
-+	*B, *C or *D preceding ACQUIRE M
-+	*A, *B or *C following RELEASE M
-+	*F, *G or *H preceding ACQUIRE Q
-+	*E, *F or *G following RELEASE Q
- 
- 
- However, if the following occurs:
-@@ -1953,29 +1958,29 @@ through *H occur in, other than the cons
- 	CPU 1				CPU 2
- 	===============================	===============================
- 	ACCESS_ONCE(*A) = a;
--	LOCK M		     [1]
-+	ACQUIRE M		     [1]
- 	ACCESS_ONCE(*B) = b;
- 	ACCESS_ONCE(*C) = c;
--	UNLOCK M	     [1]
-+	RELEASE M	     [1]
- 	ACCESS_ONCE(*D) = d;		ACCESS_ONCE(*E) = e;
--					LOCK M		     [2]
-+					ACQUIRE M		     [2]
- 					smp_mb__after_unlock_lock();
- 					ACCESS_ONCE(*F) = f;
- 					ACCESS_ONCE(*G) = g;
--					UNLOCK M	     [2]
-+					RELEASE M	     [2]
- 					ACCESS_ONCE(*H) = h;
- 
- CPU 3 might see:
- 
--	*E, LOCK M [1], *C, *B, *A, UNLOCK M [1],
--		LOCK M [2], *H, *F, *G, UNLOCK M [2], *D
-+	*E, ACQUIRE M [1], *C, *B, *A, RELEASE M [1],
-+		ACQUIRE M [2], *H, *F, *G, RELEASE M [2], *D
- 
- But assuming CPU 1 gets the lock first, CPU 3 won't see any of:
- 
--	*B, *C, *D, *F, *G or *H preceding LOCK M [1]
--	*A, *B or *C following UNLOCK M [1]
--	*F, *G or *H preceding LOCK M [2]
--	*A, *B, *C, *E, *F or *G following UNLOCK M [2]
-+	*B, *C, *D, *F, *G or *H preceding ACQUIRE M [1]
-+	*A, *B or *C following RELEASE M [1]
-+	*F, *G or *H preceding ACQUIRE M [2]
-+	*A, *B, *C, *E, *F or *G following RELEASE M [2]
- 
- Note that the smp_mb__after_unlock_lock() is critically important
- here: Without it CPU 3 might see some of the above orderings.
-@@ -1983,8 +1988,8 @@ Without smp_mb__after_unlock_lock(), the
- to be seen in order unless CPU 3 holds lock M.
- 
- 
--LOCKS VS I/O ACCESSES
-----------------------
-+ACQUIRES VS I/O ACCESSES
-+------------------------
- 
- Under certain circumstances (especially involving NUMA), I/O accesses within
- two spinlocked sections on two different CPUs may be seen as interleaved by the
-@@ -2202,13 +2207,13 @@ about the state (old or new) implies an
- 	/* when succeeds (returns 1) */
- 	atomic_add_unless();		atomic_long_add_unless();
- 
--These are used for such things as implementing LOCK-class and UNLOCK-class
-+These are used for such things as implementing ACQUIRE-class and RELEASE-class
- operations and adjusting reference counters towards object destruction, and as
- such the implicit memory barrier effects are necessary.
- 
- 
- The following operations are potential problems as they do _not_ imply memory
--barriers, but might be used for implementing such things as UNLOCK-class
-+barriers, but might be used for implementing such things as RELEASE-class
- operations:
- 
- 	atomic_set();
-@@ -2250,7 +2255,7 @@ barriers are needed or not.
- 	clear_bit_unlock();
- 	__clear_bit_unlock();
- 
--These implement LOCK-class and UNLOCK-class operations. These should be used in
-+These implement ACQUIRE-class and RELEASE-class operations. These should be used in
- preference to other operations when implementing locking primitives, because
- their implementations can be optimised on many architectures.
- 
+ #endif /* !__ASSEMBLY__ */
+ #endif /* __ASM_GENERIC_BARRIER_H */
 
 
