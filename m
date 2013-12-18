@@ -1,183 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344Ab3LRKNg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 05:13:36 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:37749 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab3LRKNa (ORCPT
+	id S1753498Ab3LRKPo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 05:15:44 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42162 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab3LRKPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 05:13:30 -0500
-Date: Wed, 18 Dec 2013 11:13:23 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Borislav Petkov <bp@suse.de>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        Robert Richter <rric@kernel.org>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/10] perf/core improvements and refactorings
-Message-ID: <20131218101323.GA20360@gmail.com>
-References: <1387313531-14629-1-git-send-email-acme@infradead.org>
+	Wed, 18 Dec 2013 05:15:41 -0500
+Date: Wed, 18 Dec 2013 11:15:23 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: David Miller <davem@davemloft.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ffusco@redhat.com, dborkman@redhat.com, tgraf@redhat.com
+Subject: Re: linux-next: build failure after merge of the net-next tree
+Message-ID: <20131218101523.GP13532@twins.programming.kicks-ass.net>
+References: <20131218125643.8ff140371e1f8c306327d354@canb.auug.org.au>
+ <20131217.212145.893665929052097867.davem@davemloft.net>
+ <20131217.213033.1019416869378407851.davem@davemloft.net>
+ <CAMuHMdUi4GQYR2p7enikEkTq1s-5YwirTzmo_tS0JwiE=dVmYw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1387313531-14629-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMuHMdUi4GQYR2p7enikEkTq1s-5YwirTzmo_tS0JwiE=dVmYw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 18, 2013 at 09:33:47AM +0100, Geert Uytterhoeven wrote:
+> On Wed, Dec 18, 2013 at 3:30 AM, David Miller <davem@davemloft.net> wrote:
+> > diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
+> > index f01fb50..a73a8e2 100644
+> > --- a/arch/alpha/include/asm/Kbuild
+> > +++ b/arch/alpha/include/asm/Kbuild
+> > @@ -4,3 +4,4 @@ generic-y += clkdev.h
+> >  generic-y += exec.h
+> >  generic-y += trace_clock.h
+> >  generic-y += preempt.h
+> > +generic-y += hash.h
+> 
+> Please keep them sorted.
+> 
+> Yes, Peter violated that too, when adding preempt.h.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+So what I did was something like:
 
-> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> The following changes since commit b283d2f3b74bc98174e8453c0be41dfcda3cae1b:
-> 
->   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-12-16 14:52:03 +0100)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to f23b24f1bf90b56cfaeb2a1c9b77c46efe8916a6:
-> 
->   tools lib traceevent: Get rid of die() in some string conversion functions (2013-12-17 16:51:49 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and refactorings:
-> 
-> New features:
-> 
-> . In perf timechart:
-> 	- Add backtrace support to CPU info
-> 	. Print pid along the name
-> 	. Add support for CPU topology
-> 	. Add new option --highlight'ing threads, be it by name or,
-> 	  if a numeric value is provided, that run more than given duration.
->   From Stanislav Fomichev.
-> 
-> Refactorings:
-> 
-> . Rename some struct DSO binary_type related members and methods,
->   to clarify its purpose and need for differentiation from symtab_type,
->   i.e. one is about the files .text, CFI, etc, i.e. its binary contents,
->   and the other is about where the symbol table came from.
-> 
-> . Convert to new topic libraries, starting with an API one (sysfs, debugfs,
->   etc), renaming liblk in the process, from Borislav Petkov.
-> 
-> . Get rid of some more panic() like error handling in libtraceevent,
->   from Namhyung Kim.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Arnaldo Carvalho de Melo (3):
->       perf symbols: Remove needless static binary_type array
->       perf symbols: Clarify method to get DSO binary_type filename
->       perf symbols: Use consistent name for the DSO binary type member
-> 
-> Borislav Petkov (1):
->       tools/: Convert to new topic libraries
-> 
-> Namhyung Kim (1):
->       tools lib traceevent: Get rid of die() in some string conversion functions
-> 
-> Stanislav Fomichev (5):
->       perf timechart: Add backtrace support to CPU info
->       perf timechart: Print pid along the name
->       perf timechart: Get number of CPUs from perf header
->       perf timechart: Add support for topology
->       perf timechart: Add --highlight option
-> 
->  tools/Makefile                              |  12 +--
->  tools/lib/{lk => api}/Makefile              |  18 ++--
->  tools/lib/{lk => api/fs}/debugfs.c          |   0
->  tools/lib/{lk => api/fs}/debugfs.h          |   6 +-
->  tools/lib/traceevent/parse-filter.c         |  67 ++++--------
->  tools/perf/Documentation/perf-timechart.txt |  16 +++
->  tools/perf/Makefile.perf                    |  33 +++---
->  tools/perf/builtin-kvm.c                    |   2 +-
->  tools/perf/builtin-probe.c                  |   2 +-
->  tools/perf/builtin-timechart.c              |  79 ++++++++++++--
->  tools/perf/perf.c                           |   2 +-
->  tools/perf/tests/parse-events.c             |   2 +-
->  tools/perf/util/dso.c                       |  24 ++---
->  tools/perf/util/dso.h                       |  14 +--
->  tools/perf/util/evlist.c                    |   2 +-
->  tools/perf/util/evsel.c                     |   2 +-
->  tools/perf/util/parse-events.c              |   2 +-
->  tools/perf/util/probe-event.c               |   2 +-
->  tools/perf/util/setup.py                    |   4 +-
->  tools/perf/util/svghelper.c                 | 159 ++++++++++++++++++++++++++--
->  tools/perf/util/svghelper.h                 |   6 +-
->  tools/perf/util/symbol.c                    |  12 +--
->  tools/perf/util/trace-event-info.c          |   2 +-
->  tools/perf/util/util.h                      |   2 +-
->  tools/vm/Makefile                           |  14 +--
->  tools/vm/page-types.c                       |   2 +-
->  26 files changed, 344 insertions(+), 142 deletions(-)
->  rename tools/lib/{lk => api}/Makefile (66%)
->  rename tools/lib/{lk => api/fs}/debugfs.c (100%)
->  rename tools/lib/{lk => api/fs}/debugfs.h (86%)
+for i in arch/*/include/asm/Kbuild
+do
+	echo "generic-y += preempt.h" >> $i
+done
 
-Pulled, thanks Arnaldo!
+Whoever is going to hand edit all gazillion archs for changes like that?
+And sort(1) is annoying in that it doesn't do in-place sort; you'll end
+up with empty files if you try the naive thing.
 
-While testing this I noticed that the trace-plugins related build 
-system messages spam, which I reported a week ago, is still there:
+Worse most of those Kbuild files include other random garbage, which
+makes automated sorting harder still.
 
-comet:~/tip/tools/perf> make install
-  BUILD:   Doing 'make -j12' parallel build
-  SUBDIR   Documentation
-  INSTALL  Documentation-man
-  INSTALL  GTK UI
-  SUBDIR   /fast/mingo/tip/tools/lib/traceevent/
-  INSTALL  plugin_jbd2.so
-  INSTALL  binaries
-  INSTALL  plugin_hrtimer.so
-  INSTALL  plugin_kmem.so
-  INSTALL  plugin_kvm.so
-  INSTALL  plugin_mac80211.so
-  INSTALL  plugin_sched_switch.so
-  INSTALL  plugin_function.so
-  INSTALL  plugin_xen.so
-  INSTALL  plugin_scsi.so
-  INSTALL  plugin_cfg80211.so
-  INSTALL  libexec
-  INSTALL  perf-archive
-  INSTALL  perl-scripts
-  INSTALL  python-scripts
-  INSTALL  perf_completion-script
-  INSTALL  tests
+So unless there's a sane and easy way to keep it sorted; I'm going to
+ignore that rule.
 
-It needlessly dominates the output while it should be just a single 
-line, like all the other entries:
-
-  INSTALL  binaries
-  INSTALL  trace_plugins
-  INSTALL  libexec
-
-Thanks,
-
-	Ingo
