@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab3LRVcz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:32:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36419 "EHLO
+	id S1755022Ab3LRVdY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:33:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36416 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127Ab3LRVNi (ORCPT
+	with ESMTP id S1754114Ab3LRVNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:38 -0500
+	Wed, 18 Dec 2013 16:13:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.12 062/118] drm/i915: use the correct force_wake function at the PC8 code
-Date: Wed, 18 Dec 2013 13:11:39 -0800
-Message-Id: <20131218211221.215030917@linuxfoundation.org>
+        Sunil K Pandey <sunil.k.pandey@intel.com>,
+        Kevin B Smith <kevin.b.smith@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 061/118] igb: Fix for issue where values could be too high for udelay function.
+Date: Wed, 18 Dec 2013 13:11:38 -0800
+Message-Id: <20131218211221.187622299@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -30,46 +33,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paulo Zanoni <paulo.r.zanoni@intel.com>
+From: Carolyn Wyborny <carolyn.wyborny@intel.com>
 
-commit a1216444283e81fd904593a4a77c90adfe5d14d1 upstream.
+commit df29df92adda751ac04ca5149d30014b5199db81 upstream.
 
-When I submitted the first patch adding these force wake functions,
-Chris Wilson observed that I was using the wrong functions, so I sent
-a second version of the patch to correct this problem. The problem is
-that v1 was merged instead of v2.
+This patch changes the igb_phy_has_link function to check the value of the
+parameter before deciding to use udelay or mdelay in order to be sure that
+the value is not too high for udelay function.
 
-I was able to notice the problem when running the
-debugfs-forcewake-user subtest of pm_pc8 from intel-gpu-tools.
-
-Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Sunil K Pandey <sunil.k.pandey@intel.com>
+Signed-off-by: Kevin B Smith <kevin.b.smith@intel.com>
+Signed-off-by: Carolyn Wyborny <carolyn.wyborny@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/intel/igb/e1000_phy.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -6062,7 +6062,7 @@ void hsw_restore_lcpll(struct drm_i915_p
- 
- 	/* Make sure we're not on PC8 state before disabling PC8, otherwise
- 	 * we'll hang the machine! */
--	dev_priv->uncore.funcs.force_wake_get(dev_priv);
-+	gen6_gt_force_wake_get(dev_priv);
- 
- 	if (val & LCPLL_POWER_DOWN_ALLOW) {
- 		val &= ~LCPLL_POWER_DOWN_ALLOW;
-@@ -6093,7 +6093,7 @@ void hsw_restore_lcpll(struct drm_i915_p
- 			DRM_ERROR("Switching back to LCPLL failed\n");
- 	}
- 
--	dev_priv->uncore.funcs.force_wake_put(dev_priv);
-+	gen6_gt_force_wake_put(dev_priv);
- }
- 
- void hsw_enable_pc8_work(struct work_struct *__work)
+--- a/drivers/net/ethernet/intel/igb/e1000_phy.c
++++ b/drivers/net/ethernet/intel/igb/e1000_phy.c
+@@ -1730,7 +1730,10 @@ s32 igb_phy_has_link(struct e1000_hw *hw
+ 			 * ownership of the resources, wait and try again to
+ 			 * see if they have relinquished the resources yet.
+ 			 */
+-			udelay(usec_interval);
++			if (usec_interval >= 1000)
++				mdelay(usec_interval/1000);
++			else
++				udelay(usec_interval);
+ 		}
+ 		ret_val = hw->phy.ops.read_reg(hw, PHY_STATUS, &phy_status);
+ 		if (ret_val)
 
 
