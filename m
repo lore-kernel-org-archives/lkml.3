@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744Ab3LRILg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 03:11:36 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:33261 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab3LRILf (ORCPT
+	id S1752802Ab3LRIMr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 03:12:47 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:53569 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab3LRIMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 03:11:35 -0500
-Message-ID: <52B158DD.2070603@gmail.com>
-Date: Wed, 18 Dec 2013 09:12:13 +0100
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 18 Dec 2013 03:12:45 -0500
 MIME-Version: 1.0
-To: micky <micky_ching@realsil.com.cn>, wwang <wei_wang@realsil.com.cn>,
-        Samuel Ortiz <sameo@linux.intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Jingoo Han <jg1.han@samsung.com>,
-        "'Chris Ball'" <cjb@laptop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "'Borislav Petkov'" <bp@alien8.de>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-References: <20131117195358.GO27323@pd.tnic> <4523614.I5MBhorHFt@vostro.rjw.lan> <5292FF5D.1050304@gmail.com> <1821758.2MoNI3h1Mv@vostro.rjw.lan> <52985041.5050000@gmail.com> <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de> <5299FF38.7060203@gmail.com> <alpine.DEB.2.02.1312021145190.30673@ionos.tec.linutronix.de> <alpine.DEB.2.02.1312021219090.30673@ionos.tec.linutronix.de> <529D92D6.8050409@gmail.com> <20131209221721.GB8612@zurbaran> <52A670E4.5050501@realsil.com.cn> <52A674E0.2080407@realsil.com.cn> <52B00547.8030904@gmail.com> <52B11EF6.3060606@realsil.com.cn>
-In-Reply-To: <52B11EF6.3060606@realsil.com.cn>
+In-Reply-To: <190d226e64e177a3cb631b8fc6f4787c.squirrel@mungewell.org>
+References: <1387295334-1744-1-git-send-email-dh.herrmann@gmail.com>
+	<190d226e64e177a3cb631b8fc6f4787c.squirrel@mungewell.org>
+Date: Wed, 18 Dec 2013 09:12:45 +0100
+Message-ID: <CANq1E4SDTLzkiWWaAmZ3iU1mSTc2Ce5E=zKHthxrsuDnBUYYMw@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Input: ABS2 and friends
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Simon Wood <simon@mungewell.org>
+Cc: "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Input Tools <input-tools@lists.freedesktop.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 05:05 AM, micky wrote:
-> Hi:
-> 
-> It seems that the card-reader was removed during suspend or resume, is 
-> that right? or did you removed by hand?
+Hi
 
-yes during a suspend/resume cycle.
+On Tue, Dec 17, 2013 at 10:28 PM,  <simon@mungewell.org> wrote:
+>> Hi
+>>
+>> This implements the recently discussed ABS2 API. It's working fine on my
+>> machine with libevdev. Comments welcome!
+>
+> Just looking at the documentation file, I have a couple of suggestions.
+>
+> 1). Make a note on the direction of gravity wrt the example image. Ie what
+> which axis/value will be positive with the device laid flat/stationary on
+> a desk. Might just prevent some confusion later.
 
-> I want to know with Thomas' patch, after resume, is the card-reader and 
-> card-reader driver still exist?
+Yepp, can add that to the Accelerometer section.
 
-I'm not sure but IIRC it's still loaded in the kernel after resuming.
+> 2). Calibration, Accels and Gyros are noisy in different ways. Gyros tend
+> to be wrong in the long term, giving some consistant bias which should be
+> calibrated out. Accels are noisy in the short term, but generally right
+> over a long period.
 
-> if not exist, I also want to know which function called first, 
-> rtsx_pci_resume or rtsx_pci_remove, can you determine it?
-> And IRQ16 seems not handled by rtsx_pci driver, so with Thomas' patch, 
-> is there still some go wrong?
-> 
+I'm not entirely sure where to put calibration/normalization. Letting
+user-space deal with that should simplify things a lot. We could even
+add it to libevdev. Comments welcome..
 
-No idea, I'm simply an unfortunate user of that driver.
+> Am I correct that the event framework will provide time-stamping of data,
+> thus making computation of relative movements possible.
 
-Aren't the information you're asking for already answered in the
-previous posts ?
+Yes, part of the evdev API.
 
-Thanks.
+Thanks
+David
