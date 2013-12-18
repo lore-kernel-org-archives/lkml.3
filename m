@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab3LRV3f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:29:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36460 "EHLO
+	id S1754228Ab3LRVNp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:13:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36444 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab3LRVNq (ORCPT
+	with ESMTP id S1754070Ab3LRVNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:46 -0500
+	Wed, 18 Dec 2013 16:13:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.12 071/118] media: saa7164: fix return value check in saa7164_initdev()
-Date: Wed, 18 Dec 2013 13:11:48 -0800
-Message-Id: <20131218211221.463456432@linuxfoundation.org>
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.12 067/118] x86, efi: Dont use (U)EFI time services on 32 bit
+Date: Wed, 18 Dec 2013 13:11:44 -0800
+Message-Id: <20131218211221.352671256@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -30,37 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Matthew Garrett <matthew.garrett@nebula.com>
 
-commit 89f4d45b2752df5d222b5f63919ce59e2d8afaf4 upstream.
+commit 04bf9ba720fcc4fa313fa122b799ae0989b6cd50 upstream.
 
-In case of error, the function kthread_run() returns ERR_PTR()
-and never returns NULL. The NULL test in the return value check
-should be replaced with IS_ERR().
+UEFI time services are often broken once we're in virtual mode. We were
+already refusing to use them on 64-bit systems, but it turns out that
+they're also broken on some 32-bit firmware, including the Dell Venue.
+Disable them for now, we can revisit once we have the 1:1 mappings code
+incorporated.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+Link: http://lkml.kernel.org/r/1385754283-2464-1-git-send-email-matthew.garrett@nebula.com
+Cc: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/pci/saa7164/saa7164-core.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/platform/efi/efi.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
---- a/drivers/media/pci/saa7164/saa7164-core.c
-+++ b/drivers/media/pci/saa7164/saa7164-core.c
-@@ -1354,9 +1354,11 @@ static int saa7164_initdev(struct pci_de
- 		if (fw_debug) {
- 			dev->kthread = kthread_run(saa7164_thread_function, dev,
- 				"saa7164 debug");
--			if (!dev->kthread)
-+			if (IS_ERR(dev->kthread)) {
-+				dev->kthread = NULL;
- 				printk(KERN_ERR "%s() Failed to create "
- 					"debug kernel thread\n", __func__);
-+			}
- 		}
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -768,13 +768,6 @@ void __init efi_init(void)
  
- 	} /* != BOARD_UNKNOWN */
+ 	set_bit(EFI_MEMMAP, &x86_efi_facility);
+ 
+-#ifdef CONFIG_X86_32
+-	if (efi_is_native()) {
+-		x86_platform.get_wallclock = efi_get_time;
+-		x86_platform.set_wallclock = efi_set_rtc_mmss;
+-	}
+-#endif
+-
+ #if EFI_DEBUG
+ 	print_efi_memmap();
+ #endif
 
 
