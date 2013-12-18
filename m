@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002Ab3LRU7e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 15:59:34 -0500
-Received: from nebula.mojo.cc ([46.4.89.19]:46071 "EHLO nebula.mojo.cc"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab3LRU7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 15:59:32 -0500
-From: "MPhil. Emanoil Kotsev" <Emanoil.Kotsev@fincom.at>
-Organization: FinCom Consulting
-To: Borislav Petkov <bp@alien8.de>
-Subject: Re: [Intel-gfx] kernel 3.11.6 general protection fault
-Date: Wed, 18 Dec 2013 21:59:22 +0100
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>
-References: <201311132058.30310.Emanoil.Kotsev@fincom.at> <201311171745.19339.Emanoil.Kotsev@fincom.at> <20131117200546.GP27323@pd.tnic>
-In-Reply-To: <20131117200546.GP27323@pd.tnic>
-X-KMail-QuotePrefix: > 
+	id S1752054Ab3LRVBm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:01:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35703 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab3LRVBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 16:01:40 -0500
+Date: Wed, 18 Dec 2013 13:01:41 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-kernel@vger.kernel.org, gnomes@lxorguk.ukuu.org.uk, arnd@arndb.de,
+        hpa@zytor.com
+Subject: Re: [PATCH v2] misc: Reserve minor for VFIO
+Message-ID: <20131218210141.GA11267@kroah.com>
+References: <20131218204024.30540.55302.stgit@bling.home>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201312182159.22794.Emanoil.Kotsev@fincom.at>
+In-Reply-To: <20131218204024.30540.55302.stgit@bling.home>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi again,
-sorry for writing  after such long time of silence, but I was busy with one 
-project (and family as well)
+On Wed, Dec 18, 2013 at 01:56:32PM -0700, Alex Williamson wrote:
+> VFIO currently allocates it's own dynamic chardev range, reserving the
+> first minor for the control part of the interface (/dev/vfio/vfio) and
+> the remainder for VFIO groups (/dev/vfio/$GROUP).  This works, but it
+> doesn't support auto loading.  For instance when libvirt checks for
+> VFIO support it looks for /dev/vfio/vfio, which currently doesn't
+> exist unless the vfio module is loaded.  By converting the control
+> device to a misc driver and reserving a static minor, we can enable
+> auto loading.
+> 
+> Reserving the minor is a prerequist to that conversion.  Minor 196
+> is unused by anything currently in the kernel.
+> 
+> Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+> 
+> v2: Plea for ack edition
+> 
+> As Alan suspected, there's been no response from device@lanana.org,
+> so there's probably nobody monitoring it anymore.  I've done due
+> diligence looking at all the callers of misc_register() in linux-next
+> and cannot find any conflicts with minor 196.  If anyone wants to toss
+> me an ack or sign-off I'll be happy to bring this in through my vfio
+> tree, otherwise I'd appreciate if someone wants to take it directly.
+> Thanks!
+> 
+>  Documentation/devices.txt  |    1 +
+>  include/linux/miscdevice.h |    1 +
+>  2 files changed, 2 insertions(+)
 
-On Sunday 17 November 2013 21:05:46 you wrote:
-> On Sun, Nov 17, 2013 at 05:45:18PM +0100, MPhil. Emanoil Kotsev wrote:
-> > How - new libraries - more exhaustive algorythms - higher cpu usage
-> > etc. Some of the things M$ is doing on purpose to force you upgrade
-> > your hardware every 2-3years
->
-> That would be too easy and machines would be dying left and right of
-> overheating. Actually, sane hardware is much more robust than that and
-> it throttles itself in case of critical temperature levels. And, IMHO
-> your Dell Latitude D520 should be fine, in that respect. But we'll see.
->
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-I was able to solve the issue by removing some of the modules I had in 
-xorg.conf.
-I noticed that it is not the cpu that is overheating, but rather the 
-video/graphic card. The area around the "Dell" logo on the front of the 
-display is still pretty hot, but the system seem to be working fine now and I 
-can not reproduce the issue any more.
-Someone would ask why I'm using the xorg.conf. The reason is because without 
-it X automatically loads the GL direver for 3d support and I am not able to 
-use second display.
-Perhaps it is worth trying latest intel driver as susggested before. However 
-with the current one it is working fine, so I would consider the issue as 
-solved.
+Feel free to take this through your tree.
 
-I would like to thank you for your precious support and ideas once again.
+thanks,
 
-regards
+greg k-h
