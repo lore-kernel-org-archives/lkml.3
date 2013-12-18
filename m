@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab3LRWDK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:03:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51481 "EHLO mail.zytor.com"
+	id S1756137Ab3LRWD3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:03:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61491 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752020Ab3LRWDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 17:03:06 -0500
-Message-ID: <52B21B7E.1020307@zytor.com>
-Date: Wed, 18 Dec 2013 14:02:38 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Alex Williamson <alex.williamson@redhat.com>
-CC: linux-kernel@vger.kernel.org, gnomes@lxorguk.ukuu.org.uk, arnd@arndb.de,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH v2] misc: Reserve minor for VFIO
-References: <20131218204024.30540.55302.stgit@bling.home> <20131218210141.GA11267@kroah.com>
-In-Reply-To: <20131218210141.GA11267@kroah.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	id S1751259Ab3LRWD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 17:03:26 -0500
+Date: Wed, 18 Dec 2013 17:03:14 -0500
+From: Rik van Riel <riel@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Chao Yang <chayang@redhat.com>, linux-mm@kvack.org,
+        akpm@linux-foundation.org, aarcange@redhat.com, mgorman@suse.de,
+        Veaceslav Falico <vfalico@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        David Rientjes <rientjes@google.com>,
+        Michel Lespinasse <walken@google.com>, Michal Hocko <mhocko@suse.cz>
+Subject: [PATCH] mm,numa,THP: initialize hstate for THP page size
+Message-ID: <20131218170314.1e57bea7@cuia.bos.redhat.com>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 01:01 PM, Greg KH wrote:
-> On Wed, Dec 18, 2013 at 01:56:32PM -0700, Alex Williamson wrote:
->> VFIO currently allocates it's own dynamic chardev range, reserving the
->> first minor for the control part of the interface (/dev/vfio/vfio) and
->> the remainder for VFIO groups (/dev/vfio/$GROUP).  This works, but it
->> doesn't support auto loading.  For instance when libvirt checks for
->> VFIO support it looks for /dev/vfio/vfio, which currently doesn't
->> exist unless the vfio module is loaded.  By converting the control
->> device to a misc driver and reserving a static minor, we can enable
->> auto loading.
->>
->> Reserving the minor is a prerequist to that conversion.  Minor 196
->> is unused by anything currently in the kernel.
->>
->> Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
->> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
->> ---
->>
->> v2: Plea for ack edition
->>
->> As Alan suspected, there's been no response from device@lanana.org,
->> so there's probably nobody monitoring it anymore.  I've done due
->> diligence looking at all the callers of misc_register() in linux-next
->> and cannot find any conflicts with minor 196.  If anyone wants to toss
->> me an ack or sign-off I'll be happy to bring this in through my vfio
->> tree, otherwise I'd appreciate if someone wants to take it directly.
->> Thanks!
->>
->>  Documentation/devices.txt  |    1 +
->>  include/linux/miscdevice.h |    1 +
->>  2 files changed, 2 insertions(+)
-> 
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
+When hugetlbfs is started with a non-default page size, it is
+possible that no hstate is initialized for the page sized used
+by transparent huge pages.
 
-I think Alan Cox was the last person to man <device@lanana.org>... Alan,
-are you still doing that?  (Otherwise patching the file in the Linux
-kernel tree seems eminently sensible... there really isn't any need to
-reserve numbers for out-of-tree drivers anymore.  Just another perk of
-being in-tree.)
+This causes copy_huge_page to crash on a null pointer. Make
+sure we always have an hpage initialized for the page sized
+used by THP.
 
-	-hpa
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reported-by: Chao Yang <chayang@redhat.com>
+---
+ mm/huge_memory.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 5749bcf..583e9d3 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -624,6 +624,13 @@ static int __init hugepage_init(void)
+ 		return -EINVAL;
+ 	}
+ 
++	/*
++	 * Make sure an hstate is initialized for our page size,
++	 * even if hugetlbfs is using a non-default page size.
++	 */
++	if (!size_to_hstate(PMD_PAGE_SIZE))
++		hugetlb_add_hstate(HUGETLB_PAGE_ORDER);
++
+ 	err = hugepage_init_sysfs(&hugepage_kobj);
+ 	if (err)
+ 		return err;
 
 
+-- 
+All Rights Reversed
