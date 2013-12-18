@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab3LRVkz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:40:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36328 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753891Ab3LRVNU (ORCPT
+	id S1755295Ab3LRVlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:41:36 -0500
+Received: from mail-gg0-f170.google.com ([209.85.161.170]:51474 "EHLO
+	mail-gg0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab3LRVld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:20 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 007/118] ALSA: hda - hdmi: Fix IEC958 ctl indexes for some simple HDMI devices
-Date: Wed, 18 Dec 2013 13:10:44 -0800
-Message-Id: <20131218211219.673611778@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
-References: <20131218211219.461663463@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Wed, 18 Dec 2013 16:41:33 -0500
+Date: Wed, 18 Dec 2013 16:41:28 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Nigel Cunningham <nigel@nigelcunningham.com.au>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
+        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] libata, freezer: avoid block device removal while system
+ is frozen
+Message-ID: <20131218214128.GB8218@mtj.dyndns.org>
+References: <20131213174932.GA27070@htj.dyndns.org>
+ <4108657.rimrPRbHDY@vostro.rjw.lan>
+ <20131218111726.GB3808@htj.dyndns.org>
+ <3767261.syB7gLdVqQ@vostro.rjw.lan>
+ <20131218213936.GA8218@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131218213936.GA8218@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Dec 18, 2013 at 04:39:36PM -0500, Tejun Heo wrote:
+> Yeah, we can just rip out the whole freezer support and let the
+> caller's pm notification hooks implement it by doing
+> 
+> 	workqueue_set_max_active(wq, 0);
+> 	flush_workqueue(wq);
 
-------------------
+Oops, the above doesn't work but I can trivially add a new interface
+for this.  Something which waits for the max_active to drop below the
+newly set level before returning.
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+	workqueue_set_max_active_and_wait(wq, 0);
 
-commit c9a6338aecdb92f9d015ecc26d203e54250bebbb upstream.
+Thanks.
 
-In case a single HDA card has both HDMI and S/PDIF outputs, the S/PDIF
-outputs will have their IEC958 controls created starting from index 16
-and the HDMI controls will be created starting from index 0.
-
-However, HDMI simple_playback_build_controls() as used by old VIA and
-NVIDIA codecs incorrectly requests the IEC958 controls to be created
-with an S/PDIF type instead of HDMI.
-In case the card has other codecs that have HDMI outputs, the controls
-will be created with wrong index=16, causing them to e.g. be unreachable
-by the ALSA "hdmi" alias.
-
-Fix that by making simple_playback_build_controls() request controls
-with HDMI indexes.
-
-Not many cards have an affected configuration, but e.g. ASUS M3N78-VM
-contains an integrated NVIDIA HDA "card" with:
-- a VIA codec that has, among others, an S/PDIF pin incorrectly
-  labelled as an HDMI pin, and
-- an NVIDIA MCP7x HDMI codec.
-
-Reported-by: MysterX on #openelec
-Tested-by: MysterX on #openelec
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/pci/hda/patch_hdmi.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -2085,8 +2085,9 @@ static int simple_playback_build_control
- 	int err;
- 
- 	per_cvt = get_cvt(spec, 0);
--	err = snd_hda_create_spdif_out_ctls(codec, per_cvt->cvt_nid,
--					    per_cvt->cvt_nid);
-+	err = snd_hda_create_dig_out_ctls(codec, per_cvt->cvt_nid,
-+					  per_cvt->cvt_nid,
-+					  HDA_PCM_TYPE_HDMI);
- 	if (err < 0)
- 		return err;
- 	return simple_hdmi_build_jack(codec, 0);
-
-
+-- 
+tejun
