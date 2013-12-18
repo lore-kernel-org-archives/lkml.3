@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756478Ab3LRWSw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:18:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35763 "EHLO
+	id S1752280Ab3LRVI4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:08:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35748 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207Ab3LRVI5 (ORCPT
+	with ESMTP id S1752207Ab3LRVIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:08:57 -0500
+	Wed, 18 Dec 2013 16:08:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefano Panella <stefano.panella@citrix.com>,
-        Frediano Ziglio <frediano.ziglio@citrix.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.4 02/31] ALSA: memalloc.h - fix wrong truncation of dma_addr_t
-Date: Wed, 18 Dec 2013 13:08:10 -0800
-Message-Id: <20131218210522.861202875@linuxfoundation.org>
+        Christian Engelmayer <christian.engelmayer@frequentis.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.4 16/31] Input: usbtouchscreen - separate report and transmit buffer size handling
+Date: Wed, 18 Dec 2013 13:08:24 -0800
+Message-Id: <20131218210523.252469477@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218210522.790152625@linuxfoundation.org>
 References: <20131218210522.790152625@linuxfoundation.org>
@@ -30,68 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefano Panella <stefano.panella@citrix.com>
+From: Christian Engelmayer <christian.engelmayer@frequentis.com>
 
-commit 932e9dec380c67ec15ac3eb073bb55797d8b4801 upstream.
+commit 4ef38351d770cc421f4a0c7a849fd13207fc5741 upstream.
 
-When running a 32bit kernel the hda_intel driver is still reporting
-a 64bit dma_mask if the HW supports it.
+This patch supports the separate handling of the USB transfer buffer length
+and the length of the buffer used for multi packet support. For devices
+supporting multiple report or diagnostic packets, the USB transfer size is now
+limited to the USB endpoints wMaxPacketSize - otherwise it defaults to the
+configured report packet size as before.
 
->From sound/pci/hda/hda_intel.c:
+This fixes an issue where event reporting can be delayed for an arbitrary
+time for multi packet devices. For instance the report size for eGalax devices
+is defined to the 16 byte maximum diagnostic packet size as opposed to the 5
+byte report packet size. In case the driver requests 16 byte from the USB
+interrupt endpoint, the USB host controller driver needs to split up the
+request into 2 accesses according to the endpoints wMaxPacketSize of 8 byte.
+When the first transfer is answered by the eGalax device with not less than
+the full 8 byte requested, the host controller has got no way of knowing
+whether the touch controller has got additional data queued and will issue
+the second transfer. If per example a liftoff event finishes at such a
+wMaxPacketSize boundary, the data will not be available to the usbtouch driver
+until a further event is triggered and transfered to the host. From user
+perspective the BTN_TOUCH release event in this case is stuck until the next
+touch down event.
 
-        /* allow 64bit DMA address if supported by H/W */
-        if ((gcap & ICH6_GCAP_64OK) && !pci_set_dma_mask(pci, DMA_BIT_MASK(64)))
-                pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(64));
-        else {
-                pci_set_dma_mask(pci, DMA_BIT_MASK(32));
-                pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32));
-        }
-
-which means when there is a call to dma_alloc_coherent from
-snd_malloc_dev_pages a machine address bigger than 32bit can be returned.
-This can be true in particular if running  the 32bit kernel as a pv dom0
-under the Xen Hypervisor or PAE on bare metal.
-
-The problem is that when calling setup_bdle to program the BLE the
-dma_addr_t returned from the dma_alloc_coherent is wrongly truncated
-from snd_sgbuf_get_addr if running a 32bit kernel:
-
-static inline dma_addr_t snd_sgbuf_get_addr(struct snd_dma_buffer *dmab,
-                                           size_t offset)
-{
-        struct snd_sg_buf *sgbuf = dmab->private_data;
-        dma_addr_t addr = sgbuf->table[offset >> PAGE_SHIFT].addr;
-        addr &= PAGE_MASK;
-        return addr + offset % PAGE_SIZE;
-}
-
-where PAGE_MASK in a 32bit kernel is zeroing the upper 32bit af addr.
-
-Without this patch the HW will fetch the 32bit truncated address,
-which is not the one obtained from dma_alloc_coherent and will result
-to a non working audio but can corrupt host memory at a random location.
-
-The current patch apply to v3.13-rc3-74-g6c843f5
-
-Signed-off-by: Stefano Panella <stefano.panella@citrix.com>
-Reviewed-by: Frediano Ziglio <frediano.ziglio@citrix.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Christian Engelmayer <christian.engelmayer@frequentis.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/sound/memalloc.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/input/touchscreen/usbtouchscreen.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
---- a/include/sound/memalloc.h
-+++ b/include/sound/memalloc.h
-@@ -101,7 +101,7 @@ static inline unsigned int snd_sgbuf_ali
- static inline dma_addr_t snd_sgbuf_get_addr(struct snd_sg_buf *sgbuf, size_t offset)
+--- a/drivers/input/touchscreen/usbtouchscreen.c
++++ b/drivers/input/touchscreen/usbtouchscreen.c
+@@ -106,6 +106,7 @@ struct usbtouch_device_info {
+ struct usbtouch_usb {
+ 	unsigned char *data;
+ 	dma_addr_t data_dma;
++	int data_size;
+ 	unsigned char *buffer;
+ 	int buf_len;
+ 	struct urb *irq;
+@@ -1474,7 +1475,7 @@ static int usbtouch_reset_resume(struct
+ static void usbtouch_free_buffers(struct usb_device *udev,
+ 				  struct usbtouch_usb *usbtouch)
  {
- 	dma_addr_t addr = sgbuf->table[offset >> PAGE_SHIFT].addr;
--	addr &= PAGE_MASK;
-+	addr &= ~((dma_addr_t)PAGE_SIZE - 1);
- 	return addr + offset % PAGE_SIZE;
+-	usb_free_coherent(udev, usbtouch->type->rept_size,
++	usb_free_coherent(udev, usbtouch->data_size,
+ 			  usbtouch->data, usbtouch->data_dma);
+ 	kfree(usbtouch->buffer);
  }
+@@ -1519,7 +1520,20 @@ static int usbtouch_probe(struct usb_int
+ 	if (!type->process_pkt)
+ 		type->process_pkt = usbtouch_process_pkt;
  
+-	usbtouch->data = usb_alloc_coherent(udev, type->rept_size,
++	usbtouch->data_size = type->rept_size;
++	if (type->get_pkt_len) {
++		/*
++		 * When dealing with variable-length packets we should
++		 * not request more than wMaxPacketSize bytes at once
++		 * as we do not know if there is more data coming or
++		 * we filled exactly wMaxPacketSize bytes and there is
++		 * nothing else.
++		 */
++		usbtouch->data_size = min(usbtouch->data_size,
++					  usb_endpoint_maxp(endpoint));
++	}
++
++	usbtouch->data = usb_alloc_coherent(udev, usbtouch->data_size,
+ 					    GFP_KERNEL, &usbtouch->data_dma);
+ 	if (!usbtouch->data)
+ 		goto out_free;
+@@ -1578,12 +1592,12 @@ static int usbtouch_probe(struct usb_int
+ 	if (usb_endpoint_type(endpoint) == USB_ENDPOINT_XFER_INT)
+ 		usb_fill_int_urb(usbtouch->irq, udev,
+ 			 usb_rcvintpipe(udev, endpoint->bEndpointAddress),
+-			 usbtouch->data, type->rept_size,
++			 usbtouch->data, usbtouch->data_size,
+ 			 usbtouch_irq, usbtouch, endpoint->bInterval);
+ 	else
+ 		usb_fill_bulk_urb(usbtouch->irq, udev,
+ 			 usb_rcvbulkpipe(udev, endpoint->bEndpointAddress),
+-			 usbtouch->data, type->rept_size,
++			 usbtouch->data, usbtouch->data_size,
+ 			 usbtouch_irq, usbtouch);
+ 
+ 	usbtouch->irq->dev = udev;
 
 
