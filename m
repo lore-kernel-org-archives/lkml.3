@@ -1,71 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab3LROUa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 09:20:30 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:34951 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619Ab3LROU2 (ORCPT
+	id S1754979Ab3LROVD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 09:21:03 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:37574 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754889Ab3LROU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 09:20:28 -0500
-X-IronPort-AV: E=Sophos;i="4.95,508,1384300800"; 
-   d="scan'208";a="83497095"
-Date: Wed, 18 Dec 2013 14:19:28 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
-        <mukesh.rathor@oracle.com>, <jbeulich@suse.com>
-Subject: Re: [Xen-devel] [PATCH v11 11/12] xen/pvh: Disable PV code that does
- not work with PVH.
-In-Reply-To: <1387313503-31362-12-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.02.1312181416230.8667@kaball.uk.xensource.com>
-References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com> <1387313503-31362-12-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 18 Dec 2013 09:20:59 -0500
+Date: Wed, 18 Dec 2013 06:20:56 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: rydberg@euromail.se, jcbian@pixcir.com.cn, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 5/9] Input: pixcir_i2c_ts: Get rid of
+ pdata->attb_read_val()
+Message-ID: <20131218142056.GF28504@core.coreip.homeip.net>
+References: <1387358480-8313-1-git-send-email-rogerq@ti.com>
+ <1387358480-8313-6-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387358480-8313-6-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> From: Mukesh Rathor <mukesh.rathor@oracle.com>
+On Wed, Dec 18, 2013 at 02:51:16PM +0530, Roger Quadros wrote:
+> Get rid of the attb_read_val() platform hook. Instead,
+> read the ATTB gpio directly from the driver.
 > 
-> As we do not have yet a mechanism for that.
+> Fail if valid ATTB gpio is not provided by patform data.
+
+Do you also need to define polarity?
+
 > 
-> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-Even though we don't even compile cpu_hotplug on ARM yet, I don't like
-this change because it affects ARM guests too.
-
-Please add a note about ARM guests in the FIXME line.
-
-
->  drivers/xen/cpu_hotplug.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
+> ---
+>  drivers/input/touchscreen/pixcir_i2c_ts.c | 19 +++++++++++++++++--
+>  include/linux/input/pixcir_ts.h           |  1 -
+>  2 files changed, 17 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/xen/cpu_hotplug.c b/drivers/xen/cpu_hotplug.c
-> index cc6513a..cbb02af 100644
-> --- a/drivers/xen/cpu_hotplug.c
-> +++ b/drivers/xen/cpu_hotplug.c
-> @@ -4,6 +4,7 @@
+> diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
+> index 3370fd9..a783d94 100644
+> --- a/drivers/input/touchscreen/pixcir_i2c_ts.c
+> +++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
+> @@ -91,11 +91,12 @@ static void pixcir_ts_poscheck(struct pixcir_i2c_ts_data *data)
+>  static irqreturn_t pixcir_ts_isr(int irq, void *dev_id)
+>  {
+>  	struct pixcir_i2c_ts_data *tsdata = dev_id;
+> +	const struct pixcir_ts_platform_data *pdata = tsdata->chip;
 >  
->  #include <xen/xen.h>
->  #include <xen/xenbus.h>
-> +#include <xen/features.h>
+>  	while (!tsdata->exiting) {
+>  		pixcir_ts_poscheck(tsdata);
 >  
->  #include <asm/xen/hypervisor.h>
->  #include <asm/cpu.h>
-> @@ -102,7 +103,8 @@ static int __init setup_vcpu_hotplug_event(void)
->  	static struct notifier_block xsn_cpu = {
->  		.notifier_call = setup_cpu_watcher };
+> -		if (tsdata->chip->attb_read_val())
+> +		if (gpio_get_value(pdata->gpio_attb))
+>  			break;
 >  
-> -	if (!xen_pv_domain())
-> +	/* PVH TBD/FIXME: future work */
-> +	if (!xen_pv_domain() || xen_feature(XENFEAT_auto_translated_physmap))
->  		return -ENODEV;
+>  		msleep(20);
+> @@ -301,8 +302,10 @@ static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
+>  		return ERR_PTR(-ENOMEM);
 >  
->  	register_xenstore_notifier(&xsn_cpu);
+>  	pdata->gpio_attb = of_get_named_gpio(np, "attb-gpio", 0);
+> -	if (!gpio_is_valid(pdata->gpio_attb))
+> +	if (!gpio_is_valid(pdata->gpio_attb)) {
+>  		dev_err(dev, "Failed to get ATTB GPIO\n");
+> +		return ERR_PTR(-EINVAL);
+> +	}
+>  
+>  	if (of_property_read_u32(np, "x-size", &pdata->x_size)) {
+>  		dev_err(dev, "Failed to get x-size property\n");
+> @@ -344,6 +347,11 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
+>  	} else if (!pdata) {
+>  		dev_err(&client->dev, "platform data not defined\n");
+>  		return -EINVAL;
+> +	} else {
+> +		if (!gpio_is_valid(pdata->gpio_attb)) {
+> +			dev_err(dev, "Invalid gpio_attb in pdata\n");
+> +			return -EINVAL;
+> +		}
+>  	}
+>  
+>  	tsdata = devm_kzalloc(dev, sizeof(*tsdata), GFP_KERNEL);
+> @@ -380,6 +388,13 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
+>  
+>  	input_set_drvdata(input, tsdata);
+>  
+> +	error = devm_gpio_request_one(dev, pdata->gpio_attb,
+> +			GPIOF_DIR_IN, "pixcir_i2c_attb");
+> +	if (error) {
+> +		dev_err(dev, "Failed to request ATTB gpio\n");
+> +		return error;
+> +	}
+> +
+>  	error = devm_request_threaded_irq(dev, client->irq, NULL, pixcir_ts_isr,
+>  				     IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+>  				     client->name, tsdata);
+> diff --git a/include/linux/input/pixcir_ts.h b/include/linux/input/pixcir_ts.h
+> index f17c192..88ffdb50 100644
+> --- a/include/linux/input/pixcir_ts.h
+> +++ b/include/linux/input/pixcir_ts.h
+> @@ -44,7 +44,6 @@ enum pixcir_int_mode {
+>  #define PIXCIR_INT_POL_HIGH	(1UL << 2)
+>  
+>  struct pixcir_ts_platform_data {
+> -	int (*attb_read_val)(void);
+>  	unsigned int x_size;	/* X axis resolution */
+>  	unsigned int y_size;	/* Y axis resolution */
+>  	int gpio_attb;		/* GPIO connected to ATTB line */
+> -- 
+> 1.8.3.2
+> 
 
+-- 
+Dmitry
