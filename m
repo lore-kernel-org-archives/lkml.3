@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab3LRVNL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:13:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36288 "EHLO
+	id S1754190Ab3LRVNm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:13:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36404 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753769Ab3LRVNJ (ORCPT
+	with ESMTP id S1754070Ab3LRVNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:09 -0500
+	Wed, 18 Dec 2013 16:13:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Mel Gorman <mgorman@suse.de>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 028/118] futex: fix handling of read-only-mapped hugepages
-Date: Wed, 18 Dec 2013 13:11:05 -0800
-Message-Id: <20131218211220.273786096@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.12 058/118] iwlwifi: mvm: check sta_id/drain values in debugfs
+Date: Wed, 18 Dec 2013 13:11:35 -0800
+Message-Id: <20131218211221.104599746@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -32,44 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit f12d5bfceb7e1f9051563381ec047f7f13956c3c upstream.
+commit 60765a47a433d54e4744c285ad127f182dcd80aa upstream.
 
-The hugepage code had the exact same bug that regular pages had in
-commit 7485d0d3758e ("futexes: Remove rw parameter from
-get_futex_key()").
+The station ID must be valid, if it's out of range then
+the array access may crash. Validate the station ID to
+the array length, and also validate the drain value even
+if that doesn't matter all that much.
 
-The regular page case was fixed by commit 9ea71503a8ed ("futex: Fix
-regression with read only mappings"), but the transparent hugepage case
-(added in a5b338f2b0b1: "thp: update futex compound knowledge") case
-remained broken.
-
-Found by Dave Jones and his trinity tool.
-
-Reported-and-tested-by: Dave Jones <davej@fedoraproject.org>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: 8ca151b568b6 ("iwlwifi: add the MVM driver")
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/futex.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/mvm/debugfs.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -288,7 +288,7 @@ again:
- 		put_page(page);
- 		/* serialize against __split_huge_page_splitting() */
- 		local_irq_disable();
--		if (likely(__get_user_pages_fast(address, 1, 1, &page) == 1)) {
-+		if (likely(__get_user_pages_fast(address, 1, !ro, &page) == 1)) {
- 			page_head = compound_head(page);
- 			/*
- 			 * page_head is valid pointer but we must pin
+--- a/drivers/net/wireless/iwlwifi/mvm/debugfs.c
++++ b/drivers/net/wireless/iwlwifi/mvm/debugfs.c
+@@ -119,6 +119,10 @@ static ssize_t iwl_dbgfs_sta_drain_write
+ 
+ 	if (sscanf(buf, "%d %d", &sta_id, &drain) != 2)
+ 		return -EINVAL;
++	if (sta_id < 0 || sta_id >= IWL_MVM_STATION_COUNT)
++		return -EINVAL;
++	if (drain < 0 || drain > 1)
++		return -EINVAL;
+ 
+ 	mutex_lock(&mvm->mutex);
+ 
 
 
