@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab3LRVWE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:22:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36593 "EHLO
+	id S1755017Ab3LRVWc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:22:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36587 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454Ab3LRVOJ (ORCPT
+	with ESMTP id S1754506Ab3LRVOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:14:09 -0500
+	Wed, 18 Dec 2013 16:14:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [PATCH 3.12 100/118] staging: comedi: drivers: use comedi_dio_update_state() for simple cases
-Date: Wed, 18 Dec 2013 13:12:17 -0800
-Message-Id: <20131218211222.279721691@linuxfoundation.org>
+        Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
+        Chris J Arges <chris.j.arges@canonical.com>
+Subject: [PATCH 3.12 099/118] sched: Avoid throttle_cfs_rq() racing with period_timer stopping
+Date: Wed, 18 Dec 2013 13:12:16 -0800
+Message-Id: <20131218211222.252171905@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,52 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H Hartley Sweeten <hsweeten@visionengravers.com>
+From: Ben Segall <bsegall@google.com>
 
-commit 97f4289ad08cffe55de06d4ac4f89ac540450aee upstream.
+commit f9f9ffc237dd924f048204e8799da74f9ecf40cf upstream.
 
-[Split from original patch subject: "staging: comedi: drivers: use
-comedi_dio_update_state() for simple cases"]
+throttle_cfs_rq() doesn't check to make sure that period_timer is running,
+and while update_curr/assign_cfs_runtime does, a concurrently running
+period_timer on another cpu could cancel itself between this cpu's
+update_curr and throttle_cfs_rq(). If there are no other cfs_rqs running
+in the tg to restart the timer, this causes the cfs_rq to be stranded
+forever.
 
-Use comedi_dio_update_state() to handle the boilerplate code to update
-the subdevice s->state for simple cases where the hardware is updated
-when any channel is modified.
+Fix this by calling __start_cfs_bandwidth() in throttle if the timer is
+inactive.
 
-Also, fix a bug in the amplc_pc263 and amplc_pci263 drivers where the
-current state is not returned in data[1].
+(Also add some sched_debug lines for cfs_bandwidth.)
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Tested: make a run/sleep task in a cgroup, loop switching the cgroup
+between 1ms/100ms quota and unlimited, checking for timer_active=0 and
+throttled=1 as a failure. With the throttle_cfs_rq() change commented out
+this fails, with the full patch it passes.
+
+Signed-off-by: Ben Segall <bsegall@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/amplc_pc263.c  |    3 +++
- drivers/staging/comedi/drivers/amplc_pci263.c |    3 +++
- 2 files changed, 6 insertions(+)
+ kernel/sched/debug.c |    8 ++++++++
+ kernel/sched/fair.c  |    2 ++
+ 2 files changed, 10 insertions(+)
 
---- a/drivers/staging/comedi/drivers/amplc_pc263.c
-+++ b/drivers/staging/comedi/drivers/amplc_pc263.c
-@@ -68,6 +68,9 @@ static int pc263_do_insn_bits(struct com
- 		outb(s->state & 0xFF, dev->iobase);
- 		outb(s->state >> 8, dev->iobase + 1);
- 	}
-+
-+	data[1] = s->state;
-+
- 	return insn->n;
- }
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -225,6 +225,14 @@ void print_cfs_rq(struct seq_file *m, in
+ 			atomic_read(&cfs_rq->tg->runnable_avg));
+ #endif
+ #endif
++#ifdef CONFIG_CFS_BANDWIDTH
++	SEQ_printf(m, "  .%-30s: %d\n", "tg->cfs_bandwidth.timer_active",
++			cfs_rq->tg->cfs_bandwidth.timer_active);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttled",
++			cfs_rq->throttled);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttle_count",
++			cfs_rq->throttle_count);
++#endif
  
---- a/drivers/staging/comedi/drivers/amplc_pci263.c
-+++ b/drivers/staging/comedi/drivers/amplc_pci263.c
-@@ -55,6 +55,9 @@ static int pci263_do_insn_bits(struct co
- 		outb(s->state & 0xFF, dev->iobase);
- 		outb(s->state >> 8, dev->iobase + 1);
- 	}
-+
-+	data[1] = s->state;
-+
- 	return insn->n;
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2335,6 +2335,8 @@ static void throttle_cfs_rq(struct cfs_r
+ 	cfs_rq->throttled_clock = rq_clock(rq);
+ 	raw_spin_lock(&cfs_b->lock);
+ 	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
++	if (!cfs_b->timer_active)
++		__start_cfs_bandwidth(cfs_b);
+ 	raw_spin_unlock(&cfs_b->lock);
  }
  
 
