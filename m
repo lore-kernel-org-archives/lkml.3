@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab3LRR0Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 12:26:25 -0500
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:34903 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754701Ab3LRR0V (ORCPT
+	id S1755619Ab3LRR0c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 12:26:32 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54606 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755592Ab3LRR02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 12:26:21 -0500
-Message-ID: <52B1DAB3.6060302@gmail.com>
-Date: Wed, 18 Dec 2013 12:26:11 -0500
-From: Anna Schumaker <schumaker.anna@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 18 Dec 2013 12:26:28 -0500
+Date: Wed, 18 Dec 2013 17:25:53 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Message-ID: <20131218172553.GA31886@sirena.org.uk>
+References: <1387286601-21646-1-git-send-email-k.kozlowski@samsung.com>
+ <1387286601-21646-4-git-send-email-k.kozlowski@samsung.com>
+ <20131218133625.GT28455@sirena.org.uk>
+ <1387375431.1433.2.camel@AMDC1943>
 MIME-Version: 1.0
-To: Zach Brown <zab@redhat.com>, Christoph Hellwig <hch@infradead.org>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Eric Wong <normalperson@yhbt.net>
-Subject: Re: [RFC] extending splice for copy offloading
-References: <1378919210-10372-1-git-send-email-zab@redhat.com> <20131218124126.GA15328@infradead.org> <20131218171044.GK14533@lenny.home.zabbo.net>
-In-Reply-To: <20131218171044.GK14533@lenny.home.zabbo.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
+Content-Disposition: inline
+In-Reply-To: <1387375431.1433.2.camel@AMDC1943>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/5] mfd: sec: Remove sec_reg* regmap helpers
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 12:10 PM, Zach Brown wrote:
-> On Wed, Dec 18, 2013 at 04:41:26AM -0800, Christoph Hellwig wrote:
->> On Wed, Sep 11, 2013 at 10:06:47AM -0700, Zach Brown wrote:
->>> When I first started on this stuff I followed the lead of previous
->>> work and added a new syscall for the copy operation:
->>>
->>> https://lkml.org/lkml/2013/5/14/618
->>>
->>> Towards the end of that thread Eric Wong asked why we didn't just
->>> extend splice.  I immediately replied with some dumb dismissive
->>> answer.  Once I sat down and looked at it, though, it does make a
->>> lot of sense.  So good job, Eric.  +10 Dummie points for me.
->>>
->>> Extending splice avoids all the noise of adding a new syscall and
->>> naturally falls back to buffered copying as that's what the direct
->>> splice path does for sendfile() today.
->> Given the convolute mess that the splice code already is I'd rather
->> prefer not overloading it even further.
-> I agree after trying to weave the copy offloading API into the splice
-> interface.  There are also weird cases that we haven't really discussed
-> so far (preserving unwritten allocations between the copied files?) that
-> would muddy the waters even further.
->
-> The further the APIs drift from each other, the more I'm prefering
-> giving copy offloading its own clean syscall.  Even if the argument
-> types superficially match the splice() ABI.
->
->> We can still fall back to the splice code as a fallback if no option
->> is provided as a last resort, but I think making the splice code handle
->> even more totally different cases is the wrong direction.
-> I'm with you.  I'll have another version out sometime after the US
-> holiday break.. say in a few weeks?
 
-That'll work for me, I'll update my NFS code once your new patches are out.
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Anna
+On Wed, Dec 18, 2013 at 03:03:51PM +0100, Krzysztof Kozlowski wrote:
+> On Wed, 2013-12-18 at 13:36 +0000, Mark Brown wrote:
 
->
-> - z
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > This doesn't apply against the regulator tree.  Can you please check
+> > what's going on here, I guess there may need to be some merge with MFD?
 
+> I think you need to rebase on current Linus' (at least 3.13-rc4) to get
+> this patch:
+> "mfd/rtc: s5m: fix register updating by adding regmap for RTC" (3e1e4a5f3a3)
+
+Yes, that's it - applied now, thanks.
+
+--G4iJoqBmSsgzjUCe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSsdqeAAoJELSic+t+oim9P04P/3OVJqBoINrcJdhGXGI9nffy
+svdDDAFfug7OtCZX5e4zV/miEE1mJtJr0SRYd9y7JI8V1LVCwEUHFDvyDYe9a6lu
+VJw09AWGylFadbmVY1FsHSaTWB3lIqtBP2qLvVC9FwxUyTpZgSoYJfQALqe3NK1q
+yGfRKbQZ8VITpfvOwObGnaO1OfHggfx5wUjqTvoj9Tq7MuLoltxkeI/onVO6Kvlv
+UZnKxHaUjyC5rwHuak54BCzI2/mE5b6C7Vy1hHBgZHxdIIdgN3ftdC8fn+r9mNUE
+PTVFI1zDcbMvxnB8WwwKjk8wHQAgv34j6v/bcRYp2AAHq/S43pXWV0v/+CS6Sj9l
+D0f66DK5tHwrOV0nVWvWMI1fqyredHKwVCKQMa+doJHBCQCUw6a8EZK9maHtgtjB
+D3Tq5bICiXJx2+zthKcliO+Ip+eNoWNFapPQJJlcg1GGHhb4ZXAg4c/ipViScQxX
+6UC3X4ma9uKBrczayFBw18uv4clnnXf8GdKr8VarKkouWw2c32NtuNniQ8HC6xh8
+MIEMmpmfhj+6tIpJoT4z7hUyUyNDmpMdkLGE8VrPEMUZDVdqnJeoBPli/h8feFP/
+FhhUC8Cl9hlIuvDqVKZpApPwJsqqcMtz9TNrupq+45SYJ2hIcPYs4H0gJfJAb2sC
+nwRgFLMcEGBS2wa9Oacg
+=D1kD
+-----END PGP SIGNATURE-----
+
+--G4iJoqBmSsgzjUCe--
