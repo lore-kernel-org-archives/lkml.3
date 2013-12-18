@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab3LRVce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:32:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36423 "EHLO
+	id S1755517Ab3LRVcz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:32:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36419 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab3LRVNj (ORCPT
+	with ESMTP id S1754127Ab3LRVNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:39 -0500
+	Wed, 18 Dec 2013 16:13:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.12 063/118] drm/radeon: fix typo in fetching mpll params
-Date: Wed, 18 Dec 2013 13:11:40 -0800
-Message-Id: <20131218211221.242751539@linuxfoundation.org>
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.12 062/118] drm/i915: use the correct force_wake function at the PC8 code
+Date: Wed, 18 Dec 2013 13:11:39 -0800
+Message-Id: <20131218211221.215030917@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -28,30 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Paulo Zanoni <paulo.r.zanoni@intel.com>
 
-commit 180f805f4f03b2894701f9831b4e96a308330b22 upstream.
+commit a1216444283e81fd904593a4a77c90adfe5d14d1 upstream.
 
-Copy-paste typo.  Value should be 0-2, not 0-1.
+When I submitted the first patch adding these force wake functions,
+Chris Wilson observed that I was using the wrong functions, so I sent
+a second version of the patch to correct this problem. The problem is
+that v1 was merged instead of v2.
 
-Noticed-by: Sylvain BERTRAND <sylware@legeek.net>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+I was able to notice the problem when running the
+debugfs-forcewake-user subtest of pm_pc8 from intel-gpu-tools.
+
+Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_display.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -2918,7 +2918,7 @@ int radeon_atom_get_memory_pll_dividers(
- 			mpll_param->dll_speed = args.ucDllSpeed;
- 			mpll_param->bwcntl = args.ucBWCntl;
- 			mpll_param->vco_mode =
--				(args.ucPllCntlFlag & MPLL_CNTL_FLAG_VCO_MODE_MASK) ? 1 : 0;
-+				(args.ucPllCntlFlag & MPLL_CNTL_FLAG_VCO_MODE_MASK);
- 			mpll_param->yclk_sel =
- 				(args.ucPllCntlFlag & MPLL_CNTL_FLAG_BYPASS_DQ_PLL) ? 1 : 0;
- 			mpll_param->qdr =
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -6062,7 +6062,7 @@ void hsw_restore_lcpll(struct drm_i915_p
+ 
+ 	/* Make sure we're not on PC8 state before disabling PC8, otherwise
+ 	 * we'll hang the machine! */
+-	dev_priv->uncore.funcs.force_wake_get(dev_priv);
++	gen6_gt_force_wake_get(dev_priv);
+ 
+ 	if (val & LCPLL_POWER_DOWN_ALLOW) {
+ 		val &= ~LCPLL_POWER_DOWN_ALLOW;
+@@ -6093,7 +6093,7 @@ void hsw_restore_lcpll(struct drm_i915_p
+ 			DRM_ERROR("Switching back to LCPLL failed\n");
+ 	}
+ 
+-	dev_priv->uncore.funcs.force_wake_put(dev_priv);
++	gen6_gt_force_wake_put(dev_priv);
+ }
+ 
+ void hsw_enable_pc8_work(struct work_struct *__work)
 
 
