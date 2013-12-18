@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab3LRSdI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 13:33:08 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:57148 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755632Ab3LRSdF (ORCPT
+	id S1755433Ab3LRSez (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 13:34:55 -0500
+Received: from www.linutronix.de ([62.245.132.108]:46778 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639Ab3LRSex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 13:33:05 -0500
-Date: Thu, 19 Dec 2013 00:02:54 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Hannes Reinecke <hare@suse.de>, Andy Grover <agrover@redhat.com>,
-        Joern Engel <joern@logfs.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 3/4] drivers: target: Mark functions as static in tcm_loop.c
-Message-ID: <6d957ed9181ac274d13385db204db100b0ef8416.1387390091.git.rashika.kheria@gmail.com>
-References: <1a63603bc5ff05147c419a301d59b135cd0c8406.1387390091.git.rashika.kheria@gmail.com>
+	Wed, 18 Dec 2013 13:34:53 -0500
+Message-ID: <52B1EAC5.4020104@linutronix.de>
+Date: Wed, 18 Dec 2013 19:34:45 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1a63603bc5ff05147c419a301d59b135cd0c8406.1387390091.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jonathan Cameron <jic23@kernel.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: am335x: IIO/ADC fixes if used together with TSC
+References: <1387385577-24447-1-git-send-email-bigeasy@linutronix.de> <d916c9be-2614-41b8-ae92-67bf1a57ed74@email.android.com>
+In-Reply-To: <d916c9be-2614-41b8-ae92-67bf1a57ed74@email.android.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions tcm_loop_make_naa_tpg(), tcm_loop_drop_naa_tpg(),
-tcm_loop_make_scsi_hba() and tcm_loop_drop_scsi_hba() as static in
-loopback/tcm_loop.c because they are not used outside this file.
+On 12/18/2013 06:25 PM, Jonathan Cameron wrote:
+> Given timing I suspect that by the we have reviewed these will be too late in this cycle so will hit in the merge window plus stable.
+> 
+> Also some of these are cleanups rather than fixes so should normally be separate from fixes and applied after them as they are not 
+> Stable material.
 
-This eliminates the following warning in loopback/tcm_loop.c:
-drivers/target/loopback/tcm_loop.c:1231:25: warning: no previous prototype for ‘tcm_loop_make_naa_tpg’ [-Wmissing-prototypes]
-drivers/target/loopback/tcm_loop.c:1276:6: warning: no previous prototype for ‘tcm_loop_drop_naa_tpg’ [-Wmissing-prototypes]
-drivers/target/loopback/tcm_loop.c:1308:16: warning: no previous prototype for ‘tcm_loop_make_scsi_hba’ [-Wmissing-prototypes]
-drivers/target/loopback/tcm_loop.c:1378:6: warning: no previous prototype for ‘tcm_loop_drop_scsi_hba’ [-Wmissing-prototypes]
+I tried to keep 5/5 as small as possible so I factor individual and
+separate changes as good as possible as long as the drivers remained
+functional. That means 1-4 are mostly pre-work for 5/5 and that makes
+5/5 depends on them.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
----
- drivers/target/loopback/tcm_loop.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Tagging 5/5 stable I would prefer to take 1-4, too to keep the backport
+effort small. The clash due to the continues mode which is v3.13 is
+probably small. This said, I think it is the best to backport it stable
+if someone asks for it (unless the majority here thinks otherwise).
 
-diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
-index 1b41e67..763ee45 100644
---- a/drivers/target/loopback/tcm_loop.c
-+++ b/drivers/target/loopback/tcm_loop.c
-@@ -1228,7 +1228,7 @@ static struct configfs_attribute *tcm_loop_tpg_attrs[] = {
- 
- /* Start items for tcm_loop_naa_cit */
- 
--struct se_portal_group *tcm_loop_make_naa_tpg(
-+static struct se_portal_group *tcm_loop_make_naa_tpg(
- 	struct se_wwn *wwn,
- 	struct config_group *group,
- 	const char *name)
-@@ -1273,7 +1273,7 @@ struct se_portal_group *tcm_loop_make_naa_tpg(
- 	return &tl_tpg->tl_se_tpg;
- }
- 
--void tcm_loop_drop_naa_tpg(
-+static void tcm_loop_drop_naa_tpg(
- 	struct se_portal_group *se_tpg)
- {
- 	struct se_wwn *wwn = se_tpg->se_tpg_wwn;
-@@ -1305,7 +1305,7 @@ void tcm_loop_drop_naa_tpg(
- 
- /* Start items for tcm_loop_cit */
- 
--struct se_wwn *tcm_loop_make_scsi_hba(
-+static struct se_wwn *tcm_loop_make_scsi_hba(
- 	struct target_fabric_configfs *tf,
- 	struct config_group *group,
- 	const char *name)
-@@ -1375,7 +1375,7 @@ out:
- 	return ERR_PTR(ret);
- }
- 
--void tcm_loop_drop_scsi_hba(
-+static void tcm_loop_drop_scsi_hba(
- 	struct se_wwn *wwn)
- {
- 	struct tcm_loop_hba *tl_hba = container_of(wwn,
--- 
-1.7.9.5
+Are you saying this is too late for v3.13 or v3.14-rc1?
 
+Sebastian
