@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab3LRGzX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 01:55:23 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:50636 "EHLO
+	id S1751929Ab3LRGzp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 01:55:45 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:63256 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255Ab3LRGyK (ORCPT
+	with ESMTP id S1753249Ab3LRGyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Dec 2013 01:54:10 -0500
-X-AuditID: 9c93017d-b7c5eae000004296-dd-52b1468e6a9e
+X-AuditID: 9c93017d-b7c5eae000004296-dc-52b1468ead54
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
@@ -21,9 +21,9 @@ Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v3 14/14] mm, hugetlb: remove a hugetlb_instantiation_mutex
-Date: Wed, 18 Dec 2013 15:54:00 +0900
-Message-Id: <1387349640-8071-15-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 13/14] mm, hugetlb: retry if failed to allocate and there is concurrent user
+Date: Wed, 18 Dec 2013 15:53:59 +0900
+Message-Id: <1387349640-8071-14-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -32,77 +32,239 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, we have an infrastructure in order to remove a this awkward mutex
-which serialize all faulting tasks, so remove it.
+If parallel fault occur, we can fail to allocate a hugepage,
+because many threads dequeue a hugepage to handle a fault of same address.
+This makes reserved pool shortage just for a little while and this cause
+faulting thread who can get hugepages to get a SIGBUS signal.
+
+To solve this problem, we already have a nice solution, that is,
+a hugetlb_instantiation_mutex. This blocks other threads to dive into
+a fault handler. This solve the problem clearly, but it introduce
+performance degradation, because it serialize all fault handling.
+
+Now, I try to remove a hugetlb_instantiation_mutex to get rid of
+performance degradation. For achieving it, at first, we should ensure that
+no one get a SIGBUS if there are enough hugepages.
+
+For this purpose, if we fail to allocate a new hugepage when there is
+concurrent user, we return just 0, instead of VM_FAULT_SIGBUS. With this,
+these threads defer to get a SIGBUS signal until there is no
+concurrent user, and so, we can ensure that no one get a SIGBUS if there
+are enough hugepages.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index ee304d1..daca347 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -255,6 +255,7 @@ struct hstate {
+ 	int next_nid_to_free;
+ 	unsigned int order;
+ 	unsigned long mask;
++	unsigned long nr_dequeue_users;
+ 	unsigned long max_huge_pages;
+ 	unsigned long nr_huge_pages;
+ 	unsigned long free_huge_pages;
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 843c554..6edf423 100644
+index a9ae7d3..843c554 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -2595,9 +2595,7 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+@@ -538,6 +538,7 @@ retry_cpuset:
+ 		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask(h))) {
+ 			page = dequeue_huge_page_node(h, zone_to_nid(zone));
+ 			if (page) {
++				h->nr_dequeue_users++;
+ 				if (!use_reserve)
+ 					break;
  
- /*
-  * Hugetlb_cow() should be called with page lock of the original hugepage held.
-- * Called with hugetlb_instantiation_mutex held and pte_page locked so we
-- * cannot race with other handlers or page migration.
-- * Keep the pte_same checks anyway to make transition from the mutex easier.
-+ * Called with pte_page locked so we cannot race with page migration.
-  */
- static int hugetlb_cow(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long address, pte_t *ptep, pte_t pte,
-@@ -2941,7 +2939,6 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	int ret;
- 	struct page *page = NULL;
- 	struct page *pagecache_page = NULL;
--	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
- 	struct hstate *h = hstate_vma(vma);
- 
- 	address &= huge_page_mask(h);
-@@ -2961,17 +2958,9 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (!ptep)
- 		return VM_FAULT_OOM;
- 
--	/*
--	 * Serialize hugepage allocation and instantiation, so that we don't
--	 * get spurious allocation failures if two CPUs race to instantiate
--	 * the same page in the page cache.
--	 */
--	mutex_lock(&hugetlb_instantiation_mutex);
- 	entry = huge_ptep_get(ptep);
--	if (huge_pte_none(entry)) {
--		ret = hugetlb_no_page(mm, vma, address, ptep, flags);
--		goto out_mutex;
--	}
-+	if (huge_pte_none(entry))
-+		return hugetlb_no_page(mm, vma, address, ptep, flags);
- 
- 	ret = 0;
- 
-@@ -2984,10 +2973,8 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * consumed.
- 	 */
- 	if ((flags & FAULT_FLAG_WRITE) && !huge_pte_write(entry)) {
--		if (vma_needs_reservation(h, vma, address) < 0) {
--			ret = VM_FAULT_OOM;
--			goto out_mutex;
--		}
-+		if (vma_needs_reservation(h, vma, address) < 0)
-+			return VM_FAULT_OOM;
- 
- 		if (!(vma->vm_flags & VM_MAYSHARE))
- 			pagecache_page = hugetlbfs_pagecache_page(h,
-@@ -3037,9 +3024,6 @@ out_ptl:
- 		unlock_page(page);
- 	put_page(page);
- 
--out_mutex:
--	mutex_unlock(&hugetlb_instantiation_mutex);
--
- 	return ret;
+@@ -557,6 +558,15 @@ err:
+ 	return NULL;
  }
  
++static void commit_dequeued_huge_page(struct vm_area_struct *vma)
++{
++	struct hstate *h = hstate_vma(vma);
++
++	spin_lock(&hugetlb_lock);
++	h->nr_dequeue_users--;
++	spin_unlock(&hugetlb_lock);
++}
++
+ static void update_and_free_page(struct hstate *h, struct page *page)
+ {
+ 	int i;
+@@ -1176,8 +1186,18 @@ static void vma_commit_reservation(struct hstate *h,
+ 	region_add(resv, idx, idx + 1);
+ }
+ 
++/*
++ * alloc_huge_page() calls dequeue_huge_page_vma() and it would increase
++ * hstate's nr_dequeue_users if it gets a page from the queue. This
++ * nr_dequeue_users is used to prevent concurrent users who can get a page on
++ * the queue from being killed by SIGBUS. After determining if we actually use
++ * it or not, we should notify that we are done to hstate by calling
++ * commit_dequeued_huge_page().
++ */
+ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+-				    unsigned long addr, int use_reserve)
++				    unsigned long addr, int use_reserve,
++				    unsigned long *nr_dequeue_users,
++				    bool *do_dequeue)
+ {
+ 	struct hugepage_subpool *spool = subpool_vma(vma);
+ 	struct hstate *h = hstate_vma(vma);
+@@ -1205,8 +1225,11 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 		return ERR_PTR(-ENOSPC);
+ 	}
+ 	spin_lock(&hugetlb_lock);
++	*do_dequeue = true;
++	*nr_dequeue_users = h->nr_dequeue_users;
+ 	page = dequeue_huge_page_vma(h, vma, addr, use_reserve);
+ 	if (!page) {
++		*do_dequeue = false;
+ 		spin_unlock(&hugetlb_lock);
+ 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+ 		if (!page) {
+@@ -1238,9 +1261,16 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ struct page *alloc_huge_page_noerr(struct vm_area_struct *vma,
+ 				unsigned long addr, int avoid_reserve)
+ {
+-	struct page *page = alloc_huge_page(vma, addr, !avoid_reserve);
++	struct page *page;
++	unsigned long nr_dequeue_users;
++	bool do_dequeue = false;
++
++	page = alloc_huge_page(vma, addr, !avoid_reserve,
++				&nr_dequeue_users, &do_dequeue);
+ 	if (IS_ERR(page))
+ 		page = NULL;
++	else if (do_dequeue)
++		commit_dequeued_huge_page(vma);
+ 	return page;
+ }
+ 
+@@ -1975,6 +2005,7 @@ void __init hugetlb_add_hstate(unsigned order)
+ 	h->mask = ~((1ULL << (order + PAGE_SHIFT)) - 1);
+ 	h->nr_huge_pages = 0;
+ 	h->free_huge_pages = 0;
++	h->nr_dequeue_users = 0;
+ 	for (i = 0; i < MAX_NUMNODES; ++i)
+ 		INIT_LIST_HEAD(&h->hugepage_freelists[i]);
+ 	INIT_LIST_HEAD(&h->hugepage_activelist);
+@@ -2577,6 +2608,8 @@ static int hugetlb_cow(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	int outside_reserve = 0;
+ 	long chg;
+ 	bool use_reserve = false;
++	unsigned long nr_dequeue_users = 0;
++	bool do_dequeue = false;
+ 	int ret = 0;
+ 	unsigned long mmun_start;	/* For mmu_notifiers */
+ 	unsigned long mmun_end;		/* For mmu_notifiers */
+@@ -2628,11 +2661,17 @@ retry_avoidcopy:
+ 		use_reserve = !chg;
+ 	}
+ 
+-	new_page = alloc_huge_page(vma, address, use_reserve);
++	new_page = alloc_huge_page(vma, address, use_reserve,
++						&nr_dequeue_users, &do_dequeue);
+ 
+ 	if (IS_ERR(new_page)) {
+ 		page_cache_release(old_page);
+ 
++		if (nr_dequeue_users) {
++			ret = 0;
++			goto out_lock;
++		}
++
+ 		/*
+ 		 * If a process owning a MAP_PRIVATE mapping fails to COW,
+ 		 * it is due to references held by a child and an insufficient
+@@ -2657,6 +2696,9 @@ retry_avoidcopy:
+ 			WARN_ON_ONCE(1);
+ 		}
+ 
++		if (use_reserve)
++			WARN_ON_ONCE(1);
++
+ 		ret = VM_FAULT_SIGBUS;
+ 		goto out_lock;
+ 	}
+@@ -2691,6 +2733,8 @@ retry_avoidcopy:
+ 	page_cache_release(new_page);
+ out_old_page:
+ 	page_cache_release(old_page);
++	if (do_dequeue)
++		commit_dequeued_huge_page(vma);
+ out_lock:
+ 	/* Caller expects lock to be held */
+ 	spin_lock(ptl);
+@@ -2744,6 +2788,8 @@ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	spinlock_t *ptl;
+ 	long chg;
+ 	bool use_reserve;
++	unsigned long nr_dequeue_users = 0;
++	bool do_dequeue = false;
+ 
+ 	/*
+ 	 * Currently, we are forced to kill the process in the event the
+@@ -2777,9 +2823,17 @@ retry:
+ 		}
+ 		use_reserve = !chg;
+ 
+-		page = alloc_huge_page(vma, address, use_reserve);
++		page = alloc_huge_page(vma, address, use_reserve,
++					&nr_dequeue_users, &do_dequeue);
+ 		if (IS_ERR(page)) {
+-			ret = VM_FAULT_SIGBUS;
++			if (nr_dequeue_users)
++				ret = 0;
++			else {
++				if (use_reserve)
++					WARN_ON_ONCE(1);
++
++				ret = VM_FAULT_SIGBUS;
++			}
+ 			goto out;
+ 		}
+ 		clear_huge_page(page, address, pages_per_huge_page(h));
+@@ -2792,22 +2846,26 @@ retry:
+ 			err = add_to_page_cache(page, mapping, idx, GFP_KERNEL);
+ 			if (err) {
+ 				put_page(page);
++				if (do_dequeue)
++					commit_dequeued_huge_page(vma);
+ 				if (err == -EEXIST)
+ 					goto retry;
+ 				goto out;
+ 			}
+ 			ClearPagePrivate(page);
++			if (do_dequeue)
++				commit_dequeued_huge_page(vma);
+ 
+ 			spin_lock(&inode->i_lock);
+ 			inode->i_blocks += blocks_per_huge_page(h);
+ 			spin_unlock(&inode->i_lock);
+ 		} else {
+ 			lock_page(page);
++			anon_rmap = 1;
+ 			if (unlikely(anon_vma_prepare(vma))) {
+ 				ret = VM_FAULT_OOM;
+ 				goto backout_unlocked;
+ 			}
+-			anon_rmap = 1;
+ 		}
+ 	} else {
+ 		/*
+@@ -2862,6 +2920,8 @@ retry:
+ 	spin_unlock(ptl);
+ 	unlock_page(page);
+ out:
++	if (anon_rmap && do_dequeue)
++		commit_dequeued_huge_page(vma);
+ 	return ret;
+ 
+ backout:
 -- 
 1.7.9.5
 
