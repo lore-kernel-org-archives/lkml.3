@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab3LRVPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:15:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36654 "EHLO
+	id S1754824Ab3LRVPv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:15:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36660 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751Ab3LRVOa (ORCPT
+	with ESMTP id S1754753Ab3LRVOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Dec 2013 16:14:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
-Subject: [PATCH 3.12 089/118] dm thin: switch to read-only mode if metadata space is exhausted
-Date: Wed, 18 Dec 2013 13:12:06 -0800
-Message-Id: <20131218211221.976999484@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.12 090/118] dm thin: always fallback the pool mode if commit fails
+Date: Wed, 18 Dec 2013 13:12:07 -0800
+Message-Id: <20131218211222.004512096@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -28,83 +28,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 4a02b34e0cf1d0d0dd3737702841da4bf615a50a upstream.
+commit 020cc3b5e28c2e24f59f53a9154faf08564f308e upstream.
 
-Switch the thin pool to read-only mode in alloc_data_block() if
-dm_pool_alloc_data_block() fails because the pool's metadata space is
-exhausted.
+Rename commit_or_fallback() to commit().  Now all previous calls to
+commit() will trigger the pool mode to fallback if the commit fails.
 
-Differentiate between data and metadata space in messages about no
-free space available.
+Also, check the error returned from commit() in alloc_data_block().
 
-This issue was noticed with the device-mapper-test-suite using:
-dmtest run --suite thin-provisioning -n /exhausting_metadata_space_causes_fail_mode/
-
-The quantity of errors logged in this case must be reduced.
-
-before patch:
-
-device-mapper: thin: 253:4: reached low water mark for metadata device: sending event.
-device-mapper: space map metadata: unable to allocate new metadata block
-device-mapper: space map common: dm_tm_shadow_block() failed
-device-mapper: space map metadata: unable to allocate new metadata block
-device-mapper: space map common: dm_tm_shadow_block() failed
-device-mapper: space map metadata: unable to allocate new metadata block
-device-mapper: space map common: dm_tm_shadow_block() failed
-device-mapper: space map metadata: unable to allocate new metadata block
-device-mapper: space map common: dm_tm_shadow_block() failed
-device-mapper: space map metadata: unable to allocate new metadata block
-device-mapper: space map common: dm_tm_shadow_block() failed
-<snip ... these repeat for a _very_ long while ... >
-device-mapper: space map metadata: unable to allocate new metadata block
-device-mapper: thin: 253:4: commit failed: error = -28
-device-mapper: thin: 253:4: switching pool to read-only mode
-
-after patch:
-
-device-mapper: thin: 253:4: reached low water mark for metadata device: sending event.
-device-mapper: space map metadata: unable to allocate new metadata block
-device-mapper: thin: 253:4: no free metadata space available.
-device-mapper: thin: 253:4: switching pool to read-only mode
-
+Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/md/dm-thin.c |   37 +++++++++++++++----------------------
+ 1 file changed, 15 insertions(+), 22 deletions(-)
 
 --- a/drivers/md/dm-thin.c
 +++ b/drivers/md/dm-thin.c
-@@ -959,7 +959,7 @@ static int alloc_data_block(struct thin_
- 		 * table reload).
- 		 */
- 		if (!free_blocks) {
--			DMWARN("%s: no free space available.",
-+			DMWARN("%s: no free data space available.",
- 			       dm_device_name(pool->pool_md));
- 			spin_lock_irqsave(&pool->lock, flags);
- 			pool->no_free_space = 1;
-@@ -969,8 +969,16 @@ static int alloc_data_block(struct thin_
+@@ -883,32 +883,23 @@ static void schedule_zero(struct thin_c
  	}
+ }
  
- 	r = dm_pool_alloc_data_block(pool->pmd, result);
+-static int commit(struct pool *pool)
+-{
+-	int r;
+-
+-	r = dm_pool_commit_metadata(pool->pmd);
 -	if (r)
+-		DMERR_LIMIT("%s: commit failed: error = %d",
+-			    dm_device_name(pool->pool_md), r);
+-
+-	return r;
+-}
+-
+ /*
+  * A non-zero return indicates read_only or fail_io mode.
+  * Many callers don't care about the return value.
+  */
+-static int commit_or_fallback(struct pool *pool)
++static int commit(struct pool *pool)
+ {
+ 	int r;
+ 
+ 	if (get_pool_mode(pool) != PM_WRITE)
+ 		return -EINVAL;
+ 
+-	r = commit(pool);
+-	if (r)
++	r = dm_pool_commit_metadata(pool->pmd);
 +	if (r) {
-+		if (r == -ENOSPC &&
-+		    !dm_pool_get_free_metadata_block_count(pool->pmd, &free_blocks) &&
-+		    !free_blocks) {
-+			DMWARN("%s: no free metadata space available.",
-+			       dm_device_name(pool->pool_md));
-+			set_pool_mode(pool, PM_READ_ONLY);
-+		}
- 		return r;
++		DMERR_LIMIT("%s: dm_pool_commit_metadata failed: error = %d",
++			    dm_device_name(pool->pool_md), r);
+ 		set_pool_mode(pool, PM_READ_ONLY);
 +	}
+ 
+ 	return r;
+ }
+@@ -945,7 +936,9 @@ static int alloc_data_block(struct thin_
+ 		 * Try to commit to see if that will free up some
+ 		 * more space.
+ 		 */
+-		(void) commit_or_fallback(pool);
++		r = commit(pool);
++		if (r)
++			return r;
+ 
+ 		r = dm_pool_get_free_block_count(pool->pmd, &free_blocks);
+ 		if (r)
+@@ -1359,7 +1352,7 @@ static void process_deferred_bios(struct
+ 	if (bio_list_empty(&bios) && !need_commit_due_to_time(pool))
+ 		return;
+ 
+-	if (commit_or_fallback(pool)) {
++	if (commit(pool)) {
+ 		while ((bio = bio_list_pop(&bios)))
+ 			bio_io_error(bio);
+ 		return;
+@@ -2276,7 +2269,7 @@ static int pool_preresume(struct dm_targ
+ 		return r;
+ 
+ 	if (need_commit1 || need_commit2)
+-		(void) commit_or_fallback(pool);
++		(void) commit(pool);
  
  	return 0;
  }
+@@ -2303,7 +2296,7 @@ static void pool_postsuspend(struct dm_t
+ 
+ 	cancel_delayed_work(&pool->waker);
+ 	flush_workqueue(pool->wq);
+-	(void) commit_or_fallback(pool);
++	(void) commit(pool);
+ }
+ 
+ static int check_arg_count(unsigned argc, unsigned args_required)
+@@ -2437,7 +2430,7 @@ static int process_reserve_metadata_snap
+ 	if (r)
+ 		return r;
+ 
+-	(void) commit_or_fallback(pool);
++	(void) commit(pool);
+ 
+ 	r = dm_pool_reserve_metadata_snap(pool->pmd);
+ 	if (r)
+@@ -2499,7 +2492,7 @@ static int pool_message(struct dm_target
+ 		DMWARN("Unrecognised thin pool target message received: %s", argv[0]);
+ 
+ 	if (!r)
+-		(void) commit_or_fallback(pool);
++		(void) commit(pool);
+ 
+ 	return r;
+ }
+@@ -2554,7 +2547,7 @@ static void pool_status(struct dm_target
+ 
+ 		/* Commit to ensure statistics aren't out-of-date */
+ 		if (!(status_flags & DM_STATUS_NOFLUSH_FLAG) && !dm_suspended(ti))
+-			(void) commit_or_fallback(pool);
++			(void) commit(pool);
+ 
+ 		r = dm_pool_get_metadata_transaction_id(pool->pmd, &transaction_id);
+ 		if (r) {
 
 
