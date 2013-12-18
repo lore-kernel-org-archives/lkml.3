@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab3LRVLu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:11:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35866 "EHLO
+	id S1755102Ab3LRWOA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:14:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35877 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819Ab3LRVLs (ORCPT
+	with ESMTP id S1752848Ab3LRVLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:11:48 -0500
+	Wed, 18 Dec 2013 16:11:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Paul Walmsley <paul@pwsan.com>
-Subject: [PATCH 3.10 10/78] ARM: OMAP3: hwmod data: Dont prevent RESET of USB Host module
-Date: Wed, 18 Dec 2013 13:10:38 -0800
-Message-Id: <20131218211112.197221847@linuxfoundation.org>
+        Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.10 13/78] KVM: Improve create VCPU parameter (CVE-2013-4587)
+Date: Wed, 18 Dec 2013 13:10:41 -0800
+Message-Id: <20131218211112.282251485@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -28,55 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Andy Honig <ahonig@google.com>
 
-commit 7f4d3641e2548d1ac5dee837ff434df668a2810c upstream.
+commit 338c7dbadd2671189cec7faf64c84d01071b3f96 upstream.
 
-Unlike what the comment states, errata i660 does not state that we
-can't RESET the USB host module. Instead it states that RESET is the
-only way to recover from a deadlock situation.
+In multiple functions the vcpu_id is used as an offset into a bitfield.  Ag
+malicious user could specify a vcpu_id greater than 255 in order to set or
+clear bits in kernel memory.  This could be used to elevate priveges in the
+kernel.  This patch verifies that the vcpu_id provided is less than 255.
+The api documentation already specifies that the vcpu_id must be less than
+max_vcpus, but this is currently not checked.
 
-RESET ensures that the module is in a known good state irrespective
-of what bootloader does with the module, so it must be done at boot.
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Tested-by: Tomi Valkeinen <tomi.valkeinen@ti.com> # Panda, BeagleXM
-Fixes: de231388cb80 ("ARM: OMAP: USB: EHCI and OHCI hwmod structures for OMAP3")
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Reported-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |   13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
+ virt/kvm/kvm_main.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-@@ -1930,7 +1930,8 @@ static struct omap_hwmod_class_sysconfig
- 	.syss_offs	= 0x0014,
- 	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_CLOCKACTIVITY |
- 			   SYSC_HAS_SIDLEMODE | SYSC_HAS_ENAWAKEUP |
--			   SYSC_HAS_SOFTRESET | SYSC_HAS_AUTOIDLE),
-+			   SYSC_HAS_SOFTRESET | SYSC_HAS_AUTOIDLE |
-+			   SYSS_HAS_RESET_STATUS),
- 	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
- 			   MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
- 	.sysc_fields	= &omap_hwmod_sysc_type1,
-@@ -2008,15 +2009,7 @@ static struct omap_hwmod omap3xxx_usb_ho
- 	 * hence HWMOD_SWSUP_MSTANDBY
- 	 */
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1904,6 +1904,9 @@ static int kvm_vm_ioctl_create_vcpu(stru
+ 	int r;
+ 	struct kvm_vcpu *vcpu, *v;
  
--	/*
--	 * During system boot; If the hwmod framework resets the module
--	 * the module will have smart idle settings; which can lead to deadlock
--	 * (above Errata Id:i660); so, dont reset the module during boot;
--	 * Use HWMOD_INIT_NO_RESET.
--	 */
--
--	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY |
--			  HWMOD_INIT_NO_RESET,
-+	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
- };
- 
- /*
++	if (id >= KVM_MAX_VCPUS)
++		return -EINVAL;
++
+ 	vcpu = kvm_arch_vcpu_create(kvm, id);
+ 	if (IS_ERR(vcpu))
+ 		return PTR_ERR(vcpu);
 
 
