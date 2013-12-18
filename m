@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727Ab3LRVNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:13:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36248 "EHLO
+	id S1754488Ab3LRVqd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:46:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36257 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753669Ab3LRVNC (ORCPT
+	with ESMTP id S1753703Ab3LRVNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:02 -0500
+	Wed, 18 Dec 2013 16:13:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 003/118] ALSA: compress: Fix 64bit ABI incompatibility
-Date: Wed, 18 Dec 2013 13:10:40 -0800
-Message-Id: <20131218211219.562272162@linuxfoundation.org>
+        Brian Carnes <bmcarnes@gmail.com>, Jean Delvare <khali@linux-fr.org>
+Subject: [PATCH 3.12 022/118] hwmon: (w83l786ng) Fix fan speed control mode setting and reporting
+Date: Wed, 18 Dec 2013 13:10:59 -0800
+Message-Id: <20131218211220.108089332@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -28,46 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Brian Carnes <bmcarnes@gmail.com>
 
-commit 6733cf572a9e20db2b7580a5dd39d5782d571eec upstream.
+commit cf7559bc053471f32373d71d04a9aa19e0b48d59 upstream.
 
-snd_pcm_uframes_t is defined as unsigned long so it would take
-different sizes depending on 32 or 64bit architectures.  As we don't
-want this ABI incompatibility, and there is no real 64bit user yet,
-let's make it the fixed size with __u32.
+The wrong mask is used, which causes some fan speed control modes
+(pwmX_enable) to be incorrectly reported, and some modes to be
+impossible to set.
 
-Also bump the protocol version number to 0.1.2.
+[JD: add subject and description.]
 
-Acked-by: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Brian Carnes <bmcarnes@gmail.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/uapi/sound/compress_offload.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/hwmon/w83l786ng.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/uapi/sound/compress_offload.h
-+++ b/include/uapi/sound/compress_offload.h
-@@ -30,7 +30,7 @@
- #include <sound/compress_params.h>
- 
- 
--#define SNDRV_COMPRESS_VERSION SNDRV_PROTOCOL_VERSION(0, 1, 1)
-+#define SNDRV_COMPRESS_VERSION SNDRV_PROTOCOL_VERSION(0, 1, 2)
- /**
-  * struct snd_compressed_buffer: compressed buffer
-  * @fragment_size: size of buffer fragment in bytes
-@@ -67,8 +67,8 @@ struct snd_compr_params {
- struct snd_compr_tstamp {
- 	__u32 byte_offset;
- 	__u32 copied_total;
--	snd_pcm_uframes_t pcm_frames;
--	snd_pcm_uframes_t pcm_io_frames;
-+	__u32 pcm_frames;
-+	__u32 pcm_io_frames;
- 	__u32 sampling_rate;
- };
- 
+--- a/drivers/hwmon/w83l786ng.c
++++ b/drivers/hwmon/w83l786ng.c
+@@ -510,7 +510,7 @@ store_pwm_enable(struct device *dev, str
+ 	mutex_lock(&data->update_lock);
+ 	reg = w83l786ng_read_value(client, W83L786NG_REG_FAN_CFG);
+ 	data->pwm_enable[nr] = val;
+-	reg &= ~(0x02 << W83L786NG_PWM_ENABLE_SHIFT[nr]);
++	reg &= ~(0x03 << W83L786NG_PWM_ENABLE_SHIFT[nr]);
+ 	reg |= (val - 1) << W83L786NG_PWM_ENABLE_SHIFT[nr];
+ 	w83l786ng_write_value(client, W83L786NG_REG_FAN_CFG, reg);
+ 	mutex_unlock(&data->update_lock);
+@@ -776,7 +776,7 @@ static struct w83l786ng_data *w83l786ng_
+ 			    ((pwmcfg >> W83L786NG_PWM_MODE_SHIFT[i]) & 1)
+ 			    ? 0 : 1;
+ 			data->pwm_enable[i] =
+-			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 2) + 1;
++			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 3) + 1;
+ 			data->pwm[i] = w83l786ng_read_value(client,
+ 			    W83L786NG_REG_PWM[i]);
+ 		}
 
 
