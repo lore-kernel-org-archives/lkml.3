@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348Ab3LRGg7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 01:36:59 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:60710 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975Ab3LRGg6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 01:36:58 -0500
-Date: Wed, 18 Dec 2013 12:06:45 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Joerg Roedel <joro@8bytes.org>, iommu@lists.linux-foundation.org,
-        josh@joshtriplett.org
-Subject: [PATCH 3/3] drivers: iommu: Mark function eoi_ioapic_pin_remapped()
- as static in irq_remapping.c
-Message-ID: <9550af5889a779ff889d4a4371097daaf42cf4a3.1387265905.git.rashika.kheria@gmail.com>
-References: <6d0cb39e3d1128669e7740943efce3996ab0d8ab.1387265904.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <6d0cb39e3d1128669e7740943efce3996ab0d8ab.1387265904.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753080Ab3LRGji (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 01:39:38 -0500
+Received: from ozlabs.org ([203.10.76.45]:60172 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750910Ab3LRGjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 01:39:37 -0500
+Date: Wed, 18 Dec 2013 17:39:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hannes Reinecke <hare@suse.de>
+Subject: linux-next: build warning after merge of the target-updates tree
+Message-Id: <20131218173930.56f758971ca1939cbc3e67ec@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__18_Dec_2013_17_39_30_+1100_VXSR.XynMKLT07Re"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark function eoi_ioapic_pin_remapped() as static in irq_remapping.c
-because it is not used outside this file.
+--Signature=_Wed__18_Dec_2013_17_39_30_+1100_VXSR.XynMKLT07Re
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This eliminates the following warning in
-irq_remapping.c:drivers/iommu/irq_remapping.c:153:6: warning: no
-previous prototype for ‘eoi_ioapic_pin_remapped’ [-Wmissing-prototypes]
+Hi Nicholas,
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/iommu/irq_remapping.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+After merging the target-updates tree, today's linux-next build (x86_64
+allmodconfig) produced this warning:
 
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 39f81ae..3b05d1b 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -150,7 +150,7 @@ static int irq_remapping_setup_msi_irqs(struct pci_dev *dev,
- 		return do_setup_msix_irqs(dev, nvec);
- }
- 
--void eoi_ioapic_pin_remapped(int apic, int pin, int vector)
-+static void eoi_ioapic_pin_remapped(int apic, int pin, int vector)
- {
- 	/*
- 	 * Intr-remapping uses pin number as the virtual vector
--- 
-1.7.9.5
+drivers/target/target_core_alua.c: In function 'core_alua_state_lba_depende=
+nt':
+drivers/target/target_core_alua.c:473:6: warning: suggest parentheses aroun=
+d operand of '!' or change '&' to '&&' or '!' to '~' [-Wparentheses]
+  if (!cmd->se_cmd_flags & SCF_SCSI_DATA_CDB)
+      ^
 
+Introduced by commit 923aacab87ba ("target_core_alua: Referrals
+infrastructure").
+--=20
+Cheers,
+Stephen Rothwell <sfr@canb.auug.org.au>
+
+--Signature=_Wed__18_Dec_2013_17_39_30_+1100_VXSR.XynMKLT07Re
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSsUMmAAoJEMDTa8Ir7ZwV3ycP/0L+RcFpmpTnsK0xpwhMXPwp
+1YuP2hl7FgXSnh4M55usZJjla9tJG23qncUA3QTkBV8oWPGd0BNlDPFXmbN0wPdg
+Bji4mz5+f8R5FYVouimlcmHEDGDhv9NxoGuaY01gOr0BgHlnZYBuLHa4MsC8EDkr
+4Oxwjs2Fh/Op07nswlw4r+6IwH+h5TEP2Q+eykljulw5P3+uUDDigJyfJC7A67/U
+/2O9n9G4668qJnKqm3CPNMMYvmBJVt3BVjMYNwWEg0mm3hT/rqCH27wQRN65xMga
+aiS1j3nj0RgTYYW8RWWGp8WYojEs5fI6TyCl0sydI7At1u/lrG+9UZiyyxACpHwe
+Ffwl5XtuYzuA11K81Wtakm67957RUqI6kcSIrwviTqqso1NzZhpSxfvYpksJWydQ
+Yg5HNxlCBxJEfELTKk/YA7lQ+4HF07IYFev4ielUCKKEAZGJGvlqj0G++xqDlWAb
+cC76jDYDQOVYe58ppnQeW5FENdGLk+Ijf2JMo+33Qsc96uHmpnjP6WtA9CTlunsp
+6SCF9nAODAo2Ke1CpNjfeqkAeJSTI7fUgX0PknfckFQXKm7wrYsXIFHIDqjl5tCo
+B9PJia8QC6E0SR/EtUSon5nq1lRSkPVWl6OLre5yzmzXHHMwMz03lW+aC3PKsCZv
+e+LEEONflTIhD6CpbBu2
+=PB2h
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__18_Dec_2013_17_39_30_+1100_VXSR.XynMKLT07Re--
