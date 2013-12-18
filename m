@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab3LRJKG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 04:10:06 -0500
-Received: from mga09.intel.com ([134.134.136.24]:51351 "EHLO mga09.intel.com"
+	id S1753600Ab3LRJK4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 04:10:56 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39479 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753288Ab3LRJHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 04:07:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,506,1384329600"; 
-   d="scan'208";a="454116600"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        sfi-devel@simplefirmware.org, linux-pci@vger.kernel.org
-Subject: [RFC PATCH 14/15] ACPI/SFI: Fix wrong <acpi/acpi.h> inclusion in SFI/ACPI wrapper - table definitions.
-Date: Wed, 18 Dec 2013 17:07:14 +0800
-Message-Id: <fc95924e41ed67b381217ec8c0b9eeee46164360.1387336613.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1387336613.git.lv.zheng@intel.com>
-References: <cover.1387336613.git.lv.zheng@intel.com>
+	id S1750910Ab3LRJKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 04:10:50 -0500
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Sekhar Nori <nsekhar@ti.com>,
+        Alexandre Courbot <gnurou@gmail.com>
+CC: Rob Herring <rob.herring@calxeda.com>, <prabhakar.csengg@gmail.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-gpio@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [PATCH v2 0/2] gpio: davinci: reuse for keystone arch
+Date: Wed, 18 Dec 2013 12:07:50 +0200
+Message-ID: <1387361272-20861-1-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes <acpi/acpi.h> inclusions from <linux/sfi_acpi.h> as
-<linux/acpi.h> has already included it for CONFIG_ACPI=n builds.
+This series is intended to update Davinci GPIO driver and reuse
+it for Keystone SoCs, because Keystone uses the similar GPIO IP like Davinci.
+Keystone GPIO IP: supports:
+- up to 32 GPIO lines;
+- only unbanked irqs;
 
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: sfi-devel@simplefirmware.org
-Cc: linux-pci@vger.kernel.org
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
----
- include/linux/sfi_acpi.h |    3 ---
- 1 file changed, 3 deletions(-)
+See Documentation:
+Keystone - http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
 
-diff --git a/include/linux/sfi_acpi.h b/include/linux/sfi_acpi.h
-index 4723bbf..a6e555c 100644
---- a/include/linux/sfi_acpi.h
-+++ b/include/linux/sfi_acpi.h
-@@ -63,8 +63,6 @@
- #include <linux/sfi.h>
- 
- #ifdef CONFIG_SFI
--#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
--
- extern int sfi_acpi_table_parse(char *signature, char *oem_id,
- 				char *oem_table_id,
- 				int (*handler)(struct acpi_table_header *));
-@@ -78,7 +76,6 @@ static inline int __init acpi_sfi_table_parse(char *signature,
- 	return sfi_acpi_table_parse(signature, NULL, NULL, handler);
- }
- #else /* !CONFIG_SFI */
--
- static inline int sfi_acpi_table_parse(char *signature, char *oem_id,
- 				char *oem_table_id,
- 				int (*handler)(struct acpi_table_header *))
+This series based on:
+https://git.kernel.org/cgit/linux/kernel/git/nsekhar/linux-davinci.git/log/?h=v3.14/gpio
+
+Changes in v2:
+- minor comments applied, no functional changes
+
+v1: https://lkml.org/lkml/2013/12/12/366
+
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>
+Cc: Sekhar Nori <nsekhar@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+
+Grygorii Strashko (2):
+  gpio: davinci: don't create irq_domain in case of unbanked irqs
+  gpio: davinci: reuse for Keystone SoC
+
+ .../devicetree/bindings/gpio/gpio-davinci.txt      |    4 +-
+ drivers/gpio/gpio-davinci.c                        |   80 ++++++++++++++------
+ 2 files changed, 59 insertions(+), 25 deletions(-)
+
 -- 
-1.7.10.4
+1.7.9.5
 
