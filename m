@@ -1,112 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab3LRAza (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 19:55:30 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60358 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750875Ab3LRAz2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 19:55:28 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Josh Triplett <josh@joshtriplett.org>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        "Zheng, Lv" <lv.zheng@intel.com>
-Cc: Rashika Kheria <rashika.kheria@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devel@acpica.org" <devel@acpica.org>
-Subject: Re: [PATCH 05/11] drivers: acpi: Include appropriate header file in utstate.c
-Date: Wed, 18 Dec 2013 02:08:46 +0100
-Message-ID: <2756776.dGKMpKb0nz@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131217202518.GA17790@jtriplet-mobl1>
-References: <c676af6619fc5a84208740bfc7edcf56bb78ed4e.1387271324.git.rashika.kheria@gmail.com> <94F2FBAB4432B54E8AACC7DFDE6C92E37C7B99F5@ORSMSX103.amr.corp.intel.com> <20131217202518.GA17790@jtriplet-mobl1>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	id S1752094Ab3LRBAi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 20:00:38 -0500
+Received: from ozlabs.org ([203.10.76.45]:50564 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751200Ab3LRBAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 20:00:37 -0500
+Date: Wed, 18 Dec 2013 12:00:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>
+Subject: linux-next: build failure after merge of the pm tree
+Message-Id: <20131218120026.aa6c48feca3e24c59b5bf4c3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__18_Dec_2013_12_00_26_+1100_5C2wyKjp8w6h2Do."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 17, 2013 12:25:18 PM Josh Triplett wrote:
-> On Tue, Dec 17, 2013 at 05:35:46PM +0000, Moore, Robert wrote:
-> > I'm not sure what version of ACPICA you are looking at, but in the master git tree for ACPICA, the file accommon.h includes "acutils.h".
-> 
-> This is the version in the latest git tree for the Linux kernel.
+--Signature=_Wed__18_Dec_2013_12_00_26_+1100_5C2wyKjp8w6h2Do.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Well, I guess that's something for Lv to look at, then.
+Hi Rafael,
 
-Lv, we seem to have a divergence here, can you please see if we can fix it
-shortly?
+After merging the pm tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-Rafael
+drivers/acpi/nvs.c:15:27: fatal error: linux/acpi_io.h: No such file or dir=
+ectory
+ #include <linux/acpi_io.h>
+                           ^
 
+Caused by commit a99493647c1a ("Merge branch 'acpi-cleanup' into
+linux-next") which incorrectly reintroduced the include of
+linux/acpi_io.h.
 
-> > > -----Original Message-----
-> > > From: Rashika Kheria [mailto:rashika.kheria@gmail.com]
-> > > Sent: Tuesday, December 17, 2013 1:22 AM
-> > > To: linux-kernel@vger.kernel.org
-> > > Cc: Moore, Robert; Zheng, Lv; Wysocki, Rafael J; Len Brown; linux-
-> > > acpi@vger.kernel.org; josh@joshtriplett.org; devel@acpica.org
-> > > Subject: [PATCH 05/11] drivers: acpi: Include appropriate header file in
-> > > utstate.c
-> > > 
-> > > Include appropriate header file acutils.h in acpica/utstate.c because
-> > > function acpi_ut_create_pkg_state_and_push() has its prototype declaration
-> > > in acutils.h. Also, encloses the function in acpica/utstate.c in ifdef
-> > > condition of ACPI_FUTURE_USAGE.
-> > > 
-> > > This eliminates the following warning in utstate.c:
-> > > drivers/acpi/acpica/utstate.c:64:1: warning: no previous prototype for
-> > > ‘acpi_ut_create_pkg_state_and_push’ [-Wmissing-prototypes]
-> > > 
-> > > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > > ---
-> > >  drivers/acpi/acpica/utstate.c |    3 +++
-> > >  1 file changed, 3 insertions(+)
-> > > 
-> > > diff --git a/drivers/acpi/acpica/utstate.c b/drivers/acpi/acpica/utstate.c
-> > > index 03c4c2f..0920d23 100644
-> > > --- a/drivers/acpi/acpica/utstate.c
-> > > +++ b/drivers/acpi/acpica/utstate.c
-> > > @@ -43,6 +43,7 @@
-> > > 
-> > >  #include <acpi/acpi.h>
-> > >  #include "accommon.h"
-> > > +#include "acutils.h"
-> > > 
-> > >  #define _COMPONENT          ACPI_UTILITIES
-> > >  ACPI_MODULE_NAME("utstate")
-> > > @@ -60,6 +61,7 @@ ACPI_MODULE_NAME("utstate")
-> > >   * DESCRIPTION: Create a new state and push it
-> > >   *
-> > > 
-> > > **************************************************************************
-> > > ****/
-> > > +#ifdef  ACPI_FUTURE_USAGE
-> > >  acpi_status
-> > >  acpi_ut_create_pkg_state_and_push(void *internal_object,
-> > >  				  void *external_object,
-> > > @@ -79,6 +81,7 @@ acpi_ut_create_pkg_state_and_push(void *internal_object,
-> > >  	acpi_ut_push_generic_state(state_list, state);
-> > >  	return (AE_OK);
-> > >  }
-> > > +#endif
-> > > 
-> > > 
-> > > /*************************************************************************
-> > > ******
-> > >   *
-> > > --
-> > > 1.7.9.5
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+I have used the pm tree from next-20131217 for today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__18_Dec_2013_12_00_26_+1100_5C2wyKjp8w6h2Do.
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSsPOvAAoJEMDTa8Ir7ZwVF04P/3ldy5PMtkV3pAfrStbJzG2m
+Y906K7wT8n6thKqKx4X9zcRquULvf3hGBDUoMH3pgpmDzH52Db7ua/E0ge0KhO+B
+ncLXOoknZvPHtfLcbYCEnLrK9fZO7ZYaoKRn77JUeundT56fzkHE87wQ8dwR/9co
+O6JGlZidhIsjunHaYs7Abxor1Y9AxD2YSmp/sY/Cm3hAGI5RjxOhmWUX4WMDvDy2
+CQmh8j5QkGKvplkF5OOsjC0vWYrc5/Z36zdvd+JEe0C/Zczx2NExniRLonUjMt2M
+GnOpnVJPR+jHB6LkNlGqf8Ez69gbo/ZzKKPI1vZLeET4GeFjhKEujSEBeBFkfIMz
+fY84ZIqvqTis41LPs4JRDMLhoki2A64adonhV7Sw1j5QibTFz/Vj0UMleXPodhvt
+1OJKkl3YHYsldftHBea5gJ+Dd0p73niU4tc2QoDivbhNumLQ4kE15f0AC2WEpbnv
+dGQN3LgPHOtF39Cq5PM4ry+kyrqBq2gYxpLG4hda6P4+pPAiZxU7oD1pGzgKLyz5
+qHzqFcK2QQBBsJLPx1lvIuRgcZyr9m7ufjxW8xCBXDYgP96g9DznP7WuPpv5cNRn
+LDJbAAUQQt0ifYnOJ93To8AnvHGXbREKhCWud8aa0dAIcQXazGOAKGafyUjEctlB
+/qMSePRsKHv/yovmDdqC
+=e+wz
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__18_Dec_2013_12_00_26_+1100_5C2wyKjp8w6h2Do.--
