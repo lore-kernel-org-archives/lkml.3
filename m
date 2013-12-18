@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab3LRFm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 00:42:57 -0500
-Received: from smtprelay0238.hostedemail.com ([216.40.44.238]:60605 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751241Ab3LRFmy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 00:42:54 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:960:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3867:3868:3871:3872:3874:4321:5007:7652:8660:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13069:13148:13230:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: pets79_361d9c35db513
-X-Filterd-Recvd-Size: 1582
-Message-ID: <1387345370.13593.10.camel@joe-AO722>
-Subject: Re: [RESEND][PATCH] scsi: esas2r: fix potential format string flaw
-From: Joe Perches <joe@perches.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Bradley Grove <linuxdrivers@attotech.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Date: Tue, 17 Dec 2013 21:42:50 -0800
-In-Reply-To: <20131217182733.GA16202@www.outflux.net>
-References: <20131217182733.GA16202@www.outflux.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+	id S1751242Ab3LRFxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 00:53:46 -0500
+Received: from ozlabs.org ([203.10.76.45]:34404 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750817Ab3LRFxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 00:53:44 -0500
+Date: Wed, 18 Dec 2013 16:53:37 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        Peter Chen <peter.chen@freescale.com>
+Subject: linux-next: manual merge of the usb tree with the usb.current tree
+Message-Id: <20131218165337.b4ed157d1c013d1eaaf2c218@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__18_Dec_2013_16_53_37_+1100_3.p55qv8hBmKbhhQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-17 at 10:27 -0800, Kees Cook wrote:
-> This makes sure format strings cannot leak into the printk call via the
-> constructed buffer.
-[]
-> diff --git a/drivers/scsi/esas2r/esas2r_log.c b/drivers/scsi/esas2r/esas2r_log.c
-[]
-> @@ -171,7 +171,7 @@ static int esas2r_log_master(const long level,
->  		if (strlen(event_buffer) < buflen)
->  			strcat(buffer, "\n");
->  
-> -		printk(event_buffer);
-> +		printk("%s", event_buffer);
+--Signature=_Wed__18_Dec_2013_16_53_37_+1100_3.p55qv8hBmKbhhQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's probably better to remove the
+Hi Greg,
 
-		if (strlen(event_buffer) < buflen)
-			strcat(buffer, "\n");
+Today's linux-next merge of the usb tree got a conflict in
+drivers/usb/host/ohci-at91.c between commit fb5f1834c322 ("usb:
+ohci-at91: fix irq and iomem resource retrieval") from the usb.current
+tree and commit 3c9740a117d4 ("usb: hcd: move controller wakeup setting
+initialization to individual driver") from the usb tree.
 
-and use
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-	printk("%s\n", event_buffer);
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-so that the output is always newline terminated.
+diff --cc drivers/usb/host/ohci-at91.c
+index 8c356af79409,29d2093e3cee..000000000000
+--- a/drivers/usb/host/ohci-at91.c
++++ b/drivers/usb/host/ohci-at91.c
+@@@ -203,9 -199,11 +203,11 @@@ static int usb_hcd_at91_probe(const str
+  	ohci->num_ports =3D board->ports;
+  	at91_start_hc(pdev);
+ =20
+ -	retval =3D usb_add_hcd(hcd, pdev->resource[1].start, IRQF_SHARED);
+ +	retval =3D usb_add_hcd(hcd, irq, IRQF_SHARED);
+- 	if (retval =3D=3D 0)
++ 	if (retval =3D=3D 0) {
++ 		device_wakeup_enable(hcd->self.controller);
+  		return retval;
++ 	}
+ =20
+  	/* Error handling */
+  	at91_stop_hc(pdev);
 
+--Signature=_Wed__18_Dec_2013_16_53_37_+1100_3.p55qv8hBmKbhhQ
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSsThlAAoJEMDTa8Ir7ZwVYV0P/2pZjmoOADGoHcYedKqQ4CiR
+8GgbY0jydCCOPG2peKmCAvIwXzzUl2HxudpvTu3xq4f6XM1giTjVRTatLSrlaNDz
+M8S3A62nhRwu15zv5DMMZYbSaMWS8vtHmGDLKQwL8DO+A6KNjQe8RMohIMWuENcl
+4gkqGznNpGAlEcNQxTnrkcX9htidiAIbAnhy2xJxuXuqqvorsWmuV8MFlEL+Q91m
+uszd+1ijFFkI05dhU50S+PlKBQBnXFkWIBNB97xa1i7/vwRpJTXjg6r7v0ADmXZ8
+pj+hmPWNeWz/MEylW6Ry3tWsLetjG8uzR36H/pOcBoPK0BbmxyTeoQZrUtRm41pS
+waC6RRn0xsTbHvb37cgeqKct6CuqHrLci8Aya9S3hJh3uirMZz5sGxIzZ4afb2ng
+KuWorhygqlCU2WE9pmT9RyfPYuXhdNaRWq7CRWDLtcU4BFwPPg6IrS39dhJRNvg6
+X6KQHJb5D+PX4ROnwdzCkuaQqrokHf5DoyfJW9v0ylAuhb/29gJbZno5I/B81v4a
+DaisPr8oYT+nz91zB/z8sSj4JwnxRth7IqZHbOgzRwxCeKuuVDp4feCrBupajgDP
+MSRKLQo98O+KhWv2/3d/XKw0zqubmzCGYM2Y9+j6EpXda1EkQi8cjqJ47NikPiRN
+19WmuI5LlRzKcRQIsAPq
+=fcuX
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__18_Dec_2013_16_53_37_+1100_3.p55qv8hBmKbhhQ--
