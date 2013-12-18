@@ -1,73 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669Ab3LRSYn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 13:24:43 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:40097 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab3LRSYl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 13:24:41 -0500
-Date: Wed, 18 Dec 2013 23:54:32 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 1/4] drivers: target: Move prototype declaration of function
- to header file target_core_pr.h
-Message-ID: <1a63603bc5ff05147c419a301d59b135cd0c8406.1387390091.git.rashika.kheria@gmail.com>
+	id S1755544Ab3LRS0B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 13:26:01 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:44179 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815Ab3LRS0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 13:26:00 -0500
+X-IronPort-AV: E=Sophos;i="4.95,508,1384300800"; 
+   d="scan'208";a="85857583"
+Date: Wed, 18 Dec 2013 18:25:15 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <mukesh.rathor@oracle.com>, <jbeulich@suse.com>
+Subject: Re: [Xen-devel] [PATCH v11 05/12] xen/pvh: Update E820 to work with
+ PVH
+In-Reply-To: <1387313503-31362-6-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1312181813260.8667@kaball.uk.xensource.com>
+References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com> <1387313503-31362-6-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declaration of function
-spc_parse_naa_6h_vendor_specific() from target_core_xcopy.c to header
-file target_core_pr.h because it is used by more than one file.
+On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> 
+> In xen_add_extra_mem() we can skip updating P2M as it's managed
+> by Xen. PVH maps the entire IO space, but only RAM pages need
+> to be repopulated.
+> 
+> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/xen/setup.c | 19 +++++++++++++++++--
+>  1 file changed, 17 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> index 2137c51..f93bca1 100644
+> --- a/arch/x86/xen/setup.c
+> +++ b/arch/x86/xen/setup.c
+> @@ -27,6 +27,7 @@
+>  #include <xen/interface/memory.h>
+>  #include <xen/interface/physdev.h>
+>  #include <xen/features.h>
+> +#include "mmu.h"
+>  #include "xen-ops.h"
+>  #include "vdso.h"
+>  
+> @@ -81,6 +82,9 @@ static void __init xen_add_extra_mem(u64 start, u64 size)
+>  
+>  	memblock_reserve(start, size);
+>  
+> +	if (xen_feature(XENFEAT_auto_translated_physmap))
+> +		return;
+> +
+>  	xen_max_p2m_pfn = PFN_DOWN(start + size);
+>  	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
+>  		unsigned long mfn = pfn_to_mfn(pfn);
+> @@ -103,6 +107,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
+>  		.domid        = DOMID_SELF
+>  	};
+>  	unsigned long len = 0;
+> +	int xlated_phys = xen_feature(XENFEAT_auto_translated_physmap);
+>  	unsigned long pfn;
+>  	int ret;
+>  
+> @@ -116,7 +121,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
+>  				continue;
+>  			frame = mfn;
+>  		} else {
+> -			if (mfn != INVALID_P2M_ENTRY)
+> +			if (!xlated_phys && mfn != INVALID_P2M_ENTRY)
+>  				continue;
+>  			frame = pfn;
+>  		}
+> @@ -154,6 +159,13 @@ static unsigned long __init xen_do_chunk(unsigned long start,
+>  static unsigned long __init xen_release_chunk(unsigned long start,
+>  					      unsigned long end)
+>  {
+> +	/*
+> +	 * Xen already ballooned out the E820 non RAM regions for us
+> +	 * and set them up properly in EPT.
+> +	 */
+> +	if (xen_feature(XENFEAT_auto_translated_physmap))
+> +		return end - start;
+> +
+>  	return xen_do_chunk(start, end, true);
+>  }
+>  
+> @@ -222,6 +234,9 @@ static void __init xen_set_identity_and_release_chunk(
+>  	 * (except for the ISA region which must be 1:1 mapped) to
+>  	 * release the refcounts (in Xen) on the original frames.
+>  	 */
+> +	if (xen_feature(XENFEAT_auto_translated_physmap))
+> +		goto skip;
+> +
+>  	for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn; pfn++) {
+>  		pte_t pte = __pte_ma(0);
+>  
+> @@ -231,7 +246,7 @@ static void __init xen_set_identity_and_release_chunk(
+>  		(void)HYPERVISOR_update_va_mapping(
+>  			(unsigned long)__va(pfn << PAGE_SHIFT), pte, 0);
+>  	}
+> -
+> +skip:
+>  	if (start_pfn < nr_pages)
+>  		*released += xen_release_chunk(
+>  			start_pfn, min(end_pfn, nr_pages));
 
-This eliminates the following warning in target_core_spc.c:
-drivers/target/target_core_spc.c:138:6: warning: no previous prototype for ‘spc_parse_naa_6h_vendor_specific’ [-Wmissing-prototypes]
-
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
----
- drivers/target/target_core_pr.h    |    5 +++++
- drivers/target/target_core_xcopy.c |    4 ----
- 2 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/target/target_core_pr.h b/drivers/target/target_core_pr.h
-index ed75cdd..2ee2936 100644
---- a/drivers/target/target_core_pr.h
-+++ b/drivers/target/target_core_pr.h
-@@ -43,6 +43,11 @@
- #define PR_APTPL_MAX_IPORT_LEN			256
- #define PR_APTPL_MAX_TPORT_LEN			256
- 
-+/*
-+ *  Function defined in target_core_spc.c
-+ */
-+void spc_parse_naa_6h_vendor_specific(struct se_device *, unsigned char *);
-+
- extern struct kmem_cache *t10_pr_reg_cache;
- 
- extern void core_pr_dump_initiator_port(struct t10_pr_registration *,
-diff --git a/drivers/target/target_core_xcopy.c b/drivers/target/target_core_xcopy.c
-index 6b88a99..669c536 100644
---- a/drivers/target/target_core_xcopy.c
-+++ b/drivers/target/target_core_xcopy.c
-@@ -40,10 +40,6 @@
- 
- static struct workqueue_struct *xcopy_wq = NULL;
- /*
-- * From target_core_spc.c
-- */
--extern void spc_parse_naa_6h_vendor_specific(struct se_device *, unsigned char *);
--/*
-  * From target_core_device.c
-  */
- extern struct mutex g_device_mutex;
--- 
-1.7.9.5
-
+A goto? Really? What's wrong with an if?
+Also considering that you are turning xen_release_chunk into a nop, the
+only purpose of this function on PVH is to call set_phys_range_identity.
+Can't we just do that?
