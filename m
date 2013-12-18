@@ -1,150 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905Ab3LRAsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 19:48:45 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:42864 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab3LRAsn (ORCPT
+	id S1752197Ab3LRAvT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 19:51:19 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59243 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751877Ab3LRAvS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 19:48:43 -0500
-Message-ID: <52B0F0D6.1090204@oracle.com>
-Date: Wed, 18 Dec 2013 08:48:22 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 17 Dec 2013 19:51:18 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
+        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH v2] libata, freezer: avoid block device removal while system is frozen
+Date: Wed, 18 Dec 2013 02:04:35 +0100
+Message-ID: <3253153.CIRSLE6KOu@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20131217125042.GF29989@htj.dyndns.org>
+References: <20131213174932.GA27070@htj.dyndns.org> <20131213204034.GE27070@htj.dyndns.org> <20131217125042.GF29989@htj.dyndns.org>
 MIME-Version: 1.0
-To: Vlastimil Babka <vbabka@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, joern@logfs.org,
-        Michel Lespinasse <walken@google.com>, stable@kernel.org
-Subject: Re: [PATCH 1/3] mm: munlock: fix a bug where THP tail page is encountered
-References: <52AE07B4.4020203@oracle.com> <1387188856-21027-1-git-send-email-vbabka@suse.cz> <1387188856-21027-2-git-send-email-vbabka@suse.cz> <52AFA845.3060109@oracle.com> <52B04AD2.2070406@suse.cz>
-In-Reply-To: <52B04AD2.2070406@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 12/17/2013 09:00 PM, Vlastimil Babka wrote:
+On Tuesday, December 17, 2013 07:50:42 AM Tejun Heo wrote:
+> Hello,
 > 
-> I would prefer that too but patch 3 needs it again, so I left it as it is here.
-> As for comment, here's a revised patch that adds it:
+> Rafael, if you're okay with the workaround, I'll route it through
+> libata/for-3.13-fixes.
 > 
-
-Thanks.
-
-> ------8<------
-> From: Vlastimil Babka <vbabka@suse.cz>
-> Date: Fri, 13 Dec 2013 14:25:21 +0100
-> Subject: [PATCH 1/3] mm: munlock: fix a bug where THP tail page is encountered
+> Thanks.
+> ------- 8< -------
+> Freezable kthreads and workqueues are fundamentally problematic in
+> that they effectively introduce a big kernel lock widely used in the
+> kernel and have already been the culprit of several deadlock
+> scenarios.  This is the latest occurrence.
 > 
-> Since commit ff6a6da60 ("mm: accelerate munlock() treatment of THP pages")
-> munlock skips tail pages of a munlocked THP page. However, when the head page
-> already has PageMlocked unset, it will not skip the tail pages.
+> During resume, libata rescans all the ports and revalidates all
+> pre-existing devices.  If it determines that a device has gone
+> missing, the device is removed from the system which involves
+> invalidating block device and flushing bdi while holding driver core
+> layer locks.  Unfortunately, this can race with the rest of device
+> resume.  Because freezable kthreads and workqueues are thawed after
+> device resume is complete and block device removal depends on
+> freezable workqueues and kthreads (e.g. bdi_wq, jbd2) to make
+> progress, this can lead to deadlock - block device removal can't
+> proceed because kthreads are frozen and kthreads can't be thawed
+> because device resume is blocked behind block device removal.
 > 
-> Commit 7225522bb ("mm: munlock: batch non-THP page isolation and
-> munlock+putback using pagevec") has added a PageTransHuge() check which
-> contains VM_BUG_ON(PageTail(page)). Sasha Levin found this triggered using
-> trinity, on the first tail page of a THP page without PageMlocked flag.
+> 839a8e8660b6 ("writeback: replace custom worker pool implementation
+> with unbound workqueue") made this particular deadlock scenario more
+> visible but the underlying problem has always been there - the
+> original forker task and jbd2 are freezable too.  In fact, this is
+> highly likely just one of many possible deadlock scenarios given that
+> freezer behaves as a big kernel lock and we don't have any debug
+> mechanism around it.
 > 
-> This patch fixes the issue by skipping tail pages also in the case when
-> PageMlocked flag is unset. There is still a possibility of race with THP page
-> split between clearing PageMlocked and determining how many pages to skip.
-> The race might result in former tail pages not being skipped, which is however
-> no longer a bug, as during the skip the PageTail flags are cleared.
+> I believe the right thing to do is getting rid of freezable kthreads
+> and workqueues.  This is something fundamentally broken.  For now,
+> implement a funny workaround in libata - just avoid doing block device
+> hot[un]plug while the system is frozen.  Kernel engineering at its
+> finest.  :(
 > 
-> However this race also affects correctness of NR_MLOCK accounting, which is to
-> be fixed in a separate patch.
+> v2: Add EXPORT_SYMBOL_GPL(pm_freezing) for cases where libata is built
+>     as a module.
 > 
-> Cc: stable@kernel.org
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-
-Reviewed-by: Bob Liu <bob.liu@oracle.com>
-
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Tomaž Šolc <tomaz.solc@tablix.org>
+> Link: https://bugzilla.kernel.org/show_bug.cgi?id=62801
+> Link: http://lkml.kernel.org/r/20131213174932.GA27070@htj.dyndns.org
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: stable@vger.kernel.org
 > ---
->  mm/mlock.c | 29 ++++++++++++++++++++++-------
->  1 file changed, 22 insertions(+), 7 deletions(-)
+>  drivers/ata/libata-scsi.c |   19 +++++++++++++++++++
+>  kernel/freezer.c          |    6 ++++++
+>  2 files changed, 25 insertions(+)
 > 
-> diff --git a/mm/mlock.c b/mm/mlock.c
-> index d480cd6..c59c420 100644
-> --- a/mm/mlock.c
-> +++ b/mm/mlock.c
-> @@ -133,7 +133,10 @@ static void __munlock_isolation_failed(struct page *page)
->  
->  /**
->   * munlock_vma_page - munlock a vma page
-> - * @page - page to be unlocked
-> + * @page - page to be unlocked, either a normal page or THP page head
-> + *
-> + * returns the size of the page as a page mask (0 for normal page,
-> + *         HPAGE_PMD_NR - 1 for THP head page)
->   *
->   * called from munlock()/munmap() path with page supposedly on the LRU.
->   * When we munlock a page, because the vma where we found the page is being
-> @@ -148,21 +151,30 @@ static void __munlock_isolation_failed(struct page *page)
->   */
->  unsigned int munlock_vma_page(struct page *page)
->  {
-> -	unsigned int page_mask = 0;
-> +	unsigned int nr_pages;
->  
->  	BUG_ON(!PageLocked(page));
->  
->  	if (TestClearPageMlocked(page)) {
-> -		unsigned int nr_pages = hpage_nr_pages(page);
-> +		nr_pages = hpage_nr_pages(page);
->  		mod_zone_page_state(page_zone(page), NR_MLOCK, -nr_pages);
-> -		page_mask = nr_pages - 1;
->  		if (!isolate_lru_page(page))
->  			__munlock_isolated_page(page);
->  		else
->  			__munlock_isolation_failed(page);
-> +	} else {
-> +		nr_pages = hpage_nr_pages(page);
+> --- a/drivers/ata/libata-scsi.c
+> +++ b/drivers/ata/libata-scsi.c
+> @@ -3871,6 +3871,25 @@ void ata_scsi_hotplug(struct work_struct
+>  		return;
 >  	}
 >  
-> -	return page_mask;
 > +	/*
-> +	 * Regardless of the original PageMlocked flag, we determine nr_pages
-> +	 * after touching the flag. This leaves a possible race with a THP page
-> +	 * split, such that a whole THP page was munlocked, but nr_pages == 1.
-> +	 * Returning a smaller mask due to that is OK, the worst that can
-> +	 * happen is subsequent useless scanning of the former tail pages.
-> +	 * The NR_MLOCK accounting can however become broken.
-> +	 */
-> +	return nr_pages - 1;
->  }
->  
->  /**
-> @@ -440,7 +452,8 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
->  
->  	while (start < end) {
->  		struct page *page = NULL;
-> -		unsigned int page_mask, page_increm;
-> +		unsigned int page_mask;
-> +		unsigned long page_increm;
->  		struct pagevec pvec;
->  		struct zone *zone;
->  		int zoneid;
-> @@ -490,7 +503,9 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
->  				goto next;
->  			}
->  		}
-> -		page_increm = 1 + (~(start >> PAGE_SHIFT) & page_mask);
-> +		/* It's a bug to munlock in the middle of a THP page */
-> +		VM_BUG_ON((start >> PAGE_SHIFT) & page_mask);
-> +		page_increm = 1 + page_mask;
->  		start += page_increm * PAGE_SIZE;
->  next:
->  		cond_resched();
-> 
+> +	 * XXX - UGLY HACK
+> +	 *
+> +	 * The core suspend/resume path is fundamentally broken due to
+> +	 * freezable kthreads and workqueue and may deadlock if a block
+> +	 * device gets removed while resume is in progress.  I don't know
+> +	 * what the solution is short of removing freezable kthreads and
+> +	 * workqueues altogether.
 
--- 
-Regards,
--Bob
+Do you mean the block device core or the SCSI core or something else?  It would
+be good to clarify that here to avoid confusion.
+
+> +	 * The following is an ugly hack to avoid kicking off device
+> +	 * removal while freezer is active.  This is a joke but does avoid
+> +	 * this particular deadlock scenario.
+> +	 *
+> +	 * https://bugzilla.kernel.org/show_bug.cgi?id=62801
+> +	 * http://marc.info/?l=linux-kernel&m=138695698516487
+> +	 */
+> +	while (pm_freezing)
+> +		msleep(100);
+
+Why is the sleep time 100 ms exactly?  And why does it matter?
+
+For example, what would change if it were 10 ms?
+
+> +
+>  	DPRINTK("ENTER\n");
+>  	mutex_lock(&ap->scsi_scan_mutex);
+>  
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -19,6 +19,12 @@ EXPORT_SYMBOL(system_freezing_cnt);
+>  bool pm_freezing;
+>  bool pm_nosig_freezing;
+>  
+> +/*
+> + * Temporary export for the deadlock workaround in ata_scsi_hotplug().
+> + * Remove once the hack becomes unnecessary.
+> + */
+> +EXPORT_SYMBOL_GPL(pm_freezing);
+> +
+>  /* protects freezing and frozen transitions */
+>  static DEFINE_SPINLOCK(freezer_lock);
+>  
+
+Thanks,
+Rafael
+
