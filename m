@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810Ab3LRVoV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:44:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36297 "EHLO
+	id S1753766Ab3LRVNJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:13:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36266 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753784Ab3LRVNL (ORCPT
+	with ESMTP id S1753715Ab3LRVNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:11 -0500
+	Wed, 18 Dec 2013 16:13:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Julius Werner <jwerner@chromium.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.12 030/118] usb: hub: Use correct reset for wedged USB3 devices that are NOTATTACHED
-Date: Wed, 18 Dec 2013 13:11:07 -0800
-Message-Id: <20131218211220.329337986@linuxfoundation.org>
+        Dave Chinner <dchinner@redhat.com>, Jie Liu <jeff.liu@oracle.com>,
+        Ben Myers <bpm@sgi.com>
+Subject: [PATCH 3.12 024/118] xfs: growfs overruns AGFL buffer on V4 filesystems
+Date: Wed, 18 Dec 2013 13:11:01 -0800
+Message-Id: <20131218211220.162931889@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,37 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julius Werner <jwerner@chromium.org>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 2d51f3cd11f414c56a87dc018196b85fd50b04a4 upstream.
+commit f94c44573e7c22860e2c3dfe349c45f72ba35ad3 upstream.
 
-This patch adds a check for USB_STATE_NOTATTACHED to the
-hub_port_warm_reset_required() workaround for ports that end up in
-Compliance Mode in hub_events() when trying to decide which reset
-function to use. Trying to call usb_reset_device() with a NOTATTACHED
-device will just fail and leave the port broken.
+This loop in xfs_growfs_data_private() is incorrect for V4
+superblocks filesystems:
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+		for (bucket = 0; bucket < XFS_AGFL_SIZE(mp); bucket++)
+			agfl->agfl_bno[bucket] = cpu_to_be32(NULLAGBLOCK);
+
+For V4 filesystems, we don't have a agfl header structure, and so
+XFS_AGFL_SIZE() returns an entire sector's worth of entries, which
+we then index from an offset into the sector. Hence: buffer overrun.
+
+This problem was introduced in 3.10 by commit 77c95bba ("xfs: add
+CRC checks to the AGFL") which changed the AGFL structure but failed
+to update the growfs code to handle the different structures.
+
+Fix it by using the correct offset into the buffer for both V4 and
+V5 filesystems.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Jie Liu <jeff.liu@oracle.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/xfs/xfs_fsops.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -4836,8 +4836,9 @@ static void hub_events(void)
- 					hub->ports[i - 1]->child;
+--- a/fs/xfs/xfs_fsops.c
++++ b/fs/xfs/xfs_fsops.c
+@@ -217,6 +217,8 @@ xfs_growfs_data_private(
+ 	 */
+ 	nfree = 0;
+ 	for (agno = nagcount - 1; agno >= oagcount; agno--, new -= agsize) {
++		__be32	*agfl_bno;
++
+ 		/*
+ 		 * AG freespace header block
+ 		 */
+@@ -276,8 +278,10 @@ xfs_growfs_data_private(
+ 			agfl->agfl_seqno = cpu_to_be32(agno);
+ 			uuid_copy(&agfl->agfl_uuid, &mp->m_sb.sb_uuid);
+ 		}
++
++		agfl_bno = XFS_BUF_TO_AGFL_BNO(mp, bp);
+ 		for (bucket = 0; bucket < XFS_AGFL_SIZE(mp); bucket++)
+-			agfl->agfl_bno[bucket] = cpu_to_be32(NULLAGBLOCK);
++			agfl_bno[bucket] = cpu_to_be32(NULLAGBLOCK);
  
- 				dev_dbg(hub_dev, "warm reset port %d\n", i);
--				if (!udev || !(portstatus &
--						USB_PORT_STAT_CONNECTION)) {
-+				if (!udev ||
-+				    !(portstatus & USB_PORT_STAT_CONNECTION) ||
-+				    udev->state == USB_STATE_NOTATTACHED) {
- 					status = hub_port_reset(hub, i,
- 							NULL, HUB_BH_RESET_TIME,
- 							true);
+ 		error = xfs_bwrite(bp);
+ 		xfs_buf_relse(bp);
 
 
