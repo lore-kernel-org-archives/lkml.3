@@ -1,88 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901Ab3LRAiz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 19:38:55 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63890 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750875Ab3LRAix (ORCPT
+	id S1752219Ab3LRAmF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 19:42:05 -0500
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:47994 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060Ab3LRAmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 19:38:53 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system suspend/hibernation
-Date: Wed, 18 Dec 2013 01:52:10 +0100
-Message-ID: <8515354.2dTerOA9sd@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CA+5PVA7vsZPd9eXwN-Q+d8c9+0bAmVdr698vv+LFyrn+3iFOMA@mail.gmail.com>
-References: <201201281445.49377.rjw@sisk.pl> <CA+5PVA5GWsTdNky-K1-hu5_R55hdKfr-Oa26HpX=FdA1cRZsbQ@mail.gmail.com> <CA+5PVA7vsZPd9eXwN-Q+d8c9+0bAmVdr698vv+LFyrn+3iFOMA@mail.gmail.com>
+	Tue, 17 Dec 2013 19:42:04 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <alpine.DEB.2.00.1312180026340.10386@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1312180026340.10386@skynet.skynet.ie>
+Date: Tue, 17 Dec 2013 16:42:02 -0800
+X-Google-Sender-Auth: Prs4VrPr7EFGu0HXKKMV8Uf5Vec
+Message-ID: <CA+55aFw_C=U0BSb8b=SPiN-5b+=dT28_R7PKHrEyy-T+FeL0Ww@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Airlie <airlied@linux.ie>
+Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 17, 2013 11:04:46 AM Josh Boyer wrote:
-> On Tue, Dec 17, 2013 at 11:03 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
-> > On Fri, May 25, 2012 at 3:13 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> On Friday, May 25, 2012, Josh Boyer wrote:
-> >>> On Fri, Feb 17, 2012 at 3:59 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >>> >> commit b94887bbc0621e1e8402e7f0ec4bc3adf46c9a6e
-> >>> >> Author: Rafael J. Wysocki <rjw@sisk.pl>
-> >>> >> Date:   Fri Feb 17 12:42:08 2012 -0500
-> >>> >>
-> >>> >>     Freeze all filesystems during system suspend and (kernel-driven)
-> >>> >>     hibernation by calling freeze_supers() for all superblocks and thaw
-> >>> >>     them during the subsequent resume with the help of thaw_supers().
-> >>> >>
-> >>> >>     This makes filesystems stay in a consistent state in case something
-> >>> >>     goes wrong between system suspend (or hibernation) and the subsequent
-> >>> >>     resume (e.g. journal replays won't be necessary in those cases).  In
-> >>> >>     particular, this should help to solve a long-standing issue that, in
-> >>> >>     some cases, during resume from hibernation the boot loader causes the
-> >>> >>     journal to be replied for the filesystem containing the kernel image
-> >>> >>     and/or initrd causing it to become inconsistent with the information
-> >>> >>     stored in the hibernation image.
-> >>> >>
-> >>> >>     The user-space-driven hibernation (s2disk) is not covered by this
-> >>> >>     change, because the freezing of filesystems prevents s2disk from
-> >>> >>     accessing device special files it needs to do its job.
-> >>> >>
-> >>> >>     This change is based on earlier work by Nigel Cunningham.
-> >>> >>
-> >>> >>     Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> >>> >>
-> >>> >>     Rebased to 3.3-rc3 by Josh Boyer <jwboyer@redhat.com>
-> >>>
-> >>> Did this patch ever wind up going anywhere?  Fedora has it sitting in
-> >>> our tree with a comment that says "rebase" and I don't see it in the
-> >>> linux-next tree at all.
-> >>>
-> >>> Did if fall through the cracks or was it NAKed somewhere?
-> >>
-> >> No, it wasn't in principle. There were some comments I haven't addressed yet.
-> >
-> > Dredging up a really old thread, sorry.
-> >
-> > We're still carrying this patch along in Fedora.  Should we drop it at
-> > this point, or is it still eventually going to head upstream?
-> 
-> Fixed Rafael's email address.  (Double sorry.)
+On Tue, Dec 17, 2013 at 4:33 PM, Dave Airlie <airlied@linux.ie> wrote:
+>
+> are available in the git repository at:
+>
+>   git://people.freedesktop.org/~airlied/linux
 
-No biggie.
+Nope.
 
-I just hadn't got sufficient response for that patch at the time it was
-submitted, so I guess it would be good to resubmit it.  Please feel free to
-do that if you want.
+I assume you meant the 'drm-fixes' branch, but you didn't actually
+*say* that, and when I pull it I don't get the same diffstat you
+claim, so I'm unpulling it and waiting for you to verify and
+double-check.
 
-Thanks!
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+             Linus
