@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757Ab3LRVj3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:39:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36354 "EHLO
+	id S1755780Ab3LRVjn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:39:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36351 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753922Ab3LRVNY (ORCPT
+	with ESMTP id S1753915Ab3LRVNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:24 -0500
+	Wed, 18 Dec 2013 16:13:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Engelmayer <christian.engelmayer@frequentis.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.12 038/118] Input: usbtouchscreen - separate report and transmit buffer size handling
-Date: Wed, 18 Dec 2013 13:11:15 -0800
-Message-Id: <20131218211220.550145725@linuxfoundation.org>
+        Steve Capper <steve.capper@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.12 001/118] arm64: mm: Fix PMD_SECT_PROT_NONE definition
+Date: Wed, 18 Dec 2013 13:10:38 -0800
+Message-Id: <20131218211219.506349458@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,94 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Engelmayer <christian.engelmayer@frequentis.com>
+From: Steve Capper <steve.capper@linaro.org>
 
-commit 4ef38351d770cc421f4a0c7a849fd13207fc5741 upstream.
+commit db4ed53cfe9f5a00355891a631d47dfa3fd4541f upstream.
 
-This patch supports the separate handling of the USB transfer buffer length
-and the length of the buffer used for multi packet support. For devices
-supporting multiple report or diagnostic packets, the USB transfer size is now
-limited to the USB endpoints wMaxPacketSize - otherwise it defaults to the
-configured report packet size as before.
+Modify the value of PMD_SECT_PROT_NONE to match that of PTE_NONE. This
+should have been in commit 3676f9ef5481 (Move PTE_PROT_NONE higher up).
 
-This fixes an issue where event reporting can be delayed for an arbitrary
-time for multi packet devices. For instance the report size for eGalax devices
-is defined to the 16 byte maximum diagnostic packet size as opposed to the 5
-byte report packet size. In case the driver requests 16 byte from the USB
-interrupt endpoint, the USB host controller driver needs to split up the
-request into 2 accesses according to the endpoints wMaxPacketSize of 8 byte.
-When the first transfer is answered by the eGalax device with not less than
-the full 8 byte requested, the host controller has got no way of knowing
-whether the touch controller has got additional data queued and will issue
-the second transfer. If per example a liftoff event finishes at such a
-wMaxPacketSize boundary, the data will not be available to the usbtouch driver
-until a further event is triggered and transfered to the host. From user
-perspective the BTN_TOUCH release event in this case is stuck until the next
-touch down event.
-
-Signed-off-by: Christian Engelmayer <christian.engelmayer@frequentis.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Steve Capper <steve.capper@linaro.org>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/touchscreen/usbtouchscreen.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ arch/arm64/include/asm/pgtable-hwdef.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/input/touchscreen/usbtouchscreen.c
-+++ b/drivers/input/touchscreen/usbtouchscreen.c
-@@ -106,6 +106,7 @@ struct usbtouch_device_info {
- struct usbtouch_usb {
- 	unsigned char *data;
- 	dma_addr_t data_dma;
-+	int data_size;
- 	unsigned char *buffer;
- 	int buf_len;
- 	struct urb *irq;
-@@ -1521,7 +1522,7 @@ static int usbtouch_reset_resume(struct
- static void usbtouch_free_buffers(struct usb_device *udev,
- 				  struct usbtouch_usb *usbtouch)
- {
--	usb_free_coherent(udev, usbtouch->type->rept_size,
-+	usb_free_coherent(udev, usbtouch->data_size,
- 			  usbtouch->data, usbtouch->data_dma);
- 	kfree(usbtouch->buffer);
- }
-@@ -1566,7 +1567,20 @@ static int usbtouch_probe(struct usb_int
- 	if (!type->process_pkt)
- 		type->process_pkt = usbtouch_process_pkt;
- 
--	usbtouch->data = usb_alloc_coherent(udev, type->rept_size,
-+	usbtouch->data_size = type->rept_size;
-+	if (type->get_pkt_len) {
-+		/*
-+		 * When dealing with variable-length packets we should
-+		 * not request more than wMaxPacketSize bytes at once
-+		 * as we do not know if there is more data coming or
-+		 * we filled exactly wMaxPacketSize bytes and there is
-+		 * nothing else.
-+		 */
-+		usbtouch->data_size = min(usbtouch->data_size,
-+					  usb_endpoint_maxp(endpoint));
-+	}
-+
-+	usbtouch->data = usb_alloc_coherent(udev, usbtouch->data_size,
- 					    GFP_KERNEL, &usbtouch->data_dma);
- 	if (!usbtouch->data)
- 		goto out_free;
-@@ -1626,12 +1640,12 @@ static int usbtouch_probe(struct usb_int
- 	if (usb_endpoint_type(endpoint) == USB_ENDPOINT_XFER_INT)
- 		usb_fill_int_urb(usbtouch->irq, udev,
- 			 usb_rcvintpipe(udev, endpoint->bEndpointAddress),
--			 usbtouch->data, type->rept_size,
-+			 usbtouch->data, usbtouch->data_size,
- 			 usbtouch_irq, usbtouch, endpoint->bInterval);
- 	else
- 		usb_fill_bulk_urb(usbtouch->irq, udev,
- 			 usb_rcvbulkpipe(udev, endpoint->bEndpointAddress),
--			 usbtouch->data, type->rept_size,
-+			 usbtouch->data, usbtouch->data_size,
- 			 usbtouch_irq, usbtouch);
- 
- 	usbtouch->irq->dev = udev;
+--- a/arch/arm64/include/asm/pgtable-hwdef.h
++++ b/arch/arm64/include/asm/pgtable-hwdef.h
+@@ -43,7 +43,7 @@
+  * Section
+  */
+ #define PMD_SECT_VALID		(_AT(pmdval_t, 1) << 0)
+-#define PMD_SECT_PROT_NONE	(_AT(pmdval_t, 1) << 2)
++#define PMD_SECT_PROT_NONE	(_AT(pmdval_t, 1) << 58)
+ #define PMD_SECT_USER		(_AT(pmdval_t, 1) << 6)		/* AP[1] */
+ #define PMD_SECT_RDONLY		(_AT(pmdval_t, 1) << 7)		/* AP[2] */
+ #define PMD_SECT_S		(_AT(pmdval_t, 3) << 8)
 
 
