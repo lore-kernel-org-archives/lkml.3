@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab3LRAaI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 19:30:08 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:52330 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab3LRAaF (ORCPT
+	id S1752659Ab3LRAdS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 19:33:18 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:60657 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537Ab3LRAdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 19:30:05 -0500
-Date: Tue, 17 Dec 2013 17:30:02 -0700
+	Tue, 17 Dec 2013 19:33:16 -0500
+Date: Tue, 17 Dec 2013 17:33:13 -0700
 From: Bjorn Helgaas <bhelgaas@google.com>
 To: Alexander Gordeev <agordeev@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Michael Ellerman <michael@ellerman.id.au>,
@@ -15,485 +15,162 @@ Cc: linux-kernel@vger.kernel.org, Michael Ellerman <michael@ellerman.id.au>,
         Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
         David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v4 9/9] PCI/MSI: Introduce pci_auto_enable_msi*() family
- helpers
-Message-ID: <20131218003002.GA15119@google.com>
+Subject: Re: [PATCH v4 6/9] PCI/MSI: Factor out pci_get_msi_vec_count()
+ interface
+Message-ID: <20131218003313.GB15119@google.com>
 References: <cover.1387140921.git.agordeev@redhat.com>
- <bbf6f73ef3e16e5dfd7d41fc1e4412f641acb0f3.1387140921.git.agordeev@redhat.com>
+ <d0d8cd19befa8757faf7660fd3ae619945b2cde4.1387140921.git.agordeev@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <bbf6f73ef3e16e5dfd7d41fc1e4412f641acb0f3.1387140921.git.agordeev@redhat.com>
+In-Reply-To: <d0d8cd19befa8757faf7660fd3ae619945b2cde4.1387140921.git.agordeev@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 09:35:02AM +0100, Alexander Gordeev wrote:
-> Currently many device drivers need contiguously call functions
-> pci_enable_msix() for MSI-X or pci_enable_msi_block() for MSI
-> in a loop until success or failure. This update generalizes
-> this usage pattern and introduces pci_auto_enable_msi*() family
-> helpers.
-
-I think the idea of this series is excellent and will really make MSI/MSI-X
-easier to use and less error-prone for drivers, so I don't want this to
-sound discouraging.  I haven't been paying attention to this in detail, so
-likely some of my questions have already been hashed out and I missed the
-answers.
-
-After this patch, we would have:
-
-    pci_enable_msi()				# existing (1 vector)
-    pci_enable_msi_block(nvec)			# existing
-    pci_enable_msi_block_auto(maxvec)		# existing (removed)
-
-    pci_auto_enable_msi(maxvec)			# new	(1-maxvec)
-    pci_auto_enable_msi_range(minvec, maxvec)	# new
-    pci_auto_enable_msi_exact(nvec)		# new	(nvec-nvec)
-
-    pci_enable_msix(nvec)			# existing
-
-    pci_auto_enable_msix(maxvec)		# new	(1-maxvec)
-    pci_auto_enable_msix_range(minvec, maxvec)	# new
-    pci_auto_enable_msix_exact(nvec)		# new	(nvec-nvec)
-
-That seems like a lot of interfaces to document and understand, especially
-since most of them are built on each other.  I'd prefer just these:
-
-    pci_enable_msi()				# existing (1 vector)
-    pci_enable_msi_range(minvec, maxvec)	# new
-
-    pci_enable_msix(nvec)			# existing
-    pci_enable_msix_range(minvec, maxvec)	# new
-
-with examples in the documentation about how to call them with ranges like
-(1, maxvec), (nvec, nvec), etc.  I think that will be easier than
-understanding several interfaces.
-
-I don't think the "auto" in the names really adds anything, does it?  The
-whole point of supplying a range is that the core has the flexibility to
-choose any number of vectors within the range.
-
-> As result, device drivers do not have to deal with tri-state
-> return values from pci_enable_msix() and pci_enable_msi_block()
-> functions directly and expected to have more clearer and straight
-> code.
-
-I only see five users of pci_enable_msi_block() (nvme, ath10k, wil6210,
-ipr, vfio); we can easily convert those to use pci_enable_msi_range() and
-then remove pci_enable_msi_block().
-
-pci_enable_msi() itself can simply be pci_enable_msi_range(1, 1).
-
-There are nearly 80 callers of pci_enable_msix(), so that's a bit harder.
-Can we deprecate that somehow, and incrementally convert callers to use
-pci_enable_msix_range() instead?  Maybe you're already planning that; I
-know you dropped some driver patches from the series for now, and I didn't
-look to see exactly what they did.
-
-It would be good if pci_enable_msix() could be implemented in terms of
-pci_enable_msix_range(nvec, nvec), with a little extra glue to handle the
-positive return values.
-
-> So i.e. the request loop described in the documentation...
-> 
-> 	int foo_driver_enable_msix(struct foo_adapter *adapter,
-> 				   int nvec)
-> 	{
-> 		while (nvec >= FOO_DRIVER_MINIMUM_NVEC) {
-> 			rc = pci_enable_msix(adapter->pdev,
-> 					     adapter->msix_entries,
-> 					     nvec);
-> 			if (rc > 0)
-> 				nvec = rc;
-> 			else
-> 				return rc;
-> 		}
-> 
-> 		return -ENOSPC;
-> 	}
-
-I think we should remove this example from the documentation because we
-want to get rid of the tri-state return idea completely.  I think the same
-thing could be accomplished with pci_enable_msix_range() (correct me if I'm
-wrong).
-
-> ...would turn into a single helper call....
-> 
-> 	rc = pci_auto_enable_msix_range(adapter->pdev,
-> 					adapter->msix_entries,
-> 					FOO_DRIVER_MINIMUM_NVEC,
-> 					nvec);
->
-> Device drivers with more specific requirements (i.e. a number of
-> MSI-Xs which is a multiple of a certain number within a specified
-> range) would still need to implement the loop using the two old
-> functions.
+On Mon, Dec 16, 2013 at 09:34:59AM +0100, Alexander Gordeev wrote:
+> Device drivers can use this interface to obtain maximum number
+> of MSI interrupts the device supports and use that number i.e.
+> in a following call to pci_enable_msi_block() interface.
 > 
 > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Suggested-by: Ben Hutchings <bhutchings@solarflare.com>
 > Reviewed-by: Tejun Heo <tj@kernel.org>
 > ---
->  Documentation/PCI/MSI-HOWTO.txt |  134 +++++++++++++++++++++++++++++++++++++--
->  drivers/pci/msi.c               |   74 +++++++++++++++++++++
->  include/linux/pci.h             |   57 +++++++++++++++++
->  3 files changed, 260 insertions(+), 5 deletions(-)
+>  Documentation/PCI/MSI-HOWTO.txt |   15 ++++++++++++++
+>  drivers/pci/msi.c               |   41 +++++++++++++++++++++++++++++++-------
+>  include/linux/pci.h             |    6 +++++
+>  3 files changed, 54 insertions(+), 8 deletions(-)
 > 
 > diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
-> index 7d19656..168d9c3 100644
+> index a4d174e..c03b815 100644
 > --- a/Documentation/PCI/MSI-HOWTO.txt
 > +++ b/Documentation/PCI/MSI-HOWTO.txt
-> @@ -127,7 +127,62 @@ on the number of vectors that can be allocated; pci_enable_msi_block()
->  returns as soon as it finds any constraint that doesn't allow the
->  call to succeed.
->  
-> -4.2.3 pci_disable_msi
-> +4.2.3 pci_auto_enable_msi_range
-> +
-> +int pci_auto_enable_msi_range(struct pci_dev *dev, struct msix_entry *entries,
-> +			      int minvec, int maxvec)
-> +
-> +This variation on pci_enable_msi_block() call allows a device driver to
-> +request any number of MSIs within specified range 'minvec' to 'maxvec'.
-> +Whenever possible device drivers are encouraged to use this function
-> +rather than explicit request loop calling pci_enable_msi_block().
-
-I think we should remove pci_enable_msi_block() completely, including its
-mention here.
-
-> +If this function returns a negative number, it indicates an error and
-> +the driver should not attempt to request any more MSI interrupts for
-> +this device.
-> +
-> +If this function returns a positive number it indicates at least the
-> +returned number of MSI interrupts have been successfully allocated (it may
-> +have allocated more in order to satisfy the power-of-two requirement).
-
-I assume this means the return value may be larger than the "maxvec"
-requested, right?  And the driver is free to use all the vectors up to the
-return value, even those above maxvec, right?
-
-> +Device drivers can use this number to further initialize devices.
-> +
-> +4.2.4 pci_auto_enable_msi
-> +
-> +int pci_auto_enable_msi(struct pci_dev *dev,
-> +			struct msix_entry *entries, int maxvec)
-> +
-> +This variation on pci_enable_msi_block() call allows a device driver to
-> +request any number of MSIs up to 'maxvec'. Whenever possible device drivers
-> +are encouraged to use this function rather than explicit request loop
-> +calling pci_enable_msi_block().
-> +
-> +If this function returns a negative number, it indicates an error and
-> +the driver should not attempt to request any more MSI interrupts for
-> +this device.
-> +
-> +If this function returns a positive number it indicates at least the
-> +returned number of MSI interrupts have been successfully allocated (it may
-> +have allocated more in order to satisfy the power-of-two requirement).
-> +Device drivers can use this number to further initialize devices.
-> +
-> +4.2.5 pci_auto_enable_msi_exact
-> +
-> +int pci_auto_enable_msi_exact(struct pci_dev *dev,
-> +			      struct msix_entry *entries, int nvec)
-> +
-> +This variation on pci_enable_msi_block() call allows a device driver to
-> +request exactly 'nvec' MSIs.
-> +
-> +If this function returns a negative number, it indicates an error and
-> +the driver should not attempt to request any more MSI interrupts for
-> +this device.
-> +
-> +If this function returns the value of 'nvec' it indicates MSI interrupts
-> +have been successfully allocated. No other value in case of success could
-> +be returned. Device drivers can use this value to further allocate and
-> +initialize device resources.
-> +
-> +4.2.6 pci_disable_msi
->  
->  void pci_disable_msi(struct pci_dev *dev)
->  
-> @@ -142,7 +197,7 @@ on any interrupt for which it previously called request_irq().
+> @@ -169,6 +169,21 @@ on any interrupt for which it previously called request_irq().
 >  Failure to do so results in a BUG_ON(), leaving the device with
 >  MSI enabled and thus leaking its vector.
 >  
-> -4.2.4 pci_get_msi_vec_count
-> +4.2.7 pci_get_msi_vec_count
->  
->  int pci_get_msi_vec_count(struct pci_dev *dev)
->  
-> @@ -222,7 +277,76 @@ static int foo_driver_enable_msix(struct foo_adapter *adapter, int nvec)
->  	return -ENOSPC;
->  }
->  
-> -4.3.2 pci_disable_msix
-> +4.3.2 pci_auto_enable_msix_range
+> +4.2.5 pci_get_msi_vec_count
 > +
-> +int pci_auto_enable_msix_range(struct pci_dev *dev, struct msix_entry *entries,
-> +			       int minvec, int maxvec)
-> +
-> +This variation on pci_enable_msix() call allows a device driver to request
-> +any number of MSI-Xs within specified range 'minvec' to 'maxvec'. Whenever
-> +possible device drivers are encouraged to use this function rather than
-> +explicit request loop calling pci_enable_msix().
+> +int pci_get_msi_vec_count(struct pci_dev *dev)
 
-I guess maybe I'm wrong, and there *are* cases where
-pci_enable_msix_range() isn't sufficient to replace pci_enable_msix()?
-Can you remind me what they are?
-
-> +If this function returns a negative number, it indicates an error and
-> +the driver should not attempt to allocate any more MSI-X interrupts for
-> +this device.
-> +
-> +If this function returns a positive number it indicates the number of
-> +MSI-X interrupts that have been successfully allocated. Device drivers
-> +can use this number to further allocate and initialize device resources.
-> +
-> +A modified function calling pci_enable_msix() in a loop might look like:
-
-There's no loop in this example.  Don't use "A modified function"; that
-only makes sense during the transition from pci_enable_msix() to
-pci_enable_msix_range().  "A function using pci_enable_msix_range() might
-look like this:" should be sufficient.
-
-> +static int foo_driver_enable_msix(struct foo_adapter *adapter, int nvec)
-> +{
-> +	rc = pci_auto_enable_msix_range(adapter->pdev, adapter->msix_entries,
-> +					FOO_DRIVER_MINIMUM_NVEC, nvec);
-> +	if (rc < 0)
-> +		return rc;
-> +
-> +	rc = foo_driver_init_other(adapter, rc);
-> +	if (rc < 0)
-> +		pci_disable_msix(adapter->pdev);
-> +
-> +	return rc;
-> +}
-> +
-> +4.3.3 pci_auto_enable_msix
-> +
-> +int pci_auto_enable_msix(struct pci_dev *dev,
-> +			 struct msix_entry *entries, int maxvec)
-> +
-> +This variation on pci_enable_msix() call allows a device driver to request
-> +any number of MSI-Xs up to 'maxvec'. Whenever possible device drivers are
-> +encouraged to use this function rather than explicit request loop calling
-> +pci_enable_msix().
-> +
-> +If this function returns a negative number, it indicates an error and
-> +the driver should not attempt to allocate any more MSI-X interrupts for
-> +this device.
-> +
-> +If this function returns a positive number it indicates the number of
-> +MSI-X interrupts that have been successfully allocated. Device drivers
-> +can use this number to further allocate and initialize device resources.
-> +
-> +4.3.4 pci_auto_enable_msix_exact
-> +
-> +int pci_auto_enable_msix_exact(struct pci_dev *dev,
-> +			       struct msix_entry *entries, int nvec)
-> +
-> +This variation on pci_enable_msix() call allows a device driver to request
-> +exactly 'nvec' MSI-Xs.
-> +
-> +If this function returns a negative number, it indicates an error and
-> +the driver should not attempt to allocate any more MSI-X interrupts for
-> +this device.
-> +
-> +If this function returns the value of 'nvec' it indicates MSI-X interrupts
-> +have been successfully allocated. No other value in case of success could
-> +be returned. Device drivers can use this value to further allocate and
-> +initialize device resources.
-> +
-> +4.3.5 pci_disable_msix
->  
->  void pci_disable_msix(struct pci_dev *dev)
->  
-> @@ -236,14 +360,14 @@ on any interrupt for which it previously called request_irq().
->  Failure to do so results in a BUG_ON(), leaving the device with
->  MSI-X enabled and thus leaking its vector.
->  
-> -4.3.3 The MSI-X Table
-> +4.3.6 The MSI-X Table
->  
->  The MSI-X capability specifies a BAR and offset within that BAR for the
->  MSI-X Table.  This address is mapped by the PCI subsystem, and should not
->  be accessed directly by the device driver.  If the driver wishes to
->  mask or unmask an interrupt, it should call disable_irq() / enable_irq().
->  
-> -4.3.4 pci_get_msix_vec_count
-> +4.3.7 pci_get_msix_vec_count
->  
->  int pci_get_msix_vec_count(struct pci_dev *dev)
->  
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index 18e877f5..ccfd49b 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -1093,3 +1093,77 @@ void pci_msi_init_pci_dev(struct pci_dev *dev)
->  	if (dev->msix_cap)
->  		msix_set_enable(dev, 0);
->  }
-> +
-> +/**
-> + * pci_auto_enable_msi_range - configure device's MSI capability structure
-> + * @dev: device to configure
-> + * @minvec: minimal number of interrupts to configure
-> + * @maxvec: maximum number of interrupts to configure
-> + *
-> + * This function tries to allocate a maximum possible number of interrupts in a
-> + * range between @minvec and @maxvec. It returns a negative errno if an error
-> + * occurs. If it succeeds, it returns the actual number of interrupts allocated
-> + * and updates the @dev's irq member to the lowest new interrupt number;
-> + * the other interrupt numbers allocated to this device are consecutive.
-> + **/
-> +int pci_auto_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
-> +{
-> +	int nvec = maxvec;
-> +	int rc;
-> +
-> +	if (maxvec < minvec)
-> +		return -ERANGE;
-> +
-> +	do {
-> +		rc = pci_enable_msi_block(dev, nvec);
-> +		if (rc < 0) {
-> +			return rc;
-> +		} else if (rc > 0) {
-> +			if (rc < minvec)
-> +				return -ENOSPC;
-> +			nvec = rc;
-> +		}
-> +	} while (rc);
-> +
-> +	return nvec;
-> +}
-> +EXPORT_SYMBOL(pci_auto_enable_msi_range);
-> +
-> +/**
-> + * pci_auto_enable_msix_range - configure device's MSI-X capability structure
-> + * @dev: pointer to the pci_dev data structure of MSI-X device function
-> + * @entries: pointer to an array of MSI-X entries
-> + * @minvec: minimum number of MSI-X irqs requested
-> + * @maxvec: maximum number of MSI-X irqs requested
-> + *
-> + * Setup the MSI-X capability structure of device function with a maximum
-> + * possible number of interrupts in the range between @minvec and @maxvec
-> + * upon its software driver call to request for MSI-X mode enabled on its
-> + * hardware device function. It returns a negative errno if an error occurs.
-> + * If it succeeds, it returns the actual number of interrupts allocated and
-> + * indicates the successful configuration of MSI-X capability structure
-> + * with new allocated MSI-X interrupts.
-> + **/
-> +int pci_auto_enable_msix_range(struct pci_dev *dev, struct msix_entry *entries,
-> +			       int minvec, int maxvec)
-> +{
-> +	int nvec = maxvec;
-> +	int rc;
-> +
-> +	if (maxvec < minvec)
-> +		return -ERANGE;
-> +
-> +	do {
-> +		rc = pci_enable_msix(dev, entries, nvec);
-> +		if (rc < 0) {
-> +			return rc;
-> +		} else if (rc > 0) {
-> +			if (rc < minvec)
-> +				return -ENOSPC;
-> +			nvec = rc;
-> +		}
-> +	} while (rc);
-> +
-> +	return nvec;
-
-I think it would be better to make pci_enable_msix_range() the fundamental
-implementation, with pci_enable_msix() built on top of it.  That way we
-could deprecate and eventually remove pci_enable_msix() and its tri-state
-return values.
+What would you think of "pci_msi_vec_count()" or "pci_msi_vector_count()"
+instead?  The "get" doesn't really seem necessary, and we often use "get"
+to indicate acquiring a reference (though it's obvious that doesn't apply
+here).
 
 Bjorn
 
+> +This function could be used to retrieve the number of MSI vectors the
+> +device requested (via the Multiple Message Capable register). The MSI
+> +specification only allows the returned value to be a power of two,
+> +up to a maximum of 2^5 (32).
+> +
+> +If this function returns a negative number, it indicates the device is
+> +not capable of sending MSIs.
+> +
+> +If this function returns a positive number, it indicates the maximum
+> +number of MSI interrupt vectors that could be allocated.
+> +
+>  4.3 Using MSI-X
+>  
+>  The MSI-X capability is much more flexible than the MSI capability.
+> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+> index c0e2259..8915edb 100644
+> --- a/drivers/pci/msi.c
+> +++ b/drivers/pci/msi.c
+> @@ -834,6 +834,31 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
+>  }
+>  
+>  /**
+> + * pci_get_msi_vec_count - Return the number of MSI vectors a device can send
+> + * @dev: device to report about
+> + *
+> + * This function returns the number of MSI vectors a device requested via
+> + * Multiple Message Capable register. It returns a negative errno if the
+> + * device is not capable sending MSI interrupts. Otherwise, the call succeeds
+> + * and returns a power of two, up to a maximum of 2^5 (32), according to the
+> + * MSI specification.
+> + **/
+> +int pci_get_msi_vec_count(struct pci_dev *dev)
+> +{
+> +	int ret;
+> +	u16 msgctl;
+> +
+> +	if (!dev->msi_cap)
+> +		return -EINVAL;
+> +
+> +	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
+> +	ret = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
+> +
+> +	return ret;
 > +}
-> +EXPORT_SYMBOL(pci_auto_enable_msix_range);
+> +EXPORT_SYMBOL(pci_get_msi_vec_count);
+> +
+> +/**
+>   * pci_enable_msi_block - configure device's MSI capability structure
+>   * @dev: device to configure
+>   * @nvec: number of interrupts to configure
+> @@ -849,13 +874,13 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
+>  int pci_enable_msi_block(struct pci_dev *dev, int nvec)
+>  {
+>  	int status, maxvec;
+> -	u16 msgctl;
+>  
+> -	if (!dev->msi_cap || dev->current_state != PCI_D0)
+> +	if (dev->current_state != PCI_D0)
+>  		return -EINVAL;
+>  
+> -	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
+> -	maxvec = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
+> +	maxvec = pci_get_msi_vec_count(dev);
+> +	if (maxvec < 0)
+> +		return maxvec;
+>  	if (nvec > maxvec)
+>  		return maxvec;
+>  
+> @@ -880,13 +905,13 @@ EXPORT_SYMBOL(pci_enable_msi_block);
+>  int pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec)
+>  {
+>  	int ret, nvec;
+> -	u16 msgctl;
+>  
+> -	if (!dev->msi_cap || dev->current_state != PCI_D0)
+> +	if (dev->current_state != PCI_D0)
+>  		return -EINVAL;
+>  
+> -	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &msgctl);
+> -	ret = 1 << ((msgctl & PCI_MSI_FLAGS_QMASK) >> 1);
+> +	ret = pci_get_msi_vec_count(dev);
+> +	if (ret < 0)
+> +		return ret;
+>  
+>  	if (maxvec)
+>  		*maxvec = ret;
 > diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 7941f06..7e30b52 100644
+> index 8cf7b15..997751d 100644
 > --- a/include/linux/pci.h
 > +++ b/include/linux/pci.h
-> @@ -1193,6 +1193,38 @@ static inline int pci_msi_enabled(void)
+> @@ -1154,6 +1154,11 @@ struct msix_entry {
+>  
+>  
+>  #ifndef CONFIG_PCI_MSI
+> +static inline int pci_get_msi_vec_count(struct pci_dev *dev)
+> +{
+> +	return -ENOSYS;
+> +}
+> +
+>  static inline int pci_enable_msi_block(struct pci_dev *dev, int nvec)
 >  {
+>  	return -ENOSYS;
+> @@ -1195,6 +1200,7 @@ static inline int pci_msi_enabled(void)
 >  	return 0;
 >  }
-> +
-> +int pci_auto_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
-> +{
-> +	return -ENOSYS;
-> +}
-> +static inline int pci_auto_enable_msi(struct pci_dev *dev, int maxvec)
-> +{
-> +	return -ENOSYS;
-> +}
-> +static inline int pci_auto_enable_msi_exact(struct pci_dev *dev, int nvec)
-> +{
-> +	return -ENOSYS;
-> +}
-> +
-> +static inline int
-> +pci_auto_enable_msix_range(struct pci_dev *dev,
-> +			   struct msix_entry *entries, int minvec, int maxvec)
-> +{
-> +	return -ENOSYS;
-> +}
-> +static inline int
-> +pci_auto_enable_msix(struct pci_dev *dev,
-> +		     struct msix_entry *entries, int maxvec)
-> +{
-> +	return -ENOSYS;
-> +}
-> +static inline int
-> +pci_auto_enable_msix_exact(struct pci_dev *dev,
-> +			   struct msix_entry *entries, int nvec)
-> +{
-> +	return -ENOSYS;
-> +}
 >  #else
->  int pci_get_msi_vec_count(struct pci_dev *dev);
+> +int pci_get_msi_vec_count(struct pci_dev *dev);
 >  int pci_enable_msi_block(struct pci_dev *dev, int nvec);
-> @@ -1205,6 +1237,31 @@ void pci_disable_msix(struct pci_dev *dev);
->  void msi_remove_pci_irq_vectors(struct pci_dev *dev);
->  void pci_restore_msi_state(struct pci_dev *dev);
->  int pci_msi_enabled(void);
-> +
-> +int pci_auto_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec);
-> +static inline int pci_auto_enable_msi(struct pci_dev *dev, int maxvec)
-> +{
-> +	return pci_auto_enable_msi_range(dev, 1, maxvec);
-> +}
-> +static inline int pci_auto_enable_msi_exact(struct pci_dev *dev, int nvec)
-> +{
-> +	return pci_auto_enable_msi_range(dev, nvec, nvec);
-> +}
-> +
-> +int pci_auto_enable_msix_range(struct pci_dev *dev, struct msix_entry *entries,
-> +			       int minvec, int maxvec);
-> +static inline int
-> +pci_auto_enable_msix(struct pci_dev *dev,
-> +		     struct msix_entry *entries, int maxvec)
-> +{
-> +	return pci_auto_enable_msix_range(dev, entries, 1, maxvec);
-> +}
-> +static inline int
-> +pci_auto_enable_msix_exact(struct pci_dev *dev,
-> +			   struct msix_entry *entries, int nvec)
-> +{
-> +	return pci_auto_enable_msix_range(dev, entries, nvec, nvec);
-> +}
->  #endif
->  
->  #ifdef CONFIG_PCIEPORTBUS
+>  int pci_enable_msi_block_auto(struct pci_dev *dev, int *maxvec);
+>  void pci_msi_shutdown(struct pci_dev *dev);
 > -- 
 > 1.7.7.6
 > 
