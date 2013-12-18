@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab3LRTRV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 14:17:21 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56752 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab3LRTRT (ORCPT
+	id S1755995Ab3LRTSH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 14:18:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34625 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755596Ab3LRTSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 14:17:19 -0500
-Date: Wed, 18 Dec 2013 20:16:52 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Waiman Long <waiman.long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, aswin@hp.com,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] qrwlock: A queue read/write lock implementation
-Message-ID: <20131218191652.GD16438@laptop.programming.kicks-ass.net>
-References: <1385147087-26588-1-git-send-email-Waiman.Long@hp.com>
- <1385147087-26588-2-git-send-email-Waiman.Long@hp.com>
- <20131217192128.GA15969@linux.vnet.ibm.com>
- <52B1ED2D.3020000@hp.com>
- <20131218185910.GS19211@linux.vnet.ibm.com>
+	Wed, 18 Dec 2013 14:18:05 -0500
+Date: Wed, 18 Dec 2013 11:18:06 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: josh@joshtriplett.org
+Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: base: Add prototype declaration in memory.c
+Message-ID: <20131218191806.GC28735@kroah.com>
+References: <20131218063953.GA3180@rashika>
+ <20131218153451.GA22228@kroah.com>
+ <20131218190108.GL24229@cloud>
+ <20131218190344.GA28706@kroah.com>
+ <20131218191024.GA24413@cloud>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131218185910.GS19211@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131218191024.GA24413@cloud>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 10:59:10AM -0800, Paul E. McKenney wrote:
-> I am hoping that it makes it into -tip soon, as I also have a patch that
-> depends on it.
+On Wed, Dec 18, 2013 at 11:10:24AM -0800, josh@joshtriplett.org wrote:
+> On Wed, Dec 18, 2013 at 11:03:44AM -0800, Greg Kroah-Hartman wrote:
+> > On Wed, Dec 18, 2013 at 11:01:08AM -0800, josh@joshtriplett.org wrote:
+> > > On Wed, Dec 18, 2013 at 07:34:51AM -0800, Greg Kroah-Hartman wrote:
+> > > > On Wed, Dec 18, 2013 at 12:09:53PM +0530, Rashika Kheria wrote:
+> > > > > Add the prototype declaration of function memory_block_size_bytes() in
+> > > > > memory.c.
+> > > > > 
+> > > > > This eliminates the following warning in memory.c:
+> > > > > drivers/base/memory.c:87:1: warning: no previous prototype for ‘memory_block_size_bytes’ [-Wmissing-prototypes]
+> > > > > 
+> > > > > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> > > > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > > > > ---
+> > > > >  drivers/base/memory.c |    1 +
+> > > > >  1 file changed, 1 insertion(+)
+> > > > > 
+> > > > > diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+> > > > > index bece691..cfa03de 100644
+> > > > > --- a/drivers/base/memory.c
+> > > > > +++ b/drivers/base/memory.c
+> > > > > @@ -83,6 +83,7 @@ static void memory_block_release(struct device *dev)
+> > > > >  	kfree(mem);
+> > > > >  }
+> > > > >  
+> > > > > +unsigned long __weak memory_block_size_bytes(void);
+> > > > >  unsigned long __weak memory_block_size_bytes(void)
+> > > > 
+> > > > If this patch is the "solution" then something else is really wrong
+> > > > here, please use your judgement to realize this...
+> > > 
+> > > It's a weak symbol provided and consumed within the same file, and then
+> > > overridden on a few random architectures.  It isn't currently prototyped
+> > > in any header file.  The other potential solution would be to add it to
+> > > an appropriate existing header or create a new one.  Any suggestions for
+> > > an appropriate existing header to prototype it in instead?
+> > 
+> > device.h?
+> 
+> include/linux/device.h?  That would work, though it seems slightly
+> out of place there.
+> 
+> Would include/linux/memory.h work?
 
-Just send out the hopefully final version.
-
-lkml.kernel.org/r/20131218190806.370008594@infradead.org
+Sure, that's fine, I don't really care...
