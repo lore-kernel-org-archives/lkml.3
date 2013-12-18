@@ -1,116 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab3LROWs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 09:22:48 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:54872 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573Ab3LROWq (ORCPT
+	id S1755106Ab3LROXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 09:23:12 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:44236 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754733Ab3LROXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 09:22:46 -0500
-Date: Wed, 18 Dec 2013 06:22:40 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH 05/13] rcu: Fix unraised IPI to timekeeping CPU
-Message-ID: <20131218142240.GP19211@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
- <1387320692-28460-6-git-send-email-fweisbec@gmail.com>
- <20131217232100.GC19211@linux.vnet.ibm.com>
- <20131218141348.GA18464@localhost.localdomain>
+	Wed, 18 Dec 2013 09:23:09 -0500
+X-IronPort-AV: E=Sophos;i="4.95,508,1384300800"; 
+   d="scan'208";a="83498952"
+Date: Wed, 18 Dec 2013 14:22:35 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <mukesh.rathor@oracle.com>, <jbeulich@suse.com>
+Subject: Re: [Xen-devel] [PATCH v11 02/12] xen/pvh: Define what an PVH guest
+ is.
+In-Reply-To: <1387313503-31362-3-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1312181421260.8667@kaball.uk.xensource.com>
+References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com> <1387313503-31362-3-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131218141348.GA18464@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121814-3532-0000-0000-000003F43DB7
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 03:13:52PM +0100, Frederic Weisbecker wrote:
-> On Tue, Dec 17, 2013 at 03:21:00PM -0800, Paul E. McKenney wrote:
-> > On Tue, Dec 17, 2013 at 11:51:24PM +0100, Frederic Weisbecker wrote:
-> > > The plan with full system idle detection is to allow the timekeeper
-> > > to sleep when all full dynticks CPUs are sleeping.
-> > > 
-> > > Then when a full dynticks CPU wakes up while the whole system is idle,
-> > > it sends an IPI to the timekeeping CPU which then restarts its tick
-> > > and polls on its timekeeping duty on behalf of all other CPUs in the
-> > > system.
-> > > 
-> > > But we are using rcu_kick_nohz_cpu() to raise this IPI, which is wrong
-> > > because this function is used to kick full dynticks CPUs when they run
-> > > in the kernel for too long without reporting a quiescent state. And
-> > > this function ignores targets that are not full dynticks, like our
-> > > timekeeper.
-> > > 
-> > > To fix this, use the smp_send_reschedule() function directly.
-> > 
-> > I guess the fact that you needed some change is reassuring.  You know
-> > the old saying, "no bugs, no users".  ;-)
+On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> From: Mukesh Rathor <mukesh.rathor@oracle.com>
 > 
-> ;-)
+> Which is a PV guest with auto page translation enabled
+> and with vector callback. It is a cross between PVHVM and PV.
 > 
-> > 
-> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > > Cc: Ingo Molnar <mingo@kernel.org>
-> > > Cc: Peter Zijlstra <peterz@infradead.org>
-> > > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > Cc: John Stultz <john.stultz@linaro.org>
-> > > Cc: Alex Shi <alex.shi@linaro.org>
-> > > Cc: Kevin Hilman <khilman@linaro.org>
-> > > ---
-> > >  kernel/rcu/tree_plugin.h | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> > > index 08004da..84d90c8 100644
-> > > --- a/kernel/rcu/tree_plugin.h
-> > > +++ b/kernel/rcu/tree_plugin.h
-> > > @@ -2488,7 +2488,7 @@ void rcu_sysidle_force_exit(void)
-> > >  				      oldstate, RCU_SYSIDLE_NOT);
-> > >  		if (oldstate == newoldstate &&
-> > >  		    oldstate == RCU_SYSIDLE_FULL_NOTED) {
-> > > -			rcu_kick_nohz_cpu(tick_do_timer_cpu);
-> > > +			smp_send_reschedule(tick_do_timer_cpu);
-> > 
-> > Hmmm...
-> > 
-> > We haven't done any sort of wakeup, and tick_nohz_full_cpu() should
-> > return false for tick_do_timer_cpu, and I don't see that we have
-> > done anything to make got_nohz_idle_kick() return true.
-> > 
-> > So the idea is that the fact of the interrupt is sufficient, and
-> > the target CPU will figure out that it must turn its scheduling-clock
-> > interrupt when returning from interrupt?
+> The Xen side defines PVH as (from docs/misc/pvh-readme.txt,
+> with modifications):
 > 
-> Exactly, the interrupt alone is sufficient and the tick is reevaluated
-> on irq_exit().
-
-But if that is the case, why do you need the change to scheduler_ipi()
-in patch 07/13?  Just having received any sort of IPI should suffice.
-
-							Thanx, Paul
-
-> > Or is something else going on here?
-> > 
-> > 							Thanx, Paul
-> > 
-> > >  			return; /* We cleared it, done! */
-> > >  		}
-> > >  		oldstate = newoldstate;
-> > > -- 
-> > > 1.8.3.1
-> > > 
-> > 
+> "* the guest uses auto translate:
+>  - p2m is managed by Xen
+>  - pagetables are owned by the guest
+>  - mmu_update hypercall not available
+> * it uses event callback and not vlapic emulation,
+> * IDT is native, so set_trap_table hcall is also N/A for a PVH guest.
 > 
+> For a full list of hcalls supported for PVH, see pvh_hypercall64_table
+> in arch/x86/hvm/hvm.c in xen.  From the ABI prespective, it's mostly a
+> PV guest with auto translate, although it does use hvm_op for setting
+> callback vector."
+> 
+> We don't have yet a Kconfig entry setup as we do not
+> have all the parts ready for it - so we piggyback
+> on the PVHVM config option. This scaffolding will
+> be removed later.
+> 
+> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
+Could you please add an "&& CONFIG_X86"?
+
+
+>  include/xen/xen.h | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/include/xen/xen.h b/include/xen/xen.h
+> index a74d436..1d6a237 100644
+> --- a/include/xen/xen.h
+> +++ b/include/xen/xen.h
+> @@ -29,4 +29,13 @@ extern enum xen_domain_type xen_domain_type;
+>  #define xen_initial_domain()	(0)
+>  #endif	/* CONFIG_XEN_DOM0 */
+>  
+> +#ifdef CONFIG_XEN_PVHVM
+> +/* Temporarily under XEN_PVHVM, but will be under CONFIG_XEN_PVH */
+> +#include <xen/features.h>
+> +#define xen_pvh_domain() (xen_pv_domain() && \
+> +			  xen_feature(XENFEAT_auto_translated_physmap) && \
+> +			  xen_have_vector_callback)
+> +#else
+> +#define xen_pvh_domain()	(0)
+> +#endif
+>  #endif	/* _XEN_XEN_H */
+> -- 
+> 1.8.3.1
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
+> 
