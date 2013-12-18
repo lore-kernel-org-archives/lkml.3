@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab3LRVN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:13:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36497 "EHLO
+	id S1755225Ab3LRV0A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:26:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36527 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab3LRVNw (ORCPT
+	with ESMTP id S1754367Ab3LRVN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:52 -0500
+	Wed, 18 Dec 2013 16:13:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [PATCH 3.12 077/118] media: af9035: unlock on error in af9035_i2c_master_xfer()
-Date: Wed, 18 Dec 2013 13:11:54 -0800
-Message-Id: <20131218211221.627980589@linuxfoundation.org>
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 044/118] mm: memcg: fix race condition between memcg teardown and swapin
+Date: Wed, 18 Dec 2013 13:11:21 -0800
+Message-Id: <20131218211220.721542466@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -30,52 +31,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 3189ef0290dcc9f44782672fade35847cb30da00 upstream.
+commit 96f1c58d853497a757463e0b57fed140d6858f3a upstream.
 
-We introduced a couple new error paths which are missing unlocks.
-Fixes: 7760e148350b ('[media] af9035: Don't use dynamic static allocation')
+There is a race condition between a memcg being torn down and a swapin
+triggered from a different memcg of a page that was recorded to belong
+to the exiting memcg on swapout (with CONFIG_MEMCG_SWAP extension).  The
+result is unreclaimable pages pointing to dead memcgs, which can lead to
+anything from endless loops in later memcg teardown (the page is charged
+to all hierarchical parents but is not on any LRU list) or crashes from
+following the dangling memcg pointer.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Memcgs with tasks in them can not be torn down and usually charges don't
+show up in memcgs without tasks.  Swapin with the CONFIG_MEMCG_SWAP
+extension is the notable exception because it charges the cgroup that
+was recorded as owner during swapout, which may be empty and in the
+process of being torn down when a task in another memcg triggers the
+swapin:
+
+  teardown:                 swapin:
+
+                            lookup_swap_cgroup_id()
+                            rcu_read_lock()
+                            mem_cgroup_lookup()
+                            css_tryget()
+                            rcu_read_unlock()
+  disable css_tryget()
+  call_rcu()
+    offline_css()
+      reparent_charges()
+                            res_counter_charge() (hierarchical!)
+                            css_put()
+                              css_free()
+                            pc->mem_cgroup = dead memcg
+                            add page to dead lru
+
+Add a final reparenting step into css_free() to make sure any such raced
+charges are moved out of the memcg before it's finally freed.
+
+In the longer term it would be cleaner to have the css_tryget() and the
+res_counter charge under the same RCU lock section so that the charge
+reparenting is deferred until the last charge whose tryget succeeded is
+visible.  But this will require more invasive changes that will be
+harder to evaluate and backport into stable, so better defer them to a
+separate change set.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/dvb-usb-v2/af9035.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ mm/memcontrol.c |   36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
---- a/drivers/media/usb/dvb-usb-v2/af9035.c
-+++ b/drivers/media/usb/dvb-usb-v2/af9035.c
-@@ -245,7 +245,8 @@ static int af9035_i2c_master_xfer(struct
- 				dev_warn(&d->udev->dev,
- 					 "%s: i2c xfer: len=%d is too big!\n",
- 					 KBUILD_MODNAME, msg[0].len);
--				return -EOPNOTSUPP;
-+				ret = -EOPNOTSUPP;
-+				goto unlock;
- 			}
- 			req.mbox |= ((msg[0].addr & 0x80)  >>  3);
- 			buf[0] = msg[1].len;
-@@ -281,7 +282,8 @@ static int af9035_i2c_master_xfer(struct
- 				dev_warn(&d->udev->dev,
- 					 "%s: i2c xfer: len=%d is too big!\n",
- 					 KBUILD_MODNAME, msg[0].len);
--				return -EOPNOTSUPP;
-+				ret = -EOPNOTSUPP;
-+				goto unlock;
- 			}
- 			req.mbox |= ((msg[0].addr & 0x80)  >>  3);
- 			buf[0] = msg[0].len;
-@@ -319,6 +321,7 @@ static int af9035_i2c_master_xfer(struct
- 		ret = -EOPNOTSUPP;
- 	}
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6341,6 +6341,42 @@ static void mem_cgroup_css_offline(struc
+ static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
++	/*
++	 * XXX: css_offline() would be where we should reparent all
++	 * memory to prepare the cgroup for destruction.  However,
++	 * memcg does not do css_tryget() and res_counter charging
++	 * under the same RCU lock region, which means that charging
++	 * could race with offlining.  Offlining only happens to
++	 * cgroups with no tasks in them but charges can show up
++	 * without any tasks from the swapin path when the target
++	 * memcg is looked up from the swapout record and not from the
++	 * current task as it usually is.  A race like this can leak
++	 * charges and put pages with stale cgroup pointers into
++	 * circulation:
++	 *
++	 * #0                        #1
++	 *                           lookup_swap_cgroup_id()
++	 *                           rcu_read_lock()
++	 *                           mem_cgroup_lookup()
++	 *                           css_tryget()
++	 *                           rcu_read_unlock()
++	 * disable css_tryget()
++	 * call_rcu()
++	 *   offline_css()
++	 *     reparent_charges()
++	 *                           res_counter_charge()
++	 *                           css_put()
++	 *                             css_free()
++	 *                           pc->mem_cgroup = dead memcg
++	 *                           add page to lru
++	 *
++	 * The bulk of the charges are still moved in offline_css() to
++	 * avoid pinning a lot of pages in case a long-term reference
++	 * like a swapout record is deferring the css_free() to long
++	 * after offlining.  But this makes sure we catch any charges
++	 * made after offlining:
++	 */
++	mem_cgroup_reparent_charges(memcg);
  
-+unlock:
- 	mutex_unlock(&d->i2c_mutex);
- 
- 	if (ret < 0)
+ 	memcg_destroy_kmem(memcg);
+ 	__mem_cgroup_free(memcg);
 
 
