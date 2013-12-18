@@ -1,55 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384Ab3LRXwb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 18:52:31 -0500
-Received: from leo.clearchain.com ([199.73.29.74]:60466 "EHLO
-	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356Ab3LRXwa (ORCPT
+	id S1752654Ab3LRXxK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 18:53:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37857 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab3LRXxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 18:52:30 -0500
-Date: Thu, 19 Dec 2013 09:55:04 +1000
-From: Peter Hutterer <peter.hutterer@who-t.net>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: David Herrmann <dh.herrmann@gmail.com>, linux-input@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        linux-kernel@vger.kernel.org, input-tools@lists.freedesktop.org
-Subject: Re: [PATCH 2/4] Input: introduce ABS_MAX2/CNT2 and friends
-Message-ID: <20131218235504.GA17958@yabbi.redhat.com>
-References: <1387295334-1744-1-git-send-email-dh.herrmann@gmail.com>
- <1387295334-1744-3-git-send-email-dh.herrmann@gmail.com>
- <20131218234009.GA9360@yabbi.redhat.com>
- <1950536.BXYYX85NB4@dtor-d630.eng.vmware.com>
+	Wed, 18 Dec 2013 18:53:09 -0500
+Date: Wed, 18 Dec 2013 15:53:10 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org, Karl Dahlke <eklhad@comcast.net>
+Subject: Re: [PATCH 3.12 v2] Broken terminal due to echo bufferring
+Message-ID: <20131218235310.GC14527@kroah.com>
+References: <alpine.LRH.2.02.1312091004110.19590@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1950536.BXYYX85NB4@dtor-d630.eng.vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.2.7 (mail.clearchain.com [127.0.0.1]); Thu, 19 Dec 2013 10:22:23 +1030 (CST)
+In-Reply-To: <alpine.LRH.2.02.1312091004110.19590@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 03:48:37PM -0800, Dmitry Torokhov wrote:
-> On Thursday, December 19, 2013 09:40:09 AM Peter Hutterer wrote:
-> > > +     memset(&abs, 0, sizeof(abs));
-> > > +     for (i = valid_cnt; i < cnt; ++i)
-> > > +             if (copy_to_user(&pinfo->info[i], &abs, sizeof(abs)))
-> > > +                     return -EFAULT;
-> > > +
-> > > +     return 0;
-> > 
-> > why don't you return the number of valid copied axes to the user?
-> > that seems better even than forcing the remainder to 0.
+On Mon, Dec 09, 2013 at 10:10:50AM -0500, Mikulas Patocka wrote:
+> Hi
 > 
-> Well, if your program messed up buffers that it faulted we do not know
-> for sure if data that did not cause fault ended up where it should have
-> or if it smashed something else. This condition I think should be
-> signaled early.
+> Here I'm sending another version of the patch that removes some unneeded 
+> code for echo bufferring - 41 lines are removed.
 
-not 100% sure I understand but I wasn't proposing to remove the -EFAULT, i
-was proposing to replace "return 0" with "return valid_cnt".
+This should now all be resolved in Linus's tree, and this patch is not
+needed, right?
 
-Cheers,
-   Peter
+thanks,
+
+greg k-h
