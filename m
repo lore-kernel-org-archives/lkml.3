@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab3LRHpc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 02:45:32 -0500
-Received: from mga09.intel.com ([134.134.136.24]:25605 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751014Ab3LRHpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 02:45:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,506,1384329600"; 
-   d="scan'208";a="446157093"
-Subject: tty: Removing the deprecated function tty_vhangup_locked()
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: gregkh@linuxfoundation.org, jslaby@suse.cz
-Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com, chao.bi@intel.com,
-        jin.xiao@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 Dec 2013 15:48:23 +0800
-Message-ID: <1387352903.3650.62.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752454Ab3LRHuU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 02:50:20 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:38394 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab3LRHuS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 02:50:18 -0500
+Message-ID: <52B153B3.4070903@gmail.com>
+Date: Wed, 18 Dec 2013 08:50:11 +0100
+From: Pontus Fuchs <pontus.fuchs@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Sander Eikelenboom <linux@eikelenboom.it>,
+        Ben Hutchings <ben@decadent.org.uk>
+CC: Julian Calaby <julian.calaby@gmail.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Avinash Patil <avinashapatil@gmail.com>
+Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't
+ work.
+References: <1342235583.20131211182804@eikelenboom.it> <CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com> <871324710.20131211191104@eikelenboom.it> <CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com> <1937118387.20131216122200@eikelenboom.it> <52AEE60B.6030509@broadcom.com> <19210260274.20131216135644@eikelenboom.it> <CAGRGNgXHemM2FfnXgW5RbzhFT+9SfUfVkjdysK3+=_u3hWSacw@mail.gmail.com> <1534126119.20131217104548@eikelenboom.it> <387552477.20131217213319@eikelenboom.it> <20131217212709.GB5624@decadent.org.uk> <1254825772.20131217224914@eikelenboom.it>
+In-Reply-To: <1254825772.20131217224914@eikelenboom.it>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2013-12-17 22:49, Sander Eikelenboom wrote:
+>
+> Indeed, I looked for a crda hook for initramfs-tools but didn't find it, so skipped that idea
+> for the moment.
+>
+> So if i combine the two .. it's essentially just a very bad idea to compile the wireless stuff in.
+> It needs a access to a userland program at module load time, or it will block forever.
 
-The function tty_vhangup_locked() was deprecated, removed it
-from the tty.h also.
+The canonical trick to have cfg80211 built in is to execute crda 
+manually in your boot scripts. This will satisfy the initial request and 
+resolve the block.
 
-Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
----
- include/linux/tty.h |    1 -
- 1 file changed, 1 deletion(-)
+Cheers,
 
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 97d660e..a98c85f 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -422,7 +422,6 @@ extern int is_ignored(int sig);
- extern int tty_signal(int sig, struct tty_struct *tty);
- extern void tty_hangup(struct tty_struct *tty);
- extern void tty_vhangup(struct tty_struct *tty);
--extern void tty_vhangup_locked(struct tty_struct *tty);
- extern void tty_unhangup(struct file *filp);
- extern int tty_hung_up_p(struct file *filp);
- extern void do_SAK(struct tty_struct *tty);
--- 
-1.7.9.5
-
-
+Pontus
 
