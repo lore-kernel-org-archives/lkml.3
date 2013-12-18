@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab3LRRl0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 12:41:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33701 "EHLO
+	id S1755423Ab3LRRmC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 12:42:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33703 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755227Ab3LRRlY (ORCPT
+	with ESMTP id S1751718Ab3LRRmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 12:41:24 -0500
-Date: Wed, 18 Dec 2013 09:41:26 -0800
+	Wed, 18 Dec 2013 12:42:00 -0500
+Date: Wed, 18 Dec 2013 09:42:02 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Driver core / sysfs fixes for 3.13-rc5
-Message-ID: <20131218174126.GA32489@kroah.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PULL] Staging driver fixes for 3.13-rc5
+Message-ID: <20131218174202.GA32599@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,29 +22,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 374b105797c3d4f29c685f3be535c35f5689b30e:
+The following changes since commit 319e2e3f63c348a9b66db4667efa73178e18b17d:
 
-  Linux 3.13-rc3 (2013-12-06 09:34:04 -0800)
+  Linux 3.13-rc4 (2013-12-15 12:31:33 -0800)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.13-rc5
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.13-rc5
 
-for you to fetch changes up to a8b14744429f90763f258ad0f69601cdcad610aa:
+for you to fetch changes up to fd6040ed57d8f200ab0cc2abf706c54995a48370:
 
-  sysfs: give different locking key to regular and bin files (2013-12-07 21:22:00 -0800)
+  imx-drm: imx-drm-core: improve safety of imx_drm_add_crtc() (2013-12-17 17:12:55 -0800)
 
 ----------------------------------------------------------------
-Driver core fix for 3.13-rc5
+Staging driver fixes for 3.13-rc5
 
-Here's a single sysfs fix for 3.13-rc5 that resolves a lockdep issue in
-sysfs that has been reported.
+Here are a number of staging, and iio, fixes for 3.13-rc5 that resolve
+some reported issues.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Tejun Heo (1):
-      sysfs: give different locking key to regular and bin files
+Beomho Seo (1):
+      iio: cm36651: Changed return value of read function
 
- fs/sysfs/file.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+Greg Kroah-Hartman (1):
+      Merge tag 'iio-fixes-for-3.13c' of git://git.kernel.org/.../jic23/iio into staging-linus
+
+H Hartley Sweeten (1):
+      staging: comedi: drivers: fix return value of comedi_load_firmware()
+
+Ian Abbott (1):
+      staging: comedi: 8255_pci: fix for newer PCI-DIO48H
+
+Jonathan Cameron (3):
+      staging:iio:mag:hmc5843 fix incorrect endianness of channel as a result of missuse of the IIO_ST macro.
+      iio:imu:adis16400 fix pressure channel scan type
+      iio:adc:ad7887 Fix channel reported endianness from cpu to big endian
+
+Russell King (7):
+      imx-drm: imx-drm-core: fix error cleanup path for imx_drm_add_crtc()
+      imx-drm: imx-drm-core: fix DRM cleanup paths
+      imx-drm: ipu-v3: fix potential CRTC device registration race
+      imx-drm: imx-tve: don't call sleeping functions beneath enable_lock spinlock
+      imx-drm: imx-drm-core: use defined constant for number of CRTCs.
+      imx-drm: imx-drm-core: make imx_drm_crtc_register() safer
+      imx-drm: imx-drm-core: improve safety of imx_drm_add_crtc()
+
+ drivers/iio/adc/ad7887.c                    | 16 ++++++++++--
+ drivers/iio/imu/adis16400_core.c            |  7 +++++-
+ drivers/iio/light/cm36651.c                 |  2 +-
+ drivers/staging/comedi/drivers.c            |  2 +-
+ drivers/staging/comedi/drivers/8255_pci.c   | 15 ++++++++---
+ drivers/staging/iio/magnetometer/hmc5843.c  |  7 +++++-
+ drivers/staging/imx-drm/imx-drm-core.c      | 39 +++++++++++++++++++++--------
+ drivers/staging/imx-drm/imx-tve.c           |  9 -------
+ drivers/staging/imx-drm/ipu-v3/ipu-common.c | 32 +++++++++++------------
+ 9 files changed, 85 insertions(+), 44 deletions(-)
