@@ -1,154 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab3LRNYf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 08:24:35 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:64338 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754314Ab3LRNYc (ORCPT
+	id S1754030Ab3LRN1l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 08:27:41 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54344 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949Ab3LRN1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 08:24:32 -0500
-From: Alex Ling <kasimling@gmail.com>
-To: rob.herring@calxeda.com, mark.rutland@arm.com, linux@arm.linux.org.uk,
-        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
-        kgene.kim@samsung.com, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Alex Ling <kasimling@gmail.com>
-Subject: [PATCH v2 1/1] ARM: dts: add board dts file for EXYNOS4412 based TINY4412 board
-Date: Wed, 18 Dec 2013 21:23:59 +0800
-Message-Id: <1387373039-4738-1-git-send-email-kasimling@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 18 Dec 2013 08:27:39 -0500
+Date: Wed, 18 Dec 2013 13:27:26 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Message-ID: <20131218132726.GQ28455@sirena.org.uk>
+References: <1387286601-21646-1-git-send-email-k.kozlowski@samsung.com>
+ <1387286601-21646-2-git-send-email-k.kozlowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bWTBxx0QKOXH2iZ2"
+Content-Disposition: inline
+In-Reply-To: <1387286601-21646-2-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: Haste makes waste.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/5] regulator: s5m8767: Add symbols for hard-coded
+ DVS_RAMP register
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a minimal board dts file for EXYNOS4412 based FriendlyARM's
-TINY4412 board. This patch including support peripherals like
-UART, SD card on SDMMC2 port and GPIO connected LEDs.
 
-Signed-off-by: Alex Ling <kasimling@gmail.com>
----
-Changes for v2:
-  - Clean up patch description
-  - Fix LED labels as Tomasz's suggested
-  - Fix style issues
+--bWTBxx0QKOXH2iZ2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
- arch/arm/boot/dts/Makefile                |    1 +
- arch/arm/boot/dts/exynos4412-tiny4412.dts |   93 +++++++++++++++++++++++++++++
- 2 files changed, 94 insertions(+)
- create mode 100644 arch/arm/boot/dts/exynos4412-tiny4412.dts
+On Tue, Dec 17, 2013 at 02:23:17PM +0100, Krzysztof Kozlowski wrote:
+> Add symbols for hard-coded values of BUCK_RAMP field in DVS_RAMP
+> register. This simplifies a little the code as register update is called
+> only once.
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 50fd70b..cfee1ef 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -59,6 +59,7 @@ dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
- 	exynos4412-odroidx.dtb \
- 	exynos4412-origen.dtb \
- 	exynos4412-smdk4412.dtb \
-+	exynos4412-tiny4412.dtb \
- 	exynos4412-trats2.dtb \
- 	exynos5250-arndale.dtb \
- 	exynos5250-smdk5250.dtb \
-diff --git a/arch/arm/boot/dts/exynos4412-tiny4412.dts b/arch/arm/boot/dts/exynos4412-tiny4412.dts
-new file mode 100644
-index 0000000..0a98312
---- /dev/null
-+++ b/arch/arm/boot/dts/exynos4412-tiny4412.dts
-@@ -0,0 +1,93 @@
-+/*
-+ * FriendlyARM's Exynos4412 based TINY4412 board device tree source
-+ *
-+ * Copyright (c) 2013 Alex Ling <kasimling@gmail.com>
-+ *
-+ * Device tree source file for FriendlyARM's TINY4412 board which is based on
-+ * Samsung's Exynos4412 SoC.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+*/
-+
-+/dts-v1/;
-+#include "exynos4412.dtsi"
-+
-+/ {
-+	model = "FriendlyARM TINY4412 board based on Exynos4412";
-+	compatible = "friendlyarm,tiny4412", "samsung,exynos4412";
-+
-+	memory {
-+		reg = <0x40000000 0x40000000>;
-+	};
-+
-+	leds {
-+		compatible = "gpio-leds";
-+
-+		led1 {
-+			label = "led1";
-+			gpios = <&gpm4 0 1>;
-+			default-state = "off";
-+			linux,default-trigger = "heartbeat";
-+		};
-+
-+		led2 {
-+			label = "led2";
-+			gpios = <&gpm4 1 1>;
-+			default-state = "off";
-+		};
-+
-+		led3 {
-+			label = "led3";
-+			gpios = <&gpm4 2 1>;
-+			default-state = "off";
-+		};
-+
-+		led4 {
-+			label = "led4";
-+			gpios = <&gpm4 3 1>;
-+			default-state = "off";
-+			linux,default-trigger = "mmc0";
-+		};
-+	};
-+
-+	rtc@10070000 {
-+		status = "okay";
-+	};
-+
-+	sdhci@12530000 {
-+		bus-width = <4>;
-+		pinctrl-0 = <&sd2_clk &sd2_cmd &sd2_cd &sd2_bus4>;
-+		pinctrl-names = "default";
-+		status = "okay";
-+	};
-+
-+	serial@13800000 {
-+		status = "okay";
-+	};
-+
-+	serial@13810000 {
-+		status = "okay";
-+	};
-+
-+	serial@13820000 {
-+		status = "okay";
-+	};
-+
-+	serial@13830000 {
-+		status = "okay";
-+	};
-+
-+	fixed-rate-clocks {
-+		xxti {
-+			compatible = "samsung,clock-xxti";
-+			clock-frequency = <0>;
-+		};
-+
-+		xusbxti {
-+			compatible = "samsung,clock-xusbxti";
-+			clock-frequency = <24000000>;
-+		};
-+	};
-+};
--- 
-1.7.9.5
+Applied, thanks.
 
+--bWTBxx0QKOXH2iZ2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSsaK7AAoJELSic+t+oim9dusP/3lpuWDkJa0hgz8csVh3qzx3
+Yugfmy4d9fOY3bJFy794KHl3y2aM1lchrJec8DBzGgxcm7+fyeFZ1p4cpdkdsHLt
+qoplTKBF+40FsDidQ7jthRedbbvDcLRh8MbZupeV36wp0N7L0mQgF83WUzO53rCt
+fOOnaFEZNnX1qP3itvtkPRImBieqG8J7buxUkCGF8kuVXVVLcJgbKp13QjLgLg30
+tdYilZPJOp+9vh8YapeaZ/mwwLaTdZe1rJ0T00huXbt+OK4t2H6EXnu7eHkz5abs
+naMgyuwPZ8XmTd8QqBRQkaeaObX8sn1ngVX+so6VEDsS0oQ+Bbn60/gCJk5R5Hv9
+HMQXWCDfWg/y7Aaz2B+xHVPkfHKnj4Mo6s08iMyUK5YopjbvEo534jz+HVSteqO8
+7Yek67es5S1k4Dmzt/JYe7FxrIhBqaOrq1szsvbOAVbop70bIrwn+p0RKnxD8FMo
+s6nqr0JqHMQ/DOuJGb/lA902STp6EMisyMTNcMsyTRXFGA3jGCE8nThFGTk6Sjog
+orw5gGabBWXdTniGeskFK1KxED6O/9RzviRwbwcyQYVHspNVSqHKIR7T8U20G9Gb
+2Ktnjsyrpibbb2WGow3hGKPXL+vn2yHsTvrx6fLl6Oc7MQrBygJGi8mmogdyBdIw
+SWfCJvyvN0Fh+qiyqRIg
+=kQ4q
+-----END PGP SIGNATURE-----
+
+--bWTBxx0QKOXH2iZ2--
