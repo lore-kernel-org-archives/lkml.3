@@ -1,173 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab3LRPrQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 10:47:16 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:52416 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755099Ab3LRPrO (ORCPT
+	id S1755366Ab3LRPui (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 10:50:38 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:18775 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755098Ab3LRPuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 10:47:14 -0500
-From: Seunghun Lee <waydi1@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, Seunghun Lee <waydi1@gmail.com>
-Subject: [PATCH] module: fix coding style
-Date: Thu, 19 Dec 2013 00:46:52 +0900
-Message-Id: <1387381612-15968-1-git-send-email-waydi1@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 18 Dec 2013 10:50:35 -0500
+X-AuditID: cbfec7f5-b7f6f6d000005b3b-f2-52b1c4489e59
+From: Tomasz Figa <t.figa@samsung.com>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-pm@vger.kernel.org, naveenkrishna.ch@gmail.com, rui.zhang@intel.com,
+        eduardo.valentin@ti.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
+        kgene.kim@samsung.com, devicetree@vger.kernel.org,
+        b.zolnierkie@samsung.com, cpgs@samsung.com
+Subject: Re: [PATCH v11 3/4] thermal: samsung: Add TMU support for Exynos5420
+ SoCs
+Date: Wed, 18 Dec 2013 16:50:17 +0100
+Message-id: <1498725.3K8LHaD3Qd@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11.3 (Linux/3.11.5-gentoo; KDE/4.11.3; x86_64; ; )
+In-reply-to: <1386657745-21602-1-git-send-email-ch.naveen@samsung.com>
+References: <1378268629-2886-3-git-send-email-ch.naveen@samsung.com>
+ <1386657745-21602-1-git-send-email-ch.naveen@samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t/xK7oeRzYGGVw9Z2HRcDXEYuOM9awW
+	d58fZrR4eUjTYv6Rc6wWa/b/ZLLoXXCVzeLyrjlsFp97jzBazDi/j8li0bb/zBZPHvaxOfB4
+	7Jx1l91j8Z6XTB59W1Yxehy/sZ3J4/MmuQDWKC6blNSczLLUIn27BK6M7hezmQrW6VbMbPzE
+	1MC4V6WLkZNDQsBE4vr0O4wQtpjEhXvr2boYuTiEBJYySnxc+4sdwulikjh2tJ8FpIpNQE3i
+	c8MjNhBbBKj7+KszYEXMAkuZJOYvW8QMkhAWCJFY/fAoE4jNIqAqcXDyHzCbV0BTYvXCRlYQ
+	m19AXeLdtqdgcVEBN4kX+7awg9icQPbsA7egNjcwSvQ1HGaDaBaU+DH5HtgVzALyEvv2T2WF
+	sLUk1u88zjSBUXAWkrJZSMpmISlbwMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMkYr7u
+	YFx6zOoQowAHoxIP7wKfjUFCrIllxZW5hxglOJiVRHiFtgKFeFMSK6tSi/Lji0pzUosPMTJx
+	cEo1MAYeCI+LWZZdk3v7tOX5Xf+fvNbtS0tOP6meHye8nv97O1vy+4t92Wm8H04x3XuZzbbv
+	3IoHs+xsRaYdKLT4wNos8KP97+VrfbfunWPlkDbfpbi30jZ0v4zVqujPLxXvMG56udbndOCK
+	pT2mLBVct5b/m9miu/DO7c3Lo6VecJ4XiU2O3ezHmqXEUpyRaKjFXFScCADXS5gZdgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix coding style of module.h
+Hi Naveen,
 
-Signed-off-by: Seunghun Lee <waydi1@gmail.com>
----
- include/linux/module.h |   62 ++++++++++++++++++++++++------------------------
- 1 file changed, 31 insertions(+), 31 deletions(-)
+On Tuesday 10 of December 2013 12:12:25 Naveen Krishna Chatradhi wrote:
+> Exynos5420 has 5 TMU channels, the TRIMINFO register is
+> misplaced for TMU channels 2, 3 and 4
+> TRIMINFO at 0x1006c000 contains data for TMU channel 3
+> TRIMINFO at 0x100a0000 contains data for TMU channel 4
+> TRIMINFO at 0x10068000 contains data for TMU channel 2
+[snip]
+> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> index a1aa602..a3e78c0 100644
+> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> @@ -6,6 +6,9 @@
+>  	       "samsung,exynos4412-tmu"
+>  	       "samsung,exynos4210-tmu"
+>  	       "samsung,exynos5250-tmu"
+> +	       "samsung,exynos5420-tmu" for TMU channel 0, 1 on Exynos5420
+> +	       "samsung,exynos5420-tmu-ext-triminfo" for TMU channels 2, 3 and 4
+> +			Exynos5420 (Must pass triminfo base and triminfo clock)
 
-diff --git a/include/linux/module.h b/include/linux/module.h
-index 46e548f..eaf60ff 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -29,8 +29,7 @@
- 
- #define MODULE_NAME_LEN MAX_PARAM_PREFIX_LEN
- 
--struct modversion_info
--{
-+struct modversion_info {
- 	unsigned long crc;
- 	char name[MODULE_NAME_LEN];
- };
-@@ -84,12 +83,12 @@ void sort_main_extable(void);
- void trim_init_extable(struct module *m);
- 
- #ifdef MODULE
--#define MODULE_GENERIC_TABLE(gtype,name)			\
-+#define MODULE_GENERIC_TABLE(gtype, name)			\
- extern const struct gtype##_id __mod_##gtype##_table		\
-   __attribute__ ((unused, alias(__stringify(name))))
- 
- #else  /* !MODULE */
--#define MODULE_GENERIC_TABLE(gtype,name)
-+#define MODULE_GENERIC_TABLE(gtype, name)
- #endif
- 
- /* Generic info of form tag = "info" */
-@@ -126,7 +125,7 @@ extern const struct gtype##_id __mod_##gtype##_table		\
-  * is a GPL combined work.
-  *
-  * This exists for several reasons
-- * 1.	So modinfo can show license info for users wanting to vet their setup 
-+ * 1.	So modinfo can show license info for users wanting to vet their setup
-  *	is free
-  * 2.	So the community can ignore bug reports including proprietary modules
-  * 3.	So vendors can do likewise based on their own policies
-@@ -138,27 +137,29 @@ extern const struct gtype##_id __mod_##gtype##_table		\
-  * authors use multiple MODULE_AUTHOR() statements/lines.
-  */
- #define MODULE_AUTHOR(_author) MODULE_INFO(author, _author)
--  
-+
- /* What your module does. */
- #define MODULE_DESCRIPTION(_description) MODULE_INFO(description, _description)
- 
--#define MODULE_DEVICE_TABLE(type,name)		\
--  MODULE_GENERIC_TABLE(type##_device,name)
-+#define MODULE_DEVICE_TABLE(type, name)		\
-+  MODULE_GENERIC_TABLE(type##_device, name)
- 
- /* Version of form [<epoch>:]<version>[-<extra-version>].
--   Or for CVS/RCS ID version, everything but the number is stripped.
--  <epoch>: A (small) unsigned integer which allows you to start versions
--           anew. If not mentioned, it's zero.  eg. "2:1.0" is after
--	   "1:2.0".
--  <version>: The <version> may contain only alphanumerics and the
--           character `.'.  Ordered by numeric sort for numeric parts,
--	   ascii sort for ascii parts (as per RPM or DEB algorithm).
--  <extraversion>: Like <version>, but inserted for local
--           customizations, eg "rh3" or "rusty1".
--
--  Using this automatically adds a checksum of the .c files and the
--  local headers in "srcversion".
--*/
-+ * Or for CVS/RCS ID version, everything but the number is stripped.
-+ * <epoch>: A (small) unsigned integer which allows you to start versions
-+ * anew. If not mentioned, it's zero.  eg. "2:1.0" is after
-+ * "1:2.0".
-+
-+ * <version>: The <version> may contain only alphanumerics and the
-+ * character `.'.  Ordered by numeric sort for numeric parts,
-+ * ascii sort for ascii parts (as per RPM or DEB algorithm).
-+
-+ * <extraversion>: Like <version>, but inserted for local
-+ * customizations, eg "rh3" or "rusty1".
-+
-+ * Using this automatically adds a checksum of the .c files and the
-+ * local headers in "srcversion".
-+ */
- 
- #if defined(MODULE) || !defined(CONFIG_SYSFS)
- #define MODULE_VERSION(_version) MODULE_INFO(version, _version)
-@@ -226,8 +227,7 @@ struct module_ref {
- 	unsigned long decs;
- } __attribute((aligned(2 * sizeof(unsigned long))));
- 
--struct module
--{
-+struct module {
- 	enum module_state state;
- 
- 	/* Member of list of modules */
-@@ -480,8 +480,8 @@ static inline void module_put(struct module *module)
- static inline void __module_get(struct module *module)
- {
- }
--#define symbol_put(x) do { } while(0)
--#define symbol_put_addr(p) do { } while(0)
-+#define symbol_put(x) do { } while (0)
-+#define symbol_put_addr(p) do { } while (0)
- 
- #endif /* CONFIG_MODULE_UNLOAD */
- int ref_module(struct module *a, struct module *b);
-@@ -507,8 +507,8 @@ int lookup_module_symbol_attrs(unsigned long addr, unsigned long *size, unsigned
- /* For extable.c to search modules' exception tables. */
- const struct exception_table_entry *search_module_extables(unsigned long addr);
- 
--int register_module_notifier(struct notifier_block * nb);
--int unregister_module_notifier(struct notifier_block * nb);
-+int register_module_notifier(struct notifier_block *nb);
-+int unregister_module_notifier(struct notifier_block *nb);
- 
- extern void print_modules(void);
- 
-@@ -548,8 +548,8 @@ static inline bool is_module_text_address(unsigned long addr)
- 
- /* Get/put a kernel symbol (calls should be symmetric) */
- #define symbol_get(x) ({ extern typeof(x) x __attribute__((weak)); &(x); })
--#define symbol_put(x) do { } while(0)
--#define symbol_put_addr(x) do { } while(0)
-+#define symbol_put(x) do { } while (0)
-+#define symbol_put_addr(x) do { } while (0)
- 
- static inline void __module_get(struct module *module)
- {
-@@ -606,13 +606,13 @@ static inline int module_kallsyms_on_each_symbol(int (*fn)(void *, const char *,
- 	return 0;
- }
- 
--static inline int register_module_notifier(struct notifier_block * nb)
-+static inline int register_module_notifier(struct notifier_block *nb)
- {
- 	/* no events will happen anyway, so this can always succeed */
- 	return 0;
- }
- 
--static inline int unregister_module_notifier(struct notifier_block * nb)
-+static inline int unregister_module_notifier(struct notifier_block *nb)
- {
- 	return 0;
- }
--- 
-1.7.9.5
+Exact clock names must be specified in description of clock-names property.
+
+>  	       "samsung,exynos5440-tmu"
+>  - interrupt-parent : The phandle for the interrupt controller
+>  - reg : Address range of the thermal registers. For soc's which has multiple
+> @@ -13,6 +16,16 @@
+>  	interrupt related then 2 set of register has to supplied. First set
+>  	belongs	to register set of TMU instance and second set belongs to
+>  	registers shared with the TMU instance.
+> +
+> +  NOTE: On Exynos5420, the TRIMINFO register is misplaced for TMU
+> +	channels 2, 3 and 4
+> +	Use "samsung,exynos5420-tmu-ext-triminfo" in cases, there is a misplaced
+> +	register, also provide clock to access that base.
+> +
+> +	TRIMINFO at 0x1006c000 contains data for TMU channel 3
+> +	TRIMINFO at 0x100a0000 contains data for TMU channel 4
+> +	TRIMINFO at 0x10068000 contains data for TMU channel 2
+> +
+>  - interrupts : Should contain interrupt for thermal system
+>  - clocks : The main clock for TMU device
+>  - clock-names : Thermal system clock name
+> @@ -43,6 +56,31 @@ Example 2):
+>  		clock-names = "tmu_apbif";
+>  	};
+>  
+> +Example 3): (In case of Exynos5420 "with misplaced TRIMINFO register")
+> +	tmu_cpu2: tmu@10068000 {
+> +		compatible = "samsung,exynos5420-tmu-ext-triminfo";
+> +		reg = <0x10068000 0x100>, <0x1006c000 0x4>;
+> +		interrupts = <0 184 0>;
+> +		clocks = <&clock 318>, <&clock 318>;
+> +		clock-names = "tmu_apbif", "tmu_triminfo_apbif";
+
+Here you have "tmu_triminfo_apbif" clock, but in the driver you call
+clk_get() with "tmu_apbif_triminfo".
+
+> +	};
+> +
+[snip]
+>  
+> +	data->clk_sec = devm_clk_get(&pdev->dev, "tmu_apbif_triminfo");
+
+Here you try to get "tmu_apbif_triminfo" clock, but in binding
+documentation you have "tmu_triminfo_apbif" in example.
+
+> +	if (IS_ERR(data->clk_sec)) {
+> +		if (data->soc == SOC_ARCH_EXYNOS5420_TRIMINFO) {
+> +			dev_err(&pdev->dev, "Failed to get triminfo clock\n");
+> +			return PTR_ERR(data->clk_sec);
+> +		}
+> +	} else {
+> +		ret = clk_prepare(data->clk_sec);
+> +		if (ret) {
+> +			dev_err(&pdev->dev, "Failed to get clock\n");
+> +			return ret;
+> +		}
+> +	}
+> +
+>  	ret = clk_prepare(data->clk);
+> -	if (ret)
+> -		return ret;
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to get clock\n");
+> +		goto err_clk_sec;
+> +	}
+>  
+>  	if (pdata->type == SOC_ARCH_EXYNOS4210 ||
+>  	    pdata->type == SOC_ARCH_EXYNOS4412 ||
+>  	    pdata->type == SOC_ARCH_EXYNOS5250 ||
+> +	    pdata->type == SOC_ARCH_EXYNOS5420_TRIMINFO ||
+
+Don't you also need SOC_ARCH_EXYNOS5420 here?
+
+>  	    pdata->type == SOC_ARCH_EXYNOS5440)
+>  		data->soc = pdata->type;
+>  	else {
+> @@ -703,6 +742,9 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+>  	return 0;
+>  err_clk:
+>  	clk_unprepare(data->clk);
+> +err_clk_sec:
+> +	if (!IS_ERR(data->clk_sec))
+> +		clk_unprepare(data->clk_sec);
+>  	return ret;
+>  }
+>  
+> @@ -715,6 +757,8 @@ static int exynos_tmu_remove(struct platform_device *pdev)
+>  	exynos_unregister_thermal(data->reg_conf);
+>  
+>  	clk_unprepare(data->clk);
+> +	if (!IS_ERR(data->clk_sec))
+> +		clk_unprepare(data->clk_sec);
+>  
+>  	if (!IS_ERR(data->regulator))
+>  		regulator_disable(data->regulator);
+> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+> index 0d6b32f..60cce28 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.h
+> +++ b/drivers/thermal/samsung/exynos_tmu.h
+> @@ -43,6 +43,7 @@ enum soc_type {
+>  	SOC_ARCH_EXYNOS4210 = 1,
+>  	SOC_ARCH_EXYNOS4412,
+>  	SOC_ARCH_EXYNOS5250,
+> +	SOC_ARCH_EXYNOS5420_TRIMINFO,
+
+Here as well.
+
+>  	SOC_ARCH_EXYNOS5440,
+>  };
+>  
+[snip]
+> +#define EXYNOS5420_TMU_DATA \
+> +	__EXYNOS5420_TMU_DATA \
+> +	.type = SOC_ARCH_EXYNOS5250, \
+> +	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
+> +			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
+> +			TMU_SUPPORT_EMUL_TIME)
+> +
+> +#define EXYNOS5420_TMU_DATA_SHARED \
+> +	__EXYNOS5420_TMU_DATA \
+> +	.type = SOC_ARCH_EXYNOS5420_TRIMINFO, \
+> +	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
+> +			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
+> +			TMU_SUPPORT_EMUL_TIME | TMU_SUPPORT_ADDRESS_MULTIPLE)
+> +
+> +struct exynos_tmu_init_data const exynos5420_default_tmu_data = {
+> +	.tmu_data = {
+> +		{ EXYNOS5420_TMU_DATA },
+> +		{ EXYNOS5420_TMU_DATA },
+> +		{ EXYNOS5420_TMU_DATA_SHARED },
+> +		{ EXYNOS5420_TMU_DATA_SHARED },
+> +		{ EXYNOS5420_TMU_DATA_SHARED },
+
+Shouldn't this be inferred from compatible string?
+
+If I understand this code correctly, you can now always use
+EXYNOS5420_TMU_DATA for 5420-tmu compatible string and
+EXYNOS5420_TMU_DATA_SHARED for 5420-tmu-ext-triminfo.
+
+Best regards,
+Tomasz
 
