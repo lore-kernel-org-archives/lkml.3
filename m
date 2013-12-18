@@ -1,194 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab3LRG5d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 01:57:33 -0500
-Received: from mga14.intel.com ([143.182.124.37]:58557 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752390Ab3LRG53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 01:57:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,506,1384329600"; 
-   d="scan'208";a="328666689"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Lv Zheng <lv.zheng@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        Ashley Lai <ashley@ashleylai.com>, Peter Huewe <peterhuewe@gmx.de>,
-        Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Sirrix AG <tpmdd@sirrix.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, Jiri Kosina <jkosina@suse.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@acpica.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>
-Subject: [RFC Patch v1 01/13] ACPI: introduce helper interfaces to support ACPI _DSM method
-Date: Wed, 18 Dec 2013 14:58:09 +0800
-Message-Id: <1387349901-3391-2-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1387349901-3391-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1387349901-3391-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1751833Ab3LRHBG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 02:01:06 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:63256 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab3LRGyI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 01:54:08 -0500
+X-AuditID: 9c93017d-b7c5eae000004296-c4-52b1468dfebb
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 05/14] mm, hugetlb: make vma_resv_map() works for all mapping type
+Date: Wed, 18 Dec 2013 15:53:51 +0900
+Message-Id: <1387349640-8071-6-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several drivers making use of ACPI _DSM method to detect
-and invoke device specific methods. Currently every driver has
-implemented its private version to support ACPI _DSM method.
-So this patch introduces three helper functions to support ACPI _DSM
-method, which will be used to replace open-coded versions.
+Util now, we get a resv_map by two ways according to each mapping type.
+This makes code dirty and unreadable. So unfiying it.
 
-It helps to simplify code and improve code readability.
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- drivers/acpi/utils.c    |   98 +++++++++++++++++++++++++++++++++++++++++++++++
- include/acpi/acpi_bus.h |   26 +++++++++++++
- 2 files changed, 124 insertions(+)
-
-diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-index 6d408bf..9517b0a 100644
---- a/drivers/acpi/utils.c
-+++ b/drivers/acpi/utils.c
-@@ -574,3 +574,101 @@ acpi_status acpi_evaluate_lck(acpi_handle handle, int lock)
- 
- 	return status;
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index ef70b6f..f394454 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -417,13 +417,24 @@ void resv_map_release(struct kref *ref)
+ 	kfree(resv_map);
  }
-+
-+/**
-+ * acpi_evaluate_dsm: evaluate device's _DSM method
-+ * @handle: ACPI device handle
-+ * @uuid: UUID of requested functions, should be 16 bytes
-+ * @rev: revision number of requested function
-+ * @func: requested function number
-+ * @argv4: the function specific parameter
-+ *
-+ * Evaluate device's _DSM method with specified UUID, revision id and
-+ * function number. Caller needs to free the returned object.
-+ *
-+ * Though ACPI defines the fourth parameter for _DSM should be a package,
-+ * some old BIOSes do expect a buffer or an integer etc.
-+ */
-+union acpi_object *
-+acpi_evaluate_dsm(acpi_handle handle, const u8 *uuid, int rev, int func,
-+		  union acpi_object *argv4)
+ 
++static inline struct resv_map *inode_resv_map(struct inode *inode)
 +{
-+	acpi_status ret;
-+	struct acpi_buffer buf = {ACPI_ALLOCATE_BUFFER, NULL};
-+	union acpi_object params[4];
-+	struct acpi_object_list input = {
-+		.count = 4,
-+		.pointer = params,
-+	};
++	return inode->i_mapping->private_data;
++}
 +
-+	params[0].type = ACPI_TYPE_BUFFER;
-+	params[0].buffer.length = 16;
-+	params[0].buffer.pointer = (char *)uuid;
-+	params[1].type = ACPI_TYPE_INTEGER;
-+	params[1].integer.value = rev;
-+	params[2].type = ACPI_TYPE_INTEGER;
-+	params[2].integer.value = func;
-+	if (argv4) {
-+		params[3] = *argv4;
+ static struct resv_map *vma_resv_map(struct vm_area_struct *vma)
+ {
+ 	VM_BUG_ON(!is_vm_hugetlb_page(vma));
+-	if (!(vma->vm_flags & VM_MAYSHARE))
++	if (vma->vm_flags & VM_MAYSHARE) {
++		struct address_space *mapping = vma->vm_file->f_mapping;
++		struct inode *inode = mapping->host;
++
++		return inode_resv_map(inode);
++
 +	} else {
-+		params[3].type = ACPI_TYPE_PACKAGE;
-+		params[3].package.count = 0;
-+		params[3].package.elements = NULL;
+ 		return (struct resv_map *)(get_vma_private_data(vma) &
+ 							~HPAGE_RESV_MASK);
+-	return NULL;
 +	}
-+
-+	ret = acpi_evaluate_object(handle, "_DSM", &input, &buf);
-+	if (ACPI_SUCCESS(ret))
-+		return (union acpi_object *)buf.pointer;
-+
-+	if (ret != AE_NOT_FOUND)
-+		acpi_handle_warn(handle,
-+				"failed to evaluate _DSM method (0x%x)\n", ret);
-+
-+	return NULL;
-+}
-+EXPORT_SYMBOL(acpi_evaluate_dsm);
-+
-+/**
-+ * acpi_check_dsm: check whether _DSM method under @handle supports
-+ *		   requested functions.
-+ * @handle: ACPI device handle
-+ * @uuid: UUID of requested functions, should be 16 bytes at least
-+ * @rev: revision number of requested functions
-+ * @funcs: bitmap of requested functions
-+ * @exclude: excluding special value, used to support i915 and nouveau
-+ *
-+ * Evaluate device's _DSM method to check whether it supports requested
-+ * functions. Currently only support 64 functions at maximum, should be
-+ * enough for now.
-+ */
-+bool acpi_check_dsm(acpi_handle handle, const u8 *uuid, int rev, u64 funcs)
-+{
-+	int i;
-+	u64 mask = 0;
-+	union acpi_object *obj;
-+
-+	if (funcs == 0)
-+		return false;
-+
-+	obj = acpi_evaluate_dsm(handle, uuid, rev, 0, NULL);
-+	if (!obj)
-+		return false;
-+
-+	/* For compatibility, old BIOSes may return an integer */
-+	if (obj->type == ACPI_TYPE_INTEGER)
-+		mask = obj->integer.value;
-+	else if (obj->type == ACPI_TYPE_BUFFER)
-+		for (i = 0; i < obj->buffer.length && i < 8; i++)
-+			mask |= (((u8)obj->buffer.pointer[i]) << (i * 8));
-+	ACPI_FREE(obj);
-+
-+	/*
-+	 * Bit 0 indicates whether there's support for any functions other than
-+	 * function 0 for the specified UUID and revision.
-+	 */
-+	if ((mask & 0x1) && (mask & funcs) == funcs)
-+		return true;
-+
-+	return false;
-+}
-+EXPORT_SYMBOL(acpi_check_dsm);
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index c602c77..efccf39 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -66,6 +66,32 @@ bool acpi_ata_match(acpi_handle handle);
- bool acpi_bay_match(acpi_handle handle);
- bool acpi_dock_match(acpi_handle handle);
+ }
  
-+bool acpi_check_dsm(acpi_handle handle, const u8 *uuid, int rev, u64 funcs);
-+union acpi_object *acpi_evaluate_dsm(acpi_handle handle, const u8 *uuid,
-+			int rev, int func, union acpi_object *argv4);
-+
-+static inline union acpi_object *
-+acpi_evaluate_dsm_typed(acpi_handle handle, const u8 *uuid, int rev, int func,
-+			union acpi_object *argv4, acpi_object_type type)
-+{
-+	union acpi_object *obj;
-+
-+	obj = acpi_evaluate_dsm(handle, uuid, rev, func, argv4);
-+	if (obj && obj->type != type) {
-+		ACPI_FREE(obj);
-+		obj = NULL;
-+	}
-+
-+	return obj;
-+}
-+
-+#define	ACPI_INIT_DSM_ARGV4(cnt, eles)			\
-+	{						\
-+	  .type = ACPI_TYPE_PACKAGE,			\
-+	  .package.count = (cnt),			\
-+	  .package.elements = (eles)			\
-+	}
-+
- #ifdef CONFIG_ACPI
+ static void set_vma_resv_map(struct vm_area_struct *vma, struct resv_map *map)
+@@ -1174,48 +1185,34 @@ static void return_unused_surplus_pages(struct hstate *h,
+ static long vma_needs_reservation(struct hstate *h,
+ 			struct vm_area_struct *vma, unsigned long addr)
+ {
+-	struct address_space *mapping = vma->vm_file->f_mapping;
+-	struct inode *inode = mapping->host;
+-
+-	if (vma->vm_flags & VM_MAYSHARE) {
+-		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+-		struct resv_map *resv = inode->i_mapping->private_data;
+-
+-		return region_chg(resv, idx, idx + 1);
++	struct resv_map *resv;
++	pgoff_t idx;
++	long chg;
  
- #include <linux/proc_fs.h>
+-	} else if (!is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
++	resv = vma_resv_map(vma);
++	if (!resv)
+ 		return 1;
+ 
+-	} else  {
+-		long err;
+-		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+-		struct resv_map *resv = vma_resv_map(vma);
++	idx = vma_hugecache_offset(h, vma, addr);
++	chg = region_chg(resv, idx, idx + 1);
+ 
+-		err = region_chg(resv, idx, idx + 1);
+-		if (err < 0)
+-			return err;
+-		return 0;
+-	}
++	if (vma->vm_flags & VM_MAYSHARE)
++		return chg;
++	else
++		return chg < 0 ? chg : 0;
+ }
+ static void vma_commit_reservation(struct hstate *h,
+ 			struct vm_area_struct *vma, unsigned long addr)
+ {
+-	struct address_space *mapping = vma->vm_file->f_mapping;
+-	struct inode *inode = mapping->host;
+-
+-	if (vma->vm_flags & VM_MAYSHARE) {
+-		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+-		struct resv_map *resv = inode->i_mapping->private_data;
+-
+-		region_add(resv, idx, idx + 1);
++	struct resv_map *resv;
++	pgoff_t idx;
+ 
+-	} else if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
+-		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+-		struct resv_map *resv = vma_resv_map(vma);
++	resv = vma_resv_map(vma);
++	if (!resv)
++		return;
+ 
+-		/* Mark this page used in the map. */
+-		region_add(resv, idx, idx + 1);
+-	}
++	idx = vma_hugecache_offset(h, vma, addr);
++	region_add(resv, idx, idx + 1);
+ }
+ 
+ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+@@ -2278,7 +2275,7 @@ static void hugetlb_vm_op_open(struct vm_area_struct *vma)
+ 	 * after this open call completes.  It is therefore safe to take a
+ 	 * new reference here without additional locking.
+ 	 */
+-	if (resv)
++	if (resv && is_vma_resv_set(vma, HPAGE_RESV_OWNER))
+ 		kref_get(&resv->refs);
+ }
+ 
+@@ -2291,7 +2288,10 @@ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
+ 	unsigned long start;
+ 	unsigned long end;
+ 
+-	if (resv) {
++	if (!resv)
++		return;
++
++	if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
+ 		start = vma_hugecache_offset(h, vma, vma->vm_start);
+ 		end = vma_hugecache_offset(h, vma, vma->vm_end);
+ 
+@@ -3185,7 +3185,7 @@ int hugetlb_reserve_pages(struct inode *inode,
+ 	 * called to make the mapping read-write. Assume !vma is a shm mapping
+ 	 */
+ 	if (!vma || vma->vm_flags & VM_MAYSHARE) {
+-		resv_map = inode->i_mapping->private_data;
++		resv_map = inode_resv_map(inode);
+ 
+ 		chg = region_chg(resv_map, from, to);
+ 
+@@ -3244,7 +3244,7 @@ out_err:
+ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
+ {
+ 	struct hstate *h = hstate_inode(inode);
+-	struct resv_map *resv_map = inode->i_mapping->private_data;
++	struct resv_map *resv_map = inode_resv_map(inode);
+ 	long chg = 0;
+ 	struct hugepage_subpool *spool = subpool_inode(inode);
+ 
 -- 
-1.7.10.4
+1.7.9.5
 
