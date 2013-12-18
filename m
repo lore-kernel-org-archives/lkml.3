@@ -1,99 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab3LRBCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 20:02:13 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:42983 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278Ab3LRBCK (ORCPT
+	id S1752846Ab3LRBDI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 20:03:08 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53957 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752432Ab3LRBDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 20:02:10 -0500
-Date: Tue, 17 Dec 2013 18:02:07 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Rajat Jain <rajatjain.linux@gmail.com>
-Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yhlu.kernel@gmail.com>,
-        Guenter Roeck <groeck@juniper.net>, Rajat Jain <rajatjain@juniper.net>,
-        Rajat Jain <rajatxjain@gmail.com>, yinghai@kernel.org
-Subject: Re: [PATCH v3 4/8] pciehp: Don't disable the link permanently,
- during removal
-Message-ID: <20131218010207.GC15119@google.com>
-References: <52B0AEAD.6050604@gmail.com>
+	Tue, 17 Dec 2013 20:03:06 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
+        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system suspend/hibernation
+Date: Wed, 18 Dec 2013 02:16:24 +0100
+Message-ID: <1894234.3Ripn7cUXR@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CA+5PVA4g_gG_1w5R_2BQU328BJ59Cq8xiv_BXomXz3FDhFSCzw@mail.gmail.com>
+References: <201201281445.49377.rjw@sisk.pl> <8515354.2dTerOA9sd@vostro.rjw.lan> <CA+5PVA4g_gG_1w5R_2BQU328BJ59Cq8xiv_BXomXz3FDhFSCzw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B0AEAD.6050604@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc yinghai@kernel.org (seems to be Yinghai's preferred email]
-
-On Tue, Dec 17, 2013 at 12:06:05PM -0800, Rajat Jain wrote:
-> We need future link up events for hot-add, thus don't disable
-> the link permanently during device removal. Also, remove the static
-> functions that are now left unused.
-
-The changelog should mention that this reverts part of 2debd9289997 ("PCI:
-pciehp: Disable/enable link during slot power off/on").
-
-Yinghai, can you tell us whether this is an issue on your systems?
-
-> Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-> Signed-off-by: Guenter Roeck <groeck@juniper.net>
-> ---
-> v3: no change, created by splitting the patch v2 [2/4]
-> v2: (non existent)
-> v1: (non existent)
+On Tuesday, December 17, 2013 08:00:55 PM Josh Boyer wrote:
+> On Tue, Dec 17, 2013 at 7:52 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Tuesday, December 17, 2013 11:04:46 AM Josh Boyer wrote:
+> >> On Tue, Dec 17, 2013 at 11:03 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> >> > On Fri, May 25, 2012 at 3:13 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> >> On Friday, May 25, 2012, Josh Boyer wrote:
+> >> >>> On Fri, Feb 17, 2012 at 3:59 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> >>> >> commit b94887bbc0621e1e8402e7f0ec4bc3adf46c9a6e
+> >> >>> >> Author: Rafael J. Wysocki <rjw@sisk.pl>
+> >> >>> >> Date:   Fri Feb 17 12:42:08 2012 -0500
+> >> >>> >>
+> >> >>> >>     Freeze all filesystems during system suspend and (kernel-driven)
+> >> >>> >>     hibernation by calling freeze_supers() for all superblocks and thaw
+> >> >>> >>     them during the subsequent resume with the help of thaw_supers().
+> >> >>> >>
+> >> >>> >>     This makes filesystems stay in a consistent state in case something
+> >> >>> >>     goes wrong between system suspend (or hibernation) and the subsequent
+> >> >>> >>     resume (e.g. journal replays won't be necessary in those cases).  In
+> >> >>> >>     particular, this should help to solve a long-standing issue that, in
+> >> >>> >>     some cases, during resume from hibernation the boot loader causes the
+> >> >>> >>     journal to be replied for the filesystem containing the kernel image
+> >> >>> >>     and/or initrd causing it to become inconsistent with the information
+> >> >>> >>     stored in the hibernation image.
+> >> >>> >>
+> >> >>> >>     The user-space-driven hibernation (s2disk) is not covered by this
+> >> >>> >>     change, because the freezing of filesystems prevents s2disk from
+> >> >>> >>     accessing device special files it needs to do its job.
+> >> >>> >>
+> >> >>> >>     This change is based on earlier work by Nigel Cunningham.
+> >> >>> >>
+> >> >>> >>     Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> >> >>> >>
+> >> >>> >>     Rebased to 3.3-rc3 by Josh Boyer <jwboyer@redhat.com>
+> >> >>>
+> >> >>> Did this patch ever wind up going anywhere?  Fedora has it sitting in
+> >> >>> our tree with a comment that says "rebase" and I don't see it in the
+> >> >>> linux-next tree at all.
+> >> >>>
+> >> >>> Did if fall through the cracks or was it NAKed somewhere?
+> >> >>
+> >> >> No, it wasn't in principle. There were some comments I haven't addressed yet.
+> >> >
+> >> > Dredging up a really old thread, sorry.
+> >> >
+> >> > We're still carrying this patch along in Fedora.  Should we drop it at
+> >> > this point, or is it still eventually going to head upstream?
+> >>
+> >> Fixed Rafael's email address.  (Double sorry.)
+> >
+> > No biggie.
+> >
+> > I just hadn't got sufficient response for that patch at the time it was
+> > submitted, so I guess it would be good to resubmit it.  Please feel free to
+> > do that if you want.
 > 
->  drivers/pci/hotplug/pciehp_hpc.c |   18 ------------------
->  1 file changed, 18 deletions(-)
-> 
-> diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
-> index b45b568..ab12555 100644
-> --- a/drivers/pci/hotplug/pciehp_hpc.c
-> +++ b/drivers/pci/hotplug/pciehp_hpc.c
-> @@ -278,11 +278,6 @@ static void pcie_wait_link_active(struct controller *ctrl)
->  	__pcie_wait_link_active(ctrl, true);
->  }
->  
-> -static void pcie_wait_link_not_active(struct controller *ctrl)
-> -{
-> -	__pcie_wait_link_active(ctrl, false);
-> -}
-> -
->  static bool pci_bus_check_dev(struct pci_bus *bus, int devfn)
->  {
->  	u32 l;
-> @@ -383,11 +378,6 @@ static int pciehp_link_enable(struct controller *ctrl)
->  	return __pciehp_link_set(ctrl, true);
->  }
->  
-> -static int pciehp_link_disable(struct controller *ctrl)
-> -{
-> -	return __pciehp_link_set(ctrl, false);
-> -}
-> -
->  int pciehp_get_attention_status(struct slot *slot, u8 *status)
->  {
->  	struct controller *ctrl = slot->ctrl;
-> @@ -620,14 +610,6 @@ int pciehp_power_off_slot(struct slot * slot)
->  	u16 cmd_mask;
->  	int retval;
->  
-> -	/* Disable the link at first */
-> -	pciehp_link_disable(ctrl);
-> -	/* wait the link is down */
-> -	if (ctrl->link_active_reporting)
-> -		pcie_wait_link_not_active(ctrl);
-> -	else
-> -		msleep(1000);
-> -
->  	slot_cmd = POWER_OFF;
->  	cmd_mask = PCI_EXP_SLTCTL_PCC;
->  	retval = pcie_write_cmd(ctrl, slot_cmd, cmd_mask);
-> -- 
-> 1.7.9.5
-> 
+> You want me to resend a patch you authored back to you?  I mean, I can
+> do that but it seems a bit strange.  All I did was rebase what you
+> wrote to a newer kernel version.
+
+Well, you can send it to me in private then and I'll resubmit. :-)
+
+I just don't have any recent version of it handy.
+
+Thanks,
+Rafael
+
