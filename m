@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab3LRMj6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 07:39:58 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:56334 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751474Ab3LRMj4 (ORCPT
+	id S1754050Ab3LRMlc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 07:41:32 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:45453 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673Ab3LRMlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 07:39:56 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqYJAL6WsVJ5LHyk/2dsb2JhbABSB4MKgzywZIVQgRoXdIIlAQEBAwE6HCMFCwgDGAklDwUlAyETh3wHyXwXFo40SAeENgSYFZIVgW2BUiiBLCM
-Date: Wed, 18 Dec 2013 23:39:52 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, Nigel Cunningham <nigel@tuxonice.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system
- suspend/hibernation
-Message-ID: <20131218123952.GI31386@dastard>
-References: <201201281445.49377.rjw@sisk.pl>
- <201202172159.15396.rjw@sisk.pl>
- <CA+5PVA50UA1oP1jKgnQjHh8APp=cNWREw3bkfrkV1OW_Tg1g+A@mail.gmail.com>
- <201205252113.50900.rjw@sisk.pl>
- <CA+5PVA5GWsTdNky-K1-hu5_R55hdKfr-Oa26HpX=FdA1cRZsbQ@mail.gmail.com>
- <CA+5PVA7vsZPd9eXwN-Q+d8c9+0bAmVdr698vv+LFyrn+3iFOMA@mail.gmail.com>
- <20131217230843.GA2911@amd.pavel.ucw.cz>
- <20131217233152.GC20579@dastard>
- <20131218000128.GA3737@amd.pavel.ucw.cz>
+	Wed, 18 Dec 2013 07:41:31 -0500
+Date: Wed, 18 Dec 2013 04:41:26 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Zach Brown <zab@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [RFC] extending splice for copy offloading
+Message-ID: <20131218124126.GA15328@infradead.org>
+References: <1378919210-10372-1-git-send-email-zab@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131218000128.GA3737@amd.pavel.ucw.cz>
+In-Reply-To: <1378919210-10372-1-git-send-email-zab@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 01:01:28AM +0100, Pavel Machek wrote:
-> On Wed 2013-12-18 10:31:52, Dave Chinner wrote:
-> > On Wed, Dec 18, 2013 at 12:08:43AM +0100, Pavel Machek wrote:
-> > > Hi!
-> > > 
-> > > > >>> Did this patch ever wind up going anywhere?  Fedora has it sitting in
-> > > > >>> our tree with a comment that says "rebase" and I don't see it in the
-> > > > >>> linux-next tree at all.
-> > > > >>>
-> > > > >>> Did if fall through the cracks or was it NAKed somewhere?
-> > > > >>
-> > > > >> No, it wasn't in principle. There were some comments I haven't addressed yet.
-> > > > >
-> > > > > Dredging up a really old thread, sorry.
-> > > > >
-> > > > > We're still carrying this patch along in Fedora.  Should we drop it at
-> > > > > this point, or is it still eventually going to head upstream?
-> > > 
-> > > I'd say drop.
-> > 
-> > I disagree - given the problem it is resolving leads to silent
-> > filesystem corruption, this patch should be considered somewhat of a
-> > priority to push...
+On Wed, Sep 11, 2013 at 10:06:47AM -0700, Zach Brown wrote:
+> When I first started on this stuff I followed the lead of previous
+> work and added a new syscall for the copy operation:
 > 
-> Umm. Ok, I forgot what it does, really.
+> https://lkml.org/lkml/2013/5/14/618
+> 
+> Towards the end of that thread Eric Wong asked why we didn't just
+> extend splice.  I immediately replied with some dumb dismissive
+> answer.  Once I sat down and looked at it, though, it does make a
+> lot of sense.  So good job, Eric.  +10 Dummie points for me.
+> 
+> Extending splice avoids all the noise of adding a new syscall and
+> naturally falls back to buffered copying as that's what the direct
+> splice path does for sendfile() today.
 
-It ensures that the filesystem is in an quiescent state both in
-memory and on disk, and it cannot be modified in memory or on disk
-whilst the suspend image is being generated, or by log recovery
-after a resume before the suspended image has been restored.
+Given the convolute mess that the splice code already is I'd rather
+prefer not overloading it even further.
 
-> So... for few years now suspend corrupts data on XFS? And Fedora has
-> the fix but it is not in mainline? That does not sound right...
+Instead I'd make the sendfile code path that already works different
+in practice separate first, and then generalize it to a copy chunk
+syscall using the same code path.
 
-The issues freezing the filesystem before the suspend image is
-created affect every journalled filesystem linux supports, be
-it XFS, ext4, reiser, btrfs, etc.
+We can still fall back to the splice code as a fallback if no option
+is provided as a last resort, but I think making the splice code handle
+even more totally different cases is the wrong direction.
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
