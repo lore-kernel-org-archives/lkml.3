@@ -1,115 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab3LRJWc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 04:22:32 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:51618 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752301Ab3LRJW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 04:22:26 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <dmitry.torokhov@gmail.com>
-CC: <rydberg@euromail.se>, <jcbian@pixcir.com.cn>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 4/9] Input: pixcir_i2c_ts: Use devres managed resource allocations
-Date: Wed, 18 Dec 2013 14:51:15 +0530
-Message-ID: <1387358480-8313-5-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387358480-8313-1-git-send-email-rogerq@ti.com>
-References: <1387358480-8313-1-git-send-email-rogerq@ti.com>
+	id S1753676Ab3LRJZp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 04:25:45 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:46553 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753351Ab3LRJZj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 04:25:39 -0500
+Date: Wed, 18 Dec 2013 10:25:31 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1652328425.20131218102531@eikelenboom.it>
+To: Arend van Spriel <arend@broadcom.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Julian Calaby <julian.calaby@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Avinash Patil <avinashapatil@gmail.com>
+Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
+In-Reply-To: <52B167F6.5060209@broadcom.com>
+References: <1342235583.20131211182804@eikelenboom.it> <CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com> <871324710.20131211191104@eikelenboom.it> <CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com> <1937118387.20131216122200@eikelenboom.it> <52AEE60B.6030509@broadcom.com> <19210260274.20131216135644@eikelenboom.it> <CAGRGNgXHemM2FfnXgW5RbzhFT+9SfUfVkjdysK3+=_u3hWSacw@mail.gmail.com> <1534126119.20131217104548@eikelenboom.it> <387552477.20131217213319@eikelenboom.it> <20131217212709.GB5624@decadent.org.uk> <1254825772.20131217224914@eikelenboom.it> <CA+55aFxQg6=MAWEkEGz64Hz8OawvPyX=fpBOjY8cGBL5XgB9WQ@mail.gmail.com> <52B167F6.5060209@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_() and friends for allocating memory, input device
-and IRQ.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
----
- drivers/input/touchscreen/pixcir_i2c_ts.c | 35 ++++++++++++-------------------
- 1 file changed, 13 insertions(+), 22 deletions(-)
+Wednesday, December 18, 2013, 10:16:38 AM, you wrote:
 
-diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
-index ce8abcd..3370fd9 100644
---- a/drivers/input/touchscreen/pixcir_i2c_ts.c
-+++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
-@@ -346,12 +346,14 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 		return -EINVAL;
- 	}
- 
--	tsdata = kzalloc(sizeof(*tsdata), GFP_KERNEL);
--	input = input_allocate_device();
--	if (!tsdata || !input) {
--		dev_err(&client->dev, "Failed to allocate driver data!\n");
--		error = -ENOMEM;
--		goto err_free_mem;
-+	tsdata = devm_kzalloc(dev, sizeof(*tsdata), GFP_KERNEL);
-+	if (!tsdata)
-+		return -ENOMEM;
-+
-+	input = devm_input_allocate_device(dev);
-+	if (!input) {
-+		dev_err(&client->dev, "Failed to allocate input device\n");
-+		return -ENOMEM;
- 	}
- 
- 	tsdata->client = client;
-@@ -378,12 +380,12 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 
- 	input_set_drvdata(input, tsdata);
- 
--	error = request_threaded_irq(client->irq, NULL, pixcir_ts_isr,
-+	error = devm_request_threaded_irq(dev, client->irq, NULL, pixcir_ts_isr,
- 				     IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
- 				     client->name, tsdata);
- 	if (error) {
--		dev_err(&client->dev, "Unable to request touchscreen IRQ.\n");
--		goto err_free_mem;
-+		dev_err(dev, "failed to request irq %d\n", client->irq);
-+		return error;
- 	}
- 
- 	/* Always be in IDLE mode to save power, device supports auto wake */
-@@ -396,23 +398,16 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 	/* Stop device till opened */
- 	error = pixcir_stop(tsdata);
- 	if (error)
--		goto err_free_irq;
-+		return error;
- 
- 	error = input_register_device(input);
- 	if (error)
--		goto err_free_irq;
-+		return error;
- 
- 	i2c_set_clientdata(client, tsdata);
- 	device_init_wakeup(&client->dev, 1);
- 
- 	return 0;
--
--err_free_irq:
--	free_irq(client->irq, tsdata);
--err_free_mem:
--	input_free_device(input);
--	kfree(tsdata);
--	return error;
- }
- 
- static int pixcir_i2c_ts_remove(struct i2c_client *client)
-@@ -423,10 +418,6 @@ static int pixcir_i2c_ts_remove(struct i2c_client *client)
- 
- 	tsdata->exiting = true;
- 	mb();
--	free_irq(client->irq, tsdata);
--
--	input_unregister_device(tsdata->input);
--	kfree(tsdata);
- 
- 	return 0;
- }
--- 
-1.8.3.2
+> On 12/17/2013 11:06 PM, Linus Torvalds wrote:
+>> We have literally had this *exact* same issue with firmware loading.
+>> Network drivers shouldn't try to load firmware at module load time.
+>> Same deal.
+
+> It is kind of a chicken and egg problem for (wireless) networking
+> drivers. To get IFF_UP from the network layer you have to register a
+> netdevice. For wireless drivers this means you have to register a wiphy
+> device with cfg80211 which flags capabilities and optionally are custom
+> regulatory domain. That information depends on the device and firmware
+> used. And there we have a full circle.
+
+Very well, but:
+
+If it can't access the CRDA and it is setting the world domain, why on earth is it blocking any
+subsequent requests to setting the regulatory domain from userspace when the CRDA *is* accessible ?
+
+I mean, i could see the need to do something *temporary* at boot when accessing the CRDA fails and to take the most
+safe default for the time being ..
+
+The BUG is that it is NOT temporary, but blocking until next reboot because the first request wasn't completely processed.
+My hostapd will try to set the domain when it starts and at that point the CRDA is accessible, so it would set it from the temporary
+domain to the one specified, as long as it isn't blocking.
+
+> Regards,
+> Arend
+
 
