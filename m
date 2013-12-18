@@ -1,129 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab3LRICg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 03:02:36 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:55765 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab3LRICe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 03:02:34 -0500
-Message-ID: <52B1568F.1050305@gmail.com>
-Date: Wed, 18 Dec 2013 16:02:23 +0800
-From: Mark Zhang <nvmarkzhang@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        swarren@nvidia.com, will.deacon@arm.com, grant.likely@linaro.org,
-        thierry.reding@gmail.com, robherring2@gmail.com, joro@8bytes.org
-CC: mark.rutland@arm.com, devicetree@vger.kernel.org,
-        lorenzo.pieralisi@arm.com, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, galak@codeaurora.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv7 06/12] ARM: tegra: create a DT header defining SWGROUP
- ID
-References: <1386835033-4701-1-git-send-email-hdoyu@nvidia.com> <1386835033-4701-7-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1386835033-4701-7-git-send-email-hdoyu@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751764Ab3LRIEz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 03:04:55 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:53188 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab3LRIEy convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Wed, 18 Dec 2013 03:04:54 -0500
+Message-Id: <52B16533020000780010E890@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 18 Dec 2013 08:04:51 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Tony Luck" <tony.luck@intel.com>
+Cc: "Matt Fleming" <matt.fleming@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] don't select EFI from certain special ACPI drivers
+References: <52AF1EBC020000780010DBF9@nat28.tlf.novell.com>
+ <3908561D78D1C84285E8C5FCA982C28F31D8A4C2@ORSMSX106.amr.corp.intel.com>
+ <52B013E8020000780010E009@nat28.tlf.novell.com>
+ <3908561D78D1C84285E8C5FCA982C28F31D8B8CE@ORSMSX106.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31D8B8CE@ORSMSX106.amr.corp.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2013 03:57 PM, Hiroshi Doyu wrote:
-> Create a header file to define the swgroup IDs used by the IOMMU(SMMU)
-> binding. "swgroup" is a group of H/W clients which a Tegra SoC
-> supports. This unique ID can be used to calculate MC_SMMU_<swgroup
-> name>_ASID_0 register offset and MC_<swgroup name>_HOTRESET_*_0
-> register bit. This will allow the same header to be used by both
-> device tree files, and drivers implementing this binding, which
-> guarantees that the two stay in sync. This also makes device trees
-> more readable by using names instead of magic numbers. For HOTRESET
-> bit shifting we need another conversion table, which will come later.
+>>> On 17.12.13 at 23:34, "Luck, Tony" <tony.luck@intel.com> wrote:
+>>  No, it hasn't. But I explicitly checked the relevant EFI=n and EFI=y
+>> cases.
 > 
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> ---
-> v6:
-> Use 0xffffffff instead of ~0UL since dtc expand this to ~0ULL.
-> 
-> v5:
-> Added new macro TEGRA_SWGROUP_CELLS() and WO_U32_OF_U64().
-> 
-> v4:
-> This is almost same as the previous v3. Just TEGRA_SWGROUP_MAX is
-> added.
->   [PATCHv3 15/19] ARM: tegra: Create a DT header defining SWGROUP ID
-> 
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> ---
->  include/dt-bindings/memory/tegra-swgroup.h | 50 ++++++++++++++++++++++++++++++
->  1 file changed, 50 insertions(+)
->  create mode 100644 include/dt-bindings/memory/tegra-swgroup.h
-> 
-> diff --git a/include/dt-bindings/memory/tegra-swgroup.h b/include/dt-bindings/memory/tegra-swgroup.h
-> new file mode 100644
-> index 0000000..9c279f1
-> --- /dev/null
-> +++ b/include/dt-bindings/memory/tegra-swgroup.h
-> @@ -0,0 +1,50 @@
-> +/*
-> + * This header provides constants for binding nvidia,swgroup ID
-> + */
-> +
-> +#ifndef _DT_BINDINGS_MEMORY_TEGRA_SWGROUP_H
-> +#define _DT_BINDINGS_MEMORY_TEGRA_SWGROUP_H
-> +
-> +#define TEGRA_SWGROUP_AFI	0	/* 0x238 */
-> +#define TEGRA_SWGROUP_AVPC	1	/* 0x23c */
-> +#define TEGRA_SWGROUP_DC	2	/* 0x240 */
-> +#define TEGRA_SWGROUP_DCB	3	/* 0x244 */
-> +#define TEGRA_SWGROUP_EPP	4	/* 0x248 */
-> +#define TEGRA_SWGROUP_G2	5	/* 0x24c */
-> +#define TEGRA_SWGROUP_HC	6	/* 0x250 */
-> +#define TEGRA_SWGROUP_HDA	7	/* 0x254 */
-> +#define TEGRA_SWGROUP_ISP	8	/* 0x258 */
-> +#define TEGRA_SWGROUP_ISP2	SWGROUP_ISP
-> +#define TEGRA_SWGROUP_DC14	9	/* 0x490 *//* Exceptional non-linear */
-> +#define TEGRA_SWGROUP_DC12	10	/* 0xa88 *//* Exceptional non-linear */
-> +#define TEGRA_SWGROUP_MPE	11	/* 0x264 */
-> +#define TEGRA_SWGROUP_MSENC	SWGROUP_MPE
+> I pushed your patch into my "next" tree - the robots will notice soon and 
+> send us e-mail if they find any issues.
 
-Need to change this to:
+Thanks, Tony. I'm afraid though that fixing this only in 3.14 would
+be a little late: Any "select" in a Kconfig results in the user not being
+asked again when that "select" goes away, so people having got EFI
+forcibly enabled in 3.13 and updating their configs to 3.14 would
+then need to remember to manually disable CONFIG_EFI again (of
+course that's already true for anyone using 3.13-rc?, but those
+should mostly be people more knowledgeable than folks just
+consuming final releases).
 
-#define TEGRA_SWGROUP_MSENC	11
+I think it should generally be the exception to "select" options that
+have visible prompts (i.e. are user configurable).
 
-The reason is that, this makes "TEGRA_SWGROUP_BIT" doesn't work. So if I
-write "TEGRA_SWGROUP_CELLS(MSENC)" in dt, that causes a dt compiling error.
+Jan
 
-"TEGRA_SWGROUP_ISP2" has the same issue.
-
-Mark
-> +#define TEGRA_SWGROUP_NV	12	/* 0x268 */
-> +#define TEGRA_SWGROUP_NV2	13	/* 0x26c */
-> +#define TEGRA_SWGROUP_PPCS	14	/* 0x270 */
-> +#define TEGRA_SWGROUP_SATA2	15	/* 0x274 */
-> +#define TEGRA_SWGROUP_SATA	16	/* 0x278 */
-> +#define TEGRA_SWGROUP_VDE	17	/* 0x27c */
-> +#define TEGRA_SWGROUP_VI	18	/* 0x280 */
-> +#define TEGRA_SWGROUP_VIC	19	/* 0x284 */
-> +#define TEGRA_SWGROUP_XUSB_HOST	20	/* 0x288 */
-> +#define TEGRA_SWGROUP_XUSB_DEV	21	/* 0x28c */
-> +#define TEGRA_SWGROUP_A9AVP	22	/* 0x290 */
-> +#define TEGRA_SWGROUP_TSEC	23	/* 0x294 */
-> +#define TEGRA_SWGROUP_PPCS1	24	/* 0x298 */
-> +#define TEGRA_SWGROUP_SDMMC1A	25	/* 0xa94 *//* Linear shift again */
-> +#define TEGRA_SWGROUP_SDMMC2A	26	/* 0xa98 */
-> +#define TEGRA_SWGROUP_SDMMC3A	27	/* 0xa9c */
-> +#define TEGRA_SWGROUP_SDMMC4A	28	/* 0xaa0 */
-> +#define TEGRA_SWGROUP_ISP2B	29	/* 0xaa4 */
-> +#define TEGRA_SWGROUP_GPU	30	/* 0xaa8 */
-> +#define TEGRA_SWGROUP_GPUB	31	/* 0xaac */
-> +#define TEGRA_SWGROUP_PPCS2	32	/* 0xab0 */
-> +
-> +#define TWO_U32_OF_U64(x)	((x) & 0xffffffff) ((x) >> 32)
-> +#define TEGRA_SWGROUP_BIT(x)	(1ULL << TEGRA_SWGROUP_##x)
-> +#define TEGRA_SWGROUP_CELLS(x)	TWO_U32_OF_U64(TEGRA_SWGROUP_BIT(x))
-> +
-> +#define TEGRA_SWGROUP_MAX	64
-> +
-> +#endif /* _DT_BINDINGS_MEMORY_TEGRA_SWGROUP_H */
-> 
