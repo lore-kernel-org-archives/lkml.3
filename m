@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab3LRIsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 03:48:24 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:38799 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab3LRIsW (ORCPT
+	id S1753148Ab3LRItK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 03:49:10 -0500
+Received: from www.linutronix.de ([62.245.132.108]:43359 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab3LRItI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 03:48:22 -0500
+	Wed, 18 Dec 2013 03:49:08 -0500
+Message-ID: <52B16182.9090209@linutronix.de>
+Date: Wed, 18 Dec 2013 09:49:06 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-In-Reply-To: <s5hfvpqk0p8.wl%tiwai@suse.de>
-References: <s5hlhzik3kk.wl%tiwai@suse.de>
-	<CANq1E4TFKDduy71jCXy+8CMS1_OFxWEpsHY3AA0RUJPW4VE8hg@mail.gmail.com>
-	<s5hfvpqk0p8.wl%tiwai@suse.de>
-Date: Wed, 18 Dec 2013 09:48:21 +0100
-X-Google-Sender-Auth: fpwnZuSdX17Zm31iBm-RVxRX3ec
-Message-ID: <CAMuHMdXk6EVdKGH5qq2qeT4b_ZvVxoqsYhBUv+cL2uAeFbpzRw@mail.gmail.com>
-Subject: Re: cirrusdrmfb broken with simplefb
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: David Herrmann <dh.herrmann@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Allen Pais <allen.pais@oracle.com>
+CC: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [PATCH 2/3] [RESEND]sparc64: convert spinloc_t to raw_spinlock_t
+ in  mmu_context_t
+References: <1387345326-20185-1-git-send-email-allen.pais@oracle.com>
+In-Reply-To: <1387345326-20185-1-git-send-email-allen.pais@oracle.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 9:44 AM, Takashi Iwai <tiwai@suse.de> wrote:
->> That bug always existed, simplefb is just the first driver to hit it
->> (vesafb/efifb didn't use resources).
->
-> Heh, the bug didn't "exist" because no other grabbed the resource
-> before.  The way the cirrus driver allocates the resource is no bug,
-> per se.  But the proper resource takeover is missing.
->
->> I'm aware of the issue but as a
->> workaround you can simply disable CONFIG_X86_SYSFB. That restores the
->> old behavior.
->
-> Yes, but CONFIG_X86_SYSFB breaks things as of now.  Shouldn't it be
-> mentioned or give some kconfig hints instead of silently giving a
-> broken output, if any quick fix isn't possible?
+On 12/18/2013 06:42 AM, Allen Pais wrote:
+> index 554995d..aae5aa9 100644
+> --- a/arch/sparc/Kconfig
+> +++ b/arch/sparc/Kconfig
+> @@ -27,6 +27,7 @@ config SPARC
+>  	select HAVE_DMA_API_DEBUG
+>  	select HAVE_ARCH_JUMP_LABEL
+>  	select HAVE_GENERIC_HARDIRQS
+> +	select IRQ_FORCED_THREADING
+>  	select GENERIC_IRQ_SHOW
+>  	select ARCH_WANT_IPC_PARSE_VERSION
+>  	select USE_GENERIC_SMP_HELPERS if SMP
 
-Indeed. That's called a "regression" in distro/allmodconfig kernels.
+Sorry for not noticing this earlier but this has nothing to do with the
+remaining part of the patch.
+To be able to set this flag, you need to mark timer & perf interrupts.
+If you already use IRQF_TIMER for the timer and perf interrupts are
+already coming as NMU then you are done. But please split this out as a
+separate patch.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Sebastian
