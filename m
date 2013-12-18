@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab3LRV0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:26:53 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:62943 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755253Ab3LRV0v (ORCPT
+	id S1754341Ab3LRVNy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:13:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36489 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752649Ab3LRVNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:26:51 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system suspend/hibernation
-Date: Wed, 18 Dec 2013 22:40:11 +0100
-Message-ID: <1531979.WgUSFX3DhN@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CA+5PVA7vqMqLzQtiB7cHWbiHEbGizOK1db5xBBX1T8Vq66PHqQ@mail.gmail.com>
-References: <201201281445.49377.rjw@sisk.pl> <1894234.3Ripn7cUXR@vostro.rjw.lan> <CA+5PVA7vqMqLzQtiB7cHWbiHEbGizOK1db5xBBX1T8Vq66PHqQ@mail.gmail.com>
+	Wed, 18 Dec 2013 16:13:51 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Linus Pizunski <linus@narrativeteam.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 041/118] drivers/rtc/rtc-at91rm9200.c: correct alarm over day/month wrap
+Date: Wed, 18 Dec 2013 13:11:18 -0800
+Message-Id: <20131218211220.638854389@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
+References: <20131218211219.461663463@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 18, 2013 07:31:59 AM Josh Boyer wrote:
-> On Tue, Dec 17, 2013 at 8:16 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Tuesday, December 17, 2013 08:00:55 PM Josh Boyer wrote:
-> >> On Tue, Dec 17, 2013 at 7:52 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >> > On Tuesday, December 17, 2013 11:04:46 AM Josh Boyer wrote:
-> >> >> On Tue, Dec 17, 2013 at 11:03 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
-> >> >> > On Fri, May 25, 2012 at 3:13 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> >> >> On Friday, May 25, 2012, Josh Boyer wrote:
-> >> >> >>> On Fri, Feb 17, 2012 at 3:59 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> >> >>> >> commit b94887bbc0621e1e8402e7f0ec4bc3adf46c9a6e
-> >> >> >>> >> Author: Rafael J. Wysocki <rjw@sisk.pl>
-> >> >> >>> >> Date:   Fri Feb 17 12:42:08 2012 -0500
-> >> >> >>> >>
-> >> >> >>> >>     Freeze all filesystems during system suspend and (kernel-driven)
-> >> >> >>> >>     hibernation by calling freeze_supers() for all superblocks and thaw
-> >> >> >>> >>     them during the subsequent resume with the help of thaw_supers().
-> >> >> >>> >>
-> >> >> >>> >>     This makes filesystems stay in a consistent state in case something
-> >> >> >>> >>     goes wrong between system suspend (or hibernation) and the subsequent
-> >> >> >>> >>     resume (e.g. journal replays won't be necessary in those cases).  In
-> >> >> >>> >>     particular, this should help to solve a long-standing issue that, in
-> >> >> >>> >>     some cases, during resume from hibernation the boot loader causes the
-> >> >> >>> >>     journal to be replied for the filesystem containing the kernel image
-> >> >> >>> >>     and/or initrd causing it to become inconsistent with the information
-> >> >> >>> >>     stored in the hibernation image.
-> >> >> >>> >>
-> >> >> >>> >>     The user-space-driven hibernation (s2disk) is not covered by this
-> >> >> >>> >>     change, because the freezing of filesystems prevents s2disk from
-> >> >> >>> >>     accessing device special files it needs to do its job.
-> >> >> >>> >>
-> >> >> >>> >>     This change is based on earlier work by Nigel Cunningham.
-> >> >> >>> >>
-> >> >> >>> >>     Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> >> >> >>> >>
-> >> >> >>> >>     Rebased to 3.3-rc3 by Josh Boyer <jwboyer@redhat.com>
-> >> >> >>>
-> >> >> >>> Did this patch ever wind up going anywhere?  Fedora has it sitting in
-> >> >> >>> our tree with a comment that says "rebase" and I don't see it in the
-> >> >> >>> linux-next tree at all.
-> >> >> >>>
-> >> >> >>> Did if fall through the cracks or was it NAKed somewhere?
-> >> >> >>
-> >> >> >> No, it wasn't in principle. There were some comments I haven't addressed yet.
-> >> >> >
-> >> >> > Dredging up a really old thread, sorry.
-> >> >> >
-> >> >> > We're still carrying this patch along in Fedora.  Should we drop it at
-> >> >> > this point, or is it still eventually going to head upstream?
-> >> >>
-> >> >> Fixed Rafael's email address.  (Double sorry.)
-> >> >
-> >> > No biggie.
-> >> >
-> >> > I just hadn't got sufficient response for that patch at the time it was
-> >> > submitted, so I guess it would be good to resubmit it.  Please feel free to
-> >> > do that if you want.
-> >>
-> >> You want me to resend a patch you authored back to you?  I mean, I can
-> >> do that but it seems a bit strange.  All I did was rebase what you
-> >> wrote to a newer kernel version.
-> >
-> > Well, you can send it to me in private then and I'll resubmit. :-)
-> 
-> Done.  Thanks.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-OK, thanks!
+------------------
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+From: Linus Pizunski <linus@narrativeteam.com>
+
+commit eb3c227289840eed95ddfb0516046f08d8993940 upstream.
+
+Update month and day of month to the alarm month/day instead of current
+day/month when setting the RTC alarm mask.
+
+Signed-off-by: Linus Pizunski <linus@narrativeteam.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/rtc/rtc-at91rm9200.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -220,6 +220,8 @@ static int at91_rtc_setalarm(struct devi
+ 
+ 	at91_alarm_year = tm.tm_year;
+ 
++	tm.tm_mon = alrm->time.tm_mon;
++	tm.tm_mday = alrm->time.tm_mday;
+ 	tm.tm_hour = alrm->time.tm_hour;
+ 	tm.tm_min = alrm->time.tm_min;
+ 	tm.tm_sec = alrm->time.tm_sec;
+
+
