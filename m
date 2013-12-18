@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab3LRVL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:11:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35881 "EHLO
+	id S1756247Ab3LRWM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:12:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35912 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874Ab3LRVLw (ORCPT
+	with ESMTP id S1752926Ab3LRVL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:11:52 -0500
+	Wed, 18 Dec 2013 16:11:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 14/78] KVM: x86: Fix potential divide by 0 in lapic (CVE-2013-6367)
-Date: Wed, 18 Dec 2013 13:10:42 -0800
-Message-Id: <20131218211112.309434823@linuxfoundation.org>
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.10 20/78] hwmon: (w83l768ng) Fix fan speed control range
+Date: Wed, 18 Dec 2013 13:10:48 -0800
+Message-Id: <20131218211112.474420891@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -28,44 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Honig <ahonig@google.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit b963a22e6d1a266a67e9eecc88134713fd54775c upstream.
+commit 33a7ab91d509fa33b4bcd3ce0038cc80298050da upstream.
 
-Under guest controllable circumstances apic_get_tmcct will execute a
-divide by zero and cause a crash.  If the guest cpuid support
-tsc deadline timers and performs the following sequence of requests
-the host will crash.
-- Set the mode to periodic
-- Set the TMICT to 0
-- Set the mode bits to 11 (neither periodic, nor one shot, nor tsc deadline)
-- Set the TMICT to non-zero.
-Then the lapic_timer.period will be 0, but the TMICT will not be.  If the
-guest then reads from the TMCCT then the host will perform a divide by 0.
+The W83L786NG stores the fan speed on 4 bits while the sysfs interface
+uses a 0-255 range. Thus the driver should scale the user input down
+to map it to the device range, and scale up the value read from the
+device before presenting it to the user. The reserved register nibble
+should be left unchanged.
 
-This patch ensures that if the lapic_timer.period is 0, then the division
-does not occur.
-
-Reported-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/lapic.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/hwmon/w83l786ng.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -855,7 +855,8 @@ static u32 apic_get_tmcct(struct kvm_lap
- 	ASSERT(apic != NULL);
+--- a/drivers/hwmon/w83l786ng.c
++++ b/drivers/hwmon/w83l786ng.c
+@@ -481,9 +481,11 @@ store_pwm(struct device *dev, struct dev
+ 	if (err)
+ 		return err;
+ 	val = clamp_val(val, 0, 255);
++	val = DIV_ROUND_CLOSEST(val, 0x11);
  
- 	/* if initial count is 0, current count should also be 0 */
--	if (kvm_apic_get_reg(apic, APIC_TMICT) == 0)
-+	if (kvm_apic_get_reg(apic, APIC_TMICT) == 0 ||
-+		apic->lapic_timer.period == 0)
- 		return 0;
+ 	mutex_lock(&data->update_lock);
+-	data->pwm[nr] = val;
++	data->pwm[nr] = val * 0x11;
++	val |= w83l786ng_read_value(client, W83L786NG_REG_PWM[nr]) & 0xf0;
+ 	w83l786ng_write_value(client, W83L786NG_REG_PWM[nr], val);
+ 	mutex_unlock(&data->update_lock);
+ 	return count;
+@@ -777,8 +779,9 @@ static struct w83l786ng_data *w83l786ng_
+ 			    ? 0 : 1;
+ 			data->pwm_enable[i] =
+ 			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 3) + 1;
+-			data->pwm[i] = w83l786ng_read_value(client,
+-			    W83L786NG_REG_PWM[i]);
++			data->pwm[i] =
++			    (w83l786ng_read_value(client, W83L786NG_REG_PWM[i])
++			     & 0x0f) * 0x11;
+ 		}
  
- 	remaining = hrtimer_get_remaining(&apic->lapic_timer.timer);
+ 
 
 
