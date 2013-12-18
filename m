@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab3LRDCM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 22:02:12 -0500
-Received: from [65.182.180.190] ([65.182.180.190]:43992 "EHLO
+	id S1752411Ab3LRDDE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 22:03:04 -0500
+Received: from [65.182.180.190] ([65.182.180.190]:44000 "EHLO
 	mxadeneo.adeneo-embedded.us" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751240Ab3LRDCL (ORCPT
+	by vger.kernel.org with ESMTP id S1751996Ab3LRDDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 22:02:11 -0500
-X-Greylist: delayed 308 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Dec 2013 22:02:11 EST
+	Tue, 17 Dec 2013 22:03:02 -0500
 From: Jean-Baptiste Theou <jtheou@adeneo-embedded.us>
 To: <linux-kernel@vger.kernel.org>
 CC: <joe@perches.com>, Jean-Baptiste Theou <jtheou@adeneo-embedded.us>
 Subject: [PATCH] checkpatch.pl: Fix wrong curly bracket position reporting
-Date: Tue, 17 Dec 2013 18:56:52 -0800
-Message-ID: <1387335412-8694-1-git-send-email-jtheou@adeneo-embedded.us>
+Date: Tue, 17 Dec 2013 18:59:51 -0800
+Message-ID: <1387335591-8741-1-git-send-email-jtheou@adeneo-embedded.us>
 X-Mailer: git-send-email 1.8.4.2
 MIME-Version: 1.0
 Content-Type: text/plain
