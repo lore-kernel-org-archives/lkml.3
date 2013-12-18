@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab3LRVQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:16:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36682 "EHLO
+	id S1754891Ab3LRVQr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:16:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36679 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754741Ab3LRVO2 (ORCPT
+	with ESMTP id S1754740Ab3LRVO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:14:28 -0500
+	Wed, 18 Dec 2013 16:14:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.12 086/118] dm space map: disallow decrementing a reference count below zero
-Date: Wed, 18 Dec 2013 13:12:03 -0800
-Message-Id: <20131218211221.893894083@linuxfoundation.org>
+        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
+Subject: [PATCH 3.12 085/118] dm space map metadata: return on failure in sm_metadata_new_block
+Date: Wed, 18 Dec 2013 13:12:02 -0800
+Message-Id: <20131218211221.859691978@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -28,108 +28,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 5b564d80f8bc21094c0cd2b19b679d983aabcc29 upstream.
+commit f62b6b8f498658a9d537c7d380e9966f15e1b2a1 upstream.
 
-The old behaviour, returning -EINVAL if a ref_count of 0 would be
-decremented, was removed in commit f722063 ("dm space map: optimise
-sm_ll_dec and sm_ll_inc").  To fix this regression we return an error
-code from the mutator function pointer passed to sm_ll_mutate() and have
-dec_ref_count() return -EINVAL if the old ref_count is 0.
+Commit 2fc48021f4afdd109b9e52b6eef5db89ca80bac7 ("dm persistent
+metadata: add space map threshold callback") introduced a regression
+to the metadata block allocation path that resulted in errors being
+ignored.  This regression was uncovered by running the following
+device-mapper-test-suite test:
+dmtest run --suite thin-provisioning -n /exhausting_metadata_space_causes_fail_mode/
 
-Add a DMERR to reflect the potential seriousness of this error.
+The ignored error codes in sm_metadata_new_block() could crash the
+kernel through use of either the dm-thin or dm-cache targets, e.g.:
 
-Also, add missing dm_tm_unlock() to sm_ll_mutate()'s error path.
+device-mapper: thin: 253:4: reached low water mark for metadata device: sending event.
+device-mapper: space map metadata: unable to allocate new metadata block
+general protection fault: 0000 [#1] SMP
+...
+Workqueue: dm-thin do_worker [dm_thin_pool]
+task: ffff880035ce2ab0 ti: ffff88021a054000 task.ti: ffff88021a054000
+RIP: 0010:[<ffffffffa0331385>]  [<ffffffffa0331385>] metadata_ll_load_ie+0x15/0x30 [dm_persistent_data]
+RSP: 0018:ffff88021a055a68  EFLAGS: 00010202
+RAX: 003fc8243d212ba0 RBX: ffff88021a780070 RCX: ffff88021a055a78
+RDX: ffff88021a055a78 RSI: 0040402222a92a80 RDI: ffff88021a780070
+RBP: ffff88021a055a68 R08: ffff88021a055ba4 R09: 0000000000000010
+R10: 0000000000000000 R11: 00000002a02e1000 R12: ffff88021a055ad4
+R13: 0000000000000598 R14: ffffffffa0338470 R15: ffff88021a055ba4
+FS:  0000000000000000(0000) GS:ffff88033fca0000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007f467c0291b8 CR3: 0000000001a0b000 CR4: 00000000000007e0
+Stack:
+ ffff88021a055ab8 ffffffffa0332020 ffff88021a055b30 0000000000000001
+ ffff88021a055b30 0000000000000000 ffff88021a055b18 0000000000000000
+ ffff88021a055ba4 ffff88021a055b98 ffff88021a055ae8 ffffffffa033304c
+Call Trace:
+ [<ffffffffa0332020>] sm_ll_lookup_bitmap+0x40/0xa0 [dm_persistent_data]
+ [<ffffffffa033304c>] sm_metadata_count_is_more_than_one+0x8c/0xc0 [dm_persistent_data]
+ [<ffffffffa0333825>] dm_tm_shadow_block+0x65/0x110 [dm_persistent_data]
+ [<ffffffffa0331b00>] sm_ll_mutate+0x80/0x300 [dm_persistent_data]
+ [<ffffffffa0330e60>] ? set_ref_count+0x10/0x10 [dm_persistent_data]
+ [<ffffffffa0331dba>] sm_ll_inc+0x1a/0x20 [dm_persistent_data]
+ [<ffffffffa0332270>] sm_disk_new_block+0x60/0x80 [dm_persistent_data]
+ [<ffffffff81520036>] ? down_write+0x16/0x40
+ [<ffffffffa001e5c4>] dm_pool_alloc_data_block+0x54/0x80 [dm_thin_pool]
+ [<ffffffffa001b23c>] alloc_data_block+0x9c/0x130 [dm_thin_pool]
+ [<ffffffffa001c27e>] provision_block+0x4e/0x180 [dm_thin_pool]
+ [<ffffffffa001fe9a>] ? dm_thin_find_block+0x6a/0x110 [dm_thin_pool]
+ [<ffffffffa001c57a>] process_bio+0x1ca/0x1f0 [dm_thin_pool]
+ [<ffffffff8111e2ed>] ? mempool_free+0x8d/0xa0
+ [<ffffffffa001d755>] process_deferred_bios+0xc5/0x230 [dm_thin_pool]
+ [<ffffffffa001d911>] do_worker+0x51/0x60 [dm_thin_pool]
+ [<ffffffff81067872>] process_one_work+0x182/0x3b0
+ [<ffffffff81068c90>] worker_thread+0x120/0x3a0
+ [<ffffffff81068b70>] ? manage_workers+0x160/0x160
+ [<ffffffff8106eb2e>] kthread+0xce/0xe0
+ [<ffffffff8106ea60>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff8152af6c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8106ea60>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff8152af6c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8106ea60>] ? kthread_freezable_should_stop+0x70/0x70
 
-With this fix the following dmts regression test now passes:
- dmtest run --suite cache -n /metadata_use_kernel/
-
-The next patch fixes the higher-level dm-array code that exposed this
-regression.
-
-Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/persistent-data/dm-space-map-common.c |   32 ++++++++++++++++-------
- 1 file changed, 23 insertions(+), 9 deletions(-)
+ drivers/md/persistent-data/dm-space-map-metadata.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/md/persistent-data/dm-space-map-common.c
-+++ b/drivers/md/persistent-data/dm-space-map-common.c
-@@ -381,7 +381,7 @@ int sm_ll_find_free_block(struct ll_disk
- }
+--- a/drivers/md/persistent-data/dm-space-map-metadata.c
++++ b/drivers/md/persistent-data/dm-space-map-metadata.c
+@@ -384,12 +384,16 @@ static int sm_metadata_new_block(struct
+ 	struct sm_metadata *smm = container_of(sm, struct sm_metadata, sm);
  
- static int sm_ll_mutate(struct ll_disk *ll, dm_block_t b,
--			uint32_t (*mutator)(void *context, uint32_t old),
-+			int (*mutator)(void *context, uint32_t old, uint32_t *new),
- 			void *context, enum allocation_event *ev)
- {
- 	int r;
-@@ -410,11 +410,17 @@ static int sm_ll_mutate(struct ll_disk *
- 
- 	if (old > 2) {
- 		r = sm_ll_lookup_big_ref_count(ll, b, &old);
--		if (r < 0)
-+		if (r < 0) {
-+			dm_tm_unlock(ll->tm, nb);
- 			return r;
-+		}
- 	}
- 
--	ref_count = mutator(context, old);
-+	r = mutator(context, old, &ref_count);
+ 	int r = sm_metadata_new_block_(sm, b);
+-	if (r)
 +	if (r) {
-+		dm_tm_unlock(ll->tm, nb);
+ 		DMERR("unable to allocate new metadata block");
 +		return r;
 +	}
  
- 	if (ref_count <= 2) {
- 		sm_set_bitmap(bm_le, bit, ref_count);
-@@ -465,9 +471,10 @@ static int sm_ll_mutate(struct ll_disk *
- 	return ll->save_ie(ll, index, &ie_disk);
- }
- 
--static uint32_t set_ref_count(void *context, uint32_t old)
-+static int set_ref_count(void *context, uint32_t old, uint32_t *new)
- {
--	return *((uint32_t *) context);
-+	*new = *((uint32_t *) context);
-+	return 0;
- }
- 
- int sm_ll_insert(struct ll_disk *ll, dm_block_t b,
-@@ -476,9 +483,10 @@ int sm_ll_insert(struct ll_disk *ll, dm_
- 	return sm_ll_mutate(ll, b, set_ref_count, &ref_count, ev);
- }
- 
--static uint32_t inc_ref_count(void *context, uint32_t old)
-+static int inc_ref_count(void *context, uint32_t old, uint32_t *new)
- {
--	return old + 1;
-+	*new = old + 1;
-+	return 0;
- }
- 
- int sm_ll_inc(struct ll_disk *ll, dm_block_t b, enum allocation_event *ev)
-@@ -486,9 +494,15 @@ int sm_ll_inc(struct ll_disk *ll, dm_blo
- 	return sm_ll_mutate(ll, b, inc_ref_count, NULL, ev);
- }
- 
--static uint32_t dec_ref_count(void *context, uint32_t old)
-+static int dec_ref_count(void *context, uint32_t old, uint32_t *new)
- {
--	return old - 1;
-+	if (!old) {
-+		DMERR_LIMIT("unable to decrement a reference count below 0");
-+		return -EINVAL;
+ 	r = sm_metadata_get_nr_free(sm, &count);
+-	if (r)
++	if (r) {
+ 		DMERR("couldn't get free block count");
++		return r;
 +	}
-+
-+	*new = old - 1;
-+	return 0;
- }
  
- int sm_ll_dec(struct ll_disk *ll, dm_block_t b, enum allocation_event *ev)
+ 	check_threshold(&smm->threshold, count);
+ 
 
 
