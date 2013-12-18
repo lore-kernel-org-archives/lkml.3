@@ -1,69 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab3LRRvv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 12:51:51 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:46401 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755433Ab3LRRvs (ORCPT
+	id S1755200Ab3LRRvk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 12:51:40 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:63748 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753242Ab3LRRvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 12:51:48 -0500
-Message-ID: <52B1E0A2.2030202@landley.net>
-Date: Wed, 18 Dec 2013 11:51:30 -0600
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Dave Young <dyoung@redhat.com>, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        sebastian.capella@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] use initmpfs even if there's root= cmdline
-References: <20131212092542.GA14218@dhcp-16-126.nay.redhat.com> <20131213023814.GA5519@dhcp-16-126.nay.redhat.com>
-In-Reply-To: <20131213023814.GA5519@dhcp-16-126.nay.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Dec 2013 12:51:38 -0500
+Message-Id: <20131218173519.265509723@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 18 Dec 2013 12:35:19 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Takashi Iwai <tiwai@suse.de>, Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC][PATCH 0/2] localmodconfig / ALSA: hda - Have codecs be disabled by localmodconfig
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus Torvalds reported that 'make localmodconfig' would never work on
+his ALSA codec modules. That is, although his box only had realtek and
+hdmi codec modules, all of the codec modules would still be built after
+running localmodconfig.
+
+When he showed me his config file which had this:
+
+  CONFIG_SND_HDA_CODEC_REALTEK=y
+  CONFIG_SND_HDA_CODEC_ANALOG=y
+  CONFIG_SND_HDA_CODEC_SIGMATEL=y
+  CONFIG_SND_HDA_CODEC_VIA=y
+  CONFIG_SND_HDA_CODEC_HDMI=y
+  CONFIG_SND_HDA_CODEC_CIRRUS=y
+  CONFIG_SND_HDA_CODEC_CONEXANT=y
+  CONFIG_SND_HDA_CODEC_CA0110=y
+  CONFIG_SND_HDA_CODEC_CA0132=y
+  CONFIG_SND_HDA_CODEC_CA0132_DSP=y
+  CONFIG_SND_HDA_CODEC_CMEDIA=y
+  CONFIG_SND_HDA_CODEC_SI3054=y
+  ..
+
+I was confused to why they were '=y' if they were to build modules
+and not '=m'. Localmodconfig will not disable anything with '=y' because
+there's not enough information in lsmod to safely disable a built-in
+config.
+
+Investigating as to why these were '=y' I found this in the Makefile:
+
+ifdef CONFIG_SND_HDA_CODEC_REALTEK
+obj-$(CONFIG_SND_HDA_INTEL) += snd-hda-codec-realtek.o
+endif
+ifdef CONFIG_SND_HDA_CODEC_CMEDIA
+obj-$(CONFIG_SND_HDA_INTEL) += snd-hda-codec-cmedia.o
+endif
+ifdef CONFIG_SND_HDA_CODEC_ANALOG
+obj-$(CONFIG_SND_HDA_INTEL) += snd-hda-codec-analog.o
+endif
+ifdef CONFIG_SND_HDA_CODEC_SIGMATEL
+obj-$(CONFIG_SND_HDA_INTEL) += snd-hda-codec-idt.o
+endif
+ifdef CONFIG_SND_HDA_CODEC_SI3054
+obj-$(CONFIG_SND_HDA_INTEL) += snd-hda-codec-si3054.o
+endif
+[...]
+
+And the reason for this is because if the code for SND_HDA_INTEL
+is a built-in, then all the codecs that are configured must also be
+built-in. If it is a module, then all the codecs must also be a module.
+
+To put this another way; if SND_HDA_INTEL is 'y' then all the codecs
+must either be 'y' or 'n'. If SND_HDA_INTEL is 'm', then all the
+codecs must be 'm' or 'n'. The latter is already supported by the
+kconfig code, but the former is not. That is, if a tristate config
+is dependent on a config that is built-in 'y', then that config can
+still become a module 'm'. This trick that is done above prevents that.
+But unfortunately, it also confuses localmodconfig, and the user
+does not get the correct result.
+
+Ideally, having a "match_config" option in the kconfig subsystem would
+be ideal. But anyone that ever took a look at the kconfig code knows that
+is much more difficult to implement than one would expect, as that
+code can cause severe eye strain.
+
+But luckily for us, we can do another trick to keep the behavior needed
+by the ALSA hda code, and still allow for localmodconfig to disable the
+modules.
+
+Now to fix this so that the codecs match the tristate of SND_HDA_INTEL
+we can add a config that states that SND_HDA_INTEL is 'y', and then add
+another config for each codec for it to build the module. We then switch
+all the codecs to be tristates too.
+
+The new config for HDA_INTEL set as 'y' is:
+
+config SND_HDA_YES
+	default y if SND_HDA_INTEL=y
+
+The new codec configs will have the following format:
+
+config SND_HDA_CODEC_FOO_BUILD
+	def_tristate (SND_HDA_CODEC_FOO=m && SND_HDA_YES) || SND_HDA_CODEC_FOO
+
+What the above does is to set SND_HDA_CODEC_FOO_BUILD to 'y' if
+SND_HDA_CODEC_FOO is a module and SND_HDA_YES is set. This forces
+the codec to be built-in. Otherwise, it just sets it to the state of
+SND_HDA_CODEC_FOO.
+
+This change lets localmodconfig turn off codecs that are not being used.
+
+The first patch fixes a bug in localmodconfig that this ordeal uncovered,
+and that was the fact that localmodconfig did not honor default dependencies
+like "def_tristate (SND_HDA_CODEC_FOO=m && SND_HDA_YES) || SND_HDA_CODEC_FOO"
+
+-- Steve
 
 
-On 12/12/13 20:38, Dave Young wrote:
-> On 12/12/13 at 05:25pm, Dave Young wrote:
->>
->> Current code use ramfs instead of tmpfs for stub when root= defined.
->>
->> But for real use case with initramfs, usually there's like cmdline like
->> root=UUID=$UUID the root dev is the real device. For that case we have
->> no way to use initmpfs, thus this patch removes the limitation so tmpfs
->> can benefit more people.
+Steven Rostedt (Red Hat) (2):
+      localmodconfig: Add config depends by default settings
+      ALSA: hda - Change codec configs to be disabled by localmodconfig
 
-The reason I did that was if you specify a root= then you don't want to 
-_stay_ on rootfs. You specify root= so either the kernel does 
-switch_root for you, or so rootfs does a swich_root at the end.
-
-The point of initmpfs is that when rootfs _is_ the "real" root device, 
-it can benefit from being tmpfs. When you're just goign to switch to a 
-different root device, tmpfs doesn't make much difference.
-
-> Discussed with Vivek Goyal about the kdump use case, I missed one thing that
-> tmpfs has default size limit though we can tune it.
->
-> So I will think more about it, will address this later, please ignore this
-> patch.
-
-I have a vague todo item of feeding rootflags= through to initmpfs, but 
-that's really intended to specify flags for root=. There isn't really an 
-existing command line option to specify initramfs flags because ramfs 
-doesn't care.
-
-It was one of those "only parse rootflags= for initmpfs when there's no 
-root=" vs "create a new rdrootflags= ala rdinit= even though that's a 
-subtly wrong name these days..." and it went on the todo list because 
-neither approach was obviously superior.
-
-Happy to take suggestions and whip up a patch if this is inconveniencing 
-somebody. :)
-
-> Thanks
-> Dave
-
-Rob
+----
+ scripts/kconfig/streamline_config.pl |  7 ++++
+ sound/pci/hda/Kconfig                | 64 +++++++++++++++++++++++++++++-------
+ sound/pci/hda/Makefile               | 44 +++++++------------------
+ 3 files changed, 70 insertions(+), 45 deletions(-)
