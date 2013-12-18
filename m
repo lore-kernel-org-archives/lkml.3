@@ -1,82 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab3LRFWP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 00:22:15 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:63059 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab3LRFVd (ORCPT
+	id S1753623Ab3LRFWm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 00:22:42 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:13407 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584Ab3LRFWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 00:21:33 -0500
-X-AuditID: 9c93017d-b7c5eae000004296-31-52b130d90794
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Arun Sharma <asharma@fb.com>,
-        Jiri Olsa <jolsa@redhat.com>, Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 13/18] perf ui/browser: Add support to accumulated hist stat
-Date: Wed, 18 Dec 2013 14:21:21 +0900
-Message-Id: <1387344086-12744-14-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
-References: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 18 Dec 2013 00:22:37 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <broonie@kernel.org>
+CC: <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <linux-doc@vger.kernel.org>, <vpalatin@chromium.org>,
+        <nicolas.ferre@atmel.com>, <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <wenyou.yang@atmel.com>
+Subject: [PATCH v3 2/3] regulator: act8865: add device tree binding doc
+Date: Wed, 18 Dec 2013 13:14:50 +0800
+Message-ID: <1387343691-18985-3-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387343691-18985-1-git-send-email-wenyou.yang@atmel.com>
+References: <1387343691-18985-1-git-send-email-wenyou.yang@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
-
-Print accumulated stat of a hist entry if requested.
-
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 ---
- tools/perf/ui/browsers/hists.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ .../bindings/regulator/act8865-regulator.txt       |   58 ++++++++++++++++++++
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ 2 files changed, 59 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/regulator/act8865-regulator.txt
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index a440e03cd8c2..efa78894f70d 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -693,11 +693,26 @@ hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
- 	return __hpp__color_fmt(hpp, he, __hpp_get_##_field, _cb);	\
- }
- 
-+#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field, _cb)			\
-+static u64 __hpp_get_acc_##_field(struct hist_entry *he)		\
-+{									\
-+	return he->stat_acc->_field;					\
-+}									\
-+									\
-+static int								\
-+hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
-+				struct perf_hpp *hpp,			\
-+				struct hist_entry *he)			\
-+{									\
-+	return __hpp__color_fmt(hpp, he, __hpp_get_acc_##_field, _cb);	\
-+}
+diff --git a/Documentation/devicetree/bindings/regulator/act8865-regulator.txt b/Documentation/devicetree/bindings/regulator/act8865-regulator.txt
+new file mode 100644
+index 0000000..bcea8ab
+--- /dev/null
++++ b/Documentation/devicetree/bindings/regulator/act8865-regulator.txt
+@@ -0,0 +1,58 @@
++ACT8865 regulator
++-------------------
 +
- __HPP_COLOR_PERCENT_FN(overhead, period, __hpp__color_callchain)
- __HPP_COLOR_PERCENT_FN(overhead_sys, period_sys, NULL)
- __HPP_COLOR_PERCENT_FN(overhead_us, period_us, NULL)
- __HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys, NULL)
- __HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us, NULL)
-+__HPP_COLOR_ACC_PERCENT_FN(overhead_acc, period, NULL)
++Required properties:
++- compatible: "active-semi,act8865"
++- reg: I2C slave address
++
++The valid names for regulators are:
++	DCDC_REG1, DCDC_REG2, DCDC_REG3, LDO_REG1, LDO_REG2, LDO_REG3, LDO_REG4.
++
++Example:
++--------
++
++		i2c1: i2c@f0018000 {
++			pmic: act8865@5b {
++				compatible = "active-semi,act8865";
++				reg = <0x5b>;
++				status = "disabled";
++
++				regulators {
++					vcc_1v8_reg: DCDC_REG1 {
++						regulator-name = "VCC_1V8";
++						regulator-min-microvolt = <1800000>;
++						regulator-max-microvolt = <1800000>;
++						regulator-always-on;
++					};
++
++					vcc_1v2_reg: DCDC_REG2 {
++						regulator-name = "VCC_1V2";
++						regulator-min-microvolt = <1100000>;
++						regulator-max-microvolt = <1300000>;
++						regulator-suspend-mem-microvolt = <1150000>;
++						regulator-suspend-standby-microvolt = <1150000>;
++						regulator-always-on;
++					};
++
++					vcc_3v3_reg: DCDC_REG3 {
++						regulator-name = "VCC_3V3";
++						regulator-min-microvolt = <3300000>;
++						regulator-max-microvolt = <3300000>;
++						regulator-always-on;
++					};
++
++					vddfuse_reg: LDO_REG1 {
++						regulator-name = "VDDANA";
++						regulator-min-microvolt = <3300000>;
++						regulator-max-microvolt = <3300000>;
++						regulator-always-on;
++					};
++
++					vddana_reg: LDO_REG2 {
++						regulator-name = "FUSE_2V5";
++						regulator-min-microvolt = <2500000>;
++						regulator-max-microvolt = <2500000>;
++					};
++				};
++			};
++		};
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index edbb8d8..519421f 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -3,6 +3,7 @@ Device tree binding vendor prefix registry.  Keep list in alphabetical order.
+ This isn't an exhaustive list, but you should add new prefixes to it before
+ using them to avoid name-space collisions.
  
- #undef __HPP_COLOR_PERCENT_FN
- 
-@@ -715,6 +730,8 @@ void hist_browser__init_hpp(void)
- 				hist_browser__hpp_color_overhead_guest_sys;
- 	perf_hpp__format[PERF_HPP__OVERHEAD_GUEST_US].color =
- 				hist_browser__hpp_color_overhead_guest_us;
-+	perf_hpp__format[PERF_HPP__OVERHEAD_ACC].color =
-+				hist_browser__hpp_color_overhead_acc;
- }
- 
- static int hist_browser__show_entry(struct hist_browser *browser,
++active-semi	Active-Semi International Inc
+ ad	Avionic Design GmbH
+ adi	Analog Devices, Inc.
+ aeroflexgaisler	Aeroflex Gaisler AB
 -- 
-1.7.11.7
+1.7.9.5
 
