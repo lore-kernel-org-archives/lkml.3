@@ -1,65 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab3LRPcD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 10:32:03 -0500
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.168]:61329 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754888Ab3LRPcA (ORCPT
+	id S1755382Ab3LRPcc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 10:32:32 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:39205 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755069Ab3LRPca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 10:32:00 -0500
-X-Greylist: delayed 431 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Dec 2013 10:32:00 EST
-X-Env-Sender: anthony.olech.opensource@diasemi.com
-X-Msg-Ref: server-4.tower-38.messagelabs.com!1387380286!2474455!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <201312181524.rBIFOhNp017016@swsrvapps-02.lan>
-From: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Date: Wed, 18 Dec 2013 15:15:31 +0000
-Subject: [PATCH V1] fix adc to voltage calculation in da9052 hwmon driver
-To: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
-CC: "open list:HARDWARE MONITORING" <lm-sensors@lm-sensors.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 18 Dec 2013 10:32:30 -0500
+Message-ID: <1387380741.2797.27.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2 0/4] futex: Wakeup optimizations
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, dvhart@linux.intel.com, peterz@infradead.org,
+        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
+        jeffm@suse.com, torvalds@linux-foundation.org, scott.norton@hp.com,
+        tom.vaden@hp.com, aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
+Date: Wed, 18 Dec 2013 07:32:21 -0800
+In-Reply-To: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
+References: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ADC resolution of the PMIC is 10-bits, this means that the maximum
-possible value is 1023 and not the 1024 as originally in the code.
+ping? 
 
-Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
----
-This patch is relative to linux-next repository tag next-20131218
+If no one has any objections, could this patchset be picked up?
 
- drivers/hwmon/da9052-hwmon.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Thanks,
+Davidlohr
 
-diff --git a/drivers/hwmon/da9052-hwmon.c b/drivers/hwmon/da9052-hwmon.c
-index 960fac3..afd3104 100644
---- a/drivers/hwmon/da9052-hwmon.c
-+++ b/drivers/hwmon/da9052-hwmon.c
-@@ -45,7 +45,7 @@ static const char * const input_names[] = {
- /* Conversion function for VDDOUT and VBAT */
- static inline int volt_reg_to_mv(int value)
- {
--	return DIV_ROUND_CLOSEST(value * 1000, 512) + 2500;
-+	return DIV_ROUND_CLOSEST(value * 2000, 1023) + 2500;
- }
- 
- /* Conversion function for ADC channels 4, 5 and 6 */
-@@ -57,7 +57,7 @@ static inline int input_reg_to_mv(int value)
- /* Conversion function for VBBAT */
- static inline int vbbat_reg_to_mv(int value)
- {
--	return DIV_ROUND_CLOSEST(value * 2500, 512);
-+	return DIV_ROUND_CLOSEST(value * 5000, 1023);
- }
- 
- static inline int da9052_enable_vddout_channel(struct da9052 *da9052)
--- 
-end-of-patch for fix adc to voltage calculation in da9052 hwmon driver V1
+On Tue, 2013-12-03 at 01:45 -0800, Davidlohr Bueso wrote:
+> Changes from v1 [https://lkml.org/lkml/2013/11/22/525]:
+>  - Removed patch "futex: Check for pi futex_q only once".
+> 
+>  - Cleaned up ifdefs for larger hash table.
+> 
+>  - Added a doc patch from tglx that describes the futex 
+>    ordering guarantees.
+> 
+>  - Improved the lockless plist check for the wake calls.
+>    Based on the community feedback, the necessary abstractions
+>    and barriers are added to maintain ordering guarantees.
+>    Code documentation is also updated.
+> 
+>  - Removed patch "sched,futex: Provide delayed wakeup list".
+>    Based on feedback from PeterZ, I will look into this as
+>    a separate issue once the other patches are settled.
+>  
+> 
+> We have been dealing with a customer database workload on large
+> 12Tb, 240 core 16 socket NUMA system that exhibits high amounts 
+> of contention on some of the locks that serialize internal futex 
+> data structures. This workload specially suffers in the wakeup 
+> paths, where waiting on the corresponding hb->lock can account for 
+> up to ~60% of the time. The result of such calls can mostly be 
+> classified as (i) nothing to wake up and (ii) wakeup large amount 
+> of tasks.
+> 
+> Before these patches are applied, we can see this pathological behavior:
+> 
+>  37.12%  826174  xxx  [kernel.kallsyms] [k] _raw_spin_lock
+>             --- _raw_spin_lock
+>              |
+>              |--97.14%-- futex_wake
+>              |          do_futex
+>              |          sys_futex
+>              |          system_call_fastpath
+>              |          |
+>              |          |--99.70%-- 0x7f383fbdea1f
+>              |          |           yyy
+> 
+>  43.71%  762296  xxx  [kernel.kallsyms] [k] _raw_spin_lock
+>             --- _raw_spin_lock
+>              |
+>              |--53.74%-- futex_wake
+>              |          do_futex
+>              |          sys_futex
+>              |          system_call_fastpath
+>              |          |
+>              |          |--99.40%-- 0x7fe7d44a4c05
+>              |          |           zzz
+>              |--45.90%-- futex_wait_setup
+>              |          futex_wait
+>              |          do_futex
+>              |          sys_futex
+>              |          system_call_fastpath
+>              |          0x7fe7ba315789
+>              |          syscall
+> 
+> 
+> With these patches, contention is practically non existent:
+> 
+>  0.10%     49   xxx  [kernel.kallsyms]   [k] _raw_spin_lock
+>                --- _raw_spin_lock
+>                 |
+>                 |--76.06%-- futex_wait_setup
+>                 |          futex_wait
+>                 |          do_futex
+>                 |          sys_futex
+>                 |          system_call_fastpath
+>                 |          |
+>                 |          |--99.90%-- 0x7f3165e63789
+>                 |          |          syscall|
+>                            ...
+>                 |--6.27%-- futex_wake
+>                 |          do_futex
+>                 |          sys_futex
+>                 |          system_call_fastpath
+>                 |          |
+>                 |          |--54.56%-- 0x7f317fff2c05
+>                 ...
+> 
+> Patch 1 is a cleanup.
+> 
+> Patch 2 addresses the well known issue of the global hash table.
+> By creating a larger and NUMA aware table, we can reduce the false
+> sharing and collisions, thus reducing the chance of different futexes 
+> using hb->lock.
+> 
+> Patch 3 documents the futex ordering guarantees.
+> 
+> Patch 4 reduces contention on the corresponding hb->lock by not trying to
+> acquire it if there are no blocked tasks in the waitqueue.
+> This particularly deals with point (i) above, where we see that it is not
+> uncommon for up to 90% of wakeup calls end up returning 0, indicating that no
+> tasks were woken.
+> 
+> This patchset has also been tested on smaller systems for a variety of
+> benchmarks, including java workloads, kernel builds and custom bang-the-hell-out-of
+> hb locks programs. So far, no functional or performance regressions have been seen.
+> Furthermore, no issues were found when running the different tests in the futextest 
+> suite: http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/
+> 
+> This patchset applies on top of Linus' tree as of v3.13-rc2 (2e7babfa).
+> 
+> Special thanks to Scott Norton, Tom Vanden, Mark Ray and Aswin Chandramouleeswaran
+> for help presenting, debugging and analyzing the data.
+> 
+>   futex: Misc cleanups
+>   futex: Larger hash table
+>   futex: Document ordering guarantees
+>   futex: Avoid taking hb lock if nothing to wakeup
+> 
+>  kernel/futex.c | 230 ++++++++++++++++++++++++++++++++++++++++++++++++---------
+>  1 file changed, 194 insertions(+), 36 deletions(-)
+> 
+
 
