@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab3LRQyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 11:54:08 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:19020 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab3LRQyG (ORCPT
+	id S1755462Ab3LRQyj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 11:54:39 -0500
+Received: from www.linutronix.de ([62.245.132.108]:46181 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754748Ab3LRQxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 11:54:06 -0500
-Date: Wed, 18 Dec 2013 11:53:56 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: xen-devel@lists.xensource.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com
-Subject: [GIT PULL] (xen) stable/for-linus-3.14-rc4-tag
-Message-ID: <20131218165356.GA4630@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 18 Dec 2013 11:53:17 -0500
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 4/5] mfd: ti_am335x: drop am335x_tsc_se_update() from resume path
+Date: Wed, 18 Dec 2013 17:52:56 +0100
+Message-Id: <1387385577-24447-5-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.8.5.1
+In-Reply-To: <1387385577-24447-1-git-send-email-bigeasy@linutronix.de>
+References: <1387385577-24447-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Linus,
+The update of the SE register in MFD doesn't look right as it has
+nothing to do with it. The better place to do it is in TSC driver (which
+is already doint it) and in the ADC driver which needs this only in the
+continues mode.
 
-Please git pull the following tag:
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/iio/adc/ti_am335x_adc.c | 2 ++
+ drivers/mfd/ti_am335x_tscadc.c  | 1 -
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
- git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-linus-3.13-rc4-tag
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index 9ad9bd9..e737eef 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -199,6 +199,7 @@ static int tiadc_buffer_predisable(struct iio_dev *indio_dev)
+ 	tiadc_writel(adc_dev, REG_IRQCLR, (IRQENB_FIFO1THRES |
+ 				IRQENB_FIFO1OVRRUN | IRQENB_FIFO1UNDRFLW));
+ 	am335x_tsc_se_clr(adc_dev->mfd_tscadc, adc_dev->buffer_en_ch_steps);
++	adc_dev->buffer_en_ch_steps = 0;
+ 
+ 	/* Flush FIFO of leftover data in the time it takes to disable adc */
+ 	fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
+@@ -494,6 +495,7 @@ static int tiadc_resume(struct device *dev)
+ 	tiadc_writel(adc_dev, REG_CTRL, restore);
+ 
+ 	tiadc_step_config(indio_dev);
++	am335x_tsc_se_set(adc_dev->mfd_tscadc, adc_dev->buffer_en_ch_steps);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
+index 2948a41..ad560c6 100644
+--- a/drivers/mfd/ti_am335x_tscadc.c
++++ b/drivers/mfd/ti_am335x_tscadc.c
+@@ -309,7 +309,6 @@ static int tscadc_resume(struct device *dev)
+ 
+ 	if (tscadc_dev->tsc_cell != -1)
+ 		tscadc_idle_config(tscadc_dev);
+-	am335x_tsc_se_update(tscadc_dev);
+ 	restore = tscadc_readl(tscadc_dev, REG_CTRL);
+ 	tscadc_writel(tscadc_dev, REG_CTRL,
+ 			(restore | CNTRLREG_TSCSSENB));
+-- 
+1.8.5.1
 
-which has mostly ARM/ARM64 and some PVHVM fixes. This pull touches the generic 
-drivers and also the arm sub-tree. The biggest change is in the
-balloon driver - and that fix solves a bug with ARM64 (not working) and PVHVM
-(working, but needlessly using extra memory). The details are as always
-in the signed tag.
-
-Please pull!
-
-
-Eric Trudeau (1):
-      XEN: Grant table address, xen_hvm_resume_frames, is a phys_addr not a pfn
-
-Ian Campbell (2):
-      xen: privcmd: do not return pages which we have failed to unmap
-      arm: xen: foreign mapping PTEs are special.
-
-Julien Grall (1):
-      xen/block: Correctly define structures in public headers on ARM32 and ARM64
-
-Stefano Stabellini (2):
-      xen/arm64: do not call the swiotlb functions twice
-      xen/balloon: Seperate the auto-translate logic properly (v2)
-
-
- arch/arm/xen/enlighten.c                   |  6 +--
- arch/arm64/include/asm/xen/page-coherent.h |  4 --
- drivers/xen/balloon.c                      | 63 ++++++++++++++++--------------
- drivers/xen/grant-table.c                  |  3 +-
- drivers/xen/privcmd.c                      |  9 ++++-
- include/xen/interface/io/blkif.h           | 10 ++---
- 6 files changed, 51 insertions(+), 44 deletions(-)
