@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab3LREAX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 23:00:23 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:62151 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab3LREAV convert rfc822-to-8bit (ORCPT
+	id S1753120Ab3LREBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 23:01:09 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:50663 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130Ab3LREBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 23:00:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <F1B567DD-C322-4BA7-BFEA-E7C4B1F82697@kolumbus.fi>
-References: <1387291383-25126-1-git-send-email-xuyongjiande@gmail.com>
-	<F1B567DD-C322-4BA7-BFEA-E7C4B1F82697@kolumbus.fi>
-Date: Wed, 18 Dec 2013 12:00:20 +0800
-Message-ID: <CAAdffVH3pPpvu+GWwikPpGynTRRMW2unbyRvP2jQWpUU-=R6qw@mail.gmail.com>
-Subject: Re: [PATCH] scsi: int overflow in st_ioctl()
-From: Yu Chen <chyyuu@gmail.com>
-To: =?ISO-8859-1?Q?Kai_M=E4kisara_=28Kolumbus=29?= 
-	<kai.makisara@kolumbus.fi>
-Cc: =?GB2312?B?0OzTwL2h?= <xuyongjiande@gmail.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Tue, 17 Dec 2013 23:01:07 -0500
+Message-ID: <1387339256.5315.12.camel@marge.simpson.net>
+Subject: Re: question about cpu_active_mask
+From: Mike Galbraith <bitbucket@online.de>
+To: markh@compro.net
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 18 Dec 2013 05:00:56 +0100
+In-Reply-To: <52B0BBBD.3000704@compro.net>
+References: <52B0BBBD.3000704@compro.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:kjTMkPpV8X0j6vq3aKt1+Z55oRQWLEPvkhLAfq5UPnw
+ 6W0nGjbfo/ScIY7OPWSueRssDarO00i5PxgxAEmO1WGW/agiMF
+ iK7ekTbgakqwjD9mUeSCV17ozCqMSpu+6GGQ1pr2TyTMa48cDu
+ xzeCXfodZrcxwb1NEOL1hoIlgNS8O07ZKiij6riNp4obBStDWT
+ QF0rVF1DA+NmOMfF0oDWrEClJgdlyNp3ndCAaNXk/C7eL/UTR2
+ FGqWiHDAuCy/IPzOq0IKzZr7MbT63+YEwyEkJZ/rTfBHqFhqSK
+ 9QeDqRWPJJqty8/NPvZeUArrLANL01PoPmnIjVjqAjglf32/wM
+ aeRZVCpqfHOochgFj/kUu+boLZPwsGEBAsY9cnWtHT4Y5dRx3k
+ bqcZVJcjqcBNQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the local variable of st_int_ioctl function, such as long ltmp
-be assigned by arg.
-I think  we should limit the parameter arg of st_int_ioctl function to
-the range of 24-bit signed integer.
-Yong Jianxu, please update your patch.
+On Tue, 2013-12-17 at 16:01 -0500, Mark Hounschell wrote: 
+> I hope it is OK to ask a newbie question here. I'm trying to better 
+> understand the boot process. I can't seem to find where in the kernel 
+> sources the cpu_active_mask (defined in include/linux/cpumask.h) gets 
+> populated. I can see that it does get populated as it brings cpus online 
+> but it is not obvious to me where. I'm using a 32 bit 3.4.x flavor kernel.
 
-2013/12/18 "Kai Mäkisara (Kolumbus)" <kai.makisara@kolumbus.fi>:
-> On 17.12.2013, at 16.43, Yongjian Xu xuyongjiande@gmail.com wrote:
->
->> From: Yongjian Xu <xuyongjiande@gmail.com>
->>
->> mtc.mt_count comes from user-space.
->> int overflow may occur:
->> mtc.mt_count++;
->> mtc.mt_count—;
->
-> I agree that this is a problem. However, it seems that there is also another problem: the SPACE command uses a 24-bit count field and this overflows far below INT_MAX. Should the count in MTFSF etc. be limited to (2<<24-2)? This would make the checks you suggest unnecessary. (-2 so that the behavior does not depend on whether we are at file mark or not.)
->
-> I am a bit hesitant with this suggestion because someone may use count INT_MAX to space to the end of the tape. This probably succeeds now but after the fix it would return an error.
->
-> Thanks,
-> Kai
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Try git grep set_cpu_active.
 
+-Mike
 
-
--- 
-Best Regards
-==============================================
-Yu Chen
-Ph.D.  Associate Professor
-System Software&Software Engineering Group,
-Dept. of Computer Science and Technology
-Tsinghua University, Beijing 100084, P.R. China
-E-Mail: mailto:yuchen@tsinghua.edu.cn  chyyuu@gmail.com
-==============================================
