@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab3LRVNP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:13:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36307 "EHLO
+	id S1755364Ab3LRVnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:43:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36315 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753805Ab3LRVNN (ORCPT
+	with ESMTP id S1753826Ab3LRVNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:13 -0500
+	Wed, 18 Dec 2013 16:13:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.12 031/118] usb: dwc3: fix implementation of endpoint wedge
-Date: Wed, 18 Dec 2013 13:11:08 -0800
-Message-Id: <20131218211220.356704297@linuxfoundation.org>
+        David Laight <david.laight@aculab.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Mark Lord <mlord@pobox.com>
+Subject: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within a USB payload burst
+Date: Wed, 18 Dec 2013 13:11:10 -0800
+Message-Id: <20131218211220.412278148@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,58 +30,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: David Laight <David.Laight@ACULAB.COM>
 
-commit a535d81c92615b8ffb99b7e1fd1fb01effaed1af upstream.
+commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e upstream.
 
-The dwc3 UDC driver doesn't implement endpoint wedging correctly.
-When an endpoint is wedged, the gadget driver should be allowed to
-clear the wedge by calling usb_ep_clear_halt().  Only the host is
-prevented from resetting the endpoint.
+Section 4.11.7.1 of rev 1.0 of the xhci specification states that a link TRB
+can only occur at a boundary between underlying USB frames (512 bytes for
+high speed devices).
 
-This patch fixes the implementation.
+If this isn't done the USB frames aren't formatted correctly and, for example,
+the USB3 ethernet ax88179_178a card will stop sending (while still receiving)
+when running a netperf tcp transmit test with (say) and 8k buffer.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Pratyush Anand <pratyush.anand@st.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+This should be a candidate for stable, the ax88179_178a driver defaults to
+gso and tso enabled so it passes a lot of fragmented skb to the USB stack.
+
+Notes from Sarah:
+
+Discussion: http://marc.info/?l=linux-usb&m=138384509604981&w=2
+
+This patch fixes a long-standing xHCI driver bug that was revealed by a
+change in 3.12 in the usb-net driver.  Commit
+638c5115a794981441246fa8fa5d95c1875af5ba "USBNET: support DMA SG" added
+support to use bulk endpoint scatter-gather (urb->sg).  Only the USB
+ethernet drivers trigger this bug, because the mass storage driver sends
+sg list entries in page-sized chunks.
+
+This patch only fixes the issue for bulk endpoint scatter-gather.  The
+problem will still occur for periodic endpoints, because hosts will
+interpret no-op transfers as a request to skip a service interval, which
+is not what we want.
+
+Luckily, the USB core isn't set up for scatter-gather on isochronous
+endpoints, and no USB drivers use scatter-gather for interrupt
+endpoints.  Document this known limitation so that developers won't try
+to use urb->sg for interrupt endpoints until this issue is fixed.  The
+more comprehensive fix would be to allow link TRBs in the middle of the
+endpoint ring and revert this patch, but that fix would touch too much
+code to be allowed in for stable.
+
+This patch should be backported to kernels as old as 3.12, that contain
+the commit 638c5115a794981441246fa8fa5d95c1875af5ba "USBNET: support DMA
+SG".  Without this patch, the USB network device gets wedged, and stops
+sending packets.  Mark Lord confirms this patch fixes the regression:
+
+http://marc.info/?l=linux-netdev&m=138487107625966&w=2
+
+Signed-off-by: David Laight <david.laight@aculab.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Mark Lord <mlord@pobox.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/ep0.c    |    2 ++
- drivers/usb/dwc3/gadget.c |    5 +----
- 2 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/usb/host/xhci-ring.c |   54 +++++++++++++++++++++++++++++++++++++++++--
+ include/linux/usb.h          |    2 +
+ 2 files changed, 54 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/dwc3/ep0.c
-+++ b/drivers/usb/dwc3/ep0.c
-@@ -459,6 +459,8 @@ static int dwc3_ep0_handle_feature(struc
- 			dep = dwc3_wIndex_to_dep(dwc, wIndex);
- 			if (!dep)
- 				return -EINVAL;
-+			if (set == 0 && (dep->flags & DWC3_EP_WEDGE))
-+				break;
- 			ret = __dwc3_gadget_ep_set_halt(dep, set);
- 			if (ret)
- 				return -EINVAL;
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1200,9 +1200,6 @@ int __dwc3_gadget_ep_set_halt(struct dwc
- 		else
- 			dep->flags |= DWC3_EP_STALL;
- 	} else {
--		if (dep->flags & DWC3_EP_WEDGE)
--			return 0;
--
- 		ret = dwc3_send_gadget_ep_cmd(dwc, dep->number,
- 			DWC3_DEPCMD_CLEARSTALL, &params);
- 		if (ret)
-@@ -1210,7 +1207,7 @@ int __dwc3_gadget_ep_set_halt(struct dwc
- 					value ? "set" : "clear",
- 					dep->name);
- 		else
--			dep->flags &= ~DWC3_EP_STALL;
-+			dep->flags &= ~(DWC3_EP_STALL | DWC3_EP_WEDGE);
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2929,8 +2929,58 @@ static int prepare_ring(struct xhci_hcd
  	}
  
- 	return ret;
+ 	while (1) {
+-		if (room_on_ring(xhci, ep_ring, num_trbs))
+-			break;
++		if (room_on_ring(xhci, ep_ring, num_trbs)) {
++			union xhci_trb *trb = ep_ring->enqueue;
++			unsigned int usable = ep_ring->enq_seg->trbs +
++					TRBS_PER_SEGMENT - 1 - trb;
++			u32 nop_cmd;
++
++			/*
++			 * Section 4.11.7.1 TD Fragments states that a link
++			 * TRB must only occur at the boundary between
++			 * data bursts (eg 512 bytes for 480M).
++			 * While it is possible to split a large fragment
++			 * we don't know the size yet.
++			 * Simplest solution is to fill the trb before the
++			 * LINK with nop commands.
++			 */
++			if (num_trbs == 1 || num_trbs <= usable || usable == 0)
++				break;
++
++			if (ep_ring->type != TYPE_BULK)
++				/*
++				 * While isoc transfers might have a buffer that
++				 * crosses a 64k boundary it is unlikely.
++				 * Since we can't add NOPs without generating
++				 * gaps in the traffic just hope it never
++				 * happens at the end of the ring.
++				 * This could be fixed by writing a LINK TRB
++				 * instead of the first NOP - however the
++				 * TRB_TYPE_LINK_LE32() calls would all need
++				 * changing to check the ring length.
++				 */
++				break;
++
++			if (num_trbs >= TRBS_PER_SEGMENT) {
++				xhci_err(xhci, "Too many fragments %d, max %d\n",
++						num_trbs, TRBS_PER_SEGMENT - 1);
++				return -ENOMEM;
++			}
++
++			nop_cmd = cpu_to_le32(TRB_TYPE(TRB_TR_NOOP) |
++					ep_ring->cycle_state);
++			ep_ring->num_trbs_free -= usable;
++			do {
++				trb->generic.field[0] = 0;
++				trb->generic.field[1] = 0;
++				trb->generic.field[2] = 0;
++				trb->generic.field[3] = nop_cmd;
++				trb++;
++			} while (--usable);
++			ep_ring->enqueue = trb;
++			if (room_on_ring(xhci, ep_ring, num_trbs))
++				break;
++		}
+ 
+ 		if (ep_ring == xhci->cmd_ring) {
+ 			xhci_err(xhci, "Do not support expand command ring\n");
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -1262,6 +1262,8 @@ typedef void (*usb_complete_t)(struct ur
+  * @sg: scatter gather buffer list, the buffer size of each element in
+  * 	the list (except the last) must be divisible by the endpoint's
+  * 	max packet size if no_sg_constraint isn't set in 'struct usb_bus'
++ * 	(FIXME: scatter-gather under xHCI is broken for periodic transfers.
++ * 	Do not use urb->sg for interrupt endpoints for now, only bulk.)
+  * @num_mapped_sgs: (internal) number of mapped sg entries
+  * @num_sgs: number of entries in the sg list
+  * @transfer_buffer_length: How big is transfer_buffer.  The transfer may
 
 
