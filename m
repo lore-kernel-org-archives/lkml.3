@@ -1,380 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab3LRNOx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 08:14:53 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:62568 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787Ab3LRNOv (ORCPT
+	id S1754135Ab3LRNQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 08:16:10 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:27145 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443Ab3LRNQI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 08:14:51 -0500
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: peterz@infradead.org, linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, pjt@google.com, Morten.Rasmussen@arm.com,
-        cmetcalf@tilera.com, tony.luck@intel.com, alex.shi@linaro.org,
-        preeti@linux.vnet.ibm.com, linaro-kernel@lists.linaro.org, rjw@sisk.pl,
-        paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
-        len.brown@intel.com, arjan@linux.intel.com, amit.kucheria@linaro.org,
-        james.hogan@imgtec.com, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, Dietmar.Eggemann@arm.com,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [RFC] sched: CPU topology try
-Date: Wed, 18 Dec 2013 14:13:51 +0100
-Message-Id: <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
-References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+	Wed, 18 Dec 2013 08:16:08 -0500
+X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat9g9Pvw+WM
+X-RZG-CLASS-ID: mo00
+Subject: Re: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION GTM601 during RING indication
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+In-Reply-To: <1387319242.28943.42.camel@dcbw.local>
+Date: Wed, 18 Dec 2013 14:16:02 +0100
+Cc: Jan Dumon <j.dumon@option.com>, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Belisko Marek <marek.belisko@gmail.com>, e.verdonck@option.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <54ED5542-6C9E-4AC6-90CC-ED77972D8CB1@goldelico.com>
+References: <B1808224-5850-41E3-9A8F-0F350F84FF89@goldelico.com> <541AADAC-7D20-4410-90FC-3E354B0C1457@goldelico.com> <1387222829.2156.51.camel@dcbw.foobar.com> <174CD81C-6425-4560-A3FA-3BFAA83BA770@goldelico.com> <1387319242.28943.42.camel@dcbw.local>
+To: Dan Williams <dcbw@redhat.com>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch applies on top of the two patches [1][2] that have been proposed by
-Peter for creating a new way to initialize sched_domain. It includes some minor
-compilation fixes and a trial of using this new method on ARM platform.
-[1] https://lkml.org/lkml/2013/11/5/239
-[2] https://lkml.org/lkml/2013/11/5/449
+Hi Dan,
 
-Based on the results of this tests, my feeling about this new way to init the
-sched_domain is a bit mitigated.
+Am 17.12.2013 um 23:27 schrieb Dan Williams:
 
-The good point is that I have been able to create the same sched_domain
-topologies than before and even more complex ones (where a subset of the cores
-in a cluster share their powergating capabilities). I have described various
-topology results below.
+> On Tue, 2013-12-17 at 20:56 +0100, Dr. H. Nikolaus Schaller wrote:
+>> Hi Dan,
+>> 
+>> Am 16.12.2013 um 20:40 schrieb Dan Williams:
+>> 
+>>> On Fri, 2013-12-13 at 15:43 +0100, Dr. H. Nikolaus Schaller wrote:
+>>>> Hi,
+>>>> 
+>>>> Am 02.10.2013 um 09:00 schrieb Dr. H. Nikolaus Schaller:
+>>>> 
+>>>>> Hi Jan,
+>>>>> 
+>>>>> we are using a GTM601 modem (Firmware 1.7) for a while and have spotted an
+>>>>> issue that under some conditions the modem sends a packed wIndex over USB
+>>>>> that is rejected by the hso driver making troubles afterwards. Not rejecting makes
+>>>>> it work fine.
+>>>>> 
+>>>>> BR,
+>>>>> Nikolaus Schaller
+>>>>> 
+>>>>> ---
+>>>>> 
+>>>>> From f5c7e15b61f2ce4fe3105ff914f6bfaf5d74af0d Mon Sep 17 00:00:00 2001
+>>>>> From: "H. Nikolaus Schaller" <hns@goldelico.com>
+>>>>> Date: Thu, 15 Nov 2012 14:40:57 +0100
+>>>>> Subject: [PATCH 1/1] hso: fix problem with wrong status code sent by OPTION
+>>>>> GTM601 during RING indication
+>>>>> 
+>>>>> It has been observed that the GTM601 with 1.7 firmware sometimes sends a value
+>>>>> wIndex that has bit 0x04 set instead of being reset as the code expects. So we
+>>>>> mask it for the error check.
+>>>>> 
+>>>>> See http://lists.goldelico.com/pipermail/gta04-owner/2012-February/001643.html
+>>>>> 
+>>>>> Signed-off-by: NeilBrown <neilb@suse.de>
+>>>>> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.de>
+>>>>> ---
+>>>>> drivers/net/usb/hso.c |    3 ++-
+>>>>> 1 files changed, 2 insertions(+), 1 deletions(-)
+>>>>> 
+>>>>> diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
+>>>>> index cba1d46..d146e26 100644
+>>>>> --- a/drivers/net/usb/hso.c
+>>>>> +++ b/drivers/net/usb/hso.c
+>>>>> @@ -1503,7 +1503,8 @@ static void tiocmget_intr_callback(struct urb *urb)
+>>>>> 	if (serial_state_notification->bmRequestType != BM_REQUEST_TYPE ||
+>>>>> 	    serial_state_notification->bNotification != B_NOTIFICATION ||
+>>>>> 	    le16_to_cpu(serial_state_notification->wValue) != W_VALUE ||
+>>>>> -	    le16_to_cpu(serial_state_notification->wIndex) != W_INDEX ||
+>>>>> +	    (le16_to_cpu(serial_state_notification->wIndex) & ~0x4) !=
+>>>>> +		W_INDEX ||
+>>>>> 	    le16_to_cpu(serial_state_notification->wLength) != W_LENGTH) {
+>>>>> 		dev_warn(&usb->dev,
+>>>>> 			 "hso received invalid serial state notification\n");
+>>>>> -- 
+>>>>> 1.7.7.4
+>>>>> 
+>>>>> 
+>>>> 
+>>>> I have found this (better) proposal by OPTION, but wonder what did happen to it.
+>>>> It neither shows in mainline 3.13-rc nor linux-next:
+>>>> 
+>>>> https://lkml.org/lkml/2013/10/9/263
+>>> 
+>>> Likely because nobody formally submitted the patch with a signed-off-by,
+>>> which indicates their intent that the patch is tested, correct, and can
+>>> be merged to the kernel.
+>> 
+>> Ok, I see. I just wasn't aware of the proposal at all since I missed the discussion
+>> and wasn't on CC.
+>> 
+>> Therefore I have added Eric to the CC.
+>> 
+>>> 
+>>> I looked at this today, and I'm left wondering how any port other than
+>>> HSO_PORT_MODEM can get the notification via tiocmget_intr_callback().
+>>> "serial->tiocmget" is only created for HSO_PORT_MODEM serial ports (see
+>>> hso_create_bulk_serial_device()):
+>>> 
+>>> 	if ((port & HSO_PORT_MASK) == HSO_PORT_MODEM) {
+>>> 		num_urbs = 2;
+>>> 		serial->tiocmget = kzalloc(sizeof(struct hso_tiocmget),
+>>> 					   GFP_KERNEL);
+>>> 
+>>> and the code in tiocmget_intr_callback() does this:
+>>> 
+>>> 	tiocmget = serial->tiocmget;
+>>> 	if (!tiocmget)
+>>> 		return;
+>>> 
+>>> which should mean that only a HSO_PORT_MODEM will ever process the
+>>> notification.  Further, the tiocmget interrupt URB is only created and
+>>> submitted if serial->tiocmget != NULL, so only HSO_PORT_MODEM should
+>>> ever be calling into tiocmget_intr_callback().
+>> 
+>> Ok, that looks plausible.
+>> 
+>>> 
+>>> So I think Eric's patch is actually wrong because it will *always* pass
+>>> the new check.
+>>> 
+>>> The original code had the correct intention, but the original code was
+>>> obviously wrong for newer devices where the port layout is read from
+>>> firmware and not from static tables, and thus for recent devices where
+>>> the modem interface is not USB interface #2.
+>> 
+>> This explains why we did run into the problem with the GTM601.
+>> 
+>>> 
+>>> Can you confirm/deny that the 'modem' interface for your GTM601 is USB
+>>> interface #6?  For example, my Icon 452 has the following USB interface
+>>> layout:
+>>> 
+>>> 0: Diag
+>>> 1: GPS
+>>> 2: GPS control
+>>> 3: Application
+>>> 4: Control
+>>> 5: Network
+>>> 6: Modem
+>>> 
+>>> So like the GTM601, I would expect any RING notifications to appear for
+>>> wIndex=0x06.
+>> 
+>> Interestingly I see:
+>> 
+>> 0: Diagnostic
+>> 1: GPS
+>> 2: GPS Control
+>> 3: Application
+>> 4: Control
+>> 5: Modem
+>> 
+>> I.e. there is no Network interface. Originally we did focus on /dev/ttyHS3
+> 
+> How are you determining the number here?  Are you using:
+> 
+> cat /sys/class/tty/ttyHS_Modem/device/bInterfaceNumber
+> 
+> to determine the actual USB interface number associated with the Modem
+> port?  Or are you going off the pre-udev-rename ttyHSx numbers?
 
-I use a system that is made of a dual cluster of quad cores with hyperthreading
-for my examples.
+Ah, I did use
 
-If one cluster (0-7) can powergate its cores independantly but not the other
-cluster (8-15) we have the following topology, which is equal to what I had
-previously:
+root@gta04:~#  ls -d /sys/class/tty/ttyHS*; cat /sys/class/tty/ttyHS*/hsotype
+/sys/class/tty/ttyHS0  /sys/class/tty/ttyHS1  /sys/class/tty/ttyHS2  /sys/class/tty/ttyHS3  /sys/class/tty/ttyHS4  /sys/class/tty/ttyHS5
+Diagnostic
+GPS
+GPS Control
+Application
+Control
+Modem
 
-CPU0:
-domain 0: span 0-1 level: SMT
-    flags: SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
-    groups: 0 1
-  domain 1: span 0-7 level: MC
-      flags: SD_SHARE_PKG_RESOURCES
-      groups: 0-1 2-3 4-5 6-7
-    domain 2: span 0-15 level: CPU
-        flags:
-        groups: 0-7 8-15
+With bInterfaceNumber I get
 
-CPU8
-domain 0: span 8-9 level: SMT
-    flags: SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
-    groups: 8 9
-  domain 1: span 8-15 level: MC
-      flags: SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
-      groups: 8-9 10-11 12-13 14-15
-    domain 2: span 0-15 level CPU
-        flags:
-        groups: 8-15 0-7
+root@gta04:~# cat /sys/class/tty/ttyHS*/device/bInterfaceNumber
+00
+01
+02
+03
+04
+06
 
-We can even describe some more complex topologies if a susbset (2-7) of the
-cluster can't powergate independatly:
+So the Modem is indeed interface 06 and there is just no ttyHS_Network.
 
-CPU0:
-domain 0: span 0-1 level: SMT
-    flags: SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
-    groups: 0 1
-  domain 1: span 0-7 level: MC
-      flags: SD_SHARE_PKG_RESOURCES
-      groups: 0-1 2-7
-    domain 2: span 0-15 level: CPU
-        flags:
-        groups: 0-7 8-15
+> 
+>> to access the Application interface, but people reported that it is not stable
+>> or always so. Therefore we have some udev rule to add symbolic names
+>> (e.g. /dev/ttyHS_Application):
+>> 
+>> http://git.goldelico.com/?p=gta04-kernel.git;a=blob;f=GTA04/udev-rules/hso.rules;hb=HEAD
+>> 
+>> So I think the assignment is not even always the same on the same device.
+> 
+> The assignment will always be the same on the same device *and the same
+> firmware*.  That is because the hso driver asks the firmware for the
+> port layout, and that is what is put into the 'hsotype' file in sysfs
+> that the udev rules use.  So if your telephony/WWAN stack is using the
+> udev symbolic links or reading 'hsotype' directly, you can be assured
+> that ttyHS_Modem is always the port you should be using for PPP.
+> 
+>> And I am a little puzzled why we do see the wIndex == 6 if it is the interface
+>> number. Maybe it happens only in some scenario where the Modem becomes
+>> interface #6.
+> 
+> I'm still not convinced that that it isn't #6 until we agree on how
+> we're figuring that out :)  I may well assume to little of you, so
+> forgive me if you are actually reporting the real USB interface # of the
+> ports.  But I've seen too many people confuse the tty numbers with USB
+> interface numbers, so I must ask.
 
-CPU2:
-domain 0: span 2-3 level: SMT
-    flags: SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
-    groups: 0 1
-  domain 1: span 2-7 level: MC
-      flags: SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
-      groups: 2-7 4-5 6-7
-    domain 2: span 0-7 level: MC
-        flags: SD_SHARE_PKG_RESOURCES
-        groups: 2-7 0-1
-      domain 3: span 0-15 level: CPU
-          flags:
-          groups: 0-7 8-15
+Yes, I did the mistake as you describe...
 
-In this case, we have an aditionnal sched_domain MC level for this subset (2-7)
-of cores so we can trigger some load balance in this subset before doing that
-on the complete cluster (which is the last level of cache in my example)
+> 
+>>> 
+>>> Does the following patch fix the problem for you?
+>> 
+>> I will try but need a little time to setup a test scenario (because I need to trigger
+>> RING indications) and will then report.
+> 
+> Here's a RING on the 452 with Modem @ usbif #6:
+> 
+> [65808.711323] tiocmget_intr_callback: W_INDEX 0006
+> [65808.711330] tiocmget_intr_callback: UART bits 000a
+> [65808.711333] tiocmget_intr_callback: Modem ifnum 06
+> 
+> and B_TX_CARRIER notification with GIO322 with Modem @ usbif #2:
+> 
+> [66029.365441] tiocmget_intr_callback: W_INDEX 0002
+> [66029.365444] tiocmget_intr_callback: UART bits 0002
+> [66029.365445] tiocmget_intr_callback: Modem ifnum 02
 
-We can add more levels that will describe other dependency/independency like
-the frequency scaling dependency and as a result the final sched_domain
-topology will have additional levels (if they have not been removed during
-the degenerate sequence)
+Hm. I didn't see these messages (on 3.12). How do I enable them?
 
-My concern is about the configuration of the table that is used to create the
-sched_domain. Some levels are "duplicated" with different flags configuration
-which make the table not easily readable and we must also take care of the
-order  because parents have to gather all cpus of its childs. So we must
-choose which capabilities will be a subset of the other one. The order is
-almost straight forward when we describe 1 or 2 kind of capabilities
-(package ressource sharing and power sharing) but it can become complex if we
-want to add more.
+BTW: the RING (or +CRING:) text messages do appear on the Application port,
+while the NO CARRIER after ATA and ending the call appears on
+the Modem port.
 
-Regards
-Vincent
-
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-
----
- arch/arm/include/asm/topology.h |    4 ++
- arch/arm/kernel/topology.c      |   99 ++++++++++++++++++++++++++++++++++++++-
- include/linux/sched.h           |    7 +++
- kernel/sched/core.c             |   17 +++----
- 4 files changed, 116 insertions(+), 11 deletions(-)
-
-diff --git a/arch/arm/include/asm/topology.h b/arch/arm/include/asm/topology.h
-index 58b8b84..5102847 100644
---- a/arch/arm/include/asm/topology.h
-+++ b/arch/arm/include/asm/topology.h
-@@ -5,12 +5,16 @@
- 
- #include <linux/cpumask.h>
- 
-+#define CPU_CORE_GATE		0x1
-+#define CPU_CLUSTER_GATE	0x2
-+
- struct cputopo_arm {
- 	int thread_id;
- 	int core_id;
- 	int socket_id;
- 	cpumask_t thread_sibling;
- 	cpumask_t core_sibling;
-+	int flags;
- };
- 
- extern struct cputopo_arm cpu_topology[NR_CPUS];
-diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-index 85a8737..8a2aec6 100644
---- a/arch/arm/kernel/topology.c
-+++ b/arch/arm/kernel/topology.c
-@@ -24,6 +24,7 @@
- 
- #include <asm/cputype.h>
- #include <asm/topology.h>
-+#include <asm/smp_plat.h>
- 
- /*
-  * cpu power scale management
-@@ -79,6 +80,51 @@ unsigned long *__cpu_capacity;
- 
- unsigned long middle_capacity = 1;
- 
-+static int __init get_dt_power_topology(struct device_node *topo)
-+{
-+	const u32 *reg;
-+	int len, power = 0;
-+	int flag = CPU_CORE_GATE;
-+
-+	for (; topo; topo = of_get_next_parent(topo)) {
-+		reg = of_get_property(topo, "power-gate", &len);
-+		if (reg && len == 4 && be32_to_cpup(reg))
-+			power |= flag;
-+		flag <<= 1;
-+	}
-+
-+	return power;
-+}
-+
-+#define for_each_subnode_with_property(dn, pn, prop_name) \
-+	for (dn = of_find_node_with_property(pn, prop_name); dn; \
-+	     dn = of_find_node_with_property(dn, prop_name))
-+
-+static void __init init_dt_power_topology(void)
-+{
-+	struct device_node *cn, *topo;
-+
-+	/* Get power domain topology information */
-+	cn = of_find_node_by_path("/cpus/cpu-map");
-+	if (!cn) {
-+		pr_warn("Missing cpu-map node, bailing out\n");
-+		return;
-+	}
-+
-+	for_each_subnode_with_property(topo, cn, "cpu") {
-+		struct device_node *cpu;
-+
-+		cpu = of_parse_phandle(topo, "cpu", 0);
-+		if (cpu) {
-+			u32 hwid;
-+
-+			of_property_read_u32(cpu, "reg", &hwid);
-+			cpu_topology[get_logical_index(hwid)].flags = get_dt_power_topology(topo);
-+
-+		}
-+	}
-+}
-+
- /*
-  * Iterate all CPUs' descriptor in DT and compute the efficiency
-  * (as per table_efficiency). Also calculate a middle efficiency
-@@ -151,6 +197,8 @@ static void __init parse_dt_topology(void)
- 		middle_capacity = ((max_capacity / 3)
- 				>> (SCHED_POWER_SHIFT-1)) + 1;
- 
-+	/* Retrieve power topology information from DT */
-+	init_dt_power_topology();
- }
- 
- /*
-@@ -266,6 +314,52 @@ void store_cpu_topology(unsigned int cpuid)
- 		cpu_topology[cpuid].socket_id, mpidr);
- }
- 
-+#ifdef CONFIG_SCHED_SMT
-+static const struct cpumask *cpu_smt_mask(int cpu)
-+{
-+	return topology_thread_cpumask(cpu);
-+}
-+#endif
-+
-+const struct cpumask *cpu_corepower_mask(int cpu)
-+{
-+	if (cpu_topology[cpu].flags & CPU_CORE_GATE)
-+		return &cpu_topology[cpu].thread_sibling;
-+	else
-+		return &cpu_topology[cpu].core_sibling;
-+}
-+
-+static const struct cpumask *cpu_cpupower_mask(int cpu)
-+{
-+	if (cpu_topology[cpu].flags & CPU_CLUSTER_GATE)
-+		return &cpu_topology[cpu].core_sibling;
-+	else
-+		return cpumask_of_node(cpu_to_node(cpu));
-+}
-+
-+static const struct cpumask *cpu_cpu_mask(int cpu)
-+{
-+	return cpumask_of_node(cpu_to_node(cpu));
-+}
-+
-+static struct sched_domain_topology_level arm_topology[] = {
-+#ifdef CONFIG_SCHED_SMT
-+	{ cpu_smt_mask, SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN },
-+#endif
-+#ifdef CONFIG_SCHED_MC
-+	{ cpu_corepower_mask, SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN },
-+	{ cpu_coregroup_mask, SD_SHARE_PKG_RESOURCES},
-+#endif
-+	{ cpu_cpupower_mask, SD_SHARE_POWERDOMAIN },
-+	{ cpu_cpu_mask, },
-+	{ NULL, },
-+};
-+
-+static int __init arm_sched_topology(void)
-+{
-+	sched_domain_topology = arm_topology;
-+}
-+
- /*
-  * init_cpu_topology is called at boot when only one cpu is running
-  * which prevent simultaneous write access to cpu_topology array
-@@ -274,6 +368,9 @@ void __init init_cpu_topology(void)
- {
- 	unsigned int cpu;
- 
-+	/* set scheduler topology descriptor */
-+	arm_sched_topology();
-+
- 	/* init core mask and power*/
- 	for_each_possible_cpu(cpu) {
- 		struct cputopo_arm *cpu_topo = &(cpu_topology[cpu]);
-@@ -283,7 +380,7 @@ void __init init_cpu_topology(void)
- 		cpu_topo->socket_id = -1;
- 		cpumask_clear(&cpu_topo->core_sibling);
- 		cpumask_clear(&cpu_topo->thread_sibling);
--
-+		cpu_topo->flags = 0;
- 		set_power_scale(cpu, SCHED_POWER_SCALE);
- 	}
- 	smp_wmb();
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 075a325..8cbaebf 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -772,6 +772,7 @@ enum cpu_idle_type {
- #define SD_BALANCE_WAKE		0x0010  /* Balance on wakeup */
- #define SD_WAKE_AFFINE		0x0020	/* Wake task to waking CPU */
- #define SD_SHARE_CPUPOWER	0x0080	/* Domain members share cpu power */
-+#define SD_SHARE_POWERDOMAIN	0x0100	/* Domain members share power domain */
- #define SD_SHARE_PKG_RESOURCES	0x0200	/* Domain members share cpu pkg resources */
- #define SD_SERIALIZE		0x0400	/* Only a single load balancing instance */
- #define SD_ASYM_PACKING		0x0800  /* Place busy groups earlier in the domain */
-@@ -893,6 +894,12 @@ typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
- 
- #define SDTL_OVERLAP	0x01
- 
-+struct sd_data {
-+	struct sched_domain **__percpu sd;
-+	struct sched_group **__percpu sg;
-+	struct sched_group_power **__percpu sgp;
-+};
-+
- struct sched_domain_topology_level {
- 	sched_domain_mask_f mask;
- 	int		    sd_flags;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 73658da..8dc2a50 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4680,7 +4680,8 @@ static int sd_degenerate(struct sched_domain *sd)
- 			 SD_BALANCE_FORK |
- 			 SD_BALANCE_EXEC |
- 			 SD_SHARE_CPUPOWER |
--			 SD_SHARE_PKG_RESOURCES)) {
-+			 SD_SHARE_PKG_RESOURCES |
-+			 SD_SHARE_POWERDOMAIN)) {
- 		if (sd->groups != sd->groups->next)
- 			return 0;
- 	}
-@@ -4711,7 +4712,8 @@ sd_parent_degenerate(struct sched_domain *sd, struct sched_domain *parent)
- 				SD_BALANCE_EXEC |
- 				SD_SHARE_CPUPOWER |
- 				SD_SHARE_PKG_RESOURCES |
--				SD_PREFER_SIBLING);
-+				SD_PREFER_SIBLING |
-+				SD_SHARE_POWERDOMAIN);
- 		if (nr_node_ids == 1)
- 			pflags &= ~SD_SERIALIZE;
- 	}
-@@ -4978,12 +4980,6 @@ static const struct cpumask *cpu_cpu_mask(int cpu)
- 	return cpumask_of_node(cpu_to_node(cpu));
- }
- 
--struct sd_data {
--	struct sched_domain **__percpu sd;
--	struct sched_group **__percpu sg;
--	struct sched_group_power **__percpu sgp;
--};
--
- struct s_data {
- 	struct sched_domain ** __percpu sd;
- 	struct root_domain	*rd;
-@@ -5345,7 +5341,8 @@ static struct cpumask ***sched_domains_numa_masks;
- 	(SD_SHARE_CPUPOWER |		\
- 	 SD_SHARE_PKG_RESOURCES |	\
- 	 SD_NUMA |			\
--	 SD_ASYM_PACKING)
-+	 SD_ASYM_PACKING |		\
-+	 SD_SHARE_POWERDOMAIN)
- 
- static struct sched_domain *
- sd_init(struct sched_domain_topology_level *tl, int cpu)
-@@ -5464,7 +5461,7 @@ static struct sched_domain_topology_level default_topology[] = {
- 	{ NULL, },
- };
- 
--static struct sched_domain_topology_level *sched_domain_topology = default_topology;
-+struct sched_domain_topology_level *sched_domain_topology = default_topology;
- 
- #define for_each_sd_topology(tl)			\
- 	for (tl = sched_domain_topology; tl->mask; tl++)
--- 
-1.7.9.5
+BR,
+Nikolaus
 
