@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab3LRVrv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:47:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36240 "EHLO
+	id S1755106Ab3LRVsN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:48:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36235 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663Ab3LRVNB (ORCPT
+	with ESMTP id S1753649Ab3LRVNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:01 -0500
+	Wed, 18 Dec 2013 16:13:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars Bull <larsbull@google.com>, Gleb Natapov <gleb@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.12 019/118] KVM: x86: fix guest-initiated crash with x2apic (CVE-2013-6376)
-Date: Wed, 18 Dec 2013 13:10:56 -0800
-Message-Id: <20131218211220.016253580@linuxfoundation.org>
+        Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.12 018/118] KVM: x86: Convert vapic synchronization to _cached functions (CVE-2013-6368)
+Date: Wed, 18 Dec 2013 13:10:55 -0800
+Message-Id: <20131218211219.988466594@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,53 +28,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gleb Natapov <gleb@redhat.com>
+From: Andy Honig <ahonig@google.com>
 
-commit 17d68b763f09a9ce824ae23eb62c9efc57b69271 upstream.
+commit fda4e2e85589191b123d31cdc21fd33ee70f50fd upstream.
 
-A guest can cause a BUG_ON() leading to a host kernel crash.
-When the guest writes to the ICR to request an IPI, while in x2apic
-mode the following things happen, the destination is read from
-ICR2, which is a register that the guest can control.
+In kvm_lapic_sync_from_vapic and kvm_lapic_sync_to_vapic there is the
+potential to corrupt kernel memory if userspace provides an address that
+is at the end of a page.  This patches concerts those functions to use
+kvm_write_guest_cached and kvm_read_guest_cached.  It also checks the
+vapic_address specified by userspace during ioctl processing and returns
+an error to userspace if the address is not a valid GPA.
 
-kvm_irq_delivery_to_apic_fast uses the high 16 bits of ICR2 as the
-cluster id.  A BUG_ON is triggered, which is a protection against
-accessing map->logical_map with an out-of-bounds access and manages
-to avoid that anything really unsafe occurs.
+This is generally not guest triggerable, because the required write is
+done by firmware that runs before the guest.  Also, it only affects AMD
+processors and oldish Intel that do not have the FlexPriority feature
+(unless you disable FlexPriority, of course; then newer processors are
+also affected).
 
-The logic in the code is correct from real HW point of view. The problem
-is that KVM supports only one cluster with ID 0 in clustered mode, but
-the code that has the bug does not take this into account.
+Fixes: b93463aa59d6 ('KVM: Accelerated apic support')
 
-Reported-by: Lars Bull <larsbull@google.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Reported-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Andrew Honig <ahonig@google.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/lapic.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/x86/kvm/lapic.c |   27 +++++++++++++++------------
+ arch/x86/kvm/lapic.h |    4 ++--
+ arch/x86/kvm/x86.c   |   40 +---------------------------------------
+ 3 files changed, 18 insertions(+), 53 deletions(-)
 
 --- a/arch/x86/kvm/lapic.c
 +++ b/arch/x86/kvm/lapic.c
-@@ -143,6 +143,8 @@ static inline int kvm_apic_id(struct kvm
- 	return (kvm_apic_get_reg(apic, APIC_ID) >> 24) & 0xff;
+@@ -1692,7 +1692,6 @@ static void apic_sync_pv_eoi_from_guest(
+ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
+ {
+ 	u32 data;
+-	void *vapic;
+ 
+ 	if (test_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention))
+ 		apic_sync_pv_eoi_from_guest(vcpu, vcpu->arch.apic);
+@@ -1700,9 +1699,8 @@ void kvm_lapic_sync_from_vapic(struct kv
+ 	if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
+ 		return;
+ 
+-	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
+-	data = *(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr));
+-	kunmap_atomic(vapic);
++	kvm_read_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
++				sizeof(u32));
+ 
+ 	apic_set_tpr(vcpu->arch.apic, data & 0xff);
+ }
+@@ -1738,7 +1736,6 @@ void kvm_lapic_sync_to_vapic(struct kvm_
+ 	u32 data, tpr;
+ 	int max_irr, max_isr;
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+-	void *vapic;
+ 
+ 	apic_sync_pv_eoi_to_guest(vcpu, apic);
+ 
+@@ -1754,18 +1751,24 @@ void kvm_lapic_sync_to_vapic(struct kvm_
+ 		max_isr = 0;
+ 	data = (tpr & 0xff) | ((max_isr & 0xf0) << 8) | (max_irr << 24);
+ 
+-	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
+-	*(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr)) = data;
+-	kunmap_atomic(vapic);
++	kvm_write_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
++				sizeof(u32));
  }
  
-+#define KVM_X2APIC_CID_BITS 0
-+
- static void recalculate_apic_map(struct kvm *kvm)
+-void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
++int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
  {
- 	struct kvm_apic_map *new, *old = NULL;
-@@ -180,7 +182,8 @@ static void recalculate_apic_map(struct
- 		if (apic_x2apic_mode(apic)) {
- 			new->ldr_bits = 32;
- 			new->cid_shift = 16;
--			new->cid_mask = new->lid_mask = 0xffff;
-+			new->cid_mask = (1 << KVM_X2APIC_CID_BITS) - 1;
-+			new->lid_mask = 0xffff;
- 		} else if (kvm_apic_sw_enabled(apic) &&
- 				!new->cid_mask /* flat mode */ &&
- 				kvm_apic_get_reg(apic, APIC_DFR) == APIC_DFR_CLUSTER) {
+-	vcpu->arch.apic->vapic_addr = vapic_addr;
+-	if (vapic_addr)
++	if (vapic_addr) {
++		if (kvm_gfn_to_hva_cache_init(vcpu->kvm,
++					&vcpu->arch.apic->vapic_cache,
++					vapic_addr, sizeof(u32)))
++			return -EINVAL;
+ 		__set_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention);
+-	else
++	} else {
+ 		__clear_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention);
++	}
++
++	vcpu->arch.apic->vapic_addr = vapic_addr;
++	return 0;
+ }
+ 
+ int kvm_x2apic_msr_write(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+--- a/arch/x86/kvm/lapic.h
++++ b/arch/x86/kvm/lapic.h
+@@ -34,7 +34,7 @@ struct kvm_lapic {
+ 	 */
+ 	void *regs;
+ 	gpa_t vapic_addr;
+-	struct page *vapic_page;
++	struct gfn_to_hva_cache vapic_cache;
+ 	unsigned long pending_events;
+ 	unsigned int sipi_vector;
+ };
+@@ -76,7 +76,7 @@ void kvm_set_lapic_tscdeadline_msr(struc
+ void kvm_apic_write_nodecode(struct kvm_vcpu *vcpu, u32 offset);
+ void kvm_apic_set_eoi_accelerated(struct kvm_vcpu *vcpu, int vector);
+ 
+-void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
++int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
+ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu);
+ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu);
+ 
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3192,8 +3192,7 @@ long kvm_arch_vcpu_ioctl(struct file *fi
+ 		r = -EFAULT;
+ 		if (copy_from_user(&va, argp, sizeof va))
+ 			goto out;
+-		r = 0;
+-		kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
++		r = kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
+ 		break;
+ 	}
+ 	case KVM_X86_SETUP_MCE: {
+@@ -5718,36 +5717,6 @@ static void post_kvm_run_save(struct kvm
+ 			!kvm_event_needs_reinjection(vcpu);
+ }
+ 
+-static int vapic_enter(struct kvm_vcpu *vcpu)
+-{
+-	struct kvm_lapic *apic = vcpu->arch.apic;
+-	struct page *page;
+-
+-	if (!apic || !apic->vapic_addr)
+-		return 0;
+-
+-	page = gfn_to_page(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
+-	if (is_error_page(page))
+-		return -EFAULT;
+-
+-	vcpu->arch.apic->vapic_page = page;
+-	return 0;
+-}
+-
+-static void vapic_exit(struct kvm_vcpu *vcpu)
+-{
+-	struct kvm_lapic *apic = vcpu->arch.apic;
+-	int idx;
+-
+-	if (!apic || !apic->vapic_addr)
+-		return;
+-
+-	idx = srcu_read_lock(&vcpu->kvm->srcu);
+-	kvm_release_page_dirty(apic->vapic_page);
+-	mark_page_dirty(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
+-	srcu_read_unlock(&vcpu->kvm->srcu, idx);
+-}
+-
+ static void update_cr8_intercept(struct kvm_vcpu *vcpu)
+ {
+ 	int max_irr, tpr;
+@@ -6047,11 +6016,6 @@ static int __vcpu_run(struct kvm_vcpu *v
+ 	struct kvm *kvm = vcpu->kvm;
+ 
+ 	vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
+-	r = vapic_enter(vcpu);
+-	if (r) {
+-		srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
+-		return r;
+-	}
+ 
+ 	r = 1;
+ 	while (r > 0) {
+@@ -6110,8 +6074,6 @@ static int __vcpu_run(struct kvm_vcpu *v
+ 
+ 	srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
+ 
+-	vapic_exit(vcpu);
+-
+ 	return r;
+ }
+ 
 
 
