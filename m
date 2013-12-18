@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab3LRPve (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 10:51:34 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:19448 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755358Ab3LRPva (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 10:51:30 -0500
-X-AuditID: cbfec7f5-b7f6f6d000005b3b-c4-52b1c47f9c9a
-From: Tomasz Figa <t.figa@samsung.com>
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: linux-pm@vger.kernel.org, naveenkrishna.ch@gmail.com, rui.zhang@intel.com,
-        eduardo.valentin@ti.com, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
-        kgene.kim@samsung.com, devicetree@vger.kernel.org,
-        b.zolnierkie@samsung.com, cpgs@samsung.com
-Subject: Re: [PATCH v11 1/4] thermal: samsung: replace inten_ bit fields with
- intclr_
-Date: Wed, 18 Dec 2013 16:51:12 +0100
-Message-id: <22385645.8hSP6uLh4A@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11.3 (Linux/3.11.5-gentoo; KDE/4.11.3; x86_64; ; )
-In-reply-to: <1386657688-21542-1-git-send-email-ch.naveen@samsung.com>
-References: <1384238168-24561-1-git-send-email-ch.naveen@samsung.com>
- <1386657688-21542-1-git-send-email-ch.naveen@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t/xa7oNRzYGGShbNFwNsdg4Yz2rxd3n
-	hxktXh7StJh/5ByrxZr9P5ksehdcZbO4vGsOm8Xn3iOMFjPO72OyWLTtP7PFk4d9bA48Hjtn
-	3WX3WLznJZNH35ZVjB7Hb2xn8vi8SS6ANYrLJiU1J7MstUjfLoErY87RzywF63kqJk+TamDs
-	4upi5OSQEDCRuLXnOhuELSZx4d56IJuLQ0hgKaNEx5tfLBBOF5NE/6uz7CBVbAJqEp8bHoF1
-	iAB1H391hh2kiFlgKZPE/GWLmEESwgLhEj0nH7OC2CwCqhJXp20Da+YV0JLoPvGaEcTmF1CX
-	eLftKROILSrgJvFi3xawGk4g+/rB71BnNDJKzJh7B6pZUOLH5HssIDazgLzEvv1TWSFsLYn1
-	O48zTWAUnIWkbBaSsllIyhYwMq9iFE0tTS4oTkrPNdIrTswtLs1L10vOz93ECImVrzsYlx6z
-	OsQowMGoxMO7wGdjkBBrYllxZe4hRgkOZiURXqGtQCHelMTKqtSi/Pii0pzU4kOMTBycwHDV
-	3u8/q8SV5+qZgnDG0N3XD0mX7DD4fnBnq3e+GouETdi+3yXT/tx9b8zBenpO/QTt5lnpPD2O
-	P+57zX78Z9czpq/6UUaVT9h3VGqI6W9+rpbWm75pp2PwseSAR5mvO4+833g72+C32d85hdc1
-	74kvNa24fiv008a4xmN7jh7ZlrGg4GepxtQ5SizFGYmGWsxFxYkA3iNUIXMCAAA=
+	id S1755532Ab3LRPvw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 10:51:52 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.150]:32827 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755142Ab3LRPvu convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 10:51:50 -0500
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Dec 2013 10:51:49 EST
+X-Env-Sender: anthony.olech.opensource@diasemi.com
+X-Msg-Ref: server-9.tower-180.messagelabs.com!1387381533!28270216!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+To: Jean Delvare <khali@linux-fr.org>,
+        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+CC: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:HARDWARE MONITORING" <lm-sensors@lm-sensors.org>
+Subject: RE: [lm-sensors] [PATCH V1] fix adc to voltage calculation in
+ da9052  power driver
+Thread-Topic: [lm-sensors] [PATCH V1] fix adc to voltage calculation in
+ da9052  power driver
+Thread-Index: AQHO/AZpFQ5cD64o6Uubym1FfuDMzJpaFb4w
+Date: Wed, 18 Dec 2013 15:45:32 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB51847ABF61@NB-EX-MBX02.diasemi.com>
+References: <201312181524.rBIFOv96017094@swsrvapps-02.lan>
+ <20131218163234.714a166c@endymion.delvare>
+In-Reply-To: <20131218163234.714a166c@endymion.delvare>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.24.126]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 10 of December 2013 12:11:28 Naveen Krishna Chatradhi wrote:
-> This patch replaces the inten_rise_shift/mask and inten_fall_shift/mask
-> with intclr_rise_shift/mask and intclr_fall_shift/mask respectively.
-> Currently, inten_rise_shift/mask and inten_fall_shift/mask bits are only used
-> to configure intclr related registers.
-> 
-> Description of H/W:
-> The offset for the bits in the CLEAR register are not consistent across TMU
-> modules in Exynso5250, 5420 and 5440.
-> 
-> On Exynos5250, the FALL interrupt related en, status and clear bits are
-> available at an offset of
-> 16 in INTEN, INTSTAT registers and at an offset of
-> 12 in INTCLEAR register.
-> 
-> On Exynos5420, the FALL interrupt related en, status and clear bits are
-> available at an offset of
-> 16 in INTEN, INTSTAT and INTCLEAR registers.
-> 
-> On Exynos5440,
-> the FALL_IRQEN bits are at an offset of 4
-> and the RISE_IRQEN bits are at an offset of 0
-> 
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> ---
-> Changes since v10:
-> None
-> 
->  drivers/thermal/samsung/exynos_tmu.c      |    6 +++---
->  drivers/thermal/samsung/exynos_tmu.h      |   16 ++++++++--------
->  drivers/thermal/samsung/exynos_tmu_data.c |   18 +++++++++---------
->  drivers/thermal/samsung/exynos_tmu_data.h |    4 ++--
->  4 files changed, 22 insertions(+), 22 deletions(-)
+> -----Original Message-----
+> From: Jean Delvare [mailto:khali@linux-fr.org]
+> Sent: 18 December 2013 15:33
+> To: Opensource [Anthony Olech]
+> Cc: Anton Vorontsov; David Woodhouse; David Dajun Chen; open list; open
+> list:HARDWARE MONITORING
+> Subject: Re: [lm-sensors] [PATCH V1] fix adc to voltage calculation in da9052
+> power driver
+> On Wed, 18 Dec 2013 15:21:13 +0000, Anthony Olech wrote:
+> > The ADC resolution of the PMIC is 10-bits, this means that the maximum
+> > possible value is 1023 and not the 1024 as in the code.
+> The conversion from register value to mV depends on the ADC's LSB, not its
+> range. So the maximum value which can be represented is irrelevant.
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+thanks for the speedy response, but the converted value returned by the function
+does depend on the scaling.
 
-Best regards,
-Tomasz
+For example take the two cases where value in 0x1F0, then the erroneous previous
+calculation yields 3469 and the new corrected calculation yields 3470
 
+So please apply the patch as it truly fixes an error.
+
+many thanks
+
+Tony Olech
+
+> > Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+> > ---
+> > This patch is relative to linux-next repository tag next-20131218
+> >  drivers/power/da9052-battery.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > diff --git a/drivers/power/da9052-battery.c
+> > b/drivers/power/da9052-battery.c index f8f4c0f..8f0f259 100644
+> > --- a/drivers/power/da9052-battery.c
+> > +++ b/drivers/power/da9052-battery.c
+> > @@ -178,7 +178,7 @@ struct da9052_battery {
+> >  static inline int volt_reg_to_mV(int value)  {
+> > -	return ((value * 1000) / 512) + 2500;
+> > +	return DIV_ROUND_CLOSEST(value * 2000, 1023) + 2500;
+> >  }
+> >  static inline int ichg_reg_to_mA(int value)
+> --
+> Jean Delvare
