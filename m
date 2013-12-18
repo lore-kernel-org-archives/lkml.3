@@ -1,141 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab3LRAvT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 19:51:19 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59243 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751877Ab3LRAvS convert rfc822-to-8bit (ORCPT
+	id S1752361Ab3LRAwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 19:52:39 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:42030 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab3LRAwi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 19:51:18 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
-        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH v2] libata, freezer: avoid block device removal while system is frozen
-Date: Wed, 18 Dec 2013 02:04:35 +0100
-Message-ID: <3253153.CIRSLE6KOu@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131217125042.GF29989@htj.dyndns.org>
-References: <20131213174932.GA27070@htj.dyndns.org> <20131213204034.GE27070@htj.dyndns.org> <20131217125042.GF29989@htj.dyndns.org>
+	Tue, 17 Dec 2013 19:52:38 -0500
 MIME-Version: 1.0
+In-Reply-To: <CA+55aFw_C=U0BSb8b=SPiN-5b+=dT28_R7PKHrEyy-T+FeL0Ww@mail.gmail.com>
+References: <alpine.DEB.2.00.1312180026340.10386@skynet.skynet.ie>
+	<CA+55aFw_C=U0BSb8b=SPiN-5b+=dT28_R7PKHrEyy-T+FeL0Ww@mail.gmail.com>
+Date: Wed, 18 Dec 2013 10:52:35 +1000
+Message-ID: <CAPM=9tx7r5k6insqJbSJA_PeQJS2xpW85Gwnz0yjZ6OmsqX4Gw@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 17, 2013 07:50:42 AM Tejun Heo wrote:
-> Hello,
-> 
-> Rafael, if you're okay with the workaround, I'll route it through
-> libata/for-3.13-fixes.
-> 
-> Thanks.
-> ------- 8< -------
-> Freezable kthreads and workqueues are fundamentally problematic in
-> that they effectively introduce a big kernel lock widely used in the
-> kernel and have already been the culprit of several deadlock
-> scenarios.  This is the latest occurrence.
-> 
-> During resume, libata rescans all the ports and revalidates all
-> pre-existing devices.  If it determines that a device has gone
-> missing, the device is removed from the system which involves
-> invalidating block device and flushing bdi while holding driver core
-> layer locks.  Unfortunately, this can race with the rest of device
-> resume.  Because freezable kthreads and workqueues are thawed after
-> device resume is complete and block device removal depends on
-> freezable workqueues and kthreads (e.g. bdi_wq, jbd2) to make
-> progress, this can lead to deadlock - block device removal can't
-> proceed because kthreads are frozen and kthreads can't be thawed
-> because device resume is blocked behind block device removal.
-> 
-> 839a8e8660b6 ("writeback: replace custom worker pool implementation
-> with unbound workqueue") made this particular deadlock scenario more
-> visible but the underlying problem has always been there - the
-> original forker task and jbd2 are freezable too.  In fact, this is
-> highly likely just one of many possible deadlock scenarios given that
-> freezer behaves as a big kernel lock and we don't have any debug
-> mechanism around it.
-> 
-> I believe the right thing to do is getting rid of freezable kthreads
-> and workqueues.  This is something fundamentally broken.  For now,
-> implement a funny workaround in libata - just avoid doing block device
-> hot[un]plug while the system is frozen.  Kernel engineering at its
-> finest.  :(
-> 
-> v2: Add EXPORT_SYMBOL_GPL(pm_freezing) for cases where libata is built
->     as a module.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Tomaž Šolc <tomaz.solc@tablix.org>
-> Link: https://bugzilla.kernel.org/show_bug.cgi?id=62801
-> Link: http://lkml.kernel.org/r/20131213174932.GA27070@htj.dyndns.org
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Len Brown <len.brown@intel.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: stable@vger.kernel.org
-> ---
->  drivers/ata/libata-scsi.c |   19 +++++++++++++++++++
->  kernel/freezer.c          |    6 ++++++
->  2 files changed, 25 insertions(+)
-> 
-> --- a/drivers/ata/libata-scsi.c
-> +++ b/drivers/ata/libata-scsi.c
-> @@ -3871,6 +3871,25 @@ void ata_scsi_hotplug(struct work_struct
->  		return;
->  	}
->  
-> +	/*
-> +	 * XXX - UGLY HACK
-> +	 *
-> +	 * The core suspend/resume path is fundamentally broken due to
-> +	 * freezable kthreads and workqueue and may deadlock if a block
-> +	 * device gets removed while resume is in progress.  I don't know
-> +	 * what the solution is short of removing freezable kthreads and
-> +	 * workqueues altogether.
+On Wed, Dec 18, 2013 at 10:42 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Dec 17, 2013 at 4:33 PM, Dave Airlie <airlied@linux.ie> wrote:
+>>
+>> are available in the git repository at:
+>>
+>>   git://people.freedesktop.org/~airlied/linux
+>
+> Nope.
+>
+> I assume you meant the 'drm-fixes' branch, but you didn't actually
+> *say* that, and when I pull it I don't get the same diffstat you
+> claim, so I'm unpulling it and waiting for you to verify and
+> double-check.
+>
 
-Do you mean the block device core or the SCSI core or something else?  It would
-be good to clarify that here to avoid confusion.
+ouch, sorry - my push failed and then I failed, here's the correct one.
 
-> +	 * The following is an ugly hack to avoid kicking off device
-> +	 * removal while freezer is active.  This is a joke but does avoid
-> +	 * this particular deadlock scenario.
-> +	 *
-> +	 * https://bugzilla.kernel.org/show_bug.cgi?id=62801
-> +	 * http://marc.info/?l=linux-kernel&m=138695698516487
-> +	 */
-> +	while (pm_freezing)
-> +		msleep(100);
+The following changes since commit 9538e10086bd1301fe915683b1ba0a1de66d7483:
 
-Why is the sleep time 100 ms exactly?  And why does it matter?
+  Merge git://www.linux-watchdog.org/linux-watchdog (2013-12-10 11:30:10 -0800)
 
-For example, what would change if it were 10 ms?
+are available in the git repository at:
 
-> +
->  	DPRINTK("ENTER\n");
->  	mutex_lock(&ap->scsi_scan_mutex);
->  
-> --- a/kernel/freezer.c
-> +++ b/kernel/freezer.c
-> @@ -19,6 +19,12 @@ EXPORT_SYMBOL(system_freezing_cnt);
->  bool pm_freezing;
->  bool pm_nosig_freezing;
->  
-> +/*
-> + * Temporary export for the deadlock workaround in ata_scsi_hotplug().
-> + * Remove once the hack becomes unnecessary.
-> + */
-> +EXPORT_SYMBOL_GPL(pm_freezing);
-> +
->  /* protects freezing and frozen transitions */
->  static DEFINE_SPINLOCK(freezer_lock);
->  
 
-Thanks,
-Rafael
+  git://people.freedesktop.org/~airlied/linux drm-fixes
 
+for you to fetch changes up to 49d45a31b71d7d9da74485922bdb63faf3dc9684:
+
+  drm/edid: add quirk for BPC in Samsung NP700G7A-S01PL notebook
+(2013-12-17 14:18:16 +1000)
+
+----------------------------------------------------------------
+Alex Deucher (4):
+      drm/radeon: Fix sideport problems on certain RS690 boards
+      drm/radeon/cik: plug in missing blit callback
+      drm/radeon: add missing display tiling setup for oland
+      Revert "drm/radeon: Implement radeon_pci_shutdown"
+
+Ben Widawsky (7):
+      drm/i915/bdw: Add BDW to ULT macro
+      drm/i915/bdw: GEN8 backlight support
+      drm/i915/bdw: Do gen6 style reset for gen8
+      drm/i915/bdw: Free correct number of ppgtt pages
+      drm/i915/bdw: Add comment about gen8 HWS PGA
+      drm/i915/bdw: Limit GTT to 2GB
+      drm/i915/bdw: PIPE_[BC] I[ME]R moved to powerwell
+
+Chris Wilson (3):
+      drm/i915: Do not clobber config status after a forced restore of hw state
+      drm/i915: Hold mutex across i915_gem_release
+      drm/i915: Repeat eviction search after idling the GPU
+
+Christian König (1):
+      drm/radeon: fix typo in cik_copy_dma
+
+Daniel Vetter (3):
+      drm/i915: fix pm init ordering
+      drm/i915: Fix use-after-free in do_switch
+      drm/i915: don't update the dri1 breadcrumb with modesetting
+
+Dave Airlie (6):
+      Merge branch 'bdw-fixes' of
+git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
+      Merge tag 'drm-intel-fixes-2013-12-11' of
+git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
+      Merge branch 'drm-tda998x-3.12-fixes' of
+git://ftp.arm.linux.org.uk/~rmk/linux-cubox into drm-fixes
+      Merge branch 'drm-fixes-3.13' of
+git://people.freedesktop.org/~agd5f/linux into drm-fixes
+      Merge branch 'vmwgfx-fixes-3.13' of
+git://people.freedesktop.org/~thomash/linux into drm-fixes
+      Merge branch 'ttm-fixes-3.13' of
+git://people.freedesktop.org/~thomash/linux into drm-next
+
+Ilia Mirkin (2):
+      drm: don't double-free on driver load error
+      drm/nouveau: only runtime suspend by default in optimus configuration
+
+Jakob Bornecrantz (1):
+      drm/vmwgfx: Add max surface memory param
+
+Martin Andersson (1):
+      drm/radeon/dpm: Fix hwmon crash
+
+Rafał Miłecki (1):
+      drm/edid: add quirk for BPC in Samsung NP700G7A-S01PL notebook
+
+Russell King (4):
+      DRM: Armada: implement lastclose() for fbhelper
+      DRM: Armada: destroy framebuffer after helper
+      DRM: Armada: fix printing of phys_addr_t/dma_addr_t
+      DRM: Armada: prime refcounting bug fix
+
+Thomas Hellstrom (1):
+      drm/ttm: Fix accesses through vmas with only partial coverage
+
+Ville Syrjälä (2):
+      drm/i915: Take modeset locks around intel_modeset_setup_hw_state()
+      drm/i915: Skip clock checks on BDW
+
+ drivers/gpu/drm/armada/armada_drm.h     |  1 +
+ drivers/gpu/drm/armada/armada_drv.c     |  7 ++++++-
+ drivers/gpu/drm/armada/armada_fbdev.c   | 20 +++++++++++++++-----
+ drivers/gpu/drm/armada/armada_gem.c     |  7 ++++---
+ drivers/gpu/drm/drm_edid.c              |  8 ++++++++
+ drivers/gpu/drm/drm_stub.c              |  6 +++---
+ drivers/gpu/drm/i915/i915_dma.c         | 20 +++++++++++---------
+ drivers/gpu/drm/i915/i915_drv.c         |  1 +
+ drivers/gpu/drm/i915/i915_drv.h         |  9 ++++++---
+ drivers/gpu/drm/i915/i915_gem_context.c | 16 ++++++++++++----
+ drivers/gpu/drm/i915/i915_gem_evict.c   | 14 +++++++++++---
+ drivers/gpu/drm/i915/i915_gem_gtt.c     |  9 +++++++--
+ drivers/gpu/drm/i915/intel_display.c    |  7 ++++---
+ drivers/gpu/drm/i915/intel_drv.h        |  1 +
+ drivers/gpu/drm/i915/intel_panel.c      | 26 +++++++++++++++++++++++---
+ drivers/gpu/drm/i915/intel_pm.c         | 29 +++++++++++++++++++++++++++--
+ drivers/gpu/drm/i915/intel_ringbuffer.c |  1 +
+ drivers/gpu/drm/i915/intel_uncore.c     |  1 +
+ drivers/gpu/drm/nouveau/nouveau_drm.c   |  6 ++++++
+ drivers/gpu/drm/radeon/atombios_crtc.c  |  4 +++-
+ drivers/gpu/drm/radeon/cik_sdma.c       |  2 +-
+ drivers/gpu/drm/radeon/radeon_asic.c    |  4 ++--
+ drivers/gpu/drm/radeon/radeon_drv.c     | 10 ----------
+ drivers/gpu/drm/radeon/radeon_pm.c      |  6 ++----
+ drivers/gpu/drm/radeon/rs690.c          | 10 ++++++++++
+ drivers/gpu/drm/ttm/ttm_bo_vm.c         |  6 +++---
+ drivers/gpu/drm/vmwgfx/vmwgfx_ioctl.c   |  3 +++
+ include/uapi/drm/vmwgfx_drm.h           |  1 +
+ 28 files changed, 173 insertions(+), 62 deletions(-)
