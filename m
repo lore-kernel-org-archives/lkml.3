@@ -1,134 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254Ab3LRROP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 12:14:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59531 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752001Ab3LRROM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 12:14:12 -0500
-Date: Wed, 18 Dec 2013 18:14:11 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/6] memcg, slab: cleanup barrier usage when accessing
- memcg_caches
-Message-ID: <20131218171411.GD31080@dhcp22.suse.cz>
-References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
- <bd0a7ffc57e4a0b0c3d456c0cf8801e829e14717.1387372122.git.vdavydov@parallels.com>
+	id S1755263Ab3LRRPn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 12:15:43 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:54100 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754Ab3LRRPl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 12:15:41 -0500
+Date: Wed, 18 Dec 2013 12:15:35 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>, Tomasz Figa <t.figa@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: Re: [PATCH v7 8/9] phy: add Broadcom Kona USB2 PHY driver
+Message-ID: <20131218171535.GF15814@beef>
+References: <1387309356-17195-1-git-send-email-mporter@linaro.org>
+ <1387309356-17195-9-git-send-email-mporter@linaro.org>
+ <20131218162554.GF4970@saruman.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <bd0a7ffc57e4a0b0c3d456c0cf8801e829e14717.1387372122.git.vdavydov@parallels.com>
+In-Reply-To: <20131218162554.GF4970@saruman.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 18-12-13 17:16:54, Vladimir Davydov wrote:
-> First, in memcg_create_kmem_cache() we should issue the write barrier
-> after the kmem_cache is initialized, but before storing the pointer to
-> it in its parent's memcg_params.
+On Wed, Dec 18, 2013 at 10:25:54AM -0600, Felipe Balbi wrote:
+> On Tue, Dec 17, 2013 at 02:42:35PM -0500, Matt Porter wrote:
+> > Add a driver for the internal Broadcom Kona USB 2.0 PHY found
+> > on the BCM281xx family of SoCs.
+> > 
+> > Signed-off-by: Matt Porter <mporter@linaro.org>
 > 
-> Second, we should always issue the read barrier after
-> cache_from_memcg_idx() to conform with the write barrier.
-> 
-> Third, its better to use smp_* versions of barriers, because we don't
-> need them on UP systems.
+> Kishon, are you ok with this driver ?
 
-Please be (much) more verbose on Why. Barriers are tricky and should be
-documented accordingly. So if you say that we should issue a barrier
-always be specific why we should do it.
+Kishon did mention he was fine with this if I addressed a couple
+comments a couple versions ago, I neglected solicit his ack though.
 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Glauber Costa <glommer@gmail.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  mm/memcontrol.c |   24 ++++++++++--------------
->  mm/slab.h       |    6 +++++-
->  2 files changed, 15 insertions(+), 15 deletions(-)
+> > +static int bcm_kona_usb2_probe(struct platform_device *pdev)
+> > +{
+> > +	struct device *dev = &pdev->dev;
+> > +	struct bcm_kona_usb *phy;
+> > +	struct resource *res;
+> > +	struct phy *gphy;
+> > +	struct phy_provider *phy_provider;
+> > +
+> > +	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
+> > +	if (!phy)
+> > +		return -ENOMEM;
+> > +
+> > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > +	phy->regs = devm_ioremap_resource(&pdev->dev, res);
+> > +	if (IS_ERR(phy->regs))
+> > +		return PTR_ERR(phy->regs);
+> > +
+> > +	platform_set_drvdata(pdev, phy);
+> > +
+> > +	phy_provider = devm_of_phy_provider_register(dev,
+> > +			of_phy_simple_xlate);
+> > +	if (IS_ERR(phy_provider))
+> > +		return PTR_ERR(phy_provider);
+> > +
+> > +	gphy = devm_phy_create(dev, &ops, NULL);
+> > +	if (IS_ERR(gphy))
+> > +		return PTR_ERR(gphy);
+> > +
+> > +	/* The Kona PHY supports an 8-bit wide UTMI interface */
+> > +	phy_set_bus_width(gphy, 8);
+> > +
+> > +	phy_set_drvdata(gphy, phy);
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index e6ad6ff..e37fdb5 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3429,12 +3429,14 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
->  
->  	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
->  
-> -	cachep->memcg_params->memcg_caches[idx] = new_cachep;
->  	/*
-> -	 * the readers won't lock, make sure everybody sees the updated value,
-> -	 * so they won't put stuff in the queue again for no reason
-> +	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
-> +	 * barrier here to ensure nobody will see the kmem_cache partially
-> +	 * initialized.
->  	 */
-> -	wmb();
-> +	smp_wmb();
-> +
-> +	cachep->memcg_params->memcg_caches[idx] = new_cachep;
->  out:
->  	mutex_unlock(&memcg_cache_mutex);
->  	return new_cachep;
-> @@ -3573,7 +3575,7 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
->  					  gfp_t gfp)
->  {
->  	struct mem_cgroup *memcg;
-> -	int idx;
-> +	struct kmem_cache *memcg_cachep;
->  
->  	VM_BUG_ON(!cachep->memcg_params);
->  	VM_BUG_ON(!cachep->memcg_params->is_root_cache);
-> @@ -3587,15 +3589,9 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
->  	if (!memcg_can_account_kmem(memcg))
->  		goto out;
->  
-> -	idx = memcg_cache_id(memcg);
-> -
-> -	/*
-> -	 * barrier to mare sure we're always seeing the up to date value.  The
-> -	 * code updating memcg_caches will issue a write barrier to match this.
-> -	 */
-> -	read_barrier_depends();
-> -	if (likely(cache_from_memcg_idx(cachep, idx))) {
-> -		cachep = cache_from_memcg_idx(cachep, idx);
-> +	memcg_cachep = cache_from_memcg_idx(cachep, memcg_cache_id(memcg));
-> +	if (likely(memcg_cachep)) {
-> +		cachep = memcg_cachep;
->  		goto out;
->  	}
->  
-> diff --git a/mm/slab.h b/mm/slab.h
-> index 0859c42..1d8b53f 100644
-> --- a/mm/slab.h
-> +++ b/mm/slab.h
-> @@ -163,9 +163,13 @@ static inline const char *cache_name(struct kmem_cache *s)
->  static inline struct kmem_cache *
->  cache_from_memcg_idx(struct kmem_cache *s, int idx)
->  {
-> +	struct kmem_cache *cachep;
-> +
->  	if (!s->memcg_params)
->  		return NULL;
-> -	return s->memcg_params->memcg_caches[idx];
-> +	cachep = s->memcg_params->memcg_caches[idx];
-> +	smp_read_barrier_depends();	/* see memcg_register_cache() */
-> +	return cachep;
->  }
->  
->  static inline struct kmem_cache *memcg_root_cache(struct kmem_cache *s)
-> -- 
-> 1.7.10.4
-> 
+> I think this set_drvdata() should be done before registering the
+> provider, no ?
 
--- 
-Michal Hocko
-SUSE Labs
+It seems so, given that we wouldn't want the provider on on the
+provider list until the phy has been allocated and configured.
+
+Interestingly, this also needs to be addressed in the four phy
+drivers already upstream...they all do the same thing before the
+generic phy is created.
+
+-Matt
