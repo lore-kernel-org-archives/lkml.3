@@ -1,175 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab3LRBH1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 20:07:27 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:40857 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab3LRBHZ (ORCPT
+	id S1751654Ab3LRBP3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 20:15:29 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:59657 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab3LRBP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 20:07:25 -0500
+	Tue, 17 Dec 2013 20:15:28 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rBI1F8Xi002407, This message is accepted by code: ctloc85258
+Message-ID: <52B0F7A6.20601@realsil.com.cn>
+Date: Wed, 18 Dec 2013 09:17:26 +0800
+From: micky <micky_ching@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1387328669-26785-1-git-send-email-john.stultz@linaro.org>
-References: <CAMbhsRRSyrnG_XMHAyNyx4ApwQGOsn0uv2E3TVWDtV-WptzpyQ@mail.gmail.com>
-	<1387328669-26785-1-git-send-email-john.stultz@linaro.org>
-Date: Tue, 17 Dec 2013 17:07:25 -0800
-X-Google-Sender-Auth: tFfcHtJFiKb3dkSi41Yi75j9sn8
-Message-ID: <CAMbhsRTDA3s64y7gEXGEzgVwbBsA1Jd_Drp1KZuo1EcAsmC3BQ@mail.gmail.com>
-Subject: Re: [PATCH v3] staging: ion: Avoid using rt_mutexes directly
-From: Colin Cross <ccross@android.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: <sameo@linux.intel.com>, <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <wei_wang@realsil.com.cn>,
+        <rogerable@realtek.com>, <devel@linuxdriverproject.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH v3 1/2] mfd: rtsx: reduce code duplication in rtl8411
+References: <cover.1387246693.git.micky_ching@realsil.com.cn> <4dbd7d35c3e2201a77357155f6610abda69a3139.1387246693.git.micky_ching@realsil.com.cn> <20131217072842.GZ28413@mwanda>
+In-Reply-To: <20131217072842.GZ28413@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 5:04 PM, John Stultz <john.stultz@linaro.org> wrote:
-> RT_MUTEXES can be configured out of the kernel, causing compile
-> problems with ION.
+On 12/17/2013 03:28 PM, Dan Carpenter wrote:
+> On Tue, Dec 17, 2013 at 10:36:58AM +0800, micky_ching@realsil.com.cn wrote:
+>> diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
+>> index 947e79b..26b52ec 100644
+>> --- a/drivers/mfd/rtsx_pcr.h
+>> +++ b/drivers/mfd/rtsx_pcr.h
+>> @@ -63,4 +63,12 @@ static inline u8 map_sd_drive(int idx)
+>>   #define rtl8411_reg_to_sd30_drive_sel_3v3(reg)	(((reg) >> 5) & 0x07)
+>>   #define rtl8411b_reg_to_sd30_drive_sel_3v3(reg)	((reg) & 0x03)
+>>   
+>> +#define set_pull_ctrl_tables(__device)				\
+>> +do {								\
+>> +	pcr->sd_pull_ctl_enable_tbl  = __device##_sd_pull_ctl_enable_tbl;  \
+>> +	pcr->sd_pull_ctl_disable_tbl = __device##_sd_pull_ctl_disable_tbl; \
+>> +	pcr->ms_pull_ctl_enable_tbl  = __device##_ms_pull_ctl_enable_tbl;  \
+>> +	pcr->ms_pull_ctl_disable_tbl = __device##_ms_pull_ctl_disable_tbl; \
+>> +} while (0)
+>> +
+>>   #endif
+> This is nasty...  With readable code, you should understand just from
+> looking at it what the code is doing but this obscures it completely.
+> It shouldn't reference the "pcr" variable without passing it in as an
+> argument but even with that cleanup I don't really like it.
 >
-> To quote Colin:
-> "rt_mutexes were added with the deferred freeing feature.  Heaps need
-> to return zeroed memory to userspace, but zeroing the memory on every
-> allocation was causing performance issues.  We added a SCHED_IDLE
-> thread to zero memory in the background after freeing, but locking the
-> heap from the SCHED_IDLE thread might block a high priority allocation
-> thread for a long time.
->
-> The lock is only used to protect the heap's free_list and
-> free_list_size members, and is not held for any long or sleeping
-> operations.  Converting to a spinlock should prevent priority
-> inversion without using the rt_mutex.  I'd also rename it to free_lock
-> to so it doesn't get used as a general heap lock."
->
-> Thus this patch converts the rt_mutex usage to a spinlock and
-> renames the lock free_lock to be more clear as to its use.
->
-> I also had to change a bit of logic in ion_heap_freelist_drain()
-> to safely avoid list corruption.
->
-> Cc: Colin Cross <ccross@android.com>
-> Cc: Android Kernel Team <kernel-team@android.com>
-> Cc: Greg KH <gregkh@linuxfoundation.org>
-> Reported-by: Jim Davis <jim.epost@gmail.com>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> ---
->
-> Changes from v2:
-> - Modified while loop to be more clear, per Colin's suggestion
+> To be honest, I don't see the problem with the original code.
 >
 >
->  drivers/staging/android/ion/ion_heap.c | 28 ++++++++++++++++------------
->  drivers/staging/android/ion/ion_priv.h |  2 +-
->  2 files changed, 17 insertions(+), 13 deletions(-)
->
-> diff --git a/drivers/staging/android/ion/ion_heap.c b/drivers/staging/android/ion/ion_heap.c
-> index 9cf5622..296c74f 100644
-> --- a/drivers/staging/android/ion/ion_heap.c
-> +++ b/drivers/staging/android/ion/ion_heap.c
-> @@ -160,10 +160,10 @@ int ion_heap_pages_zero(struct page *page, size_t size, pgprot_t pgprot)
->
->  void ion_heap_freelist_add(struct ion_heap *heap, struct ion_buffer *buffer)
->  {
-> -       rt_mutex_lock(&heap->lock);
-> +       spin_lock(&heap->free_lock);
->         list_add(&buffer->list, &heap->free_list);
->         heap->free_list_size += buffer->size;
-> -       rt_mutex_unlock(&heap->lock);
-> +       spin_unlock(&heap->free_lock);
->         wake_up(&heap->waitqueue);
->  }
->
-> @@ -171,34 +171,38 @@ size_t ion_heap_freelist_size(struct ion_heap *heap)
->  {
->         size_t size;
->
-> -       rt_mutex_lock(&heap->lock);
-> +       spin_lock(&heap->free_lock);
->         size = heap->free_list_size;
-> -       rt_mutex_unlock(&heap->lock);
-> +       spin_unlock(&heap->free_lock);
->
->         return size;
->  }
->
->  size_t ion_heap_freelist_drain(struct ion_heap *heap, size_t size)
->  {
-> -       struct ion_buffer *buffer, *tmp;
-> +       struct ion_buffer *buffer;
->         size_t total_drained = 0;
->
->         if (ion_heap_freelist_size(heap) == 0)
->                 return 0;
->
-> -       rt_mutex_lock(&heap->lock);
-> +       spin_lock(&heap->free_lock);
->         if (size == 0)
->                 size = heap->free_list_size;
->
-> -       list_for_each_entry_safe(buffer, tmp, &heap->free_list, list) {
-> +       while (!list_empty(&heap->free_list)) {
->                 if (total_drained >= size)
->                         break;
-> +               buffer = list_first_entry(&heap->free_list, struct ion_buffer,
-> +                                         list);
->                 list_del(&buffer->list);
->                 heap->free_list_size -= buffer->size;
->                 total_drained += buffer->size;
-> +               spin_unlock(&heap->free_lock);
->                 ion_buffer_destroy(buffer);
-> +               spin_lock(&heap->free_lock);
->         }
-> -       rt_mutex_unlock(&heap->lock);
-> +       spin_unlock(&heap->free_lock);
->
->         return total_drained;
->  }
-> @@ -213,16 +217,16 @@ static int ion_heap_deferred_free(void *data)
->                 wait_event_freezable(heap->waitqueue,
->                                      ion_heap_freelist_size(heap) > 0);
->
-> -               rt_mutex_lock(&heap->lock);
-> +               spin_lock(&heap->free_lock);
->                 if (list_empty(&heap->free_list)) {
-> -                       rt_mutex_unlock(&heap->lock);
-> +                       spin_unlock(&heap->free_lock);
->                         continue;
->                 }
->                 buffer = list_first_entry(&heap->free_list, struct ion_buffer,
->                                           list);
->                 list_del(&buffer->list);
->                 heap->free_list_size -= buffer->size;
-> -               rt_mutex_unlock(&heap->lock);
-> +               spin_unlock(&heap->free_lock);
->                 ion_buffer_destroy(buffer);
->         }
->
-> @@ -235,7 +239,7 @@ int ion_heap_init_deferred_free(struct ion_heap *heap)
->
->         INIT_LIST_HEAD(&heap->free_list);
->         heap->free_list_size = 0;
-> -       rt_mutex_init(&heap->lock);
-> +       spin_lock_init(&heap->free_lock);
->         init_waitqueue_head(&heap->waitqueue);
->         heap->task = kthread_run(ion_heap_deferred_free, heap,
->                                  "%s", heap->name);
-> diff --git a/drivers/staging/android/ion/ion_priv.h b/drivers/staging/android/ion/ion_priv.h
-> index fc8a4c3..d986739 100644
-> --- a/drivers/staging/android/ion/ion_priv.h
-> +++ b/drivers/staging/android/ion/ion_priv.h
-> @@ -159,7 +159,7 @@ struct ion_heap {
->         struct shrinker shrinker;
->         struct list_head free_list;
->         size_t free_list_size;
-> -       struct rt_mutex lock;
-> +       spinlock_t free_lock;
->         wait_queue_head_t waitqueue;
->         struct task_struct *task;
->         int (*debug_show)(struct ion_heap *heap, struct seq_file *, void *);
-> --
-> 1.8.3.2
->
-
-Acked-by: Colin Cross <ccross@android.com>
+Using macro can reduce some code, and define as set_pull_ctl_tables(pcr, 
+dev)
+is much better for understand
