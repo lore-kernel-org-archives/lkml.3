@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313Ab3LRVJF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:09:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35783 "EHLO
+	id S1756362Ab3LRWQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:16:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35803 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379Ab3LRVJB (ORCPT
+	with ESMTP id S1752379Ab3LRVJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:09:01 -0500
+	Wed, 18 Dec 2013 16:09:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.4 24/31] dm delay: fix a possible deadlock due to shared workqueue
-Date: Wed, 18 Dec 2013 13:08:32 -0800
-Message-Id: <20131218210523.468576020@linuxfoundation.org>
+        Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.4 07/31] KVM: Improve create VCPU parameter (CVE-2013-4587)
+Date: Wed, 18 Dec 2013 13:08:15 -0800
+Message-Id: <20131218210523.004983145@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218210522.790152625@linuxfoundation.org>
 References: <20131218210522.790152625@linuxfoundation.org>
@@ -29,110 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Andy Honig <ahonig@google.com>
 
-commit 718822c1c112dc99e0c72c8968ee1db9d9d910f0 upstream.
+commit 338c7dbadd2671189cec7faf64c84d01071b3f96 upstream.
 
-The dm-delay target uses a shared workqueue for multiple instances.  This
-can cause deadlock if two or more dm-delay targets are stacked on the top
-of each other.
+In multiple functions the vcpu_id is used as an offset into a bitfield.  Ag
+malicious user could specify a vcpu_id greater than 255 in order to set or
+clear bits in kernel memory.  This could be used to elevate priveges in the
+kernel.  This patch verifies that the vcpu_id provided is less than 255.
+The api documentation already specifies that the vcpu_id must be less than
+max_vcpus, but this is currently not checked.
 
-This patch changes dm-delay to use a per-instance workqueue.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Reported-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-delay.c |   23 +++++++++++------------
- 1 file changed, 11 insertions(+), 12 deletions(-)
+ virt/kvm/kvm_main.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/md/dm-delay.c
-+++ b/drivers/md/dm-delay.c
-@@ -20,6 +20,7 @@
- struct delay_c {
- 	struct timer_list delay_timer;
- 	struct mutex timer_lock;
-+	struct workqueue_struct *kdelayd_wq;
- 	struct work_struct flush_expired_bios;
- 	struct list_head delayed_bios;
- 	atomic_t may_delay;
-@@ -45,14 +46,13 @@ struct dm_delay_info {
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1668,6 +1668,9 @@ static int kvm_vm_ioctl_create_vcpu(stru
+ 	int r;
+ 	struct kvm_vcpu *vcpu, *v;
  
- static DEFINE_MUTEX(delayed_bios_lock);
- 
--static struct workqueue_struct *kdelayd_wq;
- static struct kmem_cache *delayed_cache;
- 
- static void handle_delayed_timer(unsigned long data)
- {
- 	struct delay_c *dc = (struct delay_c *)data;
- 
--	queue_work(kdelayd_wq, &dc->flush_expired_bios);
-+	queue_work(dc->kdelayd_wq, &dc->flush_expired_bios);
- }
- 
- static void queue_timeout(struct delay_c *dc, unsigned long expires)
-@@ -191,6 +191,12 @@ out:
- 		goto bad_dev_write;
- 	}
- 
-+	dc->kdelayd_wq = alloc_workqueue("kdelayd", WQ_MEM_RECLAIM, 0);
-+	if (!dc->kdelayd_wq) {
-+		DMERR("Couldn't start kdelayd");
-+		goto bad_queue;
-+	}
++	if (id >= KVM_MAX_VCPUS)
++		return -EINVAL;
 +
- 	setup_timer(&dc->delay_timer, handle_delayed_timer, (unsigned long)dc);
- 
- 	INIT_WORK(&dc->flush_expired_bios, flush_expired_bios);
-@@ -203,6 +209,8 @@ out:
- 	ti->private = dc;
- 	return 0;
- 
-+bad_queue:
-+	mempool_destroy(dc->delayed_pool);
- bad_dev_write:
- 	if (dc->dev_write)
- 		dm_put_device(ti, dc->dev_write);
-@@ -217,7 +225,7 @@ static void delay_dtr(struct dm_target *
- {
- 	struct delay_c *dc = ti->private;
- 
--	flush_workqueue(kdelayd_wq);
-+	destroy_workqueue(dc->kdelayd_wq);
- 
- 	dm_put_device(ti, dc->dev_read);
- 
-@@ -351,12 +359,6 @@ static int __init dm_delay_init(void)
- {
- 	int r = -ENOMEM;
- 
--	kdelayd_wq = alloc_workqueue("kdelayd", WQ_MEM_RECLAIM, 0);
--	if (!kdelayd_wq) {
--		DMERR("Couldn't start kdelayd");
--		goto bad_queue;
--	}
--
- 	delayed_cache = KMEM_CACHE(dm_delay_info, 0);
- 	if (!delayed_cache) {
- 		DMERR("Couldn't create delayed bio cache.");
-@@ -374,8 +376,6 @@ static int __init dm_delay_init(void)
- bad_register:
- 	kmem_cache_destroy(delayed_cache);
- bad_memcache:
--	destroy_workqueue(kdelayd_wq);
--bad_queue:
- 	return r;
- }
- 
-@@ -383,7 +383,6 @@ static void __exit dm_delay_exit(void)
- {
- 	dm_unregister_target(&delay_target);
- 	kmem_cache_destroy(delayed_cache);
--	destroy_workqueue(kdelayd_wq);
- }
- 
- /* Module hooks */
+ 	vcpu = kvm_arch_vcpu_create(kvm, id);
+ 	if (IS_ERR(vcpu))
+ 		return PTR_ERR(vcpu);
 
 
