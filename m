@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab3LRVvq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:51:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36186 "EHLO
+	id S1753502Ab3LRVMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:12:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36157 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753463Ab3LRVMu (ORCPT
+	with ESMTP id S1753463Ab3LRVMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:50 -0500
+	Wed, 18 Dec 2013 16:12:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [PATCH 3.10 76/78] Btrfs: fix hole check in log_one_extent
-Date: Wed, 18 Dec 2013 13:11:44 -0800
-Message-Id: <20131218211114.043754152@linuxfoundation.org>
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH 3.10 70/78] staging: comedi: ssv_dnp: use comedi_dio_update_state()
+Date: Wed, 18 Dec 2013 13:11:38 -0800
+Message-Id: <20131218211113.875224149@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -29,34 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-commit ed9e8af88e2551aaa6bf51d8063a2493e2d71597 upstream.
+commit f6b316bcd8c421acd6fa5a6e18b4c846ecb9d965 upstream.
 
-I added an assert to make sure we were looking up aligned offsets for csums and
-I tripped it when running xfstests.  This is because log_one_extent was checking
-if block_start == 0 for a hole instead of EXTENT_MAP_HOLE.  This worked out fine
-in practice it seems, but it adds a lot of extra work that is uneeded.  With
-this fix I'm no longer tripping my assert.  Thanks,
+Use comedi_dio_update_state() to handle the boilerplate code to update
+the subdevice s->state.
 
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Also, fix a bug where the state of the channels is returned in data[0].
+The comedi core expects it to be returned in data[1].
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/tree-log.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/ssv_dnp.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/btrfs/tree-log.c
-+++ b/fs/btrfs/tree-log.c
-@@ -3314,7 +3314,7 @@ static int log_one_extent(struct btrfs_t
- 		btrfs_set_token_file_extent_type(leaf, fi,
- 						 BTRFS_FILE_EXTENT_REG,
- 						 &token);
--		if (em->block_start == 0)
-+		if (em->block_start == EXTENT_MAP_HOLE)
- 			skip_csum = true;
- 	}
+--- a/drivers/staging/comedi/drivers/ssv_dnp.c
++++ b/drivers/staging/comedi/drivers/ssv_dnp.c
+@@ -87,11 +87,11 @@ static int dnp_dio_insn_bits(struct come
+ 
+ 	/* on return, data[1] contains the value of the digital input lines. */
+ 	outb(PADR, CSCIR);
+-	data[0] = inb(CSCDR);
++	data[1] = inb(CSCDR);
+ 	outb(PBDR, CSCIR);
+-	data[0] += inb(CSCDR) << 8;
++	data[1] += inb(CSCDR) << 8;
+ 	outb(PCDR, CSCIR);
+-	data[0] += ((inb(CSCDR) & 0xF0) << 12);
++	data[1] += ((inb(CSCDR) & 0xF0) << 12);
+ 
+ 	return insn->n;
  
 
 
