@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449Ab3LRABc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 19:01:32 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36871 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab3LRABa (ORCPT
+	id S1752617Ab3LRAEy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 19:04:54 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:39909 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab3LRAEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 19:01:30 -0500
-Date: Wed, 18 Dec 2013 01:01:28 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, Nigel Cunningham <nigel@tuxonice.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system
- suspend/hibernation
-Message-ID: <20131218000128.GA3737@amd.pavel.ucw.cz>
-References: <201201281445.49377.rjw@sisk.pl>
- <201202172159.15396.rjw@sisk.pl>
- <CA+5PVA50UA1oP1jKgnQjHh8APp=cNWREw3bkfrkV1OW_Tg1g+A@mail.gmail.com>
- <201205252113.50900.rjw@sisk.pl>
- <CA+5PVA5GWsTdNky-K1-hu5_R55hdKfr-Oa26HpX=FdA1cRZsbQ@mail.gmail.com>
- <CA+5PVA7vsZPd9eXwN-Q+d8c9+0bAmVdr698vv+LFyrn+3iFOMA@mail.gmail.com>
- <20131217230843.GA2911@amd.pavel.ucw.cz>
- <20131217233152.GC20579@dastard>
+	Tue, 17 Dec 2013 19:04:52 -0500
+Date: Tue, 17 Dec 2013 16:04:48 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Hyun Kwon <hyunk@xilinx.com>
+Subject: Re: [PATCH v5] clk: si570: Add a driver for SI570 oscillators
+Message-ID: <20131218000448.GA9857@roeck-us.net>
+References: <1379806839-13762-1-git-send-email-soren.brinkmann@xilinx.com>
+ <b625092b-682c-4072-85a6-9f9d7f378ec0@VA3EHSMHS043.ehs.local>
+ <20131002231751.4343.81234@quantum>
+ <52AC8857.8070504@roeck-us.net>
+ <20131217234340.23538.9631@quantum>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20131217233152.GC20579@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131217234340.23538.9631@quantum>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2013-12-18 10:31:52, Dave Chinner wrote:
-> On Wed, Dec 18, 2013 at 12:08:43AM +0100, Pavel Machek wrote:
-> > Hi!
+On Tue, Dec 17, 2013 at 03:43:40PM -0800, Mike Turquette wrote:
+> Quoting Guenter Roeck (2013-12-14 08:33:27)
+> > On 10/02/2013 04:17 PM, Mike Turquette wrote:
+> > > Quoting Sören Brinkmann (2013-10-02 10:20:38)
+> > >> Hi Mike,
+> > >>
+> > >> could you please comment on this/apply it to clk-next?
+> > >
+> > > It looks good and is in the queue. Will show up in clk-next in a few
+> > > days.
+> > >
+> > Hi Mike,
 > > 
-> > > >>> Did this patch ever wind up going anywhere?  Fedora has it sitting in
-> > > >>> our tree with a comment that says "rebase" and I don't see it in the
-> > > >>> linux-next tree at all.
-> > > >>>
-> > > >>> Did if fall through the cracks or was it NAKed somewhere?
-> > > >>
-> > > >> No, it wasn't in principle. There were some comments I haven't addressed yet.
-> > > >
-> > > > Dredging up a really old thread, sorry.
-> > > >
-> > > > We're still carrying this patch along in Fedora.  Should we drop it at
-> > > > this point, or is it still eventually going to head upstream?
-> > 
-> > I'd say drop.
+> > trying again ... what happened with this driver ? Any reason for not pushing it after all ?
 > 
-> I disagree - given the problem it is resolving leads to silent
-> filesystem corruption, this patch should be considered somewhat of a
-> priority to push...
+> This got reverted with several other patches right before 3.12 dropped.
+> Unfortunately clk-next broke linux-next two days before 3.12 came out
+> and I had to revert to a known good state, excluding this driver.
+> 
+> I've added it back to clk-next now towards 3.13. Sorry for the
+> inconvenience.
+> 
+No problem. Thanks a lot for the update.
 
-Umm. Ok, I forgot what it does, really.
-
-So... for few years now suspend corrupts data on XFS? And Fedora has
-the fix but it is not in mainline? That does not sound right...
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Guenter
