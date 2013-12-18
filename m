@@ -1,63 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab3LRIMr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 03:12:47 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:53569 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab3LRIMp (ORCPT
+	id S1752850Ab3LRIOT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 03:14:19 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:43769 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097Ab3LRIOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 03:12:45 -0500
+	Wed, 18 Dec 2013 03:14:17 -0500
+Date: Wed, 18 Dec 2013 09:15:04 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Lv Zheng <lv.zheng@intel.com>,
+        Len Brown <lenb@kernel.org>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        Ashley Lai <ashley@ashleylai.com>, Peter Huewe <peterhuewe@gmx.de>,
+        Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
+        Sirrix AG <tpmdd@sirrix.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, Jiri Kosina <jkosina@suse.cz>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        Dave Airlie <airlied@gmail.com>
+Subject: Re: [RFC Patch v1 11/13] ACPI, i915: replace open-coded _DSM
+ specific code with helper functions
+Message-ID: <20131218081503.GB26371@phenom.ffwll.local>
+Mail-Followup-To: Jiang Liu <jiang.liu@linux.intel.com>,
+	"Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+	Bjorn Helgaas <bhelgaas@google.com>, Lv Zheng <lv.zheng@intel.com>,
+	Len Brown <lenb@kernel.org>,
+	Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+	Ashley Lai <ashley@ashleylai.com>, Peter Huewe <peterhuewe@gmx.de>,
+	Rajiv Andrade <mail@srajiv.net>,
+	Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
+	David Airlie <airlied@linux.ie>, Jiri Kosina <jkosina@suse.cz>,
+	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+	Dave Airlie <airlied@gmail.com>
+References: <1387349901-3391-1-git-send-email-jiang.liu@linux.intel.com>
+ <1387349901-3391-12-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <190d226e64e177a3cb631b8fc6f4787c.squirrel@mungewell.org>
-References: <1387295334-1744-1-git-send-email-dh.herrmann@gmail.com>
-	<190d226e64e177a3cb631b8fc6f4787c.squirrel@mungewell.org>
-Date: Wed, 18 Dec 2013 09:12:45 +0100
-Message-ID: <CANq1E4SDTLzkiWWaAmZ3iU1mSTc2Ce5E=zKHthxrsuDnBUYYMw@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Input: ABS2 and friends
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Simon Wood <simon@mungewell.org>
-Cc: "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Input Tools <input-tools@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387349901-3391-12-git-send-email-jiang.liu@linux.intel.com>
+X-Operating-System: Linux phenom 3.12.0+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Wed, Dec 18, 2013 at 02:58:19PM +0800, Jiang Liu wrote:
+> Use helper functions to simplify _DSM related code in i915 driver.
+> 
+> Function intel_dsm() is used to check functions supported by ACPI _DSM
+> method, but it has strange check for special value 0x80000002. After
+> digging into nouveau driver, I think the check is copied from nouveau
+> driver and is useless for i915 driver, so remove it.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 
-On Tue, Dec 17, 2013 at 10:28 PM,  <simon@mungewell.org> wrote:
->> Hi
->>
->> This implements the recently discussed ABS2 API. It's working fine on my
->> machine with libevdev. Comments welcome!
->
-> Just looking at the documentation file, I have a couple of suggestions.
->
-> 1). Make a note on the direction of gravity wrt the example image. Ie what
-> which axis/value will be positive with the device laid flat/stationary on
-> a desk. Might just prevent some confusion later.
+Looks like a neat cleanup, so ack from my side. I don't have any clue
+about the special case, cc'ing Dave maybe he remembers.
+-Daniel
 
-Yepp, can add that to the Accelerometer section.
+> ---
+>  drivers/gpu/drm/i915/intel_acpi.c |  144 ++++++++-----------------------------
+>  1 file changed, 30 insertions(+), 114 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_acpi.c b/drivers/gpu/drm/i915/intel_acpi.c
+> index dfff090..1bfac94 100644
+> --- a/drivers/gpu/drm/i915/intel_acpi.c
+> +++ b/drivers/gpu/drm/i915/intel_acpi.c
+> @@ -12,8 +12,6 @@
+>  #include "i915_drv.h"
+>  
+>  #define INTEL_DSM_REVISION_ID 1 /* For Calpella anyway... */
+> -
+> -#define INTEL_DSM_FN_SUPPORTED_FUNCTIONS 0 /* No args */
+>  #define INTEL_DSM_FN_PLATFORM_MUX_INFO 1 /* No args */
+>  
+>  static struct intel_dsm_priv {
+> @@ -28,61 +26,6 @@ static const u8 intel_dsm_guid[] = {
+>  	0x0f, 0x13, 0x17, 0xb0, 0x1c, 0x2c
+>  };
+>  
+> -static int intel_dsm(acpi_handle handle, int func)
+> -{
+> -	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
+> -	struct acpi_object_list input;
+> -	union acpi_object params[4];
+> -	union acpi_object *obj;
+> -	u32 result;
+> -	int ret = 0;
+> -
+> -	input.count = 4;
+> -	input.pointer = params;
+> -	params[0].type = ACPI_TYPE_BUFFER;
+> -	params[0].buffer.length = sizeof(intel_dsm_guid);
+> -	params[0].buffer.pointer = (char *)intel_dsm_guid;
+> -	params[1].type = ACPI_TYPE_INTEGER;
+> -	params[1].integer.value = INTEL_DSM_REVISION_ID;
+> -	params[2].type = ACPI_TYPE_INTEGER;
+> -	params[2].integer.value = func;
+> -	params[3].type = ACPI_TYPE_PACKAGE;
+> -	params[3].package.count = 0;
+> -	params[3].package.elements = NULL;
+> -
+> -	ret = acpi_evaluate_object(handle, "_DSM", &input, &output);
+> -	if (ret) {
+> -		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
+> -		return ret;
+> -	}
+> -
+> -	obj = (union acpi_object *)output.pointer;
+> -
+> -	result = 0;
+> -	switch (obj->type) {
+> -	case ACPI_TYPE_INTEGER:
+> -		result = obj->integer.value;
+> -		break;
+> -
+> -	case ACPI_TYPE_BUFFER:
+> -		if (obj->buffer.length == 4) {
+> -			result = (obj->buffer.pointer[0] |
+> -				(obj->buffer.pointer[1] <<  8) |
+> -				(obj->buffer.pointer[2] << 16) |
+> -				(obj->buffer.pointer[3] << 24));
+> -			break;
+> -		}
+> -	default:
+> -		ret = -EINVAL;
+> -		break;
+> -	}
+> -	if (result == 0x80000002)
+> -		ret = -ENODEV;
+> -
+> -	kfree(output.pointer);
+> -	return ret;
+> -}
+> -
+>  static char *intel_dsm_port_name(u8 id)
+>  {
+>  	switch (id) {
+> @@ -137,83 +80,56 @@ static char *intel_dsm_mux_type(u8 type)
+>  
+>  static void intel_dsm_platform_mux_info(void)
+>  {
+> -	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
+> -	struct acpi_object_list input;
+> -	union acpi_object params[4];
+> -	union acpi_object *pkg;
+> -	int i, ret;
+> -
+> -	input.count = 4;
+> -	input.pointer = params;
+> -	params[0].type = ACPI_TYPE_BUFFER;
+> -	params[0].buffer.length = sizeof(intel_dsm_guid);
+> -	params[0].buffer.pointer = (char *)intel_dsm_guid;
+> -	params[1].type = ACPI_TYPE_INTEGER;
+> -	params[1].integer.value = INTEL_DSM_REVISION_ID;
+> -	params[2].type = ACPI_TYPE_INTEGER;
+> -	params[2].integer.value = INTEL_DSM_FN_PLATFORM_MUX_INFO;
+> -	params[3].type = ACPI_TYPE_PACKAGE;
+> -	params[3].package.count = 0;
+> -	params[3].package.elements = NULL;
+> -
+> -	ret = acpi_evaluate_object(intel_dsm_priv.dhandle, "_DSM", &input,
+> -				   &output);
+> -	if (ret) {
+> -		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
+> -		goto out;
+> +	int i;
+> +	union acpi_object *pkg, *connector_count;
+> +
+> +	pkg = acpi_evaluate_dsm_typed(intel_dsm_priv.dhandle, intel_dsm_guid,
+> +			INTEL_DSM_REVISION_ID, INTEL_DSM_FN_PLATFORM_MUX_INFO,
+> +			NULL, ACPI_TYPE_PACKAGE);
+> +	if (!pkg) {
+> +		DRM_DEBUG_DRIVER("failed to evaluate _DSM\n");
+> +		return;
+>  	}
+>  
+> -	pkg = (union acpi_object *)output.pointer;
+> -
+> -	if (pkg->type == ACPI_TYPE_PACKAGE) {
+> -		union acpi_object *connector_count = &pkg->package.elements[0];
+> -		DRM_DEBUG_DRIVER("MUX info connectors: %lld\n",
+> -			  (unsigned long long)connector_count->integer.value);
+> -		for (i = 1; i < pkg->package.count; i++) {
+> -			union acpi_object *obj = &pkg->package.elements[i];
+> -			union acpi_object *connector_id =
+> -				&obj->package.elements[0];
+> -			union acpi_object *info = &obj->package.elements[1];
+> -			DRM_DEBUG_DRIVER("Connector id: 0x%016llx\n",
+> -				  (unsigned long long)connector_id->integer.value);
+> -			DRM_DEBUG_DRIVER("  port id: %s\n",
+> -			       intel_dsm_port_name(info->buffer.pointer[0]));
+> -			DRM_DEBUG_DRIVER("  display mux info: %s\n",
+> -			       intel_dsm_mux_type(info->buffer.pointer[1]));
+> -			DRM_DEBUG_DRIVER("  aux/dc mux info: %s\n",
+> -			       intel_dsm_mux_type(info->buffer.pointer[2]));
+> -			DRM_DEBUG_DRIVER("  hpd mux info: %s\n",
+> -			       intel_dsm_mux_type(info->buffer.pointer[3]));
+> -		}
+> +	connector_count = &pkg->package.elements[0];
+> +	DRM_DEBUG_DRIVER("MUX info connectors: %lld\n",
+> +		  (unsigned long long)connector_count->integer.value);
+> +	for (i = 1; i < pkg->package.count; i++) {
+> +		union acpi_object *obj = &pkg->package.elements[i];
+> +		union acpi_object *connector_id = &obj->package.elements[0];
+> +		union acpi_object *info = &obj->package.elements[1];
+> +		DRM_DEBUG_DRIVER("Connector id: 0x%016llx\n",
+> +			  (unsigned long long)connector_id->integer.value);
+> +		DRM_DEBUG_DRIVER("  port id: %s\n",
+> +		       intel_dsm_port_name(info->buffer.pointer[0]));
+> +		DRM_DEBUG_DRIVER("  display mux info: %s\n",
+> +		       intel_dsm_mux_type(info->buffer.pointer[1]));
+> +		DRM_DEBUG_DRIVER("  aux/dc mux info: %s\n",
+> +		       intel_dsm_mux_type(info->buffer.pointer[2]));
+> +		DRM_DEBUG_DRIVER("  hpd mux info: %s\n",
+> +		       intel_dsm_mux_type(info->buffer.pointer[3]));
+>  	}
+>  
+> -out:
+> -	kfree(output.pointer);
+> +	ACPI_FREE(pkg);
+>  }
+>  
+>  static bool intel_dsm_pci_probe(struct pci_dev *pdev)
+>  {
+>  	acpi_handle dhandle;
+> -	int ret;
+>  
+>  	dhandle = ACPI_HANDLE(&pdev->dev);
+>  	if (!dhandle)
+>  		return false;
+>  
+> -	if (!acpi_has_method(dhandle, "_DSM")) {
+> +	if (!acpi_check_dsm(dhandle, intel_dsm_guid, INTEL_DSM_REVISION_ID,
+> +			    1 << INTEL_DSM_FN_PLATFORM_MUX_INFO)) {
+>  		DRM_DEBUG_KMS("no _DSM method for intel device\n");
+>  		return false;
+>  	}
+>  
+> -	ret = intel_dsm(dhandle, INTEL_DSM_FN_SUPPORTED_FUNCTIONS);
+> -	if (ret < 0) {
+> -		DRM_DEBUG_KMS("failed to get supported _DSM functions\n");
+> -		return false;
+> -	}
+> -
+>  	intel_dsm_priv.dhandle = dhandle;
+> -
+>  	intel_dsm_platform_mux_info();
+> +
+>  	return true;
+>  }
+>  
+> -- 
+> 1.7.10.4
+> 
 
-> 2). Calibration, Accels and Gyros are noisy in different ways. Gyros tend
-> to be wrong in the long term, giving some consistant bias which should be
-> calibrated out. Accels are noisy in the short term, but generally right
-> over a long period.
-
-I'm not entirely sure where to put calibration/normalization. Letting
-user-space deal with that should simplify things a lot. We could even
-add it to libevdev. Comments welcome..
-
-> Am I correct that the event framework will provide time-stamping of data,
-> thus making computation of relative movements possible.
-
-Yes, part of the evdev API.
-
-Thanks
-David
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
