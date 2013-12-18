@@ -1,87 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab3LRSpu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 13:45:50 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59912 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242Ab3LRSpr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 13:45:47 -0500
-Date: Wed, 18 Dec 2013 18:45:41 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Srinivas Ramana <sramana@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <20131218184541.GH31886@sirena.org.uk>
-References: <20131210235000.GK11468@sirena.org.uk>
- <52A7AE1B.3040201@codeaurora.org>
- <20131211005106.GL11468@sirena.org.uk>
- <52A7C0C3.2070805@codeaurora.org>
- <20131211132729.GT11468@sirena.org.uk>
- <52AA42FD.4040503@codeaurora.org>
- <20131213104128.GT11044@sirena.org.uk>
- <20131213213707.GO21983@codeaurora.org>
- <20131216210153.GA3185@sirena.org.uk>
- <20131217023047.GC31766@codeaurora.org>
+	id S1755495Ab3LRSrc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 13:47:32 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:32903 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753388Ab3LRSrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 13:47:31 -0500
+X-IronPort-AV: E=Sophos;i="4.95,508,1384300800"; 
+   d="scan'208";a="85866655"
+Date: Wed, 18 Dec 2013 18:46:56 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <mukesh.rathor@oracle.com>, <jbeulich@suse.com>
+Subject: Re: [Xen-devel] [PATCH v11 10/12] xen/pvh: Piggyback on PVHVM for
+ grant driver.
+In-Reply-To: <1387313503-31362-11-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1312181831560.8667@kaball.uk.xensource.com>
+References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com> <1387313503-31362-11-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nFBW6CQlri5Qm8JQ"
-Content-Disposition: inline
-In-Reply-To: <20131217023047.GC31766@codeaurora.org>
-X-Cookie: Go climb a gravity well!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: Allow regmap_bulk_write() to work for "no-bus"
- regmaps
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> In PVH the shared grant frame is the PFN and not MFN,
+> hence its mapped via the same code path as HVM.
+> 
+> The allocation of the grant frame is done differently - we
+> do not use the early platform-pci driver and have an
+> ioremap area - instead we use balloon memory and stitch
+> all of the non-contingous pages in a virtualized area.
+> 
+> That means when we call the hypervisor to replace the GMFN
+> with a XENMAPSPACE_grant_table type, we need to lookup the
+> old PFN for every iteration instead of assuming a flat
+> contingous PFN allocation.
+> 
+> Lastly, we only use v1 for grants. This is because PVHVM
+> is not able to use v2 due to no XENMEM_add_to_physmap
+> calls on the error status page (see commit
+> 69e8f430e243d657c2053f097efebc2e2cd559f0
+>  xen/granttable: Disable grant v2 for HVM domains.)
+> 
+> Until that is implemented this workaround has to
+> be in place.
+> 
+> Also per suggestions by Stefano utilize the PVHVM paths
+> as they share common functionality.
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/xen/gntdev.c       |  2 +-
+>  drivers/xen/grant-table.c  | 80 ++++++++++++++++++++++++++++++++++++++++++----
+>  drivers/xen/platform-pci.c |  2 +-
+>  include/xen/grant_table.h  |  2 +-
+>  4 files changed, 76 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+> index e41c79c..073b4a1 100644
+> --- a/drivers/xen/gntdev.c
+> +++ b/drivers/xen/gntdev.c
+> @@ -846,7 +846,7 @@ static int __init gntdev_init(void)
+>  	if (!xen_domain())
+>  		return -ENODEV;
+>  
+> -	use_ptemod = xen_pv_domain();
+> +	use_ptemod = !xen_feature(XENFEAT_auto_translated_physmap);
+>  
+>  	err = misc_register(&gntdev_miscdev);
+>  	if (err != 0) {
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index aa846a4..c0ded9f 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -47,6 +47,7 @@
+>  #include <xen/interface/xen.h>
+>  #include <xen/page.h>
+>  #include <xen/grant_table.h>
+> +#include <xen/balloon.h>
+>  #include <xen/interface/memory.h>
+>  #include <xen/hvc-console.h>
+>  #include <xen/swiotlb-xen.h>
+> @@ -66,8 +67,8 @@ static unsigned int boot_max_nr_grant_frames;
+>  static int gnttab_free_count;
+>  static grant_ref_t gnttab_free_head;
+>  static DEFINE_SPINLOCK(gnttab_list_lock);
+> -unsigned long xen_hvm_resume_frames;
+> -EXPORT_SYMBOL_GPL(xen_hvm_resume_frames);
+> +unsigned long xen_auto_xlat_grant_frames;
+> +EXPORT_SYMBOL_GPL(xen_auto_xlat_grant_frames);
+>  
+>  static union {
+>  	struct grant_entry_v1 *v1;
+> @@ -1060,7 +1061,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+>  	unsigned int nr_gframes = end_idx + 1;
+>  	int rc;
+>  
+> -	if (xen_hvm_domain()) {
+> +	if (xen_feature(XENFEAT_auto_translated_physmap)) {
+>  		struct xen_add_to_physmap xatp;
+>  		unsigned int i = end_idx;
+>  		rc = 0;
+> @@ -1069,10 +1070,24 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+>  		 * index, ensuring that the table will grow only once.
+>  		 */
+>  		do {
+> +			unsigned long vaddr;
+> +			unsigned int level;
+> +			pte_t *pte;
+> +
+>  			xatp.domid = DOMID_SELF;
+>  			xatp.idx = i;
+>  			xatp.space = XENMAPSPACE_grant_table;
+> -			xatp.gpfn = (xen_hvm_resume_frames >> PAGE_SHIFT) + i;
+> +
+> +			/*
+> +			 * Don't assume the memory is contingous. Lookup each.
+> +			 */
+> +			vaddr = xen_auto_xlat_grant_frames + (i * PAGE_SIZE);
+> +			if (xen_hvm_domain())
+> +				xatp.gpfn = vaddr >> PAGE_SHIFT;
+> +			else {
+> +				pte = lookup_address(vaddr, &level);
 
---nFBW6CQlri5Qm8JQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+lookup_address is x86 only. I added an empty implementation under
+arch/arm to be able to compile stuff under drivers/xen but I would like
+to get rid of it.
+If you can't find a way to replace lookup_address with something that
+works on arm and arm64 too, you could always turn
+xen_auto_xlat_grant_frames into an array and store the pfns there.
 
-On Mon, Dec 16, 2013 at 06:30:47PM -0800, Stephen Boyd wrote:
 
-> -	/* No formatting is require if val_byte is 1 */
-> -	if (val_bytes == 1) {
-> -		wval = (void *)val;
-> +			ival = *(unsigned int *)(val + (i * val_bytes));
-> +			ret = _regmap_write(map, reg + (i * map->reg_stride),
-> +					ival);
-> +			if (ret != 0)
-> +				goto out;
+> +				xatp.gpfn = pte_mfn(*pte);
 
-This doesn't quite work - val is an array of objects of the size of the
-size of a register not of unsigned integers so you're parsing extra data
-out there.  That possibly wasn't the best choice of API but we have
-quite a few users now so ick.
+Do you actually need the mfn here? Don't you just need the pfn?
 
---nFBW6CQlri5Qm8JQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSse1SAAoJELSic+t+oim9iGkP/3igSrkMsIA3wFboIouqSnvt
-3I4dIeBsTOyFiWiEzO6ArWte2kG6BwI/XdjsdbbJvbZwe+uq2dRrde9wm6cF1CIz
-CfMBtDmVFj02WYo3Kb+dLMViBiirk/y+CeVCYz7l16IKn5Ujpy1lLqV8tgDl17Bx
-Bo6o0v4wVObiZU3bbPZVYAcJ2vTKsOBaytJh2IqWD5O4kbOnbCp9yeTN8Y5An8GO
-5hL97Fs0MHng9LQg8NgNB9Rd26lcS7In74Mgk5IpswYLuKNKvNGXYgvCWzZjub3N
-9wtoaERJ/SUsdisywG9l+WLVnNvDVabBgqnWYmLEC1YH/+TNHqp8OPoiJqTXS79H
-NkpC9hhB1RQqPixxDOcjBlJX2jytqjIQToCjmDw1cQb9MpeUbwrwRqJerawQ6LQ/
-pY+T8C9u2jFSaYav/CRCCzL5Pi3iSuvgyrVBGdT7ovwVQ3MS0eEMNieDpWUgTAa+
-OMNGJrkoRGJdvM8lPR1UeSNCG8/cEDMjk1nE7yH9nmKKgGjKp+FilfRzLWRmQquw
-lvMCSASZIQRTRxhI6wEmycFWVK85sS2P5rHPUxe8xw0IVTjhBc7Y7+1CcTEOp26x
-O0G3KMEEvmNNSxd54MvOiRbBqvHZolB8P+bXj2L/NnOTffK4eZnzNSA2KcybhYqR
-q9ffB4Yq0c4DeTVo6Es9
-=8nt5
------END PGP SIGNATURE-----
+> +			}
+>  			rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp);
+>  			if (rc != 0) {
+>  				pr_warn("grant table add_to_physmap failed, err=%d\n",
+> @@ -1135,7 +1150,7 @@ static void gnttab_request_version(void)
+>  	int rc;
+>  	struct gnttab_set_version gsv;
+>  
+> -	if (xen_hvm_domain())
+> +	if (xen_hvm_domain() || xen_feature(XENFEAT_auto_translated_physmap))
 
---nFBW6CQlri5Qm8JQ--
+just turn this to
+
+if (xen_feature(XENFEAT_auto_translated_physmap))
+
+
+>  		gsv.version = 1;
+>  	else
+>  		gsv.version = 2;
+> @@ -1161,6 +1176,46 @@ static void gnttab_request_version(void)
+>  	pr_info("Grant tables using version %d layout\n", grant_table_version);
+>  }
+>  
+> +static int xlated_setup_gnttab_pages(unsigned long nr_grant_frames,
+> +				     unsigned long max, void *addr)
+> +{
+> +	struct page **pages;
+> +	unsigned long *pfns;
+> +	int rc, i;
+> +
+> +	pages = kcalloc(nr_grant_frames, sizeof(pages[0]), GFP_KERNEL);
+> +	if (!pages)
+> +		return -ENOMEM;
+> +
+> +	pfns = kcalloc(nr_grant_frames, sizeof(pfns[0]), GFP_KERNEL);
+> +	if (!pfns) {
+> +		kfree(pages);
+> +		return -ENOMEM;
+> +	}
+> +	rc = alloc_xenballooned_pages(nr_grant_frames, pages, 0 /* lowmem */);
+> +	if (rc) {
+> +		pr_warn("%s Couldn't balloon alloc %ld pfns rc:%d\n", __func__,
+> +			nr_grant_frames, rc);
+> +		kfree(pages);
+> +		kfree(pfns);
+> +		return rc;
+> +	}
+> +	for (i = 0; i < nr_grant_frames; i++)
+> +		pfns[i] = page_to_pfn(pages[i]);
+> +
+> +	rc = arch_gnttab_map_shared(pfns, nr_grant_frames, max, addr);
+> +
+> +	kfree(pages);
+> +	kfree(pfns);
+> +	if (rc) {
+> +		pr_warn("%s Couldn't map %ld pfns rc:%d\n", __func__,
+> +			nr_grant_frames, rc);
+> +		free_xenballooned_pages(nr_grant_frames, pages);
+> +		return rc;
+> +	}
+> +	return rc;
+> +}
+
+Please move this function somewhere under arch/x86/xen and call it from
+xen_start_kernel, it doesn't belong to common code.
+
+
+>  static int gnttab_setup(void)
+>  {
+>  	unsigned int max_nr_gframes;
+> @@ -1169,15 +1224,26 @@ static int gnttab_setup(void)
+>  	if (max_nr_gframes < nr_grant_frames)
+>  		return -ENOSYS;
+>  
+> +	if (xen_feature(XENFEAT_auto_translated_physmap) && !xen_auto_xlat_grant_frames) {
+> +		/*
+> +		 * xen_auto_xlat_grant_frames is setup for PVHVM by
+> +		 * alloc_xen_mmio by the time this is called.
+> +		 */
+> +		int rc = xlated_setup_gnttab_pages(max_nr_gframes, max_nr_gframes,
+> +						   &gnttab_shared.addr);
+> +		if (rc)
+> +			return rc;
+> +		xen_auto_xlat_grant_frames = (unsigned long)gnttab_shared.addr;
+> +	}
+
+I think you should do this from arch/x86/xen. When gnttab_setup is
+called in your guest, xen_auto_xlat_grant_frames should have already
+been setup correctly.
+
+
+>  	if (xen_pv_domain())
+>  		return gnttab_map(0, nr_grant_frames - 1);
+>  
+>  	if (gnttab_shared.addr == NULL) {
+> -		gnttab_shared.addr = xen_remap(xen_hvm_resume_frames,
+> +		gnttab_shared.addr = xen_remap(xen_auto_xlat_grant_frames,
+>  						PAGE_SIZE * max_nr_gframes);
+>  		if (gnttab_shared.addr == NULL) {
+>  			pr_warn("Failed to ioremap gnttab share frames (addr=0x%08lx)!\n",
+> -					xen_hvm_resume_frames);
+> +					xen_auto_xlat_grant_frames);
+>  			return -ENOMEM;
+>  		}
+>  	}
+> diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
+> index 2f3528e..44bc5a6 100644
+> --- a/drivers/xen/platform-pci.c
+> +++ b/drivers/xen/platform-pci.c
+> @@ -154,7 +154,7 @@ static int platform_pci_init(struct pci_dev *pdev,
+>  	}
+>  
+>  	max_nr_gframes = gnttab_max_grant_frames();
+> -	xen_hvm_resume_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
+> +	xen_auto_xlat_grant_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
+>  	ret = gnttab_init();
+>  	if (ret)
+>  		goto out;
+> diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+> index 694dcaf..24280ac 100644
+> --- a/include/xen/grant_table.h
+> +++ b/include/xen/grant_table.h
+> @@ -178,7 +178,7 @@ int arch_gnttab_map_status(uint64_t *frames, unsigned long nr_gframes,
+>  			   grant_status_t **__shared);
+>  void arch_gnttab_unmap(void *shared, unsigned long nr_gframes);
+>  
+> -extern unsigned long xen_hvm_resume_frames;
+> +extern unsigned long xen_auto_xlat_grant_frames;
+>  unsigned int gnttab_max_grant_frames(void);
+>  
+>  #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
+
+You need to s/xen_hvm_resume_frames/xen_auto_xlat_grant_frames under
+arch/arm/xen too.
