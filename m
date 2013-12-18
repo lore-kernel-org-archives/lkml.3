@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab3LRWCG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:02:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36048 "EHLO
+	id S1756109Ab3LRWCE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:02:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36064 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753243Ab3LRVMX (ORCPT
+	with ESMTP id S1753262Ab3LRVM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:23 -0500
+	Wed, 18 Dec 2013 16:12:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 45/78] drm/radeon: program DCE2 audio dto just like DCE3
-Date: Wed, 18 Dec 2013 13:11:13 -0800
-Message-Id: <20131218211113.174050245@linuxfoundation.org>
+        "Kevin B. Smith" <kevin.b.smith@intel.com>,
+        "Sunil K. Pandey" <sunil.k.pandey@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. J. Lu" <hjl.tools@gmail.com>
+Subject: [PATCH 3.10 48/78] x86, build: Pass in additional -mno-mmx, -mno-sse options
+Date: Wed, 18 Dec 2013 13:11:16 -0800
+Message-Id: <20131218211113.256951468@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -28,47 +31,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 55d4e020fb8ddd3896a8cd3351028f5c3a2c4bd3 upstream.
+commit 8b3b005d675726e38bc504d2e35a991e55819155 upstream.
 
-Seems to work like the DCE3 version despite what
-the register spec says.
+In checkin
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=71975
+    5551a34e5aea x86-64, build: Always pass in -mno-sse
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+we unconditionally added -mno-sse to the main build, to keep newer
+compilers from generating SSE instructions from autovectorization.
+However, this did not extend to the special environments
+(arch/x86/boot, arch/x86/boot/compressed, and arch/x86/realmode/rm).
+Add -mno-sse to the compiler command line for these environments, and
+add -mno-mmx to all the environments as well, as we don't want a
+compiler to generate MMX code either.
+
+This patch also removes a $(cc-option) call for -m32, since we have
+long since stopped supporting compilers too old for the -m32 option,
+and in fact hardcode it in other places in the Makefiles.
+
+Reported-by: Kevin B. Smith <kevin.b.smith@intel.com>
+Cc: Sunil K. Pandey <sunil.k.pandey@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: H. J. Lu <hjl.tools@gmail.com>
+Link: http://lkml.kernel.org/n/tip-j21wzqv790q834n7yc6g80j1@git.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/r600_hdmi.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ arch/x86/Makefile                 |    8 ++++----
+ arch/x86/boot/Makefile            |    6 +++---
+ arch/x86/boot/compressed/Makefile |    1 +
+ arch/x86/realmode/rm/Makefile     |    3 ++-
+ 4 files changed, 10 insertions(+), 8 deletions(-)
 
---- a/drivers/gpu/drm/radeon/r600_hdmi.c
-+++ b/drivers/gpu/drm/radeon/r600_hdmi.c
-@@ -279,9 +279,9 @@ void r600_audio_set_dto(struct drm_encod
- 			WREG32(DCCG_AUDIO_DTO1_MODULE, clock * 100);
- 			WREG32(DCCG_AUDIO_DTO_SELECT, 1); /* select DTO1 */
- 		}
--	} else if (ASIC_IS_DCE3(rdev)) {
-+	} else {
- 		/* according to the reg specs, this should DCE3.2 only, but in
--		 * practice it seems to cover DCE3.0/3.1 as well.
-+		 * practice it seems to cover DCE2.0/3.0/3.1 as well.
- 		 */
- 		if (dig->dig_encoder == 0) {
- 			WREG32(DCCG_AUDIO_DTO0_PHASE, base_rate * 100);
-@@ -292,10 +292,6 @@ void r600_audio_set_dto(struct drm_encod
- 			WREG32(DCCG_AUDIO_DTO1_MODULE, clock * 100);
- 			WREG32(DCCG_AUDIO_DTO_SELECT, 1); /* select DTO1 */
- 		}
--	} else {
--		/* according to the reg specs, this should be DCE2.0 and DCE3.0/3.1 */
--		WREG32(AUDIO_DTO, AUDIO_DTO_PHASE(base_rate / 10) |
--		       AUDIO_DTO_MODULE(clock / 10));
- 	}
- }
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -31,8 +31,8 @@ ifeq ($(CONFIG_X86_32),y)
  
+         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
+ 
+-        # Don't autogenerate SSE instructions
+-	KBUILD_CFLAGS += -mno-sse
++        # Don't autogenerate MMX or SSE instructions
++        KBUILD_CFLAGS += -mno-mmx -mno-sse
+ 
+         # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
+         # with nonstandard options
+@@ -60,8 +60,8 @@ else
+         KBUILD_AFLAGS += -m64
+         KBUILD_CFLAGS += -m64
+ 
+-        # Don't autogenerate SSE instructions
+-	KBUILD_CFLAGS += -mno-sse
++        # Don't autogenerate MMX or SSE instructions
++        KBUILD_CFLAGS += -mno-mmx -mno-sse
+ 
+ 	# Use -mpreferred-stack-boundary=3 if supported.
+ 	KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -53,18 +53,18 @@ $(obj)/cpustr.h: $(obj)/mkcpustr FORCE
+ 
+ # How to compile the 16-bit code.  Note we always compile for -march=i386,
+ # that way we can complain to the user if the CPU is insufficient.
+-KBUILD_CFLAGS	:= $(USERINCLUDE) -g -Os -D_SETUP -D__KERNEL__ \
++KBUILD_CFLAGS	:= $(USERINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ \
+ 		   -DDISABLE_BRANCH_PROFILING \
+ 		   -Wall -Wstrict-prototypes \
+ 		   -march=i386 -mregparm=3 \
+ 		   -include $(srctree)/$(src)/code16gcc.h \
+ 		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
++		   -mno-mmx -mno-sse \
+ 		   $(call cc-option, -ffreestanding) \
+ 		   $(call cc-option, -fno-toplevel-reorder,\
+-			$(call cc-option, -fno-unit-at-a-time)) \
++		   $(call cc-option, -fno-unit-at-a-time)) \
+ 		   $(call cc-option, -fno-stack-protector) \
+ 		   $(call cc-option, -mpreferred-stack-boundary=2)
+-KBUILD_CFLAGS	+= $(call cc-option, -m32)
+ KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
+ GCOV_PROFILE := n
+ 
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -12,6 +12,7 @@ KBUILD_CFLAGS += -DDISABLE_BRANCH_PROFIL
+ cflags-$(CONFIG_X86_32) := -march=i386
+ cflags-$(CONFIG_X86_64) := -mcmodel=small
+ KBUILD_CFLAGS += $(cflags-y)
++KBUILD_CFLAGS += -mno-mmx -mno-sse
+ KBUILD_CFLAGS += $(call cc-option,-ffreestanding)
+ KBUILD_CFLAGS += $(call cc-option,-fno-stack-protector)
+ 
+--- a/arch/x86/realmode/rm/Makefile
++++ b/arch/x86/realmode/rm/Makefile
+@@ -73,9 +73,10 @@ KBUILD_CFLAGS	:= $(LINUXINCLUDE) -m32 -g
+ 		   -march=i386 -mregparm=3 \
+ 		   -include $(srctree)/$(src)/../../boot/code16gcc.h \
+ 		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
++		   -mno-mmx -mno-sse \
+ 		   $(call cc-option, -ffreestanding) \
+ 		   $(call cc-option, -fno-toplevel-reorder,\
+-			$(call cc-option, -fno-unit-at-a-time)) \
++		   $(call cc-option, -fno-unit-at-a-time)) \
+ 		   $(call cc-option, -fno-stack-protector) \
+ 		   $(call cc-option, -mpreferred-stack-boundary=2)
+ KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
 
 
