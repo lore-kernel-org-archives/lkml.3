@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab3LRVOI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:14:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36564 "EHLO
+	id S1754974Ab3LRVWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:22:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36593 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454Ab3LRVOE (ORCPT
+	with ESMTP id S1754454Ab3LRVOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:14:04 -0500
+	Wed, 18 Dec 2013 16:14:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Trevor Cordes <trevor@tecnopolis.ca>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.12 094/118] exportfs: fix 32-bit nfsd handling of 64-bit inode numbers
-Date: Wed, 18 Dec 2013 13:12:11 -0800
-Message-Id: <20131218211222.114496733@linuxfoundation.org>
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH 3.12 100/118] staging: comedi: drivers: use comedi_dio_update_state() for simple cases
+Date: Wed, 18 Dec 2013 13:12:17 -0800
+Message-Id: <20131218211222.279721691@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -30,67 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-commit 950ee9566a5b6cc45d15f5fe044bab4f1e8b62cb upstream.
+commit 97f4289ad08cffe55de06d4ac4f89ac540450aee upstream.
 
-Symptoms were spurious -ENOENTs on stat of an NFS filesystem from a
-32-bit NFS server exporting a very large XFS filesystem, when the
-server's cache is cold (so the inodes in question are not in cache).
+[Split from original patch subject: "staging: comedi: drivers: use
+comedi_dio_update_state() for simple cases"]
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Trevor Cordes <trevor@tecnopolis.ca>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Use comedi_dio_update_state() to handle the boilerplate code to update
+the subdevice s->state for simple cases where the hardware is updated
+when any channel is modified.
+
+Also, fix a bug in the amplc_pc263 and amplc_pci263 drivers where the
+current state is not returned in data[1].
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/exportfs/expfs.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/staging/comedi/drivers/amplc_pc263.c  |    3 +++
+ drivers/staging/comedi/drivers/amplc_pci263.c |    3 +++
+ 2 files changed, 6 insertions(+)
 
---- a/fs/exportfs/expfs.c
-+++ b/fs/exportfs/expfs.c
-@@ -215,7 +215,7 @@ struct getdents_callback {
- 	struct dir_context ctx;
- 	char *name;		/* name that was found. It already points to a
- 				   buffer NAME_MAX+1 is size */
--	unsigned long ino;	/* the inum we are looking for */
-+	u64 ino;		/* the inum we are looking for */
- 	int found;		/* inode matched? */
- 	int sequence;		/* sequence counter */
- };
-@@ -255,10 +255,14 @@ static int get_name(const struct path *p
- 	struct inode *dir = path->dentry->d_inode;
- 	int error;
- 	struct file *file;
-+	struct kstat stat;
-+	struct path child_path = {
-+		.mnt = path->mnt,
-+		.dentry = child,
-+	};
- 	struct getdents_callback buffer = {
- 		.ctx.actor = filldir_one,
- 		.name = name,
--		.ino = child->d_inode->i_ino
- 	};
+--- a/drivers/staging/comedi/drivers/amplc_pc263.c
++++ b/drivers/staging/comedi/drivers/amplc_pc263.c
+@@ -68,6 +68,9 @@ static int pc263_do_insn_bits(struct com
+ 		outb(s->state & 0xFF, dev->iobase);
+ 		outb(s->state >> 8, dev->iobase + 1);
+ 	}
++
++	data[1] = s->state;
++
+ 	return insn->n;
+ }
  
- 	error = -ENOTDIR;
-@@ -268,6 +272,16 @@ static int get_name(const struct path *p
- 	if (!dir->i_fop)
- 		goto out;
- 	/*
-+	 * inode->i_ino is unsigned long, kstat->ino is u64, so the
-+	 * former would be insufficient on 32-bit hosts when the
-+	 * filesystem supports 64-bit inode numbers.  So we need to
-+	 * actually call ->getattr, not just read i_ino:
-+	 */
-+	error = vfs_getattr_nosec(&child_path, &stat);
-+	if (error)
-+		return error;
-+	buffer.ino = stat.ino;
-+	/*
- 	 * Open the directory ...
- 	 */
- 	file = dentry_open(path, O_RDONLY, cred);
+--- a/drivers/staging/comedi/drivers/amplc_pci263.c
++++ b/drivers/staging/comedi/drivers/amplc_pci263.c
+@@ -55,6 +55,9 @@ static int pci263_do_insn_bits(struct co
+ 		outb(s->state & 0xFF, dev->iobase);
+ 		outb(s->state >> 8, dev->iobase + 1);
+ 	}
++
++	data[1] = s->state;
++
+ 	return insn->n;
+ }
+ 
 
 
