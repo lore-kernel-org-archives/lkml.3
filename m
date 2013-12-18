@@ -1,188 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab3LTDKa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 22:10:30 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:46915 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab3LTDK1 (ORCPT
+	id S1752709Ab3LTDK3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 22:10:29 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49570 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab3LTDK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Dec 2013 22:10:27 -0500
-Date: Wed, 18 Dec 2013 16:17:39 -0500
+Date: Wed, 18 Dec 2013 15:30:37 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
         boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
         mukesh.rathor@oracle.com, jbeulich@suse.com
-Subject: Re: [Xen-devel] [PATCH v11 09/12] xen/pvh: Piggyback on PVHVM XenBus
- and event channels for PVH.
-Message-ID: <20131218211739.GD11717@phenom.dumpdata.com>
+Subject: Re: [Xen-devel] [PATCH v11 05/12] xen/pvh: Update E820 to work with
+ PVH
+Message-ID: <20131218203037.GA9698@phenom.dumpdata.com>
 References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
- <1387313503-31362-10-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.02.1312181827280.8667@kaball.uk.xensource.com>
+ <1387313503-31362-6-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1312181813260.8667@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312181827280.8667@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1312181813260.8667@kaball.uk.xensource.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 06:31:43PM +0000, Stefano Stabellini wrote:
+On Wed, Dec 18, 2013 at 06:25:15PM +0000, Stefano Stabellini wrote:
 > On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
 > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
 > > 
-> > PVH is a PV guest with a twist - there are certain things
-> > that work in it like HVM and some like PV. There is
-> > a similar mode - PVHVM where we run in HVM mode with
-> > PV code enabled - and this patch explores that.
-> > 
-> > The most notable PV interfaces are the XenBus and event channels.
-> > For PVH, we will use XenBus and event channels.
-> > 
-> > For the XenBus mechanism we piggyback on how it is done for
-> > PVHVM guests.
-> > 
-> > Ditto for the event channel mechanism - we piggyback on PVHVM -
-> > by setting up a specific vector callback and that
-> > vector ends up calling the event channel mechanism to
-> > dispatch the events as needed.
-> > 
-> > This means that from a pvops perspective, we can use
-> > native_irq_ops instead of the Xen PV specific. Albeit in the
-> > future we could support pirq_eoi_map. But that is
-> > a feature request that can be shared with PVHVM.
+> > In xen_add_extra_mem() we can skip updating P2M as it's managed
+> > by Xen. PVH maps the entire IO space, but only RAM pages need
+> > to be repopulated.
 > > 
 > > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > > ---
-> >  arch/x86/xen/enlighten.c           | 6 ++++++
-> >  arch/x86/xen/irq.c                 | 5 ++++-
-> >  drivers/xen/events.c               | 5 +++++
-> >  drivers/xen/xenbus/xenbus_client.c | 3 ++-
-> >  4 files changed, 17 insertions(+), 2 deletions(-)
+> >  arch/x86/xen/setup.c | 19 +++++++++++++++++--
+> >  1 file changed, 17 insertions(+), 2 deletions(-)
 > > 
-> > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> > index e420613..7fceb51 100644
-> > --- a/arch/x86/xen/enlighten.c
-> > +++ b/arch/x86/xen/enlighten.c
-> > @@ -1134,6 +1134,8 @@ void xen_setup_shared_info(void)
-> >  	/* In UP this is as good a place as any to set up shared info */
-> >  	xen_setup_vcpu_info_placement();
-> >  #endif
-> > +	if (xen_pvh_domain())
-> > +		return;
+> > diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> > index 2137c51..f93bca1 100644
+> > --- a/arch/x86/xen/setup.c
+> > +++ b/arch/x86/xen/setup.c
+> > @@ -27,6 +27,7 @@
+> >  #include <xen/interface/memory.h>
+> >  #include <xen/interface/physdev.h>
+> >  #include <xen/features.h>
+> > +#include "mmu.h"
+> >  #include "xen-ops.h"
+> >  #include "vdso.h"
 > >  
-> >  	xen_setup_mfn_list_list();
-> >  }
-> 
-> This is another one of those cases where I think we would benefit from
-> introducing xen_setup_shared_info_pvh instead of adding more ifs here.
-
-Actually this one can be removed.
-
-> 
-> 
-> > @@ -1146,6 +1148,10 @@ void xen_setup_vcpu_info_placement(void)
-> >  	for_each_possible_cpu(cpu)
-> >  		xen_vcpu_setup(cpu);
+> > @@ -81,6 +82,9 @@ static void __init xen_add_extra_mem(u64 start, u64 size)
 > >  
-> > +	/* PVH always uses native IRQ ops */
-> > +	if (xen_pvh_domain())
+> >  	memblock_reserve(start, size);
+> >  
+> > +	if (xen_feature(XENFEAT_auto_translated_physmap))
 > > +		return;
 > > +
-> >  	/* xen_vcpu_setup managed to place the vcpu_info within the
-> >  	   percpu area for all cpus, so make use of it */
-> >  	if (have_vcpu_info_placement) {
-> 
-> Same here?
-
-Hmmm, I wonder if the vcpu info placement could work with PVH.
-> 
-> 
-> > diff --git a/arch/x86/xen/irq.c b/arch/x86/xen/irq.c
-> > index 0da7f86..4f7f351 100644
-> > --- a/arch/x86/xen/irq.c
-> > +++ b/arch/x86/xen/irq.c
-> > @@ -5,6 +5,7 @@
-> >  #include <xen/interface/xen.h>
-> >  #include <xen/interface/sched.h>
-> >  #include <xen/interface/vcpu.h>
-> > +#include <xen/features.h>
-> >  #include <xen/events.h>
+> >  	xen_max_p2m_pfn = PFN_DOWN(start + size);
+> >  	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
+> >  		unsigned long mfn = pfn_to_mfn(pfn);
+> > @@ -103,6 +107,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
+> >  		.domid        = DOMID_SELF
+> >  	};
+> >  	unsigned long len = 0;
+> > +	int xlated_phys = xen_feature(XENFEAT_auto_translated_physmap);
+> >  	unsigned long pfn;
+> >  	int ret;
 > >  
-> >  #include <asm/xen/hypercall.h>
-> > @@ -128,6 +129,8 @@ static const struct pv_irq_ops xen_irq_ops __initconst = {
-> >  
-> >  void __init xen_init_irq_ops(void)
+> > @@ -116,7 +121,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
+> >  				continue;
+> >  			frame = mfn;
+> >  		} else {
+> > -			if (mfn != INVALID_P2M_ENTRY)
+> > +			if (!xlated_phys && mfn != INVALID_P2M_ENTRY)
+> >  				continue;
+> >  			frame = pfn;
+> >  		}
+> > @@ -154,6 +159,13 @@ static unsigned long __init xen_do_chunk(unsigned long start,
+> >  static unsigned long __init xen_release_chunk(unsigned long start,
+> >  					      unsigned long end)
 > >  {
-> > -	pv_irq_ops = xen_irq_ops;
-> > +	/* For PVH we use default pv_irq_ops settings */
-> > +	if (!xen_feature(XENFEAT_hvm_callback_vector))
-> > +		pv_irq_ops = xen_irq_ops;
-> >  	x86_init.irqs.intr_init = xen_init_IRQ;
+> > +	/*
+> > +	 * Xen already ballooned out the E820 non RAM regions for us
+> > +	 * and set them up properly in EPT.
+> > +	 */
+> > +	if (xen_feature(XENFEAT_auto_translated_physmap))
+> > +		return end - start;
+> > +
+> >  	return xen_do_chunk(start, end, true);
 > >  }
-> > diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> > index 4035e83..627a16a 100644
-> > --- a/drivers/xen/events.c
-> > +++ b/drivers/xen/events.c
-> > @@ -1922,6 +1922,11 @@ void __init xen_init_IRQ(void)
-> >  		if (xen_initial_domain())
-> >  			pci_xen_initial_domain();
 > >  
-> > +		if (xen_feature(XENFEAT_hvm_callback_vector)) {
-> > +			xen_callback_vector();
-> > +			return;
-> > +		}
+> > @@ -222,6 +234,9 @@ static void __init xen_set_identity_and_release_chunk(
+> >  	 * (except for the ISA region which must be 1:1 mapped) to
+> >  	 * release the refcounts (in Xen) on the original frames.
+> >  	 */
+> > +	if (xen_feature(XENFEAT_auto_translated_physmap))
+> > +		goto skip;
+> > +
+> >  	for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn; pfn++) {
+> >  		pte_t pte = __pte_ma(0);
+> >  
+> > @@ -231,7 +246,7 @@ static void __init xen_set_identity_and_release_chunk(
+> >  		(void)HYPERVISOR_update_va_mapping(
+> >  			(unsigned long)__va(pfn << PAGE_SHIFT), pte, 0);
+> >  	}
+> > -
+> > +skip:
+> >  	if (start_pfn < nr_pages)
+> >  		*released += xen_release_chunk(
+> >  			start_pfn, min(end_pfn, nr_pages));
 > 
-> There is another call to xen_callback_vector in the if
-> (xen_hvm_domain()) path. Could we just move it out and have a single one
-> if (xen_feature(XENFEAT_hvm_callback_vector))?
+> A goto? Really? What's wrong with an if?
 
-Sure. Good idea.
-> 
-> 
-> >  		pirq_eoi_map = (void *)__get_free_page(GFP_KERNEL|__GFP_ZERO);
-> >  		eoi_gmfn.gmfn = virt_to_mfn(pirq_eoi_map);
-> >  		rc = HYPERVISOR_physdev_op(PHYSDEVOP_pirq_eoi_gmfn_v2, &eoi_gmfn);
-> > diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
-> > index ec097d6..7f7c454 100644
-> > --- a/drivers/xen/xenbus/xenbus_client.c
-> > +++ b/drivers/xen/xenbus/xenbus_client.c
-> > @@ -45,6 +45,7 @@
-> >  #include <xen/grant_table.h>
-> >  #include <xen/xenbus.h>
-> >  #include <xen/xen.h>
-> > +#include <xen/features.h>
-> >  
-> >  #include "xenbus_probe.h"
-> >  
-> > @@ -743,7 +744,7 @@ static const struct xenbus_ring_ops ring_ops_hvm = {
-> >  
-> >  void __init xenbus_ring_ops_init(void)
-> >  {
-> > -	if (xen_pv_domain())
-> > +	if (xen_pv_domain() && !xen_feature(XENFEAT_auto_translated_physmap))
-> 
-> Can we just change this test to
-> 
-> if (!xen_feature(XENFEAT_auto_translated_physmap))
-> 
-> ?
+Moves too much code.
+> Also considering that you are turning xen_release_chunk into a nop, the
+> only purpose of this function on PVH is to call set_phys_range_identity.
+> Can't we just do that?
 
-I think it can. I will try it out.
-> 
-> 
-> >  		ring_ops = &ring_ops_pv;
-> >  	else
-> >  		ring_ops = &ring_ops_hvm;
-> > -- 
-> > 1.8.3.1
-> > 
-> > 
-> > _______________________________________________
-> > Xen-devel mailing list
-> > Xen-devel@lists.xen.org
-> > http://lists.xen.org/xen-devel
-> > 
+And set_phys_range_identity ends up just doing:
+
+ 769         if (unlikely(xen_feature(XENFEAT_auto_translated_physmap)))             
+ 770                 return pfn_e - pfn_s;   
+
+So what we really could do (which is what Mukesh's patch had):
+
+if (xen_feature(XENFEAT..) {
+	if (start_pfn < nr_pages)
+		*released += min(end_pfn, nr_pages) - start_pfn;
+	*identity += end_pfn - start_pfn;
+}
+
+in its own function. We could do that.
