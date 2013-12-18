@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749Ab3LRSgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 13:36:13 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:32867 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab3LRSgK (ORCPT
+	id S1755599Ab3LRSht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 13:37:49 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:39816 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755099Ab3LRShr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 13:36:10 -0500
-Date: Thu, 19 Dec 2013 00:05:59 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Jingoo Han <jg1.han@samsung.com>, Andy Grover <agrover@redhat.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Christoph Hellwig <hch@lst.de>, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 4/4] drivers: target: Mark functions and structures as static
- in tfc_conf.c
-Message-ID: <94a49e2b29220b2a3fb93449a7b2c96fb6ea4667.1387390091.git.rashika.kheria@gmail.com>
+	Wed, 18 Dec 2013 13:37:47 -0500
+Date: Wed, 18 Dec 2013 10:37:41 -0800
+From: josh@joshtriplett.org
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
+Subject: Re: [PATCH 1/4] drivers: target: Move prototype declaration of
+ function to header file target_core_pr.h
+Message-ID: <20131218183741.GA24229@cloud>
 References: <1a63603bc5ff05147c419a301d59b135cd0c8406.1387390091.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <1a63603bc5ff05147c419a301d59b135cd0c8406.1387390091.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions ft_tpg_alloc_fabric_acl(), ft_register_configfs() and
-ft_deregister_configfs() as static in tcm_fc/tfc_conf.c because they are
-not used outside this file.
+On Wed, Dec 18, 2013 at 11:54:32PM +0530, Rashika Kheria wrote:
+> Move prototype declaration of function
+> spc_parse_naa_6h_vendor_specific() from target_core_xcopy.c to header
+> file target_core_pr.h because it is used by more than one file.
+> 
+> This eliminates the following warning in target_core_spc.c:
+> drivers/target/target_core_spc.c:138:6: warning: no previous prototype for ‘spc_parse_naa_6h_vendor_specific’ [-Wmissing-prototypes]
+> 
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 
-This eliminates the following warnings in tcm_fc/tfc_conf.c:
-drivers/target/tcm_fc/tfc_conf.c:270:21: warning: no previous prototype for ‘ft_tpg_alloc_fabric_acl’ [-Wmissing-prototypes]
-drivers/target/tcm_fc/tfc_conf.c:555:5: warning: no previous prototype for ‘ft_register_configfs’ [-Wmissing-prototypes]
-drivers/target/tcm_fc/tfc_conf.c:602:6: warning: no previous prototype for ‘ft_deregister_configfs’ [-Wmissing-prototypes]
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
----
- drivers/target/tcm_fc/tfc_conf.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/target/tcm_fc/tfc_conf.c b/drivers/target/tcm_fc/tfc_conf.c
-index c6932fb..e879da8 100644
---- a/drivers/target/tcm_fc/tfc_conf.c
-+++ b/drivers/target/tcm_fc/tfc_conf.c
-@@ -267,7 +267,7 @@ struct ft_node_acl *ft_acl_get(struct ft_tpg *tpg, struct fc_rport_priv *rdata)
- 	return found;
- }
- 
--struct se_node_acl *ft_tpg_alloc_fabric_acl(struct se_portal_group *se_tpg)
-+static struct se_node_acl *ft_tpg_alloc_fabric_acl(struct se_portal_group *se_tpg)
- {
- 	struct ft_node_acl *acl;
- 
-@@ -552,7 +552,7 @@ static struct target_core_fabric_ops ft_fabric_ops = {
- 	.fabric_drop_nodeacl =		&ft_del_acl,
- };
- 
--int ft_register_configfs(void)
-+static int ft_register_configfs(void)
- {
- 	struct target_fabric_configfs *fabric;
- 	int ret;
-@@ -599,7 +599,7 @@ int ft_register_configfs(void)
- 	return 0;
- }
- 
--void ft_deregister_configfs(void)
-+static void ft_deregister_configfs(void)
- {
- 	if (!ft_configfs)
- 		return;
--- 
-1.7.9.5
-
+>  drivers/target/target_core_pr.h    |    5 +++++
+>  drivers/target/target_core_xcopy.c |    4 ----
+>  2 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/target/target_core_pr.h b/drivers/target/target_core_pr.h
+> index ed75cdd..2ee2936 100644
+> --- a/drivers/target/target_core_pr.h
+> +++ b/drivers/target/target_core_pr.h
+> @@ -43,6 +43,11 @@
+>  #define PR_APTPL_MAX_IPORT_LEN			256
+>  #define PR_APTPL_MAX_TPORT_LEN			256
+>  
+> +/*
+> + *  Function defined in target_core_spc.c
+> + */
+> +void spc_parse_naa_6h_vendor_specific(struct se_device *, unsigned char *);
+> +
+>  extern struct kmem_cache *t10_pr_reg_cache;
+>  
+>  extern void core_pr_dump_initiator_port(struct t10_pr_registration *,
+> diff --git a/drivers/target/target_core_xcopy.c b/drivers/target/target_core_xcopy.c
+> index 6b88a99..669c536 100644
+> --- a/drivers/target/target_core_xcopy.c
+> +++ b/drivers/target/target_core_xcopy.c
+> @@ -40,10 +40,6 @@
+>  
+>  static struct workqueue_struct *xcopy_wq = NULL;
+>  /*
+> - * From target_core_spc.c
+> - */
+> -extern void spc_parse_naa_6h_vendor_specific(struct se_device *, unsigned char *);
+> -/*
+>   * From target_core_device.c
+>   */
+>  extern struct mutex g_device_mutex;
+> -- 
+> 1.7.9.5
+> 
