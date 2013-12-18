@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360Ab3LRPbh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 10:31:37 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:33360 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755155Ab3LRPbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 10:31:35 -0500
-X-IronPort-AV: E=Sophos;i="4.95,508,1384300800"; 
-   d="scan'208";a="85778632"
-Message-ID: <52B1BFD4.7090702@citrix.com>
-Date: Wed, 18 Dec 2013 15:31:32 +0000
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	id S1755371Ab3LRPcD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 10:32:03 -0500
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.168]:61329 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754888Ab3LRPcA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 10:32:00 -0500
+X-Greylist: delayed 431 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Dec 2013 10:32:00 EST
+X-Env-Sender: anthony.olech.opensource@diasemi.com
+X-Msg-Ref: server-4.tower-38.messagelabs.com!1387380286!2474455!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201312181524.rBIFOhNp017016@swsrvapps-02.lan>
+From: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Date: Wed, 18 Dec 2013 15:15:31 +0000
+Subject: [PATCH V1] fix adc to voltage calculation in da9052 hwmon driver
+To: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
+CC: "open list:HARDWARE MONITORING" <lm-sensors@lm-sensors.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Ian Campbell <Ian.Campbell@citrix.com>, <david.vrabel@citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [Xen-devel] [PATCH] allow xenfb initialization for hvm guests
-References: <alpine.DEB.2.02.1312171738550.8667@kaball.uk.xensource.com> <1387367482.27441.123.camel@kazak.uk.xensource.com> <20131218151422.GF4934@phenom.dumpdata.com>
-In-Reply-To: <20131218151422.GF4934@phenom.dumpdata.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/12/13 15:14, Konrad Rzeszutek Wilk wrote:
-> On Wed, Dec 18, 2013 at 11:51:22AM +0000, Ian Campbell wrote:
->> On Tue, 2013-12-17 at 17:53 +0000, Stefano Stabellini wrote:
->>> There is no reasons why an HVM guest shouldn't be allowed to use xenfb.
->>> As a matter of fact ARM guests, HVM from Linux POV, can use xenfb.
->>> Given that no Xen toolstacks configure a xenfb backend for x86 HVM
->>> guests, they are not affected.
->> and if a toolstack did I think it would be reasonable to expect the
->> kernel to at least try and drive it!
->>
->>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->> Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> I think David Vrabel is going to Nack it unless there is a test-case.
->
-> I am saying that because in his previous statement for Wei's multi-page
-> patches was that if there are no users (or at least no test-cases) then
-> it should not be part of the kernel.
+The ADC resolution of the PMIC is 10-bits, this means that the maximum
+possible value is 1023 and not the 1024 as originally in the code.
 
-Without trying to presume too much, I really don't think he would.
+Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+---
+This patch is relative to linux-next repository tag next-20131218
 
-This patch is taking an existing thing and permitting it to work in more
-cases (which is a good change IMO).
+ drivers/hwmon/da9052-hwmon.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-The multi-page rings was completely brand new functionality with no
-consumers at all, so no ability to verify the implementation.  It is a
-completely different context.
+diff --git a/drivers/hwmon/da9052-hwmon.c b/drivers/hwmon/da9052-hwmon.c
+index 960fac3..afd3104 100644
+--- a/drivers/hwmon/da9052-hwmon.c
++++ b/drivers/hwmon/da9052-hwmon.c
+@@ -45,7 +45,7 @@ static const char * const input_names[] = {
+ /* Conversion function for VDDOUT and VBAT */
+ static inline int volt_reg_to_mv(int value)
+ {
+-	return DIV_ROUND_CLOSEST(value * 1000, 512) + 2500;
++	return DIV_ROUND_CLOSEST(value * 2000, 1023) + 2500;
+ }
+ 
+ /* Conversion function for ADC channels 4, 5 and 6 */
+@@ -57,7 +57,7 @@ static inline int input_reg_to_mv(int value)
+ /* Conversion function for VBBAT */
+ static inline int vbbat_reg_to_mv(int value)
+ {
+-	return DIV_ROUND_CLOSEST(value * 2500, 512);
++	return DIV_ROUND_CLOSEST(value * 5000, 1023);
+ }
+ 
+ static inline int da9052_enable_vddout_channel(struct da9052 *da9052)
+-- 
+end-of-patch for fix adc to voltage calculation in da9052 hwmon driver V1
 
-~Andrew
