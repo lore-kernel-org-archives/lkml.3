@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755890Ab3LRVms (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:42:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36325 "EHLO
+	id S1753849Ab3LRVNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:13:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36307 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857Ab3LRVNQ (ORCPT
+	with ESMTP id S1753805Ab3LRVNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:16 -0500
+	Wed, 18 Dec 2013 16:13:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bin Liu <b-liu@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.12 035/118] usb: musb: musb_cppi41: handle pre-mature TX complete interrupt
-Date: Wed, 18 Dec 2013 13:11:12 -0800
-Message-Id: <20131218211220.467193713@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.12 031/118] usb: dwc3: fix implementation of endpoint wedge
+Date: Wed, 18 Dec 2013 13:11:08 -0800
+Message-Id: <20131218211220.356704297@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -30,268 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit a655f481d83d6d37bec0a2ddfdd24c30ff8f541f upstream.
+commit a535d81c92615b8ffb99b7e1fd1fb01effaed1af upstream.
 
-The TX-complete interrupt of the CPPI41 on AM335x fires too early.
-Adding a loop and counting how long it takes until the
-MUSB_TXCSR_TXPKTRDY bit is cleared I see
-FS:
-|musb-hdrc musb-hdrc.0.auto: configure ep1/80 packet_sz=64, mode=0, dma_addr=0xadc54002, len=1514 is_tx=1
-|cppi41_dma_callback() 74 loops
-|musb-hdrc musb-hdrc.0.auto: configure ep1/80 packet_sz=64, mode=0, dma_addr=0xadcd8802, len=1514 is_tx=1
-|cppi41_dma_callback() 66 loops
-|musb-hdrc musb-hdrc.0.auto: configure ep1/80 packet_sz=64, mode=0, dma_addr=0xadcd8002, len=1514 is_tx=1
-|cppi41_dma_callback() 136 loops
-|musb-hdrc musb-hdrc.0.auto: configure ep1/80 packet_sz=64, mode=0, dma_addr=0xadf55802, len=1514 is_tx=1
-|cppi41_dma_callback() 136 loops
+The dwc3 UDC driver doesn't implement endpoint wedging correctly.
+When an endpoint is wedged, the gadget driver should be allowed to
+clear the wedge by calling usb_ep_clear_halt().  Only the host is
+prevented from resetting the endpoint.
 
-avg: 110 - 150us
+This patch fixes the implementation.
 
-HS:
-|musb-hdrc musb-hdrc.0.auto: configure ep1/80 packet_sz=512, mode=0, dma_addr=0xaca6f002, len=1514 is_tx=1
-|cppi41_dma_callback() 0 loops
-|musb-hdrc musb-hdrc.0.auto: configure ep1/80 packet_sz=512, mode=0, dma_addr=0xadd6f802, len=1514 is_tx=1
-|cppi41_dma_callback() 2 loops
-|musb-hdrc musb-hdrc.0.auto: configure ep1/80 packet_sz=512, mode=0, dma_addr=0xadd6f002, len=1514 is_tx=1
-|cppi41_dma_callback() 13 loops
-
-avg: 2us
-
-for the same test case. One loop means a udelay(1). The delay seems to
-depend on the packet size. On HS the bit is always cleared for small
-packet sizes while on FS it is never the case, it mostly around 110us.
-This testing has been performed with g_ether (musb as device) and using BULK
-transfers.
-
-INTR transfers are way more fun: during init the gadget sends a INT
-packet to the host and cppi41 says "transfer done" shortly after. The
-MUSB_TXCSR_TXPKTRDY bit is set even seconds later. The reason is that the host
-did not try to receive it, it does so after the interface (on host side) has
-been configured. Until this happens, that packet remains in musb's FIFO.
-
-To fix this, two things are done:
-- No DMA transfers for INT based endpoints. These transfer are usually
-  very small and rare so it is likely better to skip the DMA engine and
-  stuff the four bytes directly into the FIFO
-- on HS we poll up to 25us and hope that bit goes away. If not we setup
-  a hrtimer to poll for it. The 140us delay is a rule of thumb. In FS
-  the command
-  | ping 10.10.10.10 -c1 -s65130
-  creates about 44 1514bytes transfers. About 19 of them need a second
-  timer to complete.
-
-Reported-by: Bin Liu <b-liu@ti.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Pratyush Anand <pratyush.anand@st.com>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/musb_cppi41.c |  113 +++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 108 insertions(+), 5 deletions(-)
+ drivers/usb/dwc3/ep0.c    |    2 ++
+ drivers/usb/dwc3/gadget.c |    5 +----
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/musb/musb_cppi41.c
-+++ b/drivers/usb/musb/musb_cppi41.c
-@@ -38,6 +38,7 @@ struct cppi41_dma_channel {
- 	u32 prog_len;
- 	u32 transferred;
- 	u32 packet_sz;
-+	struct list_head tx_check;
- };
- 
- #define MUSB_DMA_NUM_CHANNELS 15
-@@ -47,6 +48,8 @@ struct cppi41_dma_controller {
- 	struct cppi41_dma_channel rx_channel[MUSB_DMA_NUM_CHANNELS];
- 	struct cppi41_dma_channel tx_channel[MUSB_DMA_NUM_CHANNELS];
- 	struct musb *musb;
-+	struct hrtimer early_tx;
-+	struct list_head early_tx_list;
- 	u32 rx_mode;
- 	u32 tx_mode;
- 	u32 auto_req;
-@@ -96,11 +99,23 @@ static void update_rx_toggle(struct cppi
- 	cppi41_channel->usb_toggle = toggle;
- }
- 
-+static bool musb_is_tx_fifo_empty(struct musb_hw_ep *hw_ep)
-+{
-+	u8		epnum = hw_ep->epnum;
-+	struct musb	*musb = hw_ep->musb;
-+	void __iomem	*epio = musb->endpoints[epnum].regs;
-+	u16		csr;
-+
-+	csr = musb_readw(epio, MUSB_TXCSR);
-+	if (csr & MUSB_TXCSR_TXPKTRDY)
-+		return false;
-+	return true;
-+}
-+
- static void cppi41_dma_callback(void *private_data);
- 
--static void cppi41_trans_done(struct dma_channel *channel)
-+static void cppi41_trans_done(struct cppi41_dma_channel *cppi41_channel)
- {
--	struct cppi41_dma_channel *cppi41_channel = channel->private_data;
- 	struct musb_hw_ep *hw_ep = cppi41_channel->hw_ep;
- 	struct musb *musb = hw_ep->musb;
- 
-@@ -138,7 +153,7 @@ static void cppi41_trans_done(struct dma
- 			return;
- 
- 		dma_desc->callback = cppi41_dma_callback;
--		dma_desc->callback_param = channel;
-+		dma_desc->callback_param = &cppi41_channel->channel;
- 		cppi41_channel->cookie = dma_desc->tx_submit(dma_desc);
- 		dma_async_issue_pending(dc);
- 
-@@ -150,6 +165,41 @@ static void cppi41_trans_done(struct dma
- 	}
- }
- 
-+static enum hrtimer_restart cppi41_recheck_tx_req(struct hrtimer *timer)
-+{
-+	struct cppi41_dma_controller *controller;
-+	struct cppi41_dma_channel *cppi41_channel, *n;
-+	struct musb *musb;
-+	unsigned long flags;
-+	enum hrtimer_restart ret = HRTIMER_NORESTART;
-+
-+	controller = container_of(timer, struct cppi41_dma_controller,
-+			early_tx);
-+	musb = controller->musb;
-+
-+	spin_lock_irqsave(&musb->lock, flags);
-+	list_for_each_entry_safe(cppi41_channel, n, &controller->early_tx_list,
-+			tx_check) {
-+		bool empty;
-+		struct musb_hw_ep *hw_ep = cppi41_channel->hw_ep;
-+
-+		empty = musb_is_tx_fifo_empty(hw_ep);
-+		if (empty) {
-+			list_del_init(&cppi41_channel->tx_check);
-+			cppi41_trans_done(cppi41_channel);
-+		}
-+	}
-+
-+	if (!list_empty(&controller->early_tx_list)) {
-+		ret = HRTIMER_RESTART;
-+		hrtimer_forward_now(&controller->early_tx,
-+				ktime_set(0, 150 * NSEC_PER_USEC));
-+	}
-+
-+	spin_unlock_irqrestore(&musb->lock, flags);
-+	return ret;
-+}
-+
- static void cppi41_dma_callback(void *private_data)
- {
- 	struct dma_channel *channel = private_data;
-@@ -159,6 +209,7 @@ static void cppi41_dma_callback(void *pr
- 	unsigned long flags;
- 	struct dma_tx_state txstate;
- 	u32 transferred;
-+	bool empty;
- 
- 	spin_lock_irqsave(&musb->lock, flags);
- 
-@@ -177,8 +228,52 @@ static void cppi41_dma_callback(void *pr
- 			transferred < cppi41_channel->packet_sz)
- 		cppi41_channel->prog_len = 0;
- 
--	cppi41_trans_done(channel);
+--- a/drivers/usb/dwc3/ep0.c
++++ b/drivers/usb/dwc3/ep0.c
+@@ -459,6 +459,8 @@ static int dwc3_ep0_handle_feature(struc
+ 			dep = dwc3_wIndex_to_dep(dwc, wIndex);
+ 			if (!dep)
+ 				return -EINVAL;
++			if (set == 0 && (dep->flags & DWC3_EP_WEDGE))
++				break;
+ 			ret = __dwc3_gadget_ep_set_halt(dep, set);
+ 			if (ret)
+ 				return -EINVAL;
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -1200,9 +1200,6 @@ int __dwc3_gadget_ep_set_halt(struct dwc
+ 		else
+ 			dep->flags |= DWC3_EP_STALL;
+ 	} else {
+-		if (dep->flags & DWC3_EP_WEDGE)
+-			return 0;
 -
-+	empty = musb_is_tx_fifo_empty(hw_ep);
-+	if (empty) {
-+		cppi41_trans_done(cppi41_channel);
-+	} else {
-+		struct cppi41_dma_controller *controller;
-+		/*
-+		 * On AM335x it has been observed that the TX interrupt fires
-+		 * too early that means the TXFIFO is not yet empty but the DMA
-+		 * engine says that it is done with the transfer. We don't
-+		 * receive a FIFO empty interrupt so the only thing we can do is
-+		 * to poll for the bit. On HS it usually takes 2us, on FS around
-+		 * 110us - 150us depending on the transfer size.
-+		 * We spin on HS (no longer than than 25us and setup a timer on
-+		 * FS to check for the bit and complete the transfer.
-+		 */
-+		controller = cppi41_channel->controller;
-+
-+		if (musb->g.speed == USB_SPEED_HIGH) {
-+			unsigned wait = 25;
-+
-+			do {
-+				empty = musb_is_tx_fifo_empty(hw_ep);
-+				if (empty)
-+					break;
-+				wait--;
-+				if (!wait)
-+					break;
-+				udelay(1);
-+			} while (1);
-+
-+			empty = musb_is_tx_fifo_empty(hw_ep);
-+			if (empty) {
-+				cppi41_trans_done(cppi41_channel);
-+				goto out;
-+			}
-+		}
-+		list_add_tail(&cppi41_channel->tx_check,
-+				&controller->early_tx_list);
-+		if (!hrtimer_active(&controller->early_tx)) {
-+			hrtimer_start_range_ns(&controller->early_tx,
-+				ktime_set(0, 140 * NSEC_PER_USEC),
-+				40 * NSEC_PER_USEC,
-+				HRTIMER_MODE_REL);
-+		}
-+	}
-+out:
- 	spin_unlock_irqrestore(&musb->lock, flags);
- }
- 
-@@ -377,6 +472,8 @@ static int cppi41_is_compatible(struct d
- 		WARN_ON(1);
- 		return 1;
+ 		ret = dwc3_send_gadget_ep_cmd(dwc, dep->number,
+ 			DWC3_DEPCMD_CLEARSTALL, &params);
+ 		if (ret)
+@@ -1210,7 +1207,7 @@ int __dwc3_gadget_ep_set_halt(struct dwc
+ 					value ? "set" : "clear",
+ 					dep->name);
+ 		else
+-			dep->flags &= ~DWC3_EP_STALL;
++			dep->flags &= ~(DWC3_EP_STALL | DWC3_EP_WEDGE);
  	}
-+	if (cppi41_channel->hw_ep->ep_in.type != USB_ENDPOINT_XFER_BULK)
-+		return 0;
- 	if (cppi41_channel->is_tx)
- 		return 1;
- 	/* AM335x Advisory 1.0.13. No workaround for device RX mode */
-@@ -401,6 +498,7 @@ static int cppi41_dma_channel_abort(stru
- 	if (cppi41_channel->channel.status == MUSB_DMA_STATUS_FREE)
- 		return 0;
  
-+	list_del_init(&cppi41_channel->tx_check);
- 	if (is_tx) {
- 		csr = musb_readw(epio, MUSB_TXCSR);
- 		csr &= ~MUSB_TXCSR_DMAENAB;
-@@ -507,6 +605,7 @@ static int cppi41_dma_controller_start(s
- 		cppi41_channel->controller = controller;
- 		cppi41_channel->port_num = port;
- 		cppi41_channel->is_tx = is_tx;
-+		INIT_LIST_HEAD(&cppi41_channel->tx_check);
- 
- 		musb_dma = &cppi41_channel->channel;
- 		musb_dma->private_data = cppi41_channel;
-@@ -531,6 +630,7 @@ void dma_controller_destroy(struct dma_c
- 	struct cppi41_dma_controller *controller = container_of(c,
- 			struct cppi41_dma_controller, controller);
- 
-+	hrtimer_cancel(&controller->early_tx);
- 	cppi41_dma_controller_stop(controller);
- 	kfree(controller);
- }
-@@ -550,6 +650,9 @@ struct dma_controller *dma_controller_cr
- 	if (!controller)
- 		goto kzalloc_fail;
- 
-+	hrtimer_init(&controller->early_tx, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	controller->early_tx.function = cppi41_recheck_tx_req;
-+	INIT_LIST_HEAD(&controller->early_tx_list);
- 	controller->musb = musb;
- 
- 	controller->controller.channel_alloc = cppi41_dma_channel_allocate;
+ 	return ret;
 
 
