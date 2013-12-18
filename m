@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab3LRWM0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 17:12:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35912 "EHLO
+	id S1756260Ab3LRWMn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 17:12:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35906 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926Ab3LRVL5 (ORCPT
+	with ESMTP id S1752919Ab3LRVL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:11:57 -0500
+	Wed, 18 Dec 2013 16:11:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.10 20/78] hwmon: (w83l768ng) Fix fan speed control range
-Date: Wed, 18 Dec 2013 13:10:48 -0800
-Message-Id: <20131218211112.474420891@linuxfoundation.org>
+        =?UTF-8?q?Nol=20 "Mag" =20Archinova?= <magissia@magissia.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.10 02/78] Input: xpad - add signature for Razer Onza Classic Edition
+Date: Wed, 18 Dec 2013 13:10:30 -0800
+Message-Id: <20131218211111.974025060@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -28,50 +29,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Mag <magissia@magissia.com>
 
-commit 33a7ab91d509fa33b4bcd3ce0038cc80298050da upstream.
+commit ed06349fe8d12dcb718984862b6e839fc8606c34 upstream.
 
-The W83L786NG stores the fan speed on 4 bits while the sysfs interface
-uses a 0-255 range. Thus the driver should scale the user input down
-to map it to the device range, and scale up the value read from the
-device before presenting it to the user. The reserved register nibble
-should be left unchanged.
-
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Nol "Mag" Archinova <magissia@magissia.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/w83l786ng.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/input/joystick/xpad.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/hwmon/w83l786ng.c
-+++ b/drivers/hwmon/w83l786ng.c
-@@ -481,9 +481,11 @@ store_pwm(struct device *dev, struct dev
- 	if (err)
- 		return err;
- 	val = clamp_val(val, 0, 255);
-+	val = DIV_ROUND_CLOSEST(val, 0x11);
- 
- 	mutex_lock(&data->update_lock);
--	data->pwm[nr] = val;
-+	data->pwm[nr] = val * 0x11;
-+	val |= w83l786ng_read_value(client, W83L786NG_REG_PWM[nr]) & 0xf0;
- 	w83l786ng_write_value(client, W83L786NG_REG_PWM[nr], val);
- 	mutex_unlock(&data->update_lock);
- 	return count;
-@@ -777,8 +779,9 @@ static struct w83l786ng_data *w83l786ng_
- 			    ? 0 : 1;
- 			data->pwm_enable[i] =
- 			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 3) + 1;
--			data->pwm[i] = w83l786ng_read_value(client,
--			    W83L786NG_REG_PWM[i]);
-+			data->pwm[i] =
-+			    (w83l786ng_read_value(client, W83L786NG_REG_PWM[i])
-+			     & 0x0f) * 0x11;
- 		}
- 
- 
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -167,6 +167,7 @@ static const struct xpad_device {
+ 	{ 0x1430, 0x8888, "TX6500+ Dance Pad (first generation)", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
+ 	{ 0x146b, 0x0601, "BigBen Interactive XBOX 360 Controller", 0, XTYPE_XBOX360 },
+ 	{ 0x1689, 0xfd00, "Razer Onza Tournament Edition", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
++	{ 0x1689, 0xfd01, "Razer Onza Classic Edition", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
+ 	{ 0x1bad, 0x0002, "Harmonix Rock Band Guitar", 0, XTYPE_XBOX360 },
+ 	{ 0x1bad, 0x0003, "Harmonix Rock Band Drumkit", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
+ 	{ 0x1bad, 0xf016, "Mad Catz Xbox 360 Controller", 0, XTYPE_XBOX360 },
 
 
