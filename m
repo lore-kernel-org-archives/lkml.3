@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870Ab3LRTIG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 14:08:06 -0500
-Received: from mxout1.idt.com ([157.165.5.25]:51769 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754930Ab3LRTIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 14:08:05 -0500
-X-Greylist: delayed 591 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Dec 2013 14:08:05 EST
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Jean Delvare <jdelvare@suse.de>, Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, linux-mips@linux-mips.org
-Subject: [PATCH] rapidio: add modular rapidio core build into powerpc and mips branches
-Date: Wed, 18 Dec 2013 13:57:35 -0500
-Message-Id: <1387393055-10114-1-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.8.4
+	id S1755617Ab3LRTKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 14:10:30 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:55095 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753242Ab3LRTK3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 14:10:29 -0500
+Date: Wed, 18 Dec 2013 11:10:24 -0800
+From: josh@joshtriplett.org
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: base: Add prototype declaration in memory.c
+Message-ID: <20131218191024.GA24413@cloud>
+References: <20131218063953.GA3180@rashika>
+ <20131218153451.GA22228@kroah.com>
+ <20131218190108.GL24229@cloud>
+ <20131218190344.GA28706@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131218190344.GA28706@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow modular build option for RapidIO subsystem core in MIPS and PowerPC
-architectural branches.
+On Wed, Dec 18, 2013 at 11:03:44AM -0800, Greg Kroah-Hartman wrote:
+> On Wed, Dec 18, 2013 at 11:01:08AM -0800, josh@joshtriplett.org wrote:
+> > On Wed, Dec 18, 2013 at 07:34:51AM -0800, Greg Kroah-Hartman wrote:
+> > > On Wed, Dec 18, 2013 at 12:09:53PM +0530, Rashika Kheria wrote:
+> > > > Add the prototype declaration of function memory_block_size_bytes() in
+> > > > memory.c.
+> > > > 
+> > > > This eliminates the following warning in memory.c:
+> > > > drivers/base/memory.c:87:1: warning: no previous prototype for ‘memory_block_size_bytes’ [-Wmissing-prototypes]
+> > > > 
+> > > > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> > > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > > > ---
+> > > >  drivers/base/memory.c |    1 +
+> > > >  1 file changed, 1 insertion(+)
+> > > > 
+> > > > diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+> > > > index bece691..cfa03de 100644
+> > > > --- a/drivers/base/memory.c
+> > > > +++ b/drivers/base/memory.c
+> > > > @@ -83,6 +83,7 @@ static void memory_block_release(struct device *dev)
+> > > >  	kfree(mem);
+> > > >  }
+> > > >  
+> > > > +unsigned long __weak memory_block_size_bytes(void);
+> > > >  unsigned long __weak memory_block_size_bytes(void)
+> > > 
+> > > If this patch is the "solution" then something else is really wrong
+> > > here, please use your judgement to realize this...
+> > 
+> > It's a weak symbol provided and consumed within the same file, and then
+> > overridden on a few random architectures.  It isn't currently prototyped
+> > in any header file.  The other potential solution would be to add it to
+> > an appropriate existing header or create a new one.  Any suggestions for
+> > an appropriate existing header to prototype it in instead?
+> 
+> device.h?
 
-At this moment modular RapidIO subsystem build is enabled only for platforms
-that use PCI/PCIe based RapidIO controllers (e.g. Tsi721).
+include/linux/device.h?  That would work, though it seems slightly
+out of place there.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Jean Delvare <jdelvare@suse.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
-Cc: linux-mips@linux-mips.org
----
- arch/mips/Kconfig    |    2 +-
- arch/powerpc/Kconfig |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Would include/linux/memory.h work?
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 650de39..e6a8a7a 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -2442,7 +2442,7 @@ source "drivers/pcmcia/Kconfig"
- source "drivers/pci/hotplug/Kconfig"
- 
- config RAPIDIO
--	bool "RapidIO support"
-+	tristate "RapidIO support"
- 	depends on PCI
- 	default n
- 	help
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index b44b52c..992531f 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -790,7 +790,7 @@ config HAS_RAPIDIO
- 	default n
- 
- config RAPIDIO
--	bool "RapidIO support"
-+	tristate "RapidIO support"
- 	depends on HAS_RAPIDIO || PCI
- 	help
- 	  If you say Y here, the kernel will include drivers and
-@@ -798,7 +798,7 @@ config RAPIDIO
- 
- config FSL_RIO
- 	bool "Freescale Embedded SRIO Controller support"
--	depends on RAPIDIO && HAS_RAPIDIO
-+	depends on RAPIDIO = y && HAS_RAPIDIO
- 	default "n"
- 	---help---
- 	  Include support for RapidIO controller on Freescale embedded
--- 
-1.7.8.4
-
+- Josh Triplett
