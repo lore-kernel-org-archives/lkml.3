@@ -1,78 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab3LRB4x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 20:56:53 -0500
-Received: from ozlabs.org ([203.10.76.45]:48079 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750949Ab3LRB4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 20:56:52 -0500
-Date: Wed, 18 Dec 2013 12:56:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Francesco Fusco <ffusco@redhat.com>,
-        Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@redhat.com>
-Subject: linux-next: build failure after merge of the net-next tree
-Message-Id: <20131218125643.8ff140371e1f8c306327d354@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__18_Dec_2013_12_56_43_+1100_i7Gq2pdwQ6mTjpqw"
+	id S1752204Ab3LRCBT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 21:01:19 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:58327 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949Ab3LRCBR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 21:01:17 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rBI217Z4004453, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
+        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH v4 1/2] mfd: rtsx: add set pull control macro and simplify rtl8411
+Date: Wed, 18 Dec 2013 10:03:12 +0800
+Message-ID: <af3355d221489601a865f70c45f27cb569c69ed3.1387331869.git.micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1387331869.git.micky_ching@realsil.com.cn>
+References: <cover.1387331869.git.micky_ching@realsil.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__18_Dec_2013_12_56_43_+1100_i7Gq2pdwQ6mTjpqw
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-Hi all,
+add set pull control macro to reduce code for setting pull control, and
+use a common init function to reduce code for rtl8411.c. So this patch
+is used to just simplify code.
 
-After merging the net-next tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+---
+ drivers/mfd/rtl8411.c  |   53 ++++++++++++------------------------------------
+ drivers/mfd/rtsx_pcr.h |    8 ++++++++
+ 2 files changed, 21 insertions(+), 40 deletions(-)
 
-In file included from include/linux/hashtable.h:12:0,
-                 from include/linux/elevator.h:5,
-                 from include/linux/blkdev.h:222,
-                 from init/do_mounts.h:2,
-                 from init/do_mounts_rd.c:21:
-include/linux/hash.h:18:22: fatal error: asm/hash.h: No such file or direct=
-ory
- #include <asm/hash.h>
-                      ^
+diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
+index 5280135..00ecf6b 100644
+--- a/drivers/mfd/rtl8411.c
++++ b/drivers/mfd/rtl8411.c
+@@ -441,12 +441,10 @@ static const u32 rtl8411b_qfn48_ms_pull_ctl_disable_tbl[] = {
+ 	0,
+ };
+ 
+-void rtl8411_init_params(struct rtsx_pcr *pcr)
++void rtl8411_init_common_params(struct rtsx_pcr *pcr)
+ {
+ 	pcr->extra_caps = EXTRA_CAPS_SD_SDR50 | EXTRA_CAPS_SD_SDR104;
+ 	pcr->num_slots = 2;
+-	pcr->ops = &rtl8411_pcr_ops;
+-
+ 	pcr->flags = 0;
+ 	pcr->card_drive_sel = RTL8411_CARD_DRIVE_DEFAULT;
+ 	pcr->sd30_drive_sel_1v8 = DRIVER_TYPE_B;
+@@ -454,47 +452,22 @@ void rtl8411_init_params(struct rtsx_pcr *pcr)
+ 	pcr->aspm_en = ASPM_L1_EN;
+ 	pcr->tx_initial_phase = SET_CLOCK_PHASE(23, 7, 14);
+ 	pcr->rx_initial_phase = SET_CLOCK_PHASE(4, 3, 10);
+-
+ 	pcr->ic_version = rtl8411_get_ic_version(pcr);
+-	pcr->sd_pull_ctl_enable_tbl = rtl8411_sd_pull_ctl_enable_tbl;
+-	pcr->sd_pull_ctl_disable_tbl = rtl8411_sd_pull_ctl_disable_tbl;
+-	pcr->ms_pull_ctl_enable_tbl = rtl8411_ms_pull_ctl_enable_tbl;
+-	pcr->ms_pull_ctl_disable_tbl = rtl8411_ms_pull_ctl_disable_tbl;
++}
++
++void rtl8411_init_params(struct rtsx_pcr *pcr)
++{
++	rtl8411_init_common_params(pcr);
++	pcr->ops = &rtl8411_pcr_ops;
++	set_pull_ctrl_tables(pcr, rtl8411);
+ }
+ 
+ void rtl8411b_init_params(struct rtsx_pcr *pcr)
+ {
+-	pcr->extra_caps = EXTRA_CAPS_SD_SDR50 | EXTRA_CAPS_SD_SDR104;
+-	pcr->num_slots = 2;
++	rtl8411_init_common_params(pcr);
+ 	pcr->ops = &rtl8411b_pcr_ops;
+-
+-	pcr->flags = 0;
+-	pcr->card_drive_sel = RTL8411_CARD_DRIVE_DEFAULT;
+-	pcr->sd30_drive_sel_1v8 = DRIVER_TYPE_B;
+-	pcr->sd30_drive_sel_3v3 = DRIVER_TYPE_D;
+-	pcr->aspm_en = ASPM_L1_EN;
+-	pcr->tx_initial_phase = SET_CLOCK_PHASE(23, 7, 14);
+-	pcr->rx_initial_phase = SET_CLOCK_PHASE(4, 3, 10);
+-
+-	pcr->ic_version = rtl8411_get_ic_version(pcr);
+-
+-	if (rtl8411b_is_qfn48(pcr)) {
+-		pcr->sd_pull_ctl_enable_tbl =
+-			rtl8411b_qfn48_sd_pull_ctl_enable_tbl;
+-		pcr->sd_pull_ctl_disable_tbl =
+-			rtl8411b_qfn48_sd_pull_ctl_disable_tbl;
+-		pcr->ms_pull_ctl_enable_tbl =
+-			rtl8411b_qfn48_ms_pull_ctl_enable_tbl;
+-		pcr->ms_pull_ctl_disable_tbl =
+-			rtl8411b_qfn48_ms_pull_ctl_disable_tbl;
+-	} else {
+-		pcr->sd_pull_ctl_enable_tbl =
+-			rtl8411b_qfn64_sd_pull_ctl_enable_tbl;
+-		pcr->sd_pull_ctl_disable_tbl =
+-			rtl8411b_qfn64_sd_pull_ctl_disable_tbl;
+-		pcr->ms_pull_ctl_enable_tbl =
+-			rtl8411b_qfn64_ms_pull_ctl_enable_tbl;
+-		pcr->ms_pull_ctl_disable_tbl =
+-			rtl8411b_qfn64_ms_pull_ctl_disable_tbl;
+-	}
++	if (rtl8411b_is_qfn48(pcr))
++		set_pull_ctrl_tables(pcr, rtl8411b_qfn48);
++	else
++		set_pull_ctrl_tables(pcr, rtl8411b_qfn64);
+ }
+diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
+index 947e79b..e9feadb 100644
+--- a/drivers/mfd/rtsx_pcr.h
++++ b/drivers/mfd/rtsx_pcr.h
+@@ -63,4 +63,12 @@ static inline u8 map_sd_drive(int idx)
+ #define rtl8411_reg_to_sd30_drive_sel_3v3(reg)	(((reg) >> 5) & 0x07)
+ #define rtl8411b_reg_to_sd30_drive_sel_3v3(reg)	((reg) & 0x03)
+ 
++#define set_pull_ctrl_tables(pcr, __device)				\
++do {									\
++	pcr->sd_pull_ctl_enable_tbl  = __device##_sd_pull_ctl_enable_tbl;  \
++	pcr->sd_pull_ctl_disable_tbl = __device##_sd_pull_ctl_disable_tbl; \
++	pcr->ms_pull_ctl_enable_tbl  = __device##_ms_pull_ctl_enable_tbl;  \
++	pcr->ms_pull_ctl_disable_tbl = __device##_ms_pull_ctl_disable_tbl; \
++} while (0)
++
+ #endif
+-- 
+1.7.9.5
 
-And many more ...
-
-Caused by commit 71ae8aac3e19 ("lib: introduce arch optimized hash
-library").  Presumably this would break any architecture other than
-x86 :-(
-
-I have used the net-next tree from next-20131217 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__18_Dec_2013_12_56_43_+1100_i7Gq2pdwQ6mTjpqw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSsQDfAAoJEMDTa8Ir7ZwVHiwP/RHLnxKeWIvlEwMDIi8y35tQ
-ykpKL1TmZ71zn+mEXWjTjJCKrCG9Tb8ao9pGShAJn2NBjsALQpuG1G2g953rD6xe
-RBHMwqukza7x6l41VNM2yEAKOy0KzhHHgTX9WB4AnHBXRalvMxAlriqS7u/Dqy2W
-6iwlFaS70ENVCqyuZ8VHf9eDW1FqF2aw72hjsedY0bB6rOjOjM/Leyux8wnCMSWy
-tBdYrXCCKiNbjdj8XoUZ8umVgJs3/m0hgDCjlO+xBdQKkJkXziFofCWAKC2IqraB
-PEWsZ/iT6Sw5nZvfvAsX2Au0Gu2VUb9iTaPmblrJO/PEG8myUxc3/6J/zNI2I2MM
-bf2765JHm59X6CzOAPcJw1c6bJ/a6ZcPX6z5NgSxNOuuVUByWlygSzHX179NebbG
-Tq6qYvmlkYw4X6f3kc5o7JYI0br5AJN362pP4pAD0PmmGi/TR3auJLJKfd/A4YmY
-wd77CDqriHDOWy+sVdxFs9UqiKTRTBw4cxrdRn5t3BGxcp3w+znYDjNh4COYPTQr
-TPtLeKWnX8prvM5JeqLgMWbRBCtdfcAubGxk0m6zgfJUE6QR02QZysA8xL1/+bxN
-BuorVM1oIt37gNy4iTyGEYbjpJbMG5poqXFGto0SXani8Q365IrkesZhuWF+Ch+h
-Pe4/ExVVjCu5MAVPox2/
-=D1OX
------END PGP SIGNATURE-----
-
---Signature=_Wed__18_Dec_2013_12_56_43_+1100_i7Gq2pdwQ6mTjpqw--
