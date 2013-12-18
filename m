@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab3LRVNS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:13:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36302 "EHLO
+	id S1755400Ab3LRVmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:42:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36328 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715Ab3LRVNM (ORCPT
+	with ESMTP id S1753873Ab3LRVNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:12 -0500
+	Wed, 18 Dec 2013 16:13:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefano Panella <stefano.panella@citrix.com>,
-        Frediano Ziglio <frediano.ziglio@citrix.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 004/118] ALSA: memalloc.h - fix wrong truncation of dma_addr_t
-Date: Wed, 18 Dec 2013 13:10:41 -0800
-Message-Id: <20131218211219.589946261@linuxfoundation.org>
+        Gustavo Zacarias <gustavo@zacarias.com.ar>
+Subject: [PATCH 3.12 036/118] USB: serial: option: blacklist interface 1 for Huawei E173s-6
+Date: Wed, 18 Dec 2013 13:11:13 -0800
+Message-Id: <20131218211220.495354104@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -30,68 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefano Panella <stefano.panella@citrix.com>
+From: Gustavo Zacarias <gustavo@zacarias.com.ar>
 
-commit 932e9dec380c67ec15ac3eb073bb55797d8b4801 upstream.
+commit 8f173e22abf2258ddfa73f46eadbb6a6c29f1631 upstream.
 
-When running a 32bit kernel the hda_intel driver is still reporting
-a 64bit dma_mask if the HW supports it.
+Interface 1 on this device isn't for option to bind to otherwise an oops
+on usb_wwan with log flooding will happen when accessing the port:
 
->From sound/pci/hda/hda_intel.c:
+tty_release: ttyUSB1: read/write wait queue active!
 
-        /* allow 64bit DMA address if supported by H/W */
-        if ((gcap & ICH6_GCAP_64OK) && !pci_set_dma_mask(pci, DMA_BIT_MASK(64)))
-                pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(64));
-        else {
-                pci_set_dma_mask(pci, DMA_BIT_MASK(32));
-                pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32));
-        }
+It doesn't seem to respond to QMI if it's added to qmi_wwan so don't add
+it there - it's likely used by the card reader.
 
-which means when there is a call to dma_alloc_coherent from
-snd_malloc_dev_pages a machine address bigger than 32bit can be returned.
-This can be true in particular if running  the 32bit kernel as a pv dom0
-under the Xen Hypervisor or PAE on bare metal.
-
-The problem is that when calling setup_bdle to program the BLE the
-dma_addr_t returned from the dma_alloc_coherent is wrongly truncated
-from snd_sgbuf_get_addr if running a 32bit kernel:
-
-static inline dma_addr_t snd_sgbuf_get_addr(struct snd_dma_buffer *dmab,
-                                           size_t offset)
-{
-        struct snd_sg_buf *sgbuf = dmab->private_data;
-        dma_addr_t addr = sgbuf->table[offset >> PAGE_SHIFT].addr;
-        addr &= PAGE_MASK;
-        return addr + offset % PAGE_SIZE;
-}
-
-where PAGE_MASK in a 32bit kernel is zeroing the upper 32bit af addr.
-
-Without this patch the HW will fetch the 32bit truncated address,
-which is not the one obtained from dma_alloc_coherent and will result
-to a non working audio but can corrupt host memory at a random location.
-
-The current patch apply to v3.13-rc3-74-g6c843f5
-
-Signed-off-by: Stefano Panella <stefano.panella@citrix.com>
-Reviewed-by: Frediano Ziglio <frediano.ziglio@citrix.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Gustavo Zacarias <gustavo@zacarias.com.ar>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/sound/memalloc.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/include/sound/memalloc.h
-+++ b/include/sound/memalloc.h
-@@ -103,7 +103,7 @@ static inline dma_addr_t snd_sgbuf_get_a
- {
- 	struct snd_sg_buf *sgbuf = dmab->private_data;
- 	dma_addr_t addr = sgbuf->table[offset >> PAGE_SHIFT].addr;
--	addr &= PAGE_MASK;
-+	addr &= ~((dma_addr_t)PAGE_SIZE - 1);
- 	return addr + offset % PAGE_SIZE;
- }
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -85,6 +85,7 @@ static void option_instat_callback(struc
+ #define HUAWEI_PRODUCT_K4505			0x1464
+ #define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_K4605			0x14C6
++#define HUAWEI_PRODUCT_E173S6			0x1C07
  
+ #define QUANTA_VENDOR_ID			0x0408
+ #define QUANTA_PRODUCT_Q101			0xEA02
+@@ -572,6 +573,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173S6, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E1750, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
 
 
