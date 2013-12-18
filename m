@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab3LRLRZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 06:17:25 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:55004 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934Ab3LRLRX (ORCPT
+	id S1754025Ab3LRLRd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 06:17:33 -0500
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:57516 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753934Ab3LRLRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 06:17:23 -0500
+	Wed, 18 Dec 2013 06:17:30 -0500
+Date: Wed, 18 Dec 2013 06:17:26 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Nigel Cunningham <nigel@nigelcunningham.com.au>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
+        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] libata, freezer: avoid block device removal while system
+ is frozen
+Message-ID: <20131218111726.GB3808@htj.dyndns.org>
+References: <20131213174932.GA27070@htj.dyndns.org>
+ <8951916.gd5Uu6GpK1@vostro.rjw.lan>
+ <20131217123457.GD29989@htj.dyndns.org>
+ <4108657.rimrPRbHDY@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <20131218111232.GE14274@lee--X1>
-References: <CAOMwXhN5UfR=Y8V3i=A2zSCv7V9sRDd0Z+D1AQFahvRS-mV5Fw@mail.gmail.com>
-	<20131216082556.GE18769@lee--X1>
-	<CAOMwXhN8fG8YbU53A_U_MyMTyGWfV7NCCtr2a5oCbHdB0iqqmA@mail.gmail.com>
-	<20131216150514.GN18769@lee--X1>
-	<CAOMwXhMn5W76Dp=EFNHaknXCqZ4q4e7fphgtttx+8U=1Fc_DMQ@mail.gmail.com>
-	<20131216164844.GS18769@lee--X1>
-	<CAOMwXhPLNVKbRqR2tPQc758zLsh0Lg0D6JUf2yrf+ZosJVANAw@mail.gmail.com>
-	<20131218091609.GB14274@lee--X1>
-	<CAOMwXhOSpnEiDoyXNPmy0Gt1tLiwdzGRqoseKqtAUogLEfkCZQ@mail.gmail.com>
-	<20131218111232.GE14274@lee--X1>
-Date: Wed, 18 Dec 2013 11:17:22 +0000
-X-Google-Sender-Auth: tc4OY5rGe9d2eGJhH9g0Ij4_fI8
-Message-ID: <CAOMwXhNMrnLEDUHrPqH1rgbFDgNPWmhCr2dPUNhdhfmdPTcGfg@mail.gmail.com>
-Subject: Re: Simple MFD driver example
-From: Laszlo Papp <lpapp@kde.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: sameo@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4108657.rimrPRbHDY@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 11:12 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> The MAX6650/6651 chip has multiple functionality:
->>
->> * fan/hwmon
->>
->> * gpio
->>
->> * alarm, etc.
->>
->> What you eventually see in hwmon is only a subset of all the features
->> the IC provides. You may want to read this thread:
->> https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg536509.html
->
-> Okay, so the best thing to do is send out the entire patch-set at
-> once, CC'ing each of the maintainers on every patch so we can all see
-> how this thing fits together.
+Hello, Rafael.
 
-Well, I am not even sure currently where to head with the MFD bits and
-its children subdevices currently....
+On Wed, Dec 18, 2013 at 01:35:13AM +0100, Rafael J. Wysocki wrote:
+> So do I understand correctly that you're talking about kernel threads/worqueues
+> freezing below?
 
-I would appreciate any direction. Yesterday, I was told on IRC, I
-would need to switch from i2c to platform drivers for the hwmon and
-gpio parts, but looking at some existing mfd driver code and their
-children drivers, I do not see it like that.
+Yeap, I'm strictly talking about kernel freezables.
 
-I have already sent out the gpio driver yesterday which works fine on
-its own: http://www.spinics.net/lists/kernel/msg1655805.html
+> > So, are you saying it's really about giving device drivers easy way to
+> > implement suspend/resume?
+> 
+> Well, that's a side effect rather than a recommeded interface.  A *few* pieces
+> of code need to freeze kernel threads/workqueues, but they should know who they
+> are and they really really should know *why* they need that (the above-mentioned
+> runtime PM workqueue is one example).  The rest is just doing that because they
+> can, which may not be entirely reasonable (or because they did that in the past
+> and the original author is not responsive and everyone else does not dare to try
+> removing that).
 
-Could you please guide me into the right direction what I need to
-change once we have standalone drivers, and they should be glued
-together? I thought adding an abstraction with the mfd layer would be
-sufficient, but apparently, that is not enough.
+I see.  In the long term, I think the right thing to do is making the
+freezer interface more specific so that only the ones which actually
+need it do so explicitly.  Right now, kernel freezables are
+conceptually at a very high level - it's a global task attribute and a
+major knob in workqueue.  I suppose most of that is historical but by
+perpetuating the model we're encouraging misuse of freezer in large
+swaths of the kernel.  Even in this specific case, both writeback and
+jbd workers have no fundamental reason to be freezable and yet
+they're, eventually developing into totally unnecessary deadlocks.
 
-Practically speaking, I am confused since if I needed to change the
-existing drivers, that means I could potentially break the interface
-for the existing users if the drivers stop working on their own, but
-then again, I am such a newbie that I would greatly appreciate some
-pointers.
+> They were a lot more of that to start with really.  We removed quite a number
+> of try_to_freeze() instances from the kernel a few years ago, but apparently
+> people are taking shortcuts.
+
+Great, so we're at least headed towards the right direction.
+
+> The rule should be to require patch submitters to put in comments explaining
+> why they need their kernel threads/workqueues to be freezable and generally
+> there should be no such things in drivers.
+
+I'm not so sure whether that's something which can be effectively
+enforced given the current high visibility and confusion around
+freezer.  I think the only way to get this under control is weed out
+the current spurious users actively, deprecate the existing interface
+and switch the real ones to something a lot more specific.
+
+Thanks.
+
+-- 
+tejun
