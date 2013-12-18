@@ -1,43 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab3LRNr5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 08:47:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42261 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753195Ab3LRNry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 08:47:54 -0500
-Message-ID: <52B1A781.50002@redhat.com>
-Date: Wed, 18 Dec 2013 08:47:45 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/6] Configurable fair allocation zone policy v3
-References: <1387298904-8824-1-git-send-email-mgorman@suse.de> <20131217200210.GG21724@cmpxchg.org> <20131218061750.GK21724@cmpxchg.org>
-In-Reply-To: <20131218061750.GK21724@cmpxchg.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754259Ab3LRNur (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 08:50:47 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:51580 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab3LRNup (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 08:50:45 -0500
+From: David Herrmann <dh.herrmann@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Takashi Iwai <tiwai@suse.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        the arch/x86 maintainers <x86@kernel.org>, linux-fbdev@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ingo Molnar <mingo@kernel.org>, David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH v2] x86: sysfb: remove sysfb when probing real hw
+Date: Wed, 18 Dec 2013 14:50:11 +0100
+Message-Id: <1387374611-12493-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.8.5.1
+In-Reply-To: <1387367283-20078-1-git-send-email-dh.herrmann@gmail.com>
+References: <1387367283-20078-1-git-send-email-dh.herrmann@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 01:17 AM, Johannes Weiner wrote:
+With CONFIG_X86_SYSFB=y, probing real hw-drivers may result in
+resource-conflicts and drivers will refuse to load. A call to
+request_mem_region() will fail, if the region overlaps with the mem-region
+used by simplefb. The common desktop DRM drivers (intel, nouveau, radeon)
+are not affected as they don't reserve their resources, but some others
+do, including (nvidiafb, cirrus, ..).
 
-> Updated version with your tmpfs __GFP_PAGECACHE parts added and
-> documentation, changelog updated as necessary.  I remain unconvinced
-> that tmpfs pages should be round-robined, but I agree with you that it
-> is the conservative change to do for 3.12 and 3.12 and we can figure
-> out the rest later.  I sure hope that this doesn't drive most people
-> on NUMA to disable pagecache interleaving right away as I expect most
-> tmpfs workloads to see little to no reclaim and prefer locality... :/
+The problem is that we add an IORESOURCE_MEM to the simple-framebuffer
+platform-device during bootup but never release it. Probing simplefb on
+this platform-device is fine, but the handover to real-hw via
+remove_conflicting_framebuffers() will only unload the fbdev driver, but
+keep the platform-device around. Thus, if the real hw-driver calls
+request_mem_region() and friends on the same PCI region, we will get a
+resource conflict and most drivers refuse to load. Users will see
+errors like:
+  "nvidiafb: cannot reserve video memory at <xyz>"
 
-Actually, I suspect most tmpfs heavy workloads will be things like
-databases with shared memory segments. Those tend to benefit from
-having all of the system's memory bandwidth available. The worker
-threads/processes tend to live all over the system, too...
+vesafb and efifb don't store any resources, so disabling CONFIG_X86_SYSFB
+and falling back to those drivers will avoid the bug. With sysfb enabled,
+we need to properly unload the simple-framebuffer devices before probing
+real hw-drivers.
 
+This patch adds sysfb_unregister() for that purpose. It can be called from
+any context (except from the platform-device ->probe and ->remove callback
+path), synchronously unloads any global sysfb and prevents new sysfbs from
+getting registered. Thus, you can call it even before any sysfb has been
+loaded. Note that for now we only do that for simple-framebuffer devices,
+as efi/vesa-framebuffer platform-drivers lack ->remove() callbacks.
+They're not affected by the resource-conflicts, so we can fix those later.
+
+This also changes remove_conflicting_framebuffer() to call this helper
+*before* trying its heuristic to remove conflicting drivers. This way, we
+unload sysfbs properly on any conflict. But to avoid dead-locks in
+register_framebuffer(), we must not call sysfb_unregister() for
+framebuffers probing on sysfb devices. Hence, we simply remove any
+aperture from simplefb and we're good to go. simplefb is unregistered by
+sysfb_unregister() now, so no reason to keep the apertures (on non-x86,
+there currently is no handover from simplefb, so we're fine. If it's
+added, they need to provide something like sysfb_unregister() too)
+
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+---
+v2:
+ - remove simplefb apertures to avoid dead-lock
+ - skip sysfb_unregister() if no apertures are set
+ - merge sysfb_alloc() into sysfb_register()
+ - simplify sysfb_unregister() logic
+ - call sysfb_unregister() even if SYSFB=n but X86=y
+
+Tested with efifb and simplefb + i915 handover on x86.
+
+Thanks
+David
+
+ arch/x86/include/asm/sysfb.h     |  6 ++++
+ arch/x86/kernel/sysfb.c          | 63 ++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/sysfb_simplefb.c |  9 ++----
+ drivers/video/fbmem.c            | 19 ++++++++++++
+ drivers/video/simplefb.c         |  8 -----
+ 5 files changed, 90 insertions(+), 15 deletions(-)
+
+diff --git a/arch/x86/include/asm/sysfb.h b/arch/x86/include/asm/sysfb.h
+index 2aeb3e2..10d719d 100644
+--- a/arch/x86/include/asm/sysfb.h
++++ b/arch/x86/include/asm/sysfb.h
+@@ -11,6 +11,7 @@
+  * any later version.
+  */
+ 
++#include <linux/fb.h>
+ #include <linux/kernel.h>
+ #include <linux/platform_data/simplefb.h>
+ #include <linux/screen_info.h>
+@@ -59,6 +60,11 @@ struct efifb_dmi_info {
+ 	int flags;
+ };
+ 
++__init int sysfb_register(const char *name, int id,
++			  const struct resource *res, unsigned int res_num,
++			  const void *data, size_t data_size);
++void sysfb_unregister(const struct apertures_struct *apert, bool primary);
++
+ #ifdef CONFIG_EFI
+ 
+ extern struct efifb_dmi_info efifb_dmi_list[];
+diff --git a/arch/x86/kernel/sysfb.c b/arch/x86/kernel/sysfb.c
+index 193ec2c..9d8da8d 100644
+--- a/arch/x86/kernel/sysfb.c
++++ b/arch/x86/kernel/sysfb.c
+@@ -33,11 +33,74 @@
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
++#include <linux/mutex.h>
+ #include <linux/platform_data/simplefb.h>
+ #include <linux/platform_device.h>
+ #include <linux/screen_info.h>
+ #include <asm/sysfb.h>
+ 
++static DEFINE_MUTEX(sysfb_lock);
++static struct platform_device *sysfb_dev;
++
++__init int sysfb_register(const char *name, int id,
++			  const struct resource *res, unsigned int res_num,
++			  const void *data, size_t data_size)
++{
++	struct platform_device *pd;
++	int ret = 0;
++
++	mutex_lock(&sysfb_lock);
++	if (!sysfb_dev) {
++		pd = platform_device_register_resndata(NULL, name, id,
++						       res, res_num,
++						       data, data_size);
++		if (IS_ERR(pd))
++			ret = PTR_ERR(pd);
++		else
++			sysfb_dev = pd;
++	}
++	mutex_unlock(&sysfb_lock);
++
++	return ret;
++}
++
++static bool sysfb_match(const struct apertures_struct *apert, bool primary)
++{
++	struct screen_info *si = &screen_info;
++	unsigned int i;
++	const struct aperture *a;
++
++	if (!apert || primary)
++		return true;
++
++	for (i = 0; i < apert->count; ++i) {
++		a = &apert->ranges[i];
++		if (a->base >= si->lfb_base &&
++		    a->base < si->lfb_base + ((u64)si->lfb_size << 16))
++			return true;
++		if (si->lfb_base >= a->base &&
++		    si->lfb_base < a->base + a->size)
++			return true;
++	}
++
++	return false;
++}
++
++/* unregister the sysfb and prevent new sysfbs from getting registered */
++void sysfb_unregister(const struct apertures_struct *apert, bool primary)
++{
++	mutex_lock(&sysfb_lock);
++	if (!IS_ERR(sysfb_dev) && sysfb_dev) {
++		if (sysfb_match(apert, primary)) {
++			platform_device_unregister(sysfb_dev);
++			sysfb_dev = ERR_PTR(-EALREADY);
++		}
++	} else {
++		sysfb_dev = ERR_PTR(-EALREADY);
++	}
++	mutex_unlock(&sysfb_lock);
++}
++
+ static __init int sysfb_init(void)
+ {
+ 	struct screen_info *si = &screen_info;
+diff --git a/arch/x86/kernel/sysfb_simplefb.c b/arch/x86/kernel/sysfb_simplefb.c
+index 86179d4..a760d47 100644
+--- a/arch/x86/kernel/sysfb_simplefb.c
++++ b/arch/x86/kernel/sysfb_simplefb.c
+@@ -64,7 +64,6 @@ __init bool parse_mode(const struct screen_info *si,
+ __init int create_simplefb(const struct screen_info *si,
+ 			   const struct simplefb_platform_data *mode)
+ {
+-	struct platform_device *pd;
+ 	struct resource res;
+ 	unsigned long len;
+ 
+@@ -86,10 +85,6 @@ __init int create_simplefb(const struct screen_info *si,
+ 	if (res.end <= res.start)
+ 		return -EINVAL;
+ 
+-	pd = platform_device_register_resndata(NULL, "simple-framebuffer", 0,
+-					       &res, 1, mode, sizeof(*mode));
+-	if (IS_ERR(pd))
+-		return PTR_ERR(pd);
+-
+-	return 0;
++	return sysfb_register("simple-framebuffer", 0, &res, 1, mode,
++			      sizeof(*mode));
+ }
+diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+index 010d191..590a46a 100644
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -35,6 +35,9 @@
+ 
+ #include <asm/fb.h>
+ 
++#if IS_ENABLED(CONFIG_X86)
++#include <asm/sysfb.h>
++#endif
+ 
+     /*
+      *  Frame buffer device initialization and setup routines
+@@ -1604,6 +1607,17 @@ static void do_remove_conflicting_framebuffers(struct apertures_struct *a,
+ 	}
+ }
+ 
++static void remove_conflicting_sysfb(const struct apertures_struct *apert,
++				     bool primary)
++{
++	if (!apert)
++		return;
++
++#if IS_ENABLED(CONFIG_X86)
++	sysfb_unregister(apert, primary);
++#endif
++}
++
+ static int do_register_framebuffer(struct fb_info *fb_info)
+ {
+ 	int i;
+@@ -1742,6 +1756,8 @@ EXPORT_SYMBOL(unlink_framebuffer);
+ void remove_conflicting_framebuffers(struct apertures_struct *a,
+ 				     const char *name, bool primary)
+ {
++	remove_conflicting_sysfb(a, primary);
++
+ 	mutex_lock(&registration_lock);
+ 	do_remove_conflicting_framebuffers(a, name, primary);
+ 	mutex_unlock(&registration_lock);
+@@ -1762,6 +1778,9 @@ register_framebuffer(struct fb_info *fb_info)
+ {
+ 	int ret;
+ 
++	remove_conflicting_sysfb(fb_info->apertures,
++				 fb_is_primary_device(fb_info));
++
+ 	mutex_lock(&registration_lock);
+ 	ret = do_register_framebuffer(fb_info);
+ 	mutex_unlock(&registration_lock);
+diff --git a/drivers/video/simplefb.c b/drivers/video/simplefb.c
+index 210f3a0..9f4a0cf 100644
+--- a/drivers/video/simplefb.c
++++ b/drivers/video/simplefb.c
+@@ -209,14 +209,6 @@ static int simplefb_probe(struct platform_device *pdev)
+ 	info->var.blue = params.format->blue;
+ 	info->var.transp = params.format->transp;
+ 
+-	info->apertures = alloc_apertures(1);
+-	if (!info->apertures) {
+-		framebuffer_release(info);
+-		return -ENOMEM;
+-	}
+-	info->apertures->ranges[0].base = info->fix.smem_start;
+-	info->apertures->ranges[0].size = info->fix.smem_len;
+-
+ 	info->fbops = &simplefb_ops;
+ 	info->flags = FBINFO_DEFAULT | FBINFO_MISC_FIRMWARE;
+ 	info->screen_base = ioremap_wc(info->fix.smem_start,
 -- 
-All rights reversed
+1.8.5.1
+
