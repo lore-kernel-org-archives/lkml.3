@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab3LRNRL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 08:17:11 -0500
-Received: from relay.parallels.com ([195.214.232.42]:54269 "EHLO
+	id S1754532Ab3LRNRJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 08:17:09 -0500
+Received: from relay.parallels.com ([195.214.232.42]:54263 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754301Ab3LRNRF (ORCPT
+	with ESMTP id S1753592Ab3LRNRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Dec 2013 08:17:05 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
@@ -15,30 +15,16 @@ CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
         Pekka Enberg <penberg@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 5/6] memcg: clear memcg_params after removing cache from memcg_slab_caches list
-Date: Wed, 18 Dec 2013 17:16:56 +0400
-Message-ID: <ae3ba60101a33b9659506267236d1d792ffc4693.1387372122.git.vdavydov@parallels.com>
+Subject: [PATCH 1/6] slab: cleanup kmem_cache_create_memcg()
+Date: Wed, 18 Dec 2013 17:16:52 +0400
+Message-ID: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
-References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-All caches of the same memory cgroup are linked in the memcg_slab_caches
-list via kmem_cache::memcg_params::list. This list is traversed when we
-read memory.kmem.slabinfo. Since the list actually consists of
-memcg_cache_params objects, to convert an element of the list to a
-kmem_cache object, we use memcg_params_to_cache(), which obtains the
-pointer to the cache from the memcg_params::memcg_caches array of the
-root cache, but on cache destruction this pointer is cleared before the
-removal of the cache from the list, which potentially can result in a
-NULL ptr dereference. Let's fix this by clearing the pointer to a cache
-in the memcg_params::memcg_caches array of its parent only after it
-cannot be accessed by the memcg_slab_caches list.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 Cc: Michal Hocko <mhocko@suse.cz>
@@ -48,49 +34,113 @@ Cc: Christoph Lameter <cl@linux.com>
 Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- mm/memcontrol.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ mm/slab_common.c |   66 +++++++++++++++++++++++++++---------------------------
+ 1 file changed, 33 insertions(+), 33 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 62b9991..ad8de6a 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3241,6 +3241,11 @@ void memcg_register_cache(struct kmem_cache *s)
- 	 */
- 	smp_wmb();
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 0b7bb39..5d6f743 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -176,8 +176,9 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+ 	get_online_cpus();
+ 	mutex_lock(&slab_mutex);
  
-+	/*
-+	 * Initialize the pointer to this cache in its parent's memcg_params
-+	 * before adding it to the memcg_slab_caches list, otherwise we can
-+	 * fail to convert memcg_params_to_cache() while traversing the list.
-+	 */
- 	root->memcg_params->memcg_caches[id] = s;
+-	if (!kmem_cache_sanity_check(memcg, name, size) == 0)
+-		goto out_locked;
++	err = kmem_cache_sanity_check(memcg, name, size);
++	if (err)
++		goto out_unlock;
  
- 	mutex_lock(&memcg->slab_caches_mutex);
-@@ -3265,15 +3270,20 @@ void memcg_release_cache(struct kmem_cache *s)
- 		goto out;
+ 	/*
+ 	 * Some allocators will constraint the set of valid flags to a subset
+@@ -189,45 +190,41 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
  
- 	memcg = s->memcg_params->memcg;
--	id  = memcg_cache_id(memcg);
+ 	s = __kmem_cache_alias(memcg, name, size, align, flags, ctor);
+ 	if (s)
+-		goto out_locked;
++		goto out_unlock;
+ 
+ 	s = kmem_cache_zalloc(kmem_cache, GFP_KERNEL);
+-	if (s) {
+-		s->object_size = s->size = size;
+-		s->align = calculate_alignment(flags, align, size);
+-		s->ctor = ctor;
 -
-+	id = memcg_cache_id(memcg);
- 	root = s->memcg_params->root_cache;
--	root->memcg_params->memcg_caches[id] = NULL;
+-		if (memcg_register_cache(memcg, s, parent_cache)) {
+-			kmem_cache_free(kmem_cache, s);
+-			err = -ENOMEM;
+-			goto out_locked;
+-		}
++	if (!s) {
++		err = -ENOMEM;
++		goto out_unlock;
++	}
  
- 	mutex_lock(&memcg->slab_caches_mutex);
- 	list_del(&s->memcg_params->list);
- 	mutex_unlock(&memcg->slab_caches_mutex);
+-		s->name = kstrdup(name, GFP_KERNEL);
+-		if (!s->name) {
+-			kmem_cache_free(kmem_cache, s);
+-			err = -ENOMEM;
+-			goto out_locked;
+-		}
++	s->object_size = s->size = size;
++	s->align = calculate_alignment(flags, align, size);
++	s->ctor = ctor;
  
-+	/*
-+	 * Clear the pointer to this cache in its parent's memcg_params only
-+	 * after removing it from the memcg_slab_caches list, otherwise we can
-+	 * fail to convert memcg_params_to_cache() while traversing the list.
-+	 */
-+	root->memcg_params->memcg_caches[id] = NULL;
+-		err = __kmem_cache_create(s, flags);
+-		if (!err) {
+-			s->refcount = 1;
+-			list_add(&s->list, &slab_caches);
+-			memcg_cache_list_add(memcg, s);
+-		} else {
+-			kfree(s->name);
+-			kmem_cache_free(kmem_cache, s);
+-		}
+-	} else
++	s->name = kstrdup(name, GFP_KERNEL);
++	if (!s->name) {
+ 		err = -ENOMEM;
++		goto out_free_cache;
++	}
 +
- 	css_put(&memcg->css);
- out:
- 	kfree(s->memcg_params);
++	err = memcg_register_cache(memcg, s, parent_cache);
++	if (err)
++		goto out_free_cache;
+ 
+-out_locked:
++	err = __kmem_cache_create(s, flags);
++	if (err)
++		goto out_free_cache;
++
++	s->refcount = 1;
++	list_add(&s->list, &slab_caches);
++	memcg_cache_list_add(memcg, s);
++
++out_unlock:
+ 	mutex_unlock(&slab_mutex);
+ 	put_online_cpus();
+ 
+ 	if (err) {
+-
+ 		if (flags & SLAB_PANIC)
+ 			panic("kmem_cache_create: Failed to create slab '%s'. Error %d\n",
+ 				name, err);
+@@ -236,11 +233,14 @@ out_locked:
+ 				name, err);
+ 			dump_stack();
+ 		}
+-
+ 		return NULL;
+ 	}
+-
+ 	return s;
++
++out_free_cache:
++	kfree(s->name);
++	kmem_cache_free(kmem_cache, s);
++	goto out_unlock;
+ }
+ 
+ struct kmem_cache *
 -- 
 1.7.10.4
 
