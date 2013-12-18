@@ -1,67 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab3LRQzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 11:55:50 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:52369 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754808Ab3LRQzs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 11:55:48 -0500
-Date: Wed, 18 Dec 2013 17:55:08 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com
-Subject: Re: [PATCH 09/13] sched: Add bandwidth management for sched_dl
-Message-ID: <20131218165508.GB30183@twins.programming.kicks-ass.net>
-References: <20131217122720.950475833@infradead.org>
- <20131217123353.180539582@infradead.org>
+	id S1755540Ab3LRQ4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 11:56:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59273 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755495Ab3LRQ4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 11:56:05 -0500
+Date: Wed, 18 Dec 2013 17:56:03 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/6] slab: cleanup kmem_cache_create_memcg()
+Message-ID: <20131218165603.GB31080@dhcp22.suse.cz>
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131217123353.180539582@infradead.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 01:27:29PM +0100, Peter Zijlstra wrote:
-> @@ -4381,6 +4592,13 @@ static int __migrate_task(struct task_st
->  		goto fail;
+On Wed 18-12-13 17:16:52, Vladimir Davydov wrote:
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Glauber Costa <glommer@gmail.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+
+Dunno, is this really better to be worth the code churn?
+
+It even makes the generated code tiny bit bigger:
+text    data     bss     dec     hex filename
+4355     171     236    4762    129a mm/slab_common.o.after
+4342     171     236    4749    128d mm/slab_common.o.before
+
+Or does it make the further changes much more easier? Be explicit in the
+patch description if so.
+
+> ---
+>  mm/slab_common.c |   66 +++++++++++++++++++++++++++---------------------------
+>  1 file changed, 33 insertions(+), 33 deletions(-)
+> 
+> diff --git a/mm/slab_common.c b/mm/slab_common.c
+> index 0b7bb39..5d6f743 100644
+> --- a/mm/slab_common.c
+> +++ b/mm/slab_common.c
+> @@ -176,8 +176,9 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+>  	get_online_cpus();
+>  	mutex_lock(&slab_mutex);
+>  
+> -	if (!kmem_cache_sanity_check(memcg, name, size) == 0)
+> -		goto out_locked;
+> +	err = kmem_cache_sanity_check(memcg, name, size);
+> +	if (err)
+> +		goto out_unlock;
 >  
 >  	/*
-> +	 * If p is -deadline, proceed only if there is enough
-> +	 * bandwidth available on dest_cpu
-> +	 */
-> +	if (unlikely(dl_task(p)) && !set_task_cpu_dl(p, dest_cpu))
-> +		goto fail;
+>  	 * Some allocators will constraint the set of valid flags to a subset
+> @@ -189,45 +190,41 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+>  
+>  	s = __kmem_cache_alias(memcg, name, size, align, flags, ctor);
+>  	if (s)
+> -		goto out_locked;
+> +		goto out_unlock;
+>  
+>  	s = kmem_cache_zalloc(kmem_cache, GFP_KERNEL);
+> -	if (s) {
+> -		s->object_size = s->size = size;
+> -		s->align = calculate_alignment(flags, align, size);
+> -		s->ctor = ctor;
+> -
+> -		if (memcg_register_cache(memcg, s, parent_cache)) {
+> -			kmem_cache_free(kmem_cache, s);
+> -			err = -ENOMEM;
+> -			goto out_locked;
+> -		}
+> +	if (!s) {
+> +		err = -ENOMEM;
+> +		goto out_unlock;
+> +	}
+>  
+> -		s->name = kstrdup(name, GFP_KERNEL);
+> -		if (!s->name) {
+> -			kmem_cache_free(kmem_cache, s);
+> -			err = -ENOMEM;
+> -			goto out_locked;
+> -		}
+> +	s->object_size = s->size = size;
+> +	s->align = calculate_alignment(flags, align, size);
+> +	s->ctor = ctor;
+>  
+> -		err = __kmem_cache_create(s, flags);
+> -		if (!err) {
+> -			s->refcount = 1;
+> -			list_add(&s->list, &slab_caches);
+> -			memcg_cache_list_add(memcg, s);
+> -		} else {
+> -			kfree(s->name);
+> -			kmem_cache_free(kmem_cache, s);
+> -		}
+> -	} else
+> +	s->name = kstrdup(name, GFP_KERNEL);
+> +	if (!s->name) {
+>  		err = -ENOMEM;
+> +		goto out_free_cache;
+> +	}
 > +
-> +	/*
->  	 * If we're not on a rq, the next wake-up will ensure we're
->  	 * placed properly.
->  	 */
+> +	err = memcg_register_cache(memcg, s, parent_cache);
+> +	if (err)
+> +		goto out_free_cache;
+>  
+> -out_locked:
+> +	err = __kmem_cache_create(s, flags);
+> +	if (err)
+> +		goto out_free_cache;
+> +
+> +	s->refcount = 1;
+> +	list_add(&s->list, &slab_caches);
+> +	memcg_cache_list_add(memcg, s);
+> +
+> +out_unlock:
+>  	mutex_unlock(&slab_mutex);
+>  	put_online_cpus();
+>  
+>  	if (err) {
+> -
+>  		if (flags & SLAB_PANIC)
+>  			panic("kmem_cache_create: Failed to create slab '%s'. Error %d\n",
+>  				name, err);
+> @@ -236,11 +233,14 @@ out_locked:
+>  				name, err);
+>  			dump_stack();
+>  		}
+> -
+>  		return NULL;
+>  	}
+> -
+>  	return s;
+> +
+> +out_free_cache:
+> +	kfree(s->name);
+> +	kmem_cache_free(kmem_cache, s);
+> +	goto out_unlock;
+>  }
+>  
+>  struct kmem_cache *
+> -- 
+> 1.7.10.4
+> 
 
-I just noticed this one.. we can't do this.
-
-The reason we cannot do this is because:
-
-  CPU_DYING -> migration_call() -> migrate_tasks() -> __migrate_task()
-
-cannot fail and hard assumes it _will_ move all tasks off of the dying
-cpu, failing this will break hotplug.
-
-Also, I'm not entirely sure why this hunk exists. For GEDF we don't need
-this constraints AFAIK, as long as we guarantee we run the N earliest
-deadlines, it only matters what the total utilization (root domain wide)
-is, the per-cpu utilization is irrelevant.
-
-If the purpose is to fail hotplug because taking out the CPU would end
-up in over-subscription, then we need a DOWN_PREPARE handler.
-
-Dario, Juri?
+-- 
+Michal Hocko
+SUSE Labs
