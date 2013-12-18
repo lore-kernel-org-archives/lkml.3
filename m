@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab3LRVt5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:49:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36204 "EHLO
+	id S1755258Ab3LRVuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:50:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36199 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753552Ab3LRVMy (ORCPT
+	with ESMTP id S1753546Ab3LRVMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:54 -0500
+	Wed, 18 Dec 2013 16:12:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergei Ianovich <ynvich@gmail.com>, Marek Vasut <marex@denx.de>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH 3.12 011/118] ARM: pxa: prevent PXA270 occasional reboot freezes
-Date: Wed, 18 Dec 2013 13:10:48 -0800
-Message-Id: <20131218211219.785986194@linuxfoundation.org>
+        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@redhat.com>,
+        Thomas Meyer <thomas@m3y3r.de>
+Subject: [PATCH 3.12 002/118] udl: fix issue with imported prime buffers
+Date: Wed, 18 Dec 2013 13:10:39 -0800
+Message-Id: <20131218211219.534447174@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -30,58 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Ianovich <ynvich@gmail.com>
+From: Rob Clark <robdclark@gmail.com>
 
-commit ff88b4724fde18056a4c539f7327389aec0f4c2d upstream.
+commit 1d507b3af40a60e03a3bbc4c897fc2709c075d24 upstream.
 
-Erratum 71 of PXA270M Processor Family Specification Update
-(April 19, 2010) explains that watchdog reset time is just
-8us insead of 10ms in EMTS.
+5dc9e1e8 was a bit over-ambitious, and accidentially removed handling
+for imported prime buffers.
 
-If SDRAM is not reset, it causes memory bus congestion and
-the device hangs. We put SDRAM in selfresh mode before watchdog
-reset, removing potential freezes.
-
-Without this patch PXA270-based ICP DAS LP-8x4x hangs after up to 40
-reboots. With this patch it has successfully rebooted 500 times.
-
-Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
-Tested-by: Marek Vasut <marex@denx.de>
-Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Rob Clark <robdclark@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Cc: Thomas Meyer <thomas@m3y3r.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-pxa/reset.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/udl/udl_gem.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/arm/mach-pxa/reset.c
-+++ b/arch/arm/mach-pxa/reset.c
-@@ -13,6 +13,7 @@
+--- a/drivers/gpu/drm/udl/udl_gem.c
++++ b/drivers/gpu/drm/udl/udl_gem.c
+@@ -132,6 +132,12 @@ static int udl_gem_get_pages(struct udl_
  
- #include <mach/regs-ost.h>
- #include <mach/reset.h>
-+#include <mach/smemc.h>
- 
- unsigned int reset_status;
- EXPORT_SYMBOL(reset_status);
-@@ -81,6 +82,12 @@ static void do_hw_reset(void)
- 	writel_relaxed(OSSR_M3, OSSR);
- 	/* ... in 100 ms */
- 	writel_relaxed(readl_relaxed(OSCR) + 368640, OSMR3);
-+	/*
-+	 * SDRAM hangs on watchdog reset on Marvell PXA270 (erratum 71)
-+	 * we put SDRAM into self-refresh to prevent that
-+	 */
-+	while (1)
-+		writel_relaxed(MDREFR_SLFRSH, MDREFR);
+ static void udl_gem_put_pages(struct udl_gem_object *obj)
+ {
++	if (obj->base.import_attach) {
++		drm_free_large(obj->pages);
++		obj->pages = NULL;
++		return;
++	}
++
+ 	drm_gem_put_pages(&obj->base, obj->pages, false, false);
+ 	obj->pages = NULL;
  }
- 
- void pxa_restart(enum reboot_mode mode, const char *cmd)
-@@ -104,4 +111,3 @@ void pxa_restart(enum reboot_mode mode,
- 		break;
- 	}
- }
--
 
 
