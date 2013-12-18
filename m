@@ -1,75 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab3LRNYU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 08:24:20 -0500
-Received: from mga02.intel.com ([134.134.136.20]:64418 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752165Ab3LRNYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 08:24:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,508,1384329600"; 
-   d="scan'208";a="454222468"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
-In-Reply-To: <20131217161126.GL13532@twins.programming.kicks-ass.net>
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-5-git-send-email-alexander.shishkin@linux.intel.com> <20131217161126.GL13532@twins.programming.kicks-ass.net>
-User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Wed, 18 Dec 2013 15:23:41 +0200
-Message-ID: <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754420Ab3LRNYf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 08:24:35 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:64338 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754314Ab3LRNYc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 08:24:32 -0500
+From: Alex Ling <kasimling@gmail.com>
+To: rob.herring@calxeda.com, mark.rutland@arm.com, linux@arm.linux.org.uk,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
+        kgene.kim@samsung.com, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: Alex Ling <kasimling@gmail.com>
+Subject: [PATCH v2 1/1] ARM: dts: add board dts file for EXYNOS4412 based TINY4412 board
+Date: Wed, 18 Dec 2013 21:23:59 +0800
+Message-Id: <1387373039-4738-1-git-send-email-kasimling@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+Add a minimal board dts file for EXYNOS4412 based FriendlyARM's
+TINY4412 board. This patch including support peripherals like
+UART, SD card on SDMMC2 port and GPIO connected LEDs.
 
-> On Wed, Dec 11, 2013 at 02:36:16PM +0200, Alexander Shishkin wrote:
->> Instruction tracing PMUs are capable of recording a log of instruction
->> execution flow on a cpu core, which can be useful for profiling and crash
->> analysis. This patch adds itrace infrastructure for perf events and the
->> rest of the kernel to use.
->> 
->> Since such PMUs can produce copious amounts of trace data, it may be
->> impractical to process it inside the kernel in real time, but instead export
->> raw trace streams to userspace for subsequent analysis. Thus, itrace PMUs
->> may export their trace buffers, which can be mmap()ed to userspace from a
->> perf event fd with a PERF_EVENT_ITRACE_OFFSET offset. To that end, perf
->> is extended to work with multiple ring buffers per event, reusing the
->> ring_buffer code in an attempt to reduce complexity.
->
-> Please read the thread here: https://lkml.org/lkml/2008/12/4/64
->
-> On my thoughts of this creative mmap() usage.
+Signed-off-by: Alex Ling <kasimling@gmail.com>
+---
+Changes for v2:
+  - Clean up patch description
+  - Fix LED labels as Tomasz's suggested
+  - Fix style issues
 
-That's unfortunate, it made sense to me. But let's then have a look at
-the alternative approaches. Bearing in mind that it is crucial for us to
-export trace buffers to userspace as opposed to processing the trace
-data in the kernel, the fact that we still need the normal perf data
-stream and your dislike for mmap trickery, we need two separate file
-descriptors: one for the perf data and one for the trace data.
+ arch/arm/boot/dts/Makefile                |    1 +
+ arch/arm/boot/dts/exynos4412-tiny4412.dts |   93 +++++++++++++++++++++++++++++
+ 2 files changed, 94 insertions(+)
+ create mode 100644 arch/arm/boot/dts/exynos4412-tiny4412.dts
 
-One way of doing this would be to call sys_perf_event_open() once for
-each. The first call would return a file descriptor, which provides good
-old perf data buffer; the second call would use this file descriptor for
-a group leader and will return another descriptor (thus creating another
-perf_event), which, when mmap()ed, will provide a trace buffer.
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 50fd70b..cfee1ef 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -59,6 +59,7 @@ dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
+ 	exynos4412-odroidx.dtb \
+ 	exynos4412-origen.dtb \
+ 	exynos4412-smdk4412.dtb \
++	exynos4412-tiny4412.dtb \
+ 	exynos4412-trats2.dtb \
+ 	exynos5250-arndale.dtb \
+ 	exynos5250-smdk5250.dtb \
+diff --git a/arch/arm/boot/dts/exynos4412-tiny4412.dts b/arch/arm/boot/dts/exynos4412-tiny4412.dts
+new file mode 100644
+index 0000000..0a98312
+--- /dev/null
++++ b/arch/arm/boot/dts/exynos4412-tiny4412.dts
+@@ -0,0 +1,93 @@
++/*
++ * FriendlyARM's Exynos4412 based TINY4412 board device tree source
++ *
++ * Copyright (c) 2013 Alex Ling <kasimling@gmail.com>
++ *
++ * Device tree source file for FriendlyARM's TINY4412 board which is based on
++ * Samsung's Exynos4412 SoC.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++*/
++
++/dts-v1/;
++#include "exynos4412.dtsi"
++
++/ {
++	model = "FriendlyARM TINY4412 board based on Exynos4412";
++	compatible = "friendlyarm,tiny4412", "samsung,exynos4412";
++
++	memory {
++		reg = <0x40000000 0x40000000>;
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		led1 {
++			label = "led1";
++			gpios = <&gpm4 0 1>;
++			default-state = "off";
++			linux,default-trigger = "heartbeat";
++		};
++
++		led2 {
++			label = "led2";
++			gpios = <&gpm4 1 1>;
++			default-state = "off";
++		};
++
++		led3 {
++			label = "led3";
++			gpios = <&gpm4 2 1>;
++			default-state = "off";
++		};
++
++		led4 {
++			label = "led4";
++			gpios = <&gpm4 3 1>;
++			default-state = "off";
++			linux,default-trigger = "mmc0";
++		};
++	};
++
++	rtc@10070000 {
++		status = "okay";
++	};
++
++	sdhci@12530000 {
++		bus-width = <4>;
++		pinctrl-0 = <&sd2_clk &sd2_cmd &sd2_cd &sd2_bus4>;
++		pinctrl-names = "default";
++		status = "okay";
++	};
++
++	serial@13800000 {
++		status = "okay";
++	};
++
++	serial@13810000 {
++		status = "okay";
++	};
++
++	serial@13820000 {
++		status = "okay";
++	};
++
++	serial@13830000 {
++		status = "okay";
++	};
++
++	fixed-rate-clocks {
++		xxti {
++			compatible = "samsung,clock-xxti";
++			clock-frequency = <0>;
++		};
++
++		xusbxti {
++			compatible = "samsung,clock-xusbxti";
++			clock-frequency = <24000000>;
++		};
++	};
++};
+-- 
+1.7.9.5
 
-Or, we could introduce a new PERF_FLAG_XXX to mean that we want a
-descriptor with a trace buffer. And then, of course, one could always
-add an ioctl(), but that'd probably be a bit over the top.
-
-Do any of these sound reasonable? Any other possibilities that I'm
-missing here?
-
-Thanks,
---
-Alex
