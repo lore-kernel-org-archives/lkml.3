@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3LRV1o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:27:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36504 "EHLO
+	id S1755316Ab3LRV2D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:28:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36500 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327Ab3LRVNy (ORCPT
+	with ESMTP id S1754311Ab3LRVNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:54 -0500
+	Wed, 18 Dec 2013 16:13:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Sterba <dsterba@suse.cz>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.12 079/118] btrfs: call mnt_drop_write after interrupted subvol deletion
-Date: Wed, 18 Dec 2013 13:11:56 -0800
-Message-Id: <20131218211221.683666023@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Jie Liu <jeff.liu@oracle.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.12 078/118] Btrfs: fix access_ok() check in btrfs_ioctl_send()
+Date: Wed, 18 Dec 2013 13:11:55 -0800
+Message-Id: <20131218211221.656116738@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -28,40 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Sterba <dsterba@suse.cz>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit e43f998e47bae27e37e159915625e8d4b130153b upstream.
+commit 700ff4f095d78af0998953e922e041d75254518b upstream.
 
-If btrfs_ioctl_snap_destroy blocks on the mutex and the process is
-killed, mnt_write count is unbalanced and leads to unmountable
-filesystem.
+The closing parenthesis is in the wrong place.  We want to check
+"sizeof(*arg->clone_sources) * arg->clone_sources_count" instead of
+"sizeof(*arg->clone_sources * arg->clone_sources_count)".
 
-Signed-off-by: David Sterba <dsterba@suse.cz>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Reviewed-by: Jie Liu <jeff.liu@oracle.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/ioctl.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/btrfs/send.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -2130,7 +2130,7 @@ static noinline int btrfs_ioctl_snap_des
+--- a/fs/btrfs/send.c
++++ b/fs/btrfs/send.c
+@@ -4756,8 +4756,8 @@ long btrfs_ioctl_send(struct file *mnt_f
+ 	}
  
- 	err = mutex_lock_killable_nested(&dir->i_mutex, I_MUTEX_PARENT);
- 	if (err == -EINTR)
--		goto out;
-+		goto out_drop_write;
- 	dentry = lookup_one_len(vol_args->name, parent, namelen);
- 	if (IS_ERR(dentry)) {
- 		err = PTR_ERR(dentry);
-@@ -2293,6 +2293,7 @@ out_dput:
- 	dput(dentry);
- out_unlock_dir:
- 	mutex_unlock(&dir->i_mutex);
-+out_drop_write:
- 	mnt_drop_write_file(file);
- out:
- 	kfree(vol_args);
+ 	if (!access_ok(VERIFY_READ, arg->clone_sources,
+-			sizeof(*arg->clone_sources *
+-			arg->clone_sources_count))) {
++			sizeof(*arg->clone_sources) *
++			arg->clone_sources_count)) {
+ 		ret = -EFAULT;
+ 		goto out;
+ 	}
 
 
