@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab3LRKkG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 05:40:06 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:35426 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754389Ab3LRKkA (ORCPT
+	id S1754672Ab3LRKkT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 05:40:19 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:64601 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754335Ab3LRKkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 05:40:00 -0500
-From: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
-To: stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
-        kgene.kim@samsung.com, linux-usb@vger.kernel.org,
-        sarah.a.sharp@linux.intel.com, balbi@ti.com, gautam.vivek@samsung.com,
-        joshi@samsung.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
-Subject: [RFC 4/5] usb: dwc3-exynos: enable async suspend/resume
-Date: Wed, 18 Dec 2013 16:09:33 +0530
-Message-Id: <1387363174-25942-4-git-send-email-yuvaraj.cd@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1387363174-25942-1-git-send-email-yuvaraj.cd@samsung.com>
-References: <1387363174-25942-1-git-send-email-yuvaraj.cd@samsung.com>
+	Wed, 18 Dec 2013 05:40:16 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Dave Young <dyoung@redhat.com>
+Subject: Re: [PATCH 1/4] Create generic early_ioremap() support
+Date: Wed, 18 Dec 2013 11:40:00 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Mark Salter <msalter@redhat.com>, linux-kernel@vger.kernel.org,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org
+References: <1385606679-30446-1-git-send-email-msalter@redhat.com> <1387305938.1979.166.camel@deneb.redhat.com> <20131218091348.GB15594@dhcp-16-126.nay.redhat.com>
+In-Reply-To: <20131218091348.GB15594@dhcp-16-126.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312181140.01134.arnd@arndb.de>
+X-Provags-ID: V02:K0:lB9LqTeJVOBKAbwNtu1yq5q5eXyh6Nim6IaTxpk6ZoP
+ 0qDE8+jjiXDN0lBzFw7gQbx0Xln8uS5svID7juNMJ3UKmcs1yK
+ DPWYqIPrztf4GrRbVC9fF7dyNSx6Pr7acBZGcDAbzC66y+Vq/X
+ w7ceHGPyM9hAlVSJa31ZTmKUAYyhud0kUPAncuZKOZaWPHx22u
+ FklJunXt+vA3BE+UT1rKeX2CDmytd174/79CET/bpMJZZBjzx5
+ GzZgyiU9WocGr727YplH6P7BqB7ue7/3XA0RblbHFnXh6FhSRf
+ 1tAiZnwl3Ryv4YEXfVM1bcbhnCFEteLIvkmPV+I+9DMNrnwAtf
+ Mu2L5amj23B9QgBOr2NM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Bresticker <abrestic@chromium.org>
+On Wednesday 18 December 2013, Dave Young wrote:
+> > 
+> > I hadn't really thought about it. Putting these things in mm doesn't
+> > sound unreasonable, but lib seems to have become the place for a lot
+> > generic code which could also belong in mm, net, etc.
+> > 
+> 
+> IMHO, move subsystem lib code to subsystem core dir looks more reasonable.
+> lib should be the place for general kernel stuff.
+> 
+> I'm not specific for and object this patch, just give my opinion about the lib/..
 
-In addition to enabling async suspend/resume on the xhci-plat device,
-we must enable it for the dwc3-exynos platform device in order to make
-the full USB stack resume asynchronously.  Like the xhci-plat, ehci-s5p,
-and ohci-exynos drivers, there are no outside dependencies which would
-make resuming the dwc3-exynos driver asynchronously unsafe.
+Traditionally, lib/ is for things that may or may not be used by other optional
+code, typically drivers, which I think is a reasonable concept. There has been
+some shift over the years from lib-$(CONFIG_FOO) towards obj-$(CONFIG_FOO),
+so it's not always used as a actual library code in the linker sense though.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-Reviewed-by: Julius Werner <jwerner@chromium.org>
-Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
----
- drivers/usb/dwc3/dwc3-exynos.c |    2 ++
- 1 file changed, 2 insertions(+)
+I would agree that moving mm related code such as early_ioremap into mm/ is
+a good idea. For things like the compression helpers lib/ is probably
+still the best place.
 
-diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
-index 8b20c70..57431b7 100644
---- a/drivers/usb/dwc3/dwc3-exynos.c
-+++ b/drivers/usb/dwc3/dwc3-exynos.c
-@@ -155,6 +155,8 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
- 		goto err2;
- 	}
- 
-+	device_enable_async_suspend(dev);
-+
- 	return 0;
- 
- err2:
--- 
-1.7.9.5
-
+	Arnd
