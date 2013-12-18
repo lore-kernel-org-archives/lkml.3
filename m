@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab3LRToY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 14:44:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33998 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752134Ab3LRTmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752172Ab3LRTmJ (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 18 Dec 2013 14:42:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33984 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752047Ab3LRTmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 14:42:07 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
         Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 3/6] mm: page_alloc: Break out zone page aging distribution into its own helper
-Date: Wed, 18 Dec 2013 19:42:00 +0000
-Message-Id: <1387395723-25391-4-git-send-email-mgorman@suse.de>
+Subject: [PATCH 1/6] mm: page_alloc: exclude unreclaimable allocations from zone fairness policy
+Date: Wed, 18 Dec 2013 19:41:58 +0000
+Message-Id: <1387395723-25391-2-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1387395723-25391-1-git-send-email-mgorman@suse.de>
 References: <1387395723-25391-1-git-send-email-mgorman@suse.de>
@@ -22,99 +22,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves the decision on whether to round-robin allocations between
-zones and nodes into its own helper functions. It'll make some later patches
-easier to understand and it will be automatically inlined.
+From: Johannes Weiner <hannes@cmpxchg.org>
+
+Dave Hansen noted a regression in a microbenchmark that loops around
+open() and close() on an 8-node NUMA machine and bisected it down to
+81c0a2bb515f ("mm: page_alloc: fair zone allocator policy").  That
+change forces the slab allocations of the file descriptor to spread
+out to all 8 nodes, causing remote references in the page allocator
+and slab.
+
+The round-robin policy is only there to provide fairness among memory
+allocations that are reclaimed involuntarily based on pressure in each
+zone.  It does not make sense to apply it to unreclaimable kernel
+allocations that are freed manually, in this case instantly after the
+allocation, and incur the remote reference costs twice for no reason.
+
+Only round-robin allocations that are usually freed through page
+reclaim or slab shrinking.
 
 Cc: <stable@kernel.org> # 3.12
+Bisected-by: Dave Hansen <dave.hansen@intel.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Reviewed-by: Rik van Riel <riel@redhat.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/page_alloc.c | 63 ++++++++++++++++++++++++++++++++++++++-------------------
- 1 file changed, 42 insertions(+), 21 deletions(-)
+ mm/page_alloc.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 61e9e8c..2cd694c 100644
+index 580a5f0..f861d02 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1880,6 +1880,42 @@ static inline void init_zone_allows_reclaim(int nid)
- #endif	/* CONFIG_NUMA */
- 
- /*
-+ * Distribute pages in proportion to the individual zone size to ensure fair
-+ * page aging.  The zone a page was allocated in should have no effect on the
-+ * time the page has in memory before being reclaimed.
-+ * 
-+ * Returns true if this zone should be skipped to spread the page ages to
-+ * other zones.
-+ */
-+static bool zone_distribute_age(gfp_t gfp_mask, struct zone *preferred_zone,
-+				struct zone *zone, int alloc_flags)
-+{
-+	/* Only round robin in the allocator fast path */
-+	if (!(alloc_flags & ALLOC_WMARK_LOW))
-+		return false;
-+
-+	/* Only round robin pages likely to be LRU or reclaimable slab */
-+	if (!(gfp_mask & GFP_MOVABLE_MASK))
-+		return false;
-+
-+	/* Distribute to the next zone if this zone has exhausted its batch */
-+	if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
-+		return true;
-+
-+	/*
-+	 * When zone_reclaim_mode is enabled, try to stay in local zones in the
-+	 * fastpath.  If that fails, the slowpath is entered, which will do
-+	 * another pass starting with the local zones, but ultimately fall back
-+	 * back to remote zones that do not partake in the fairness round-robin
-+	 * cycle of this zonelist.
-+	 */
-+	if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
-+		return true;
-+
-+	return false;
-+}
-+
-+/*
-  * get_page_from_freelist goes through the zonelist trying to allocate
-  * a page.
-  */
-@@ -1915,27 +1951,12 @@ zonelist_scan:
- 		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
- 		if (unlikely(alloc_flags & ALLOC_NO_WATERMARKS))
- 			goto try_this_zone;
--		/*
--		 * Distribute pages in proportion to the individual
--		 * zone size to ensure fair page aging.  The zone a
--		 * page was allocated in should have no effect on the
--		 * time the page has in memory before being reclaimed.
--		 *
--		 * When zone_reclaim_mode is enabled, try to stay in
--		 * local zones in the fastpath.  If that fails, the
--		 * slowpath is entered, which will do another pass
--		 * starting with the local zones, but ultimately fall
--		 * back to remote zones that do not partake in the
--		 * fairness round-robin cycle of this zonelist.
--		 */
--		if ((alloc_flags & ALLOC_WMARK_LOW) &&
--		    (gfp_mask & GFP_MOVABLE_MASK)) {
--			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
--				continue;
--			if (zone_reclaim_mode &&
--			    !zone_local(preferred_zone, zone))
--				continue;
--		}
-+
-+		/* Distribute pages to ensure fair page aging */
-+		if (zone_distribute_age(gfp_mask, preferred_zone, zone,
-+					alloc_flags))
-+			continue;
-+
- 		/*
- 		 * When allocating a page cache page for writing, we
- 		 * want to get it from a zone that is within its dirty
+@@ -1920,7 +1920,8 @@ zonelist_scan:
+ 		 * back to remote zones that do not partake in the
+ 		 * fairness round-robin cycle of this zonelist.
+ 		 */
+-		if (alloc_flags & ALLOC_WMARK_LOW) {
++		if ((alloc_flags & ALLOC_WMARK_LOW) &&
++		    (gfp_mask & GFP_MOVABLE_MASK)) {
+ 			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+ 				continue;
+ 			if (zone_reclaim_mode &&
 -- 
 1.8.4
 
