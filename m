@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab3LRFWQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 00:22:16 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:56165 "EHLO
+	id S1753517Ab3LRFWP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 00:22:15 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:63059 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296Ab3LRFVd (ORCPT
+	with ESMTP id S1751277Ab3LRFVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Dec 2013 00:21:33 -0500
-X-AuditID: 9c93017d-b7c5eae000004296-32-52b130d936de
+X-AuditID: 9c93017d-b7c5eae000004296-31-52b130d90794
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Arun Sharma <asharma@fb.com>,
         Jiri Olsa <jolsa@redhat.com>, Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 14/18] perf ui/gtk: Add support to accumulated hist stat
-Date: Wed, 18 Dec 2013 14:21:22 +0900
-Message-Id: <1387344086-12744-15-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 13/18] perf ui/browser: Add support to accumulated hist stat
+Date: Wed, 18 Dec 2013 14:21:21 +0900
+Message-Id: <1387344086-12744-14-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
 References: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
@@ -34,48 +34,49 @@ Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/gtk/hists.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ tools/perf/ui/browsers/hists.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 2ca66cc1160f..70ed0d5e1b94 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -98,11 +98,25 @@ static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,
- 	return __hpp__color_fmt(hpp, he, he_get_##_field);			\
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index a440e03cd8c2..efa78894f70d 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -693,11 +693,26 @@ hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
+ 	return __hpp__color_fmt(hpp, he, __hpp_get_##_field, _cb);	\
  }
  
-+#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
-+static u64 he_get_acc_##_field(struct hist_entry *he)				\
-+{										\
-+	return he->stat_acc->_field;						\
-+}										\
-+										\
-+static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
-+				       struct perf_hpp *hpp,			\
-+				       struct hist_entry *he)			\
-+{										\
-+	return __hpp__color_fmt(hpp, he, he_get_acc_##_field);			\
++#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field, _cb)			\
++static u64 __hpp_get_acc_##_field(struct hist_entry *he)		\
++{									\
++	return he->stat_acc->_field;					\
++}									\
++									\
++static int								\
++hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
++				struct perf_hpp *hpp,			\
++				struct hist_entry *he)			\
++{									\
++	return __hpp__color_fmt(hpp, he, __hpp_get_acc_##_field, _cb);	\
 +}
 +
- __HPP_COLOR_PERCENT_FN(overhead, period)
- __HPP_COLOR_PERCENT_FN(overhead_sys, period_sys)
- __HPP_COLOR_PERCENT_FN(overhead_us, period_us)
- __HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys)
- __HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
-+__HPP_COLOR_ACC_PERCENT_FN(overhead_acc, period)
+ __HPP_COLOR_PERCENT_FN(overhead, period, __hpp__color_callchain)
+ __HPP_COLOR_PERCENT_FN(overhead_sys, period_sys, NULL)
+ __HPP_COLOR_PERCENT_FN(overhead_us, period_us, NULL)
+ __HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys, NULL)
+ __HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us, NULL)
++__HPP_COLOR_ACC_PERCENT_FN(overhead_acc, period, NULL)
  
  #undef __HPP_COLOR_PERCENT_FN
  
-@@ -121,6 +135,8 @@ void perf_gtk__init_hpp(void)
- 				perf_gtk__hpp_color_overhead_guest_sys;
+@@ -715,6 +730,8 @@ void hist_browser__init_hpp(void)
+ 				hist_browser__hpp_color_overhead_guest_sys;
  	perf_hpp__format[PERF_HPP__OVERHEAD_GUEST_US].color =
- 				perf_gtk__hpp_color_overhead_guest_us;
+ 				hist_browser__hpp_color_overhead_guest_us;
 +	perf_hpp__format[PERF_HPP__OVERHEAD_ACC].color =
-+				perf_gtk__hpp_color_overhead_acc;
++				hist_browser__hpp_color_overhead_acc;
  }
  
- static void callchain_list__sym_name(struct callchain_list *cl,
+ static int hist_browser__show_entry(struct hist_browser *browser,
 -- 
 1.7.11.7
 
