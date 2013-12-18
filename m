@@ -1,116 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab3LRIQu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 03:16:50 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:52167 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3LRIQs (ORCPT
+	id S1752840Ab3LRIVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 03:21:30 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:48702 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab3LRIV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 03:16:48 -0500
-Date: Wed, 18 Dec 2013 09:16:45 +0100
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <cjb@laptop.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [PATCHv3] mmc: atmel-mci: add vmmc-supply support
-Message-ID: <20131218081645.GA4268@ldesroches-Latitude-E6320>
-Mail-Followup-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-	Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <cjb@laptop.org>,
-	linux-mmc <linux-mmc@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1382006808-22728-1-git-send-email-alexandre.belloni@free-electrons.com>
- <CAPDyKFoiWOE47DWrUHNWVPyihL=uCidpd52TV1vgUbq1aMNvbw@mail.gmail.com>
- <52B09FF0.4070200@free-electrons.com>
+	Wed, 18 Dec 2013 03:21:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <52B09FF0.4070200@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5hlhzik3kk.wl%tiwai@suse.de>
+References: <s5hlhzik3kk.wl%tiwai@suse.de>
+Date: Wed, 18 Dec 2013 09:21:28 +0100
+Message-ID: <CANq1E4TFKDduy71jCXy+8CMS1_OFxWEpsHY3AA0RUJPW4VE8hg@mail.gmail.com>
+Subject: Re: cirrusdrmfb broken with simplefb
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+Hi
 
-On Tue, Dec 17, 2013 at 08:03:12PM +0100, Alexandre Belloni wrote:
+On Wed, Dec 18, 2013 at 8:42 AM, Takashi Iwai <tiwai@suse.de> wrote:
 > Hi,
-> 
-> It seems that patch never made it to the mainline. Is it still missing
-> something ?
+>
+> with the recent enablement of simplefb on x86, cirrusdrmfb on QEMU/KVM
+> gets broken now, as reported at:
+>     https://bugzilla.novell.com/show_bug.cgi?id=855821
+>
+> The cirrus VGA resource is reserved at first as "BOOTFB" in
+> arch/x86/kernel/sysfb_simplefb.c, which is taken by simplefb platform
+> device.  This resource is, however, never released until the platform
+> device is destroyed, and the framebuffer switching doesn't trigger
+> it.  It calls fb's destroy callback, at most.  Then, cirrus driver
+> tries to assign the resource, fails and gives up, resulting in a
+> complete blank screen.
+>
+> The same problem should exist on other KMS drivers like mgag200 or
+> ast, not only cirrus.  Intel graphics doesn't hit this problem just
+> because the reserved iomem by BOOTFB isn't required by i915 driver.
+>
+> The patch below is a quick attempt to solve the issue.  It adds a new
+> API function for releasing resources of platform_device, and call it
+> in destroy op of simplefb.  But, forcibly releasing resources of a
+> parent device doesn't sound like a correct design.  We may take such
+> as a band aid, but definitely need a more fundamental fix.
+>
+> Any thoughts?
 
-No reason on my side, maybe because my ack is missing but I thought I
-gave it on a previous version, maybe I am wrong.
+That bug always existed, simplefb is just the first driver to hit it
+(vesafb/efifb didn't use resources). I'm aware of the issue but as a
+workaround you can simply disable CONFIG_X86_SYSFB. That restores the
+old behavior.
 
-So Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+As a proper fix, I'd propose something like:
+  dev = platform_find_device("platform-framebuffer");
+  platform_remove_device(dev);
 
+And we wrap this as:
+  sysfb_remove_framebuffers()
+in arch/x86/kernel/sysfb.c
 
-Regards
+This should cause a ->remove() event for the platform-driver and
+correctly release the resources. Comments?
+I will try to write a patch and send it later.
 
-Ludovic
+Thanks
+David
 
-> 
-> Regards,
-> 
-> On 17/10/2013 15:56, Ulf Hansson wrote:
-> > On 17 October 2013 12:46, Alexandre Belloni
-> > <alexandre.belloni@free-electrons.com> wrote:
-> >> Other MMC hosts handle a regulator named vmmc-supply that allows to power the
-> >> MMC card or SDIO device before communicating on the bus.
-> >>
-> >> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
-> >
-> >> ---
-> >>
-> >> Changes in v2:
-> >>  - use mmc_regulator_get_supply instead of devm_regulator_get
-> >>
-> >> Changes in v3:
-> >>  - en/disable the regulator in .set_ios using mmc_regulator_set_ocr
-> >>
-> >>  drivers/mmc/host/atmel-mci.c | 7 +++++++
-> >>  1 file changed, 7 insertions(+)
-> >>
-> >> diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-> >> index 69e438e..a9e1ba6 100644
-> >> --- a/drivers/mmc/host/atmel-mci.c
-> >> +++ b/drivers/mmc/host/atmel-mci.c
-> >> @@ -1385,8 +1385,14 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
-> >>                 clk_unprepare(host->mck);
-> >>
-> >>         switch (ios->power_mode) {
-> >> +       case MMC_POWER_OFF:
-> >> +               if (!IS_ERR(mmc->supply.vmmc))
-> >> +                       mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
-> >> +               break;
-> >>         case MMC_POWER_UP:
-> >>                 set_bit(ATMCI_CARD_NEED_INIT, &slot->flags);
-> >> +               if (!IS_ERR(mmc->supply.vmmc))
-> >> +                       mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, ios->vdd);
-> >>                 break;
-> >>         default:
-> >>                 /*
-> >> @@ -2196,6 +2202,7 @@ static int __init atmci_init_slot(struct atmel_mci *host,
-> >>         }
-> >>
-> >>         host->slot[id] = slot;
-> >> +       mmc_regulator_get_supply(mmc);
-> >>         mmc_add_host(mmc);
-> >>
-> >>         if (gpio_is_valid(slot->detect_pin)) {
-> >> --
-> >> 1.8.1.2
-> >>
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
-> -- 
-> Alexandre Belloni, Free Electrons
-> Embedded Linux, Kernel and Android engineering
-> http://free-electrons.com
-> 
+>
+> thanks,
+>
+> Takashi
+>
+> ---
+> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> index 3a94b79..f939236 100644
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -267,6 +267,23 @@ int platform_device_add_data(struct platform_device *pdev, const void *data,
+>  }
+>  EXPORT_SYMBOL_GPL(platform_device_add_data);
+>
+> +static void do_release_resources(struct platform_device *pdev, int nums)
+> +{
+> +       int i;
+> +
+> +       for (i = 0; i < nums; i++) {
+> +               struct resource *r = &pdev->resource[i];
+> +               unsigned long type = resource_type(r);
+> +
+> +               if (type == IORESOURCE_MEM || type == IORESOURCE_IO)
+> +                       release_resource(r);
+> +       }
+> +
+> +       kfree(pdev->resource);
+> +       pdev->resource = NULL;
+> +       pdev->num_resources = 0;
+> +}
+> +
+>  /**
+>   * platform_device_add - add a platform device to device hierarchy
+>   * @pdev: platform device we're adding
+> @@ -342,13 +359,7 @@ int platform_device_add(struct platform_device *pdev)
+>                 pdev->id = PLATFORM_DEVID_AUTO;
+>         }
+>
+> -       while (--i >= 0) {
+> -               struct resource *r = &pdev->resource[i];
+> -               unsigned long type = resource_type(r);
+> -
+> -               if (type == IORESOURCE_MEM || type == IORESOURCE_IO)
+> -                       release_resource(r);
+> -       }
+> +       do_release_resources(pdev, i - 1);
+>
+>   err_out:
+>         return ret;
+> @@ -365,8 +376,6 @@ EXPORT_SYMBOL_GPL(platform_device_add);
+>   */
+>  void platform_device_del(struct platform_device *pdev)
+>  {
+> -       int i;
+> -
+>         if (pdev) {
+>                 device_del(&pdev->dev);
+>
+> @@ -375,17 +384,17 @@ void platform_device_del(struct platform_device *pdev)
+>                         pdev->id = PLATFORM_DEVID_AUTO;
+>                 }
+>
+> -               for (i = 0; i < pdev->num_resources; i++) {
+> -                       struct resource *r = &pdev->resource[i];
+> -                       unsigned long type = resource_type(r);
+> -
+> -                       if (type == IORESOURCE_MEM || type == IORESOURCE_IO)
+> -                               release_resource(r);
+> -               }
+> +               do_release_resources(pdev, pdev->num_resources);
+>         }
+>  }
+>  EXPORT_SYMBOL_GPL(platform_device_del);
+>
+> +void platform_device_release_resources(struct platform_device *pdev)
+> +{
+> +       do_release_resources(pdev, pdev->num_resources);
+> +}
+> +EXPORT_SYMBOL_GPL(platform_device_release_resources);
+> +
+>  /**
+>   * platform_device_register - add a platform-level device
+>   * @pdev: platform device we're adding
+> diff --git a/drivers/video/simplefb.c b/drivers/video/simplefb.c
+> index 210f3a0..fbf5e89 100644
+> --- a/drivers/video/simplefb.c
+> +++ b/drivers/video/simplefb.c
+> @@ -70,6 +70,7 @@ static void simplefb_destroy(struct fb_info *info)
+>  {
+>         if (info->screen_base)
+>                 iounmap(info->screen_base);
+> +       platform_device_release_resources(to_platform_device(info->device));
+>  }
+>
+>  static struct fb_ops simplefb_ops = {
+> diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+> index 16f6654..7cc1f54 100644
+> --- a/include/linux/platform_device.h
+> +++ b/include/linux/platform_device.h
+> @@ -42,6 +42,7 @@ struct platform_device {
+>
+>  extern int platform_device_register(struct platform_device *);
+>  extern void platform_device_unregister(struct platform_device *);
+> +extern void platform_device_release_resources(struct platform_device *pdev);
+>
+>  extern struct bus_type platform_bus_type;
+>  extern struct device platform_bus;
