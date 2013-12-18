@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab3LRNYN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 08:24:13 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:50744 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab3LRNYL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 08:24:11 -0500
-X-AuditID: cbfee61a-b7f7e6d000005936-ea-52b1a1f4b5b6
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        linux-ide@vger.kernel.org
-Subject: Re: [PATCH 1/2] drivers: ide: Include appropriate header file in
- ide-cd_verbose.c
-Date: Wed, 18 Dec 2013 14:23:52 +0100
-Message-id: <1930396.DGXdd6ZaUD@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <20131217190610.GJ30592@pd.tnic>
-References: <d24d7befadfbfb9501d0e873f13e39fd42ec893b.1387278225.git.rashika.kheria@gmail.com>
- <52B0A93E.7090503@cogentembedded.com> <20131217190610.GJ30592@pd.tnic>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=utf-8
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsVy+t9jAd0vCzcGGRw9qW3xecM/Nos551tY
-	LP4vyLc4tuMRk8XlXXPYLBYt/s1ucWbVLXYHdo/vrX0sHg+m/mfy2LLyJpPHzll32T1uvbb1
-	+LxJLoAtissmJTUnsyy1SN8ugStjyuXP7AUH2CsuPe1nb2B8z9rFyMkhIWAisfXKTiYIW0zi
-	wr31bF2MXBxCAosYJeZ0djJBOC1MEi2LN7KAVLEJWElMbF/FCGKLCChJfF00F6yIWeATo8SB
-	V6eAEhwcwgIxEvsfFIDUsAioSvw/eJgZxOYV0JQ4t3ASO4gtKuApsWP7SjYQm1NAV2JP21Ko
-	ZSsZJXatWcsE0SAo8WPyPbDFzALyEvv2T2UFmc8soC4xZUruBEaBWUiqZiGpmoVQtYCReRWj
-	aGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcKg/k9rBuLLB4hCjAAejEg+vh9fGICHWxLLiytxD
-	jBIczEoivAtnAIV4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmi1DhQSSE8sSc1OTS1ILYLJMnFw
-	SjUw5jxdOuXvwtcswR+vLFZbsJDh23F2F+uJLzovXbr8+HT+rnuble9fjCxYtHbLtvpY/gt3
-	UgSPnPy+v3pzzvLZ4hZfMo9ZvM/5d/jcGhOLvviqfXtEjrjUTj1YsyqvsmbygoQPKdu3/q1z
-	O2FooRf/8cRTvssSf2LD1aXzmz09epR0rlgtNvSdXqTEUpyRaKjFXFScCAD5fIp5cQIAAA==
+	id S1754261Ab3LRNYU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 08:24:20 -0500
+Received: from mga02.intel.com ([134.134.136.20]:64418 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752165Ab3LRNYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 08:24:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,508,1384329600"; 
+   d="scan'208";a="454222468"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
+In-Reply-To: <20131217161126.GL13532@twins.programming.kicks-ass.net>
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-5-git-send-email-alexander.shishkin@linux.intel.com> <20131217161126.GL13532@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Wed, 18 Dec 2013 15:23:41 +0200
+Message-ID: <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Peter Zijlstra <peterz@infradead.org> writes:
 
-Hi,
+> On Wed, Dec 11, 2013 at 02:36:16PM +0200, Alexander Shishkin wrote:
+>> Instruction tracing PMUs are capable of recording a log of instruction
+>> execution flow on a cpu core, which can be useful for profiling and crash
+>> analysis. This patch adds itrace infrastructure for perf events and the
+>> rest of the kernel to use.
+>> 
+>> Since such PMUs can produce copious amounts of trace data, it may be
+>> impractical to process it inside the kernel in real time, but instead export
+>> raw trace streams to userspace for subsequent analysis. Thus, itrace PMUs
+>> may export their trace buffers, which can be mmap()ed to userspace from a
+>> perf event fd with a PERF_EVENT_ITRACE_OFFSET offset. To that end, perf
+>> is extended to work with multiple ring buffers per event, reusing the
+>> ring_buffer code in an attempt to reduce complexity.
+>
+> Please read the thread here: https://lkml.org/lkml/2008/12/4/64
+>
+> On my thoughts of this creative mmap() usage.
 
-On Tuesday, December 17, 2013 08:06:10 PM Borislav Petkov wrote:
-> On Tue, Dec 17, 2013 at 10:42:54PM +0300, Sergei Shtylyov wrote:
-> > You're right in your doubting: there are quite a lot of drivers used
-> > by embedded platforms that nobody has bothered to convert to libata
-> > thus far.
-> 
-> Hold on, what does that mean? IDE is back from the dead and used only
-> for embedded stuff?
+That's unfortunate, it made sense to me. But let's then have a look at
+the alternative approaches. Bearing in mind that it is crucial for us to
+export trace buffers to userspace as opposed to processing the trace
+data in the kernel, the fact that we still need the normal perf data
+stream and your dislike for mmap trickery, we need two separate file
+descriptors: one for the perf data and one for the trace data.
 
-No, it means that there are legacy PATA chipsets (some used by embedded
-platforms) that are only supported by IDE host drivers.
+One way of doing this would be to call sys_perf_event_open() once for
+each. The first call would return a file descriptor, which provides good
+old perf data buffer; the second call would use this file descriptor for
+a group leader and will return another descriptor (thus creating another
+perf_event), which, when mmap()ed, will provide a trace buffer.
 
-> Or we force people to convert drivers to libata by *deleting* ide?
-> 
-> :-)
+Or, we could introduce a new PERF_FLAG_XXX to mean that we want a
+descriptor with a trace buffer. And then, of course, one could always
+add an ioctl(), but that'd probably be a bit over the top.
 
-If there is a need I should be able to help in converting these leftover
-drivers before we delete IDE.  Once I find some time I will go over all
-IDE host drivers, make a list of affected hardware and start a discussion
-on IDE removal.
+Do any of these sound reasonable? Any other possibilities that I'm
+missing here?
 
-Best regards,
+Thanks,
 --
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
+Alex
