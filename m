@@ -1,171 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503Ab3LRDVI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 22:21:08 -0500
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:45446
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751963Ab3LRDVF (ORCPT
+	id S1752676Ab3LRD3S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 22:29:18 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:60804 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936Ab3LRD3Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 22:21:05 -0500
-X-Forefront-Antispam-Report: CIP:157.56.240.101;KIP:(null);UIP:(null);IPV:NLI;H:BL2PRD0510HT002.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(z579ehz98dI154dI1443I542I1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz8275ch1de098h8275dh1de097hz2fh109h2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah224fh1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1fe8h1ff5h2216h22d0h2336h9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(10009001)(54534003)(13464003)(164054003)(199002)(189002)(24454002)(51874003)(51704005)(85852003)(87266001)(76786001)(83072002)(33646001)(63696002)(76576001)(85306002)(76482001)(90146001)(53806001)(54356001)(76796001)(31966008)(51856001)(56816005)(65816001)(80022001)(46102001)(47446002)(19580395003)(83322001)(74662001)(19580405001)(74502001)(66066001)(81816001)(77982001)(59766001)(74316001)(81686001)(74366001)(69226001)(56776001)(54316002)(49866001)(47736001)(74876001)(87936001)(79102001)(74706001)(2656002)(47976001)(81342001)(80976001)(81542001)(4396001)(50986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR05MB526;H:DM2PR05MB671.namprd05.prod.outlook.com;CLIP:66.129.239.12;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-From: Rajat Jain <rajatjain@juniper.net>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Rajat Jain <rajatjain.linux@gmail.com>
-CC: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	Tue, 17 Dec 2013 22:29:16 -0500
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yhlu.kernel@gmail.com>, Guenter Roeck <groeck@juniper.net>,
-        Rajat Jain <rajatxjain@gmail.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>
-Subject: RE: [PATCH v3 4/8] pciehp: Don't disable the link permanently,
- during removal
-Thread-Topic: [PATCH v3 4/8] pciehp: Don't disable the link permanently,
- during removal
-Thread-Index: AQHO+2O+glESpPkjFkO6kKuv5WeLEZpZIsOAgAAgqXA=
-Date: Wed, 18 Dec 2013 03:20:58 +0000
-Message-ID: <41c1723da4454cdca6503418746a5ca7@DM2PR05MB671.namprd05.prod.outlook.com>
-References: <52B0AEAD.6050604@gmail.com> <20131218010207.GC15119@google.com>
-In-Reply-To: <20131218010207.GC15119@google.com>
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "vpalatin@chromium.org" <vpalatin@chromium.org>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: RE: [PATCH 2/3 v2] regulator: act8865: add device tree binding doc
+Thread-Topic: [PATCH 2/3 v2] regulator: act8865: add device tree binding doc
+Thread-Index: AQHO+uotgWnltztuF0yUx56i3oVToJpX0HIAgAF3YdA=
+Date: Wed, 18 Dec 2013 03:12:34 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A24364172F1838F@penmbx01>
+References: <1387258597-21866-1-git-send-email-wenyou.yang@atmel.com>
+ <1387258597-21866-3-git-send-email-wenyou.yang@atmel.com>
+ <20131217124750.GX3185@sirena.org.uk>
+In-Reply-To: <20131217124750.GX3185@sirena.org.uk>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [66.129.239.12]
-x-forefront-prvs: 0064B3273C
-Content-Type: text/plain; charset="utf-8"
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-OriginatorOrg: juniper.net
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBI3LOxb006975
 
-
+Hi Mark,
 
 > -----Original Message-----
-> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> From: Mark Brown [mailto:broonie@kernel.org]
+> Sent: Tuesday, December 17, 2013 8:48 PM
+> To: Yang, Wenyou
+> Cc: lgirdwood@gmail.com; linux-kernel@vger.kernel.org;
+> grant.likely@linaro.org; rob.herring@calxeda.com; linux-
+> doc@vger.kernel.org; vpalatin@chromium.org; Ferre, Nicolas;
+> plagnioj@jcrosoft.com; linux-arm-kernel@lists.infradead.org;
+> devicetree@vger.kernel.org
+> Subject: Re: [PATCH 2/3 v2] regulator: act8865: add device tree binding
+> doc
 > 
-> [+cc yinghai@kernel.org (seems to be Yinghai's preferred email]
+> On Tue, Dec 17, 2013 at 01:36:36PM +0800, Wenyou Yang wrote:
 > 
-> On Tue, Dec 17, 2013 at 12:06:05PM -0800, Rajat Jain wrote:
-> > We need future link up events for hot-add, thus don't disable the link
-> > permanently during device removal. Also, remove the static functions
-> > that are now left unused.
+> > +Required properties:
+> > +- compatible: "active-semi,act8865"
+> > +- reg: I2C slave address
 > 
-> The changelog should mention that this reverts part of 2debd9289997
-> ("PCI:
-> pciehp: Disable/enable link during slot power off/on").
+> This needs to also document the regulators property, for example all the
+> regulator names.
+Add all the regulator name:
+The valid names for regulators are:
+       DCDC_REG1, DCDC_REG2, DCDC_REG3, LDO_REG1, LDO_REG2, LDO_REG3, LDO_REG4.
 
-Sure, I'll add that. 
-
-> 
-> Yinghai, can you tell us whether this is an issue on your systems?
->
-
-Thanks in advance Yinghai. 
-
-Actually I did not understand the original problem and the solution in the first
-place (so I also do not understand how might disabling of presence detect notification
-help). If you can give more details on the original problem that shall be great. Here
-is what I understood from the commit log:
-
-The believe the HW looks like this:
-
-PCIe port <----> Repeater <----> Device.
-
-An in addition there is the presence detect pin that is connected directly from
-The port to the device. Now, when the device is plugged out, the pin indicates
-No presence. But are you saying the PCIe link from port to repeater is still up?
-
-Part of log:
-====================================
-    ...
-    It turns out the root complex is continually trying to train the link to
-    the repeater because the repeater has not been reset.
-
-    This patch will disable the link at removal time to allow the repeater
-    to be reset properly.
-    ...
-====================================
-
-1) I did not understand why would port try to retrain to the link in either cases -
-Whether the link to the repeater is up or not?
-
-2) When no link is seen, is THAT what causes repeater to go down and hence solve the
-Problem?
-
-3) I'd expect you'd continuously get "adapter not present" messages if some how
-The driver was trying to add the device. But I did not understand where did
-"adapter present" messages came from?
-
-Sorry, but I guess I am totally confused now. I'll probably go to sleep :-) 
-
-Just trying to understand.
-
-Thanks,
-
-Rajat
-
-> > Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-> > Signed-off-by: Guenter Roeck <groeck@juniper.net>
-> > ---
-> > v3: no change, created by splitting the patch v2 [2/4]
-> > v2: (non existent)
-> > v1: (non existent)
-> >
-> >  drivers/pci/hotplug/pciehp_hpc.c |   18 ------------------
-> >  1 file changed, 18 deletions(-)
-> >
-> > diff --git a/drivers/pci/hotplug/pciehp_hpc.c
-> > b/drivers/pci/hotplug/pciehp_hpc.c
-> > index b45b568..ab12555 100644
-> > --- a/drivers/pci/hotplug/pciehp_hpc.c
-> > +++ b/drivers/pci/hotplug/pciehp_hpc.c
-> > @@ -278,11 +278,6 @@ static void pcie_wait_link_active(struct
-> controller *ctrl)
-> >  	__pcie_wait_link_active(ctrl, true);  }
-> >
-> > -static void pcie_wait_link_not_active(struct controller *ctrl) -{
-> > -	__pcie_wait_link_active(ctrl, false);
-> > -}
-> > -
-> >  static bool pci_bus_check_dev(struct pci_bus *bus, int devfn)  {
-> >  	u32 l;
-> > @@ -383,11 +378,6 @@ static int pciehp_link_enable(struct controller
-> *ctrl)
-> >  	return __pciehp_link_set(ctrl, true);  }
-> >
-> > -static int pciehp_link_disable(struct controller *ctrl) -{
-> > -	return __pciehp_link_set(ctrl, false);
-> > -}
-> > -
-> >  int pciehp_get_attention_status(struct slot *slot, u8 *status)  {
-> >  	struct controller *ctrl = slot->ctrl; @@ -620,14 +610,6 @@ int
-> > pciehp_power_off_slot(struct slot * slot)
-> >  	u16 cmd_mask;
-> >  	int retval;
-> >
-> > -	/* Disable the link at first */
-> > -	pciehp_link_disable(ctrl);
-> > -	/* wait the link is down */
-> > -	if (ctrl->link_active_reporting)
-> > -		pcie_wait_link_not_active(ctrl);
-> > -	else
-> > -		msleep(1000);
-> > -
-> >  	slot_cmd = POWER_OFF;
-> >  	cmd_mask = PCI_EXP_SLTCTL_PCC;
-> >  	retval = pcie_write_cmd(ctrl, slot_cmd, cmd_mask);
-> > --
-> > 1.7.9.5
-> >
-> 
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Best Regards,
+Wenyou Yang
