@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab3LRVn7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:43:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36310 "EHLO
+	id S1751810Ab3LRVoV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:44:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36297 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807Ab3LRVNN (ORCPT
+	with ESMTP id S1753784Ab3LRVNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:13 -0500
+	Wed, 18 Dec 2013 16:13:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.12 032/118] usb: gadget: composite: reset delayed_status on reset_config
-Date: Wed, 18 Dec 2013 13:11:09 -0800
-Message-Id: <20131218211220.384416919@linuxfoundation.org>
+        Julius Werner <jwerner@chromium.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.12 030/118] usb: hub: Use correct reset for wedged USB3 devices that are NOTATTACHED
+Date: Wed, 18 Dec 2013 13:11:07 -0800
+Message-Id: <20131218211220.329337986@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,32 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Julius Werner <jwerner@chromium.org>
 
-commit 2bac51a1827a18821150ed8c9f9752c02f9c2b02 upstream.
+commit 2d51f3cd11f414c56a87dc018196b85fd50b04a4 upstream.
 
-The delayed_status value is used to keep track of status response
-packets on ep0. It needs to be reset or the set_config function would
-still delay the answer, if the usb device got unplugged while waiting
-for setup_continue to be called.
+This patch adds a check for USB_STATE_NOTATTACHED to the
+hub_port_warm_reset_required() workaround for ports that end up in
+Compliance Mode in hub_events() when trying to decide which reset
+function to use. Trying to call usb_reset_device() with a NOTATTACHED
+device will just fail and leave the port broken.
 
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/composite.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/core/hub.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -593,6 +593,7 @@ static void reset_config(struct usb_comp
- 		bitmap_zero(f->endpoints, 32);
- 	}
- 	cdev->config = NULL;
-+	cdev->delayed_status = 0;
- }
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -4836,8 +4836,9 @@ static void hub_events(void)
+ 					hub->ports[i - 1]->child;
  
- static int set_config(struct usb_composite_dev *cdev,
+ 				dev_dbg(hub_dev, "warm reset port %d\n", i);
+-				if (!udev || !(portstatus &
+-						USB_PORT_STAT_CONNECTION)) {
++				if (!udev ||
++				    !(portstatus & USB_PORT_STAT_CONNECTION) ||
++				    udev->state == USB_STATE_NOTATTACHED) {
+ 					status = hub_port_reset(hub, i,
+ 							NULL, HUB_BH_RESET_TIME,
+ 							true);
 
 
