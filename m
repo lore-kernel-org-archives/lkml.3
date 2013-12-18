@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab3LRVZb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:25:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36548 "EHLO
+	id S1754379Ab3LRVN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:13:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36497 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754407Ab3LRVOA (ORCPT
+	with ESMTP id S1752650Ab3LRVNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:14:00 -0500
+	Wed, 18 Dec 2013 16:13:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.12 082/118] dm stats: initialize read-only module parameter
-Date: Wed, 18 Dec 2013 13:11:59 -0800
-Message-Id: <20131218211221.765554472@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [PATCH 3.12 077/118] media: af9035: unlock on error in af9035_i2c_master_xfer()
+Date: Wed, 18 Dec 2013 13:11:54 -0800
+Message-Id: <20131218211221.627980589@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,41 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 76f5bee5c3b45c617f91243e85547fc8f67bc678 upstream.
+commit 3189ef0290dcc9f44782672fade35847cb30da00 upstream.
 
-The module parameter stats_current_allocated_bytes in dm-mod is
-read-only.  This parameter informs the user about memory
-consumption.  It is not supposed to be changed by the user.
+We introduced a couple new error paths which are missing unlocks.
+Fixes: 7760e148350b ('[media] af9035: Don't use dynamic static allocation')
 
-However, despite being read-only, this parameter can be set on
-modprobe or insmod command line:
-modprobe dm-mod stats_current_allocated_bytes=12345
-
-The kernel doesn't expect that this variable can be non-zero at module
-initialization and if the user sets it, it results in warning.
-
-This patch initializes the variable in the module init routine, so
-that user-supplied value is ignored.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-stats.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/usb/dvb-usb-v2/af9035.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-stats.c
-+++ b/drivers/md/dm-stats.c
-@@ -964,6 +964,7 @@ int dm_stats_message(struct mapped_devic
+--- a/drivers/media/usb/dvb-usb-v2/af9035.c
++++ b/drivers/media/usb/dvb-usb-v2/af9035.c
+@@ -245,7 +245,8 @@ static int af9035_i2c_master_xfer(struct
+ 				dev_warn(&d->udev->dev,
+ 					 "%s: i2c xfer: len=%d is too big!\n",
+ 					 KBUILD_MODNAME, msg[0].len);
+-				return -EOPNOTSUPP;
++				ret = -EOPNOTSUPP;
++				goto unlock;
+ 			}
+ 			req.mbox |= ((msg[0].addr & 0x80)  >>  3);
+ 			buf[0] = msg[1].len;
+@@ -281,7 +282,8 @@ static int af9035_i2c_master_xfer(struct
+ 				dev_warn(&d->udev->dev,
+ 					 "%s: i2c xfer: len=%d is too big!\n",
+ 					 KBUILD_MODNAME, msg[0].len);
+-				return -EOPNOTSUPP;
++				ret = -EOPNOTSUPP;
++				goto unlock;
+ 			}
+ 			req.mbox |= ((msg[0].addr & 0x80)  >>  3);
+ 			buf[0] = msg[0].len;
+@@ -319,6 +321,7 @@ static int af9035_i2c_master_xfer(struct
+ 		ret = -EOPNOTSUPP;
+ 	}
  
- int __init dm_statistics_init(void)
- {
-+	shared_memory_amount = 0;
- 	dm_stat_need_rcu_barrier = 0;
- 	return 0;
- }
++unlock:
+ 	mutex_unlock(&d->i2c_mutex);
+ 
+ 	if (ret < 0)
 
 
