@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab3LRN2T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 08:28:19 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59361 "EHLO
+	id S1754584Ab3LRN2y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 08:28:54 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:59377 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754016Ab3LRN2R (ORCPT
+	with ESMTP id S1754066Ab3LRN2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 08:28:17 -0500
-Date: Wed, 18 Dec 2013 13:28:09 +0000
+	Wed, 18 Dec 2013 08:28:53 -0500
+Date: Wed, 18 Dec 2013 13:28:25 +0000
 From: Mark Brown <broonie@kernel.org>
 To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
@@ -25,20 +25,20 @@ Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         linux-kernel@vger.kernel.org,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>
-Message-ID: <20131218132809.GR28455@sirena.org.uk>
+Message-ID: <20131218132825.GS28455@sirena.org.uk>
 References: <1387286601-21646-1-git-send-email-k.kozlowski@samsung.com>
- <1387286601-21646-2-git-send-email-k.kozlowski@samsung.com>
+ <1387286601-21646-3-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5vb8QKeSi34BFwx0"
+	protocol="application/pgp-signature"; boundary="pE9oldV/ca00Larp"
 Content-Disposition: inline
-In-Reply-To: <1387286601-21646-2-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1387286601-21646-3-git-send-email-k.kozlowski@samsung.com>
 X-Cookie: Haste makes waste.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/5] regulator: s5m8767: Add symbols for hard-coded
- DVS_RAMP register
+Subject: Re: [PATCH 2/5] regulator: s5m8767: Do not use sec_reg* regmap
+ helpers
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -46,37 +46,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---5vb8QKeSi34BFwx0
+--pE9oldV/ca00Larp
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Dec 17, 2013 at 02:23:17PM +0100, Krzysztof Kozlowski wrote:
-> Add symbols for hard-coded values of BUCK_RAMP field in DVS_RAMP
-> register. This simplifies a little the code as register update is called
-> only once.
+On Tue, Dec 17, 2013 at 02:23:18PM +0100, Krzysztof Kozlowski wrote:
+> Replace calls to sec_reg* helpers with direct usage of regmap API. The
+> sec_reg* helpers are error-prone as they mix u8 with unsigned int and
+> order of some of parameters (val and mask in sec_reg_update()).
 
 Applied, thanks.
 
---5vb8QKeSi34BFwx0
+--pE9oldV/ca00Larp
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSsaLmAAoJELSic+t+oim9PJ0P/A5FpkftgxgfeHX7KGKDVG4p
-20yPxtXM99dcw5rnysyxafld6pck14DCq64TdZzuU3YMW/E8uDGa4uwTGjBdo66T
-0bfjT/GfbsASGVdben56iOlAgJd5XIiQVP59tiQ93HtASGwIfzPxZZ6YY/938qqZ
-aWf1IguwTZ9TpB3ceDrC/G0SKWl5rztklpbghi4u1jlsp3uBoljzZWc3z6dC7Asf
-2qHOio924DsefpglwAB4PEv2bOzGXRRwVa2i+IF9fu94mfVQZRt3EutKQ8kkBEsw
-eLghj3ssq/uyJieJdAjIapekeh8Ndj7SbryZXZap8ezu5Ywa5Iv7NdV3lbpbf/yk
-ix0u/vFiVp01gWDsEI8f6B/6hfM9z3JyfF+pXUlXIBnBmIJZmvCFRS1Gq3yobD8g
-2Y/X1U2CrHnJorX882yHbpiy5BoGXI9BpbYw/o+gsE7zu7HlCigS2qdLFbnr3gOZ
-SS5na7qJUeJjUtabLmr5Lluxs+rb/3hwNOLZG62KEQztAuGA+12LIpRdJCgy6tKp
-jJhdseLRGbUx4WPjKAgqrOd4zIcZC6AJpu1nz8v2ngPyGsHpIJmKa/WFbWmFwBv1
-7YF8s8KZmqU++GMvNF9EX9NbLubwhGk3fBIrZCFH9AUlsDC41IlKffv2p6ufg8fW
-6NbwYAF6+ffigZqpZ/kR
-=5vWZ
+iQIcBAEBAgAGBQJSsaL2AAoJELSic+t+oim9thgP/16aWfvcIBKLXdGUUVPsOkzP
+zlVmlFYk+VQmnIFysXfHBn7+ZkREAgCoNrW/LRM5lWB7961t8vWGLe6Y+4smzdvc
+e1kU57RRF8LyOVYhF2f9TuCGZ+D7t9Ofo4c5Q+5HP9jhMIEXw22vLYR+wMBnRsjs
+MllKRQFH2R9u0S9YkQnJng17iQ1GgNULE2TnHiWVR1LxfscUD5oJvld263Zw+iJE
+CiybZ8x3MTdyjlH7Rc2d2crkNAQ0426PK7ETYnwpZTQqTTHrJOcy/N5oTxv+IbEi
+LoktyvNzCMwM5MZ6Y6w3o3G041PVzMGETFWTc7aDOY0asXehPo0JQKSf59VXVQDz
+rbeB0GYYftSTJro2q77gWRq+lDDMDrX9UkyhKJJBP+5SAwA3ehtKwM5Aot5O/7r3
+lWmrPeUhjz/2s/tjUJhA6d2G4ODWMOQuuhTLm4e3qhFgaykzZ8z6+TD958S7GBZt
+03pAGd/lK1EqIduDFl/9qWfAuBrOvi9g+USDMVKe4aDUX8HQ5wacdP/gEN2ulZ4o
+Dt7+BhCCPu3y8Zp8DlERIf9an9JpwHo9adOhWDZZQRJX3H/kfbJ3Xd0QpwQ7cSUi
+ajDxDggYo6uEftVCYdIUKW/TN6Yd4DggdErCQ7aGbui3MrbcadhJJxmOX4CbG/JT
+VyxDFPDPxbAMJN4YYHE0
+=6ISc
 -----END PGP SIGNATURE-----
 
---5vb8QKeSi34BFwx0--
+--pE9oldV/ca00Larp--
