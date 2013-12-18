@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab3LRVIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:08:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35732 "EHLO
+	id S1752530Ab3LRVJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:09:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35785 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab3LRVIu (ORCPT
+	with ESMTP id S1752384Ab3LRVJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:08:50 -0500
+	Wed, 18 Dec 2013 16:09:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.4 12/31] usb: dwc3: fix implementation of endpoint wedge
-Date: Wed, 18 Dec 2013 13:08:20 -0800
-Message-Id: <20131218210523.141680542@linuxfoundation.org>
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH 3.4 03/31] ARM: pxa: tosa: fix keys mapping
+Date: Wed, 18 Dec 2013 13:08:11 -0800
+Message-Id: <20131218210522.888364679@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218210522.790152625@linuxfoundation.org>
 References: <20131218210522.790152625@linuxfoundation.org>
@@ -29,58 +30,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
-commit a535d81c92615b8ffb99b7e1fd1fb01effaed1af upstream.
+commit 506cac15ac86f204b83e3cfccde73eeb4e7c5f34 upstream.
 
-The dwc3 UDC driver doesn't implement endpoint wedging correctly.
-When an endpoint is wedged, the gadget driver should be allowed to
-clear the wedge by calling usb_ep_clear_halt().  Only the host is
-prevented from resetting the endpoint.
+When converting from tosa-keyboard driver to matrix keyboard, tosa keys
+received extra 1 column shift. Replace that with correct values to make
+keyboard work again.
 
-This patch fixes the implementation.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Pratyush Anand <pratyush.anand@st.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Fixes: f69a6548c9d5 ('[ARM] pxa/tosa: make use of the matrix keypad driver')
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/ep0.c    |    2 ++
- drivers/usb/dwc3/gadget.c |    5 +----
- 2 files changed, 3 insertions(+), 4 deletions(-)
+ arch/arm/mach-pxa/tosa.c |  102 +++++++++++++++++++++++------------------------
+ 1 file changed, 51 insertions(+), 51 deletions(-)
 
---- a/drivers/usb/dwc3/ep0.c
-+++ b/drivers/usb/dwc3/ep0.c
-@@ -380,6 +380,8 @@ static int dwc3_ep0_handle_feature(struc
- 			dep = dwc3_wIndex_to_dep(dwc, wIndex);
- 			if (!dep)
- 				return -EINVAL;
-+			if (set == 0 && (dep->flags & DWC3_EP_WEDGE))
-+				break;
- 			ret = __dwc3_gadget_ep_set_halt(dep, set);
- 			if (ret)
- 				return -EINVAL;
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1101,9 +1101,6 @@ int __dwc3_gadget_ep_set_halt(struct dwc
- 		else
- 			dep->flags |= DWC3_EP_STALL;
- 	} else {
--		if (dep->flags & DWC3_EP_WEDGE)
--			return 0;
--
- 		ret = dwc3_send_gadget_ep_cmd(dwc, dep->number,
- 			DWC3_DEPCMD_CLEARSTALL, &params);
- 		if (ret)
-@@ -1111,7 +1108,7 @@ int __dwc3_gadget_ep_set_halt(struct dwc
- 					value ? "set" : "clear",
- 					dep->name);
- 		else
--			dep->flags &= ~DWC3_EP_STALL;
-+			dep->flags &= ~(DWC3_EP_STALL | DWC3_EP_WEDGE);
- 	}
+--- a/arch/arm/mach-pxa/tosa.c
++++ b/arch/arm/mach-pxa/tosa.c
+@@ -424,57 +424,57 @@ static struct platform_device tosa_power
+  * Tosa Keyboard
+  */
+ static const uint32_t tosakbd_keymap[] = {
+-	KEY(0, 2, KEY_W),
+-	KEY(0, 6, KEY_K),
+-	KEY(0, 7, KEY_BACKSPACE),
+-	KEY(0, 8, KEY_P),
+-	KEY(1, 1, KEY_Q),
+-	KEY(1, 2, KEY_E),
+-	KEY(1, 3, KEY_T),
+-	KEY(1, 4, KEY_Y),
+-	KEY(1, 6, KEY_O),
+-	KEY(1, 7, KEY_I),
+-	KEY(1, 8, KEY_COMMA),
+-	KEY(2, 1, KEY_A),
+-	KEY(2, 2, KEY_D),
+-	KEY(2, 3, KEY_G),
+-	KEY(2, 4, KEY_U),
+-	KEY(2, 6, KEY_L),
+-	KEY(2, 7, KEY_ENTER),
+-	KEY(2, 8, KEY_DOT),
+-	KEY(3, 1, KEY_Z),
+-	KEY(3, 2, KEY_C),
+-	KEY(3, 3, KEY_V),
+-	KEY(3, 4, KEY_J),
+-	KEY(3, 5, TOSA_KEY_ADDRESSBOOK),
+-	KEY(3, 6, TOSA_KEY_CANCEL),
+-	KEY(3, 7, TOSA_KEY_CENTER),
+-	KEY(3, 8, TOSA_KEY_OK),
+-	KEY(3, 9, KEY_LEFTSHIFT),
+-	KEY(4, 1, KEY_S),
+-	KEY(4, 2, KEY_R),
+-	KEY(4, 3, KEY_B),
+-	KEY(4, 4, KEY_N),
+-	KEY(4, 5, TOSA_KEY_CALENDAR),
+-	KEY(4, 6, TOSA_KEY_HOMEPAGE),
+-	KEY(4, 7, KEY_LEFTCTRL),
+-	KEY(4, 8, TOSA_KEY_LIGHT),
+-	KEY(4, 10, KEY_RIGHTSHIFT),
+-	KEY(5, 1, KEY_TAB),
+-	KEY(5, 2, KEY_SLASH),
+-	KEY(5, 3, KEY_H),
+-	KEY(5, 4, KEY_M),
+-	KEY(5, 5, TOSA_KEY_MENU),
+-	KEY(5, 7, KEY_UP),
+-	KEY(5, 11, TOSA_KEY_FN),
+-	KEY(6, 1, KEY_X),
+-	KEY(6, 2, KEY_F),
+-	KEY(6, 3, KEY_SPACE),
+-	KEY(6, 4, KEY_APOSTROPHE),
+-	KEY(6, 5, TOSA_KEY_MAIL),
+-	KEY(6, 6, KEY_LEFT),
+-	KEY(6, 7, KEY_DOWN),
+-	KEY(6, 8, KEY_RIGHT),
++	KEY(0, 1, KEY_W),
++	KEY(0, 5, KEY_K),
++	KEY(0, 6, KEY_BACKSPACE),
++	KEY(0, 7, KEY_P),
++	KEY(1, 0, KEY_Q),
++	KEY(1, 1, KEY_E),
++	KEY(1, 2, KEY_T),
++	KEY(1, 3, KEY_Y),
++	KEY(1, 5, KEY_O),
++	KEY(1, 6, KEY_I),
++	KEY(1, 7, KEY_COMMA),
++	KEY(2, 0, KEY_A),
++	KEY(2, 1, KEY_D),
++	KEY(2, 2, KEY_G),
++	KEY(2, 3, KEY_U),
++	KEY(2, 5, KEY_L),
++	KEY(2, 6, KEY_ENTER),
++	KEY(2, 7, KEY_DOT),
++	KEY(3, 0, KEY_Z),
++	KEY(3, 1, KEY_C),
++	KEY(3, 2, KEY_V),
++	KEY(3, 3, KEY_J),
++	KEY(3, 4, TOSA_KEY_ADDRESSBOOK),
++	KEY(3, 5, TOSA_KEY_CANCEL),
++	KEY(3, 6, TOSA_KEY_CENTER),
++	KEY(3, 7, TOSA_KEY_OK),
++	KEY(3, 8, KEY_LEFTSHIFT),
++	KEY(4, 0, KEY_S),
++	KEY(4, 1, KEY_R),
++	KEY(4, 2, KEY_B),
++	KEY(4, 3, KEY_N),
++	KEY(4, 4, TOSA_KEY_CALENDAR),
++	KEY(4, 5, TOSA_KEY_HOMEPAGE),
++	KEY(4, 6, KEY_LEFTCTRL),
++	KEY(4, 7, TOSA_KEY_LIGHT),
++	KEY(4, 9, KEY_RIGHTSHIFT),
++	KEY(5, 0, KEY_TAB),
++	KEY(5, 1, KEY_SLASH),
++	KEY(5, 2, KEY_H),
++	KEY(5, 3, KEY_M),
++	KEY(5, 4, TOSA_KEY_MENU),
++	KEY(5, 6, KEY_UP),
++	KEY(5, 10, TOSA_KEY_FN),
++	KEY(6, 0, KEY_X),
++	KEY(6, 1, KEY_F),
++	KEY(6, 2, KEY_SPACE),
++	KEY(6, 3, KEY_APOSTROPHE),
++	KEY(6, 4, TOSA_KEY_MAIL),
++	KEY(6, 5, KEY_LEFT),
++	KEY(6, 6, KEY_DOWN),
++	KEY(6, 7, KEY_RIGHT),
+ };
  
- 	return ret;
+ static struct matrix_keymap_data tosakbd_keymap_data = {
 
 
