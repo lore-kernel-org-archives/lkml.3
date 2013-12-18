@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139Ab3LRVev (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:34:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36391 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894Ab3LRVNb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754030Ab3LRVNb (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 18 Dec 2013 16:13:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36325 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753715Ab3LRVNU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 16:13:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bob Copeland <me@bobcopeland.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.12 055/118] Revert "mac80211: allow disable power save in mesh"
-Date: Wed, 18 Dec 2013 13:11:32 -0800
-Message-Id: <20131218211221.023028144@linuxfoundation.org>
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH 3.12 008/118] ARM: pxa: tosa: fix keys mapping
+Date: Wed, 18 Dec 2013 13:10:45 -0800
+Message-Id: <20131218211219.701681211@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,45 +30,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Copeland <me@bobcopeland.com>
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
-commit 2d3db210860f1df099a35b1dd54cca35454e0361 upstream.
+commit 506cac15ac86f204b83e3cfccde73eeb4e7c5f34 upstream.
 
-This reverts commit ee1f668136b2fb6640ee2d54c2a525ea41f98211.
+When converting from tosa-keyboard driver to matrix keyboard, tosa keys
+received extra 1 column shift. Replace that with correct values to make
+keyboard work again.
 
-The aformentioned commit added a check to allow
-'iw wlan0 set power_save off' to work for mesh interfaces.
-
-However, this is problematic because it also allows
-'iw wlan0 set power_save on', which will crash in short order
-because all of the subsequent code manipulates sdata->u.mgd.
-
-The power-saving states for mesh interfaces can be manipulated
-through the mesh config, e.g:
-'iw wlan0 set mesh_param mesh_power_save=active' (which,
-despite the name, actualy disables power saving since the
-setting refers to the type of sleep the interface undergoes).
-
-Fixes: ee1f668136b2 ("mac80211: allow disable power save in mesh")
-Signed-off-by: Bob Copeland <me@bobcopeland.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Fixes: f69a6548c9d5 ('[ARM] pxa/tosa: make use of the matrix keypad driver')
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/cfg.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/arm/mach-pxa/tosa.c |  102 +++++++++++++++++++++++------------------------
+ 1 file changed, 51 insertions(+), 51 deletions(-)
 
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -2386,8 +2386,7 @@ static int ieee80211_set_power_mgmt(stru
- 	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
- 	struct ieee80211_local *local = wdev_priv(dev->ieee80211_ptr);
+--- a/arch/arm/mach-pxa/tosa.c
++++ b/arch/arm/mach-pxa/tosa.c
+@@ -425,57 +425,57 @@ static struct platform_device tosa_power
+  * Tosa Keyboard
+  */
+ static const uint32_t tosakbd_keymap[] = {
+-	KEY(0, 2, KEY_W),
+-	KEY(0, 6, KEY_K),
+-	KEY(0, 7, KEY_BACKSPACE),
+-	KEY(0, 8, KEY_P),
+-	KEY(1, 1, KEY_Q),
+-	KEY(1, 2, KEY_E),
+-	KEY(1, 3, KEY_T),
+-	KEY(1, 4, KEY_Y),
+-	KEY(1, 6, KEY_O),
+-	KEY(1, 7, KEY_I),
+-	KEY(1, 8, KEY_COMMA),
+-	KEY(2, 1, KEY_A),
+-	KEY(2, 2, KEY_D),
+-	KEY(2, 3, KEY_G),
+-	KEY(2, 4, KEY_U),
+-	KEY(2, 6, KEY_L),
+-	KEY(2, 7, KEY_ENTER),
+-	KEY(2, 8, KEY_DOT),
+-	KEY(3, 1, KEY_Z),
+-	KEY(3, 2, KEY_C),
+-	KEY(3, 3, KEY_V),
+-	KEY(3, 4, KEY_J),
+-	KEY(3, 5, TOSA_KEY_ADDRESSBOOK),
+-	KEY(3, 6, TOSA_KEY_CANCEL),
+-	KEY(3, 7, TOSA_KEY_CENTER),
+-	KEY(3, 8, TOSA_KEY_OK),
+-	KEY(3, 9, KEY_LEFTSHIFT),
+-	KEY(4, 1, KEY_S),
+-	KEY(4, 2, KEY_R),
+-	KEY(4, 3, KEY_B),
+-	KEY(4, 4, KEY_N),
+-	KEY(4, 5, TOSA_KEY_CALENDAR),
+-	KEY(4, 6, TOSA_KEY_HOMEPAGE),
+-	KEY(4, 7, KEY_LEFTCTRL),
+-	KEY(4, 8, TOSA_KEY_LIGHT),
+-	KEY(4, 10, KEY_RIGHTSHIFT),
+-	KEY(5, 1, KEY_TAB),
+-	KEY(5, 2, KEY_SLASH),
+-	KEY(5, 3, KEY_H),
+-	KEY(5, 4, KEY_M),
+-	KEY(5, 5, TOSA_KEY_MENU),
+-	KEY(5, 7, KEY_UP),
+-	KEY(5, 11, TOSA_KEY_FN),
+-	KEY(6, 1, KEY_X),
+-	KEY(6, 2, KEY_F),
+-	KEY(6, 3, KEY_SPACE),
+-	KEY(6, 4, KEY_APOSTROPHE),
+-	KEY(6, 5, TOSA_KEY_MAIL),
+-	KEY(6, 6, KEY_LEFT),
+-	KEY(6, 7, KEY_DOWN),
+-	KEY(6, 8, KEY_RIGHT),
++	KEY(0, 1, KEY_W),
++	KEY(0, 5, KEY_K),
++	KEY(0, 6, KEY_BACKSPACE),
++	KEY(0, 7, KEY_P),
++	KEY(1, 0, KEY_Q),
++	KEY(1, 1, KEY_E),
++	KEY(1, 2, KEY_T),
++	KEY(1, 3, KEY_Y),
++	KEY(1, 5, KEY_O),
++	KEY(1, 6, KEY_I),
++	KEY(1, 7, KEY_COMMA),
++	KEY(2, 0, KEY_A),
++	KEY(2, 1, KEY_D),
++	KEY(2, 2, KEY_G),
++	KEY(2, 3, KEY_U),
++	KEY(2, 5, KEY_L),
++	KEY(2, 6, KEY_ENTER),
++	KEY(2, 7, KEY_DOT),
++	KEY(3, 0, KEY_Z),
++	KEY(3, 1, KEY_C),
++	KEY(3, 2, KEY_V),
++	KEY(3, 3, KEY_J),
++	KEY(3, 4, TOSA_KEY_ADDRESSBOOK),
++	KEY(3, 5, TOSA_KEY_CANCEL),
++	KEY(3, 6, TOSA_KEY_CENTER),
++	KEY(3, 7, TOSA_KEY_OK),
++	KEY(3, 8, KEY_LEFTSHIFT),
++	KEY(4, 0, KEY_S),
++	KEY(4, 1, KEY_R),
++	KEY(4, 2, KEY_B),
++	KEY(4, 3, KEY_N),
++	KEY(4, 4, TOSA_KEY_CALENDAR),
++	KEY(4, 5, TOSA_KEY_HOMEPAGE),
++	KEY(4, 6, KEY_LEFTCTRL),
++	KEY(4, 7, TOSA_KEY_LIGHT),
++	KEY(4, 9, KEY_RIGHTSHIFT),
++	KEY(5, 0, KEY_TAB),
++	KEY(5, 1, KEY_SLASH),
++	KEY(5, 2, KEY_H),
++	KEY(5, 3, KEY_M),
++	KEY(5, 4, TOSA_KEY_MENU),
++	KEY(5, 6, KEY_UP),
++	KEY(5, 10, TOSA_KEY_FN),
++	KEY(6, 0, KEY_X),
++	KEY(6, 1, KEY_F),
++	KEY(6, 2, KEY_SPACE),
++	KEY(6, 3, KEY_APOSTROPHE),
++	KEY(6, 4, TOSA_KEY_MAIL),
++	KEY(6, 5, KEY_LEFT),
++	KEY(6, 6, KEY_DOWN),
++	KEY(6, 7, KEY_RIGHT),
+ };
  
--	if (sdata->vif.type != NL80211_IFTYPE_STATION &&
--	    sdata->vif.type != NL80211_IFTYPE_MESH_POINT)
-+	if (sdata->vif.type != NL80211_IFTYPE_STATION)
- 		return -EOPNOTSUPP;
- 
- 	if (!(local->hw.flags & IEEE80211_HW_SUPPORTS_PS))
+ static struct matrix_keymap_data tosakbd_keymap_data = {
 
 
