@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab3LRRTY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 12:19:24 -0500
-Received: from mga02.intel.com ([134.134.136.20]:16686 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751718Ab3LRRTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 12:19:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,508,1384329600"; 
-   d="scan'208";a="426725941"
-Date: Wed, 18 Dec 2013 21:41:07 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Alexander Popov <a13xp0p0v88@gmail.com>
-Cc: Gerhard Sittig <gsi@denx.de>, Dan Williams <dan.j.williams@intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
-        Anatolij Gustschin <agust@denx.de>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] dmaengine: fix incorrect kernel-doc comment for
- struct dma_slave_config
-Message-ID: <20131218161107.GI16227@intel.com>
-References: <1387181537-3254-1-git-send-email-a13xp0p0v88@gmail.com>
+	id S1755017Ab3LRRUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 12:20:50 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:54581 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001Ab3LRRUt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 12:20:49 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Subject: Re: [PATCH] watchdog: mach-moxart: add restart handler
+Date: Wed, 18 Dec 2013 18:20:39 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-watchdog@vger.kernel.org, wim@iguana.be,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, linux@roeck-us.net
+References: <1387379883-16525-1-git-send-email-jonas.jensen@gmail.com>
+In-Reply-To: <1387379883-16525-1-git-send-email-jonas.jensen@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387181537-3254-1-git-send-email-a13xp0p0v88@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312181820.39639.arnd@arndb.de>
+X-Provags-ID: V02:K0:5lBtpWiFcvw4F8whZaf2GsN/qb2NTXSjfLmcDD7JuoP
+ UtL6zLB10lpcmiVZYYVSEhsOOtpgry886b//0IUaO0PE1kxG6v
+ LTqXCbTyrJXr3aPMX8/bhPoea9+UTBrDnQxnR2BeVVsW3RbHq/
+ GvM1DzF4/mczCW+L1/nguItizIDwRZsil2fUFx7WBphCwmBBm3
+ dfDyixm+3oYXXg3av/fJYJ4dfJnWZygHhd5JGOZGyfRVqLEX0x
+ vXTBJb1mjs2ynHiMd1DCOuTwlYxJ9VW76AjIczt6Fpi+FKN4bi
+ NohtNnn3ErX5u9htrBrXzkjWE8zbvUSKPYa1HVhpUZDFrRdQ82
+ fPiGNRCME8rdULncOM9A=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 12:12:17PM +0400, Alexander Popov wrote:
-> The 'direction' member of 'struct dma_slave_config' is of data
-> type 'enum dma_transfer_direction', so update the kernel-doc comment
-> for 'struct dma_slave_config' to refer to appropriate values.
+On Wednesday 18 December 2013, Jonas Jensen wrote:
+> mach-moxart lacks a separate register for reset; as a workaround,
+> add a function that can be hooked to arm_pm_restart.
 > 
-> Signed-off-by: Alexander Popov <a13xp0p0v88@gmail.com>
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 
-Applied, thanks
-
---
-~Vinod
-
-> ---
->  include/linux/dmaengine.h | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> index 41cf0c3..bd6b882 100644
-> --- a/include/linux/dmaengine.h
-> +++ b/include/linux/dmaengine.h
-> @@ -305,9 +305,8 @@ enum dma_slave_buswidth {
->  /**
->   * struct dma_slave_config - dma slave channel runtime config
->   * @direction: whether the data shall go in or out on this slave
-> - * channel, right now. DMA_TO_DEVICE and DMA_FROM_DEVICE are
-> - * legal values, DMA_BIDIRECTIONAL is not acceptable since we
-> - * need to differentiate source and target addresses.
-> + * channel, right now. DMA_MEM_TO_DEV and DMA_DEV_TO_MEM are
-> + * legal values.
->   * @src_addr: this is the physical address where DMA slave data
->   * should be read (RX), if the source is memory this argument is
->   * ignored.
-> -- 
-> 1.8.4.2
-> 
-
--- 
+Acked-by: Arnd Bergmann <arnd@arndb.de>
