@@ -1,193 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab3LRPL2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 10:11:28 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22164 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755110Ab3LRPL1 (ORCPT
+	id S1755342Ab3LRPMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 10:12:23 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49227 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754959Ab3LRPMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 10:11:27 -0500
-Date: Wed, 18 Dec 2013 10:10:15 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        mukesh.rathor@oracle.com, jbeulich@suse.com
-Subject: Re: [Xen-devel] [PATCH v11 08/12] xen/pvh: MMU changes for PVH
-Message-ID: <20131218151015.GE4934@phenom.dumpdata.com>
-References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
- <1387313503-31362-9-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.02.1312181442050.8667@kaball.uk.xensource.com>
+	Wed, 18 Dec 2013 10:12:22 -0500
+Date: Wed, 18 Dec 2013 16:11:58 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        John Stultz <john.stultz@linaro.org>, Alex Shi <alex.shi@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 05/13] rcu: Fix unraised IPI to timekeeping CPU
+Message-ID: <20131218151158.GV21999@twins.programming.kicks-ass.net>
+References: <1387320692-28460-1-git-send-email-fweisbec@gmail.com>
+ <1387320692-28460-6-git-send-email-fweisbec@gmail.com>
+ <20131217232100.GC19211@linux.vnet.ibm.com>
+ <20131218141348.GA18464@localhost.localdomain>
+ <20131218142240.GP19211@linux.vnet.ibm.com>
+ <20131218145610.GE18464@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312181442050.8667@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20131218145610.GE18464@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 02:48:38PM +0000, Stefano Stabellini wrote:
-> On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> > From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > 
-> > .. which are surprinsingly small compared to the amount for PV code.
-> > 
-> > PVH uses mostly native mmu ops, we leave the generic (native_*) for
-> > the majority and just overwrite the baremetal with the ones we need.
-> > 
-> > We also optimize one - the TLB flush. The native operation would
-> > needlessly IPI offline VCPUs causing extra wakeups. Using the
-> > Xen one avoids that and lets the hypervisor determine which
-> > VCPU needs the TLB flush.
-> > 
-> > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  arch/x86/xen/mmu.c | 35 +++++++++++++++++++++++++++++++----
-> >  1 file changed, 31 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> > index ce563be..77b7622 100644
-> > --- a/arch/x86/xen/mmu.c
-> > +++ b/arch/x86/xen/mmu.c
-> > @@ -74,6 +74,7 @@
-> >  #include <xen/interface/version.h>
-> >  #include <xen/interface/memory.h>
-> >  #include <xen/hvc-console.h>
-> > +#include <xen/balloon.h>
-> >  
-> >  #include "multicalls.h"
-> >  #include "mmu.h"
-> > @@ -1207,6 +1208,8 @@ static void __init xen_pagetable_init(void)
-> >  #endif
-> >  	paging_init();
-> >  	xen_setup_shared_info();
-> > +	if (xen_feature(XENFEAT_auto_translated_physmap))
-> > +		return;
-> >  #ifdef CONFIG_X86_64
-> >  	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
-> >  		unsigned long new_mfn_list;
-> 
-> At the very least you should remove the second
-> XENFEAT_auto_translated_physmap check.  Also xen_setup_shared_info
-> contains yet another XENFEAT_auto_translated_physmap check. Maybe we
-> could refactor the code a bit to look nicer. Having a separate
-> xen_pagetable_init function for PVH could help.
+On Wed, Dec 18, 2013 at 03:56:12PM +0100, Frederic Weisbecker wrote:
+> Because scheduler_ipi() conditionally calls irq_enter() and irq_exit()
+> (I wonder if that's a good idea btw, is that here to deal with spurious
+> scheduler IPIs of some sort?)
 
-Right, that would be much nicer.
-> 
-> 
-> > @@ -1556,6 +1559,10 @@ static void __init xen_set_pte_init(pte_t *ptep, pte_t pte)
-> >  static void pin_pagetable_pfn(unsigned cmd, unsigned long pfn)
-> >  {
-> >  	struct mmuext_op op;
-> > +
-> > +	if (xen_feature(XENFEAT_writable_page_tables))
-> > +		return;
-> > +
-> >  	op.cmd = cmd;
-> >  	op.arg1.mfn = pfn_to_mfn(pfn);
-> >  	if (HYPERVISOR_mmuext_op(&op, 1, NULL, DOMID_SELF))
-> 
-> Why do we need this? I thought that all the callers of pin_pagetable_pfn
-> are not actually enabled on PVH.
+No its because the traditional scheduler IPI did all the work from the
+interrupt return path -- and like the comment in there says, for many of
+the IPIs that's still true.
 
-We still call xen_setup_kernel_pagetable.
-> 
-> 
-> > @@ -1753,6 +1760,10 @@ static void set_page_prot_flags(void *addr, pgprot_t prot, unsigned long flags)
-> >  	unsigned long pfn = __pa(addr) >> PAGE_SHIFT;
-> >  	pte_t pte = pfn_pte(pfn, prot);
-> >  
-> > +	/* recall for PVH, page tables are native. */
-> > +	if (xen_feature(XENFEAT_auto_translated_physmap))
-> > +		return;
-> > +
-> >  	if (HYPERVISOR_update_va_mapping((unsigned long)addr, pte, flags))
-> >  		BUG();
-> >  }
-> 
-> This one too. Is it because we are reusing xen_setup_kernel_pagetable on
-> PVH?
-
-Yup.
-> 
-> 
-> > @@ -1834,6 +1845,9 @@ static void convert_pfn_mfn(void *v)
-> >  	pte_t *pte = v;
-> >  	int i;
-> >  
-> > +	if (xen_feature(XENFEAT_auto_translated_physmap))
-> > +		return;
-> > +
-> >  	/* All levels are converted the same way, so just treat them
-> >  	   as ptes. */
-> >  	for (i = 0; i < PTRS_PER_PTE; i++)
-> 
-> This is getting pretty bad.
-> Can we find a way to refactor xen_setup_kernel_pagetable so that we
-> don't need all this? Maybe we need a new function?
-
-Is it that bad? Doing a copy of xen_setup_kernel_pagetable just
-for PVH strikes me as error prone. Having the checks in the
-functions that xen_setup_kernel_pagetable is much easier and
-nicer I think.
-
-Maybe if we did a big 'if (xen_feature(XEN..)' inside of
-xen_setup_kernel_pagetable that would be easier?
-
-> 
-> 
-> > @@ -1863,6 +1877,7 @@ static void __init check_pt_base(unsigned long *pt_base, unsigned long *pt_end,
-> >   * but that's enough to get __va working.  We need to fill in the rest
-> >   * of the physical mapping once some sort of allocator has been set
-> >   * up.
-> > + * NOTE: for PVH, the page tables are native.
-> >   */
-> >  void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
-> >  {
-> > @@ -1940,10 +1955,13 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
-> >  	 * structure to attach it to, so make sure we just set kernel
-> >  	 * pgd.
-> >  	 */
-> > -	xen_mc_batch();
-> > -	__xen_write_cr3(true, __pa(init_level4_pgt));
-> > -	xen_mc_issue(PARAVIRT_LAZY_CPU);
-> > -
-> > +	if (xen_feature(XENFEAT_writable_page_tables)) {
-> > +		native_write_cr3(__pa(init_level4_pgt));
-> > +	} else {
-> > +		xen_mc_batch();
-> > +		__xen_write_cr3(true, __pa(init_level4_pgt));
-> > +		xen_mc_issue(PARAVIRT_LAZY_CPU);
-> > +	}
-> >  	/* We can't that easily rip out L3 and L2, as the Xen pagetables are
-> >  	 * set out this way: [L4], [L1], [L2], [L3], [L1], [L1] ...  for
-> >  	 * the initial domain. For guests using the toolstack, they are in:
-> > @@ -2207,6 +2225,15 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
-> >  void __init xen_init_mmu_ops(void)
-> >  {
-> >  	x86_init.paging.pagetable_init = xen_pagetable_init;
-> > +
-> > +	/* Optimization - we can use the HVM one but it has no idea which
-> > +	 * VCPUs are descheduled - which means that it will needlessly IPI
-> > +	 * them. Xen knows so let it do the job.
-> > +	 */
-> > +	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-> > +		pv_mmu_ops.flush_tlb_others = xen_flush_tlb_others;
-> > +		return;
-> > +	}
-> >  	pv_mmu_ops = xen_mmu_ops;
-> >  
-> >  	memset(dummy_mapping, 0xff, PAGE_SIZE);
-> > -- 
-> > 1.8.3.1
-> > 
-> > 
-> > _______________________________________________
-> > Xen-devel mailing list
-> > Xen-devel@lists.xen.org
-> > http://lists.xen.org/xen-devel
-> > 
+So going through the architectures and making all scheduler_ipi callers
+do irq_enter/exit would actually make them slower.
