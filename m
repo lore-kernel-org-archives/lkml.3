@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab3LRPvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 10:51:52 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.150]:32827 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755142Ab3LRPvu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 10:51:50 -0500
-X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Dec 2013 10:51:49 EST
-X-Env-Sender: anthony.olech.opensource@diasemi.com
-X-Msg-Ref: server-9.tower-180.messagelabs.com!1387381533!28270216!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-To: Jean Delvare <khali@linux-fr.org>,
-        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-CC: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:HARDWARE MONITORING" <lm-sensors@lm-sensors.org>
-Subject: RE: [lm-sensors] [PATCH V1] fix adc to voltage calculation in
- da9052  power driver
-Thread-Topic: [lm-sensors] [PATCH V1] fix adc to voltage calculation in
- da9052  power driver
-Thread-Index: AQHO/AZpFQ5cD64o6Uubym1FfuDMzJpaFb4w
-Date: Wed, 18 Dec 2013 15:45:32 +0000
-Message-ID: <24DF37198A1E704D9811D8F72B87EB51847ABF61@NB-EX-MBX02.diasemi.com>
-References: <201312181524.rBIFOv96017094@swsrvapps-02.lan>
- <20131218163234.714a166c@endymion.delvare>
-In-Reply-To: <20131218163234.714a166c@endymion.delvare>
-Accept-Language: en-GB, de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.24.126]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755552Ab3LRPv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 10:51:58 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:18837 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755118Ab3LRPvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 10:51:55 -0500
+X-AuditID: cbfec7f5-b7f6f6d000005b3b-57-52b1c49949e3
+From: Tomasz Figa <t.figa@samsung.com>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-pm@vger.kernel.org, naveenkrishna.ch@gmail.com, rui.zhang@intel.com,
+        eduardo.valentin@ti.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
+        kgene.kim@samsung.com, devicetree@vger.kernel.org,
+        b.zolnierkie@samsung.com, cpgs@samsung.com
+Subject: Re: [PATCH v11 2/4] thermal: samsung: change base_common to more
+ meaningful base_second
+Date: Wed, 18 Dec 2013 16:51:37 +0100
+Message-id: <2079238.D0LMFQmTKa@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11.3 (Linux/3.11.5-gentoo; KDE/4.11.3; x86_64; ; )
+In-reply-to: <1386657716-21572-1-git-send-email-ch.naveen@samsung.com>
+References: <1378268629-2886-2-git-send-email-ch.naveen@samsung.com>
+ <1386657716-21572-1-git-send-email-ch.naveen@samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t/xa7ozj2wMMth0h9Oi4WqIxcYZ61kt
+	7j4/zGjx8pCmxfwj51gt1uz/yWTRu+Aqm8XlXXPYLD73HmG0mHF+H5PFom3/mS2ePOxjc+Dx
+	2DnrLrvH4j0vmTz6tqxi9Dh+YzuTx+dNcgGsUVw2Kak5mWWpRfp2CVwZZz8fYCuYw1nxf/px
+	pgbGWexdjJwcEgImEldmHGGFsMUkLtxbz9bFyMUhJLCUUeLFvw4mkISQQBeTxPZZViA2m4Ca
+	xOeGR2wgtghQ8/FXZ9hBGpgFljJJzF+2iLmLkYNDWCBJYsFbF5AaFgFViZudr8HqeQU0JX60
+	rmIBsfkF1CXebXsKNl9UwE3ixb4tYAdxAtlTjnyGOqKBUeL+jZuMEM2CEj8m3wNrZhaQl9i3
+	fyorhK0lsX7ncaYJjIKzkJTNQlI2C0nZAkbmVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxgh
+	0fJ1B+PSY1aHGAU4GJV4eBf4bAwSYk0sK67MPcQowcGsJMIrtBUoxJuSWFmVWpQfX1Sak1p8
+	iJGJg1OqgdH11eEQIz7V/z/zv8o/XPUv5f4eE5dv2T3fuo4uOyVmde9V3Nt9W5gN+7Ydf613
+	eWvYJbOs9D+P/+Q8EeTct/FOfOG+xKxVLTlrLPYc2806pWXJRvmVd6uvlZluEFwbEqR5asI8
+	RpGjT1vcOtyuXZrxNWnNRkWX1Es2+VW3njyIP/bMv672ZKC1EktxRqKhFnNRcSIAzqXZbnQC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jean Delvare [mailto:khali@linux-fr.org]
-> Sent: 18 December 2013 15:33
-> To: Opensource [Anthony Olech]
-> Cc: Anton Vorontsov; David Woodhouse; David Dajun Chen; open list; open
-> list:HARDWARE MONITORING
-> Subject: Re: [lm-sensors] [PATCH V1] fix adc to voltage calculation in da9052
-> power driver
-> On Wed, 18 Dec 2013 15:21:13 +0000, Anthony Olech wrote:
-> > The ADC resolution of the PMIC is 10-bits, this means that the maximum
-> > possible value is 1023 and not the 1024 as in the code.
-> The conversion from register value to mV depends on the ADC's LSB, not its
-> range. So the maximum value which can be represented is irrelevant.
+On Tuesday 10 of December 2013 12:11:56 Naveen Krishna Chatradhi wrote:
+> On Exynos5440 and Exynos5420 there are registers common
+> across the TMU channels.
+> 
+> To support that, we introduced a ADDRESS_MULTIPLE flag in the
+> driver and the 2nd set of register base and size are provided
+> in the "reg" property of the node.
+> 
+> As per Amit's suggestion, this patch changes the base_common
+> to base_second and SHARED_MEMORY to ADDRESS_MULTIPLE.
+> 
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> ---
+> Changes since v10:
+> Documentation rephrased as per comments from Tomasz Figa
+> 
+>  .../devicetree/bindings/thermal/exynos-thermal.txt       |    4 ++--
+>  drivers/thermal/samsung/exynos_tmu.c                     |   14 +++++++-------
+>  drivers/thermal/samsung/exynos_tmu.h                     |    4 ++--
+>  drivers/thermal/samsung/exynos_tmu_data.c                |    2 +-
+>  4 files changed, 12 insertions(+), 12 deletions(-)
 
-thanks for the speedy response, but the converted value returned by the function
-does depend on the scaling.
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
-For example take the two cases where value in 0x1F0, then the erroneous previous
-calculation yields 3469 and the new corrected calculation yields 3470
+Best regards,
+Tomasz
 
-So please apply the patch as it truly fixes an error.
-
-many thanks
-
-Tony Olech
-
-> > Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
-> > ---
-> > This patch is relative to linux-next repository tag next-20131218
-> >  drivers/power/da9052-battery.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > diff --git a/drivers/power/da9052-battery.c
-> > b/drivers/power/da9052-battery.c index f8f4c0f..8f0f259 100644
-> > --- a/drivers/power/da9052-battery.c
-> > +++ b/drivers/power/da9052-battery.c
-> > @@ -178,7 +178,7 @@ struct da9052_battery {
-> >  static inline int volt_reg_to_mV(int value)  {
-> > -	return ((value * 1000) / 512) + 2500;
-> > +	return DIV_ROUND_CLOSEST(value * 2000, 1023) + 2500;
-> >  }
-> >  static inline int ichg_reg_to_mA(int value)
-> --
-> Jean Delvare
