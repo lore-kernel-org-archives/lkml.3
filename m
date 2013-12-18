@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab3LRVpz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:45:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36276 "EHLO
+	id S1753727Ab3LRVNG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:13:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36248 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753669Ab3LRVNH (ORCPT
+	with ESMTP id S1753669Ab3LRVNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:13:07 -0500
+	Wed, 18 Dec 2013 16:13:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Dave Chinner <dchinner@redhat.com>, Ben Myers <bpm@sgi.com>
-Subject: [PATCH 3.12 025/118] xfs: underflow bug in xfs_attrlist_by_handle()
-Date: Wed, 18 Dec 2013 13:11:02 -0800
-Message-Id: <20131218211220.190758921@linuxfoundation.org>
+        Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 003/118] ALSA: compress: Fix 64bit ABI incompatibility
+Date: Wed, 18 Dec 2013 13:10:40 -0800
+Message-Id: <20131218211219.562272162@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -30,50 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 31978b5cc66b8ba8a7e8eef60b12395d41b7b890 upstream.
+commit 6733cf572a9e20db2b7580a5dd39d5782d571eec upstream.
 
-If we allocate less than sizeof(struct attrlist) then we end up
-corrupting memory or doing a ZERO_PTR_SIZE dereference.
+snd_pcm_uframes_t is defined as unsigned long so it would take
+different sizes depending on 32 or 64bit architectures.  As we don't
+want this ABI incompatibility, and there is no real 64bit user yet,
+let's make it the fixed size with __u32.
 
-This can only be triggered with CAP_SYS_ADMIN.
+Also bump the protocol version number to 0.1.2.
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_ioctl.c   |    3 ++-
- fs/xfs/xfs_ioctl32.c |    3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ include/uapi/sound/compress_offload.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/xfs/xfs_ioctl.c
-+++ b/fs/xfs/xfs_ioctl.c
-@@ -443,7 +443,8 @@ xfs_attrlist_by_handle(
- 		return -XFS_ERROR(EPERM);
- 	if (copy_from_user(&al_hreq, arg, sizeof(xfs_fsop_attrlist_handlereq_t)))
- 		return -XFS_ERROR(EFAULT);
--	if (al_hreq.buflen > XATTR_LIST_MAX)
-+	if (al_hreq.buflen < sizeof(struct attrlist) ||
-+	    al_hreq.buflen > XATTR_LIST_MAX)
- 		return -XFS_ERROR(EINVAL);
+--- a/include/uapi/sound/compress_offload.h
++++ b/include/uapi/sound/compress_offload.h
+@@ -30,7 +30,7 @@
+ #include <sound/compress_params.h>
  
- 	/*
---- a/fs/xfs/xfs_ioctl32.c
-+++ b/fs/xfs/xfs_ioctl32.c
-@@ -357,7 +357,8 @@ xfs_compat_attrlist_by_handle(
- 	if (copy_from_user(&al_hreq, arg,
- 			   sizeof(compat_xfs_fsop_attrlist_handlereq_t)))
- 		return -XFS_ERROR(EFAULT);
--	if (al_hreq.buflen > XATTR_LIST_MAX)
-+	if (al_hreq.buflen < sizeof(struct attrlist) ||
-+	    al_hreq.buflen > XATTR_LIST_MAX)
- 		return -XFS_ERROR(EINVAL);
  
- 	/*
+-#define SNDRV_COMPRESS_VERSION SNDRV_PROTOCOL_VERSION(0, 1, 1)
++#define SNDRV_COMPRESS_VERSION SNDRV_PROTOCOL_VERSION(0, 1, 2)
+ /**
+  * struct snd_compressed_buffer: compressed buffer
+  * @fragment_size: size of buffer fragment in bytes
+@@ -67,8 +67,8 @@ struct snd_compr_params {
+ struct snd_compr_tstamp {
+ 	__u32 byte_offset;
+ 	__u32 copied_total;
+-	snd_pcm_uframes_t pcm_frames;
+-	snd_pcm_uframes_t pcm_io_frames;
++	__u32 pcm_frames;
++	__u32 pcm_io_frames;
+ 	__u32 sampling_rate;
+ };
+ 
 
 
