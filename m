@@ -1,291 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab3LRRlJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 12:41:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60264 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752104Ab3LRRlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 12:41:07 -0500
-Date: Wed, 18 Dec 2013 18:41:05 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
+	id S1755380Ab3LRRl0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 12:41:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33701 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755227Ab3LRRlY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 12:41:24 -0500
+Date: Wed, 18 Dec 2013 09:41:26 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/6] memcg, slab: check and init memcg_cahes under
- slab_mutex
-Message-ID: <20131218174105.GE31080@dhcp22.suse.cz>
-References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
- <afc6d5e85d805c7313e928497b4ebcf1815703dd.1387372122.git.vdavydov@parallels.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Driver core / sysfs fixes for 3.13-rc5
+Message-ID: <20131218174126.GA32489@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <afc6d5e85d805c7313e928497b4ebcf1815703dd.1387372122.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 18-12-13 17:16:55, Vladimir Davydov wrote:
-> The memcg_params::memcg_caches array can be updated concurrently from
-> memcg_update_cache_size() and memcg_create_kmem_cache(). Although both
-> of these functions take the slab_mutex during their operation, the
-> latter checks if memcg's cache has already been allocated w/o taking the
-> mutex. This can result in a race as described below.
-> 
-> Asume two threads schedule kmem_cache creation works for the same
-> kmem_cache of the same memcg from __memcg_kmem_get_cache(). One of the
-> works successfully creates it. Another work should fail then, but if it
-> interleaves with memcg_update_cache_size() as follows, it does not:
+The following changes since commit 374b105797c3d4f29c685f3be535c35f5689b30e:
 
-I am not sure I understand the race. memcg_update_cache_size is called
-when we start accounting a new memcg or a child is created and it
-inherits accounting from the parent. memcg_create_kmem_cache is called
-when a new cache is first allocated from, right?
+  Linux 3.13-rc3 (2013-12-06 09:34:04 -0800)
 
-Why cannot we simply take slab_mutex inside memcg_create_kmem_cache?
-it is running from the workqueue context so it should clash with other
-locks.
+are available in the git repository at:
 
-> 
->   memcg_create_kmem_cache()                     memcg_update_cache_size()
->   (called w/o mutexes held)                     (called with slab_mutex held)
->   -------------------------                     -------------------------
->   mutex_lock(&memcg_cache_mutex)
->                                                 s->memcg_params=kzalloc(...)
->   new_cachep=cache_from_memcg_idx(cachep,idx)
->   // new_cachep==NULL => proceed to creation
->                                                 s->memcg_params->memcg_caches[i]
->                                                     =cur_params->memcg_caches[i]
->   // kmem_cache_dup takes slab_mutex so we will
->   // hang around here until memcg_update_cache_size()
->   // finishes, but ...
->   new_cachep = kmem_cache_dup(memcg, cachep)
->   // nothing will prevent kmem_cache_dup from
->   // succeeding so ...
->   cachep->memcg_params->memcg_caches[idx]=new_cachep
->   // we've overwritten an existing cache ptr!
-> 
-> Let's fix this by moving both the check and the update of
-> memcg_params::memcg_caches from memcg_create_kmem_cache() to
-> kmem_cache_create_memcg() to be called under the slab_mutex.
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Glauber Costa <glommer@gmail.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  include/linux/memcontrol.h |    9 ++--
->  mm/memcontrol.c            |   98 +++++++++++++++-----------------------------
->  mm/slab_common.c           |    8 +++-
->  3 files changed, 44 insertions(+), 71 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index b357ae3..fdd3f30 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -500,8 +500,8 @@ int memcg_cache_id(struct mem_cgroup *memcg);
->  int memcg_init_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
->  			    struct kmem_cache *root_cache);
->  void memcg_free_cache_params(struct kmem_cache *s);
-> -void memcg_release_cache(struct kmem_cache *cachep);
-> -void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep);
-> +void memcg_register_cache(struct kmem_cache *s);
-> +void memcg_release_cache(struct kmem_cache *s);
->  
->  int memcg_update_cache_size(struct kmem_cache *s, int num_groups);
->  void memcg_update_array_size(int num_groups);
-> @@ -652,12 +652,11 @@ static inline void memcg_free_cache_params(struct kmem_cache *s);
->  {
->  }
->  
-> -static inline void memcg_release_cache(struct kmem_cache *cachep)
-> +static inline void memcg_register_cache(struct kmem_cache *s)
->  {
->  }
->  
-> -static inline void memcg_cache_list_add(struct mem_cgroup *memcg,
-> -					struct kmem_cache *s)
-> +static inline void memcg_release_cache(struct kmem_cache *s)
->  {
->  }
->  
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index e37fdb5..62b9991 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3059,16 +3059,6 @@ static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
->  		css_put(&memcg->css);
->  }
->  
-> -void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
-> -{
-> -	if (!memcg)
-> -		return;
-> -
-> -	mutex_lock(&memcg->slab_caches_mutex);
-> -	list_add(&cachep->memcg_params->list, &memcg->memcg_slab_caches);
-> -	mutex_unlock(&memcg->slab_caches_mutex);
-> -}
-> -
->  /*
->   * helper for acessing a memcg's index. It will be used as an index in the
->   * child cache array in kmem_cache, and also to derive its name. This function
-> @@ -3229,6 +3219,35 @@ void memcg_free_cache_params(struct kmem_cache *s)
->  	kfree(s->memcg_params);
->  }
->  
-> +void memcg_register_cache(struct kmem_cache *s)
-> +{
-> +	struct kmem_cache *root;
-> +	struct mem_cgroup *memcg;
-> +	int id;
-> +
-> +	if (is_root_cache(s))
-> +		return;
-> +
-> +	memcg = s->memcg_params->memcg;
-> +	id = memcg_cache_id(memcg);
-> +	root = s->memcg_params->root_cache;
-> +
-> +	css_get(&memcg->css);
-> +
-> +	/*
-> +	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
-> +	 * barrier here to ensure nobody will see the kmem_cache partially
-> +	 * initialized.
-> +	 */
-> +	smp_wmb();
-> +
-> +	root->memcg_params->memcg_caches[id] = s;
-> +
-> +	mutex_lock(&memcg->slab_caches_mutex);
-> +	list_add(&s->memcg_params->list, &memcg->memcg_slab_caches);
-> +	mutex_unlock(&memcg->slab_caches_mutex);
-> +}
-> +
->  void memcg_release_cache(struct kmem_cache *s)
->  {
->  	struct kmem_cache *root;
-> @@ -3356,26 +3375,13 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
->  	schedule_work(&cachep->memcg_params->destroy);
->  }
->  
-> -/*
-> - * This lock protects updaters, not readers. We want readers to be as fast as
-> - * they can, and they will either see NULL or a valid cache value. Our model
-> - * allow them to see NULL, in which case the root memcg will be selected.
-> - *
-> - * We need this lock because multiple allocations to the same cache from a non
-> - * will span more than one worker. Only one of them can create the cache.
-> - */
-> -static DEFINE_MUTEX(memcg_cache_mutex);
-> -
-> -/*
-> - * Called with memcg_cache_mutex held
-> - */
-> -static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
-> -					 struct kmem_cache *s)
-> +static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
-> +						  struct kmem_cache *s)
->  {
->  	struct kmem_cache *new;
->  	static char *tmp_name = NULL;
->  
-> -	lockdep_assert_held(&memcg_cache_mutex);
-> +	BUG_ON(!memcg_can_account_kmem(memcg));
->  
->  	/*
->  	 * kmem_cache_create_memcg duplicates the given name and
-> @@ -3403,45 +3409,6 @@ static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
->  	return new;
->  }
->  
-> -static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
-> -						  struct kmem_cache *cachep)
-> -{
-> -	struct kmem_cache *new_cachep;
-> -	int idx;
-> -
-> -	BUG_ON(!memcg_can_account_kmem(memcg));
-> -
-> -	idx = memcg_cache_id(memcg);
-> -
-> -	mutex_lock(&memcg_cache_mutex);
-> -	new_cachep = cache_from_memcg_idx(cachep, idx);
-> -	if (new_cachep) {
-> -		css_put(&memcg->css);
-> -		goto out;
-> -	}
-> -
-> -	new_cachep = kmem_cache_dup(memcg, cachep);
-> -	if (new_cachep == NULL) {
-> -		new_cachep = cachep;
-> -		css_put(&memcg->css);
-> -		goto out;
-> -	}
-> -
-> -	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
-> -
-> -	/*
-> -	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
-> -	 * barrier here to ensure nobody will see the kmem_cache partially
-> -	 * initialized.
-> -	 */
-> -	smp_wmb();
-> -
-> -	cachep->memcg_params->memcg_caches[idx] = new_cachep;
-> -out:
-> -	mutex_unlock(&memcg_cache_mutex);
-> -	return new_cachep;
-> -}
-> -
->  void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
->  {
->  	struct kmem_cache *c;
-> @@ -3516,6 +3483,7 @@ static void memcg_create_cache_work_func(struct work_struct *w)
->  
->  	cw = container_of(w, struct create_work, work);
->  	memcg_create_kmem_cache(cw->memcg, cw->cachep);
-> +	css_put(&cw->memcg->css);
->  	kfree(cw);
->  }
->  
-> diff --git a/mm/slab_common.c b/mm/slab_common.c
-> index 62712fe..51dc106 100644
-> --- a/mm/slab_common.c
-> +++ b/mm/slab_common.c
-> @@ -176,6 +176,12 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
->  	get_online_cpus();
->  	mutex_lock(&slab_mutex);
->  
-> +	if (memcg) {
-> +		s = cache_from_memcg_idx(parent_cache, memcg_cache_id(memcg));
-> +		if (s)
-> +			goto out_unlock;
-> +	}
-> +
->  	err = kmem_cache_sanity_check(memcg, name, size);
->  	if (err)
->  		goto out_unlock;
-> @@ -218,7 +224,7 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
->  
->  	s->refcount = 1;
->  	list_add(&s->list, &slab_caches);
-> -	memcg_cache_list_add(memcg, s);
-> +	memcg_register_cache(s);
->  
->  out_unlock:
->  	mutex_unlock(&slab_mutex);
-> -- 
-> 1.7.10.4
-> 
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.13-rc5
 
--- 
-Michal Hocko
-SUSE Labs
+for you to fetch changes up to a8b14744429f90763f258ad0f69601cdcad610aa:
+
+  sysfs: give different locking key to regular and bin files (2013-12-07 21:22:00 -0800)
+
+----------------------------------------------------------------
+Driver core fix for 3.13-rc5
+
+Here's a single sysfs fix for 3.13-rc5 that resolves a lockdep issue in
+sysfs that has been reported.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Tejun Heo (1):
+      sysfs: give different locking key to regular and bin files
+
+ fs/sysfs/file.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
