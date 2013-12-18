@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab3LRVMt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:12:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36157 "EHLO
+	id S1753191Ab3LRVwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:52:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36181 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753463Ab3LRVMp (ORCPT
+	with ESMTP id S1753498Ab3LRVMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:12:45 -0500
+	Wed, 18 Dec 2013 16:12:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [PATCH 3.10 70/78] staging: comedi: ssv_dnp: use comedi_dio_update_state()
-Date: Wed, 18 Dec 2013 13:11:38 -0800
-Message-Id: <20131218211113.875224149@linuxfoundation.org>
+        Liu Bo <bo.li.liu@oracle.com>, Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: [PATCH 3.10 75/78] Btrfs: fix memory leak of chunks extent map
+Date: Wed, 18 Dec 2013 13:11:43 -0800
+Message-Id: <20131218211114.016634460@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -29,40 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H Hartley Sweeten <hsweeten@visionengravers.com>
+From: Liu Bo <bo.li.liu@oracle.com>
 
-commit f6b316bcd8c421acd6fa5a6e18b4c846ecb9d965 upstream.
+commit 7d3d1744f8a7d62e4875bd69cc2192a939813880 upstream.
 
-Use comedi_dio_update_state() to handle the boilerplate code to update
-the subdevice s->state.
+As we're hold a ref on looking up the extent map, we need to drop the ref
+before returning to callers.
 
-Also, fix a bug where the state of the channels is returned in data[0].
-The comedi core expects it to be returned in data[1].
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/ssv_dnp.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/btrfs/volumes.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/staging/comedi/drivers/ssv_dnp.c
-+++ b/drivers/staging/comedi/drivers/ssv_dnp.c
-@@ -87,11 +87,11 @@ static int dnp_dio_insn_bits(struct come
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -4248,6 +4248,7 @@ int btrfs_num_copies(struct btrfs_fs_inf
+ 		btrfs_emerg(fs_info, "Invalid mapping for %Lu-%Lu, got "
+ 			    "%Lu-%Lu\n", logical, logical+len, em->start,
+ 			    em->start + em->len);
++		free_extent_map(em);
+ 		return 1;
+ 	}
  
- 	/* on return, data[1] contains the value of the digital input lines. */
- 	outb(PADR, CSCIR);
--	data[0] = inb(CSCDR);
-+	data[1] = inb(CSCDR);
- 	outb(PBDR, CSCIR);
--	data[0] += inb(CSCDR) << 8;
-+	data[1] += inb(CSCDR) << 8;
- 	outb(PCDR, CSCIR);
--	data[0] += ((inb(CSCDR) & 0xF0) << 12);
-+	data[1] += ((inb(CSCDR) & 0xF0) << 12);
- 
- 	return insn->n;
+@@ -4429,6 +4430,7 @@ static int __btrfs_map_block(struct btrf
+ 		btrfs_crit(fs_info, "found a bad mapping, wanted %Lu, "
+ 			   "found %Lu-%Lu\n", logical, em->start,
+ 			   em->start + em->len);
++		free_extent_map(em);
+ 		return -EINVAL;
+ 	}
  
 
 
