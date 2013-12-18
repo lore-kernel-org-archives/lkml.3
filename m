@@ -1,63 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab3LRXtB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 18:49:01 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:52517 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335Ab3LRXs7 (ORCPT
+	id S1752598Ab3LRXuf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 18:50:35 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:51168 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231Ab3LRXue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 18:48:59 -0500
-Date: Wed, 18 Dec 2013 15:48:57 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/118] 3.12.6-stable review
-Message-ID: <20131218234857.GA23500@roeck-us.net>
-References: <20131218211219.461663463@linuxfoundation.org>
+	Wed, 18 Dec 2013 18:50:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <1387410076-22283-1-git-send-email-galak@codeaurora.org>
+References: <1387410076-22283-1-git-send-email-galak@codeaurora.org>
+Date: Wed, 18 Dec 2013 15:50:33 -0800
+Message-ID: <CAOesGMjt9d_JkoyJbJuByiO8AUDWb79hCLhw9DKfS_C8WPhooQ@mail.gmail.com>
+Subject: Re: [PATCH] of: Update qcom vendor prefix description
+From: Olof Johansson <olof@lixom.net>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 01:10:37PM -0800, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.12.6 release.
-> There are 118 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Fri Dec 20 21:12:03 UTC 2013.
-> Anything received after that time might be too late.
-> 
+On Wed, Dec 18, 2013 at 3:41 PM, Kumar Gala <galak@codeaurora.org> wrote:
+> Update vendor description to be the full name of the corporate entity that
+> produces the SoCs associated with this prefix.
+>
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
 
-Hi greg,
+Acked-by: Olof Johansson <olof@lixom.net>
 
-I see a couple of failed builds.
 
-m68k:allmodconfig ... failed
-mips:allmodconfig ... failed
-sparc64:allmodconfig ... failed
-x86_64:allyesconfig ... failed
-x86_64:allmodconfig ... failed
-
-Build is still going on, so there may be more.
-
-Error log:
-
-drivers/staging/comedi/drivers/ssv_dnp.c: In function 'dnp_dio_insn_bits':
-drivers/staging/comedi/drivers/ssv_dnp.c:63:2: error: implicit declaration of function 'comedi_dio_update_state' [-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-make[4]: *** [drivers/staging/comedi/drivers/ssv_dnp.o] Error 1
-
-Function comedi_dio_update_state() is not defined anywhere in 3.12,
-so patches
-	 staging: comedi: ssv_dnp: use comedi_dio_update_state()
-	 staging: comedi: drivers: use comedi_dio_update_state() for simple cases
-
-won't apply without additional changes.
-
-Guenter
+-Olof
