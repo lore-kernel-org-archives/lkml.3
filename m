@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab3LRNgg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 08:36:36 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36952 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753842Ab3LRNge (ORCPT
+	id S1754059Ab3LRNlX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 08:41:23 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:57003 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752673Ab3LRNlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 08:36:34 -0500
-Date: Wed, 18 Dec 2013 13:36:25 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Message-ID: <20131218133625.GT28455@sirena.org.uk>
-References: <1387286601-21646-1-git-send-email-k.kozlowski@samsung.com>
- <1387286601-21646-4-git-send-email-k.kozlowski@samsung.com>
+	Wed, 18 Dec 2013 08:41:22 -0500
+Message-ID: <52B1A5FB.3030605@hurleysoftware.com>
+Date: Wed, 18 Dec 2013 08:41:15 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yahdd2r5OMEJJ+pI"
-Content-Disposition: inline
-In-Reply-To: <1387286601-21646-4-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: Haste makes waste.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/5] mfd: sec: Remove sec_reg* regmap helpers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, linux-kernel@vger.kernel.org
+CC: Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v4] n_tty: Fix buffer overruns with larger-than-4k pastes
+References: <52A79030.9090403@hurleysoftware.com> <1386713522-6959-1-git-send-email-peter@hurleysoftware.com> <20131217005719.GA26381@kroah.com> <52AFA7CF.3050800@hurleysoftware.com> <20131218114800.GC29631@khazad-dum.debian.net>
+In-Reply-To: <20131218114800.GC29631@khazad-dum.debian.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/18/2013 06:48 AM, Henrique de Moraes Holschuh wrote:
+> On Mon, 16 Dec 2013, Peter Hurley wrote:
+>>> Is this a 3.13-final thing, or can it wait for 3.14-rc1?
+>>
+>> Definitely not 3.13 at this point -- it should go to -next.
+>
+> Please earmark it for stable, if possible. This fixes a rather annoying long
+> time bug, after all...
 
---yahdd2r5OMEJJ+pI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+There is a (unlikely) possibility that this will cause a regression
+in userspace (because this causes a successful read() to return when
+it would not have in prior kernels).
 
-On Tue, Dec 17, 2013 at 02:23:19PM +0100, Krzysztof Kozlowski wrote:
-> Remove sec_reg* helpers as they are not used anymore. These helpers were
-> error-prone as they mixed u8 with unsigned int and they changed order of
-> some of parameters (val and mask in sec_reg_update()).
+I'd like to see this survive into 3.14-rc5+ before this goes to 3.12
+& 3.13 -stable.
 
-This doesn't apply against the regulator tree.  Can you please check
-what's going on here, I guess there may need to be some merge with MFD?
+This will need multiple, different backports for pre-3.12 kernels,
+which may not work correctly because pre-3.12 didn't lock out the input
+processing worker during termios changes.
 
---yahdd2r5OMEJJ+pI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Regards,
+Peter Hurley
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSsaTWAAoJELSic+t+oim9ruEP/1u2tp+unLCNN1rUqh7SPMjZ
-dd7CvoH/zpJxo0nYaLPVer9ei5fS9RJjdeU5VEpu7Y8ke+wsZvYbN6NVAC4y6lzL
-s5MXAS8Rt2rf9u3tiAHLpAw7Hp5el/hBuL0H+PCshM+qK5rfyA/Qswpsjvp6LYPE
-voEFF0TWOlAA3rypu4RBkYxswmVCsmnkC0Dk655+K6jLjoKtHpXFKNAaYKyz1Y7x
-/k5wVeOye9XWVXMMlLKukMXH8m8swWr41ZIrgrhf113cx7rkOy34ANIeOkQ0+9w9
-G19AXp/+vqoB36RagPRWe5/799l3vptDdqgVMQDV958q0sLn3PpUQGujDkIh2miA
-08ILSVwOJURlgCOKHRhaTKOJFBQ1HzIK7q1/Fu9mUxYW+B5QgmdakT7bDtV7h7lg
-WIxBw7RCLKIn/ffnGj7As5sKLl2qVFe6dKzD5f0/plIFR0M2FY6VtNoAwEhjX2kI
-s0T2EkxFXmpCSydL4AyiluI5JsauXpYYbNdhH9hP0GceYRShEUZTtS2meFSi8wtP
-vYJ+yNzvsATkIpB8TgO3UhMxTKaU9kKHLiUz5INxS6Ztdb/uoF9zrdI/+f7SszJ7
-KeiJQ6tB7RbRDvL7xpaBDJwuKOykilpUgjgg0Cvsquqjhiy+Gq6NLjWldfUKWoRb
-YMPj5ZjYERppdlPolb3D
-=FjUx
------END PGP SIGNATURE-----
-
---yahdd2r5OMEJJ+pI--
