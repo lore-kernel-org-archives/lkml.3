@@ -1,126 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab3LRF0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 00:26:55 -0500
-Received: from mga09.intel.com ([134.134.136.24]:51715 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752650Ab3LRF0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 00:26:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,505,1384329600"; 
-   d="scan'208";a="446106865"
-Subject: TTY/n_gsm: Removing the wrong tty_unlock/lock() in
- gsm_dlci_release()
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: gregkh@linuxfoundation.org, jslaby@suse.cz
-Cc: linux-kernel@vger.kernel.org, chao.bi@intel.com, chuansheng.liu@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 Dec 2013 13:30:11 +0800
-Message-ID: <1387344611.3650.56.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752391Ab3LRFVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 00:21:52 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:54467 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204Ab3LRFVa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 00:21:30 -0500
+X-AuditID: 9c93017d-b7c5eae000004296-1c-52b130d8895c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Arun Sharma <asharma@fb.com>,
+        Jiri Olsa <jolsa@redhat.com>, Rodrigo Campos <rodrigo@sdfg.com.ar>
+Subject: [RFC/PATCHSET 00/18] perf report: Add support to accumulate hist periods (v3)
+Date: Wed, 18 Dec 2013 14:21:08 +0900
+Message-Id: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-Commit 4d9b109060f690f5c835(tty: Prevent deadlock in n_gsm driver)
-tried to close all the virtual ports synchronously before closing the
-phycial ports, so the tty_vhangup() is used.
+This is my third attempt to implement cumulative hist period report.
+This work begins from Arun's SORT_INCLUSIVE patch [1] but I completely
+rewrote it from scratch.
 
-But the tty_unlock/lock() is wrong:
-tty_release
- tty_ldisc_release
-  tty_lock_pair(tty, o_tty)  < == Here the tty is for physical port
-  tty_ldisc_kill
-    gsmld_close
-      gsm_cleanup_mux
-        gsm_dlci_release
-          tty = tty_port_tty_get(&dlci->port)
-                            < == Here the tty(s) are for virtual port
+Please see the patch 04/18.  I refactored functions that add hist
+entries with struct add_entry_iter.  While I converted all functions
+carefully, it'd be better anyone can test and confirm that I didn't
+mess up something - especially for branch stack and mem stuff.
 
-They are different ttys, so before tty_vhangup(virtual tty), do not need
-to call the tty_unlock(virtual tty) at all which causes unbalanced unlock
-warning.
+This patchset basically adds period in a sample to every node in the
+callchain.  A hist_entry now has an additional fields to keep the
+cumulative period if --cumulate option is given on perf report.
 
-When enabling mutex debugging option, we will hit the below warning also:
-[   99.276903] =====================================
-[   99.282172] [ BUG: bad unlock balance detected! ]
-[   99.287442] 3.10.20-261976-gaec5ba0 #44 Tainted: G           O
-[   99.293972] -------------------------------------
-[   99.299240] mmgr/152 is trying to release lock (&tty->legacy_mutex) at:
-[   99.306693] [<c1b2dcad>] mutex_unlock+0xd/0x10
-[   99.311669] but there are no more locks to release!
-[   99.317131]
-[   99.317131] other info that might help us debug this:
-[   99.324440] 3 locks held by mmgr/152:
-[   99.328542]  #0:  (&tty->legacy_mutex/1){......}, at: [<c1b30ab0>] tty_lock_nested+0x40/0x90
-[   99.338116]  #1:  (&tty->ldisc_mutex){......}, at: [<c15dbd02>] tty_ldisc_kill+0x22/0xd0
-[   99.347284]  #2:  (&gsm->mutex){......}, at: [<c15e3d83>] gsm_cleanup_mux+0x73/0x170
-[   99.356060]
-[   99.356060] stack backtrace:
-[   99.360932] CPU: 0 PID: 152 Comm: mmgr Tainted: G           O 3.10.20-261976-gaec5ba0 #44
-[   99.370086]  ef4a4de0 ef4a4de0 ef4c1d98 c1b27b91 ef4c1db8 c1292655 c1dd10f5 c1b2dcad
-[   99.378921]  c1b2dcad ef4a4de0 ef4a528c ffffffff ef4c1dfc c12930dd 00000246 00000000
-[   99.387754]  00000000 00000000 c15e1926 00000000 00000001 ddfa7530 00000003 c1b2dcad
-[   99.396588] Call Trace:
-[   99.399326]  [<c1b27b91>] dump_stack+0x16/0x18
-[   99.404307]  [<c1292655>] print_unlock_imbalance_bug+0xe5/0xf0
-[   99.410840]  [<c1b2dcad>] ? mutex_unlock+0xd/0x10
-[   99.416110]  [<c1b2dcad>] ? mutex_unlock+0xd/0x10
-[   99.421382]  [<c12930dd>] lock_release_non_nested+0x1cd/0x210
-[   99.427818]  [<c15e1926>] ? gsm_destroy_network+0x36/0x130
-[   99.433964]  [<c1b2dcad>] ? mutex_unlock+0xd/0x10
-[   99.439235]  [<c12931a2>] lock_release+0x82/0x1c0
-[   99.444505]  [<c1b2dcad>] ? mutex_unlock+0xd/0x10
-[   99.449776]  [<c1b2dcad>] ? mutex_unlock+0xd/0x10
-[   99.455047]  [<c1b2dc2f>] __mutex_unlock_slowpath+0x5f/0xd0
-[   99.461288]  [<c1b2dcad>] mutex_unlock+0xd/0x10
-[   99.466365]  [<c1b30bb1>] tty_unlock+0x21/0x50
-[   99.471345]  [<c15e3dd1>] gsm_cleanup_mux+0xc1/0x170
-[   99.476906]  [<c15e44d2>] gsmld_close+0x52/0x90
-[   99.481983]  [<c15db905>] tty_ldisc_close.isra.1+0x35/0x50
-[   99.488127]  [<c15dbd0c>] tty_ldisc_kill+0x2c/0xd0
-[   99.493494]  [<c15dc7af>] tty_ldisc_release+0x2f/0x50
-[   99.499152]  [<c15d572c>] tty_release+0x37c/0x4b0
-[   99.504424]  [<c1b2dcad>] ? mutex_unlock+0xd/0x10
-[   99.509695]  [<c1b2dcad>] ? mutex_unlock+0xd/0x10
-[   99.514967]  [<c1372f6e>] ? eventpoll_release_file+0x7e/0x90
-[   99.521307]  [<c1335849>] __fput+0xd9/0x200
-[   99.525996]  [<c133597d>] ____fput+0xd/0x10
-[   99.530685]  [<c125c731>] task_work_run+0x81/0xb0
-[   99.535957]  [<c12019e9>] do_notify_resume+0x49/0x70
-[   99.541520]  [<c1b30dc4>] work_notifysig+0x29/0x31
-[   99.546897] ------------[ cut here ]------------
+I changed the option as a separate --cumulate and added a new "Total"
+column (and renamed the default "Overhead" column into "Self").  The
+output will be sorted by total (cumulative) overhead for now.  The
+reason I changed to the --cumulate is that I still think it's much
+different from other --callchain options and I plan to add support for
+showing (remaining) callchains to cumulative entries too.  The
+--callchain option will take care of it even with --cumulate option.
 
-So here we can call tty_vhangup() directly which is for virtual port.
+I know that the UI should be changed also to be more flexible as Ingo
+requested, but I'd like to do this first and then move to work on the
+next.  I also added a new config option to enable it by default.
 
-Reviewed-by: Chao Bi <chao.bi@intel.com>
-Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
----
- drivers/tty/n_gsm.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ * changes in v3:
+  - change to --cumulate option
+  - fix a couple of bugs (Jiri, Rodrigo)
+  - rename some help functions (Arnaldo)
+  - cache previous hist entries rathen than just symbol and dso
+  - add some preparatory cleanups
+  - add report.cumulate config option
 
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index c0f76da..8187ae6 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1704,11 +1704,8 @@ static void gsm_dlci_release(struct gsm_dlci *dlci)
- 		gsm_destroy_network(dlci);
- 		mutex_unlock(&dlci->mutex);
- 
--		/* tty_vhangup needs the tty_lock, so unlock and
--		   relock after doing the hangup. */
--		tty_unlock(tty);
- 		tty_vhangup(tty);
--		tty_lock(tty);
-+
- 		tty_port_tty_set(&dlci->port, NULL);
- 		tty_kref_put(tty);
- 	}
+
+Let me show you an example:
+
+  $ cat abc.c
+  #define barrier() asm volatile("" ::: "memory")
+
+  void a(void)
+  {
+  	int i;
+  	for (i = 0; i < 1000000; i++)
+  		barrier();
+  }
+  void b(void)
+  {
+  	a();
+  }
+  void c(void)
+  {
+  	b();
+  }
+  int main(void)
+  {
+  	c();
+  	return 0;
+  }
+
+With this simple program I ran perf record and report:
+
+  $ perf record -g -e cycles:u ./abc
+
+  $ perf report --stdio
+      88.29%      abc  abc                [.] a                  
+                  |
+                  --- a
+                      b
+                      c
+                      main
+                      __libc_start_main
+
+       9.43%      abc  ld-2.17.so         [.] _dl_relocate_object
+                  |
+                  --- _dl_relocate_object
+                      dl_main
+                      _dl_sysdep_start
+
+       2.27%      abc  [kernel.kallsyms]  [k] page_fault         
+                  |
+                  --- page_fault
+                     |          
+                     |--95.94%-- _dl_sysdep_start
+                     |          _dl_start_user
+                     |          
+                      --4.06%-- _start
+
+       0.00%      abc  ld-2.17.so         [.] _start             
+                  |
+                  --- _start
+
+
+When the -g cumulative option is given, it'll be shown like this:
+
+  $ perf report --cumulate --stdio
+
+  #     Self     Total  Command      Shared Object                   Symbol
+  # ........  ........  .......  .................  .......................
+  #
+       0.00%    88.29%      abc  libc-2.17.so       [.] __libc_start_main  
+       0.00%    88.29%      abc  abc                [.] main               
+       0.00%    88.29%      abc  abc                [.] c                  
+       0.00%    88.29%      abc  abc                [.] b                  
+      88.29%    88.29%      abc  abc                [.] a                  
+       0.00%    11.61%      abc  ld-2.17.so         [.] _dl_sysdep_start   
+       0.00%     9.43%      abc  ld-2.17.so         [.] dl_main            
+       9.43%     9.43%      abc  ld-2.17.so         [.] _dl_relocate_object
+       2.27%     2.27%      abc  [kernel.kallsyms]  [k] page_fault         
+       0.00%     2.18%      abc  ld-2.17.so         [.] _dl_start_user     
+       0.00%     0.10%      abc  ld-2.17.so         [.] _start             
+
+As you can see __libc_start_main -> main -> c -> b -> a callchain show
+up in the output.
+
+I know it have some rough edges or even bugs, but I really want to
+release it and get reviews.  It does not handle event groups and
+annotations yet.
+
+You can also get this series on 'perf/cumulate-v3' branch in my tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcome, thanks.
+Namhyung
+
+
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+
+[1] https://lkml.org/lkml/2012/3/31/6
+
+
+Namhyung Kim (18):
+  perf sort: Compare addresses if no symbol info
+  perf sort: Do not compare dso again
+  perf tools: Do not pass period and weight to add_hist_entry()
+  perf tools: Introduce struct add_entry_iter
+  perf hists: Convert hist entry functions to use struct he_stat
+  perf hists: Add support for accumulated stat of hist entry
+  perf hists: Check if accumulated when adding a hist entry
+  perf hists: Accumulate hist entry stat based on the callchain
+  perf tools: Update cpumode for each cumulative entry
+  perf report: Cache cumulative callchains
+  perf hists: Sort hist entries by accumulated period
+  perf ui/hist: Add support to accumulated hist stat
+  perf ui/browser: Add support to accumulated hist stat
+  perf ui/gtk: Add support to accumulated hist stat
+  perf tools: Apply percent-limit to cumulative percentage
+  perf tools: Add more hpp helper functions
+  perf report: Add --cumulate option
+  perf report: Add report.cumulate config option
+
+ tools/perf/Documentation/perf-report.txt |   5 +
+ tools/perf/builtin-annotate.c            |   3 +-
+ tools/perf/builtin-diff.c                |   2 +-
+ tools/perf/builtin-report.c              | 679 ++++++++++++++++++++++++-------
+ tools/perf/builtin-top.c                 |   2 +-
+ tools/perf/tests/hists_link.c            |   4 +-
+ tools/perf/ui/browsers/hists.c           |  51 ++-
+ tools/perf/ui/gtk/hists.c                |  27 +-
+ tools/perf/ui/hist.c                     |  62 +++
+ tools/perf/ui/stdio/hist.c               |  13 +-
+ tools/perf/util/hist.c                   |  79 +++-
+ tools/perf/util/hist.h                   |   7 +-
+ tools/perf/util/sort.c                   |  22 +-
+ tools/perf/util/sort.h                   |   1 +
+ tools/perf/util/symbol.h                 |   1 +
+ 15 files changed, 761 insertions(+), 197 deletions(-)
+
 -- 
-1.7.9.5
-
-
+1.7.11.7
 
