@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870Ab3LRVLv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:11:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35860 "EHLO
+	id S1752970Ab3LRVL7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:11:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35884 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790Ab3LRVLr (ORCPT
+	with ESMTP id S1752790Ab3LRVLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:11:47 -0500
+	Wed, 18 Dec 2013 16:11:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jim Quinlan <jim2101024@gmail.com>, linux-mips@linux-mips.org,
-        cernekee@gmail.com, Ralf Baechle <ralf@linux-mips.org>,
-        John Ulvr <julvr@broadcom.com>
-Subject: [PATCH 3.10 01/78] MIPS: DMA: For BMIPS5000 cores flush region just like non-coherent R10000
-Date: Wed, 18 Dec 2013 13:10:29 -0800
-Message-Id: <20131218211111.946465474@linuxfoundation.org>
+        Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.10 15/78] KVM: x86: Convert vapic synchronization to _cached functions (CVE-2013-6368)
+Date: Wed, 18 Dec 2013 13:10:43 -0800
+Message-Id: <20131218211112.336941133@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
 References: <20131218211111.903835960@linuxfoundation.org>
@@ -30,86 +28,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jim Quinlan <jim2101024@gmail.com>
+From: Andy Honig <ahonig@google.com>
 
-commit f86f55d3ad21b21b736bdeb29bee0f0937b77138 upstream.
+commit fda4e2e85589191b123d31cdc21fd33ee70f50fd upstream.
 
-The BMIPS5000 (Zephyr) processor utilizes instruction speculation. A
-stale misprediction address in either the JTB or the CRS may trigger
-a prefetch inside a region that is currently being used by a DMA engine,
-which is not IO-coherent.  This prefetch will fetch a line into the
-scache, and that line will soon become stale (ie wrong) during/after the
-DMA.  Mayhem ensues.
+In kvm_lapic_sync_from_vapic and kvm_lapic_sync_to_vapic there is the
+potential to corrupt kernel memory if userspace provides an address that
+is at the end of a page.  This patches concerts those functions to use
+kvm_write_guest_cached and kvm_read_guest_cached.  It also checks the
+vapic_address specified by userspace during ioctl processing and returns
+an error to userspace if the address is not a valid GPA.
 
-In dma-default.c, the r10000 is handled as a special case in the same way
-that we want to handle Zephyr.  So we generalize the exception cases into
-a function, and include Zephyr as one of the processors that needs this
-special care.
+This is generally not guest triggerable, because the required write is
+done by firmware that runs before the guest.  Also, it only affects AMD
+processors and oldish Intel that do not have the FlexPriority feature
+(unless you disable FlexPriority, of course; then newer processors are
+also affected).
 
-Signed-off-by: Jim Quinlan <jim2101024@gmail.com>
-Cc: linux-mips@linux-mips.org
-Cc: cernekee@gmail.com
-Patchwork: https://patchwork.linux-mips.org/patch/5776/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Cc: John Ulvr <julvr@broadcom.com>
+Fixes: b93463aa59d6 ('KVM: Accelerated apic support')
+
+Reported-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/mm/dma-default.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ arch/x86/kvm/lapic.c |   27 +++++++++++++++------------
+ arch/x86/kvm/lapic.h |    4 ++--
+ arch/x86/kvm/x86.c   |   40 +---------------------------------------
+ 3 files changed, 18 insertions(+), 53 deletions(-)
 
---- a/arch/mips/mm/dma-default.c
-+++ b/arch/mips/mm/dma-default.c
-@@ -50,16 +50,20 @@ static inline struct page *dma_addr_to_p
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1706,7 +1706,6 @@ static void apic_sync_pv_eoi_from_guest(
+ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
+ {
+ 	u32 data;
+-	void *vapic;
+ 
+ 	if (test_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention))
+ 		apic_sync_pv_eoi_from_guest(vcpu, vcpu->arch.apic);
+@@ -1714,9 +1713,8 @@ void kvm_lapic_sync_from_vapic(struct kv
+ 	if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
+ 		return;
+ 
+-	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
+-	data = *(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr));
+-	kunmap_atomic(vapic);
++	kvm_read_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
++				sizeof(u32));
+ 
+ 	apic_set_tpr(vcpu->arch.apic, data & 0xff);
+ }
+@@ -1752,7 +1750,6 @@ void kvm_lapic_sync_to_vapic(struct kvm_
+ 	u32 data, tpr;
+ 	int max_irr, max_isr;
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+-	void *vapic;
+ 
+ 	apic_sync_pv_eoi_to_guest(vcpu, apic);
+ 
+@@ -1768,18 +1765,24 @@ void kvm_lapic_sync_to_vapic(struct kvm_
+ 		max_isr = 0;
+ 	data = (tpr & 0xff) | ((max_isr & 0xf0) << 8) | (max_irr << 24);
+ 
+-	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
+-	*(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr)) = data;
+-	kunmap_atomic(vapic);
++	kvm_write_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
++				sizeof(u32));
  }
  
- /*
-+ * The affected CPUs below in 'cpu_needs_post_dma_flush()' can
-+ * speculatively fill random cachelines with stale data at any time,
-+ * requiring an extra flush post-DMA.
-+ *
-  * Warning on the terminology - Linux calls an uncached area coherent;
-  * MIPS terminology calls memory areas with hardware maintained coherency
-  * coherent.
-  */
--
--static inline int cpu_is_noncoherent_r10000(struct device *dev)
-+static inline int cpu_needs_post_dma_flush(struct device *dev)
+-void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
++int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
  {
- 	return !plat_device_is_coherent(dev) &&
- 	       (current_cpu_type() == CPU_R10000 ||
--	       current_cpu_type() == CPU_R12000);
-+		current_cpu_type() == CPU_R12000 ||
-+		current_cpu_type() == CPU_BMIPS5000);
+-	vcpu->arch.apic->vapic_addr = vapic_addr;
+-	if (vapic_addr)
++	if (vapic_addr) {
++		if (kvm_gfn_to_hva_cache_init(vcpu->kvm,
++					&vcpu->arch.apic->vapic_cache,
++					vapic_addr, sizeof(u32)))
++			return -EINVAL;
+ 		__set_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention);
+-	else
++	} else {
+ 		__clear_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention);
++	}
++
++	vcpu->arch.apic->vapic_addr = vapic_addr;
++	return 0;
  }
  
- static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
-@@ -230,7 +234,7 @@ static inline void __dma_sync(struct pag
- static void mips_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
- 	size_t size, enum dma_data_direction direction, struct dma_attrs *attrs)
- {
--	if (cpu_is_noncoherent_r10000(dev))
-+	if (cpu_needs_post_dma_flush(dev))
- 		__dma_sync(dma_addr_to_page(dev, dma_addr),
- 			   dma_addr & ~PAGE_MASK, size, direction);
+ int kvm_x2apic_msr_write(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+--- a/arch/x86/kvm/lapic.h
++++ b/arch/x86/kvm/lapic.h
+@@ -34,7 +34,7 @@ struct kvm_lapic {
+ 	 */
+ 	void *regs;
+ 	gpa_t vapic_addr;
+-	struct page *vapic_page;
++	struct gfn_to_hva_cache vapic_cache;
+ 	unsigned long pending_events;
+ 	unsigned int sipi_vector;
+ };
+@@ -76,7 +76,7 @@ void kvm_set_lapic_tscdeadline_msr(struc
+ void kvm_apic_write_nodecode(struct kvm_vcpu *vcpu, u32 offset);
+ void kvm_apic_set_eoi_accelerated(struct kvm_vcpu *vcpu, int vector);
  
-@@ -281,7 +285,7 @@ static void mips_dma_unmap_sg(struct dev
- static void mips_dma_sync_single_for_cpu(struct device *dev,
- 	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction)
- {
--	if (cpu_is_noncoherent_r10000(dev))
-+	if (cpu_needs_post_dma_flush(dev))
- 		__dma_sync(dma_addr_to_page(dev, dma_handle),
- 			   dma_handle & ~PAGE_MASK, size, direction);
- }
-@@ -302,7 +306,7 @@ static void mips_dma_sync_sg_for_cpu(str
+-void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
++int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
+ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu);
+ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu);
  
- 	/* Make sure that gcc doesn't leave the empty loop body.  */
- 	for (i = 0; i < nelems; i++, sg++) {
--		if (cpu_is_noncoherent_r10000(dev))
-+		if (cpu_needs_post_dma_flush(dev))
- 			__dma_sync(sg_page(sg), sg->offset, sg->length,
- 				   direction);
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3138,8 +3138,7 @@ long kvm_arch_vcpu_ioctl(struct file *fi
+ 		r = -EFAULT;
+ 		if (copy_from_user(&va, argp, sizeof va))
+ 			goto out;
+-		r = 0;
+-		kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
++		r = kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
+ 		break;
  	}
+ 	case KVM_X86_SETUP_MCE: {
+@@ -5539,36 +5538,6 @@ static void post_kvm_run_save(struct kvm
+ 			!kvm_event_needs_reinjection(vcpu);
+ }
+ 
+-static int vapic_enter(struct kvm_vcpu *vcpu)
+-{
+-	struct kvm_lapic *apic = vcpu->arch.apic;
+-	struct page *page;
+-
+-	if (!apic || !apic->vapic_addr)
+-		return 0;
+-
+-	page = gfn_to_page(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
+-	if (is_error_page(page))
+-		return -EFAULT;
+-
+-	vcpu->arch.apic->vapic_page = page;
+-	return 0;
+-}
+-
+-static void vapic_exit(struct kvm_vcpu *vcpu)
+-{
+-	struct kvm_lapic *apic = vcpu->arch.apic;
+-	int idx;
+-
+-	if (!apic || !apic->vapic_addr)
+-		return;
+-
+-	idx = srcu_read_lock(&vcpu->kvm->srcu);
+-	kvm_release_page_dirty(apic->vapic_page);
+-	mark_page_dirty(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
+-	srcu_read_unlock(&vcpu->kvm->srcu, idx);
+-}
+-
+ static void update_cr8_intercept(struct kvm_vcpu *vcpu)
+ {
+ 	int max_irr, tpr;
+@@ -5889,11 +5858,6 @@ static int __vcpu_run(struct kvm_vcpu *v
+ 	struct kvm *kvm = vcpu->kvm;
+ 
+ 	vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
+-	r = vapic_enter(vcpu);
+-	if (r) {
+-		srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
+-		return r;
+-	}
+ 
+ 	r = 1;
+ 	while (r > 0) {
+@@ -5951,8 +5915,6 @@ static int __vcpu_run(struct kvm_vcpu *v
+ 
+ 	srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
+ 
+-	vapic_exit(vcpu);
+-
+ 	return r;
+ }
+ 
 
 
