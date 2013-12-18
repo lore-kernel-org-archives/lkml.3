@@ -1,83 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842Ab3LRSkm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 13:40:42 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38075 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755282Ab3LRSkk (ORCPT
+	id S1755567Ab3LRSoL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 13:44:11 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:52601 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754754Ab3LRSoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 13:40:40 -0500
-Date: Wed, 18 Dec 2013 10:40:36 -0800
-From: josh@joshtriplett.org
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Jingoo Han <jg1.han@samsung.com>, Andy Grover <agrover@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org
-Subject: Re: [PATCH 4/4] drivers: target: Mark functions and structures as
- static in tfc_conf.c
-Message-ID: <20131218184036.GE24229@cloud>
-References: <1a63603bc5ff05147c419a301d59b135cd0c8406.1387390091.git.rashika.kheria@gmail.com>
- <94a49e2b29220b2a3fb93449a7b2c96fb6ea4667.1387390091.git.rashika.kheria@gmail.com>
+	Wed, 18 Dec 2013 13:44:09 -0500
+Message-ID: <52B1ECF5.2000204@linaro.org>
+Date: Wed, 18 Dec 2013 10:44:05 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <94a49e2b29220b2a3fb93449a7b2c96fb6ea4667.1387390091.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ingo Molnar <mingo@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>, xen-devel@lists.xen.org,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH 2/3] timekeeping: Fix potential lost pv notification of
+ time change
+References: <1387308457-25364-1-git-send-email-john.stultz@linaro.org> <1387308457-25364-3-git-send-email-john.stultz@linaro.org> <20131218100807.GC19319@gmail.com>
+In-Reply-To: <20131218100807.GC19319@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 12:05:59AM +0530, Rashika Kheria wrote:
-> Mark functions ft_tpg_alloc_fabric_acl(), ft_register_configfs() and
-> ft_deregister_configfs() as static in tcm_fc/tfc_conf.c because they are
-> not used outside this file.
-> 
-> This eliminates the following warnings in tcm_fc/tfc_conf.c:
-> drivers/target/tcm_fc/tfc_conf.c:270:21: warning: no previous prototype for ‘ft_tpg_alloc_fabric_acl’ [-Wmissing-prototypes]
-> drivers/target/tcm_fc/tfc_conf.c:555:5: warning: no previous prototype for ‘ft_register_configfs’ [-Wmissing-prototypes]
-> drivers/target/tcm_fc/tfc_conf.c:602:6: warning: no previous prototype for ‘ft_deregister_configfs’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+On 12/18/2013 02:08 AM, Ingo Molnar wrote:
+> * John Stultz <john.stultz@linaro.org> wrote:
+>
+>> In 780427f0e11 (Indicate that clock was set in the pvclock
+>> gtod notifier), logic was added to pass a CLOCK_WAS_SET
+>> notification to the pvclock notifier chain.
+>>
+>> While that patch added a action flag returned from
+>> accumulate_nsecs_to_secs(), it only uses the returned value
+>> in one location, and not in the logarithmic accumulation.
+>>
+>> This means if a leap second triggered during the logarithmic
+>> accumulation (which is most likely where it would happen),
+>> the notification that the clock was set would not make it to
+>> the pv notifiers.
+>>
+>> This patch extends the logarithmic_accumulation pass down
+>> that action flag so proper notification will occur.
+>>
+>> Cc: Sasha Levin <sasha.levin@oracle.com>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> Cc: David Vrabel <david.vrabel@citrix.com>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> Cc: Prarit Bhargava <prarit@redhat.com>
+>> Cc: Richard Cochran <richardcochran@gmail.com>
+>> Cc: <xen-devel@lists.xen.org>
+>> Cc: stable <stable@vger.kernel.org> #3.11+
+>> Signed-off-by: John Stultz <john.stultz@linaro.org>
+>> ---
+>>  kernel/time/timekeeping.c | 10 +++++-----
+>>  1 file changed, 5 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+>> index 6bad3d9..998ec751 100644
+>> --- a/kernel/time/timekeeping.c
+>> +++ b/kernel/time/timekeeping.c
+>> @@ -1295,7 +1295,7 @@ static inline unsigned int accumulate_nsecs_to_secs(struct timekeeper *tk)
+>>   * Returns the unconsumed cycles.
+>>   */
+>>  static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
+>> -						u32 shift)
+>> +						u32 shift, unsigned int *action)
+> I have two complaints about this patch:
+>
+> 1)
+>
+> I think the 'action' name sucks because it's too obfuscated. It's only 
+> ever set to TK_CLOCK_WAS_SET, so why not name it more descriptively, 
+> i.e. 'clock_was_set'?
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Sure, I was reusing the existing variables, but no issue changing the
+name here too.
 
->  drivers/target/tcm_fc/tfc_conf.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/target/tcm_fc/tfc_conf.c b/drivers/target/tcm_fc/tfc_conf.c
-> index c6932fb..e879da8 100644
-> --- a/drivers/target/tcm_fc/tfc_conf.c
-> +++ b/drivers/target/tcm_fc/tfc_conf.c
-> @@ -267,7 +267,7 @@ struct ft_node_acl *ft_acl_get(struct ft_tpg *tpg, struct fc_rport_priv *rdata)
->  	return found;
->  }
->  
-> -struct se_node_acl *ft_tpg_alloc_fabric_acl(struct se_portal_group *se_tpg)
-> +static struct se_node_acl *ft_tpg_alloc_fabric_acl(struct se_portal_group *se_tpg)
->  {
->  	struct ft_node_acl *acl;
->  
-> @@ -552,7 +552,7 @@ static struct target_core_fabric_ops ft_fabric_ops = {
->  	.fabric_drop_nodeacl =		&ft_del_acl,
->  };
->  
-> -int ft_register_configfs(void)
-> +static int ft_register_configfs(void)
->  {
->  	struct target_fabric_configfs *fabric;
->  	int ret;
-> @@ -599,7 +599,7 @@ int ft_register_configfs(void)
->  	return 0;
->  }
->  
-> -void ft_deregister_configfs(void)
-> +static void ft_deregister_configfs(void)
->  {
->  	if (!ft_configfs)
->  		return;
-> -- 
-> 1.7.9.5
-> 
+
+> 2)
+>
+> Secondly, the proliferation of parameters passed around I think calls 
+> for a helper structure which would carry the (offset, shift, 
+> clock_was_set) triple:
+>
+> 	struct acc_params {
+> 		cycle_t		offset;
+> 		u32		shift;
+> 		bool		clock_was_set;
+> 	};
+>
+> And then passed down like this:
+>
+>>  static cycle_t logarithmic_accumulation(struct timekeeper *tk, struct acc_params *params)
+> Agreed?
+
+Huh. Ok, I don't see the parameters structure likely being reused, so
+this would be a special struct only for the logarithmic_accumulation() call?
+
+Also, since we want to pass down TK_CLOCK_WAS_SET to timekeeping_update,
+you ok with clock_was_set being an int instead of a bool?
+
+thanks
+-john
+
+
