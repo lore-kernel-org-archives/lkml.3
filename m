@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab3LRVP1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 16:15:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36694 "EHLO
+	id S1754874Ab3LRVPy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 16:15:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36688 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754756Ab3LRVOb (ORCPT
+	with ESMTP id S1754749Ab3LRVO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 16:14:31 -0500
+	Wed, 18 Dec 2013 16:14:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.12 081/118] dm snapshot: avoid snapshot space leak on crash
-Date: Wed, 18 Dec 2013 13:11:58 -0800
-Message-Id: <20131218211221.738154711@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.12 088/118] dm thin: switch to read only mode if a mapping insert fails
+Date: Wed, 18 Dec 2013 13:12:05 -0800
+Message-Id: <20131218211221.949287270@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20131218211219.461663463@linuxfoundation.org>
 References: <20131218211219.461663463@linuxfoundation.org>
@@ -29,194 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 230c83afdd9cd384348475bea1e14b80b3b6b1b8 upstream.
+commit fafc7a815e40255d24e80a1cb7365892362fa398 upstream.
 
-There is a possible leak of snapshot space in case of crash.
+Switch the thin pool to read-only mode when dm_thin_insert_block() fails
+since there is little reason to expect the cause of the failure to be
+resolved without further action by user space.
 
-The reason for space leaking is that chunks in the snapshot device are
-allocated sequentially, but they are finished (and stored in the metadata)
-out of order, depending on the order in which copying finished.
+This issue was noticed with the device-mapper-test-suite using:
+dmtest run --suite thin-provisioning -n /exhausting_metadata_space_causes_fail_mode/
 
-For example, supposed that the metadata contains the following records
-SUPERBLOCK
-METADATA (blocks 0 ... 250)
-DATA 0
-DATA 1
-DATA 2
-...
-DATA 250
+The quantity of errors logged in this case must be reduced.
 
-Now suppose that you allocate 10 new data blocks 251-260. Suppose that
-copying of these blocks finish out of order (block 260 finished first
-and the block 251 finished last). Now, the snapshot device looks like
-this:
-SUPERBLOCK
-METADATA (blocks 0 ... 250, 260, 259, 258, 257, 256)
-DATA 0
-DATA 1
-DATA 2
-...
-DATA 250
-DATA 251
-DATA 252
-DATA 253
-DATA 254
-DATA 255
-METADATA (blocks 255, 254, 253, 252, 251)
-DATA 256
-DATA 257
-DATA 258
-DATA 259
-DATA 260
+before patch:
 
-Now, if the machine crashes after writing the first metadata block but
-before writing the second metadata block, the space for areas DATA 250-255
-is leaked, it contains no valid data and it will never be used in the
-future.
+device-mapper: thin: dm_thin_insert_block() failed
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: thin: dm_thin_insert_block() failed
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: thin: dm_thin_insert_block() failed
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: thin: dm_thin_insert_block() failed
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: thin: dm_thin_insert_block() failed
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: thin: dm_thin_insert_block() failed
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: thin: dm_thin_insert_block() failed
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: thin: dm_thin_insert_block() failed
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: thin: dm_thin_insert_block() failed
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: thin: dm_thin_insert_block() failed
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: space map metadata: unable to allocate new metadata block
+<snip ... these repeat for a long while ... >
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: space map common: dm_tm_shadow_block() failed
+device-mapper: thin: 253:4: no free metadata space available.
+device-mapper: thin: 253:4: switching pool to read-only mode
 
-This patch makes dm-snapshot complete exceptions in the same order they
-were allocated, thus fixing this bug.
+after patch:
 
-Note: when backporting this patch to the stable kernel, change the version
-field in the following way:
-* if version in the stable kernel is {1, 11, 1}, change it to {1, 12, 0}
-* if version in the stable kernel is {1, 10, 0} or {1, 10, 1}, change it
-  to {1, 10, 2}
-Userspace reads the version to determine if the bug was fixed, so the
-version change is needed.
+device-mapper: space map metadata: unable to allocate new metadata block
+device-mapper: thin: 253:4: dm_thin_insert_block() failed: error = -28
+device-mapper: thin: 253:4: switching pool to read-only mode
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-snap.c |   71 +++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 64 insertions(+), 7 deletions(-)
+ drivers/md/dm-thin.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -66,6 +66,18 @@ struct dm_snapshot {
- 
- 	atomic_t pending_exceptions_count;
- 
-+	/* Protected by "lock" */
-+	sector_t exception_start_sequence;
-+
-+	/* Protected by kcopyd single-threaded callback */
-+	sector_t exception_complete_sequence;
-+
-+	/*
-+	 * A list of pending exceptions that completed out of order.
-+	 * Protected by kcopyd single-threaded callback.
-+	 */
-+	struct list_head out_of_order_list;
-+
- 	mempool_t *pending_pool;
- 
- 	struct dm_exception_table pending;
-@@ -173,6 +185,14 @@ struct dm_snap_pending_exception {
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -640,7 +640,9 @@ static void process_prepared_mapping(str
  	 */
- 	int started;
- 
-+	/* There was copying error. */
-+	int copy_error;
-+
-+	/* A sequence number, it is used for in-order completion. */
-+	sector_t exception_sequence;
-+
-+	struct list_head out_of_order_entry;
-+
- 	/*
- 	 * For writing a complete chunk, bypassing the copy.
- 	 */
-@@ -1094,6 +1114,9 @@ static int snapshot_ctr(struct dm_target
- 	s->valid = 1;
- 	s->active = 0;
- 	atomic_set(&s->pending_exceptions_count, 0);
-+	s->exception_start_sequence = 0;
-+	s->exception_complete_sequence = 0;
-+	INIT_LIST_HEAD(&s->out_of_order_list);
- 	init_rwsem(&s->lock);
- 	INIT_LIST_HEAD(&s->list);
- 	spin_lock_init(&s->pe_lock);
-@@ -1443,6 +1466,19 @@ static void commit_callback(void *contex
- 	pending_complete(pe, success);
- }
- 
-+static void complete_exception(struct dm_snap_pending_exception *pe)
-+{
-+	struct dm_snapshot *s = pe->snap;
-+
-+	if (unlikely(pe->copy_error))
-+		pending_complete(pe, 0);
-+
-+	else
-+		/* Update the metadata if we are persistent */
-+		s->store->type->commit_exception(s->store, &pe->e,
-+						 commit_callback, pe);
-+}
-+
- /*
-  * Called when the copy I/O has finished.  kcopyd actually runs
-  * this code so don't block.
-@@ -1452,13 +1488,32 @@ static void copy_callback(int read_err,
- 	struct dm_snap_pending_exception *pe = context;
- 	struct dm_snapshot *s = pe->snap;
- 
--	if (read_err || write_err)
--		pending_complete(pe, 0);
-+	pe->copy_error = read_err || write_err;
- 
--	else
--		/* Update the metadata if we are persistent */
--		s->store->type->commit_exception(s->store, &pe->e,
--						 commit_callback, pe);
-+	if (pe->exception_sequence == s->exception_complete_sequence) {
-+		s->exception_complete_sequence++;
-+		complete_exception(pe);
-+
-+		while (!list_empty(&s->out_of_order_list)) {
-+			pe = list_entry(s->out_of_order_list.next,
-+					struct dm_snap_pending_exception, out_of_order_entry);
-+			if (pe->exception_sequence != s->exception_complete_sequence)
-+				break;
-+			s->exception_complete_sequence++;
-+			list_del(&pe->out_of_order_entry);
-+			complete_exception(pe);
-+		}
-+	} else {
-+		struct list_head *lh;
-+		struct dm_snap_pending_exception *pe2;
-+
-+		list_for_each_prev(lh, &s->out_of_order_list) {
-+			pe2 = list_entry(lh, struct dm_snap_pending_exception, out_of_order_entry);
-+			if (pe2->exception_sequence < pe->exception_sequence)
-+				break;
-+		}
-+		list_add(&pe->out_of_order_entry, lh);
-+	}
- }
- 
- /*
-@@ -1553,6 +1608,8 @@ __find_pending_exception(struct dm_snaps
- 		return NULL;
+ 	r = dm_thin_insert_block(tc->td, m->virt_block, m->data_block);
+ 	if (r) {
+-		DMERR_LIMIT("dm_thin_insert_block() failed");
++		DMERR_LIMIT("%s: dm_thin_insert_block() failed: error = %d",
++			    dm_device_name(pool->pool_md), r);
++		set_pool_mode(pool, PM_READ_ONLY);
+ 		cell_error(pool, m->cell);
+ 		goto out;
  	}
- 
-+	pe->exception_sequence = s->exception_start_sequence++;
-+
- 	dm_insert_exception(&s->pending, &pe->e);
- 
- 	return pe;
-@@ -2192,7 +2249,7 @@ static struct target_type origin_target
- 
- static struct target_type snapshot_target = {
- 	.name    = "snapshot",
--	.version = {1, 11, 1},
-+	.version = {1, 12, 0},
- 	.module  = THIS_MODULE,
- 	.ctr     = snapshot_ctr,
- 	.dtr     = snapshot_dtr,
 
 
