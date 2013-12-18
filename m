@@ -1,82 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab3LRDfa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Dec 2013 22:35:30 -0500
-Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:55878
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751950Ab3LRDf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Dec 2013 22:35:29 -0500
-Message-ID: <1387337708.3140.31.camel@snotra.buserror.net>
-Subject: Re: [v3][PATCH 3/8] book3e/kexec/kdump: enable kexec for kernel
-From: Scott Wood <scottwood@freescale.com>
-To: Tiejun Chen <tiejun.chen@windriver.com>
-CC: <benh@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Tue, 17 Dec 2013 21:35:08 -0600
-In-Reply-To: <1373357007-30785-4-git-send-email-tiejun.chen@windriver.com>
-References: <1373357007-30785-1-git-send-email-tiejun.chen@windriver.com>
-	 <1373357007-30785-4-git-send-email-tiejun.chen@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1752829Ab3LRDgY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Dec 2013 22:36:24 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:27030 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab3LRDgW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Dec 2013 22:36:22 -0500
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "vpalatin@chromium.org" <vpalatin@chromium.org>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: RE: [PATCH 1/3 v2] regulator: act8865: add PMIC act8865 driver
+Thread-Topic: [PATCH 1/3 v2] regulator: act8865: add PMIC act8865 driver
+Thread-Index: AQHO+uoYvkwxJEEdc0mjsEvGxg1mlppX1cWAgAFvtOA=
+Date: Wed, 18 Dec 2013 03:11:12 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A24364172F18381@penmbx01>
+References: <1387258597-21866-1-git-send-email-wenyou.yang@atmel.com>
+ <1387258597-21866-2-git-send-email-wenyou.yang@atmel.com>
+ <20131217130653.GA3185@sirena.org.uk>
+In-Reply-To: <20131217130653.GA3185@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: BLUPR05CA005.namprd05.prod.outlook.com (10.255.219.163)
- To DM2PR03MB399.namprd03.prod.outlook.com (10.141.84.148)
-X-Forefront-PRVS: 0064B3273C
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(199002)(51704005)(24454002)(377424004)(189002)(76796001)(80976001)(65816001)(76786001)(80022001)(83322001)(19580405001)(74706001)(79102001)(81686001)(54316002)(81342001)(62966002)(19580395003)(23676002)(87286001)(56776001)(87976001)(74366001)(47776003)(77982001)(90146001)(63696002)(89996001)(69226001)(50466002)(81542001)(50986001)(47736001)(56816005)(47976001)(49866001)(4396001)(50226001)(88136002)(31966008)(74662001)(47446002)(74502001)(51856001)(46102001)(83072002)(85852003)(77096001)(77156001)(74876001)(87266001)(76482001)(85306002)(59766001)(42186004)(53806001)(33646001)(81816001)(32563001)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB399;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];CLIP:2601:2:5800:3f7:12bf:48ff:fe84:c9a0;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-09 at 16:03 +0800, Tiejun Chen wrote:
-> We need to active KEXEC for book3e and bypass or convert non-book3e stuff
-> in kexec coverage.
+Hi Mark,
+
+Thank you very much.
+
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@kernel.org]
+> Sent: Tuesday, December 17, 2013 9:07 PM
+> To: Yang, Wenyou
+> Cc: lgirdwood@gmail.com; linux-kernel@vger.kernel.org;
+> grant.likely@linaro.org; rob.herring@calxeda.com; linux-
+> doc@vger.kernel.org; vpalatin@chromium.org; Ferre, Nicolas;
+> plagnioj@jcrosoft.com; linux-arm-kernel@lists.infradead.org;
+> devicetree@vger.kernel.org
+> Subject: Re: [PATCH 1/3 v2] regulator: act8865: add PMIC act8865 driver
 > 
-> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
-> ---
->  arch/powerpc/Kconfig                   |    2 +-
->  arch/powerpc/kernel/machine_kexec_64.c |  148 ++++++++++++++++++--------------
->  arch/powerpc/kernel/misc_64.S          |    6 ++
->  3 files changed, 89 insertions(+), 67 deletions(-)
+> On Tue, Dec 17, 2013 at 01:36:35PM +0800, Wenyou Yang wrote:
+> >  Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 > 
-> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-> index 5374776..d945435 100644
-> --- a/arch/powerpc/Kconfig
-> +++ b/arch/powerpc/Kconfig
-> @@ -357,7 +357,7 @@ config ARCH_ENABLE_MEMORY_HOTREMOVE
->  
->  config KEXEC
->  	bool "kexec system call"
-> -	depends on (PPC_BOOK3S || FSL_BOOKE || (44x && !SMP))
-> +	depends on (PPC_BOOK3S || FSL_BOOKE || (44x && !SMP)) || PPC_BOOK3E
+> Much better.  Still a few small issues though.
+> 
+> > +/* ACt8865 voltage table */
+> > +static const u32 act8865_voltages_table[] = {
+> 
+> This is the wrong type for a voltage table but it looks like it
+> shouldn't be a voltage table at all - this looks like it should be
+> mapped as linear ranges.
+Change it, using unsigned int.
 
-Please remove the outher parentheses, and especially don't put
-PPC_BOOK3E on the outside of them when there's no reason to group the
-other items together.
+It is not linear, can't be mapped as linear range. so using voltage table.
 
-> @@ -367,6 +301,87 @@ void default_machine_kexec(struct kimage *image)
->  	/* NOTREACHED */
->  }
->  
-> +#ifdef CONFIG_PPC_BOOK3E
-> +int default_machine_kexec_prepare(struct kimage *image)
-> +{
-> +	int i;
-> +	/*
-> +	 * Since we use the kernel fault handlers and paging code to
-> +	 * handle the virtual mode, we must make sure no destination
-> +	 * overlaps kernel static data or bss.
-> +	 */
-> +	for (i = 0; i < image->nr_segments; i++)
-> +		if (image->segment[i].mem < __pa(_end))
-> +			return -ETXTBSY;
-> +	return 0;
+> 
+> > +static struct regulator_ops act8865_ops = {
+> > +	.list_voltage		= regulator_list_voltage_table,
+> > +	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+> > +	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+> > +	.enable			= regulator_enable_regmap,
+> > +	.disable		= regulator_disable_regmap,
+> > +	.is_enabled		= regulator_is_enabled_regmap,
+> > +	.set_suspend_voltage	= act8865_set_suspend_voltage,
+> > +	.set_suspend_enable	= regulator_enable_regmap,
+> > +	.set_suspend_disable	= regulator_disable_regmap,
+> > +};
+> 
+> This is missing a git di() operation.
 
-Factor out this common code rather than duplicate it.
+Add it, 
+.map_voltage            = regulator_map_voltage_ascend,
 
--Scott
+> 
+> > +#ifdef CONFIG_OF
+> > +static const struct of_device_id act8865_dt_ids[] = {
+> > +	{ .compatible = "active-semi,act8865" },
+> > +	{ }
+> > +};
+> > +MODULE_DEVICE_TABLE(of, act8865_dt_ids);
+> 
+> active-semi needs adding to vendor-prefixes.txt.
+> 
+Add it,
+active-semi    Active-Semi International Inc
 
+> > +	np = of_find_node_by_name(dev->of_node, "regulators");
+> > +	if (!np) {
+> > +		dev_err(dev, "missing 'regulators' subnode in DT\n");
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	for (i = 0; i < ARRAY_SIZE(rmatch); i++)
+> > +		rmatch[i].name = act8865_reg[i].name;
+> > +
+> > +	matched = of_regulator_match(dev, np, rmatch, ARRAY_SIZE(rmatch));
+> > +	if (matched <= 0)
+> > +		return matched;
+> 
+> You should register all regulators the device has regardless of how many
+> have parameters configured in the DT so that the settings can be read
+> back for diagnostic purposes.
+Change it.
 
+> 
+> > +	if (dev->of_node && !pdata) {
+> > +		const struct of_device_id *id;
+> > +		struct act8865_platform_data pdata_of;
+> > +
+> > +		id = of_match_device(of_match_ptr(act8865_dt_ids), dev);
+> > +		if (!id)
+> > +			return -ENODEV;
+> > +
+> > +		ret = act8865_pdata_from_dt(dev, of_node, &pdata_of);
+> > +		if (ret < 0)
+> > +			return ret;
+> > +
+> > +		pdata = &pdata_of;
+> > +	} else {
+> > +		memset(of_node, 0, sizeof(of_node));
+> > +	}
+> 
+> What's this memset() for?
+No meaningful,  removed.
+
+> 
+> > +		rdev[i] = devm_regulator_register(&client->dev,
+> > +						&act8865_reg[i], &config);
+> 
+> > +err_unregister:
+> > +	while (--i >= 0)
+> > +		regulator_unregister(rdev[i]);
+> 
+> The whole purpose of devm_ APIs is to avoid the need to explicitly
+> unregister, you shouldn't need to call regulator_unregister() at all.
+
+Remove regulator_unregister(rdev[i]) statement.
+
+Best Regard,
+Wenyou Yang
