@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663Ab3LRUQO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 15:16:14 -0500
-Received: from mga09.intel.com ([134.134.136.24]:23121 "EHLO mga09.intel.com"
+	id S1751858Ab3LRUSv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 15:18:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43099 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126Ab3LRUQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 15:16:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,509,1384329600"; 
-   d="scan'208";a="426820599"
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch\@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	id S1751223Ab3LRUSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 15:18:49 -0500
+Date: Wed, 18 Dec 2013 21:19:41 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: John Johansen <john.johansen@canonical.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] qrwlock: A queue read/write lock implementation
-References: <1385147087-26588-1-git-send-email-Waiman.Long@hp.com>
-	<1385147087-26588-2-git-send-email-Waiman.Long@hp.com>
-	<20131217192128.GA15969@linux.vnet.ibm.com>
-	<CA+55aFzNSZCKnuEm+CDWUN2G4bfrN+HafX8r13NcfT2tJ4h-jw@mail.gmail.com>
-	<878uvilzka.fsf@tassilo.jf.intel.com>
-	<20131218194615.GG16438@laptop.programming.kicks-ass.net>
-Date: Wed, 18 Dec 2013 12:16:11 -0800
-In-Reply-To: <20131218194615.GG16438@laptop.programming.kicks-ass.net> (Peter
-	Zijlstra's message of "Wed, 18 Dec 2013 20:46:15 +0100")
-Message-ID: <87zjnxlxtg.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] apparmor: remove the "task" arg from
+	may_change_ptraced_domain()
+Message-ID: <20131218201940.GA9694@redhat.com>
+References: <20131218194338.GB23692@madcap2.tricolour.ca>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131218194338.GB23692@madcap2.tricolour.ca>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
-
-> On Wed, Dec 18, 2013 at 11:38:29AM -0800, Andi Kleen wrote:
->> (maybe it would be time to get rid of the patchable LOCK though?)
+On 12/18, Richard Guy Briggs wrote:
 >
-> With the argument that Intel simply doesn't ship UP chips anymore, with
-> the exception of quark which should probably run custom UP kernels due
-> to size constraints anyway?
+> Bcc: rgb@redhat.com
+> Subject: Re: [PATCH] apparmor: remove the "task" arg from
+>  may_change_ptraced_domain()
+> Reply-To:
+> In-Reply-To: <20130926132519.GY13968@madcap2.tricolour.ca>
 
-That, and:
+The subject is empty ;) I changed it to match the above.
 
-- Anything with a single core only has very fast LOCK
-- LOCK generally became much faster everywhere.
-- The original reason was for single cpu VM guests, but even those
-should increasingly have at least two VCPUs.
+> On 13/09/26, Richard Guy Briggs wrote:
+> > On Tue, Sep 24, 2013 at 06:44:42PM +0200, Oleg Nesterov wrote:
+> > > On 09/23, Richard Guy Briggs wrote:
+> > > >
+> > > > On Mon, Sep 16, 2013 at 04:20:35PM +0200, Oleg Nesterov wrote:
+> > > > > Unless task == current ptrace_parent(task) is not safe even under
+> > > > > rcu_read_lock() and most of the current users are not right.
+> > > >
+> > > > Could you point to an explanation of this?
+> > >
+> > > If this task exits before rcu_read_lock() ->parent can point to the
+> > > already freed/reused memory.
+> >
+> > Ok, understood.  So even though the task may have exited, the task
+> > struct pointer is still valid, but not the contents of the task struct
+> > to which it points.
+>
+> [The thread also relates to the patch
+> 	"pid: get ppid pid_t of task in init_pid_ns safely"
+> in which sys_getppid() (which appears safe) is replaced with something that
+> references the init_pid_ns rather than current's pid_ns.]
+>
+> So, in the general case, that call is not safe, and we should at least
+> remove the task_struct argument.
 
--Andi
+I changed my mind, please see the recent discussion with Paul:
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+	http://marc.info/?t=138626281900001
+
+instead we should document why ptrace_parent() is safe without pid_alive().
+
+I hope that the change in apparmor was fine anyway.
+
+
+Otherwise I can't understand your email, at least right now... I do not
+know how/where audit uses parent/real_parent.
+
+But yes, unless tsk == current, the usage of tsk->*parent is not safe even
+under rcu_read_lock() unless you verify that this task was not unhashed.
+
+ptrace_parent() is safe because it checks ->ptrace. Previously I thought
+we should not rely on this, but the additional pid_alive() looks ugly so
+it would be better to simply document this. I'll send the patch.
+
+Oleg.
+
