@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101Ab3LSAus (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 19:50:48 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:60718 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab3LSAuq (ORCPT
+	id S1753175Ab3LSAux (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 19:50:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38145 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab3LSAuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 19:50:46 -0500
-Message-ID: <1387414241.31516.19.camel@host5.omatika.ru>
-Subject: Re: [PATCH v3 07/21] ARM: dts: parse DMA config in pxamci
-From: Sergei Ianovich <ynvich@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Daniel Mack <zonque@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Chris Ball <cjb@laptop.org>,
-        Mark Brown <broonie@linaro.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-mmc@vger.kernel.org
-Date: Thu, 19 Dec 2013 04:50:41 +0400
-In-Reply-To: <1387309071-22382-8-git-send-email-ynvich@gmail.com>
-References: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
-	 <1387309071-22382-1-git-send-email-ynvich@gmail.com>
-	 <1387309071-22382-8-git-send-email-ynvich@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
+	Wed, 18 Dec 2013 19:50:50 -0500
+Date: Wed, 18 Dec 2013 16:50:49 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>, Hugh Dickins <hughd@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH] mm/rmap: fix BUG at rmap_walk
+Message-Id: <20131218165049.32462271f314185aed81de39@linux-foundation.org>
+In-Reply-To: <52B240C8.5070805@oracle.com>
+References: <1387412195-26498-1-git-send-email-liwanp@linux.vnet.ibm.com>
+	<20131218162858.6ec808c067baf4644532e110@linux-foundation.org>
+	<52B240C8.5070805@oracle.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel,
+On Wed, 18 Dec 2013 19:41:44 -0500 Sasha Levin <sasha.levin@oracle.com> wrote:
 
-On Tue, 2013-12-17 at 23:37 +0400, Sergei Ianovich wrote:
-> The existing PXA MMC driver cannot get DMA channels in a proper
-> way from the respective device tree binding.
+> On 12/18/2013 07:28 PM, Andrew Morton wrote:
+> > On Thu, 19 Dec 2013 08:16:35 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
+> >
+> >> page_get_anon_vma() called in page_referenced_anon() will lock and
+> >> increase the refcount of anon_vma, page won't be locked for anonymous
+> >> page. This patch fix it by skip check anonymous page locked.
+> >>
+> >> [  588.698828] kernel BUG at mm/rmap.c:1663!
+> >
+> > Why is all this suddenly happening.  Did we change something, or did a
+> > new test get added to trinity?
 > 
-> This patch provides temporary workaround which allows using the
-> existing driver in DT machines by pointing to the proper
-> dmaengine-based "marvell,pdma-1.0" DMA.
-> 
-> Even though the new DMA provider is not present we can parse device node
-> attributes manually and use channel numbers to acquire DMA channel
-> from the existing non-dmaengine provider.
-> 
-> When Daniel's DMA series is merged there will be no need to manually
-> parse for "dmas" and this patch can be safely reverted.
-> 
-> Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
-> CC: Daniel Mack <zonque@gmail.com>
-> CC: Arnd Bergmann <arnd@arndb.de>
-> ---
->    v2..v3
->    * split into good (PATCH 07/21) and temporary (this one) parts
-> 
->    v1..v2
->    * add binding for next-gen dma controller
->    * use correct dma declararion
->    * number changed from 5 to 3
+> Dave has improved mmap testing in trinity, maybe it's related?
 
-Could you please comment on this solution for PXA DMA?
+Dave, can you please summarise recent trinity changes for us?
 
-There may appear new, but it remains the last open review comment for
-the series at the moment.
+> > Or if there is no reason why the page must be locked for
+> > rmap_walk_ksm() and rmap_walk_file(), let's just remove rmap_walk()'s
+> > VM_BUG_ON()?  And rmap_walk_ksm()'s as well - it's duplicative anyway.
+> 
+> IMO, removing all these VM_BUG_ON()s (which is happening quite often recently) will
+> lead to having bugs sneak by causing obscure undetected corruption instead of
+> being very obvious through a BUG.
+> 
+
+Well.  a) My patch was functionally the same as the one Wanpeng
+proposed, only better ;) and b) we shouldn't just assert X because we
+observed that the existing code does X.  If a particular function
+*needs* PageLocked(page) then sure, it can and should assert that the
+page is locked.  Preferably with a comment explaining *why*
+PageLocked() is needed.  That way we don't end up with years-old
+assertions which nobody understands any more, which is what we have
+now.
 
