@@ -1,174 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab3LSOZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:25:29 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:48973 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754920Ab3LSOXc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:23:32 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>
-Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: [PATCH v8 5/9] usb: gadget: s3c-hsotg: enable generic phy support
-Date: Thu, 19 Dec 2013 09:23:06 -0500
-Message-Id: <1387462990-12039-6-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1387462990-12039-1-git-send-email-mporter@linaro.org>
-References: <1387462990-12039-1-git-send-email-mporter@linaro.org>
+	id S932242Ab3LSMkb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:40:31 -0500
+Received: from mga01.intel.com ([192.55.52.88]:5565 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754953Ab3LSL5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:57:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
+   d="scan'208";a="452577940"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
+In-Reply-To: <20131219112519.GX21999@twins.programming.kicks-ass.net>
+References: <20131217161126.GL13532@twins.programming.kicks-ass.net> <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com> <20131218133439.GR21999@twins.programming.kicks-ass.net> <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com> <20131218141125.GT21999@twins.programming.kicks-ass.net> <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com> <20131218150900.GU21999@twins.programming.kicks-ass.net> <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com> <20131219102625.GC30183@twins.programming.kicks-ass.net> <87r499rt32.fsf@ashishki-desk.ger.corp.intel.com> <20131219112519.GX21999@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Thu, 19 Dec 2013 13:57:27 +0200
+Message-ID: <87lhzhrr2w.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for the generic PHY subsystem. Generic PHY
-support is probed and then the driver falls back to checking
-for an old style USB PHY and pdata if not found.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-Signed-off-by: Matt Porter <mporter@linaro.org>
----
- drivers/usb/gadget/s3c-hsotg.c | 55 ++++++++++++++++++++++++++++++------------
- 1 file changed, 39 insertions(+), 16 deletions(-)
+> On Thu, Dec 19, 2013 at 01:14:09PM +0200, Alexander Shishkin wrote:
+>> Peter Zijlstra <peterz@infradead.org> writes:
+>> 
+>> > On Thu, Dec 19, 2013 at 09:53:44AM +0200, Alexander Shishkin wrote:
+>> >> Peter Zijlstra <peterz@infradead.org> writes:
+>> >> > The thing is; why can't you zero-copy whatever buffer the hardware
+>> >> > writes into, into the normal buffer?
+>> >> 
+>> >> I'm not sure I understand. You mean, have the buffer split between perf
+>> >> data and trace data?
+>> >
+>> > Yep, I don't see any reason why this wouldn't work.
+>> >
+>> > When the hardware thing sends an interrupt to notify us its buffer is
+>> > 'full', stop the recorder, try to create a single record in the buffer
+>> > that's big enough + 1 page, then swizzle the hardware pages and the
+>> > buffer pages for that record, using the +1 page to page align the actual
+>> > data. Then (re)start the hardware on the 'new' pages.
+>> 
+>> We configure the hardware thing to send an interrupt *before* the buffer
+>> is full, keep the recorder running while userspace saves stuff to
+>> perf.data file. Recording only stops if perf fails to read the trace
+>> data out fast enough and the buffer fills up. So you'd have a complete
+>> trace.
+>> 
+>> Also, we have what we call a "snapshot" mode, where we keep the hardware
+>> thing running, writing data to a circular buffer till it's stopped, in
+>> case we're only interested in the most recent trace data to see what it
+>> is that takes too long to respond, etc. And while it is running, we're
+>> getting new records in the perf stream all the time (mmaps, etc).
+>> 
+>> Put simple: perf data and trace data are two different separate types of
+>> information that originate from two different sources, can exist and
+>> make sense separately from one another and should not be mixed.
+>
+> Well you're either having to change your stance or we're done talking
+> right now.
 
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index cbfbf41..8f9bcdb 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -30,6 +30,8 @@
- #include <linux/clk.h>
- #include <linux/regulator/consumer.h>
- #include <linux/of_platform.h>
-+#include <linux/phy/phy.h>
-+#include <linux/usb/phy.h>
- 
- #include <linux/usb/ch9.h>
- #include <linux/usb/gadget.h>
-@@ -138,6 +140,7 @@ struct s3c_hsotg_ep {
-  * @dev: The parent device supplied to the probe function
-  * @driver: USB gadget driver
-  * @phy: The otg phy transceiver structure for phy control.
-+ * @uphy: The otg phy transceiver structure for old USB phy control.
-  * @plat: The platform specific configuration data. This can be removed once
-  * all SoCs support usb transceiver.
-  * @regs: The memory area mapped for accessing registers.
-@@ -159,7 +162,8 @@ struct s3c_hsotg_ep {
- struct s3c_hsotg {
- 	struct device		 *dev;
- 	struct usb_gadget_driver *driver;
--	struct usb_phy		*phy;
-+	struct phy		 *phy;
-+	struct usb_phy		 *uphy;
- 	struct s3c_hsotg_plat	 *plat;
- 
- 	spinlock_t              lock;
-@@ -2901,8 +2905,11 @@ static void s3c_hsotg_phy_enable(struct s3c_hsotg *hsotg)
- 
- 	dev_dbg(hsotg->dev, "pdev 0x%p\n", pdev);
- 
--	if (hsotg->phy)
--		usb_phy_init(hsotg->phy);
-+	if (hsotg->phy) {
-+		phy_init(hsotg->phy);
-+		phy_power_on(hsotg->phy);
-+	} else if (hsotg->uphy)
-+		usb_phy_init(hsotg->uphy);
- 	else if (hsotg->plat->phy_init)
- 		hsotg->plat->phy_init(pdev, hsotg->plat->phy_type);
- }
-@@ -2918,8 +2925,11 @@ static void s3c_hsotg_phy_disable(struct s3c_hsotg *hsotg)
- {
- 	struct platform_device *pdev = to_platform_device(hsotg->dev);
- 
--	if (hsotg->phy)
--		usb_phy_shutdown(hsotg->phy);
-+	if (hsotg->phy) {
-+		phy_power_off(hsotg->phy);
-+		phy_exit(hsotg->phy);
-+	} else if (hsotg->uphy)
-+		usb_phy_shutdown(hsotg->uphy);
- 	else if (hsotg->plat->phy_exit)
- 		hsotg->plat->phy_exit(pdev, hsotg->plat->phy_type);
- }
-@@ -3526,7 +3536,8 @@ static void s3c_hsotg_delete_debug(struct s3c_hsotg *hsotg)
- static int s3c_hsotg_probe(struct platform_device *pdev)
- {
- 	struct s3c_hsotg_plat *plat = dev_get_platdata(&pdev->dev);
--	struct usb_phy *phy;
-+	struct phy *phy;
-+	struct usb_phy *uphy;
- 	struct device *dev = &pdev->dev;
- 	struct s3c_hsotg_ep *eps;
- 	struct s3c_hsotg *hsotg;
-@@ -3541,19 +3552,26 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--	phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-+	/*
-+	 * Attempt to find a generic PHY, then look for an old style
-+	 * USB PHY, finally fall back to pdata
-+	 */
-+	phy = devm_phy_get(&pdev->dev, "usb2-phy");
- 	if (IS_ERR(phy)) {
--		/* Fallback for pdata */
--		plat = dev_get_platdata(&pdev->dev);
--		if (!plat) {
--			dev_err(&pdev->dev, "no platform data or transceiver defined\n");
--			return -EPROBE_DEFER;
--		} else {
-+		uphy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-+		if (IS_ERR(uphy)) {
-+			/* Fallback for pdata */
-+			plat = dev_get_platdata(&pdev->dev);
-+			if (!plat) {
-+				dev_err(&pdev->dev,
-+				"no platform data or transceiver defined\n");
-+				return -EPROBE_DEFER;
-+			}
- 			hsotg->plat = plat;
--		}
--	} else {
-+		} else
-+			hsotg->uphy = uphy;
-+	} else
- 		hsotg->phy = phy;
--	}
- 
- 	hsotg->dev = dev;
- 
-@@ -3620,6 +3638,9 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
- 		goto err_supplies;
- 	}
- 
-+	if (hsotg->phy)
-+		phy_init(hsotg->phy);
-+
- 	/* usb phy enable */
- 	s3c_hsotg_phy_enable(hsotg);
- 
-@@ -3713,6 +3734,8 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
- 	}
- 
- 	s3c_hsotg_phy_disable(hsotg);
-+	if (hsotg->phy)
-+		phy_exit(hsotg->phy);
- 	clk_disable_unprepare(hsotg->clk);
- 
- 	return 0;
--- 
-1.8.4
+I'm making a case in favor of 2 separate buffers just like you asked in
+one of the previous emails. It's backed by some very real usecases. That
+said, I'm not personally attached to any one design, only what makes
+sense. There is no 'stance'.
 
+Regards,
+--
+Alex
