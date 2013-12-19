@@ -1,22 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab3LSPyq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:54:46 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:2869 "EHLO
+	id S1755548Ab3LSPzA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:55:00 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:2885 "EHLO
 	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415Ab3LSPyn (ORCPT
+	with ESMTP id S1755479Ab3LSPy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:54:43 -0500
+	Thu, 19 Dec 2013 10:54:58 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 19 Dec 2013 07:56:46 -0800
+	by hqnvupgp08.nvidia.com on Thu, 19 Dec 2013 07:56:12 -0800
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/6] efuse driver for Tegra
-Date: Thu, 19 Dec 2013 17:54:28 +0200
-Message-ID: <1387468474-26521-1-git-send-email-pdeschrijver@nvidia.com>
+        <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>
+Subject: [PATCH 1/6] ARM: tegra: export apb dma readl/writel
+Date: Thu, 19 Dec 2013 17:54:29 +0200
+Message-ID: <1387468474-26521-2-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1387468474-26521-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1387468474-26521-1-git-send-email-pdeschrijver@nvidia.com>
 X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -24,62 +32,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver allows userspace to read the raw efuse data. Its userspace
-interface is modelled after the sunxi_sid driver which provides similar
-functionality for some Allwinner SoCs. It has been tested on
-Tegra20 (ventana), Tegra30 (beaverboard) and Tegra114 (dalmore).
+Export APB DMA readl and writel. These are needed because we can't access
+the fuses directly on Tegra20 without potentially causing a system hang.
 
-TODO:
-* test on Tegra124 (venice2)
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ arch/arm/mach-tegra/apbio.c |   51 ++++++++++++++++++++++++++----------------
+ include/linux/tegra-soc.h   |   16 +++++++++++++
+ 2 files changed, 47 insertions(+), 20 deletions(-)
 
-Peter De Schrijver (6):
-  ARM: tegra: export apb dma readl/writel
-  misc: fuse: Add efuse driver for Tegra
-  ARM: tegra: Add efuse bindings
-  ARM: tegra: rework fuse.c
-  ARM: Tegra: remove speedo files
-  misc: enable fuse drivers
-
- arch/arm/boot/dts/tegra114.dtsi           |    6 +
- arch/arm/boot/dts/tegra124.dtsi           |    6 +
- arch/arm/boot/dts/tegra20.dtsi            |    7 +
- arch/arm/boot/dts/tegra30.dtsi            |    6 +
- arch/arm/mach-tegra/Makefile              |    3 -
- arch/arm/mach-tegra/apbio.c               |   51 +++--
- arch/arm/mach-tegra/fuse.c                |  121 ++-----------
- arch/arm/mach-tegra/tegra114_speedo.c     |  104 ----------
- arch/arm/mach-tegra/tegra20_speedo.c      |  109 -----------
- arch/arm/mach-tegra/tegra30_speedo.c      |  292 ----------------------------
- drivers/misc/Kconfig                      |    1 +
- drivers/misc/Makefile                     |    1 +
- drivers/misc/fuse/Kconfig                 |   12 ++
- drivers/misc/fuse/Makefile                |    1 +
- drivers/misc/fuse/tegra/Makefile          |    7 +
- drivers/misc/fuse/tegra/fuse-tegra.c      |   96 ++++++++++
- drivers/misc/fuse/tegra/fuse-tegra20.c    |  152 +++++++++++++++
- drivers/misc/fuse/tegra/fuse-tegra30.c    |  192 +++++++++++++++++++
- drivers/misc/fuse/tegra/fuse.h            |   79 ++++++++
- drivers/misc/fuse/tegra/tegra114_speedo.c |  108 +++++++++++
- drivers/misc/fuse/tegra/tegra124_speedo.c |  163 ++++++++++++++++
- drivers/misc/fuse/tegra/tegra20_speedo.c  |  110 +++++++++++
- drivers/misc/fuse/tegra/tegra30_speedo.c  |  293 +++++++++++++++++++++++++++++
- include/linux/tegra-soc.h                 |   17 ++
- 24 files changed, 1301 insertions(+), 636 deletions(-)
- delete mode 100644 arch/arm/mach-tegra/tegra114_speedo.c
- delete mode 100644 arch/arm/mach-tegra/tegra20_speedo.c
- delete mode 100644 arch/arm/mach-tegra/tegra30_speedo.c
- create mode 100644 drivers/misc/fuse/Kconfig
- create mode 100644 drivers/misc/fuse/Makefile
- create mode 100644 drivers/misc/fuse/tegra/Makefile
- create mode 100644 drivers/misc/fuse/tegra/fuse-tegra.c
- create mode 100644 drivers/misc/fuse/tegra/fuse-tegra20.c
- create mode 100644 drivers/misc/fuse/tegra/fuse-tegra30.c
- create mode 100644 drivers/misc/fuse/tegra/fuse.h
- create mode 100644 drivers/misc/fuse/tegra/tegra114_speedo.c
- create mode 100644 drivers/misc/fuse/tegra/tegra124_speedo.c
- create mode 100644 drivers/misc/fuse/tegra/tegra20_speedo.c
- create mode 100644 drivers/misc/fuse/tegra/tegra30_speedo.c
-
+diff --git a/arch/arm/mach-tegra/apbio.c b/arch/arm/mach-tegra/apbio.c
+index bc47197..e0bf49d 100644
+--- a/arch/arm/mach-tegra/apbio.c
++++ b/arch/arm/mach-tegra/apbio.c
+@@ -32,8 +32,8 @@ static u32 *tegra_apb_bb;
+ static dma_addr_t tegra_apb_bb_phys;
+ static DECLARE_COMPLETION(tegra_apb_wait);
+ 
+-static u32 tegra_apb_readl_direct(unsigned long offset);
+-static void tegra_apb_writel_direct(u32 value, unsigned long offset);
++static int tegra_apb_readl_direct(unsigned long offset, u32 *value);
++static int tegra_apb_writel_direct(u32 value, unsigned long offset);
+ 
+ static struct dma_chan *tegra_apb_dma_chan;
+ static struct dma_slave_config dma_sconfig;
+@@ -128,58 +128,64 @@ static int do_dma_transfer(unsigned long apb_add,
+ 	return 0;
+ }
+ 
+-static u32 tegra_apb_readl_using_dma(unsigned long offset)
++int tegra_apb_readl_using_dma(unsigned long offset, u32 *value)
+ {
+ 	int ret;
+ 
+ 	if (!tegra_apb_dma_chan && !tegra_apb_dma_init())
+-		return tegra_apb_readl_direct(offset);
++		return tegra_apb_readl_direct(offset, value);
+ 
+ 	mutex_lock(&tegra_apb_dma_lock);
+ 	ret = do_dma_transfer(offset, DMA_DEV_TO_MEM);
+-	if (ret < 0) {
++	if (ret < 0)
+ 		pr_err("error in reading offset 0x%08lx using dma\n", offset);
+-		*(u32 *)tegra_apb_bb = 0;
+-	}
++	else
++		*value = *tegra_apb_bb;
++
+ 	mutex_unlock(&tegra_apb_dma_lock);
+-	return *((u32 *)tegra_apb_bb);
++
++	return ret;
+ }
+ 
+-static void tegra_apb_writel_using_dma(u32 value, unsigned long offset)
++int tegra_apb_writel_using_dma(u32 value, unsigned long offset)
+ {
+ 	int ret;
+ 
+-	if (!tegra_apb_dma_chan && !tegra_apb_dma_init()) {
+-		tegra_apb_writel_direct(value, offset);
+-		return;
+-	}
++	if (!tegra_apb_dma_chan && !tegra_apb_dma_init())
++		return tegra_apb_writel_direct(value, offset);
+ 
+ 	mutex_lock(&tegra_apb_dma_lock);
+ 	*((u32 *)tegra_apb_bb) = value;
+ 	ret = do_dma_transfer(offset, DMA_MEM_TO_DEV);
++	mutex_unlock(&tegra_apb_dma_lock);
+ 	if (ret < 0)
+ 		pr_err("error in writing offset 0x%08lx using dma\n", offset);
+-	mutex_unlock(&tegra_apb_dma_lock);
++
++	return ret;
+ }
+ #else
+ #define tegra_apb_readl_using_dma tegra_apb_readl_direct
+ #define tegra_apb_writel_using_dma tegra_apb_writel_direct
+ #endif
+ 
+-typedef u32 (*apbio_read_fptr)(unsigned long offset);
+-typedef void (*apbio_write_fptr)(u32 value, unsigned long offset);
++typedef int (*apbio_read_fptr)(unsigned long offset, u32 *value);
++typedef int (*apbio_write_fptr)(u32 value, unsigned long offset);
+ 
+ static apbio_read_fptr apbio_read;
+ static apbio_write_fptr apbio_write;
+ 
+-static u32 tegra_apb_readl_direct(unsigned long offset)
++static int tegra_apb_readl_direct(unsigned long offset, u32 *value)
+ {
+-	return readl(IO_ADDRESS(offset));
++	*value = readl(IO_ADDRESS(offset));
++
++	return 0;
+ }
+ 
+-static void tegra_apb_writel_direct(u32 value, unsigned long offset)
++static int tegra_apb_writel_direct(u32 value, unsigned long offset)
+ {
+ 	writel(value, IO_ADDRESS(offset));
++
++	return 0;
+ }
+ 
+ void tegra_apb_io_init(void)
+@@ -197,7 +203,12 @@ void tegra_apb_io_init(void)
+ 
+ u32 tegra_apb_readl(unsigned long offset)
+ {
+-	return apbio_read(offset);
++	u32 val;
++
++	if (apbio_read(offset, &val) < 0)
++		return 0;
++	else
++		return val;
+ }
+ 
+ void tegra_apb_writel(u32 value, unsigned long offset)
+diff --git a/include/linux/tegra-soc.h b/include/linux/tegra-soc.h
+index 95f611d..f53fe9c 100644
+--- a/include/linux/tegra-soc.h
++++ b/include/linux/tegra-soc.h
+@@ -19,4 +19,20 @@
+ 
+ u32 tegra_read_chipid(void);
+ 
++
++#if defined(CONFIG_TEGRA20_APB_DMA)
++void tegra_apb_io_init(void);
++int tegra_apb_readl_using_dma(unsigned long offset, u32 *value);
++int tegra_apb_writel_using_dma(u32 value, unsigned long offset);
++#else
++static inline void tegra_apb_io_init(void) {}
++static inline int tegra_apb_readl_using_dma(unsigned long offset, u32 *value)
++{
++	return -EINVAL;
++}
++static inline int tegra_apb_writel_using_dma(u32 value, unsigned long offset)
++{
++	return -EINVAL;
++}
++#endif
+ #endif /* __LINUX_TEGRA_SOC_H_ */
 -- 
 1.7.7.rc0.72.g4b5ea.dirty
 
