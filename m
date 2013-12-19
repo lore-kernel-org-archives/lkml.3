@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227Ab3LSFHj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 00:07:39 -0500
-Received: from mga14.intel.com ([143.182.124.37]:62151 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab3LSFHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 00:07:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="397788382"
-Date: Wed, 18 Dec 2013 21:12:29 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: pavel@ucw.cz, rjw@rjwysocki.net, len.brown@intel.com,
-        sarah.a.sharp@linux.intel.com, gregkh@linuxfoundation.org
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, santosh.shilimkar@ti.com
-Subject: Re: [RFC/PATCH 0/3] pm: Make SET_*_PM_OPS() macros more smart
-Message-ID: <20131219051229.GA27854@psi-dev26.jf.intel.com>
-References: <1386911905-2366-1-git-send-email-david.a.cohen@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1386911905-2366-1-git-send-email-david.a.cohen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751373Ab3LSFPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 00:15:17 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:58940 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857Ab3LSFPO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 00:15:14 -0500
+Date: Thu, 19 Dec 2013 00:15:13 -0500 (EST)
+Message-Id: <20131219.001513.1709782271902847928.davem@davemloft.net>
+To: borkmann@iogearbox.net
+Cc: fengguang.wu@intel.com, gaowanlong@cn.fujitsu.com, ffusco@redhat.com,
+        kbuild-all@01.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [net-next/master PATCH] lib: fix compile warning in
+ hashlib_init
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <52B24C92.8050201@iogearbox.net>
+References: <1387415314-21786-1-git-send-email-gaowanlong@cn.fujitsu.com>
+	<20131219011506.GA27326@localhost>
+	<52B24C92.8050201@iogearbox.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 18 Dec 2013 21:15:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 09:18:22PM -0800, David Cohen wrote:
-> Hi,
-> 
-> These patches are proposal to extend the lack of #ifdef checks on PM callback
-> to its implementation too.
-> 
-> Currently SET_*_PM_OPS() macros make #ifdefs checks not necessary when setting
-> the callback to PM ops, but the callbacks implementation don't see same
-> benefit.
-> 
-> This RFC Solves a problem reported by Santosh on xhci-plat.c driver due to
-> wrong #ifdef checks:
-> 
-> drivers/usb/host/xhci-plat.c:201:12: warning: ‘xhci_plat_suspend’ defined but not used [-Wunused-function]
-> drivers/usb/host/xhci-plat.c:209:12: warning: ‘xhci_plat_resume’ defined but not used [-Wunused-function]
-> 
-> But instead of fixing the #ifdefs, we remove the need for it :)
+From: Daniel Borkmann <borkmann@iogearbox.net>
+Date: Thu, 19 Dec 2013 02:32:02 +0100
 
-Ping. Comments here? :)
+> On 12/19/2013 02:15 AM, Fengguang Wu wrote:
+>> CC the list.
+>>
+>> On Thu, Dec 19, 2013 at 09:08:34AM +0800, Wanlong Gao wrote:
+>>> /git/linux/lib/hash.c: In function 'hashlib_init':
+>>> /git/linux/lib/hash.c:35:2: warning: passing argument 1 of
+>>> 'setup_arch_fast_hash' from incompatible pointer type [enabled by
+>>> default]
+>>> /git/linux/include/asm-generic/hash.h:5:20: note: expected 'struct
+>>> arch_hash_ops *' but argument is of type 'struct fast_hash_ops *'
+>>>
+>>> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+>>> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> 
+> That's already in netdev patchwork:
+> 
+> http://patchwork.ozlabs.org/patch/302908/
 
-Br, David
-
-> 
-> Br, David Cohen
-> 
-> ---
-> David Cohen (2):
->   pm: make PM macros more smart
->   usb/xhci: implement proper static inline stubs when !CONFIG_PM
-> 
-> Santosh Shilimkar (1):
->   usb/xhci-plat: remove unnecessary #ifdef checks for CONFIG_PM_SLEEP
-> 
->  drivers/usb/host/xhci-plat.c |  7 +------
->  drivers/usb/host/xhci.h      |  6 ++++--
->  include/linux/pm.h           | 11 +++++++++--
->  3 files changed, 14 insertions(+), 10 deletions(-)
-> 
-> -- 
-> 1.8.4.2
+And I've applied it, thanks.
