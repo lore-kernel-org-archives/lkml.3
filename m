@@ -1,84 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575Ab3LSHB2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 02:01:28 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:50167 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab3LSHBZ (ORCPT
+	id S1752813Ab3LSHB7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 02:01:59 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47860 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab3LSHAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 02:01:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
-References: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 19 Dec 2013 15:52:47 +0900
-Message-ID: <CAAVeFuKAGfnnsbtBg=zfmciyMdZHgrX_EpecqPjG=oO6rZdWag@mail.gmail.com>
-Subject: Re: [PATCH] Tracing events with GPIOs
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, masami.hiramatsu.pt@hitachi.com,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 19 Dec 2013 02:00:16 -0500
+X-AuditID: 9c930179-b7bedae000000f15-74-52b2997d4ebc
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 2/6] perf tools: Introduce struct perf_log
+Date: Thu, 19 Dec 2013 16:00:07 +0900
+Message-Id: <1387436411-20160-3-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
+References: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 9:22 AM, Jean-Jacques Hiblot
-<jjhiblot@traphandler.com> wrote:
->
-> This patch implements a new tracing mechanism based on kprobes and using GPIO.
-> Debugging with GPIO is very common in the embedded world. At least for those of us
-> fortunate enough to have an oscilloscope or a logic analyzer on their bench...
-> This is especially true if the issue results of a hardware/sofware interaction.
->
-> Typical use cases are :
-> * mixed software/hardware debugging. For example when the software detects a
->   situation of interest (typically an error) it toggles a GPIO to trigger the
->   oscilloscope acquisition.
-> * direct latency/duration measurements.
->
-> examples:
-> To trig the oscilloscope whenever a mmc command error:
->   echo "p:my_mmc_blk_error mmc_blk_cmd_error gpiopulse@13" > /sys/kernel/debug/tracing/kprobe_events
->   echo 1 > /sys/kernel/debug/tracing/events/kprobes/my_mmc_blk_error/enable
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-I do like this idea, however I wonder if you could try and make it use
-the new gpio descriptor API (see Documentation/gpio/) instead of the
-GPIO integers we are trying to deprecate (well ok, we just *started*
-claiming they are deprecated).
+Add new functions to save error messages in a temp file.  It'll be
+used by some UI front-ends to see the messages.
 
-This would probably make things a little bit more complicated on your
-side, due to the fact the gpiod API is new and probably does not cover
-all your needs. But it would also make your approach safer and more
-future proof, on top of helping us refine gpiod for various use cases.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/Makefile.perf |   1 +
+ tools/perf/perf.c        |   3 ++
+ tools/perf/util/debug.h  |  15 +++++++
+ tools/perf/util/log.c    | 105 +++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 124 insertions(+)
+ create mode 100644 tools/perf/util/log.c
 
-The problems I can see so far:
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 97a2145e4cc6..ec8184014a76 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -372,6 +372,7 @@ LIB_OBJS += $(OUTPUT)util/stat.o
+ LIB_OBJS += $(OUTPUT)util/record.o
+ LIB_OBJS += $(OUTPUT)util/srcline.o
+ LIB_OBJS += $(OUTPUT)util/data.o
++LIB_OBJS += $(OUTPUT)util/log.o
+ 
+ LIB_OBJS += $(OUTPUT)ui/setup.o
+ LIB_OBJS += $(OUTPUT)ui/helpline.o
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 431798a4110d..bdf7bd8e4394 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -10,6 +10,7 @@
+ 
+ #include "util/exec_cmd.h"
+ #include "util/cache.h"
++#include "util/debug.h"
+ #include "util/quote.h"
+ #include "util/run-command.h"
+ #include "util/parse-events.h"
+@@ -524,6 +525,7 @@ int main(int argc, const char **argv)
+ 	 */
+ 	pthread__block_sigwinch();
+ 
++	perf_log_init();
+ 	while (1) {
+ 		static int done_help;
+ 		int was_alias = run_argv(&argc, &argv);
+@@ -543,6 +545,7 @@ int main(int argc, const char **argv)
+ 		} else
+ 			break;
+ 	}
++	perf_log_exit();
+ 
+ 	fprintf(stderr, "Failed to run command '%s': %s\n",
+ 		cmd, strerror(errno));
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index 443694c36b03..ea160abc2ae0 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -19,4 +19,19 @@ int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
+ 
+ void pr_stat(const char *fmt, ...);
+ 
++struct perf_log {
++	FILE *fp;
++	off_t *linemap;
++	u32 lines;
++	u32 nr_alloc;
++	bool seen_newline;
++};
++
++extern struct perf_log perf_log;
++
++int perf_log_init(void);
++int perf_log_exit(void);
++void perf_log_add(const char *msg);
++void perf_log_addv(const char *fmt, va_list ap);
++
+ #endif	/* __PERF_DEBUG_H */
+diff --git a/tools/perf/util/log.c b/tools/perf/util/log.c
+new file mode 100644
+index 000000000000..4a34bed2af44
+--- /dev/null
++++ b/tools/perf/util/log.c
+@@ -0,0 +1,105 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include "util/debug.h"
++
++#define LINEMAP_GROW  128
++
++struct perf_log perf_log = {
++	.seen_newline = true,
++};
++
++int perf_log_init(void)
++{
++	FILE *fp;
++	char name[] = "/tmp/perf-tui-log-XXXXXX";
++	int fd = mkstemp(name);
++
++	if (fd < 0)
++		return -1;
++
++	fp = fdopen(fd, "r+");
++	if (fp == NULL) {
++		close(fd);
++		return -1;
++	}
++
++	perf_log.fp = fp;
++
++	return 0;
++}
++
++int perf_log_exit(void)
++{
++	FILE *fp = perf_log.fp;
++	if (fp)
++		fclose(fp);
++
++	free(perf_log.linemap);
++
++	perf_log.fp = NULL;
++	perf_log.linemap = NULL;
++	return 0;
++}
++
++static int grow_linemap(struct perf_log *log)
++{
++	off_t *newmap;
++	int newsize = log->nr_alloc + LINEMAP_GROW;
++
++	newmap = realloc(log->linemap, newsize * sizeof(*log->linemap));
++	if (newmap == NULL)
++		return -1;
++
++	log->nr_alloc = newsize;
++	log->linemap = newmap;
++	return 0;
++}
++
++static int __add_to_linemap(struct perf_log *log, off_t index)
++{
++	if (log->lines == log->nr_alloc)
++		if (grow_linemap(log) < 0)
++			return -1;
++
++	log->linemap[log->lines++] = index;
++	return 0;
++}
++
++static void add_to_linemap(struct perf_log *log, const char *msg, off_t base)
++{
++	const char *pos;
++
++	if (strlen(msg) == 0)
++		return;
++
++	if (log->seen_newline) {
++		if (__add_to_linemap(log, base) < 0)
++			return;
++	}
++
++	if ((pos = strchr(msg, '\n')) != NULL) {
++		log->seen_newline = true;
++		pos++;
++		add_to_linemap(log, pos, base + (pos - msg));
++	} else {
++		log->seen_newline = false;
++	}
++}
++
++void perf_log_add(const char *msg)
++{
++	FILE *fp = perf_log.fp;
++	off_t offset = ftello(fp);
++
++	add_to_linemap(&perf_log, msg, offset);
++
++	fwrite(msg, 1, strlen(msg), fp);
++}
++
++void perf_log_addv(const char *fmt, va_list ap)
++{
++	char buf[4096];
++
++	vsnprintf(buf, sizeof(buf), fmt, ap);
++	perf_log_add(buf);
++}
+-- 
+1.7.11.7
 
-- Using gpiod, GPIOs are not specified as integers, but are typically
-mapped to a given (device, function) pair (device can be NULL) using
-device tree/platform data/ACPI and obtained by the corresponding
-device driver through gpiod_get(). You would need to find a different
-way to specify GPIOs, maybe using the gpio_chip's label and the GPIO
-hardware number.
-
-- Even if you do so, there is currently no way to arbitrarily obtain a
-GPIO that has not been explicitly mapped to a (device, function), and
-IIUC you need to specify the tracing GPIO freely from user-space. This
-hints that we will need to add a function that is sensibly the same as
-gpio_request_one() to the gpiod API, but I wonder if that does not
-defeats the purpose somehow.
-
-So using gpiod we would have the dual problem of how to represent the
-GPIO you need from user-space, and how you can safely obtain it. It
-would be interesting to hear what Linus thinks about it, and if he has
-better ideas about how we could solve these issues (as he usually has
-;) ).
-
-(note that it is *not* a hard requirement to use gpiod over the legacy
-integer API, but considering this is the direction we are taking, it
-would be nice to consider it and see how we could solve the issues
-mentioned above)
-
-Thanks,
-Alex.
