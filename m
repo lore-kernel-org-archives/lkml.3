@@ -1,96 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083Ab3LSMNp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:13:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45244 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755877Ab3LSL7T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:19 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Stefano Panella <stefano.panella@citrix.com>, Takashi Iwai <tiwai@suse.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 168/208] ALSA: memalloc.h - fix wrong truncation of dma_addr_t
-Date: Thu, 19 Dec 2013 11:54:26 +0000
-Message-Id: <1387454106-19326-169-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1753299Ab3LSLtr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:49:47 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:51846 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752462Ab3LSLtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:49:45 -0500
+Message-ID: <52B2DD56.8040401@imgtec.com>
+Date: Thu, 19 Dec 2013 11:49:42 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+CC: <linux-metag@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch: metag: kernel: export 'cpu_core_map' in "topology.c"
+References: <52B2A85C.9060303@gmail.com>
+In-Reply-To: <52B2A85C.9060303@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_12_19_11_49_44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+On 19/12/13 08:03, Chen Gang wrote:
+> Need export 'cpu_core_map', or cann't pass compiling with allmodconfig,
+> the related error:
+> 
+>     MODPOST 2909 modules
+>   ERROR: "cpu_core_map" [drivers/staging/lustre/lustre/libcfs/libcfs.ko] undefined!
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 
-------------------
+Thanks, applied.
 
-From: Stefano Panella <stefano.panella@citrix.com>
-
-commit 932e9dec380c67ec15ac3eb073bb55797d8b4801 upstream.
-
-When running a 32bit kernel the hda_intel driver is still reporting
-a 64bit dma_mask if the HW supports it.
-
->From sound/pci/hda/hda_intel.c:
-
-        /* allow 64bit DMA address if supported by H/W */
-        if ((gcap & ICH6_GCAP_64OK) && !pci_set_dma_mask(pci, DMA_BIT_MASK(64)))
-                pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(64));
-        else {
-                pci_set_dma_mask(pci, DMA_BIT_MASK(32));
-                pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32));
-        }
-
-which means when there is a call to dma_alloc_coherent from
-snd_malloc_dev_pages a machine address bigger than 32bit can be returned.
-This can be true in particular if running  the 32bit kernel as a pv dom0
-under the Xen Hypervisor or PAE on bare metal.
-
-The problem is that when calling setup_bdle to program the BLE the
-dma_addr_t returned from the dma_alloc_coherent is wrongly truncated
-from snd_sgbuf_get_addr if running a 32bit kernel:
-
-static inline dma_addr_t snd_sgbuf_get_addr(struct snd_dma_buffer *dmab,
-                                           size_t offset)
-{
-        struct snd_sg_buf *sgbuf = dmab->private_data;
-        dma_addr_t addr = sgbuf->table[offset >> PAGE_SHIFT].addr;
-        addr &= PAGE_MASK;
-        return addr + offset % PAGE_SIZE;
-}
-
-where PAGE_MASK in a 32bit kernel is zeroing the upper 32bit af addr.
-
-Without this patch the HW will fetch the 32bit truncated address,
-which is not the one obtained from dma_alloc_coherent and will result
-to a non working audio but can corrupt host memory at a random location.
-
-The current patch apply to v3.13-rc3-74-g6c843f5
-
-Signed-off-by: Stefano Panella <stefano.panella@citrix.com>
-Reviewed-by: Frediano Ziglio <frediano.ziglio@citrix.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- include/sound/memalloc.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/sound/memalloc.h b/include/sound/memalloc.h
-index cf15b82..54aff2d 100644
---- a/include/sound/memalloc.h
-+++ b/include/sound/memalloc.h
-@@ -103,7 +103,7 @@ static inline dma_addr_t snd_sgbuf_get_addr(struct snd_dma_buffer *dmab,
- {
- 	struct snd_sg_buf *sgbuf = dmab->private_data;
- 	dma_addr_t addr = sgbuf->table[offset >> PAGE_SHIFT].addr;
--	addr &= PAGE_MASK;
-+	addr &= ~((dma_addr_t)PAGE_SIZE - 1);
- 	return addr + offset % PAGE_SIZE;
- }
- 
--- 
-1.8.3.2
+Cheers
+James
 
