@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab3LSKK5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 05:10:57 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:63816 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab3LSKKy (ORCPT
+	id S1752894Ab3LSKMO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 05:12:14 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:44995 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649Ab3LSKML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 05:10:54 -0500
-Date: Thu, 19 Dec 2013 15:40:40 +0530
+	Thu, 19 Dec 2013 05:12:11 -0500
+Date: Thu, 19 Dec 2013 15:42:03 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 4/7] drivers: usb: Include appropriate header file in
- pci-quirks.c
-Message-ID: <e0ff2366ddbd62f75e8597008b1f3f9001224ad6.1387439261.git.rashika.kheria@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: [PATCH 5/7] drivers: usb: Mark function as static in usbsevseg.c
+Message-ID: <4f12812db338b0cacc9ed456a1b18679a3ac4a6d.1387439261.git.rashika.kheria@gmail.com>
 References: <0e0e74b4487edd341b66674333d734d5828c7e64.1387439261.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -27,31 +25,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include header file include/linux/usb/hcd.h in host/pci-quirks.c because
-function usb_hcd_amd_remote_wakeup_quirk() has its prototype declaration
-in include/linux/usb/hcd.h.
+Mark function my_memlen() as static in misc/usbsevseg.c because it is
+not used outside this file.
 
-This eliminates the following warning in host/pci-quirks.c:
-drivers/usb/host/pci-quirks.c:253:5: warning: no previous prototype for ‘usb_hcd_amd_remote_wakeup_quirk’ [-Wmissing-prototypes]
+This eliminates the following warning in misc/usbsevseg.c:
+drivers/usb/misc/usbsevseg.c:60:15: warning: no previous prototype for ‘my_memlen’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/usb/host/pci-quirks.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/misc/usbsevseg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index dfbdd3a..4574953 100644
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -17,6 +17,7 @@
- #include <linux/export.h>
- #include <linux/acpi.h>
- #include <linux/dmi.h>
-+#include <linux/usb/hcd.h>
- #include "pci-quirks.h"
- #include "xhci-ext-caps.h"
- 
+diff --git a/drivers/usb/misc/usbsevseg.c b/drivers/usb/misc/usbsevseg.c
+index b2d82b9..0a87d3e 100644
+--- a/drivers/usb/misc/usbsevseg.c
++++ b/drivers/usb/misc/usbsevseg.c
+@@ -57,7 +57,7 @@ struct usb_sevsegdev {
+  * if str commands are used, we would assume the end of string
+  * so mem commands are used.
+  */
+-inline size_t my_memlen(const char *buf, size_t count)
++static inline size_t my_memlen(const char *buf, size_t count)
+ {
+ 	if (count > 0 && buf[count-1] == '\n')
+ 		return count - 1;
 -- 
 1.7.9.5
 
