@@ -1,43 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab3LSPHS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:07:18 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54916 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab3LSPHP (ORCPT
+	id S932276Ab3LSMzj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:55:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44703 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754457Ab3LSL4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:07:15 -0500
-Date: Thu, 19 Dec 2013 08:07:01 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
-        Akhil Bhansali <abhansali@stec-inc.com>, josh@joshtriplett.org
-Subject: Re: [PATCH 01/13] drivers: block: Mark the functions as static in
- skd_main.c
-Message-ID: <20131219150701.GD30200@kernel.dk>
-References: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
+	Thu, 19 Dec 2013 06:56:47 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, <ian.campbell@citrix.com>,
+        <rjw@rjwysocki.net>, <len.brown@intel.com>,
+        <gregkh@linuxfoundation.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 058/208] irq: Enable all irqs unconditionally in irq_resume
+Date: Thu, 19 Dec 2013 11:52:36 +0000
+Message-Id: <1387454106-19326-59-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19 2013, Rashika Kheria wrote:
-> Mark functions skd_skmsg_state_to_str() and skd_skreq_state_to_str() as
-> static in skd_main.c because they are not used outside this file.
-> 
-> This eliminates the following warnings in skd_main.c:
-> drivers/block/skd_main.c:5272:13: warning: no previous prototype for ‘skd_skmsg_state_to_str’ [-Wmissing-prototypes]
-> drivers/block/skd_main.c:5284:13: warning: no previous prototype for ‘skd_skreq_state_to_str’ [-Wmissing-prototypes]
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Thanks, applied.
+------------------
 
+From: Laxman Dewangan <ldewangan@nvidia.com>
+
+commit ac01810c9d2814238f08a227062e66a35a0e1ea2 upstream.
+
+When the system enters suspend, it disables all interrupts in
+suspend_device_irqs(), including the interrupts marked EARLY_RESUME.
+
+On the resume side things are different. The EARLY_RESUME interrupts
+are reenabled in sys_core_ops->resume and the non EARLY_RESUME
+interrupts are reenabled in the normal system resume path.
+
+When suspend_noirq() failed or suspend is aborted for any other
+reason, we might omit the resume side call to sys_core_ops->resume()
+and therefor the interrupts marked EARLY_RESUME are not reenabled and
+stay disabled forever.
+
+To solve this, enable all irqs unconditionally in irq_resume()
+regardless whether interrupts marked EARLY_RESUMEhave been already
+enabled or not.
+
+This might try to reenable already enabled interrupts in the non
+failure case, but the only affected platform is XEN and it has been
+confirmed that it does not cause any side effects.
+
+[ tglx: Massaged changelog. ]
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Acked-by-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Heiko Stuebner <heiko@sntech.de>
+Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Cc: <ian.campbell@citrix.com>
+Cc: <rjw@rjwysocki.net>
+Cc: <len.brown@intel.com>
+Cc: <gregkh@linuxfoundation.org>
+Link: http://lkml.kernel.org/r/1385388587-16442-1-git-send-email-ldewangan@nvidia.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ kernel/irq/pm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
+index cb228bf..abcd6ca 100644
+--- a/kernel/irq/pm.c
++++ b/kernel/irq/pm.c
+@@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
+ 		bool is_early = desc->action &&
+ 			desc->action->flags & IRQF_EARLY_RESUME;
+ 
+-		if (is_early != want_early)
++		if (!is_early && want_early)
+ 			continue;
+ 
+ 		raw_spin_lock_irqsave(&desc->lock, flags);
 -- 
-Jens Axboe
+1.8.3.2
 
