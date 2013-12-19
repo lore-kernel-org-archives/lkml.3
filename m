@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab3LSKGR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 05:06:17 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:35598 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab3LSKGM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 05:06:12 -0500
-Date: Thu, 19 Dec 2013 15:36:00 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Matthias Beyer <mail@beyermatthias.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Hans de Goede <hdegoede@redhat.com>, linux-usb@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: [PATCH 1/7] drivers: usb: Include appropriate header file in hcd.c
-Message-ID: <0e0e74b4487edd341b66674333d734d5828c7e64.1387439261.git.rashika.kheria@gmail.com>
+	id S1752963Ab3LSKGX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 05:06:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47065 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751090Ab3LSKGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 05:06:18 -0500
+Date: Thu, 19 Dec 2013 11:06:15 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 6/6] memcg, slab: RCU protect memcg_params for root caches
+Message-ID: <20131219100615.GD10855@dhcp22.suse.cz>
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
+ <be8f2fede0fbc45496c06f7bc6cc2272b9b81cc4.1387372122.git.vdavydov@parallels.com>
+ <20131219092836.GH9331@dhcp22.suse.cz>
+ <52B2BE2A.2080509@parallels.com>
+ <20131219094333.GB10855@dhcp22.suse.cz>
+ <52B2C0B5.9010602@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <52B2C0B5.9010602@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include appropriate header file include/linux/usb/otg.h in core/hcd.c
-because function usb_bus_start_enum() has its prototype declaration in
-include/linux/usb/otg.h.
+On Thu 19-12-13 13:47:33, Vladimir Davydov wrote:
+[...]
+> Yeah, you're right, this longs for a documentation. I'm going to check
 
-This eliminates the following warning in core/hcd.c:
-drivers/usb/core/hcd.c:2295:5: warning: no previous prototype for ‘usb_bus_start_enum’ [-Wmissing-prototypes]
+We desparately need a documentation for the life cycle of all involved
+objects and description of which locks are used at which stage. 
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/usb/core/hcd.c |    1 +
- 1 file changed, 1 insertion(+)
+> this code a bit more and try to write a good comment about it (although
+> I'm rather poor at writing comments :-( )
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index 6bffb8c..077be7c 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -44,6 +44,7 @@
- 
- #include <linux/usb.h>
- #include <linux/usb/hcd.h>
-+#include <linux/usb/otg.h>
- 
- #include "usb.h"
- 
+A nice diagram would do as well...
+
+Thanks!
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
