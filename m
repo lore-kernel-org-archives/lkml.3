@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab3LSQlZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:41:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43605 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab3LSQlW (ORCPT
+	id S1755492Ab3LSQls (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:41:48 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:48486 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754419Ab3LSQlq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:41:22 -0500
-Date: Thu, 19 Dec 2013 08:41:09 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Cc: Rob Landley <rob@landley.net>, Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [RFC PATCH] gpio: add GPIO hogging mechanism
-Message-ID: <20131219164109.GB27409@kroah.com>
-References: <1387463671-1164-1-git-send-email-b.brezillon@overkiz.com>
- <1387463671-1164-2-git-send-email-b.brezillon@overkiz.com>
+	Thu, 19 Dec 2013 11:41:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387463671-1164-2-git-send-email-b.brezillon@overkiz.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20131219163623.GB12255@kroah.com>
+References: <0e0e74b4487edd341b66674333d734d5828c7e64.1387439261.git.rashika.kheria@gmail.com>
+	<20131219163623.GB12255@kroah.com>
+Date: Thu, 19 Dec 2013 22:11:45 +0530
+Message-ID: <CAMpEsFGi7hj8EXUJ78zS0g6ZWRTW5FpGD5Q7tz1DgEJSNAWSZQ@mail.gmail.com>
+Subject: Re: [PATCH 1/7] drivers: usb: Include appropriate header file in hcd.c
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Matthias Beyer <mail@beyermatthias.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 03:34:31PM +0100, Boris BREZILLON wrote:
-> GPIO hogging is a way to request and configure specific GPIO without
-> explicitly requesting it in the device driver.
-> 
-> The request and configuration procedure is handled in the core device
-> driver code before the driver probe function is called.
-> 
-> It allows specific GPIOs to be configured without any driver specific code.
-> 
-> Particularly usefull when a external device is connected to a bus and the
-> bus connections depends on an external switch controlled by a GPIO pin.
-> Or when some GPIOs have to be exported to sysfs without any userspace
-> intervention.
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> ---
->  Documentation/devicetree/bindings/gpio/gpio.txt |   47 ++++++++
->  drivers/base/Makefile                           |    1 +
->  drivers/base/dd.c                               |    5 +
->  drivers/base/gpio.c                             |   59 ++++++++++
+On Thu, Dec 19, 2013 at 10:06 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Thu, Dec 19, 2013 at 03:36:00PM +0530, Rashika Kheria wrote:
+>> Include appropriate header file include/linux/usb/otg.h in core/hcd.c
+>> because function usb_bus_start_enum() has its prototype declaration in
+>> include/linux/usb/otg.h.
+>>
+>> This eliminates the following warning in core/hcd.c:
+>> drivers/usb/core/hcd.c:2295:5: warning: no previous prototype for ‘usb_bus_start_enum’ [-Wmissing-prototypes]
+>
+> What is generating this warning?  I don't see it here on my machines,
+> nor do I see any of the other warnings you have fixed in this series.
+> How do I duplicate them?
+>
+> thanks,
+>
+> greg k-h
 
-I don't understand what makes GPIO's "special" enough to get included in
-the driver core like this, and called for each and every device that is
-added to the system.
+Hi Greg,
 
-What's wrong with the generic device callbacks/notifiers we already
-have?  Why does this need to be in the driver core?  And what exactly
-are you doing all of this for in the first place?
+These warning are non-default GCC warnings. These can be seen either
+by adding W=1 while running make (i.e. make W=1) or adding
+-Wmissing-prototypes in KBUILD_CFLAGS in the toplevel Makefile.
 
-greg k-h
+Thanks,
+-- 
+Rashika Kheria
+B.Tech CSE
+IIIT Hyderabad
