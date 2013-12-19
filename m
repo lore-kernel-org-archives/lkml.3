@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab3LSM1Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:27:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45025 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755352Ab3LSL6T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:19 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Felipe Balbi <balbi@ti.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 125/208] usb: gadget: composite: reset delayed_status on reset_config
-Date: Thu, 19 Dec 2013 11:53:43 +0000
-Message-Id: <1387454106-19326-126-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S932096Ab3LSNm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:42:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56632 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756906Ab3LSNmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 08:42:47 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 9/9] tools lib traceevent: Use global 'O' processing code
+Date: Thu, 19 Dec 2013 14:42:07 +0100
+Message-Id: <1387460527-15030-10-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
+References: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+Using global 'O' processing code because it's already
+setup due to the scripts/Makefile.include include.
 
-------------------
+Using global variable OUTPUT instead of the local
+BUILD_OUTPUT.
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
-
-commit 2bac51a1827a18821150ed8c9f9752c02f9c2b02 upstream.
-
-The delayed_status value is used to keep track of status response
-packets on ep0. It needs to be reset or the set_config function would
-still delay the answer, if the usb device got unplugged while waiting
-for setup_continue to be called.
-
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Ahern <dsahern@gmail.com>
 ---
- drivers/usb/gadget/composite.c | 1 +
- 1 file changed, 1 insertion(+)
+ tools/lib/traceevent/Makefile | 13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-index 55f4df6..44a292b 100644
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -593,6 +593,7 @@ static void reset_config(struct usb_composite_dev *cdev)
- 		bitmap_zero(f->endpoints, 32);
- 	}
- 	cdev->config = NULL;
-+	cdev->delayed_status = 0;
- }
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 3496c9c..ca4ab78 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -83,18 +83,13 @@ ifeq ("$(origin O)", "command line")
+ endif
  
- static int set_config(struct usb_composite_dev *cdev,
+ ifeq ($(BUILD_SRC),)
+-ifneq ($(BUILD_OUTPUT),)
++ifneq ($(OUTPUT),)
+ 
+ define build_output
+-	$(if $(VERBOSE:1=),@)+$(MAKE) -C $(BUILD_OUTPUT) 	\
+-	BUILD_SRC=$(CURDIR) -f $(CURDIR)/Makefile $1
++	$(if $(VERBOSE:1=),@)+$(MAKE) -C $(OUTPUT) \
++	BUILD_SRC=$(CURDIR)/ -f $(CURDIR)/Makefile $1
+ endef
+ 
+-saved-output := $(BUILD_OUTPUT)
+-BUILD_OUTPUT := $(shell cd $(BUILD_OUTPUT) && /bin/pwd)
+-$(if $(BUILD_OUTPUT),, \
+-     $(error output directory "$(saved-output)" does not exist))
+-
+ all: sub-make
+ 
+ $(MAKECMDGOALS): sub-make
+@@ -106,7 +101,7 @@ sub-make: force
+ # Leave processing to above invocation of make
+ skip-makefile := 1
+ 
+-endif # BUILD_OUTPUT
++endif # OUTPUT
+ endif # BUILD_SRC
+ 
+ # We process the rest of the Makefile if this is the final invocation of make
 -- 
-1.8.3.2
+1.8.3.1
 
