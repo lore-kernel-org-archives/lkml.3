@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab3LSCqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 21:46:53 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:18912 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751239Ab3LSCqw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 21:46:52 -0500
-X-IronPort-AV: E=Sophos;i="4.95,511,1384272000"; 
-   d="scan'208";a="9287858"
-Message-ID: <52B25CA8.8090806@cn.fujitsu.com>
-Date: Thu, 19 Dec 2013 10:40:40 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Gao feng <gaofeng@cn.fujitsu.com>, linux-audit@redhat.com
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] audit: fix build error when disable audit
-References: <1387420469-27665-1-git-send-email-gaofeng@cn.fujitsu.com>
-In-Reply-To: <1387420469-27665-1-git-send-email-gaofeng@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/19 10:39:10,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/19 10:39:10
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751987Ab3LSCvL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 21:51:11 -0500
+Received: from ozlabs.org ([203.10.76.45]:55515 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751386Ab3LSCvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 21:51:09 -0500
+Date: Thu, 19 Dec 2013 13:51:03 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Solner <solner@alcatel-lucent.com>,
+        David Howells <dhowells@redhat.com>
+Subject: linux-next: manual merge of the modules tree with Linus' tree
+Message-Id: <20131219135103.a679236c1c4ec0f614fe3357@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__19_Dec_2013_13_51_03_+1100_EoeSjd=9ulGg2wFv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 10:34 AM, Gao feng wrote:
-> kernel/capability.c: In function ‘SYSC_capset’:
-> kernel/capability.c:280:2: warning: passing argument 1 of ‘audit_log_capset’ makes integer from pointer without a cast [enabled by default]
->   audit_log_capset(new, current_cred());
->   ^
-> In file included from kernel/capability.c:10:0:
-> include/linux/audit.h:400:20: note: expected ‘pid_t’ but argument is of type ‘struct cred *’
->  static inline void audit_log_capset(pid_t pid, const struct cred *new,
->                     ^
-> kernel/capability.c:280:2: error: too few arguments to function ‘audit_log_capset’
->   audit_log_capset(new, current_cred());
->   ^
-> In file included from kernel/capability.c:10:0:
-> include/linux/audit.h:400:20: note: declared here
->  static inline void audit_log_capset(pid_t pid, const struct cred *new,
->                     ^
-> make[1]: *** [kernel/capability.o] Error 1
-> 
+--Signature=_Thu__19_Dec_2013_13_51_03_+1100_EoeSjd=9ulGg2wFv
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-BTW, bug introduced by commmit 26b81eb408c411d86c7cc93278fb88fbcd785f65
-audit: Simplify and correct audit_log_capset
+Hi Rusty,
+
+Today's linux-next merge of the modules tree got a conflict in Documentatio=
+n/module-signing.txt between commit 3cafea307642 ("Add Documentation/module=
+-signing.txt file") from the  tree and commit 160e01aca3da ("Add Documentat=
+ion/module-signing.txt file") from the modules tree.
+
+I fixed it up (I arbitrarily chose the version from Linus' tree) and can
+carry the fix as necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__19_Dec_2013_13_51_03_+1100_EoeSjd=9ulGg2wFv
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSsl8bAAoJEMDTa8Ir7ZwV4o8P/1dbX9cQkuJ4hW4HEoyrBpQe
+ztRAhthKb6RD41r5wxz48FBlZIGVJmHq/3YDL3ARX06kSBmrkZGXqYSBN/MP/l+g
+I7PsTOgwKh0ZudjG3js30ISJSSKrO5uEb4sP3vmwbWu5Iffwe5BqixM2Qij0lhd6
+gkmI5XctFLLkhAb5Y0/u5pRGzCYoxpabZWgBMfIRrwkZMUk46ini34iVgvizlBdN
+m4g2B54aOZUM7dFglXvC4EPYGR7i0r7mQebf1o5RpVYOQDXmtoUvDPzldBVWzlSZ
+OCw0VtFa1omFZwIEUD+TY5bUBfK8FQOIZeNHVO4qKrdS/Du7DYbslJ8K8QS4A/Cc
+hoQJNOOOyWdtkM85puaAdBuifBrbaT4X+U20z4vUo7j75akcXiIdnr0gzYT2oB4X
+kPo7m1LYt73XHK3dBSFQbxAyOIk3zLjidt1y5nEEUevISmg5GxGPXbQ2osJYUrw2
+Yidxni1anXo4xxl/6zNUO0aRYVns1L1NwcE7EJMwa8Lh7acgVFRpg4PEzUy5dJ2Y
+6XE2tsIce/FaMfESkDJMc2wUMVRr28Y1SjdMEVFAocQdjMF1QWeo+joAH6GlaIgs
+pPOC/UytqEMAzTDiMJO5xA3XocBRrwfLRX2V1ddmES20NfVf3xbX3uc+UtQVLb7V
+ucdFzBly6cMHgHbe+csj
+=7CiP
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__19_Dec_2013_13_51_03_+1100_EoeSjd=9ulGg2wFv--
