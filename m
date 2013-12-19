@@ -1,111 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab3LSOVE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:21:04 -0500
-Received: from smtp03.stone-is.org ([87.238.162.66]:41170 "EHLO
-	smtpgw.stone-is.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435Ab3LSOVB (ORCPT
+	id S932117Ab3LSMOp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:14:45 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:48407 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753814Ab3LSMOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:21:01 -0500
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-Message-ID: <52B300C7.7090808@acm.org>
-Date: Thu, 19 Dec 2013 15:20:55 +0100
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 19 Dec 2013 07:14:41 -0500
+Date: Thu, 19 Dec 2013 13:14:35 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCHSET 0/6] perf tools: A couple of TUI improvements
+Message-ID: <20131219121435.GB11279@gmail.com>
+References: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Greg KH <greg@kroah.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: netfilter: active obj WARN when cleaning up
-References: <20131127233415.GB19270@kroah.com> <00000142b4282aaf-913f5e4c-314c-4351-9d24-615e66928157-000000@email.amazonses.com> <20131202164039.GA19937@kroah.com> <00000142b4514eb5-2e8f675d-0ecc-423b-9906-58c5f383089b-000000@email.amazonses.com> <20131202172615.GA4722@kroah.com> <00000142b4aeca89-186fc179-92b8-492f-956c-38a7c196d187-000000@email.amazonses.com> <20131202190814.GA2267@kroah.com> <00000142b4d4360c-5755af87-b9b0-4847-b5fa-7a9dd13b49c5-000000@email.amazonses.com> <20131202212235.GA1297@kroah.com> <00000142b54f6694-c51e81b1-f1a2-483b-a1ce-a2d4cb6b155c-000000@email.amazonses.com> <20131202222208.GB13034@kroah.com> <00000142b90da700-19f6b465-ff15-4b2b-9bcd-b91d71958b7f-000000@email.amazonses.com> <52B0ABB6.8090205@oracle.com> <52B2E2B9.1040706@acm.org>
-In-Reply-To: <52B2E2B9.1040706@acm.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/13 13:12, Bart Van Assche wrote:
-> On 12/17/13 20:53, Sasha Levin wrote:
->> I'm still seeing warnings with this patch applied:
->>
->> [   24.900482] WARNING: CPU: 12 PID: 3654 at lib/debugobjects.c:260
->> debug_print_object+0x8d/0xb0()
->> [   24.900482] ODEBUG: free active (active state 0) object type:
->> timer_list hint: delayed_work_timer_fn+0x0/0x20
->> [   24.900482] Modules linked in:
->> [   24.900482] CPU: 12 PID: 3654 Comm: kworker/12:1 Tainted: G       
->> W    3.13.0-rc4-n
->> ext-20131217-sasha-00013-ga878504-dirty #4149
->> [   24.900482] Workqueue: events kobject_delayed_cleanup
->> [   24.900482]  0000000000000104 ffff8804f429bae8 ffffffff8439501c
->> ffffffff8555a92c
->> [   24.900482]  ffff8804f429bb38 ffff8804f429bb28 ffffffff8112f8ac
->> ffff8804f429bb58
->> [   24.900482]  ffffffff856a9413 ffff880826333530 ffffffff85c68c40
->> ffffffff8801bb58
->> [   24.900482] Call Trace:
->> [   24.900482]  [<ffffffff8439501c>] dump_stack+0x52/0x7f
->> [   24.900482]  [<ffffffff8112f8ac>] warn_slowpath_common+0x8c/0xc0
->> [   24.900482]  [<ffffffff8112f996>] warn_slowpath_fmt+0x46/0x50
->> [   24.900482]  [<ffffffff81adb50d>] debug_print_object+0x8d/0xb0
->> [   24.900482]  [<ffffffff81153090>] ? __queue_work+0x3f0/0x3f0
->> [   24.900482]  [<ffffffff81adbd15>] __debug_check_no_obj_freed+0xa5/0x220
->> [   24.900482]  [<ffffffff832b1acb>] ? rtc_device_release+0x2b/0x40
->> [   24.900482]  [<ffffffff832b1acb>] ? rtc_device_release+0x2b/0x40
->> [   24.900482]  [<ffffffff81adbea5>] debug_check_no_obj_freed+0x15/0x20
->> [   24.900482]  [<ffffffff812ad54f>] kfree+0x21f/0x2e0
->> [   24.900482]  [<ffffffff832b1acb>] rtc_device_release+0x2b/0x40
->> [   24.900482]  [<ffffffff8207efd5>] device_release+0x65/0xc0
->> [   24.900482]  [<ffffffff81ab05e5>] kobject_cleanup+0x145/0x190
->> [   24.900482]  [<ffffffff81ab063d>] kobject_delayed_cleanup+0xd/0x10
->> [   24.900482]  [<ffffffff81153a60>] process_one_work+0x320/0x530
->> [   24.900482]  [<ffffffff81153940>] ? process_one_work+0x200/0x530
->> [   24.900482]  [<ffffffff81155fe5>] worker_thread+0x215/0x350
->> [   24.900482]  [<ffffffff81155dd0>] ? manage_workers+0x180/0x180
->> [   24.900482]  [<ffffffff8115c9c5>] kthread+0x105/0x110
->> [   24.900482]  [<ffffffff8115c8c0>] ? set_kthreadd_affinity+0x30/0x30
->> [   24.900482]  [<ffffffff843a5e7c>] ret_from_fork+0x7c/0xb0
->> [   24.900482]  [<ffffffff8115c8c0>] ? set_kthreadd_affinity+0x30/0x30
->> [   24.900482] ---[ end trace 45529ebf79b2573e ]---
+
+* Namhyung Kim <namhyung@kernel.org> wrote:
+
+> Hello,
 > 
-> Can anyone tell me whether the patch below makes sense ?
+> I was playing with TUI code and added two new windows.  One for
+> showing log messages and another for showing header information.
+> (Maybe they can be implemented on the GTK code too someday.)
 > 
-> [ ... ]
+> Please try to use it! :)
+> 
+> I put the patches on 'perf/tui-v1' branch in my tree:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> 
+> Any feedbacks are more than welcome, thanks
+> Namhyung
 
-(replying to my own e-mail)
+In the morning haze it took me some time to figure out that typing 'l' 
+gives leads to the log window, 'i' to the header information.
 
-Please ignore the patch in the previous e-mail - it did not make sense.
+'l' seems to work (no log messages though :-), but in perf-top 'i' 
+segfaulted:
 
-Regarding the warning above: the "delayed_work_timer_fn+0x0/0x20" hint
-probably indicates an attempt to free a delayed_work structure that is
-embedded in struct rtc_device and that is still scheduled. It's
-unfortunate that debug_check_no_obj_freed() does not print the address
-of the offending object and the argument passed to kfree(). That
-information would allow to compute the offset of the embedded
-delayed_work structure make it easier to figure out what's going on.
+  comet:~/tip/tools/perf> perf top
+  perf: Segmentation fault
 
-Bart.
+Program received signal SIGSEGV, Segmentation fault.
+[Switching to Thread 0x7ffff0d39700 (LWP 14785)]
+perf_header__fprintf_info (session=session@entry=0x957bf0, fp=fp@entry=0x7fffec000a30, full=full@entry=true) at util/header.c:2195
+2195            int fd = perf_data_file__fd(session->file);
+Missing separate debuginfos, use: debuginfo-install audit-libs-2.3.2-1.fc19.x86_64 bzip2-libs-1.0.6-8.fc19.x86_64 elfutils-libelf-0.156-5.fc19.x86_64 elfutils-libs-0.156-5.fc19.x86_64 glibc-2.17-19.fc19.x86_64 libgcc-4.8.2-1.fc19.x86_64 libunwind-1.1-2.fc19.x86_64 nss-softokn-freebl-3.15.2-2.fc19.x86_64 numactl-libs-2.0.8-4.fc19.x86_64 perl-libs-5.16.3-266.fc19.x86_64 python-libs-2.7.5-9.fc19.x86_64 slang-2.2.4-8.fc19.x86_64 xz-libs-5.1.2-4alpha.fc19.x86_64 zlib-1.2.7-10.fc19.x86_64
+(gdb) bt
+#0  perf_header__fprintf_info (session=session@entry=0x957bf0, fp=fp@entry=0x7fffec000a30, full=full@entry=true) at util/header.c:2195
+#1  0x00000000004ce3fe in tui__header_window (env=env@entry=0x957c30) at ui/browsers/header.c:92
+#2  0x00000000004cbdfd in perf_evsel__hists_browse (evsel=evsel@entry=0x957560, nr_events=nr_events@entry=1, 
+    helpline=helpline@entry=0x57db88 "For a higher level overview, try: perf top --sort comm,dso", ev_name=0x957870 "cycles", left_exits=left_exits@entry=false, 
+    hbt=hbt@entry=0x7ffff0d38ea0, min_pcnt=min_pcnt@entry=0, env=env@entry=0x957c30) at ui/browsers/hists.c:1491
+#3  0x00000000004cd5a5 in perf_evlist__tui_browse_hists (evlist=0x8e5930, help=help@entry=0x57db88 "For a higher level overview, try: perf top --sort comm,dso", 
+    hbt=hbt@entry=0x7ffff0d38ea0, min_pcnt=0, env=0x957c30) at ui/browsers/hists.c:1957
+#4  0x0000000000433b48 in display_thread_tui (arg=0x7fffffffb150) at builtin-top.c:584
+#5  0x0000003e59407c53 in start_thread () from /lib64/libpthread.so.0
+#6  0x0000003e590f5dbd in clone () from /lib64/libc.so.6
+(gdb) 
+
+I suspect it got surprised by perf top not having a header per se? 
+Still it might make sense to also robustify 
+perf_header__fprintf_info() against segfaulting and such.
+
+But it's a nice feature nevertheless!
+
+Btw., it would be nice if 'P' worked on these screens, so any 
+interesting data can be extracted! Cut & paste is usually a PITA due 
+to the graphical TUI characters.
+
+Btw., in case you are taking TUI usability bugreports, here's a few I 
+noticed while playing with your changes:
+
+1)
+
+In histogram view it would be nice if 'P' gave some status bar 
+indication that it just wrote to perf.hist.0 or so - otherwise the 
+user is kept in the dark.
+
+2)
+
+Likewise, in a TUI every keypress must produce some tangible feedback 
+to the user. Try hitting 'o' for example - it should probably output 
+into the status bar that 'o' is not a bound keypress or so.
+
+3)
+
+Same goes for page up / page down in histogram view if we are at the 
+end of the list: some low-key, single-character feedback should be 
+given that the keypress was seen but we are at the end of the list. 
+For exampe the scrollbar 'diamond' character could briefly 
+inverse-flash or so.
+
+Thanks,
+
+	Ingo
