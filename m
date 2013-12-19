@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab3LSMZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:25:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45059 "EHLO
+	id S1755069Ab3LSL5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:57:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44880 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755424Ab3LSL63 (ORCPT
+	with ESMTP id S1754879Ab3LSL5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:29 -0500
+	Thu, 19 Dec 2013 06:57:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Pierre Ossman <pierre@ossman.eu>, Alex Deucher <alexander.deucher@amd.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 132/208] drm/i915: Fix pipe CSC post offset calculation
-Date: Thu, 19 Dec 2013 11:53:50 +0000
-Message-Id: <1387454106-19326-133-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 095/208] drm/radeon/audio: correct ACR table
+Date: Thu, 19 Dec 2013 11:53:13 +0000
+Message-Id: <1387454106-19326-96-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,37 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
+From: Pierre Ossman <pierre@ossman.eu>
 
-commit 32cf0cb0294814cb1ee5d8727e9aac0e9aa80d2e upstream.
+commit 3e71985f2439d8c4090dc2820e497e6f3d72dcff upstream.
 
-We were miscalculating the pipe CSC post offset for the full->limited
-range conversion. The resulting post offset was double what it was
-supposed to be, which caused blacks to come out grey when using
-limited range output on HSW+.
+The values were taken from the HDMI spec, but they assumed
+exact x/1.001 clocks. Since we round the clocks, we also need
+to calculate different N and CTS values.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71769
-Tested-by: Lauri Mylläri <lauri.myllari@gmail.com>
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Note that the N for 25.2/1.001 MHz at 44.1 kHz audio is out of
+spec. Hopefully this mode is rarely used and/or HDMI sinks
+tolerate overly large values of N.
+
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=69675
+
+Signed-off-by: Pierre Ossman <pierre@ossman.eu>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_display.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/r600_hdmi.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 449ec09..9d39620 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -5466,7 +5466,7 @@ static void intel_set_pipe_csc(struct drm_crtc *crtc)
- 		uint16_t postoff = 0;
+diff --git a/drivers/gpu/drm/radeon/r600_hdmi.c b/drivers/gpu/drm/radeon/r600_hdmi.c
+index 01a2e1c..92c6df7 100644
+--- a/drivers/gpu/drm/radeon/r600_hdmi.c
++++ b/drivers/gpu/drm/radeon/r600_hdmi.c
+@@ -58,15 +58,15 @@ enum r600_hdmi_iec_status_bits {
+ static const struct radeon_hdmi_acr r600_hdmi_predefined_acr[] = {
+     /*	     32kHz	  44.1kHz	48kHz    */
+     /* Clock      N     CTS      N     CTS      N     CTS */
+-    {  25175,  4576,  28125,  7007,  31250,  6864,  28125 }, /*  25,20/1.001 MHz */
++    {  25175,  4096,  25175, 28224, 125875,  6144,  25175 }, /*  25,20/1.001 MHz */
+     {  25200,  4096,  25200,  6272,  28000,  6144,  25200 }, /*  25.20       MHz */
+     {  27000,  4096,  27000,  6272,  30000,  6144,  27000 }, /*  27.00       MHz */
+     {  27027,  4096,  27027,  6272,  30030,  6144,  27027 }, /*  27.00*1.001 MHz */
+     {  54000,  4096,  54000,  6272,  60000,  6144,  54000 }, /*  54.00       MHz */
+     {  54054,  4096,  54054,  6272,  60060,  6144,  54054 }, /*  54.00*1.001 MHz */
+-    {  74176, 11648, 210937, 17836, 234375, 11648, 140625 }, /*  74.25/1.001 MHz */
++    {  74176,  4096,  74176,  5733,  75335,  6144,  74176 }, /*  74.25/1.001 MHz */
+     {  74250,  4096,  74250,  6272,  82500,  6144,  74250 }, /*  74.25       MHz */
+-    { 148352, 11648, 421875,  8918, 234375,  5824, 140625 }, /* 148.50/1.001 MHz */
++    { 148352,  4096, 148352,  5733, 150670,  6144, 148352 }, /* 148.50/1.001 MHz */
+     { 148500,  4096, 148500,  6272, 165000,  6144, 148500 }, /* 148.50       MHz */
+ };
  
- 		if (intel_crtc->config.limited_color_range)
--			postoff = (16 * (1 << 13) / 255) & 0x1fff;
-+			postoff = (16 * (1 << 12) / 255) & 0x1fff;
- 
- 		I915_WRITE(PIPE_CSC_POSTOFF_HI(pipe), postoff);
- 		I915_WRITE(PIPE_CSC_POSTOFF_ME(pipe), postoff);
 -- 
 1.8.3.2
 
