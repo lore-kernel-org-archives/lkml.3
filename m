@@ -1,96 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab3LSXa3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 18:30:29 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:46575 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755573Ab3LSXa2 (ORCPT
+	id S1756690Ab3LSXfc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 18:35:32 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:52788 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956Ab3LSXfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 18:30:28 -0500
-Message-ID: <52B38191.9090007@linaro.org>
-Date: Thu, 19 Dec 2013 15:30:25 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 19 Dec 2013 18:35:31 -0500
+Date: Thu, 19 Dec 2013 18:35:26 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Nigel Cunningham <nigel@nigelcunningham.com.au>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
+        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        David Howells <dhowells@redhat.com>
+Subject: [PATCH wq/for-3.14 1/2] workqueue: update max_active clamping rules
+Message-ID: <20131219233526.GD22725@htj.dyndns.org>
+References: <20131213174932.GA27070@htj.dyndns.org>
+ <20131218213936.GA8218@mtj.dyndns.org>
+ <20131218214128.GB8218@mtj.dyndns.org>
+ <1735137.dNmBz0IqxU@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH] ion_test: Add compat_ioctl support
-References: <1387492830-7988-1-git-send-email-john.stultz@linaro.org> <CAMbhsRTLL7UfccyLeXraDx53SHXmBoVnKZE8fPcWzB1wsywo_Q@mail.gmail.com>
-In-Reply-To: <CAMbhsRTLL7UfccyLeXraDx53SHXmBoVnKZE8fPcWzB1wsywo_Q@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1735137.dNmBz0IqxU@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 02:52 PM, Colin Cross wrote:
-> On Thu, Dec 19, 2013 at 2:40 PM, John Stultz <john.stultz@linaro.org> wrote:
->> Prior to subitting this, Colin reworked the compat_ioctl support
->> for the ion_test driver, moving the structure to be the same size
->> on both 32 and 64 bit architectures.
->>
->> Two small things were left out. The compat_ioctl ptr assignment,
->> and the fact that despite having uniform sized types in the
->> structure, the structure pads out to different sizes on different
->> arches.
->>
->> This patch resolves this issue by setting the write flag as
->> a __u64, and adding the compat_ioctl ptr.
->>
->> While this does affect the ABI for 32bit users, its only
->> the ABI for the ion_test driver, not ion itself.
->>
->> Cc: Colin Cross <ccross@android.com>
->> Cc: Greg KH <gregkh@linuxfoundation.org>
->> Cc: Android Kernel Team <kernel-team@android.com>
->> Signed-off-by: John Stultz <john.stultz@linaro.org>
->> ---
->>  drivers/staging/android/ion/ion_test.c  | 1 +
->>  drivers/staging/android/uapi/ion_test.h | 2 +-
->>  2 files changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/staging/android/ion/ion_test.c b/drivers/staging/android/ion/ion_test.c
->> index 3e20349..654acb5 100644
->> --- a/drivers/staging/android/ion/ion_test.c
->> +++ b/drivers/staging/android/ion/ion_test.c
->> @@ -231,6 +231,7 @@ static int ion_test_release(struct inode *inode, struct file *file)
->>  static const struct file_operations ion_test_fops = {
->>         .owner = THIS_MODULE,
->>         .unlocked_ioctl = ion_test_ioctl,
->> +       .compat_ioctl = ion_test_ioctl,
-> Setting the compat_ioctl to the same thing as unlocked_ioctl shouldn't
-> be necessary, compat_sys_ioctl will fall through to do_vfs_ioctl if
-> compat_ioctl is not set, which will call unlocked_ioctl.
+>From bdd220b2a1b86fee14a12b69fb0cadafe60a1dac Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Thu, 19 Dec 2013 18:33:09 -0500
 
-Hrm. I've not looked into the implementation, but doesn't seem to be the
-case on x86_64. Without it I get -1 back when calling the ioctl from a
-32bit application. With it the ioctls work.
+@max_active handling is currently inconsistent.
 
+* In alloc_workqueue(), 0 gets converted to the default and the value
+  gets clamped to [1, lim].
 
->
->>         .open = ion_test_open,
->>         .release = ion_test_release,
->>  };
->> diff --git a/drivers/staging/android/uapi/ion_test.h b/drivers/staging/android/uapi/ion_test.h
->> index 614d1e3..f1727f5 100644
->> --- a/drivers/staging/android/uapi/ion_test.h
->> +++ b/drivers/staging/android/uapi/ion_test.h
->> @@ -31,7 +31,7 @@ struct ion_test_rw_data {
->>         __u64 ptr;
->>         __u64 offset;
->>         __u64 size;
->> -       int write;
->> +       __u64 write;
->>  };
-> Whoops, missed that one.  Can you add "int padding" after "int write"
-> instead?  That at least lets us use the 32 bits later.
+* In workqueue_set_max_active(), 0 is not converted to the default and
+  the value is clamped to [1, lim].
 
-Will do.
+* When a workqueue is exposed through sysfs, input < 1 fails with
+  -EINVAL; otherwise, the value is clamped to [1, lim].
 
+* fscache exposes max_active through a sysctl and clamps the value in
+  [1, lim].
 
-thanks
--john
+We want to be able to express zero @max_active but as it's a special
+case and 0 is already used for default, don't want to use 0 for it.
+Update @max_active clamping so that the following rules are followed.
 
+* In both alloc_workqueue() and workqueue_set_max_active(), 0 is
+  converted to the default, and a new special value WQ_FROZEN_ACTIVE
+  becomes 0; otherwise, the value is clamped to [1, lim].
+
+* In both sysfs and fscache sysctl, input < 1 fails with -EINVAL;
+  otherwise, the value is clamped to [1, lim].
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: David Howells <dhowells@redhat.com>
+---
+ fs/fscache/main.c         | 10 +++++++---
+ include/linux/workqueue.h |  1 +
+ kernel/workqueue.c        |  6 +++++-
+ 3 files changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/fs/fscache/main.c b/fs/fscache/main.c
+index 7c27907..9d5a716 100644
+--- a/fs/fscache/main.c
++++ b/fs/fscache/main.c
+@@ -62,9 +62,13 @@ static int fscache_max_active_sysctl(struct ctl_table *table, int write,
+ 	int ret;
+ 
+ 	ret = proc_dointvec(table, write, buffer, lenp, ppos);
+-	if (ret == 0)
+-		workqueue_set_max_active(*wqp, *datap);
+-	return ret;
++	if (ret < 0)
++		return ret;
++	if (*datap < 1)
++		return -EINVAL;
++
++	workqueue_set_max_active(*wqp, *datap);
++	return 0;
+ }
+ 
+ ctl_table fscache_sysctls[] = {
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index 594521b..334daa3 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -338,6 +338,7 @@ enum {
+ 	__WQ_DRAINING		= 1 << 16, /* internal: workqueue is draining */
+ 	__WQ_ORDERED		= 1 << 17, /* internal: workqueue is ordered */
+ 
++	WQ_FROZEN_ACTIVE	= -1,	  /* special value for frozen wq */
+ 	WQ_MAX_ACTIVE		= 512,	  /* I like 512, better ideas? */
+ 	WQ_MAX_UNBOUND_PER_CPU	= 4,	  /* 4 * #cpus for unbound wq */
+ 	WQ_DFL_ACTIVE		= WQ_MAX_ACTIVE / 2,
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 987293d..6748fbf 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -4136,6 +4136,11 @@ static int wq_clamp_max_active(int max_active, unsigned int flags,
+ {
+ 	int lim = flags & WQ_UNBOUND ? WQ_UNBOUND_MAX_ACTIVE : WQ_MAX_ACTIVE;
+ 
++	if (max_active == 0)
++		return WQ_DFL_ACTIVE;
++	if (max_active == WQ_FROZEN_ACTIVE)
++		return 0;
++
+ 	if (max_active < 1 || max_active > lim)
+ 		pr_warn("workqueue: max_active %d requested for %s is out of range, clamping between %d and %d\n",
+ 			max_active, name, 1, lim);
+@@ -4176,7 +4181,6 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
+ 	vsnprintf(wq->name, sizeof(wq->name), fmt, args);
+ 	va_end(args);
+ 
+-	max_active = max_active ?: WQ_DFL_ACTIVE;
+ 	max_active = wq_clamp_max_active(max_active, flags, wq->name);
+ 
+ 	/* init wq */
+-- 
+1.8.4.2
 
