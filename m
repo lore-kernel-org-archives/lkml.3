@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab3LSPIa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:08:30 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:50771 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754865Ab3LSPI0 (ORCPT
+	id S1756308Ab3LSMLu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:11:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45268 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755895Ab3LSL70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:08:26 -0500
-From: Levente Kurusa <levex@linux.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Levente Kurusa <levex@linux.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: [PATCH 35/38] media: bt8xx: add missing put_device call
-Date: Thu, 19 Dec 2013 16:06:49 +0100
-Message-Id: <1387465612-3673-36-git-send-email-levex@linux.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1387465612-3673-33-git-send-email-levex@linux.com>
-References: <1387465612-3673-33-git-send-email-levex@linux.com>
+	Thu, 19 Dec 2013 06:59:26 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 173/208] dm table: fail dm_table_create on dm_round_up overflow
+Date: Thu, 19 Dec 2013 11:54:31 +0000
+Message-Id: <1387454106-19326-174-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is required so that we give up the last reference to the device.
-Remove the kfree() because the put_device() call will actually call
-release_sub_device which in turn kfrees the device.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Levente Kurusa <levex@linux.com>
+------------------
+
+From: Mikulas Patocka <mpatocka@redhat.com>
+
+commit 5b2d06576c5410c10d95adfd5c4d8b24de861d87 upstream.
+
+The dm_round_up function may overflow to zero.  In this case,
+dm_table_create() must fail rather than go on to allocate an empty array
+with alloc_targets().
+
+This fixes a possible memory corruption that could be caused by passing
+too large a number in "param->target_count".
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/pci/bt8xx/bttv-gpio.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/dm-table.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/media/pci/bt8xx/bttv-gpio.c b/drivers/media/pci/bt8xx/bttv-gpio.c
-index 922e823..3f364b7 100644
---- a/drivers/media/pci/bt8xx/bttv-gpio.c
-+++ b/drivers/media/pci/bt8xx/bttv-gpio.c
-@@ -98,7 +98,7 @@ int bttv_sub_add_device(struct bttv_core *core, char *name)
+diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
+index bbd7369..d502fb6 100644
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -200,6 +200,11 @@ int dm_table_create(struct dm_table **result, fmode_t mode,
  
- 	err = device_register(&sub->dev);
- 	if (0 != err) {
--		kfree(sub);
-+		put_device(&sub->dev);
- 		return err;
- 	}
- 	pr_info("%d: add subdevice \"%s\"\n", core->nr, dev_name(&sub->dev));
+ 	num_targets = dm_round_up(num_targets, KEYS_PER_NODE);
+ 
++	if (!num_targets) {
++		kfree(t);
++		return -ENOMEM;
++	}
++
+ 	if (alloc_targets(t, num_targets)) {
+ 		kfree(t);
+ 		return -ENOMEM;
 -- 
-1.8.3.1
+1.8.3.2
 
