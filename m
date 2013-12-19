@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab3LSQNH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:13:07 -0500
-Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:41691 "EHLO
-	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754045Ab3LSPug (ORCPT
+	id S932166Ab3LSQNa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:13:30 -0500
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:48052 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753630Ab3LSPue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:50:36 -0500
-Message-Id: <20131219155031.510140751@linux.com>
-Date: Thu, 19 Dec 2013 09:50:22 -0600
+	Thu, 19 Dec 2013 10:50:34 -0500
+Message-Id: <20131219155030.973571127@linux.com>
+Date: Thu, 19 Dec 2013 09:50:17 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Robert Richter <rric@kernel.org>,
-        oprofile-list@lists.sf.net
-Subject: [PATCH 07/40] drivers/oprofile: Replace __get_cpu_var uses for address calculation
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH 02/40] tracing: Replace __get_cpu_var uses with this_cpu_ptr
 References: <20131219155015.443763038@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_drivers_oprofile
+Content-Disposition: inline; filename=this_trace
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the uses of __get_cpu_var for address calculation with this_cpu_ptr.
+Replace uses of &__get_cpu_var for address calculation with this_cpu_ptr.
 
-Cc: Robert Richter <rric@kernel.org>
-Cc: oprofile-list@lists.sf.net
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@redhat.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/drivers/oprofile/cpu_buffer.c
+Index: linux/include/linux/kprobes.h
 ===================================================================
---- linux.orig/drivers/oprofile/cpu_buffer.c	2013-12-02 16:07:48.614666335 -0600
-+++ linux/drivers/oprofile/cpu_buffer.c	2013-12-02 16:07:48.614666335 -0600
-@@ -45,7 +45,7 @@ unsigned long oprofile_get_cpu_buffer_si
+--- linux.orig/include/linux/kprobes.h	2013-12-02 16:07:46.104736079 -0600
++++ linux/include/linux/kprobes.h	2013-12-02 16:07:46.104736079 -0600
+@@ -355,7 +355,7 @@ static inline void reset_current_kprobe(
  
- void oprofile_cpu_buffer_inc_smpl_lost(void)
+ static inline struct kprobe_ctlblk *get_kprobe_ctlblk(void)
  {
--	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
-+	struct oprofile_cpu_buffer *cpu_buf = this_cpu_ptr(&op_cpu_buffer);
- 
- 	cpu_buf->sample_lost_overflow++;
- }
-@@ -297,7 +297,7 @@ __oprofile_add_ext_sample(unsigned long
- 			  unsigned long event, int is_kernel,
- 			  struct task_struct *task)
- {
--	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
-+	struct oprofile_cpu_buffer *cpu_buf = this_cpu_ptr(&op_cpu_buffer);
- 	unsigned long backtrace = oprofile_backtrace_depth;
- 
- 	/*
-@@ -357,7 +357,7 @@ oprofile_write_reserve(struct op_entry *
- {
- 	struct op_sample *sample;
- 	int is_kernel = !user_mode(regs);
--	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
-+	struct oprofile_cpu_buffer *cpu_buf = this_cpu_ptr(&op_cpu_buffer);
- 
- 	cpu_buf->sample_received++;
- 
-@@ -412,13 +412,13 @@ int oprofile_write_commit(struct op_entr
- 
- void oprofile_add_pc(unsigned long pc, int is_kernel, unsigned long event)
- {
--	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
-+	struct oprofile_cpu_buffer *cpu_buf = this_cpu_ptr(&op_cpu_buffer);
- 	log_sample(cpu_buf, pc, 0, is_kernel, event, NULL);
+-	return (&__get_cpu_var(kprobe_ctlblk));
++	return this_cpu_ptr(&kprobe_ctlblk);
  }
  
- void oprofile_add_trace(unsigned long pc)
- {
--	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
-+	struct oprofile_cpu_buffer *cpu_buf = this_cpu_ptr(&op_cpu_buffer);
- 
- 	if (!cpu_buf->tracing)
- 		return;
-Index: linux/drivers/oprofile/timer_int.c
+ int register_kprobe(struct kprobe *p);
+Index: linux/kernel/trace/ftrace.c
 ===================================================================
---- linux.orig/drivers/oprofile/timer_int.c	2013-12-02 16:07:48.614666335 -0600
-+++ linux/drivers/oprofile/timer_int.c	2013-12-02 16:07:48.614666335 -0600
-@@ -32,7 +32,7 @@ static enum hrtimer_restart oprofile_hrt
+--- linux.orig/kernel/trace/ftrace.c	2013-12-02 16:07:46.104736079 -0600
++++ linux/kernel/trace/ftrace.c	2013-12-02 16:07:46.104736079 -0600
+@@ -864,7 +864,7 @@ function_profile_call(unsigned long ip,
  
- static void __oprofile_hrtimer_start(void *unused)
- {
--	struct hrtimer *hrtimer = &__get_cpu_var(oprofile_hrtimer);
-+	struct hrtimer *hrtimer = this_cpu_ptr(&oprofile_hrtimer);
+ 	local_irq_save(flags);
  
- 	if (!ctr_running)
- 		return;
+-	stat = &__get_cpu_var(ftrace_profile_stats);
++	stat = this_cpu_ptr(&ftrace_profile_stats);
+ 	if (!stat->hash || !ftrace_profile_enabled)
+ 		goto out;
+ 
+@@ -895,7 +895,7 @@ static void profile_graph_return(struct
+ 	unsigned long flags;
+ 
+ 	local_irq_save(flags);
+-	stat = &__get_cpu_var(ftrace_profile_stats);
++	stat = this_cpu_ptr(&ftrace_profile_stats);
+ 	if (!stat->hash || !ftrace_profile_enabled)
+ 		goto out;
+ 
+Index: linux/kernel/trace/trace.c
+===================================================================
+--- linux.orig/kernel/trace/trace.c	2013-12-02 16:07:46.104736079 -0600
++++ linux/kernel/trace/trace.c	2013-12-02 16:07:46.104736079 -0600
+@@ -1685,7 +1685,7 @@ static void __ftrace_trace_stack(struct
+ 	 */
+ 	barrier();
+ 	if (use_stack == 1) {
+-		trace.entries		= &__get_cpu_var(ftrace_stack).calls[0];
++		trace.entries		= this_cpu_ptr(ftrace_stack.calls);
+ 		trace.max_entries	= FTRACE_STACK_MAX_ENTRIES;
+ 
+ 		if (regs)
 
