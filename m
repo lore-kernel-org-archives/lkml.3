@@ -1,46 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab3LSQLx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:11:53 -0500
-Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:55721 "EHLO
-	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754089Ab3LSPuh (ORCPT
+	id S1755254Ab3LSQLw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:11:52 -0500
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:36846 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754099Ab3LSPuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Dec 2013 10:50:37 -0500
-Message-Id: <20131219155031.290596459@linux.com>
-Date: Thu, 19 Dec 2013 09:50:20 -0600
+Message-Id: <20131219155031.396219497@linux.com>
+Date: Thu, 19 Dec 2013 09:50:21 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 05/40] drivers/char/random: Replace __get_cpu_var uses
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [PATCH 06/40] drivers/cpuidle: Replace __get_cpu_var uses for address calculation
 References: <20131219155015.443763038@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_drivers_char
+Content-Disposition: inline; filename=this_drivers_cpuidle
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A single case of using __get_cpu_var for address calculation.
+All of these are for address calculation. Replace with
+this_cpu_ptr().
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-pm@vger.kernel.org
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+[cpufreq changes]
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/drivers/char/random.c
+Index: linux/drivers/cpuidle/governors/ladder.c
 ===================================================================
---- linux.orig/drivers/char/random.c	2013-12-02 16:07:47.924685509 -0600
-+++ linux/drivers/char/random.c	2013-12-02 16:07:47.924685509 -0600
-@@ -838,7 +838,7 @@ static DEFINE_PER_CPU(struct fast_pool,
- void add_interrupt_randomness(int irq, int irq_flags)
+--- linux.orig/drivers/cpuidle/governors/ladder.c	2013-12-02 16:07:48.284675507 -0600
++++ linux/drivers/cpuidle/governors/ladder.c	2013-12-02 16:07:48.274675782 -0600
+@@ -66,7 +66,7 @@ static inline void ladder_do_selection(s
+ static int ladder_select_state(struct cpuidle_driver *drv,
+ 				struct cpuidle_device *dev)
  {
- 	struct entropy_store	*r;
--	struct fast_pool	*fast_pool = &__get_cpu_var(irq_randomness);
-+	struct fast_pool	*fast_pool = this_cpu_ptr(&irq_randomness);
- 	struct pt_regs		*regs = get_irq_regs();
- 	unsigned long		now = jiffies;
- 	cycles_t		cycles = random_get_entropy();
+-	struct ladder_device *ldev = &__get_cpu_var(ladder_devices);
++	struct ladder_device *ldev = this_cpu_ptr(&ladder_devices);
+ 	struct ladder_device_state *last_state;
+ 	int last_residency, last_idx = ldev->last_state_idx;
+ 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+@@ -170,7 +170,7 @@ static int ladder_enable_device(struct c
+  */
+ static void ladder_reflect(struct cpuidle_device *dev, int index)
+ {
+-	struct ladder_device *ldev = &__get_cpu_var(ladder_devices);
++	struct ladder_device *ldev = this_cpu_ptr(&ladder_devices);
+ 	if (index > 0)
+ 		ldev->last_state_idx = index;
+ }
+Index: linux/drivers/cpuidle/governors/menu.c
+===================================================================
+--- linux.orig/drivers/cpuidle/governors/menu.c	2013-12-02 16:07:48.284675507 -0600
++++ linux/drivers/cpuidle/governors/menu.c	2013-12-02 16:07:48.274675782 -0600
+@@ -286,7 +286,7 @@ again:
+  */
+ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ {
+-	struct menu_device *data = &__get_cpu_var(menu_devices);
++	struct menu_device *data = this_cpu_ptr(&menu_devices);
+ 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+ 	int i;
+ 	int multiplier;
+@@ -375,7 +375,7 @@ static int menu_select(struct cpuidle_dr
+  */
+ static void menu_reflect(struct cpuidle_device *dev, int index)
+ {
+-	struct menu_device *data = &__get_cpu_var(menu_devices);
++	struct menu_device *data = this_cpu_ptr(&menu_devices);
+ 	data->last_state_idx = index;
+ 	if (index >= 0)
+ 		data->needs_update = 1;
+@@ -388,7 +388,7 @@ static void menu_reflect(struct cpuidle_
+  */
+ static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ {
+-	struct menu_device *data = &__get_cpu_var(menu_devices);
++	struct menu_device *data = this_cpu_ptr(&menu_devices);
+ 	int last_idx = data->last_state_idx;
+ 	unsigned int last_idle_us = cpuidle_get_last_residency(dev);
+ 	struct cpuidle_state *target = &drv->states[last_idx];
 
