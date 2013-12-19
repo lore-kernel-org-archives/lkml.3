@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab3LSV0E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 16:26:04 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:49149 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756295Ab3LSV0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 16:26:03 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS bugfixes for 3.13-rc5
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20131219212557.EDAB14266AC@whiskey.americas.sgi.com>
-Date: Thu, 19 Dec 2013 15:25:57 -0600 (CST)
-From: bpm@sgi.com (Ben Myers)
+	id S1756444Ab3LSV3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 16:29:23 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:53523 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754259Ab3LSV3V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 16:29:21 -0500
+Message-ID: <1387488621.5567.52.camel@haakon3.risingtidesystems.com>
+Subject: Re: linux-next: Tree for Dec 19 (target)
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        target-devel <target-devel@vger.kernel.org>,
+        Hannes Reinecke <hare@suse.de>
+Date: Thu, 19 Dec 2013 13:30:21 -0800
+In-Reply-To: <52B349B5.6090200@infradead.org>
+References: <20131219165106.73f28ea8aa1bd059423cb5f8@canb.auug.org.au>
+	 <52B349B5.6090200@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 2013-12-19 at 11:32 -0800, Randy Dunlap wrote:
+> On 12/18/13 21:51, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > Changes since 20131218:
+> > 
+> 
+> 
+> on i386:
+> 
+> drivers/built-in.o: In function `target_alua_state_check':
+> (.text+0x3fc859): undefined reference to `__udivdi3'
+> 
+> 
 
-   Please pull these fixes for XFS.  This contains fixes for some asserts
-   related to project quotas, a memory leak, a hang when disabling group or
-   project quotas before disabling user quotas, Dave's email address, several
-   fixes for the alignment of file allocation to stripe unit/width geometry, a
-   fix for an assertion with xfs_zero_remaining_bytes, and the behavior of
-   metadata writeback in the face of IO errors.
+Mmm, this appears to be a different unsigned long long division than the
+one fixed in core_alua_state_lba_dependent() for 12192013 next code..
 
-Thanks,
-	Ben
+Strangely enough, I'm not able to reproduce with a local ARCH=i386
+build..?
 
-The following changes since commit f94c44573e7c22860e2c3dfe349c45f72ba35ad3:
+Hannes (CC'ed) care to take a look..?
 
-  xfs: growfs overruns AGFL buffer on V4 filesystems (2013-12-10 10:04:27 -0600)
+--nab
 
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs.git tags/xfs-for-linus-v3.13-rc5
-
-for you to fetch changes up to ac8809f9ab01a73de1a47b5a37bd8dcca8712fb3:
-
-  xfs: abort metadata writeback on permanent errors (2013-12-17 09:40:23 -0600)
-
-----------------------------------------------------------------
-xfs: bugfixes for 3.13-rc5
-
-- fix memory leak in xfs_dir2_node_removename
-- fix quota assertion in xfs_setattr_size
-- fix quota assertions in xfs_qm_vop_create_dqattach
-- fix for hang when disabling group and project quotas before
-  disabling user quotas
-- fix Dave Chinner's email address in MAINTAINERS
-- fix for file allocation alignment
-- fix for assertion in xfs_buf_stale by removing xfsbdstrat
-- fix for alignment with swalloc mount option
-- fix for "retry forever" semantics on IO errors
-
-----------------------------------------------------------------
-Christoph Hellwig (1):
-      xfs: remove xfsbdstrat error
-
-Dave Chinner (3):
-      xfs: align initial file allocations correctly
-      xfs: swalloc doesn't align allocations properly
-      xfs: abort metadata writeback on permanent errors
-
-Jie Liu (3):
-      xfs: fix false assertion at xfs_qm_vop_create_dqattach
-      xfs: fix assertion failure at xfs_setattr_nonsize
-      xfs: fix infinite loop by detaching the group/project hints from user dquot
-
-Mark Tinguely (1):
-      xfs: fix memory leak in xfs_dir2_node_removename
-
-Namjae Jeon (1):
-      MAINTAINERS: fix incorrect mail address of XFS maintainer
-
- MAINTAINERS              |  2 +-
- fs/xfs/xfs_bmap.c        | 32 ++++++++++++++-----
- fs/xfs/xfs_bmap_util.c   | 14 +++++++--
- fs/xfs/xfs_buf.c         | 37 +++++++++-------------
- fs/xfs/xfs_buf.h         | 11 ++++---
- fs/xfs/xfs_buf_item.c    | 21 +++++++++++--
- fs/xfs/xfs_dir2_node.c   | 26 ++++++++--------
- fs/xfs/xfs_iops.c        |  3 +-
- fs/xfs/xfs_log_recover.c | 13 ++++++--
- fs/xfs/xfs_qm.c          | 80 ++++++++++++++++++++++++++++++++----------------
- fs/xfs/xfs_trans_buf.c   | 13 +++++++-
- 11 files changed, 168 insertions(+), 84 deletions(-)
