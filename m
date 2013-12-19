@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab3LSPGy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:06:54 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:41602 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754485Ab3LSPFT (ORCPT
+	id S1757107Ab3LSMgc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:36:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44901 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755053Ab3LSL5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:05:19 -0500
-From: Levente Kurusa <levex@linux.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Levente Kurusa <levex@linux.com>, Paul Mundt <lethal@linux-sh.org>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org
-Subject: [PATCH 28/38] superhyway: intc: add missing put_device call
-Date: Thu, 19 Dec 2013 16:03:39 +0100
-Message-Id: <1387465429-3568-29-git-send-email-levex@linux.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1387465429-3568-2-git-send-email-levex@linux.com>
-References: <1387465429-3568-2-git-send-email-levex@linux.com>
+	Thu, 19 Dec 2013 06:57:44 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 100/208] video: kyro: fix incorrect sizes when copying to userspace
+Date: Thu, 19 Dec 2013 11:53:18 +0000
+Message-Id: <1387454106-19326-101-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is required so that we give up the last reference to the device.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Levente Kurusa <levex@linux.com>
+------------------
+
+From: Sasha Levin <sasha.levin@oracle.com>
+
+commit 2ab68ec927310dc488f3403bb48f9e4ad00a9491 upstream.
+
+kyro would copy u32s and specify sizeof(unsigned long) as the size to copy.
+
+This would copy more data than intended and cause memory corruption and might
+leak kernel memory.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/sh/intc/core.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/video/kyro/fbdev.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/sh/intc/core.c b/drivers/sh/intc/core.c
-index 8f32a13..c89768e 100644
---- a/drivers/sh/intc/core.c
-+++ b/drivers/sh/intc/core.c
-@@ -504,8 +504,10 @@ static int __init register_intc_devs(void)
- 			if (error == 0)
- 				error = device_create_file(&d->dev,
- 							   &dev_attr_name);
--			if (error)
-+			if (error) {
-+				put_device(&d->dev);
- 				break;
-+			}
+diff --git a/drivers/video/kyro/fbdev.c b/drivers/video/kyro/fbdev.c
+index 6157f74..ec7fc87 100644
+--- a/drivers/video/kyro/fbdev.c
++++ b/drivers/video/kyro/fbdev.c
+@@ -625,15 +625,15 @@ static int kyrofb_ioctl(struct fb_info *info,
  		}
+ 		break;
+ 	case KYRO_IOCTL_UVSTRIDE:
+-		if (copy_to_user(argp, &deviceInfo.ulOverlayUVStride, sizeof(unsigned long)))
++		if (copy_to_user(argp, &deviceInfo.ulOverlayUVStride, sizeof(deviceInfo.ulOverlayUVStride)))
+ 			return -EFAULT;
+ 		break;
+ 	case KYRO_IOCTL_STRIDE:
+-		if (copy_to_user(argp, &deviceInfo.ulOverlayStride, sizeof(unsigned long)))
++		if (copy_to_user(argp, &deviceInfo.ulOverlayStride, sizeof(deviceInfo.ulOverlayStride)))
+ 			return -EFAULT;
+ 		break;
+ 	case KYRO_IOCTL_OVERLAY_OFFSET:
+-		if (copy_to_user(argp, &deviceInfo.ulOverlayOffset, sizeof(unsigned long)))
++		if (copy_to_user(argp, &deviceInfo.ulOverlayOffset, sizeof(deviceInfo.ulOverlayOffset)))
+ 			return -EFAULT;
+ 		break;
  	}
- 
 -- 
-1.8.3.1
+1.8.3.2
 
