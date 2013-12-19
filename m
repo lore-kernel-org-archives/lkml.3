@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404Ab3LSMyi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:54:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44710 "EHLO
+	id S1757053Ab3LSNFd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:05:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44488 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517Ab3LSL4s (ORCPT
+	with ESMTP id S1753992Ab3LSLzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:48 -0500
+	Thu, 19 Dec 2013 06:55:55 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Joel Fernandes <joelf@ti.com>, Tony Lindgren <tony@atomide.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 062/208] ARM: OMAP2+: Disable POSTED mode for errata i103 and i767
-Date: Thu, 19 Dec 2013 11:52:40 +0000
-Message-Id: <1387454106-19326-63-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 025/208] net: clamp ->msg_namelen instead of returning an error
+Date: Thu, 19 Dec 2013 11:52:03 +0000
+Message-Id: <1387454106-19326-26-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,49 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joel Fernandes <joelf@ti.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 912e663127c5f700da6805ce21635dce703cb2cc upstream.
+commit db31c55a6fb245fdbb752a2ca4aefec89afabb06 upstream.
 
-Enabling of Posted mode is seen to cause problems on dmtimer modules on AM33xx
-(much like other OMAPs).  Reference discussions on forums [1] [2]. Earlier
-patch solving this on other OMAPs [3].
+If kmsg->msg_namelen > sizeof(struct sockaddr_storage) then in the
+original code that would lead to memory corruption in the kernel if you
+had audit configured.  If you didn't have audit configured it was
+harmless.
 
-For OMAP SoCs with this errata, the fix has been to not enable Posted mode.
-However, on some SoCs (atleast AM33xx) which carry this errata, Posted mode
-is enabled on reset. So we not only need to ignore enabling of the POSTED bit
-when the timer is requested, but also disable Posted mode if errata is present.
+There are some programs such as beta versions of Ruby which use too
+large of a buffer and returning an error code breaks them.  We should
+clamp the ->msg_namelen value instead.
 
-[1] http://e2e.ti.com/support/arm/sitara_arm/f/791/t/285744.aspx
-[2] http://e2e.ti.com/support/arm/sitara_arm/f/791/t/270632.aspx
-[3] http://www.spinics.net/lists/linux-omap/msg81770.html
-
-Reported-by: Russ Dill <russ.dill@ti.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Joel Fernandes <joelf@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Fixes: 1661bf364ae9 ("net: heap overflow in __audit_sockaddr()")
+Reported-by: Eric Wong <normalperson@yhbt.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Tested-by: Eric Wong <normalperson@yhbt.net>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/plat-omap/include/plat/dmtimer.h | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/compat.c | 2 +-
+ net/socket.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/plat-omap/include/plat/dmtimer.h b/arch/arm/plat-omap/include/plat/dmtimer.h
-index fb92abb..2861b15 100644
---- a/arch/arm/plat-omap/include/plat/dmtimer.h
-+++ b/arch/arm/plat-omap/include/plat/dmtimer.h
-@@ -336,8 +336,11 @@ static inline void __omap_dm_timer_enable_posted(struct omap_dm_timer *timer)
- 	if (timer->posted)
- 		return;
+diff --git a/net/compat.c b/net/compat.c
+index 618c6a8..dd32e34 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -72,7 +72,7 @@ int get_compat_msghdr(struct msghdr *kmsg, struct compat_msghdr __user *umsg)
+ 	    __get_user(kmsg->msg_flags, &umsg->msg_flags))
+ 		return -EFAULT;
+ 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
+-		return -EINVAL;
++		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
+ 	kmsg->msg_name = compat_ptr(tmp1);
+ 	kmsg->msg_iov = compat_ptr(tmp2);
+ 	kmsg->msg_control = compat_ptr(tmp3);
+diff --git a/net/socket.c b/net/socket.c
+index 65b0013..03d5324 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1982,7 +1982,7 @@ static int copy_msghdr_from_user(struct msghdr *kmsg,
+ 	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
+ 		return -EFAULT;
+ 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
+-		return -EINVAL;
++		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
+ 	return 0;
+ }
  
--	if (timer->errata & OMAP_TIMER_ERRATA_I103_I767)
-+	if (timer->errata & OMAP_TIMER_ERRATA_I103_I767) {
-+		timer->posted = OMAP_TIMER_NONPOSTED;
-+		__omap_dm_timer_write(timer, OMAP_TIMER_IF_CTRL_REG, 0, 0);
- 		return;
-+	}
- 
- 	__omap_dm_timer_write(timer, OMAP_TIMER_IF_CTRL_REG,
- 			      OMAP_TIMER_CTRL_POSTED, 0);
 -- 
 1.8.3.2
 
