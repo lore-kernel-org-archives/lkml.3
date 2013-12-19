@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107Ab3LSMgc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:36:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44901 "EHLO
+	id S1756950Ab3LSNAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:00:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44585 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755053Ab3LSL5o (ORCPT
+	with ESMTP id S1754232Ab3LSL4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:44 -0500
+	Thu, 19 Dec 2013 06:56:18 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 100/208] video: kyro: fix incorrect sizes when copying to userspace
-Date: Thu, 19 Dec 2013 11:53:18 +0000
-Message-Id: <1387454106-19326-101-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 041/208] inet: fix possible seqlock deadlocks
+Date: Thu, 19 Dec 2013 11:52:19 +0000
+Message-Id: <1387454106-19326-42-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,45 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 2ab68ec927310dc488f3403bb48f9e4ad00a9491 upstream.
+commit f1d8cba61c3c4b1eb88e507249c4cb8d635d9a76 upstream.
 
-kyro would copy u32s and specify sizeof(unsigned long) as the size to copy.
+In commit c9e9042994d3 ("ipv4: fix possible seqlock deadlock") I left
+another places where IP_INC_STATS_BH() were improperly used.
 
-This would copy more data than intended and cause memory corruption and might
-leak kernel memory.
+udp_sendmsg(), ping_v4_sendmsg() and tcp_v4_connect() are called from
+process context, not from softirq context.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+This was detected by lockdep seqlock support.
+
+Reported-by: jongman heo <jongman.heo@samsung.com>
+Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
+Fixes: c319b4d76b9e ("net: ipv4: add IPPROTO_ICMP socket kind")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/video/kyro/fbdev.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/ipv4/ping.c     | 2 +-
+ net/ipv4/tcp_ipv4.c | 2 +-
+ net/ipv4/udp.c      | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/video/kyro/fbdev.c b/drivers/video/kyro/fbdev.c
-index 6157f74..ec7fc87 100644
---- a/drivers/video/kyro/fbdev.c
-+++ b/drivers/video/kyro/fbdev.c
-@@ -625,15 +625,15 @@ static int kyrofb_ioctl(struct fb_info *info,
- 		}
- 		break;
- 	case KYRO_IOCTL_UVSTRIDE:
--		if (copy_to_user(argp, &deviceInfo.ulOverlayUVStride, sizeof(unsigned long)))
-+		if (copy_to_user(argp, &deviceInfo.ulOverlayUVStride, sizeof(deviceInfo.ulOverlayUVStride)))
- 			return -EFAULT;
- 		break;
- 	case KYRO_IOCTL_STRIDE:
--		if (copy_to_user(argp, &deviceInfo.ulOverlayStride, sizeof(unsigned long)))
-+		if (copy_to_user(argp, &deviceInfo.ulOverlayStride, sizeof(deviceInfo.ulOverlayStride)))
- 			return -EFAULT;
- 		break;
- 	case KYRO_IOCTL_OVERLAY_OFFSET:
--		if (copy_to_user(argp, &deviceInfo.ulOverlayOffset, sizeof(unsigned long)))
-+		if (copy_to_user(argp, &deviceInfo.ulOverlayOffset, sizeof(deviceInfo.ulOverlayOffset)))
- 			return -EFAULT;
- 		break;
+diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
+index 09ee970..d7886b2 100644
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -769,7 +769,7 @@ int ping_v4_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 		err = PTR_ERR(rt);
+ 		rt = NULL;
+ 		if (err == -ENETUNREACH)
+-			IP_INC_STATS_BH(net, IPSTATS_MIB_OUTNOROUTES);
++			IP_INC_STATS(net, IPSTATS_MIB_OUTNOROUTES);
+ 		goto out;
  	}
+ 
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index b299da5..0f20350 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -177,7 +177,7 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 	if (IS_ERR(rt)) {
+ 		err = PTR_ERR(rt);
+ 		if (err == -ENETUNREACH)
+-			IP_INC_STATS_BH(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
++			IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
+ 		return err;
+ 	}
+ 
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index a1787101d..b30deb9 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -972,7 +972,7 @@ int udp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 			err = PTR_ERR(rt);
+ 			rt = NULL;
+ 			if (err == -ENETUNREACH)
+-				IP_INC_STATS_BH(net, IPSTATS_MIB_OUTNOROUTES);
++				IP_INC_STATS(net, IPSTATS_MIB_OUTNOROUTES);
+ 			goto out;
+ 		}
+ 
 -- 
 1.8.3.2
 
