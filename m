@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab3LSJaM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:30:12 -0500
-Received: from relay.parallels.com ([195.214.232.42]:34828 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab3LSJaE (ORCPT
+	id S1752369Ab3LSJcg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:32:36 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:37713 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab3LSJcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:30:04 -0500
-Message-ID: <52B2BC97.4010506@parallels.com>
-Date: Thu, 19 Dec 2013 13:29:59 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	Thu, 19 Dec 2013 04:32:33 -0500
+Date: Thu, 19 Dec 2013 15:02:22 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
+        Akhil Bhansali <abhansali@stec-inc.com>, josh@joshtriplett.org
+Subject: [PATCH 01/13] drivers: block: Mark the functions as static in
+ skd_main.c
+Message-ID: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/6] memcg, slab: cleanup barrier usage when accessing
- memcg_caches
-References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com> <bd0a7ffc57e4a0b0c3d456c0cf8801e829e14717.1387372122.git.vdavydov@parallels.com> <20131218171411.GD31080@dhcp22.suse.cz> <52B29427.9010909@parallels.com> <20131219091007.GC9331@dhcp22.suse.cz> <52B2B951.5080809@parallels.com> <20131219092137.GG9331@dhcp22.suse.cz>
-In-Reply-To: <20131219092137.GG9331@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 01:21 PM, Michal Hocko wrote:
-> On Thu 19-12-13 13:16:01, Vladimir Davydov wrote:
->> On 12/19/2013 01:10 PM, Michal Hocko wrote:
->>> On Thu 19-12-13 10:37:27, Vladimir Davydov wrote:
->>>> On 12/18/2013 09:14 PM, Michal Hocko wrote:
->>>>> On Wed 18-12-13 17:16:54, Vladimir Davydov wrote:
->>>>>> First, in memcg_create_kmem_cache() we should issue the write barrier
->>>>>> after the kmem_cache is initialized, but before storing the pointer to
->>>>>> it in its parent's memcg_params.
->>>>>>
->>>>>> Second, we should always issue the read barrier after
->>>>>> cache_from_memcg_idx() to conform with the write barrier.
->>>>>>
->>>>>> Third, its better to use smp_* versions of barriers, because we don't
->>>>>> need them on UP systems.
->>>>> Please be (much) more verbose on Why. Barriers are tricky and should be
->>>>> documented accordingly. So if you say that we should issue a barrier
->>>>> always be specific why we should do it.
->>>> In short, we have kmem_cache::memcg_params::memcg_caches is an array of
->>>> pointers to per-memcg caches. We access it lock-free so we should use
->>>> memory barriers during initialization. Obviously we should place a write
->>>> barrier just before we set the pointer in order to make sure nobody will
->>>> see a partially initialized structure. Besides there must be a read
->>>> barrier between reading the pointer and accessing the structure, to
->>>> conform with the write barrier. It's all that similar to rcu_assign and
->>>> rcu_deref. Currently the barrier usage looks rather strange:
->>>>
->>>> memcg_create_kmem_cache:
->>>>     initialize kmem
->>>>     set the pointer in memcg_caches
->>>>     wmb() // ???
->>>>
->>>> __memcg_kmem_get_cache:
->>>>     <...>
->>>>     read_barrier_depends() // ???
->>>>     cachep = root_cache->memcg_params->memcg_caches[memcg_id]
->>>>     <...>
->>> Why do we need explicit memory barriers when we can use RCU?
->>> __memcg_kmem_get_cache already dereferences within rcu_read_lock.
->> Because it's not RCU, IMO. RCU implies freeing the old version after a
->> grace period, while kmem_caches are freed immediately. We simply want to
->> be sure the kmem_cache is fully initialized. And we do not require
->> calling this in an RCU critical section.
-> And you can use rcu_dereference and rcu_assign for that as well.
+Mark functions skd_skmsg_state_to_str() and skd_skreq_state_to_str() as
+static in skd_main.c because they are not used outside this file.
 
-rcu_dereference() will complain if called outside an RCU critical
-section, while cache_from_memcg_idx() is called w/o RCU protection from
-some places.
+This eliminates the following warnings in skd_main.c:
+drivers/block/skd_main.c:5272:13: warning: no previous prototype for ‘skd_skmsg_state_to_str’ [-Wmissing-prototypes]
+drivers/block/skd_main.c:5284:13: warning: no previous prototype for ‘skd_skreq_state_to_str’ [-Wmissing-prototypes]
 
-> It hides all the juicy details about memory barriers.
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/block/skd_main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-IMO, a memory barrier with a good comment looks better than an
-rcu_dereference() without RCU protection :-)
+diff --git a/drivers/block/skd_main.c b/drivers/block/skd_main.c
+index 9199c93..eb6e1e0 100644
+--- a/drivers/block/skd_main.c
++++ b/drivers/block/skd_main.c
+@@ -5269,7 +5269,7 @@ const char *skd_skdev_state_to_str(enum skd_drvr_state state)
+ 	}
+ }
+ 
+-const char *skd_skmsg_state_to_str(enum skd_fit_msg_state state)
++static const char *skd_skmsg_state_to_str(enum skd_fit_msg_state state)
+ {
+ 	switch (state) {
+ 	case SKD_MSG_STATE_IDLE:
+@@ -5281,7 +5281,7 @@ const char *skd_skmsg_state_to_str(enum skd_fit_msg_state state)
+ 	}
+ }
+ 
+-const char *skd_skreq_state_to_str(enum skd_req_state state)
++static const char *skd_skreq_state_to_str(enum skd_req_state state)
+ {
+ 	switch (state) {
+ 	case SKD_REQ_STATE_IDLE:
+-- 
+1.7.9.5
 
-> Besides that nothing prevents us from freeing from rcu callback. Or?
-
-It's an overhead we can live without there. The point is that we can
-access a cache only if it is active. I mean no allocation can go from a
-cache that has already been destroyed. It would be a bug. So there is no
-point in introducing RCU-protection for kmem_caches there. It would only
-confuse, IMO.
-
-Thanks.
