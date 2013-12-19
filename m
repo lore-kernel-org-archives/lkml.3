@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab3LSWPy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 17:15:54 -0500
-Received: from smtprelay0169.hostedemail.com ([216.40.44.169]:44636 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755906Ab3LSWPw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 17:15:52 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:966:967:968:973:988:989:1042:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2525:2538:2553:2561:2564:2682:2685:2693:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3354:3770:3855:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4385:4605:4823:5007:6117:6119:6755:7652:7773:7809:7903:8599:8957:8985:9025:9388:9389:9855:10004:10400:10848:10920:11232:11658:11914:12043:12219:12296:12517:12519:12555:12663:12682:12740:12776:13019:13437:19902:19997:21060,0,RBL:none,C
-X-HE-Tag: stamp74_32cd3401ed24c
-X-Filterd-Recvd-Size: 3212
-Message-ID: <1387491348.2353.20.camel@joe-AO722>
-Subject: Re: checkpatch.pl error might be false positive
-From: Joe Perches <joe@perches.com>
-To: Ravi Patel <rapatel@apm.com>, Josh Triplett <josh@joshtriplett.org>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>
-Cc: Andy Whitcroft <apw@canonical.com>, Kumar Sankaran <ksankaran@apm.com>,
-        Loc Ho <lho@apm.com>, Keyur Chudgar <kchudgar@apm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 19 Dec 2013 14:15:48 -0800
-In-Reply-To: <CAN1v_PvS3dH6HVQ90d=3cfsSdMgieyoDNp3VN-vrHv-aqSFEAw@mail.gmail.com>
-References: <CAN1v_PvS3dH6HVQ90d=3cfsSdMgieyoDNp3VN-vrHv-aqSFEAw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1756295Ab3LSWSH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 17:18:07 -0500
+Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:51686
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755386Ab3LSWSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 17:18:05 -0500
+Message-ID: <1387491465.3140.159.camel@snotra.buserror.net>
+Subject: Re: [REPOST][PATCH 2/2] driver core: platform: allow platform
+ drivers to bind to any device
+From: Scott Wood <scottwood@freescale.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Kim Phillips <kim.phillips@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <kvm@vger.kernel.org>, <R65777@freescale.com>, <B07421@freescale.com>,
+        <B08248@freescale.com>, <christoffer.dall@linaro.org>,
+        <alex.williamson@redhat.com>, <a.motakis@virtualopensystems.com>,
+        <agraf@suse.de>, <B16395@freescale.com>
+Date: Thu, 19 Dec 2013 16:17:45 -0600
+In-Reply-To: <20131219204452.GA13301@kroah.com>
+References: <20131203123454.3ab18749ed0d0d943b10df9a@linaro.org>
+	 <20131219010340.GA23055@kroah.com>
+	 <1387484961.3140.141.camel@snotra.buserror.net>
+	 <20131219204452.GA13301@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
+X-ClientProxiedBy: BN1PR04CA004.namprd04.prod.outlook.com (10.255.197.14) To
+ BL2PR03MB387.namprd03.prod.outlook.com (10.141.91.152)
+X-Forefront-PRVS: 006546F32A
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(199002)(189002)(51704005)(377424004)(24454002)(33646001)(74876001)(50986001)(77156001)(46102001)(74706001)(50466002)(49866001)(50226001)(47736001)(47976001)(74366001)(76482001)(23676002)(51856001)(77096001)(53806001)(42186004)(81542001)(63696002)(81342001)(47776003)(88136002)(79102001)(54316002)(83322001)(65816001)(80976001)(80022001)(81816001)(87286001)(81686001)(87266001)(31966008)(74502001)(47446002)(85306002)(74662001)(4396001)(89996001)(85852003)(62966002)(59766001)(87976001)(77982001)(76796001)(76786001)(69226001)(90146001)(83072002)(56776001)(56816005)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB387;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];CLIP:2601:2:5800:3f7:12bf:48ff:fe84:c9a0;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(resending adding lkml)
-(adding Josh Triplett and Jesse Brandeburg)
-
-On Thu, 2013-12-19 at 13:01 -0800, Ravi Patel wrote:
-> Hi Andy, Joe
+On Thu, 2013-12-19 at 12:44 -0800, Greg Kroah-Hartman wrote:
+> On Thu, Dec 19, 2013 at 02:29:21PM -0600, Scott Wood wrote:
+> > On Wed, 2013-12-18 at 17:03 -0800, Greg Kroah-Hartman wrote:
+> > > On Tue, Dec 03, 2013 at 12:34:54PM +0000, Kim Phillips wrote:
+> > > > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> > > > index 3a94b79..78a5b62 100644
+> > > > --- a/drivers/base/platform.c
+> > > > +++ b/drivers/base/platform.c
+> > > > @@ -736,6 +736,10 @@ static int platform_match(struct device *dev, struct device_driver *drv)
+> > > >  	struct platform_device *pdev = to_platform_device(dev);
+> > > >  	struct platform_driver *pdrv = to_platform_driver(drv);
+> > > >  
+> > > > +	/* the driver matches any device */
+> > > > +	if (pdrv->match_any_dev)
+> > > > +		return 1;
+> > > 
+> > > This breaks userspace in that it will never know to load the module that
+> > > can "bind to anything".
+> > > 
+> > > You need a way to encode this in the platform device id that can be a
+> > > wildcard type of thing, so that userspace can know about this.
+> > 
+> > How is userspace broken?  vfio platform is a new thing; there's nothing
+> > existing to break.  I don't see how automatic module loading makes sense
+> > for it.  Whether the module needs to be loaded depends on the user's
+> > intentions, not based on what hardware you have.
 > 
-> My name is Ravi Patel and I am working for AppliedMicro.
-> I am planning to submit APM X-Gene SoC QMTM drivers to open source after
-> running checkpatch.pl
-> I am seeing following error saying remove FSF address from my patch, which
-> I don't have in my source/header files.
-> 
-> ERROR: Do not include the paragraph about writing to the Free Software
-> Foundation's mailing address from the sample GPL notice. The FSF has
-> changed addresses in the past, and may do so again. Linux already includes
-> a copy of the GPL.
-> #1580: FILE: include/misc/xgene/xgene_qmtm.h:19:
-> + * You should have received a copy of the GNU General Public License$
-> 
-> Here is my License banner in xgene_qmtm.h
-> There are no tabs in my banner
-> 
-> /*
->  * AppliedMicro X-Gene SOC Queue Manager/Traffic Manager driver
->  *
->  * Copyright (c) 2013 Applied Micro Circuits Corporation.
->  * Author: Ravi Patel <rapatel@apm.com>
->  *         Keyur Chudgar <kchudgar@apm.com>
->  *         Fushen Chen <fchen@apm.com>
->  *
->  * This program is free software; you can redistribute  it and/or modify it
->  * under  the terms of  the GNU General  Public License as published by the
->  * Free Software Foundation;  either version 2 of the  License, or (at your
->  * option) any later version.
->  *
->  * This program is distributed in the hope that it will be useful,
->  * but WITHOUT ANY WARRANTY; without even the implied warranty of
->  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->  * GNU General Public License for more details.
->  *
->  * You should have received a copy of the GNU General Public License
->  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
->  *
->  */
-> 
-> Can you please check if the error is false positive.
+> As your driver is saying it can "match any device", you need to tell
+> userspace that, which you aren't doing here.
 
-Josh?
+Userspace either knows how to set up VFIO platform devices, in which
+case it knows what to do, or it doesn't, in which case why would we want
+the module loaded?
 
-Is the intent that the "copy of the GNU General Public License"
-statement should also be removed?
+> That's what the ids that are exported to userspace do, please add some for platform devices to
+> allow this to work properly, like almost all other busses have.
 
-Jesse had a question recently about the appropriateness of the
-removal given the license text.
+This isn't about platform devices versus "almost all other buses", it's
+about VFIO being fundamentally different from normal drivers.
 
-http://www.spinics.net/lists/netdev/msg262152.html
-
+-Scott
 
 
