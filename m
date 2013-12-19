@@ -1,123 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab3LSP5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:57:55 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:2964 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab3LSPzu (ORCPT
+	id S1755998Ab3LSP6O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:58:14 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:60560 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755722Ab3LSPzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:55:50 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 19 Dec 2013 07:57:04 -0800
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        <devicetree@vger.kernel.org>
-Subject: [PATCH 3/6] ARM: tegra: Add efuse bindings
-Date: Thu, 19 Dec 2013 17:54:31 +0200
-Message-ID: <1387468474-26521-4-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1387468474-26521-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1387468474-26521-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 19 Dec 2013 10:55:44 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, broonie@kernel.org, alsa-devel@alsa-project.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 08/11] ASoC: ux500: Store DMA data in the DAI differently in the pdata and DT case
+Date: Thu, 19 Dec 2013 15:55:05 +0000
+Message-Id: <1387468508-12286-9-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387468508-12286-1-git-send-email-lee.jones@linaro.org>
+References: <1387468508-12286-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add efuse bindings for Tegra20, Tegra30, Tegra114 and Tegra124.
+In this patch we do two things. Firstly, instead of open coding the
+store of DMA data in to the DAI for later use, we use the API provided.
+Secondly we create and store similar DMA data for the DT case, only
+this time we use 'struct snd_dmaengine_dai_dma_data' which is provided
+by the core for this very reason.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/boot/dts/tegra114.dtsi |    6 ++++++
- arch/arm/boot/dts/tegra124.dtsi |    6 ++++++
- arch/arm/boot/dts/tegra20.dtsi  |    7 +++++++
- arch/arm/boot/dts/tegra30.dtsi  |    6 ++++++
- 4 files changed, 25 insertions(+), 0 deletions(-)
+ sound/soc/ux500/ux500_msp_dai.c | 42 +++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 40 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
-index 8d42787..09a69bf 100644
---- a/arch/arm/boot/dts/tegra114.dtsi
-+++ b/arch/arm/boot/dts/tegra114.dtsi
-@@ -316,6 +316,12 @@
- 		clock-names = "pclk", "clk32k_in";
- 	};
+diff --git a/sound/soc/ux500/ux500_msp_dai.c b/sound/soc/ux500/ux500_msp_dai.c
+index bc042cc..f4d607a 100644
+--- a/sound/soc/ux500/ux500_msp_dai.c
++++ b/sound/soc/ux500/ux500_msp_dai.c
+@@ -17,12 +17,14 @@
+ #include <linux/bitops.h>
+ #include <linux/platform_device.h>
+ #include <linux/clk.h>
++#include <linux/of.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/mfd/dbx500-prcmu.h>
+ #include <linux/platform_data/asoc-ux500-msp.h>
  
-+	efuse@7000f800 {
-+		compatible = "nvidia,tegra114-efuse";
-+		reg = <0x7000f800 0x400>;
-+		clocks = <&tegra_car TEGRA114_CLK_FUSE>;
-+	};
-+
- 	iommu {
- 		compatible = "nvidia,tegra114-smmu", "nvidia,tegra30-smmu";
- 		reg = <0x70019010 0x02c
-diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
-index b741300..5e82956 100644
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -106,6 +106,12 @@
- 		reg = <0x7000e400 0x400>;
- 	};
+ #include <sound/soc.h>
+ #include <sound/soc-dai.h>
++#include <sound/dmaengine_pcm.h>
  
-+	efuse@7000f800 {
-+		compatible = "nvidia,tegra124-efuse";
-+		reg = <0x7000f800 0x400>;
-+		clocks = <&tegra_car TEGRA124_CLK_FUSE>;
-+	};
-+
- 	cpus {
- 		#address-cells = <1>;
- 		#size-cells = <0>;
-diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
-index df40b54..85daed6 100644
---- a/arch/arm/boot/dts/tegra20.dtsi
-+++ b/arch/arm/boot/dts/tegra20.dtsi
-@@ -121,6 +121,7 @@
- 		};
- 	};
+ #include "ux500_msp_i2s.h"
+ #include "ux500_msp_dai.h"
+@@ -654,16 +656,52 @@ static int ux500_msp_dai_trigger(struct snd_pcm_substream *substream,
+ 	return ret;
+ }
  
++static int ux500_msp_dai_of_probe(struct snd_soc_dai *dai)
++{
++	struct ux500_msp_i2s_drvdata *drvdata = dev_get_drvdata(dai->dev);
++	struct snd_dmaengine_dai_dma_data *playback_dma_data;
++	struct snd_dmaengine_dai_dma_data *capture_dma_data;
 +
- 	timer@50004600 {
- 		compatible = "arm,cortex-a9-twd-timer";
- 		reg = <0x50040600 0x20>;
-@@ -455,6 +456,12 @@
- 		#size-cells = <0>;
- 	};
++	playback_dma_data = devm_kzalloc(dai->dev,
++					 sizeof(*playback_dma_data),
++					 GFP_KERNEL);
++	if (!playback_dma_data)
++		return -ENOMEM;
++
++	capture_dma_data = devm_kzalloc(dai->dev,
++					sizeof(*capture_dma_data),
++					GFP_KERNEL);
++	if (!capture_dma_data)
++		return -ENOMEM;
++
++	playback_dma_data->addr = drvdata->msp->playback_dma_data.tx_rx_addr;
++	capture_dma_data->addr = drvdata->msp->capture_dma_data.tx_rx_addr;
++
++	playback_dma_data->maxburst = 4;
++	capture_dma_data->maxburst = 4;
++
++	snd_soc_dai_init_dma_data(dai, playback_dma_data, capture_dma_data);
++
++	return 0;
++}
++
+ static int ux500_msp_dai_probe(struct snd_soc_dai *dai)
+ {
+ 	struct ux500_msp_i2s_drvdata *drvdata = dev_get_drvdata(dai->dev);
++	struct msp_i2s_platform_data *pdata = dai->dev->platform_data;
++	int ret;
  
-+	efuse@7000F800 {
-+		compatible = "nvidia,tegra20-efuse";
-+		reg = <0x7000F800 0x400>;
-+		clocks = <&tegra_car TEGRA20_CLK_FUSE>;
-+	};
-+
- 	pcie-controller {
- 		compatible = "nvidia,tegra20-pcie";
- 		device_type = "pci";
-diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
-index 2bd55cf..da1b998 100644
---- a/arch/arm/boot/dts/tegra30.dtsi
-+++ b/arch/arm/boot/dts/tegra30.dtsi
-@@ -535,6 +535,12 @@
- 		nvidia,ahb = <&ahb>;
- 	};
+-	dai->playback_dma_data = &drvdata->msp->playback_dma_data;
+-	dai->capture_dma_data = &drvdata->msp->capture_dma_data;
++	if (!pdata) {
++		ret = ux500_msp_dai_of_probe(dai);
++		return ret;
++	}
  
-+	efuse@7000f800 {
-+		compatible = "nvidia,tegra30-efuse";
-+		reg = <0x7000f800 0x400>;
-+		clocks = <&tegra_car TEGRA30_CLK_FUSE>;
-+	};
-+
- 	ahub {
- 		compatible = "nvidia,tegra30-ahub";
- 		reg = <0x70080000 0x200
+ 	drvdata->msp->playback_dma_data.data_size = drvdata->slot_width;
+ 	drvdata->msp->capture_dma_data.data_size = drvdata->slot_width;
+ 
++	snd_soc_dai_init_dma_data(dai,
++				  &drvdata->msp->playback_dma_data,
++				  &drvdata->msp->capture_dma_data);
+ 	return 0;
+ }
+ 
 -- 
-1.7.7.rc0.72.g4b5ea.dirty
+1.8.3.2
 
