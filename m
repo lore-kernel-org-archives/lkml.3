@@ -1,67 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab3LSJf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:35:26 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:36387 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438Ab3LSJfS (ORCPT
+	id S1753017Ab3LSJgO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:36:14 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55948 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321Ab3LSJef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:35:18 -0500
-Message-ID: <1387445713.31516.30.camel@host5.omatika.ru>
-Subject: Re: [PATCH v3 01/21 resend] serial: rewrite pxa2xx-uart to use
- 8250_core
-From: Sergei Ianovich <ynvich@gmail.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Jiri Slaby <jslaby@suse.cz>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        James Cameron <quozl@laptop.org>, Zhou Zhu <zzhu3@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "open list:SERIAL DRIVERS" <linux-serial@vger.kernel.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
-Date: Thu, 19 Dec 2013 13:35:13 +0400
-In-Reply-To: <20131219085145.GB20686@xps8300>
-References: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
-	 <1387309071-22382-1-git-send-email-ynvich@gmail.com>
-	 <1387309071-22382-2-git-send-email-ynvich@gmail.com>
-	 <20131219085145.GB20686@xps8300>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Dec 2013 04:34:35 -0500
+X-AuditID: 9c930179-b7bedae000000f15-9d-52b2bda87060
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 4/4] tools lib traceevent: Get rid of die() finally!!
+Date: Thu, 19 Dec 2013 18:34:26 +0900
+Message-Id: <1387445666-7821-4-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1387445666-7821-1-git-send-email-namhyung@kernel.org>
+References: <1387445666-7821-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heikki,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-On Thu, 2013-12-19 at 10:51 +0200, Heikki Krogerus wrote:
-> I noticed one more thing. I'm sorry about commenting this late.
-> 
-> Since you set the type PORT_XSCALE, don's you want to use
-> UPF_FIXED_TYPE flag instead of the UPF_SKIP_TEST here? Otherwise the
-> type will just get overridden and autoconfig() will be executed.
+Now all of its users were gone. :)
 
-UPF_FIXED_PORT was my first guess. However, it didn't work.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/lib/traceevent/event-utils.h |  4 ----
+ tools/lib/traceevent/parse-utils.c | 44 --------------------------------------
+ 2 files changed, 48 deletions(-)
 
-I've also tried to do ioremap in serial_pxa_probe instead of using
-UPF_IOREMAP. This didn't work as well.
-
-I've left this
-
-uart.port.type = PORT_XSCALE;
-
-as an indicator that 8250_pxa depends on this port type, and anyone
-changing its specific code paths should test with 8250_pxa. This line
-could be safely removed or commented out, if you feel strongly about
-that.
-
-> I'm guessing you also want to prevent things like the irq and the
-> uartclk from being changed by anybody by using the flag
-> UPF_FIXED_PORT, right?
-
-IIRC, autoprobing doesn't change irq or uartclk.
+diff --git a/tools/lib/traceevent/event-utils.h b/tools/lib/traceevent/event-utils.h
+index e76c9acb92cd..d1dc2170e402 100644
+--- a/tools/lib/traceevent/event-utils.h
++++ b/tools/lib/traceevent/event-utils.h
+@@ -23,18 +23,14 @@
+ #include <ctype.h>
+ 
+ /* Can be overridden */
+-void die(const char *fmt, ...);
+-void *malloc_or_die(unsigned int size);
+ void warning(const char *fmt, ...);
+ void pr_stat(const char *fmt, ...);
+ void vpr_stat(const char *fmt, va_list ap);
+ 
+ /* Always available */
+-void __die(const char *fmt, ...);
+ void __warning(const char *fmt, ...);
+ void __pr_stat(const char *fmt, ...);
+ 
+-void __vdie(const char *fmt, ...);
+ void __vwarning(const char *fmt, ...);
+ void __vpr_stat(const char *fmt, ...);
+ 
+diff --git a/tools/lib/traceevent/parse-utils.c b/tools/lib/traceevent/parse-utils.c
+index bba701cf10e6..eda07fa31dca 100644
+--- a/tools/lib/traceevent/parse-utils.c
++++ b/tools/lib/traceevent/parse-utils.c
+@@ -25,40 +25,6 @@
+ 
+ #define __weak __attribute__((weak))
+ 
+-void __vdie(const char *fmt, va_list ap)
+-{
+-	int ret = errno;
+-
+-	if (errno)
+-		perror("trace-cmd");
+-	else
+-		ret = -1;
+-
+-	fprintf(stderr, "  ");
+-	vfprintf(stderr, fmt, ap);
+-
+-	fprintf(stderr, "\n");
+-	exit(ret);
+-}
+-
+-void __die(const char *fmt, ...)
+-{
+-	va_list ap;
+-
+-	va_start(ap, fmt);
+-	__vdie(fmt, ap);
+-	va_end(ap);
+-}
+-
+-void __weak die(const char *fmt, ...)
+-{
+-	va_list ap;
+-
+-	va_start(ap, fmt);
+-	__vdie(fmt, ap);
+-	va_end(ap);
+-}
+-
+ void __vwarning(const char *fmt, va_list ap)
+ {
+ 	if (errno)
+@@ -117,13 +83,3 @@ void __weak pr_stat(const char *fmt, ...)
+ 	__vpr_stat(fmt, ap);
+ 	va_end(ap);
+ }
+-
+-void __weak *malloc_or_die(unsigned int size)
+-{
+-	void *data;
+-
+-	data = malloc(size);
+-	if (!data)
+-		die("malloc");
+-	return data;
+-}
+-- 
+1.7.11.7
 
