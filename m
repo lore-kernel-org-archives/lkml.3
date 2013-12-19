@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565Ab3LSWtN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 17:49:13 -0500
-Received: from mail-pb0-f74.google.com ([209.85.160.74]:53174 "EHLO
-	mail-pb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754699Ab3LSWtL (ORCPT
+	id S1756529Ab3LSWwk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 17:52:40 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:63160 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754470Ab3LSWwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 17:49:11 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Simon Glass <sjg@chromium.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Olof Johansson <olof@lixom.net>, Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Ben Dooks <ben-linux@fluff.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] ARM: dts: Add the missing "\" key in non-US keyboards for exynos5250-snow
-Date: Thu, 19 Dec 2013 14:36:17 -0800
-Message-Id: <1387492578-22068-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.5.1
-In-Reply-To: <1387492578-22068-1-git-send-email-dianders@chromium.org>
-References: <1387492578-22068-1-git-send-email-dianders@chromium.org>
+	Thu, 19 Dec 2013 17:52:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <1387492830-7988-1-git-send-email-john.stultz@linaro.org>
+References: <1387492830-7988-1-git-send-email-john.stultz@linaro.org>
+Date: Thu, 19 Dec 2013 14:52:38 -0800
+X-Google-Sender-Auth: _5wYqbZo3BuzAm5gZlByDhusSYY
+Message-ID: <CAMbhsRTLL7UfccyLeXraDx53SHXmBoVnKZE8fPcWzB1wsywo_Q@mail.gmail.com>
+Subject: Re: [PATCH] ion_test: Add compat_ioctl support
+From: Colin Cross <ccross@android.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Android Kernel Team <kernel-team@android.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the exynos5250 device tree was sent upstream the keyboard mapping
-was missing the 2nd instance of the "\" key.  There are two copies of
-the "\" because it simply has a different row and column on US and
-non-US keyboards.
+On Thu, Dec 19, 2013 at 2:40 PM, John Stultz <john.stultz@linaro.org> wrote:
+> Prior to subitting this, Colin reworked the compat_ioctl support
+> for the ion_test driver, moving the structure to be the same size
+> on both 32 and 64 bit architectures.
+>
+> Two small things were left out. The compat_ioctl ptr assignment,
+> and the fact that despite having uniform sized types in the
+> structure, the structure pads out to different sizes on different
+> arches.
+>
+> This patch resolves this issue by setting the write flag as
+> a __u64, and adding the compat_ioctl ptr.
+>
+> While this does affect the ABI for 32bit users, its only
+> the ABI for the ion_test driver, not ion itself.
+>
+> Cc: Colin Cross <ccross@android.com>
+> Cc: Greg KH <gregkh@linuxfoundation.org>
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> ---
+>  drivers/staging/android/ion/ion_test.c  | 1 +
+>  drivers/staging/android/uapi/ion_test.h | 2 +-
+>  2 files changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/staging/android/ion/ion_test.c b/drivers/staging/android/ion/ion_test.c
+> index 3e20349..654acb5 100644
+> --- a/drivers/staging/android/ion/ion_test.c
+> +++ b/drivers/staging/android/ion/ion_test.c
+> @@ -231,6 +231,7 @@ static int ion_test_release(struct inode *inode, struct file *file)
+>  static const struct file_operations ion_test_fops = {
+>         .owner = THIS_MODULE,
+>         .unlocked_ioctl = ion_test_ioctl,
+> +       .compat_ioctl = ion_test_ioctl,
 
-For more details, see the previous patch in this series: (mkbp: Fix
-problems with backslash).
+Setting the compat_ioctl to the same thing as unlocked_ioctl shouldn't
+be necessary, compat_sys_ioctl will fall through to do_vfs_ioctl if
+compat_ioctl is not set, which will call unlocked_ioctl.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- arch/arm/boot/dts/exynos5250-snow.dts | 1 +
- 1 file changed, 1 insertion(+)
+>         .open = ion_test_open,
+>         .release = ion_test_release,
+>  };
+> diff --git a/drivers/staging/android/uapi/ion_test.h b/drivers/staging/android/uapi/ion_test.h
+> index 614d1e3..f1727f5 100644
+> --- a/drivers/staging/android/uapi/ion_test.h
+> +++ b/drivers/staging/android/uapi/ion_test.h
+> @@ -31,7 +31,7 @@ struct ion_test_rw_data {
+>         __u64 ptr;
+>         __u64 offset;
+>         __u64 size;
+> -       int write;
+> +       __u64 write;
+>  };
 
-diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-index fd711e2..28fe2e2 100644
---- a/arch/arm/boot/dts/exynos5250-snow.dts
-+++ b/arch/arm/boot/dts/exynos5250-snow.dts
-@@ -130,6 +130,7 @@
- 							0x04060024	/* J */
- 							0x04080027	/* ; */
- 							0x04090026	/* L */
-+							0x040a002b	/* \ */
- 							0x040b001c	/* ENTER */
- 
- 							0x0501002c	/* Z */
--- 
-1.8.5.1
-
+Whoops, missed that one.  Can you add "int padding" after "int write"
+instead?  That at least lets us use the 32 bits later.
