@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab3LSMWS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:22:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45105 "EHLO
+	id S1756902Ab3LSM3S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:29:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44997 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755492Ab3LSL6l (ORCPT
+	with ESMTP id S1755277Ab3LSL6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:41 -0500
+	Thu, 19 Dec 2013 06:58:11 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
+        Chris J Arges <chris.j.arges@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 141/208] drm/radeon: program DCE2 audio dto just like DCE3
-Date: Thu, 19 Dec 2013 11:53:59 +0000
-Message-Id: <1387454106-19326-142-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 115/208] sched: Avoid throttle_cfs_rq() racing with period_timer stopping
+Date: Thu, 19 Dec 2013 11:53:33 +0000
+Message-Id: <1387454106-19326-116-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,47 +29,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Ben Segall <bsegall@google.com>
 
-commit 55d4e020fb8ddd3896a8cd3351028f5c3a2c4bd3 upstream.
+commit f9f9ffc237dd924f048204e8799da74f9ecf40cf upstream.
 
-Seems to work like the DCE3 version despite what
-the register spec says.
+throttle_cfs_rq() doesn't check to make sure that period_timer is running,
+and while update_curr/assign_cfs_runtime does, a concurrently running
+period_timer on another cpu could cancel itself between this cpu's
+update_curr and throttle_cfs_rq(). If there are no other cfs_rqs running
+in the tg to restart the timer, this causes the cfs_rq to be stranded
+forever.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=71975
+Fix this by calling __start_cfs_bandwidth() in throttle if the timer is
+inactive.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+(Also add some sched_debug lines for cfs_bandwidth.)
+
+Tested: make a run/sleep task in a cgroup, loop switching the cgroup
+between 1ms/100ms quota and unlimited, checking for timer_active=0 and
+throttled=1 as a failure. With the throttle_cfs_rq() change commented out
+this fails, with the full patch it passes.
+
+Signed-off-by: Ben Segall <bsegall@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/r600_hdmi.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ kernel/sched/debug.c | 8 ++++++++
+ kernel/sched/fair.c  | 2 ++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/r600_hdmi.c b/drivers/gpu/drm/radeon/r600_hdmi.c
-index 92c6df7..4006a32 100644
---- a/drivers/gpu/drm/radeon/r600_hdmi.c
-+++ b/drivers/gpu/drm/radeon/r600_hdmi.c
-@@ -304,9 +304,9 @@ void r600_audio_set_dto(struct drm_encoder *encoder, u32 clock)
- 			WREG32(DCCG_AUDIO_DTO1_MODULE, dto_modulo);
- 			WREG32(DCCG_AUDIO_DTO_SELECT, 1); /* select DTO1 */
- 		}
--	} else if (ASIC_IS_DCE3(rdev)) {
-+	} else {
- 		/* according to the reg specs, this should DCE3.2 only, but in
--		 * practice it seems to cover DCE3.0/3.1 as well.
-+		 * practice it seems to cover DCE2.0/3.0/3.1 as well.
- 		 */
- 		if (dig->dig_encoder == 0) {
- 			WREG32(DCCG_AUDIO_DTO0_PHASE, base_rate * 100);
-@@ -317,10 +317,6 @@ void r600_audio_set_dto(struct drm_encoder *encoder, u32 clock)
- 			WREG32(DCCG_AUDIO_DTO1_MODULE, clock * 100);
- 			WREG32(DCCG_AUDIO_DTO_SELECT, 1); /* select DTO1 */
- 		}
--	} else {
--		/* according to the reg specs, this should be DCE2.0 and DCE3.0/3.1 */
--		WREG32(AUDIO_DTO, AUDIO_DTO_PHASE(base_rate / 10) |
--		       AUDIO_DTO_MODULE(clock / 10));
- 	}
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index e076bdd..631daf2 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -225,6 +225,14 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 			atomic_read(&cfs_rq->tg->runnable_avg));
+ #endif
+ #endif
++#ifdef CONFIG_CFS_BANDWIDTH
++	SEQ_printf(m, "  .%-30s: %d\n", "tg->cfs_bandwidth.timer_active",
++			cfs_rq->tg->cfs_bandwidth.timer_active);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttled",
++			cfs_rq->throttled);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttle_count",
++			cfs_rq->throttle_count);
++#endif
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 31cbc15..66dae75 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2335,6 +2335,8 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+ 	cfs_rq->throttled_clock = rq_clock(rq);
+ 	raw_spin_lock(&cfs_b->lock);
+ 	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
++	if (!cfs_b->timer_active)
++		__start_cfs_bandwidth(cfs_b);
+ 	raw_spin_unlock(&cfs_b->lock);
  }
  
 -- 
