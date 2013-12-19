@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab3LSMjM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:39:12 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:35767 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757164Ab3LSMjJ (ORCPT
+	id S1756983Ab3LSNBe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:01:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44579 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab3LSL4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:39:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131219123137.GC18110@gmail.com>
-References: <s5hlhzik3kk.wl%tiwai@suse.de>
-	<CANq1E4TFKDduy71jCXy+8CMS1_OFxWEpsHY3AA0RUJPW4VE8hg@mail.gmail.com>
-	<20131218092941.GA19210@gmail.com>
-	<20131219000346.0f722b65@alan.etchedpixels.co.uk>
-	<CANq1E4Q3KiLMC-ETFs+FAmTv3yWdCyqG2c+KzGFX4xZmcxLbJg@mail.gmail.com>
-	<20131219123137.GC18110@gmail.com>
-Date: Thu, 19 Dec 2013 13:39:08 +0100
-Message-ID: <CANq1E4R5fF+Xtub8E_64bh6akZi8uU6d2ntG-rzsc_D7KFBY=g@mail.gmail.com>
-Subject: Re: cirrusdrmfb broken with simplefb
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Takashi Iwai <tiwai@suse.de>, Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 Dec 2013 06:56:17 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tom Herbert <therbert@google.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Shawn Landden <shawn@churchofgit.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 039/208] net: update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST
+Date: Thu, 19 Dec 2013 11:52:17 +0000
+Message-Id: <1387454106-19326-40-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-On Thu, Dec 19, 2013 at 1:31 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * David Herrmann <dh.herrmann@gmail.com> wrote:
->
->> Hi
->>
->> On Thu, Dec 19, 2013 at 1:03 AM, One Thousand Gnomes
->> <gnomes@lxorguk.ukuu.org.uk> wrote:
->> >> > That bug always existed, simplefb is just the first driver to hit it
->> >> > (vesafb/efifb didn't use resources). I'm aware of the issue but as a
->> >> > workaround you can simply disable CONFIG_X86_SYSFB. That restores
->> >> > the old behavior.
->> >>
->> >> This looks like a regression, so we'll either need a fix or we'll have
->> >> to mark CONFIG_X86_SYSFB as CONFIG_BROKEN.
->> >
->> > Kernel bugzilla has entries for simplefb breaking both vesafb and
->> > matrox mga.
->>
->> Thanks for the hints. I've read through all I could find and tried
->> to provide some help.
->>
->> I'm kind of confused, most of them enable CONFIG_X86_SYSFB (which is
->> 'n' by default) but don't read the help text. I did my best to tell
->> people that this option requires CONFIG_FB_SIMPLE, but if you don't
->> read the help-text you won't notice that. Don't know what to do
->> about that..
->
-> People generally don't read the help text - still the kernel should
-> not break. So please the Kconfig angle (and the bootup logic, etc.)
-> fool-proof, graphics failures are not fun to debug!
+------------------
 
-There're dozens of combinations that break gfx-boot. Even non-obvious
-things like disabling VT_HW_CONSOLE_BINDING will break gfx-handover.
-Anyhow, bad examples are no excuse.. I will send patches to fool-proof
-sysfb.
+From: Shawn Landden <shawn@churchofgit.com>
 
-David
+commit d3f7d56a7a4671d395e8af87071068a195257bf6 upstream.
+
+Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
+added an internal flag MSG_SENDPAGE_NOTLAST, similar to
+MSG_MORE.
+
+algif_hash, algif_skcipher, and udp used MSG_MORE from tcp_sendpages()
+and need to see the new flag as identical to MSG_MORE.
+
+This fixes sendfile() on AF_ALG.
+
+v3: also fix udp
+
+Cc: Tom Herbert <therbert@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
+Original-patch: Richard Weinberger <richard@nod.at>
+Signed-off-by: Shawn Landden <shawn@churchofgit.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ crypto/algif_hash.c     | 3 +++
+ crypto/algif_skcipher.c | 3 +++
+ net/ipv4/udp.c          | 3 +++
+ 3 files changed, 9 insertions(+)
+
+diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
+index ef5356c..8502462 100644
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -114,6 +114,9 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
+ 	struct hash_ctx *ctx = ask->private;
+ 	int err;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	lock_sock(sk);
+ 	sg_init_table(ctx->sgl.sg, 1);
+ 	sg_set_page(ctx->sgl.sg, page, size, offset);
+diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
+index 6a6dfc0..a19c027 100644
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -378,6 +378,9 @@ static ssize_t skcipher_sendpage(struct socket *sock, struct page *page,
+ 	struct skcipher_sg_list *sgl;
+ 	int err = -EINVAL;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	lock_sock(sk);
+ 	if (!ctx->more && ctx->used)
+ 		goto unlock;
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index a5fbb8c..a1787101d 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1071,6 +1071,9 @@ int udp_sendpage(struct sock *sk, struct page *page, int offset,
+ 	struct udp_sock *up = udp_sk(sk);
+ 	int ret;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	if (!up->pending) {
+ 		struct msghdr msg = {	.msg_flags = flags|MSG_MORE };
+ 
+-- 
+1.8.3.2
+
