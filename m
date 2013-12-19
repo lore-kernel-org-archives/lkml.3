@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab3LSJO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:14:28 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:59282 "EHLO
+	id S1753063Ab3LSJO1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:14:27 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:59302 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab3LSJKZ (ORCPT
+	with ESMTP id S1752188Ab3LSJK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:10:25 -0500
-Subject: [PATCH -tip v6 19/22] kprobes: Use NOKPROBE_SYMBOL() in sample
- modules
+	Thu, 19 Dec 2013 04:10:28 -0500
+Subject: [PATCH -tip v6 20/22] kprobes/x86: Use kprobe_blacklist for
+ .kprobes.text and .entry.text
 To: Ingo Molnar <mingo@kernel.org>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
         lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
-Date: Thu, 19 Dec 2013 09:04:40 +0000
-Message-ID: <20131219090440.14309.51975.stgit@kbuild-fedora.novalocal>
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Thu, 19 Dec 2013 09:04:43 +0000
+Message-ID: <20131219090443.14309.41560.stgit@kbuild-fedora.novalocal>
 In-Reply-To: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
 References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
 User-Agent: StGit/0.16
@@ -28,76 +31,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use NOKPROBE_SYMBOL() to protect handlers from kprobes
-in sample modules.
+Use kprobe_blackpoint for blacklisting .entry.text and .kprobees.text
+instead of arch_within_kprobe_blacklist. This also makes them visible
+via (debugfs)/kprobes/blacklist.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- samples/kprobes/jprobe_example.c    |    1 +
- samples/kprobes/kprobe_example.c    |    3 +++
- samples/kprobes/kretprobe_example.c |    2 ++
- 3 files changed, 6 insertions(+)
+ arch/x86/kernel/kprobes/core.c |   11 +------
+ include/linux/kprobes.h        |    1 +
+ kernel/kprobes.c               |   64 ++++++++++++++++++++++++++++------------
+ 3 files changed, 48 insertions(+), 28 deletions(-)
 
-diff --git a/samples/kprobes/jprobe_example.c b/samples/kprobes/jprobe_example.c
-index b754135..40114ac 100644
---- a/samples/kprobes/jprobe_example.c
-+++ b/samples/kprobes/jprobe_example.c
-@@ -35,6 +35,7 @@ static long jdo_fork(unsigned long clone_flags, unsigned long stack_start,
- 	jprobe_return();
- 	return 0;
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index 24bed46..060641e 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -1069,17 +1069,10 @@ int longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
  }
-+NOKPROBE_SYMBOL(jdo_fork);
+ NOKPROBE_SYMBOL(longjmp_break_handler);
  
- static struct jprobe my_jprobe = {
- 	.entry			= jdo_fork,
-diff --git a/samples/kprobes/kprobe_example.c b/samples/kprobes/kprobe_example.c
-index 366db1a..462d90f 100644
---- a/samples/kprobes/kprobe_example.c
-+++ b/samples/kprobes/kprobe_example.c
-@@ -46,6 +46,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
- 	/* A dump_stack() here will give a stack backtrace */
- 	return 0;
- }
-+NOKPROBE_SYMBOL(handler_pre);
- 
- /* kprobe post_handler: called after the probed instruction is executed */
- static void handler_post(struct kprobe *p, struct pt_regs *regs,
-@@ -68,6 +69,7 @@ static void handler_post(struct kprobe *p, struct pt_regs *regs,
- 		p->addr, regs->ex1);
- #endif
- }
-+NOKPROBE_SYMBOL(handler_post);
- 
- /*
-  * fault_handler: this is called if an exception is generated for any
-@@ -81,6 +83,7 @@ static int handler_fault(struct kprobe *p, struct pt_regs *regs, int trapnr)
- 	/* Return 0 because we don't handle the fault. */
- 	return 0;
- }
-+NOKPROBE_SYMBOL(handler_fault);
- 
- static int __init kprobe_init(void)
+-bool arch_within_kprobe_blacklist(unsigned long addr)
+-{
+-	return  (addr >= (unsigned long)__kprobes_text_start &&
+-		 addr < (unsigned long)__kprobes_text_end) ||
+-		(addr >= (unsigned long)__entry_text_start &&
+-		 addr < (unsigned long)__entry_text_end);
+-}
+-
+ int __init arch_init_kprobes(void)
  {
-diff --git a/samples/kprobes/kretprobe_example.c b/samples/kprobes/kretprobe_example.c
-index 1041b67..d932c52 100644
---- a/samples/kprobes/kretprobe_example.c
-+++ b/samples/kprobes/kretprobe_example.c
-@@ -47,6 +47,7 @@ static int entry_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
- 	data->entry_stamp = ktime_get();
- 	return 0;
+-	return 0;
++	return kprobe_blacklist_add_range((unsigned long)__entry_text_start,
++					  (unsigned long) __entry_text_end);
  }
-+NOKPROBE_SYMBOL(entry_handler);
  
+ int arch_trampoline_kprobe(struct kprobe *p)
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index e059507..e81bced 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -266,6 +266,7 @@ extern int arch_init_kprobes(void);
+ extern void show_registers(struct pt_regs *regs);
+ extern void kprobes_inc_nmissed_count(struct kprobe *p);
+ extern bool arch_within_kprobe_blacklist(unsigned long addr);
++extern int kprobe_blacklist_add_range(unsigned long start, unsigned long end);
+ 
+ struct kprobe_insn_cache {
+ 	struct mutex mutex;
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 8319048..abdede5 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1325,13 +1325,6 @@ out:
+ 	return ret;
+ }
+ 
+-bool __weak arch_within_kprobe_blacklist(unsigned long addr)
+-{
+-	/* The __kprobes marked functions and entry code must not be probed */
+-	return addr >= (unsigned long)__kprobes_text_start &&
+-	       addr < (unsigned long)__kprobes_text_end;
+-}
+-
+ static struct kprobe_blacklist_entry *find_blacklist_entry(unsigned long addr)
+ {
+ 	struct kprobe_blacklist_entry *ent;
+@@ -1346,8 +1339,6 @@ static struct kprobe_blacklist_entry *find_blacklist_entry(unsigned long addr)
+ 
+ static bool within_kprobe_blacklist(unsigned long addr)
+ {
+-	if (arch_within_kprobe_blacklist(addr))
+-		return true;
+ 	/*
+ 	 * If there exists a kprobe_blacklist, verify and
+ 	 * fail any probe registration in the prohibited area
+@@ -2032,6 +2023,40 @@ void dump_kprobe(struct kprobe *kp)
+ }
+ NOKPROBE_SYMBOL(dump_kprobe);
+ 
++static int __kprobe_blacklist_add(unsigned long start, unsigned long end)
++{
++	struct kprobe_blacklist_entry *ent;
++
++	ent = kmalloc(sizeof(*ent), GFP_KERNEL);
++	if (!ent)
++		return -ENOMEM;
++
++	ent->start_addr = start;
++	ent->end_addr = end;
++	INIT_LIST_HEAD(&ent->list);
++	list_add_tail(&ent->list, &kprobe_blacklist);
++	return 0;
++}
++
++int kprobe_blacklist_add_range(unsigned long start, unsigned long end)
++{
++	unsigned long offset = 0, size = 0;
++	int err = 0;
++
++	mutex_lock(&kprobe_blacklist_mutex);
++	while (!err && start < end) {
++		if (!kallsyms_lookup_size_offset(start, &size, &offset) ||
++		    size == 0) {
++			err = -ENOENT;
++			break;
++		}
++		err = __kprobe_blacklist_add(start, start + size);
++		start += size;
++	}
++	mutex_unlock(&kprobe_blacklist_mutex);
++	return err;
++}
++
  /*
-  * Return-probe handler: Log the return value and duration. Duration may turn
-@@ -66,6 +67,7 @@ static int ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
- 			func_name, retval, (long long)delta);
- 	return 0;
- }
-+NOKPROBE_SYMBOL(ret_handler);
+  * Lookup and populate the kprobe_blacklist.
+  *
+@@ -2043,8 +2068,8 @@ NOKPROBE_SYMBOL(dump_kprobe);
+ static int populate_kprobe_blacklist(unsigned long *start, unsigned long *end)
+ {
+ 	unsigned long *iter;
+-	struct kprobe_blacklist_entry *ent;
+ 	unsigned long offset = 0, size = 0;
++	int ret;
  
- static struct kretprobe my_kretprobe = {
- 	.handler		= ret_handler,
+ 	mutex_lock(&kprobe_blacklist_mutex);
+ 	for (iter = start; iter < end; iter++) {
+@@ -2052,14 +2077,7 @@ static int populate_kprobe_blacklist(unsigned long *start, unsigned long *end)
+ 			pr_err("Failed to find blacklist %p\n", (void *)*iter);
+ 			continue;
+ 		}
+-
+-		ent = kmalloc(sizeof(*ent), GFP_KERNEL);
+-		if (!ent)
+-			return -ENOMEM;
+-		ent->start_addr = *iter;
+-		ent->end_addr = *iter + size;
+-		INIT_LIST_HEAD(&ent->list);
+-		list_add_tail(&ent->list, &kprobe_blacklist);
++		ret = __kprobe_blacklist_add(*iter, *iter + size);
+ 	}
+ 	mutex_unlock(&kprobe_blacklist_mutex);
+ 
+@@ -2154,7 +2172,15 @@ static int __init init_kprobes(void)
+ 
+ 	err = populate_kprobe_blacklist(__start_kprobe_blacklist,
+ 					__stop_kprobe_blacklist);
+-	if (err) {
++
++	if (err >= 0 && __kprobes_text_start != __kprobes_text_end) {
++		/* The __kprobes marked functions must not be probed */
++		err = kprobe_blacklist_add_range(
++					(unsigned long)__kprobes_text_start,
++					(unsigned long)__kprobes_text_end);
++	}
++
++	if (err < 0) {
+ 		pr_err("kprobes: failed to populate blacklist: %d\n", err);
+ 		pr_err("Please take care of using kprobes.\n");
+ 	}
 
 
