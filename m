@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab3LSL7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:59:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45169 "EHLO
+	id S1755915Ab3LSMt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:49:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44795 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755624Ab3LSL66 (ORCPT
+	with ESMTP id S1754752Ab3LSL5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:58 -0500
+	Thu, 19 Dec 2013 06:57:14 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 153/208] drm/radeon: fixup bad vram size on SI
-Date: Thu, 19 Dec 2013 11:54:11 +0000
-Message-Id: <1387454106-19326-154-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 080/208] ALSA: hda - Another fixup for ASUS laptop with ALC660 codec
+Date: Thu, 19 Dec 2013 11:52:58 +0000
+Message-Id: <1387454106-19326-81-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,43 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 0ca223b029a261e82fb2f50c52eb85d510f4260e upstream.
+commit e7ca237bfcf6a288702cb95e94ab94f642ccad88 upstream.
 
-Some boards seem to have garbage in the upper
-16 bits of the vram size register.  Check for
-this and clamp the size properly.  Fixes
-boards reporting bogus amounts of vram.
+ASUS Z35HL laptop also needs the very same fix as the previous one
+that was applied to ASUS W7J.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66231
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/si.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
-index bf1fcb6..a69180c 100644
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -3903,8 +3903,15 @@ static int si_mc_init(struct radeon_device *rdev)
- 	rdev->mc.aper_base = pci_resource_start(rdev->pdev, 0);
- 	rdev->mc.aper_size = pci_resource_len(rdev->pdev, 0);
- 	/* size in MB on si */
--	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
--	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
-+	tmp = RREG32(CONFIG_MEMSIZE);
-+	/* some boards may have garbage in the upper 16 bits */
-+	if (tmp & 0xffff0000) {
-+		DRM_INFO("Probable bad vram size: 0x%08x\n", tmp);
-+		if (tmp & 0xffff)
-+			tmp &= 0xffff;
-+	}
-+	rdev->mc.mc_vram_size = tmp * 1024ULL * 1024ULL;
-+	rdev->mc.real_vram_size = rdev->mc.mc_vram_size;
- 	rdev->mc.visible_vram_size = rdev->mc.aper_size;
- 	si_vram_gtt_location(rdev, &rdev->mc);
- 	radeon_update_bandwidth_info(rdev);
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 881c9e01..9eace98 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4091,6 +4091,7 @@ static const struct hda_fixup alc861_fixups[] = {
+ 
+ static const struct snd_pci_quirk alc861_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1043, 0x1253, "ASUS W7J", ALC660_FIXUP_ASUS_W7J),
++	SND_PCI_QUIRK(0x1043, 0x1263, "ASUS Z35HL", ALC660_FIXUP_ASUS_W7J),
+ 	SND_PCI_QUIRK(0x1043, 0x1393, "ASUS A6Rp", ALC861_FIXUP_ASUS_A6RP),
+ 	SND_PCI_QUIRK_VENDOR(0x1043, "ASUS laptop", ALC861_FIXUP_AMP_VREF_0F),
+ 	SND_PCI_QUIRK(0x1462, 0x7254, "HP DX2200", ALC861_FIXUP_NO_JACK_DETECT),
 -- 
 1.8.3.2
 
