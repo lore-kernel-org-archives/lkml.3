@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab3LSL4w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:56:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44690 "EHLO
+	id S1755471Ab3LSL6e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:58:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45064 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754498Ab3LSL4o (ORCPT
+	with ESMTP id S1755449Ab3LSL6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:44 -0500
+	Thu, 19 Dec 2013 06:58:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 060/208] can: flexcan: use correct clock as base for bit rate calculation
-Date: Thu, 19 Dec 2013 11:52:38 +0000
-Message-Id: <1387454106-19326-61-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 133/208] [media] af9035: add [0413:6a05] Leadtek WinFast DTV Dongle Dual
+Date: Thu, 19 Dec 2013 11:53:51 +0000
+Message-Id: <1387454106-19326-134-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,43 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Antti Palosaari <crope@iki.fi>
 
-commit 1a3e5173f5e72cbf7f0c8927b33082e361c16d72 upstream.
+commit 0c413d10515feae02cee967b31bb8afea8aa0d29 upstream.
 
-The flexcan IP core uses the peripheral clock ("per") as basic clock for the
-bit timing calculation. However the driver uses the the wrong clock ("ipg").
-This leads to wrong bit rates if the rates on both clock are different.
+It is IT9135 dual design.
+Thanks to Michael Piko for reporting that!
 
-This patch fixes the problem by using the correct clock for the bit rate
-calculation.
-
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Reported-by: Michael Piko <michael@piko.com.au>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/can/flexcan.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/usb/dvb-usb-v2/af9035.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
-index cf3c93f..eb6b191 100644
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -1010,7 +1010,6 @@ static int flexcan_probe(struct platform_device *pdev)
- 			err = PTR_ERR(clk_ipg);
- 			goto failed_clock;
- 		}
--		clock_freq = clk_get_rate(clk_ipg);
- 
- 		clk_per = devm_clk_get(&pdev->dev, "per");
- 		if (IS_ERR(clk_per)) {
-@@ -1018,6 +1017,7 @@ static int flexcan_probe(struct platform_device *pdev)
- 			err = PTR_ERR(clk_per);
- 			goto failed_clock;
- 		}
-+		clock_freq = clk_get_rate(clk_per);
- 	}
- 
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+diff --git a/drivers/media/usb/dvb-usb-v2/af9035.c b/drivers/media/usb/dvb-usb-v2/af9035.c
+index c8fcd78..798565c 100644
+--- a/drivers/media/usb/dvb-usb-v2/af9035.c
++++ b/drivers/media/usb/dvb-usb-v2/af9035.c
+@@ -1534,6 +1534,8 @@ static const struct usb_device_id af9035_id_table[] = {
+ 	/* XXX: that same ID [0ccd:0099] is used by af9015 driver too */
+ 	{ DVB_USB_DEVICE(USB_VID_TERRATEC, 0x0099,
+ 		&af9035_props, "TerraTec Cinergy T Stick Dual RC (rev. 2)", NULL) },
++	{ DVB_USB_DEVICE(USB_VID_LEADTEK, 0x6a05,
++		&af9035_props, "Leadtek WinFast DTV Dongle Dual", NULL) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(usb, af9035_id_table);
 -- 
 1.8.3.2
 
