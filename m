@@ -1,98 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab3LSGVy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 01:21:54 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60412 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751011Ab3LSGVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 01:21:53 -0500
-Message-ID: <52B29079.2040704@ti.com>
-Date: Thu, 19 Dec 2013 11:51:45 +0530
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751905Ab3LSGb4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 01:31:56 -0500
+Received: from relay.parallels.com ([195.214.232.42]:35998 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab3LSGbz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 01:31:55 -0500
+Message-ID: <52B292CF.5030002@parallels.com>
+Date: Thu, 19 Dec 2013 10:31:43 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-To: Huang Rui <ray.huang@amd.com>, <gregkh@linuxfoundation.org>
-CC: <stern@rowland.harvard.edu>, <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] usb: usbtest: Always clear halt else further tests
- will fail
-References: <1387361411-15139-1-git-send-email-rogerq@ti.com> <1387361411-15139-2-git-send-email-rogerq@ti.com> <20131219040146.GC19091@hr-dev.amd.com> <20131219054651.GD19091@hr-dev.amd.com>
-In-Reply-To: <20131219054651.GD19091@hr-dev.amd.com>
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/6] slab: cleanup kmem_cache_create_memcg()
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com> <20131218165603.GB31080@dhcp22.suse.cz>
+In-Reply-To: <20131218165603.GB31080@dhcp22.suse.cz>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 11:16 AM, Huang Rui wrote:
-> On Thu, Dec 19, 2013 at 12:01:47PM +0800, Huang Rui wrote:
->> On Wed, Dec 18, 2013 at 03:40:11PM +0530, Roger Quadros wrote:
->>> In test_halt() we set an endpoint halt condition and return on halt verification
->>> failure, then the enpoint will remain halted and all further tests related
->                       ^^^^^^^
->>> to that enpoint will fail. This is because we don't tackle endpoint halt error condition
->             ^^^^^^^
-> BTW, please fix these typo.
+On 12/18/2013 08:56 PM, Michal Hocko wrote:
+> On Wed 18-12-13 17:16:52, Vladimir Davydov wrote:
+>> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+>> Cc: Michal Hocko <mhocko@suse.cz>
+>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>> Cc: Glauber Costa <glommer@gmail.com>
+>> Cc: Christoph Lameter <cl@linux.com>
+>> Cc: Pekka Enberg <penberg@kernel.org>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Dunno, is this really better to be worth the code churn?
+>
+> It even makes the generated code tiny bit bigger:
+> text    data     bss     dec     hex filename
+> 4355     171     236    4762    129a mm/slab_common.o.after
+> 4342     171     236    4749    128d mm/slab_common.o.before
+>
+> Or does it make the further changes much more easier? Be explicit in the
+> patch description if so.
 
-Hi Rui,
+Hi, Michal
 
-These patches have been already applied to Greg's usb tree without your Ack's or the typo fix.
+IMO, undoing under labels looks better than inside conditionals, because
+we don't have to repeat the same deinitialization code then, like this
+(note three calls to kmem_cache_free()):
 
-Greg,
+    s = kmem_cache_zalloc(kmem_cache, GFP_KERNEL);
+    if (s) {
+        s->object_size = s->size = size;
+        s->align = calculate_alignment(flags, align, size);
+        s->ctor = ctor;
 
-do you want me to resend the patches?
+        if (memcg_register_cache(memcg, s, parent_cache)) {
+            kmem_cache_free(kmem_cache, s);
+            err = -ENOMEM;
+            goto out_locked;
+        }
 
-cheers,
--roger
+        s->name = kstrdup(name, GFP_KERNEL);
+        if (!s->name) {
+            kmem_cache_free(kmem_cache, s);
+            err = -ENOMEM;
+            goto out_locked;
+        }
 
-> 
-> Thanks,
-> Rui
-> 
->>> in any of the tests. To avoid that situation, make sure to clear the
->>> halt condition before exiting test_halt().
->>>
->>> Signed-off-by: Roger Quadros <rogerq@ti.com>
->>> Reviewed-by: Felipe Balbi <balbi@ti.com>
+        err = __kmem_cache_create(s, flags);
+        if (!err) {
+            s->refcount = 1;
+            list_add(&s->list, &slab_caches);
+            memcg_cache_list_add(memcg, s);
+        } else {
+            kfree(s->name);
+            kmem_cache_free(kmem_cache, s);
+        }
+    } else
+        err = -ENOMEM;
+
+The next patch, which fixes the memcg_params leakage on error, would
+make it even worse introducing two calls to memcg_free_cache_params()
+after kstrdup and __kmem_cache_create.
+
+If you think it isn't worthwhile applying this patch, just let me know,
+I don't mind dropping it.
+
+Anyway, I'll improve the comment and resend.
+
+Thanks.
+
+>
+>> ---
+>>  mm/slab_common.c |   66 +++++++++++++++++++++++++++---------------------------
+>>  1 file changed, 33 insertions(+), 33 deletions(-)
 >>
->> Acked-by: Huang Rui <ray.huang@amd.com>
+>> diff --git a/mm/slab_common.c b/mm/slab_common.c
+>> index 0b7bb39..5d6f743 100644
+>> --- a/mm/slab_common.c
+>> +++ b/mm/slab_common.c
+>> @@ -176,8 +176,9 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+>>  	get_online_cpus();
+>>  	mutex_lock(&slab_mutex);
+>>  
+>> -	if (!kmem_cache_sanity_check(memcg, name, size) == 0)
+>> -		goto out_locked;
+>> +	err = kmem_cache_sanity_check(memcg, name, size);
+>> +	if (err)
+>> +		goto out_unlock;
+>>  
+>>  	/*
+>>  	 * Some allocators will constraint the set of valid flags to a subset
+>> @@ -189,45 +190,41 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+>>  
+>>  	s = __kmem_cache_alias(memcg, name, size, align, flags, ctor);
+>>  	if (s)
+>> -		goto out_locked;
+>> +		goto out_unlock;
+>>  
+>>  	s = kmem_cache_zalloc(kmem_cache, GFP_KERNEL);
+>> -	if (s) {
+>> -		s->object_size = s->size = size;
+>> -		s->align = calculate_alignment(flags, align, size);
+>> -		s->ctor = ctor;
+>> -
+>> -		if (memcg_register_cache(memcg, s, parent_cache)) {
+>> -			kmem_cache_free(kmem_cache, s);
+>> -			err = -ENOMEM;
+>> -			goto out_locked;
+>> -		}
+>> +	if (!s) {
+>> +		err = -ENOMEM;
+>> +		goto out_unlock;
+>> +	}
+>>  
+>> -		s->name = kstrdup(name, GFP_KERNEL);
+>> -		if (!s->name) {
+>> -			kmem_cache_free(kmem_cache, s);
+>> -			err = -ENOMEM;
+>> -			goto out_locked;
+>> -		}
+>> +	s->object_size = s->size = size;
+>> +	s->align = calculate_alignment(flags, align, size);
+>> +	s->ctor = ctor;
+>>  
+>> -		err = __kmem_cache_create(s, flags);
+>> -		if (!err) {
+>> -			s->refcount = 1;
+>> -			list_add(&s->list, &slab_caches);
+>> -			memcg_cache_list_add(memcg, s);
+>> -		} else {
+>> -			kfree(s->name);
+>> -			kmem_cache_free(kmem_cache, s);
+>> -		}
+>> -	} else
+>> +	s->name = kstrdup(name, GFP_KERNEL);
+>> +	if (!s->name) {
+>>  		err = -ENOMEM;
+>> +		goto out_free_cache;
+>> +	}
+>> +
+>> +	err = memcg_register_cache(memcg, s, parent_cache);
+>> +	if (err)
+>> +		goto out_free_cache;
+>>  
+>> -out_locked:
+>> +	err = __kmem_cache_create(s, flags);
+>> +	if (err)
+>> +		goto out_free_cache;
+>> +
+>> +	s->refcount = 1;
+>> +	list_add(&s->list, &slab_caches);
+>> +	memcg_cache_list_add(memcg, s);
+>> +
+>> +out_unlock:
+>>  	mutex_unlock(&slab_mutex);
+>>  	put_online_cpus();
+>>  
+>>  	if (err) {
+>> -
+>>  		if (flags & SLAB_PANIC)
+>>  			panic("kmem_cache_create: Failed to create slab '%s'. Error %d\n",
+>>  				name, err);
+>> @@ -236,11 +233,14 @@ out_locked:
+>>  				name, err);
+>>  			dump_stack();
+>>  		}
+>> -
+>>  		return NULL;
+>>  	}
+>> -
+>>  	return s;
+>> +
+>> +out_free_cache:
+>> +	kfree(s->name);
+>> +	kmem_cache_free(kmem_cache, s);
+>> +	goto out_unlock;
+>>  }
+>>  
+>>  struct kmem_cache *
+>> -- 
+>> 1.7.10.4
 >>
->>> ---
->>>  drivers/usb/misc/usbtest.c | 11 ++++++++++-
->>>  1 file changed, 10 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
->>> index 6294e1b..300b726 100644
->>> --- a/drivers/usb/misc/usbtest.c
->>> +++ b/drivers/usb/misc/usbtest.c
->>> @@ -1545,8 +1545,17 @@ static int test_halt(struct usbtest_dev *tdev, int ep, struct urb *urb)
->>>  		return retval;
->>>  	}
->>>  	retval = verify_halted(tdev, ep, urb);
->>> -	if (retval < 0)
->>> +	if (retval < 0) {
->>> +		int ret;
->>> +
->>> +		/* clear halt anyways, else further tests will fail */
->>> +		ret = usb_clear_halt(urb->dev, urb->pipe);
->>> +		if (ret)
->>> +			ERROR(tdev, "ep %02x couldn't clear halt, %d\n",
->>> +			      ep, ret);
->>> +
->>>  		return retval;
->>> +	}
->>>  
->>>  	/* clear halt (tests API + protocol), verify it worked */
->>>  	retval = usb_clear_halt(urb->dev, urb->pipe);
->>> -- 
->>> 1.8.3.2
->>>
->>>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
 
