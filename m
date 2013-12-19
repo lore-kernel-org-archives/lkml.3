@@ -1,90 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab3LSL77 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:59:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45349 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184Ab3LSL75 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:57 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 190/208] hwmon: Prevent some divide by zeros in FAN_TO_REG()
-Date: Thu, 19 Dec 2013 11:54:48 +0000
-Message-Id: <1387454106-19326-191-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1753070Ab3LSOvO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:51:14 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49463 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750896Ab3LSOvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 09:51:11 -0500
+Message-ID: <52B307CC.2020704@ti.com>
+Date: Thu, 19 Dec 2013 10:50:52 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Lukasz Majewski <l.majewski@samsung.com>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, <durgadoss.r@intel.com>,
+        <linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH v11 7/7] thermal:exynos:boost: Automatic enable/disable
+ of BOOST feature (at Exynos4412)
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com> <1386952717-30947-1-git-send-email-l.majewski@samsung.com> <1386952717-30947-8-git-send-email-l.majewski@samsung.com>
+In-Reply-To: <1386952717-30947-8-git-send-email-l.majewski@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="OuK5HSlsKdmIsMRgfIpauCespVANEeE4a"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+--OuK5HSlsKdmIsMRgfIpauCespVANEeE4a
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On 13-12-2013 12:38, Lukasz Majewski wrote:
+> This patch provides auto disable/enable operation for boost. It uses al=
+ready
+> present thermal infrastructure to provide boost hysteresis.
+> The TMU data has been modified to work properly with or without boost.
+>=20
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
 
-commit 3806b45ba4655147a011df03242cc197ab986c43 upstream.
+Looks better to me now. You might consider refactoring this driver to be
+frequency independent, if possible. But that is a different subject
+other than this patch.
 
-The "rpm * div" operations can overflow here, so this patch adds an
-upper limit to rpm to prevent that.  Jean Delvare helped me with this
-patch.
+>=20
+> ---
+> Changes for v11:
+>     - Use only one thermal data set
+>     - Adjust Exynos4412 thermal data to work with or without BOOST
+>=20
+> Changes for v10:
+>     - Remove boost related code from thermal_core.c
+>     - Use already present thermal infrastructure to provide thermal hys=
+teresis
+>     - Introduce special set of TMU data for BOOST
+>=20
+> Changes for v9:
+>     - None
+>=20
+> Changes for v8:
+>     - Move cpufreq_boost_* stub functions definition (needed when cpufr=
+eq
+>       is not compiled in) to cpufreq.h at cpufreq core support commit
+>=20
+> Changes for v7:
+>     - None
+>=20
+> Changes for v6:
+>     - Disable boost only when supported and enabled
+>     - Protect boost related thermal_zone_device struct fields with mute=
+x
+>     - Evaluate temperature trend during boost enable decision
+>     - Create separate methods to handle boost enable/disable
+>       (thermal_boost_{enable|disable}) operations
+>     - Boost is disabled at any trip point passage (not only the non cri=
+tical one)
+>     - Add stub definitions for cpufreq boost functions used when
+>       CONFIG_CPU_FREQ is NOT defined.
+>=20
+> Changes for v5:
+>     - Move boost disable code from cpu_cooling.c to thermal_core.c
+>       (to handle_non_critical_trips)
+>     - Extent struct thermal_zone_device by adding overheated bool flag
+>     - Implement auto enable of boost after device cools down
+>     - Introduce boost_polling flag, which indicates if thermal uses it'=
+s predefined
+>       pool delay or has woken up thermal workqueue only to wait until d=
+evice
+>       cools down.
+>=20
+> Changes for v4:
+>     - New patch
+>=20
+>  drivers/thermal/samsung/exynos_tmu_data.c |   12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+>=20
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/therma=
+l/samsung/exynos_tmu_data.c
+> index 073c292..476b768 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.c
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+> @@ -131,8 +131,8 @@ static const struct exynos_tmu_registers exynos4412=
+_tmu_registers =3D {
+> =20
+>  #define EXYNOS4412_TMU_DATA \
+>  	.threshold_falling =3D 10, \
+> -	.trigger_levels[0] =3D 85, \
+> -	.trigger_levels[1] =3D 103, \
+> +	.trigger_levels[0] =3D 70, \
+> +	.trigger_levels[1] =3D 95, \
+>  	.trigger_levels[2] =3D 110, \
+>  	.trigger_levels[3] =3D 120, \
+>  	.trigger_enable[0] =3D true, \
+> @@ -155,12 +155,12 @@ static const struct exynos_tmu_registers exynos44=
+12_tmu_registers =3D {
+>  	.second_point_trim =3D 85, \
+>  	.default_temp_offset =3D 50, \
+>  	.freq_tab[0] =3D { \
+> -		.freq_clip_max =3D 800 * 1000, \
+> -		.temp_level =3D 85, \
+> +		.freq_clip_max =3D 1400 * 1000, \
+> +		.temp_level =3D 70, \
+>  	}, \
+>  	.freq_tab[1] =3D { \
+> -		.freq_clip_max =3D 200 * 1000, \
+> -		.temp_level =3D 103, \
+> +		.freq_clip_max =3D 400 * 1000, \
+> +		.temp_level =3D 95, \
+>  	}, \
+>  	.freq_tab_count =3D 2, \
+>  	.registers =3D &exynos4412_tmu_registers, \
+>=20
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Roger Lucas <vt8231@hiddenengine.co.uk>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/hwmon/lm78.c    | 2 ++
- drivers/hwmon/sis5595.c | 2 ++
- drivers/hwmon/vt8231.c  | 2 +-
- 3 files changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/lm78.c b/drivers/hwmon/lm78.c
-index 6cf6bff..a2f3b4a 100644
---- a/drivers/hwmon/lm78.c
-+++ b/drivers/hwmon/lm78.c
-@@ -94,6 +94,8 @@ static inline u8 FAN_TO_REG(long rpm, int div)
- {
- 	if (rpm <= 0)
- 		return 255;
-+	if (rpm > 1350000)
-+		return 1;
- 	return clamp_val((1350000 + rpm * div / 2) / (rpm * div), 1, 254);
- }
- 
-diff --git a/drivers/hwmon/sis5595.c b/drivers/hwmon/sis5595.c
-index 1404e63..72a8897 100644
---- a/drivers/hwmon/sis5595.c
-+++ b/drivers/hwmon/sis5595.c
-@@ -141,6 +141,8 @@ static inline u8 FAN_TO_REG(long rpm, int div)
- {
- 	if (rpm <= 0)
- 		return 255;
-+	if (rpm > 1350000)
-+		return 1;
- 	return clamp_val((1350000 + rpm * div / 2) / (rpm * div), 1, 254);
- }
- 
-diff --git a/drivers/hwmon/vt8231.c b/drivers/hwmon/vt8231.c
-index 0e70178..aee14e2 100644
---- a/drivers/hwmon/vt8231.c
-+++ b/drivers/hwmon/vt8231.c
-@@ -145,7 +145,7 @@ static const u8 regtempmin[] = { 0x3a, 0x3e, 0x2c, 0x2e, 0x30, 0x32 };
-  */
- static inline u8 FAN_TO_REG(long rpm, int div)
- {
--	if (rpm == 0)
-+	if (rpm <= 0 || rpm > 1310720)
- 		return 0;
- 	return clamp_val(1310720 / (rpm * div), 1, 255);
- }
--- 
-1.8.3.2
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
 
+Eduardo Valentin
+
+
+--OuK5HSlsKdmIsMRgfIpauCespVANEeE4a
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlKzB88ACgkQCXcVR3XQvP1MKQD/XLfPfRu43RY75bep6m2CrUsW
+0yyREHxyUNtUr6t5QT0BAJBUCFwXLF1xcT3OFrQZwa2uOY3bx2kqGAb1XYkKsfWc
+=Hsi/
+-----END PGP SIGNATURE-----
+
+--OuK5HSlsKdmIsMRgfIpauCespVANEeE4a--
