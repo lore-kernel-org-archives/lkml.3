@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab3LSMmh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:42:37 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40229 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610Ab3LSMmd (ORCPT
+	id S1754578Ab3LSL4w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:56:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44690 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754498Ab3LSL4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:42:33 -0500
-Date: Thu, 19 Dec 2013 13:42:28 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Masami Ichikawa <masami256@gmail.com>
-Cc: len.brown@intel.com, rjw@rjwysocki.net, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PM: Fix memory leak in pm_vt_switch_unregister().
-Message-ID: <20131219124228.GA11928@amd.pavel.ucw.cz>
-References: <1387450847-23797-1-git-send-email-masami256@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387450847-23797-1-git-send-email-masami256@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 19 Dec 2013 06:56:44 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 060/208] can: flexcan: use correct clock as base for bit rate calculation
+Date: Thu, 19 Dec 2013 11:52:38 +0000
+Message-Id: <1387454106-19326-61-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2013-12-19 20:00:47, Masami Ichikawa wrote:
-> kmemleak reported a memory leak as below.
-> 
-> unreferenced object 0xffff880118f14700 (size 32):
->   comm "swapper/0", pid 1, jiffies 4294877401 (age 123.283s)
->   hex dump (first 32 bytes):
->     00 01 10 00 00 00 ad de 00 02 20 00 00 00 ad de  .......... .....
->     00 d4 d2 18 01 88 ff ff 01 00 00 00 00 04 00 00  ................
->   backtrace:
->     [<ffffffff814edb1e>] kmemleak_alloc+0x4e/0xb0
->     [<ffffffff811889dc>] kmem_cache_alloc_trace+0x1ec/0x260
->     [<ffffffff810aba66>] pm_vt_switch_required+0x76/0xb0
->     [<ffffffff812f39f5>] register_framebuffer+0x195/0x320
->     [<ffffffff8130af18>] efifb_probe+0x718/0x780
->     [<ffffffff81391495>] platform_drv_probe+0x45/0xb0
->     [<ffffffff8138f407>] driver_probe_device+0x87/0x3a0
->     [<ffffffff8138f7f3>] __driver_attach+0x93/0xa0
->     [<ffffffff8138d413>] bus_for_each_dev+0x63/0xa0
->     [<ffffffff8138ee5e>] driver_attach+0x1e/0x20
->     [<ffffffff8138ea40>] bus_add_driver+0x180/0x250
->     [<ffffffff8138fe74>] driver_register+0x64/0xf0
->     [<ffffffff813913ba>] __platform_driver_register+0x4a/0x50
->     [<ffffffff8191e028>] efifb_driver_init+0x12/0x14
->     [<ffffffff8100214a>] do_one_initcall+0xfa/0x1b0
->     [<ffffffff818e40e0>] kernel_init_freeable+0x17b/0x201
-> 
-> In pm_vt_switch_required(), "entry" variable is allocated via kmalloc().
-> So, in pm_vt_switch_unregister(), it needs to call kfree() when object
-> is deleted from list.
-> 
-> Signed-off-by: Masami Ichikawa <masami256@gmail.com>
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
+------------------
 
-Thanks!
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
+commit 1a3e5173f5e72cbf7f0c8927b33082e361c16d72 upstream.
+
+The flexcan IP core uses the peripheral clock ("per") as basic clock for the
+bit timing calculation. However the driver uses the the wrong clock ("ipg").
+This leads to wrong bit rates if the rates on both clock are different.
+
+This patch fixes the problem by using the correct clock for the bit rate
+calculation.
+
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/net/can/flexcan.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
+index cf3c93f..eb6b191 100644
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -1010,7 +1010,6 @@ static int flexcan_probe(struct platform_device *pdev)
+ 			err = PTR_ERR(clk_ipg);
+ 			goto failed_clock;
+ 		}
+-		clock_freq = clk_get_rate(clk_ipg);
+ 
+ 		clk_per = devm_clk_get(&pdev->dev, "per");
+ 		if (IS_ERR(clk_per)) {
+@@ -1018,6 +1017,7 @@ static int flexcan_probe(struct platform_device *pdev)
+ 			err = PTR_ERR(clk_per);
+ 			goto failed_clock;
+ 		}
++		clock_freq = clk_get_rate(clk_per);
+ 	}
+ 
+ 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.3.2
+
