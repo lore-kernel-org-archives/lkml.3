@@ -1,137 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757089Ab3LSNCg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:02:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44563 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754172Ab3LSL4O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:14 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Yang Yingliang <yangyingliang@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 038/208] net: 8139cp: fix a BUG_ON triggered by wrong bytes_compl
-Date: Thu, 19 Dec 2013 11:52:16 +0000
-Message-Id: <1387454106-19326-39-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1752961Ab3LSLtB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:49:01 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:6063 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751845Ab3LSLs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:48:59 -0500
+X-IronPort-AV: E=Sophos;i="4.95,512,1384300800"; 
+   d="scan'208";a="86107340"
+Date: Thu, 19 Dec 2013 11:48:58 +0000
+From: Wei Liu <wei.liu2@citrix.com>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+CC: Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <josh@joshtriplett.org>
+Subject: Re: [PATCH v3 8/8] drivers: net: Mark function
+ xenvif_count_frag_slots() as static in netback.c
+Message-ID: <20131219114857.GI25969@zion.uk.xensource.com>
+References: <04fe932bc3585620c91d511bb0894e45bb762ffa.1387382457.git.rashika.kheria@gmail.com>
+ <72d6fe114ba7cc2f09f51e279313860f83142d46.1387382457.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <72d6fe114ba7cc2f09f51e279313860f83142d46.1387382457.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Dec 19, 2013 at 02:26:47PM +0530, Rashika Kheria wrote:
+> This patch marks the function xenvif_count_frag_slots() in netback.c as
+> static because they are not used outside this file.
+> 
+> Thus, it also removes the following warning in xen-netback/netback.c:
+> drivers/net/xen-netback/netback.c:218:14: warning: no previous prototype for ‘xenvif_count_frag_slots’ [-Wmissing-prototypes]
+> 
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> Acked-by: Ian Campbell <ian.campbell@citrix.com>
 
-------------------
+Easy, there's no need to resend the patch with maintainer's Acked-by.
+DaveM will take care of this. Just be patient. :-)
 
-From: Yang Yingliang <yangyingliang@huawei.com>
-
-commit 7fe0ee099ad5e3dea88d4ee1b6f20246b1ca57c3 upstream.
-
-Using iperf to send packets(GSO mode is on), a bug is triggered:
-
-[  212.672781] kernel BUG at lib/dynamic_queue_limits.c:26!
-[  212.673396] invalid opcode: 0000 [#1] SMP
-[  212.673882] Modules linked in: 8139cp(O) nls_utf8 edd fuse loop dm_mod ipv6 i2c_piix4 8139too i2c_core intel_agp joydev pcspkr hid_generic intel_gtt floppy sr_mod mii button sg cdrom ext3 jbd mbcache usbhid hid uhci_hcd ehci_hcd usbcore sd_mod usb_common crc_t10dif crct10dif_common processor thermal_sys hwmon scsi_dh_emc scsi_dh_rdac scsi_dh_hp_sw scsi_dh ata_generic ata_piix libata scsi_mod [last unloaded: 8139cp]
-[  212.676084] CPU: 0 PID: 4124 Comm: iperf Tainted: G           O 3.12.0-0.7-default+ #16
-[  212.676084] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[  212.676084] task: ffff8800d83966c0 ti: ffff8800db4c8000 task.ti: ffff8800db4c8000
-[  212.676084] RIP: 0010:[<ffffffff8122e23f>]  [<ffffffff8122e23f>] dql_completed+0x17f/0x190
-[  212.676084] RSP: 0018:ffff880116e03e30  EFLAGS: 00010083
-[  212.676084] RAX: 00000000000005ea RBX: 0000000000000f7c RCX: 0000000000000002
-[  212.676084] RDX: ffff880111dd0dc0 RSI: 0000000000000bd4 RDI: ffff8800db6ffcc0
-[  212.676084] RBP: ffff880116e03e48 R08: 0000000000000992 R09: 0000000000000000
-[  212.676084] R10: ffffffff8181e400 R11: 0000000000000004 R12: 000000000000000f
-[  212.676084] R13: ffff8800d94ec840 R14: ffff8800db440c80 R15: 000000000000000e
-[  212.676084] FS:  00007f6685a3c700(0000) GS:ffff880116e00000(0000) knlGS:0000000000000000
-[  212.676084] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  212.676084] CR2: 00007f6685ad6460 CR3: 00000000db714000 CR4: 00000000000006f0
-[  212.676084] Stack:
-[  212.676084]  ffff8800db6ffc00 000000000000000f ffff8800d94ec840 ffff880116e03eb8
-[  212.676084]  ffffffffa041509f ffff880116e03e88 0000000f16e03e88 ffff8800d94ec000
-[  212.676084]  00000bd400059858 000000050000000f ffffffff81094c36 ffff880116e03eb8
-[  212.676084] Call Trace:
-[  212.676084]  <IRQ>
-[  212.676084]  [<ffffffffa041509f>] cp_interrupt+0x4ef/0x590 [8139cp]
-[  212.676084]  [<ffffffff81094c36>] ? ktime_get+0x56/0xd0
-[  212.676084]  [<ffffffff8108cf73>] handle_irq_event_percpu+0x53/0x170
-[  212.676084]  [<ffffffff8108d0cc>] handle_irq_event+0x3c/0x60
-[  212.676084]  [<ffffffff8108fdb5>] handle_fasteoi_irq+0x55/0xf0
-[  212.676084]  [<ffffffff810045df>] handle_irq+0x1f/0x30
-[  212.676084]  [<ffffffff81003c8b>] do_IRQ+0x5b/0xe0
-[  212.676084]  [<ffffffff8142beaa>] common_interrupt+0x6a/0x6a
-[  212.676084]  <EOI>
-[  212.676084]  [<ffffffffa0416a21>] ? cp_start_xmit+0x621/0x97c [8139cp]
-[  212.676084]  [<ffffffffa0416a09>] ? cp_start_xmit+0x609/0x97c [8139cp]
-[  212.676084]  [<ffffffff81378ed9>] dev_hard_start_xmit+0x2c9/0x550
-[  212.676084]  [<ffffffff813960a9>] sch_direct_xmit+0x179/0x1d0
-[  212.676084]  [<ffffffff813793f3>] dev_queue_xmit+0x293/0x440
-[  212.676084]  [<ffffffff813b0e46>] ip_finish_output+0x236/0x450
-[  212.676084]  [<ffffffff810e59e7>] ? __alloc_pages_nodemask+0x187/0xb10
-[  212.676084]  [<ffffffff813b10e8>] ip_output+0x88/0x90
-[  212.676084]  [<ffffffff813afa64>] ip_local_out+0x24/0x30
-[  212.676084]  [<ffffffff813aff0d>] ip_queue_xmit+0x14d/0x3e0
-[  212.676084]  [<ffffffff813c6fd1>] tcp_transmit_skb+0x501/0x840
-[  212.676084]  [<ffffffff813c8323>] tcp_write_xmit+0x1e3/0xb20
-[  212.676084]  [<ffffffff81363237>] ? skb_page_frag_refill+0x87/0xd0
-[  212.676084]  [<ffffffff813c8c8b>] tcp_push_one+0x2b/0x40
-[  212.676084]  [<ffffffff813bb7e6>] tcp_sendmsg+0x926/0xc90
-[  212.676084]  [<ffffffff813e1d21>] inet_sendmsg+0x61/0xc0
-[  212.676084]  [<ffffffff8135e861>] sock_aio_write+0x101/0x120
-[  212.676084]  [<ffffffff81107cf1>] ? vma_adjust+0x2e1/0x5d0
-[  212.676084]  [<ffffffff812163e0>] ? timerqueue_add+0x60/0xb0
-[  212.676084]  [<ffffffff81130b60>] do_sync_write+0x60/0x90
-[  212.676084]  [<ffffffff81130d44>] ? rw_verify_area+0x54/0xf0
-[  212.676084]  [<ffffffff81130f66>] vfs_write+0x186/0x190
-[  212.676084]  [<ffffffff811317fd>] SyS_write+0x5d/0xa0
-[  212.676084]  [<ffffffff814321e2>] system_call_fastpath+0x16/0x1b
-[  212.676084] Code: ca 41 89 dc 41 29 cc 45 31 db 29 c2 41 89 c5 89 d0 45 29 c5 f7 d0 c1 e8 1f e9 43 ff ff ff 66 0f 1f 44 00 00 31 c0 e9 7b ff ff ff <0f> 0b eb fe 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 c7 47 40 00
-[  212.676084] RIP  [<ffffffff8122e23f>] dql_completed+0x17f/0x190
-------------[ cut here ]------------
-
-When a skb has frags, bytes_compl plus skb->len nr_frags times in cp_tx().
-It's not the correct value(actually, it should plus skb->len once) and it
-will trigger the BUG_ON(bytes_compl > num_queued - dql->num_completed).
-So only increase bytes_compl when finish sending all frags. pkts_compl also
-has a wrong value, fix it too.
-
-It's introduced by commit 871f0d4c ("8139cp: enable bql").
-
-Suggested-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/ethernet/realtek/8139cp.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
-index d2e5919..0095af5 100644
---- a/drivers/net/ethernet/realtek/8139cp.c
-+++ b/drivers/net/ethernet/realtek/8139cp.c
-@@ -678,9 +678,6 @@ static void cp_tx (struct cp_private *cp)
- 				 le32_to_cpu(txd->opts1) & 0xffff,
- 				 PCI_DMA_TODEVICE);
- 
--		bytes_compl += skb->len;
--		pkts_compl++;
--
- 		if (status & LastFrag) {
- 			if (status & (TxError | TxFIFOUnder)) {
- 				netif_dbg(cp, tx_err, cp->dev,
-@@ -702,6 +699,8 @@ static void cp_tx (struct cp_private *cp)
- 				netif_dbg(cp, tx_done, cp->dev,
- 					  "tx done, slot %d\n", tx_tail);
- 			}
-+			bytes_compl += skb->len;
-+			pkts_compl++;
- 			dev_kfree_skb_irq(skb);
- 		}
- 
--- 
-1.8.3.2
-
+Wei.
