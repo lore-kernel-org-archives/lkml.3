@@ -1,129 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab3LSPFX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:05:23 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:60414 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754482Ab3LSPFT (ORCPT
+	id S1756616Ab3LSM1t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:27:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45010 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755316Ab3LSL6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:05:19 -0500
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu, wsa@the-dreams.de,
-        joe@perches.com
-Cc: Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
-        Jingoo Han <jg1.han@samsung.com>, Jean Delvare <khali@linux-fr.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>, linux-i2c@vger.kernel.org
-Subject: [PATCH v5 1/3] i2c: xilinx: Fix i2c checkpatch warnings
-Date: Thu, 19 Dec 2013 16:05:04 +0100
-Message-Id: <c220f51fd2ee7a5d65afa805a62582bd23e4d599.1387465488.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-14292-1387465506-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Thu, 19 Dec 2013 06:58:15 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johannes Berg <johannes.berg@intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 122/208] mac80211: fix scheduled scan rtnl deadlock
+Date: Thu, 19 Dec 2013 11:53:40 +0000
+Message-Id: <1387454106-19326-123-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
---=_mimegpg-monstr-desktop-14292-1387465506-0001
+------------------
 
-From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-Code changes to fix checkpatch warnings listed below.
-- WARNING: please, no space before tabs
-- WARNING: quoted string split across lines
+commit 18db594a1005d908d995a2fc8f5a7bf4286fdca0 upstream.
 
-Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+When changing cfg80211 to use RTNL locking, this caused a
+deadlock in mac80211 as it calls cfg80211_sched_scan_stopped()
+from a work item that's on a workqueue that is flushed with
+the RTNL held.
+
+Fix this by simply using schedule_work(), the work only needs
+to finish running before the wiphy is unregistered, no other
+synchronisation (e.g. with suspend) is really required since
+for suspend userspace is already blocked anyway when we flush
+the workqueue so will only pick up the event after resume.
+
+Fixes: 5fe231e87372 ("cfg80211: vastly simplify locking")
+Reported-and-tested-by: Eliad Peller <eliadx.peller@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
+ net/mac80211/main.c | 1 +
+ net/mac80211/scan.c | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-Changes in v5: None
-Changes in v4:
-- Get back full dev_dbg message
+diff --git a/net/mac80211/main.c b/net/mac80211/main.c
+index 091088a..ec53369 100644
+--- a/net/mac80211/main.c
++++ b/net/mac80211/main.c
+@@ -1059,6 +1059,7 @@ void ieee80211_unregister_hw(struct ieee80211_hw *hw)
+ 
+ 	cancel_work_sync(&local->restart_work);
+ 	cancel_work_sync(&local->reconfig_filter);
++	flush_work(&local->sched_scan_stopped_work);
+ 
+ 	ieee80211_clear_tx_pending(local);
+ 	rate_control_deinitialize(local);
+diff --git a/net/mac80211/scan.c b/net/mac80211/scan.c
+index 7aafa54..89fb87b 100644
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -1033,6 +1033,6 @@ void ieee80211_sched_scan_stopped(struct ieee80211_hw *hw)
+ 
+ 	trace_api_sched_scan_stopped(local);
+ 
+-	ieee80211_queue_work(&local->hw, &local->sched_scan_stopped_work);
++	schedule_work(&local->sched_scan_stopped_work);
+ }
+ EXPORT_SYMBOL(ieee80211_sched_scan_stopped);
+-- 
+1.8.3.2
 
-Changes in v3: None
-Changes in v2:
-- It is checkpatch warnings not sparse
-- Extend patch description with checkpatch warnings
-
-Tested by:
-./scripts/checkpatch.pl -f drivers/i2c/busses/i2c-xiic.c
-
----
- drivers/i2c/busses/i2c-xiic.c | 20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
-index fc2716a..5e5fae7 100644
---- a/drivers/i2c/busses/i2c-xiic.c
-+++ b/drivers/i2c/busses/i2c-xiic.c
-@@ -69,7 +69,7 @@ struct xiic_i2c {
- 	struct i2c_adapter	adap;
- 	struct i2c_msg		*tx_msg;
- 	spinlock_t		lock;
--	unsigned int 		tx_pos;
-+	unsigned int		tx_pos;
- 	unsigned int		nmsgs;
- 	enum xilinx_i2c_state	state;
- 	struct i2c_msg		*rx_msg;
-@@ -272,8 +272,8 @@ static void xiic_read_rx(struct xiic_i2c *i2c)
-
- 	bytes_in_fifo = xiic_getreg8(i2c, XIIC_RFO_REG_OFFSET) + 1;
-
--	dev_dbg(i2c->adap.dev.parent, "%s entry, bytes in fifo: %d, msg: %d"
--		", SR: 0x%x, CR: 0x%x\n",
-+	dev_dbg(i2c->adap.dev.parent,
-+		"%s entry, bytes in fifo: %d, msg: %d, SR: 0x%x, CR: 0x%x\n",
- 		__func__, bytes_in_fifo, xiic_rx_space(i2c),
- 		xiic_getreg8(i2c, XIIC_SR_REG_OFFSET),
- 		xiic_getreg8(i2c, XIIC_CR_REG_OFFSET));
-@@ -340,9 +340,10 @@ static void xiic_process(struct xiic_i2c *i2c)
- 	ier = xiic_getreg32(i2c, XIIC_IIER_OFFSET);
- 	pend = isr & ier;
-
--	dev_dbg(i2c->adap.dev.parent, "%s entry, IER: 0x%x, ISR: 0x%x, "
--		"pend: 0x%x, SR: 0x%x, msg: %p, nmsgs: %d\n",
--		__func__, ier, isr, pend, xiic_getreg8(i2c, XIIC_SR_REG_OFFSET),
-+	dev_dbg(i2c->adap.dev.parent, "%s: IER: 0x%x, ISR: 0x%x, pend: 0x%x\n",
-+		__func__, ier, isr, pend);
-+	dev_dbg(i2c->adap.dev.parent, "%s: SR: 0x%x, msg: %p, nmsgs: %d\n",
-+		__func__, xiic_getreg8(i2c, XIIC_SR_REG_OFFSET),
- 		i2c->tx_msg, i2c->nmsgs);
-
- 	/* Do not processes a devices interrupts if the device has no
-@@ -542,9 +543,10 @@ static void xiic_start_send(struct xiic_i2c *i2c)
-
- 	xiic_irq_clr(i2c, XIIC_INTR_TX_ERROR_MASK);
-
--	dev_dbg(i2c->adap.dev.parent, "%s entry, msg: %p, len: %d, "
--		"ISR: 0x%x, CR: 0x%x\n",
--		__func__, msg, msg->len, xiic_getreg32(i2c, XIIC_IISR_OFFSET),
-+	dev_dbg(i2c->adap.dev.parent, "%s entry, msg: %p, len: %d",
-+		__func__, msg, msg->len);
-+	dev_dbg(i2c->adap.dev.parent, "%s entry, ISR: 0x%x, CR: 0x%x\n",
-+		__func__, xiic_getreg32(i2c, XIIC_IISR_OFFSET),
- 		xiic_getreg8(i2c, XIIC_CR_REG_OFFSET));
-
- 	if (!(msg->flags & I2C_M_NOSTART)) {
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-14292-1387465506-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlKzCyIACgkQykllyylKDCE7XACffb1EJed/tm7wuN8gIKSJMMsW
-h0QAoIYrsM1qdB+5mt/ICppY5iP8zg5T
-=SmHk
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-14292-1387465506-0001--
