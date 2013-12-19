@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab3LSNDt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:03:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44528 "EHLO
+	id S1753630Ab3LSLzW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:55:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44351 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093Ab3LSL4H (ORCPT
+	with ESMTP id S1752411Ab3LSLzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:07 -0500
+	Thu, 19 Dec 2013 06:55:14 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Steven Whitehouse <swhiteho@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 033/208] net: core: Always propagate flag changes to interfaces
-Date: Thu, 19 Dec 2013 11:52:11 +0000
-Message-Id: <1387454106-19326-34-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 001/208] GFS2: Fix ref count bug relating to atomic_open
+Date: Thu, 19 Dec 2013 11:51:39 +0000
+Message-Id: <1387454106-19326-2-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,69 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Steven Whitehouse <swhiteho@redhat.com>
 
-commit d2615bf450694c1302d86b9cc8a8958edfe4c3a4 upstream.
+commit ea0341e071527d5cec350917b01ab901af09d758 upstream.
 
-The following commit:
-    b6c40d68ff6498b7f63ddf97cf0aa818d748dee7
-    net: only invoke dev->change_rx_flags when device is UP
+In the case that atomic_open calls finish_no_open() with
+the dentry that was supplied to gfs2_atomic_open() an
+extra reference count is required. This patch fixes that
+issue preventing a bug trap triggering at umount time.
 
-tried to fix a problem with VLAN devices and promiscuouse flag setting.
-The issue was that VLAN device was setting a flag on an interface that
-was down, thus resulting in bad promiscuity count.
-This commit blocked flag propagation to any device that is currently
-down.
-
-A later commit:
-    deede2fabe24e00bd7e246eb81cd5767dc6fcfc7
-    vlan: Don't propagate flag changes on down interfaces
-
-fixed VLAN code to only propagate flags when the VLAN interface is up,
-thus fixing the same issue as above, only localized to VLAN.
-
-The problem we have now is that if we have create a complex stack
-involving multiple software devices like bridges, bonds, and vlans,
-then it is possible that the flags would not propagate properly to
-the physical devices.  A simple examle of the scenario is the
-following:
-
-  eth0----> bond0 ----> bridge0 ---> vlan50
-
-If bond0 or eth0 happen to be down at the time bond0 is added to
-the bridge, then eth0 will never have promisc mode set which is
-currently required for operation as part of the bridge.  As a
-result, packets with vlan50 will be dropped by the interface.
-
-The only 2 devices that implement the special flag handling are
-VLAN and DSA and they both have required code to prevent incorrect
-flag propagation.  As a result we can remove the generic solution
-introduced in b6c40d68ff6498b7f63ddf97cf0aa818d748dee7 and leave
-it to the individual devices to decide whether they will block
-flag propagation or not.
-
-Reported-by: Stefan Priebe <s.priebe@profihost.ag>
-Suggested-by: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/dev.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/gfs2/inode.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 26755dd..bf33219 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4598,7 +4598,7 @@ static void dev_change_rx_flags(struct net_device *dev, int flags)
- {
- 	const struct net_device_ops *ops = dev->netdev_ops;
- 
--	if ((dev->flags & IFF_UP) && ops->ndo_change_rx_flags)
-+	if (ops->ndo_change_rx_flags)
- 		ops->ndo_change_rx_flags(dev, flags);
- }
- 
+diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
+index cd58611..e4bd52f 100644
+--- a/fs/gfs2/inode.c
++++ b/fs/gfs2/inode.c
+@@ -1166,8 +1166,11 @@ static int gfs2_atomic_open(struct inode *dir, struct dentry *dentry,
+ 	if (d != NULL)
+ 		dentry = d;
+ 	if (dentry->d_inode) {
+-		if (!(*opened & FILE_OPENED))
++		if (!(*opened & FILE_OPENED)) {
++			if (d == NULL)
++				dget(dentry);
+ 			return finish_no_open(file, dentry);
++		}
+ 		dput(d);
+ 		return 0;
+ 	}
 -- 
 1.8.3.2
 
