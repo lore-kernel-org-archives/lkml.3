@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab3LSMAU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:00:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45382 "EHLO
+	id S1755406Ab3LSL61 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:58:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45035 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753270Ab3LSMAF (ORCPT
+	with ESMTP id S1755386Ab3LSL6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:00:05 -0500
+	Thu, 19 Dec 2013 06:58:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 196/208] KVM: x86: Convert vapic synchronization to _cached functions (CVE-2013-6368)
-Date: Thu, 19 Dec 2013 11:54:54 +0000
-Message-Id: <1387454106-19326-197-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 127/208] usb: musb: only cancel work if it is initialized
+Date: Thu, 19 Dec 2013 11:53:45 +0000
+Message-Id: <1387454106-19326-128-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,193 +28,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Honig <ahonig@google.com>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit fda4e2e85589191b123d31cdc21fd33ee70f50fd upstream.
+commit 66fadea5b79c07154126bb0db375be915f611246 upstream.
 
-In kvm_lapic_sync_from_vapic and kvm_lapic_sync_to_vapic there is the
-potential to corrupt kernel memory if userspace provides an address that
-is at the end of a page.  This patches concerts those functions to use
-kvm_write_guest_cached and kvm_read_guest_cached.  It also checks the
-vapic_address specified by userspace during ioctl processing and returns
-an error to userspace if the address is not a valid GPA.
+Since commit c5340bd14 ("usb: musb: cancel work on removal") the workqueue
+is cancelled but then if we bail out before the workqueue is setup we
+get this:
 
-This is generally not guest triggerable, because the required write is
-done by firmware that runs before the guest.  Also, it only affects AMD
-processors and oldish Intel that do not have the FlexPriority feature
-(unless you disable FlexPriority, of course; then newer processors are
-also affected).
+|INFO: trying to register non-static key.
+|the code is fine but needs lockdep annotation.
+|turning off the locking correctness validator.
+|CPU: 0 PID: 708 Comm: modprobe Not tainted 3.12.0+ #435
+|[<c00867bc>] (lock_acquire+0xf0/0x108) from [<c00529d0>] (flush_work+0x38/0x2ec)
+|[<c00529d0>] (flush_work+0x38/0x2ec) from [<c0052d24>] (__cancel_work_timer+0xa0/0x134)
+|[<c0052d24>] (__cancel_work_timer+0xa0/0x134) from [<bf0e4ae4>] (musb_free+0x40/0x60 [musb_hdrc])
+|[<bf0e4ae4>] (musb_free+0x40/0x60 [musb_hdrc]) from [<bf0e5364>] (musb_probe+0x678/0xb78 [musb_hdrc])
+|[<bf0e5364>] (musb_probe+0x678/0xb78 [musb_hdrc]) from [<c0294bf0>] (platform_drv_probe+0x1c/0x24)
+|[<c0294bf0>] (platform_drv_probe+0x1c/0x24) from [<c0293970>] (driver_probe_device+0x90/0x224)
+|[<c0293970>] (driver_probe_device+0x90/0x224) from [<c0291ef0>] (bus_for_each_drv+0x60/0x8c)
+|[<c0291ef0>] (bus_for_each_drv+0x60/0x8c) from [<c02938bc>] (device_attach+0x80/0xa4)
+|[<c02938bc>] (device_attach+0x80/0xa4) from [<c0292b24>] (bus_probe_device+0x88/0xac)
+|[<c0292b24>] (bus_probe_device+0x88/0xac) from [<c0291490>] (device_add+0x388/0x6c8)
+|[<c0291490>] (device_add+0x388/0x6c8) from [<c02952a0>] (platform_device_add+0x188/0x22c)
+|[<c02952a0>] (platform_device_add+0x188/0x22c) from [<bf11ea30>] (dsps_probe+0x294/0x394 [musb_dsps])
+|[<bf11ea30>] (dsps_probe+0x294/0x394 [musb_dsps]) from [<c0294bf0>] (platform_drv_probe+0x1c/0x24)
+|platform musb-hdrc.1.auto: Driver musb-hdrc requests probe deferral
+|musb-hdrc musb-hdrc.1.auto: musb_init_controller failed with status -517
 
-Fixes: b93463aa59d6 ('KVM: Accelerated apic support')
+This patch moves the init part to earlier part so it can be cleaned as
+part of the fail3 label because now it is surrounded by the fail4 label.
+Step two is to remove it from musb_free() and add it to the two cleanup
+paths (error path and device removal) separately.
 
-Reported-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kvm/lapic.c | 27 +++++++++++++++------------
- arch/x86/kvm/lapic.h |  4 ++--
- arch/x86/kvm/x86.c   | 40 +---------------------------------------
- 3 files changed, 18 insertions(+), 53 deletions(-)
+ drivers/usb/musb/musb_core.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index adbcc08..1dae459 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -1706,7 +1706,6 @@ static void apic_sync_pv_eoi_from_guest(struct kvm_vcpu *vcpu,
- void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
- {
- 	u32 data;
--	void *vapic;
- 
- 	if (test_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention))
- 		apic_sync_pv_eoi_from_guest(vcpu, vcpu->arch.apic);
-@@ -1714,9 +1713,8 @@ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
- 	if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
- 		return;
- 
--	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
--	data = *(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr));
--	kunmap_atomic(vapic);
-+	kvm_read_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
-+				sizeof(u32));
- 
- 	apic_set_tpr(vcpu->arch.apic, data & 0xff);
- }
-@@ -1752,7 +1750,6 @@ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu)
- 	u32 data, tpr;
- 	int max_irr, max_isr;
- 	struct kvm_lapic *apic = vcpu->arch.apic;
--	void *vapic;
- 
- 	apic_sync_pv_eoi_to_guest(vcpu, apic);
- 
-@@ -1768,18 +1765,24 @@ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu)
- 		max_isr = 0;
- 	data = (tpr & 0xff) | ((max_isr & 0xf0) << 8) | (max_irr << 24);
- 
--	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
--	*(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr)) = data;
--	kunmap_atomic(vapic);
-+	kvm_write_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
-+				sizeof(u32));
- }
- 
--void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
-+int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
- {
--	vcpu->arch.apic->vapic_addr = vapic_addr;
--	if (vapic_addr)
-+	if (vapic_addr) {
-+		if (kvm_gfn_to_hva_cache_init(vcpu->kvm,
-+					&vcpu->arch.apic->vapic_cache,
-+					vapic_addr, sizeof(u32)))
-+			return -EINVAL;
- 		__set_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention);
--	else
-+	} else {
- 		__clear_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention);
-+	}
-+
-+	vcpu->arch.apic->vapic_addr = vapic_addr;
-+	return 0;
- }
- 
- int kvm_x2apic_msr_write(struct kvm_vcpu *vcpu, u32 msr, u64 data)
-diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
-index c730ac9..c8b0d0d 100644
---- a/arch/x86/kvm/lapic.h
-+++ b/arch/x86/kvm/lapic.h
-@@ -34,7 +34,7 @@ struct kvm_lapic {
- 	 */
- 	void *regs;
- 	gpa_t vapic_addr;
--	struct page *vapic_page;
-+	struct gfn_to_hva_cache vapic_cache;
- 	unsigned long pending_events;
- 	unsigned int sipi_vector;
- };
-@@ -76,7 +76,7 @@ void kvm_set_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu, u64 data);
- void kvm_apic_write_nodecode(struct kvm_vcpu *vcpu, u32 offset);
- void kvm_apic_set_eoi_accelerated(struct kvm_vcpu *vcpu, int vector);
- 
--void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
-+int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
- void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu);
- void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu);
- 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index d21bce5..34e2e19 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3179,8 +3179,7 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
- 		r = -EFAULT;
- 		if (copy_from_user(&va, argp, sizeof va))
- 			goto out;
--		r = 0;
--		kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
-+		r = kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
- 		break;
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index a3c6000..d3fcb9b 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1810,7 +1810,6 @@ static void musb_free(struct musb *musb)
+ 			disable_irq_wake(musb->nIrq);
+ 		free_irq(musb->nIrq, musb);
  	}
- 	case KVM_X86_SETUP_MCE: {
-@@ -5579,36 +5578,6 @@ static void post_kvm_run_save(struct kvm_vcpu *vcpu)
- 			!kvm_event_needs_reinjection(vcpu);
- }
+-	cancel_work_sync(&musb->irq_work);
+ 	if (is_dma_capable() && musb->dma_controller) {
+ 		struct dma_controller	*c = musb->dma_controller;
  
--static int vapic_enter(struct kvm_vcpu *vcpu)
--{
--	struct kvm_lapic *apic = vcpu->arch.apic;
--	struct page *page;
--
--	if (!apic || !apic->vapic_addr)
--		return 0;
--
--	page = gfn_to_page(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
--	if (is_error_page(page))
--		return -EFAULT;
--
--	vcpu->arch.apic->vapic_page = page;
--	return 0;
--}
--
--static void vapic_exit(struct kvm_vcpu *vcpu)
--{
--	struct kvm_lapic *apic = vcpu->arch.apic;
--	int idx;
--
--	if (!apic || !apic->vapic_addr)
--		return;
--
--	idx = srcu_read_lock(&vcpu->kvm->srcu);
--	kvm_release_page_dirty(apic->vapic_page);
--	mark_page_dirty(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
--	srcu_read_unlock(&vcpu->kvm->srcu, idx);
--}
--
- static void update_cr8_intercept(struct kvm_vcpu *vcpu)
- {
- 	int max_irr, tpr;
-@@ -5931,11 +5900,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
- 	struct kvm *kvm = vcpu->kvm;
+@@ -1909,6 +1908,9 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+ 	musb_platform_disable(musb);
+ 	musb_generic_disable(musb);
  
- 	vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
--	r = vapic_enter(vcpu);
--	if (r) {
--		srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
--		return r;
--	}
++	/* Init IRQ workqueue before request_irq */
++	INIT_WORK(&musb->irq_work, musb_irq_work);
++
+ 	/* setup musb parts of the core (especially endpoints) */
+ 	status = musb_core_init(plat->config->multipoint
+ 			? MUSB_CONTROLLER_MHDRC
+@@ -1918,9 +1920,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
  
- 	r = 1;
- 	while (r > 0) {
-@@ -5993,8 +5957,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+ 	setup_timer(&musb->otg_timer, musb_otg_timer_func, (unsigned long) musb);
  
- 	srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
- 
--	vapic_exit(vcpu);
+-	/* Init IRQ workqueue before request_irq */
+-	INIT_WORK(&musb->irq_work, musb_irq_work);
 -
- 	return r;
- }
+ 	/* attach to the IRQ */
+ 	if (request_irq(nIrq, musb->isr, 0, dev_name(dev), musb)) {
+ 		dev_err(dev, "request_irq %d failed!\n", nIrq);
+@@ -1994,6 +1993,7 @@ fail4:
+ 	musb_host_cleanup(musb);
  
+ fail3:
++	cancel_work_sync(&musb->irq_work);
+ 	pm_runtime_put_sync(musb->controller);
+ 
+ fail2:
+@@ -2050,6 +2050,7 @@ static int musb_remove(struct platform_device *pdev)
+ 	musb_exit_debugfs(musb);
+ 	musb_shutdown(pdev);
+ 
++	cancel_work_sync(&musb->irq_work);
+ 	musb_free(musb);
+ 	device_init_wakeup(dev, 0);
+ #ifndef CONFIG_MUSB_PIO_ONLY
 -- 
 1.8.3.2
 
