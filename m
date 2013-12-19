@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab3LSHyw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 02:54:52 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:59192 "EHLO
+	id S1753232Ab3LSHzA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 02:55:00 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:38021 "EHLO
 	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab3LSHyt (ORCPT
+	with ESMTP id S1753159Ab3LSHy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 02:54:49 -0500
+	Thu, 19 Dec 2013 02:54:58 -0500
 From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Alessandro Zummo <a.zummo@towertech.it>,
@@ -19,9 +19,9 @@ Cc: Elliott@hp.com, samer.el-haj-mahmoud@hp.com,
         rtc-linux@googlegroups.com, x86@kernel.org,
         "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
         linux-acpi@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [RFC PATCH 10/14] rtc: improve and move week day computing function to rtc header
-Date: Thu, 19 Dec 2013 15:51:51 +0800
-Message-Id: <1387439515-8926-11-git-send-email-jlee@suse.com>
+Subject: [RFC PATCH 11/14] rtc: switch to get/set rtc time to efi functions if CMOS RTC Not Present git set.
+Date: Thu, 19 Dec 2013 15:51:52 +0800
+Message-Id: <1387439515-8926-12-git-send-email-jlee@suse.com>
 X-Mailer: git-send-email 1.6.0.2
 In-Reply-To: <1387439515-8926-1-git-send-email-jlee@suse.com>
 References: <1387439515-8926-1-git-send-email-jlee@suse.com>
@@ -29,125 +29,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to rtc-acpid and efi time used the same logic for computing
-week day, so this patch moves code to rtc.h header file.
+When CMOS RTC Not Present git set in FADT, system should not access CMOS
+interface for time. This patch move get/set rtc time function from CMOS
+to EFI runtime on x86_64 machine. And, it also set the BUG_ON check in
+rtc_cmos_read/write function to avoid access it.
 
-Additionally using a leap year algorithm to replace the for-loop
-block in compute_wday for improve the performance. The first
-version of algorithm is from Oliver Neukum.
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
 ---
- drivers/rtc/rtc-acpitad.c |   13 +------------
- include/linux/efi.h       |   13 +------------
- include/linux/rtc.h       |   38 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 40 insertions(+), 24 deletions(-)
+ arch/x86/kernel/rtc.c     |    8 ++++++++
+ include/asm-generic/rtc.h |   22 ++++++++++++++++++++++
+ 2 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/rtc/rtc-acpitad.c b/drivers/rtc/rtc-acpitad.c
-index 065a033..bdf7ae1 100644
---- a/drivers/rtc/rtc-acpitad.c
-+++ b/drivers/rtc/rtc-acpitad.c
-@@ -32,23 +32,12 @@ compute_yday(struct acpi_time *acpit)
- static int
- compute_wday(struct acpi_time *acpit)
+diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
+index 9b6c568..a54cd09 100644
+--- a/arch/x86/kernel/rtc.c
++++ b/arch/x86/kernel/rtc.c
+@@ -117,6 +117,10 @@ unsigned char rtc_cmos_read(unsigned char addr)
  {
--	int y;
--	int ndays = 0;
--
- 	if (acpit->year < 1900) {
- 		pr_err("ACPI year < 1900, invalid date\n");
- 		return -1;
- 	}
+ 	unsigned char val;
  
--	for (y = 1900; y < acpit->year; y++)
--		ndays += 365 + (is_leap_year(y) ? 1 : 0);
--
--	ndays += compute_yday(acpit);
--
--	/*
--	 * 1=1/1/1900 was a Monday
--	 */
--	return (ndays + 1) % 7;
-+	return rtc_wday(acpit->day, acpit->month - 1, acpit->year);
- }
++	BUG_ON(acpi_gbl_FADT.header.revision >= 5 &&
++	       acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_CMOS_RTC &&
++	       addr <= RTC_YEAR);
++
+ 	lock_cmos_prefix(addr);
+ 	outb(addr, RTC_PORT(0));
+ 	val = inb(RTC_PORT(1));
+@@ -128,6 +132,10 @@ EXPORT_SYMBOL(rtc_cmos_read);
  
- static void
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 3859f3e..1c78ae7 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -177,23 +177,12 @@ compute_yday(efi_time_t *eft)
- static inline int
- compute_wday(efi_time_t *eft)
+ void rtc_cmos_write(unsigned char val, unsigned char addr)
  {
--	int y;
--	int ndays = 0;
--
- 	if (eft->year < 1998) {
- 		pr_err("EFI year < 1998, invalid date\n");
- 		return -1;
- 	}
- 
--	for (y = EFI_RTC_EPOCH; y < eft->year; y++)
--		ndays += 365 + (is_leap_year(y) ? 1 : 0);
--
--	ndays += compute_yday(eft);
--
--	/*
--	 * 4=1/1/1998 was a Thursday
--	 */
--	return (ndays + 4) % 7;
-+	return rtc_wday(eft->day, eft->month - 1, eft->year);
- }
- 
- static inline void
-diff --git a/include/linux/rtc.h b/include/linux/rtc.h
-index e6380ec..511884f 100644
---- a/include/linux/rtc.h
-+++ b/include/linux/rtc.h
-@@ -196,6 +196,44 @@ static inline bool is_leap_year(unsigned int year)
- 	return (!(year % 4) && (year % 100)) || !(year % 400);
- }
- 
-+#define SINCE1900 25    /* valid from 2000 */
++	BUG_ON(acpi_gbl_FADT.header.revision >= 5 &&
++	       acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_CMOS_RTC &&
++	       addr <= RTC_YEAR);
 +
-+static inline int rtc_wday(unsigned int day, unsigned int month, unsigned int year)
-+{
-+	int ndays, correction;
-+	int base;
-+
-+	if (year < 1900) {
-+		pr_err("rtc: year < 1900, invalid date\n");
-+		return -1;
+ 	lock_cmos_prefix(addr);
+ 	outb(addr, RTC_PORT(0));
+ 	outb(val, RTC_PORT(1));
+diff --git a/include/asm-generic/rtc.h b/include/asm-generic/rtc.h
+index fa86f24..4ba8aa6 100644
+--- a/include/asm-generic/rtc.h
++++ b/include/asm-generic/rtc.h
+@@ -16,6 +16,8 @@
+ #include <linux/rtc.h>
+ #include <linux/bcd.h>
+ #include <linux/delay.h>
++#include <linux/efi.h>
++#include <linux/acpi.h>
+ 
+ #define RTC_PIE 0x40		/* periodic interrupt enable */
+ #define RTC_AIE 0x20		/* alarm interrupt enable */
+@@ -51,6 +53,16 @@ static inline unsigned int __get_rtc_time(struct rtc_time *time)
+ 	unsigned int real_year;
+ #endif
+ 
++	if (acpi_gbl_FADT.header.revision >= 5 &&
++	    acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_CMOS_RTC) {
++#if defined(CONFIG_EFI) && defined(CONFIG_X86_64)
++		printk_once(KERN_INFO "efi: get rtc time by EFI\n");
++		return efi_read_time(time);
++#else
++		BUG();
++#endif
 +	}
 +
-+	if (year >= 2000)
-+		base = year - 2000;
-+	else
-+		base = year - 1900;
-+
-+	correction = 0;
-+	if (base >= 0) {
-+		correction += base / 4;
-+		correction -= base / 100;
-+		correction += base / 400;
-+		if (year >= 2000)
-+			correction += SINCE1900;
-+
-+		/* later rtc_year_days will add the leap day of current year */
-+		correction -= ((is_leap_year(year)) ? 1 : 0);
+ 	/*
+ 	 * read RTC once any update in progress is done. The update
+ 	 * can take just over 2ms. We wait 20ms. There is no need to
+@@ -123,6 +135,16 @@ static inline int __set_rtc_time(struct rtc_time *time)
+ 	unsigned int real_yrs, leap_yr;
+ #endif
+ 
++	if (acpi_gbl_FADT.header.revision >= 5 &&
++	    acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_CMOS_RTC) {
++#if defined(CONFIG_EFI) && defined(CONFIG_X86_64)
++		printk_once(KERN_INFO "efi: set rtc time by EFI\n");
++		return efi_set_time(time);
++#else
++		BUG();
++#endif
 +	}
 +
-+	ndays = (year - 1900) * 365 + correction;
-+	ndays += rtc_year_days(day, month, year);
-+
-+	/*
-+	 * 1=1/1/1900 was a Monday
-+	 */
-+	return (ndays + 1) % 7;
-+}
-+
- #ifdef CONFIG_RTC_HCTOSYS_DEVICE
- extern int rtc_hctosys_ret;
- #else
+ 	yrs = time->tm_year;
+ 	mon = time->tm_mon + 1;   /* tm_mon starts at zero */
+ 	day = time->tm_mday;
 -- 
 1.6.4.2
 
