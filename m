@@ -1,66 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab3LSJM1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:12:27 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:60319 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab3LSJKz (ORCPT
+	id S1752882Ab3LSJNG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:13:06 -0500
+Received: from host.colocrossing.com ([172.245.7.208]:47780 "EHLO
+	smtp5.170bc.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430Ab3LSJL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:10:55 -0500
-Subject: Re: [RFC 1/2] CRC32 Add GenWQE CRC to kernel CRC code
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Reply-To: haver@linux.vnet.ibm.com
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
-        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
-        cascardo@linux.vnet.ibm.com, michael@ibmra.de
-In-Reply-To: <20131219005557.GB32112@kroah.com>
-References: <1386592244-2521-7-git-send-email-haver@linux.vnet.ibm.com>
-	 <1386780563-1722-1-git-send-email-haver@linux.vnet.ibm.com>
-	 <20131219005557.GB32112@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Thu, 19 Dec 2013 10:10:42 +0100
-Message-ID: <1387444242.10173.3.camel@oc7383187364.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121909-3548-0000-0000-0000078934D5
+	Thu, 19 Dec 2013 04:11:57 -0500
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Dec 2013 04:11:56 EST
+Date: Thu, 19 Dec 2013 17:05:17 +0800
+From: "Iris" <ky5@smtp5.170bc.com>
+Reply-To: alina@tjdekay.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Re: High quality HDPE LDPE
+Message-ID: <201312191705171258272@smtp5.170bc.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBJ9DD48019687
 
-Hi Greg,
+Dear Manager,
 
-Am Mittwoch, den 18.12.2013, 16:55 -0800 schrieb Greg KH:
-> > ---
-> >  include/linux/crc32.h |    2         2 +     0 -     0 !
-> >  lib/crc32.c           |   10         10 +    0 -     0 !
-> >  lib/crc32defs.h       |    5         5 +     0 -     0 !
-> >  lib/gen_crc32table.c  |   39         31 +    8 -     0 !
-> >  4 files changed, 48 insertions(+), 8 deletions(-)
-> 
-> What kind of crazy diffstat is that?  What generated it? 
+Glad to hear that you're on the market for HDPE/LDPE/PET. We specialize in this field for several years, with the Blow moulding ,injection moulding ,film industry, with good quality and pretty competitive price.
 
-Those two patches I generated with quilt. I used an obviously strange
-setting in my .quiltrc which was:
+Product: HDPE 
+Price : USD 900~1300/MT, FOB TIANJIN
+Product:LDPE
+Price: USD 920~1400/MT, FOB TIANJIN
 
-  QUILT_DIFFSTAT_OPTS="-f0"
+Should you have any questions, pls do not hesitate to contact me. FREE SAMPLES will be sent for your evaluation!
 
-Removing this it looks better now:
----
- include/linux/crc32.h |    2 ++
- lib/crc32.c           |   10 ++++++++++
- lib/crc32defs.h       |    6 ++++++
- lib/gen_crc32table.c  |   39 +++++++++++++++++++++++++++++++--------
- 4 files changed, 49 insertions(+), 8 deletions(-)
+Tks & br,
 
-The other patches I generated with git.
-
-Regards
-
-Frank
-
+Irisÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
