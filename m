@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757492Ab3LSNJj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:09:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44412 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753680Ab3LSLzb (ORCPT
+	id S1754482Ab3LSPOf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:14:35 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55215 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268Ab3LSPOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:55:31 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 010/208] bonding: don't permit to use ARP monitoring in 802.3ad mode
-Date: Thu, 19 Dec 2013 11:51:48 +0000
-Message-Id: <1387454106-19326-11-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 10:14:33 -0500
+Date: Thu, 19 Dec 2013 16:14:27 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
+ tracing units
+Message-ID: <20131219151427.GJ16438@laptop.programming.kicks-ass.net>
+References: <20131218141125.GT21999@twins.programming.kicks-ass.net>
+ <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131218150900.GU21999@twins.programming.kicks-ass.net>
+ <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219103134.GD30183@twins.programming.kicks-ass.net>
+ <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219112812.GY21999@twins.programming.kicks-ass.net>
+ <20131219115759.GS3694@twins.programming.kicks-ass.net>
+ <20131219125759.GU3694@twins.programming.kicks-ass.net>
+ <87eh58ki1o.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87eh58ki1o.fsf@ashishki-desk.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Dec 19, 2013 at 04:54:27PM +0200, Alexander Shishkin wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
+> 
+> > On Thu, Dec 19, 2013 at 12:57:59PM +0100, Peter Zijlstra wrote:
+> > So you're basically forced to stop the tracing on PMI anyhow; so your
+> > continuous tracing argument goes out the window.
+> 
+> It's only stopped inside the PMI handler to set up another buffer, and
+> is then started again, so no useful trace is lost. PMI handler is not
+> traced. What you're proposing is stopping it for good till perf collects
+> the previous data, which will lose us a lot of trace. So my argument
+> stands.
 
-------------------
+That is not what I proposed at all.
 
-From: Veaceslav Falico <vfalico@redhat.com>
+The PMI will swizzle the pages and resume recording. If there is no
+space in the output buffer, we'll simply re-use the existing pages and
+overwrite data.
 
-commit ec9f1d15db8185f63a2c3143dc1e90ba18541b08 upstream.
 
-Currently the ARP monitoring is not supported with 802.3ad, and it's
-prohibited to use it via the module params.
-
-However we still can set it afterwards via sysfs, cause we only check for
-*LB modes there.
-
-To fix this - add a check for 802.3ad mode in bonding_store_arp_interval.
-
-CC: Jay Vosburgh <fubar@us.ibm.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/bonding/bond_sysfs.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
-index dc36a3d..076f8af 100644
---- a/drivers/net/bonding/bond_sysfs.c
-+++ b/drivers/net/bonding/bond_sysfs.c
-@@ -565,8 +565,9 @@ static ssize_t bonding_store_arp_interval(struct device *d,
- 		goto out;
- 	}
- 	if (bond->params.mode == BOND_MODE_ALB ||
--	    bond->params.mode == BOND_MODE_TLB) {
--		pr_info("%s: ARP monitoring cannot be used with ALB/TLB. Only MII monitoring is supported on %s.\n",
-+	    bond->params.mode == BOND_MODE_TLB ||
-+	    bond->params.mode == BOND_MODE_8023AD) {
-+		pr_info("%s: ARP monitoring cannot be used with ALB/TLB/802.3ad. Only MII monitoring is supported on %s.\n",
- 			bond->dev->name, bond->dev->name);
- 		ret = -EINVAL;
- 		goto out;
--- 
-1.8.3.2
 
