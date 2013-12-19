@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab3LSPHv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:07:51 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:55386 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754438Ab3LSPFO (ORCPT
+	id S1754420Ab3LSOcQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:32:16 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:45509 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab3LSOcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:05:14 -0500
-From: Levente Kurusa <levex@linux.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Levente Kurusa <levex@linux.com>, Paul Mundt <lethal@linux-sh.org>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org
-Subject: [PATCH 27/38] superhyway: add missing put_device call
-Date: Thu, 19 Dec 2013 16:03:38 +0100
-Message-Id: <1387465429-3568-28-git-send-email-levex@linux.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1387465429-3568-2-git-send-email-levex@linux.com>
-References: <1387465429-3568-2-git-send-email-levex@linux.com>
+	Thu, 19 Dec 2013 09:32:13 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <balbi@ti.com>, <kishon@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <s.nawrocki@samsung.com>, <jg1.han@samsung.com>, <mporter@linaro.org>,
+        <andrew@lunn.ch>, <k.debski@samsung.com>, <gautamvivek1987@gmail.com>,
+        <heikki.krogerus@linux.intel.com>, <yuvaraj.cd@gmail.com>
+Subject: [PATCH 2/2] phy: phy-core.c: remove unnecessary initialization of local variables
+Date: Thu, 19 Dec 2013 20:01:44 +0530
+Message-ID: <1387463504-4415-2-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1387463504-4415-1-git-send-email-kishon@ti.com>
+References: <1387463504-4415-1-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is required so that we give up the last reference to the device.
-Also, this makes superhyway_device_release actually used.
+There were a few places where variables are initialized unncessarily.
+Remove those initializations.
 
-Signed-off-by: Levente Kurusa <levex@linux.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/sh/superhyway/superhyway.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/phy/phy-core.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/sh/superhyway/superhyway.c b/drivers/sh/superhyway/superhyway.c
-index 2d9e7f3..765cf7d 100644
---- a/drivers/sh/superhyway/superhyway.c
-+++ b/drivers/sh/superhyway/superhyway.c
-@@ -54,6 +54,7 @@ int superhyway_add_device(unsigned long base, struct superhyway_device *sdev,
- 			  struct superhyway_bus *bus)
+diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+index e198259..8d9ef25 100644
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -198,7 +198,7 @@ EXPORT_SYMBOL_GPL(phy_exit);
+ 
+ int phy_power_on(struct phy *phy)
  {
- 	struct superhyway_device *dev = sdev;
-+	int rc = 0;
+-	int ret = -ENOTSUPP;
++	int ret;
  
- 	if (!dev) {
- 		dev = kzalloc(sizeof(struct superhyway_device), GFP_KERNEL);
-@@ -86,8 +87,11 @@ int superhyway_add_device(unsigned long base, struct superhyway_device *sdev,
- 	dev_set_name(&dev->dev, "%02x", superhyway_devices);
+ 	ret = phy_pm_runtime_get_sync(phy);
+ 	if (ret < 0 && ret != -ENOTSUPP)
+@@ -226,7 +226,7 @@ EXPORT_SYMBOL_GPL(phy_power_on);
  
- 	superhyway_devices++;
-+	rc = device_register(&dev->dev);
-+	if (rc)
-+		put_device(&dev->dev);
+ int phy_power_off(struct phy *phy)
+ {
+-	int ret = -ENOTSUPP;
++	int ret;
  
--	return device_register(&dev->dev);
-+	return rc;
- }
+ 	mutex_lock(&phy->mutex);
+ 	if (phy->power_count == 1 && phy->ops->power_off) {
+@@ -369,7 +369,7 @@ EXPORT_SYMBOL_GPL(of_phy_simple_xlate);
+ struct phy *phy_get(struct device *dev, const char *string)
+ {
+ 	int index = 0;
+-	struct phy *phy = NULL;
++	struct phy *phy;
  
- int superhyway_add_devices(struct superhyway_bus *bus,
+ 	if (string == NULL) {
+ 		dev_WARN(dev, "missing string\n");
 -- 
-1.8.3.1
+1.7.10.4
 
