@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab3LSL5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:57:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44776 "EHLO
+	id S1756366Ab3LSMLv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:11:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45264 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754711Ab3LSL5J (ORCPT
+	with ESMTP id S1755915Ab3LSL7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:09 -0500
+	Thu, 19 Dec 2013 06:59:25 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 076/208] ARM: footbridge: fix EBSA285 LEDs
-Date: Thu, 19 Dec 2013 11:52:54 +0000
-Message-Id: <1387454106-19326-77-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 172/208] dm snapshot: avoid snapshot space leak on crash
+Date: Thu, 19 Dec 2013 11:54:30 +0000
+Message-Id: <1387454106-19326-173-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,79 +27,196 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 67130c5464f50428aea0b4526a6729d61f9a1d53 upstream.
+commit 230c83afdd9cd384348475bea1e14b80b3b6b1b8 upstream.
 
-- The LEDs register is write-only: it can't be read-modify-written.
-- The LEDs are write-1-for-off not 0.
-- The check for the platform was inverted.
+There is a possible leak of snapshot space in case of crash.
 
-Fixes: cf6856d693dd ("ARM: mach-footbridge: retire custom LED code")
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+The reason for space leaking is that chunks in the snapshot device are
+allocated sequentially, but they are finished (and stored in the metadata)
+out of order, depending on the order in which copying finished.
+
+For example, supposed that the metadata contains the following records
+SUPERBLOCK
+METADATA (blocks 0 ... 250)
+DATA 0
+DATA 1
+DATA 2
+...
+DATA 250
+
+Now suppose that you allocate 10 new data blocks 251-260. Suppose that
+copying of these blocks finish out of order (block 260 finished first
+and the block 251 finished last). Now, the snapshot device looks like
+this:
+SUPERBLOCK
+METADATA (blocks 0 ... 250, 260, 259, 258, 257, 256)
+DATA 0
+DATA 1
+DATA 2
+...
+DATA 250
+DATA 251
+DATA 252
+DATA 253
+DATA 254
+DATA 255
+METADATA (blocks 255, 254, 253, 252, 251)
+DATA 256
+DATA 257
+DATA 258
+DATA 259
+DATA 260
+
+Now, if the machine crashes after writing the first metadata block but
+before writing the second metadata block, the space for areas DATA 250-255
+is leaked, it contains no valid data and it will never be used in the
+future.
+
+This patch makes dm-snapshot complete exceptions in the same order they
+were allocated, thus fixing this bug.
+
+Note: when backporting this patch to the stable kernel, change the version
+field in the following way:
+* if version in the stable kernel is {1, 11, 1}, change it to {1, 12, 0}
+* if version in the stable kernel is {1, 10, 0} or {1, 10, 1}, change it
+  to {1, 10, 2}
+Userspace reads the version to determine if the bug was fixed, so the
+version change is needed.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-footbridge/ebsa285.c | 22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
+ drivers/md/dm-snap.c | 71 ++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 64 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/mach-footbridge/ebsa285.c b/arch/arm/mach-footbridge/ebsa285.c
-index b082435..1a7235f 100644
---- a/arch/arm/mach-footbridge/ebsa285.c
-+++ b/arch/arm/mach-footbridge/ebsa285.c
-@@ -30,21 +30,24 @@ static const struct {
- 	const char *name;
- 	const char *trigger;
- } ebsa285_leds[] = {
--	{ "ebsa285:amber", "heartbeat", },
--	{ "ebsa285:green", "cpu0", },
-+	{ "ebsa285:amber", "cpu0", },
-+	{ "ebsa285:green", "heartbeat", },
- 	{ "ebsa285:red",},
- };
+diff --git a/drivers/md/dm-snap.c b/drivers/md/dm-snap.c
+index aec57d7..944690b 100644
+--- a/drivers/md/dm-snap.c
++++ b/drivers/md/dm-snap.c
+@@ -66,6 +66,18 @@ struct dm_snapshot {
  
-+static unsigned char hw_led_state;
+ 	atomic_t pending_exceptions_count;
+ 
++	/* Protected by "lock" */
++	sector_t exception_start_sequence;
 +
- static void ebsa285_led_set(struct led_classdev *cdev,
- 		enum led_brightness b)
- {
- 	struct ebsa285_led *led = container_of(cdev,
- 			struct ebsa285_led, cdev);
++	/* Protected by kcopyd single-threaded callback */
++	sector_t exception_complete_sequence;
++
++	/*
++	 * A list of pending exceptions that completed out of order.
++	 * Protected by kcopyd single-threaded callback.
++	 */
++	struct list_head out_of_order_list;
++
+ 	mempool_t *pending_pool;
  
--	if (b != LED_OFF)
--		*XBUS_LEDS |= led->mask;
-+	if (b == LED_OFF)
-+		hw_led_state |= led->mask;
- 	else
--		*XBUS_LEDS &= ~led->mask;
-+		hw_led_state &= ~led->mask;
-+	*XBUS_LEDS = hw_led_state;
+ 	struct dm_exception_table pending;
+@@ -173,6 +185,14 @@ struct dm_snap_pending_exception {
+ 	 */
+ 	int started;
+ 
++	/* There was copying error. */
++	int copy_error;
++
++	/* A sequence number, it is used for in-order completion. */
++	sector_t exception_sequence;
++
++	struct list_head out_of_order_entry;
++
+ 	/*
+ 	 * For writing a complete chunk, bypassing the copy.
+ 	 */
+@@ -1094,6 +1114,9 @@ static int snapshot_ctr(struct dm_target *ti, unsigned int argc, char **argv)
+ 	s->valid = 1;
+ 	s->active = 0;
+ 	atomic_set(&s->pending_exceptions_count, 0);
++	s->exception_start_sequence = 0;
++	s->exception_complete_sequence = 0;
++	INIT_LIST_HEAD(&s->out_of_order_list);
+ 	init_rwsem(&s->lock);
+ 	INIT_LIST_HEAD(&s->list);
+ 	spin_lock_init(&s->pe_lock);
+@@ -1443,6 +1466,19 @@ static void commit_callback(void *context, int success)
+ 	pending_complete(pe, success);
  }
  
- static enum led_brightness ebsa285_led_get(struct led_classdev *cdev)
-@@ -52,18 +55,19 @@ static enum led_brightness ebsa285_led_get(struct led_classdev *cdev)
- 	struct ebsa285_led *led = container_of(cdev,
- 			struct ebsa285_led, cdev);
++static void complete_exception(struct dm_snap_pending_exception *pe)
++{
++	struct dm_snapshot *s = pe->snap;
++
++	if (unlikely(pe->copy_error))
++		pending_complete(pe, 0);
++
++	else
++		/* Update the metadata if we are persistent */
++		s->store->type->commit_exception(s->store, &pe->e,
++						 commit_callback, pe);
++}
++
+ /*
+  * Called when the copy I/O has finished.  kcopyd actually runs
+  * this code so don't block.
+@@ -1452,13 +1488,32 @@ static void copy_callback(int read_err, unsigned long write_err, void *context)
+ 	struct dm_snap_pending_exception *pe = context;
+ 	struct dm_snapshot *s = pe->snap;
  
--	return (*XBUS_LEDS & led->mask) ? LED_FULL : LED_OFF;
-+	return hw_led_state & led->mask ? LED_OFF : LED_FULL;
+-	if (read_err || write_err)
+-		pending_complete(pe, 0);
++	pe->copy_error = read_err || write_err;
+ 
+-	else
+-		/* Update the metadata if we are persistent */
+-		s->store->type->commit_exception(s->store, &pe->e,
+-						 commit_callback, pe);
++	if (pe->exception_sequence == s->exception_complete_sequence) {
++		s->exception_complete_sequence++;
++		complete_exception(pe);
++
++		while (!list_empty(&s->out_of_order_list)) {
++			pe = list_entry(s->out_of_order_list.next,
++					struct dm_snap_pending_exception, out_of_order_entry);
++			if (pe->exception_sequence != s->exception_complete_sequence)
++				break;
++			s->exception_complete_sequence++;
++			list_del(&pe->out_of_order_entry);
++			complete_exception(pe);
++		}
++	} else {
++		struct list_head *lh;
++		struct dm_snap_pending_exception *pe2;
++
++		list_for_each_prev(lh, &s->out_of_order_list) {
++			pe2 = list_entry(lh, struct dm_snap_pending_exception, out_of_order_entry);
++			if (pe2->exception_sequence < pe->exception_sequence)
++				break;
++		}
++		list_add(&pe->out_of_order_entry, lh);
++	}
  }
  
- static int __init ebsa285_leds_init(void)
- {
- 	int i;
+ /*
+@@ -1553,6 +1608,8 @@ __find_pending_exception(struct dm_snapshot *s,
+ 		return NULL;
+ 	}
  
--	if (machine_is_ebsa285())
-+	if (!machine_is_ebsa285())
- 		return -ENODEV;
++	pe->exception_sequence = s->exception_start_sequence++;
++
+ 	dm_insert_exception(&s->pending, &pe->e);
  
--	/* 3 LEDS All ON */
--	*XBUS_LEDS |= XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
-+	/* 3 LEDS all off */
-+	hw_led_state = XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
-+	*XBUS_LEDS = hw_led_state;
+ 	return pe;
+@@ -2192,7 +2249,7 @@ static struct target_type origin_target = {
  
- 	for (i = 0; i < ARRAY_SIZE(ebsa285_leds); i++) {
- 		struct ebsa285_led *led;
+ static struct target_type snapshot_target = {
+ 	.name    = "snapshot",
+-	.version = {1, 11, 1},
++	.version = {1, 12, 0},
+ 	.module  = THIS_MODULE,
+ 	.ctr     = snapshot_ctr,
+ 	.dtr     = snapshot_dtr,
 -- 
 1.8.3.2
 
