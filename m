@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab3LSHzN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 02:55:13 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:64354 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab3LSHzH (ORCPT
+	id S1753327Ab3LSHzY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 02:55:24 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:34939 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682Ab3LSHzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 02:55:07 -0500
+	Thu, 19 Dec 2013 02:55:17 -0500
 From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Alessandro Zummo <a.zummo@towertech.it>,
@@ -19,9 +19,9 @@ Cc: Elliott@hp.com, samer.el-haj-mahmoud@hp.com,
         rtc-linux@googlegroups.com, x86@kernel.org,
         "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
         linux-acpi@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [RFC PATCH 12/14] efi: adjust system time base on timezone from EFI time services
-Date: Thu, 19 Dec 2013 15:51:53 +0800
-Message-Id: <1387439515-8926-13-git-send-email-jlee@suse.com>
+Subject: [RFC PATCH 13/14] Documentation/RTC: add document of ACPI TAD and EFI TIME driver
+Date: Thu, 19 Dec 2013 15:51:54 +0800
+Message-Id: <1387439515-8926-14-git-send-email-jlee@suse.com>
 X-Mailer: git-send-email 1.6.0.2
 In-Reply-To: <1387439515-8926-1-git-send-email-jlee@suse.com>
 References: <1387439515-8926-1-git-send-email-jlee@suse.com>
@@ -29,130 +29,532 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EFI time services provide the interface to store timezone to BIOS. The
-timezone value from EFI indicates the offset of RTC time in minutes from
-UTC.
-The formula is: Localtime = UTC - TimeZone.
-
-This patch add a efI_warp_clock() function to initial process for adjust
-system time base on timezone value from EFI time services. It will also
-set persistent_clock_is_local global variable to avoid user space
-adjust timezone again.
-
-This efi warp clock mechanism will triggered on x86_64 EFI machine when
-timezone value is neither 0 nor 2047(UNSPECIFIED), kernel assume the
-value of RTC is local time. On the other hand, system just follow
-the old logic when timezone value from EFI is 0 or 2047, kernel assume
-the value of RTC is UTC time.
-
-About the 2047(EFI_UNSPECIFIED_TIMEZONE) value, it's the default value
-of UEFI BIOS if there didn't have software set it through EFI interface.
-We can _NOT_ follow EFI spec to interpret the RTC time as a local time
-if timezone value is EFI_UNSPECIFIED_TIMEZONE, that's because Linux stored
-UTC to BIOS on shipped UEFI machines.
+This patch add rtc-tz.txt document to explain the RTC driver of
+ACPI TAD, EFI TIME. It focus on the timezone field and CMOS RTC Not
+Present bit of ACPI 5.0.
 
 Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
 ---
- arch/x86/platform/efi/efi.c |   37 +++++++++++++++++++++++++++++++++++++
- include/linux/efi.h         |    2 ++
- init/main.c                 |    5 +++++
- kernel/time.c               |    2 +-
- 4 files changed, 45 insertions(+), 1 deletions(-)
+ Documentation/rtc-tz.txt |  510 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 510 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/rtc-tz.txt
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 42d6052..848160e 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -306,6 +306,43 @@ static void efi_get_time(struct timespec *now)
- 	now->tv_nsec = 0;
- }
- 
-+static int efi_read_timezone(s16 *timezone)
-+{
-+	efi_status_t status;
-+	efi_time_t eft;
-+	efi_time_cap_t cap;
+diff --git a/Documentation/rtc-tz.txt b/Documentation/rtc-tz.txt
+new file mode 100644
+index 0000000..7dfe523
+--- /dev/null
++++ b/Documentation/rtc-tz.txt
+@@ -0,0 +1,510 @@
 +
-+	status = efi.get_time(&eft, &cap);
++	ACPI TAD and EFI TIME Drivers for Timezone and Daylight
++	=======================================================
 +
-+	if (status != EFI_SUCCESS) {
-+		/* should never happen */
-+		pr_err("efitime: can't read timezone.\n");
-+		return -EINVAL;
-+	}
++In ACPI 5.0 ACPI TAD (Time and Alram Device) and EFI, they defined
++Timezone and Daylight field in time struct:
 +
-+	*timezone = (s16)le16_to_cpu(eft.timezone);
-+	return 0;
-+}
++    *	ACPI TAD ... INT16 TimeZone
++		         -1440 to 1440 or 2047 (unspecified)
++		         Time zone field is the number of minutes that
++		         the local time lags behind the UTC time.
++		         Follow this equation: Localtime = UTC - TimeZone
++		     UINT8 Daylight
++			Daylight is a bitmask containing the daylight
++			savings time information for the time:
++			Bit0: 1 = the time is affected by daylight savings time,
++			      0= time is not affected by daylight savings.
++			Bit1: 1= the time has been adjusted for daylight savings time,
++			      0= the time hasn't been adjusted for daylight savings.
 +
-+void __init efi_warp_clock(void)
-+{
-+	s16 timezone;
++    *	EFI TIME ... INT16 TimeZone
++			-1440 to 1440 or 2047 (unspecified)
++			Time zone field is the number of minutes that
++			the local time lags behind the UTC time.
++			Follow this equation: Localtime = UTC - TimeZone
++		     UINT8 Daylight
++			EFI_TIME_ADJUST_DAYLIGHT 0x01
++			    indicates if the time is affected by daylight
++			    savings time or not.
++			EFI_TIME_IN_DAYLIGHT 0x02
++			    is set, the time has been adjusted for daylight
++			    savings time.
 +
-+	if (!efi_read_timezone(&timezone)) {
-+		/* TimeZone value, 2047 or 0 means UTC */
-+		if (timezone != 0 && timezone != 2047) {
-+			struct timespec adjust;
++Then, the Timzone and daylight definition in GNU struct tm:
 +
-+			persistent_clock_is_local = 1;
-+			adjust.tv_sec = timezone * 60;
-+			adjust.tv_nsec = 0;
-+			timekeeping_inject_offset(&adjust);
-+			pr_info("RTC timezone is %d mins behind of UTC.\n", timezone);
-+			pr_info("Adjusted system time to UTC.\n");
-+		}
-+	}
-+}
++    *	GNU struct tm ... long int __tm_gmtoff;	/* Seconds east of UTC.	*/
++			  int tm_isdst;		/* DST.         [-1/0/1]*/
 +
- /*
-  * Tell the kernel about the EFI memory map.  This might include
-  * more than the max 128 entries that can fit in the e820 legacy
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 1c78ae7..a8d4f5c 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -715,10 +715,12 @@ extern void efi_memmap_walk (efi_freemem_callback_t callback, void *arg);
- extern void efi_gettimeofday (struct timespec *ts);
- extern void efi_enter_virtual_mode (void);	/* switch EFI to virtual mode, if possible */
- #ifdef CONFIG_X86
-+extern void efi_warp_clock(void);
- extern void efi_late_init(void);
- extern void efi_free_boot_services(void);
- extern efi_status_t efi_query_variable_store(u32 attributes, unsigned long size);
- #else
-+static inline void efi_warp_clock(void) {}
- static inline void efi_late_init(void) {}
- static inline void efi_free_boot_services(void) {}
- 
-diff --git a/init/main.c b/init/main.c
-index 61164ce..9effb1c 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -570,6 +570,11 @@ asmlinkage void __init start_kernel(void)
- 	hrtimers_init();
- 	softirq_init();
- 	timekeeping_init();
-+#ifdef CONFIG_X86_64
-+	/* adjust system time by timezone */
-+	if (efi_enabled(EFI_RUNTIME_SERVICES))
-+		efi_warp_clock();
++For Timzone, the definition match between ACPI TAD and EFI TIME. But it
++different with GNU time struct. GNU's tm_gmtoff is "Seconds east of UTC".
++Simply say, the timzone of ACPI/EFI and GNU are sign difference.
++
++Example 1:
++  'Asia/Taipei'	UTC +8
++	GNU:		tm_gmtoff = 28800 seconds.
++			Taiwan is east of UTC, so it's positive number.
++	ACPI or EFI:	TimeZone = -480 hours
++			Timezone = UTC - Localtime = UTC - Taipei time
++			So, it's negative number.
++Example 2:
++  'Americ/Los_Angeles'	UTC -8
++	GNU:		tm_gmtoff = -28800 seconds.
++			Los Angeles is west of UTC, so it's negative number.
++	ACPI or EFI:	TimeZone = 480 hours
++			Timezone = UTC - Localtime = UTC - Taipei time
++			So, it's positive number.
++
++For Daylight, due to GNU's tm_isdst is only define: '1' means current
++time is in daylight savings. '0' means not. '-1' means non-available.
++So, 1b is the only value from ACPI/EFI will transfer to '1' in GNU.
++When ACPI or EFI value is:
++
++    * 11b: Time is affected by daylight and has been adjusted for daylight
++	   tm->tm_isdst = 1
++    * 01b: Time is affected by daylight but hasn't been adjusted for daylight
++	   tm->tm_isdst = 0
++    * 00b(or 10b): Time is affected by daylight
++	   	   tm->tm_isdst = -1
++
++The above data tranfer work of Timezone and Daylight will handled by RTC driver
++to ACPI TAD and EFI TIME: rtc-acpitad and rtc-efi.
++
++SYSFS INTERFACE
++---------------
++
++The sysfs interface under /sys/class/rtc/rtcN provides access to various
++rtc attributes without requiring the use of ioctls. Here only have one new
++sysfs interface for grab the capabilities:
++
++caps:		This interface will return a bitmap of capabilitites to the RTC
++		interface. Currently it indicates the RTC has capability for
++		handle Timezone or Daylight:
++			Bit0: Timezone. Set this bit means this interface has
++			      capability to store Timezone
++			Bit1: Daylight: Set this bit means this interface has
++			      capability to store Daylight savings time.
++		There already have the following definition in linux/rtc.h:
++			#define        RTC_TZ_CAP      (1 << 0)
++			#define        RTC_DST_CAP     (1 << 1)
++
++IOCTL INTERFACE
++---------------
++
++Here create 3 new ioctl functions for read/set timezone and read the
++capabilities of RTC interface.
++
++    *	RTC_RD_GMTOFF, RTC_SET_GMTOFF ... Used to read and set timezone value.
++	Due to support the GNU tm_gmtoff format, so the input/output value
++	is "Seconds east of UTC". RTC drivers, rtc-acpitad and rtc-efi, done
++	the data transfer work.
++	The rtc-acpitad and rtc-efi driver also avoid to overwrite the timezone
++	field in their time struct in RTC_SET_TIME.
++
++    *	RTC_CAPS_READ ... As the caps sysfs interface, this ioctl provides
++	interface to userspace application for grab capabilities of current
++	RTC interface. Application can early check does this interface support
++	Timezone or Daylight.
++
++CMOS RTC Not Present flag
++-------------------------
++
++ACPI 5.0 spec defines a "CMOS RTC Not Present" flag in IA-PC Boot
++Architecture Flags of FADT. If this bit set, that means OSPM need uses the
++ACPI Time and Alarm device instead. Software should not access RTC through
++CMOS interface.
++
++In Linux kernel, the defaul wallclock functions deal with RTC by CMOS, it
++should move to ACPI TAD or EFI Time servcies. ACPI Time and Alarm device is
++described in DSDT that need wait until DSDT parsed by kernel in subsystem
++initial stage, so it can not used to deal with wallclock when system boot.
++
++Current solution of "CMOS RTC Not Present" is switch to EFI time services.
++On x86_64 EFI machine kernel will deal with RTC by EFI time services. In
++initial process, system time will adjusted base on timezone value from EFI
++time services, it also set persistent_clock_is_local global variable to
++avoid user space adjust system time by userland timezone again.
++
++The above efi warp clock mechanism will triggered on x86_64 EFI machine when
++timezone value is neither 0 nor 2047(UNSPECIFIED), kernel assume the value
++of RTC is local time. On the other hand, system just follow the old logic
++when timezone value from EFI is 0 or 2047, kernel assume the value of RTC is
++UTC time.
++
++About the 2047(EFI_UNSPECIFIED_TIMEZONE) value, it's the default value of
++UEFI BIOS if there didn't have any software set it through EFI interface.
++We can _NOT_ follow EFI spec to interpret the RTC time as a local time if
++timezone value is EFI_UNSPECIFIED_TIMEZONE, that's because Linux stored
++UTC to BIOS on shipped UEFI machines.
++
++
++-------------------- 8< ---------------- 8< -----------------------------
++
++/*
++ * Timezone of ACPI/EFI RTC Driver Test Program
++ *
++ * Compile with:
++ *      gcc rtc-tz-test.c -o rtc-tz-test
++ *
++ * Copyright (C) 2013 SUSE Linux Products GmbH. All rights reserved.
++ * Written by Lee, Chun-Yi (jlee@suse.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++#include <stdio.h>
++#include <string.h>
++#include <fcntl.h>
++#include <sys/ioctl.h>
++#include <linux/rtc.h>
++
++#ifndef RTC_RD_GMTOFF
++#define RTC_RD_GMTOFF   _IOR('p', 0x13, long int)    /* Read time zone return seconds east of UTC */
++#define RTC_SET_GMTOFF  _IOW('p', 0x14, long int)    /* Set time zone input seconds east of UTC */
 +#endif
- 	time_init();
- 	sched_clock_postinit();
- 	perf_event_init();
-diff --git a/kernel/time.c b/kernel/time.c
-index 7c7964c..ce18bac 100644
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -176,7 +176,7 @@ int do_sys_settimeofday(const struct timespec *tv, const struct timezone *tz)
- 		update_vsyscall_tz();
- 		if (firsttime) {
- 			firsttime = 0;
--			if (!tv)
-+			if (!tv && !persistent_clock_is_local)
- 				warp_clock();
- 		}
- 	}
++#ifndef RTC_CAPS_READ
++#define RTC_CAPS_READ   _IOR('p', 0x15, unsigned int)    /* Get capabilities, e.g. TZ, DST */
++#endif
++/* Time Zone and Daylight capabilities */
++#ifndef RTC_TZ_CAP
++#define RTC_TZ_CAP      (1 << 0)
++#define RTC_DST_CAP     (1 << 1)
++#endif
++
++#define MAX_DEV         5
++#define ADJUST_MIN      60
++#define DEFAULT_TZ      28800           /* GMT offset of Taiwan R.O.C (Seconds east of UTC)*/
++#define ADJUST_TZ       -28800          /* GMT offset of Los Angeles (Seconds east of UTC) */
++
++static const char dev_path[] = "/dev/rtc";
++static const char sys_path[] = "/sys/class/rtc/rtc";
++
++static const struct {
++        const char *driver_name;
++        const char *name;
++} names[] = {
++        {"rtc_cmos", "CMOS"},
++        {"rtc-efi", "EFI"},
++        {"rtc-acpitad", "ACPI-TAD"},
++};
++
++struct rtc_dev {
++        char dev_path[10];
++        char sys_path[21];
++        char name[15];
++        char driver_name[15];
++        unsigned int caps;
++};
++
++struct rtc_dev rtc_devs[5];
++
++void search_rtc_dev(void)
++{
++        int i, j, fd, ret;
++        FILE *fin;
++
++        for (i = 0; i <= MAX_DEV; i++)
++        {
++                char path_tmp[30];
++                sprintf(path_tmp, "%s%d", dev_path, i);
++
++                fd = open(path_tmp, O_RDONLY);
++                if (fd !=  -1) {
++                        struct rtc_dev *dev = &rtc_devs[i];
++
++                        memcpy(dev->dev_path, path_tmp, 10);
++                        sprintf(dev->sys_path, "%s%d/", sys_path, i);
++
++                        sprintf(path_tmp, "%s%s", dev->sys_path, "name");
++                        if ((fin = fopen(path_tmp, "r")) != NULL)
++                                fscanf(fin, "%s", dev->driver_name);
++                        fclose(fin);
++
++                        for (j = 0; j < sizeof(names)/sizeof(names[0]); j++) {
++                                if (!strcmp(dev->driver_name, names[j].driver_name))
++                                        memcpy(dev->name, names[j].name, strlen(names[j].name));
++                        }
++
++                        ioctl(fd, RTC_CAPS_READ, &dev->caps);
++                        close(fd);
++                }
++        }
++}
++
++void print_rtc_dev(struct rtc_dev *dev)
++{
++        long int gmtoff;
++        struct rtc_time rtc_tm;
++        int fd, ret;
++
++        fd = open(dev->dev_path, O_RDONLY);
++
++        printf("Name: %s(%s)\n", dev->name, dev->driver_name);
++        printf("    Device Path: %s\n", dev->dev_path);
++        printf("    Sysfs Path : %s\n", dev->sys_path);
++
++        /* Read the RTC time/date */
++        ret = ioctl(fd, RTC_RD_TIME, &rtc_tm);
++        if (ret == -1)
++                perror("RTC_RD_TIME ioctl");
++
++        printf("    RTC date/time: %d-%d-%d %02d:%02d:%02d\n",
++                rtc_tm.tm_mday, rtc_tm.tm_mon + 1, rtc_tm.tm_year + 1900,
++                rtc_tm.tm_hour, rtc_tm.tm_min, rtc_tm.tm_sec);
++        printf("    Is Daylight: %d (%s)\n", rtc_tm.tm_isdst,
++                (rtc_tm.tm_isdst)? (rtc_tm.tm_isdst < 0)? "NOT AVAILABLE":"INEFFECT":"NOT IN EFFECT");
++
++        printf("    Capabilities: %d (%s %s)\n", dev->caps,
++                (dev->caps & RTC_TZ_CAP)? "TZ":"",
++                (dev->caps & RTC_DST_CAP)? "DST":"");
++
++        /* Read the GMTOFF (Seconds east of UTC) */
++        ret = ioctl(fd, RTC_RD_GMTOFF, &gmtoff);
++        if (ret == -1)
++                printf("    GMTOFF: not support\n");
++        else
++                printf("    GMTOFF: %ld    TIMEZONE: %d\n", gmtoff, gmtoff / 60 * -1);
++
++        close(fd);
++        printf("\n");
++}
++
++void print_rtc_devs(void)
++{
++        int i;
++
++        for (i = 0; i <= MAX_DEV; i++) {
++                if(strlen(rtc_devs[i].sys_path))
++                        print_rtc_dev(&rtc_devs[i]);
++        }
++}
++
++void print_rtc_dev_time(struct rtc_dev *dev)
++{
++        long int gmtoff;
++        struct rtc_time rtc_tm;
++        int fd, ret;
++
++        fd = open(dev->dev_path, O_RDONLY);
++
++        /* Read the RTC time/date */
++        ret = ioctl(fd, RTC_RD_TIME, &rtc_tm);
++        if (ret == -1)
++                perror("RTC_RD_TIME ioctl");
++
++        printf("        %s: %d-%d-%d %02d:%02d:%02d\n", dev->name,
++                rtc_tm.tm_mday, rtc_tm.tm_mon + 1, rtc_tm.tm_year + 1900,
++                rtc_tm.tm_hour, rtc_tm.tm_min, rtc_tm.tm_sec);
++
++        close(fd);
++}
++
++void print_rtc_devs_time(void)
++{
++        int i;
++
++        for (i = 0; i <= MAX_DEV; i++) {
++                if(strlen(rtc_devs[i].sys_path))
++                        print_rtc_dev_time(&rtc_devs[i]);
++        }
++}
++
++void time_increase(struct rtc_dev *dev, int in_min)
++{
++        struct rtc_time rtc_tm;
++        int fd, ret;
++
++        fd = open(dev->dev_path, O_RDONLY);
++
++        /* Read the RTC time/date */
++        ret = ioctl(fd, RTC_RD_TIME, &rtc_tm);
++        if (ret == -1)
++                perror("RTC_RD_TIME ioctl");
++
++        /* Increase minutes */
++        rtc_tm.tm_min += in_min;
++        if (rtc_tm.tm_min >= 60) {
++                rtc_tm.tm_hour += (rtc_tm.tm_min / 60);
++                rtc_tm.tm_min %= 60;
++                if (rtc_tm.tm_hour >= 24) {
++                        rtc_tm.tm_mday += (rtc_tm.tm_hour / 24);
++                        rtc_tm.tm_hour %= 24;
++                }
++                /* Yes, it's not perfect, only adjust to mday level for testing */
++        }
++
++        /* Set increased time */
++        ret = ioctl(fd, RTC_SET_TIME, &rtc_tm);
++        if (ret == -1)
++                perror("RTC_SET_TIME ioctl");
++
++        close(fd);
++}
++
++void time_decrease(struct rtc_dev *dev, int in_min)
++{
++        struct rtc_time rtc_tm;
++        int fd, ret;
++
++        fd = open(dev->dev_path, O_RDONLY);
++
++        /* Read the RTC time/date */
++        ret = ioctl(fd, RTC_RD_TIME, &rtc_tm);
++        if (ret == -1)
++                perror("RTC_RD_TIME ioctl");
++
++        /* Increase minutes */
++        if ((rtc_tm.tm_min - in_min) < 0) {
++                rtc_tm.tm_hour -= (in_min / 60);
++                rtc_tm.tm_min -= in_min % 60;
++                if (rtc_tm.tm_hour < 0) {
++                        rtc_tm.tm_mday += (rtc_tm.tm_hour / 24);
++                        rtc_tm.tm_hour = (rtc_tm.tm_hour % 24) * -1;
++                }
++                /* Yes, it's not perfect, only adjust to mday level for testing */
++        }
++
++        ret = ioctl(fd, RTC_SET_TIME, &rtc_tm);
++        if (ret == -1)
++                perror("RTC_SET_TIME ioctl");
++
++        close(fd);
++}
++
++void set_rtc_time_test(void)
++{
++        int i;
++
++        for (i = 0; i <= MAX_DEV; i++) {
++                struct rtc_dev *dev = &rtc_devs[i];
++
++                if(strlen(dev->sys_path) &&
++                   dev->caps & RTC_TZ_CAP) {
++                        printf("Test Target: %s(%s)\n", dev->name, dev->driver_name);
++
++                        printf("    Before Increase\n");
++                        print_rtc_devs_time();
++                        time_increase(dev, ADJUST_MIN);
++                        printf("    After Increased %d minutes\n", ADJUST_MIN);
++                        print_rtc_devs_time();
++                        printf("    Before Decrease\n");
++                        print_rtc_devs_time();
++                        time_decrease(dev, ADJUST_MIN);
++                        printf("    After Decreased %d minutes\n", ADJUST_MIN);
++                        print_rtc_devs_time();
++
++                        printf("\n\n");
++                }
++        }
++}
++
++void print_rtc_dev_tz(struct rtc_dev *dev)
++{
++        long int gmtoff;
++        struct rtc_time rtc_tm;
++        int fd, ret;
++
++        fd = open(dev->dev_path, O_RDONLY);
++
++        /* Read the GMTOFF (Seconds east of UTC) */
++        ret = ioctl(fd, RTC_RD_GMTOFF, &gmtoff);
++        if (ret == -1)
++                printf("        %s(%s): not support\n", dev->name, dev->driver_name);
++        else
++                printf("        %s(%s): GMTOFF: %ld    TIMEZONE: %d\n", dev->name, dev->driver_name, gmtoff, gmtoff / 60 * -1);
++
++        close(fd);
++}
++
++void print_rtc_devs_tz()
++{
++        int i;
++
++        for (i = 0; i <= MAX_DEV; i++) {
++                if(strlen(rtc_devs[i].sys_path))
++                        print_rtc_dev_tz(&rtc_devs[i]);
++        }
++}
++
++long int change_gmtoff(struct rtc_dev *dev, long int gmtoff_in)
++{
++        long int gmtoff = 122820;
++        struct rtc_time rtc_tm;
++        int fd, ret;
++
++        fd = open(dev->dev_path, O_RDONLY);
++
++        /* Read the GMTOFF (Seconds east of UTC) */
++        ret = ioctl(fd, RTC_RD_GMTOFF, &gmtoff);
++        if (ret == -1) {
++                printf("RTC_RD_GMTOFF fail.\n");
++                goto read_err;
++        }
++
++        ret = ioctl(fd, RTC_SET_GMTOFF, gmtoff_in);
++        if (ret == -1)
++                printf("RTC_SET_GMTOFF fail.\n");
++
++read_err:
++        close(fd);
++
++        return gmtoff;
++}
++
++void access_gmtoff_test(void)
++{
++        int i;
++
++        for (i = 0; i <= MAX_DEV; i++) {
++                struct rtc_dev *dev = &rtc_devs[i];
++
++                if(strlen(dev->sys_path) &&
++                   dev->caps & RTC_TZ_CAP) {
++                        long int orig_tz;
++
++                        printf("Test Target: %s(%s)\n", dev->name, dev->driver_name);
++                        printf("Set to Default TZ: %ld\n", DEFAULT_TZ);
++                        change_gmtoff(dev, DEFAULT_TZ);
++
++                        printf("    Before Adjust TZ\n");
++                        print_rtc_devs_tz();
++                        orig_tz = change_gmtoff(dev, ADJUST_TZ);
++                        printf("    After Adjusted TZ\n");
++                        print_rtc_devs_tz();
++                        orig_tz = change_gmtoff(dev, orig_tz);
++                        printf("    Adjusted Back\n");
++                        print_rtc_devs_tz();
++
++                        printf("\n\n");
++                }
++        }
++}
++
++int main(int argc, char **argv)
++{
++        search_rtc_dev();
++        printf("\nThis testing program will access following ioctl interface:\n");
++        printf("    RTC_RD_TIME/RTC_SET_TIME: Used to read and set RTC value.\n");
++        printf("    RTC_RD_GMTOFF/RTC_SET_GMTOFF: Used to read and set timezone, input/output is \"Seconds east of UTC\".\n");
++        printf("    RTC_CAPS_READ: Read the Timzone and Daylight capabilities of RTC interface.\n");
++
++        printf("\n======== Read Time Testing (RTC_RD_TIME/RTC_CAPS_READ) ========\n\n");
++        print_rtc_devs();
++
++        printf("\n======== Set Time Testing (RTC_SET_TIME/RTC_RD_TIME) ========\n");
++        printf("Only testing the interface supported Timezone.\n");
++        printf("This testing will increase %d minutes of RTC time then decrease it back.\n\n", ADJUST_MIN);
++        set_rtc_time_test();
++
++        printf("\n======== Access TimeZone Testing (RTC_RD_GMTOFF/RTC_SET_GMTOFF) ========\n");
++        printf("Only testing the interface supported Timezone.\n");
++        printf("Timezone of ACPI and UEFI spec: Time zone field is the number of minutes that the local time lags behind the UTC time.\n");
++        printf("                                -1440 to 1440 or 2047. Localtime = UTC - TimeZone\n");
++        printf("Timezone in GNU tm struct: Seconds east of UTC.\n");
++        printf("This testing will set time zone to Los Angeles time (-28800 Seconds east of UTC) then set it back.\n\n", ADJUST_MIN);
++        access_gmtoff_test();
++
++        return 0;
++}
 -- 
 1.6.4.2
 
