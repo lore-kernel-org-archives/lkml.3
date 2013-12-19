@@ -1,132 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab3LSHgF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 02:36:05 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:52091 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424Ab3LSHgD (ORCPT
+	id S1752223Ab3LSHpd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 02:45:33 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:34974 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab3LSHpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 02:36:03 -0500
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <529DDDAF.1000202@redhat.com>
-References: <1382101019-23563-1-git-send-email-jmarchan@redhat.com>
-	<1382101019-23563-2-git-send-email-jmarchan@redhat.com>
-	<529DDDAF.1000202@redhat.com>
-Date: Wed, 18 Dec 2013 23:36:02 -0800
-Message-ID: <CAOesGMigOZzAEYV=SJNTd+cm6LcepxOek3ZvBrFCc+WT94OkzA@mail.gmail.com>
-Subject: Re: [PATCH v5] mm: add overcommit_kbytes sysctl variable
-From: Olof Johansson <olof@lixom.net>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dave.hansen@intel.com, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 Dec 2013 02:45:31 -0500
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Elliott@hp.com, samer.el-haj-mahmoud@hp.com,
+        Oliver Neukum <oneukum@suse.de>, werner@suse.com, trenn@suse.de,
+        JBeulich@suse.com, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, x86@kernel.org,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>
+Subject: [RFC PATCH 00/14] Support timezone of ACPI TAD and EFI TIME
+Date: Thu, 19 Dec 2013 15:43:59 +0800
+Message-Id: <1387439053-8711-1-git-send-email-jlee@suse.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patchset add the timezone support of ACPI TAD and EFI TIME, it
+also add codes for adjusting system time base on the timezone value
+from EFI TIME services when system boot.
 
-On Tue, Dec 3, 2013 at 5:33 AM, Jerome Marchand <jmarchan@redhat.com> wrote:
+Those patches bring the following changes:
 
-[...]
+ + Add ACPI driver against ACPI000E ACPI Time and Alarm Device.
 
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index 34a6047..7877929 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -97,6 +97,7 @@
->  /* External variables not in a header file. */
->  extern int sysctl_overcommit_memory;
->  extern int sysctl_overcommit_ratio;
-> +extern unsigned long sysctl_overcommit_kbytes;
->  extern int max_threads;
->  extern int suid_dumpable;
->  #ifdef CONFIG_COREDUMP
-> @@ -1128,7 +1129,14 @@ static struct ctl_table vm_table[] = {
->                 .data           = &sysctl_overcommit_ratio,
->                 .maxlen         = sizeof(sysctl_overcommit_ratio),
->                 .mode           = 0644,
-> -               .proc_handler   = proc_dointvec,
-> +               .proc_handler   = overcommit_ratio_handler,
-> +       },
-> +       {
-> +               .procname       = "overcommit_kbytes",
-> +               .data           = &sysctl_overcommit_kbytes,
-> +               .maxlen         = sizeof(sysctl_overcommit_kbytes),
-> +               .mode           = 0644,
-> +               .proc_handler   = overcommit_kbytes_handler,
->         },
->         {
->                 .procname       = "page-cluster",
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 834b2d7..b25167d 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -86,6 +86,7 @@ EXPORT_SYMBOL(vm_get_page_prot);
->
->  int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
->  int sysctl_overcommit_ratio __read_mostly = 50;        /* default is 50% */
-> +unsigned long sysctl_overcommit_kbytes __read_mostly = 0;
->  int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
->  unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
->  unsigned long sysctl_admin_reserve_kbytes __read_mostly = 1UL << 13; /* 8MB */
-> @@ -95,6 +96,30 @@ unsigned long sysctl_admin_reserve_kbytes __read_mostly = 1UL << 13; /* 8MB */
->   */
->  struct percpu_counter vm_committed_as ____cacheline_aligned_in_smp;
->
-> +int overcommit_ratio_handler(struct ctl_table *table, int write,
-> +                            void __user *buffer, size_t *lenp,
-> +                            loff_t *ppos)
-> +{
-> +       int ret;
-> +
-> +       ret = proc_dointvec(table, write, buffer, lenp, ppos);
-> +       if (ret == 0 && write)
-> +               sysctl_overcommit_kbytes = 0;
-> +       return ret;
-> +}
-> +
-> +int overcommit_kbytes_handler(struct ctl_table *table, int write,
-> +                            void __user *buffer, size_t *lenp,
-> +                            loff_t *ppos)
-> +{
-> +       int ret;
-> +
-> +       ret = proc_doulongvec_minmax(table, write, buffer, lenp, ppos);
-> +       if (ret == 0 && write)
-> +               sysctl_overcommit_ratio = 0;
-> +       return ret;
-> +}
-> +
->  /*
->   * The global memory commitment made in the system can be a metric
->   * that can be used to drive ballooning decisions when Linux is hosted
-> diff --git a/mm/nommu.c b/mm/nommu.c
-> index fec093a..319ab8f 100644
-> --- a/mm/nommu.c
-> +++ b/mm/nommu.c
-> @@ -60,6 +60,7 @@ unsigned long highest_memmap_pfn;
->  struct percpu_counter vm_committed_as;
->  int sysctl_overcommit_memory = OVERCOMMIT_GUESS; /* heuristic overcommit */
->  int sysctl_overcommit_ratio = 50; /* default is 50% */
-> +unsigned long sysctl_overcommit_kbytes __read_mostly = 0;
->  int sysctl_max_map_count = DEFAULT_MAX_MAP_COUNT;
->  int sysctl_nr_trim_pages = CONFIG_NOMMU_INITIAL_TRIM_EXCESS;
->  unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
+ + Add RTC driver of ACPI TAD.
 
-You add the variable on the nommu side, but not the functions to
-handle the sysctl. So things fail to compile on !MMU builds with:
+ + Add rtc ioctl functions, RTC_RD_GMTOFF and RTC_SET_GMTOFF, provide
+   interface to user space for maintain timezone value in BIOS.
+   The GMTOFF names of ioctl functions match with the tm_gmtoff field
+   in rtc_time and tm structure in GNU C library.
 
-kernel/built-in.o:(.data+0x4e0): undefined reference to
-`overcommit_ratio_handler'
-kernel/built-in.o:(.data+0x504): undefined reference to
-`overcommit_kbytes_handler'
+ + Add rtc ioctl function, RTC_CAPS_READ, provide to user space for
+   grab the capabilities value to timezone and daylight of interface.
 
-I don't know mm well enough to tell if copying and pasting the code
-over verbatim is the right thing to do, or if there's a preferred
-other location (that is shared) to move it to?
+ + Moved duplicate functions to efi.h header for convert EFI Time.
+
+ + When "CMOS RTC not Present" flag set in FADT, block CMOS RTC interface
+   and switch to EFI time services.
+
+ + Adjusting system time base on timezone from EFI time when system boot.
+
+ + Add rtc-tz.txt document.
+
+Please set CONFIG_RTC_DRV_EFI=m and CONFIG_RTC_ACPI_TAD=m to build RTC ACPI
+TAD and EFI TIME drivers.For testing, please use "acpi_no_cmos_rtc=1" to set
+CMOST RTC not Present flag in FADT to trigger the mechanism for adjust system
+time and block CMOS interface.
+
+About the definition of timezone and the format transformation between ACPI,
+EFI and tm_gmtoff of GNU. Please check the rtc-tz.txt document in patch.
 
 
--Olof
+Jan Beulich (1):
+  x86-64/efi: Use EFI to deal with platform wall clock (again)
+
+Lee, Chun-Yi (13):
+  rtc-efi: fix decrease day twice when computing year days
+  rtc: block registration of rtc-cmos when CMOS RTC Not Present
+  ACPI: Add ACPI 5.0 Time and Alarm Device driver
+  rtc: Add RTC driver of ACPI Time and Alarm Device
+  rtc-efi: register rtc-efi device when EFI enabled
+  rtc-efi: add GMTOFF support to rtc_efi
+  rtc-efi: set uie_unsupported for indicate rtc-efi doesn't support UIE
+  efi: move functions of access efi time to header file for sharing
+  rtc: improve and move week day computing function to rtc header
+  rtc: switch to get/set rtc time to efi functions if CMOS RTC Not
+  efi: adjust system time base on timezone from EFI time services
+  Documentation/RTC: add document of ACPI TAD and EFI TIME driver
+  acpi: add early parameter to set CMOS RTC Not Present bit for testing
+
+ Documentation/rtc-tz.txt    |  510 +++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/acpi/boot.c |   17 ++
+ arch/x86/kernel/rtc.c       |   28 ++-
+ arch/x86/mm/pageattr.c      |   10 +-
+ arch/x86/platform/efi/efi.c |   89 ++++++--
+ drivers/acpi/Makefile       |    3 +
+ drivers/acpi/acpi_tad.c     |  176 +++++++++++++++
+ drivers/acpi/bus.c          |    3 +
+ drivers/acpi/internal.h     |    5 +
+ drivers/char/efirtc.c       |   98 ---------
+ drivers/rtc/Kconfig         |   12 +-
+ drivers/rtc/Makefile        |    1 +
+ drivers/rtc/rtc-acpitad.c   |  283 ++++++++++++++++++++++++
+ drivers/rtc/rtc-cmos.c      |    9 +
+ drivers/rtc/rtc-dev.c       |    4 +
+ drivers/rtc/rtc-efi.c       |  177 +++++++---------
+ drivers/rtc/rtc-sysfs.c     |    8 +
+ include/asm-generic/rtc.h   |   22 ++
+ include/linux/acpi.h        |   31 +++
+ include/linux/efi.h         |  127 +++++++++++-
+ include/linux/rtc.h         |   43 ++++
+ include/uapi/linux/rtc.h    |    5 +
+ init/main.c                 |   13 +-
+ kernel/time.c               |    2 +-
+ 24 files changed, 1439 insertions(+), 237 deletions(-)
+ create mode 100644 Documentation/rtc-tz.txt
+ create mode 100644 drivers/acpi/acpi_tad.c
+ create mode 100644 drivers/rtc/rtc-acpitad.c
+
