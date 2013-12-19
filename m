@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab3LSL6v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:58:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45131 "EHLO
+	id S1755739Ab3LSL7D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:59:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45169 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755517Ab3LSL6t (ORCPT
+	with ESMTP id S1755624Ab3LSL66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:49 -0500
+	Thu, 19 Dec 2013 06:58:58 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Colin Leitner <colin.leitner@gmail.com>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 146/208] USB: ftdi_sio: fixed handling of unsupported CSIZE setting
-Date: Thu, 19 Dec 2013 11:54:04 +0000
-Message-Id: <1387454106-19326-147-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 153/208] drm/radeon: fixup bad vram size on SI
+Date: Thu, 19 Dec 2013 11:54:11 +0000
+Message-Id: <1387454106-19326-154-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,90 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Leitner <colin.leitner@googlemail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 8704211f65a2106ba01b6ac9727cdaf9ca11594c upstream.
+commit 0ca223b029a261e82fb2f50c52eb85d510f4260e upstream.
 
-FTDI UARTs support only 7 or 8 data bits. Until now the ftdi_sio driver would
-only report this limitation for CS6 to dmesg and fail to reflect this fact to
-tcgetattr.
+Some boards seem to have garbage in the upper
+16 bits of the vram size register.  Check for
+this and clamp the size properly.  Fixes
+boards reporting bogus amounts of vram.
 
-This patch reverts the unsupported CSIZE setting and reports the fact with less
-severance to dmesg for both CS5 and CS6.
-
-To test the patch it's sufficient to call
-
-    stty -F /dev/ttyUSB0 cs5
-
-which will succeed without the patch and report an error with the patch
-applied.
-
-As an additional fix this patch ensures that the control request will always
-include a data bit size.
-
-Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c | 37 ++++++++++++++++++++++++-------------
- 1 file changed, 24 insertions(+), 13 deletions(-)
+ drivers/gpu/drm/radeon/si.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index aa3aed5..92549cc 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -2131,6 +2131,20 @@ static void ftdi_set_termios(struct tty_struct *tty,
- 		termios->c_cflag |= CRTSCTS;
- 	}
- 
-+	/*
-+	 * All FTDI UART chips are limited to CS7/8. We won't pretend to
-+	 * support CS5/6 and revert the CSIZE setting instead.
-+	 */
-+	if ((C_CSIZE(tty) != CS8) && (C_CSIZE(tty) != CS7)) {
-+		dev_warn(ddev, "requested CSIZE setting not supported\n");
-+
-+		termios->c_cflag &= ~CSIZE;
-+		if (old_termios)
-+			termios->c_cflag |= old_termios->c_cflag & CSIZE;
-+		else
-+			termios->c_cflag |= CS8;
+diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
+index bf1fcb6..a69180c 100644
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -3903,8 +3903,15 @@ static int si_mc_init(struct radeon_device *rdev)
+ 	rdev->mc.aper_base = pci_resource_start(rdev->pdev, 0);
+ 	rdev->mc.aper_size = pci_resource_len(rdev->pdev, 0);
+ 	/* size in MB on si */
+-	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
+-	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
++	tmp = RREG32(CONFIG_MEMSIZE);
++	/* some boards may have garbage in the upper 16 bits */
++	if (tmp & 0xffff0000) {
++		DRM_INFO("Probable bad vram size: 0x%08x\n", tmp);
++		if (tmp & 0xffff)
++			tmp &= 0xffff;
 +	}
-+
- 	cflag = termios->c_cflag;
- 
- 	if (!old_termios)
-@@ -2167,19 +2181,16 @@ no_skip:
- 	} else {
- 		urb_value |= FTDI_SIO_SET_DATA_PARITY_NONE;
- 	}
--	if (cflag & CSIZE) {
--		switch (cflag & CSIZE) {
--		case CS7:
--			urb_value |= 7;
--			dev_dbg(ddev, "Setting CS7\n");
--			break;
--		case CS8:
--			urb_value |= 8;
--			dev_dbg(ddev, "Setting CS8\n");
--			break;
--		default:
--			dev_err(ddev, "CSIZE was set but not CS7-CS8\n");
--		}
-+	switch (cflag & CSIZE) {
-+	case CS7:
-+		urb_value |= 7;
-+		dev_dbg(ddev, "Setting CS7\n");
-+		break;
-+	default:
-+	case CS8:
-+		urb_value |= 8;
-+		dev_dbg(ddev, "Setting CS8\n");
-+		break;
- 	}
- 
- 	/* This is needed by the break command since it uses the same command
++	rdev->mc.mc_vram_size = tmp * 1024ULL * 1024ULL;
++	rdev->mc.real_vram_size = rdev->mc.mc_vram_size;
+ 	rdev->mc.visible_vram_size = rdev->mc.aper_size;
+ 	si_vram_gtt_location(rdev, &rdev->mc);
+ 	radeon_update_bandwidth_info(rdev);
 -- 
 1.8.3.2
 
