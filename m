@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab3LSShO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:37:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60703 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755678Ab3LSShJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:37:09 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org
-Subject: [PATCH] fs/proc/page.c: add PageAnon check to surely detect thp
-Date: Thu, 19 Dec 2013 13:36:54 -0500
-Message-Id: <1387478214-10369-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1755858Ab3LSShm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:37:42 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:47619 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755798Ab3LSShi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 13:37:38 -0500
+Date: Thu, 19 Dec 2013 18:37:32 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>
+Message-ID: <20131219183732.GG31886@sirena.org.uk>
+References: <1385733827-19831-1-git-send-email-peter.ujfalusi@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mOKeRhn3B7HglGBY"
+Content-Disposition: inline
+In-Reply-To: <1385733827-19831-1-git-send-email-peter.ujfalusi@ti.com>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 0/5] ASoC/MFD: twl6040: Remove codec driver local reg
+ cache
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-stable_page_flags() checks !PageHuge && PageTransCompound && PageLRU to
-know that a specified page is thp or not. But sometimes it's not enough
-and we fail to detect thp when the thp is on pagevec. This happens only
-for a few seconds after LRU list operations, but it makes it difficult to
-control our applications depending on this flag.
 
-So this patch adds another check PageAnon to detect thps on pagevec.
-It might not give the future extensibility for thp pagecache, but it's
-OK at least for now.
+--mOKeRhn3B7HglGBY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- fs/proc/page.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+On Fri, Nov 29, 2013 at 04:03:42PM +0200, Peter Ujfalusi wrote:
+> Hi Mark,
+>=20
+> It was not straight forward task to remove the local reg cache from the t=
+wl6040
+> codec driver. I also needed to change the MFD part so it will take over t=
+he
+> caching of registers via regmap.
 
-diff --git v3.13-rc4.orig/fs/proc/page.c v3.13-rc4/fs/proc/page.c
-index b8730d9ebaee..cab84b6272ed 100644
---- v3.13-rc4.orig/fs/proc/page.c
-+++ v3.13-rc4/fs/proc/page.c
-@@ -118,10 +118,12 @@ u64 stable_page_flags(struct page *page)
- 	/*
- 	 * PageTransCompound can be true for non-huge compound pages (slab
- 	 * pages or pages allocated by drivers with __GFP_COMP) because it
--	 * just checks PG_head/PG_tail, so we need to check PageLRU to make
--	 * sure a given page is a thp, not a non-huge compound page.
-+	 * just checks PG_head/PG_tail, so we need to check PageLRU/PageAnon
-+	 * to make sure a given page is a thp, not a non-huge compound page.
- 	 */
--	else if (PageTransCompound(page) && PageLRU(compound_trans_head(page)))
-+	else if (PageTransCompound(page) &&
-+		 (PageLRU(compound_trans_head(page)) ||
-+		  PageAnon(compound_trans_head(page))))
- 		u |= 1 << KPF_THP;
- 
- 	/*
--- 
-1.8.3.1
+Applied all, thanks.
 
+--mOKeRhn3B7HglGBY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSszzpAAoJELSic+t+oim9UYYP/A9Bzq3h4vUIsLPR6BZFH+8z
+F9Z+sS97iNxgLIGXfeYKaRKwg3VejVVTvQBLder807XYA9SM3as1ngipY6Qz+rVW
+Z7yNdRwLSGPY3bUFkRU7VojNpd0m7WJs8KJNiiXuopV4os4ZMYo0FKXI1HchhvHq
+GmmnVUIqecPOLZp4BVEuC5IR4p2/O0DKhHp5TVXYdVc7A1Sk9zC4DoPrSdldV5qw
+RC6uYttLocV5hTLS787XAXDvjZBm5ZammKI9SOcsSEAUVy2eYY/eTlF7EqMsWcpq
+sd7dSIXxQ/MWdWbNfO4WGynInd+sesDvEi2X49K/+0HT+Y9vxflMTC1wfg/1WUJ6
+NhZvPjyVSuQW9/kepjRDxWxKKJRBTD2KYiGKdhLvdlPL3kzF1PEMtOa8YVh47St3
+YHWBkANyyoLqNvTfNaWhwQjFXChe2pEpa0t0mw8fOVx6vIOMudu1qN3voFJs88AR
+jwc7K9OLfS56R/rr8rMP4unusa+N9cd38taIViqjykGVKWDNolWDnim/qkDUPI2v
+syxg27l2oMR1vtNi6jggExJKvtMnifTDjXcqHsXwUrti5TA+Q2IOyOq206l24DSD
+kqs0j4248NTUsUP1iFoAoBsblVPfBwjQGTgiGF9SvdRMDg9t77qEFj9axVN82vnS
+gOEGH2XoDDxVgM9OCaND
+=nsBw
+-----END PGP SIGNATURE-----
+
+--mOKeRhn3B7HglGBY--
