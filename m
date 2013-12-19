@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810Ab3LSCeu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 21:34:50 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:62299 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751188Ab3LSCes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 21:34:48 -0500
-X-IronPort-AV: E=Sophos;i="4.95,510,1384272000"; 
-   d="scan'208";a="9287331"
-Message-ID: <52B24D94.6090600@cn.fujitsu.com>
-Date: Thu, 19 Dec 2013 09:36:20 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752334Ab3LSCfj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 21:35:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36110 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752218Ab3LSCff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 21:35:35 -0500
+Date: Thu, 19 Dec 2013 10:35:24 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Rob Landley <rob@landley.net>
+Cc: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
+        grant.likely@secretlab.ca, sebastian.capella@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] use initmpfs even if there's root= cmdline
+Message-ID: <20131219023524.GB2070@darkstar.nay.redhat.com>
+References: <20131212092542.GA14218@dhcp-16-126.nay.redhat.com>
+ <20131213023814.GA5519@dhcp-16-126.nay.redhat.com>
+ <52B1E0A2.2030202@landley.net>
 MIME-Version: 1.0
-To: Daniel Borkmann <borkmann@iogearbox.net>
-CC: Fengguang Wu <fengguang.wu@intel.com>, davem@davemloft.net,
-        ffusco@redhat.com, kbuild-all@01.org, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [net-next/master PATCH] lib: fix compile warning in hashlib_init
-References: <1387415314-21786-1-git-send-email-gaowanlong@cn.fujitsu.com> <20131219011506.GA27326@localhost> <52B24C92.8050201@iogearbox.net>
-In-Reply-To: <52B24C92.8050201@iogearbox.net>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/19 09:35:52,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/19 09:35:53,
-	Serialize complete at 2013/12/19 09:35:53
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B1E0A2.2030202@landley.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 09:32 AM, Daniel Borkmann wrote:
-> On 12/19/2013 02:15 AM, Fengguang Wu wrote:
->> CC the list.
->>
->> On Thu, Dec 19, 2013 at 09:08:34AM +0800, Wanlong Gao wrote:
->>> /git/linux/lib/hash.c: In function 'hashlib_init':
->>> /git/linux/lib/hash.c:35:2: warning: passing argument 1 of 'setup_arch_fast_hash' from incompatible pointer type [enabled by default]
->>> /git/linux/include/asm-generic/hash.h:5:20: note: expected 'struct arch_hash_ops *' but argument is of type 'struct fast_hash_ops *'
->>>
->>> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
->>> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+On Wed, Dec 18, 2013 at 11:51:30AM -0600, Rob Landley wrote:
 > 
-> That's already in netdev patchwork:
 > 
-> http://patchwork.ozlabs.org/patch/302908/
+> On 12/12/13 20:38, Dave Young wrote:
+> >On 12/12/13 at 05:25pm, Dave Young wrote:
+> >>
+> >>Current code use ramfs instead of tmpfs for stub when root= defined.
+> >>
+> >>But for real use case with initramfs, usually there's like cmdline like
+> >>root=UUID=$UUID the root dev is the real device. For that case we have
+> >>no way to use initmpfs, thus this patch removes the limitation so tmpfs
+> >>can benefit more people.
+> 
+> The reason I did that was if you specify a root= then you don't want
+> to _stay_ on rootfs. You specify root= so either the kernel does
+> switch_root for you, or so rootfs does a swich_root at the end.
+> 
+> The point of initmpfs is that when rootfs _is_ the "real" root
+> device, it can benefit from being tmpfs. When you're just goign to
+> switch to a different root device, tmpfs doesn't make much
+> difference.
 
-Nice, thank you.
-
-Regards,
-Wanlong Gao
+The reason make sense to most of users. Thanks for the info.
+For Fedora kdump initramfs there's different requirement though, we do the
+vmcore capturing in ramfs with root=, the root= is not necessay in most of
+the cases because we will reboot immediately after vmcore capturing finish.
+There's one potential exception is that we could switch to real root in
+case of capturing failure. Another thing is we use dracut to create initramfs
+and dracut has a limitation that root= is a must-have param.
 
 > 
-> Thanks !
+> >Discussed with Vivek Goyal about the kdump use case, I missed one thing that
+> >tmpfs has default size limit though we can tune it.
+> >
+> >So I will think more about it, will address this later, please ignore this
+> >patch.
 > 
+> I have a vague todo item of feeding rootflags= through to initmpfs,
+> but that's really intended to specify flags for root=. There isn't
+> really an existing command line option to specify initramfs flags
+> because ramfs doesn't care.
+> 
+> It was one of those "only parse rootflags= for initmpfs when there's
+> no root=" vs "create a new rdrootflags= ala rdinit= even though
+> that's a subtly wrong name these days..." and it went on the todo
+> list because neither approach was obviously superior.
+> 
+> Happy to take suggestions and whip up a patch if this is
+> inconveniencing somebody. :)
 
+It would be great that initmpfs can use the whole memory on demand by default at
+the same time we can avoid the deadlock mentioned about OOM handler.
+
+For this purpose no need for extra flags? For other flags maybe "initmpfsflags="?
+
+Thanks
+Dave
