@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980Ab3LSKxa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 05:53:30 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:52300 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab3LSKx3 (ORCPT
+	id S1757357Ab3LSNFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:05:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44499 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753969Ab3LSLz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 05:53:29 -0500
-Date: Thu, 19 Dec 2013 16:23:12 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Gordeev <agordeev@redhat.com>, josh@joshtriplett.org
-Subject: [PATCH] drivers: pci: Add prototype declarations of function in
- appropriate header
-Message-ID: <20131219105312.GA23614@rashika>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Dec 2013 06:55:57 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 027/208] ip6_output: fragment outgoing reassembled skb properly
+Date: Thu, 19 Dec 2013 11:52:05 +0000
+Message-Id: <1387454106-19326-28-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add prototype declarations of functions arch_msi_mask_irq() and
-arch_msix_mask_irq() to header file include/linux/msi.h.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-This eliminates the following warning in msi.c:
-drivers/pci/msi.c:202:12: warning: no previous prototype for ‘arch_msi_mask_irq’ [-Wmissing-prototypes]
-drivers/pci/msi.c:232:12: warning: no previous prototype for ‘arch_msix_mask_irq’ [-Wmissing-prototypes]
+------------------
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+From: Jiri Pirko <jiri@resnulli.us>
+
+commit 9037c3579a277f3a23ba476664629fda8c35f7c4 upstream.
+
+If reassembled packet would fit into outdev MTU, it is not fragmented
+according the original frag size and it is send as single big packet.
+
+The second case is if skb is gso. In that case fragmentation does not happen
+according to the original frag size.
+
+This patch fixes these.
+
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/msi.h |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv6/ip6_output.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 009b024..63b7d14 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -66,6 +66,8 @@ void default_teardown_msi_irqs(struct pci_dev *dev);
- void default_restore_msi_irqs(struct pci_dev *dev, int irq);
- u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag);
- u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag);
-+u32 arch_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag);
-+u32 arch_msix_mask_irq(struct msi_desc *desc, u32 flag);
- 
- struct msi_chip {
- 	struct module *owner;
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index 5b25f85..f80f2fa 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -150,7 +150,8 @@ static int ip6_finish_output2(struct sk_buff *skb)
+ static int ip6_finish_output(struct sk_buff *skb)
+ {
+ 	if ((skb->len > ip6_skb_dst_mtu(skb) && !skb_is_gso(skb)) ||
+-	    dst_allfrag(skb_dst(skb)))
++	    dst_allfrag(skb_dst(skb)) ||
++	    (IP6CB(skb)->frag_max_size && skb->len > IP6CB(skb)->frag_max_size))
+ 		return ip6_fragment(skb, ip6_finish_output2);
+ 	else
+ 		return ip6_finish_output2(skb);
 -- 
-1.7.9.5
+1.8.3.2
 
