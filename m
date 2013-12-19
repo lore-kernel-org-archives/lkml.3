@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab3LSNcc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:32:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58030 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752961Ab3LSNca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:32:30 -0500
-Date: Thu, 19 Dec 2013 14:32:12 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 3/6] perf tools: Get rid of a duplicate va_end()
-Message-ID: <20131219133212.GC3568@krava.brq.redhat.com>
-References: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
- <1387436411-20160-4-git-send-email-namhyung@kernel.org>
+	id S1756186Ab3LSMYv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:24:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45069 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753237Ab3LSL6d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:58:33 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 134/208] [media] bttv: don't setup the controls if there are no video devices
+Date: Thu, 19 Dec 2013 11:53:52 +0000
+Message-Id: <1387454106-19326-135-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387436411-20160-4-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 04:00:08PM +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> The va_end() in _eprintf() should be removed since the caller also
-> invokes va_end().
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+------------------
 
-jirka
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-> ---
->  tools/perf/util/debug.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
-> index 8640a9121e72..299b55586502 100644
-> --- a/tools/perf/util/debug.c
-> +++ b/tools/perf/util/debug.c
-> @@ -25,7 +25,6 @@ static int _eprintf(int level, const char *fmt, va_list args)
->  			ui_helpline__vshow(fmt, args);
->  		else
->  			ret = vfprintf(stderr, fmt, args);
-> -		va_end(args);
->  	}
->  
->  	return ret;
-> -- 
-> 1.7.11.7
-> 
+commit f8e1b699a5504a2da05834c7cfdddb125a8ce088 upstream.
+
+The no_video flag was checked in all other cases except one. Calling
+v4l2_ctrl_handler_setup() if no_video is 1 will crash.
+This wasn't noticed before since there are only two card types that
+set no_video to 1, so this type of hardware is quite rare.
+
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Reported-by: Lorenz Röhrl <sheepshit@gmx.de>
+Tested-by: Lorenz Röhrl <sheepshit@gmx.de>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/media/pci/bt8xx/bttv-driver.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/pci/bt8xx/bttv-driver.c b/drivers/media/pci/bt8xx/bttv-driver.c
+index c6532de..4f0aaa5 100644
+--- a/drivers/media/pci/bt8xx/bttv-driver.c
++++ b/drivers/media/pci/bt8xx/bttv-driver.c
+@@ -4182,7 +4182,8 @@ static int bttv_probe(struct pci_dev *dev, const struct pci_device_id *pci_id)
+ 	}
+ 	btv->std = V4L2_STD_PAL;
+ 	init_irqreg(btv);
+-	v4l2_ctrl_handler_setup(hdl);
++	if (!bttv_tvcards[btv->c.type].no_video)
++		v4l2_ctrl_handler_setup(hdl);
+ 	if (hdl->error) {
+ 		result = hdl->error;
+ 		goto fail2;
+-- 
+1.8.3.2
+
