@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab3LSAux (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 19:50:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38145 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab3LSAuu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 19:50:50 -0500
-Date: Wed, 18 Dec 2013 16:50:49 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>, Hugh Dickins <hughd@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH] mm/rmap: fix BUG at rmap_walk
-Message-Id: <20131218165049.32462271f314185aed81de39@linux-foundation.org>
-In-Reply-To: <52B240C8.5070805@oracle.com>
-References: <1387412195-26498-1-git-send-email-liwanp@linux.vnet.ibm.com>
-	<20131218162858.6ec808c067baf4644532e110@linux-foundation.org>
-	<52B240C8.5070805@oracle.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S1753122Ab3LSA5R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 19:57:17 -0500
+Received: from ozlabs.org ([203.10.76.45]:45364 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751386Ab3LSA5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 19:57:16 -0500
+Date: Thu, 19 Dec 2013 11:57:10 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Francesco Fusco <ffusco@redhat.com>
+Subject: linux-next: build failure after merge of the net-next tree
+Message-Id: <20131219115710.598bdf6314b4784703a07100@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__19_Dec_2013_11_57_10_+1100_sMBsM=5Z.QfvcA=h"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Dec 2013 19:41:44 -0500 Sasha Levin <sasha.levin@oracle.com> wrote:
+--Signature=_Thu__19_Dec_2013_11_57_10_+1100_sMBsM=5Z.QfvcA=h
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 12/18/2013 07:28 PM, Andrew Morton wrote:
-> > On Thu, 19 Dec 2013 08:16:35 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
-> >
-> >> page_get_anon_vma() called in page_referenced_anon() will lock and
-> >> increase the refcount of anon_vma, page won't be locked for anonymous
-> >> page. This patch fix it by skip check anonymous page locked.
-> >>
-> >> [  588.698828] kernel BUG at mm/rmap.c:1663!
-> >
-> > Why is all this suddenly happening.  Did we change something, or did a
-> > new test get added to trinity?
-> 
-> Dave has improved mmap testing in trinity, maybe it's related?
+Hi all,
 
-Dave, can you please summarise recent trinity changes for us?
+After merging the net-next tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-> > Or if there is no reason why the page must be locked for
-> > rmap_walk_ksm() and rmap_walk_file(), let's just remove rmap_walk()'s
-> > VM_BUG_ON()?  And rmap_walk_ksm()'s as well - it's duplicative anyway.
-> 
-> IMO, removing all these VM_BUG_ON()s (which is happening quite often recently) will
-> lead to having bugs sneak by causing obscure undetected corruption instead of
-> being very obvious through a BUG.
-> 
+lib/hash.c:16:43: error: expected '=3D', ',', ';', 'asm' or '__attribute__'=
+ before '__read_mostly'
+ static struct fast_hash_ops arch_hash_ops __read_mostly =3D {
+                                           ^
+lib/hash.c: In function 'arch_fast_hash':
+lib/hash.c:23:9: error: 'arch_hash_ops' undeclared (first use in this funct=
+ion)
+  return arch_hash_ops.hash(data, len, seed);
+         ^
+lib/hash.c:23:9: note: each undeclared identifier is reported only once for=
+ each function it appears in
+lib/hash.c: In function 'arch_fast_hash2':
+lib/hash.c:29:9: error: 'arch_hash_ops' undeclared (first use in this funct=
+ion)
+  return arch_hash_ops.hash2(data, len, seed);
+         ^
+lib/hash.c: In function 'hashlib_init':
+lib/hash.c:35:24: error: 'arch_hash_ops' undeclared (first use in this func=
+tion)
+  setup_arch_fast_hash(&arch_hash_ops);
+                        ^
+lib/hash.c: In function 'arch_fast_hash':
+lib/hash.c:24:1: warning: control reaches end of non-void function [-Wretur=
+n-type]
+ }
+ ^
+lib/hash.c: In function 'arch_fast_hash2':
+lib/hash.c:30:1: warning: control reaches end of non-void function [-Wretur=
+n-type]
+ }
+ ^
 
-Well.  a) My patch was functionally the same as the one Wanpeng
-proposed, only better ;) and b) we shouldn't just assert X because we
-observed that the existing code does X.  If a particular function
-*needs* PageLocked(page) then sure, it can and should assert that the
-page is locked.  Preferably with a comment explaining *why*
-PageLocked() is needed.  That way we don't end up with years-old
-assertions which nobody understands any more, which is what we have
-now.
+Caused by commit 71ae8aac3e19 ("lib: introduce arch optimized hash
+library").  Read Rule 1 in Documentation/SubmitChecklist :-(  Hint:
+__read_mostly is defined in linux/cache.h ...
 
+I have used the net-next tree from next-20131217 again today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__19_Dec_2013_11_57_10_+1100_sMBsM=5Z.QfvcA=h
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSskRqAAoJEMDTa8Ir7ZwVMCMP/jlSDsGT/WS7270mnE4BKu5H
+5TBfT16CyKGicv2x8pAgJdUrja3D0D0y1r8KHQg4UQvt5g7QR0lPSpx/ROK0xc3Z
+djAHf0i0u/x+yKNHy9sSSrYbzpj7NzFF620wcOLUmUvE+g1EENGU8mbF8ibjMhix
+OQOW5BUMF+BcQe5O9IKEOiQZ67N0FSvlwVZOBJjMsMrXnK1nktEvmBO40ortlIKK
+fg1TukffhxsK9tZdHlrwJD95+GqV8vYS921WeAyCqM84FjXFnBa0KSvqwY8Ek5z1
+NOmoGEGKnCuDrVACTgv/PNs9lpQ8fDxCUFx8JGlbV+1CzVyY73jCax86/dPjNIts
+I6uyyfwTsGItncQOa7oRiPDyx9m/Mf6eCOy6WyJbwnltUncr9v1NOKVCiz4Tn1sj
+vxXMRpkvLhuvVNygdFjpXajmpTA5grq35PRnSRtrUuaLDKS9pgVf2/BghRyySjPJ
+22CIQ9ys9oZC+wQZMPkQxjKSrKNaV5P+ufzrB4U80zPVBJ5WSi/5KqPn9E8zUoZQ
+rJMcAWLO4mtXgCNPo13i/tWPQ5DyiR0rdQmWZBsFJ9Aqu3Q5pQA7GtHqcJWx29uY
+7WyIFsBudgu1a52GYeZlvPxu8kCtOoVdn7FGSs3jyeNvf47JMgBkxjVQt6C9yAMG
+dNyPBqQpMit/WRT4AbWS
+=4zXz
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__19_Dec_2013_11_57_10_+1100_sMBsM=5Z.QfvcA=h--
