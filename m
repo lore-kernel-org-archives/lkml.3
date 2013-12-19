@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab3LSMdH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:33:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44955 "EHLO
+	id S1755958Ab3LSMYe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:24:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45093 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755183Ab3LSL56 (ORCPT
+	with ESMTP id S1752823Ab3LSL6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:58 -0500
+	Thu, 19 Dec 2013 06:58:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tomas Winkler <tomas.winkler@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 110/208] mei: add 9 series PCH mei device ids
-Date: Thu, 19 Dec 2013 11:53:28 +0000
-Message-Id: <1387454106-19326-111-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 138/208] ath9k: Fix QuickDrop usage
+Date: Thu, 19 Dec 2013 11:53:56 +0000
+Message-Id: <1387454106-19326-139-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,56 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit 76a9635979e543f04a5885198e68ff28e3311b67 upstream.
+commit 93c1cfbe598f72cfa7be49e4a7d2a1d482e15119 upstream.
 
-And Lynx Point H Refresh and Wildcat Point LP
-device ids.
+Bit 5 in the miscConfiguration field of the base EEPROM
+header denotes whether QuickDrop is enabled or not. Fix
+the incorrect usage of BIT(1) and also make sure that
+this is done only for the required chips.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/misc/mei/hw-me-regs.h | 5 ++++-
- drivers/misc/mei/pci-me.c     | 4 +++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c | 20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/misc/mei/hw-me-regs.h b/drivers/misc/mei/hw-me-regs.h
-index 6c0fde5..66f411a 100644
---- a/drivers/misc/mei/hw-me-regs.h
-+++ b/drivers/misc/mei/hw-me-regs.h
-@@ -109,9 +109,12 @@
- #define MEI_DEV_ID_PPT_2      0x1CBA  /* Panther Point */
- #define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+index d105e43..d3ca712 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -3949,18 +3949,20 @@ static void ar9003_hw_quick_drop_apply(struct ath_hw *ah, u16 freq)
+ 	int quick_drop;
+ 	s32 t[3], f[3] = {5180, 5500, 5785};
  
--#define MEI_DEV_ID_LPT        0x8C3A  /* Lynx Point */
-+#define MEI_DEV_ID_LPT_H      0x8C3A  /* Lynx Point H */
- #define MEI_DEV_ID_LPT_W      0x8D3A  /* Lynx Point - Wellsburg */
- #define MEI_DEV_ID_LPT_LP     0x9C3A  /* Lynx Point LP */
-+#define MEI_DEV_ID_LPT_HR     0x8CBA  /* Lynx Point H Refresh */
-+
-+#define MEI_DEV_ID_WPT_LP     0x9CBA  /* Wildcat Point LP */
- /*
-  * MEI HW Section
-  */
-diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
-index a0a5e72..e637318 100644
---- a/drivers/misc/mei/pci-me.c
-+++ b/drivers/misc/mei/pci-me.c
-@@ -76,9 +76,11 @@ static DEFINE_PCI_DEVICE_TABLE(mei_me_pci_tbl) = {
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_1)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_2)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_3)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_H)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_W)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_LP)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_HR)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_WPT_LP)},
+-	if (!(pBase->miscConfiguration & BIT(1)))
++	if (!(pBase->miscConfiguration & BIT(4)))
+ 		return;
  
- 	/* required last entry */
- 	{0, }
+-	if (freq < 4000)
+-		quick_drop = eep->modalHeader2G.quick_drop;
+-	else {
+-		t[0] = eep->base_ext1.quick_drop_low;
+-		t[1] = eep->modalHeader5G.quick_drop;
+-		t[2] = eep->base_ext1.quick_drop_high;
+-		quick_drop = ar9003_hw_power_interpolate(freq, f, t, 3);
++	if (AR_SREV_9300(ah) || AR_SREV_9580(ah) || AR_SREV_9340(ah)) {
++		if (freq < 4000) {
++			quick_drop = eep->modalHeader2G.quick_drop;
++		} else {
++			t[0] = eep->base_ext1.quick_drop_low;
++			t[1] = eep->modalHeader5G.quick_drop;
++			t[2] = eep->base_ext1.quick_drop_high;
++			quick_drop = ar9003_hw_power_interpolate(freq, f, t, 3);
++		}
++		REG_RMW_FIELD(ah, AR_PHY_AGC, AR_PHY_AGC_QUICK_DROP, quick_drop);
+ 	}
+-	REG_RMW_FIELD(ah, AR_PHY_AGC, AR_PHY_AGC_QUICK_DROP, quick_drop);
+ }
+ 
+ static void ar9003_hw_txend_to_xpa_off_apply(struct ath_hw *ah, bool is2ghz)
 -- 
 1.8.3.2
 
