@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab3LSQCR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:02:17 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:33115 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038Ab3LSQCO (ORCPT
+	id S1756125Ab3LSP7o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:59:44 -0500
+Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:43250
+	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753207Ab3LSP7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:02:14 -0500
-Date: Thu, 19 Dec 2013 17:02:10 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Len Brown <lenb@kernel.org>, x86@kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        stable@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power
- regression
-Message-ID: <20131219160210.GA28426@gmail.com>
-References: <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com>
- <20131219122257.GC11279@gmail.com>
- <52B316FF.50906@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B316FF.50906@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Dec 2013 10:59:42 -0500
+Message-Id: <20131219155031.825195188@linux.com>
+Date: Thu, 19 Dec 2013 09:50:25 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 10/40] staging/zsmalloc: Replace instances of using __get_cpu_var for address calculation
+References: <20131219155015.443763038@linux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=this_staging
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Replace the use of __get_cpu_var for address calculation with
+this_cpu_ptr().
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-> On 12/19/2013 04:22 AM, Ingo Molnar wrote:
-> >> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> >> index 92d1206..f80b700 100644
-> >> --- a/drivers/idle/intel_idle.c
-> >> +++ b/drivers/idle/intel_idle.c
-> >> @@ -377,6 +377,9 @@ static int intel_idle(struct cpuidle_device *dev,
-> >>  
-> >>  	if (!current_set_polling_and_test()) {
-> >>  
-> >> +		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
-> >> +			clflush((void *)&current_thread_info()->flags);
-> >> +
-> >>  		__monitor((void *)&current_thread_info()->flags, 0, 0);
-> > 
-> > I don't think either of these casts to '(void *)' is needed, both the 
-> > clflush() and __monitor() will take pointers.
-> 
-> __monitor() currently doesn't, which is idiotic.
+Index: linux/drivers/staging/zsmalloc/zsmalloc-main.c
+===================================================================
+--- linux.orig/drivers/staging/zsmalloc/zsmalloc-main.c	2013-12-02 16:07:49.564639939 -0600
++++ linux/drivers/staging/zsmalloc/zsmalloc-main.c	2013-12-02 16:07:49.554640215 -0600
+@@ -1003,7 +1003,7 @@ void *zs_map_object(struct zs_pool *pool
+ 	class = &pool->size_class[class_idx];
+ 	off = obj_idx_to_offset(page, obj_idx, class->size);
+ 
+-	area = &get_cpu_var(zs_map_area);
++	area = this_cpu_ptr(&zs_map_area);
+ 	area->vm_mm = mm;
+ 	if (off + class->size <= PAGE_SIZE) {
+ 		/* this object is contained entirely within a page */
+@@ -1037,7 +1037,7 @@ void zs_unmap_object(struct zs_pool *poo
+ 	class = &pool->size_class[class_idx];
+ 	off = obj_idx_to_offset(page, obj_idx, class->size);
+ 
+-	area = &__get_cpu_var(zs_map_area);
++	area = this_cpu_ptr(&zs_map_area);
+ 	if (off + class->size <= PAGE_SIZE)
+ 		kunmap_atomic(area->vm_addr);
+ 	else {
 
-Hm, __monitor() seems to take a void *:
-
- arch/x86/include/asm/processor.h:static inline void __monitor(const void *eax, unsigned long ecx,
-
-So writing:
-
-		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
-			clflush(&current_thread_info()->flags);
-
-  		__monitor(&current_thread_info()->flags, 0, 0);
-
-ought to work just fine.
-
-Thanks,
-
-	Ingo
