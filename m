@@ -1,139 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab3LSQIz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:08:55 -0500
-Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:56320 "EHLO
-	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754130Ab3LSPui (ORCPT
+	id S1756652Ab3LSQIx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:08:53 -0500
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:36853 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754145Ab3LSPui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Dec 2013 10:50:38 -0500
-Message-Id: <20131219155032.146331548@linux.com>
-Date: Thu, 19 Dec 2013 09:50:28 -0600
+Message-Id: <20131219155031.935326462@linux.com>
+Date: Thu, 19 Dec 2013 09:50:26 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [PATCH 13/40] drivers/net/ethernet/tile: Replace __get_cpu_var uses for address calculation
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org
+Subject: [PATCH 11/40] parisc: Replace __get_cpu_var uses for address calculation
 References: <20131219155015.443763038@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_driver_net_ethernet_tile
+Content-Disposition: inline; filename=this_parisc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace with this_cpu_ptr.
+Convert to the use of this_cpu_ptr().
 
-Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: Helge Deller <deller@gmx.de>
+Cc: linux-parisc@vger.kernel.org
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/drivers/net/ethernet/tile/tilegx.c
+Index: linux/arch/parisc/lib/memcpy.c
 ===================================================================
---- linux.orig/drivers/net/ethernet/tile/tilegx.c	2013-12-02 16:07:54.574500726 -0600
-+++ linux/drivers/net/ethernet/tile/tilegx.c	2013-12-02 16:07:54.564501002 -0600
-@@ -427,7 +427,7 @@ static void tile_net_pop_all_buffers(int
- /* Provide linux buffers to mPIPE. */
- static void tile_net_provide_needed_buffers(void)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	int instance, kind;
- 	for (instance = 0; instance < NR_MPIPE_MAX &&
- 		     info->mpipe[instance].has_iqueue; instance++)	{
-@@ -653,7 +653,7 @@ drop:
-  */
- static int tile_net_poll(struct napi_struct *napi, int budget)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	unsigned int work = 0;
- 	gxio_mpipe_idesc_t *idesc;
- 	int instance, i, n;
-@@ -699,7 +699,7 @@ done:
- /* Handle an ingress interrupt from an instance on the current cpu. */
- static irqreturn_t tile_net_handle_ingress_irq(int irq, void *id)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	napi_schedule(&info->mpipe[(uint64_t)id].napi);
- 	return IRQ_HANDLED;
- }
-@@ -762,7 +762,7 @@ static enum hrtimer_restart tile_net_han
- /* Make sure the egress timer is scheduled. */
- static void tile_net_schedule_egress_timer(void)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
+--- linux.orig/arch/parisc/lib/memcpy.c	2013-12-02 16:07:49.844632157 -0600
++++ linux/arch/parisc/lib/memcpy.c	2013-12-02 16:07:49.844632157 -0600
+@@ -470,7 +470,7 @@ static unsigned long pa_memcpy(void *dst
+ 		return 0;
  
- 	if (!info->egress_timer_scheduled) {
- 		hrtimer_start(&info->egress_timer,
-@@ -779,7 +779,7 @@ static void tile_net_schedule_egress_tim
-  */
- static enum hrtimer_restart tile_net_handle_egress_timer(struct hrtimer *t)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	unsigned long irqflags;
- 	bool pending = false;
- 	int i, instance;
-@@ -1933,7 +1933,7 @@ static void tso_egress(struct net_device
-  */
- static int tile_net_tx_tso(struct sk_buff *skb, struct net_device *dev)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	struct tile_net_priv *priv = netdev_priv(dev);
- 	int channel = priv->echannel;
- 	int instance = priv->instance;
-@@ -2002,7 +2002,7 @@ static unsigned int tile_net_tx_frags(st
- /* Help the kernel transmit a packet. */
- static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	struct tile_net_priv *priv = netdev_priv(dev);
- 	int instance = priv->instance;
- 	struct mpipe_data *md = &mpipe_data[instance];
-@@ -2141,7 +2141,7 @@ static int tile_net_set_mac_address(stru
- static void tile_net_netpoll(struct net_device *dev)
- {
- 	int instance = mpipe_instance(dev);
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	struct mpipe_data *md = &mpipe_data[instance];
+ 	/* if a load or store fault occured we can get the faulty addr */
+-	d = &__get_cpu_var(exception_data);
++	d = this_cpu_ptr(&exception_data);
+ 	fault_addr = d->fault_addr;
  
- 	disable_percpu_irq(md->ingress_irq);
-@@ -2248,7 +2248,7 @@ static void tile_net_dev_init(const char
- /* Per-cpu module initialization. */
- static void tile_net_init_module_percpu(void *unused)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	int my_cpu = smp_processor_id();
- 	int instance;
- 
-Index: linux/drivers/net/ethernet/tile/tilepro.c
+ 	/* error in load or store? */
+Index: linux/arch/parisc/mm/fault.c
 ===================================================================
---- linux.orig/drivers/net/ethernet/tile/tilepro.c	2013-12-02 16:07:54.574500726 -0600
-+++ linux/drivers/net/ethernet/tile/tilepro.c	2013-12-02 16:07:54.564501002 -0600
-@@ -993,13 +993,13 @@ static void tile_net_register(void *dev_
- 	PDEBUG("tile_net_register(queue_id %d)\n", queue_id);
- 
- 	if (!strcmp(dev->name, "xgbe0"))
--		info = &__get_cpu_var(hv_xgbe0);
-+		info = this_cpu_ptr(&hv_xgbe0);
- 	else if (!strcmp(dev->name, "xgbe1"))
--		info = &__get_cpu_var(hv_xgbe1);
-+		info = this_cpu_ptr(&hv_xgbe1);
- 	else if (!strcmp(dev->name, "gbe0"))
--		info = &__get_cpu_var(hv_gbe0);
-+		info = this_cpu_ptr(&hv_gbe0);
- 	else if (!strcmp(dev->name, "gbe1"))
--		info = &__get_cpu_var(hv_gbe1);
-+		info = this_cpu_ptr(&hv_gbe1);
- 	else
- 		BUG();
- 
+--- linux.orig/arch/parisc/mm/fault.c	2013-12-02 16:07:49.844632157 -0600
++++ linux/arch/parisc/mm/fault.c	2013-12-02 16:07:49.844632157 -0600
+@@ -151,7 +151,7 @@ int fixup_exception(struct pt_regs *regs
+ 	fix = search_exception_tables(regs->iaoq[0]);
+ 	if (fix) {
+ 		struct exception_data *d;
+-		d = &__get_cpu_var(exception_data);
++		d = this_cpu_ptr(&exception_data);
+ 		d->fault_ip = regs->iaoq[0];
+ 		d->fault_space = regs->isr;
+ 		d->fault_addr = regs->ior;
 
