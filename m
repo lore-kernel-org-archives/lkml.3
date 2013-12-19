@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab3LSJnj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:43:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46389 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752700Ab3LSJne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:43:34 -0500
-Date: Thu, 19 Dec 2013 10:43:33 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 6/6] memcg, slab: RCU protect memcg_params for root caches
-Message-ID: <20131219094333.GB10855@dhcp22.suse.cz>
-References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
- <be8f2fede0fbc45496c06f7bc6cc2272b9b81cc4.1387372122.git.vdavydov@parallels.com>
- <20131219092836.GH9331@dhcp22.suse.cz>
- <52B2BE2A.2080509@parallels.com>
+	id S1753418Ab3LSJnt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:43:49 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:40444 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223Ab3LSJnq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 04:43:46 -0500
+Date: Thu, 19 Dec 2013 15:13:37 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Lars Ellenberg <drbd-dev@lists.linbit.com>, drbd-user@lists.linbit.com,
+        josh@joshtriplett.org
+Subject: [PATCH 08/13] drivers: block: Mark function as static in
+ drbd_actlog.c
+Message-ID: <aaf95204c9af025e2ad4c00c0e9d6ed23bbe96ac.1387445396.git.rashika.kheria@gmail.com>
+References: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52B2BE2A.2080509@parallels.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 19-12-13 13:36:42, Vladimir Davydov wrote:
-> On 12/19/2013 01:28 PM, Michal Hocko wrote:
-> > On Wed 18-12-13 17:16:57, Vladimir Davydov wrote:
-[...]
-> >> diff --git a/mm/slab.h b/mm/slab.h
-> >> index 1d8b53f..53b81a9 100644
-> >> --- a/mm/slab.h
-> >> +++ b/mm/slab.h
-> >> @@ -164,10 +164,16 @@ static inline struct kmem_cache *
-> >>  cache_from_memcg_idx(struct kmem_cache *s, int idx)
-> >>  {
-> >>  	struct kmem_cache *cachep;
-> >> +	struct memcg_cache_params *params;
-> >>  
-> >>  	if (!s->memcg_params)
-> >>  		return NULL;
-> >> -	cachep = s->memcg_params->memcg_caches[idx];
-> >> +
-> >> +	rcu_read_lock();
-> >> +	params = rcu_dereference(s->memcg_params);
-> >> +	cachep = params->memcg_caches[idx];
-> >> +	rcu_read_unlock();
-> >> +
-> > Consumer has to be covered by the same rcu section otherwise
-> > memcg_params might be freed right after rcu unlock here.
-> 
-> No. We protect only accesses to kmem_cache::memcg_params, which can
-> potentially be relocated for root caches.
+Mark the function drbd_al_begin_io_prepare() as static in
+drbd/drbd_actlog.c because it is not used outside this file.
 
-Hmm, ok. So memcg_params might change (a new memcg is accounted) but
-pointers at idx will be same, right?
+This eliminates the following warnings in drbd/drbd_actlog.c:
+drivers/block/drbd/drbd_actlog.c:277:6: warning: no previous prototype for ‘drbd_al_begin_io_prepare’ [-Wmissing-prototypes]
 
-> But as soon as we get the
-> pointer to a kmem_cache from this array, we can freely dereference it,
-> because the cache cannot be freed when we use it. This is, because we
-> access a kmem_cache either under the slab_mutex or
-> memcg->slab_caches_mutex, or when we allocate/free from it. While doing
-> the latter, the cache can't go away, it would be a bug. IMO.
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/block/drbd/drbd_actlog.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-That expects that cache_from_memcg_idx is always called with slab_mutex
-or slab_caches_mutex held, right? Please document it.
-
-> 
-> Thanks.
-
+diff --git a/drivers/block/drbd/drbd_actlog.c b/drivers/block/drbd/drbd_actlog.c
+index 28c73ca..7ba73c4 100644
+--- a/drivers/block/drbd/drbd_actlog.c
++++ b/drivers/block/drbd/drbd_actlog.c
+@@ -274,6 +274,7 @@ bool drbd_al_begin_io_fastpath(struct drbd_conf *mdev, struct drbd_interval *i)
+ 	return _al_get(mdev, first, true);
+ }
+ 
++static
+ bool drbd_al_begin_io_prepare(struct drbd_conf *mdev, struct drbd_interval *i)
+ {
+ 	/* for bios crossing activity log extent boundaries,
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
