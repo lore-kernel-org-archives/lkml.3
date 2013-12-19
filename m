@@ -1,126 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab3LSM71 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:59:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54824 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755717Ab3LSM7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:59:23 -0500
-Date: Thu, 19 Dec 2013 13:59:21 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/6] Configurable fair allocation zone policy v3
-Message-ID: <20131219125921.GF10855@dhcp22.suse.cz>
-References: <1387298904-8824-1-git-send-email-mgorman@suse.de>
- <20131217200210.GG21724@cmpxchg.org>
- <20131218145111.GA27510@dhcp22.suse.cz>
- <20131218151846.GM21724@cmpxchg.org>
- <20131218162050.GB27510@dhcp22.suse.cz>
- <20131218192015.GA20038@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131218192015.GA20038@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757095Ab3LSMgF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:36:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44917 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab3LSL5s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:57:48 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: AceLan Kao <acelan.kao@canonical.com>, Jiri Kosina <jkosina@suse.cz>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 103/208] HID: usbhid: quirk for SiS Touchscreen
+Date: Thu, 19 Dec 2013 11:53:21 +0000
+Message-Id: <1387454106-19326-104-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 18-12-13 14:20:15, Johannes Weiner wrote:
-> On Wed, Dec 18, 2013 at 05:20:50PM +0100, Michal Hocko wrote:
-[...]
-> > Currently we have a per-process (cpuset in fact) flag but this will
-> > change it to all or nothing. Is this really a good step?
-> > Btw. I do not mind having PF_SPREAD_PAGE enabled by default.
-> 
-> I don't want to muck around with cpusets too much, tbh...  but I agree
-> that the behavior of PF_SPREAD_PAGE should be the default.  Except it
-> should honor zone_reclaim_mode and round-robin nodes that are within
-> RECLAIM_DISTANCE of the local one.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Agreed.
+------------------
 
-> I will have spotty access to internet starting tomorrow night until
-> New Year's.  Is there a chance we can maybe revert the NUMA aspects of
-> the original patch for now and leave it as a node-local zone fairness
-> thing?
+From: AceLan Kao <acelan.kao@canonical.com>
 
-Yes, that sounds perfectly reasonable to me.
+commit 684524d35fe8d13be1f2649633e43bd02c96c695 upstream.
 
-> The NUMA behavior was so broken on 3.12 that I doubt that
-> people have come to rely on the cache fairness on such machines in
-> that one release.  So we should be able to release 3.12-stable and
-> 3.13 with node-local zone fairness without regressing anybody, and
-> then give the NUMA aspect of it another try in 3.14.
-> 
-> Something like the following should restore NUMA behavior while still
-> fixing the kswapd vs. page allocator interaction bug of thrashing on
-> the highest zone. 
+BugLink: http://bugs.launchpad.net/bugs/1180881
 
-Yes, it looks good to me. I guess zone_local could have stayed as it
-was because it shouldn't be a big deal to fall-back to a different node
-if the distance is LOCAL, but taking a conservative approach is not
-harmfull.
+This device needs to be added to the quirks list with HID_QUIRK_NO_INIT_REPORTS,
+otherwise it causes 10 seconds timeout during report initialization.
 
-> PS: zone_local() is in a CONFIG_NUMA block, which
-> is why accessing zone->node is safe :-)
-> 
-> ---
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index dd886fac451a..317ea747d2cd 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1822,7 +1822,7 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
->  
->  static bool zone_local(struct zone *local_zone, struct zone *zone)
->  {
-> -	return node_distance(local_zone->node, zone->node) == LOCAL_DISTANCE;
-> +	return local_zone->node == zone->node;
->  }
->  
->  static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
-> @@ -1919,18 +1919,17 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
->  		 * page was allocated in should have no effect on the
->  		 * time the page has in memory before being reclaimed.
->  		 *
-> -		 * When zone_reclaim_mode is enabled, try to stay in
-> -		 * local zones in the fastpath.  If that fails, the
-> -		 * slowpath is entered, which will do another pass
-> -		 * starting with the local zones, but ultimately fall
-> -		 * back to remote zones that do not partake in the
-> -		 * fairness round-robin cycle of this zonelist.
-> +		 * Try to stay in local zones in the fastpath.  If
-> +		 * that fails, the slowpath is entered, which will do
-> +		 * another pass starting with the local zones, but
-> +		 * ultimately fall back to remote zones that do not
-> +		 * partake in the fairness round-robin cycle of this
-> +		 * zonelist.
->  		 */
->  		if (alloc_flags & ALLOC_WMARK_LOW) {
->  			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
->  				continue;
-> -			if (zone_reclaim_mode &&
-> -			    !zone_local(preferred_zone, zone))
-> +			if (!zone_local(preferred_zone, zone))
->  				continue;
->  		}
->  		/*
-> @@ -2396,7 +2395,7 @@ static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
->  		 * thrash fairness information for zones that are not
->  		 * actually part of this zonelist's round-robin cycle.
->  		 */
-> -		if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
-> +		if (!zone_local(preferred_zone, zone))
->  			continue;
->  		mod_zone_page_state(zone, NR_ALLOC_BATCH,
->  				    high_wmark_pages(zone) -
-> 
-> 
+[12431.828467] hid-multitouch 0003:0457:1013.0475: usb_submit_urb(ctrl) failed: -1
+[12431.828507] hid-multitouch 0003:0457:1013.0475: timeout initializing reports
 
+Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/hid/hid-ids.h           | 3 +++
+ drivers/hid/usbhid/hid-quirks.c | 1 +
+ 2 files changed, 4 insertions(+)
+
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 5e791dc..b4e3716 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -933,4 +933,7 @@
+ #define USB_VENDOR_ID_PRIMAX	0x0461
+ #define USB_DEVICE_ID_PRIMAX_KEYBOARD	0x4e05
+ 
++#define USB_VENDOR_ID_SIS	0x0457
++#define USB_DEVICE_ID_SIS_TS	0x1013
++
+ #endif
+diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+index 54413b84..0db9a67 100644
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -114,6 +114,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_DUOSENSE, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS1, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS2, HID_QUIRK_NO_INIT_REPORTS },
++	{ USB_VENDOR_ID_SIS, USB_DEVICE_ID_SIS_TS, HID_QUIRK_NO_INIT_REPORTS },
+ 
+ 	{ 0, 0 }
+ };
 -- 
-Michal Hocko
-SUSE Labs
+1.8.3.2
+
