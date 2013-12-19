@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab3LSMPj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:15:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45202 "EHLO
+	id S1756852Ab3LSM0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:26:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45046 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755788Ab3LSL7J (ORCPT
+	with ESMTP id S1753181Ab3LSL6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:09 -0500
+	Thu, 19 Dec 2013 06:58:25 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steve Capper <steve.capper@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+Cc: Ujjal Roy <royujjal@gmail.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 160/208] arm64: mm: Fix PMD_SECT_PROT_NONE definition
-Date: Thu, 19 Dec 2013 11:54:18 +0000
-Message-Id: <1387454106-19326-161-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 129/208] mwifiex: fix memory leak issue for ibss join
+Date: Thu, 19 Dec 2013 11:53:47 +0000
+Message-Id: <1387454106-19326-130-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,33 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Capper <steve.capper@linaro.org>
+From: Ujjal Roy <royujjal@gmail.com>
 
-commit db4ed53cfe9f5a00355891a631d47dfa3fd4541f upstream.
+commit 517543fd72d577dde2ebd9505dc4abf26d589f9a upstream.
 
-Modify the value of PMD_SECT_PROT_NONE to match that of PTE_NONE. This
-should have been in commit 3676f9ef5481 (Move PTE_PROT_NONE higher up).
+For IBSS join if the requested SSID matches current SSID,
+it returns without freeing the allocated beacon IE buffer.
 
-Signed-off-by: Steve Capper <steve.capper@linaro.org>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Ujjal Roy <royujjal@gmail.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm64/include/asm/pgtable-hwdef.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/mwifiex/sta_ioctl.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm64/include/asm/pgtable-hwdef.h b/arch/arm64/include/asm/pgtable-hwdef.h
-index e182a35..ccfeeee 100644
---- a/arch/arm64/include/asm/pgtable-hwdef.h
-+++ b/arch/arm64/include/asm/pgtable-hwdef.h
-@@ -43,7 +43,7 @@
-  * Section
-  */
- #define PMD_SECT_VALID		(_AT(pmdval_t, 1) << 0)
--#define PMD_SECT_PROT_NONE	(_AT(pmdval_t, 1) << 2)
-+#define PMD_SECT_PROT_NONE	(_AT(pmdval_t, 1) << 58)
- #define PMD_SECT_USER		(_AT(pmdval_t, 1) << 6)		/* AP[1] */
- #define PMD_SECT_RDONLY		(_AT(pmdval_t, 1) << 7)		/* AP[2] */
- #define PMD_SECT_S		(_AT(pmdval_t, 3) << 8)
+diff --git a/drivers/net/wireless/mwifiex/sta_ioctl.c b/drivers/net/wireless/mwifiex/sta_ioctl.c
+index 8af97ab..252e09b 100644
+--- a/drivers/net/wireless/mwifiex/sta_ioctl.c
++++ b/drivers/net/wireless/mwifiex/sta_ioctl.c
+@@ -319,8 +319,8 @@ int mwifiex_bss_start(struct mwifiex_private *priv, struct cfg80211_bss *bss,
+ 		if (bss_desc && bss_desc->ssid.ssid_len &&
+ 		    (!mwifiex_ssid_cmp(&priv->curr_bss_params.bss_descriptor.
+ 				       ssid, &bss_desc->ssid))) {
+-			kfree(bss_desc);
+-			return 0;
++			ret = 0;
++			goto done;
+ 		}
+ 
+ 		/* Exit Adhoc mode first */
 -- 
 1.8.3.2
 
