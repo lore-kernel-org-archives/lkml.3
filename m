@@ -1,112 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab3LSMra (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:47:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44829 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754861Ab3LSL5Z (ORCPT
+	id S1756807Ab3LSMXH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:23:07 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:38364 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756555Ab3LSMXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:25 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Vijaya Mohan Guvva <vmohan@brocade.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 086/208] [SCSI] bfa: Fix crash when symb name set for offline vport
-Date: Thu, 19 Dec 2013 11:53:04 +0000
-Message-Id: <1387454106-19326-87-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 07:23:02 -0500
+Date: Thu, 19 Dec 2013 13:22:57 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Len Brown <lenb@kernel.org>
+Cc: x86@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, stable@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power
+ regression
+Message-ID: <20131219122257.GC11279@gmail.com>
+References: <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+* Len Brown <lenb@kernel.org> wrote:
 
-From: Vijaya Mohan Guvva <vmohan@brocade.com>
+> From: Len Brown <len.brown@intel.com>
+> 
+> Linux 3.10 changed the timing of how thread_info->flags is touched:
+> 
+> 	x86: Use generic idle loop
+> 	(7d1a941731fabf27e5fb6edbebb79fe856edb4e5)
+> 
+> This caused Intel NHM-EX and WSM-EX servers to experience a large number
+> of immediate MONITOR/MWAIT break wakeups, which caused cpuidle to demote
+> from deep C-states to shallow C-states, which caused these platforms
+> to experience a significant increase in idle power.
+> 
+> Note that this issue was already present before the commit above,
+> however, it wasn't seen often enough to be noticed in power measurements.
+> 
+> Here we extend an errata workaround from the Core2 EX "Dunnington"
+> to extend to NHM-EX and WSM-EX, to prevent these immediate
+> returns from MWAIT, reducing idle power on these platforms.
+> 
+> While only acpi_idle ran on Dunnington, intel_idle
+> may also run on these two newer systems.
+> As of today, there are no other models that are known
+> to need this tweak.
+> 
+> ref: https://lkml.org/lkml/2013/12/7/22
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> Cc: <stable@vger.kernel.org> # 3.12.x, 3.11.x, 3.10.x
+> ---
+>  arch/x86/kernel/cpu/intel.c | 3 ++-
+>  drivers/idle/intel_idle.c   | 3 +++
+>  2 files changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+> index dc1ec0d..ea04b34 100644
+> --- a/arch/x86/kernel/cpu/intel.c
+> +++ b/arch/x86/kernel/cpu/intel.c
+> @@ -387,7 +387,8 @@ static void init_intel(struct cpuinfo_x86 *c)
+>  			set_cpu_cap(c, X86_FEATURE_PEBS);
+>  	}
+>  
+> -	if (c->x86 == 6 && c->x86_model == 29 && cpu_has_clflush)
+> +	if (c->x86 == 6 && cpu_has_clflush &&
+> +	    (c->x86_model == 29 || c->x86_model == 46 || c->x86_model == 47))
+>  		set_cpu_cap(c, X86_FEATURE_CLFLUSH_MONITOR);
+>  
+>  #ifdef CONFIG_X86_64
+> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+> index 92d1206..f80b700 100644
+> --- a/drivers/idle/intel_idle.c
+> +++ b/drivers/idle/intel_idle.c
+> @@ -377,6 +377,9 @@ static int intel_idle(struct cpuidle_device *dev,
+>  
+>  	if (!current_set_polling_and_test()) {
+>  
+> +		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
+> +			clflush((void *)&current_thread_info()->flags);
+> +
+>  		__monitor((void *)&current_thread_info()->flags, 0, 0);
 
-commit 22a08538dca5c0630226f1c0c58dccd12e463d22 upstream.
+I don't think either of these casts to '(void *)' is needed, both the 
+clflush() and __monitor() will take pointers.
 
-This patch fixes a crash when tried setting symbolic name for an offline
-vport through sysfs. Crash is due to uninitialized pointer lport->ns,
-which gets initialized only on linkup (port online).
+Looks good to me otherwise - except that maybe the best way to 
+represent this quirk would be for the CLFLUSH+MONITOR sequence to be a 
+single 'instruction' which is patched in dynamically during bootup, 
+using our usual alternatives framework.
 
-Signed-off-by: Vijaya Mohan Guvva <vmohan@brocade.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/scsi/bfa/bfa_fcs.h       |  1 +
- drivers/scsi/bfa/bfa_fcs_lport.c | 14 +++++++++++---
- drivers/scsi/bfa/bfad_attr.c     |  7 ++-----
- 3 files changed, 14 insertions(+), 8 deletions(-)
+On non-affected CPUs a NOP would remain in place of the CLFLUSH, 
+eliminating the branch above.
 
-diff --git a/drivers/scsi/bfa/bfa_fcs.h b/drivers/scsi/bfa/bfa_fcs.h
-index 94d5d01..42bcb97 100644
---- a/drivers/scsi/bfa/bfa_fcs.h
-+++ b/drivers/scsi/bfa/bfa_fcs.h
-@@ -296,6 +296,7 @@ wwn_t bfa_fcs_lport_get_rport(struct bfa_fcs_lport_s *port, wwn_t wwn,
- struct bfa_fcs_lport_s *bfa_fcs_lookup_port(struct bfa_fcs_s *fcs,
- 					    u16 vf_id, wwn_t lpwwn);
- 
-+void bfa_fcs_lport_set_symname(struct bfa_fcs_lport_s *port, char *symname);
- void bfa_fcs_lport_get_info(struct bfa_fcs_lport_s *port,
- 			    struct bfa_lport_info_s *port_info);
- void bfa_fcs_lport_get_attr(struct bfa_fcs_lport_s *port,
-diff --git a/drivers/scsi/bfa/bfa_fcs_lport.c b/drivers/scsi/bfa/bfa_fcs_lport.c
-index 2f61a5a..f5e4e61 100644
---- a/drivers/scsi/bfa/bfa_fcs_lport.c
-+++ b/drivers/scsi/bfa/bfa_fcs_lport.c
-@@ -1097,6 +1097,17 @@ bfa_fcs_lport_init(struct bfa_fcs_lport_s *lport,
- 	bfa_sm_send_event(lport, BFA_FCS_PORT_SM_CREATE);
- }
- 
-+void
-+bfa_fcs_lport_set_symname(struct bfa_fcs_lport_s *port,
-+				char *symname)
-+{
-+	strcpy(port->port_cfg.sym_name.symname, symname);
-+
-+	if (bfa_sm_cmp_state(port, bfa_fcs_lport_sm_online))
-+		bfa_fcs_lport_ns_util_send_rspn_id(
-+			BFA_FCS_GET_NS_FROM_PORT(port), NULL);
-+}
-+
- /*
-  *  fcs_lport_api
-  */
-@@ -5140,9 +5151,6 @@ bfa_fcs_lport_ns_util_send_rspn_id(void *cbarg, struct bfa_fcxp_s *fcxp_alloced)
- 	u8 *psymbl = &symbl[0];
- 	int len;
- 
--	if (!bfa_sm_cmp_state(port, bfa_fcs_lport_sm_online))
--		return;
--
- 	/* Avoid sending RSPN in the following states. */
- 	if (bfa_sm_cmp_state(ns, bfa_fcs_lport_ns_sm_offline) ||
- 	    bfa_sm_cmp_state(ns, bfa_fcs_lport_ns_sm_plogi_sending) ||
-diff --git a/drivers/scsi/bfa/bfad_attr.c b/drivers/scsi/bfa/bfad_attr.c
-index e9a681d..40be670 100644
---- a/drivers/scsi/bfa/bfad_attr.c
-+++ b/drivers/scsi/bfa/bfad_attr.c
-@@ -593,11 +593,8 @@ bfad_im_vport_set_symbolic_name(struct fc_vport *fc_vport)
- 		return;
- 
- 	spin_lock_irqsave(&bfad->bfad_lock, flags);
--	if (strlen(sym_name) > 0) {
--		strcpy(fcs_vport->lport.port_cfg.sym_name.symname, sym_name);
--		bfa_fcs_lport_ns_util_send_rspn_id(
--			BFA_FCS_GET_NS_FROM_PORT((&fcs_vport->lport)), NULL);
--	}
-+	if (strlen(sym_name) > 0)
-+		bfa_fcs_lport_set_symname(&fcs_vport->lport, sym_name);
- 	spin_unlock_irqrestore(&bfad->bfad_lock, flags);
- }
- 
--- 
-1.8.3.2
+So the whole thing could be thought of as a slightly more complex 
+'monitor' instruction - not exposing the quirk details to actual usage 
+sites.
 
+Thanks,
+
+	Ingo
