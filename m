@@ -1,86 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757121Ab3LSMgm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:36:42 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:59684 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755650Ab3LSMgj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:36:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <s5h61qlt7zm.wl%tiwai@suse.de>
-References: <s5hlhzik3kk.wl%tiwai@suse.de>
-	<CANq1E4TFKDduy71jCXy+8CMS1_OFxWEpsHY3AA0RUJPW4VE8hg@mail.gmail.com>
-	<20131218092941.GA19210@gmail.com>
-	<20131219000346.0f722b65@alan.etchedpixels.co.uk>
-	<CANq1E4Q3KiLMC-ETFs+FAmTv3yWdCyqG2c+KzGFX4xZmcxLbJg@mail.gmail.com>
-	<s5h61qlt7zm.wl%tiwai@suse.de>
-Date: Thu, 19 Dec 2013 13:36:38 +0100
-Message-ID: <CANq1E4TW3O9czVzX1bj4F5oMrDHZ+ZsLHLCk9ANsg2e14QXmfg@mail.gmail.com>
-Subject: Re: cirrusdrmfb broken with simplefb
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756155Ab3LSNmb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:42:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18526 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753546Ab3LSNm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 08:42:29 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 1/9] perf tests: Factor make install tests
+Date: Thu, 19 Dec 2013 14:41:59 +0100
+Message-Id: <1387460527-15030-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
+References: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Factoring make install tests to check for multiple
+files. Adding default set of installed files for
+install and install_bin tests.
 
-On Thu, Dec 19, 2013 at 12:06 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Thu, 19 Dec 2013 11:46:51 +0100,
-> David Herrmann wrote:
->>
->> Hi
->>
->> On Thu, Dec 19, 2013 at 1:03 AM, One Thousand Gnomes
->> <gnomes@lxorguk.ukuu.org.uk> wrote:
->> >> > That bug always existed, simplefb is just the first driver to hit it
->> >> > (vesafb/efifb didn't use resources). I'm aware of the issue but as a
->> >> > workaround you can simply disable CONFIG_X86_SYSFB. That restores
->> >> > the old behavior.
->> >>
->> >> This looks like a regression, so we'll either need a fix or we'll have
->> >> to mark CONFIG_X86_SYSFB as CONFIG_BROKEN.
->> >
->> > Kernel bugzilla has entries for simplefb breaking both vesafb and matrox
->> > mga.
->>
->> Thanks for the hints. I've read through all I could find and tried to
->> provide some help.
->>
->> I'm kind of confused, most of them enable CONFIG_X86_SYSFB (which is
->> 'n' by default) but don't read the help text. I did my best to tell
->> people that this option requires CONFIG_FB_SIMPLE, but if you don't
->> read the help-text you won't notice that. Don't know what to do about
->> that..
->
-> You can set FB_SIMPLE default value depending on X86_SYSFB, something
-> like:
->
-> --- a/drivers/video/Kconfig
-> +++ b/drivers/video/Kconfig
-> @@ -2455,6 +2455,7 @@ config FB_HYPERV
->  config FB_SIMPLE
->         bool "Simple framebuffer support"
->         depends on (FB = y)
-> +       default y if X86_SYSFB
->         select FB_CFB_FILLRECT
->         select FB_CFB_COPYAREA
->         select FB_CFB_IMAGEBLIT
+Putting the 'test' line into the log file instead
+to the screen as it gets more complex now.
 
-The "default <wx> if <yz>" only works if the config hasn't been set at
-all, yet. Even a "# CONFIG_* is unset" causes the "default" value to
-be ignored.
+If the tests fails to find a file, following message
+is displayed:
 
-How about adding "depends on (FB_SIMPLE = y)" for X86_SYSFB? I guess I
-will try that and send a patch.
+$ make -f tests/make make_install_bin
+- make_install_bin: cd . && make -f Makefile DESTDIR=/tmp/tmp.nCVuQoSHaJ install-bin
+  failed to find: bin/perf
 
-Thanks
-David
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/tests/make | 38 ++++++++++++++++++++++++++++++++------
+ 1 file changed, 32 insertions(+), 6 deletions(-)
+
+diff --git a/tools/perf/tests/make b/tools/perf/tests/make
+index 2ca0abf..f641c35 100644
+--- a/tools/perf/tests/make
++++ b/tools/perf/tests/make
+@@ -106,10 +106,36 @@ test_make_python_perf_so := test -f $(PERF)/python/perf.so
+ test_make_perf_o     := test -f $(PERF)/perf.o
+ test_make_util_map_o := test -f $(PERF)/util/map.o
+ 
+-test_make_install       := test -x $$TMP_DEST/bin/perf
+-test_make_install_O     := $(test_make_install)
+-test_make_install_bin   := $(test_make_install)
+-test_make_install_bin_O := $(test_make_install)
++define test_dest_files
++  for file in $(1); do				\
++    if [ ! -x $$TMP_DEST/$$file ]; then		\
++      echo "  failed to find: $$file";		\
++    fi						\
++  done
++endef
++
++installed_files_bin := bin/perf
++installed_files_bin += etc/bash_completion.d/perf
++installed_files_bin += libexec/perf-core/perf-archive
++
++installed_files_plugins := lib64/traceevent/plugins/plugin_cfg80211.so
++installed_files_plugins += lib64/traceevent/plugins/plugin_scsi.so
++installed_files_plugins += lib64/traceevent/plugins/plugin_xen.so
++installed_files_plugins += lib64/traceevent/plugins/plugin_function.so
++installed_files_plugins += lib64/traceevent/plugins/plugin_sched_switch.so
++installed_files_plugins += lib64/traceevent/plugins/plugin_mac80211.so
++installed_files_plugins += lib64/traceevent/plugins/plugin_kvm.so
++installed_files_plugins += lib64/traceevent/plugins/plugin_kmem.so
++installed_files_plugins += lib64/traceevent/plugins/plugin_hrtimer.so
++installed_files_plugins += lib64/traceevent/plugins/plugin_jbd2.so
++
++installed_files_all := $(installed_files_bin)
++installed_files_all += $(installed_files_plugins)
++
++test_make_install       := $(call test_dest_files,$(installed_files_all))
++test_make_install_O     := $(call test_dest_files,$(installed_files_all))
++test_make_install_bin   := $(call test_dest_files,$(installed_files_bin))
++test_make_install_bin_O := $(call test_dest_files,$(installed_files_bin))
+ 
+ # FIXME nothing gets installed
+ test_make_install_man    := test -f $$TMP_DEST/share/man/man1/perf.1
+@@ -162,7 +188,7 @@ $(run):
+ 	cmd="cd $(PERF) && make -f $(MK) DESTDIR=$$TMP_DEST $($@)"; \
+ 	echo "- $@: $$cmd" && echo $$cmd > $@ && \
+ 	( eval $$cmd ) >> $@ 2>&1; \
+-	echo "  test: $(call test,$@)"; \
++	echo "  test: $(call test,$@)" >> $@ 2>&1; \
+ 	$(call test,$@) && \
+ 	rm -f $@ \
+ 	rm -rf $$TMP_DEST
+@@ -174,7 +200,7 @@ $(run_O):
+ 	cmd="cd $(PERF) && make -f $(MK) O=$$TMP_O DESTDIR=$$TMP_DEST $($(patsubst %_O,%,$@))"; \
+ 	echo "- $@: $$cmd" && echo $$cmd > $@ && \
+ 	( eval $$cmd ) >> $@ 2>&1 && \
+-	echo "  test: $(call test_O,$@)"; \
++	echo "  test: $(call test_O,$@)" >> $@ 2>&1; \
+ 	$(call test_O,$@) && \
+ 	rm -f $@ && \
+ 	rm -rf $$TMP_O \
+-- 
+1.8.3.1
+
