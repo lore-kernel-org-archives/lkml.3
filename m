@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab3LSHOh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 02:14:37 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:18906 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab3LSHOg (ORCPT
+	id S1752162Ab3LSHPo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 02:15:44 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64592 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab3LSHPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 02:14:36 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 18 Dec 2013 23:16:41 -0800
-Message-ID: <52B29CD0.1000801@nvidia.com>
-Date: Thu, 19 Dec 2013 12:44:24 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 19 Dec 2013 02:15:42 -0500
+X-AuditID: 9c930197-b7cefae000007949-37-52b29d1ceddb
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Arun Sharma <asharma@fb.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 04/18] perf tools: Introduce struct add_entry_iter
+References: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
+	<1387344086-12744-5-git-send-email-namhyung@kernel.org>
+	<20131218155040.GI4146@krava.brq.redhat.com>
+Date: Thu, 19 Dec 2013 16:15:40 +0900
+In-Reply-To: <20131218155040.GI4146@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Wed, 18 Dec 2013 16:50:40 +0100")
+Message-ID: <87ppotfh0j.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-CC: "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: tegra: fix missing pincontrol configuration
- for Venice2
-References: <1387371179-16725-1-git-send-email-ldewangan@nvidia.com> <52B20C0D.9030200@wwwdotorg.org>
-In-Reply-To: <52B20C0D.9030200@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 19 December 2013 02:26 AM, Stephen Warren wrote:
-> On 12/18/2013 05:52 AM, Laxman Dewangan wrote:
->> Compare the initial population of default pinmux configuration of Venice2
->> with the chrome branch and add/fix the missing configurations.
-> Wow, that's a big chunk of changes. Are you sure this is correct? Why
-> was the original patch (which added the pinctrl nodes) so incorrect?
+Hi Jiri,
 
-The pinmux which got added is based on the venice2 pinmux spreadsheet 
-where I covered only the SFIO pin groups.
+On Wed, 18 Dec 2013 16:50:40 +0100, Jiri Olsa wrote:
+> On Wed, Dec 18, 2013 at 02:21:12PM +0900, Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> There're some duplicate code when adding hist entries.  They are
+>> different in that some have branch info or mem info but generally do
+>> same thing.  So introduce new struct add_entry_iter and add callbacks
+>> to customize each case in general way.
+>> 
+>> The new perf_evsel__add_entry() function will look like:
+>> 
+>>   iter->prepare_entry();
+>>   iter->add_single_entry();
+>> 
+>>   while (iter->next_entry())
+>>     iter->add_next_entry();
+>> 
+>>   iter->finish_entry();
+>> 
+>> This will help further work like the cumulative callchain patchset.
+>
+> cool, I was waiting for this one! I have another user
+> for it, I'll test by rebasing my code ;-)
 
-https://wiki.nvidia.com/engwiki/index.php/Platform_Design_Center/Projects_Archive/PM371#pinmux
+Great!  I'd look forward to your feedback! :)
 
-
-After comparing with the chrome, I also added the pinmux for all pins 
-which are used as GPIO and hence the change is big.
-This is complete pinmux based on chrome kernel-next.
-I booted chrome with this pinmux and not observe any behavioral change.
-
-> Thierry, I thought you had mentioned comparing the pinctrl setup in
-> linux-next with the downstream kernel for Venice2 and only found a
-> difference in the PWM settings, which you sent a patch for. However,
-> this patch is much larger than that. Where's the disconnect?
-
+Thanks,
+Namhyung
