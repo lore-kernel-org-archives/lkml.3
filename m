@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab3LRX7w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 18:59:52 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:35107 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab3LRX7u (ORCPT
+	id S1752083Ab3LSADu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 19:03:50 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47035 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037Ab3LSADs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 18:59:50 -0500
-Message-ID: <1387411248.5567.4.camel@haakon3.risingtidesystems.com>
-Subject: Re: randconfig build error with next-20131218, in
- drivers/target/target_core_alua.c
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Jim Davis <jim.epost@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org
-Date: Wed, 18 Dec 2013 16:00:48 -0800
-In-Reply-To: <CA+r1ZhieKb_Y-e51vud0Ot5xm2O+hkp7nX6tNPpcZ02zVRq+9w@mail.gmail.com>
-References: <CA+r1ZhieKb_Y-e51vud0Ot5xm2O+hkp7nX6tNPpcZ02zVRq+9w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Wed, 18 Dec 2013 19:03:48 -0500
+Date: Thu, 19 Dec 2013 00:03:46 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Cc: David Herrmann <dh.herrmann@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: cirrusdrmfb broken with simplefb
+Message-ID: <20131219000346.0f722b65@alan.etchedpixels.co.uk>
+In-Reply-To: <20131218092941.GA19210@gmail.com>
+References: <s5hlhzik3kk.wl%tiwai@suse.de>
+	<CANq1E4TFKDduy71jCXy+8CMS1_OFxWEpsHY3AA0RUJPW4VE8hg@mail.gmail.com>
+	<20131218092941.GA19210@gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jim,
-
-On Wed, 2013-12-18 at 06:45 -0700, Jim Davis wrote:
-> Building with the attached random configuration file,
+> > That bug always existed, simplefb is just the first driver to hit it 
+> > (vesafb/efifb didn't use resources). I'm aware of the issue but as a 
+> > workaround you can simply disable CONFIG_X86_SYSFB. That restores 
+> > the old behavior.
 > 
->   LD      init/built-in.o
-> drivers/built-in.o: In function `core_alua_state_lba_dependent':
-> /home/jim/linux/drivers/target/target_core_alua.c:492: undefined
-> reference to `__umoddi3'
-> make: *** [vmlinux] Error 1
+> This looks like a regression, so we'll either need a fix or we'll have 
+> to mark CONFIG_X86_SYSFB as CONFIG_BROKEN.
 
-Thanks for the heads up.  A patch for this has been merged into the
-original, and will be appearing in today's (12192013) linux-next tree.
+Kernel bugzilla has entries for simplefb breaking both vesafb and matrox
+mga.
 
-Thank you,
-
---nab
 
