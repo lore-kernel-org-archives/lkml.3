@@ -1,63 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab3LSPCo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:02:44 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54564 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab3LSPCn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:02:43 -0500
-Date: Thu, 19 Dec 2013 16:02:26 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
- tracing units
-Message-ID: <20131219150226.GH16438@laptop.programming.kicks-ass.net>
-References: <20131218141125.GT21999@twins.programming.kicks-ass.net>
- <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218150900.GU21999@twins.programming.kicks-ass.net>
- <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219103134.GD30183@twins.programming.kicks-ass.net>
- <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219112812.GY21999@twins.programming.kicks-ass.net>
- <20131219123955.GA18186@gmail.com>
- <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219144926.GB19788@localhost.localdomain>
+	id S1754041Ab3LSOlx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:41:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60421 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753926Ab3LSOlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 09:41:51 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20131219122257.GC11279@gmail.com>
+References: <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com> <20131219122257.GC11279@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131219144926.GB19788@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power regression
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 19 Dec 2013 06:40:41 -0800
+To: Ingo Molnar <mingo@kernel.org>, Len Brown <lenb@kernel.org>
+CC: x86@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, stable@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Borislav Petkov <bp@alien8.de>
+Message-ID: <ad600986-5506-4cf5-baad-d767079d086f@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 03:49:42PM +0100, Frederic Weisbecker wrote:
-> On Thu, Dec 19, 2013 at 04:30:53PM +0200, Alexander Shishkin wrote:
-> > Or the interface and implementation of BTS support in the kernel
-> > discourage its use and that is why it is so rarely used.
-> 
-> I never heard complains about it. It's a simple dump of from/to address couples.
-> I just think nobody take the time to develop userspace tooling to exploit it.
-> But it's famous slowness might have had a bad influence on this. And may be
-> also the fact that it's very architecture specific. AMD doesn't support BTS if I recall
-> correctly. Or may be it has its own different implementation?
+... or just use static_cpu_has() maybe?
 
-No AMD doesn't do anything like that.
+Ingo Molnar <mingo@kernel.org> wrote:
+>
+>* Len Brown <lenb@kernel.org> wrote:
+>
+>> From: Len Brown <len.brown@intel.com>
+>> 
+>> Linux 3.10 changed the timing of how thread_info->flags is touched:
+>> 
+>> 	x86: Use generic idle loop
+>> 	(7d1a941731fabf27e5fb6edbebb79fe856edb4e5)
+>> 
+>> This caused Intel NHM-EX and WSM-EX servers to experience a large
+>number
+>> of immediate MONITOR/MWAIT break wakeups, which caused cpuidle to
+>demote
+>> from deep C-states to shallow C-states, which caused these platforms
+>> to experience a significant increase in idle power.
+>> 
+>> Note that this issue was already present before the commit above,
+>> however, it wasn't seen often enough to be noticed in power
+>measurements.
+>> 
+>> Here we extend an errata workaround from the Core2 EX "Dunnington"
+>> to extend to NHM-EX and WSM-EX, to prevent these immediate
+>> returns from MWAIT, reducing idle power on these platforms.
+>> 
+>> While only acpi_idle ran on Dunnington, intel_idle
+>> may also run on these two newer systems.
+>> As of today, there are no other models that are known
+>> to need this tweak.
+>> 
+>> ref: https://lkml.org/lkml/2013/12/7/22
+>> Signed-off-by: Len Brown <len.brown@intel.com>
+>> Cc: <stable@vger.kernel.org> # 3.12.x, 3.11.x, 3.10.x
+>> ---
+>>  arch/x86/kernel/cpu/intel.c | 3 ++-
+>>  drivers/idle/intel_idle.c   | 3 +++
+>>  2 files changed, 5 insertions(+), 1 deletion(-)
+>> 
+>> diff --git a/arch/x86/kernel/cpu/intel.c
+>b/arch/x86/kernel/cpu/intel.c
+>> index dc1ec0d..ea04b34 100644
+>> --- a/arch/x86/kernel/cpu/intel.c
+>> +++ b/arch/x86/kernel/cpu/intel.c
+>> @@ -387,7 +387,8 @@ static void init_intel(struct cpuinfo_x86 *c)
+>>  			set_cpu_cap(c, X86_FEATURE_PEBS);
+>>  	}
+>>  
+>> -	if (c->x86 == 6 && c->x86_model == 29 && cpu_has_clflush)
+>> +	if (c->x86 == 6 && cpu_has_clflush &&
+>> +	    (c->x86_model == 29 || c->x86_model == 46 || c->x86_model ==
+>47))
+>>  		set_cpu_cap(c, X86_FEATURE_CLFLUSH_MONITOR);
+>>  
+>>  #ifdef CONFIG_X86_64
+>> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+>> index 92d1206..f80b700 100644
+>> --- a/drivers/idle/intel_idle.c
+>> +++ b/drivers/idle/intel_idle.c
+>> @@ -377,6 +377,9 @@ static int intel_idle(struct cpuidle_device *dev,
+>>  
+>>  	if (!current_set_polling_and_test()) {
+>>  
+>> +		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
+>> +			clflush((void *)&current_thread_info()->flags);
+>> +
+>>  		__monitor((void *)&current_thread_info()->flags, 0, 0);
+>
+>I don't think either of these casts to '(void *)' is needed, both the 
+>clflush() and __monitor() will take pointers.
+>
+>Looks good to me otherwise - except that maybe the best way to 
+>represent this quirk would be for the CLFLUSH+MONITOR sequence to be a 
+>single 'instruction' which is patched in dynamically during bootup, 
+>using our usual alternatives framework.
+>
+>On non-affected CPUs a NOP would remain in place of the CLFLUSH, 
+>eliminating the branch above.
+>
+>So the whole thing could be thought of as a slightly more complex 
+>'monitor' instruction - not exposing the quirk details to actual usage 
+>sites.
+>
+>Thanks,
+>
+>	Ingo
 
-There was some attempt to cure some of the wobblies:
-
-  https://lkml.org/lkml/2013/7/8/154
-
-But people never pursued that.
-
-That said, if people want overwrite mode to work for PT we'd need to fix
-the same thing.
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
