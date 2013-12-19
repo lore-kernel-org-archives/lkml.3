@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab3LSQBA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:01:00 -0500
-Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:46644 "EHLO
-	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756121Ab3LSP7o (ORCPT
+	id S1756310Ab3LSQBX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:01:23 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57161 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756285Ab3LSQBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:59:44 -0500
-Message-Id: <20131219155032.973230919@linux.com>
-Date: Thu, 19 Dec 2013 09:50:36 -0600
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 21/40] block: Replace __this_cpu_ptr with raw_cpu_ptr
-References: <20131219155015.443763038@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_block
+	Thu, 19 Dec 2013 11:01:21 -0500
+Date: Thu, 19 Dec 2013 17:01:16 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: lockdep: BUG: MAX_LOCKDEP_ENTRIES too low!
+Message-ID: <20131219160116.GC7959@laptop.programming.kicks-ass.net>
+References: <52B289F4.7060205@oracle.com>
+ <20131219103401.GE30183@twins.programming.kicks-ass.net>
+ <52B2FC66.9010309@oracle.com>
+ <20131219152002.GK16438@laptop.programming.kicks-ass.net>
+ <52B3134D.2010203@oracle.com>
+ <20131219155121.GL16438@laptop.programming.kicks-ass.net>
+ <20131219155917.GB25771@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131219155917.GB25771@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Patch depends on another patch in this series that introduces raw_cpu_ops]
+On Thu, Dec 19, 2013 at 10:59:17AM -0500, Dave Jones wrote:
+> On Thu, Dec 19, 2013 at 04:51:21PM +0100, Peter Zijlstra wrote:
+>  > On Thu, Dec 19, 2013 at 10:39:57AM -0500, Sasha Levin wrote:
+>  > > That discusses lockdep classes, which is actually fine in my case. I ran out of
+>  > > MAX_LOCKDEP_ENTRIES, which isn't mentioned anywhere in Documentation/ .
+>  > 
+>  > Yeah, it suffers from the same problem though. Lockdep has static
+>  > resource allocation and never frees them.
+>  > 
+>  > The lock classes are the smallest pool and usually run out first, but
+>  > the same could happen for the entries, after all, the more classes we
+>  > have the more class connections can happen.
+>  > 
+>  > Anyway, barring a leak and silly class mistakes like mentioned in the
+>  > document there's nothing we can do except raise the number.
+> 
+> I tried this. When you bump it to 32k, it fares better but then you
+> start seeing "BUG: MAX_LOCKDEP_CHAINS too low!" instead.
+> I've not tried bumping that yet, as I've stopped seeing these lately
+> due to hitting more serious bugs first.
 
-__this_cpu_ptr is being phased out.
-
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/fs/ext4/mballoc.c
-===================================================================
---- linux.orig/fs/ext4/mballoc.c	2013-12-02 16:07:53.574528512 -0600
-+++ linux/fs/ext4/mballoc.c	2013-12-02 16:07:53.574528512 -0600
-@@ -4085,7 +4085,7 @@ static void ext4_mb_group_or_file(struct
- 	 * per cpu locality group is to reduce the contention between block
- 	 * request from multiple CPUs.
- 	 */
--	ac->ac_lg = __this_cpu_ptr(sbi->s_locality_groups);
-+	ac->ac_lg = raw_cpu_ptr(sbi->s_locality_groups);
- 
- 	/* we're going to use group allocation */
- 	ac->ac_flags |= EXT4_MB_HINT_GROUP_ALLOC;
-Index: linux/fs/buffer.c
-===================================================================
---- linux.orig/fs/buffer.c	2013-12-02 16:07:53.574528512 -0600
-+++ linux/fs/buffer.c	2013-12-02 16:07:53.574528512 -0600
-@@ -1312,7 +1312,7 @@ static void bh_lru_install(struct buffer
- 		}
- 		while (out < BH_LRU_SIZE)
- 			bhs[out++] = NULL;
--		memcpy(__this_cpu_ptr(&bh_lrus.bhs), bhs, sizeof(bhs));
-+		memcpy(this_cpu_ptr(&bh_lrus.bhs), bhs, sizeof(bhs));
- 	}
- 	bh_lru_unlock();
- 
-
+What are you doing to trigger all this? I don't see these. Are you
+loading/unloading modules a lot?
