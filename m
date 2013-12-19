@@ -1,162 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295Ab3LSUsE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 15:48:04 -0500
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:13730 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756195Ab3LSUq2 (ORCPT
+	id S932180Ab3LSUuZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 15:50:25 -0500
+Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.87]:34257 "EHLO
+	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756184Ab3LSUuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 15:46:28 -0500
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@redhat.com, dvhart@linux.intel.com, peterz@infradead.org,
-        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
-        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
-        aswin@hp.com, davidlohr@hp.com, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH v4 2/4] futex: Larger hash table
-Date: Thu, 19 Dec 2013 12:45:48 -0800
-Message-Id: <1387485950-7320-3-git-send-email-davidlohr@hp.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1387485950-7320-1-git-send-email-davidlohr@hp.com>
-References: <1387485950-7320-1-git-send-email-davidlohr@hp.com>
+	Thu, 19 Dec 2013 15:50:23 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Tom Herbert <therbert@google.com>
+CC: Daniel Borkmann <dborkman@redhat.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+Subject: RE: [PATCH net-next] hyperv: Add support for Virtual Receive Side
+ Scaling (vRSS)
+Thread-Topic: [PATCH net-next] hyperv: Add support for Virtual Receive Side
+ Scaling (vRSS)
+Thread-Index: AQHO/DjpLyfIXxkiYUqDQo2oHD6XuZpcUhsA//+GhuCAAIn5gP//g6IggACQ8YD//4UPEA==
+Date: Thu, 19 Dec 2013 20:49:42 +0000
+Message-ID: <05be4f23ff784e56b710dd02eb88358a@DFM-DB3MBX15-08.exchange.corp.microsoft.com>
+References: <1387405262-18334-1-git-send-email-haiyangz@microsoft.com>
+	<1387475178.1876.29.camel@bwh-desktop.uk.level5networks.com>
+	<ff7f7541d0164d408b3a4278569c593a@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+	<52B33EC1.5040901@redhat.com>
+	<6ee28c6a94e74c958ee96c3547741fb9@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <CA+mtBx-BBBQjVTOrnaow=GNc7VM5D2Zj8xr=fPM4b4f_xT7qkQ@mail.gmail.com>
+In-Reply-To: <CA+mtBx-BBBQjVTOrnaow=GNc7VM5D2Zj8xr=fPM4b4f_xT7qkQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.147.100;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(13464003)(164054003)(51704005)(199002)(189002)(377454003)(81686001)(53806001)(54356001)(15202345003)(44976005)(76786001)(80976001)(74366001)(31966008)(74502001)(19580395003)(47446002)(83322001)(19580405001)(74662001)(90146001)(46102001)(76796001)(6806004)(87936001)(56816005)(2656002)(85852003)(4396001)(81816001)(83072002)(50466002)(81342001)(51856001)(81542001)(59766001)(80022001)(69226001)(20776003)(23676002)(47776003)(85306002)(66066001)(33646001)(47736001)(50986001)(79102001)(77982001)(74876001)(49866001)(15975445006)(65816001)(74706001)(54316002)(47976001)(56776001)(63696002)(87266001)(76482001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:CH1SR01MB600;H:hybrid.exchange.microsoft.com;CLIP:131.107.147.100;FPR:;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-PRVS: 006546F32A
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBJKoS2D007967
 
-From: Davidlohr Bueso <davidlohr@hp.com>
 
-Currently, the futex global hash table suffers from it's fixed, smallish
-(for today's standards) size of 256 entries, as well as its lack of NUMA
-awareness. Large systems, using many futexes, can be prone to high amounts
-of collisions; where these futexes hash to the same bucket and lead to
-extra contention on the same hb->lock. Furthermore, cacheline bouncing is a
-reality when we have multiple hb->locks residing on the same cacheline and
-different futexes hash to adjacent buckets.
 
-This patch keeps the current static size of 16 entries for small systems,
-or otherwise, 256 * ncpus (or larger as we need to round the number to a
-power of 2). Note that this number of CPUs accounts for all CPUs that can
-ever be available in the system, taking into consideration things like
-hotpluging. While we do impose extra overhead at bootup by making the hash
-table larger, this is a one time thing, and does not shadow the benefits
-of this patch.
+> -----Original Message-----
+> From: Tom Herbert [mailto:therbert@google.com]
+> Sent: Thursday, December 19, 2013 2:59 PM
+> To: Haiyang Zhang
+> Cc: Daniel Borkmann; Ben Hutchings; davem@davemloft.net;
+> netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
+> jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH net-next] hyperv: Add support for Virtual Receive Side
+> Scaling (vRSS)
+> 
+> I posted an implementation of library functions for Toeplitz (see [PATCH 1/2]
+> net: Toeplitz library functions).  This includes some pre-computation of the
+> table to get reasonable performance in the host. Please take a look.
+> 
+> On the other hand, if you're computing a hash in the host, do you really need
+> Toeplitz, flow_dissector already supports a good hash computation and can
+> parse many more packets than just plain UDP/TCP.
+> We probably only should be doing Toeplitz in the host if we need to match
+> HW computed values.
 
-Furthermore, as suggested by tglx, by cache aligning the hash buckets we can
-avoid access across cacheline boundaries and also avoid massive cache line
-bouncing if multiple cpus are hammering away at different hash buckets which
-happen to reside in the same cache line.
+The Hyper-V host requires the guest to select channel based on Toeplitz hash, so
+we need to compute it on the guest. 
 
-Also, similar to other core kernel components (pid, dcache, tcp), by using
-alloc_large_system_hash() we benefit from its NUMA awareness and thus the
-table is distributed among the nodes instead of in a single one.
+Regarding the Toeplitz function, do you mean this patch?
+http://patchwork.ozlabs.org/patch/277344/
+This doesn't contain the implementation. Could you point me to the actual code?
 
-For a custom microbenchmark that pounds on the uaddr hashing -- making the wait
-path fail at futex_wait_setup() returning -EWOULDBLOCK for large amounts of
-futexes, we can see the following benefits on a 80-core, 8-socket 1Tb server:
+Thanks,
+- Haiyang
 
-+---------+--------------------+------------------------+-----------------------+-------------------------------+
-| threads | baseline (ops/sec) | aligned-only (ops/sec) | large table (ops/sec) | large table+aligned (ops/sec) |
-+---------+--------------------+------------------------+-----------------------+-------------------------------+
-|     512 |		 32426 | 50531  (+55.8%)	| 255274  (+687.2%)	| 292553  (+802.2%)		|
-|     256 |		 65360 | 99588  (+52.3%)	| 443563  (+578.6%)	| 508088  (+677.3%)		|
-|     128 |		125635 | 200075 (+59.2%)	| 742613  (+491.1%)	| 835452  (+564.9%)		|
-|      80 |		193559 | 323425 (+67.1%)	| 1028147 (+431.1%)	| 1130304 (+483.9%)		|
-|      64 |		247667 | 443740 (+79.1%)	| 997300  (+302.6%)	| 1145494 (+362.5%)		|
-|      32 |		628412 | 721401 (+14.7%)	| 965996  (+53.7%)	| 1122115 (+78.5%)		|
-+---------+--------------------+------------------------+-----------------------+-------------------------------+
-
-Cc: Ingo Molnar <mingo@kernel.org>
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Jeff Mahoney <jeffm@suse.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Scott Norton <scott.norton@hp.com>
-Cc: Tom Vaden <tom.vaden@hp.com>
-Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-Reviewed-by: Waiman Long <Waiman.Long@hp.com>
-Reviewed-and-tested-by: Jason Low <jason.low2@hp.com>
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
----
- kernel/futex.c | 26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 085f5fa..577481d 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -63,6 +63,7 @@
- #include <linux/sched/rt.h>
- #include <linux/hugetlb.h>
- #include <linux/freezer.h>
-+#include <linux/bootmem.h>
- 
- #include <asm/futex.h>
- 
-@@ -70,8 +71,6 @@
- 
- int __read_mostly futex_cmpxchg_enabled;
- 
--#define FUTEX_HASHBITS (CONFIG_BASE_SMALL ? 4 : 8)
--
- /*
-  * Futex flags used to encode options to functions and preserve them across
-  * restarts.
-@@ -149,9 +148,11 @@ static const struct futex_q futex_q_init = {
- struct futex_hash_bucket {
- 	spinlock_t lock;
- 	struct plist_head chain;
--};
-+} ____cacheline_aligned_in_smp;
- 
--static struct futex_hash_bucket futex_queues[1<<FUTEX_HASHBITS];
-+static unsigned long __read_mostly futex_hashsize;
-+
-+static struct futex_hash_bucket *futex_queues;
- 
- /*
-  * We hash on the keys returned from get_futex_key (see below).
-@@ -161,7 +162,7 @@ static struct futex_hash_bucket *hash_futex(union futex_key *key)
- 	u32 hash = jhash2((u32*)&key->both.word,
- 			  (sizeof(key->both.word)+sizeof(key->both.ptr))/4,
- 			  key->both.offset);
--	return &futex_queues[hash & ((1 << FUTEX_HASHBITS)-1)];
-+	return &futex_queues[hash & (futex_hashsize - 1)];
- }
- 
- /*
-@@ -2719,7 +2720,18 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
- static int __init futex_init(void)
- {
- 	u32 curval;
--	int i;
-+	unsigned long i;
-+
-+#if CONFIG_BASE_SMALL
-+	futex_hashsize = 16;
-+#else
-+	futex_hashsize = roundup_pow_of_two(256 * num_possible_cpus());
-+#endif
-+
-+	futex_queues = alloc_large_system_hash("futex", sizeof(*futex_queues),
-+					       futex_hashsize, 0,
-+					       futex_hashsize < 256 ? HASH_SMALL : 0,
-+					       NULL, NULL, futex_hashsize, futex_hashsize);
- 
- 	/*
- 	 * This will fail and we want it. Some arch implementations do
-@@ -2734,7 +2746,7 @@ static int __init futex_init(void)
- 	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
- 		futex_cmpxchg_enabled = 1;
- 
--	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
-+	for (i = 0; i < futex_hashsize; i++) {
- 		plist_head_init(&futex_queues[i].chain);
- 		spin_lock_init(&futex_queues[i].lock);
- 	}
--- 
-1.8.1.4
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
