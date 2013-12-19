@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964Ab3LSTpl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 14:45:41 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:52504 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab3LSTpj (ORCPT
+	id S1755821Ab3LSTsm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 14:48:42 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:40803 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755154Ab3LSTsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 14:45:39 -0500
+	Thu, 19 Dec 2013 14:48:41 -0500
+Date: Thu, 19 Dec 2013 11:48:37 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Arnaud Ebalard <arno@natisbad.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, rtc-linux@googlegroups.com,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Mark Brown <broonie@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Peter Huewe <peter.huewe@infineon.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thierry Reding <treding@nvidia.com>
+Subject: Re: Can someone Ack and queue a patch for RTC subsytem?
+Message-ID: <20131219194837.GA27311@roeck-us.net>
+References: <87siton6ke.fsf@natisbad.org>
+ <20131219173857.0a546b99@linux.lan.towertech.it>
+ <87d2kslphr.fsf@natisbad.org>
+ <20131219184024.2a649328@linux.lan.towertech.it>
+ <8761qkk96q.fsf@natisbad.org>
+ <20131219180940.GY2609@titan.lakedaemon.net>
 MIME-Version: 1.0
-In-Reply-To: <20131219192621.GA9228@kvack.org>
-References: <20131219040738.GA10316@redhat.com>
-	<CA+55aFwweoGs3eGWXFULcqnbRbpDhpj2qrefXB5OpQOiWW8wYA@mail.gmail.com>
-	<20131219155313.GA25771@redhat.com>
-	<CA+55aFyoXCDNfHb+r5b=CgKQLPA1wrU_Tmh4ROZNEt5TPjpODA@mail.gmail.com>
-	<20131219181134.GC25385@kmo-pixel>
-	<20131219182920.GG30640@kvack.org>
-	<CA+55aFzCo_r7ZGHk+zqUjmCW2w7-7z9oxEJjhR66tZ4qZPxnvw@mail.gmail.com>
-	<20131219192621.GA9228@kvack.org>
-Date: Fri, 20 Dec 2013 04:45:38 +0900
-X-Google-Sender-Auth: xFXimc7AtQL87oFFV4lJKSA47lU
-Message-ID: <CA+55aFz=tEkVAx9VndtCXApDxcw+5T-BxMsVuXp+vMSb05f8Aw@mail.gmail.com>
-Subject: Re: bad page state in 3.13-rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Kent Overstreet <kmo@daterainc.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@gentwo.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131219180940.GY2609@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 4:26 AM, Benjamin LaHaise <bcrl@kvack.org> wrote:
->
-> Okay, I'll rewriting it to use truncate to free the pages.
+On Thu, Dec 19, 2013 at 01:09:40PM -0500, Jason Cooper wrote:
+> On Thu, Dec 19, 2013 at 07:05:49PM +0100, Arnaud Ebalard wrote:
+> > Hi,
+> > 
+> > Alessandro Zummo <a.zummo@towertech.it> writes:
+> > 
+> > >> Do you want me to send a v7 w/ the .proc helper removed or leave
+> > >> things as they are and Ack the patch as is?
+> > >
+> > >  Unless absolutely needed, I'd prefer if you can remove them
+> > >  or move to sysfs.
+> > 
+> > Well, my helper provides info on control and status registers flags
+> > (just like rtc-isl1208.c does), which are useful mainly for debug I
+> > guess. If this can help pushing things forward, I will send a v7 later
+> > today w/ the .proc helper removed from the patch.
+> 
+> Why not convert to debugfs?
+> 
+Separate follow-on patch, maybe, to keep things going ?
 
-It already does that in put_aio_ring_file() afaik. No?
-
-                Linus
+Guenter
