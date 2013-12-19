@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab3LSOZv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:25:51 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:36364 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408Ab3LSOZm (ORCPT
+	id S1754914Ab3LSOX2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:23:28 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:59785 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754782Ab3LSOXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:25:42 -0500
-Date: Thu, 19 Dec 2013 09:25:36 -0500
+	Thu, 19 Dec 2013 09:23:24 -0500
 From: Matt Porter <mporter@linaro.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: balbi@ti.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
         Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>, Tomasz Figa <t.figa@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>,
+        Paul Zimmerman <paulz@synopsys.com>
+Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Dinh Nguyen <dinh.linux@gmail.com>,
         Russell King <linux@arm.linux.org.uk>,
@@ -25,75 +25,54 @@ Cc: balbi@ti.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Devicetree List <devicetree@vger.kernel.org>,
         Linaro Patches <patches@linaro.org>
-Subject: Re: [PATCH v7 8/9] phy: add Broadcom Kona USB2 PHY driver
-Message-ID: <20131219142536.GG15814@beef>
-References: <1387309356-17195-1-git-send-email-mporter@linaro.org>
- <1387309356-17195-9-git-send-email-mporter@linaro.org>
- <20131218162554.GF4970@saruman.home>
- <52B288EF.1040006@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B288EF.1040006@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: [PATCH v8 2/9] staging: dwc2: update DT binding to add generic clock/phy properties
+Date: Thu, 19 Dec 2013 09:23:03 -0500
+Message-Id: <1387462990-12039-3-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1387462990-12039-1-git-send-email-mporter@linaro.org>
+References: <1387462990-12039-1-git-send-email-mporter@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 11:19:35AM +0530, Kishon Vijay Abraham I wrote:
-> Hi Felipe,
-> 
-> On Wednesday 18 December 2013 09:55 PM, Felipe Balbi wrote:
-> > On Tue, Dec 17, 2013 at 02:42:35PM -0500, Matt Porter wrote:
-> >> Add a driver for the internal Broadcom Kona USB 2.0 PHY found
-> >> on the BCM281xx family of SoCs.
-> >>
-> >> Signed-off-by: Matt Porter <mporter@linaro.org>
-> > 
-> > Kishon, are you ok with this driver ?
-> 
-> yeah. Since this patch touches phy/Kconfig (and Makefile) and there is one more
-> PHY driver to be merged that also modifies Kconfig there might be conflicts. So
-> thought I should be taking this patch?
-> > 
-> >> +static int bcm_kona_usb2_probe(struct platform_device *pdev)
-> >> +{
-> >> +	struct device *dev = &pdev->dev;
-> >> +	struct bcm_kona_usb *phy;
-> >> +	struct resource *res;
-> >> +	struct phy *gphy;
-> >> +	struct phy_provider *phy_provider;
-> >> +
-> >> +	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
-> >> +	if (!phy)
-> >> +		return -ENOMEM;
-> >> +
-> >> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> >> +	phy->regs = devm_ioremap_resource(&pdev->dev, res);
-> >> +	if (IS_ERR(phy->regs))
-> >> +		return PTR_ERR(phy->regs);
-> >> +
-> >> +	platform_set_drvdata(pdev, phy);
-> >> +
-> >> +	phy_provider = devm_of_phy_provider_register(dev,
-> >> +			of_phy_simple_xlate);
-> >> +	if (IS_ERR(phy_provider))
-> >> +		return PTR_ERR(phy_provider);
-> >> +
-> >> +	gphy = devm_phy_create(dev, &ops, NULL);
-> >> +	if (IS_ERR(gphy))
-> >> +		return PTR_ERR(gphy);
-> >> +
-> >> +	/* The Kona PHY supports an 8-bit wide UTMI interface */
-> >> +	phy_set_bus_width(gphy, 8);
-> >> +
-> >> +	phy_set_drvdata(gphy, phy);
-> > 
-> > I think this set_drvdata() should be done before registering the
-> > provider, no ?
-> 
-> hmm, right.
+dwc2/s3c-hsotg require a single clock to be specified and optionally
+a generic phy. On the s3c-hsotg driver old style USB phy support is
+present as a fallback so the generic phy properties are optional.
 
-I sent a v8 series update that addresses this issue.
+Signed-off-by: Matt Porter <mporter@linaro.org>
+Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ Documentation/devicetree/bindings/staging/dwc2.txt | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
--Matt
+diff --git a/Documentation/devicetree/bindings/staging/dwc2.txt b/Documentation/devicetree/bindings/staging/dwc2.txt
+index 1a1b7cf..a1753ed 100644
+--- a/Documentation/devicetree/bindings/staging/dwc2.txt
++++ b/Documentation/devicetree/bindings/staging/dwc2.txt
+@@ -5,6 +5,14 @@ Required properties:
+ - compatible : "snps,dwc2"
+ - reg : Should contain 1 register range (address and length)
+ - interrupts : Should contain 1 interrupt
++- clocks: clock provider specifier
++- clock-names: shall be "otg"
++Refer to clk/clock-bindings.txt for generic clock consumer properties
++
++Optional properties:
++- phys: phy provider specifier
++- phy-names: shall be "device"
++Refer to phy/phy-bindings.txt for generic phy consumer properties
+ 
+ Example:
+ 
+@@ -12,4 +20,8 @@ Example:
+                 compatible = "ralink,rt3050-usb, snps,dwc2";
+                 reg = <0x101c0000 40000>;
+                 interrupts = <18>;
++		clocks = <&usb_otg_ahb_clk>;
++		clock-names = "otg";
++		phys = <&usbphy>;
++		phy-names = "usb2-phy";
+         };
+-- 
+1.8.4
+
