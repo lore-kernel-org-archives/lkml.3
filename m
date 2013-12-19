@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab3LSSfk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:35:40 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:51361 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753842Ab3LSSfi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:35:38 -0500
-X-Originating-IP: 173.246.103.110
-Date: Thu, 19 Dec 2013 10:35:29 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Matthias Beyer <mail@beyermatthias.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        linux-usb <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 1/7] drivers: usb: Include appropriate header file in
- hcd.c
-Message-ID: <20131219183529.GB17741@jtriplet-mobl1>
-References: <0e0e74b4487edd341b66674333d734d5828c7e64.1387439261.git.rashika.kheria@gmail.com>
- <20131219163623.GB12255@kroah.com>
- <CAMpEsFGi7hj8EXUJ78zS0g6ZWRTW5FpGD5Q7tz1DgEJSNAWSZQ@mail.gmail.com>
- <20131219165802.GA27639@kroah.com>
- <AE90C24D6B3A694183C094C60CF0A2F6026B74B9@saturn3.aculab.com>
+	id S1755556Ab3LSSgN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:36:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20158 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753698Ab3LSSgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 13:36:12 -0500
+Message-ID: <52B33C93.2020006@redhat.com>
+Date: Thu, 19 Dec 2013 13:36:03 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B74B9@saturn3.aculab.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+CC: Alex Thorlton <athorlton@sgi.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: Remove bogus warning in copy_huge_pmd
+References: <1386690695-27380-1-git-send-email-mgorman@suse.de> <1386690695-27380-11-git-send-email-mgorman@suse.de> <52B0D5F9.5030208@oracle.com> <20131219120007.GJ11295@suse.de>
+In-Reply-To: <20131219120007.GJ11295@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 05:33:09PM -0000, David Laight wrote:
-> > > These warning are non-default GCC warnings. These can be seen either
-> > > by adding W=1 while running make (i.e. make W=1) or adding
-> > > -Wmissing-prototypes in KBUILD_CFLAGS in the toplevel Makefile.
-> > 
-> > By default, we don't care about 'W=1' warnings, as no one sees them, and
-> > they don't matter.
-> 
-> -Wmissing-prototypes really ought to be defined.
+On 12/19/2013 07:00 AM, Mel Gorman wrote:
+> Sasha Levin reported the following warning being triggered
+>
+> [ 1704.594807] WARNING: CPU: 28 PID: 35287 at mm/huge_memory.c:887 copy_huge_pmd+0x145/ 0x3a0()
+> [ 1704.597258] Modules linked in:
+> [ 1704.597844] CPU: 28 PID: 35287 Comm: trinity-main Tainted: G        W    3.13.0-rc4-next-20131217-sasha-00013-ga878504-dirty #4149
+> [ 1704.599924]  0000000000000377e delta! pid slot 27 [36258]: old:2 now:537927697 diff: 537927695 ffff8803593ddb90 ffffffff8439501c ffffffff854722c1
+> [ 1704.604846]  0000000000000000 ffff8803593ddbd0 ffffffff8112f8ac ffff8803593ddbe0
+> [ 1704.606391]  ffff88034bc137f0 ffff880e41677000 8000000b47c009e4 ffff88034a638000
+> [ 1704.608008] Call Trace:
+> [ 1704.608511]  [<ffffffff8439501c>] dump_stack+0x52/0x7f
+> [ 1704.609699]  [<ffffffff8112f8ac>] warn_slowpath_common+0x8c/0xc0
+> [ 1704.612617]  [<ffffffff8112f8fa>] warn_slowpath_null+0x1a/0x20
+> [ 1704.614043]  [<ffffffff812b91c5>] copy_huge_pmd+0x145/0x3a0
+> [ 1704.615587]  [<ffffffff8127e032>] copy_page_range+0x3f2/0x560
+> [ 1704.616869]  [<ffffffff81199ef1>] ? rwsem_wake+0x51/0x70
+> [ 1704.617942]  [<ffffffff8112cf59>] dup_mmap+0x2c9/0x3d0
+> [ 1704.619146]  [<ffffffff8112d54d>] dup_mm+0xad/0x150
+> [ 1704.620051]  [<ffffffff8112e178>] copy_process+0xa68/0x12e0
+> [ 1704.622976]  [<ffffffff81194eda>] ? __lock_release+0x1da/0x1f0
+> [ 1704.624234]  [<ffffffff8112eee6>] do_fork+0x96/0x270
+> [ 1704.624975]  [<ffffffff81249465>] ? context_tracking_user_exit+0x195/0x1d0
+> [ 1704.626427]  [<ffffffff811930ed>] ? trace_hardirqs_on+0xd/0x10
+> [ 1704.627681]  [<ffffffff8112f0d6>] SyS_clone+0x16/0x20
+> [ 1704.628833]  [<ffffffff843a6309>] stub_clone+0x69/0x90
+> [ 1704.629672]  [<ffffffff843a6150>] ? tracesys+0xdd/0xe2
+>
+> This warning was introduced by "mm: numa: Avoid unnecessary disruption
+> of NUMA hinting during migration" for paranoia reasons but the warning
+> is bogus. I was thinking of parallel races between NUMA hinting faults
+> and forks but this warning would also be triggered by a parallel reclaim
+> splitting a THP during a fork. Remote the bogus warning.
+>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Yeah, that's the plan; this volume of patches should make it
-sufficiently low-noise to allow turning it on by default.
+Acked-by: Rik van Riel <riel@redhat.com>
 
-> Some of the other warning are a little more pedantic, the most annoying
-> is -Wsign-compare.  OTOH a lot of code out there is clean enough to build
-> without any warnings and with a moderate amount of pedantry from the compiler.
-> 
-> OTOH just including extra headers isn't ideal - it can considerably
-> slow down the compilation time. There are many subsystems that don't
-> really separate their internal headers from their external ones.
-
-There's a benefit to doing so, though: it ensures that the prototypes in
-the header stay in sync with the definition.
-
-- Josh Triplett
