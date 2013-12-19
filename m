@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259Ab3LSRhr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 12:37:47 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:36059 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659Ab3LSRhp (ORCPT
+	id S1753911Ab3LSRiy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 12:38:54 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:58932 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612Ab3LSRix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 12:37:45 -0500
+	Thu, 19 Dec 2013 12:38:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <1387465429-3568-31-git-send-email-levex@linux.com>
-References: <1387465429-3568-2-git-send-email-levex@linux.com> <1387465429-3568-31-git-send-email-levex@linux.com>
-From: Florian Fainelli <florian@openwrt.org>
-Date: Thu, 19 Dec 2013 09:37:04 -0800
-X-Google-Sender-Auth: 1cXTJ_L1sfXHqhHrPm5pPyK4zP4
-Message-ID: <CAGVrzcZKKbm9B0A0eQbPRevT7+4CD=H_UbDCd8NaamrOjxAbcg@mail.gmail.com>
-Subject: Re: [PATCH 30/38] vlynq: add missing put_device call
-To: Levente Kurusa <levex@linux.com>
+In-Reply-To: <1387474472.2353.10.camel@joe-AO722>
+References: <CAOMwXhPPN2h2boAOn1=BaHuWa+9nYw=oe1u1bYHtHGyad9Kw8A@mail.gmail.com>
+	<1387310726.8859.5.camel@joe-AO722>
+	<CAOMwXhNVJ8HPCe6t=VkCthEiOqNtOczz5Xqy_ciM7rsqWRVOYw@mail.gmail.com>
+	<1387470731.2353.7.camel@joe-AO722>
+	<CAOMwXhPceCtCRvD8i7VO=QOuDX=M0gQuERwTConkrF9ohPfs=g@mail.gmail.com>
+	<1387474472.2353.10.camel@joe-AO722>
+Date: Thu, 19 Dec 2013 17:38:52 +0000
+X-Google-Sender-Auth: Uq5sdEBfgVQ67Fh56IfuJZCLzsQ
+Message-ID: <CAOMwXhNbiYf4MP1DNebRVWoSM4b1mGYR3MJzeR-ompg3zyFsMQ@mail.gmail.com>
+Subject: Re: Lindent formatting issues
+From: Laszlo Papp <lpapp@kde.org>
+To: Joe Perches <joe@perches.com>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/12/19 Levente Kurusa <levex@linux.com>:
-> This is required so that we give up the last reference to the device.
-> This will result in vlynq_device_release being called making the kfree()
-> in the errorpath unneccessary.
+On Thu, Dec 19, 2013 at 5:34 PM, Joe Perches <joe@perches.com> wrote:
+> On Thu, 2013-12-19 at 17:30 +0000, Laszlo Papp wrote:
+>> On Thu, Dec 19, 2013 at 4:32 PM, Joe Perches <joe@perches.com> wrote:
 >
-> Signed-off-by: Levente Kurusa <levex@linux.com>
-
-Acked-by: Florian Fainelli <florian@openwrt.org>
-
-> ---
->  drivers/vlynq/vlynq.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
+>> > Is this change from Lindent or checkpatch?
+>>
+>> I have used Lindent when these lines were generated. Here is some more:
 >
-> diff --git a/drivers/vlynq/vlynq.c b/drivers/vlynq/vlynq.c
-> index 7b07135..71d5905 100644
-> --- a/drivers/vlynq/vlynq.c
-> +++ b/drivers/vlynq/vlynq.c
-> @@ -748,11 +748,14 @@ static int vlynq_probe(struct platform_device *pdev)
->         return 0;
+> I am not a Lindent / indent maintainer.
 >
->  fail_register:
-> +       put_device(&dev->dev);
-> +       dev->dev = 0;
->         iounmap(dev->local);
->  fail_remap:
->  fail_request:
->         release_mem_region(regs_res->start, len);
-> -       kfree(dev);
-> +       if(dev)
-> +               kfree(dev);
-
-This probably now generates a checkpatch warning since it is safe to
-call kfree() on a NULL pointer.
-
->         return result;
->  }
+> My suggestion remains not to use Lindent.
 >
-> --
-> 1.8.3.1
+> I _have_ suggested that Lindent be removed from the kernel.
+>
+> http://lkml.org/lkml/2013/2/11/390
 
-
-
--- 
-Florian
+I see. It was quite a while ago. You could post a follow-up? ;-)
