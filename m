@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab3LSPpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:45:25 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:57140 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab3LSPpY (ORCPT
+	id S1754189Ab3LSPpp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:45:45 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:55831 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753614Ab3LSPpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:45:24 -0500
+	Thu, 19 Dec 2013 10:45:43 -0500
+Date: Thu, 19 Dec 2013 10:45:42 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Rashika Kheria <rashika.kheria@gmail.com>
+cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <josh@joshtriplett.org>
+Subject: Re: [PATCH 3/7] drivers: usb: Include appropriate header file in
+ hcd.h
+In-Reply-To: <026c3f34e6c26d5456940c28a0f33da96064e023.1387439261.git.rashika.kheria@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1312191043280.984-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <52B313D8.6090508@linux.com>
-References: <1387465429-3568-2-git-send-email-levex@linux.com>
-	<1387465429-3568-22-git-send-email-levex@linux.com>
-	<20131219152044.GB16994@htj.dyndns.org>
-	<52B31158.3030801@linux.com>
-	<CAOS58YO7Ot69kv=2UOTDORMAtgL2EOq-voEj3JLCDb8Rv=LABA@mail.gmail.com>
-	<52B313D8.6090508@linux.com>
-Date: Thu, 19 Dec 2013 10:45:21 -0500
-X-Google-Sender-Auth: TLBq4Cxnwr-JWlQ5LeTGY2yFTJI
-Message-ID: <CAOS58YPnh40gdZFJ_8H2-ZnHxibQNW387ivtubH4p8G-h5QCtw@mail.gmail.com>
-Subject: Re: [PATCH 21/38] workqueue: add missing put_device call
-From: Tejun Heo <tj@kernel.org>
-To: Levente Kurusa <levex@linux.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 10:42 AM, Levente Kurusa <levex@linux.com> wrote:
->> Greg, the API as described by the comment is really weird and
->> unconventional. Failed calls are not supposed to have side effects
->> which require explicit cleanup. Can we please update the comment?
->>
->
-> Yes, it was already discussed that it would be more sane to have
-> device_register() call put_device() if it would fail, but Greg
-> said that the API was designed so that no kfree()s happen in the core.
+On Thu, 19 Dec 2013, Rashika Kheria wrote:
 
-Of course not. For the third time: A failed call shouldn't make
-material changes which makes difference to its caller. An obj which
-failed init should be destructible in the exact reverse operation that
-the caller took to create it. This is a fundamental rule of any API
-design. There sure are occasional exceptions but there's no reason to
-deviate from that here.
+> Include header file include/linux/usb.h in include/linux/usb/hcd.h
+> because structures usb_device, usb_host_config and usb_interface have
+> their definitions in include/linux/usb.h.
+> 
+> This eliminates the following warning in include/linux/usb/hcd.h:
+> include/linux/usb/hcd.h:311:44: warning: ‘struct usb_device’ declared inside parameter list [enabled by default]
+> include/linux/usb/hcd.h:412:10: warning: ‘struct usb_host_config’ declared inside parameter list [enabled by default]
+> include/linux/usb/hcd.h:614:9: warning: ‘struct usb_interface’ declared inside parameter list [enabled by default]
 
-Thanks.
+Where does this problem show up?
 
--- 
-tejun
+Any file that include linux/usb/hcd.h should include linux/usb.h first.  
+IMO it would be better to fix the source files that don't do the 
+includes properly.
+
+Of course, people have varying opinions on this issue.  As far as I 
+know, there is no fixed policy in the kernel about nested includes.
+
+Alan Stern
+
