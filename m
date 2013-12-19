@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab3LST1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 14:27:54 -0500
-Received: from doppler.thel33t.co.uk ([193.110.88.198]:42956 "EHLO
-	doppler.thel33t.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228Ab3LST1w (ORCPT
+	id S1755822Ab3LST3L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 14:29:11 -0500
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:33244 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895Ab3LST3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 14:27:52 -0500
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+	Thu, 19 Dec 2013 14:29:09 -0500
+Message-ID: <1387481345.5494.1.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, dvhart@linux.intel.com,
+        peterz@infradead.org, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
+        efault@gmx.de, jeffm@suse.com, torvalds@linux-foundation.org,
+        jason.low2@hp.com, Waiman.Long@hp.com, tom.vaden@hp.com,
+        scott.norton@hp.com, aswin@hp.com
+Date: Thu, 19 Dec 2013 11:29:05 -0800
+In-Reply-To: <20131219192532.GB564@gmail.com>
+References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
+	 <1387478746-5436-5-git-send-email-davidlohr@hp.com>
+	 <20131219192532.GB564@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Date: Thu, 19 Dec 2013 19:35:01 +0000
-From: Leigh Brown <leigh@solinno.co.uk>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Schichan <nschichan@freebox.fr>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Florian Fainelli <florian@openwrt.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v2] net: mvmdio: fix interrupt timeout handling
-In-Reply-To: <20131219174334.GB10227@obsidianresearch.com>
-References: <52B2D97F.4070200@gmail.com>
- <1387458588-17231-1-git-send-email-leigh@solinno.co.uk>
- <20131219174334.GB10227@obsidianresearch.com>
-Message-ID: <aff941cf1be9b91cc58198b4c23a3e41@doppler.thel33t.co.uk>
-User-Agent: Roundcube Webmail/0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-12-19 17:43, Jason Gunthorpe wrote:
-> On Thu, Dec 19, 2013 at 01:09:48PM +0000, Leigh Brown wrote:
->> This version corrects the whitespace issue.
->> 
->> orion_mdio_wait_ready uses wait_event_timeout to wait for the
->> SMI interrupt to fire.  wait_event_timeout waits for between
->> "timeout - 1" and "timeout" jiffies.  In this case a 1ms timeout
->> when HZ is 1000 results in a wait of 0 to 1 jiffies, causing
->> premature timeouts.
->> 
->> This fix ensures a minimum timeout of 2 jiffies, ensuring
->> wait_event_timeout will always wait at least 1 jiffie.
->> 
->> Issue reported by Nicolas Schichan.
->> 
->> Tested-by: Nicolas Schichan <nschichan@freebox.fr>
->> Signed-off-by: Leigh Brown <leigh@solinno.co.uk>
->>  drivers/net/ethernet/marvell/mvmdio.c | 6 ++++++
->>  1 file changed, 6 insertions(+)
+On Thu, 2013-12-19 at 20:25 +0100, Ingo Molnar wrote:
+> * Davidlohr Bueso <davidlohr@hp.com> wrote:
 > 
-> Leigh, I have just noticed a regression in 3.13-rc3 vs 3.10, on
-> kirkwood where 3.13 occasionally prints:
+> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> > Signed-off-by: Jason Low <jason.low2@hp.com>
 > 
-> 3 12/11 13:59:02 kernel: orion-mdio f1072004.mdio: Timeout: SMI busy
-> for too long
-> 
-> Is that the same issue that this patch is addressing?
+> So, that's not a valid SOB sequence either, the person sending me a 
+> patch should be the last person in the SOB chain 
 
-Yes, absolutely.
+Which is why I had it like that in the original version.
 
-Regards,
+> - if you want to 
+> credit them please add a Reviewed-by or add special credits to the 
+> changelog.
 
-Leigh.
+I will change the tags and resend in a v4.
+
+Thanks,
+Davidlohr
 
