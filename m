@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab3LSSxt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:53:49 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55534 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752296Ab3LSSxs (ORCPT
+	id S1754966Ab3LSSyL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:54:11 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53153 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754486Ab3LSSyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:53:48 -0500
-Message-ID: <52B340B4.3050309@linutronix.de>
-Date: Thu, 19 Dec 2013 19:53:40 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Thu, 19 Dec 2013 13:54:08 -0500
+Message-ID: <52B340CB.90807@wwwdotorg.org>
+Date: Thu, 19 Dec 2013 11:54:03 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] mfd: input: iio: ti_amm335x: Rework TSC/ADC synchronization
-References: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de> <1387466911-3732-6-git-send-email-bigeasy@linutronix.de> <20131219171823.GC16145@lee--X1>
-In-Reply-To: <20131219171823.GC16145@lee--X1>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: David Herrmann <dh.herrmann@gmail.com>, linux-kernel@vger.kernel.org
+CC: Takashi Iwai <tiwai@suse.de>, the arch/x86 maintainers <x86@kernel.org>,
+        linux-fbdev@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org
+Subject: Re: [PATCH v3] x86: sysfb: remove sysfb when probing real hw
+References: <1387374611-12493-1-git-send-email-dh.herrmann@gmail.com> <1387448038-8260-1-git-send-email-dh.herrmann@gmail.com>
+In-Reply-To: <1387448038-8260-1-git-send-email-dh.herrmann@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 06:18 PM, Lee Jones wrote:
+On 12/19/2013 03:13 AM, David Herrmann wrote:
+> With CONFIG_X86_SYSFB=y, probing real hw-drivers may result in
+> resource-conflicts and drivers will refuse to load. A call to
+> request_mem_region() will fail, if the region overlaps with the mem-region
+> used by simplefb. The common desktop DRM drivers (intel, nouveau, radeon)
+> are not affected as they don't reserve their resources, but some others
+> do, including (nvidiafb, cirrus, ..).
 
-> Assuming nothing else has changed since the answers you gave me:
->   Acked-by: Lee Jones <lee.jones@linaro.org>
-> 
-> Once we have the remaining Acks I'll happily apply this patch-set.
-
-Thank you.
-
-Sebastian
+I have validated that this doesn't cause any regressions on the/a
+non-x86 platform using simplefb, although given the main point of this
+patch is to fix issues on x86, I'm rather hesitant to give a tested-by
+tag in case someone looking back interprets it incorrectly:-)
