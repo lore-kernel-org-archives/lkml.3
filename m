@@ -1,106 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab3LSSnq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:43:46 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:36403 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677Ab3LSSnn (ORCPT
+	id S1754470Ab3LSSqF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:46:05 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:8019 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab3LSSqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:43:43 -0500
-Date: Thu, 19 Dec 2013 19:43:39 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Borislav Petkov <bp@alien8.de>, Mike Galbraith <efault@gmx.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
-        linux-pm@vger.kernel.org, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <lenb@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power
- regression
-Message-ID: <20131219184339.GA32669@gmail.com>
-References: <52B316FF.50906@zytor.com>
- <20131219160210.GA28426@gmail.com>
- <52B31B21.6010901@zytor.com>
- <20131219162136.GM16438@laptop.programming.kicks-ass.net>
- <52B323BE.7090108@zytor.com>
- <20131219170741.GB30382@gmail.com>
- <52B33640.3020204@zytor.com>
- <52B338AA.1020307@zytor.com>
- <20131219182314.GE32508@gmail.com>
- <CA+55aFzGxcML7j8CEvQPYzh0W81uVoAAVmGctMOUZ7CZ1yYd2A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFzGxcML7j8CEvQPYzh0W81uVoAAVmGctMOUZ7CZ1yYd2A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Dec 2013 13:46:03 -0500
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@redhat.com, dvhart@linux.intel.com, peterz@infradead.org,
+        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
+        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
+        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
+        aswin@hp.com, davidlohr@hp.com
+Subject: [PATCH v3 0/4] futex: Wakeup optimizations
+Date: Thu, 19 Dec 2013 10:45:42 -0800
+Message-Id: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changes from v2 [http://lwn.net/Articles/575449/]:
+ - Reordered SOB tags to reflect me as primary author.
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+ - Improved ordering guarantee comments for patch 4.
 
-> The x86 memory rules are that two loads always execute in order (ie 
-> rmb is a no-op).
-> 
-> So I see no reason for a memory barrier after the monitor. [...]
+ - Rebased patch 4 against Linus' tree (this patch didn't
+   apply after the recent futex changes/fixes).
 
-Yes, I'm leaning towards that interpretation as well, but the reason 
-I'm a bit catious is the somewhat curious (to me!) wording of the 
-MONITOR instruction:
+Changes from v1 [https://lkml.org/lkml/2013/11/22/525]:
+ - Removed patch "futex: Check for pi futex_q only once".
 
-  Sets up a linear address range to be monitored by hardware and 
-  activates the monitor.
+ - Cleaned up ifdefs for larger hash table.
 
-  ...
+ - Added a doc patch from tglx that describes the futex 
+   ordering guarantees.
 
-  The MONITOR instruction is ordered as a load operation with respect 
-  to other memory trans­actions. The instruction can be used at all 
-  privilege levels and is subject to all permission checking and 
-  faults associated with a byte load. Like a load, the MONITOR 
-  instruction sets the A-bit but not the D-bit in page tables.
+ - Improved the lockless plist check for the wake calls.
+   Based on the community feedback, the necessary abstractions
+   and barriers are added to maintain ordering guarantees.
+   Code documentation is also updated.
 
-Where apparently the 'range' means 'full cache line surrounding the 
-memory address in question'.
+ - Removed patch "sched,futex: Provide delayed wakeup list".
+   Based on feedback from PeterZ, I will look into this as
+   a separate issue once the other patches are settled.
+ 
 
-We have no other load instructions that operate on such a large 
-'range' of addresses, and I wanted to make sure it's a true (single 
-byte) load for that specific address. The documentation does not 
-appear to explicitly state that it's a load for that address - only 
-that it's ordered as a load.
+We have been dealing with a customer database workload on large
+12Tb, 240 core 16 socket NUMA system that exhibits high amounts 
+of contention on some of the locks that serialize internal futex 
+data structures. This workload specially suffers in the wakeup 
+paths, where waiting on the corresponding hb->lock can account for 
+up to ~60% of the time. The result of such calls can mostly be 
+classified as (i) nothing to wake up and (ii) wakeup large amount 
+of tasks.
 
-The reason I'm asking is because 'flags' itself might not be at the 
-beginning of the cache line, as it's in the middle of thread_info:
+Before these patches are applied, we can see this pathological behavior:
 
- struct thread_info {
-        struct task_struct      *task;          /* main task structure */
-        struct exec_domain      *exec_domain;   /* execution domain */
-        __u32                   flags;          /* low level flags */
+ 37.12%  826174  xxx  [kernel.kallsyms] [k] _raw_spin_lock
+            --- _raw_spin_lock
+             |
+             |--97.14%-- futex_wake
+             |          do_futex
+             |          sys_futex
+             |          system_call_fastpath
+             |          |
+             |          |--99.70%-- 0x7f383fbdea1f
+             |          |           yyy
 
-while 'MONITOR' appears to work on the cache line. So are all 
-addresses within that cache line ordered? Only the specific address 
-given to the instruction itself? Only the first word of the cacheline 
-itself?
+ 43.71%  762296  xxx  [kernel.kallsyms] [k] _raw_spin_lock
+            --- _raw_spin_lock
+             |
+             |--53.74%-- futex_wake
+             |          do_futex
+             |          sys_futex
+             |          system_call_fastpath
+             |          |
+             |          |--99.40%-- 0x7fe7d44a4c05
+             |          |           zzz
+             |--45.90%-- futex_wait_setup
+             |          futex_wait
+             |          do_futex
+             |          sys_futex
+             |          system_call_fastpath
+             |          0x7fe7ba315789
+             |          syscall
 
-The documentation is a bit vague, at least in my reading, and 
-depending on which actual word the instruction reads (if it reads any 
-word at all ... it's probably just setting up an address for MWAIT) 
-from that cacheline, its ordering properties might be surprising.
 
-> [...] But both sides of clflush sounds sane, and as mentioned the 
-> "go to sleep" side isn't as critical as the "wake up" side if the 
-> monitor.
+With these patches, contention is practically non existent:
 
-Yeah.
+ 0.10%     49   xxx  [kernel.kallsyms]   [k] _raw_spin_lock
+               --- _raw_spin_lock
+                |
+                |--76.06%-- futex_wait_setup
+                |          futex_wait
+                |          do_futex
+                |          sys_futex
+                |          system_call_fastpath
+                |          |
+                |          |--99.90%-- 0x7f3165e63789
+                |          |          syscall|
+                           ...
+                |--6.27%-- futex_wake
+                |          do_futex
+                |          sys_futex
+                |          system_call_fastpath
+                |          |
+                |          |--54.56%-- 0x7f317fff2c05
+                ...
 
-> Please let's just make that pre-monitor hack be a static key, and do 
-> mfence explicitly around the clflush inside that conditional 
-> section.
+Patch 1 is a cleanup.
 
-Agreed.
+Patch 2 addresses the well known issue of the global hash table.
+By creating a larger and NUMA aware table, we can reduce the false
+sharing and collisions, thus reducing the chance of different futexes 
+using hb->lock.
 
-Thanks,
+Patch 3 documents the futex ordering guarantees.
 
-	Ingo
+Patch 4 reduces contention on the corresponding hb->lock by not trying to
+acquire it if there are no blocked tasks in the waitqueue.
+This particularly deals with point (i) above, where we see that it is not
+uncommon for up to 90% of wakeup calls end up returning 0, indicating that no
+tasks were woken.
+
+This patchset has also been tested on smaller systems for a variety of
+benchmarks, including java workloads, kernel builds and custom bang-the-hell-out-of
+hb locks programs. So far, no functional or performance regressions have been seen.
+Furthermore, no issues were found when running the different tests in the futextest 
+suite: http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/
+
+This patchset applies on top of Linus' tree as of v3.13-rc4 (f7556698).
+
+Special thanks to Scott Norton, Tom Vanden, Mark Ray and Aswin Chandramouleeswaran
+for help presenting, debugging and analyzing the data.
+
+  futex: Misc cleanups
+  futex: Larger hash table
+  futex: Document ordering guarantees
+  futex: Avoid taking hb lock if nothing to wakeup
+
+ kernel/futex.c | 236 +++++++++++++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 196 insertions(+), 40 deletions(-)
+
+-- 
+1.8.1.4
+
