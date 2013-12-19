@@ -1,124 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab3LSLzl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:55:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44434 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717Ab3LSLzj (ORCPT
+	id S1755442Ab3LSOZn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:25:43 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:56292 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754920Ab3LSOZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:55:39 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Felix Fietkau <nbd@openwrt.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 015/208] tcp: tsq: restore minimal amount of queueing
-Date: Thu, 19 Dec 2013 11:51:53 +0000
-Message-Id: <1387454106-19326-16-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 09:25:34 -0500
+Date: Thu, 19 Dec 2013 15:24:02 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kumar Gala <galak@kernel.crashing.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        Alexey Lugovskoy <lugovskoy@dev.rtsoft.ru>,
+        Dmitry Krivoschekov <dkrivoschokov@dev.rtsoft.ru>
+Subject: Re: commit e38c0a1f breaks powerpc boards with uli1575 chip
+Message-ID: <20131219142400.GA13878@ulmo.nvidia.com>
+References: <201312171135.38576@blacky.localdomain>
+ <52B1EC15.5070606@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
+Content-Disposition: inline
+In-Reply-To: <52B1EC15.5070606@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--vtzGhvizbBRQ85DL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Eric Dumazet <edumazet@google.com>
+On Wed, Dec 18, 2013 at 12:40:21PM -0600, Rob Herring wrote:
+> [fixed DT maillist address]
+>=20
+> On 12/17/2013 01:35 AM, Nikita Yushchenko wrote:
+> > Hi
+> >=20
+> > While trying to make freescale p2020ds and  mpc8572ds boards working wi=
+th mainline kernel, I faced that commit=20
+> > e38c0a1f (Handle #address-cells > 2 specially) breaks things with these=
+ boards.
+>=20
+> Good to see this broke in v3.7 and is just now found...
+>=20
+> >=20
+> > Both these boards have uli1575 chip.
+> > Corresponding part in device tree is something like
+> >=20
+> >                 uli1575@0 {
+> >                         reg =3D <0x0 0x0 0x0 0x0 0x0>;
+> >                         #size-cells =3D <2>;
+> >                         #address-cells =3D <3>;
+> >                         ranges =3D <0x2000000 0x0 0x80000000
+> >                                   0x2000000 0x0 0x80000000
+> >                                   0x0 0x20000000
+> >=20
+> >                                   0x1000000 0x0 0x0
+> >                                   0x1000000 0x0 0x0
+> >                                   0x0 0x10000>;
+> >                         isa@1e {
+> > ...
+> >=20
+> > I.e. it has #address-cells =3D <3>
+> >=20
+> >=20
+> > With commit e38c0a1f reverted, devices under uli1575 are registered cor=
+rectly, e.g. for rtc
+> >=20
+> > OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rt=
+c@70 **
+> > OF: bus is isa (na=3D2, ns=3D1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@=
+1e
+> > OF: translating address: 00000001 00000070
+> > OF: parent bus is default (na=3D3, ns=3D2) on /pcie@ffe09000/pcie@0/uli=
+1575@0
+> > OF: walking ranges...
+> > OF: ISA map, cp=3D0, s=3D1000, da=3D70
+> > OF: parent translation for: 01000000 00000000 00000000
+> > OF: with offset: 70
+> > OF: one level translation: 00000000 00000000 00000070
+> > OF: parent bus is pci (na=3D3, ns=3D2) on /pcie@ffe09000/pcie@0
+> > OF: walking ranges...
+> > OF: default map, cp=3Da0000000, s=3D20000000, da=3D70
+> > OF: default map, cp=3D0, s=3D10000, da=3D70
+> > OF: parent translation for: 01000000 00000000 00000000
+> > OF: with offset: 70
+> > OF: one level translation: 01000000 00000000 00000070
+> > OF: parent bus is pci (na=3D3, ns=3D2) on /pcie@ffe09000
+> > OF: walking ranges...
+> > OF: PCI map, cp=3D0, s=3D10000, da=3D70
+> > OF: parent translation for: 01000000 00000000 00000000
+> > OF: with offset: 70
+> > OF: one level translation: 01000000 00000000 00000070
+> > OF: parent bus is default (na=3D2, ns=3D2) on /
+> > OF: walking ranges...
+> > OF: PCI map, cp=3D0, s=3D10000, da=3D70
+> > OF: parent translation for: 00000000 ffc10000
+> > OF: with offset: 70
+> > OF: one level translation: 00000000 ffc10070
+> > OF: reached root node
+> >=20
+> > With commit e38c0a1f in place, address translation fails:
+> >=20
+> > OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rt=
+c@70 **
+> > OF: bus is isa (na=3D2, ns=3D1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@=
+1e
+> > OF: translating address: 00000001 00000070
+> > OF: parent bus is default (na=3D3, ns=3D2) on /pcie@ffe09000/pcie@0/uli=
+1575@0
+> > OF: walking ranges...
+> > OF: ISA map, cp=3D0, s=3D1000, da=3D70
+> > OF: parent translation for: 01000000 00000000 00000000
+> > OF: with offset: 70
+> > OF: one level translation: 00000000 00000000 00000070
+> > OF: parent bus is pci (na=3D3, ns=3D2) on /pcie@ffe09000/pcie@0
+> > OF: walking ranges...
+> > OF: default map, cp=3Da0000000, s=3D20000000, da=3D70
+> > OF: default map, cp=3D0, s=3D10000, da=3D70
+> > OF: not found !
+> >=20
+> > Either e38c0a1f should be reverted, or uli1575 (and perhaps other simil=
+ar devices) have to be described in device=20
+> > trees differently.
+>=20
+> Reverting would break Tegra PCIe, but you should not have to change the
+> DT either. So we need a solution.
 
-commit 98e09386c0ef4dfd48af7ba60ff908f0d525cdee upstream.
+We ended up merging a different address representation for Tegra PCIe
+and I've confirmed that reverting this commit doesn't cause any obvious
+regressions. I think all other drivers in drivers/pci/host ended up
+copying what we did on Tegra, so I wouldn't expect any other breakage
+either.
 
-After commit c9eeec26e32e ("tcp: TSQ can use a dynamic limit"), several
-users reported throughput regressions, notably on mvneta and wifi
-adapters.
+Thierry
 
-802.11 AMPDU requires a fair amount of queueing to be effective.
+--vtzGhvizbBRQ85DL
+Content-Type: application/pgp-signature
 
-This patch partially reverts the change done in tcp_write_xmit()
-so that the minimal amount is sysctl_tcp_limit_output_bytes.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-It also remove the use of this sysctl while building skb stored
-in write queue, as TSO autosizing does the right thing anyway.
+iQIcBAEBAgAGBQJSswGAAAoJEN0jrNd/PrOhBwgQAJDizHJfZzFT1RDzdd6TKM28
+cR658qJqY+s3bAAz8te+exfItB8iuIIfBujtJVivq2mJsmQvVKJX5TPD4YwCrPKz
+Zz7BAx0XmYCoU+e2uhLN5RlFPE25fp+vGB6Py9Ri6wmrx/s5BFJuxwfaMEmrnJRO
+WZXIDY2iXx+1/Ysp4fWIMDA6yWSaP5LHeyxW5JUEs1PbDv5lTO9cZhgNiRt3Vl1P
+0QB6xIUDJ9KFBrUEy+UVqzlYF3dc4bQyWpMsOeHXAtB1bzToFT4vWbNaWW0FpTbs
+GssNqrXRnnmH4RkJJ74CDJKiZ3d4X2mldKJqclGVsIkDKzHzc5DaFzP6sqWHSwGR
+UaTyVJaiD+vCQG3HKkBhCResU3DCIdLYPNpkCr93Amgn+0Y0zqsIpTdp8h4aRLnm
+8/HNyyJLxbfyFlmOBqymb6t2LPw9JCr/wlqCHW3Q6GwE1iwVbb6Tt3qkxQfd2elZ
+PUQNJgizYl612BWAPXSJ9+bhACBjRSqZO8ZDYwjpxq6Muf2thjsTe+xcbjQSoXVZ
+Q0IcfY6vHu8+zGSpSc95T9sfQjUksv9AO00qVjX8F2NLYiOOneA9CqHwG+M0QI1U
+XnCx/mOXzYNlWhIDwMY18Adlbo39eaqUnB6MYfzAUXweyRtOCOYM5C0oMNqkJqe/
+HAVXM6+MoRDDT+jg+OYF
+=rrN2
+-----END PGP SIGNATURE-----
 
-Users with well behaving NICS and correct qdisc (like sch_fq),
-can then lower the default sysctl_tcp_limit_output_bytes value from
-128KB to 8KB.
-
-This new usage of sysctl_tcp_limit_output_bytes permits each driver
-authors to check how their driver performs when/if the value is set
-to a minimum of 4KB.
-
-Normally, line rate for a single TCP flow should be possible,
-but some drivers rely on timers to perform TX completion and
-too long TX completion delays prevent reaching full throughput.
-
-Fixes: c9eeec26e32e ("tcp: TSQ can use a dynamic limit")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Sujith Manoharan <sujith@msujith.org>
-Reported-by: Arnaud Ebalard <arno@natisbad.org>
-Tested-by: Sujith Manoharan <sujith@msujith.org>
-Cc: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- Documentation/networking/ip-sysctl.txt | 3 ---
- net/ipv4/tcp.c                         | 6 ------
- net/ipv4/tcp_output.c                  | 6 +++++-
- 3 files changed, 5 insertions(+), 10 deletions(-)
-
-diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
-index b522883..392d7cd 100644
---- a/Documentation/networking/ip-sysctl.txt
-+++ b/Documentation/networking/ip-sysctl.txt
-@@ -571,9 +571,6 @@ tcp_limit_output_bytes - INTEGER
- 	typical pfifo_fast qdiscs.
- 	tcp_limit_output_bytes limits the number of bytes on qdisc
- 	or device to reduce artificial RTT/cwnd and reduce bufferbloat.
--	Note: For GSO/TSO enabled flows, we try to have at least two
--	packets in flight. Reducing tcp_limit_output_bytes might also
--	reduce the size of individual GSO packet (64KB being the max)
- 	Default: 131072
- 
- tcp_challenge_ack_limit - INTEGER
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index ec586e5..2d2e978 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -810,12 +810,6 @@ static unsigned int tcp_xmit_size_goal(struct sock *sk, u32 mss_now,
- 		xmit_size_goal = min_t(u32, gso_size,
- 				       sk->sk_gso_max_size - 1 - hlen);
- 
--		/* TSQ : try to have at least two segments in flight
--		 * (one in NIC TX ring, another in Qdisc)
--		 */
--		xmit_size_goal = min_t(u32, xmit_size_goal,
--				       sysctl_tcp_limit_output_bytes >> 1);
--
- 		xmit_size_goal = tcp_bound_to_half_wnd(tp, xmit_size_goal);
- 
- 		/* We try hard to avoid divides here */
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 28c0d6a..d673814 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1871,8 +1871,12 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
- 		 *  - better RTT estimation and ACK scheduling
- 		 *  - faster recovery
- 		 *  - high rates
-+		 * Alas, some drivers / subsystems require a fair amount
-+		 * of queued bytes to ensure line rate.
-+		 * One example is wifi aggregation (802.11 AMPDU)
- 		 */
--		limit = max(skb->truesize, sk->sk_pacing_rate >> 10);
-+		limit = max_t(unsigned int, sysctl_tcp_limit_output_bytes,
-+			      sk->sk_pacing_rate >> 10);
- 
- 		if (atomic_read(&sk->sk_wmem_alloc) > limit) {
- 			set_bit(TSQ_THROTTLED, &tp->tsq_flags);
--- 
-1.8.3.2
-
+--vtzGhvizbBRQ85DL--
