@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab3LSMCl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:02:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45419 "EHLO
+	id S1756244Ab3LSMBw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:01:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45429 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756161Ab3LSMAO (ORCPT
+	with ESMTP id S1756186Ab3LSMAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:00:14 -0500
+	Thu, 19 Dec 2013 07:00:17 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>,
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 203/208] HID: kye: Add report fixup for Genius Manticore Keyboard
-Date: Thu, 19 Dec 2013 11:55:01 +0000
-Message-Id: <1387454106-19326-204-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 205/208] intel_pstate: Fix type mismatch warning
+Date: Thu, 19 Dec 2013 11:55:03 +0000
+Message-Id: <1387454106-19326-206-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,71 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 4a2c94c9b6c03af61b04993340bd9559e2277de4 upstream.
+commit 09c87e2f79eb336bd313090be8113ae29345b8f5 upstream.
 
-Genius Manticore Keyboard presents the same problem in its report
-descriptors than Genius Gila Gaming Mouse and Genius Imperator Keyboard.
-Use the same fixup.
+The expression in line 398 of intel_pstate.c causes the following
+warning to be emitted:
 
-Reported-and-tested-by: Adam Kulagowski <fidor@fidor.org>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+drivers/cpufreq/intel_pstate.c:398:3: warning: left shift count >= width of type
+
+which happens because unsigned long is 32-bit on some architectures.
+
+Fix that by using a helper u64 variable and simplify the code
+slightly.
+
+Tested-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-core.c | 1 +
- drivers/hid/hid-ids.h  | 1 +
- drivers/hid/hid-kye.c  | 5 +++++
- 3 files changed, 7 insertions(+)
+ drivers/cpufreq/intel_pstate.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index d22cc95..016aab4 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1682,6 +1682,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KEYTOUCH, USB_DEVICE_ID_KEYTOUCH_IEC) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_MANTICORE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_GX_IMPERATOR) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_I405X) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index b4e3716..7c85918 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -489,6 +489,7 @@
- #define USB_VENDOR_ID_KYE		0x0458
- #define USB_DEVICE_ID_KYE_ERGO_525V	0x0087
- #define USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE	0x0138
-+#define USB_DEVICE_ID_GENIUS_MANTICORE	0x0153
- #define USB_DEVICE_ID_GENIUS_GX_IMPERATOR	0x4018
- #define USB_DEVICE_ID_KYE_GPEN_560	0x5003
- #define USB_DEVICE_ID_KYE_EASYPEN_I405X	0x5010
-diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
-index 7384512..35a4f9c 100644
---- a/drivers/hid/hid-kye.c
-+++ b/drivers/hid/hid-kye.c
-@@ -341,6 +341,9 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
- 		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
- 					"Genius Gx Imperator Keyboard");
-+	case USB_DEVICE_ID_GENIUS_MANTICORE:
-+		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
-+					"Genius Manticore Keyboard");
- 		break;
- 	}
- 	return rdesc;
-@@ -439,6 +442,8 @@ static const struct hid_device_id kye_devices[] = {
- 				USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
- 				USB_DEVICE_ID_GENIUS_GX_IMPERATOR) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
-+				USB_DEVICE_ID_GENIUS_MANTICORE) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, kye_devices);
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index f112f7d..315c6f9 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -383,6 +383,7 @@ static void intel_pstate_get_min_max(struct cpudata *cpu, int *min, int *max)
+ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
+ {
+ 	int max_perf, min_perf;
++	u64 val;
+ 
+ 	intel_pstate_get_min_max(cpu, &min_perf, &max_perf);
+ 
+@@ -394,11 +395,11 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
+ 	trace_cpu_frequency(pstate * 100000, cpu->cpu);
+ 
+ 	cpu->pstate.current_pstate = pstate;
++	val = pstate << 8;
+ 	if (limits.no_turbo)
+-		wrmsrl(MSR_IA32_PERF_CTL, BIT(32) | (pstate << 8));
+-	else
+-		wrmsrl(MSR_IA32_PERF_CTL, pstate << 8);
++		val |= (u64)1 << 32;
+ 
++	wrmsrl(MSR_IA32_PERF_CTL, val);
+ }
+ 
+ static inline void intel_pstate_pstate_increase(struct cpudata *cpu, int steps)
 -- 
 1.8.3.2
 
