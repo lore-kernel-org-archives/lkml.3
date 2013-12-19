@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab3LSTIZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 14:08:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9363 "EHLO mx1.redhat.com"
+	id S1755275Ab3LSTJD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 14:09:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26604 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753911Ab3LSTIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 14:08:23 -0500
-Date: Thu, 19 Dec 2013 20:08:46 +0100
+	id S1755179Ab3LSTJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 14:09:01 -0500
+Date: Thu, 19 Dec 2013 20:09:20 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>,
@@ -16,37 +16,66 @@ Cc: Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH 0/1] mm: fix the theoretical compound_lock() vs
+Subject: [PATCH 1/1] mm: fix the theoretical compound_lock() vs
 	prep_new_page() race
-Message-ID: <20131219190846.GA24566@redhat.com>
-References: <CA+55aFw_emAUOr5BYx0TfTCGEOrW6-ZRATWbm00DvCXsGD7=DQ@mail.gmail.com> <20131211170844.GA21700@redhat.com> <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de> <20131211175615.GA24546@redhat.com> <20131211191855.GA32485@redhat.com> <20131213151035.GE5408@redhat.com> <20131213162240.GA11762@redhat.com> <20131213173406.GG5408@redhat.com> <20131216183618.GA28252@redhat.com> <20131216201952.GE21218@redhat.com>
+Message-ID: <20131219190920.GB24566@redhat.com>
+References: <20131211170844.GA21700@redhat.com> <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de> <20131211175615.GA24546@redhat.com> <20131211191855.GA32485@redhat.com> <20131213151035.GE5408@redhat.com> <20131213162240.GA11762@redhat.com> <20131213173406.GG5408@redhat.com> <20131216183618.GA28252@redhat.com> <20131216201952.GE21218@redhat.com> <20131219190846.GA24566@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131216201952.GE21218@redhat.com>
+In-Reply-To: <20131219190846.GA24566@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16, Andrea Arcangeli wrote:
->
-> Can you reorder set_page_refcount in your v2?
+get/put_page(thp_tail) paths do get_page_unless_zero(page_head) +
+compound_lock(). In theory this page_head can be already freed and
+reallocated as alloc_pages(__GFP_COMP, smaller_order). In this case
+get_page_unless_zero() can succeed right after set_page_refcounted(),
+and compound_lock() can race with the non-atomic __SetPageHead().
 
-Please see the patch.
+Perhaps we should rework the thp locking (under discussion), but
+until then this patch moves set_page_refcounted() and adds wmb()
+to ensure that page->_count != 0 comes as a last change.
 
-> I wonder if arch_alloc_page needs refcount 1, it sets the page as
-> stable on s390.
+I am not sure about other callers of set_page_refcounted(), but at
+first glance they look fine to me.
 
-Obviously I have no idea what set_page_stable() does, but it works
-with page_to_phys(), unlikely the content of "struct page" can matter.
-And only s390 HAVE_ARCH_ALLOC_PAGE, I added Martin and Heiko.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ mm/page_alloc.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-> the other way around is to move prep_compound_page
-> before set_page_refcounted (though I think if we can, keeping the
-> refcounted at the very last with a comment is preferable).
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 115b23b..9402337 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -865,8 +865,6 @@ static int prep_new_page(struct page *page, int order, gfp_t gfp_flags)
+ 	}
+ 
+ 	set_page_private(page, 0);
+-	set_page_refcounted(page);
+-
+ 	arch_alloc_page(page, order);
+ 	kernel_map_pages(page, 1 << order, 1);
+ 
+@@ -876,6 +874,14 @@ static int prep_new_page(struct page *page, int order, gfp_t gfp_flags)
+ 	if (order && (gfp_flags & __GFP_COMP))
+ 		prep_compound_page(page, order);
+ 
++	/*
++	 * Make sure the caller of get_page_unless_zero() will see the
++	 * fully initialized page. Say, to ensure that compound_lock()
++	 * can't race with the non-atomic __SetPage*() above.
++	 */
++	smp_wmb();
++	set_page_refcounted(page);
++
+ 	return 0;
+ }
+ 
+-- 
+1.5.5.1
 
-Yes, yes, this looks much more natural.
-
-Oleg.
 
