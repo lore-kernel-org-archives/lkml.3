@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980Ab3LSKsR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 05:48:17 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:48415 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab3LSKsP (ORCPT
+	id S1756297Ab3LSMDC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:03:02 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45414 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756130Ab3LSMAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 05:48:15 -0500
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org, arm@kernel.org,
-        linux@arm.linux.org.uk, arnd@arndb.de, olof@lixom.net,
-        soren.brinkmann@xilinx.com, peter.crosthwaite@xilinx.com,
-        linux@roeck-us.net, Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH v7 0/2] ARM: mach-moxart: add MOXA ART SoC support
-Date: Thu, 19 Dec 2013 11:47:42 +0100
-Message-Id: <1387450064-6598-1-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
+	Thu, 19 Dec 2013 07:00:13 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Sunil K Pandey <sunil.k.pandey@intel.com>,
+        Kevin B Smith <kevin.b.smith@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 202/208] igb: Fix for issue where values could be too high for udelay function.
+Date: Thu, 19 Dec 2013 11:55:00 +0000
+Message-Id: <1387454106-19326-203-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The reason behind why fixed rate clock "ref12" couldn't be moved from
-.dtsi to .dts:
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-There was nothing else in "clocks { .. }", the entire block was then
-deleted from .dtsi.
+------------------
 
-If a skeleton "clocks { .. }" remain in .dtsi, the node can then be
-moved to .dts, and of_clk_get() works again.
+From: Carolyn Wyborny <carolyn.wyborny@intel.com>
 
-Changes since v6:
+commit df29df92adda751ac04ca5149d30014b5199db81 upstream.
 
-1. move fixed rate clock "ref12" from .dtsi to .dts
-2. sort new entry alphabetically in arch/arm/Kconfig
-3. rebase to next-20131219: arch/arm/Makefile arch/arm/Kconfig
+This patch changes the igb_phy_has_link function to check the value of the
+parameter before deciding to use udelay or mdelay in order to be sure that
+the value is not too high for udelay function.
 
-Applies to next-20131219
+Signed-off-by: Sunil K Pandey <sunil.k.pandey@intel.com>
+Signed-off-by: Kevin B Smith <kevin.b.smith@intel.com>
+Signed-off-by: Carolyn Wyborny <carolyn.wyborny@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/net/ethernet/intel/igb/e1000_phy.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Jonas Jensen (2):
-  ARM: mach-moxart: add MOXA ART SoC platform files
-  ARM: mach-moxart: add MOXA ART SoC device tree files
-
- Documentation/devicetree/bindings/arm/moxart.txt |  12 ++
- arch/arm/Kconfig                                 |   2 +
- arch/arm/Makefile                                |   1 +
- arch/arm/boot/dts/Makefile                       |   1 +
- arch/arm/boot/dts/moxart-uc7112lx.dts            | 117 ++++++++++++++++++
- arch/arm/boot/dts/moxart.dtsi                    | 148 ++++++++++++++++++++++
- arch/arm/configs/moxart_defconfig                | 149 +++++++++++++++++++++++
- arch/arm/mach-moxart/Kconfig                     |  31 +++++
- arch/arm/mach-moxart/Makefile                    |   3 +
- arch/arm/mach-moxart/moxart.c                    |  15 +++
- 10 files changed, 479 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/moxart.txt
- create mode 100644 arch/arm/boot/dts/moxart-uc7112lx.dts
- create mode 100644 arch/arm/boot/dts/moxart.dtsi
- create mode 100644 arch/arm/configs/moxart_defconfig
- create mode 100644 arch/arm/mach-moxart/Kconfig
- create mode 100644 arch/arm/mach-moxart/Makefile
- create mode 100644 arch/arm/mach-moxart/moxart.c
-
+diff --git a/drivers/net/ethernet/intel/igb/e1000_phy.c b/drivers/net/ethernet/intel/igb/e1000_phy.c
+index 6046194..4703d45 100644
+--- a/drivers/net/ethernet/intel/igb/e1000_phy.c
++++ b/drivers/net/ethernet/intel/igb/e1000_phy.c
+@@ -1719,7 +1719,10 @@ s32 igb_phy_has_link(struct e1000_hw *hw, u32 iterations,
+ 			 * ownership of the resources, wait and try again to
+ 			 * see if they have relinquished the resources yet.
+ 			 */
+-			udelay(usec_interval);
++			if (usec_interval >= 1000)
++				mdelay(usec_interval/1000);
++			else
++				udelay(usec_interval);
+ 		}
+ 		ret_val = hw->phy.ops.read_reg(hw, PHY_STATUS, &phy_status);
+ 		if (ret_val)
 -- 
-1.8.2.1
+1.8.3.2
 
