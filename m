@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040Ab3LSNe5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:34:57 -0500
-Received: from mail-qe0-f47.google.com ([209.85.128.47]:52805 "EHLO
-	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755938Ab3LSNew (ORCPT
+	id S1754420Ab3LSPFH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:05:07 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:45441 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754310Ab3LSPFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:34:52 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: nfs-ganesha-devel@lists.sourceforge.net, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 05/13] locks: eliminate BUG() call when there's an unexpected lock on file close
-Date: Thu, 19 Dec 2013 08:34:17 -0500
-Message-Id: <1387460065-28269-6-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
-References: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
+	Thu, 19 Dec 2013 10:05:04 -0500
+From: Levente Kurusa <levex@linux.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Levente Kurusa <levex@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        linux-pcmcia@lists.infradead.org
+Subject: [PATCH 24/38] pcmcia: add missing put_device call
+Date: Thu, 19 Dec 2013 16:03:35 +0100
+Message-Id: <1387465429-3568-25-git-send-email-levex@linux.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1387465429-3568-2-git-send-email-levex@linux.com>
+References: <1387465429-3568-2-git-send-email-levex@linux.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A leftover lock on the list is surely a sign of a problem of some sort,
-but it's not necessarily a reason to panic the box. Instead, just log a
-warning with some info about the lock, and then delete it like we would
-any other lock.
+This is required so that we give up the last reference to the device.
 
-In the event that the filesystem declares a ->lock f_op, we may end up
-leaking something, but that's generally preferable to an immediate
-panic.
-
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Levente Kurusa <levex@linux.com>
 ---
- fs/locks.c | 24 ++++++++++++++++++------
- 1 file changed, 18 insertions(+), 6 deletions(-)
+ drivers/pcmcia/cs.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 6084f5a..dd30933 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -2281,16 +2281,28 @@ void locks_remove_flock(struct file *filp)
- 
- 	while ((fl = *before) != NULL) {
- 		if (fl->fl_file == filp) {
--			if (IS_FLOCK(fl)) {
--				locks_delete_lock(before);
--				continue;
--			}
- 			if (IS_LEASE(fl)) {
- 				lease_modify(before, F_UNLCK);
- 				continue;
- 			}
--			/* What? */
--			BUG();
-+
-+			/*
-+			 * There's a leftover lock on the list of a type that
-+			 * we didn't expect to see. Most likely a classic
-+			 * POSIX lock that ended up not getting released
-+			 * properly, or that raced onto the list somehow. Log
-+			 * some info about it and then just remove it from
-+			 * the list.
-+			 */
-+			WARN(!IS_FLOCK(fl),
-+				"leftover lock: dev=%u:%u ino=%lu type=%hhd flags=0x%x start=%lld end=%lld\n",
-+				MAJOR(inode->i_sb->s_dev),
-+				MINOR(inode->i_sb->s_dev), inode->i_ino,
-+				fl->fl_type, fl->fl_flags,
-+				fl->fl_start, fl->fl_end);
-+
-+			locks_delete_lock(before);
-+			continue;
-  		}
- 		before = &fl->fl_next;
- 	}
+diff --git a/drivers/pcmcia/cs.c b/drivers/pcmcia/cs.c
+index 5292db6..5057de9 100644
+--- a/drivers/pcmcia/cs.c
++++ b/drivers/pcmcia/cs.c
+@@ -607,6 +607,7 @@ static int pccardd(void *__skt)
+ 	if (ret) {
+ 		dev_printk(KERN_WARNING, &skt->dev,
+ 			   "PCMCIA: unable to register socket\n");
++		put_device(&skt->dev);
+ 		skt->thread = NULL;
+ 		complete(&skt->thread_done);
+ 		return 0;
 -- 
-1.8.4.2
+1.8.3.1
 
