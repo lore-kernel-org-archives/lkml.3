@@ -1,114 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab3LSONS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:13:18 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.138]:25852 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753476Ab3LSONP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:13:15 -0500
-X-Env-Sender: anthony.olech.opensource@diasemi.com
-X-Msg-Ref: server-15.tower-180.messagelabs.com!1387462391!28454105!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-To: Guenter Roeck <linux@roeck-us.net>,
-        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-CC: Jean Delvare <khali@linux-fr.org>,
-        "open list:HARDWARE MONITORING" <lm-sensors@lm-sensors.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        "David Woodhouse" <dwmw2@infradead.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: RE: [lm-sensors] [PATCH V1] fix adc to voltage calculation in
- da9052 power driver
-Thread-Topic: [lm-sensors] [PATCH V1] fix adc to voltage calculation in
- da9052 power driver
-Thread-Index: AQHO/BX4D47Jr6rAM0azknGXH6yv+5pbj3kw
-Date: Thu, 19 Dec 2013 14:13:09 +0000
-Message-ID: <24DF37198A1E704D9811D8F72B87EB51847AC2C3@NB-EX-MBX02.diasemi.com>
-References: <201312181524.rBIFOv96017094@swsrvapps-02.lan>
- <20131218163234.714a166c@endymion.delvare>
- <24DF37198A1E704D9811D8F72B87EB51847ABF61@NB-EX-MBX02.diasemi.com>
- <20131218172402.GA18892@roeck-us.net>
-In-Reply-To: <20131218172402.GA18892@roeck-us.net>
-Accept-Language: en-GB, de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.24.126]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754540Ab3LSNYU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:24:20 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:39070 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462Ab3LSNYT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 08:24:19 -0500
+From: Dan Streetman <ddstreet@ieee.org>
+To: Seth Jennings <sjennings@variantweb.net>
+Cc: Dan Streetman <ddstreet@ieee.org>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Shirish Pargaonkar <spargaonkar@suse.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] mm/zswap: add writethrough option
+Date: Thu, 19 Dec 2013 08:23:27 -0500
+Message-Id: <1387459407-29342-1-git-send-email-ddstreet@ieee.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Guenter Roeck [mailto:groeck7@gmail.com] On Behalf Of Guenter
-> Roeck
-> Sent: 18 December 2013 17:24
-> To: Opensource [Anthony Olech]
-> Cc: Jean Delvare; open list:HARDWARE MONITORING; Anton Vorontsov;
-> David Woodhouse; open list; David Dajun Chen
-> Subject: Re: [lm-sensors] [PATCH V1] fix adc to voltage calculation in da9052
-> power driver
-> On Wed, Dec 18, 2013 at 03:45:32PM +0000, Opensource [Anthony Olech]
-> wrote:
-> > > -----Original Message-----
-> > > From: Jean Delvare [mailto:khali@linux-fr.org]
-> > > Sent: 18 December 2013 15:33
-> > > To: Opensource [Anthony Olech]
-> > > Cc: Anton Vorontsov; David Woodhouse; David Dajun Chen; open list;
-> > > open list:HARDWARE MONITORING
-> > > Subject: Re: [lm-sensors] [PATCH V1] fix adc to voltage calculation
-> > > in da9052 power driver On Wed, 18 Dec 2013 15:21:13 +0000, Anthony
-> > > Olech wrote:
-> > > > The ADC resolution of the PMIC is 10-bits, this means that the
-> > > > maximum possible value is 1023 and not the 1024 as in the code.
-> > > The conversion from register value to mV depends on the ADC's LSB,
-> > > not its range. So the maximum value which can be represented is
-> irrelevant.
-> > thanks for the speedy response, but the converted value returned by
-> > the function does depend on the scaling.
-> > For example take the two cases where value in 0x1F0, then the
-> > erroneous previous calculation yields 3469 and the new corrected
-> > calculation yields 3470
-> > So please apply the patch as it truly fixes an error.
-> AFAICS the previous calculation should return 3468. Replacing the division by
-> 512 with DIV_ROUND_CLOSEST would return 3469, and the new calculation
-> would return 3470.
-> Still, an ADC would typically have an LSB. Question here is what that LSB is (in
-> mV), or in other words what the maximim voltage represented by 0x3ff is.
-> Current assumption is that it is 1.9531 mV or 2000/1024, which admittedly is
-> odd. It might be 2000/1023 = 1.9550 mV, or it might be 2 mV.
+Currently, zswap is writeback cache; stored pages are not sent
+to swap disk, and when zswap wants to evict old pages it must
+first write them back to swap cache/disk manually.  This avoids
+swap out disk I/O up front, but only moves that disk I/O to
+the writeback case (for pages that are evicted), and adds the
+overhead of having to uncompress the evicted pages and the
+need for an additional free page (to store the uncompressed page).
 
-the maximum voltage represented by 0x3ff is 2000 mV, so the existing code is
-incorrect and the patch is to correct the error.
+This optionally changes zswap to writethrough cache by enabling
+frontswap_writethrough() before registering, so that any
+successful page store will also be written to swap disk.  The
+default remains writeback.  To enable writethrough, the param
+zswap.writethrough=1 must be used at boot.
 
-many thanks for your comment,
+Whether writeback or writethrough will provide better performance
+depends on many factors including disk I/O speed/throughput,
+CPU speed(s), system load, etc.  In most cases it is likely
+that writeback has better performance than writethrough before
+zswap is full, but after zswap fills up writethrough has
+better performance than writeback.
 
-Tony Olech
+Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+
+---
+
+Based on specjbb testing on my laptop, the results for both writeback
+and writethrough are better than not using zswap at all, but writeback
+does seem to be better than writethrough while zswap isn't full.  Once
+it fills up, performance for writethrough is essentially close to not
+using zswap, while writeback seems to be worse than not using zswap.
+However, I think more testing on a wider span of systems and conditions
+is needed.  Additionally, I'm not sure that specjbb is measuring true
+performance under fully loaded cpu conditions, so additional cpu load
+might need to be added or specjbb parameters modified (I took the
+values from the 4 "warehouses" test run).
+
+In any case though, I think having writethrough as an option is still
+useful.  More changes could be made, such as changing from writeback
+to writethrough based on the zswap % full.  And the patch doesn't
+change default behavior - writethrough must be specifically enabled.
+
+The %-ized numbers I got from specjbb on average, using the default
+20% max_pool_percent and varying the amount of heap used as shown:
+
+ram | no zswap | writeback | writethrough
+75     93.08     100         96.90
+87     96.58     95.58       96.72
+100    92.29     89.73       86.75
+112    63.80     38.66       19.66
+125    4.79      29.90       15.75
+137    4.99      4.50        4.75
+150    4.28      4.62        5.01
+162    5.20      2.94        4.66
+175    5.71      2.11        4.84
+
+
+
+ mm/zswap.c | 68 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 64 insertions(+), 4 deletions(-)
+
+diff --git a/mm/zswap.c b/mm/zswap.c
+index e55bab9..2f919db 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -61,6 +61,8 @@ static atomic_t zswap_stored_pages = ATOMIC_INIT(0);
+ static u64 zswap_pool_limit_hit;
+ /* Pages written back when pool limit was reached */
+ static u64 zswap_written_back_pages;
++/* Pages evicted when pool limit was reached */
++static u64 zswap_evicted_pages;
+ /* Store failed due to a reclaim failure after pool limit was reached */
+ static u64 zswap_reject_reclaim_fail;
+ /* Compressed page was too big for the allocator to (optimally) store */
+@@ -89,6 +91,10 @@ static unsigned int zswap_max_pool_percent = 20;
+ module_param_named(max_pool_percent,
+ 			zswap_max_pool_percent, uint, 0644);
  
-> Thanks,
-> Guenter
-> > many thanks
-> > Tony Olech
-> > > > Signed-off-by: Anthony Olech
-> > > > <anthony.olech.opensource@diasemi.com>
-> > > > This patch is relative to linux-next repository tag next-20131218
-> > > >  drivers/power/da9052-battery.c |    2 +-
-> > > >  1 file changed, 1 insertion(+), 1 deletion(-) diff --git
-> > > > a/drivers/power/da9052-battery.c b/drivers/power/da9052-battery.c
-> > > > index f8f4c0f..8f0f259 100644
-> > > > --- a/drivers/power/da9052-battery.c
-> > > > +++ b/drivers/power/da9052-battery.c
-> > > > @@ -178,7 +178,7 @@ struct da9052_battery {  static inline int
-> > > > volt_reg_to_mV(int value)  {
-> > > > -	return ((value * 1000) / 512) + 2500;
-> > > > +	return DIV_ROUND_CLOSEST(value * 2000, 1023) + 2500;
-> > > >  }
-> > > >  static inline int ichg_reg_to_mA(int value)
-> > > Jean Delvare 
++/* Writeback/writethrough mode (fixed at boot for now) */
++static bool zswap_writethrough;
++module_param_named(writethrough, zswap_writethrough, bool, 0444);
++
+ /*********************************
+ * compression functions
+ **********************************/
+@@ -629,6 +635,48 @@ end:
+ }
+ 
+ /*********************************
++* evict code
++**********************************/
++
++/*
++ * This evicts pages that have already been written through to swap.
++ */
++static int zswap_evict_entry(struct zbud_pool *pool, unsigned long handle)
++{
++	struct zswap_header *zhdr;
++	swp_entry_t swpentry;
++	struct zswap_tree *tree;
++	pgoff_t offset;
++	struct zswap_entry *entry;
++
++	/* extract swpentry from data */
++	zhdr = zbud_map(pool, handle);
++	swpentry = zhdr->swpentry; /* here */
++	zbud_unmap(pool, handle);
++	tree = zswap_trees[swp_type(swpentry)];
++	offset = swp_offset(swpentry);
++	BUG_ON(pool != tree->pool);
++
++	/* find and ref zswap entry */
++	spin_lock(&tree->lock);
++	entry = zswap_rb_search(&tree->rbroot, offset);
++	if (!entry) {
++		/* entry was invalidated */
++		spin_unlock(&tree->lock);
++		return 0;
++	}
++
++	zswap_evicted_pages++;
++
++	zswap_rb_erase(&tree->rbroot, entry);
++	zswap_entry_put(tree, entry);
++
++	spin_unlock(&tree->lock);
++
++	return 0;
++}
++
++/*********************************
+ * frontswap hooks
+ **********************************/
+ /* attempts to compress and store an single page */
+@@ -744,7 +792,7 @@ static int zswap_frontswap_load(unsigned type, pgoff_t offset,
+ 	spin_lock(&tree->lock);
+ 	entry = zswap_entry_find_get(&tree->rbroot, offset);
+ 	if (!entry) {
+-		/* entry was written back */
++		/* entry was written back or evicted */
+ 		spin_unlock(&tree->lock);
+ 		return -1;
+ 	}
+@@ -778,7 +826,7 @@ static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
+ 	spin_lock(&tree->lock);
+ 	entry = zswap_rb_search(&tree->rbroot, offset);
+ 	if (!entry) {
+-		/* entry was written back */
++		/* entry was written back or evicted */
+ 		spin_unlock(&tree->lock);
+ 		return;
+ 	}
+@@ -813,18 +861,26 @@ static void zswap_frontswap_invalidate_area(unsigned type)
+ 	zswap_trees[type] = NULL;
+ }
+ 
+-static struct zbud_ops zswap_zbud_ops = {
++static struct zbud_ops zswap_zbud_writeback_ops = {
+ 	.evict = zswap_writeback_entry
+ };
++static struct zbud_ops zswap_zbud_writethrough_ops = {
++	.evict = zswap_evict_entry
++};
+ 
+ static void zswap_frontswap_init(unsigned type)
+ {
+ 	struct zswap_tree *tree;
++	struct zbud_ops *ops;
+ 
+ 	tree = kzalloc(sizeof(struct zswap_tree), GFP_KERNEL);
+ 	if (!tree)
+ 		goto err;
+-	tree->pool = zbud_create_pool(GFP_KERNEL, &zswap_zbud_ops);
++	if (zswap_writethrough)
++		ops = &zswap_zbud_writethrough_ops;
++	else
++		ops = &zswap_zbud_writeback_ops;
++	tree->pool = zbud_create_pool(GFP_KERNEL, ops);
+ 	if (!tree->pool)
+ 		goto freetree;
+ 	tree->rbroot = RB_ROOT;
+@@ -875,6 +931,8 @@ static int __init zswap_debugfs_init(void)
+ 			zswap_debugfs_root, &zswap_reject_compress_poor);
+ 	debugfs_create_u64("written_back_pages", S_IRUGO,
+ 			zswap_debugfs_root, &zswap_written_back_pages);
++	debugfs_create_u64("evicted_pages", S_IRUGO,
++			zswap_debugfs_root, &zswap_evicted_pages);
+ 	debugfs_create_u64("duplicate_entry", S_IRUGO,
+ 			zswap_debugfs_root, &zswap_duplicate_entry);
+ 	debugfs_create_u64("pool_pages", S_IRUGO,
+@@ -919,6 +977,8 @@ static int __init init_zswap(void)
+ 		pr_err("per-cpu initialization failed\n");
+ 		goto pcpufail;
+ 	}
++	if (zswap_writethrough)
++		frontswap_writethrough(true);
+ 	frontswap_register_ops(&zswap_frontswap_ops);
+ 	if (zswap_debugfs_init())
+ 		pr_warn("debugfs initialization failed\n");
+-- 
+1.8.3.1
+
