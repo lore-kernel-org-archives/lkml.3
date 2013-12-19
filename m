@@ -1,71 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab3LSNDR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:03:17 -0500
-Received: from verein.lst.de ([213.95.11.211]:55140 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753669Ab3LSNDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:03:14 -0500
-X-Greylist: delayed 510 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Dec 2013 08:03:14 EST
-Date: Thu, 19 Dec 2013 13:54:39 +0100
-From: Torsten Duwe <duwe@lst.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org, hpa@zytor.com,
-        Peter Jones <pjones@redhat.com>, Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
-	kernel kexec
-Message-ID: <20131219125439.GA6379@lst.de>
-References: <1384969851-7251-5-git-send-email-vgoyal@redhat.com> <20131121190350.GC17070@kroah.com> <20131121190620.GA25951@srcf.ucam.org> <20131121191305.GK16208@redhat.com> <20131121191907.GA26366@srcf.ucam.org> <20131122185706.GK4046@redhat.com> <87vbzju6ql.fsf@xmission.com> <20131125163920.GC23094@redhat.com> <87fvqj2vxz.fsf@xmission.com> <20131126142759.GA5473@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131126142759.GA5473@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1753815Ab3LSLzl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:55:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44434 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717Ab3LSLzj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:55:39 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Eric Dumazet <edumazet@google.com>, Felix Fietkau <nbd@openwrt.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 015/208] tcp: tsq: restore minimal amount of queueing
+Date: Thu, 19 Dec 2013 11:51:53 +0000
+Message-Id: <1387454106-19326-16-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 09:27:59AM -0500, Vivek Goyal wrote:
-> On Tue, Nov 26, 2013 at 04:23:36AM -0800, Eric W. Biederman wrote:
-> > Vivek Goyal <vgoyal@redhat.com> writes:
-> > 
-> > > On Fri, Nov 22, 2013 at 07:39:14PM -0800, Eric W. Biederman wrote:
-> > >
-> > 
-> > The init_size should be reflected in the .bss of the ELF segments.  If
-> > not it is a bug when generating the kernel ELF headers and should be
-> > fixed.
-> > 
-> > For use by kexec I don't see any issues with just signing the embedded
-> > ELF image.
-> 
-> Being able to write kernel to a file and then load it feels little odd to
-> me. Though this should be allowed but this should not be mandatory.
-> 
-> I think if we allow passing detached signature in kexec system call, then
-> it makes it much more flexible. We should be able to do what you are
-> suggesting at the same time it will also keep the possibility open for what
-> chromeOS developers are looking for.
-> 
-Support for detached signatures would be a big plus for kexec_file_load.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-First I thought, some vendors are already shipping signed bzImages, why not
-verify these? But as it turns out, parsing MS-DOS, PE/COFF headers just to
-find the gaps is a lot of bloat for this little functionality. And David Howells
-got flamed quite badly when he suggested to add pkcs#7 to the kernel.
-IMO it's up to user land to search lists of certificates, and present
-only the final chain of trust to the kernel for checking.
+------------------
 
-ELF is the preferred format for most sane OSes and firmware, and a detached
-signature would probably be simplest to check. If we have the choice,
-without restrictions from braindead boot loaders, ELF should be first.
-And if the pesigning isn't usable and another sig is needed anyway,
-why not apply that to vmlinux(.gz) ?
+From: Eric Dumazet <edumazet@google.com>
 
-Another remaining issue is the root of trust. Should the kernel solely depend
-on UeFI to check certificates? I'd rather vote for a compile-time fallback key.
+commit 98e09386c0ef4dfd48af7ba60ff908f0d525cdee upstream.
 
-	Torsten
+After commit c9eeec26e32e ("tcp: TSQ can use a dynamic limit"), several
+users reported throughput regressions, notably on mvneta and wifi
+adapters.
+
+802.11 AMPDU requires a fair amount of queueing to be effective.
+
+This patch partially reverts the change done in tcp_write_xmit()
+so that the minimal amount is sysctl_tcp_limit_output_bytes.
+
+It also remove the use of this sysctl while building skb stored
+in write queue, as TSO autosizing does the right thing anyway.
+
+Users with well behaving NICS and correct qdisc (like sch_fq),
+can then lower the default sysctl_tcp_limit_output_bytes value from
+128KB to 8KB.
+
+This new usage of sysctl_tcp_limit_output_bytes permits each driver
+authors to check how their driver performs when/if the value is set
+to a minimum of 4KB.
+
+Normally, line rate for a single TCP flow should be possible,
+but some drivers rely on timers to perform TX completion and
+too long TX completion delays prevent reaching full throughput.
+
+Fixes: c9eeec26e32e ("tcp: TSQ can use a dynamic limit")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Sujith Manoharan <sujith@msujith.org>
+Reported-by: Arnaud Ebalard <arno@natisbad.org>
+Tested-by: Sujith Manoharan <sujith@msujith.org>
+Cc: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ Documentation/networking/ip-sysctl.txt | 3 ---
+ net/ipv4/tcp.c                         | 6 ------
+ net/ipv4/tcp_output.c                  | 6 +++++-
+ 3 files changed, 5 insertions(+), 10 deletions(-)
+
+diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
+index b522883..392d7cd 100644
+--- a/Documentation/networking/ip-sysctl.txt
++++ b/Documentation/networking/ip-sysctl.txt
+@@ -571,9 +571,6 @@ tcp_limit_output_bytes - INTEGER
+ 	typical pfifo_fast qdiscs.
+ 	tcp_limit_output_bytes limits the number of bytes on qdisc
+ 	or device to reduce artificial RTT/cwnd and reduce bufferbloat.
+-	Note: For GSO/TSO enabled flows, we try to have at least two
+-	packets in flight. Reducing tcp_limit_output_bytes might also
+-	reduce the size of individual GSO packet (64KB being the max)
+ 	Default: 131072
+ 
+ tcp_challenge_ack_limit - INTEGER
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index ec586e5..2d2e978 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -810,12 +810,6 @@ static unsigned int tcp_xmit_size_goal(struct sock *sk, u32 mss_now,
+ 		xmit_size_goal = min_t(u32, gso_size,
+ 				       sk->sk_gso_max_size - 1 - hlen);
+ 
+-		/* TSQ : try to have at least two segments in flight
+-		 * (one in NIC TX ring, another in Qdisc)
+-		 */
+-		xmit_size_goal = min_t(u32, xmit_size_goal,
+-				       sysctl_tcp_limit_output_bytes >> 1);
+-
+ 		xmit_size_goal = tcp_bound_to_half_wnd(tp, xmit_size_goal);
+ 
+ 		/* We try hard to avoid divides here */
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 28c0d6a..d673814 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1871,8 +1871,12 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
+ 		 *  - better RTT estimation and ACK scheduling
+ 		 *  - faster recovery
+ 		 *  - high rates
++		 * Alas, some drivers / subsystems require a fair amount
++		 * of queued bytes to ensure line rate.
++		 * One example is wifi aggregation (802.11 AMPDU)
+ 		 */
+-		limit = max(skb->truesize, sk->sk_pacing_rate >> 10);
++		limit = max_t(unsigned int, sysctl_tcp_limit_output_bytes,
++			      sk->sk_pacing_rate >> 10);
+ 
+ 		if (atomic_read(&sk->sk_wmem_alloc) > limit) {
+ 			set_bit(TSQ_THROTTLED, &tp->tsq_flags);
+-- 
+1.8.3.2
 
