@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276Ab3LSMzj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:55:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44703 "EHLO
+	id S1756855Ab3LSM6z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:58:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44627 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab3LSL4r (ORCPT
+	with ESMTP id S1754337Ab3LSL4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:47 -0500
+	Thu, 19 Dec 2013 06:56:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, <ian.campbell@citrix.com>,
-        <rjw@rjwysocki.net>, <len.brown@intel.com>,
-        <gregkh@linuxfoundation.org>, Thomas Gleixner <tglx@linutronix.de>,
+Cc: Francois Romieu <romieu@fr.zoreil.com>,
+        Jamie Heilman <jamie@audible.transient.net>,
+        Michele Baldessari <michele@acksyn.org>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 058/208] irq: Enable all irqs unconditionally in irq_resume
-Date: Thu, 19 Dec 2013 11:52:36 +0000
-Message-Id: <1387454106-19326-59-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 048/208] via-velocity: fix netif_receive_skb use in irq disabled section.
+Date: Thu, 19 Dec 2013 11:52:26 +0000
+Message-Id: <1387454106-19326-49-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -29,60 +31,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laxman Dewangan <ldewangan@nvidia.com>
+From: =?UTF-8?q?fran=C3=A7ois=20romieu?= <romieu@fr.zoreil.com>
 
-commit ac01810c9d2814238f08a227062e66a35a0e1ea2 upstream.
+commit bc9627e7e918a85e906c1a3f6d01d9b8ef911a96 upstream.
 
-When the system enters suspend, it disables all interrupts in
-suspend_device_irqs(), including the interrupts marked EARLY_RESUME.
+2fdac010bdcf10a30711b6924612dfc40daf19b8 ("via-velocity.c: update napi
+implementation") overlooked an irq disabling spinlock when the Rx part
+of the NAPI poll handler was converted from netif_rx to netif_receive_skb.
 
-On the resume side things are different. The EARLY_RESUME interrupts
-are reenabled in sys_core_ops->resume and the non EARLY_RESUME
-interrupts are reenabled in the normal system resume path.
+NAPI Rx processing can be taken out of the locked section with a pair of
+napi_{disable / enable} since it only races with the MTU change function.
 
-When suspend_noirq() failed or suspend is aborted for any other
-reason, we might omit the resume side call to sys_core_ops->resume()
-and therefor the interrupts marked EARLY_RESUME are not reenabled and
-stay disabled forever.
+An heavier rework of the NAPI locking would be able to perform NAPI Tx
+before Rx where I simply removed one of velocity_tx_srv calls.
 
-To solve this, enable all irqs unconditionally in irq_resume()
-regardless whether interrupts marked EARLY_RESUMEhave been already
-enabled or not.
-
-This might try to reenable already enabled interrupts in the non
-failure case, but the only affected platform is XEN and it has been
-confirmed that it does not cause any side effects.
-
-[ tglx: Massaged changelog. ]
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Acked-by-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Heiko Stuebner <heiko@sntech.de>
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
-Cc: <ian.campbell@citrix.com>
-Cc: <rjw@rjwysocki.net>
-Cc: <len.brown@intel.com>
-Cc: <gregkh@linuxfoundation.org>
-Link: http://lkml.kernel.org/r/1385388587-16442-1-git-send-email-ldewangan@nvidia.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+References: https://bugzilla.redhat.com/show_bug.cgi?id=1022733
+Fixes: 2fdac010bdcf (via-velocity.c: update napi implementation)
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Tested-by: Alex A. Schmidt <aaschmidt1@gmail.com>
+Cc: Jamie Heilman <jamie@audible.transient.net>
+Cc: Michele Baldessari <michele@acksyn.org>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/irq/pm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/via/via-velocity.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-index cb228bf..abcd6ca 100644
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
- 		bool is_early = desc->action &&
- 			desc->action->flags & IRQF_EARLY_RESUME;
+diff --git a/drivers/net/ethernet/via/via-velocity.c b/drivers/net/ethernet/via/via-velocity.c
+index d01cacf..40e4c02 100644
+--- a/drivers/net/ethernet/via/via-velocity.c
++++ b/drivers/net/ethernet/via/via-velocity.c
+@@ -2172,16 +2172,13 @@ static int velocity_poll(struct napi_struct *napi, int budget)
+ 	unsigned int rx_done;
+ 	unsigned long flags;
  
--		if (is_early != want_early)
-+		if (!is_early && want_early)
- 			continue;
+-	spin_lock_irqsave(&vptr->lock, flags);
+ 	/*
+ 	 * Do rx and tx twice for performance (taken from the VIA
+ 	 * out-of-tree driver).
+ 	 */
+-	rx_done = velocity_rx_srv(vptr, budget / 2);
+-	velocity_tx_srv(vptr);
+-	rx_done += velocity_rx_srv(vptr, budget - rx_done);
++	rx_done = velocity_rx_srv(vptr, budget);
++	spin_lock_irqsave(&vptr->lock, flags);
+ 	velocity_tx_srv(vptr);
+-
+ 	/* If budget not fully consumed, exit the polling mode */
+ 	if (rx_done < budget) {
+ 		napi_complete(napi);
+@@ -2342,6 +2339,8 @@ static int velocity_change_mtu(struct net_device *dev, int new_mtu)
+ 		if (ret < 0)
+ 			goto out_free_tmp_vptr_1;
  
- 		raw_spin_lock_irqsave(&desc->lock, flags);
++		napi_disable(&vptr->napi);
++
+ 		spin_lock_irqsave(&vptr->lock, flags);
+ 
+ 		netif_stop_queue(dev);
+@@ -2362,6 +2361,8 @@ static int velocity_change_mtu(struct net_device *dev, int new_mtu)
+ 
+ 		velocity_give_many_rx_descs(vptr);
+ 
++		napi_enable(&vptr->napi);
++
+ 		mac_enable_int(vptr->mac_regs);
+ 		netif_start_queue(dev);
+ 
 -- 
 1.8.3.2
 
