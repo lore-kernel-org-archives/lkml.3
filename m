@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207Ab3LSMm7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:42:59 -0500
-Received: from mga09.intel.com ([134.134.136.24]:19259 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756809Ab3LSMm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:42:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="427187558"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Lv Zheng <lv.zheng@intel.com>,
-        Len Brown <lenb@kernel.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [Patch v2 03/13] PCI, pci-label: release allocated ACPI object on error recovery path
-Date: Thu, 19 Dec 2013 20:38:12 +0800
-Message-Id: <1387456702-4709-4-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1756680Ab3LSMSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:18:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45173 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755710Ab3LSL67 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:58:59 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 154/208] drm/radeon: atombios hw i2c fixes
+Date: Thu, 19 Dec 2013 11:54:12 +0000
+Message-Id: <1387454106-19326-155-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function dsm_get_label() leaks the returned ACPI object if
-obj->package.count is not 2, so fix the possible memory leak.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+------------------
+
+From: Alex Deucher <alexander.deucher@amd.com>
+
+commit d1e3b5564834ea24dee6b364a172365f64865fe5 upstream.
+
+These fixes make writes work properly.  Previously
+only reads worked.  Note that this feature is off
+by default.
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ luis: 3.11.y prereq for:
+  - ffd3d336 drm/radeon/atom: fix bus probes when hw_i2c is set (v2) ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pci/pci-label.c |   12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/radeon/atombios_i2c.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/pci/pci-label.c b/drivers/pci/pci-label.c
-index d51f45a..f6e01a5 100644
---- a/drivers/pci/pci-label.c
-+++ b/drivers/pci/pci-label.c
-@@ -233,11 +233,7 @@ dsm_get_label(acpi_handle handle, int func,
- 		return -1;
+diff --git a/drivers/gpu/drm/radeon/atombios_i2c.c b/drivers/gpu/drm/radeon/atombios_i2c.c
+index 2ca389d..deaf98c 100644
+--- a/drivers/gpu/drm/radeon/atombios_i2c.c
++++ b/drivers/gpu/drm/radeon/atombios_i2c.c
+@@ -32,7 +32,7 @@ extern void radeon_atom_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le);
+ #define TARGET_HW_I2C_CLOCK 50
  
- 	obj = (union acpi_object *)output->pointer;
--
--	switch (obj->type) {
--	case ACPI_TYPE_PACKAGE:
--		if (obj->package.count != 2)
--			break;
-+	if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 2) {
- 		len = obj->package.elements[0].integer.value;
- 		if (buf) {
- 			if (attribute == ACPI_ATTR_INDEX_SHOW)
-@@ -250,10 +246,10 @@ dsm_get_label(acpi_handle handle, int func,
+ /* these are a limitation of ProcessI2cChannelTransaction not the hw */
+-#define ATOM_MAX_HW_I2C_WRITE 2
++#define ATOM_MAX_HW_I2C_WRITE 3
+ #define ATOM_MAX_HW_I2C_READ  255
+ 
+ static int radeon_process_i2c_ch(struct radeon_i2c_chan *chan,
+@@ -52,20 +52,24 @@ static int radeon_process_i2c_ch(struct radeon_i2c_chan *chan,
+ 
+ 	if (flags & HW_I2C_WRITE) {
+ 		if (num > ATOM_MAX_HW_I2C_WRITE) {
+-			DRM_ERROR("hw i2c: tried to write too many bytes (%d vs 2)\n", num);
++			DRM_ERROR("hw i2c: tried to write too many bytes (%d vs 3)\n", num);
+ 			return -EINVAL;
  		}
- 		kfree(output->pointer);
- 		return len;
--	break;
--	default:
--		kfree(output->pointer);
+-		memcpy(&out, buf, num);
++		args.ucRegIndex = buf[0];
++		if (num > 1)
++			memcpy(&out, &buf[1], num - 1);
+ 		args.lpI2CDataOut = cpu_to_le16(out);
+ 	} else {
+ 		if (num > ATOM_MAX_HW_I2C_READ) {
+ 			DRM_ERROR("hw i2c: tried to read too many bytes (%d vs 255)\n", num);
+ 			return -EINVAL;
+ 		}
++		args.ucRegIndex = 0;
++		args.lpI2CDataOut = 0;
  	}
-+
-+	kfree(output->pointer);
-+
- 	return -1;
- }
  
++	args.ucFlag = flags;
+ 	args.ucI2CSpeed = TARGET_HW_I2C_CLOCK;
+-	args.ucRegIndex = 0;
+ 	args.ucTransBytes = num;
+ 	args.ucSlaveAddr = slave_addr << 1;
+ 	args.ucLineNumber = chan->rec.i2c_id;
 -- 
-1.7.10.4
+1.8.3.2
 
