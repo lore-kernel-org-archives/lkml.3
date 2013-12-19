@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab3LSRD0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 12:03:26 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:58681 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812Ab3LSRDX (ORCPT
+	id S1753631Ab3LSRHa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 12:07:30 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:54064 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab3LSRH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 12:03:23 -0500
-Message-ID: <52B334EF.1090202@cogentembedded.com>
-Date: Thu, 19 Dec 2013 21:03:27 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 19 Dec 2013 12:07:28 -0500
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>, josh@joshtriplett.org
-CC: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 3/7] drivers: usb: Include appropriate header file in
- hcd.h
-References: <Pine.LNX.4.44L0.1312191142501.984-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1312191142501.984-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131219155313.GA25771@redhat.com>
+References: <20131219040738.GA10316@redhat.com>
+	<CA+55aFwweoGs3eGWXFULcqnbRbpDhpj2qrefXB5OpQOiWW8wYA@mail.gmail.com>
+	<20131219155313.GA25771@redhat.com>
+Date: Thu, 19 Dec 2013 09:07:27 -0800
+X-Google-Sender-Auth: R_PThA20UqS1I6WHDtfVvrJCl8c
+Message-ID: <CA+55aFyoXCDNfHb+r5b=CgKQLPA1wrU_Tmh4ROZNEt5TPjpODA@mail.gmail.com>
+Subject: Re: bad page state in 3.13-rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@gentwo.org>,
+        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thu, Dec 19, 2013 at 7:53 AM, Dave Jones <davej@redhat.com> wrote:
+>
+> Interesting that CPU2 was doing sys_io_setup again. Different trace though.
 
-On 12/19/2013 07:48 PM, Alan Stern wrote:
+Well, it was once again in aio_free_ring() - double free or freeing
+while already in use? And this time the other end of the complaint was
+allocating a new page that definitely was still busily in use (it's
+locked).
 
->>> Of course, people have varying opinions on this issue.  As far as I
->>> know, there is no fixed policy in the kernel about nested includes.
+And there's no sign of migration, although obviously that could have
+happened or be in progress on another CPU and just didn't notice the
+mess. But yes, based on the two traces, fs/aio.c:io_setup() would seem
+to be the main point of interest.
 
->> True.  I personally prefer the policy of making all headers
->> self-contained, and then only including headers that define things used
->> in the source file.  That has the advantage of not including any
->> unnecessary headers if the dependencies shrink, and not requiring
->> changes to multiple source files if the dependencies grow.
+Have you started doing something new in trinity wrt AIO, and
+io_setup() in particular? Or anything else different that might have
+started triggering this?
 
->> Any particular objection to making the headers self-contained?
+But we do have new AIO code, and these two in particular look suspicious:
 
-> I guess it depends on what you mean by "self-contained".  The only
-> reasonable definition I can think of at the moment is that you don't
-> get any errors or warnings when you compile the .h file by itself.
+ - new page migration logic:
 
-> But what use is that in practice?  Nobody ever compiles .h files by
-> themselves.
+    71ad7490c1f3 rework aio migrate pages to use aio fs
 
-    It's enough to verify that a .c file containing the given .h file would 
-not cause errors *located in that .h file*. This is not really such an 
-improbable situation, e.g. at the early stages of development. I did discover 
-header fiel errors this way.
+ - trying to fix double frees and error cases:
 
-> For that matter, how can you tell that you are including only headers
-> that define things used in the source file?
+    e34ecee2ae79 aio: Fix a trinity splat
+    d558023207e0 aio: prevent double free in ioctx_alloc
+    d1b9432712a2 aio: clean up aio ring in the fail path
 
-    I still think that's a whole different issue.
+and some kind of double free in an error path would certainly explain
+this (with io_setup() . And the first oops reported obviously had that
+migration thing. So maybe those "fixes" weren't fixing things at all
+(or just moved the error case around).
 
-> Remove each #include line,
-> one at a time, and see if you then get an error?  Do you do this after
-> each change to the source file to make sure it remains true over time?
+Btw, that "rework aio migrate pages to use aio fs" looks odd. It has
+Ben LaHaise marked as author, but no sign-off, instead "Tested-by" and
+"Acked-by".
 
-    That's what #include cleanup patches are for. Somebody has to do them from 
-time to time when the #include's accumulate -- they tend to accumulate as 
-people often forget to remove no longer needed one while removing some feature 
-from the .c file.
+Al, Ben, Kent, see the beginning thread on lkml
+(https://lkml.org/lkml/2013/12/18/932). Any comments?
 
-> My point is that the C language design and compiler infrastructure make
-> it virtually impossible to enforce any fixed policy.
-
-    I don't really see how C language design can justify header files that 
-once included, require each .c file to #include other headers ahead of them, 
-each time such header is used. In my opinion, it's just crazy.
-
-> Alan Stern
-
-WBR, Sergei
-
+                      Linus
