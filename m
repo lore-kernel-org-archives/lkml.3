@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab3LSPpp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:45:45 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:55831 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753614Ab3LSPpn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:45:43 -0500
-Date: Thu, 19 Dec 2013 10:45:42 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Rashika Kheria <rashika.kheria@gmail.com>
-cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <josh@joshtriplett.org>
-Subject: Re: [PATCH 3/7] drivers: usb: Include appropriate header file in
- hcd.h
-In-Reply-To: <026c3f34e6c26d5456940c28a0f33da96064e023.1387439261.git.rashika.kheria@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1312191043280.984-100000@iolanthe.rowland.org>
+	id S1754238Ab3LSPqK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:46:10 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:35911 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753709Ab3LSPqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 10:46:07 -0500
+Date: Thu, 19 Dec 2013 16:45:57 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Len Brown <lenb@kernel.org>,
+        x86@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, stable@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power
+ regression
+Message-ID: <20131219154557.GC26289@pd.tnic>
+References: <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com>
+ <20131219122257.GC11279@gmail.com>
+ <ad600986-5506-4cf5-baad-d767079d086f@email.android.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <ad600986-5506-4cf5-baad-d767079d086f@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Dec 2013, Rashika Kheria wrote:
+On Thu, Dec 19, 2013 at 06:40:41AM -0800, H. Peter Anvin wrote:
+> ... or just use static_cpu_has() maybe?
 
-> Include header file include/linux/usb.h in include/linux/usb/hcd.h
-> because structures usb_device, usb_host_config and usb_interface have
-> their definitions in include/linux/usb.h.
-> 
-> This eliminates the following warning in include/linux/usb/hcd.h:
-> include/linux/usb/hcd.h:311:44: warning: ‘struct usb_device’ declared inside parameter list [enabled by default]
-> include/linux/usb/hcd.h:412:10: warning: ‘struct usb_host_config’ declared inside parameter list [enabled by default]
-> include/linux/usb/hcd.h:614:9: warning: ‘struct usb_interface’ declared inside parameter list [enabled by default]
+Right, if we can get the compiler to generate the shortest CLFLUSH of 3
+bytes with register indirect addressing for the operand, then stomping
+over those 3 bytes with the alternatives would be the fastest solution.
 
-Where does this problem show up?
+If, of course, three NOPs which get discarded in the front end are
+cheaper than the near JMP from static_cpu_has.
 
-Any file that include linux/usb/hcd.h should include linux/usb.h first.  
-IMO it would be better to fix the source files that don't do the 
-includes properly.
+-- 
+Regards/Gruss,
+    Boris.
 
-Of course, people have varying opinions on this issue.  As far as I 
-know, there is no fixed policy in the kernel about nested includes.
-
-Alan Stern
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
