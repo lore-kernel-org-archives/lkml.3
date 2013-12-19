@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab3LSFzL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 00:55:11 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48184 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab3LSFzJ (ORCPT
+	id S1752109Ab3LSF5P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 00:57:15 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:19133 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab3LSF5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 00:55:09 -0500
-X-AuditID: 9c930179-b7bedae000000f15-b5-52b28a3b9477
-Date: Thu, 19 Dec 2013 14:55:10 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] mm/rmap: fix BUG at rmap_walk
-Message-ID: <20131219055510.GA27532@lge.com>
-References: <1387431715-6786-1-git-send-email-liwanp@linux.vnet.ibm.com>
+	Thu, 19 Dec 2013 00:57:13 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 18 Dec 2013 21:59:18 -0800
+Message-ID: <52B28ACD.5080204@nvidia.com>
+Date: Thu, 19 Dec 2013 13:57:33 +0800
+From: bilhuang <bilhuang@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387431715-6786-1-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v3 2/2] cpufreq: tegra: Re-model Tegra cpufreq driver
+References: <1386229462-3474-1-git-send-email-bilhuang@nvidia.com>	<1386229462-3474-3-git-send-email-bilhuang@nvidia.com>	<CAKohponns4B+BPPum3EN6EuXx6U+6MzOa50gMdR1BNBtxMNf0Q@mail.gmail.com>	<52B02D04.4050905@nvidia.com>	<CAKohpom0n8P8goQnsgBnWJwyqCVv_FRX3xKvO1yFW0VUMpMW8w@mail.gmail.com>	<52B187F5.7020105@nvidia.com>	<CAKohpokwhYC4FGnhpZPOGuJ2AM_7vygNk+3S+VpA_eXAexQX7g@mail.gmail.com>	<52B28397.5010808@nvidia.com> <CAKohpo=fJTLrN6myq5b9FTSro1m9oN3ep-aMu-3iv0J-S6TpdQ@mail.gmail.com>
+In-Reply-To: <CAKohpo=fJTLrN6myq5b9FTSro1m9oN3ep-aMu-3iv0J-S6TpdQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 01:41:55PM +0800, Wanpeng Li wrote:
-> This bug is introduced by commit 37f093cdf(mm/rmap: use rmap_walk() in 
-> page_referenced()). page_get_anon_vma() called in page_referenced_anon() 
-> will lock and increase the refcount of anon_vma. PageLocked is not required 
-> by page_referenced_anon() and there is not any assertion before, commit 
-> 37f093cdf introduced this extra BUG_ON() checking for anon page by mistake.
-> This patch fix it by remove rmap_walk()'s VM_BUG_ON() and comment reason why 
-> the page must be locked for rmap_walk_ksm() and rmap_walk_file().
-> 
-> [  588.698828] kernel BUG at mm/rmap.c:1663!
-> [  588.699380] invalid opcode: 0000 [#2] PREEMPT SMP DEBUG_PAGEALLOC
-> [  588.700347] Dumping ftrace buffer:
-> [  588.701186]    (ftrace buffer empty)
-> [  588.702062] Modules linked in:
-> [  588.702759] CPU: 0 PID: 4647 Comm: kswapd0 Tainted: G      D W    3.13.0-rc4-next-20131218-sasha-00012-g1962367-dirty #4155
-> [  588.704330] task: ffff880062bcb000 ti: ffff880062450000 task.ti: ffff880062450000
-> [  588.705507] RIP: 0010:[<ffffffff81289c80>]  [<ffffffff81289c80>] rmap_walk+0x10/0x50
-> [  588.706800] RSP: 0018:ffff8800624518d8  EFLAGS: 00010246
-> [  588.707515] RAX: 000fffff80080048 RBX: ffffea00000227c0 RCX: 0000000000000000
-> [  588.707515] RDX: 0000000000000000 RSI: ffff8800624518e8 RDI: ffffea00000227c0
-> [  588.707515] RBP: ffff8800624518d8 R08: ffff8800624518e8 R09: 0000000000000000
-> [  588.707515] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800624519d8
-> [  588.707515] R13: 0000000000000000 R14: ffffea00000227e0 R15: 0000000000000000
-> [  588.707515] FS:  0000000000000000(0000) GS:ffff880065200000(0000) knlGS:0000000000000000
-> [  588.707515] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  588.707515] CR2: 00007fec40cbe0f8 CR3: 00000000c2382000 CR4: 00000000000006f0
-> [  588.707515] Stack:
-> [  588.707515]  ffff880062451958 ffffffff81289f4b ffff880062451918 ffffffff81289f80
-> [  588.707515]  0000000000000000 0000000000000000 ffffffff8128af60 0000000000000000
-> [  588.707515]  0000000000000024 0000000000000000 0000000000000000 0000000000000286
-> [  588.707515] Call Trace:
-> [  588.707515]  [<ffffffff81289f4b>] page_referenced+0xcb/0x100
-> [  588.707515]  [<ffffffff81289f80>] ? page_referenced+0x100/0x100
-> [  588.707515]  [<ffffffff8128af60>] ? invalid_page_referenced_vma+0x170/0x170
-> [  588.707515]  [<ffffffff81264302>] shrink_active_list+0x212/0x330
-> [  588.707515]  [<ffffffff81260e23>] ? inactive_file_is_low+0x33/0x50
-> [  588.707515]  [<ffffffff812646f5>] shrink_lruvec+0x2d5/0x300
-> [  588.707515]  [<ffffffff812647b6>] shrink_zone+0x96/0x1e0
-> [  588.707515]  [<ffffffff81265b06>] kswapd_shrink_zone+0xf6/0x1c0
-> [  588.707515]  [<ffffffff81265f43>] balance_pgdat+0x373/0x550
-> [  588.707515]  [<ffffffff81266d63>] kswapd+0x2f3/0x350
-> [  588.707515]  [<ffffffff81266a70>] ? perf_trace_mm_vmscan_lru_isolate_template+0x120/0x120
-> [  588.707515]  [<ffffffff8115c9c5>] kthread+0x105/0x110
-> [  588.707515]  [<ffffffff8115c8c0>] ? set_kthreadd_affinity+0x30/0x30
-> [  588.707515]  [<ffffffff843a6a7c>] ret_from_fork+0x7c/0xb0
-> [  588.707515]  [<ffffffff8115c8c0>] ? set_kthreadd_affinity+0x30/0x30
-> [  588.707515] Code: c0 48 83 c4 18 89 d0 5b 41 5c 41 5d 41 5e 41 5f c9 c3 66 0f 1f 84
-> 00 00 00 00 00 55 48 89 e5 66 66 66 66 90 48 8b 07 a8 01 75 10 <0f> 0b 66 0f 1f 44 00 0
-> 0 eb fe 66 0f 1f 44 00 00 f6 47 08 01 74
-> [  588.707515] RIP  [<ffffffff81289c80>] rmap_walk+0x10/0x50
-> [  588.707515]  RSP <ffff8800624518d8>
-> 
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-
-Reviewed-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-Thanks for all relevant people. :)
+On 12/19/2013 01:29 PM, Viresh Kumar wrote:
+> On 19 December 2013 10:56, bilhuang <bilhuang@nvidia.com> wrote:
+>> I'm not sure virtual regulator for CPU is a good idea, in addition to that,
+>> we don't have a single SoC OPP table, we need several which are speedo-id
+>> and process-id dependant, but generic cpufreq-cpu0 is assuming there is only
+>> one statically
+>
+> Can't that be handled via DT ?
+I don't think it can be handled via DT unless we separate DTB according 
+to different CPU speedo/process-id but that is not a good idea.
+>
+>> for some SoC the frequency table is not fixed, they are
+>> created at runtime combining our fast and slow CPU frequency table and dvfs
+>> table. So I'm really not sure is it worth adding so many tweaks in order to
+>> use the generic cpufreq-cpu0 driver.
+>
+> Hmm, maybe I got confused because I don't have a clear picture in my mind.
+> It might be better to go ahead with your implementation for now and after
+> everything is set, we can choose to use cpufreq-cpu0 if it is worth it.
+>
+This makes more sense to me, thanks.
+> --
+> viresh
+>
 
