@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab3LSMEB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:04:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50497 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753448Ab3LSMAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:00:10 -0500
-Date: Thu, 19 Dec 2013 12:00:07 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm: Remove bogus warning in copy_huge_pmd
-Message-ID: <20131219120007.GJ11295@suse.de>
-References: <1386690695-27380-1-git-send-email-mgorman@suse.de>
- <1386690695-27380-11-git-send-email-mgorman@suse.de>
- <52B0D5F9.5030208@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <52B0D5F9.5030208@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755703Ab3LSL66 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:58:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45157 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755624Ab3LSL6z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:58:55 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 150/208] [media] af9035: unlock on error in af9035_i2c_master_xfer()
+Date: Thu, 19 Dec 2013 11:54:08 +0000
+Message-Id: <1387454106-19326-151-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin reported the following warning being triggered
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-[ 1704.594807] WARNING: CPU: 28 PID: 35287 at mm/huge_memory.c:887 copy_huge_pmd+0x145/ 0x3a0()
-[ 1704.597258] Modules linked in:
-[ 1704.597844] CPU: 28 PID: 35287 Comm: trinity-main Tainted: G        W    3.13.0-rc4-next-20131217-sasha-00013-ga878504-dirty #4149
-[ 1704.599924]  0000000000000377e delta! pid slot 27 [36258]: old:2 now:537927697 diff: 537927695 ffff8803593ddb90 ffffffff8439501c ffffffff854722c1
-[ 1704.604846]  0000000000000000 ffff8803593ddbd0 ffffffff8112f8ac ffff8803593ddbe0
-[ 1704.606391]  ffff88034bc137f0 ffff880e41677000 8000000b47c009e4 ffff88034a638000
-[ 1704.608008] Call Trace:
-[ 1704.608511]  [<ffffffff8439501c>] dump_stack+0x52/0x7f
-[ 1704.609699]  [<ffffffff8112f8ac>] warn_slowpath_common+0x8c/0xc0
-[ 1704.612617]  [<ffffffff8112f8fa>] warn_slowpath_null+0x1a/0x20
-[ 1704.614043]  [<ffffffff812b91c5>] copy_huge_pmd+0x145/0x3a0
-[ 1704.615587]  [<ffffffff8127e032>] copy_page_range+0x3f2/0x560
-[ 1704.616869]  [<ffffffff81199ef1>] ? rwsem_wake+0x51/0x70
-[ 1704.617942]  [<ffffffff8112cf59>] dup_mmap+0x2c9/0x3d0
-[ 1704.619146]  [<ffffffff8112d54d>] dup_mm+0xad/0x150
-[ 1704.620051]  [<ffffffff8112e178>] copy_process+0xa68/0x12e0
-[ 1704.622976]  [<ffffffff81194eda>] ? __lock_release+0x1da/0x1f0
-[ 1704.624234]  [<ffffffff8112eee6>] do_fork+0x96/0x270
-[ 1704.624975]  [<ffffffff81249465>] ? context_tracking_user_exit+0x195/0x1d0
-[ 1704.626427]  [<ffffffff811930ed>] ? trace_hardirqs_on+0xd/0x10
-[ 1704.627681]  [<ffffffff8112f0d6>] SyS_clone+0x16/0x20
-[ 1704.628833]  [<ffffffff843a6309>] stub_clone+0x69/0x90
-[ 1704.629672]  [<ffffffff843a6150>] ? tracesys+0xdd/0xe2
+------------------
 
-This warning was introduced by "mm: numa: Avoid unnecessary disruption
-of NUMA hinting during migration" for paranoia reasons but the warning
-is bogus. I was thinking of parallel races between NUMA hinting faults
-and forks but this warning would also be triggered by a parallel reclaim
-splitting a THP during a fork. Remote the bogus warning.
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+commit 3189ef0290dcc9f44782672fade35847cb30da00 upstream.
+
+We introduced a couple new error paths which are missing unlocks.
+Fixes: 7760e148350b ('[media] af9035: Don't use dynamic static allocation')
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/huge_memory.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/media/usb/dvb-usb-v2/af9035.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index e3b6a75..468bd3a 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -883,9 +883,6 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 		goto out_unlock;
+diff --git a/drivers/media/usb/dvb-usb-v2/af9035.c b/drivers/media/usb/dvb-usb-v2/af9035.c
+index 4453b0b..8f9b2cea 100644
+--- a/drivers/media/usb/dvb-usb-v2/af9035.c
++++ b/drivers/media/usb/dvb-usb-v2/af9035.c
+@@ -245,7 +245,8 @@ static int af9035_i2c_master_xfer(struct i2c_adapter *adap,
+ 				dev_warn(&d->udev->dev,
+ 					 "%s: i2c xfer: len=%d is too big!\n",
+ 					 KBUILD_MODNAME, msg[0].len);
+-				return -EOPNOTSUPP;
++				ret = -EOPNOTSUPP;
++				goto unlock;
+ 			}
+ 			req.mbox |= ((msg[0].addr & 0x80)  >>  3);
+ 			buf[0] = msg[1].len;
+@@ -281,7 +282,8 @@ static int af9035_i2c_master_xfer(struct i2c_adapter *adap,
+ 				dev_warn(&d->udev->dev,
+ 					 "%s: i2c xfer: len=%d is too big!\n",
+ 					 KBUILD_MODNAME, msg[0].len);
+-				return -EOPNOTSUPP;
++				ret = -EOPNOTSUPP;
++				goto unlock;
+ 			}
+ 			req.mbox |= ((msg[0].addr & 0x80)  >>  3);
+ 			buf[0] = msg[0].len;
+@@ -319,6 +321,7 @@ static int af9035_i2c_master_xfer(struct i2c_adapter *adap,
+ 		ret = -EOPNOTSUPP;
  	}
  
--	/* mmap_sem prevents this happening but warn if that changes */
--	WARN_ON(pmd_trans_migrating(pmd));
--
- 	if (unlikely(pmd_trans_splitting(pmd))) {
- 		/* split huge page running from under us */
- 		spin_unlock(src_ptl);
++unlock:
+ 	mutex_unlock(&d->i2c_mutex);
+ 
+ 	if (ret < 0)
+-- 
+1.8.3.2
+
