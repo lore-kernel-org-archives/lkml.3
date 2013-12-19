@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab3LSEXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 23:23:42 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:11512 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752777Ab3LSEXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 23:23:41 -0500
-X-IronPort-AV: E=Sophos;i="4.95,511,1384272000"; 
-   d="scan'208";a="9288556"
-Message-ID: <52B26F1A.9070308@cn.fujitsu.com>
-Date: Thu, 19 Dec 2013 11:59:22 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1751951Ab3LSEkK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 23:40:10 -0500
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:41545 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267Ab3LSEkI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 23:40:08 -0500
 MIME-Version: 1.0
-To: Richard Guy Briggs <rgb@redhat.com>
-CC: linux-audit@redhat.com, Eric Paris <eparis@redhat.com>,
-        Steve Grubb <sgrubb@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH] audit: listen in all network namespaces
-References: <1374006760-7687-1-git-send-email-rgb@redhat.com>
-In-Reply-To: <1374006760-7687-1-git-send-email-rgb@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/19 11:57:52,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/19 11:57:55,
-	Serialize complete at 2013/12/19 11:57:55
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20131219040738.GA10316@redhat.com>
+References: <20131219040738.GA10316@redhat.com>
+Date: Wed, 18 Dec 2013 20:40:07 -0800
+X-Google-Sender-Auth: o4_C_Y_jL7aEIHc8KT7DKpEmIes
+Message-ID: <CA+55aFwweoGs3eGWXFULcqnbRbpDhpj2qrefXB5OpQOiWW8wYA@mail.gmail.com>
+Subject: Re: bad page state in 3.13-rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@gentwo.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 04:32 AM, Richard Guy Briggs wrote:
-> Convert audit from only listening in init_net to use register_pernet_subsys()
-> to dynamically manage the netlink socket list.
-> 
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> ---
+On Wed, Dec 18, 2013 at 8:07 PM, Dave Jones <davej@redhat.com> wrote:
+> Just hit this while fuzzing with lots of child processes.
+> (trinity -C128)
 
-I think it's the time for us to discuss if we should revert this
-commit, since this one prevent me from continuing to achieve
-audit namespace.
+Ok, there's a BUG_ON() in the middle, the "bad page" part is just this:
 
+> BUG: Bad page state in process trinity-c93  pfn:100499
+> page:ffffea0004012640 count:0 mapcount:0 mapping:          (null) index:0x389
+> page flags: 0x2000000000000c(referenced|uptodate)
+> Call Trace:
+>  [<ffffffff816db2f5>] dump_stack+0x4e/0x7a
+>  [<ffffffff816d8b05>] bad_page.part.71+0xcf/0xe8
+>  [<ffffffff8113a645>] free_pages_prepare+0x185/0x190
+>  [<ffffffff8113b085>] free_hot_cold_page+0x35/0x180
+>  [<ffffffff811403f3>] __put_single_page+0x23/0x30
+>  [<ffffffff81140665>] put_page+0x35/0x50
+>  [<ffffffff811e8705>] aio_free_ring+0x55/0xf0
+>  [<ffffffff811e9c5a>] SyS_io_setup+0x59a/0xbe0
+>  [<ffffffff816edb24>] tracesys+0xdd/0xe2
 
-The major problem is in kaudit_send_skb, we have no idea which
-audit sock the skb should send to.
+at free_pages() time, and I don't see anything bad in the printout wrt
+the page counts of flags.
 
-in this patch, there only is one auditd proecess, so the
-audit_sock is the only one. but when we have audit namespace.
-there will be multi audit socks. we have to store audit_sock
-into auditns(auditns will be passed to kauditd_send_skb),
-this will cause auditns have to get a reference of netns.
-and for some reason(netfilter audit target), netns will
-get reference of auditns too. this is terrible...
+Which makes me wonder if this is mem_cgroup_bad_page_check()
+triggering. Of course, if it's a race, it may be that by the time we
+print out the counts they all look good, even if they weren't good at
+the time we did that bad_page() *check*.
 
-So why not we revert this one, and use a very simple one to
-replace it? the below patch will save us from the refer to
-each other case, achieve the same effect.
+And the fact that we do have a concurrent BUG_ON() triggering with a
+zero page count obviously does look suspicious. Looks like a possible
+race with memory compaction happening at the same time aio_free_ring()
+frees the page.
 
-what's your opinion?
+Somebody who knows the migration code needs to look at this. ChristophL?
 
-
-Add a compare function which always return true for
-audit netlink socket, this will cause audit netlink
-sockets netns unaware, and no matter which netns the
-user space audit netlink sockets belong to, they all
-can find out and communicate with audit_sock.
-
-This gets rid of the necessary to create per-netns
-audit kernel side socket(audit_sock), it's pain to
-depend on and get reference of netns for auditns.
-
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
----
- kernel/audit.c | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 7b0e23a..468950b 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -886,12 +886,18 @@ static void audit_receive(struct sk_buff  *skb)
- 	mutex_unlock(&audit_cmd_mutex);
- }
-
-+static bool audit_compare(struct net *net, struct sock *sk)
-+{
-+	return true;
-+}
-+
- /* Initialize audit support at boot time. */
- static int __init audit_init(void)
- {
- 	int i;
- 	struct netlink_kernel_cfg cfg = {
- 		.input	= audit_receive,
-+		.compare = audit_compare,
- 	};
-
- 	if (audit_initialized == AUDIT_DISABLED)
+                        Linus
