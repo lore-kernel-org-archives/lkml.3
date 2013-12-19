@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181Ab3LSMAP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:00:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45391 "EHLO
+	id S1755471Ab3LSMWS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:22:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45105 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756132Ab3LSMAH (ORCPT
+	with ESMTP id S1755492Ab3LSL6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:00:07 -0500
+	Thu, 19 Dec 2013 06:58:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Moore <pmoore@redhat.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 198/208] selinux: handle TCP SYN-ACK packets correctly in selinux_ip_output()
-Date: Thu, 19 Dec 2013 11:54:56 +0000
-Message-Id: <1387454106-19326-199-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 141/208] drm/radeon: program DCE2 audio dto just like DCE3
+Date: Thu, 19 Dec 2013 11:53:59 +0000
+Message-Id: <1387454106-19326-142-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,85 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 47180068276a04ed31d24fe04c673138208b07a9 upstream.
+commit 55d4e020fb8ddd3896a8cd3351028f5c3a2c4bd3 upstream.
 
-In selinux_ip_output() we always label packets based on the parent
-socket.  While this approach works in almost all cases, it doesn't
-work in the case of TCP SYN-ACK packets when the correct label is not
-the label of the parent socket, but rather the label of the larval
-socket represented by the request_sock struct.
+Seems to work like the DCE3 version despite what
+the register spec says.
 
-Unfortunately, since the request_sock isn't queued on the parent
-socket until *after* the SYN-ACK packet is sent, we can't lookup the
-request_sock to determine the correct label for the packet; at this
-point in time the best we can do is simply pass/NF_ACCEPT the packet.
-It must be said that simply passing the packet without any explicit
-labeling action, while far from ideal, is not terrible as the SYN-ACK
-packet will inherit any IP option based labeling from the initial
-connection request so the label *should* be correct and all our
-access controls remain in place so we shouldn't have to worry about
-information leaks.
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=71975
 
-Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
-Tested-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- security/selinux/hooks.c | 25 +++++++++++++++++++++++--
- 1 file changed, 23 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/r600_hdmi.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index c956390..01ba0d6 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -53,6 +53,7 @@
- #include <net/ip.h>		/* for local_port_range[] */
- #include <net/sock.h>
- #include <net/tcp.h>		/* struct or_callable used in sock_rcv_skb */
-+#include <net/inet_connection_sock.h>
- #include <net/net_namespace.h>
- #include <net/netlabel.h>
- #include <linux/uaccess.h>
-@@ -4696,6 +4697,7 @@ static unsigned int selinux_ipv6_forward(unsigned int hooknum,
- static unsigned int selinux_ip_output(struct sk_buff *skb,
- 				      u16 family)
- {
-+	struct sock *sk;
- 	u32 sid;
+diff --git a/drivers/gpu/drm/radeon/r600_hdmi.c b/drivers/gpu/drm/radeon/r600_hdmi.c
+index 92c6df7..4006a32 100644
+--- a/drivers/gpu/drm/radeon/r600_hdmi.c
++++ b/drivers/gpu/drm/radeon/r600_hdmi.c
+@@ -304,9 +304,9 @@ void r600_audio_set_dto(struct drm_encoder *encoder, u32 clock)
+ 			WREG32(DCCG_AUDIO_DTO1_MODULE, dto_modulo);
+ 			WREG32(DCCG_AUDIO_DTO_SELECT, 1); /* select DTO1 */
+ 		}
+-	} else if (ASIC_IS_DCE3(rdev)) {
++	} else {
+ 		/* according to the reg specs, this should DCE3.2 only, but in
+-		 * practice it seems to cover DCE3.0/3.1 as well.
++		 * practice it seems to cover DCE2.0/3.0/3.1 as well.
+ 		 */
+ 		if (dig->dig_encoder == 0) {
+ 			WREG32(DCCG_AUDIO_DTO0_PHASE, base_rate * 100);
+@@ -317,10 +317,6 @@ void r600_audio_set_dto(struct drm_encoder *encoder, u32 clock)
+ 			WREG32(DCCG_AUDIO_DTO1_MODULE, clock * 100);
+ 			WREG32(DCCG_AUDIO_DTO_SELECT, 1); /* select DTO1 */
+ 		}
+-	} else {
+-		/* according to the reg specs, this should be DCE2.0 and DCE3.0/3.1 */
+-		WREG32(AUDIO_DTO, AUDIO_DTO_PHASE(base_rate / 10) |
+-		       AUDIO_DTO_MODULE(clock / 10));
+ 	}
+ }
  
- 	if (!netlbl_enabled())
-@@ -4704,8 +4706,27 @@ static unsigned int selinux_ip_output(struct sk_buff *skb,
- 	/* we do this in the LOCAL_OUT path and not the POST_ROUTING path
- 	 * because we want to make sure we apply the necessary labeling
- 	 * before IPsec is applied so we can leverage AH protection */
--	if (skb->sk) {
--		struct sk_security_struct *sksec = skb->sk->sk_security;
-+	sk = skb->sk;
-+	if (sk) {
-+		struct sk_security_struct *sksec;
-+
-+		if (sk->sk_state == TCP_LISTEN)
-+			/* if the socket is the listening state then this
-+			 * packet is a SYN-ACK packet which means it needs to
-+			 * be labeled based on the connection/request_sock and
-+			 * not the parent socket.  unfortunately, we can't
-+			 * lookup the request_sock yet as it isn't queued on
-+			 * the parent socket until after the SYN-ACK is sent.
-+			 * the "solution" is to simply pass the packet as-is
-+			 * as any IP option based labeling should be copied
-+			 * from the initial connection request (in the IP
-+			 * layer).  it is far from ideal, but until we get a
-+			 * security label in the packet itself this is the
-+			 * best we can do. */
-+			return NF_ACCEPT;
-+
-+		/* standard practice, label using the parent socket */
-+		sksec = sk->sk_security;
- 		sid = sksec->sid;
- 	} else
- 		sid = SECINITSID_KERNEL;
 -- 
 1.8.3.2
 
