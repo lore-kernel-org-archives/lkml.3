@@ -1,108 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab3LSRX2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 12:23:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16910 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751035Ab3LSRX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 12:23:27 -0500
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Rik van Riel <riel@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: [PATCH] ipc: change kern_ipc_perm.deleted type to bool
-Date: Thu, 19 Dec 2013 15:23:02 -0200
-Message-Id: <2376eb01a06ca5e9ea68955f65ac1913929d41a1.1387416739.git.aquini@redhat.com>
+	id S1750954Ab3LSRYC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 12:24:02 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:64743 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab3LSRYA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 12:24:00 -0500
+Message-ID: <52B329F2.9020403@gmail.com>
+Date: Thu, 19 Dec 2013 09:16:34 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 18/40] percpu: Add preemption checks to __this_cpu ops
+References: <20131219155015.443763038@linux.com> <20131219155032.657725367@linux.com>
+In-Reply-To: <20131219155032.657725367@linux.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct kern_ipc_perm.deleted is meant to be used as a boolean toogle, and
-the changes introduced by this patch are just to make the case explicit.
+On 12/19/2013 07:50 AM, Christoph Lameter wrote:
+> [Patch depends on another patch in this series that introduces raw_cpu_ops]
+>
+> We define a check function in order to avoid trouble with the
+> include files. Then the higher level __this_cpu macros are
+> modified to invoke the preemption check.
+>
+> Acked-by: Ingo Molnar<mingo@kernel.org>
+> Signed-off-by: Christoph Lameter<cl@linux.com>
+>
 
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
----
-* a quick sidenote: this patch goes on top of the recently posted
-[PATCH v3] ipc: introduce ipc_valid_object() helper to sort out IPC_RMID races
 
- include/linux/ipc.h | 2 +-
- ipc/sem.c           | 2 +-
- ipc/util.c          | 6 +++---
- ipc/util.h          | 2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
+I get:
 
-diff --git a/include/linux/ipc.h b/include/linux/ipc.h
-index 8d861b2..9d84942 100644
---- a/include/linux/ipc.h
-+++ b/include/linux/ipc.h
-@@ -11,7 +11,7 @@
- struct kern_ipc_perm
- {
- 	spinlock_t	lock;
--	int		deleted;
-+	bool		deleted;
- 	int		id;
- 	key_t		key;
- 	kuid_t		uid;
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 5972e60..1659cd9 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -394,7 +394,7 @@ static inline struct sem_array *sem_obtain_lock(struct ipc_namespace *ns,
- 	/* ipc_rmid() may have already freed the ID while sem_lock
- 	 * was spinning: verify that the structure is still valid
- 	 */
--	if (!ipcp->deleted)
-+	if (ipc_valid_object(ipcp))
- 		return container_of(ipcp, struct sem_array, sem_perm);
- 
- 	sem_unlock(sma, *locknum);
-diff --git a/ipc/util.c b/ipc/util.c
-index 3ae17a4..9dc67fa 100644
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -286,7 +286,7 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size)
- 	idr_preload(GFP_KERNEL);
- 
- 	spin_lock_init(&new->lock);
--	new->deleted = 0;
-+	new->deleted = false;
- 	rcu_read_lock();
- 	spin_lock(&new->lock);
- 
-@@ -447,7 +447,7 @@ void ipc_rmid(struct ipc_ids *ids, struct kern_ipc_perm *ipcp)
- 
- 	ids->in_use--;
- 
--	ipcp->deleted = 1;
-+	ipcp->deleted = true;
- 
- 	return;
- }
-@@ -657,7 +657,7 @@ struct kern_ipc_perm *ipc_lock(struct ipc_ids *ids, int id)
- 	/* ipc_rmid() may have already freed the ID while ipc_lock
- 	 * was spinning: here verify that the structure is still valid
- 	 */
--	if (!out->deleted)
-+	if (ipc_valid_object(out))
- 		return out;
- 
- 	spin_unlock(&out->lock);
-diff --git a/ipc/util.h b/ipc/util.h
-index d05b708..a1cbc3a 100644
---- a/ipc/util.h
-+++ b/ipc/util.h
-@@ -195,7 +195,7 @@ static inline void ipc_unlock(struct kern_ipc_perm *perm)
-  */
- static inline bool ipc_valid_object(struct kern_ipc_perm *perm)
- {
--	return perm->deleted == 0;
-+	return !perm->deleted;
- }
- 
- struct kern_ipc_perm *ipc_obtain_object_check(struct ipc_ids *ids, int id);
--- 
-1.8.3.1
 
+Applying: percpu: Add preemption checks to __this_cpu ops
+/home/ddaney/base/octeon/linux-base/trunk/kernel/linux-master/.git/rebase-apply/patch:139: 
+new blank line at EOF.
++
+warning: 1 line adds whitespace errors.
+
+
+David
