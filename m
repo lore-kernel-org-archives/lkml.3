@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab3LSOCz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:02:55 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:41801 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753796Ab3LSOCx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:02:53 -0500
-Message-ID: <52B2FC66.9010309@oracle.com>
-Date: Thu, 19 Dec 2013 09:02:14 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1757606Ab3LSNMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:12:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55247 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753202Ab3LSNMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 08:12:38 -0500
+Date: Thu, 19 Dec 2013 14:12:36 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/6] Configurable fair allocation zone policy v4
+Message-ID: <20131219131236.GG10855@dhcp22.suse.cz>
+References: <1387395723-25391-1-git-send-email-mgorman@suse.de>
+ <20131218210617.GC20038@cmpxchg.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: lockdep: BUG: MAX_LOCKDEP_ENTRIES too low!
-References: <52B289F4.7060205@oracle.com> <20131219103401.GE30183@twins.programming.kicks-ass.net>
-In-Reply-To: <20131219103401.GE30183@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131218210617.GC20038@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 05:34 AM, Peter Zijlstra wrote:
-> On Thu, Dec 19, 2013 at 12:53:56AM -0500, Sasha Levin wrote:
->> Hi all,
->>
->> I think that my bloated kernel managed to create way too many entries in the
->> dependency table. If that sounds right, I can send a patch to increase those.
->>
->> Attached /proc/lock_stat as requested as well.
->
-> /proc/lockdep_stats not lock_stat :-)
->
-> Do you still happen to have that?
+On Wed 18-12-13 16:06:17, Johannes Weiner wrote:
+[...]
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Subject: [patch] mm: page_alloc: revert NUMA aspect of fair allocation
+>  policy
+> 
+> 81c0a2bb ("mm: page_alloc: fair zone allocator policy") meant to bring
+> aging fairness among zones in system, but it was overzealous and badly
+> regressed basic workloads on NUMA systems.
+> 
+> Due to the way kswapd and page allocator interacts, we still want to
+> make sure that all zones in any given node are used equally for all
+> allocations to maximize memory utilization and prevent thrashing on
+> the highest zone in the node.
+> 
+> While the same principle applies to NUMA nodes - memory utilization is
+> obviously improved by spreading allocations throughout all nodes -
+> remote references can be costly and so many workloads prefer locality
+> over memory utilization.  The original change assumed that
+> zone_reclaim_mode would be a good enough predictor for that, but it
+> turned out to be as indicative as a coin flip.
 
-Is the BUG message intentional ("Please attach the output of /proc/lock_stat to the bug report")?
+We generaly suggest to disable zone_reclaim_mode because it does more
+harm than good in 90% of situations.
 
-Here's /proc/lockdep_stats:
+> Revert the NUMA aspect of the fairness until we can find a proper way
+> to make it configurable and agree on a sane default.
 
-  lock-classes:                         2397 [max: 8191]
-  direct dependencies:                 16384 [max: 16384]
-  indirect dependencies:               60481
-  all direct dependencies:            308079
-  dependency chains:                   21162 [max: 32768]
-  dependency chain hlocks:             67298 [max: 163840]
-  in-hardirq chains:                      51
-  in-softirq chains:                     430
-  in-process chains:                   19782
-  stack-trace entries:                235133 [max: 262144]
-  combined max dependencies:       443376596
-  hardirq-safe locks:                     59
-  hardirq-unsafe locks:                 1285
-  softirq-safe locks:                    156
-  softirq-unsafe locks:                 1136
-  irq-safe locks:                        168
-  irq-unsafe locks:                     1285
-  hardirq-read-safe locks:                 4
-  hardirq-read-unsafe locks:             357
-  softirq-read-safe locks:                 7
-  softirq-read-unsafe locks:             337
-  irq-read-safe locks:                     8
-  irq-read-unsafe locks:                 357
-  uncategorized locks:                   281
-  unused locks:                            0
-  max locking depth:                      12
-  max bfs queue depth:                   663
-  chain lookup misses:                 21432
-  chain lookup hits:               490237032
-  cyclic checks:                       20219
-  find-mask forwards checks:           12353
-  find-mask backwards checks:         128734
-  hardirq on events:               372837372
-  hardirq off events:              372837362
-  redundant hardirq ons:                3467
-  redundant hardirq offs:          361517382
-  softirq on events:                 3688513
-  softirq off events:                3688541
-  redundant softirq ons:                   0
-  redundant softirq offs:                  0
-  debug_locks:                             0
+OK, so you have dropped zone_local change which is good IMO. We still
+might allocate from !local node but it will be in the local distance so
+it shouldn't be harmful from the performance point of view. Zone NUMA
+statistics might be skewed a bit - especially NUMA misses but that would
+be a separate issue - why do we even count such allocations as misses?
+ 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: <stable@kernel.org> # 3.12
 
+Anyway
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-Thanks,
-Sasha
+> ---
+>  mm/page_alloc.c | 17 ++++++++---------
+>  1 file changed, 8 insertions(+), 9 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index dd886fac451a..c5939317984f 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1919,18 +1919,17 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
+>  		 * page was allocated in should have no effect on the
+>  		 * time the page has in memory before being reclaimed.
+>  		 *
+> -		 * When zone_reclaim_mode is enabled, try to stay in
+> -		 * local zones in the fastpath.  If that fails, the
+> -		 * slowpath is entered, which will do another pass
+> -		 * starting with the local zones, but ultimately fall
+> -		 * back to remote zones that do not partake in the
+> -		 * fairness round-robin cycle of this zonelist.
+> +		 * Try to stay in local zones in the fastpath.  If
+> +		 * that fails, the slowpath is entered, which will do
+> +		 * another pass starting with the local zones, but
+> +		 * ultimately fall back to remote zones that do not
+> +		 * partake in the fairness round-robin cycle of this
+> +		 * zonelist.
+>  		 */
+>  		if (alloc_flags & ALLOC_WMARK_LOW) {
+>  			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+>  				continue;
+> -			if (zone_reclaim_mode &&
+> -			    !zone_local(preferred_zone, zone))
+> +			if (!zone_local(preferred_zone, zone))
+>  				continue;
+>  		}
+>  		/*
+> @@ -2396,7 +2395,7 @@ static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
+>  		 * thrash fairness information for zones that are not
+>  		 * actually part of this zonelist's round-robin cycle.
+>  		 */
+> -		if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
+> +		if (!zone_local(preferred_zone, zone))
+>  			continue;
+>  		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+>  				    high_wmark_pages(zone) -
+> -- 
+> 1.8.4.2
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
