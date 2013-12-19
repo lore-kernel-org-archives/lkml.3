@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab3LSQtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:49:31 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:52237 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754591Ab3LSQt3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:49:29 -0500
-Date: Thu, 19 Dec 2013 17:49:25 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alex Shi <alex.shi@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
-        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
- range flush v2
-Message-ID: <20131219164925.GA29546@gmail.com>
-References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
- <CA+55aFyNAigQqBk07xLpf0nkhZ_x-QkBYG8otRzsqg_8A2eg-Q@mail.gmail.com>
- <20131215155539.GM11295@suse.de>
- <20131216102439.GA21624@gmail.com>
- <20131216125923.GS11295@suse.de>
- <20131216134449.GA3034@gmail.com>
- <20131217092124.GV11295@suse.de>
- <20131217110051.GA27701@gmail.com>
- <20131219142405.GM11295@suse.de>
+	id S1754267Ab3LSQvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:51:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33748 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752442Ab3LSQvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 11:51:21 -0500
+Message-ID: <52B323BE.7090108@zytor.com>
+Date: Thu, 19 Dec 2013 08:50:06 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131219142405.GM11295@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, Len Brown <lenb@kernel.org>,
+        x86@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, stable@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power regression
+References: <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com> <20131219122257.GC11279@gmail.com> <52B316FF.50906@zytor.com> <20131219160210.GA28426@gmail.com> <52B31B21.6010901@zytor.com> <20131219162136.GM16438@laptop.programming.kicks-ass.net>
+In-Reply-To: <20131219162136.GM16438@laptop.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mel Gorman <mgorman@suse.de> wrote:
-
-> [...]
+On 12/19/2013 08:21 AM, Peter Zijlstra wrote:
 > 
-> Because we lack data on TLB range flush distributions I think we 
-> should still go with the conservative choice for the TLB flush 
-> shift. The worst case is really bad here and it's painfully obvious 
-> on ebizzy.
+> What's that mb for?
+> 
 
-So I'm obviously much in favor of this - I'd in fact suggest making 
-the conservative choice on _all_ CPU models that have aggressive TLB 
-range values right now, because frankly the testing used to pick those 
-values does not look all that convincing to me.
+It already exists in mwait_idle_with_hints(); I just moved it into this
+common function.  It is a bit odd, I have to admit; it seems like it
+should be *before* the monitor (and possibly we should have one after
+the CLFLUSH as well?)
 
-I very much suspect that the problem goes wider than just IvyBridge 
-CPUs ... it's just that few people put as much testing into it as you.
+> Also, can you please merge:
+> 
+>   http://marc.info/?l=linux-kernel&m=138685838420632
+> 
+> Thomas said he would pick up that series, but seems to have gone missing
+> the past week or so.
+> 
 
-We can certainly get more aggressive in the future, subject to proper 
-measurements.
-
-Thanks,
-
-	Ingo
+We need to get the immediate regression fixed.
