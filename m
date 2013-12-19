@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab3LSO26 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:28:58 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:60774 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab3LSO24 convert rfc822-to-8bit (ORCPT
+	id S1754545Ab3LSL4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:56:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44692 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754504Ab3LSL4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:28:56 -0500
-X-Originating-IP: 50.43.14.201
-Date: Thu, 19 Dec 2013 06:28:47 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Gordeev <agordeev@redhat.com>
-Subject: Re: [PATCH] drivers: pci: Add prototype declarations of function in
- appropriate header
-Message-ID: <20131219142846.GA20678@leaf>
-References: <20131219105312.GA23614@rashika>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131219105312.GA23614@rashika>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+	Thu, 19 Dec 2013 06:56:45 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 059/208] ARM: OMAPFB: panel-sony-acx565akm: fix bad unlock balance
+Date: Thu, 19 Dec 2013 11:52:37 +0000
+Message-Id: <1387454106-19326-60-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 04:23:12PM +0530, Rashika Kheria wrote:
-> Add prototype declarations of functions arch_msi_mask_irq() and
-> arch_msix_mask_irq() to header file include/linux/msi.h.
-> 
-> This eliminates the following warning in msi.c:
-> drivers/pci/msi.c:202:12: warning: no previous prototype for ‘arch_msi_mask_irq’ [-Wmissing-prototypes]
-> drivers/pci/msi.c:232:12: warning: no previous prototype for ‘arch_msix_mask_irq’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+------------------
 
->  include/linux/msi.h |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/include/linux/msi.h b/include/linux/msi.h
-> index 009b024..63b7d14 100644
-> --- a/include/linux/msi.h
-> +++ b/include/linux/msi.h
-> @@ -66,6 +66,8 @@ void default_teardown_msi_irqs(struct pci_dev *dev);
->  void default_restore_msi_irqs(struct pci_dev *dev, int irq);
->  u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag);
->  u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag);
-> +u32 arch_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag);
-> +u32 arch_msix_mask_irq(struct msi_desc *desc, u32 flag);
->  
->  struct msi_chip {
->  	struct module *owner;
-> -- 
-> 1.7.9.5
-> 
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+
+commit c37dd677988ca50bc8bc60ab5ab053720583c168 upstream.
+
+When booting Nokia N900 smartphone with v3.12 + omap2plus_defconfig
+(LOCKDEP enabled) and CONFIG_DISPLAY_PANEL_SONY_ACX565AKM enabled,
+the following BUG is seen during the boot:
+
+[    7.302154] =====================================
+[    7.307128] [ BUG: bad unlock balance detected! ]
+[    7.312103] 3.12.0-los.git-2093492-00120-g5e01dc7 #3 Not tainted
+[    7.318450] -------------------------------------
+[    7.323425] kworker/u2:1/12 is trying to release lock (&ddata->mutex) at:
+[    7.330657] [<c031b760>] acx565akm_enable+0x12c/0x18c
+[    7.335998] but there are no more locks to release!
+
+Fix by removing double unlock and handling the locking completely inside
+acx565akm_panel_power_on() when doing the power on.
+
+Reported-by: Eduardo Valentin <eduardo.valentin@ti.com>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/video/omap2/displays-new/panel-sony-acx565akm.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/video/omap2/displays-new/panel-sony-acx565akm.c b/drivers/video/omap2/displays-new/panel-sony-acx565akm.c
+index e6d56f7..d94f35d 100644
+--- a/drivers/video/omap2/displays-new/panel-sony-acx565akm.c
++++ b/drivers/video/omap2/displays-new/panel-sony-acx565akm.c
+@@ -526,6 +526,8 @@ static int acx565akm_panel_power_on(struct omap_dss_device *dssdev)
+ 	struct omap_dss_device *in = ddata->in;
+ 	int r;
+ 
++	mutex_lock(&ddata->mutex);
++
+ 	dev_dbg(&ddata->spi->dev, "%s\n", __func__);
+ 
+ 	in->ops.sdi->set_timings(in, &ddata->videomode);
+@@ -614,10 +616,7 @@ static int acx565akm_enable(struct omap_dss_device *dssdev)
+ 	if (omapdss_device_is_enabled(dssdev))
+ 		return 0;
+ 
+-	mutex_lock(&ddata->mutex);
+ 	r = acx565akm_panel_power_on(dssdev);
+-	mutex_unlock(&ddata->mutex);
+-
+ 	if (r)
+ 		return r;
+ 
+-- 
+1.8.3.2
+
