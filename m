@@ -1,154 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917Ab3LSNAb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:00:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44611 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754254Ab3LSL40 (ORCPT
+	id S1754922Ab3LSN2O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:28:14 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:34783 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926Ab3LSN2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:26 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 046/208] gro: Clean up tcpX_gro_receive checksum verification
-Date: Thu, 19 Dec 2013 11:52:24 +0000
-Message-Id: <1387454106-19326-47-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 08:28:12 -0500
+Date: Thu, 19 Dec 2013 10:28:06 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 2/6] perf tools: Introduce struct perf_log
+Message-ID: <20131219132806.GJ4819@ghostprotocols.net>
+References: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
+ <1387436411-20160-3-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387436411-20160-3-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+Em Thu, Dec 19, 2013 at 04:00:07PM +0900, Namhyung Kim escreveu:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> Add new functions to save error messages in a temp file.  It'll be
+> used by some UI front-ends to see the messages.
 
-------------------
+Do we really have to grow a logging facility like this? Can't we somehow
+openlog/syslog/closelog? Just a first gut reaction, continuing to read
+the series...
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
-
-commit b8ee93ba80b5a0b6c3c06b65c34dd1276f16c047 upstream.
-
-This patch simplifies the checksum verification in tcpX_gro_receive
-by reusing the CHECKSUM_COMPLETE code for CHECKSUM_NONE.  All it
-does for CHECKSUM_NONE is compute the partial checksum and then
-treat it as if it came from the hardware (CHECKSUM_COMPLETE).
-
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-
-Cheers,
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/ipv4/tcp_offload.c   | 26 ++++++++++----------------
- net/ipv6/tcpv6_offload.c | 27 ++++++++++-----------------
- 2 files changed, 20 insertions(+), 33 deletions(-)
-
-diff --git a/net/ipv4/tcp_offload.c b/net/ipv4/tcp_offload.c
-index 44c8678..910ab81 100644
---- a/net/ipv4/tcp_offload.c
-+++ b/net/ipv4/tcp_offload.c
-@@ -272,35 +272,29 @@ static struct sk_buff **tcp4_gro_receive(struct sk_buff **head, struct sk_buff *
- {
- 	const struct iphdr *iph = skb_gro_network_header(skb);
- 	__wsum wsum;
--	__sum16 sum;
+- Arnaldo
  
- 	/* Don't bother verifying checksum if we're going to flush anyway. */
- 	if (NAPI_GRO_CB(skb)->flush)
- 		goto skip_csum;
- 
-+	wsum = skb->csum;
-+
- 	switch (skb->ip_summed) {
-+	case CHECKSUM_NONE:
-+		wsum = skb_checksum(skb, skb_gro_offset(skb), skb_gro_len(skb),
-+				    0);
-+
-+		/* fall through */
-+
- 	case CHECKSUM_COMPLETE:
- 		if (!tcp_v4_check(skb_gro_len(skb), iph->saddr, iph->daddr,
--				  skb->csum)) {
-+				  wsum)) {
- 			skb->ip_summed = CHECKSUM_UNNECESSARY;
- 			break;
- 		}
--flush:
-+
- 		NAPI_GRO_CB(skb)->flush = 1;
- 		return NULL;
--
--	case CHECKSUM_NONE:
--		wsum = csum_tcpudp_nofold(iph->saddr, iph->daddr,
--					  skb_gro_len(skb), IPPROTO_TCP, 0);
--		sum = csum_fold(skb_checksum(skb,
--					     skb_gro_offset(skb),
--					     skb_gro_len(skb),
--					     wsum));
--		if (sum)
--			goto flush;
--
--		skb->ip_summed = CHECKSUM_UNNECESSARY;
--		break;
- 	}
- 
- skip_csum:
-diff --git a/net/ipv6/tcpv6_offload.c b/net/ipv6/tcpv6_offload.c
-index 78081d8..a7a2384 100644
---- a/net/ipv6/tcpv6_offload.c
-+++ b/net/ipv6/tcpv6_offload.c
-@@ -37,36 +37,29 @@ static struct sk_buff **tcp6_gro_receive(struct sk_buff **head,
- {
- 	const struct ipv6hdr *iph = skb_gro_network_header(skb);
- 	__wsum wsum;
--	__sum16 sum;
- 
- 	/* Don't bother verifying checksum if we're going to flush anyway. */
- 	if (NAPI_GRO_CB(skb)->flush)
- 		goto skip_csum;
- 
-+	wsum = skb->csum;
-+
- 	switch (skb->ip_summed) {
-+	case CHECKSUM_NONE:
-+		wsum = skb_checksum(skb, skb_gro_offset(skb), skb_gro_len(skb),
-+				    wsum);
-+
-+		/* fall through */
-+
- 	case CHECKSUM_COMPLETE:
- 		if (!tcp_v6_check(skb_gro_len(skb), &iph->saddr, &iph->daddr,
--				  skb->csum)) {
-+				  wsum)) {
- 			skb->ip_summed = CHECKSUM_UNNECESSARY;
- 			break;
- 		}
--flush:
-+
- 		NAPI_GRO_CB(skb)->flush = 1;
- 		return NULL;
--
--	case CHECKSUM_NONE:
--		wsum = ~csum_unfold(csum_ipv6_magic(&iph->saddr, &iph->daddr,
--						    skb_gro_len(skb),
--						    IPPROTO_TCP, 0));
--		sum = csum_fold(skb_checksum(skb,
--					     skb_gro_offset(skb),
--					     skb_gro_len(skb),
--					     wsum));
--		if (sum)
--			goto flush;
--
--		skb->ip_summed = CHECKSUM_UNNECESSARY;
--		break;
- 	}
- 
- skip_csum:
--- 
-1.8.3.2
-
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/Makefile.perf |   1 +
+>  tools/perf/perf.c        |   3 ++
+>  tools/perf/util/debug.h  |  15 +++++++
+>  tools/perf/util/log.c    | 105 +++++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 124 insertions(+)
+>  create mode 100644 tools/perf/util/log.c
+> 
+> diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+> index 97a2145e4cc6..ec8184014a76 100644
+> --- a/tools/perf/Makefile.perf
+> +++ b/tools/perf/Makefile.perf
+> @@ -372,6 +372,7 @@ LIB_OBJS += $(OUTPUT)util/stat.o
+>  LIB_OBJS += $(OUTPUT)util/record.o
+>  LIB_OBJS += $(OUTPUT)util/srcline.o
+>  LIB_OBJS += $(OUTPUT)util/data.o
+> +LIB_OBJS += $(OUTPUT)util/log.o
+>  
+>  LIB_OBJS += $(OUTPUT)ui/setup.o
+>  LIB_OBJS += $(OUTPUT)ui/helpline.o
+> diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+> index 431798a4110d..bdf7bd8e4394 100644
+> --- a/tools/perf/perf.c
+> +++ b/tools/perf/perf.c
+> @@ -10,6 +10,7 @@
+>  
+>  #include "util/exec_cmd.h"
+>  #include "util/cache.h"
+> +#include "util/debug.h"
+>  #include "util/quote.h"
+>  #include "util/run-command.h"
+>  #include "util/parse-events.h"
+> @@ -524,6 +525,7 @@ int main(int argc, const char **argv)
+>  	 */
+>  	pthread__block_sigwinch();
+>  
+> +	perf_log_init();
+>  	while (1) {
+>  		static int done_help;
+>  		int was_alias = run_argv(&argc, &argv);
+> @@ -543,6 +545,7 @@ int main(int argc, const char **argv)
+>  		} else
+>  			break;
+>  	}
+> +	perf_log_exit();
+>  
+>  	fprintf(stderr, "Failed to run command '%s': %s\n",
+>  		cmd, strerror(errno));
+> diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+> index 443694c36b03..ea160abc2ae0 100644
+> --- a/tools/perf/util/debug.h
+> +++ b/tools/perf/util/debug.h
+> @@ -19,4 +19,19 @@ int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
+>  
+>  void pr_stat(const char *fmt, ...);
+>  
+> +struct perf_log {
+> +	FILE *fp;
+> +	off_t *linemap;
+> +	u32 lines;
+> +	u32 nr_alloc;
+> +	bool seen_newline;
+> +};
+> +
+> +extern struct perf_log perf_log;
+> +
+> +int perf_log_init(void);
+> +int perf_log_exit(void);
+> +void perf_log_add(const char *msg);
+> +void perf_log_addv(const char *fmt, va_list ap);
+> +
+>  #endif	/* __PERF_DEBUG_H */
+> diff --git a/tools/perf/util/log.c b/tools/perf/util/log.c
+> new file mode 100644
+> index 000000000000..4a34bed2af44
+> --- /dev/null
+> +++ b/tools/perf/util/log.c
+> @@ -0,0 +1,105 @@
+> +#include <stdio.h>
+> +#include <stdlib.h>
+> +#include "util/debug.h"
+> +
+> +#define LINEMAP_GROW  128
+> +
+> +struct perf_log perf_log = {
+> +	.seen_newline = true,
+> +};
+> +
+> +int perf_log_init(void)
+> +{
+> +	FILE *fp;
+> +	char name[] = "/tmp/perf-tui-log-XXXXXX";
+> +	int fd = mkstemp(name);
+> +
+> +	if (fd < 0)
+> +		return -1;
+> +
+> +	fp = fdopen(fd, "r+");
+> +	if (fp == NULL) {
+> +		close(fd);
+> +		return -1;
+> +	}
+> +
+> +	perf_log.fp = fp;
+> +
+> +	return 0;
+> +}
+> +
+> +int perf_log_exit(void)
+> +{
+> +	FILE *fp = perf_log.fp;
+> +	if (fp)
+> +		fclose(fp);
+> +
+> +	free(perf_log.linemap);
+> +
+> +	perf_log.fp = NULL;
+> +	perf_log.linemap = NULL;
+> +	return 0;
+> +}
+> +
+> +static int grow_linemap(struct perf_log *log)
+> +{
+> +	off_t *newmap;
+> +	int newsize = log->nr_alloc + LINEMAP_GROW;
+> +
+> +	newmap = realloc(log->linemap, newsize * sizeof(*log->linemap));
+> +	if (newmap == NULL)
+> +		return -1;
+> +
+> +	log->nr_alloc = newsize;
+> +	log->linemap = newmap;
+> +	return 0;
+> +}
+> +
+> +static int __add_to_linemap(struct perf_log *log, off_t index)
+> +{
+> +	if (log->lines == log->nr_alloc)
+> +		if (grow_linemap(log) < 0)
+> +			return -1;
+> +
+> +	log->linemap[log->lines++] = index;
+> +	return 0;
+> +}
+> +
+> +static void add_to_linemap(struct perf_log *log, const char *msg, off_t base)
+> +{
+> +	const char *pos;
+> +
+> +	if (strlen(msg) == 0)
+> +		return;
+> +
+> +	if (log->seen_newline) {
+> +		if (__add_to_linemap(log, base) < 0)
+> +			return;
+> +	}
+> +
+> +	if ((pos = strchr(msg, '\n')) != NULL) {
+> +		log->seen_newline = true;
+> +		pos++;
+> +		add_to_linemap(log, pos, base + (pos - msg));
+> +	} else {
+> +		log->seen_newline = false;
+> +	}
+> +}
+> +
+> +void perf_log_add(const char *msg)
+> +{
+> +	FILE *fp = perf_log.fp;
+> +	off_t offset = ftello(fp);
+> +
+> +	add_to_linemap(&perf_log, msg, offset);
+> +
+> +	fwrite(msg, 1, strlen(msg), fp);
+> +}
+> +
+> +void perf_log_addv(const char *fmt, va_list ap)
+> +{
+> +	char buf[4096];
+> +
+> +	vsnprintf(buf, sizeof(buf), fmt, ap);
+> +	perf_log_add(buf);
+> +}
+> -- 
+> 1.7.11.7
