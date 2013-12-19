@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab3LSPdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:33:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58958 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751747Ab3LSPde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:33:34 -0500
-Date: Thu, 19 Dec 2013 16:33:30 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Timo Teras <timo.teras@iki.fi>
-cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] fs/binfmt_elf: fix memory map for PIE applications
-In-Reply-To: <20131219172644.7bb5f332@vostro>
-Message-ID: <alpine.LNX.2.00.1312191631590.11852@pobox.suse.cz>
-References: <1380698395-5784-1-git-send-email-timo.teras@iki.fi> <alpine.LNX.2.00.1312191516270.11852@pobox.suse.cz> <20131219164251.3ebd124a@vostro> <alpine.LNX.2.00.1312191558140.11852@pobox.suse.cz> <20131219172644.7bb5f332@vostro>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753659Ab3LSPeF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:34:05 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:55473 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895Ab3LSPeC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 10:34:02 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <52B31158.3030801@linux.com>
+References: <1387465429-3568-2-git-send-email-levex@linux.com>
+	<1387465429-3568-22-git-send-email-levex@linux.com>
+	<20131219152044.GB16994@htj.dyndns.org>
+	<52B31158.3030801@linux.com>
+Date: Thu, 19 Dec 2013 10:34:00 -0500
+X-Google-Sender-Auth: VjKSgml5bbVIUtJkTYHfrwNCAtY
+Message-ID: <CAOS58YO7Ot69kv=2UOTDORMAtgL2EOq-voEj3JLCDb8Rv=LABA@mail.gmail.com>
+Subject: Re: [PATCH 21/38] workqueue: add missing put_device call
+From: Tejun Heo <tj@kernel.org>
+To: Levente Kurusa <levex@linux.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Dec 2013, Timo Teras wrote:
+Hello,
 
-> > > As you see, the main executable is mapped 57620000-57708000 and
-> > > 57708000-5770a000. Heap follow immediately after that
-> > > 5770a000-5770c000 followed by anything mmaped after it (stack or
-> > > some other libraries). Heap can grow only up to 5ffdf000 meaning the
-> > > application is limited to 140 megs or so in this instance. This
-> > > limit can go much lower depending how the randomization went. And
-> > > even 140 megs is very little for big apps.
-> > 
-> > So what is the real problem again (i.e. the actual symptoms), please?
-> > Is it that your userspace memory allocator doesn't use mmap() for
-> > allocations at all?
-> 
-> Random application failures with uclibc and musl c-libraries. Both seem
-> to use mmap() for large allocations, and brk() for small ones. IIRC,
-> there was also some minor breakage with other applications that use
-> brk() to do some self-accounting / other funny stuff.
+On Thu, Dec 19, 2013 at 10:31 AM, Levente Kurusa <levex@linux.com> wrote:
+> The reason I removed the kfree() was because the put_device() will decrement
+> wq_dev->dev's reference count to zero (it is set to one by device_register) and hence the
+> wq_device_release() will be called. Now, this effectively does the same the kfree() call
+> would have done but also driver core is notified.
 
-Hmm, that's really unfortunate. Applications really should be prepared for 
-failing brk(), as there is no guarantee provided by anyobody whatsoever 
-about the space allocated for the program break.
+Yeah, I know it does the same thing. It's just not the right way to do it.
 
-Heck, even my manpage tells me:
+> Also, if you take a look at the comment for the device_register() function, it explicitly
+> says NOT to kfree the struct device, but instead call put_device() and let the device's release()
+> function take care.
 
-"Avoid using brk() and sbrk(): the malloc(3) memory allocation package is 
- the portable and comfortable  way  of allocating memory."
+Greg, the API as described by the comment is really weird and
+unconventional. Failed calls are not supposed to have side effects
+which require explicit cleanup. Can we please update the comment?
+
+Thanks.
 
 -- 
-Jiri Kosina
-SUSE Labs
+tejun
