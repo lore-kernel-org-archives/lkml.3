@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab3LSMvF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:51:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44768 "EHLO
+	id S1755665Ab3LSL6y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:58:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45141 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754629Ab3LSL5G (ORCPT
+	with ESMTP id S1755624Ab3LSL6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:06 -0500
+	Thu, 19 Dec 2013 06:58:52 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Helge Deller <deller@gmx.de>,
+Cc: Antti Palosaari <crope@iki.fi>, Mauro Carvalho Chehab <mchehab@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 074/208] parisc: fix mmap(MAP_FIXED|MAP_SHARED) to already mmapped address
-Date: Thu, 19 Dec 2013 11:52:52 +0000
-Message-Id: <1387454106-19326-75-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 148/208] [media] af9035: fix broken I2C and USB I/O
+Date: Thu, 19 Dec 2013 11:54:06 +0000
+Message-Id: <1387454106-19326-149-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,85 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Antti Palosaari <crope@iki.fi>
 
-commit 0576da2c08e3d332f1b0653030d28ab804585ab6 upstream.
+commit 9323297dc0ea9141f8099e474657391bb3ad98f8 upstream.
 
-locale-gen on Debian showed a strange problem on parisc:
-mmap2(NULL, 536870912, PROT_NONE, MAP_SHARED, 3, 0) = 0x42a54000
-mmap2(0x42a54000, 103860, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, 3, 0) = -1 EINVAL (Invalid argument)
+There was three small buffer len calculation bugs which caused
+driver non-working. These are coming from recent commit:
+commit 7760e148350bf6df95662bc0db3734e9d991cb03
+[media] af9035: Don't use dynamic static allocation
 
-Basically it was just trying to re-mmap() a file at the same address
-which it was given by a previous mmap() call. But this remapping failed
-with EINVAL.
-
-The problem is, that when MAP_FIXED and MAP_SHARED flags were used, we didn't
-included the mapping-based offset when we verified the alignment of the given
-fixed address against the offset which we calculated it in the previous call.
-
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/parisc/kernel/sys_parisc.c | 25 +++++++++++++++----------
- 1 file changed, 15 insertions(+), 10 deletions(-)
+ drivers/media/usb/dvb-usb-v2/af9035.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/parisc/kernel/sys_parisc.c b/arch/parisc/kernel/sys_parisc.c
-index 5dfd248..0d3a9d4 100644
---- a/arch/parisc/kernel/sys_parisc.c
-+++ b/arch/parisc/kernel/sys_parisc.c
-@@ -61,8 +61,15 @@ static int get_offset(struct address_space *mapping)
- 	return (unsigned long) mapping >> 8;
- }
- 
--static unsigned long get_shared_area(struct address_space *mapping,
--		unsigned long addr, unsigned long len, unsigned long pgoff)
-+static unsigned long shared_align_offset(struct file *filp, unsigned long pgoff)
-+{
-+	struct address_space *mapping = filp ? filp->f_mapping : NULL;
-+
-+	return (get_offset(mapping) + pgoff) << PAGE_SHIFT;
-+}
-+
-+static unsigned long get_shared_area(struct file *filp, unsigned long addr,
-+		unsigned long len, unsigned long pgoff)
+diff --git a/drivers/media/usb/dvb-usb-v2/af9035.c b/drivers/media/usb/dvb-usb-v2/af9035.c
+index 798565c..4453b0b 100644
+--- a/drivers/media/usb/dvb-usb-v2/af9035.c
++++ b/drivers/media/usb/dvb-usb-v2/af9035.c
+@@ -131,7 +131,7 @@ static int af9035_wr_regs(struct dvb_usb_device *d, u32 reg, u8 *val, int len)
  {
- 	struct vm_unmapped_area_info info;
+ 	u8 wbuf[MAX_XFER_SIZE];
+ 	u8 mbox = (reg >> 16) & 0xff;
+-	struct usb_req req = { CMD_MEM_WR, mbox, sizeof(wbuf), wbuf, 0, NULL };
++	struct usb_req req = { CMD_MEM_WR, mbox, 6 + len, wbuf, 0, NULL };
  
-@@ -71,7 +78,7 @@ static unsigned long get_shared_area(struct address_space *mapping,
- 	info.low_limit = PAGE_ALIGN(addr);
- 	info.high_limit = TASK_SIZE;
- 	info.align_mask = PAGE_MASK & (SHMLBA - 1);
--	info.align_offset = (get_offset(mapping) + pgoff) << PAGE_SHIFT;
-+	info.align_offset = shared_align_offset(filp, pgoff);
- 	return vm_unmapped_area(&info);
- }
+ 	if (6 + len > sizeof(wbuf)) {
+ 		dev_warn(&d->udev->dev, "%s: i2c wr: len=%d is too big!\n",
+@@ -238,7 +238,7 @@ static int af9035_i2c_master_xfer(struct i2c_adapter *adap,
+ 		} else {
+ 			/* I2C */
+ 			u8 buf[MAX_XFER_SIZE];
+-			struct usb_req req = { CMD_I2C_RD, 0, sizeof(buf),
++			struct usb_req req = { CMD_I2C_RD, 0, 5 + msg[0].len,
+ 					buf, msg[1].len, msg[1].buf };
  
-@@ -82,20 +89,18 @@ unsigned long arch_get_unmapped_area(struct file *filp, unsigned long addr,
- 		return -ENOMEM;
- 	if (flags & MAP_FIXED) {
- 		if ((flags & MAP_SHARED) &&
--		    (addr - (pgoff << PAGE_SHIFT)) & (SHMLBA - 1))
-+		    (addr - shared_align_offset(filp, pgoff)) & (SHMLBA - 1))
- 			return -EINVAL;
- 		return addr;
- 	}
- 	if (!addr)
- 		addr = TASK_UNMAPPED_BASE;
+ 			if (5 + msg[0].len > sizeof(buf)) {
+@@ -274,8 +274,8 @@ static int af9035_i2c_master_xfer(struct i2c_adapter *adap,
+ 		} else {
+ 			/* I2C */
+ 			u8 buf[MAX_XFER_SIZE];
+-			struct usb_req req = { CMD_I2C_WR, 0, sizeof(buf), buf,
+-					0, NULL };
++			struct usb_req req = { CMD_I2C_WR, 0, 5 + msg[0].len,
++					buf, 0, NULL };
  
--	if (filp) {
--		addr = get_shared_area(filp->f_mapping, addr, len, pgoff);
--	} else if(flags & MAP_SHARED) {
--		addr = get_shared_area(NULL, addr, len, pgoff);
--	} else {
-+	if (filp || (flags & MAP_SHARED))
-+		addr = get_shared_area(filp, addr, len, pgoff);
-+	else
- 		addr = get_unshared_area(addr, len);
--	}
-+
- 	return addr;
- }
- 
+ 			if (5 + msg[0].len > sizeof(buf)) {
+ 				dev_warn(&d->udev->dev,
 -- 
 1.8.3.2
 
