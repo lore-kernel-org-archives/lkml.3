@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab3LSMbo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:31:44 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:49954 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755794Ab3LSMbl (ORCPT
+	id S1754606Ab3LSL4y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:56:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44684 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754485Ab3LSL4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:31:41 -0500
-Date: Thu, 19 Dec 2013 13:31:37 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Takashi Iwai <tiwai@suse.de>, Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: cirrusdrmfb broken with simplefb
-Message-ID: <20131219123137.GC18110@gmail.com>
-References: <s5hlhzik3kk.wl%tiwai@suse.de>
- <CANq1E4TFKDduy71jCXy+8CMS1_OFxWEpsHY3AA0RUJPW4VE8hg@mail.gmail.com>
- <20131218092941.GA19210@gmail.com>
- <20131219000346.0f722b65@alan.etchedpixels.co.uk>
- <CANq1E4Q3KiLMC-ETFs+FAmTv3yWdCyqG2c+KzGFX4xZmcxLbJg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANq1E4Q3KiLMC-ETFs+FAmTv3yWdCyqG2c+KzGFX4xZmcxLbJg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Dec 2013 06:56:44 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andy Lutomirski <luto@amacapital.net>, Paul Turner <pjt@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 052/208] time: Fix 1ns/tick drift w/ GENERIC_TIME_VSYSCALL_OLD
+Date: Thu, 19 Dec 2013 11:52:30 +0000
+Message-Id: <1387454106-19326-53-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-* David Herrmann <dh.herrmann@gmail.com> wrote:
+------------------
 
-> Hi
-> 
-> On Thu, Dec 19, 2013 at 1:03 AM, One Thousand Gnomes
-> <gnomes@lxorguk.ukuu.org.uk> wrote:
-> >> > That bug always existed, simplefb is just the first driver to hit it
-> >> > (vesafb/efifb didn't use resources). I'm aware of the issue but as a
-> >> > workaround you can simply disable CONFIG_X86_SYSFB. That restores
-> >> > the old behavior.
-> >>
-> >> This looks like a regression, so we'll either need a fix or we'll have
-> >> to mark CONFIG_X86_SYSFB as CONFIG_BROKEN.
-> >
-> > Kernel bugzilla has entries for simplefb breaking both vesafb and 
-> > matrox mga.
-> 
-> Thanks for the hints. I've read through all I could find and tried 
-> to provide some help.
-> 
-> I'm kind of confused, most of them enable CONFIG_X86_SYSFB (which is 
-> 'n' by default) but don't read the help text. I did my best to tell 
-> people that this option requires CONFIG_FB_SIMPLE, but if you don't 
-> read the help-text you won't notice that. Don't know what to do 
-> about that..
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-People generally don't read the help text - still the kernel should 
-not break. So please the Kconfig angle (and the bootup logic, etc.) 
-fool-proof, graphics failures are not fun to debug!
+commit 4be77398ac9d948773116b6be4a3c91b3d6ea18c upstream.
 
-Thanks,
+Since commit 1e75fa8be9f (time: Condense timekeeper.xtime
+into xtime_sec - merged in v3.6), there has been an problem
+with the error accounting in the timekeeping code, such that
+when truncating to nanoseconds, we round up to the next nsec,
+but the balancing adjustment to the ntp_error value was dropped.
 
-	Ingo
+This causes 1ns per tick drift forward of the clock.
+
+In 3.7, this logic was isolated to only GENERIC_TIME_VSYSCALL_OLD
+architectures (s390, ia64, powerpc).
+
+The fix is simply to balance the accounting and to subtract the
+added nanosecond from ntp_error. This allows the internal long-term
+clock steering to keep the clock accurate.
+
+While this fix removes the regression added in 1e75fa8be9f, the
+ideal solution is to move away from GENERIC_TIME_VSYSCALL_OLD
+and use the new VSYSCALL method, which avoids entirely the
+nanosecond granular rounding, and the resulting short-term clock
+adjustment oscillation needed to keep long term accurate time.
+
+[ jstultz: Many thanks to Martin for his efforts identifying this
+  	   subtle bug, and providing the fix. ]
+
+Originally-from: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Paul Turner <pjt@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1385149491-20307-1-git-send-email-john.stultz@linaro.org
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ kernel/time/timekeeping.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 947ba25..5cf6c70 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1347,7 +1347,7 @@ static inline void old_vsyscall_fixup(struct timekeeper *tk)
+ 	tk->xtime_nsec -= remainder;
+ 	tk->xtime_nsec += 1ULL << tk->shift;
+ 	tk->ntp_error += remainder << tk->ntp_error_shift;
+-
++	tk->ntp_error -= (1ULL << tk->shift) << tk->ntp_error_shift;
+ }
+ #else
+ #define old_vsyscall_fixup(tk)
+-- 
+1.8.3.2
+
