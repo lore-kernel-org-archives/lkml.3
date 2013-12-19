@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab3LSKH4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 05:07:56 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:34541 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab3LSKHx (ORCPT
+	id S1753248Ab3LSKID (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 05:08:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43795 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008Ab3LSKH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 05:07:53 -0500
-Date: Thu, 19 Dec 2013 15:37:37 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 2/7] drivers: usb: Include appropriate header file in
- configfs.c
-Message-ID: <81b82e653766ab5d9712445000a953a264165356.1387439261.git.rashika.kheria@gmail.com>
-References: <0e0e74b4487edd341b66674333d734d5828c7e64.1387439261.git.rashika.kheria@gmail.com>
+	Thu, 19 Dec 2013 05:07:57 -0500
+Date: Thu, 19 Dec 2013 10:07:52 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: David Miller <davem@davemloft.net>
+Cc: nicolas.dichtel@6wind.com, netdev@vger.kernel.org,
+        gregkh@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        williams@redhat.com, linux-rt-users@vger.kernel.org, lclaudio@uudg.org
+Subject: Re: [PATCH linux-3.10.y] ip6tnl: fix use after free of fb_tnl_dev
+Message-ID: <20131219100752.GA3866@hercules>
+References: <20131212.153545.1184197791301496227.davem@davemloft.net>
+ <1386925595-4995-1-git-send-email-nicolas.dichtel@6wind.com>
+ <20131217.144002.1716319550180883592.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <0e0e74b4487edd341b66674333d734d5828c7e64.1387439261.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131217.144002.1716319550180883592.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include appropriate header file drivers/usb/gadget/configfs.h in
-gadget/configfs.c because function unregister_gadget_item() has its
-prototype declaration in gadget/configfs.h.
+On Tue, Dec 17, 2013 at 02:40:02PM -0500, David Miller wrote:
+> From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+> Date: Fri, 13 Dec 2013 10:06:35 +0100
+> 
+> > The upstream commit bb8140947a24 ("ip6tnl: allow to use rtnl ops on fb tunnel")
+> > (backported into linux-3.10.y) left a bug which was fixed upstream by commit
+> > 1e9f3d6f1c40 ("ip6tnl: fix use after free of fb_tnl_dev").
+> > 
+> > The problem is a bit different in linux-3.10.y, because there is no x-netns
+> > support (upstream commit 0bd8762824e7 ("ip6tnl: add x-netns support")).
+> > When ip6_tunnel.ko is unloaded, FB device is deleted by rtnl_link_unregister()
+> > and then we try to delete it again in ip6_tnl_destroy_tunnels().
+> > 
+> > This patch removes the second deletion.
+> > 
+> > Reported-by: Steven Rostedt <rostedt@goodmis.org>
+> > Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+> > Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+> 
+> Greg please queue this up for 3.10 -stable if you haven't already.
 
-This eliminates the following warning in gadget/configfs.c:
-drivers/usb/gadget/configfs.c:994:6: warning: no previous prototype for ‘unregister_gadget_item’ [-Wmissing-prototypes]
+As I'm picking the networking patches into the 3.11 kernel as well, I
+believe this fix is also applicable.  I'm queuing it for the 3.11 kernel.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/usb/gadget/configfs.c |    1 +
- 1 file changed, 1 insertion(+)
+Cheers,
+--
+Luis
 
-diff --git a/drivers/usb/gadget/configfs.c b/drivers/usb/gadget/configfs.c
-index 2588511..a117ec2 100644
---- a/drivers/usb/gadget/configfs.c
-+++ b/drivers/usb/gadget/configfs.c
-@@ -4,6 +4,7 @@
- #include <linux/device.h>
- #include <linux/usb/composite.h>
- #include <linux/usb/gadget_configfs.h>
-+#include "configfs.h"
- 
- int check_user_usb_string(const char *name,
- 		struct usb_gadget_strings *stringtab_dev)
--- 
-1.7.9.5
 
+> 
+> Thanks a lot.
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
