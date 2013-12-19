@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab3LSQh1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:37:27 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:56531 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415Ab3LSQhZ (ORCPT
+	id S1755458Ab3LSQiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:38:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43601 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073Ab3LSQiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:37:25 -0500
-Date: Thu, 19 Dec 2013 08:37:20 -0800
-From: josh@joshtriplett.org
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Thu, 19 Dec 2013 11:38:19 -0500
+Date: Thu, 19 Dec 2013 08:38:21 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Denis Turischev <denis.turischev@compulab.co.il>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-kernel@vger.kernel.org,
         linux-usb@vger.kernel.org
-Subject: Re: [PATCH 3/7] drivers: usb: Include appropriate header file in
- hcd.h
-Message-ID: <20131219163720.GB1658@cloud>
-References: <026c3f34e6c26d5456940c28a0f33da96064e023.1387439261.git.rashika.kheria@gmail.com>
- <Pine.LNX.4.44L0.1312191043280.984-100000@iolanthe.rowland.org>
+Subject: Re: xhci: Switch Intel Lynx Point ports to EHCI on shutdown
+Message-ID: <20131219163821.GA27409@kroah.com>
+References: <52B31EDA.60908@compulab.co.il>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <Pine.LNX.4.44L0.1312191043280.984-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52B31EDA.60908@compulab.co.il>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 10:45:42AM -0500, Alan Stern wrote:
-> On Thu, 19 Dec 2013, Rashika Kheria wrote:
+On Thu, Dec 19, 2013 at 06:29:14PM +0200, Denis Turischev wrote:
+> The same issue like with Panther Point chipsets. If the USB ports are
+> switched to xHCI on shutdown, the xHCI host will send a spurious interrupt,
+> which will wake the system. Some BIOS have work around for this, but not all.
 > 
-> > Include header file include/linux/usb.h in include/linux/usb/hcd.h
-> > because structures usb_device, usb_host_config and usb_interface have
-> > their definitions in include/linux/usb.h.
-> > 
-> > This eliminates the following warning in include/linux/usb/hcd.h:
-> > include/linux/usb/hcd.h:311:44: warning: ‘struct usb_device’ declared inside parameter list [enabled by default]
-> > include/linux/usb/hcd.h:412:10: warning: ‘struct usb_host_config’ declared inside parameter list [enabled by default]
-> > include/linux/usb/hcd.h:614:9: warning: ‘struct usb_interface’ declared inside parameter list [enabled by default]
+> The bug can be avoided if the USB ports are switched back to EHCI on
+> shutdown.
 > 
-> Where does this problem show up?
+> Signed-off-by: Denis Turischev <denis@compulab.co.il>
 > 
-> Any file that include linux/usb/hcd.h should include linux/usb.h first.  
-> IMO it would be better to fix the source files that don't do the 
-> includes properly.
-> 
-> Of course, people have varying opinions on this issue.  As far as I 
-> know, there is no fixed policy in the kernel about nested includes.
+> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+> --- a/drivers/usb/host/xhci-pci.c	2013-12-19 11:36:12.049589400 +0200
+> +++ b/drivers/usb/host/xhci-pci.c	2013-12-19 11:37:27.261590385 +0200
+> @@ -91,8 +91,9 @@
+>  		xhci->quirks |= XHCI_LPM_SUPPORT;
+>  		xhci->quirks |= XHCI_INTEL_HOST;
+>  	}
+> -	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
+> -			pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) {
+> +	if (pdev->vendor == PCI_VENDOR_ID_INTEL && (
+> +			(pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) ||
+> +			(pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI))) {
+>  		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
+>  		xhci->limit_active_eps = 64;
+>  		xhci->quirks |= XHCI_SW_BW_CHECKING;
+> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+> --- a/include/linux/pci_ids.h	2013-12-19 11:36:11.945589398 +0200
+> +++ b/include/linux/pci_ids.h	2013-12-19 11:35:57.817589213 +0200
+> @@ -2576,6 +2576,7 @@
+>  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX	0x1c5f
+>  #define PCI_DEVICE_ID_INTEL_PATSBURG_LPC_0	0x1d40
+>  #define PCI_DEVICE_ID_INTEL_PATSBURG_LPC_1	0x1d41
+> +#define PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI	0x9c31
 
-True.  I personally prefer the policy of making all headers
-self-contained, and then only including headers that define things used
-in the source file.  That has the advantage of not including any
-unnecessary headers if the dependencies shrink, and not requiring
-changes to multiple source files if the dependencies grow.
+Please read the top of this file for why to not add new device ids to
+it.
 
-Any particular objection to making the headers self-contained?
+And if you really need to do so, please do it in sorted order:
 
-- Josh Triplett
+>  #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI	0x1e31
+>  #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_LPC_MIN	0x1e40
+>  #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_LPC_MAX	0x1e5f
+
+Which you didn't do :(
+
+greg k-h
