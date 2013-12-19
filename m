@@ -1,157 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab3LSNfM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:35:12 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:36496 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755716Ab3LSNfJ (ORCPT
+	id S1753492Ab3LSLZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:25:38 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:47710 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612Ab3LSLZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:35:09 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: nfs-ganesha-devel@lists.sourceforge.net, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 13/13] locks: add new "private" lock type that is owned by the filp
-Date: Thu, 19 Dec 2013 08:34:25 -0500
-Message-Id: <1387460065-28269-14-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
-References: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
+	Thu, 19 Dec 2013 06:25:36 -0500
+Date: Thu, 19 Dec 2013 12:25:19 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
+ tracing units
+Message-ID: <20131219112519.GX21999@twins.programming.kicks-ass.net>
+References: <20131217161126.GL13532@twins.programming.kicks-ass.net>
+ <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131218133439.GR21999@twins.programming.kicks-ass.net>
+ <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131218141125.GT21999@twins.programming.kicks-ass.net>
+ <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131218150900.GU21999@twins.programming.kicks-ass.net>
+ <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219102625.GC30183@twins.programming.kicks-ass.net>
+ <87r499rt32.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87r499rt32.fsf@ashishki-desk.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to some unfortunate history, POSIX locks have very strange and
-unhelpful semantics. The thing that usually catches people by surprise
-is that they are dropped whenever the process closes any file descriptor
-associated with the inode.
+On Thu, Dec 19, 2013 at 01:14:09PM +0200, Alexander Shishkin wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
+> 
+> > On Thu, Dec 19, 2013 at 09:53:44AM +0200, Alexander Shishkin wrote:
+> >> Peter Zijlstra <peterz@infradead.org> writes:
+> >> > The thing is; why can't you zero-copy whatever buffer the hardware
+> >> > writes into, into the normal buffer?
+> >> 
+> >> I'm not sure I understand. You mean, have the buffer split between perf
+> >> data and trace data?
+> >
+> > Yep, I don't see any reason why this wouldn't work.
+> >
+> > When the hardware thing sends an interrupt to notify us its buffer is
+> > 'full', stop the recorder, try to create a single record in the buffer
+> > that's big enough + 1 page, then swizzle the hardware pages and the
+> > buffer pages for that record, using the +1 page to page align the actual
+> > data. Then (re)start the hardware on the 'new' pages.
+> 
+> We configure the hardware thing to send an interrupt *before* the buffer
+> is full, keep the recorder running while userspace saves stuff to
+> perf.data file. Recording only stops if perf fails to read the trace
+> data out fast enough and the buffer fills up. So you'd have a complete
+> trace.
+> 
+> Also, we have what we call a "snapshot" mode, where we keep the hardware
+> thing running, writing data to a circular buffer till it's stopped, in
+> case we're only interested in the most recent trace data to see what it
+> is that takes too long to respond, etc. And while it is running, we're
+> getting new records in the perf stream all the time (mmaps, etc).
+> 
+> Put simple: perf data and trace data are two different separate types of
+> information that originate from two different sources, can exist and
+> make sense separately from one another and should not be mixed.
 
-This is extremely problematic for people developing file servers that
-need to implement byte-range locks. Developers often need a "lock
-management" facility to ensure that file descriptors are not closed
-until all of the locks associated with the inode are finished.
-
-Additionally, "classic" POSIX locks are owned by the process. Locks
-taken between threads within the same process won't conflict with one
-another, which renders them useless for synchronization between threads.
-
-This patchset adds a new type of lock that attempts to address these
-issues. These locks conflict with classic POSIX read/write locks, but
-have semantics that are more like BSD locks with respect to inheritance
-and behavior on close.
-
-This is implemented primarily by changing how fl_owner field is set for
-these locks. Instead of having them owned by the files_struct of the
-process, they are instead owned by the filp on which they were acquired.
-Thus, they are inherited across fork() and are only released when the
-last reference to a filp is put.
-
-These new semantics prevent them from being merged with classic POSIX
-locks, even if they are acquired by the same process. These locks will
-also conflict with classic POSIX locks even if they are acquired by
-the same process or on the same file descriptor.
-
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/locks.c                       | 34 ++++++++++++++++++++++++++++++++--
- include/uapi/asm-generic/fcntl.h | 16 ++++++++++++++++
- 2 files changed, 48 insertions(+), 2 deletions(-)
-
-diff --git a/fs/locks.c b/fs/locks.c
-index 013b177..bd2d824 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -381,7 +381,6 @@ static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
- 	} else
- 		fl->fl_end = OFFSET_MAX;
- 
--	fl->fl_owner = current->files;
- 	fl->fl_pid = current->tgid;
- 	fl->fl_file = filp;
- 	fl->fl_flags = FL_POSIX;
-@@ -391,16 +390,45 @@ static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
- 	/* Ensure that fl->fl_filp has compatible f_mode */
- 	switch (l->l_type) {
- 	case F_RDLCK:
-+	case F_RDLCKP:
- 		if (!(filp->f_mode & FMODE_READ))
- 			return -EBADF;
- 		break;
- 	case F_WRLCK:
-+	case F_WRLCKP:
- 		if (!(filp->f_mode & FMODE_WRITE))
- 			return -EBADF;
- 		break;
- 	}
- 
--	return assign_type(fl, l->l_type);
-+	/*
-+	 * FL_FILE_PVT locks are "owned" by the filp upon which they were
-+	 * acquired, regardless of what task is dealing with them. Set the
-+	 * fl_owner appropriately and flag them as private.
-+	 */
-+	switch(l->l_type) {
-+	case F_RDLCKP:
-+		fl->fl_owner = (fl_owner_t)filp;
-+		fl->fl_type = F_RDLCK;
-+		fl->fl_flags |= FL_FILE_PVT;
-+		break;
-+	case F_WRLCKP:
-+		fl->fl_owner = (fl_owner_t)filp;
-+		fl->fl_type = F_WRLCK;
-+		fl->fl_flags |= FL_FILE_PVT;
-+		break;
-+	case F_UNLCKP:
-+		fl->fl_owner = (fl_owner_t)filp;
-+		fl->fl_type = F_UNLCK;
-+		fl->fl_flags |= FL_FILE_PVT;
-+		break;
-+	default:
-+		/* Any other POSIX lock is owned by the file_struct */
-+		fl->fl_owner = current->files;
-+		return assign_type(fl, l->l_type);
-+	}
-+
-+	return 0;
- }
- 
- /* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
-@@ -2207,6 +2235,8 @@ void locks_remove_file(struct file *filp)
- 	if (!inode->i_flock)
- 		return;
- 
-+	locks_remove_posix(filp, (fl_owner_t)filp);
-+
- 	if (filp->f_op->flock) {
- 		struct file_lock fl = {
- 			.fl_pid = current->tgid,
-diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-index 36025f7..25eb7be 100644
---- a/include/uapi/asm-generic/fcntl.h
-+++ b/include/uapi/asm-generic/fcntl.h
-@@ -151,6 +151,22 @@ struct f_owner_ex {
- #define F_UNLCK		2
- #endif
- 
-+/*
-+ * fd "private" POSIX locks.
-+ *
-+ * Usually POSIX locks held by a process are released on *any* close and are
-+ * not inherited across a fork().
-+ *
-+ * These lock types will conflict with normal POSIX locks, but are "owned"
-+ * by the opened file, not the process. This means that they are inherited
-+ * across fork() like BSD (flock) locks, and they are only released
-+ * automatically when the last reference to the the open file against which
-+ * they were acquired is put.
-+ */
-+#define F_RDLCKP	5
-+#define F_WRLCKP	6
-+#define F_UNLCKP	7
-+
- /* for old implementation of bsd flock () */
- #ifndef F_EXLCK
- #define F_EXLCK		4	/* or 3 */
--- 
-1.8.4.2
-
+Well you're either having to change your stance or we're done talking
+right now.
