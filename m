@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab3LSTJD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 14:09:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26604 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755179Ab3LSTJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 14:09:01 -0500
-Date: Thu, 19 Dec 2013 20:09:20 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH 1/1] mm: fix the theoretical compound_lock() vs
-	prep_new_page() race
-Message-ID: <20131219190920.GB24566@redhat.com>
-References: <20131211170844.GA21700@redhat.com> <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de> <20131211175615.GA24546@redhat.com> <20131211191855.GA32485@redhat.com> <20131213151035.GE5408@redhat.com> <20131213162240.GA11762@redhat.com> <20131213173406.GG5408@redhat.com> <20131216183618.GA28252@redhat.com> <20131216201952.GE21218@redhat.com> <20131219190846.GA24566@redhat.com>
+	id S1755457Ab3LSTJQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 14:09:16 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39306 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754814Ab3LSTJN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 14:09:13 -0500
+Message-ID: <52B34454.1040603@wwwdotorg.org>
+Date: Thu, 19 Dec 2013 12:09:08 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131219190846.GA24566@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Ingo Molnar <mingo@kernel.org>
+CC: David Herrmann <dh.herrmann@gmail.com>, linux-kernel@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>,
+        the arch/x86 maintainers <x86@kernel.org>, linux-fbdev@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>, stable@vger.kernel.org
+Subject: Re: [PATCH v3] x86: sysfb: remove sysfb when probing real hw
+References: <1387374611-12493-1-git-send-email-dh.herrmann@gmail.com> <1387448038-8260-1-git-send-email-dh.herrmann@gmail.com> <52B340CB.90807@wwwdotorg.org> <20131219185517.GA303@gmail.com>
+In-Reply-To: <20131219185517.GA303@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get/put_page(thp_tail) paths do get_page_unless_zero(page_head) +
-compound_lock(). In theory this page_head can be already freed and
-reallocated as alloc_pages(__GFP_COMP, smaller_order). In this case
-get_page_unless_zero() can succeed right after set_page_refcounted(),
-and compound_lock() can race with the non-atomic __SetPageHead().
+On 12/19/2013 11:55 AM, Ingo Molnar wrote:
+> 
+> * Stephen Warren <swarren@wwwdotorg.org> wrote:
+> 
+>> On 12/19/2013 03:13 AM, David Herrmann wrote:
+>>> With CONFIG_X86_SYSFB=y, probing real hw-drivers may result in
+>>> resource-conflicts and drivers will refuse to load. A call to
+>>> request_mem_region() will fail, if the region overlaps with the mem-region
+>>> used by simplefb. The common desktop DRM drivers (intel, nouveau, radeon)
+>>> are not affected as they don't reserve their resources, but some others
+>>> do, including (nvidiafb, cirrus, ..).
+>>
+>> I have validated that this doesn't cause any regressions on the/a
+>> non-x86 platform using simplefb, although given the main point of this
+>> patch is to fix issues on x86, I'm rather hesitant to give a tested-by
+>> tag in case someone looking back interprets it incorrectly:-)
+> 
+> Tested-on-ARM-by: Stephen Warren <swarren@wwwdotorg.org>
 
-Perhaps we should rework the thp locking (under discussion), but
-until then this patch moves set_page_refcounted() and adds wmb()
-to ensure that page->_count != 0 comes as a last change.
+I suppose with CC: stable there's some precedent for a comment after the
+tag, so perhaps:
 
-I am not sure about other callers of set_page_refcounted(), but at
-first glance they look fine to me.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- mm/page_alloc.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 115b23b..9402337 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -865,8 +865,6 @@ static int prep_new_page(struct page *page, int order, gfp_t gfp_flags)
- 	}
- 
- 	set_page_private(page, 0);
--	set_page_refcounted(page);
--
- 	arch_alloc_page(page, order);
- 	kernel_map_pages(page, 1 << order, 1);
- 
-@@ -876,6 +874,14 @@ static int prep_new_page(struct page *page, int order, gfp_t gfp_flags)
- 	if (order && (gfp_flags & __GFP_COMP))
- 		prep_compound_page(page, order);
- 
-+	/*
-+	 * Make sure the caller of get_page_unless_zero() will see the
-+	 * fully initialized page. Say, to ensure that compound_lock()
-+	 * can't race with the non-atomic __SetPage*() above.
-+	 */
-+	smp_wmb();
-+	set_page_refcounted(page);
-+
- 	return 0;
- }
- 
--- 
-1.5.5.1
-
+Tested-by: Stephen Warren <swarren@wwwdotorg.org> # on ARM only
 
