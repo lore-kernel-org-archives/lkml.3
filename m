@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab3LSNFA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:05:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44499 "EHLO
+	id S1756821Ab3LSMXn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:23:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45097 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753969Ab3LSLz5 (ORCPT
+	with ESMTP id S1752148Ab3LSL6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:55:57 -0500
+	Thu, 19 Dec 2013 06:58:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>,
+Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 027/208] ip6_output: fragment outgoing reassembled skb properly
-Date: Thu, 19 Dec 2013 11:52:05 +0000
-Message-Id: <1387454106-19326-28-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 139/208] ath9k: Fix XLNA bias strength
+Date: Thu, 19 Dec 2013 11:53:57 +0000
+Message-Id: <1387454106-19326-140-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit 9037c3579a277f3a23ba476664629fda8c35f7c4 upstream.
+commit a1783a7b0846fc6414483e6caf646db72023fffd upstream.
 
-If reassembled packet would fit into outdev MTU, it is not fragmented
-according the original frag size and it is send as single big packet.
+The EEPROM parameter to determine whether the bias
+strength values for XLNA have to be applied is part
+of the miscConfiguration field and not featureEnable.
 
-The second case is if skb is gso. In that case fragmentation does not happen
-according to the original frag size.
-
-This patch fixes these.
-
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv6/ip6_output.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 5b25f85..f80f2fa 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -150,7 +150,8 @@ static int ip6_finish_output2(struct sk_buff *skb)
- static int ip6_finish_output(struct sk_buff *skb)
- {
- 	if ((skb->len > ip6_skb_dst_mtu(skb) && !skb_is_gso(skb)) ||
--	    dst_allfrag(skb_dst(skb)))
-+	    dst_allfrag(skb_dst(skb)) ||
-+	    (IP6CB(skb)->frag_max_size && skb->len > IP6CB(skb)->frag_max_size))
- 		return ip6_fragment(skb, ip6_finish_output2);
- 	else
- 		return ip6_finish_output2(skb);
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+index d3ca712..86d203c 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -4002,7 +4002,7 @@ static void ar9003_hw_xlna_bias_strength_apply(struct ath_hw *ah, bool is2ghz)
+ 	struct ar9300_eeprom *eep = &ah->eeprom.ar9300_eep;
+ 	u8 bias;
+ 
+-	if (!(eep->baseEepHeader.featureEnable & 0x40))
++	if (!(eep->baseEepHeader.miscConfiguration & 0x40))
+ 		return;
+ 
+ 	if (!AR_SREV_9300(ah))
 -- 
 1.8.3.2
 
