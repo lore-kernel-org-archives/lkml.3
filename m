@@ -1,101 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756807Ab3LSQN2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:13:28 -0500
-Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:36833 "EHLO
-	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753711Ab3LSPue (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:50:34 -0500
-Message-Id: <20131219155031.181331056@linux.com>
-Date: Thu, 19 Dec 2013 09:50:19 -0600
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org
-Subject: [PATCH 04/40] kernel misc: Replace __get_cpu_var uses
-References: <20131219155015.443763038@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_misc
+	id S932190Ab3LSQOB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:14:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33279 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932170Ab3LSQN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 11:13:58 -0500
+Message-ID: <52B31B21.6010901@zytor.com>
+Date: Thu, 19 Dec 2013 08:13:21 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Len Brown <lenb@kernel.org>, x86@kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        stable@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power regression
+References: <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com> <20131219122257.GC11279@gmail.com> <52B316FF.50906@zytor.com> <20131219160210.GA28426@gmail.com>
+In-Reply-To: <20131219160210.GA28426@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/mixed;
+ boundary="------------000906000501000406070602"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace uses of __get_cpu_var for address calculation with this_cpu_ptr.
+This is a multi-part message in MIME format.
+--------------000906000501000406070602
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-Cc: akpm@linux-foundation.org
-Signed-off-by: Christoph Lameter <cl@linux.com>
+How does this look?  Completely untested, of course.
 
-Index: linux/kernel/printk/printk.c
-===================================================================
---- linux.orig/kernel/printk/printk.c	2013-12-02 16:07:47.434699125 -0600
-+++ linux/kernel/printk/printk.c	2013-12-02 16:07:47.434699125 -0600
-@@ -2447,7 +2447,7 @@ static void wake_up_klogd_work_func(stru
- 	int pending = __this_cpu_xchg(printk_pending, 0);
- 
- 	if (pending & PRINTK_PENDING_SCHED) {
--		char *buf = __get_cpu_var(printk_sched_buf);
-+		char *buf = this_cpu_ptr(printk_sched_buf);
- 		pr_warn("[sched_delayed] %s", buf);
- 	}
- 
-@@ -2465,7 +2465,7 @@ void wake_up_klogd(void)
- 	preempt_disable();
- 	if (waitqueue_active(&log_wait)) {
- 		this_cpu_or(printk_pending, PRINTK_PENDING_WAKEUP);
--		irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
-+		irq_work_queue(this_cpu_ptr(&wake_up_klogd_work));
- 	}
- 	preempt_enable();
+I do wonder if we need more memory barriers, though.
+
+An alternative would be to move everything into mwait_idle_with_hints().
+
+	-hpa
+
+
+--------------000906000501000406070602
+Content-Type: text/plain; charset=UTF-8;
+ name="diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="diff"
+
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 7b034a4057f9..6dce588f94b4 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -723,6 +723,23 @@ static inline void __sti_mwait(unsigned long eax, unsigned long ecx)
+ 		     :: "a" (eax), "c" (ecx));
  }
-@@ -2478,14 +2478,14 @@ int printk_sched(const char *fmt, ...)
- 	int r;
  
- 	local_irq_save(flags);
--	buf = __get_cpu_var(printk_sched_buf);
-+	buf = this_cpu_ptr(printk_sched_buf);
++/*
++ * Issue a clflush in preparation for a monitor instruction if the CPU
++ * needs it.  We force the address into the ax register to get a fixed
++ * length for the instruction, however, this is what the monitor instruction
++ * is going to need anyway, so it shouldn't add any additional code.
++ */
++static inline void clflush_monitor(const void *addr, unsigned long ecx,
++				   unsigned long edx)
++{
++	alternative_input(ASM_NOP3,
++			  "clflush (%0)",
++			  X86_FEATURE_CLFLUSH_MONITOR,
++			  "a" (addr));
++	__monitor(addr, eax, edx);
++	smp_mb();
++}
++
+ extern void select_idle_routine(const struct cpuinfo_x86 *c);
+ extern void init_amd_e400_c1e_mask(void);
  
- 	va_start(args, fmt);
- 	r = vsnprintf(buf, PRINTK_BUF_SIZE, fmt, args);
- 	va_end(args);
- 
- 	__this_cpu_or(printk_pending, PRINTK_PENDING_SCHED);
--	irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
-+	irq_work_queue(this_cpu_ptr(&wake_up_klogd_work));
- 	local_irq_restore(flags);
- 
- 	return r;
-Index: linux/kernel/smp.c
-===================================================================
---- linux.orig/kernel/smp.c	2013-12-02 16:07:47.434699125 -0600
-+++ linux/kernel/smp.c	2013-12-02 16:07:47.434699125 -0600
-@@ -177,7 +177,7 @@ static void generic_exec_single(int cpu,
-  */
- void generic_smp_call_function_single_interrupt(void)
+diff --git a/arch/x86/kernel/acpi/cstate.c b/arch/x86/kernel/acpi/cstate.c
+index d2b7f27781bc..b14d02354134 100644
+--- a/arch/x86/kernel/acpi/cstate.c
++++ b/arch/x86/kernel/acpi/cstate.c
+@@ -163,11 +163,7 @@ EXPORT_SYMBOL_GPL(acpi_processor_ffh_cstate_probe);
+ void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
  {
--	struct call_single_queue *q = &__get_cpu_var(call_single_queue);
-+	struct call_single_queue *q = this_cpu_ptr(&call_single_queue);
- 	LIST_HEAD(list);
- 
- 	/*
-@@ -245,7 +245,7 @@ int smp_call_function_single(int cpu, sm
- 			struct call_single_data *csd = &d;
- 
- 			if (!wait)
--				csd = &__get_cpu_var(csd_data);
-+				csd = this_cpu_ptr(&csd_data);
- 
- 			csd_lock(csd);
- 
-@@ -393,7 +393,7 @@ void smp_call_function_many(const struct
- 		return;
+ 	if (!need_resched()) {
+-		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
+-			clflush((void *)&current_thread_info()->flags);
+-
+-		__monitor((void *)&current_thread_info()->flags, 0, 0);
+-		smp_mb();
++		clflush_monitor(&current_thread_info()->flags, 0, 0);
+ 		if (!need_resched())
+ 			__mwait(ax, cx);
  	}
- 
--	cfd = &__get_cpu_var(cfd_data);
-+	cfd = this_cpu_ptr(&cfd_data);
- 
- 	cpumask_and(cfd->cpumask, mask, cpu_online_mask);
- 	cpumask_clear_cpu(this_cpu, cfd->cpumask);
 
+--------------000906000501000406070602--
