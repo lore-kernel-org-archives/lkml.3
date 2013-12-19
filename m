@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab3LSP25 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:28:57 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53655 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754284Ab3LSP2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:28:53 -0500
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 2/5] mfd: ti_am335x_tscadc: Make am335x_tsc_se_update() local
-Date: Thu, 19 Dec 2013 16:28:28 +0100
-Message-Id: <1387466911-3732-3-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.8.5.1
-In-Reply-To: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
-References: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	id S1754507Ab3LSP3Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:29:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58888 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754448Ab3LSP3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 10:29:13 -0500
+Date: Thu, 19 Dec 2013 15:29:06 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC PATCH 0/3] Change how we determine when to hand out THPs
+Message-ID: <20131219152906.GQ11295@suse.de>
+References: <20131212180037.GA134240@sgi.com>
+ <20131213214437.6fdbf7f2.akpm@linux-foundation.org>
+ <20131216171214.GA15663@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131216171214.GA15663@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the "recent" changes, am335x_tsc_se_update() has no longer any
-users outside of this file so make it local.
+On Mon, Dec 16, 2013 at 11:12:15AM -0600, Alex Thorlton wrote:
+> > Please cc Andrea on this.
+> 
+> I'm going to clean up a few small things for a v2 pretty soon, I'll be
+> sure to cc Andrea there.
+> 
+> > > My proposed solution to the problem is to allow users to set a
+> > > threshold at which THPs will be handed out.  The idea here is that, when
+> > > a user faults in a page in an area where they would usually be handed a
+> > > THP, we pull 512 pages off the free list, as we would with a regular
+> > > THP, but we only fault in single pages from that chunk, until the user
+> > > has faulted in enough pages to pass the threshold we've set.  Once they
+> > > pass the threshold, we do the necessary work to turn our 512 page chunk
+> > > into a proper THP.  As it stands now, if the user tries to fault in
+> > > pages from different nodes, we completely give up on ever turning a
+> > > particular chunk into a THP, and just fault in the 4K pages as they're
+> > > requested.  We may want to make this tunable in the future (i.e. allow
+> > > them to fault in from only 2 different nodes).
+> > 
+> > OK.  But all 512 pages reside on the same node, yes?  Whereas with thp
+> > disabled those 512 pages would have resided closer to the CPUs which
+> > instantiated them.  
+> 
+> As it stands right now, yes, since we're pulling a 512 page contiguous
+> chunk off the free list, everything from that chunk will reside on the
+> same node, but as I (stupidly) forgot to mention in my original e-mail,
+> one piece I have yet to add is the functionality to put the remaining
+> unfaulted pages from our chunk *back* on the free list after we give up
+> on handing out a THP. 
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/mfd/ti_am335x_tscadc.c       | 3 +--
- include/linux/mfd/ti_am335x_tscadc.h | 1 -
- 2 files changed, 1 insertion(+), 3 deletions(-)
+You don't necessarily have to take it off in the
+first place either. Heavy handed approach is to create
+MIGRATE_MOVABLE_THP_RESERVATION_BECAUSE_WHO_NEEDS_SNAPPY_NAMES and put it
+at the bottom of the fallback lists in the page allocator. Allocate one
+base page, move the other 511 to that list. On the second fault, use the
+correctly aligned page if it's still on the buddy lists and local to the
+current NUMA node, otherwise fallback to a normal allocation. On promotion,
+you're checking first if all the faulted page are on the same node and
+second if the correctly aligned pages are on the free lists or not.
 
-diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index 88718ab..67d0eb4 100644
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -48,11 +48,10 @@ static const struct regmap_config tscadc_regmap_config = {
- 	.val_bits = 32,
- };
- 
--void am335x_tsc_se_update(struct ti_tscadc_dev *tsadc)
-+static void am335x_tsc_se_update(struct ti_tscadc_dev *tsadc)
- {
- 	tscadc_writel(tsadc, REG_SE, tsadc->reg_se_cache);
- }
--EXPORT_SYMBOL_GPL(am335x_tsc_se_update);
- 
- void am335x_tsc_se_set(struct ti_tscadc_dev *tsadc, u32 val)
- {
-diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-index d498d98f..1fe7219 100644
---- a/include/linux/mfd/ti_am335x_tscadc.h
-+++ b/include/linux/mfd/ti_am335x_tscadc.h
-@@ -176,7 +176,6 @@ static inline struct ti_tscadc_dev *ti_tscadc_dev_get(struct platform_device *p)
- 	return *tscadc_dev;
- }
- 
--void am335x_tsc_se_update(struct ti_tscadc_dev *tsadc);
- void am335x_tsc_se_set(struct ti_tscadc_dev *tsadc, u32 val);
- void am335x_tsc_se_clr(struct ti_tscadc_dev *tsadc, u32 val);
- 
+The addition of a migrate type would very heavy handed but you could
+just create a special cased linked list of pages that are potentially
+reserved that is drained before the page allocator wakes kswapd.
+
+Order the pages such that the oldest one on the new free list is the
+first allocated. That way you do not have to worry about scanning tasks
+for pages to put back on the free list.
+
 -- 
-1.8.5.1
-
+Mel Gorman
+SUSE Labs
