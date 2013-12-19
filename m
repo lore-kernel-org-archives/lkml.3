@@ -1,66 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092Ab3LSUqm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 15:46:42 -0500
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:64118 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756743Ab3LSUqi (ORCPT
+	id S1756803Ab3LSUqk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 15:46:40 -0500
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:14659 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756752Ab3LSUqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 15:46:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131219204051.GA2253@gmail.com>
-References: <CA+55aFzGxcML7j8CEvQPYzh0W81uVoAAVmGctMOUZ7CZ1yYd2A@mail.gmail.com>
-	<tip-7e98b71920464b8d15fa95c74366416cd3c88861@git.kernel.org>
-	<20131219204051.GA2253@gmail.com>
-Date: Fri, 20 Dec 2013 05:46:37 +0900
-X-Google-Sender-Auth: Xh2BRuOUkbKeTOG7DA-y6-KI68o
-Message-ID: <CA+55aFyr5VcONQKp_yDRDy+BFpMy9=P--+U8d1uYeDVNWcAM8Q@mail.gmail.com>
-Subject: Re: [tip:x86/idle] x86, idle: Use static_cpu_has() for CLFLUSH
- workaround, add barriers
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Anvin <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Anvin <hpa@linux.intel.com>, Len Brown <len.brown@intel.com>,
-        linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 19 Dec 2013 15:46:30 -0500
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@redhat.com, dvhart@linux.intel.com, peterz@infradead.org,
+        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
+        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
+        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
+        aswin@hp.com, davidlohr@hp.com, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH v4 3/4] futex: Document ordering guarantees
+Date: Thu, 19 Dec 2013 12:45:49 -0800
+Message-Id: <1387485950-7320-4-git-send-email-davidlohr@hp.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1387485950-7320-1-git-send-email-davidlohr@hp.com>
+References: <1387485950-7320-1-git-send-email-davidlohr@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 5:40 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> The first mb() looks superfluous, because see
-> current_set_polling_and_test():
->
-> static inline bool __must_check current_set_polling_and_test(void)
-> {
->         __current_set_polling();
->
->         /*
->          * Polling state must be visible before we test NEED_RESCHED,
->          * paired by resched_task()
->          */
->         smp_mb();
->
->         return unlikely(tif_need_resched());
-> }
->
-> So it already has a (MFENCE) barrier after ->flags is modified.
+From: Thomas Gleixner <tglx@linutronix.de>
 
-So what?
+That's essential, if you want to hack on futexes.
 
-The mb() isn't necessarily against the *write*, it is also against the *read*.
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Jeff Mahoney <jeffm@suse.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Scott Norton <scott.norton@hp.com>
+Cc: Tom Vaden <tom.vaden@hp.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>
+Cc: Jason Low <jason.low2@hp.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ kernel/futex.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 57 insertions(+)
 
-If the cflush is needed before the monitor, it's likely because the
-monitor instruction has some bug with already-existing cachelines in
-shared state or whatever.
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 577481d..af1fc31 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -69,6 +69,63 @@
+ 
+ #include "locking/rtmutex_common.h"
+ 
++/*
++ * Basic futex operation and ordering guarantees:
++ *
++ * The waiter reads the futex value in user space and calls
++ * futex_wait(). It computes the hash bucket and acquires the hash
++ * bucket lock. After that it reads the futex user space value again
++ * and verifies that the data has not changed. If it has not changed
++ * it enqueues itself into the hash bucket, releases the hash
++ * bucket lock and schedules.
++ *
++ * The waker side modifies the user space value of the futex and calls
++ * futex_wake(). It computes the hash bucket and acquires the hash
++ * bucket lock. Then it looks for waiters on that futex in the hash
++ * bucket and wakes them.
++ *
++ * Note that the spin_lock serializes waiters and wakers, so that the
++ * following scenario is avoided:
++ *
++ * CPU 0                               CPU 1
++ * val = *futex;
++ * sys_futex(WAIT, futex, val);
++ *   futex_wait(futex, val);
++ *   uval = *futex;
++ *                                     *futex = newval;
++ *                                     sys_futex(WAKE, futex);
++ *                                       futex_wake(futex);
++ *                                       if (queue_empty())
++ *                                         return;
++ *   if (uval == val)
++ *      lock(hash_bucket(futex));
++ *      queue();
++ *     unlock(hash_bucket(futex));
++ *     schedule();
++ *
++ * This would cause the waiter on CPU 0 to wait forever because it
++ * missed the transition of the user space value from val to newval
++ * and the waker did not find the waiter in the hash bucket queue.
++ * The spinlock serializes that:
++ *
++ * CPU 0                               CPU 1
++ * val = *futex;
++ * sys_futex(WAIT, futex, val);
++ *   futex_wait(futex, val);
++ *   lock(hash_bucket(futex));
++ *   uval = *futex;
++ *                                     *futex = newval;
++ *                                     sys_futex(WAKE, futex);
++ *                                       futex_wake(futex);
++ *                                       lock(hash_bucket(futex));
++ *   if (uval == val)
++ *      queue();
++ *     unlock(hash_bucket(futex));
++ *     schedule();                       if (!queue_empty())
++ *                                         wake_waiters(futex);
++ *                                       unlock(hash_bucket(futex));
++ */
++
+ int __read_mostly futex_cmpxchg_enabled;
+ 
+ /*
+-- 
+1.8.1.4
 
-Which means that we want to make sure that the cflush is ordered wrt
-*reads* from that cacheline too.
-
-cflush has nothing specifically to do with writes.
-
-             Linus
