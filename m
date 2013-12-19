@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab3LSSqm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:46:42 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:11330 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721Ab3LSSqI (ORCPT
+	id S1755982Ab3LSSrA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:47:00 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:4775 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753502Ab3LSSqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:46:08 -0500
+	Thu, 19 Dec 2013 13:46:04 -0500
 From: Davidlohr Bueso <davidlohr@hp.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@redhat.com, dvhart@linux.intel.com, peterz@infradead.org,
@@ -14,9 +14,9 @@ Cc: mingo@redhat.com, dvhart@linux.intel.com, peterz@infradead.org,
         jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
         Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
         aswin@hp.com, davidlohr@hp.com, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH v3 3/4] futex: Document ordering guarantees
-Date: Thu, 19 Dec 2013 10:45:45 -0800
-Message-Id: <1387478746-5436-4-git-send-email-davidlohr@hp.com>
+Subject: [PATCH v3 1/4] futex: Misc cleanups
+Date: Thu, 19 Dec 2013 10:45:43 -0800
+Message-Id: <1387478746-5436-2-git-send-email-davidlohr@hp.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
 References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
@@ -24,12 +24,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Jason Low <jason.low2@hp.com>
 
-That's essential, if you want to hack on futexes.
+- Remove unnecessary head variables.
+- Delete unused parameter in queue_unlock().
 
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Darren Hart <dvhart@linux.intel.com>
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
 Acked-by: Peter Zijlstra <peterz@infradead.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
@@ -40,81 +41,172 @@ Cc: Scott Norton <scott.norton@hp.com>
 Cc: Tom Vaden <tom.vaden@hp.com>
 Cc: Aswin Chandramouleeswaran <aswin@hp.com>
 Cc: Waiman Long <Waiman.Long@hp.com>
-Cc: Jason Low <jason.low2@hp.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Jason Low <jason.low2@hp.com>
 Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 ---
- kernel/futex.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 57 insertions(+)
+ kernel/futex.c | 39 ++++++++++++---------------------------
+ 1 file changed, 12 insertions(+), 27 deletions(-)
 
 diff --git a/kernel/futex.c b/kernel/futex.c
-index 577481d..af1fc31 100644
+index f6ff019..085f5fa 100644
 --- a/kernel/futex.c
 +++ b/kernel/futex.c
-@@ -69,6 +69,63 @@
+@@ -598,13 +598,10 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ {
+ 	struct futex_pi_state *pi_state = NULL;
+ 	struct futex_q *this, *next;
+-	struct plist_head *head;
+ 	struct task_struct *p;
+ 	pid_t pid = uval & FUTEX_TID_MASK;
  
- #include "locking/rtmutex_common.h"
+-	head = &hb->chain;
+-
+-	plist_for_each_entry_safe(this, next, head, list) {
++	plist_for_each_entry_safe(this, next, &hb->chain, list) {
+ 		if (match_futex(&this->key, key)) {
+ 			/*
+ 			 * Another waiter already exists - bump up
+@@ -986,7 +983,6 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+ {
+ 	struct futex_hash_bucket *hb;
+ 	struct futex_q *this, *next;
+-	struct plist_head *head;
+ 	union futex_key key = FUTEX_KEY_INIT;
+ 	int ret;
  
-+/*
-+ * Basic futex operation and ordering guarantees:
-+ *
-+ * The waiter reads the futex value in user space and calls
-+ * futex_wait(). It computes the hash bucket and acquires the hash
-+ * bucket lock. After that it reads the futex user space value again
-+ * and verifies that the data has not changed. If it has not changed
-+ * it enqueues itself into the hash bucket, releases the hash
-+ * bucket lock and schedules.
-+ *
-+ * The waker side modifies the user space value of the futex and calls
-+ * futex_wake(). It computes the hash bucket and acquires the hash
-+ * bucket lock. Then it looks for waiters on that futex in the hash
-+ * bucket and wakes them.
-+ *
-+ * Note that the spin_lock serializes waiters and wakers, so that the
-+ * following scenario is avoided:
-+ *
-+ * CPU 0                               CPU 1
-+ * val = *futex;
-+ * sys_futex(WAIT, futex, val);
-+ *   futex_wait(futex, val);
-+ *   uval = *futex;
-+ *                                     *futex = newval;
-+ *                                     sys_futex(WAKE, futex);
-+ *                                       futex_wake(futex);
-+ *                                       if (queue_empty())
-+ *                                         return;
-+ *   if (uval == val)
-+ *      lock(hash_bucket(futex));
-+ *      queue();
-+ *     unlock(hash_bucket(futex));
-+ *     schedule();
-+ *
-+ * This would cause the waiter on CPU 0 to wait forever because it
-+ * missed the transition of the user space value from val to newval
-+ * and the waker did not find the waiter in the hash bucket queue.
-+ * The spinlock serializes that:
-+ *
-+ * CPU 0                               CPU 1
-+ * val = *futex;
-+ * sys_futex(WAIT, futex, val);
-+ *   futex_wait(futex, val);
-+ *   lock(hash_bucket(futex));
-+ *   uval = *futex;
-+ *                                     *futex = newval;
-+ *                                     sys_futex(WAKE, futex);
-+ *                                       futex_wake(futex);
-+ *                                       lock(hash_bucket(futex));
-+ *   if (uval == val)
-+ *      queue();
-+ *     unlock(hash_bucket(futex));
-+ *     schedule();                       if (!queue_empty())
-+ *                                         wake_waiters(futex);
-+ *                                       unlock(hash_bucket(futex));
-+ */
-+
- int __read_mostly futex_cmpxchg_enabled;
+@@ -999,9 +995,8 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
  
- /*
+ 	hb = hash_futex(&key);
+ 	spin_lock(&hb->lock);
+-	head = &hb->chain;
+ 
+-	plist_for_each_entry_safe(this, next, head, list) {
++	plist_for_each_entry_safe(this, next, &hb->chain, list) {
+ 		if (match_futex (&this->key, &key)) {
+ 			if (this->pi_state || this->rt_waiter) {
+ 				ret = -EINVAL;
+@@ -1034,7 +1029,6 @@ futex_wake_op(u32 __user *uaddr1, unsigned int flags, u32 __user *uaddr2,
+ {
+ 	union futex_key key1 = FUTEX_KEY_INIT, key2 = FUTEX_KEY_INIT;
+ 	struct futex_hash_bucket *hb1, *hb2;
+-	struct plist_head *head;
+ 	struct futex_q *this, *next;
+ 	int ret, op_ret;
+ 
+@@ -1082,9 +1076,7 @@ retry_private:
+ 		goto retry;
+ 	}
+ 
+-	head = &hb1->chain;
+-
+-	plist_for_each_entry_safe(this, next, head, list) {
++	plist_for_each_entry_safe(this, next, &hb1->chain, list) {
+ 		if (match_futex (&this->key, &key1)) {
+ 			if (this->pi_state || this->rt_waiter) {
+ 				ret = -EINVAL;
+@@ -1097,10 +1089,8 @@ retry_private:
+ 	}
+ 
+ 	if (op_ret > 0) {
+-		head = &hb2->chain;
+-
+ 		op_ret = 0;
+-		plist_for_each_entry_safe(this, next, head, list) {
++		plist_for_each_entry_safe(this, next, &hb2->chain, list) {
+ 			if (match_futex (&this->key, &key2)) {
+ 				if (this->pi_state || this->rt_waiter) {
+ 					ret = -EINVAL;
+@@ -1270,7 +1260,6 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
+ 	int drop_count = 0, task_count = 0, ret;
+ 	struct futex_pi_state *pi_state = NULL;
+ 	struct futex_hash_bucket *hb1, *hb2;
+-	struct plist_head *head1;
+ 	struct futex_q *this, *next;
+ 	u32 curval2;
+ 
+@@ -1393,8 +1382,7 @@ retry_private:
+ 		}
+ 	}
+ 
+-	head1 = &hb1->chain;
+-	plist_for_each_entry_safe(this, next, head1, list) {
++	plist_for_each_entry_safe(this, next, &hb1->chain, list) {
+ 		if (task_count - nr_wake >= nr_requeue)
+ 			break;
+ 
+@@ -1494,7 +1482,7 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
+ }
+ 
+ static inline void
+-queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
++queue_unlock(struct futex_hash_bucket *hb)
+ 	__releases(&hb->lock)
+ {
+ 	spin_unlock(&hb->lock);
+@@ -1867,7 +1855,7 @@ retry_private:
+ 	ret = get_futex_value_locked(&uval, uaddr);
+ 
+ 	if (ret) {
+-		queue_unlock(q, *hb);
++		queue_unlock(*hb);
+ 
+ 		ret = get_user(uval, uaddr);
+ 		if (ret)
+@@ -1881,7 +1869,7 @@ retry_private:
+ 	}
+ 
+ 	if (uval != val) {
+-		queue_unlock(q, *hb);
++		queue_unlock(*hb);
+ 		ret = -EWOULDBLOCK;
+ 	}
+ 
+@@ -2029,7 +2017,7 @@ retry_private:
+ 			 * Task is exiting and we just wait for the
+ 			 * exit to complete.
+ 			 */
+-			queue_unlock(&q, hb);
++			queue_unlock(hb);
+ 			put_futex_key(&q.key);
+ 			cond_resched();
+ 			goto retry;
+@@ -2081,7 +2069,7 @@ retry_private:
+ 	goto out_put_key;
+ 
+ out_unlock_put_key:
+-	queue_unlock(&q, hb);
++	queue_unlock(hb);
+ 
+ out_put_key:
+ 	put_futex_key(&q.key);
+@@ -2091,7 +2079,7 @@ out:
+ 	return ret != -EINTR ? ret : -ERESTARTNOINTR;
+ 
+ uaddr_faulted:
+-	queue_unlock(&q, hb);
++	queue_unlock(hb);
+ 
+ 	ret = fault_in_user_writeable(uaddr);
+ 	if (ret)
+@@ -2113,7 +2101,6 @@ static int futex_unlock_pi(u32 __user *uaddr, unsigned int flags)
+ {
+ 	struct futex_hash_bucket *hb;
+ 	struct futex_q *this, *next;
+-	struct plist_head *head;
+ 	union futex_key key = FUTEX_KEY_INIT;
+ 	u32 uval, vpid = task_pid_vnr(current);
+ 	int ret;
+@@ -2153,9 +2140,7 @@ retry:
+ 	 * Ok, other tasks may need to be woken up - check waiters
+ 	 * and do the wakeup if necessary:
+ 	 */
+-	head = &hb->chain;
+-
+-	plist_for_each_entry_safe(this, next, head, list) {
++	plist_for_each_entry_safe(this, next, &hb->chain, list) {
+ 		if (!match_futex (&this->key, &key))
+ 			continue;
+ 		ret = wake_futex_pi(uaddr, uval, this);
 -- 
 1.8.1.4
 
