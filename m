@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab3LSQFT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:05:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62586 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754532Ab3LSQFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:05:16 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] HID: input: fix input sysfs path for hid devices
-Date: Thu, 19 Dec 2013 11:05:13 -0500
-Message-Id: <1387469113-4129-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1754787Ab3LSPvc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:51:32 -0500
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:36833 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754482Ab3LSPul (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 10:50:41 -0500
+Message-Id: <20131219155034.566038323@linux.com>
+Date: Thu, 19 Dec 2013 09:50:51 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Subject: [PATCH 36/40] avr32: Replace __get_cpu_var with __this_cpu_write
+References: <20131219155015.443763038@linux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=this_avr32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-we used to set the parent of the input device as the parent of
-the hid bus. This was introduced when we created hid as a real bus, and
-to keep backward compatibility. Now, it's time to proper set the parent
-so that sysfs has an idea of which input device is attached to
-which hid device.
+Replace the single use of __get_cpu_var in avr32 with
+__this_cpu_write.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Hi Jiri,
-
-well, the regression test did not showed anything bad, and a look at the hid
-drivers also showed that no drivers should be armed by that.
-
-I think this is valuable because it will give a better understanding of the
-actual mapping hardware/inputs. Like a touchscreen with pen + touch will have
-the same hid parent, and I expect X/Wayland to be able to detect this at some
-point to keep the mapping correctly between the two input devices and the screen.
-
-I also need that for hid-replay, so that I can be sure which input is attached
-to which uhid device, and give up the heuristics I currently use.
-
-Cheers,
-Benjamin
-
- drivers/hid/hid-input.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index d97f232..d50e731 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -1279,7 +1279,7 @@ static struct hid_input *hidinput_allocate(struct hid_device *hid)
- 	input_dev->id.vendor  = hid->vendor;
- 	input_dev->id.product = hid->product;
- 	input_dev->id.version = hid->version;
--	input_dev->dev.parent = hid->dev.parent;
-+	input_dev->dev.parent = &hid->dev;
- 	hidinput->input = input_dev;
- 	list_add_tail(&hidinput->list, &hid->inputs);
+Index: linux/arch/avr32/kernel/kprobes.c
+===================================================================
+--- linux.orig/arch/avr32/kernel/kprobes.c	2013-12-02 16:08:00.844326498 -0600
++++ linux/arch/avr32/kernel/kprobes.c	2013-12-02 16:08:00.834326779 -0600
+@@ -104,7 +104,7 @@ static void __kprobes resume_execution(s
  
--- 
-1.8.3.1
+ static void __kprobes set_current_kprobe(struct kprobe *p)
+ {
+-	__get_cpu_var(current_kprobe) = p;
++	__this_cpu_write(current_kprobe, p);
+ }
+ 
+ static int __kprobes kprobe_handler(struct pt_regs *regs)
 
