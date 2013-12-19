@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756855Ab3LSM6z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:58:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44627 "EHLO
+	id S1755457Ab3LSMqt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:46:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44843 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754337Ab3LSL4b (ORCPT
+	with ESMTP id S1754899Ab3LSL52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:31 -0500
+	Thu, 19 Dec 2013 06:57:28 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Francois Romieu <romieu@fr.zoreil.com>,
-        Jamie Heilman <jamie@audible.transient.net>,
-        Michele Baldessari <michele@acksyn.org>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 048/208] via-velocity: fix netif_receive_skb use in irq disabled section.
-Date: Thu, 19 Dec 2013 11:52:26 +0000
-Message-Id: <1387454106-19326-49-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 090/208] ALSA: hda - Fix silent output on MacBook Air 2,1
+Date: Thu, 19 Dec 2013 11:53:08 +0000
+Message-Id: <1387454106-19326-91-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,74 +30,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?fran=C3=A7ois=20romieu?= <romieu@fr.zoreil.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit bc9627e7e918a85e906c1a3f6d01d9b8ef911a96 upstream.
+commit 0756f09c4946fe2d9ce2ebcb6f2e3c58830d22a3 upstream.
 
-2fdac010bdcf10a30711b6924612dfc40daf19b8 ("via-velocity.c: update napi
-implementation") overlooked an irq disabling spinlock when the Rx part
-of the NAPI poll handler was converted from netif_rx to netif_receive_skb.
+MacBook Air 2,1 has a fairly different pin assignment from its brother
+MBA 1,1, and yet another quirks are needed for pin 0x18 and 0x19,
+similarly like what iMac 9,1 requires, in order to make the sound
+working on it.
 
-NAPI Rx processing can be taken out of the locked section with a pair of
-napi_{disable / enable} since it only races with the MTU change function.
-
-An heavier rework of the NAPI locking would be able to perform NAPI Tx
-before Rx where I simply removed one of velocity_tx_srv calls.
-
-References: https://bugzilla.redhat.com/show_bug.cgi?id=1022733
-Fixes: 2fdac010bdcf (via-velocity.c: update napi implementation)
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Tested-by: Alex A. Schmidt <aaschmidt1@gmail.com>
-Cc: Jamie Heilman <jamie@audible.transient.net>
-Cc: Michele Baldessari <michele@acksyn.org>
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Bruno Prémont <bonbons@linux-vserver.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/via/via-velocity.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ sound/pci/hda/patch_realtek.c | 39 +++++++++++++++++++++++++++++++--------
+ 1 file changed, 31 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/ethernet/via/via-velocity.c b/drivers/net/ethernet/via/via-velocity.c
-index d01cacf..40e4c02 100644
---- a/drivers/net/ethernet/via/via-velocity.c
-+++ b/drivers/net/ethernet/via/via-velocity.c
-@@ -2172,16 +2172,13 @@ static int velocity_poll(struct napi_struct *napi, int budget)
- 	unsigned int rx_done;
- 	unsigned long flags;
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 40407f4..de47748 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -1767,6 +1767,7 @@ enum {
+ 	ALC889_FIXUP_DAC_ROUTE,
+ 	ALC889_FIXUP_MBP_VREF,
+ 	ALC889_FIXUP_IMAC91_VREF,
++	ALC889_FIXUP_MBA21_VREF,
+ 	ALC882_FIXUP_INV_DMIC,
+ 	ALC882_FIXUP_NO_PRIMARY_HP,
+ 	ALC887_FIXUP_ASUS_BASS,
+@@ -1870,17 +1871,13 @@ static void alc889_fixup_mbp_vref(struct hda_codec *codec,
+ 	}
+ }
  
--	spin_lock_irqsave(&vptr->lock, flags);
- 	/*
- 	 * Do rx and tx twice for performance (taken from the VIA
- 	 * out-of-tree driver).
- 	 */
--	rx_done = velocity_rx_srv(vptr, budget / 2);
--	velocity_tx_srv(vptr);
--	rx_done += velocity_rx_srv(vptr, budget - rx_done);
-+	rx_done = velocity_rx_srv(vptr, budget);
-+	spin_lock_irqsave(&vptr->lock, flags);
- 	velocity_tx_srv(vptr);
--
- 	/* If budget not fully consumed, exit the polling mode */
- 	if (rx_done < budget) {
- 		napi_complete(napi);
-@@ -2342,6 +2339,8 @@ static int velocity_change_mtu(struct net_device *dev, int new_mtu)
- 		if (ret < 0)
- 			goto out_free_tmp_vptr_1;
+-/* Set VREF on speaker pins on imac91 */
+-static void alc889_fixup_imac91_vref(struct hda_codec *codec,
+-				     const struct hda_fixup *fix, int action)
++static void alc889_fixup_mac_pins(struct hda_codec *codec,
++				  const hda_nid_t *nids, int num_nids)
+ {
+ 	struct alc_spec *spec = codec->spec;
+-	static hda_nid_t nids[2] = { 0x18, 0x1a };
+ 	int i;
  
-+		napi_disable(&vptr->napi);
+-	if (action != HDA_FIXUP_ACT_INIT)
+-		return;
+-	for (i = 0; i < ARRAY_SIZE(nids); i++) {
++	for (i = 0; i < num_nids; i++) {
+ 		unsigned int val;
+ 		val = snd_hda_codec_get_pin_target(codec, nids[i]);
+ 		val |= AC_PINCTL_VREF_50;
+@@ -1889,6 +1886,26 @@ static void alc889_fixup_imac91_vref(struct hda_codec *codec,
+ 	spec->gen.keep_vref_in_automute = 1;
+ }
+ 
++/* Set VREF on speaker pins on imac91 */
++static void alc889_fixup_imac91_vref(struct hda_codec *codec,
++				     const struct hda_fixup *fix, int action)
++{
++	static hda_nid_t nids[2] = { 0x18, 0x1a };
 +
- 		spin_lock_irqsave(&vptr->lock, flags);
- 
- 		netif_stop_queue(dev);
-@@ -2362,6 +2361,8 @@ static int velocity_change_mtu(struct net_device *dev, int new_mtu)
- 
- 		velocity_give_many_rx_descs(vptr);
- 
-+		napi_enable(&vptr->napi);
++	if (action == HDA_FIXUP_ACT_INIT)
++		alc889_fixup_mac_pins(codec, nids, ARRAY_SIZE(nids));
++}
 +
- 		mac_enable_int(vptr->mac_regs);
- 		netif_start_queue(dev);
- 
++/* Set VREF on speaker pins on mba21 */
++static void alc889_fixup_mba21_vref(struct hda_codec *codec,
++				    const struct hda_fixup *fix, int action)
++{
++	static hda_nid_t nids[2] = { 0x18, 0x19 };
++
++	if (action == HDA_FIXUP_ACT_INIT)
++		alc889_fixup_mac_pins(codec, nids, ARRAY_SIZE(nids));
++}
++
+ /* Don't take HP output as primary
+  * Strangely, the speaker output doesn't work on Vaio Z and some Vaio
+  * all-in-one desktop PCs (for example VGC-LN51JGB) through DAC 0x05
+@@ -2083,6 +2100,12 @@ static const struct hda_fixup alc882_fixups[] = {
+ 		.chained = true,
+ 		.chain_id = ALC882_FIXUP_GPIO1,
+ 	},
++	[ALC889_FIXUP_MBA21_VREF] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = alc889_fixup_mba21_vref,
++		.chained = true,
++		.chain_id = ALC889_FIXUP_MBP_VREF,
++	},
+ 	[ALC882_FIXUP_INV_DMIC] = {
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = alc_fixup_inv_dmic_0x12,
+@@ -2147,7 +2170,7 @@ static const struct snd_pci_quirk alc882_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x106b, 0x3000, "iMac", ALC889_FIXUP_MBP_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x3200, "iMac 7,1 Aluminum", ALC882_FIXUP_EAPD),
+ 	SND_PCI_QUIRK(0x106b, 0x3400, "MacBookAir 1,1", ALC889_FIXUP_MBP_VREF),
+-	SND_PCI_QUIRK(0x106b, 0x3500, "MacBookAir 2,1", ALC889_FIXUP_MBP_VREF),
++	SND_PCI_QUIRK(0x106b, 0x3500, "MacBookAir 2,1", ALC889_FIXUP_MBA21_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x3600, "Macbook 3,1", ALC889_FIXUP_MBP_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x3800, "MacbookPro 4,1", ALC889_FIXUP_MBP_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x3e00, "iMac 24 Aluminum", ALC885_FIXUP_MACPRO_GPIO),
 -- 
 1.8.3.2
 
