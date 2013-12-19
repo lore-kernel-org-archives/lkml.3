@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab3LSL4y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:56:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44684 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754485Ab3LSL4o (ORCPT
+	id S1752165Ab3LSKxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 05:53:08 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34618 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab3LSKxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:44 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andy Lutomirski <luto@amacapital.net>, Paul Turner <pjt@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 052/208] time: Fix 1ns/tick drift w/ GENERIC_TIME_VSYSCALL_OLD
-Date: Thu, 19 Dec 2013 11:52:30 +0000
-Message-Id: <1387454106-19326-53-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 05:53:06 -0500
+Date: Thu, 19 Dec 2013 10:52:40 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>
+Message-ID: <20131219105240.GU31886@sirena.org.uk>
+References: <1385733827-19831-1-git-send-email-peter.ujfalusi@ti.com>
+ <1385733827-19831-4-git-send-email-peter.ujfalusi@ti.com>
+ <20131129160032.GC26982@lee--X1>
+ <20131218185659.GL31886@sirena.org.uk>
+ <20131219090632.GA24932@lee--X1>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fxBYc4U7HLIDBZ2G"
+Content-Disposition: inline
+In-Reply-To: <20131219090632.GA24932@lee--X1>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/5] MFD: twl6040: reg_defaults support for regmap
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--fxBYc4U7HLIDBZ2G
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+On Thu, Dec 19, 2013 at 09:06:32AM +0000, Lee Jones wrote:
 
-commit 4be77398ac9d948773116b6be4a3c91b3d6ea18c upstream.
+> What -rc are you currently based on?
 
-Since commit 1e75fa8be9f (time: Condense timekeeper.xtime
-into xtime_sec - merged in v3.6), there has been an problem
-with the error accounting in the timekeeping code, such that
-when truncating to nanoseconds, we round up to the next nsec,
-but the balancing adjustment to the ntp_error value was dropped.
+Using -rc1 makes life easier, it'll be a new branch.
 
-This causes 1ns per tick drift forward of the clock.
+--fxBYc4U7HLIDBZ2G
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-In 3.7, this logic was isolated to only GENERIC_TIME_VSYSCALL_OLD
-architectures (s390, ia64, powerpc).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-The fix is simply to balance the accounting and to subtract the
-added nanosecond from ntp_error. This allows the internal long-term
-clock steering to keep the clock accurate.
+iQIcBAEBAgAGBQJSss/1AAoJELSic+t+oim99K4P/2hbYAZuVyOkdBEwl9VS7BM0
+1FUFaxz66a74a6T5NYLzR2fZj7pl4T1ghsys2Tarfu6UnXKpbgZRDFE9TLGYmDyb
+mEhP965Os65ZLKfkMDZo99XKL0fw+uitdeu+F5SjfjwpsGivj3H6PeG9mI8MKIAC
+KXFhW1++hXXXP5Lwxbnn+jnRLzwY54QgY7Ay+4W1ZfnIa5J1i1MPh22E19Bjq5dT
+P4e2UUgsmk96/G+ODeDmApe3s/jyUqM5cCCFMtoferXlp3QDLrtY/BcV1Cz7U1sP
+nRyaHMxPDDtCSB6CtuX5D2+Y6kw+T/IBLqOgMvdpQGQAEiHpxP+1xtyD2w1MgtBQ
+lv7RIzi0TDroc5osgwYoUl3AMXuWrLNUOQLEu5q7qyvhBafPxMtYYvBWeOWO4oyT
+1YayE9k3nM0Z02bRudMGutAG3IVKifR0abZcgzXr/ZsaKjdZUkNMwpMkLtSG4hMI
+cRfL0ZMMWFWSAuwHi9kEUouZ8a84MeWQ5qiMZNzgpLoG/O2VbO2ZDcDYHYWORTaO
+6yJcJWS5euSE9dHUi7L6uv+t2lzrsGBbll+jbIF6ZQKlqoHm0owYq5sFGhqeWAJT
+uOlUFkaR53vH9QLElqi4sNr/EWqO5T/tF3mZG8PZ+9gDoUdmw2+x+s8repVh0QKS
+7iqvi53uagK+KYy+fJ5d
+=zuLF
+-----END PGP SIGNATURE-----
 
-While this fix removes the regression added in 1e75fa8be9f, the
-ideal solution is to move away from GENERIC_TIME_VSYSCALL_OLD
-and use the new VSYSCALL method, which avoids entirely the
-nanosecond granular rounding, and the resulting short-term clock
-adjustment oscillation needed to keep long term accurate time.
-
-[ jstultz: Many thanks to Martin for his efforts identifying this
-  	   subtle bug, and providing the fix. ]
-
-Originally-from: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Paul Turner <pjt@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1385149491-20307-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- kernel/time/timekeeping.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 947ba25..5cf6c70 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1347,7 +1347,7 @@ static inline void old_vsyscall_fixup(struct timekeeper *tk)
- 	tk->xtime_nsec -= remainder;
- 	tk->xtime_nsec += 1ULL << tk->shift;
- 	tk->ntp_error += remainder << tk->ntp_error_shift;
--
-+	tk->ntp_error -= (1ULL << tk->shift) << tk->ntp_error_shift;
- }
- #else
- #define old_vsyscall_fixup(tk)
--- 
-1.8.3.2
-
+--fxBYc4U7HLIDBZ2G--
