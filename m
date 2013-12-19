@@ -1,78 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048Ab3LSAXG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 19:23:06 -0500
-Received: from leo.clearchain.com ([199.73.29.74]:42775 "EHLO
-	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020Ab3LSAXE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 19:23:04 -0500
-Date: Thu, 19 Dec 2013 10:25:42 +1000
-From: Peter Hutterer <peter.hutterer@who-t.net>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: David Herrmann <dh.herrmann@gmail.com>, linux-input@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        linux-kernel@vger.kernel.org, input-tools@lists.freedesktop.org
-Subject: Re: [PATCH 2/4] Input: introduce ABS_MAX2/CNT2 and friends
-Message-ID: <20131219002542.GB6315@yabbi.redhat.com>
-References: <1387295334-1744-1-git-send-email-dh.herrmann@gmail.com>
- <1387295334-1744-3-git-send-email-dh.herrmann@gmail.com>
- <20131218234009.GA9360@yabbi.redhat.com>
- <1950536.BXYYX85NB4@dtor-d630.eng.vmware.com>
- <20131218235504.GA17958@yabbi.redhat.com>
- <20131219000537.GA838@core.coreip.homeip.net>
+	id S1752921Ab3LSAYU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 19:24:20 -0500
+Received: from www.sr71.net ([198.145.64.142]:33679 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752211Ab3LSAYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 19:24:19 -0500
+Message-ID: <52B23CAF.809@sr71.net>
+Date: Wed, 18 Dec 2013 16:24:15 -0800
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131219000537.GA838@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.2.7 (mail.clearchain.com [127.0.0.1]); Thu, 19 Dec 2013 10:52:57 +1030 (CST)
+To: Christoph Lameter <cl@linux.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pravin B Shelar <pshelar@nicira.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [RFC][PATCH 0/7] re-shrink 'struct page' when SLUB is on.
+References: <20131213235903.8236C539@viggo.jf.intel.com> <20131216160128.aa1f1eb8039f5eee578cf560@linux-foundation.org> <52AF9EB9.7080606@sr71.net> <0000014301223b3e-a73f3d59-8234-48f1-9888-9af32709a879-000000@email.amazonses.com>
+In-Reply-To: <0000014301223b3e-a73f3d59-8234-48f1-9888-9af32709a879-000000@email.amazonses.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 04:05:37PM -0800, Dmitry Torokhov wrote:
-> On Thu, Dec 19, 2013 at 09:55:04AM +1000, Peter Hutterer wrote:
-> > On Wed, Dec 18, 2013 at 03:48:37PM -0800, Dmitry Torokhov wrote:
-> > > On Thursday, December 19, 2013 09:40:09 AM Peter Hutterer wrote:
-> > > > > +     memset(&abs, 0, sizeof(abs));
-> > > > > +     for (i = valid_cnt; i < cnt; ++i)
-> > > > > +             if (copy_to_user(&pinfo->info[i], &abs, sizeof(abs)))
-> > > > > +                     return -EFAULT;
-> > > > > +
-> > > > > +     return 0;
-> > > > 
-> > > > why don't you return the number of valid copied axes to the user?
-> > > > that seems better even than forcing the remainder to 0.
-> > > 
-> > > Well, if your program messed up buffers that it faulted we do not know
-> > > for sure if data that did not cause fault ended up where it should have
-> > > or if it smashed something else. This condition I think should be
-> > > signaled early.
-> > 
-> > not 100% sure I understand but I wasn't proposing to remove the -EFAULT, i
-> > was proposing to replace "return 0" with "return valid_cnt".
+On 12/17/2013 07:17 AM, Christoph Lameter wrote:
+> On Mon, 16 Dec 2013, Dave Hansen wrote:
 > 
-> I understand what you were saying. Now consider: your program supplied
-> buffer that is actually smaller than what it said to the kernel.
-> Depending on the exact placement we may or may not fault when we get
-> pass the buffer boundary, most likely not. We are likely to fault when
-> we go way past the buffer boundary and wracked process' memory. If we
-> return -EFAULT the program will at least notice that something wrong. If
-> we return count it will try to resubmit the remainder of operation and
-> not even know that there was something very bad happening.
+>> I'll do some testing and see if I can coax out any delta from the
+>> optimization myself.  Christoph went to a lot of trouble to put this
+>> together, so I assumed that he had a really good reason, although the
+>> changelogs don't really mention any.
 > 
-> IOW we should not treat fault condition as other partial read/write
-> conditions.
+> The cmpxchg on the struct page avoids disabling interrupts etc and
+> therefore simplifies the code significantly.
+> 
+>> I honestly can't imagine that a cmpxchg16 is going to be *THAT* much
+>> cheaper than a per-page spinlock.  The contended case of the cmpxchg is
+>> way more expensive than spinlock contention for sure.
+> 
+> Make sure slub does not set __CMPXCHG_DOUBLE in the kmem_cache flags
+> and it will fall back to spinlocks if you want to do a comparison. Most
+> non x86 arches will use that fallback code.
 
-I'm still not sure we're talking about the same thing :)
-let me rephrase: why can't we use the behaviour bits_to_user() provides?
-it limits the output to maxlen and returns that value (or -EFAULT), it's
-only a small step from that to limit the output to min(maxbit, ABS_CNT2).
 
-Cheers,
-   Peter
+I did four tests.  The first workload allocs a bunch of stuff, then
+frees it all with both the cmpxchg-enabled 64-byte struct page and the
+48-byte one that is supposed to use a spinlock.  I confirmed the 'struct
+page' size in both cases by looking at dmesg.
 
- 
+Essentially, I see no worthwhile benefit from using the double-cmpxchg
+over the spinlock.  In fact, the increased cache footprint makes it
+*substantially* worse when doing a tight loop.
+
+Unless somebody can find some holes in this, I think we have no choice
+but to unset the HAVE_ALIGNED_STRUCT_PAGE config option and revert using
+the cmpxchg, at least for now.
+
+Kernel config:
+https://www.sr71.net/~dave/intel/config-20131218-structpagesize
+System was an 80-core "Westmere" Xeon
+
+I suspect that the original data:
+
+> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=8a5ec0b
+
+are invalid because the data there were not done with the increased
+'struct page' padding.
+
+---------------------------
+
+First test:
+
+	for (i = 0; i < kmalloc_iterations; i++)
+        	gunk[i] = kmalloc(kmalloc_size, GFP_KERNEL);
+	for (i = 0; i < kmalloc_iterations; i++)
+		kfree(gunk[i]);
+
+All units are all in nanoseconds, lower is better.
+
+		size of 'struct page':
+kmalloc size	64-byte 48-byte
+8		98.2	105.7
+32		123.7	125.8
+128		293.9	289.9
+256		572.4	577.9
+1024		621.0	639.3
+4096		733.3	746.7
+8192		968.3	948.6
+
+As you can see, it's mostly a wash.  The 64-byte one looks to have a
+~8ns advantage, but any advantage disappears in to the noise on the
+other sizes.
+
+---------------------------
+
+Second test did the same 'struct page sizes', but instead did a
+kmalloc() immediately followed by a kfree:
+
+	for (i = 0; i < kmalloc_iterations; i++) {
+        	gunk[i] = kmalloc(kmalloc_size, GFP_KERNEL);
+		kfree(gunk[i]);
+	}
+
+		size of 'struct page':
+kmalloc size	64-byte 48-byte
+8		58.6	43.0
+32		59.3	43.0
+128		59.4	43.2
+256		57.4	42.8
+1024		80.4	43.0
+4096		76.0	43.8
+8192		79.9	43.0
