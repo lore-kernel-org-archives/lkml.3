@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab3LSPAl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:00:41 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60578 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751332Ab3LSPAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:00:39 -0500
-Message-ID: <52B309EB.90300@zytor.com>
-Date: Thu, 19 Dec 2013 06:59:55 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-CC: Elliott@hp.com, samer.el-haj-mahmoud@hp.com,
-        Oliver Neukum <oneukum@suse.de>, werner@suse.com, trenn@suse.de,
-        JBeulich@suse.com, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>
-Subject: Re: [RFC PATCH 00/14] Support timezone of ACPI TAD and EFI TIME
-References: <1387439053-8711-1-git-send-email-jlee@suse.com>
-In-Reply-To: <1387439053-8711-1-git-send-email-jlee@suse.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754240Ab3LSOEa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:04:30 -0500
+Received: from m59-178.qiye.163.com ([123.58.178.59]:44501 "EHLO
+	m59-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753721Ab3LSOEZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 09:04:25 -0500
+From: Li Wang <liwang@ubuntukylin.com>
+To: ceph-devel@vger.kernel.org
+Cc: Sage Weil <sage@inktank.com>, Milosz Tanski <milosz@adfin.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Wang <liwang@ubuntukylin.com>
+Subject: [PATCH 2/2] ceph fscache: Uncaching no data page from fscache in readpage()
+Date: Thu, 19 Dec 2013 06:03:49 -0800
+Message-Id: <fe9e6fbe07dfdd26c16aa577758a9f4f799c5dfe.1387461299.git.liwang@ubuntukylin.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1387461299.git.liwang@ubuntukylin.com>
+References: <cover.1387461299.git.liwang@ubuntukylin.com>
+In-Reply-To: <cover.1387461299.git.liwang@ubuntukylin.com>
+References: <cover.1387461299.git.liwang@ubuntukylin.com>
+X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUlMVUNJQkJCQkJJSExLTUtOTldZCQ4XHghZQV
+	koKz0kKDQ9Lz06MjckMjUkMz46Pz4pQUtVS0A2IyQiPigkMjUkMz46Pz4pQUtVS0ArLykkNTQkMj
+	UkMz46Pz4pQUlVS0A4NC41LykiJDg1QUtVS0ApPjwyNDUkOigyOkFLVUtAKyk0LTI1OD4kMy41Oj
+	VBS1VLQD8iNTo2MjgkMiskNTQkMjUkMz46Pz4pQUtVS0ApPjo3JDIrJDI1JCk5NyQyNSQzPjo*Pi
+	lBSklVS0A2LjcvMiQpOCsvJD8yPT0#KT41LyQyNSQzPjo*PilBSVVLQDIrJC80PzoiJDg1LyRLJE
+	pLS0FLVUtAMiskTiQ2MjUuLz4kODUvJEskSktBS1VLQDIrJEokNjI1Li8#JDg1LyRLJEpLQUtVS0
+	AyKyRKJDM0LikkODUvJEskSktLQUtVS0AyKyRISyQ2MjUuLz4kODUvJEskTktBS1VLQDU0LyQ9Oj
+	Y0LigkPzQ2OjI1JCgrPSQ9OjI3QUpLVUtAKC45JD5BSlVOTkA9NSQoLjkkPjUsNCk*KCQzNzEkSk
+	tLSUtKQUtVSUNZBg++
+X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSENM
+	T01KQ01IQ0tPVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
+	QUlLTk43V1kSC1lBWU1KVUpDTFVOT1VCWQY+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 11:43 PM, Lee, Chun-Yi wrote:
-> This patchset add the timezone support of ACPI TAD and EFI TIME, it
-> also add codes for adjusting system time base on the timezone value
-> from EFI TIME services when system boot.
+Currently, if one new page allocated into fscache in readpage(), however, 
+with no data read into due to error encountered during reading from OSDs, 
+the slot in fscache is not uncached. This patch fixes this.
 
-EFI time is something we used to support and ripped out, because it
-doesn't work well, *at all*.
+Signed-off-by: Li Wang <liwang@ubuntukylin.com>
+---
+ fs/ceph/addr.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-I am hyper-skeptical to reintroducing them, and *definitely* will veto
-reintroducing them on a system which has PNP0B0x devices present.
-
-	-hpa
+diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+index ec3ba43..0cc9749 100644
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -209,6 +209,7 @@ static int readpage_nounlock(struct file *filp, struct page *page)
+ 		err = 0;
+ 	if (err < 0) {
+ 		SetPageError(page);
++		ceph_fscache_readpage_cancel(inode, page);
+ 		goto out;
+ 	} else {
+ 		if (err < PAGE_CACHE_SIZE) {
+-- 
+1.7.9.5
 
