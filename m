@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab3LSUnE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 15:43:04 -0500
-Received: from seketeli.net ([91.121.166.71]:47965 "EHLO ms.seketeli.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756376Ab3LSUm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 15:42:29 -0500
-From: Apelete Seketeli <apelete@seketeli.net>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v3 2/2] usb: musb: fix setting JZ4740 gadget periphal mode on reset
-Date: Thu, 19 Dec 2013 21:42:27 +0100
-Message-Id: <1387485747-25759-3-git-send-email-apelete@seketeli.net>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1387485747-25759-1-git-send-email-apelete@seketeli.net>
-References: <1387485747-25759-1-git-send-email-apelete@seketeli.net>
+	id S1756572Ab3LSUns (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 15:43:48 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35722 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756038Ab3LSUnr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 15:43:47 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Guo Chao <yan@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v6 0/2] PCI: allocate 64bit mmio pref
+Date: Thu, 19 Dec 2013 12:44:01 -0800
+Message-Id: <1387485843-17403-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-JZ4740 USB Device Controller is not OTG compatible and does not have
-DEVCTL register in silicon.
+mmio 64 allocation that could help Guo Chao <yan@linux.vnet.ibm.com> on powerpc mmio allocation.
+It will try to assign 64 bit resource above 4g at first.
 
-During ethernet-over-usb transactions, on reset, musb driver tries to
-read from DEVCTL and consequently sets device as host (A-Device)
-instead of peripheral (B-Device), which makes it a composite device to
-the USB gadget driver.
-This induces a kernel panic during power down where the USB gadget
-driver does a null pointer dereference when trying to access the
-composite device configuration.
+And it is based on current pci/next and pci/resource.
 
-On reset, do not rely on DEVCTL value for setting gadget peripheral
-mode. Use is_otg flag instead to set it to B-Device.
+-v2: update after patch that move device_del down to pci_destroy_dev.
+     add "Try best to allocate pref mmio 64bit above 4G"
 
-Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
----
- drivers/usb/musb/musb_gadget.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+-v3: refresh and send out after pci_clip_resource() changes,
+     as Bjorn is not happy with attachments.
 
-diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-index c410a7f..d4aa779 100644
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -2119,7 +2119,15 @@ __acquires(musb->lock)
- 	/* Normal reset, as B-Device;
- 	 * or else after HNP, as A-Device
- 	 */
--	if (devctl & MUSB_DEVCTL_BDEVICE) {
-+	if (!musb->g.is_otg) {
-+		/* USB device controllers that are not OTG compatible
-+		 * may not have DEVCTL register in silicon.
-+		 * In that case, do not rely on devctl for setting
-+		 * peripheral mode.
-+		 */
-+		musb->xceiv->state = OTG_STATE_B_PERIPHERAL;
-+		musb->g.is_a_peripheral = 0;
-+	} else if (devctl & MUSB_DEVCTL_BDEVICE) {
- 		musb->xceiv->state = OTG_STATE_B_PERIPHERAL;
- 		musb->g.is_a_peripheral = 0;
- 	} else {
+-v4: make pcibios_resource_to_bus take bus directly.
+
+-v5: fix non-pref mmio64 allocation problem found by Guo Chao.
+     refresh last three as Bjorn update first two and put them in pci/resource
+
+-v6: try above 4G at first, then restart again for under 4G.
+     so we can drop patch that sort pci root bus resource list.
+
+Yinghai Lu (2):
+  PCI: Try to allocate mem64 above 4G at first
+  PCI: Try best to allocate pref mmio 64bit above 4g
+
+ drivers/pci/bus.c       |  34 ++++++++----
+ drivers/pci/setup-bus.c | 138 ++++++++++++++++++++++++++++++++----------------
+ drivers/pci/setup-res.c |  20 ++++++-
+ 3 files changed, 135 insertions(+), 57 deletions(-)
+
 -- 
-1.7.10.4
+1.8.4
 
