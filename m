@@ -1,39 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab3LSNwL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:52:11 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:64547 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab3LSNwJ (ORCPT
+	id S1754135Ab3LSOE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:04:27 -0500
+Received: from m59-178.qiye.163.com ([123.58.178.59]:44488 "EHLO
+	m59-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab3LSOEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:52:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
-References: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
-Date: Thu, 19 Dec 2013 08:52:06 -0500
-Message-ID: <CAFB9KM0S8Y0njF2tp6YAge_Nrie4X7bfp6pMwn4G5JWu89LT6A@mail.gmail.com>
-Subject: Re: [PATCH v4 00/13] locks: implement "filp-private" (aka UNPOSIX) locks
-From: Scott Lovenberg <scott.lovenberg@gmail.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        samba-technical@lists.samba.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 19 Dec 2013 09:04:25 -0500
+From: Li Wang <liwang@ubuntukylin.com>
+To: ceph-devel@vger.kernel.org
+Cc: Sage Weil <sage@inktank.com>, Milosz Tanski <milosz@adfin.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Wang <liwang@ubuntukylin.com>
+Subject: [PATCH 0/2] ceph fscache: uncaching single no data page when error
+Date: Thu, 19 Dec 2013 06:03:47 -0800
+Message-Id: <cover.1387461299.git.liwang@ubuntukylin.com>
+X-Mailer: git-send-email 1.7.9.5
+X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUpOVUNJQkJCQkJJSExLTUtOTldZCQ4XHghZQV
+	koKz0kKzooKCQyNSQzPjo*PilBS1VLQDYjJCI#KCQyNSQzPjo*PilBS1VLQCsvKSQiPigkMjUkMz
+	46Pz4pQUtVS0A4NC41LykiJDg1QUtVS0ApPjwyNDUkOigyOkFLVUtAKyk0LTI1OD4kMy41OjVBS1
+	VLQD8iNTo2MjgkMiskNTQkMjUkMz46Pz4pQUtVS0ApPjo3JDIrJDI1JCk5NyQyNSQzPjo*PilBSk
+	lVS0A2LjcvMiQpOCsvJD8yPT0#KT41LyQyNSQzPjo*PilBSVVLQDIrJC80PzoiJDg1LyRLJEpLS0
+	FLVUtAMiskTiQ2MjUuLz4kODUvJEskSktBS1VLQDIrJEokNjI1Li8#JDg1LyRLJEpLQUtVS0AyKy
+	RKJDM0LikkODUvJEskSktLQUtVS0AyKyRISyQ2MjUuLz4kODUvJEskTktBS1VLQCguOSQ#QUpVTk
+	5APTUkKC45JD41LDQpPygkMzcxJEpLS0lLSkFLVUlDWQY+
+X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSENM
+	T01KQ01JTU9IVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
+	QUpISU83V1kSC1lBWU1KVUpDTFVOT1VCWQY+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 8:34 AM, Jeff Layton <jlayton@redhat.com> wrote:
->
-> This patchset is the fourth posting of this set. Behavior between this
-> set and the last should be more or less the same. Here is a summary of
-> changes:
->
->
+Currently, if one new page allocated into fscache in readpage(), however, 
+with no data read into due to error encountered during reading from OSDs, 
+the slot in fscache is not uncached. This patch fixes this.
 
-Go, Jeff, go! Seriously, it's awesome you're bringing the UNPOSIX
-locking code forward.
+Li Wang (2):
+  ceph: Introduce a routine for uncaching single no data page from
+    fscache
+  ceph: Uncaching no data page from fscache in readpage()
+
+ fs/ceph/addr.c  |    1 +
+ fs/ceph/cache.h |   13 +++++++++++++
+ 2 files changed, 14 insertions(+)
 
 -- 
-Peace and Blessings,
--Scott.
+1.7.9.5
+
