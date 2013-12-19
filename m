@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab3LSPOK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:14:10 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:40794 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268Ab3LSPEi (ORCPT
+	id S1757492Ab3LSNJj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:09:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44412 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753680Ab3LSLzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:04:38 -0500
-From: Levente Kurusa <levex@linux.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Levente Kurusa <levex@linux.com>, Ralf Baechle <ralf@linux-mips.org>,
-        linux-mips@linux-mips.org
-Subject: [PATCH 15/38] mips: txx9: 7segled: add missing put_device call
-Date: Thu, 19 Dec 2013 16:03:26 +0100
-Message-Id: <1387465429-3568-16-git-send-email-levex@linux.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1387465429-3568-2-git-send-email-levex@linux.com>
-References: <1387465429-3568-2-git-send-email-levex@linux.com>
+	Thu, 19 Dec 2013 06:55:31 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 010/208] bonding: don't permit to use ARP monitoring in 802.3ad mode
+Date: Thu, 19 Dec 2013 11:51:48 +0000
+Message-Id: <1387454106-19326-11-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is required so that we give up the last reference to the device.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Also, add a new tx_7segled_release function which will be called after the
-put_device to ensure that device is kfree'd.
+------------------
 
-Signed-off-by: Levente Kurusa <levex@linux.com>
+From: Veaceslav Falico <vfalico@redhat.com>
+
+commit ec9f1d15db8185f63a2c3143dc1e90ba18541b08 upstream.
+
+Currently the ARP monitoring is not supported with 802.3ad, and it's
+prohibited to use it via the module params.
+
+However we still can set it afterwards via sysfs, cause we only check for
+*LB modes there.
+
+To fix this - add a check for 802.3ad mode in bonding_store_arp_interval.
+
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/mips/txx9/generic/7segled.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/net/bonding/bond_sysfs.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/txx9/generic/7segled.c b/arch/mips/txx9/generic/7segled.c
-index 4642f56..3caa548 100644
---- a/arch/mips/txx9/generic/7segled.c
-+++ b/arch/mips/txx9/generic/7segled.c
-@@ -83,6 +83,10 @@ static struct bus_type tx_7segled_subsys = {
- 	.dev_name	= "7segled",
- };
- 
-+void tx_7segled_release(struct device *dev) {
-+	kfree(dev);
-+}
-+
- static int __init tx_7segled_init_sysfs(void)
- {
- 	int error, i;
-@@ -103,11 +107,14 @@ static int __init tx_7segled_init_sysfs(void)
- 		}
- 		dev->id = i;
- 		dev->bus = &tx_7segled_subsys;
-+		dev->release = &tx_7segled_release;
- 		error = device_register(dev);
--		if (!error) {
--			device_create_file(dev, &dev_attr_ascii);
--			device_create_file(dev, &dev_attr_raw);
-+		if (error) {
-+			put_device(dev);
-+			return error;
- 		}
-+		device_create_file(dev, &dev_attr_ascii);
-+		device_create_file(dev, &dev_attr_raw);	
+diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
+index dc36a3d..076f8af 100644
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -565,8 +565,9 @@ static ssize_t bonding_store_arp_interval(struct device *d,
+ 		goto out;
  	}
- 	return error;
- }
+ 	if (bond->params.mode == BOND_MODE_ALB ||
+-	    bond->params.mode == BOND_MODE_TLB) {
+-		pr_info("%s: ARP monitoring cannot be used with ALB/TLB. Only MII monitoring is supported on %s.\n",
++	    bond->params.mode == BOND_MODE_TLB ||
++	    bond->params.mode == BOND_MODE_8023AD) {
++		pr_info("%s: ARP monitoring cannot be used with ALB/TLB/802.3ad. Only MII monitoring is supported on %s.\n",
+ 			bond->dev->name, bond->dev->name);
+ 		ret = -EINVAL;
+ 		goto out;
 -- 
-1.8.3.1
+1.8.3.2
 
