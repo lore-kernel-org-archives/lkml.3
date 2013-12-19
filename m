@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab3LSTdn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 14:33:43 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36111 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754803Ab3LSTdk (ORCPT
+	id S1755650Ab3LSTfP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 14:35:15 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34835 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754522Ab3LSTfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 14:33:40 -0500
-Message-ID: <52B34A0F.5080901@wwwdotorg.org>
-Date: Thu, 19 Dec 2013 12:33:35 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 19 Dec 2013 14:35:13 -0500
+Message-ID: <52B34A6D.7010903@infradead.org>
+Date: Thu, 19 Dec 2013 11:35:09 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Bill Huang <bilhuang@nvidia.com>, rjw@rjwysocki.net,
-        viresh.kumar@linaro.org, thierry.reding@gmail.com
-CC: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v5 1/1] cpufreq: tegra: Re-model Tegra20 cpufreq driver
-References: <1387451926-21373-1-git-send-email-bilhuang@nvidia.com>
-In-Reply-To: <1387451926-21373-1-git-send-email-bilhuang@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Tom Lendacky <thomas.lendacky@amd.com>, Jim Davis <jim.epost@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: randconfig build error with next-20131210, in drivers/crypto/ccp/ccp-pci.c
+References: <CA+r1ZhhhUWhMqeyS0J7V5j-iYtCk24gszpJFif8hF2cwr5K6hg@mail.gmail.com> <1785749.ip5jsEzFz7@tlendack-t1>
+In-Reply-To: <1785749.ip5jsEzFz7@tlendack-t1>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 04:18 AM, Bill Huang wrote:
-> Re-model Tegra20 cpufreq driver as below.
+On 12/10/13 07:34, Tom Lendacky wrote:
 > 
-> * Rename tegra-cpufreq.c to tegra20-cpufreq.c since this file supports
->   only Tegra20.
-> * Add probe function so defer probe can be used when we're going to
->   support DVFS.
-> * Create a fake cpufreq platform device with its name being
->   "${root_compatible}-cpufreq" so SoC cpufreq driver can bind to it
->   accordingly.
+> On Tuesday, December 10, 2013 07:21:36 AM Jim Davis wrote:
+>> Building with the attached random configuration file,
+>>
+>> drivers/crypto/ccp/ccp-pci.c: In function ‘ccp_get_msix_irqs’:
+>> drivers/crypto/ccp/ccp-pci.c:44:20: error: array type has incomplete
+>> element type
+>> drivers/crypto/ccp/ccp-pci.c:48:18: error: negative width in bit-field
+>> ‘<anonymous>’
+>> drivers/crypto/ccp/ccp-pci.c:51:2: error: implicit declaration of
+>> function ‘pci_enable_msix’ [-Werror=implicit-function-declaration]
+>> drivers/crypto/ccp/ccp-pci.c:76:2: error: implicit declaration of
+>> function ‘pci_disable_msix’ [-Werror=implicit-function-declaration]
+>> drivers/crypto/ccp/ccp-pci.c:44:20: warning: unused variable
+>> ‘msix_entry’ [-Wunused-variable]
+>> drivers/crypto/ccp/ccp-pci.c: In function ‘ccp_get_msi_irq’:
+>> drivers/crypto/ccp/ccp-pci.c:89:2: error: implicit declaration of
+>> function ‘pci_enable_msi’ [-Werror=implicit-function-declaration]
+>> drivers/crypto/ccp/ccp-pci.c:102:2: error: implicit declaration of
+>> function ‘pci_disable_msi’ [-Werror=implicit-function-declaration]
+>> cc1: some warnings being treated as errors
+>> make[3]: *** [drivers/crypto/ccp/ccp-pci.o] Error 1
+> 
+> Thanks for finding this, I'll update to the Kconfig to add PCI to
+> the 'depends on' statement.
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Tom,
 
-It should be fine to merge the arch/arm/mach-tegra/ changes in this
-patch through the cpufreq tree, since I don't think they'll conflict at
-all with anything in other trees this kernel cycle.
+Can you get this patch and the HW_RANDOM patch merged into linux-next, please?
+linux-next builds are still failing for both of these reasons.
 
-> diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra20-cpufreq.c
-
-> -#define NUM_CPUS	2
-> +#define MAX_CPUS	2
-
-Nit: Given this driver is explicitly for a 2-CPU SoC, I don't think
-there's any need to s/NUM/MAX/ here. But I don't care that much.
-
+thanks,
+-- 
+~Randy
