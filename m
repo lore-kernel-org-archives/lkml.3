@@ -1,138 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab3LSM2w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:28:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45001 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755283Ab3LSL6M (ORCPT
+	id S1755028Ab3LSOXl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:23:41 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:63215 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754730Ab3LSOXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:12 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 120/208] dm delay: fix a possible deadlock due to shared workqueue
-Date: Thu, 19 Dec 2013 11:53:38 +0000
-Message-Id: <1387454106-19326-121-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 09:23:36 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>
+Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: [PATCH v8 7/9] phy: add Broadcom Kona USB2 PHY DT binding
+Date: Thu, 19 Dec 2013 09:23:08 -0500
+Message-Id: <1387462990-12039-8-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1387462990-12039-1-git-send-email-mporter@linaro.org>
+References: <1387462990-12039-1-git-send-email-mporter@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+Add a binding that describes the Broadcom Kona USB2 PHY found
+on the BCM281xx family of SoCs.
 
-------------------
-
-From: Mikulas Patocka <mpatocka@redhat.com>
-
-commit 718822c1c112dc99e0c72c8968ee1db9d9d910f0 upstream.
-
-The dm-delay target uses a shared workqueue for multiple instances.  This
-can cause deadlock if two or more dm-delay targets are stacked on the top
-of each other.
-
-This patch changes dm-delay to use a per-instance workqueue.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Matt Porter <mporter@linaro.org>
+Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/md/dm-delay.c | 23 +++++++++++------------
- 1 file changed, 11 insertions(+), 12 deletions(-)
+ Documentation/devicetree/bindings/phy/bcm-phy.txt | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/bcm-phy.txt
 
-diff --git a/drivers/md/dm-delay.c b/drivers/md/dm-delay.c
-index 496d5f3..2f91d6d 100644
---- a/drivers/md/dm-delay.c
-+++ b/drivers/md/dm-delay.c
-@@ -20,6 +20,7 @@
- struct delay_c {
- 	struct timer_list delay_timer;
- 	struct mutex timer_lock;
-+	struct workqueue_struct *kdelayd_wq;
- 	struct work_struct flush_expired_bios;
- 	struct list_head delayed_bios;
- 	atomic_t may_delay;
-@@ -45,14 +46,13 @@ struct dm_delay_info {
- 
- static DEFINE_MUTEX(delayed_bios_lock);
- 
--static struct workqueue_struct *kdelayd_wq;
- static struct kmem_cache *delayed_cache;
- 
- static void handle_delayed_timer(unsigned long data)
- {
- 	struct delay_c *dc = (struct delay_c *)data;
- 
--	queue_work(kdelayd_wq, &dc->flush_expired_bios);
-+	queue_work(dc->kdelayd_wq, &dc->flush_expired_bios);
- }
- 
- static void queue_timeout(struct delay_c *dc, unsigned long expires)
-@@ -191,6 +191,12 @@ out:
- 		goto bad_dev_write;
- 	}
- 
-+	dc->kdelayd_wq = alloc_workqueue("kdelayd", WQ_MEM_RECLAIM, 0);
-+	if (!dc->kdelayd_wq) {
-+		DMERR("Couldn't start kdelayd");
-+		goto bad_queue;
-+	}
+diff --git a/Documentation/devicetree/bindings/phy/bcm-phy.txt b/Documentation/devicetree/bindings/phy/bcm-phy.txt
+new file mode 100644
+index 0000000..3dc8b3d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/bcm-phy.txt
+@@ -0,0 +1,15 @@
++BROADCOM KONA USB2 PHY
 +
- 	setup_timer(&dc->delay_timer, handle_delayed_timer, (unsigned long)dc);
- 
- 	INIT_WORK(&dc->flush_expired_bios, flush_expired_bios);
-@@ -203,6 +209,8 @@ out:
- 	ti->private = dc;
- 	return 0;
- 
-+bad_queue:
-+	mempool_destroy(dc->delayed_pool);
- bad_dev_write:
- 	if (dc->dev_write)
- 		dm_put_device(ti, dc->dev_write);
-@@ -217,7 +225,7 @@ static void delay_dtr(struct dm_target *ti)
- {
- 	struct delay_c *dc = ti->private;
- 
--	flush_workqueue(kdelayd_wq);
-+	destroy_workqueue(dc->kdelayd_wq);
- 
- 	dm_put_device(ti, dc->dev_read);
- 
-@@ -350,12 +358,6 @@ static int __init dm_delay_init(void)
- {
- 	int r = -ENOMEM;
- 
--	kdelayd_wq = alloc_workqueue("kdelayd", WQ_MEM_RECLAIM, 0);
--	if (!kdelayd_wq) {
--		DMERR("Couldn't start kdelayd");
--		goto bad_queue;
--	}
--
- 	delayed_cache = KMEM_CACHE(dm_delay_info, 0);
- 	if (!delayed_cache) {
- 		DMERR("Couldn't create delayed bio cache.");
-@@ -373,8 +375,6 @@ static int __init dm_delay_init(void)
- bad_register:
- 	kmem_cache_destroy(delayed_cache);
- bad_memcache:
--	destroy_workqueue(kdelayd_wq);
--bad_queue:
- 	return r;
- }
- 
-@@ -382,7 +382,6 @@ static void __exit dm_delay_exit(void)
- {
- 	dm_unregister_target(&delay_target);
- 	kmem_cache_destroy(delayed_cache);
--	destroy_workqueue(kdelayd_wq);
- }
- 
- /* Module hooks */
++Required properties:
++ - compatible: brcm,kona-usb2-phy
++ - reg: offset and length of the PHY registers
++ - #phy-cells: must be 0
++Refer to phy/phy-bindings.txt for the generic PHY binding properties
++
++Example:
++
++	usbphy: usb-phy@3f130000 {
++		compatible = "brcm,kona-usb2-phy";
++		reg = <0x3f130000 0x28>;
++		#phy-cells = <0>;
++	};
 -- 
-1.8.3.2
+1.8.4
 
