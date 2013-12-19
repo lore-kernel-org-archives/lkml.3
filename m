@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680Ab3LSOgY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:36:24 -0500
-Received: from mga01.intel.com ([192.55.52.88]:16027 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753078Ab3LSOgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:36:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="446998947"
-Date: Thu, 19 Dec 2013 22:37:13 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Matias =?iso-8859-1?Q?Bj=F8rling?= <m@bjorling.me>
-Cc: Ming Lei <tom.leiming@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        Huang Ying <ying.huang@intel.com>, Jens Axboe <axboe@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Subject: Re: changes caused by 0d11e6ac("blk-mq: fix use-after-free of
- request")
-Message-ID: <20131219143713.GX31783@yliu-dev.sh.intel.com>
-References: <20131218085007.GP31783@yliu-dev.sh.intel.com>
- <52B1790A.5070105@bjorling.me>
+	id S1754773Ab3LSOWs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:22:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46152 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab3LSOWq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 09:22:46 -0500
+Date: Thu, 19 Dec 2013 14:22:41 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Frederik Himpe <fhimpe@telenet.be>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: stable regression: tda18271_read_regs: [1-0060|M] ERROR:
+ i2c_transfer returned: -19
+Message-ID: <20131219142241.GD3866@hercules>
+References: <1386969579.3914.13.camel@piranha.localdomain>
+ <20131214092443.622b069d@samsung.com>
+ <1387223868.2892.1.camel@piranha.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52B1790A.5070105@bjorling.me>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1387223868.2892.1.camel@piranha.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 11:29:30AM +0100, Matias Bjørling wrote:
-> On 12/18/2013 09:50 AM, Yuanhan Liu wrote:
-> >Hi,
-> >
-> >FYI, we noticed some changes caused by 0d11e6ac("blk-mq: fix use-after-free of request"):
-> >
+On Mon, Dec 16, 2013 at 08:57:48PM +0100, Frederik Himpe wrote:
+> On za, 2013-12-14 at 09:24 -0200, Mauro Carvalho Chehab wrote:
+> > Em Fri, 13 Dec 2013 22:19:39 +0100
+> > Frederik Himpe <fhimpe@telenet.be> escreveu:
+> > 
+> > > [My excuses for multiposting, it seems gmane does not permit posting to all
+> > > the relevant lists]
+> > > 
+> > > Since upgrading my system from Linux 3.12 to 3.12.3, my PCTV Systems
+> > > nanoStick T2 290e does not work anymore.
+> > > 
+> > > This happens with 3.12.3:
+> > > 
 > 
-> The blk-mq accounting was faulty up to that commit. We should
-> compare the blk-mq with the previous block layer.
+> > > [    3.844020] tda18271 1-0060: creating new instance
+> > > [    3.868422] tda18271_read_regs: [1-0060|M] ERROR: i2c_transfer returned: -19
+> > > [    3.868492] Error reading device ID @ 1-0060, bailing out.
+> > > [    3.868548] tda18271_attach: [1-0060|M] error -5 on line 1285
+> > > [    3.868603] tda18271 1-0060: destroying instance
+> > > [    3.868666] Em28xx: Initialized (Em28xx dvb Extension) extension
+> > > [    3.894687] Registered IR keymap rc-pinnacle-pctv-hd
+> > > [    3.894819] input: em28xx IR (em28174 #0) as /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.7/rc/rc0/input23
+> > > [    3.894979] rc0: em28xx IR (em28174 #0) as /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.7/rc/rc0
+> > > [    3.895570] Em28xx: Initialized (Em28xx Input Extension) extension
+> > > 
+> > > I see the same problem reported here:
+> > > https://github.com/Hexxeh/rpi-firmware/issues/38 where it is mentioned
+> > > that this regression also appeared in 3.10 stable series recently.
+> > > 
+> > > I noticed upstream commit 8393796dfa4cf5dffcceec464c7789bec3a2f471
+> > > (media: dvb-frontends: Don't use dynamic static allocation)
+> > > entered both 3.10.22 (which is the first version introducing the
+> > > regression in 3.10 stable according to the linked bug), and 3.12.3.
+> > > This file contains stuff related to tda18271. Could this be the 
+> > > culprit?
+> > > 
+> > 
+> > Well, for board EM28174_BOARD_PCTV_290E, it first attaches cxd2820r
+> > and then the tuner tda18271.
+> > 
+> > I suspect that the issue is at cxd2820r. Could you please apply this
+> > patch:
+> > 	http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=0db3fa2741ad8371c21b3a6785416a4afc0cc1d4 
+> > and see if it solves the issue?
 > 
-> Could you try to revert the following patches:
-> 
-> f02b9ac virtio-blk: virtqueue_kick() must be ordered with other...
-> 1cf7e9c virtio_blk: blk-mq support
-> 
-> and compare the two runs (upto 0d11e6ac applied, and the same, with
-> the two patches reverted)
+> I have applied this patch to 3.12.5 and I can confirm it works fine now.
+> Can this patch be applied to the stable series in order to fix this
+> regression in stable?
 
-Hi Matias,
+I'm also queuing this patch for the 3.11 kernel.
 
-You are right. Those counter restore back with the two patches reverted(d1b4e3825c8848b0ea0f).
-
-959a35f13eb785f982d7       0d11e6aca396e679c07b       d1b4e3825c8848b0ea0f  
----------------            -------------------------  -------------------------  
-      0.00                      60.02 ~42%                  0.00       vpx/micro/xfstests/4HDD-btrfs-generic-quick
-      0.00                     367.81 ~27%                  0.00       vpx/micro/xfstests/4HDD-ext4-generic-mid
-      0.00                     411.64 ~13%                  0.00       vpx/micro/xfstests/4HDD-xfs-generic-mid
-      0.00                     208.39 ~10%                  0.00       vpx/micro/xfstests/4HDD-xfs-generic-quick
-      0.00                    1047.86                       0.00       TOTAL iostat.vdd.await
-
-959a35f13eb785f982d7       0d11e6aca396e679c07b       d1b4e3825c8848b0ea0f  
----------------            -------------------------  -------------------------  
-      0.00                     301.60 ~34%                  0.00       vpx/micro/xfstests/4HDD-btrfs-generic-mid
-      0.00                     249.16 ~12%                  0.00       vpx/micro/xfstests/4HDD-btrfs-generic-quick
-      0.00                      51.45 ~26%                  0.00       vpx/micro/xfstests/4HDD-ext4-generic-mid
-      0.00                      91.51 ~21%                  0.04       vpx/micro/xfstests/4HDD-xfs-generic-127
-      0.00                    1919.27 ~43%                  0.00       vpx/micro/xfstests/4HDD-xfs-generic-mid
-      0.00                     121.04 ~11%                  0.00       vpx/micro/xfstests/4HDD-xfs-generic-quick
-      0.00                    2734.03                       0.04       TOTAL iostat.vda.r_await
-
-959a35f13eb785f982d7       0d11e6aca396e679c07b       d1b4e3825c8848b0ea0f  
----------------            -------------------------  -------------------------  
-      0.00                     406.12 ~10%                  0.00       vpx/micro/xfstests/4HDD-btrfs-generic-mid
-      0.00                     433.66 ~ 7%                  0.00       vpx/micro/xfstests/4HDD-btrfs-generic-quick
-      0.00                     807.79 ~15%                  0.00       vpx/micro/xfstests/4HDD-ext4-generic-mid
-      0.00                      42.94 ~67%                  0.51       vpx/micro/xfstests/4HDD-xfs-generic-127
-      0.00                     592.20 ~16%                  0.00       vpx/micro/xfstests/4HDD-xfs-generic-mid
-      0.00                     401.74 ~12%                  0.00       vpx/micro/xfstests/4HDD-xfs-generic-quick
-      0.00                    2684.45                       0.51       TOTAL iostat.vda.w_await
-
-
-
-	--yliu
+Cheers,
+--
+Luis
