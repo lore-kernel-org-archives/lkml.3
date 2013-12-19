@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab3LSP2F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:28:05 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:33731 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab3LSP2C (ORCPT
+	id S1754254Ab3LSP2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:28:53 -0500
+Received: from www.linutronix.de ([62.245.132.108]:53646 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812Ab3LSP2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:28:02 -0500
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        linux-arm-kernel@lists.infradead.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH] MAINTAINERS: Setup proper record for Xilinx Zynq
-Date: Thu, 19 Dec 2013 16:27:55 +0100
-Message-Id: <3dac35ceaef6199c5a58bba17ce59f1ef0e2bf1e.1387466706.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-16885-1387466875-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Thu, 19 Dec 2013 10:28:47 -0500
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: Jonathan Cameron <jic23@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 1/5] iio: ti_am335x_adc: Adjust the closing bracket in tiadc_read_raw()
+Date: Thu, 19 Dec 2013 16:28:27 +0100
+Message-Id: <1387466911-3732-2-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.8.5.1
+In-Reply-To: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
+References: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+It somehow looks like the ending bracket belongs to the if statement but
+it does belong to the while loop. This patch moves the bracket where it
+belongs.
 
---=_mimegpg-monstr-desktop-16885-1387466875-0001
-
-Setup correct zynq entry.
-- Add missing cadence_ttc_timer maintainership
-- Add zynq wildcard
-- Add xilinx wildcard
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Reviewed-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
+ drivers/iio/adc/ti_am335x_adc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- MAINTAINERS | 3 +++
- 1 file changed, 3 insertions(+)
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index d4d7482..e948454 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -341,7 +341,7 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
+ 	while (tiadc_readl(adc_dev, REG_ADCFSM) & SEQ_STATUS) {
+ 		if (time_after(jiffies, timeout))
+ 			return -EAGAIN;
+-		}
++	}
+ 	map_val = chan->channel + TOTAL_CHANNELS;
+ 
+ 	/*
+-- 
+1.8.5.1
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 1344816..5f6e3ae 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1366,6 +1366,9 @@ T:	git git://git.xilinx.com/linux-xlnx.git
- S:	Supported
- F:	arch/arm/mach-zynq/
- F:	drivers/cpuidle/cpuidle-zynq.c
-+N:	zynq
-+N:	xilinx
-+F:	drivers/clocksource/cadence_ttc_timer.c
-
- ARM SMMU DRIVER
- M:	Will Deacon <will.deacon@arm.com>
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-16885-1387466875-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlKzEHsACgkQykllyylKDCEwqACgmTWk4x08T//hdpGCwu69Fj3X
-LwsAnRCV5L2cng+Rybr04N+w/8VV/42g
-=gkix
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-16885-1387466875-0001--
