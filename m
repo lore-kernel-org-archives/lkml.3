@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab3LSOcQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:32:16 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:45509 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab3LSOcN (ORCPT
+	id S1756942Ab3LSMbo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:31:44 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:49954 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755794Ab3LSMbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:32:13 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <balbi@ti.com>, <kishon@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <s.nawrocki@samsung.com>, <jg1.han@samsung.com>, <mporter@linaro.org>,
-        <andrew@lunn.ch>, <k.debski@samsung.com>, <gautamvivek1987@gmail.com>,
-        <heikki.krogerus@linux.intel.com>, <yuvaraj.cd@gmail.com>
-Subject: [PATCH 2/2] phy: phy-core.c: remove unnecessary initialization of local variables
-Date: Thu, 19 Dec 2013 20:01:44 +0530
-Message-ID: <1387463504-4415-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1387463504-4415-1-git-send-email-kishon@ti.com>
-References: <1387463504-4415-1-git-send-email-kishon@ti.com>
+	Thu, 19 Dec 2013 07:31:41 -0500
+Date: Thu, 19 Dec 2013 13:31:37 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Takashi Iwai <tiwai@suse.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: cirrusdrmfb broken with simplefb
+Message-ID: <20131219123137.GC18110@gmail.com>
+References: <s5hlhzik3kk.wl%tiwai@suse.de>
+ <CANq1E4TFKDduy71jCXy+8CMS1_OFxWEpsHY3AA0RUJPW4VE8hg@mail.gmail.com>
+ <20131218092941.GA19210@gmail.com>
+ <20131219000346.0f722b65@alan.etchedpixels.co.uk>
+ <CANq1E4Q3KiLMC-ETFs+FAmTv3yWdCyqG2c+KzGFX4xZmcxLbJg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANq1E4Q3KiLMC-ETFs+FAmTv3yWdCyqG2c+KzGFX4xZmcxLbJg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There were a few places where variables are initialized unncessarily.
-Remove those initializations.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/phy/phy-core.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+* David Herrmann <dh.herrmann@gmail.com> wrote:
 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index e198259..8d9ef25 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -198,7 +198,7 @@ EXPORT_SYMBOL_GPL(phy_exit);
- 
- int phy_power_on(struct phy *phy)
- {
--	int ret = -ENOTSUPP;
-+	int ret;
- 
- 	ret = phy_pm_runtime_get_sync(phy);
- 	if (ret < 0 && ret != -ENOTSUPP)
-@@ -226,7 +226,7 @@ EXPORT_SYMBOL_GPL(phy_power_on);
- 
- int phy_power_off(struct phy *phy)
- {
--	int ret = -ENOTSUPP;
-+	int ret;
- 
- 	mutex_lock(&phy->mutex);
- 	if (phy->power_count == 1 && phy->ops->power_off) {
-@@ -369,7 +369,7 @@ EXPORT_SYMBOL_GPL(of_phy_simple_xlate);
- struct phy *phy_get(struct device *dev, const char *string)
- {
- 	int index = 0;
--	struct phy *phy = NULL;
-+	struct phy *phy;
- 
- 	if (string == NULL) {
- 		dev_WARN(dev, "missing string\n");
--- 
-1.7.10.4
+> Hi
+> 
+> On Thu, Dec 19, 2013 at 1:03 AM, One Thousand Gnomes
+> <gnomes@lxorguk.ukuu.org.uk> wrote:
+> >> > That bug always existed, simplefb is just the first driver to hit it
+> >> > (vesafb/efifb didn't use resources). I'm aware of the issue but as a
+> >> > workaround you can simply disable CONFIG_X86_SYSFB. That restores
+> >> > the old behavior.
+> >>
+> >> This looks like a regression, so we'll either need a fix or we'll have
+> >> to mark CONFIG_X86_SYSFB as CONFIG_BROKEN.
+> >
+> > Kernel bugzilla has entries for simplefb breaking both vesafb and 
+> > matrox mga.
+> 
+> Thanks for the hints. I've read through all I could find and tried 
+> to provide some help.
+> 
+> I'm kind of confused, most of them enable CONFIG_X86_SYSFB (which is 
+> 'n' by default) but don't read the help text. I did my best to tell 
+> people that this option requires CONFIG_FB_SIMPLE, but if you don't 
+> read the help-text you won't notice that. Don't know what to do 
+> about that..
 
+People generally don't read the help text - still the kernel should 
+not break. So please the Kconfig angle (and the bootup logic, etc.) 
+fool-proof, graphics failures are not fun to debug!
+
+Thanks,
+
+	Ingo
