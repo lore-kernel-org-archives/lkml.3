@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab3LSSWp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:22:45 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:62518 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755938Ab3LSSWn (ORCPT
+	id S1756008Ab3LSSXK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:23:10 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60492 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755716Ab3LSSXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:22:43 -0500
+	Thu, 19 Dec 2013 13:23:07 -0500
+Message-ID: <52B33986.5020508@wwwdotorg.org>
+Date: Thu, 19 Dec 2013 11:23:02 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1387456702-4709-4-git-send-email-jiang.liu@linux.intel.com>
-References: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com> <1387456702-4709-4-git-send-email-jiang.liu@linux.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 19 Dec 2013 11:22:22 -0700
-Message-ID: <CAErSpo4oKsJCKxUhxT8E745BkX+veOD-tMEeHULHOuH-3suMRA@mail.gmail.com>
-Subject: Re: [Patch v2 03/13] PCI, pci-label: release allocated ACPI object on
- error recovery path
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>, Len Brown <lenb@kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 2/2] ARM: tegra: add ams AS3722 device to Venice2 DT
+References: <1387371179-16725-1-git-send-email-ldewangan@nvidia.com> <1387371179-16725-2-git-send-email-ldewangan@nvidia.com> <52B20BB4.50506@wwwdotorg.org> <52B2A01D.2000207@nvidia.com>
+In-Reply-To: <52B2A01D.2000207@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 5:38 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
-> Function dsm_get_label() leaks the returned ACPI object if
-> obj->package.count is not 2, so fix the possible memory leak.
->
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+On 12/19/2013 12:28 AM, Laxman Dewangan wrote:
+> On Thursday 19 December 2013 02:25 AM, Stephen Warren wrote:
+>> On 12/18/2013 05:52 AM, Laxman Dewangan wrote:
+>>> Add ams AS3722 entry for gpio/pincontrol and regulators
+>>> to venice2 DT.
+>> This patch still causes:
+>>
+>>> [    0.726545] as3722-pinctrl as3722-pinctrl: pin gpio0 already
+>>> requested by as3722-pinctrl; cannot claim for as3722-regulator
+>>> [    0.737681] as3722-pinctrl as3722-pinctrl: pin-0
+>>> (as3722-regulator) status -22
+>>> [    0.744895] as3722-pinctrl as3722-pinctrl: could not request pin 0
+>>> (gpio0) from group gpio0  on device as3722-pinctrl
+>>> [    0.755500] as3722-regulator as3722-regulator: Error applying
+>>> setting, reverse things back
+> 
+> This error is nothing related to the ams dt or driver. This came from
+> the framework from the driver/base for adding pinmux call before calling
+> any diver's probe.
 
-Rafael, if you want to take these through your tree, feel free.  I'm
-guessing it probably makes sense to keep the whole series together.
+OK, after reverting the problematic MFD commit (which I assume will
+happen upstream too), I see no errors caused by this patch.
 
-> ---
->  drivers/pci/pci-label.c |   12 ++++--------
->  1 file changed, 4 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/pci/pci-label.c b/drivers/pci/pci-label.c
-> index d51f45a..f6e01a5 100644
-> --- a/drivers/pci/pci-label.c
-> +++ b/drivers/pci/pci-label.c
-> @@ -233,11 +233,7 @@ dsm_get_label(acpi_handle handle, int func,
->                 return -1;
->
->         obj = (union acpi_object *)output->pointer;
-> -
-> -       switch (obj->type) {
-> -       case ACPI_TYPE_PACKAGE:
-> -               if (obj->package.count != 2)
-> -                       break;
-> +       if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 2) {
->                 len = obj->package.elements[0].integer.value;
->                 if (buf) {
->                         if (attribute == ACPI_ATTR_INDEX_SHOW)
-> @@ -250,10 +246,10 @@ dsm_get_label(acpi_handle handle, int func,
->                 }
->                 kfree(output->pointer);
->                 return len;
-> -       break;
-> -       default:
-> -               kfree(output->pointer);
->         }
-> +
-> +       kfree(output->pointer);
-> +
->         return -1;
->  }
->
-> --
-> 1.7.10.4
->
+As such, I've applied the series to Tegra's for-3.14/dt branch.
+
+Note that I couldn't verify if the pinctrl setup in patch 1/2 matched
+the ChromeOS kernel, since the node order is different there, and the
+property values don't use named constants there. I'll have to trust you.
+I'll be annoyed if it turns out we need to churn the pinctrl
+configuration in the future...
