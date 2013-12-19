@@ -1,431 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365Ab3LSWjX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 17:39:23 -0500
-Received: from mga09.intel.com ([134.134.136.24]:36169 "EHLO mga09.intel.com"
+	id S1756543Ab3LSWj0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 17:39:26 -0500
+Received: from ozlabs.org ([203.10.76.45]:49362 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754249Ab3LSWjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 17:39:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,515,1384329600"; 
-   d="scan'208";a="427482460"
-From: "David E. Box" <david.e.box@linux.intel.com>
-To: mjg59@srcf.ucam.org, rjw@rjwysocki.net
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        "David E. Box" <david.e.box@linux.intel.com>
-Subject: [PATCH v5][RESEND] X86 platform: New BayTrail IOSF-SB MBI driver
-Date: Thu, 19 Dec 2013 14:37:46 -0800
-Message-Id: <1387492666-5398-1-git-send-email-david.e.box@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1386363573-2008-1-git-send-email-david.e.box@linux.intel.com>
-References: <1386363573-2008-1-git-send-email-david.e.box@linux.intel.com>
+	id S1754249Ab3LSWjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 17:39:25 -0500
+Date: Fri, 20 Dec 2013 09:39:16 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
+	<u.kleine-koenig@pengutronix.de>,
+        <linux-next@vger.kernel.org>
+Subject: Re: Could you include clockevents/clocksource tree in linux-next ?
+Message-Id: <20131220093916.06b43263127f5d6428a9056f@canb.auug.org.au>
+In-Reply-To: <52B363F1.2080209@linaro.org>
+References: <52B363F1.2080209@linaro.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__20_Dec_2013_09_39_16_+1100_UOk.bJtW/5oMf/F6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "David E. Box" <david.e.box@linux.intel.com>
+--Signature=_Fri__20_Dec_2013_09_39_16_+1100_UOk.bJtW/5oMf/F6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Current Intel SOC cores use a MailBox Interface (MBI) to provide access to unit
-devices connected to the system fabric. This driver implements access to this
-interface on BayTrail platforms. This is a requirement for drivers that need
-access to unit registers on the platform (e.g. accessing the PUNIT for power
-management features such as RAPL). Serialized access is handled by all exported
-routines with spinlocks.
+Hi Daniel,
 
-The API includes 3 functions for access to unit registers:
+On Thu, 19 Dec 2013 22:24:01 +0100 Daniel Lezcano <daniel.lezcano@linaro.or=
+g> wrote:
+>
+> is it possible to add the clockevents/clocksource tree in linux-next.
+>=20
+> git://git.linaro.org/people/daniel.lezcano/linux.git clockevents/next
+>=20
+> It will be based on top of tip/timers/core.
 
-int bt_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr)
-int bt_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr)
-int bt_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
+Added from today.
 
-port:	indicating the unit being accessed
-opcode:	the read or write port specific opcode
-offset:	the register offset within the port
-mdr:	the register data to be read, written, or modified
-mask:	bit locations in mdr to change
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
 
-Returns nonzero on error
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
 
-Note: GPU code handles access to the GFX unit. Therefore access to that unit
-with this driver is disallowed to avoid conflicts.
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
 
-Signed-off-by: David E. Box <david.e.box@linux.intel.com>
----
-v5: Converted from pnpacpi/mmio driver to pci/config_space driver as
-    necessitated by firmware change.
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
 
-v4: Define driver as platform specific to BayTrail as some platforms cannot
-    enumerate the MBI using ACPI as noted by Bin Gao <bin.gao@linux.intel.com>
-    Renamed register macros and API funcitons to platform specific names.
-    Changed dependency to PNPACPI as sugessted by Rafael Wysocki <rjw@rjwysocki.net>
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
 
-v3: Converted to PNP ACPI driver as sugessted by Rafael Wysocki <rjw@rjwysocki.net>
-    Removed config visibility to user as suggested by Andi Kleen <andi@firstfloor.org>
+--Signature=_Fri__20_Dec_2013_09_39_16_+1100_UOk.bJtW/5oMf/F6
+Content-Type: application/pgp-signature
 
-v2: Made modular since there was no longer a reason not to
-    Moved to x86 platform as suggested by Mathhew Garrett <mjg59@srcf.ucam.org>
-    Added probe to init to cause driver load to fail if device not detected.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
- drivers/platform/x86/Kconfig          |    8 ++
- drivers/platform/x86/Makefile         |    1 +
- drivers/platform/x86/intel_baytrail.c |  224 +++++++++++++++++++++++++++++++++
- drivers/platform/x86/intel_baytrail.h |   90 +++++++++++++
- 4 files changed, 323 insertions(+)
- create mode 100644 drivers/platform/x86/intel_baytrail.c
- create mode 100644 drivers/platform/x86/intel_baytrail.h
+iQIcBAEBCAAGBQJSs3WYAAoJEMDTa8Ir7ZwVDwIP/iPO/HUZiTbDMvPq8pxEBe3h
+l+4cfEHF3HJN/Y8AHauPwiRkngZghPslEeJSwyMC8rSaWrQPWYdn/qQNyuuzh7MZ
+QLgBZkyBD5/fCIWTsAByeS77VV4a/SQAuHCJFDD806AmCjrYA8DBiotp01G4iAwr
+JyvX+TgTWJpGbIH+ETqgwvW4M/7SeHUcodwbVxAQzpnW3YFKOy1RA22Ymke7xYnL
+g2oNJoE4thZuNKLRxq1+W5ot6HBOsyXiAOUBv9PFxUDhXnm5lweEmg/t2i1sjQNh
+ZNhuRXP2/S+4Tn5k1ueQDLmBYdQnZbK+4E4Bos71lJb/V2cFk6l0WA3l+g2m0D3x
+Dmsw25ejBterYxl+ROhj2X5t20A8RGFJsM6/rEbs5oWBjddfkYePx9IG5mS1HY22
++NSrztr8tAzc2UB4hsbfP9Ir6EJrlfltbMJoNquXYGElKTcTa6lDFNOrOm55VgDX
+aiZuk6bwoJLkGqwtzlKMprsiGOH7xlaTs1EJMGCvPfKP2wceQJldG1ZuWtEkOpFE
+Kdv7f5PpEFMhDKlaJUJjJRmNAcaX8OE2qTpThLIOLbbRsVicD/1EGyJbjFvSJGgM
+g6BQn8YCu7RkklSmZdciAKaXujP2VE7p53wuRxh/NGTZ8ZImSKTEBId1kvIXPLVJ
+6wn+TCR6EUUdJ65PwF5B
+=PGlI
+-----END PGP SIGNATURE-----
 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index b51a746..b482e22 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -819,4 +819,12 @@ config PVPANIC
- 	  a paravirtualized device provided by QEMU; it lets a virtual machine
- 	  (guest) communicate panic events to the host.
- 
-+config INTEL_BAYTRAIL_MBI
-+	tristate
-+	depends on PCI
-+	---help---
-+	  Needed on Baytrail platforms for access to the IOSF Sideband Mailbox
-+	  Interface. This is a requirement for systems that need to configure
-+	  the PUNIT for power management features such as RAPL.
-+
- endif # X86_PLATFORM_DEVICES
-diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-index 5dbe193..b3d4cfd 100644
---- a/drivers/platform/x86/Makefile
-+++ b/drivers/platform/x86/Makefile
-@@ -55,3 +55,4 @@ obj-$(CONFIG_INTEL_RST)		+= intel-rst.o
- obj-$(CONFIG_INTEL_SMARTCONNECT)	+= intel-smartconnect.o
- 
- obj-$(CONFIG_PVPANIC)           += pvpanic.o
-+obj-$(CONFIG_INTEL_BAYTRAIL_MBI)	+= intel_baytrail.o
-diff --git a/drivers/platform/x86/intel_baytrail.c b/drivers/platform/x86/intel_baytrail.c
-new file mode 100644
-index 0000000..f96626b
---- /dev/null
-+++ b/drivers/platform/x86/intel_baytrail.c
-@@ -0,0 +1,224 @@
-+/*
-+ * Baytrail IOSF-SB MailBox Interface Driver
-+ * Copyright (c) 2013, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ *
-+ * The IOSF-SB is a fabric bus available on Atom based SOC's that uses a
-+ * mailbox interface (MBI) to communicate with mutiple devices. This
-+ * driver implements BayTrail-specific access to this interface.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/spinlock.h>
-+#include <linux/pci.h>
-+
-+#include "intel_baytrail.h"
-+
-+static DEFINE_SPINLOCK(iosf_mbi_lock);
-+
-+static inline u32 iosf_mbi_form_mcr(u8 op, u8 port, u8 offset)
-+{
-+	return (op << 24) | (port << 16) | (offset << 8) | BT_MBI_ENABLE;
-+}
-+
-+static struct pci_dev *mbi_pdev;	/* one mbi device */
-+
-+/* Hold lock before calling */
-+static int iosf_mbi_pci_read_mdr(u32 mcrx, u32 mcr, u32 *mdr)
-+{
-+	int result;
-+
-+	if (!mbi_pdev)
-+		return -ENODEV;
-+
-+	if (mcrx) {
-+		result = pci_write_config_dword(mbi_pdev,
-+						BT_MBI_MCRX_OFFSET, mcrx);
-+		if (result < 0)
-+			goto iosf_mbi_read_err;
-+	}
-+
-+	result = pci_write_config_dword(mbi_pdev,
-+					BT_MBI_MCR_OFFSET, mcr);
-+	if (result < 0)
-+		goto iosf_mbi_read_err;
-+
-+	result = pci_read_config_dword(mbi_pdev,
-+				       BT_MBI_MDR_OFFSET, mdr);
-+	if (result < 0)
-+		goto iosf_mbi_read_err;
-+
-+	return 0;
-+
-+iosf_mbi_read_err:
-+	dev_err(&mbi_pdev->dev, "error: PCI config operation returned %d\n",
-+		result);
-+	return result;
-+}
-+
-+/* Hold lock before calling */
-+static int iosf_mbi_pci_write_mdr(u32 mcrx, u32 mcr, u32 mdr)
-+{
-+	int result;
-+
-+	if (!mbi_pdev)
-+		return -ENODEV;
-+
-+	result = pci_write_config_dword(mbi_pdev,
-+					BT_MBI_MDR_OFFSET, mdr);
-+	if (result < 0)
-+		goto iosf_mbi_write_err;
-+
-+	if (mcrx) {
-+		result = pci_write_config_dword(mbi_pdev,
-+			 BT_MBI_MCRX_OFFSET, mcrx);
-+		if (result < 0)
-+			goto iosf_mbi_write_err;
-+	}
-+
-+	result = pci_write_config_dword(mbi_pdev,
-+					BT_MBI_MCR_OFFSET, mcr);
-+	if (result < 0)
-+		goto iosf_mbi_write_err;
-+
-+	return 0;
-+
-+iosf_mbi_write_err:
-+	dev_err(&mbi_pdev->dev, "error: PCI config operation returned %d\n",
-+		result);
-+	return result;
-+}
-+
-+int bt_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr)
-+{
-+	u32 mcr, mcrx;
-+	unsigned long flags;
-+	int ret;
-+
-+	/*Access to the GFX unit is handled by GPU code */
-+	BUG_ON(port == BT_MBI_UNIT_GFX);
-+
-+	mcr = iosf_mbi_form_mcr(opcode, port, offset & BT_MBI_MASK_LO);
-+	mcrx = offset & BT_MBI_MASK_HI;
-+
-+	spin_lock_irqsave(&iosf_mbi_lock, flags);
-+	ret = iosf_mbi_pci_read_mdr(mcrx, mcr, mdr);
-+	spin_unlock_irqrestore(&iosf_mbi_lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(bt_mbi_read);
-+
-+int bt_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr)
-+{
-+	u32 mcr, mcrx;
-+	unsigned long flags;
-+	int ret;
-+
-+	/*Access to the GFX unit is handled by GPU code */
-+	BUG_ON(port == BT_MBI_UNIT_GFX);
-+
-+	mcr = iosf_mbi_form_mcr(opcode, port, offset & BT_MBI_MASK_LO);
-+	mcrx = offset & BT_MBI_MASK_HI;
-+
-+	spin_lock_irqsave(&iosf_mbi_lock, flags);
-+	ret = iosf_mbi_pci_write_mdr(mcrx, mcr, mdr);
-+	spin_unlock_irqrestore(&iosf_mbi_lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(bt_mbi_write);
-+
-+int bt_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
-+{
-+	u32 mcr, mcrx;
-+	u32 value;
-+	unsigned long flags;
-+	int ret;
-+
-+	/*Access to the GFX unit is handled by GPU code */
-+	BUG_ON(port == BT_MBI_UNIT_GFX);
-+
-+	mcr = iosf_mbi_form_mcr(opcode, port, offset & BT_MBI_MASK_LO);
-+	mcrx = offset & BT_MBI_MASK_HI;
-+
-+	spin_lock_irqsave(&iosf_mbi_lock, flags);
-+
-+	/* Read current mdr value */
-+	ret = iosf_mbi_pci_read_mdr(mcrx, mcr & BT_MBI_RD_MASK, &value);
-+	if (ret < 0) {
-+		spin_unlock_irqrestore(&iosf_mbi_lock, flags);
-+		return ret;
-+	}
-+
-+	/* Apply mask */
-+	value &= ~mask;
-+	mdr &= mask;
-+	value |= mdr;
-+
-+	/* Write back */
-+	ret = iosf_mbi_pci_write_mdr(mcrx, mcr | BT_MBI_WR_MASK, value);
-+
-+	spin_unlock_irqrestore(&iosf_mbi_lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(bt_mbi_modify);
-+
-+static int iosf_mbi_probe(struct pci_dev *pdev,
-+			  const struct pci_device_id *unused)
-+{
-+	int ret;
-+
-+	ret = pci_enable_device(pdev);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "error: could not enable device\n");
-+		return ret;
-+	}
-+
-+	mbi_pdev = pci_dev_get(pdev);
-+	return 0;
-+}
-+
-+static DEFINE_PCI_DEVICE_TABLE(iosf_mbi_pci_ids) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0F00) },
-+	{ 0, },
-+};
-+MODULE_DEVICE_TABLE(pci, iosf_mbi_pci_ids);
-+
-+static struct pci_driver iosf_mbi_pci_driver = {
-+	.name		= "iosf_mbi_pci",
-+	.probe		= iosf_mbi_probe,
-+	.id_table	= iosf_mbi_pci_ids,
-+};
-+
-+static int __init bt_mbi_init(void)
-+{
-+	return pci_register_driver(&iosf_mbi_pci_driver);
-+}
-+
-+static void __exit bt_mbi_exit(void)
-+{
-+	pci_unregister_driver(&iosf_mbi_pci_driver);
-+	if (mbi_pdev) {
-+		pci_dev_put(mbi_pdev);
-+		mbi_pdev = NULL;
-+	}
-+}
-+
-+module_init(bt_mbi_init);
-+module_exit(bt_mbi_exit);
-+
-+MODULE_AUTHOR("David E. Box <david.e.box@linux.intel.com>");
-+MODULE_DESCRIPTION("BayTrail Mailbox Interface accessor");
-+MODULE_LICENSE("GPL v2");
-diff --git a/drivers/platform/x86/intel_baytrail.h b/drivers/platform/x86/intel_baytrail.h
-new file mode 100644
-index 0000000..8bcc311
---- /dev/null
-+++ b/drivers/platform/x86/intel_baytrail.h
-@@ -0,0 +1,90 @@
-+/*
-+ * intel_baytrail.h: MailBox access support for Intel BayTrail platforms
-+ */
-+
-+#ifndef INTEL_BAYTRAIL_MBI_SYMS_H
-+#define INTEL_BAYTRAIL_MBI_SYMS_H
-+
-+#define BT_MBI_MCR_OFFSET	0xD0
-+#define BT_MBI_MDR_OFFSET	0xD4
-+#define BT_MBI_MCRX_OFFSET	0xD8
-+
-+#define BT_MBI_RD_MASK		0xFEFFFFFF
-+#define BT_MBI_WR_MASK		0X01000000
-+
-+#define BT_MBI_MASK_HI		0xFFFFFF00
-+#define BT_MBI_MASK_LO		0x000000FF
-+#define BT_MBI_ENABLE		0xF0
-+
-+/* BT-SB unit access methods */
-+#define BT_MBI_UNIT_AUNIT	0x00
-+#define BT_MBI_UNIT_SMC		0x01
-+#define BT_MBI_UNIT_CPU		0x02
-+#define BT_MBI_UNIT_BUNIT	0x03
-+#define BT_MBI_UNIT_PMC		0x04
-+#define BT_MBI_UNIT_GFX		0x06
-+#define BT_MBI_UNIT_SMI		0x0C
-+#define BT_MBI_UNIT_USB		0x43
-+#define BT_MBI_UNIT_SATA	0xA3
-+#define BT_MBI_UNIT_PCIE	0xA6
-+
-+/* Read/write opcodes */
-+#define BT_MBI_AUNIT_READ	0x10
-+#define BT_MBI_AUNIT_WRITE	0x11
-+#define BT_MBI_SMC_READ		0x10
-+#define BT_MBI_SMC_WRITE	0x11
-+#define BT_MBI_CPU_READ		0x10
-+#define BT_MBI_CPU_WRITE	0x11
-+#define BT_MBI_BUNIT_READ	0x10
-+#define BT_MBI_BUNIT_WRITE	0x11
-+#define BT_MBI_PMC_READ		0x06
-+#define BT_MBI_PMC_WRITE	0x07
-+#define BT_MBI_GFX_READ		0x00
-+#define BT_MBI_GFX_WRITE	0x01
-+#define BT_MBI_SMIO_READ	0x06
-+#define BT_MBI_SMIO_WRITE	0x07
-+#define BT_MBI_USB_READ		0x06
-+#define BT_MBI_USB_WRITE	0x07
-+#define BT_MBI_SATA_READ	0x00
-+#define BT_MBI_SATA_WRITE	0x01
-+#define BT_MBI_PCIE_READ	0x00
-+#define BT_MBI_PCIE_WRITE	0x01
-+
-+/**
-+ * bt_mbi_read() - MailBox Interface read command
-+ * @port:	port indicating subunit being accessed
-+ * @opcode:	port specific read or write opcode
-+ * @offset:	register address offset
-+ * @mdr:	register data to be read
-+ *
-+ * Locking is handled by spinlock - cannot sleep.
-+ * Return: Nonzero on error
-+ */
-+int bt_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr);
-+
-+/**
-+ * bt_mbi_write() - MailBox unmasked write command
-+ * @port:	port indicating subunit being accessed
-+ * @opcode:	port specific read or write opcode
-+ * @offset:	register address offset
-+ * @mdr:	register data to be written
-+ *
-+ * Locking is handled by spinlock - cannot sleep.
-+ * Return: Nonzero on error
-+ */
-+int bt_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr);
-+
-+/**
-+ * bt_mbi_modify() - MailBox masked write command
-+ * @port:	port indicating subunit being accessed
-+ * @opcode:	port specific read or write opcode
-+ * @offset:	register address offset
-+ * @mdr:	register data being modified
-+ * @mask:	mask indicating bits in mdr to be modified
-+ *
-+ * Locking is handled by spinlock - cannot sleep.
-+ * Return: Nonzero on error
-+ */
-+int bt_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask);
-+
-+#endif /* INTEL_BAYTRAIL_MBI_SYMS_H */
--- 
-1.7.10.4
-
+--Signature=_Fri__20_Dec_2013_09_39_16_+1100_UOk.bJtW/5oMf/F6--
