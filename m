@@ -1,115 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab3LSXUC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 18:20:02 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58349 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754699Ab3LSXUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 18:20:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,516,1384329600"; 
-   d="scan'208";a="455155607"
-Message-ID: <1387495199.3510.38.camel@dvhart-mobl4.amr.corp.intel.com>
-Subject: Re: [PATCH v4 3/4] futex: Document ordering guarantees
-From: Darren Hart <dvhart@linux.intel.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        paulmck@linux.vnet.ibm.com, efault@gmx.de, jeffm@suse.com,
-        torvalds@linux-foundation.org, jason.low2@hp.com, Waiman.Long@hp.com,
-        tom.vaden@hp.com, scott.norton@hp.com, aswin@hp.com,
-        Ingo Molnar <mingo@kernel.org>
-Date: Thu, 19 Dec 2013 15:19:59 -0800
-In-Reply-To: <52B37BAA.60200@infradead.org>
-References: <1387485950-7320-1-git-send-email-davidlohr@hp.com>
-		 <1387485950-7320-4-git-send-email-davidlohr@hp.com>
-		 <52B35C64.3050504@infradead.org>
-		 <1387486823.5494.5.camel@buesod1.americas.hpqcorp.net>
-	 <1387487274.3510.18.camel@dvhart-mobl4.amr.corp.intel.com>
-	 <52B37BAA.60200@infradead.org>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756673Ab3LSX00 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 18:26:26 -0500
+Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.23]:31203 "EHLO
+	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756443Ab3LSX0Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 18:26:24 -0500
+X-Greylist: delayed 14665 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Dec 2013 18:26:24 EST
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Tom Herbert <therbert@google.com>
+CC: Daniel Borkmann <dborkman@redhat.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+Subject: RE: [PATCH net-next] hyperv: Add support for Virtual Receive Side
+ Scaling (vRSS)
+Thread-Topic: [PATCH net-next] hyperv: Add support for Virtual Receive Side
+ Scaling (vRSS)
+Thread-Index: AQHO/DjpLyfIXxkiYUqDQo2oHD6XuZpcUhsA//+GhuCAAIn5gP//g6IggACQ8YD//4UPEAATARIAAA2nPlA=
+Date: Thu, 19 Dec 2013 23:15:25 +0000
+Message-ID: <3eb3eb6885704b6098c39fad1fdfc443@DFM-DB3MBX15-08.exchange.corp.microsoft.com>
+References: <1387405262-18334-1-git-send-email-haiyangz@microsoft.com>
+	<1387475178.1876.29.camel@bwh-desktop.uk.level5networks.com>
+	<ff7f7541d0164d408b3a4278569c593a@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+	<52B33EC1.5040901@redhat.com>
+	<6ee28c6a94e74c958ee96c3547741fb9@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+	<CA+mtBx-BBBQjVTOrnaow=GNc7VM5D2Zj8xr=fPM4b4f_xT7qkQ@mail.gmail.com>
+	<05be4f23ff784e56b710dd02eb88358a@DFM-DB3MBX15-08.exchange.corp.microsoft.com>
+ <CA+mtBx_SSPd6s5519dWCyPGmFvO=kE+Fh3ZQ9w9oo=pJraRAFQ@mail.gmail.com>
+In-Reply-To: <CA+mtBx_SSPd6s5519dWCyPGmFvO=kE+Fh3ZQ9w9oo=pJraRAFQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.100;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(164054003)(51704005)(377454003)(13464003)(199002)(189002)(47776003)(20776003)(63696002)(74706001)(87936001)(46102001)(79102001)(66066001)(49866001)(74366001)(87266001)(50466002)(80022001)(65816001)(50986001)(47736001)(47976001)(77982001)(85306002)(2656002)(76482001)(33646001)(6806004)(59766001)(80976001)(85852003)(81342001)(90146001)(56816005)(83072002)(74662001)(4396001)(23676002)(69226001)(31966008)(47446002)(74502001)(81686001)(51856001)(83322001)(81816001)(74876001)(54316002)(81542001)(76786001)(56776001)(44976005)(19580405001)(76796001)(19580395003)(54356001)(53806001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:CH1SR01MB599;H:hybrid.exchange.microsoft.com;CLIP:131.107.159.100;FPR:;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-PRVS: 006546F32A
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBJNQUlM008684
 
-On Thu, 2013-12-19 at 15:05 -0800, Randy Dunlap wrote:
-> On 12/19/13 13:07, Darren Hart wrote:
-> > On Thu, 2013-12-19 at 13:00 -0800, Davidlohr Bueso wrote:
-> >> On Thu, 2013-12-19 at 12:51 -0800, Randy Dunlap wrote:
-> >>> On 12/19/13 12:45, Davidlohr Bueso wrote:
-> >>>> From: Thomas Gleixner <tglx@linutronix.de>
-> >>>>
-> >>>> That's essential, if you want to hack on futexes.
-> >>>>
-> >>>> Cc: Ingo Molnar <mingo@kernel.org>
-> >>>> Cc: Darren Hart <dvhart@linux.intel.com>
-> >>>> Acked-by: Peter Zijlstra <peterz@infradead.org>
-> >>>> Cc: Thomas Gleixner <tglx@linutronix.de>
-> >>>> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> >>>> Cc: Mike Galbraith <efault@gmx.de>
-> >>>> Cc: Jeff Mahoney <jeffm@suse.com>
-> >>>> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> >>>> Cc: Scott Norton <scott.norton@hp.com>
-> >>>> Cc: Tom Vaden <tom.vaden@hp.com>
-> >>>> Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-> >>>> Cc: Waiman Long <Waiman.Long@hp.com>
-> >>>> Cc: Jason Low <jason.low2@hp.com>
-> >>>> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> >>>> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> >>>> ---
-> >>>>  kernel/futex.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >>>>  1 file changed, 57 insertions(+)
-> >>>>
-> >>>> diff --git a/kernel/futex.c b/kernel/futex.c
-> >>>> index 577481d..af1fc31 100644
-> >>>> --- a/kernel/futex.c
-> >>>> +++ b/kernel/futex.c
-> >>>> @@ -69,6 +69,63 @@
-> >>>>  
-> >>>>  #include "locking/rtmutex_common.h"
-> >>>>  
-> >>>> +/*
-> >>>> + * Basic futex operation and ordering guarantees:
-> >>>> + *
-> >>>> + * The waiter reads the futex value in user space and calls
-> >>>> + * futex_wait(). It computes the hash bucket and acquires the hash
-> >>>
-> >>> does                It
-> >>> refer to "the waiter" or to futex_wait()?
-> >>> I read it as referring to the waiter, but ISTM that the comments are using It
-> >>> to refer to futex_wait()... ???
-> >>>
-> >>
-> >> Yes, it refers to futex_wait(), which IMO in a futex context is pretty
-> >> clear.
-> > 
-> > 
-> > Agreed.
-> > 
-> > 
+> -----Original Message-----
+> From: Tom Herbert [mailto:therbert@google.com]
+> Sent: Thursday, December 19, 2013 4:43 PM
+> To: Haiyang Zhang
+> Cc: Daniel Borkmann; Ben Hutchings; davem@davemloft.net;
+> netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
+> jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH net-next] hyperv: Add support for Virtual Receive Side
+> Scaling (vRSS)
 > 
-> I'll just have to get by with disagreeing with both of you then.
-> I say that the pronoun's antecedent is ambiguous (unclear).
-> 
+> Patch is below. This version did most pre-computation of the variants I built,
+> but results in largest table (40*256*4 bytes), This gives performance roughly
+> comparable with jhash (roughly same as jhash for IPv4, about 30% more
+> cycles for IPv6). I have the simpler less memory intensive versions also if
+> you're interested, these are 10x worse cycles so I wouldn't want those in
+> critical path.
+> ----
 
-You are correct from a purely grammatical perspective, no argument
-there. I just feel that the comment is clear enough from the context -
-although perhaps people that hack on futexes should be excluded from
-having an opinion here as we are biased :-)
+Thank you for the code. We like the fast implementation even it uses a bit more
+memory. Are you going to address the comments and re-submit the code soon?
 
-If Davidlohr is going to resubmit for other reasons, then by all means,
-please correct this per Randy's suggestion - I just didn't want to put
-him (Davidlohr ;-) through another round of patches for this alone.
-
-Thanks for ensuring our docs are as clear as possible Randy!
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
-
-
+Thanks,
+- Haiyang
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
