@@ -1,100 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757042Ab3LSNDr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:03:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44534 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754104Ab3LSL4I (ORCPT
+	id S1752919Ab3LSOtr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:49:47 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:62171 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870Ab3LSOtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:08 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ding Tianhong <dingtianhong@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 034/208] bridge: flush br's address entry in fdb when remove the
-Date: Thu, 19 Dec 2013 11:52:12 +0000
-Message-Id: <1387454106-19326-35-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 09:49:45 -0500
+Date: Thu, 19 Dec 2013 15:49:42 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
+ tracing units
+Message-ID: <20131219144926.GB19788@localhost.localdomain>
+References: <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131218141125.GT21999@twins.programming.kicks-ass.net>
+ <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131218150900.GU21999@twins.programming.kicks-ass.net>
+ <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219103134.GD30183@twins.programming.kicks-ass.net>
+ <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219112812.GY21999@twins.programming.kicks-ass.net>
+ <20131219123955.GA18186@gmail.com>
+ <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Dec 19, 2013 at 04:30:53PM +0200, Alexander Shishkin wrote:
+> Or the interface and implementation of BTS support in the kernel
+> discourage its use and that is why it is so rarely used.
 
-------------------
-
-From: Ding Tianhong <dingtianhong@huawei.com>
-
-commit f873042093c0b418d2351fe142222b625c740149 upstream.
-
- bridge dev
-
-When the following commands are executed:
-
-brctl addbr br0
-ifconfig br0 hw ether <addr>
-rmmod bridge
-
-The calltrace will occur:
-
-[  563.312114] device eth1 left promiscuous mode
-[  563.312188] br0: port 1(eth1) entered disabled state
-[  563.468190] kmem_cache_destroy bridge_fdb_cache: Slab cache still has objects
-[  563.468197] CPU: 6 PID: 6982 Comm: rmmod Tainted: G           O 3.12.0-0.7-default+ #9
-[  563.468199] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[  563.468200]  0000000000000880 ffff88010f111e98 ffffffff814d1c92 ffff88010f111eb8
-[  563.468204]  ffffffff81148efd ffff88010f111eb8 0000000000000000 ffff88010f111ec8
-[  563.468206]  ffffffffa062a270 ffff88010f111ed8 ffffffffa063ac76 ffff88010f111f78
-[  563.468209] Call Trace:
-[  563.468218]  [<ffffffff814d1c92>] dump_stack+0x6a/0x78
-[  563.468234]  [<ffffffff81148efd>] kmem_cache_destroy+0xfd/0x100
-[  563.468242]  [<ffffffffa062a270>] br_fdb_fini+0x10/0x20 [bridge]
-[  563.468247]  [<ffffffffa063ac76>] br_deinit+0x4e/0x50 [bridge]
-[  563.468254]  [<ffffffff810c7dc9>] SyS_delete_module+0x199/0x2b0
-[  563.468259]  [<ffffffff814e0922>] system_call_fastpath+0x16/0x1b
-[  570.377958] Bridge firewalling registered
-
---------------------------- cut here -------------------------------
-
-The reason is that when the bridge dev's address is changed, the
-br_fdb_change_mac_address() will add new address in fdb, but when
-the bridge was removed, the address entry in the fdb did not free,
-the bridge_fdb_cache still has objects when destroy the cache, Fix
-this by flushing the bridge address entry when removing the bridge.
-
-v2: according to the Toshiaki Makita and Vlad's suggestion, I only
-    delete the vlan0 entry, it still have a leak here if the vlan id
-    is other number, so I need to call fdb_delete_by_port(br, NULL, 1)
-    to flush all entries whose dst is NULL for the bridge.
-
-Suggested-by: Toshiaki Makita <toshiaki.makita1@gmail.com>
-Suggested-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.11: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/bridge/br_if.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
-index 5623be6..6f17728 100644
---- a/net/bridge/br_if.c
-+++ b/net/bridge/br_if.c
-@@ -172,6 +172,8 @@ void br_dev_delete(struct net_device *dev, struct list_head *head)
- 		del_nbp(p);
- 	}
- 
-+	br_fdb_delete_by_port(br, NULL, 1);
-+
- 	del_timer_sync(&br->gc_timer);
- 
- 	br_sysfs_delbr(br->dev);
--- 
-1.8.3.2
-
+I never heard complains about it. It's a simple dump of from/to address couples.
+I just think nobody take the time to develop userspace tooling to exploit it.
+But it's famous slowness might have had a bad influence on this. And may be
+also the fact that it's very architecture specific. AMD doesn't support BTS if I recall
+correctly. Or may be it has its own different implementation?
