@@ -1,147 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab3LSBG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 20:06:59 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36213 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab3LSBG5 (ORCPT
+	id S1751536Ab3LSBMU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 20:12:20 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:34588 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab3LSBMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 20:06:57 -0500
-Message-ID: <52B246AC.1090107@infradead.org>
-Date: Wed, 18 Dec 2013 17:06:52 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Matias Bjorling <m@bjorling.me>, axboe@kernel.dk
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] null_blk: documentation
-References: <1387370504-30853-1-git-send-email-m@bjorling.me> <1387370504-30853-2-git-send-email-m@bjorling.me>
-In-Reply-To: <1387370504-30853-2-git-send-email-m@bjorling.me>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Dec 2013 20:12:18 -0500
+From: Kent Overstreet <kmo@daterainc.com>
+To: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, neilb@suse.de,
+        axboe@kernel.dk
+Cc: Kent Overstreet <kmo@daterainc.com>
+Subject: [PATCH] bcache/md: Use raid stripe size
+Date: Wed, 18 Dec 2013 17:12:11 -0800
+Message-Id: <1387415531-10713-1-git-send-email-kmo@daterainc.com>
+X-Mailer: git-send-email 1.8.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/13 04:41, Matias Bjorling wrote:
-> Add description of module and its parameters.
-> 
-> Signed-off-by: Matias Bjorling <m@bjorling.me>
-> ---
->  Documentation/block/null_blk.txt | 71 ++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 71 insertions(+)
->  create mode 100644 Documentation/block/null_blk.txt
-> 
-> diff --git a/Documentation/block/null_blk.txt b/Documentation/block/null_blk.txt
-> new file mode 100644
-> index 0000000..9e1b047
-> --- /dev/null
-> +++ b/Documentation/block/null_blk.txt
-> @@ -0,0 +1,71 @@
-> +Null block device driver
-> +================================================================================
-> +
-> +I. Overview
-> +
-> +The null block device (/dev/nullb*) is used for benchmarking the various
-> +block-layer implementations. It emulates a block device of X gigabytes in size.
-> +The following instances are possible:
-> +
-> +  Single-queue block-layer
-> +    - Request-based.
-> +    - Single submission queue per device.
-> +    - Implements IO scheduling algorithms (CFQ, Deadline, noop).
-> +  Multi-queue block-layer
-> +    - Request-based.
-> +    - Configurable submission queues per device.
-> +  No block-layer (Known as bio-based)
-> +    - Bio-based. IO requests are submitted directly to the device driver.
-> +    - Directly accepts bio data structure and returns them.
-> +
-> +All of them has a completion queue for each core in the system.
+Now that we've got code for raid5/6 stripe awareness, bcache just needs
+to know about the stripes and when writing partial stripes is expensive
+- we probably don't want to enable this optimization for raid1 or 10,
+even though they have stripes. So add a flag to queue_limits.
 
-               have
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+---
+This is in my pile of bcache stuff queued up for 3.14 - if no one objects it'll
+be in my bcache pull request:
 
-The text sometimes uses "core" vs. "socket" vs. "cpu(s)".
-Did you double-check all of these uses?  Thanks.
+ drivers/md/bcache/super.c | 6 ++++++
+ drivers/md/raid5.c        | 1 +
+ include/linux/blkdev.h    | 1 +
+ 3 files changed, 8 insertions(+)
 
-
-> +
-> +II. Module parameters applicable for all instances:
-> +
-> +queue_mode=[0-2]: Default: 2-Multi-queue
-> +  Selects which block-layer the module should instantiate with.
-> +
-> +  0: Bio-based.
-> +  1: Single-queue.
-> +  2: Multi-queue.
-> +
-> +home_node=[0--nr_nodes]: Default: NUMA_NO_NODE
-> +  Selects what socket the data structures is allocated from.
-
-                                             are
-
-> +
-> +gb=[Size in GB]: Default: 250GB
-> +  The size of the device reported to the system.
-> +
-> +bs=[Block size (in bytes)]: Default: 512 bytes
-> +  The block size reported to the system.
-> +
-> +nr_devices=[Num. devices]: Default: 2
-
-               Number
-
-> +  Number of block devices instantiated. They are instantiated as /dev/nullb0,
-> +  etc.
-> +
-> +irq_mode=[0-2]: Default: Soft-irq
-
-                   Default: 1-Soft-irq
-
-> +  The completion mode used for completing IOs to the block-layer.
-> +
-> +  0: None.
-> +  1: Soft-irq. Uses ipi to complete IOs across sockets. Simulates the overhead
-
-                       IPI
-
-> +     when IOs are issued from another socket than the home the device is
-> +     connected to.
-> +  2: Timer: Waits a specific period (completion_nsec) for each IO before
-> +     completion.
-> +
-> +completion_nsec=[Num. ns]: Default: 10.000ns
-
-                    Number
-
-> +  Combined with irq_mode=2 (timer). The time each completion event must wait.
-> +
-> +submit_queues=[0..nr_cpus]:
-> +  The number of submission queues attached to the device driver. If unset, it
-> +  defaults to 1 on single-queue and bio-based instances. For multi-queue,
-> +  its ignored when use_per_node_hctx module parameter is 1.
-
-     it is
-
-> +
-> +hw_queue_depth=[0..qdepth]: Defaults: 64
-
-                               Default:
-
-> +  The hardware queue depth of the device.
-> +
-> +III: Multi-queue specific parameters
-> +
-> +use_per_node_hctx=[0/1]: Defaults: 1
-
-                            Default:
-
-> +  If 1, the multi-queue block layer is instantiated with a hardware dispatch
-> +  queue for each CPU node in the system. If 0, it is instantiated with the
-> +  number of queues defined in the submit_queues parameter.
-> 
-
-
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 63ebef78df..e363efcf2b 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1134,6 +1134,12 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
+ 		hlist_add_head(&io->hash, dc->io_hash + RECENT_IO);
+ 	}
+ 
++	dc->disk.stripe_size = q->limits.io_opt >> 9;
++
++	if (dc->disk.stripe_size)
++		dc->partial_stripes_expensive =
++			q->limits.raid_partial_stripes_expensive;
++
+ 	ret = bcache_device_init(&dc->disk, block_size,
+ 			 dc->bdev->bd_part->nr_sects - dc->sb.data_offset);
+ 	if (ret)
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index bef353c51c..4b5035f286 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -6104,6 +6104,7 @@ static int run(struct mddev *mddev)
+ 		blk_queue_io_min(mddev->queue, chunk_size);
+ 		blk_queue_io_opt(mddev->queue, chunk_size *
+ 				 (conf->raid_disks - conf->max_degraded));
++		mddev->queue->limits.raid_partial_stripes_expensive = 1;
+ 		/*
+ 		 * We can only discard a whole stripe. It doesn't make sense to
+ 		 * discard data disk but write parity disk
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 02cb6f0ea7..0375654adb 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -291,6 +291,7 @@ struct queue_limits {
+ 	unsigned char		discard_misaligned;
+ 	unsigned char		cluster;
+ 	unsigned char		discard_zeroes_data;
++	unsigned char		raid_partial_stripes_expensive;
+ };
+ 
+ struct request_queue {
 -- 
-~Randy
+1.8.5.1
+
