@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab3LSPTP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:19:15 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46258 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755083Ab3LSPTM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755034Ab3LSPTM (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 19 Dec 2013 10:19:12 -0500
-Message-ID: <1387466350.2210.5.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH 33/38] scsi: transport: add missing put_device call
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Levente Kurusa <levex@linux.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Mike Christie <michaelc@cs.wisc.edu>,
-        open-iscsi@googlegroups.com, linux-scsi@vger.kernel.org
-Date: Thu, 19 Dec 2013 07:19:10 -0800
-In-Reply-To: <1387465612-3673-34-git-send-email-levex@linux.com>
-References: <1387465612-3673-33-git-send-email-levex@linux.com>
-	 <1387465612-3673-34-git-send-email-levex@linux.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Received: from 3.mo3.mail-out.ovh.net ([46.105.44.175]:40010 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753320Ab3LSPTK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 10:19:10 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+Subject: [PATCH 1/3] ARM: at91/dt: add clk properties to sama5d3 SHA device node
+Date: Thu, 19 Dec 2013 16:11:13 +0100
+Message-Id: <1387465875-4548-2-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387465875-4548-1-git-send-email-b.brezillon@overkiz.com>
+References: <1387465875-4548-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 912823350806214765
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-19 at 16:06 +0100, Levente Kurusa wrote:
-> This is required so that we give up the last reference to the device.
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ arch/arm/boot/dts/sama5d3.dtsi |    2 ++
+ 1 file changed, 2 insertions(+)
 
-This isn't true.
-
-> Remove the kfree() as well, because the put_device() will result in
-> iscsi_endpoint_release being called and hence it will be kfree'd.
-
-There's no real point to this patch.  The use case where we own the
-device absolutely up until the point we hand out references is well
-established and there are a number of destroy paths running through SCSI
-code which don't go via refcounting and this is one of them.  They're
-almost universally on error legs on device bring up as this one is.
-
-James
-
+diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+index de9fece..4d290ad 100644
+--- a/arch/arm/boot/dts/sama5d3.dtsi
++++ b/arch/arm/boot/dts/sama5d3.dtsi
+@@ -336,6 +336,8 @@
+ 				compatible = "atmel,sam9g46-sha";
+ 				reg = <0xf8034000 0x100>;
+ 				interrupts = <42 IRQ_TYPE_LEVEL_HIGH 0>;
++				clocks = <&sha_clk>;
++				clock-names = "sha_clk";
+ 			};
+ 
+ 			aes@f8038000 {
+-- 
+1.7.9.5
 
