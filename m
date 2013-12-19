@@ -1,200 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab3LSJO1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:14:27 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:59302 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab3LSJK2 (ORCPT
+	id S1753318Ab3LSJQW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:16:22 -0500
+Received: from relay.parallels.com ([195.214.232.42]:60559 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649Ab3LSJQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:10:28 -0500
-Subject: [PATCH -tip v6 20/22] kprobes/x86: Use kprobe_blacklist for
- .kprobes.text and .entry.text
-To: Ingo Molnar <mingo@kernel.org>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Thu, 19 Dec 2013 09:04:43 +0000
-Message-ID: <20131219090443.14309.41560.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.16
+	Thu, 19 Dec 2013 04:16:13 -0500
+Message-ID: <52B2B951.5080809@parallels.com>
+Date: Thu, 19 Dec 2013 13:16:01 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/6] memcg, slab: cleanup barrier usage when accessing
+ memcg_caches
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com> <bd0a7ffc57e4a0b0c3d456c0cf8801e829e14717.1387372122.git.vdavydov@parallels.com> <20131218171411.GD31080@dhcp22.suse.cz> <52B29427.9010909@parallels.com> <20131219091007.GC9331@dhcp22.suse.cz>
+In-Reply-To: <20131219091007.GC9331@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use kprobe_blackpoint for blacklisting .entry.text and .kprobees.text
-instead of arch_within_kprobe_blacklist. This also makes them visible
-via (debugfs)/kprobes/blacklist.
+On 12/19/2013 01:10 PM, Michal Hocko wrote:
+> On Thu 19-12-13 10:37:27, Vladimir Davydov wrote:
+>> On 12/18/2013 09:14 PM, Michal Hocko wrote:
+>>> On Wed 18-12-13 17:16:54, Vladimir Davydov wrote:
+>>>> First, in memcg_create_kmem_cache() we should issue the write barrier
+>>>> after the kmem_cache is initialized, but before storing the pointer to
+>>>> it in its parent's memcg_params.
+>>>>
+>>>> Second, we should always issue the read barrier after
+>>>> cache_from_memcg_idx() to conform with the write barrier.
+>>>>
+>>>> Third, its better to use smp_* versions of barriers, because we don't
+>>>> need them on UP systems.
+>>> Please be (much) more verbose on Why. Barriers are tricky and should be
+>>> documented accordingly. So if you say that we should issue a barrier
+>>> always be specific why we should do it.
+>> In short, we have kmem_cache::memcg_params::memcg_caches is an array of
+>> pointers to per-memcg caches. We access it lock-free so we should use
+>> memory barriers during initialization. Obviously we should place a write
+>> barrier just before we set the pointer in order to make sure nobody will
+>> see a partially initialized structure. Besides there must be a read
+>> barrier between reading the pointer and accessing the structure, to
+>> conform with the write barrier. It's all that similar to rcu_assign and
+>> rcu_deref. Currently the barrier usage looks rather strange:
+>>
+>> memcg_create_kmem_cache:
+>>     initialize kmem
+>>     set the pointer in memcg_caches
+>>     wmb() // ???
+>>
+>> __memcg_kmem_get_cache:
+>>     <...>
+>>     read_barrier_depends() // ???
+>>     cachep = root_cache->memcg_params->memcg_caches[memcg_id]
+>>     <...>
+> Why do we need explicit memory barriers when we can use RCU?
+> __memcg_kmem_get_cache already dereferences within rcu_read_lock.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- arch/x86/kernel/kprobes/core.c |   11 +------
- include/linux/kprobes.h        |    1 +
- kernel/kprobes.c               |   64 ++++++++++++++++++++++++++++------------
- 3 files changed, 48 insertions(+), 28 deletions(-)
+Because it's not RCU, IMO. RCU implies freeing the old version after a
+grace period, while kmem_caches are freed immediately. We simply want to
+be sure the kmem_cache is fully initialized. And we do not require
+calling this in an RCU critical section.
 
-diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index 24bed46..060641e 100644
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -1069,17 +1069,10 @@ int longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- }
- NOKPROBE_SYMBOL(longjmp_break_handler);
- 
--bool arch_within_kprobe_blacklist(unsigned long addr)
--{
--	return  (addr >= (unsigned long)__kprobes_text_start &&
--		 addr < (unsigned long)__kprobes_text_end) ||
--		(addr >= (unsigned long)__entry_text_start &&
--		 addr < (unsigned long)__entry_text_end);
--}
--
- int __init arch_init_kprobes(void)
- {
--	return 0;
-+	return kprobe_blacklist_add_range((unsigned long)__entry_text_start,
-+					  (unsigned long) __entry_text_end);
- }
- 
- int arch_trampoline_kprobe(struct kprobe *p)
-diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index e059507..e81bced 100644
---- a/include/linux/kprobes.h
-+++ b/include/linux/kprobes.h
-@@ -266,6 +266,7 @@ extern int arch_init_kprobes(void);
- extern void show_registers(struct pt_regs *regs);
- extern void kprobes_inc_nmissed_count(struct kprobe *p);
- extern bool arch_within_kprobe_blacklist(unsigned long addr);
-+extern int kprobe_blacklist_add_range(unsigned long start, unsigned long end);
- 
- struct kprobe_insn_cache {
- 	struct mutex mutex;
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 8319048..abdede5 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1325,13 +1325,6 @@ out:
- 	return ret;
- }
- 
--bool __weak arch_within_kprobe_blacklist(unsigned long addr)
--{
--	/* The __kprobes marked functions and entry code must not be probed */
--	return addr >= (unsigned long)__kprobes_text_start &&
--	       addr < (unsigned long)__kprobes_text_end;
--}
--
- static struct kprobe_blacklist_entry *find_blacklist_entry(unsigned long addr)
- {
- 	struct kprobe_blacklist_entry *ent;
-@@ -1346,8 +1339,6 @@ static struct kprobe_blacklist_entry *find_blacklist_entry(unsigned long addr)
- 
- static bool within_kprobe_blacklist(unsigned long addr)
- {
--	if (arch_within_kprobe_blacklist(addr))
--		return true;
- 	/*
- 	 * If there exists a kprobe_blacklist, verify and
- 	 * fail any probe registration in the prohibited area
-@@ -2032,6 +2023,40 @@ void dump_kprobe(struct kprobe *kp)
- }
- NOKPROBE_SYMBOL(dump_kprobe);
- 
-+static int __kprobe_blacklist_add(unsigned long start, unsigned long end)
-+{
-+	struct kprobe_blacklist_entry *ent;
-+
-+	ent = kmalloc(sizeof(*ent), GFP_KERNEL);
-+	if (!ent)
-+		return -ENOMEM;
-+
-+	ent->start_addr = start;
-+	ent->end_addr = end;
-+	INIT_LIST_HEAD(&ent->list);
-+	list_add_tail(&ent->list, &kprobe_blacklist);
-+	return 0;
-+}
-+
-+int kprobe_blacklist_add_range(unsigned long start, unsigned long end)
-+{
-+	unsigned long offset = 0, size = 0;
-+	int err = 0;
-+
-+	mutex_lock(&kprobe_blacklist_mutex);
-+	while (!err && start < end) {
-+		if (!kallsyms_lookup_size_offset(start, &size, &offset) ||
-+		    size == 0) {
-+			err = -ENOENT;
-+			break;
-+		}
-+		err = __kprobe_blacklist_add(start, start + size);
-+		start += size;
-+	}
-+	mutex_unlock(&kprobe_blacklist_mutex);
-+	return err;
-+}
-+
- /*
-  * Lookup and populate the kprobe_blacklist.
-  *
-@@ -2043,8 +2068,8 @@ NOKPROBE_SYMBOL(dump_kprobe);
- static int populate_kprobe_blacklist(unsigned long *start, unsigned long *end)
- {
- 	unsigned long *iter;
--	struct kprobe_blacklist_entry *ent;
- 	unsigned long offset = 0, size = 0;
-+	int ret;
- 
- 	mutex_lock(&kprobe_blacklist_mutex);
- 	for (iter = start; iter < end; iter++) {
-@@ -2052,14 +2077,7 @@ static int populate_kprobe_blacklist(unsigned long *start, unsigned long *end)
- 			pr_err("Failed to find blacklist %p\n", (void *)*iter);
- 			continue;
- 		}
--
--		ent = kmalloc(sizeof(*ent), GFP_KERNEL);
--		if (!ent)
--			return -ENOMEM;
--		ent->start_addr = *iter;
--		ent->end_addr = *iter + size;
--		INIT_LIST_HEAD(&ent->list);
--		list_add_tail(&ent->list, &kprobe_blacklist);
-+		ret = __kprobe_blacklist_add(*iter, *iter + size);
- 	}
- 	mutex_unlock(&kprobe_blacklist_mutex);
- 
-@@ -2154,7 +2172,15 @@ static int __init init_kprobes(void)
- 
- 	err = populate_kprobe_blacklist(__start_kprobe_blacklist,
- 					__stop_kprobe_blacklist);
--	if (err) {
-+
-+	if (err >= 0 && __kprobes_text_start != __kprobes_text_end) {
-+		/* The __kprobes marked functions must not be probed */
-+		err = kprobe_blacklist_add_range(
-+					(unsigned long)__kprobes_text_start,
-+					(unsigned long)__kprobes_text_end);
-+	}
-+
-+	if (err < 0) {
- 		pr_err("kprobes: failed to populate blacklist: %d\n", err);
- 		pr_err("Please take care of using kprobes.\n");
- 	}
+> Btw. cache_from_memcg_idx is desperately asking for a comment about
+> required locking.
 
+Actually, I placed a reference to the comment there ;-) but no problem,
+I move it to cache_from_memcg_idx().
 
+Thanks.
