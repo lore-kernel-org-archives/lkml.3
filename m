@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678Ab3LSM6A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:58:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44642 "EHLO
+	id S1756776Ab3LSMVf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:21:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45121 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754378Ab3LSL4f (ORCPT
+	with ESMTP id S1755535Ab3LSL6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:35 -0500
+	Thu, 19 Dec 2013 06:58:46 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Colin Leitner <colin.leitner@gmail.com>, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 050/208] NFSv4: Update list of irrecoverable errors on DELEGRETURN
-Date: Thu, 19 Dec 2013 11:52:28 +0000
-Message-Id: <1387454106-19326-51-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 144/208] USB: spcp8x5: correct handling of CS5 setting
+Date: Thu, 19 Dec 2013 11:54:02 +0000
+Message-Id: <1387454106-19326-145-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,46 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Colin Leitner <colin.leitner@googlemail.com>
 
-commit c97cf606e43b85a6cf158b810375dd77312024db upstream.
+commit 711fbdfbf2bc4827214a650afe3f64767a1aba16 upstream.
 
-If the DELEGRETURN errors out with something like NFS4ERR_BAD_STATEID
-then there is no recovery possible. Just quit without returning an error.
+This patch removes an erroneous check of CSIZE, which made it impossible to set
+CS5.
 
-Also, note that the client must not assume that the NFSv4 lease has been
-renewed when it sees an error on DELEGRETURN.
+Compiles clean, but couldn't test against hardware.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfs/nfs4proc.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/usb/serial/spcp8x5.c | 30 ++++++++++++++----------------
+ 1 file changed, 14 insertions(+), 16 deletions(-)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index ecca3b5..412e800 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4768,11 +4768,17 @@ static void nfs4_delegreturn_done(struct rpc_task *task, void *calldata)
- 		return;
+diff --git a/drivers/usb/serial/spcp8x5.c b/drivers/usb/serial/spcp8x5.c
+index ddf6c47..1694d4f 100644
+--- a/drivers/usb/serial/spcp8x5.c
++++ b/drivers/usb/serial/spcp8x5.c
+@@ -346,22 +346,20 @@ static void spcp8x5_set_termios(struct tty_struct *tty,
+ 	}
  
- 	switch (task->tk_status) {
--	case -NFS4ERR_STALE_STATEID:
--	case -NFS4ERR_EXPIRED:
- 	case 0:
- 		renew_lease(data->res.server, data->timestamp);
- 		break;
-+	case -NFS4ERR_ADMIN_REVOKED:
-+	case -NFS4ERR_DELEG_REVOKED:
-+	case -NFS4ERR_BAD_STATEID:
-+	case -NFS4ERR_OLD_STATEID:
-+	case -NFS4ERR_STALE_STATEID:
-+	case -NFS4ERR_EXPIRED:
-+		task->tk_status = 0;
+ 	/* Set Data Length : 00:5bit, 01:6bit, 10:7bit, 11:8bit */
+-	if (cflag & CSIZE) {
+-		switch (cflag & CSIZE) {
+-		case CS5:
+-			buf[1] |= SET_UART_FORMAT_SIZE_5;
+-			break;
+-		case CS6:
+-			buf[1] |= SET_UART_FORMAT_SIZE_6;
+-			break;
+-		case CS7:
+-			buf[1] |= SET_UART_FORMAT_SIZE_7;
+-			break;
+-		default:
+-		case CS8:
+-			buf[1] |= SET_UART_FORMAT_SIZE_8;
+-			break;
+-		}
++	switch (cflag & CSIZE) {
++	case CS5:
++		buf[1] |= SET_UART_FORMAT_SIZE_5;
 +		break;
- 	default:
- 		if (nfs4_async_handle_error(task, data->res.server, NULL) ==
- 				-EAGAIN) {
++	case CS6:
++		buf[1] |= SET_UART_FORMAT_SIZE_6;
++		break;
++	case CS7:
++		buf[1] |= SET_UART_FORMAT_SIZE_7;
++		break;
++	default:
++	case CS8:
++		buf[1] |= SET_UART_FORMAT_SIZE_8;
++		break;
+ 	}
+ 
+ 	/* Set Stop bit2 : 0:1bit 1:2bit */
 -- 
 1.8.3.2
 
