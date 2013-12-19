@@ -1,69 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab3LSLFN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:05:13 -0500
-Received: from mga01.intel.com ([192.55.52.88]:63661 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752165Ab3LSLFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:05:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="452559431"
-Date: Thu, 19 Dec 2013 13:05:02 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Sergei Ianovich <ynvich@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Jiri Slaby <jslaby@suse.cz>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        James Cameron <quozl@laptop.org>, Zhou Zhu <zzhu3@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "open list:SERIAL DRIVERS" <linux-serial@vger.kernel.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 01/21 resend] serial: rewrite pxa2xx-uart to use
- 8250_core
-Message-ID: <20131219110502.GC20686@xps8300>
-References: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
- <1387309071-22382-1-git-send-email-ynvich@gmail.com>
- <1387309071-22382-2-git-send-email-ynvich@gmail.com>
- <20131219085145.GB20686@xps8300>
- <1387445713.31516.30.camel@host5.omatika.ru>
- <1387447296.31516.37.camel@host5.omatika.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387447296.31516.37.camel@host5.omatika.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756181Ab3LSMAP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:00:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45391 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756132Ab3LSMAH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 07:00:07 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Paul Moore <pmoore@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 198/208] selinux: handle TCP SYN-ACK packets correctly in selinux_ip_output()
+Date: Thu, 19 Dec 2013 11:54:56 +0000
+Message-Id: <1387454106-19326-199-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 02:01:36PM +0400, Sergei Ianovich wrote:
-> On Thu, 2013-12-19 at 13:35 +0400, Sergei Ianovich wrote:
-> > On Thu, 2013-12-19 at 10:51 +0200, Heikki Krogerus wrote:
-> > > I noticed one more thing. I'm sorry about commenting this late.
-> > > 
-> > > Since you set the type PORT_XSCALE, don's you want to use
-> > > UPF_FIXED_TYPE flag instead of the UPF_SKIP_TEST here? Otherwise the
-> > > type will just get overridden and autoconfig() will be executed.
-> > 
-> > UPF_FIXED_PORT was my first guess. However, it didn't work.
-> > 
-> > I've also tried to do ioremap in serial_pxa_probe instead of using
-> > UPF_IOREMAP. This didn't work as well.
-> 
-> I didn't clarify properly.
-> 
-> UPF_SKIP_TEST skips only the loopback test. This test could work on PXA,
-> but requires PXA-specific pre-initialization. There are more test after
-> the loopback one, which will fail if we are not on PXA. So I decided
-> that skipping it is easier than tricky rewriting of autoconfig().
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-OK. So there is no problem here. Sorry about the noise.
+------------------
 
-Thanks,
+From: Paul Moore <pmoore@redhat.com>
 
+commit 47180068276a04ed31d24fe04c673138208b07a9 upstream.
+
+In selinux_ip_output() we always label packets based on the parent
+socket.  While this approach works in almost all cases, it doesn't
+work in the case of TCP SYN-ACK packets when the correct label is not
+the label of the parent socket, but rather the label of the larval
+socket represented by the request_sock struct.
+
+Unfortunately, since the request_sock isn't queued on the parent
+socket until *after* the SYN-ACK packet is sent, we can't lookup the
+request_sock to determine the correct label for the packet; at this
+point in time the best we can do is simply pass/NF_ACCEPT the packet.
+It must be said that simply passing the packet without any explicit
+labeling action, while far from ideal, is not terrible as the SYN-ACK
+packet will inherit any IP option based labeling from the initial
+connection request so the label *should* be correct and all our
+access controls remain in place so we shouldn't have to worry about
+information leaks.
+
+Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
+Tested-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ security/selinux/hooks.c | 25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
+
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index c956390..01ba0d6 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -53,6 +53,7 @@
+ #include <net/ip.h>		/* for local_port_range[] */
+ #include <net/sock.h>
+ #include <net/tcp.h>		/* struct or_callable used in sock_rcv_skb */
++#include <net/inet_connection_sock.h>
+ #include <net/net_namespace.h>
+ #include <net/netlabel.h>
+ #include <linux/uaccess.h>
+@@ -4696,6 +4697,7 @@ static unsigned int selinux_ipv6_forward(unsigned int hooknum,
+ static unsigned int selinux_ip_output(struct sk_buff *skb,
+ 				      u16 family)
+ {
++	struct sock *sk;
+ 	u32 sid;
+ 
+ 	if (!netlbl_enabled())
+@@ -4704,8 +4706,27 @@ static unsigned int selinux_ip_output(struct sk_buff *skb,
+ 	/* we do this in the LOCAL_OUT path and not the POST_ROUTING path
+ 	 * because we want to make sure we apply the necessary labeling
+ 	 * before IPsec is applied so we can leverage AH protection */
+-	if (skb->sk) {
+-		struct sk_security_struct *sksec = skb->sk->sk_security;
++	sk = skb->sk;
++	if (sk) {
++		struct sk_security_struct *sksec;
++
++		if (sk->sk_state == TCP_LISTEN)
++			/* if the socket is the listening state then this
++			 * packet is a SYN-ACK packet which means it needs to
++			 * be labeled based on the connection/request_sock and
++			 * not the parent socket.  unfortunately, we can't
++			 * lookup the request_sock yet as it isn't queued on
++			 * the parent socket until after the SYN-ACK is sent.
++			 * the "solution" is to simply pass the packet as-is
++			 * as any IP option based labeling should be copied
++			 * from the initial connection request (in the IP
++			 * layer).  it is far from ideal, but until we get a
++			 * security label in the packet itself this is the
++			 * best we can do. */
++			return NF_ACCEPT;
++
++		/* standard practice, label using the parent socket */
++		sksec = sk->sk_security;
+ 		sid = sksec->sid;
+ 	} else
+ 		sid = SECINITSID_KERNEL;
 -- 
-heikki
+1.8.3.2
+
