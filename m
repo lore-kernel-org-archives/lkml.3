@@ -1,234 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab3LSMp0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:45:26 -0500
-Received: from mga02.intel.com ([134.134.136.20]:42668 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757286Ab3LSMoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:44:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="427188195"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Lv Zheng <lv.zheng@intel.com>,
-        Len Brown <lenb@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
-Subject: [Patch v2 11/13] ACPI, i915: replace open-coded _DSM specific code with helper functions
-Date: Thu, 19 Dec 2013 20:38:20 +0800
-Message-Id: <1387456702-4709-12-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1757191Ab3LSMmh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:42:37 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40229 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755610Ab3LSMmd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 07:42:33 -0500
+Date: Thu, 19 Dec 2013 13:42:28 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Masami Ichikawa <masami256@gmail.com>
+Cc: len.brown@intel.com, rjw@rjwysocki.net, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PM: Fix memory leak in pm_vt_switch_unregister().
+Message-ID: <20131219124228.GA11928@amd.pavel.ucw.cz>
+References: <1387450847-23797-1-git-send-email-masami256@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387450847-23797-1-git-send-email-masami256@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use helper functions to simplify _DSM related code in i915 driver.
+On Thu 2013-12-19 20:00:47, Masami Ichikawa wrote:
+> kmemleak reported a memory leak as below.
+> 
+> unreferenced object 0xffff880118f14700 (size 32):
+>   comm "swapper/0", pid 1, jiffies 4294877401 (age 123.283s)
+>   hex dump (first 32 bytes):
+>     00 01 10 00 00 00 ad de 00 02 20 00 00 00 ad de  .......... .....
+>     00 d4 d2 18 01 88 ff ff 01 00 00 00 00 04 00 00  ................
+>   backtrace:
+>     [<ffffffff814edb1e>] kmemleak_alloc+0x4e/0xb0
+>     [<ffffffff811889dc>] kmem_cache_alloc_trace+0x1ec/0x260
+>     [<ffffffff810aba66>] pm_vt_switch_required+0x76/0xb0
+>     [<ffffffff812f39f5>] register_framebuffer+0x195/0x320
+>     [<ffffffff8130af18>] efifb_probe+0x718/0x780
+>     [<ffffffff81391495>] platform_drv_probe+0x45/0xb0
+>     [<ffffffff8138f407>] driver_probe_device+0x87/0x3a0
+>     [<ffffffff8138f7f3>] __driver_attach+0x93/0xa0
+>     [<ffffffff8138d413>] bus_for_each_dev+0x63/0xa0
+>     [<ffffffff8138ee5e>] driver_attach+0x1e/0x20
+>     [<ffffffff8138ea40>] bus_add_driver+0x180/0x250
+>     [<ffffffff8138fe74>] driver_register+0x64/0xf0
+>     [<ffffffff813913ba>] __platform_driver_register+0x4a/0x50
+>     [<ffffffff8191e028>] efifb_driver_init+0x12/0x14
+>     [<ffffffff8100214a>] do_one_initcall+0xfa/0x1b0
+>     [<ffffffff818e40e0>] kernel_init_freeable+0x17b/0x201
+> 
+> In pm_vt_switch_required(), "entry" variable is allocated via kmalloc().
+> So, in pm_vt_switch_unregister(), it needs to call kfree() when object
+> is deleted from list.
+> 
+> Signed-off-by: Masami Ichikawa <masami256@gmail.com>
 
-Function intel_dsm() is used to check functions supported by ACPI _DSM
-method, but it has strange check for special value 0x80000002. After
-digging into nouveau driver, I think the check is copied from nouveau
-driver and is useless for i915 driver, so remove it.
+Reviewed-by: Pavel Machek <pavel@ucw.cz>
 
-Acked-by: Daniel Vetter <daniel@ffwll.ch>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- drivers/gpu/drm/i915/intel_acpi.c |  144 ++++++++-----------------------------
- 1 file changed, 30 insertions(+), 114 deletions(-)
+Thanks!
 
-diff --git a/drivers/gpu/drm/i915/intel_acpi.c b/drivers/gpu/drm/i915/intel_acpi.c
-index dfff090..1bfac94 100644
---- a/drivers/gpu/drm/i915/intel_acpi.c
-+++ b/drivers/gpu/drm/i915/intel_acpi.c
-@@ -12,8 +12,6 @@
- #include "i915_drv.h"
- 
- #define INTEL_DSM_REVISION_ID 1 /* For Calpella anyway... */
--
--#define INTEL_DSM_FN_SUPPORTED_FUNCTIONS 0 /* No args */
- #define INTEL_DSM_FN_PLATFORM_MUX_INFO 1 /* No args */
- 
- static struct intel_dsm_priv {
-@@ -28,61 +26,6 @@ static const u8 intel_dsm_guid[] = {
- 	0x0f, 0x13, 0x17, 0xb0, 0x1c, 0x2c
- };
- 
--static int intel_dsm(acpi_handle handle, int func)
--{
--	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
--	struct acpi_object_list input;
--	union acpi_object params[4];
--	union acpi_object *obj;
--	u32 result;
--	int ret = 0;
--
--	input.count = 4;
--	input.pointer = params;
--	params[0].type = ACPI_TYPE_BUFFER;
--	params[0].buffer.length = sizeof(intel_dsm_guid);
--	params[0].buffer.pointer = (char *)intel_dsm_guid;
--	params[1].type = ACPI_TYPE_INTEGER;
--	params[1].integer.value = INTEL_DSM_REVISION_ID;
--	params[2].type = ACPI_TYPE_INTEGER;
--	params[2].integer.value = func;
--	params[3].type = ACPI_TYPE_PACKAGE;
--	params[3].package.count = 0;
--	params[3].package.elements = NULL;
--
--	ret = acpi_evaluate_object(handle, "_DSM", &input, &output);
--	if (ret) {
--		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
--		return ret;
--	}
--
--	obj = (union acpi_object *)output.pointer;
--
--	result = 0;
--	switch (obj->type) {
--	case ACPI_TYPE_INTEGER:
--		result = obj->integer.value;
--		break;
--
--	case ACPI_TYPE_BUFFER:
--		if (obj->buffer.length == 4) {
--			result = (obj->buffer.pointer[0] |
--				(obj->buffer.pointer[1] <<  8) |
--				(obj->buffer.pointer[2] << 16) |
--				(obj->buffer.pointer[3] << 24));
--			break;
--		}
--	default:
--		ret = -EINVAL;
--		break;
--	}
--	if (result == 0x80000002)
--		ret = -ENODEV;
--
--	kfree(output.pointer);
--	return ret;
--}
--
- static char *intel_dsm_port_name(u8 id)
- {
- 	switch (id) {
-@@ -137,83 +80,56 @@ static char *intel_dsm_mux_type(u8 type)
- 
- static void intel_dsm_platform_mux_info(void)
- {
--	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
--	struct acpi_object_list input;
--	union acpi_object params[4];
--	union acpi_object *pkg;
--	int i, ret;
--
--	input.count = 4;
--	input.pointer = params;
--	params[0].type = ACPI_TYPE_BUFFER;
--	params[0].buffer.length = sizeof(intel_dsm_guid);
--	params[0].buffer.pointer = (char *)intel_dsm_guid;
--	params[1].type = ACPI_TYPE_INTEGER;
--	params[1].integer.value = INTEL_DSM_REVISION_ID;
--	params[2].type = ACPI_TYPE_INTEGER;
--	params[2].integer.value = INTEL_DSM_FN_PLATFORM_MUX_INFO;
--	params[3].type = ACPI_TYPE_PACKAGE;
--	params[3].package.count = 0;
--	params[3].package.elements = NULL;
--
--	ret = acpi_evaluate_object(intel_dsm_priv.dhandle, "_DSM", &input,
--				   &output);
--	if (ret) {
--		DRM_DEBUG_DRIVER("failed to evaluate _DSM: %d\n", ret);
--		goto out;
-+	int i;
-+	union acpi_object *pkg, *connector_count;
-+
-+	pkg = acpi_evaluate_dsm_typed(intel_dsm_priv.dhandle, intel_dsm_guid,
-+			INTEL_DSM_REVISION_ID, INTEL_DSM_FN_PLATFORM_MUX_INFO,
-+			NULL, ACPI_TYPE_PACKAGE);
-+	if (!pkg) {
-+		DRM_DEBUG_DRIVER("failed to evaluate _DSM\n");
-+		return;
- 	}
- 
--	pkg = (union acpi_object *)output.pointer;
--
--	if (pkg->type == ACPI_TYPE_PACKAGE) {
--		union acpi_object *connector_count = &pkg->package.elements[0];
--		DRM_DEBUG_DRIVER("MUX info connectors: %lld\n",
--			  (unsigned long long)connector_count->integer.value);
--		for (i = 1; i < pkg->package.count; i++) {
--			union acpi_object *obj = &pkg->package.elements[i];
--			union acpi_object *connector_id =
--				&obj->package.elements[0];
--			union acpi_object *info = &obj->package.elements[1];
--			DRM_DEBUG_DRIVER("Connector id: 0x%016llx\n",
--				  (unsigned long long)connector_id->integer.value);
--			DRM_DEBUG_DRIVER("  port id: %s\n",
--			       intel_dsm_port_name(info->buffer.pointer[0]));
--			DRM_DEBUG_DRIVER("  display mux info: %s\n",
--			       intel_dsm_mux_type(info->buffer.pointer[1]));
--			DRM_DEBUG_DRIVER("  aux/dc mux info: %s\n",
--			       intel_dsm_mux_type(info->buffer.pointer[2]));
--			DRM_DEBUG_DRIVER("  hpd mux info: %s\n",
--			       intel_dsm_mux_type(info->buffer.pointer[3]));
--		}
-+	connector_count = &pkg->package.elements[0];
-+	DRM_DEBUG_DRIVER("MUX info connectors: %lld\n",
-+		  (unsigned long long)connector_count->integer.value);
-+	for (i = 1; i < pkg->package.count; i++) {
-+		union acpi_object *obj = &pkg->package.elements[i];
-+		union acpi_object *connector_id = &obj->package.elements[0];
-+		union acpi_object *info = &obj->package.elements[1];
-+		DRM_DEBUG_DRIVER("Connector id: 0x%016llx\n",
-+			  (unsigned long long)connector_id->integer.value);
-+		DRM_DEBUG_DRIVER("  port id: %s\n",
-+		       intel_dsm_port_name(info->buffer.pointer[0]));
-+		DRM_DEBUG_DRIVER("  display mux info: %s\n",
-+		       intel_dsm_mux_type(info->buffer.pointer[1]));
-+		DRM_DEBUG_DRIVER("  aux/dc mux info: %s\n",
-+		       intel_dsm_mux_type(info->buffer.pointer[2]));
-+		DRM_DEBUG_DRIVER("  hpd mux info: %s\n",
-+		       intel_dsm_mux_type(info->buffer.pointer[3]));
- 	}
- 
--out:
--	kfree(output.pointer);
-+	ACPI_FREE(pkg);
- }
- 
- static bool intel_dsm_pci_probe(struct pci_dev *pdev)
- {
- 	acpi_handle dhandle;
--	int ret;
- 
- 	dhandle = ACPI_HANDLE(&pdev->dev);
- 	if (!dhandle)
- 		return false;
- 
--	if (!acpi_has_method(dhandle, "_DSM")) {
-+	if (!acpi_check_dsm(dhandle, intel_dsm_guid, INTEL_DSM_REVISION_ID,
-+			    1 << INTEL_DSM_FN_PLATFORM_MUX_INFO)) {
- 		DRM_DEBUG_KMS("no _DSM method for intel device\n");
- 		return false;
- 	}
- 
--	ret = intel_dsm(dhandle, INTEL_DSM_FN_SUPPORTED_FUNCTIONS);
--	if (ret < 0) {
--		DRM_DEBUG_KMS("failed to get supported _DSM functions\n");
--		return false;
--	}
--
- 	intel_dsm_priv.dhandle = dhandle;
--
- 	intel_dsm_platform_mux_info();
-+
- 	return true;
- }
- 
 -- 
-1.7.10.4
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
