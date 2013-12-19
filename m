@@ -1,75 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab3LSRqg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 12:46:36 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:55288 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab3LSRqd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 12:46:33 -0500
-Message-ID: <52B330F3.4090603@gmail.com>
-Date: Thu, 19 Dec 2013 09:46:27 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754444Ab3LSRrT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 12:47:19 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:38741 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752612Ab3LSRrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 12:47:17 -0500
+From: arno@natisbad.org (Arnaud Ebalard)
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        rtc-linux@googlegroups.com, Pawel Moll <pawel.moll@arm.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Mark Brown <broonie@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Peter Huewe <peter.huewe@infineon.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thierry Reding <treding@nvidia.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: Re: Can someone Ack and queue a patch for RTC subsytem?
+References: <87siton6ke.fsf@natisbad.org>
+	<20131219164624.GV2609@titan.lakedaemon.net>
+X-PGP-Key-URL: http://natisbad.org/arno@natisbad.org.asc
+X-Fingerprint: D3A5 B68A 839B 38A5 815A 781B B77C 0748 A7AE 341B
+X-Hashcash: 1:20:131219:a.zummo@towertech.it::DQZ2iAJ0jeozp7KD:000000000000000000000000000000000000000000c7B
+X-Hashcash: 1:20:131219:swarren@wwwdotorg.org::yrH4Akdy2r9Y3GjD:00000000000000000000000000000000000000000YiU
+X-Hashcash: 1:20:131219:mark.rutland@arm.com::qIbuRw67TdPk2Lsf:000000000000000000000000000000000000000000dtQ
+X-Hashcash: 1:20:131219:grant.likely@linaro.org::na1wnP81+20+ZhxZ:000000000000000000000000000000000000000mqT
+X-Hashcash: 1:20:131219:akpm@linux-foundation.org::efRToJ8kAybUswnU:0000000000000000000000000000000000000p3v
+X-Hashcash: 1:20:131219:jgunthorpe@obsidianresearch.com::jpdTmHnWXfgwKHla:0000000000000000000000000000000yUU
+X-Hashcash: 1:20:131219:pawel.moll@arm.com::7X83WGdCCy/ndbtJ:000000000000000000000000000000000000000000016IV
+X-Hashcash: 1:20:131219:rob.herring@calxeda.com::7raIx5IFbkxaIyCU:000000000000000000000000000000000000001W4r
+X-Hashcash: 1:20:131219:linux-arm-kernel@lists.infradead.org::TxD3IZy0VtPQf5ei:00000000000000000000000001ZeO
+X-Hashcash: 1:20:131219:jason@lakedaemon.net::2892NSMUQRyEjlxg:000000000000000000000000000000000000000001hcf
+X-Hashcash: 1:20:131219:ijc+devicetree@hellion.org.uk::KxjQLaVMCfKQiRyc:0000000000000000000000000000000021SC
+X-Hashcash: 1:20:131219:rob@landley.net::PFBB4ZLSRhFSPzIq:002YsH
+X-Hashcash: 1:20:131219:linus.walleij@linaro.org::ashD3R6nZ9s0vc6l:00000000000000000000000000000000000002ok+
+X-Hashcash: 1:20:131219:broonie@kernel.org::xGGjSomfG36WoxXv:00000000000000000000000000000000000000000003DZ/
+X-Hashcash: 1:20:131219:sfr@canb.auug.org.au::UUfQSoGw4lwD97NP:000000000000000000000000000000000000000005HLA
+X-Hashcash: 1:20:131219:galak@codeaurora.org::3B3vLK625XJMKq/O:000000000000000000000000000000000000000005B1t
+X-Hashcash: 1:20:131219:rtc-linux@googlegroups.com::5vLL/wTPSrbGbvaK:000000000000000000000000000000000005p4m
+X-Hashcash: 1:20:131219:linux-kernel@vger.kernel.org::Mn5ur2w43ZWUIs4A:0000000000000000000000000000000006Evx
+X-Hashcash: 1:20:131219:linux@roeck-us.net::7QtOgm8k1SFfbiHY:00000000000000000000000000000000000000000007CiU
+X-Hashcash: 1:20:131219:peter.huewe@infineon.com::+XMUKoaHeLLsZLx0:00000000000000000000000000000000000006Kq2
+X-Hashcash: 1:20:131219:treding@nvidia.com::+KL+iFCnyGHq+pcv:00000000000000000000000000000000000000000008sAH
+Date: Thu, 19 Dec 2013 18:46:18 +0100
+In-Reply-To: <20131219164624.GV2609@titan.lakedaemon.net> (Jason Cooper's
+	message of "Thu, 19 Dec 2013 11:46:24 -0500")
+Message-ID: <87sitoka39.fsf@natisbad.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH 29/40] mips: Replace __get_cpu_var uses
-References: <20131219155015.443763038@linux.com> <20131219155033.834416420@linux.com>
-In-Reply-To: <20131219155033.834416420@linux.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 07:50 AM, Christoph Lameter wrote:
-[...]
+Hi,
+
+Jason Cooper <jason@lakedaemon.net> writes:
+
+> On Thu, Dec 19, 2013 at 05:34:09PM +0100, Arnaud Ebalard wrote:
+>> I have a very simple driver (support for reading and setting the time)
+>> for a RTC chip (Intersil ISL 12057) but cannot find anyone to get it
+>> Acked and queued for v3.14. In v3.14, there should be at least three
+>> users of the driver (ReadyNAS 102, 104 and 2120) if I meet -rc5 cutoff
+>> for associated .dts changes.
 >
+> The -rc5 cutoff isn't a hard line.  It's also mvebu-specific.  eg, We
+> need things _posted_ a week or so before arm-soc's cutoff of -rc6 so we
+> have time to get the pull request in.  If it needs to go through
+> mvebu/arm-soc, once it's posted, you're good.
+
+I understand. But I guess you will not (for valid reason) accept .dts
+changes to reference a rtc driver that is not on good track towards
+-next. This is the issue I try and solve.
+
+
+>> I never heard of *listed* RTC maintainer during all the review process
+>> on rtc-linux list (v0 sent in october); I dug the list archives and when
+>> this previously happened, someone else (e.g. Andrew Morton) was kind
+>> enough to handle the patches:
+>> 
+>>   http://www.spinics.net/lists/arm-kernel/msg292187.html
 >
-> Cc: Ralf Baechle<ralf@linux-mips.org>
-> Signed-off-by: Christoph Lameter<cl@linux.com>
+> Unfortunately, it doesn't look like Alessandro has been active for a
+> while and Andrew Morton has indeed been picking up the slack.  S-o-B's
+> confirm this.
 >
-> Index: linux/arch/mips/include/asm/fpu_emulator.h
-> ===================================================================
-> --- linux.orig/arch/mips/include/asm/fpu_emulator.h	2013-12-02 16:07:58.254398466 -0600
-> +++ linux/arch/mips/include/asm/fpu_emulator.h	2013-12-02 16:07:58.244398747 -0600
-> @@ -43,7 +43,7 @@ DECLARE_PER_CPU(struct mips_fpu_emulator
->   #define MIPS_FPU_EMU_INC_STATS(M)					\
->   do {									\
->   	preempt_disable();						\
-> -	__local_inc(&__get_cpu_var(fpuemustats).M);			\
-> +	__this_cpu_inc(fpuemustats.M);					\
->   	preempt_enable();						\
->   } while (0)
+> I haven't worked with Andrew enough to know his workflow, but I imagine
+> he can take patches much closer to the merge window than we can.
 >
+>> I wonder if someone (Andrew? Stephen? Jason?) would be kind enough to
+>> take care of the v6 I just sent [1].
+>
+> I don't mind routing it though mvebu/arm-soc since the only consumers
+> are currently mvebu boards, but I'd like to hear from Andrew that this
+> is ok.
 
-Something seems to be incorrect in this bit.
+I will do what you think is the best.
 
-I applied patches 01-16,18-23,25-29  (17 and 24 went missing)
+Cheers,
 
-building for arch/mips/configs/cavium_octeon_defconfig, I get:
-
-.
-.
-.
-   CC      arch/mips/math-emu/cp1emu.o
-arch/mips/math-emu/cp1emu.c: In function 'cop1Emulate':
-arch/mips/math-emu/cp1emu.c:957:1: error: invalid operands to binary + 
-(have 'local_t' and 'int')
-arch/mips/math-emu/cp1emu.c:957:1: error: invalid operands to binary + 
-(have 'local_t' and 'int')
-arch/mips/math-emu/cp1emu.c:957:1: error: invalid operands to binary + 
-(have 'local_t' and 'int')
-arch/mips/math-emu/cp1emu.c:957:1: error: invalid operands to binary + 
-(have 'local_t' and 'int')
-.
-.
-.
-
-
-
+a+
