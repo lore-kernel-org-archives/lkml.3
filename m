@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab3LSOJl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:09:41 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:54451 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751336Ab3LSOJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:09:39 -0500
-Date: Thu, 19 Dec 2013 14:09:33 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC PATCH 06/14] rtc-efi: register rtc-efi device when EFI
- enabled
-Message-ID: <20131219140918.GF3145@console-pimps.org>
-References: <1387439515-8926-1-git-send-email-jlee@suse.com>
- <1387439515-8926-7-git-send-email-jlee@suse.com>
+	id S1754347Ab3LSOEm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:04:42 -0500
+Received: from mail.southpole.se ([37.247.8.11]:46117 "EHLO mail.southpole.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754269Ab3LSOEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 09:04:40 -0500
+Message-ID: <52B2FCF5.40601@southpole.se>
+Date: Thu, 19 Dec 2013 15:04:37 +0100
+From: Jonas Bonn <jonas@southpole.se>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387439515-8926-7-git-send-email-jlee@suse.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: Re: Lockdep warning
+References: <52B2F668.2030400@southpole.se> <20131219140221.GA27143@pd.tnic>
+In-Reply-To: <20131219140221.GA27143@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Assp-Version: 2.3.3(13335) on assp.southpole.se
+X-Assp-ID: assp.southpole.se 61877-08212
+X-Assp-Session: 7F3FBC8B7170 (mail 1)
+X-Assp-Client-TLS: yes
+X-Assp-Server-TLS: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Dec, at 03:51:47PM, Lee, Chun-Yi wrote:
-> UEFI time services, GetTime(), SetTime(), GetWakeupTime(), SetWakeupTime() are also
-> supported by other non-IA64 architecutre with UEFI BIOS, e.g. x86.
-> 
-> This patch changed RTC_DRV_EFI configuration to depend on EFI but not just IA64. It
-> checks efi_enabled flag and efi-rtc driver should enabled.
-> 
-> Cc: Matt Fleming <matt.fleming@intel.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Matthew Garrett <matthew.garrett@nebula.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Jan Beulich <JBeulich@suse.com>
-> Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-> ---
->  arch/x86/platform/efi/efi.c |   17 +++++++++++++++++
->  drivers/rtc/Kconfig         |    2 +-
->  2 files changed, 18 insertions(+), 1 deletions(-)
+On 12/19/2013 03:02 PM, Borislav Petkov wrote:
+> On Thu, Dec 19, 2013 at 02:36:40PM +0100, Jonas Bonn wrote:
+>
+> In such situations I'd always search the net first, to see whether this
+> has been fixed already. Hint: try searching for "lockdep __udp4_lib_rcv"
 
-This patch needs to be justified. Enabling the EFI runtime *Time
-functions just because they're available isn't good enough. We need to
-know why this patch improves things, what use case does it solve?
+Ah... my bad.  Thanks!
 
-The general attitude has been that we want to invoke the runtime
-services less, not more, due to the huge variety of runtime
-implementation bugs.
+Sorry for the noise.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+/Jonas
