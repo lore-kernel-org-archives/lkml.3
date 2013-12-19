@@ -1,88 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab3LSJxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:53:31 -0500
-Received: from relay.parallels.com ([195.214.232.42]:39299 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340Ab3LSJx2 (ORCPT
+	id S1752966Ab3LSJxk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:53:40 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:48485 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340Ab3LSJxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:53:28 -0500
-Message-ID: <52B2C20D.1030302@parallels.com>
-Date: Thu, 19 Dec 2013 13:53:17 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	Thu, 19 Dec 2013 04:53:34 -0500
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/6] memcg, slab: cleanup barrier usage when accessing
- memcg_caches
-References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com> <bd0a7ffc57e4a0b0c3d456c0cf8801e829e14717.1387372122.git.vdavydov@parallels.com> <20131218171411.GD31080@dhcp22.suse.cz> <52B29427.9010909@parallels.com> <20131219091007.GC9331@dhcp22.suse.cz> <52B2B951.5080809@parallels.com> <20131219092137.GG9331@dhcp22.suse.cz> <52B2BC97.4010506@parallels.com> <20131219093619.GA10855@dhcp22.suse.cz>
-In-Reply-To: <20131219093619.GA10855@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+In-Reply-To: <20131219082453.GA12239@verge.net.au>
+References: <201312140309.31407.sergei.shtylyov@cogentembedded.com>
+	<20131219082453.GA12239@verge.net.au>
+Date: Thu, 19 Dec 2013 18:53:32 +0900
+Message-ID: <CANqRtoT9-Pp+6p4gWa=uOh9Wdw8JmxXcduqTiqBApaPbr3YYng@mail.gmail.com>
+Subject: Re: [PATCH] irq-renesas-irqc: simplify irq_set_type() method
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Simon Horman <horms@verge.net.au>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 01:36 PM, Michal Hocko wrote:
-> On Thu 19-12-13 13:29:59, Vladimir Davydov wrote:
->> On 12/19/2013 01:21 PM, Michal Hocko wrote:
->>> On Thu 19-12-13 13:16:01, Vladimir Davydov wrote:
->>>> On 12/19/2013 01:10 PM, Michal Hocko wrote:
->>>>> On Thu 19-12-13 10:37:27, Vladimir Davydov wrote:
->>>>>> On 12/18/2013 09:14 PM, Michal Hocko wrote:
->>>>>>> On Wed 18-12-13 17:16:54, Vladimir Davydov wrote:
->>>>>>>> First, in memcg_create_kmem_cache() we should issue the write barrier
->>>>>>>> after the kmem_cache is initialized, but before storing the pointer to
->>>>>>>> it in its parent's memcg_params.
->>>>>>>>
->>>>>>>> Second, we should always issue the read barrier after
->>>>>>>> cache_from_memcg_idx() to conform with the write barrier.
->>>>>>>>
->>>>>>>> Third, its better to use smp_* versions of barriers, because we don't
->>>>>>>> need them on UP systems.
->>>>>>> Please be (much) more verbose on Why. Barriers are tricky and should be
->>>>>>> documented accordingly. So if you say that we should issue a barrier
->>>>>>> always be specific why we should do it.
->>>>>> In short, we have kmem_cache::memcg_params::memcg_caches is an array of
->>>>>> pointers to per-memcg caches. We access it lock-free so we should use
->>>>>> memory barriers during initialization. Obviously we should place a write
->>>>>> barrier just before we set the pointer in order to make sure nobody will
->>>>>> see a partially initialized structure. Besides there must be a read
->>>>>> barrier between reading the pointer and accessing the structure, to
->>>>>> conform with the write barrier. It's all that similar to rcu_assign and
->>>>>> rcu_deref. Currently the barrier usage looks rather strange:
->>>>>>
->>>>>> memcg_create_kmem_cache:
->>>>>>     initialize kmem
->>>>>>     set the pointer in memcg_caches
->>>>>>     wmb() // ???
->>>>>>
->>>>>> __memcg_kmem_get_cache:
->>>>>>     <...>
->>>>>>     read_barrier_depends() // ???
->>>>>>     cachep = root_cache->memcg_params->memcg_caches[memcg_id]
->>>>>>     <...>
->>>>> Why do we need explicit memory barriers when we can use RCU?
->>>>> __memcg_kmem_get_cache already dereferences within rcu_read_lock.
->>>> Because it's not RCU, IMO. RCU implies freeing the old version after a
->>>> grace period, while kmem_caches are freed immediately. We simply want to
->>>> be sure the kmem_cache is fully initialized. And we do not require
->>>> calling this in an RCU critical section.
->>> And you can use rcu_dereference and rcu_assign for that as well.
->> rcu_dereference() will complain if called outside an RCU critical
->> section, while cache_from_memcg_idx() is called w/o RCU protection from
->> some places.
-> Does anything prevents us from using RCU from those callers as well?
+On Thu, Dec 19, 2013 at 5:24 PM, Simon Horman <horms@verge.net.au> wrote:
+> On Sat, Dec 14, 2013 at 03:09:31AM +0300, Sergei Shtylyov wrote:
+>> Value 0 of the sense  selection field of CONFIG_n register means "disable event
+>> detection" and serves in irqc_sense[] for marking the invalid values of the IRQ
+>> type (by just omitting initializers). There is no need for INTC_IRQ_SENSE_VALID
+>> and hence INTC_IRQ_SENSE() as all field values matching to the  valid IRQ types
+>> are non-zero anyway.
+>>
+>> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+>
+> Magnus, could you review this?
 
-Yes, take a look at kmem_cache_destroy_memcg_children(), for instance.
-We call cancel_work_sync() there on a cache obtained via
-cache_from_memcg_idx().
+The patch is IMO only cosmetic so I can't say I care that much. But
+since you ask. =)
 
-Thanks.
+Acked-by: Magnus Damm <damm@opensource.se>
+
+Cheers,
+
+/ magnus
