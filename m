@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab3LSQA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:00:29 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:42121 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866Ab3LSQA1 (ORCPT
+	id S1756256Ab3LSQBA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:01:00 -0500
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:46644 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756121Ab3LSP7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:00:27 -0500
-Date: Thu, 19 Dec 2013 08:00:21 -0800
-From: josh@joshtriplett.org
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 4/7] drivers: usb: Include appropriate header file in
- pci-quirks.c
-Message-ID: <20131219160021.GA1658@cloud>
-References: <e0ff2366ddbd62f75e8597008b1f3f9001224ad6.1387439261.git.rashika.kheria@gmail.com>
- <Pine.LNX.4.44L0.1312191047440.984-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <Pine.LNX.4.44L0.1312191047440.984-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 19 Dec 2013 10:59:44 -0500
+Message-Id: <20131219155032.973230919@linux.com>
+Date: Thu, 19 Dec 2013 09:50:36 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 21/40] block: Replace __this_cpu_ptr with raw_cpu_ptr
+References: <20131219155015.443763038@linux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=this_block
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 10:51:50AM -0500, Alan Stern wrote:
-> On Thu, 19 Dec 2013, Rashika Kheria wrote:
-> 
-> > Include header file include/linux/usb/hcd.h in host/pci-quirks.c because
-> > function usb_hcd_amd_remote_wakeup_quirk() has its prototype declaration
-> > in include/linux/usb/hcd.h.
-> > 
-> > This eliminates the following warning in host/pci-quirks.c:
-> > drivers/usb/host/pci-quirks.c:253:5: warning: no previous prototype for ‘usb_hcd_amd_remote_wakeup_quirk’ [-Wmissing-prototypes]
-> 
-> Since when does the compiler complain about functions with no 
-> prototype?
+[Patch depends on another patch in this series that introduces raw_cpu_ops]
 
-Sparse has warned about this for years, and GCC warns about it (for
-functions only, not data) when given -Wmissing-prototypes, which it does
-with "make W=1".  The intent is to call attention to functions that may
-need to be marked static or removed, and to require inclusion of an
-appropriate header for non-static functions, which then allows the
-compiler to ensure that the prototype matches the definition.
+__this_cpu_ptr is being phased out.
 
-> In any case, I think it would make more sense to move the prototype 
-> declaration into drivers/usb/host/pci-quirks.h, and have 
-> drivers/usb/core/hcd-pci.c include that file.  After all, it's 
-> perfectly reasonable for hcd-pci to want to know about the quirks of 
-> various PCI-based controllers, but it's not reasonable for pci-quirks.c 
-> to need to know about the details of HCDs.
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Sounds reasonable.
+Index: linux/fs/ext4/mballoc.c
+===================================================================
+--- linux.orig/fs/ext4/mballoc.c	2013-12-02 16:07:53.574528512 -0600
++++ linux/fs/ext4/mballoc.c	2013-12-02 16:07:53.574528512 -0600
+@@ -4085,7 +4085,7 @@ static void ext4_mb_group_or_file(struct
+ 	 * per cpu locality group is to reduce the contention between block
+ 	 * request from multiple CPUs.
+ 	 */
+-	ac->ac_lg = __this_cpu_ptr(sbi->s_locality_groups);
++	ac->ac_lg = raw_cpu_ptr(sbi->s_locality_groups);
+ 
+ 	/* we're going to use group allocation */
+ 	ac->ac_flags |= EXT4_MB_HINT_GROUP_ALLOC;
+Index: linux/fs/buffer.c
+===================================================================
+--- linux.orig/fs/buffer.c	2013-12-02 16:07:53.574528512 -0600
++++ linux/fs/buffer.c	2013-12-02 16:07:53.574528512 -0600
+@@ -1312,7 +1312,7 @@ static void bh_lru_install(struct buffer
+ 		}
+ 		while (out < BH_LRU_SIZE)
+ 			bhs[out++] = NULL;
+-		memcpy(__this_cpu_ptr(&bh_lrus.bhs), bhs, sizeof(bhs));
++		memcpy(this_cpu_ptr(&bh_lrus.bhs), bhs, sizeof(bhs));
+ 	}
+ 	bh_lru_unlock();
+ 
 
-- Josh Triplett
