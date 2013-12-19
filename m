@@ -1,151 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab3LSP5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:57:30 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:64245 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755789Ab3LSPzw (ORCPT
+	id S1755958Ab3LSP5z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:57:55 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:2964 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159Ab3LSPzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:55:52 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, broonie@kernel.org, alsa-devel@alsa-project.org,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 11/11] ASoC: ux500: Dramatically reduce the size of the DAI driver data struct
-Date: Thu, 19 Dec 2013 15:55:08 +0000
-Message-Id: <1387468508-12286-12-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387468508-12286-1-git-send-email-lee.jones@linaro.org>
-References: <1387468508-12286-1-git-send-email-lee.jones@linaro.org>
+	Thu, 19 Dec 2013 10:55:50 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 19 Dec 2013 07:57:04 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        <devicetree@vger.kernel.org>
+Subject: [PATCH 3/6] ARM: tegra: Add efuse bindings
+Date: Thu, 19 Dec 2013 17:54:31 +0200
+Message-ID: <1387468474-26521-4-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1387468474-26521-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1387468474-26521-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We no longer have a means to differentiate between MSP devices at probe
-time, mainly because we don't really have to. So rather than have an over-
-sized static data structure in place, where the only difference between
-devices is the ID and name (which are unused), we'll just create one
-succinct, statically assigned and shared one instead.
+Add efuse bindings for Tegra20, Tegra30, Tegra114 and Tegra124.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- sound/soc/ux500/ux500_msp_dai.c | 96 ++++++-----------------------------------
- 1 file changed, 14 insertions(+), 82 deletions(-)
+ arch/arm/boot/dts/tegra114.dtsi |    6 ++++++
+ arch/arm/boot/dts/tegra124.dtsi |    6 ++++++
+ arch/arm/boot/dts/tegra20.dtsi  |    7 +++++++
+ arch/arm/boot/dts/tegra30.dtsi  |    6 ++++++
+ 4 files changed, 25 insertions(+), 0 deletions(-)
 
-diff --git a/sound/soc/ux500/ux500_msp_dai.c b/sound/soc/ux500/ux500_msp_dai.c
-index f4d607a..5f4807b 100644
---- a/sound/soc/ux500/ux500_msp_dai.c
-+++ b/sound/soc/ux500/ux500_msp_dai.c
-@@ -718,87 +718,19 @@ static struct snd_soc_dai_ops ux500_msp_dai_ops[] = {
- 	}
- };
+diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
+index 8d42787..09a69bf 100644
+--- a/arch/arm/boot/dts/tegra114.dtsi
++++ b/arch/arm/boot/dts/tegra114.dtsi
+@@ -316,6 +316,12 @@
+ 		clock-names = "pclk", "clk32k_in";
+ 	};
  
--static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
--	{
--		.name = "ux500-msp-i2s.0",
--		.probe = ux500_msp_dai_probe,
--		.id = 0,
--		.suspend = NULL,
--		.resume = NULL,
--		.playback = {
--			.channels_min = UX500_MSP_MIN_CHANNELS,
--			.channels_max = UX500_MSP_MAX_CHANNELS,
--			.rates = UX500_I2S_RATES,
--			.formats = UX500_I2S_FORMATS,
--		},
--		.capture = {
--			.channels_min = UX500_MSP_MIN_CHANNELS,
--			.channels_max = UX500_MSP_MAX_CHANNELS,
--			.rates = UX500_I2S_RATES,
--			.formats = UX500_I2S_FORMATS,
--		},
--		.ops = ux500_msp_dai_ops,
--	},
--	{
--		.name = "ux500-msp-i2s.1",
--		.probe = ux500_msp_dai_probe,
--		.id = 1,
--		.suspend = NULL,
--		.resume = NULL,
--		.playback = {
--			.channels_min = UX500_MSP_MIN_CHANNELS,
--			.channels_max = UX500_MSP_MAX_CHANNELS,
--			.rates = UX500_I2S_RATES,
--			.formats = UX500_I2S_FORMATS,
--		},
--		.capture = {
--			.channels_min = UX500_MSP_MIN_CHANNELS,
--			.channels_max = UX500_MSP_MAX_CHANNELS,
--			.rates = UX500_I2S_RATES,
--			.formats = UX500_I2S_FORMATS,
--		},
--		.ops = ux500_msp_dai_ops,
--	},
--	{
--		.name = "ux500-msp-i2s.2",
--		.id = 2,
--		.probe = ux500_msp_dai_probe,
--		.suspend = NULL,
--		.resume = NULL,
--		.playback = {
--			.channels_min = UX500_MSP_MIN_CHANNELS,
--			.channels_max = UX500_MSP_MAX_CHANNELS,
--			.rates = UX500_I2S_RATES,
--			.formats = UX500_I2S_FORMATS,
--		},
--		.capture = {
--			.channels_min = UX500_MSP_MIN_CHANNELS,
--			.channels_max = UX500_MSP_MAX_CHANNELS,
--			.rates = UX500_I2S_RATES,
--			.formats = UX500_I2S_FORMATS,
--		},
--		.ops = ux500_msp_dai_ops,
--	},
--	{
--		.name = "ux500-msp-i2s.3",
--		.probe = ux500_msp_dai_probe,
--		.id = 3,
--		.suspend = NULL,
--		.resume = NULL,
--		.playback = {
--			.channels_min = UX500_MSP_MIN_CHANNELS,
--			.channels_max = UX500_MSP_MAX_CHANNELS,
--			.rates = UX500_I2S_RATES,
--			.formats = UX500_I2S_FORMATS,
--		},
--		.capture = {
--			.channels_min = UX500_MSP_MIN_CHANNELS,
--			.channels_max = UX500_MSP_MAX_CHANNELS,
--			.rates = UX500_I2S_RATES,
--			.formats = UX500_I2S_FORMATS,
--		},
--		.ops = ux500_msp_dai_ops,
--	},
-+static struct snd_soc_dai_driver ux500_msp_dai_drv = {
-+	.probe                 = ux500_msp_dai_probe,
-+	.suspend               = NULL,
-+	.resume                = NULL,
-+	.playback.channels_min = UX500_MSP_MIN_CHANNELS,
-+	.playback.channels_max = UX500_MSP_MAX_CHANNELS,
-+	.playback.rates        = UX500_I2S_RATES,
-+	.playback.formats      = UX500_I2S_FORMATS,
-+	.capture.channels_min  = UX500_MSP_MIN_CHANNELS,
-+	.capture.channels_max  = UX500_MSP_MAX_CHANNELS,
-+	.capture.rates         = UX500_I2S_RATES,
-+	.capture.formats       = UX500_I2S_FORMATS,
-+	.ops                   = ux500_msp_dai_ops,
- };
++	efuse@7000f800 {
++		compatible = "nvidia,tegra114-efuse";
++		reg = <0x7000f800 0x400>;
++		clocks = <&tegra_car TEGRA114_CLK_FUSE>;
++	};
++
+ 	iommu {
+ 		compatible = "nvidia,tegra114-smmu", "nvidia,tegra30-smmu";
+ 		reg = <0x70019010 0x02c
+diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
+index b741300..5e82956 100644
+--- a/arch/arm/boot/dts/tegra124.dtsi
++++ b/arch/arm/boot/dts/tegra124.dtsi
+@@ -106,6 +106,12 @@
+ 		reg = <0x7000e400 0x400>;
+ 	};
  
- static const struct snd_soc_component_driver ux500_msp_component = {
-@@ -868,7 +800,7 @@ static int ux500_msp_drv_probe(struct platform_device *pdev)
- 	dev_set_drvdata(&pdev->dev, drvdata);
++	efuse@7000f800 {
++		compatible = "nvidia,tegra124-efuse";
++		reg = <0x7000f800 0x400>;
++		clocks = <&tegra_car TEGRA124_CLK_FUSE>;
++	};
++
+ 	cpus {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+index df40b54..85daed6 100644
+--- a/arch/arm/boot/dts/tegra20.dtsi
++++ b/arch/arm/boot/dts/tegra20.dtsi
+@@ -121,6 +121,7 @@
+ 		};
+ 	};
  
- 	ret = snd_soc_register_component(&pdev->dev, &ux500_msp_component,
--					 &ux500_msp_dai_drv[drvdata->msp->id], 1);
-+					 &ux500_msp_dai_drv, 1);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "Error: %s: Failed to register MSP%d!\n",
- 			__func__, drvdata->msp->id);
++
+ 	timer@50004600 {
+ 		compatible = "arm,cortex-a9-twd-timer";
+ 		reg = <0x50040600 0x20>;
+@@ -455,6 +456,12 @@
+ 		#size-cells = <0>;
+ 	};
+ 
++	efuse@7000F800 {
++		compatible = "nvidia,tegra20-efuse";
++		reg = <0x7000F800 0x400>;
++		clocks = <&tegra_car TEGRA20_CLK_FUSE>;
++	};
++
+ 	pcie-controller {
+ 		compatible = "nvidia,tegra20-pcie";
+ 		device_type = "pci";
+diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+index 2bd55cf..da1b998 100644
+--- a/arch/arm/boot/dts/tegra30.dtsi
++++ b/arch/arm/boot/dts/tegra30.dtsi
+@@ -535,6 +535,12 @@
+ 		nvidia,ahb = <&ahb>;
+ 	};
+ 
++	efuse@7000f800 {
++		compatible = "nvidia,tegra30-efuse";
++		reg = <0x7000f800 0x400>;
++		clocks = <&tegra_car TEGRA30_CLK_FUSE>;
++	};
++
+ 	ahub {
+ 		compatible = "nvidia,tegra30-ahub";
+ 		reg = <0x70080000 0x200
 -- 
-1.8.3.2
+1.7.7.rc0.72.g4b5ea.dirty
 
