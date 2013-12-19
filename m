@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784Ab3LSXhj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 18:37:39 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:55416 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755800Ab3LSXhi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 18:37:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <3eb3eb6885704b6098c39fad1fdfc443@DFM-DB3MBX15-08.exchange.corp.microsoft.com>
-References: <1387405262-18334-1-git-send-email-haiyangz@microsoft.com>
-	<1387475178.1876.29.camel@bwh-desktop.uk.level5networks.com>
-	<ff7f7541d0164d408b3a4278569c593a@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-	<52B33EC1.5040901@redhat.com>
-	<6ee28c6a94e74c958ee96c3547741fb9@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-	<CA+mtBx-BBBQjVTOrnaow=GNc7VM5D2Zj8xr=fPM4b4f_xT7qkQ@mail.gmail.com>
-	<05be4f23ff784e56b710dd02eb88358a@DFM-DB3MBX15-08.exchange.corp.microsoft.com>
-	<CA+mtBx_SSPd6s5519dWCyPGmFvO=kE+Fh3ZQ9w9oo=pJraRAFQ@mail.gmail.com>
-	<3eb3eb6885704b6098c39fad1fdfc443@DFM-DB3MBX15-08.exchange.corp.microsoft.com>
-Date: Thu, 19 Dec 2013 15:30:40 -0800
-Message-ID: <CA+mtBx_g6X_hs_Mn-SvRXqV+c_qmDV8YSynVBqTyaoimr9+3Ww@mail.gmail.com>
-Subject: Re: [PATCH net-next] hyperv: Add support for Virtual Receive Side
- Scaling (vRSS)
-From: Tom Herbert <therbert@google.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756805Ab3LSXi5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 18:38:57 -0500
+Received: from kanga.kvack.org ([205.233.56.17]:54903 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754124Ab3LSXi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 18:38:56 -0500
+Date: Thu, 19 Dec 2013 18:38:54 -0500
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kent Overstreet <kmo@daterainc.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@gentwo.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: bad page state in 3.13-rc4
+Message-ID: <20131219233854.GD10905@kvack.org>
+References: <CA+55aFwweoGs3eGWXFULcqnbRbpDhpj2qrefXB5OpQOiWW8wYA@mail.gmail.com> <20131219155313.GA25771@redhat.com> <CA+55aFyoXCDNfHb+r5b=CgKQLPA1wrU_Tmh4ROZNEt5TPjpODA@mail.gmail.com> <20131219181134.GC25385@kmo-pixel> <20131219182920.GG30640@kvack.org> <CA+55aFzCo_r7ZGHk+zqUjmCW2w7-7z9oxEJjhR66tZ4qZPxnvw@mail.gmail.com> <20131219192621.GA9228@kvack.org> <CA+55aFz=tEkVAx9VndtCXApDxcw+5T-BxMsVuXp+vMSb05f8Aw@mail.gmail.com> <20131219195352.GB9228@kvack.org> <20131219202416.GA14519@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131219202416.GA14519@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 3:15 PM, Haiyang Zhang <haiyangz@microsoft.com> wrote:
->> -----Original Message-----
->> From: Tom Herbert [mailto:therbert@google.com]
->> Sent: Thursday, December 19, 2013 4:43 PM
->> To: Haiyang Zhang
->> Cc: Daniel Borkmann; Ben Hutchings; davem@davemloft.net;
->> netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
->> jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
->> devel@linuxdriverproject.org
->> Subject: Re: [PATCH net-next] hyperv: Add support for Virtual Receive Side
->> Scaling (vRSS)
->>
->> Patch is below. This version did most pre-computation of the variants I built,
->> but results in largest table (40*256*4 bytes), This gives performance roughly
->> comparable with jhash (roughly same as jhash for IPv4, about 30% more
->> cycles for IPv6). I have the simpler less memory intensive versions also if
->> you're interested, these are 10x worse cycles so I wouldn't want those in
->> critical path.
->> ----
->
-> Thank you for the code. We like the fast implementation even it uses a bit more
-> memory. Are you going to address the comments and re-submit the code soon?
->
-I'll take another look now that there's some new motivation :-)
+On Thu, Dec 19, 2013 at 03:24:16PM -0500, Dave Jones wrote:
+> Yes. Note the original trace in this thread was a VM_BUG_ON(atomic_read(&page->_count) <= 0);
+> 
+> Right after these crashes btw, the box locks up solid. So bad that traces don't
+> always make it over usb-serial. Annoying.
 
-> Thanks,
-> - Haiyang
+I think I finally have an idea what's going on now.  Kent's changes in 
+e34ecee2ae791df674dfb466ce40692ca6218e43 are broken and result in a memory 
+leak of the aio kioctx.  This eventually leads to the system running out of 
+memory, which ends up triggering the otherwise hard to hit error paths in 
+aio_setup_ring().  Linus' suggested changes should fix the badness in the 
+aio_setup_ring(), but more work has to be done to fix up the percpu 
+reference counting tie in with the aio code.  I'll fix this up in the 
+morning if nobody beats me to it over night, as I'm just heading out right 
+now.
+
+		-ben
+
+> 	Dave
+> 
+
+-- 
+"Thought is the essence of where you are now."
