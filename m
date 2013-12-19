@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab3LSALX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 19:11:23 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:51864 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922Ab3LSALV (ORCPT
+	id S1752841Ab3LSANR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 19:13:17 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:2819 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140Ab3LSANP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 19:11:21 -0500
-Message-ID: <1387411939.5567.11.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH 4/4] drivers: target: Mark functions and structures as
- static in tfc_conf.c
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
-        Andy Grover <agrover@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        josh@joshtriplett.org
-Date: Wed, 18 Dec 2013 16:12:19 -0800
-In-Reply-To: <94a49e2b29220b2a3fb93449a7b2c96fb6ea4667.1387390091.git.rashika.kheria@gmail.com>
-References: <1a63603bc5ff05147c419a301d59b135cd0c8406.1387390091.git.rashika.kheria@gmail.com>
-	 <94a49e2b29220b2a3fb93449a7b2c96fb6ea4667.1387390091.git.rashika.kheria@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 18 Dec 2013 19:13:15 -0500
+X-IronPort-AV: E=Sophos;i="4.95,510,1384329600"; 
+   d="scan'208";a="3903268"
+Message-ID: <52B239EE.6010601@broadcom.com>
+Date: Wed, 18 Dec 2013 16:12:30 -0800
+From: Sherman Yin <syin@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>, Linus Walleij <linus.walleij@linaro.org>
+CC: Rob Herring <rob.herring@calxeda.com>,
+        =?ISO-8859-1?Q?Heiko_St=FCbn?= =?ISO-8859-1?Q?er?= 
+	<heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 5/6] ARM: pinctrl: Add Broadcom Capri pinctrl driver
+References: <1381174108-25168-1-git-send-email-syin@broadcom.com> <1386787041-6035-1-git-send-email-syin@broadcom.com> <1386787041-6035-6-git-send-email-syin@broadcom.com> <CACRpkdaeZCodKv6R+4ZS3o-5u=QQuV3JidEp7uaLsN9aYG7bqA@mail.gmail.com> <20131213102252.GS11044@sirena.org.uk>
+In-Reply-To: <20131213102252.GS11044@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-19 at 00:05 +0530, Rashika Kheria wrote:
-> Mark functions ft_tpg_alloc_fabric_acl(), ft_register_configfs() and
-> ft_deregister_configfs() as static in tcm_fc/tfc_conf.c because they are
-> not used outside this file.
-> 
-> This eliminates the following warnings in tcm_fc/tfc_conf.c:
-> drivers/target/tcm_fc/tfc_conf.c:270:21: warning: no previous prototype for ‘ft_tpg_alloc_fabric_acl’ [-Wmissing-prototypes]
-> drivers/target/tcm_fc/tfc_conf.c:555:5: warning: no previous prototype for ‘ft_register_configfs’ [-Wmissing-prototypes]
-> drivers/target/tcm_fc/tfc_conf.c:602:6: warning: no previous prototype for ‘ft_deregister_configfs’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> ---
->  drivers/target/tcm_fc/tfc_conf.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
+On 13-12-13 02:22 AM, Mark Brown wrote:
+> On Thu, Dec 12, 2013 at 09:54:50PM +0100, Linus Walleij wrote:
+>
+>> This is a reimplementation of regmap for MMIO.
+>> See drivers/base/regmap/regmap-mmio.c
+>> Notice how regmap_update_bits() is used throughout the
+>> kernel.
+>
+>> If you want to do this, use regmap.
+>
+> Or if this is very performance sensitive (which I'd not expect for
+> pinctrl) there's a helper in review at the minute which just uses a
+> spinlock.
+>
 
-Applied to target-pending/for-next.
+Thanks Mark.  It's not expected to be performance sensitive, so I'll 
+probably go with regmap.
 
-Thanks Rashika + Josh!
-
---nab
-
-> diff --git a/drivers/target/tcm_fc/tfc_conf.c b/drivers/target/tcm_fc/tfc_conf.c
-> index c6932fb..e879da8 100644
-> --- a/drivers/target/tcm_fc/tfc_conf.c
-> +++ b/drivers/target/tcm_fc/tfc_conf.c
-> @@ -267,7 +267,7 @@ struct ft_node_acl *ft_acl_get(struct ft_tpg *tpg, struct fc_rport_priv *rdata)
->  	return found;
->  }
->  
-> -struct se_node_acl *ft_tpg_alloc_fabric_acl(struct se_portal_group *se_tpg)
-> +static struct se_node_acl *ft_tpg_alloc_fabric_acl(struct se_portal_group *se_tpg)
->  {
->  	struct ft_node_acl *acl;
->  
-> @@ -552,7 +552,7 @@ static struct target_core_fabric_ops ft_fabric_ops = {
->  	.fabric_drop_nodeacl =		&ft_del_acl,
->  };
->  
-> -int ft_register_configfs(void)
-> +static int ft_register_configfs(void)
->  {
->  	struct target_fabric_configfs *fabric;
->  	int ret;
-> @@ -599,7 +599,7 @@ int ft_register_configfs(void)
->  	return 0;
->  }
->  
-> -void ft_deregister_configfs(void)
-> +static void ft_deregister_configfs(void)
->  {
->  	if (!ft_configfs)
->  		return;
-
-
+Regards,
+Sherman
