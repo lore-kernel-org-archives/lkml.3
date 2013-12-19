@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389Ab3LSNGX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:06:23 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:58481 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753826Ab3LSNGS (ORCPT
+	id S1753311Ab3LSOMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:12:50 -0500
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:34172 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab3LSOMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:06:18 -0500
-Date: Thu, 19 Dec 2013 13:06:10 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: anton@enomsg.org, dwmw2@infradead.org, mark.rutland@arm.com,
-        rob@landley.net, ijc+devicetree@hellion.org.uk, swarren@nvidia.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mfd: AS3722: add dt node properties for system power
- controller
-Message-ID: <20131219130610.GI27373@lee--X1>
-References: <1387457821-12509-1-git-send-email-ldewangan@nvidia.com>
+	Thu, 19 Dec 2013 09:12:49 -0500
+Date: Thu, 19 Dec 2013 11:12:32 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, mingo@redhat.com, paulus@samba.org,
+        a.p.zijlstra@chello.nl
+Subject: Re: [PATCH 0/4] Add support of guest user space symbols for perf kvm
+ command.
+Message-ID: <20131219141232.GM4819@ghostprotocols.net>
+References: <cover.1387493396.git.yangds.fnst@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1387457821-12509-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <cover.1387493396.git.yangds.fnst@cn.fujitsu.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Dec 2013, Laxman Dewangan wrote:
+Em Thu, Dec 19, 2013 at 05:54:50PM -0500, Dongsheng Yang escreveu:
+> Hi all,
+> 	This patch add support of guest user space symbols for perf kvm command.
 
-> ams AS3722 device supports the power off by turning off its all rails.
+Cool stuff! Please see some comments on the patches, with requests for
+possible patch splits and better changeset comments.
+ 
+> Example:
+>         # perf kvm --guestmount /tmp/guestmount/ top
+>         Samples: 1K of event 'cycles', Event count (approx.): 259112905
+>          17.34%  libcrypto.so.1.0.1e  [u] 0x000000000007d971
+>           5.60%  [guest.kernel]       [g] kallsyms_expand_symbol
+>           5.44%  libcrypto.so.1.0.1e  [u] md5_block_asm_data_order
+>           4.09%  [guest.kernel]       [g] number.isra.1
+>           3.59%  [guest.kernel]       [g] vsnprintf
+>           3.52%  sshd                 [u] 0x00000000000441c0
+>           2.37%  [guest.kernel]       [g] format_decode
+>           2.36%  [guest.kernel]       [g] memcpy
+>           2.11%  [guest.kernel]       [g] strnlen
 > 
-> Add dt node properties to enable this functionality on this device.
+>         # perf kvm --guestmount /tmp/guestmount/ record -a sleep 1
+>         [ perf record: Woken up 1 times to write data ]
+>         [ perf record: Captured and wrote 0.828 MB perf.data.guest (~36163 samples) ]
+>     
+>         # perf kvm --guestmount /tmp/guestmount/ report
+>         Samples: 4K of event 'cycles', Event count (approx.): 2662750816
+>           8.67%  [guest/9217]  dd                            [u] 0x0000000000004e90
+>           6.62%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] fget_light
+>           6.17%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] system_call
+>           5.97%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] __srcu_read_lock
+>           5.53%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] __srcu_read_unlock
+>           5.47%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] __audit_syscall_exit
+>           5.38%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] fsnotify
+>           5.32%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] system_call_after_swapgs
+>           4.45%  [guest/9217]  libc-2.17.so                  [u] __GI___libc_write
+>           4.15%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] sys_write
+>           3.97%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] vfs_read
+>           3.78%  [guest/9217]  libc-2.17.so                  [u] __GI___libc_read
 > 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  Documentation/devicetree/bindings/mfd/as3722.txt |    9 +++++++++
->  1 file changed, 9 insertions(+)
 > 
-> diff --git a/Documentation/devicetree/bindings/mfd/as3722.txt b/Documentation/devicetree/bindings/mfd/as3722.txt
-> index fc2191e..1e54937 100644
-> --- a/Documentation/devicetree/bindings/mfd/as3722.txt
-> +++ b/Documentation/devicetree/bindings/mfd/as3722.txt
-> @@ -112,6 +112,15 @@ Following are properties of regulator subnode.
->  		ams,enable-tracking: Enable tracking with SD1, only supported
->  			by LDO3.
->  
-> +Power-off:
-> +=========
-> +AS3722 supports the system power off by turning off all its rail. The power off
-> +is provided through pm power off.
-
-I think pm_power_off is a Linuxisum.
-
-> +The device node should have the following properties to enable power-off
-
-Why is it power-off here and power off everywhere else?
-
-> +functionality from ams AS3722:
-> +ams,system-power-controller: To enable the power off functionality through
-> +	device.
-
-Do what with it? "on", "<1>", something else?
-
->  Example:
->  --------
->  #include <dt-bindings/mfd/as3722.h>
-
-Should it be represented in the example?
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> Dongsheng Yang (4):
+>   perf tools: Add support of guest in synthesize_threads.
+>   perf tools: Add support for PERF_RECORD_MISC_GUEST_USER in
+>     thread__find_addr_map().
+>   perf tools: Add support of user space symbols for guest in perf kvm
+>     top.
+>   perf tools: Add support of user space symbols for guest in perf kvm
+>     record.
+> 
+>  tools/perf/builtin-record.c | 10 ++++++++++
+>  tools/perf/builtin-top.c    | 15 ++++++++++-----
+>  tools/perf/util/event.c     | 44 ++++++++++++++++++++++++++++++--------------
+>  3 files changed, 50 insertions(+), 19 deletions(-)
+> 
+> -- 
+> 1.8.2.1
