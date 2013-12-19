@@ -1,64 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755773Ab3LSSO7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:14:59 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:62777 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab3LSSO4 convert rfc822-to-8bit (ORCPT
+	id S1755823Ab3LSSPP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:15:15 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:55256 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754345Ab3LSSPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:14:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <8b3e7f6a5ffdf104e316c5e1c848d7db34dd766e.1387387468.git.rashika.kheria@gmail.com>
-References: <7fc39fa8a73bfcca6f379c6cd53cdb1659fc9d12.1387387468.git.rashika.kheria@gmail.com>
- <8b3e7f6a5ffdf104e316c5e1c848d7db34dd766e.1387387468.git.rashika.kheria@gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 19 Dec 2013 11:14:35 -0700
-Message-ID: <CAErSpo6sbrYa_xLrxpWp8X8mTjEpGxAQGrvG3gEt5h=EnMs0ww@mail.gmail.com>
-Subject: Re: [PATCH 3/3] drivers: pcmcia: Include appropriate header file in cardbus.c
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, linux-pcmcia@lists.infradead.org,
-        josh@joshtriplett.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 19 Dec 2013 13:15:11 -0500
+X-Greylist: delayed 864 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Dec 2013 13:15:11 EST
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: next-20131218 - WARNING in qdisc_list_add
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1387476879_3146P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 19 Dec 2013 13:14:39 -0500
+Message-ID: <7625.1387476879@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 1:36 AM, Rashika Kheria
-<rashika.kheria@gmail.com> wrote:
-> Include appropriate header file cs_internal.h in cardbus.c because
-> functions cb_alloc() and cb_free() have their prototype declarations in
-> cs_internal.h.
->
-> This eliminates the following warnings in cardbus.c:
-> drivers/pcmcia/cardbus.c:67:11: warning: no previous prototype for ‘cb_alloc’ [-Wmissing-prototypes]
-> drivers/pcmcia/cardbus.c:105:6: warning: no previous prototype for ‘cb_free’ [-Wmissing-prototypes]
->
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+--==_Exmh_1387476879_3146P
+Content-Type: text/plain; charset=us-ascii
 
-Applied to my pci/misc branch for v3.14, thanks!
+Seen once while booting next-20131218 (different boot than the BUG
+I hit). Command that triggered it would have been one of these 2:
 
-Bjorn
+/usr/sbin/tc qdisc add dev em1 root codel
+/usr/sbin/tc qdisc add dev wlp3s0 root codel
 
-> ---
->  drivers/pcmcia/cardbus.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/pcmcia/cardbus.c b/drivers/pcmcia/cardbus.c
-> index b2a98cd..1c85f4b 100644
-> --- a/drivers/pcmcia/cardbus.c
-> +++ b/drivers/pcmcia/cardbus.c
-> @@ -25,7 +25,7 @@
->  #include <linux/pci.h>
->
->  #include <pcmcia/ss.h>
-> -
-> +#include "cs_internal.h"
->
->  static void cardbus_config_irq_and_cls(struct pci_bus *bus, int irq)
->  {
-> --
-> 1.7.9.5
->
+It's possible that wlp3s0 wasn't there yet due to rfkill switch having
+nuked the wireless.
+
+'git blame' points at the message being added in this commit:
+
+commit e57a784d8cae429f5b697fe55abf420181d9ff09
+Author: Eric Dumazet <edumazet@google.com>
+Date:   Thu Dec 12 15:41:56 2013 -0800
+
+    pkt_sched: set root qdisc before change() in attach_default_qdiscs()
+
+    After commit 95dc19299f74 ("pkt_sched: give visibility to mq slave
+    qdiscs") we call disc_list_add() while the device qdisc might be
+    the noop_qdisc one.
+
+    This shows up as duplicates in "tc qdisc show", as all inactive devices
+    point to noop_qdisc.
+
+    Fix this by setting dev->qdisc to the new qdisc before calling
+    ops->change() in attach_default_qdiscs()
+
+    Add a WARN_ON_ONCE() to catch any future similar problem.
+
+    Signed-off-by: Eric Dumazet <edumazet@google.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+
+ [  153.876539] ------------[ cut here ]------------
+ [  153.878667] WARNING: CPU: 1 PID: 1446 at net/sched/sch_api.c:278 qdisc_list_add+0x79/0xcf()
+ [  153.897042] CPU: 3 PID: 1446 Comm: tc Tainted: G           O 3.13.0-rc4-next-20131218 #129
+ [  153.898877] Hardware name: Dell Inc. Latitude E6530/07Y85M, BIOS A11 03/12/2013
+ [  153.900666]  0000000000000000 ffff880121195950 ffffffff8164c74f 0000000000000000
+ [  153.905666]  ffff880121195988 ffffffff8103875e ffffffff814afe73 ffff88012828f600
+ [  153.910847]  0000000000000001 ffffffff81c8cac0 0000000000000001 ffff880121195998
+ [  153.916012] Call Trace:
+ [  153.917237]  [<ffffffff8164c74f>] dump_stack+0x4f/0xa2
+ [  153.918659]  [<ffffffff8103875e>] warn_slowpath_common+0x7a/0x93
+ [  153.920222]  [<ffffffff814afe73>] ? qdisc_list_add+0x79/0xcf
+ [  153.921896]  [<ffffffff81038816>] warn_slowpath_null+0x15/0x17
+ [  153.923579]  [<ffffffff814afe73>] qdisc_list_add+0x79/0xcf
+ [  153.925134]  [<ffffffff814b1466>] qdisc_create+0x237/0x350
+ [  153.926658]  [<ffffffff814b1a05>] tc_modify_qdisc+0x486/0x4af
+ [  153.928173]  [<ffffffff814a2bb0>] rtnetlink_rcv_msg+0x180/0x193
+ [  153.929753]  [<ffffffff810c7c32>] ? trace_preempt_on+0x12/0x2f
+ [  153.931453]  [<ffffffff814a2a30>] ? rtnl_newlink+0x4ba/0x4ba
+ [  153.933107]  [<ffffffff814b67e4>] netlink_rcv_skb+0x44/0x86
+ [  153.934586]  [<ffffffff8149fbeb>] rtnetlink_rcv+0x1e/0x25
+ [  153.936133]  [<ffffffff814b62ef>] netlink_unicast+0xf1/0x175
+ [  153.937587]  [<ffffffff814b6677>] netlink_sendmsg+0x304/0x34e
+ [  153.939088]  [<ffffffff814794ac>] __sock_sendmsg_nosec+0x25/0x27
+ [  153.940638]  [<ffffffff8147b0c2>] sock_sendmsg+0x52/0x6c
+ [  153.942278]  [<ffffffff811009ce>] ? might_fault+0x9b/0x9f
+ [  153.943980]  [<ffffffff81100985>] ? might_fault+0x52/0x9f
+ [  153.945439]  [<ffffffff81487cec>] ? verify_iovec+0x5e/0xac
+ [  153.946993]  [<ffffffff8147cd41>] ___sys_sendmsg+0x20d/0x29d
+ [  153.948540]  [<ffffffff81073236>] ? arch_local_irq_save+0x9/0xc
+ [  153.950087]  [<ffffffff81072708>] ? up_read+0x22/0x25
+ [  153.951743]  [<ffffffff8165a21b>] ? __do_page_fault+0x56f/0x600
+ [  153.953495]  [<ffffffff810c7bdd>] ? time_hardirqs_on+0x1b/0x2f
+ [  153.955175]  [<ffffffff8113fdee>] ? fcheck_files+0x80/0xe0
+ [  153.956720]  [<ffffffff8114062d>] ? fget_light+0x30/0x90
+ [  153.958195]  [<ffffffff8147d20a>] __sys_sendmsg+0x3d/0x5b
+ [  153.959645]  [<ffffffff8147d235>] SyS_sendmsg+0xd/0x17
+ [  153.961092]  [<ffffffff8165d722>] system_call_fastpath+0x16/0x1b
+ [  153.965229] ---[ end trace ec29ec2eecd5a461 ]---
+
+
+--==_Exmh_1387476879_3146P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUrM3jwdmEQWDXROgAQKrbQ/+P9oJjyif0HRm0prl5J+//j09jovoAEuw
+Nqt1FI6gi6Eit13vTSsLrkJptfJ6KIKU4LVQkCrRNskp51rDHqrre7FVs5JgHCoQ
+j8JMAcCLYZsKNNPWt0L7QNp7z0Ps9NOdnrj/IelisBKEHkQaK0OscO7oV+r1Q4EE
+XDMedzqZyp+ND8/4U7g5qh3uUPVAgmeABid2WK+4ZwUtUfI7jSU3j1xQAF+hGMNT
+uKyC9eKPYEDWPPL2RT/B4mtZ5i9wTl+20CF6XS10l9RwH88IRo18MS5za/CO5mUm
+bpHS55386nw0NlNuhdW4zU/pGPXyPVvv7I/XHhgSQhi0qf2stdeBrJ4ljIxKA+mw
+9w3lYjapWAYmbdl8vq1v3dyAJqgbWXQCtq0/Au99TnrRkSTMXXvbnuigDpfFweGD
+xLbQAyf8Uqik+itUPZxWpad0x/o5jBsCh9iXc9hxAZaNzRCzqRXXFAOCPbih9kLf
+oi8c2uzg6mjL3QEcLRJD5NnARRCeb0ETxbY1GbJ4o46Amavo1+aMeF5e+68BxFv1
+ASDPMgs1GW0gliPjziOvJZhdSK45+INrWPYqs2+ymE1cIYILAERsoyiwIanBh+7I
+EdUq7slpIkZwSK76gbCxVIV+OVcC22d7OIfnykiKc6UJt4kmmatmu+CYo8VzZi33
+UFQ3luOorAQ=
+=PSwe
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1387476879_3146P--
