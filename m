@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab3LSJlW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:41:22 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:48170 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab3LSJlU (ORCPT
+	id S1753332Ab3LSJmV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:42:21 -0500
+Received: from relay.parallels.com ([195.214.232.42]:37525 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109Ab3LSJmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:41:20 -0500
-Date: Thu, 19 Dec 2013 15:11:09 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Lars Ellenberg <drbd-dev@lists.linbit.com>, drbd-user@lists.linbit.com,
-        josh@joshtriplett.org
-Subject: [PATCH 06/13] drivers: block: Mark functions as static in
- drbd_receiver.c
-Message-ID: <fe63e86117a10a434e59db1222b3b08b015551a2.1387445396.git.rashika.kheria@gmail.com>
-References: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
+	Thu, 19 Dec 2013 04:42:17 -0500
+Message-ID: <52B2BF70.7080204@parallels.com>
+Date: Thu, 19 Dec 2013 13:42:08 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vasily Averin <vvs@parallels.com>
+CC: Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@gmail.com>,
+        <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        <cgroups@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>, <devel@openvz.org>
+Subject: Re: [Devel] [PATCH 1/6] slab: cleanup kmem_cache_create_memcg()
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com> <52B2AB7C.1010803@parallels.com> <52B2B0A4.8050009@parallels.com> <52B2BBB4.3090209@parallels.com>
+In-Reply-To: <52B2BBB4.3090209@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions conn_wait_active_ee_empty() and
-drbd_crypto_alloc_digest_safe() as static in drbd/drbd_receiver.c
-because they are not used outside this file.
+On 12/19/2013 01:26 PM, Vasily Averin wrote:
+> On 12/19/2013 12:39 PM, Vladimir Davydov wrote:
+>> On 12/19/2013 12:17 PM, Vasily Averin wrote:
+>>> On 12/18/2013 05:16 PM, Vladimir Davydov wrote:
+>>>> --- a/mm/slab_common.c
+>>>> +++ b/mm/slab_common.c
+>>>> @@ -176,8 +176,9 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+>>>>  	get_online_cpus();
+>>>>  	mutex_lock(&slab_mutex);
+>>>>  
+>>>> -	if (!kmem_cache_sanity_check(memcg, name, size) == 0)
+>>>> -		goto out_locked;
+>>>> +	err = kmem_cache_sanity_check(memcg, name, size);
+>>>> +	if (err)
+>>>> +		goto out_unlock;
+>>>>  
+>>>>  	/*
+>>>>  	 * Some allocators will constraint the set of valid flags to a subset
+>>> Theoretically in future kmem_cache_sanity_check() can return positive value.
+>>> Probably it's better to check (err < 0) in caller ?
+>> Hmm, why? What information could positive retval carry here? We have
+>> plenty of places throughout the code where we check for (err), not
+>> (err<0), simply because it looks clearer, e.g. look at
+>> __kmem_cache_create() calls. If it returns a positive value one day, we
+>> will have to parse every place where it's called. Anyway, if someone
+>> wants to change a function behavior, he must check every place where
+>> this function is called and fix them accordingly.
+> I believe expected semantic of function -- return negative in case of error.
+> So correct error cheek should be (err < 0).
+> (err) check is semantically incorrect, and it can lead to troubles in future.
 
-This eliminates the following warning in drbd/drbd_receiver.c:
-drivers/block/drbd/drbd_receiver.c:1401:6: warning: no previous prototype for ‘conn_wait_active_ee_empty’ [-Wmissing-prototypes]
-drivers/block/drbd/drbd_receiver.c:3259:21: warning: no previous prototype for ‘drbd_crypto_alloc_digest_safe’ [-Wmissing-prototypes]
+You are free to use the "correct" check then, but making everyone do so
+would be too painful ;-)
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/block/drbd/drbd_receiver.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+linux-tip$ grep -rI '^\s*if (err)' . | wc -l
+13631
+linux-tip$ grep -rI '^\s*if (err\s*<\s*0)' . | wc -l
+5449
 
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 6fa6673..c31c7a2 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -1398,7 +1398,7 @@ static void drbd_remove_epoch_entry_interval(struct drbd_conf *mdev,
- 		wake_up(&mdev->misc_wait);
- }
- 
--void conn_wait_active_ee_empty(struct drbd_tconn *tconn)
-+static void conn_wait_active_ee_empty(struct drbd_tconn *tconn)
- {
- 	struct drbd_conf *mdev;
- 	int vnr;
-@@ -3256,6 +3256,7 @@ disconnect:
-  * return: NULL (alg name was "")
-  *         ERR_PTR(error) if something goes wrong
-  *         or the crypto hash ptr, if it worked out ok. */
-+static
- struct crypto_hash *drbd_crypto_alloc_digest_safe(const struct drbd_conf *mdev,
- 		const char *alg, const char *name)
- {
--- 
-1.7.9.5
-
+Thanks.
