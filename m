@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab3LSOez (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:34:55 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57694 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751332Ab3LSOey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:34:54 -0500
-Date: Thu, 19 Dec 2013 14:34:50 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Alex Shi <alex.shi@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        H Peter Anvin <hpa@zytor.com>, Linux-X86 <x86@kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
- range flush v2
-Message-ID: <20131219143449.GN11295@suse.de>
-References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
- <20131218072814.GA798@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20131218072814.GA798@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752980Ab3LSKsR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 05:48:17 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:48415 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab3LSKsP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 05:48:15 -0500
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org, arm@kernel.org,
+        linux@arm.linux.org.uk, arnd@arndb.de, olof@lixom.net,
+        soren.brinkmann@xilinx.com, peter.crosthwaite@xilinx.com,
+        linux@roeck-us.net, Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v7 0/2] ARM: mach-moxart: add MOXA ART SoC support
+Date: Thu, 19 Dec 2013 11:47:42 +0100
+Message-Id: <1387450064-6598-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 03:28:14PM +0800, Fengguang Wu wrote:
-> Hi Mel,
-> 
-> I'd like to share some test numbers with your patches applied on top of v3.13-rc3.
-> 
-> Basically there are
-> 
-> 1) no big performance changes
-> 
->   76628486           -0.7%   76107841       TOTAL vm-scalability.throughput
->     407038           +1.2%     412032       TOTAL hackbench.throughput
->      50307           -1.5%      49549       TOTAL ebizzy.throughput
-> 
+The reason behind why fixed rate clock "ref12" couldn't be moved from
+.dtsi to .dts:
 
-I'm assuming this was an ivybridge processor. How many threads were ebizzy
-tested with? The memory ranges used by the vm scalability benchmarks are
-probably too large to be affected by the series but I'm guessing. I doubt
-hackbench is doing any flushes and the 1.2% is noise.
+There was nothing else in "clocks { .. }", the entire block was then
+deleted from .dtsi.
 
-> 2) huge proc-vmstat.nr_tlb_* increases
-> 
->   99986527         +3e+14%  2.988e+20       TOTAL proc-vmstat.nr_tlb_local_flush_one
->  3.812e+08       +2.2e+13%  8.393e+19       TOTAL proc-vmstat.nr_tlb_remote_flush_received
->  3.301e+08       +2.2e+13%  7.241e+19       TOTAL proc-vmstat.nr_tlb_remote_flush
->    5990864       +1.2e+15%  7.032e+19       TOTAL proc-vmstat.nr_tlb_local_flush_all
-> 
+If a skeleton "clocks { .. }" remain in .dtsi, the node can then be
+moved to .dts, and of_clk_get() works again.
 
-The accounting changes can be mostly explained by "x86: mm: Clean up
-inconsistencies when flushing TLB ranges". flush_all was simply not
-being counted before so I would claim that the old figure was simply
-wrong and did not reflect reality.
+Changes since v6:
 
-Alterations on when range versus global flushes would affect the other
-counters but arguably it's now behaving as originally intended by the tlb
-flush shift.
+1. move fixed rate clock "ref12" from .dtsi to .dts
+2. sort new entry alphabetically in arch/arm/Kconfig
+3. rebase to next-20131219: arch/arm/Makefile arch/arm/Kconfig
 
-> Here are the detailed numbers. eabb1f89905a0c809d13 is the HEAD commit
-> with 4 patches applied. The "~ N%" notations are the stddev percent.
-> The "[+-] N%" notations are the increase/decrease percent. The
-> brickland2, lkp-snb01, lkp-ib03 etc. are testbox names.
-> 
+Applies to next-20131219
 
-Are positive numbers always better? If so, most of these figures look good
-to me and support the series being merged. Please speak up if that is in
-error.
+Jonas Jensen (2):
+  ARM: mach-moxart: add MOXA ART SoC platform files
+  ARM: mach-moxart: add MOXA ART SoC device tree files
 
-I do see a few major regressions like this
-
->     324497 ~ 0%    -100.0%          0 ~ 0%  brickland2/micro/vm-scalability/16G-truncate
-
-but I have no idea what the test is doing and whether something happened
-that the test broke that time or if it's something to be really
-concerned about.
-
-Thanks
+ Documentation/devicetree/bindings/arm/moxart.txt |  12 ++
+ arch/arm/Kconfig                                 |   2 +
+ arch/arm/Makefile                                |   1 +
+ arch/arm/boot/dts/Makefile                       |   1 +
+ arch/arm/boot/dts/moxart-uc7112lx.dts            | 117 ++++++++++++++++++
+ arch/arm/boot/dts/moxart.dtsi                    | 148 ++++++++++++++++++++++
+ arch/arm/configs/moxart_defconfig                | 149 +++++++++++++++++++++++
+ arch/arm/mach-moxart/Kconfig                     |  31 +++++
+ arch/arm/mach-moxart/Makefile                    |   3 +
+ arch/arm/mach-moxart/moxart.c                    |  15 +++
+ 10 files changed, 479 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/moxart.txt
+ create mode 100644 arch/arm/boot/dts/moxart-uc7112lx.dts
+ create mode 100644 arch/arm/boot/dts/moxart.dtsi
+ create mode 100644 arch/arm/configs/moxart_defconfig
+ create mode 100644 arch/arm/mach-moxart/Kconfig
+ create mode 100644 arch/arm/mach-moxart/Makefile
+ create mode 100644 arch/arm/mach-moxart/moxart.c
 
 -- 
-Mel Gorman
-SUSE Labs
+1.8.2.1
+
