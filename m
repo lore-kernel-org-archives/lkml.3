@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951Ab3LSEkK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 23:40:10 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:41545 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267Ab3LSEkI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 23:40:08 -0500
+	id S1752619Ab3LSEmL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 23:42:11 -0500
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:39721 "EHLO dev.rtsoft.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750929Ab3LSEmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 23:42:10 -0500
+From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+Organization: RTsoft Software Development Center
+To: Rob Herring <robherring2@gmail.com>
+Subject: Re: commit e38c0a1f breaks powerpc boards with uli1575 chip
+Date: Thu, 19 Dec 2013 08:42:00 +0400
+User-Agent: KMail/1.9.9
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kumar Gala <galak@kernel.crashing.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        Alexey Lugovskoy <lugovskoy@dev.rtsoft.ru>,
+        Dmitry Krivoschekov <dkrivoschokov@dev.rtsoft.ru>
+References: <201312171135.38576@blacky.localdomain> <52B1EC15.5070606@gmail.com>
+In-Reply-To: <52B1EC15.5070606@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131219040738.GA10316@redhat.com>
-References: <20131219040738.GA10316@redhat.com>
-Date: Wed, 18 Dec 2013 20:40:07 -0800
-X-Google-Sender-Auth: o4_C_Y_jL7aEIHc8KT7DKpEmIes
-Message-ID: <CA+55aFwweoGs3eGWXFULcqnbRbpDhpj2qrefXB5OpQOiWW8wYA@mail.gmail.com>
-Subject: Re: bad page state in 3.13-rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@gentwo.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201312190842.02702@blacky.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 8:07 PM, Dave Jones <davej@redhat.com> wrote:
-> Just hit this while fuzzing with lots of child processes.
-> (trinity -C128)
+> Reverting would break Tegra PCIe, but you should not have to change the
+> DT either. So we need a solution.
+>
+> Is this something like this sufficient to fix it?
+>
+> diff --git a/drivers/of/address.c b/drivers/of/address.c
+> index 4b9317b..378aebd 100644
+> --- a/drivers/of/address.c
+> +++ b/drivers/of/address.c
+> @@ -74,7 +74,7 @@ static u64 of_bus_default_map(__be32 *addr, const
+> __be32 *range,
+>          * mapping doesn't specify a physical address. Rather, the
+> address * specifies an identifier that must match exactly.
+>          */
+> -       if (na > 2 && memcmp(range, addr, na * 4) != 0)
+> +       if (na > 2 && memcmp(range, addr, (na - 2) * 4) != 0)
+>                 return OF_BAD_ADDR;
+>
+>         if (da < cp || da >= (cp + s))
 
-Ok, there's a BUG_ON() in the middle, the "bad page" part is just this:
 
-> BUG: Bad page state in process trinity-c93  pfn:100499
-> page:ffffea0004012640 count:0 mapcount:0 mapping:          (null) index:0x389
-> page flags: 0x2000000000000c(referenced|uptodate)
-> Call Trace:
->  [<ffffffff816db2f5>] dump_stack+0x4e/0x7a
->  [<ffffffff816d8b05>] bad_page.part.71+0xcf/0xe8
->  [<ffffffff8113a645>] free_pages_prepare+0x185/0x190
->  [<ffffffff8113b085>] free_hot_cold_page+0x35/0x180
->  [<ffffffff811403f3>] __put_single_page+0x23/0x30
->  [<ffffffff81140665>] put_page+0x35/0x50
->  [<ffffffff811e8705>] aio_free_ring+0x55/0xf0
->  [<ffffffff811e9c5a>] SyS_io_setup+0x59a/0xbe0
->  [<ffffffff816edb24>] tracesys+0xdd/0xe2
+No, this does not help.
 
-at free_pages() time, and I don't see anything bad in the printout wrt
-the page counts of flags.
+I've dumped the actual content of 'range' and 'addr' at the failure point 
+(i.e. ar point that returns error with e38c0a1f but passes without 
+e38c0a1f ):
 
-Which makes me wonder if this is mem_cgroup_bad_page_check()
-triggering. Of course, if it's a race, it may be that by the time we
-print out the counts they all look good, even if they weren't good at
-the time we did that bad_page() *check*.
+OF: default map, cp=0, s=10000, da=70
+range:  01 00 00 00 00 00 00 00 00 00 00 00
+ addr:  00 00 00 00 00 00 00 00 00 00 00 70
 
-And the fact that we do have a concurrent BUG_ON() triggering with a
-zero page count obviously does look suspicious. Looks like a possible
-race with memory compaction happening at the same time aio_free_ring()
-frees the page.
-
-Somebody who knows the migration code needs to look at this. ChristophL?
-
-                        Linus
+Nikita
