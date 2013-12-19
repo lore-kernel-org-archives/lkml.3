@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750978Ab3LSFAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 00:00:06 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:33771 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab3LSFAE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 00:00:04 -0500
-Message-ID: <52B27D48.9030703@oracle.com>
-Date: Wed, 18 Dec 2013 23:59:52 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751227Ab3LSFHj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 00:07:39 -0500
+Received: from mga14.intel.com ([143.182.124.37]:62151 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750810Ab3LSFHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 00:07:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
+   d="scan'208";a="397788382"
+Date: Wed, 18 Dec 2013 21:12:29 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: pavel@ucw.cz, rjw@rjwysocki.net, len.brown@intel.com,
+        sarah.a.sharp@linux.intel.com, gregkh@linuxfoundation.org
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, santosh.shilimkar@ti.com
+Subject: Re: [RFC/PATCH 0/3] pm: Make SET_*_PM_OPS() macros more smart
+Message-ID: <20131219051229.GA27854@psi-dev26.jf.intel.com>
+References: <1386911905-2366-1-git-send-email-david.a.cohen@linux.intel.com>
 MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>, Bob Liu <lliubbo@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] mm/rmap: fix BUG at rmap_walk
-References: <1387424720-22826-1-git-send-email-liwanp@linux.vnet.ibm.com> <CAA_GA1dA0Yohqx9=HRUJWWcbwp==n3uY5auuB-LRMHWtKJ3QBQ@mail.gmail.com> <20131219042902.GA27512@hacker.(null)>
-In-Reply-To: <20131219042902.GA27512@hacker.(null)>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1386911905-2366-1-git-send-email-david.a.cohen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 11:29 PM, Wanpeng Li wrote:
->> PageLocked is not required by page_referenced_anon() and there is not
->> >any assertion before, commit 37f093cdf introduced this extra BUG_ON()
-> There are two callsites shrink_active_list and page_check_references()
-> of page_referenced(). shrink_active_list and its callee won't lock anonymous
-> page, however, page_check_references() is called with anonymous page
-> lock held in shrink_page_list. So page_check_references case need
-> specail handling.
+On Thu, Dec 12, 2013 at 09:18:22PM -0800, David Cohen wrote:
+> Hi,
+> 
+> These patches are proposal to extend the lack of #ifdef checks on PM callback
+> to its implementation too.
+> 
+> Currently SET_*_PM_OPS() macros make #ifdefs checks not necessary when setting
+> the callback to PM ops, but the callbacks implementation don't see same
+> benefit.
+> 
+> This RFC Solves a problem reported by Santosh on xhci-plat.c driver due to
+> wrong #ifdef checks:
+> 
+> drivers/usb/host/xhci-plat.c:201:12: warning: ‘xhci_plat_suspend’ defined but not used [-Wunused-function]
+> drivers/usb/host/xhci-plat.c:209:12: warning: ‘xhci_plat_resume’ defined but not used [-Wunused-function]
+> 
+> But instead of fixing the #ifdefs, we remove the need for it :)
 
-This explanation seems to be based on current observed behaviour.
+Ping. Comments here? :)
 
-I think it would be easier if you could point out the actual code in each
-function that requires a page to be locked, once we have that we don't have
-to care about what the callers currently do.
+Br, David
 
-
-Thanks,
-Sasha
+> 
+> Br, David Cohen
+> 
+> ---
+> David Cohen (2):
+>   pm: make PM macros more smart
+>   usb/xhci: implement proper static inline stubs when !CONFIG_PM
+> 
+> Santosh Shilimkar (1):
+>   usb/xhci-plat: remove unnecessary #ifdef checks for CONFIG_PM_SLEEP
+> 
+>  drivers/usb/host/xhci-plat.c |  7 +------
+>  drivers/usb/host/xhci.h      |  6 ++++--
+>  include/linux/pm.h           | 11 +++++++++--
+>  3 files changed, 14 insertions(+), 10 deletions(-)
+> 
+> -- 
+> 1.8.4.2
