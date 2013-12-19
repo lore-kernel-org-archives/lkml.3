@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab3LSKby (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 05:31:54 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:46581 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab3LSKbw (ORCPT
+	id S1753546Ab3LSL6W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:58:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45020 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444Ab3LSL6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 05:31:52 -0500
-Date: Thu, 19 Dec 2013 11:31:34 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
- tracing units
-Message-ID: <20131219103134.GD30183@twins.programming.kicks-ass.net>
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1386765443-26966-5-git-send-email-alexander.shishkin@linux.intel.com>
- <20131217161126.GL13532@twins.programming.kicks-ass.net>
- <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218133439.GR21999@twins.programming.kicks-ass.net>
- <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218141125.GT21999@twins.programming.kicks-ass.net>
- <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218150900.GU21999@twins.programming.kicks-ass.net>
- <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 19 Dec 2013 06:58:18 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 124/208] USB: serial: fix race in generic write
+Date: Thu, 19 Dec 2013 11:53:42 +0000
+Message-Id: <1387454106-19326-125-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 09:53:44AM +0200, Alexander Shishkin wrote:
-> Yes and some implementations of PT have the same issue, but you can do a
-> sufficiently large high order allocation and map it to userspace and
-> still no copying (or parsing/decoding) in kernel space required.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-What's sufficiently large? The largest we could possibly allocate is
-something like 4k^11 which is 8M or so. That's not all that big given
-you keep saying it generates in the order of 100 MB/s.
+------------------
 
-Also, 'some implementations', that sounds like a fail right there. Why
-are there already different implementations, and some which such stupid
-design, of something this new?
+From: Johan Hovold <jhovold@gmail.com>
 
-How about just saying NO to the ones that requires physically contiguous
-allocations?
+commit 6f6485463aada1ec6a0f3db6a03eb8e393d6bb55 upstream.
+
+Fix race in generic write implementation, which could lead to
+temporarily degraded throughput.
+
+The current generic write implementation introduced by commit
+27c7acf22047 ("USB: serial: reimplement generic fifo-based writes") has
+always had this bug, although it's fairly hard to trigger and the
+consequences are not likely to be noticed.
+
+Specifically, a write() on one CPU while the completion handler is
+running on another could result in only one of the two write urbs being
+utilised to empty the remainder of the write fifo (unless there is a
+second write() that doesn't race during that time).
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/usb/serial/generic.c | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
+
+diff --git a/drivers/usb/serial/generic.c b/drivers/usb/serial/generic.c
+index ba45170..8335b48 100644
+--- a/drivers/usb/serial/generic.c
++++ b/drivers/usb/serial/generic.c
+@@ -176,14 +176,7 @@ retry:
+ 		return result;
+ 	}
+ 
+-	/* Try sending off another urb, unless in irq context (in which case
+-	 * there will be no free urb). */
+-	if (!in_irq())
+-		goto retry;
+-
+-	clear_bit_unlock(USB_SERIAL_WRITE_BUSY, &port->flags);
+-
+-	return 0;
++	goto retry;	/* try sending off another urb */
+ }
+ 
+ /**
+-- 
+1.8.3.2
+
