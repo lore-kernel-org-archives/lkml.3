@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab3LSSIv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:08:51 -0500
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:42309 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546Ab3LSSIu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:08:50 -0500
-From: Betty Dall <betty.dall@hp.com>
-To: jcliburn@gmail.com, chris.snook@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Betty Dall <betty.dall@hp.com>
-Subject: [PATCH] Check return from pci_find_ext_capability() in atl1c_reset_pcie()
-Date: Thu, 19 Dec 2013 10:59:09 -0700
-Message-Id: <1387475949-30452-1-git-send-email-betty.dall@hp.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1755023Ab3LSSKD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:10:03 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34473 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754249Ab3LSSKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 13:10:01 -0500
+Message-ID: <52B33640.3020204@zytor.com>
+Date: Thu, 19 Dec 2013 10:09:04 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Len Brown <lenb@kernel.org>,
+        x86@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, stable@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power regression
+References: <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com> <20131219122257.GC11279@gmail.com> <52B316FF.50906@zytor.com> <20131219160210.GA28426@gmail.com> <52B31B21.6010901@zytor.com> <20131219162136.GM16438@laptop.programming.kicks-ass.net> <52B323BE.7090108@zytor.com> <20131219170741.GB30382@gmail.com>
+In-Reply-To: <20131219170741.GB30382@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function atl1c_reset_pcie() does not check the return from
-pci_find_ext_cabability() where it is getting the postion of the
-PCI_EXT_CAP_ID_ERR. It is possible for the return to be 0.
+On 12/19/2013 09:07 AM, Ingo Molnar wrote:
+> 
+> Likewise, having a barrier before the MONITOR looks sensible as well. 
+> Having it _after_ monitor looks weird and is probably wrong. [It might 
+> have been the effects of someone seeing the spurious wakeup problems 
+> with realizing the true source, or so.]
+> 
 
-Signed-off-by: Betty Dall <betty.dall@hp.com>
----
+Does anyone know the history of this barrier after the monitor?  I know
+Len is looking for a minimal patchset that can go into -stable, and it
+seems prudent to not preturb the code more than necessary, but going
+forward it would be nice to know...
 
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+	-hpa
 
 
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-index a36a760..2980175 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-@@ -145,9 +145,11 @@ static void atl1c_reset_pcie(struct atl1c_hw *hw, u32 flag)
- 	 * Mask some pcie error bits
- 	 */
- 	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ERR);
--	pci_read_config_dword(pdev, pos + PCI_ERR_UNCOR_SEVER, &data);
--	data &= ~(PCI_ERR_UNC_DLP | PCI_ERR_UNC_FCP);
--	pci_write_config_dword(pdev, pos + PCI_ERR_UNCOR_SEVER, data);
-+	if (pos) {
-+		pci_read_config_dword(pdev, pos + PCI_ERR_UNCOR_SEVER, &data);
-+		data &= ~(PCI_ERR_UNC_DLP | PCI_ERR_UNC_FCP);
-+		pci_write_config_dword(pdev, pos + PCI_ERR_UNCOR_SEVER, data);
-+	}
- 	/* clear error status */
- 	pcie_capability_write_word(pdev, PCI_EXP_DEVSTA,
- 			PCI_EXP_DEVSTA_NFED |
