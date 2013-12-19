@@ -1,109 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab3LSRav (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 12:30:51 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:54545 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754089Ab3LSR3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 12:29:13 -0500
-X-Greylist: delayed 3252 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Dec 2013 12:29:11 EST
-From: arno@natisbad.org (Arnaud Ebalard)
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Peter Huewe <peter.huewe@infineon.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Thierry Reding <treding@nvidia.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, Rob Landley <rob@landley.net>,
-        rtc-linux@googlegroups.com, Guenter Roeck <linux@roeck-us.net>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Can someone Ack and queue a patch for RTC subsytem?
-References: <87siton6ke.fsf@natisbad.org>
-	<20131219173857.0a546b99@linux.lan.towertech.it>
-X-PGP-Key-URL: http://natisbad.org/arno@natisbad.org.asc
-X-Fingerprint: D3A5 B68A 839B 38A5 815A 781B B77C 0748 A7AE 341B
-X-Hashcash: 1:20:131219:galak@codeaurora.org::QxheWfDAu3BDk59s:000000000000000000000000000000000000000000Ycg
-X-Hashcash: 1:20:131219:treding@nvidia.com::W+AXMlW1lKjRFF5L:00000000000000000000000000000000000000000000g8S
-X-Hashcash: 1:20:131219:linux-arm-kernel@lists.infradead.org::J9n3X1bJHly1alDy:00000000000000000000000000i1D
-X-Hashcash: 1:20:131219:rob@landley.net::kKkWBuJlSTjxNbBZ:0014lG
-X-Hashcash: 1:20:131219:sfr@canb.auug.org.au::uci2IYbJ0psP1tBt:000000000000000000000000000000000000000001Efz
-X-Hashcash: 1:20:131219:jgunthorpe@obsidianresearch.com::/IDGqJC3E1JhVKi+:0000000000000000000000000000001Ag5
-X-Hashcash: 1:20:131219:linux@roeck-us.net::WWzobj7hYlg6foPg:00000000000000000000000000000000000000000001GKD
-X-Hashcash: 1:20:131219:broonie@kernel.org::v1LlBh+GnNK6HR2I:00000000000000000000000000000000000000000001F+2
-X-Hashcash: 1:20:131219:grant.likely@linaro.org::8GVFM3il3DpmJ6o3:000000000000000000000000000000000000003Um/
-X-Hashcash: 1:20:131219:peter.huewe@infineon.com::crYiqkqrZ+TdmDCj:00000000000000000000000000000000000002C+M
-X-Hashcash: 1:20:131219:linux-kernel@vger.kernel.org::iVPT4VpK6a5oY8zY:0000000000000000000000000000000003zNz
-X-Hashcash: 1:20:131219:mark.rutland@arm.com::41MHfKDNX3iPm0G0:000000000000000000000000000000000000000002czu
-X-Hashcash: 1:20:131219:ijc+devicetree@hellion.org.uk::bhsO6tEUadj3j00L:000000000000000000000000000000004tSf
-X-Hashcash: 1:20:131219:akpm@linux-foundation.org::S0YTl9SeZ9nBLyfO:00000000000000000000000000000000000044x2
-X-Hashcash: 1:20:131219:linus.walleij@linaro.org::kBp9srUn0Nw2psYd:00000000000000000000000000000000000005XNx
-X-Hashcash: 1:20:131219:pawel.moll@arm.com::PvBPeIfFwUmi31Zo:00000000000000000000000000000000000000000008WXn
-X-Hashcash: 1:20:131219:jason@lakedaemon.net::RWrm9YqkS8zqhSop:0000000000000000000000000000000000000000073V5
-X-Hashcash: 1:20:131219:swarren@wwwdotorg.org::4jFEO3JJYhFBp8Qm:00000000000000000000000000000000000000008jYI
-X-Hashcash: 1:20:131219:a.zummo@towertech.it::QW6e8v7GHs5DbjK9:000000000000000000000000000000000000000008CE4
-X-Hashcash: 1:20:131219:rtc-linux@googlegroups.com::CCbXX25jgTVfQzXl:00000000000000000000000000000000000A0Z+
-X-Hashcash: 1:20:131219:rob.herring@calxeda.com::eY/yt8+bUlcSPZ+z:00000000000000000000000000000000000000Ay2x
-Date: Thu, 19 Dec 2013 18:28:16 +0100
-In-Reply-To: <20131219173857.0a546b99@linux.lan.towertech.it> (Alessandro
-	Zummo's message of "Thu, 19 Dec 2013 17:38:57 +0100")
-Message-ID: <87d2kslphr.fsf@natisbad.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753552Ab3LSReh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 12:34:37 -0500
+Received: from smtprelay0012.hostedemail.com ([216.40.44.12]:36820 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751682Ab3LSRef (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 12:34:35 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:800:960:967:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3770:3865:3867:3871:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6691:7652:8985:9025:9388:10004:10049:10400:10848:11232:11658:11914:12043:12517:12519:12663:12740:13069:13160:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: start94_44f99eea3345d
+X-Filterd-Recvd-Size: 1442
+Message-ID: <1387474472.2353.10.camel@joe-AO722>
+Subject: Re: Lindent formatting issues
+From: Joe Perches <joe@perches.com>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 19 Dec 2013 09:34:32 -0800
+In-Reply-To: <CAOMwXhPceCtCRvD8i7VO=QOuDX=M0gQuERwTConkrF9ohPfs=g@mail.gmail.com>
+References: <CAOMwXhPPN2h2boAOn1=BaHuWa+9nYw=oe1u1bYHtHGyad9Kw8A@mail.gmail.com>
+	 <1387310726.8859.5.camel@joe-AO722>
+	 <CAOMwXhNVJ8HPCe6t=VkCthEiOqNtOczz5Xqy_ciM7rsqWRVOYw@mail.gmail.com>
+	 <1387470731.2353.7.camel@joe-AO722>
+	 <CAOMwXhPceCtCRvD8i7VO=QOuDX=M0gQuERwTConkrF9ohPfs=g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2013-12-19 at 17:30 +0000, Laszlo Papp wrote:
+> On Thu, Dec 19, 2013 at 4:32 PM, Joe Perches <joe@perches.com> wrote:
 
-Alessandro Zummo <a.zummo@towertech.it> writes:
+> > Is this change from Lindent or checkpatch?
+> 
+> I have used Lindent when these lines were generated. Here is some more:
 
-> On Thu, 19 Dec 2013 17:34:09 +0100
-> arno@natisbad.org (Arnaud Ebalard) wrote:
->
->> I never heard of *listed* RTC maintainer during all the review process
->> on rtc-linux list (v0 sent in october); I dug the list archives and when
->> this previously happened, someone else (e.g. Andrew Morton) was kind
->> enough to handle the patches:
->
->  Yes, Andrew usually pick those. 
+I am not a Lindent / indent maintainer.
 
-I guess he should be put in the MAINTAINERS file then. Otherwise,
-get_maintainer.pl script can not do its job correctly and people
-end up thinking you should be the one handling those.
+My suggestion remains not to use Lindent.
+
+I _have_ suggested that Lindent be removed from the kernel.
+
+http://lkml.org/lkml/2013/2/11/390
 
 
-> I do not maintain a separate tree due to most RTCs being specifit to a
-> subsytem. 
-
-I do not understand: the chip is generic, i.e. this is not a RTC chip
-specific to a given SoC (like rtc-mv.c is for instance). Can you be
-more specific?
-
-
->>   http://www.spinics.net/lists/arm-kernel/msg292187.html
->
->  Regarding your patch, please do not add entries to /proc.
->  Use sysfs if you need.
-
-Well, this is what is currently described in the documentation
-(Documentation/rtc.txt), in drivers/rtc/rtc-test.c driver and what
-many drivers do (AFAICT, 22/125).
-
-Additionally, I only provide some additional info for an existing
-file: the /proc entry is created by the drivers/rtc/class.c as
-soon as someone selects CONFIG_RTC_INTF_PROC.
-
-Do you want me to send a v7 w/ the .proc helper removed or leave
-things as they are and Ack the patch as is?
-
-Cheers,
-
-a+
