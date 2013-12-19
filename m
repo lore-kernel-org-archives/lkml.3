@@ -1,72 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756482Ab3LSXOH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 18:14:07 -0500
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:54276 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754699Ab3LSXOF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 18:14:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <1387478746-5436-5-git-send-email-davidlohr@hp.com>
-References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
-	<1387478746-5436-5-git-send-email-davidlohr@hp.com>
-Date: Thu, 19 Dec 2013 15:14:01 -0800
-X-Google-Sender-Auth: GZTltnMrTIewtVZCC2nRSQj6Ep0
-Message-ID: <CA+55aFxY_sMes2=0tz0qTKH5-fpAaLji_xd9CdU-u2JxxNN6pA@mail.gmail.com>
-Subject: Re: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
-        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Tom Vaden <tom.vaden@hp.com>, "Norton, Scott J" <scott.norton@hp.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+	id S1756618Ab3LSXUC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 18:20:02 -0500
+Received: from mga09.intel.com ([134.134.136.24]:58349 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754699Ab3LSXUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 18:20:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,516,1384329600"; 
+   d="scan'208";a="455155607"
+Message-ID: <1387495199.3510.38.camel@dvhart-mobl4.amr.corp.intel.com>
+Subject: Re: [PATCH v4 3/4] futex: Document ordering guarantees
+From: Darren Hart <dvhart@linux.intel.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        paulmck@linux.vnet.ibm.com, efault@gmx.de, jeffm@suse.com,
+        torvalds@linux-foundation.org, jason.low2@hp.com, Waiman.Long@hp.com,
+        tom.vaden@hp.com, scott.norton@hp.com, aswin@hp.com,
         Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Date: Thu, 19 Dec 2013 15:19:59 -0800
+In-Reply-To: <52B37BAA.60200@infradead.org>
+References: <1387485950-7320-1-git-send-email-davidlohr@hp.com>
+		 <1387485950-7320-4-git-send-email-davidlohr@hp.com>
+		 <52B35C64.3050504@infradead.org>
+		 <1387486823.5494.5.camel@buesod1.americas.hpqcorp.net>
+	 <1387487274.3510.18.camel@dvhart-mobl4.amr.corp.intel.com>
+	 <52B37BAA.60200@infradead.org>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 10:45 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
->
-> - increment the counter at queue_lock() as we always end up calling
->   queue_me() which adds the element to the list. Upon any error,
->   queue_unlock() is called for housekeeping, for which we decrement
->   to mach the increment done in queue_lock().
->
-> - decrement the counter at __unqueue_me() to reflect when an element is
->   removed from the queue for wakeup related purposes.
+On Thu, 2013-12-19 at 15:05 -0800, Randy Dunlap wrote:
+> On 12/19/13 13:07, Darren Hart wrote:
+> > On Thu, 2013-12-19 at 13:00 -0800, Davidlohr Bueso wrote:
+> >> On Thu, 2013-12-19 at 12:51 -0800, Randy Dunlap wrote:
+> >>> On 12/19/13 12:45, Davidlohr Bueso wrote:
+> >>>> From: Thomas Gleixner <tglx@linutronix.de>
+> >>>>
+> >>>> That's essential, if you want to hack on futexes.
+> >>>>
+> >>>> Cc: Ingo Molnar <mingo@kernel.org>
+> >>>> Cc: Darren Hart <dvhart@linux.intel.com>
+> >>>> Acked-by: Peter Zijlstra <peterz@infradead.org>
+> >>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+> >>>> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >>>> Cc: Mike Galbraith <efault@gmx.de>
+> >>>> Cc: Jeff Mahoney <jeffm@suse.com>
+> >>>> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> >>>> Cc: Scott Norton <scott.norton@hp.com>
+> >>>> Cc: Tom Vaden <tom.vaden@hp.com>
+> >>>> Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+> >>>> Cc: Waiman Long <Waiman.Long@hp.com>
+> >>>> Cc: Jason Low <jason.low2@hp.com>
+> >>>> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> >>>> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> >>>> ---
+> >>>>  kernel/futex.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >>>>  1 file changed, 57 insertions(+)
+> >>>>
+> >>>> diff --git a/kernel/futex.c b/kernel/futex.c
+> >>>> index 577481d..af1fc31 100644
+> >>>> --- a/kernel/futex.c
+> >>>> +++ b/kernel/futex.c
+> >>>> @@ -69,6 +69,63 @@
+> >>>>  
+> >>>>  #include "locking/rtmutex_common.h"
+> >>>>  
+> >>>> +/*
+> >>>> + * Basic futex operation and ordering guarantees:
+> >>>> + *
+> >>>> + * The waiter reads the futex value in user space and calls
+> >>>> + * futex_wait(). It computes the hash bucket and acquires the hash
+> >>>
+> >>> does                It
+> >>> refer to "the waiter" or to futex_wait()?
+> >>> I read it as referring to the waiter, but ISTM that the comments are using It
+> >>> to refer to futex_wait()... ???
+> >>>
+> >>
+> >> Yes, it refers to futex_wait(), which IMO in a futex context is pretty
+> >> clear.
+> > 
+> > 
+> > Agreed.
+> > 
+> > 
+> 
+> I'll just have to get by with disagreeing with both of you then.
+> I say that the pronoun's antecedent is ambiguous (unclear).
+> 
 
-I still hate this whole separate counter thing. It seems really annoying.
+You are correct from a purely grammatical perspective, no argument
+there. I just feel that the comment is clear enough from the context -
+although perhaps people that hack on futexes should be excluded from
+having an opinion here as we are biased :-)
 
-If re-ordering things didn't work out, then why can't just the counter
-we *already* have in the spinlock itself work as the counter? Your
-counter update logic seems to basically match when you take the
-spinlock anyway.
+If Davidlohr is going to resubmit for other reasons, then by all means,
+please correct this per Randy's suggestion - I just didn't want to put
+him (Davidlohr ;-) through another round of patches for this alone.
 
-The *testing* side doesn't actually care about how many waiters there
-are, it only cares about whether there are waiters. And it can look at
-the wait-list for that - but you want to close the race between the
-entry actually getting added to the list using this counter. But the
-place you increment the new counter is the same place as you take the
-spinlock, which does that ticket increment. No?
+Thanks for ensuring our docs are as clear as possible Randy!
 
-So I still think this can be done without that new counter field, or
-any new atomics.
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
 
-hb_waiters_pending() could be something like
 
-    spin_contended(hb->lock) || !list_empty(&hb->chain)
-
-which considering where you increment the new count should be
-equivalent to your "!!hb->waiters". The smp_mb_after_atomic_inc()" on
-the spinlock side would become smp_mb_after_spin_lock() instead.
-
-Yes? No? Why?
-
-            Linus
