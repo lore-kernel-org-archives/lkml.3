@@ -1,282 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab3LSNGv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:06:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44467 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794Ab3LSLzr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:55:47 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 021/208] inet: prevent leakage of uninitialized memory to user in recv syscalls
-Date: Thu, 19 Dec 2013 11:51:59 +0000
-Message-Id: <1387454106-19326-22-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1756328Ab3LSNoq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:44:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10767 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753546Ab3LSNmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 08:42:32 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 4/9] tools lib traceevent: Use global QUIET_CC build output
+Date: Thu, 19 Dec 2013 14:42:02 +0100
+Message-Id: <1387460527-15030-5-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
+References: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+Using global QUIET_CC build output variable and getting
+rid of local print_compile.
 
-------------------
-
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-
-commit bceaa90240b6019ed73b49965eac7d167610be69 upstream.
-
-Only update *addr_len when we actually fill in sockaddr, otherwise we
-can return uninitialized memory from the stack to the caller in the
-recvfrom, recvmmsg and recvmsg syscalls. Drop the the (addr_len == NULL)
-checks because we only get called with a valid addr_len pointer either
-from sock_common_recvmsg or inet_recvmsg.
-
-If a blocking read waits on a socket which is concurrently shut down we
-now return zero and set msg_msgnamelen to 0.
-
-Reported-by: mpb <mpb.mail@gmail.com>
-Suggested-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Ahern <dsahern@gmail.com>
 ---
- net/ieee802154/dgram.c |  3 +--
- net/ipv4/ping.c        | 19 +++++++------------
- net/ipv4/raw.c         |  4 +---
- net/ipv4/udp.c         |  7 +------
- net/ipv6/raw.c         |  4 +---
- net/ipv6/udp.c         |  5 +----
- net/l2tp/l2tp_ip.c     |  4 +---
- net/phonet/datagram.c  |  9 ++++-----
- 8 files changed, 17 insertions(+), 38 deletions(-)
+ tools/lib/traceevent/Makefile | 13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
-diff --git a/net/ieee802154/dgram.c b/net/ieee802154/dgram.c
-index 581a595..1865fdf 100644
---- a/net/ieee802154/dgram.c
-+++ b/net/ieee802154/dgram.c
-@@ -315,9 +315,8 @@ static int dgram_recvmsg(struct kiocb *iocb, struct sock *sk,
- 	if (saddr) {
- 		saddr->family = AF_IEEE802154;
- 		saddr->addr = mac_cb(skb)->sa;
--	}
--	if (addr_len)
- 		*addr_len = sizeof(*saddr);
-+	}
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 022c987..e852a8d 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -67,6 +67,8 @@ PLUGIN_DIR = -DPLUGIN_DIR="$(DESTDIR)/$(plugin_dir)"
+ PLUGIN_DIR_SQ = '$(subst ','\'',$(PLUGIN_DIR))'
+ endif
  
- 	if (flags & MSG_TRUNC)
- 		copied = skb->len;
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-index 746427c..8bdf040 100644
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -827,8 +827,6 @@ int ping_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- {
- 	struct inet_sock *isk = inet_sk(sk);
- 	int family = sk->sk_family;
--	struct sockaddr_in *sin;
--	struct sockaddr_in6 *sin6;
- 	struct sk_buff *skb;
- 	int copied, err;
- 
-@@ -838,13 +836,6 @@ int ping_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 	if (flags & MSG_OOB)
- 		goto out;
- 
--	if (addr_len) {
--		if (family == AF_INET)
--			*addr_len = sizeof(*sin);
--		else if (family == AF_INET6 && addr_len)
--			*addr_len = sizeof(*sin6);
--	}
--
- 	if (flags & MSG_ERRQUEUE) {
- 		if (family == AF_INET) {
- 			return ip_recv_error(sk, msg, len);
-@@ -874,11 +865,13 @@ int ping_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 
- 	/* Copy the address and add cmsg data. */
- 	if (family == AF_INET) {
--		sin = (struct sockaddr_in *) msg->msg_name;
-+		struct sockaddr_in *sin = (struct sockaddr_in *)msg->msg_name;
++include $(if $(BUILD_SRC),$(BUILD_SRC)/)../../scripts/Makefile.include
 +
- 		sin->sin_family = AF_INET;
- 		sin->sin_port = 0 /* skb->h.uh->source */;
- 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
- 		memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
-+		*addr_len = sizeof(*sin);
+ # copy a bit from Linux kbuild
  
- 		if (isk->cmsg_flags)
- 			ip_cmsg_recv(msg, skb);
-@@ -887,17 +880,19 @@ int ping_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 	} else if (family == AF_INET6) {
- 		struct ipv6_pinfo *np = inet6_sk(sk);
- 		struct ipv6hdr *ip6 = ipv6_hdr(skb);
--		sin6 = (struct sockaddr_in6 *) msg->msg_name;
-+		struct sockaddr_in6 *sin6 =
-+			(struct sockaddr_in6 *)msg->msg_name;
-+
- 		sin6->sin6_family = AF_INET6;
- 		sin6->sin6_port = 0;
- 		sin6->sin6_addr = ip6->saddr;
--
- 		sin6->sin6_flowinfo = 0;
- 		if (np->sndflow)
- 			sin6->sin6_flowinfo = ip6_flowinfo(ip6);
+ ifeq ("$(origin V)", "command line")
+@@ -150,7 +152,6 @@ override CFLAGS += $(udis86-flags) -D_GNU_SOURCE
  
- 		sin6->sin6_scope_id = ipv6_iface_scope_id(&sin6->sin6_addr,
- 							  IP6CB(skb)->iif);
-+		*addr_len = sizeof(*sin6);
+ ifeq ($(VERBOSE),1)
+   Q =
+-  print_compile =
+   print_fpic_compile =
+   print_shared_lib_compile =
+   print_plugin_obj_compile =
+@@ -158,7 +159,6 @@ ifeq ($(VERBOSE),1)
+   print_install =
+ else
+   Q = @
+-  print_compile =		echo '  CC       '$(OBJ);
+   print_fpic_compile =		echo '  CC FPIC  '$(OBJ);
+   print_shared_lib_compile =	echo '  BUILD    SHARED LIB '$(OBJ);
+   print_plugin_obj_compile =	echo '  CC FPIC  '$(OBJ);
+@@ -188,16 +188,13 @@ do_build_static_lib =				\
+ 	$(RM) $@;  $(AR) rcs $@ $^)
  
- 		if (inet6_sk(sk)->rxopt.all)
- 			pingv6_ops.ip6_datagram_recv_ctl(sk, msg, skb);
-diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
-index 6fb2337..448e5a7 100644
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -692,9 +692,6 @@ static int raw_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 	if (flags & MSG_OOB)
- 		goto out;
  
--	if (addr_len)
--		*addr_len = sizeof(*sin);
--
- 	if (flags & MSG_ERRQUEUE) {
- 		err = ip_recv_error(sk, msg, len);
- 		goto out;
-@@ -722,6 +719,7 @@ static int raw_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
- 		sin->sin_port = 0;
- 		memset(&sin->sin_zero, 0, sizeof(sin->sin_zero));
-+		*addr_len = sizeof(*sin);
- 	}
- 	if (inet->cmsg_flags)
- 		ip_cmsg_recv(msg, skb);
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index 766e6ba..c69955f 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1208,12 +1208,6 @@ int udp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 	int is_udplite = IS_UDPLITE(sk);
- 	bool slow;
+-define do_compile
+-	$(print_compile)						\
+-	$(CC) -c $(CFLAGS) $(EXT) $< -o $(obj)/$@;
+-endef
++do_compile = $(QUIET_CC)$(CC) -c $(CFLAGS) $(EXT) $< -o $(obj)/$@;
  
--	/*
--	 *	Check any passed addresses
--	 */
--	if (addr_len)
--		*addr_len = sizeof(*sin);
--
- 	if (flags & MSG_ERRQUEUE)
- 		return ip_recv_error(sk, msg, len);
+ $(obj)/%.o: $(src)/%.c
+-	$(Q)$(call do_compile)
++	$(call do_compile)
  
-@@ -1275,6 +1269,7 @@ try_again:
- 		sin->sin_port = udp_hdr(skb)->source;
- 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
- 		memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
-+		*addr_len = sizeof(*sin);
- 	}
- 	if (inet->cmsg_flags)
- 		ip_cmsg_recv(msg, skb);
-diff --git a/net/ipv6/raw.c b/net/ipv6/raw.c
-index cdaed47..8aa1b31 100644
---- a/net/ipv6/raw.c
-+++ b/net/ipv6/raw.c
-@@ -459,9 +459,6 @@ static int rawv6_recvmsg(struct kiocb *iocb, struct sock *sk,
- 	if (flags & MSG_OOB)
- 		return -EOPNOTSUPP;
+ %.o: $(src)/%.c
+-	$(Q)$(call do_compile)
++	$(call do_compile)
  
--	if (addr_len)
--		*addr_len=sizeof(*sin6);
--
- 	if (flags & MSG_ERRQUEUE)
- 		return ipv6_recv_error(sk, msg, len);
- 
-@@ -500,6 +497,7 @@ static int rawv6_recvmsg(struct kiocb *iocb, struct sock *sk,
- 		sin6->sin6_flowinfo = 0;
- 		sin6->sin6_scope_id = ipv6_iface_scope_id(&sin6->sin6_addr,
- 							  IP6CB(skb)->iif);
-+		*addr_len = sizeof(*sin6);
- 	}
- 
- 	sock_recv_ts_and_drops(msg, sk, skb);
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index f405815..a483286 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -374,9 +374,6 @@ int udpv6_recvmsg(struct kiocb *iocb, struct sock *sk,
- 	int is_udp4;
- 	bool slow;
- 
--	if (addr_len)
--		*addr_len = sizeof(struct sockaddr_in6);
--
- 	if (flags & MSG_ERRQUEUE)
- 		return ipv6_recv_error(sk, msg, len);
- 
-@@ -462,7 +459,7 @@ try_again:
- 				ipv6_iface_scope_id(&sin6->sin6_addr,
- 						    IP6CB(skb)->iif);
- 		}
--
-+		*addr_len = sizeof(*sin6);
- 	}
- 	if (is_udp4) {
- 		if (inet->cmsg_flags)
-diff --git a/net/l2tp/l2tp_ip.c b/net/l2tp/l2tp_ip.c
-index 571db8d..da1a1ce 100644
---- a/net/l2tp/l2tp_ip.c
-+++ b/net/l2tp/l2tp_ip.c
-@@ -518,9 +518,6 @@ static int l2tp_ip_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *m
- 	if (flags & MSG_OOB)
- 		goto out;
- 
--	if (addr_len)
--		*addr_len = sizeof(*sin);
--
- 	skb = skb_recv_datagram(sk, flags, noblock, &err);
- 	if (!skb)
- 		goto out;
-@@ -543,6 +540,7 @@ static int l2tp_ip_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *m
- 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
- 		sin->sin_port = 0;
- 		memset(&sin->sin_zero, 0, sizeof(sin->sin_zero));
-+		*addr_len = sizeof(*sin);
- 	}
- 	if (inet->cmsg_flags)
- 		ip_cmsg_recv(msg, skb);
-diff --git a/net/phonet/datagram.c b/net/phonet/datagram.c
-index 12c30f3..38946b2 100644
---- a/net/phonet/datagram.c
-+++ b/net/phonet/datagram.c
-@@ -139,9 +139,6 @@ static int pn_recvmsg(struct kiocb *iocb, struct sock *sk,
- 			MSG_CMSG_COMPAT))
- 		goto out_nofree;
- 
--	if (addr_len)
--		*addr_len = sizeof(sa);
--
- 	skb = skb_recv_datagram(sk, flags, noblock, &rval);
- 	if (skb == NULL)
- 		goto out_nofree;
-@@ -162,8 +159,10 @@ static int pn_recvmsg(struct kiocb *iocb, struct sock *sk,
- 
- 	rval = (flags & MSG_TRUNC) ? skb->len : copylen;
- 
--	if (msg->msg_name != NULL)
--		memcpy(msg->msg_name, &sa, sizeof(struct sockaddr_pn));
-+	if (msg->msg_name != NULL) {
-+		memcpy(msg->msg_name, &sa, sizeof(sa));
-+		*addr_len = sizeof(sa);
-+	}
- 
- out:
- 	skb_free_datagram(sk, skb);
+ PEVENT_LIB_OBJS  = event-parse.o
+ PEVENT_LIB_OBJS += event-plugin.o
 -- 
-1.8.3.2
+1.8.3.1
 
