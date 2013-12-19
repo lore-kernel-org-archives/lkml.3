@@ -1,138 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab3LSMqr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:46:47 -0500
-Received: from mga14.intel.com ([143.182.124.37]:49109 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042Ab3LSMqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:46:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="397864166"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Lv Zheng <lv.zheng@intel.com>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chen Gong <gong.chen@linux.intel.com>
-Subject: [Patch v2 02/13] ACPI, extlog: replace open-coded _DSM specific code with helper functions
-Date: Thu, 19 Dec 2013 20:47:46 +0800
-Message-Id: <1387457266-4854-1-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752204Ab3LSK7A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 05:59:00 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:32913 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394Ab3LSK66 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 05:58:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAEgOgz4sxg6khQwKtj5owPrm_Jsz+i-bV9-u7Wh9U_YBWvNtmw@mail.gmail.com>
+References: <1387371526-15309-1-git-send-email-jonas.jensen@gmail.com>
+	<1387371526-15309-3-git-send-email-jonas.jensen@gmail.com>
+	<CAEgOgz4sxg6khQwKtj5owPrm_Jsz+i-bV9-u7Wh9U_YBWvNtmw@mail.gmail.com>
+Date: Thu, 19 Dec 2013 11:58:57 +0100
+Message-ID: <CACmBeS2WaRDwvq=WvDgK_eodw90AGbjK3+OiV6Ts03d5h4wtCg@mail.gmail.com>
+Subject: Re: [PATCH v6 2/2] ARM: mach-moxart: add MOXA ART SoC device tree files
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        "linux@roeck-us.net" <linux@roeck-us.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use helper functions to simplify _DSM related code in acpi_extlog driver.
-Also mark initialization data and functions with __init and __initdata
-to reduce memory footprint.
+On 19 December 2013 00:41, Peter Crosthwaite
+<peter.crosthwaite@xilinx.com> wrote:
+>> +       clocks {
+>> +               #address-cells = <1>;
+>> +               #size-cells = <0>;
+>> +
+>> +               ref12: ref12M {
+>> +                       compatible = "fixed-clock";
+>
+> Is the correct split to perhaps have the fixed-clock node in dtsi as
+> you have here but ...
+>
+>> +                       #clock-cells = <0>;
+>> +                       clock-frequency = <12000000>;
+>
+> The board is responsible for the frequency?
+>
+> I guess in this schema,
+>
+> 1. the "fixed-clock" node corresponds to the existence of clock input
+> pins on the SoC level - hence the node is DTSI.
+> 2. setting the clock-frequency corresponds to populatation of those
+> input pins with a soldered crystal - hence done in DTS
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Chen Gong <gong.chen@linux.intel.com>
----
- drivers/acpi/acpi_extlog.c |   61 +++++++++-----------------------------------
- 1 file changed, 12 insertions(+), 49 deletions(-)
+Yes, the soldered crystal belongs to board. Changes in v7 should reflect that.
 
-diff --git a/drivers/acpi/acpi_extlog.c b/drivers/acpi/acpi_extlog.c
-index a6869e1..928c4db 100644
---- a/drivers/acpi/acpi_extlog.c
-+++ b/drivers/acpi/acpi_extlog.c
-@@ -20,11 +20,9 @@
- #define EXT_ELOG_ENTRY_MASK	GENMASK_ULL(51, 0) /* elog entry address mask */
- 
- #define EXTLOG_DSM_REV		0x0
--#define	EXTLOG_FN_QUERY		0x0
- #define	EXTLOG_FN_ADDR		0x1
- 
- #define FLAG_OS_OPTIN		BIT(0)
--#define EXTLOG_QUERY_L1_EXIST	BIT(1)
- #define ELOG_ENTRY_VALID	(1ULL<<63)
- #define ELOG_ENTRY_LEN		0x1000
- 
-@@ -43,7 +41,7 @@ struct extlog_l1_head {
- 	u8  rev1[12];
- };
- 
--static u8 extlog_dsm_uuid[] = "663E35AF-CC10-41A4-88EA-5470AF055295";
-+static u8 extlog_dsm_uuid[] __initdata = "663E35AF-CC10-41A4-88EA-5470AF055295";
- 
- /* L1 table related physical address */
- static u64 elog_base;
-@@ -153,62 +151,27 @@ static int extlog_print(struct notifier_block *nb, unsigned long val,
- 	return NOTIFY_DONE;
- }
- 
--static int extlog_get_dsm(acpi_handle handle, int rev, int func, u64 *ret)
-+static bool __init extlog_get_l1addr(void)
- {
--	struct acpi_buffer buf = {ACPI_ALLOCATE_BUFFER, NULL};
--	struct acpi_object_list input;
--	union acpi_object params[4], *obj;
- 	u8 uuid[16];
--	int i;
-+	acpi_handle handle;
-+	union acpi_object *obj;
- 
- 	acpi_str_to_uuid(extlog_dsm_uuid, uuid);
--	input.count = 4;
--	input.pointer = params;
--	params[0].type = ACPI_TYPE_BUFFER;
--	params[0].buffer.length = 16;
--	params[0].buffer.pointer = uuid;
--	params[1].type = ACPI_TYPE_INTEGER;
--	params[1].integer.value = rev;
--	params[2].type = ACPI_TYPE_INTEGER;
--	params[2].integer.value = func;
--	params[3].type = ACPI_TYPE_PACKAGE;
--	params[3].package.count = 0;
--	params[3].package.elements = NULL;
--
--	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_DSM", &input, &buf)))
--		return -1;
--
--	*ret = 0;
--	obj = (union acpi_object *)buf.pointer;
--	if (obj->type == ACPI_TYPE_INTEGER) {
--		*ret = obj->integer.value;
--	} else if (obj->type == ACPI_TYPE_BUFFER) {
--		if (obj->buffer.length <= 8) {
--			for (i = 0; i < obj->buffer.length; i++)
--				*ret |= (obj->buffer.pointer[i] << (i * 8));
--		}
--	}
--	kfree(buf.pointer);
--
--	return 0;
--}
--
--static bool extlog_get_l1addr(void)
--{
--	acpi_handle handle;
--	u64 ret;
- 
- 	if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle)))
- 		return false;
--
--	if (extlog_get_dsm(handle, EXTLOG_DSM_REV, EXTLOG_FN_QUERY, &ret) ||
--	    !(ret & EXTLOG_QUERY_L1_EXIST))
-+	if (!acpi_check_dsm(handle, uuid, EXTLOG_DSM_REV, 1 << EXTLOG_FN_ADDR))
- 		return false;
--
--	if (extlog_get_dsm(handle, EXTLOG_DSM_REV, EXTLOG_FN_ADDR, &ret))
-+	obj = acpi_evaluate_dsm_typed(handle, uuid, EXTLOG_DSM_REV,
-+				      EXTLOG_FN_ADDR, NULL, ACPI_TYPE_INTEGER);
-+	if (!obj) {
- 		return false;
-+	} else {
-+		l1_dirbase = obj->integer.value;
-+		ACPI_FREE(obj);
-+	}
- 
--	l1_dirbase = ret;
- 	/* Spec says L1 directory must be 4K aligned, bail out if it isn't */
- 	if (l1_dirbase & ((1 << 12) - 1)) {
- 		pr_warn(FW_BUG "L1 Directory is invalid at physical %llx\n",
--- 
-1.7.10.4
+I tried to doing what you said above, it didn't quite work, I got the
+same error from of_clk_get() / of_clk_get_by_name(), but came up with
+another solution please have a look at v7.
 
+Thanks,
+Jonas
