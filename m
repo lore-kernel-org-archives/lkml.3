@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862Ab3LSA3A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 19:29:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37999 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793Ab3LSA27 (ORCPT
+	id S1752453Ab3LSAeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 19:34:31 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:38707 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131Ab3LSAe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 19:28:59 -0500
-Date: Wed, 18 Dec 2013 16:28:58 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/rmap: fix BUG at rmap_walk
-Message-Id: <20131218162858.6ec808c067baf4644532e110@linux-foundation.org>
-In-Reply-To: <1387412195-26498-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1387412195-26498-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Dec 2013 19:34:29 -0500
+Date: Wed, 18 Dec 2013 16:34:25 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Peter Hutterer <peter.hutterer@who-t.net>
+Cc: David Herrmann <dh.herrmann@gmail.com>, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        linux-kernel@vger.kernel.org, input-tools@lists.freedesktop.org
+Subject: Re: [PATCH 2/4] Input: introduce ABS_MAX2/CNT2 and friends
+Message-ID: <20131219003425.GB838@core.coreip.homeip.net>
+References: <1387295334-1744-1-git-send-email-dh.herrmann@gmail.com>
+ <1387295334-1744-3-git-send-email-dh.herrmann@gmail.com>
+ <20131218234009.GA9360@yabbi.redhat.com>
+ <1950536.BXYYX85NB4@dtor-d630.eng.vmware.com>
+ <20131218235504.GA17958@yabbi.redhat.com>
+ <20131219000537.GA838@core.coreip.homeip.net>
+ <20131219002542.GB6315@yabbi.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131219002542.GB6315@yabbi.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Dec 2013 08:16:35 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
-
-> page_get_anon_vma() called in page_referenced_anon() will lock and 
-> increase the refcount of anon_vma, page won't be locked for anonymous 
-> page. This patch fix it by skip check anonymous page locked.
+On Thu, Dec 19, 2013 at 10:25:42AM +1000, Peter Hutterer wrote:
+> On Wed, Dec 18, 2013 at 04:05:37PM -0800, Dmitry Torokhov wrote:
+> > On Thu, Dec 19, 2013 at 09:55:04AM +1000, Peter Hutterer wrote:
+> > > On Wed, Dec 18, 2013 at 03:48:37PM -0800, Dmitry Torokhov wrote:
+> > > > On Thursday, December 19, 2013 09:40:09 AM Peter Hutterer wrote:
+> > > > > > +     memset(&abs, 0, sizeof(abs));
+> > > > > > +     for (i = valid_cnt; i < cnt; ++i)
+> > > > > > +             if (copy_to_user(&pinfo->info[i], &abs, sizeof(abs)))
+> > > > > > +                     return -EFAULT;
+> > > > > > +
+> > > > > > +     return 0;
+> > > > > 
+> > > > > why don't you return the number of valid copied axes to the user?
+> > > > > that seems better even than forcing the remainder to 0.
+> > > > 
+> > > > Well, if your program messed up buffers that it faulted we do not know
+> > > > for sure if data that did not cause fault ended up where it should have
+> > > > or if it smashed something else. This condition I think should be
+> > > > signaled early.
+> > > 
+> > > not 100% sure I understand but I wasn't proposing to remove the -EFAULT, i
+> > > was proposing to replace "return 0" with "return valid_cnt".
+> > 
+> > I understand what you were saying. Now consider: your program supplied
+> > buffer that is actually smaller than what it said to the kernel.
+> > Depending on the exact placement we may or may not fault when we get
+> > pass the buffer boundary, most likely not. We are likely to fault when
+> > we go way past the buffer boundary and wracked process' memory. If we
+> > return -EFAULT the program will at least notice that something wrong. If
+> > we return count it will try to resubmit the remainder of operation and
+> > not even know that there was something very bad happening.
+> > 
+> > IOW we should not treat fault condition as other partial read/write
+> > conditions.
 > 
-> [  588.698828] kernel BUG at mm/rmap.c:1663!
+> I'm still not sure we're talking about the same thing :)
 
-Why is all this suddenly happening.  Did we change something, or did a
-new test get added to trinity?
+Hmm, it appears you are right ;)
 
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -1660,7 +1660,8 @@ done:
->  
->  int rmap_walk(struct page *page, struct rmap_walk_control *rwc)
->  {
-> -	VM_BUG_ON(!PageLocked(page));
-> +	if (!PageAnon(page) || PageKsm(page))
-> +		VM_BUG_ON(!PageLocked(page));
->  
->  	if (unlikely(PageKsm(page)))
->  		return rmap_walk_ksm(page, rwc);
+> let me rephrase: why can't we use the behaviour bits_to_user() provides?
+> it limits the output to maxlen and returns that value (or -EFAULT), it's
+> only a small step from that to limit the output to min(maxbit, ABS_CNT2).
 
-Is there any reason why rmap_walk_ksm() and rmap_walk_file() *need*
-PageLocked() whereas rmap_walk_anon() does not?  If so, let's implement
-it like this:
+OK, makes sense.
 
-
---- a/mm/rmap.c~a
-+++ a/mm/rmap.c
-@@ -1716,6 +1716,10 @@ static int rmap_walk_file(struct page *p
- 	struct vm_area_struct *vma;
- 	int ret = SWAP_AGAIN;
- 
-+	/*
-+	 * page must be locked because <reason goes here>
-+	 */
-+	VM_BUG_ON(!PageLocked(page));
- 	if (!mapping)
- 		return ret;
- 	mutex_lock(&mapping->i_mmap_mutex);
-@@ -1737,8 +1741,6 @@ static int rmap_walk_file(struct page *p
- int rmap_walk(struct page *page, int (*rmap_one)(struct page *,
- 		struct vm_area_struct *, unsigned long, void *), void *arg)
- {
--	VM_BUG_ON(!PageLocked(page));
--
- 	if (unlikely(PageKsm(page)))
- 		return rmap_walk_ksm(page, rmap_one, arg);
- 	else if (PageAnon(page))
---- a/mm/ksm.c~a
-+++ a/mm/ksm.c
-@@ -2006,6 +2006,9 @@ int rmap_walk_ksm(struct page *page, int
- 	int search_new_forks = 0;
- 
- 	VM_BUG_ON(!PageKsm(page));
-+	/*
-+	 * page must be locked because <reason goes here>
-+	 */
- 	VM_BUG_ON(!PageLocked(page));
- 
- 	stable_node = page_stable_node(page);
-
-
-Or if there is no reason why the page must be locked for
-rmap_walk_ksm() and rmap_walk_file(), let's just remove rmap_walk()'s
-VM_BUG_ON()?  And rmap_walk_ksm()'s as well - it's duplicative anyway.
-
+-- 
+Dmitry
