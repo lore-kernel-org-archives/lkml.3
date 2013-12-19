@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab3LSL6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:58:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45015 "EHLO
+	id S932083Ab3LSMNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:13:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45244 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755250Ab3LSL6Q (ORCPT
+	with ESMTP id S1755877Ab3LSL7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:16 -0500
+	Thu, 19 Dec 2013 06:59:19 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
+Cc: Stefano Panella <stefano.panella@citrix.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 123/208] mac80211: don't attempt to reorder multicast frames
-Date: Thu, 19 Dec 2013 11:53:41 +0000
-Message-Id: <1387454106-19326-124-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 168/208] ALSA: memalloc.h - fix wrong truncation of dma_addr_t
+Date: Thu, 19 Dec 2013 11:54:26 +0000
+Message-Id: <1387454106-19326-169-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,38 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Stefano Panella <stefano.panella@citrix.com>
 
-commit 051a41fa4ee14f5c39668f0980973b9a195de560 upstream.
+commit 932e9dec380c67ec15ac3eb073bb55797d8b4801 upstream.
 
-Multicast frames can't be transmitted as part of an aggregation
-session (such a session couldn't even be set up) so don't try to
-reorder them. Trying to do so would cause the reorder to stop
-working correctly since multicast QoS frames (as transmitted by
-the Aruba APs this was found with) would cause sequence number
-confusion in the buffer.
+When running a 32bit kernel the hda_intel driver is still reporting
+a 64bit dma_mask if the HW supports it.
 
-Reported-by: Blaise Gassend <blaise@suitabletech.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+>From sound/pci/hda/hda_intel.c:
+
+        /* allow 64bit DMA address if supported by H/W */
+        if ((gcap & ICH6_GCAP_64OK) && !pci_set_dma_mask(pci, DMA_BIT_MASK(64)))
+                pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(64));
+        else {
+                pci_set_dma_mask(pci, DMA_BIT_MASK(32));
+                pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32));
+        }
+
+which means when there is a call to dma_alloc_coherent from
+snd_malloc_dev_pages a machine address bigger than 32bit can be returned.
+This can be true in particular if running  the 32bit kernel as a pv dom0
+under the Xen Hypervisor or PAE on bare metal.
+
+The problem is that when calling setup_bdle to program the BLE the
+dma_addr_t returned from the dma_alloc_coherent is wrongly truncated
+from snd_sgbuf_get_addr if running a 32bit kernel:
+
+static inline dma_addr_t snd_sgbuf_get_addr(struct snd_dma_buffer *dmab,
+                                           size_t offset)
+{
+        struct snd_sg_buf *sgbuf = dmab->private_data;
+        dma_addr_t addr = sgbuf->table[offset >> PAGE_SHIFT].addr;
+        addr &= PAGE_MASK;
+        return addr + offset % PAGE_SIZE;
+}
+
+where PAGE_MASK in a 32bit kernel is zeroing the upper 32bit af addr.
+
+Without this patch the HW will fetch the 32bit truncated address,
+which is not the one obtained from dma_alloc_coherent and will result
+to a non working audio but can corrupt host memory at a random location.
+
+The current patch apply to v3.13-rc3-74-g6c843f5
+
+Signed-off-by: Stefano Panella <stefano.panella@citrix.com>
+Reviewed-by: Frediano Ziglio <frediano.ziglio@citrix.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/mac80211/rx.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/sound/memalloc.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
-index 2b88d77..57932c3 100644
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -868,7 +868,8 @@ static void ieee80211_rx_reorder_ampdu(struct ieee80211_rx_data *rx,
- 	u16 sc;
- 	u8 tid, ack_policy;
+diff --git a/include/sound/memalloc.h b/include/sound/memalloc.h
+index cf15b82..54aff2d 100644
+--- a/include/sound/memalloc.h
++++ b/include/sound/memalloc.h
+@@ -103,7 +103,7 @@ static inline dma_addr_t snd_sgbuf_get_addr(struct snd_dma_buffer *dmab,
+ {
+ 	struct snd_sg_buf *sgbuf = dmab->private_data;
+ 	dma_addr_t addr = sgbuf->table[offset >> PAGE_SHIFT].addr;
+-	addr &= PAGE_MASK;
++	addr &= ~((dma_addr_t)PAGE_SIZE - 1);
+ 	return addr + offset % PAGE_SIZE;
+ }
  
--	if (!ieee80211_is_data_qos(hdr->frame_control))
-+	if (!ieee80211_is_data_qos(hdr->frame_control) ||
-+	    is_multicast_ether_addr(hdr->addr1))
- 		goto dont_reorder;
- 
- 	/*
 -- 
 1.8.3.2
 
