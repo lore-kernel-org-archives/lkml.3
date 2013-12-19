@@ -1,109 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab3LSRSy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 12:18:54 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50254 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753793Ab3LSRSw (ORCPT
+	id S1754647Ab3LSRUo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 12:20:44 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:55434 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528Ab3LSRUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 12:18:52 -0500
+	Thu, 19 Dec 2013 12:20:42 -0500
+Date: Thu, 19 Dec 2013 17:20:36 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>
+Subject: Re: [PATCH 3/5] MFD: twl6040: reg_defaults support for regmap
+Message-ID: <20131219172036.GD16145@lee--X1>
+References: <1385733827-19831-1-git-send-email-peter.ujfalusi@ti.com>
+ <1385733827-19831-4-git-send-email-peter.ujfalusi@ti.com>
+ <20131129160032.GC26982@lee--X1>
+ <20131218185659.GL31886@sirena.org.uk>
+ <20131219090632.GA24932@lee--X1>
+ <20131219105240.GU31886@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20131219170927.GC30382@gmail.com>
-References: <1387374611-12493-1-git-send-email-dh.herrmann@gmail.com>
-	<1387448038-8260-1-git-send-email-dh.herrmann@gmail.com>
-	<20131219163606.GA29243@gmail.com>
-	<CANq1E4Ss30G72t3R1iza9vOO7ESYQynjS74mB+nJ-zT2zAvyzQ@mail.gmail.com>
-	<20131219170927.GC30382@gmail.com>
-Date: Thu, 19 Dec 2013 18:18:51 +0100
-Message-ID: <CANq1E4Qv3B=EzP1dwWZUQP08Ja_N-q=1eWFcMdQQGmL4Ue2W4w@mail.gmail.com>
-Subject: Re: [PATCH v3] x86: sysfb: remove sysfb when probing real hw
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131219105240.GU31886@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Enjoy!
 
-On Thu, Dec 19, 2013 at 6:09 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * David Herrmann <dh.herrmann@gmail.com> wrote:
->
->> Hi
->>
->> On Thu, Dec 19, 2013 at 5:36 PM, Ingo Molnar <mingo@kernel.org> wrote:
->> >
->> > * David Herrmann <dh.herrmann@gmail.com> wrote:
->> >
->> >> --- a/drivers/video/fbmem.c
->> >> +++ b/drivers/video/fbmem.c
->> >> @@ -35,6 +35,9 @@
->> >>
->> >>  #include <asm/fb.h>
->> >>
->> >> +#if IS_ENABLED(CONFIG_X86)
->> >> +#include <asm/sysfb.h>
->> >> +#endif
->> >
->> > I think this can be written as:
->> >
->> > #ifdef CONFIG_X86
->> > # include <asm/sysfb.h>
->> > #endif
->> >
->> > also ... the dependency on a large, unrelated option like CONFIG_X86
->> > looks pretty ugly here - is there no other, more specific CONFIG_
->> > option that can be used here - such as CONFIG_FB_SIMPLE or
->> > CONFIG_X86_SYSFB?
->> >
->> >> +#if IS_ENABLED(CONFIG_X86)
->> >> +     sysfb_unregister(apert, primary);
->> >> +#endif
->> >
->> > Ditto.
->>
->> CONFIG_X86 is probably never 'm'.. will fix that. It was
->> CONFIG_X86_SYSFB before and that works, too, but the broader X86
->> seemed more appropriate as sysfb is available on all x86.
->
-> Well, sysfb is available if CONFIG_X86_SYSFB is set, right? So on
-> !CONFIG_X86_SYSFB x86 kernels this code should not run, right?
+> > What -rc are you currently based on?
+> 
+> Using -rc1 makes life easier, it'll be a new branch.
 
-No. The sysfb code is always enabled. It provides platform-devices for
-firmware-framebuffers which efifb/vesafb pick up. The X86_SYSFB option
-only controls whether generic system-framebuffers should be used
-instead of the specific efi/vesa FBs (to be compatible to other
-architectures and keep efi/vesa specifics in arch/x86/).
+The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
 
-But the system-framebuffer conversion (to a format compatible to
-simplefb/simple-framebuffer) is what may break as the legacy fbs don't
-reserve resources. Hence, putting it enclosed into X86_SYSFB works for
-now. But if we start registering efifb/vesafb with sysfb, too, then we
-need to change it to CONFIG_X86 as all fbs are affected then.
+  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
 
-I think using X86_SYSFB (as in v1 of this patch) is the way to go. I
-will fix it up and resend v4. The broader #ifdef can be used once we
-do the more complex cleanups, in which case it will go away entirely.
+are available in the git repository at:
 
->> Note that I have patches here locally which move
->> sysfb_register/unregister to drivers/video/sysfb.c and add
->> include/linux/sysfb.h with dummies if CONFIG_SYSFB is not selected
->> to avoid the #ifdef. This will allow other architectures to do
->> gfx-hand-over, too. They seem too big for stable, though. That's why
->> I split them up and added it to x86/kernel/sysfb.c first.
->
-> Yeah, it's fine to do those cleanups after the minimal fix. But using
-> a sensible config option must still be done - we cannot just slap
-> broad CONFIG_X86 dependencies into random code.
+  git://git.linaro.org/people/ljones/mfd.git tags/ib-asoc-3.14-1
 
-Ok.
+for you to fetch changes up to c7f9129d22940720141d1f1e958a51142eff9d21:
 
-Thanks
-David
+  mfd: twl6040: reg_defaults support for regmap (2013-12-19 17:01:11 +0000)
+
+----------------------------------------------------------------
+Immutable branch between ASoC and MFD - for v3.14 merge window
+
+----------------------------------------------------------------
+Peter Ujfalusi (1):
+      mfd: twl6040: reg_defaults support for regmap
+
+ drivers/mfd/twl6040.c | 92 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 89 insertions(+), 3 deletions(-)
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
