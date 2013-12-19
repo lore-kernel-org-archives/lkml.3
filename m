@@ -1,103 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab3LSMbK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:31:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44970 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab3LSL6C (ORCPT
+	id S1754786Ab3LSO1G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:27:06 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:38199 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754785Ab3LSOXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:02 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Arnaud Ebalard <arno@natisbad.org>, Jason Cooper <jason@lakedaemon.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 113/208] ARM: mvebu: second PCIe unit of Armada XP mv78230 is only x1 capable
-Date: Thu, 19 Dec 2013 11:53:31 +0000
-Message-Id: <1387454106-19326-114-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 09:23:22 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>
+Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: [PATCH v8 1/9] phy: add phy_get_bus_width()/phy_set_bus_width() calls
+Date: Thu, 19 Dec 2013 09:23:02 -0500
+Message-Id: <1387462990-12039-2-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1387462990-12039-1-git-send-email-mporter@linaro.org>
+References: <1387462990-12039-1-git-send-email-mporter@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+This adds a pair of APIs that allows the generic PHY subsystem to
+provide information on the PHY bus width. The PHY provider driver may
+use phy_set_bus_width() to set the bus width that the PHY supports.
+The controller driver may then use phy_get_bus_width() to fetch the
+PHY bus width in order to properly configure the controller.
 
-------------------
-
-From: Arnaud Ebalard <arno@natisbad.org>
-
-commit 12b69a599745fc9e203f61fbb7160b2cc5f479dd upstream.
-
-Various Marvell datasheets advertise second PCIe unit of mv78230
-flavour of Armada XP as x4/quad x1 capable. This second unit is in
-fact only x1 capable. This patch fixes current mv78230 .dtsi to
-reflect that, i.e. makes 1.0 the second interface (instead of 2.0
-at the moment). This was successfully tested on a mv78230-based
-ReadyNAS 2120 platform with a x1 device (FL1009 XHCI controller)
-connected to this second interface.
-
-Signed-off-by: Arnaud Ebalard <arno@natisbad.org>
-Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Matt Porter <mporter@linaro.org>
+Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- arch/arm/boot/dts/armada-xp-mv78230.dtsi | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ include/linux/phy/phy.h | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-diff --git a/arch/arm/boot/dts/armada-xp-mv78230.dtsi b/arch/arm/boot/dts/armada-xp-mv78230.dtsi
-index f8eaa38..f94cdbc 100644
---- a/arch/arm/boot/dts/armada-xp-mv78230.dtsi
-+++ b/arch/arm/boot/dts/armada-xp-mv78230.dtsi
-@@ -81,7 +81,7 @@
- 			/*
- 			 * MV78230 has 2 PCIe units Gen2.0: One unit can be
- 			 * configured as x4 or quad x1 lanes. One unit is
--			 * x4/x1.
-+			 * x1 only.
- 			 */
- 			pcie-controller {
- 				compatible = "marvell,armada-xp-pcie";
-@@ -94,10 +94,10 @@
- 				bus-range = <0x00 0xff>;
+diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+index 6d72269..e273e5a 100644
+--- a/include/linux/phy/phy.h
++++ b/include/linux/phy/phy.h
+@@ -38,6 +38,14 @@ struct phy_ops {
+ };
  
- 				ranges = <0x82000000 0 0x40000 0x40000 0 0x00002000   /* Port 0.0 registers */
--					0x82000000 0 0x42000 0x42000 0 0x00002000   /* Port 2.0 registers */
- 					0x82000000 0 0x44000 0x44000 0 0x00002000   /* Port 0.1 registers */
- 					0x82000000 0 0x48000 0x48000 0 0x00002000   /* Port 0.2 registers */
- 					0x82000000 0 0x4c000 0x4c000 0 0x00002000   /* Port 0.3 registers */
-+					0x82000000 0 0x80000 0x80000 0 0x00002000   /* Port 1.0 registers */
- 					0x82000000 0 0xe0000000 0xe0000000 0 0x08000000   /* non-prefetchable memory */
- 					0x81000000 0 0	  0xe8000000 0 0x00100000>; /* downstream I/O */
+ /**
++ * struct phy_attrs - represents phy attributes
++ * @bus_width: Data path width implemented by PHY
++ */
++struct phy_attrs {
++	u32			bus_width;
++};
++
++/**
+  * struct phy - represents the phy device
+  * @dev: phy device
+  * @id: id of the phy device
+@@ -46,6 +54,7 @@ struct phy_ops {
+  * @mutex: mutex to protect phy_ops
+  * @init_count: used to protect when the PHY is used by multiple consumers
+  * @power_count: used to protect when the PHY is used by multiple consumers
++ * @phy_attrs: used to specify PHY specific attributes
+  */
+ struct phy {
+ 	struct device		dev;
+@@ -55,6 +64,7 @@ struct phy {
+ 	struct mutex		mutex;
+ 	int			init_count;
+ 	int			power_count;
++	struct phy_attrs	attrs;
+ };
  
-@@ -165,19 +165,19 @@
- 					status = "disabled";
- 				};
+ /**
+@@ -127,6 +137,14 @@ int phy_init(struct phy *phy);
+ int phy_exit(struct phy *phy);
+ int phy_power_on(struct phy *phy);
+ int phy_power_off(struct phy *phy);
++static inline int phy_get_bus_width(struct phy *phy)
++{
++	return phy->attrs.bus_width;
++}
++static inline void phy_set_bus_width(struct phy *phy, int bus_width)
++{
++	phy->attrs.bus_width = bus_width;
++}
+ struct phy *phy_get(struct device *dev, const char *string);
+ struct phy *devm_phy_get(struct device *dev, const char *string);
+ void phy_put(struct phy *phy);
+@@ -199,6 +217,16 @@ static inline int phy_power_off(struct phy *phy)
+ 	return -ENOSYS;
+ }
  
--				pcie@9,0 {
-+				pcie@5,0 {
- 					device_type = "pci";
--					assigned-addresses = <0x82000800 0 0x42000 0 0x2000>;
--					reg = <0x4800 0 0 0 0>;
-+					assigned-addresses = <0x82000800 0 0x80000 0 0x2000>;
-+					reg = <0x2800 0 0 0 0>;
- 					#address-cells = <3>;
- 					#size-cells = <2>;
- 					#interrupt-cells = <1>;
- 					ranges;
- 					interrupt-map-mask = <0 0 0 0>;
--					interrupt-map = <0 0 0 0 &mpic 99>;
--					marvell,pcie-port = <2>;
-+					interrupt-map = <0 0 0 0 &mpic 62>;
-+					marvell,pcie-port = <1>;
- 					marvell,pcie-lane = <0>;
--					clocks = <&gateclk 26>;
-+					clocks = <&gateclk 9>;
- 					status = "disabled";
- 				};
- 			};
++static inline int phy_get_bus_width(struct phy *phy)
++{
++	return -ENOSYS;
++}
++
++static inline void phy_set_bus_width(struct phy *phy, int bus_width)
++{
++	return;
++}
++
+ static inline struct phy *phy_get(struct device *dev, const char *string)
+ {
+ 	return ERR_PTR(-ENOSYS);
 -- 
-1.8.3.2
+1.8.4
 
