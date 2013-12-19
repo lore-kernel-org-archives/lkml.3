@@ -1,148 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab3LSJ2k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:28:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45909 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750985Ab3LSJ2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:28:37 -0500
-Date: Thu, 19 Dec 2013 10:28:36 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 6/6] memcg, slab: RCU protect memcg_params for root caches
-Message-ID: <20131219092836.GH9331@dhcp22.suse.cz>
-References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
- <be8f2fede0fbc45496c06f7bc6cc2272b9b81cc4.1387372122.git.vdavydov@parallels.com>
+	id S1752411Ab3LSJ3h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:29:37 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:4157 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752187Ab3LSJ3e convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 04:29:34 -0500
+X-IronPort-AV: E=Sophos;i="4.95,512,1384272000"; 
+   d="scan'208";a="9290856"
+Message-ID: <52B2BACA.80600@cn.fujitsu.com>
+Date: Thu, 19 Dec 2013 17:22:18 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <be8f2fede0fbc45496c06f7bc6cc2272b9b81cc4.1387372122.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: jaegeuk.kim@samsung.com
+CC: Chao Yu <chao2.yu@samsung.com>,
+        "'fsdevel'" <linux-fsdevel@vger.kernel.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'f2fs'" <linux-f2fs-devel@lists.sourceforge.net>
+Subject: Re: [f2fs-dev] [PATCH] f2fs: move all the bio initialization into
+ __bio_alloc
+References: <52B17905.7040708@cn.fujitsu.com> <000a01cefc59$0a9b4580$1fd1d080$@samsung.com> <1387443585.2101.216.camel@kjgkr>
+In-Reply-To: <1387443585.2101.216.camel@kjgkr>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/19 17:28:54,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/19 17:28:57
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 18-12-13 17:16:57, Vladimir Davydov wrote:
-> We update root cache's memcg_params whenever we need to grow the
-> memcg_caches array to accommodate all kmem-active memory cgroups.
-> Currently we free the old version immediately then, which can lead to
-> use-after-free, because the memcg_caches array is accessed lock-free.
-> This patch fixes this by making memcg_params RCU-protected.
+Hi Kim, Yu,
+Thanks for your review!
 
-yes, I was thinking about something like this when talking about RCU
-usage.
+On 12/19/2013 04:59 PM, Jaegeuk Kim wrote:
 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Glauber Costa <glommer@gmail.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  include/linux/slab.h |    5 ++++-
->  mm/memcontrol.c      |   15 ++++++++-------
->  mm/slab.h            |    8 +++++++-
->  3 files changed, 19 insertions(+), 9 deletions(-)
+> Hi Gu,
 > 
-> diff --git a/include/linux/slab.h b/include/linux/slab.h
-> index 1e2f4fe..f7e5649 100644
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -528,7 +528,10 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
->  struct memcg_cache_params {
->  	bool is_root_cache;
->  	union {
-> -		struct kmem_cache *memcg_caches[0];
-> +		struct {
-> +			struct rcu_head rcu_head;
-> +			struct kmem_cache *memcg_caches[0];
-> +		};
->  		struct {
->  			struct mem_cgroup *memcg;
->  			struct list_head list;
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index ad8de6a..379fc5f 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3142,18 +3142,17 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
->  
->  	if (num_groups > memcg_limited_groups_array_size) {
->  		int i;
-> +		struct memcg_cache_params *new_params;
->  		ssize_t size = memcg_caches_array_size(num_groups);
->  
->  		size *= sizeof(void *);
->  		size += offsetof(struct memcg_cache_params, memcg_caches);
->  
-> -		s->memcg_params = kzalloc(size, GFP_KERNEL);
-> -		if (!s->memcg_params) {
-> -			s->memcg_params = cur_params;
-> +		new_params = kzalloc(size, GFP_KERNEL);
-> +		if (!new_params)
->  			return -ENOMEM;
-> -		}
->  
-> -		s->memcg_params->is_root_cache = true;
-> +		new_params->is_root_cache = true;
->  
->  		/*
->  		 * There is the chance it will be bigger than
-> @@ -3167,7 +3166,7 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
->  		for (i = 0; i < memcg_limited_groups_array_size; i++) {
->  			if (!cur_params->memcg_caches[i])
->  				continue;
-> -			s->memcg_params->memcg_caches[i] =
-> +			new_params->memcg_caches[i] =
->  						cur_params->memcg_caches[i];
->  		}
->  
-> @@ -3180,7 +3179,9 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
->  		 * bigger than the others. And all updates will reset this
->  		 * anyway.
->  		 */
-> -		kfree(cur_params);
-> +		rcu_assign_pointer(s->memcg_params, new_params);
-> +		if (cur_params)
-> +			kfree_rcu(cur_params, rcu_head);
->  	}
->  	return 0;
->  }
-> diff --git a/mm/slab.h b/mm/slab.h
-> index 1d8b53f..53b81a9 100644
-> --- a/mm/slab.h
-> +++ b/mm/slab.h
-> @@ -164,10 +164,16 @@ static inline struct kmem_cache *
->  cache_from_memcg_idx(struct kmem_cache *s, int idx)
->  {
->  	struct kmem_cache *cachep;
-> +	struct memcg_cache_params *params;
->  
->  	if (!s->memcg_params)
->  		return NULL;
-> -	cachep = s->memcg_params->memcg_caches[idx];
-> +
-> +	rcu_read_lock();
-> +	params = rcu_dereference(s->memcg_params);
-> +	cachep = params->memcg_caches[idx];
-> +	rcu_read_unlock();
-> +
+> I agreed with Chao.
+> It is more readable to use something like "is_read" instead of "rw".
 
-Consumer has to be covered by the same rcu section otherwise
-memcg_params might be freed right after rcu unlock here.
+Agree. I'll follow it.
 
->  	smp_read_barrier_depends();	/* see memcg_register_cache() */
->  	return cachep;
->  }
-> -- 
-> 1.7.10.4
+Regards,
+Gu
+
+> Thanks,
+> 
+> 2013-12-19 (목), 09:23 +0800, Chao Yu:
+>> Hi Gu,
+>>
+>>> -----Original Message-----
+>>> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
+>>> Sent: Wednesday, December 18, 2013 6:29 PM
+>>> To: Kim
+>>> Cc: fsdevel; linux-kernel; f2fs
+>>> Subject: [f2fs-dev] [PATCH] f2fs: move all the bio initialization into __bio_alloc
+>>>
+>>> Move all the bio initialization into __bio_alloc, and some minor cleanups are
+>>> also added.
+>>
+>> Looks more neat!
+>>
+>>> @@ -178,17 +179,16 @@ void f2fs_submit_page_mbio(struct f2fs_sb_info *sbi, struct page *page,
+>>>  			block_t blk_addr, struct f2fs_io_info *fio)
+>>>  {
+>>>  	enum page_type btype = PAGE_TYPE_OF_BIO(fio->type);
+>>> -	struct block_device *bdev = sbi->sb->s_bdev;
+>>>  	struct f2fs_bio_info *io;
+>>> -	int bio_blocks;
+>>> +	int rw = is_read_io(fio->rw);
+>>
+>> Maybe it's more neat to use 'is_read' to instead of 'rw'.
+>>
+>> Thanks
+>>
 > 
 
--- 
-Michal Hocko
-SUSE Labs
+
