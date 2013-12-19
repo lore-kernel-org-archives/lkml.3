@@ -1,56 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab3LSQLE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:11:04 -0500
-Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:41181 "EHLO
-	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754480Ab3LSQLB (ORCPT
+	id S1756594Ab3LSQIs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:08:48 -0500
+Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:47625
+	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754385Ab3LSPui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:11:01 -0500
-X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Dec 2013 11:11:00 EST
-Date: Thu, 19 Dec 2013 17:04:45 +0100
-From: Alessandro Zummo <a.zummo@towertech.it>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>
-Subject: Re: [RFC PATCH 00/14] Support timezone of ACPI TAD and EFI TIME
-Message-ID: <20131219170445.42b50a5b@linux.lan.towertech.it>
-In-Reply-To: <52B309EB.90300@zytor.com>
-References: <1387439053-8711-1-git-send-email-jlee@suse.com>
-	<52B309EB.90300@zytor.com>
-Organization: Tower Technologies
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Dec 2013 10:50:38 -0500
+Message-Id: <20131219155032.559429807@linux.com>
+Date: Thu, 19 Dec 2013 09:50:32 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, netdev@vger.kernel.org,
+        davem@davemloft.net, edumazet@google.com
+Subject: [PATCH 17/40] net: Replace __this_cpu_inc in route.c with raw_cpu_inc
+References: <20131219155015.443763038@linux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=preempt_rt_cache_stat
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Dec 2013 06:59:55 -0800
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+[Patch depends on another patch in this series that introduces raw_cpu_ops]
 
-> EFI time is something we used to support and ripped out, because it
-> doesn't work well, *at all*.
-> 
-> I am hyper-skeptical to reintroducing them, and *definitely* will veto
-> reintroducing them on a system which has PNP0B0x devices present.
+The RT_CACHE_STAT_INC macro triggers the new preemption checks
+for __this_cpu ops.
 
- Definitely agree.
+I do not see any other synchronization that would allow the use
+of a __this_cpu operation here however in commit
+dbd2915ce87e811165da0717f8e159276ebb803e Andrew justifies
+the use of raw_smp_processor_id() here because "we do not care"
+about races. In the past we agreed that the price of disabling
+interrupts here to get consistent counters would be too high.
+These counters may be inaccurate due to race conditions.
 
--- 
+The use of __this_cpu op improves the situation already from what commit
+dbd2915ce87e811165da0717f8e159276ebb803e did since the single instruction
+emitted on x86 does not allow the race to occur anymore. However,
+non x86 platforms could still experience a race here.
 
- Best regards,
+Trace:
 
- Alessandro Zummo,
-  Tower Technologies - Torino, Italy
+[ 1277.189084] __this_cpu_add operation in preemptible [00000000] code: avahi-daemon/1193
+[ 1277.189085] caller is __this_cpu_preempt_check+0x38/0x60
+[ 1277.189086] CPU: 1 PID: 1193 Comm: avahi-daemon Tainted: GF            3.12.0-rc4+ #187
+[ 1277.189087] Hardware name: FUJITSU CELSIUS W530 Power/D3227-A1, BIOS V4.6.5.4 R1.10.0 for D3227-A1x 09/16/2013
+[ 1277.189088]  0000000000000001 ffff8807ef78fa00 ffffffff816d5a57 ffff8807ef78ffd8
+[ 1277.189089]  ffff8807ef78fa30 ffffffff8137359c ffff8807ef78fba0 ffff88079f822b40
+[ 1277.189091]  0000000020000000 ffff8807ee32c800 ffff8807ef78fa70 ffffffff813735f8
+[ 1277.189093] Call Trace:
+[ 1277.189094]  [<ffffffff816d5a57>] dump_stack+0x4e/0x82
+[ 1277.189096]  [<ffffffff8137359c>] check_preemption_disabled+0xec/0x110
+[ 1277.189097]  [<ffffffff813735f8>] __this_cpu_preempt_check+0x38/0x60
+[ 1277.189098]  [<ffffffff81610d65>] __ip_route_output_key+0x575/0x8c0
+[ 1277.189100]  [<ffffffff816110d7>] ip_route_output_flow+0x27/0x70
+[ 1277.189101]  [<ffffffff81616c80>] ? ip_copy_metadata+0x1a0/0x1a0
+[ 1277.189102]  [<ffffffff81640b15>] udp_sendmsg+0x825/0xa20
+[ 1277.189104]  [<ffffffff811b4aa9>] ? do_sys_poll+0x449/0x5d0
+[ 1277.189105]  [<ffffffff8164c695>] inet_sendmsg+0x85/0xc0
+[ 1277.189106]  [<ffffffff815c6e3c>] sock_sendmsg+0x9c/0xd0
+[ 1277.189108]  [<ffffffff813735f8>] ? __this_cpu_preempt_check+0x38/0x60
+[ 1277.189109]  [<ffffffff815c7550>] ? move_addr_to_kernel+0x40/0xa0
+[ 1277.189111]  [<ffffffff815c71ec>] ___sys_sendmsg+0x37c/0x390
+[ 1277.189112]  [<ffffffff8136613a>] ? string.isra.3+0x3a/0xd0
+[ 1277.189113]  [<ffffffff8136613a>] ? string.isra.3+0x3a/0xd0
+[ 1277.189115]  [<ffffffff81367b54>] ? vsnprintf+0x364/0x650
+[ 1277.189116]  [<ffffffff81367ee9>] ? snprintf+0x39/0x40
+[ 1277.189118]  [<ffffffff813735f8>] ? __this_cpu_preempt_check+0x38/0x60
+[ 1277.189119]  [<ffffffff815c7ff9>] __sys_sendmsg+0x49/0x90
+[ 1277.189121]  [<ffffffff815c8052>] SyS_sendmsg+0x12/0x20
+[ 1277.189122]  [<ffffffff816e4fd3>] tracesys+0xe1/0xe6
 
-  http://www.towertech.it
+Cc: netdev@vger.kernel.org
+Cc: davem@davemloft.net
+Cc: edumazet@google.com
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/net/ipv4/route.c
+===================================================================
+--- linux.orig/net/ipv4/route.c	2013-12-02 16:07:51.964573250 -0600
++++ linux/net/ipv4/route.c	2013-12-02 16:07:51.954573526 -0600
+@@ -197,7 +197,7 @@ const __u8 ip_tos2prio[16] = {
+ EXPORT_SYMBOL(ip_tos2prio);
+ 
+ static DEFINE_PER_CPU(struct rt_cache_stat, rt_cache_stat);
+-#define RT_CACHE_STAT_INC(field) __this_cpu_inc(rt_cache_stat.field)
++#define RT_CACHE_STAT_INC(field) raw_cpu_inc(rt_cache_stat.field)
+ 
+ #ifdef CONFIG_PROC_FS
+ static void *rt_cache_seq_start(struct seq_file *seq, loff_t *pos)
 
