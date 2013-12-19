@@ -1,172 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab3LSJTR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:19:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44897 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752037Ab3LSJKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:10:09 -0500
-Date: Thu, 19 Dec 2013 10:10:07 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/6] memcg, slab: cleanup barrier usage when accessing
- memcg_caches
-Message-ID: <20131219091007.GC9331@dhcp22.suse.cz>
-References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
- <bd0a7ffc57e4a0b0c3d456c0cf8801e829e14717.1387372122.git.vdavydov@parallels.com>
- <20131218171411.GD31080@dhcp22.suse.cz>
- <52B29427.9010909@parallels.com>
+	id S1753526Ab3LSJTN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:19:13 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:56757 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086Ab3LSJKK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 04:10:10 -0500
+Subject: [PATCH -tip v6 13/22] kprobes: Use NOKPROBE_SYMBOL macro instead of
+ __kprobes
+To: Ingo Molnar <mingo@kernel.org>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Date: Thu, 19 Dec 2013 09:04:26 +0000
+Message-ID: <20131219090426.14309.53598.stgit@kbuild-fedora.novalocal>
+In-Reply-To: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
+References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B29427.9010909@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 19-12-13 10:37:27, Vladimir Davydov wrote:
-> On 12/18/2013 09:14 PM, Michal Hocko wrote:
-> > On Wed 18-12-13 17:16:54, Vladimir Davydov wrote:
-> >> First, in memcg_create_kmem_cache() we should issue the write barrier
-> >> after the kmem_cache is initialized, but before storing the pointer to
-> >> it in its parent's memcg_params.
-> >>
-> >> Second, we should always issue the read barrier after
-> >> cache_from_memcg_idx() to conform with the write barrier.
-> >>
-> >> Third, its better to use smp_* versions of barriers, because we don't
-> >> need them on UP systems.
-> > Please be (much) more verbose on Why. Barriers are tricky and should be
-> > documented accordingly. So if you say that we should issue a barrier
-> > always be specific why we should do it.
-> 
-> In short, we have kmem_cache::memcg_params::memcg_caches is an array of
-> pointers to per-memcg caches. We access it lock-free so we should use
-> memory barriers during initialization. Obviously we should place a write
-> barrier just before we set the pointer in order to make sure nobody will
-> see a partially initialized structure. Besides there must be a read
-> barrier between reading the pointer and accessing the structure, to
-> conform with the write barrier. It's all that similar to rcu_assign and
-> rcu_deref. Currently the barrier usage looks rather strange:
-> 
-> memcg_create_kmem_cache:
->     initialize kmem
->     set the pointer in memcg_caches
->     wmb() // ???
-> 
-> __memcg_kmem_get_cache:
->     <...>
->     read_barrier_depends() // ???
->     cachep = root_cache->memcg_params->memcg_caches[memcg_id]
->     <...>
+Use NOKPROBE_SYMBOL macro to protect functions from
+kprobes instead of __kprobes annotation.
 
-Why do we need explicit memory barriers when we can use RCU?
-__memcg_kmem_get_cache already dereferences within rcu_read_lock.
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+---
+ kernel/kprobes.c |   67 +++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 41 insertions(+), 26 deletions(-)
 
-Btw. cache_from_memcg_idx is desperately asking for a comment about
-required locking.
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 4db2cc6..a21b4e6 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -301,7 +301,7 @@ static inline void reset_kprobe_instance(void)
+  * 				OR
+  * 	- with preemption disabled - from arch/xxx/kernel/kprobes.c
+  */
+-struct kprobe __kprobes *get_kprobe(void *addr)
++struct kprobe *get_kprobe(void *addr)
+ {
+ 	struct hlist_head *head;
+ 	struct kprobe *p;
+@@ -314,8 +314,9 @@ struct kprobe __kprobes *get_kprobe(void *addr)
+ 
+ 	return NULL;
+ }
++NOKPROBE_SYMBOL(get_kprobe);
+ 
+-static int __kprobes aggr_pre_handler(struct kprobe *p, struct pt_regs *regs);
++static int aggr_pre_handler(struct kprobe *p, struct pt_regs *regs);
+ 
+ /* Return true if the kprobe is an aggregator */
+ static inline int kprobe_aggrprobe(struct kprobe *p)
+@@ -347,7 +348,7 @@ static bool kprobes_allow_optimization;
+  * Call all pre_handler on the list, but ignores its return value.
+  * This must be called from arch-dep optimized caller.
+  */
+-void __kprobes opt_pre_handler(struct kprobe *p, struct pt_regs *regs)
++void opt_pre_handler(struct kprobe *p, struct pt_regs *regs)
+ {
+ 	struct kprobe *kp;
+ 
+@@ -359,6 +360,7 @@ void __kprobes opt_pre_handler(struct kprobe *p, struct pt_regs *regs)
+ 		reset_kprobe_instance();
+ 	}
+ }
++NOKPROBE_SYMBOL(opt_pre_handler);
+ 
+ /* Free optimized instructions and optimized_kprobe */
+ static void free_aggr_kprobe(struct kprobe *p)
+@@ -995,7 +997,7 @@ static void disarm_kprobe(struct kprobe *kp, bool reopt)
+  * Aggregate handlers for multiple kprobes support - these handlers
+  * take care of invoking the individual kprobe handlers on p->list
+  */
+-static int __kprobes aggr_pre_handler(struct kprobe *p, struct pt_regs *regs)
++static int aggr_pre_handler(struct kprobe *p, struct pt_regs *regs)
+ {
+ 	struct kprobe *kp;
+ 
+@@ -1009,9 +1011,10 @@ static int __kprobes aggr_pre_handler(struct kprobe *p, struct pt_regs *regs)
+ 	}
+ 	return 0;
+ }
++NOKPROBE_SYMBOL(aggr_pre_handler);
+ 
+-static void __kprobes aggr_post_handler(struct kprobe *p, struct pt_regs *regs,
+-					unsigned long flags)
++static void aggr_post_handler(struct kprobe *p, struct pt_regs *regs,
++			      unsigned long flags)
+ {
+ 	struct kprobe *kp;
+ 
+@@ -1023,9 +1026,10 @@ static void __kprobes aggr_post_handler(struct kprobe *p, struct pt_regs *regs,
+ 		}
+ 	}
+ }
++NOKPROBE_SYMBOL(aggr_post_handler);
+ 
+-static int __kprobes aggr_fault_handler(struct kprobe *p, struct pt_regs *regs,
+-					int trapnr)
++static int aggr_fault_handler(struct kprobe *p, struct pt_regs *regs,
++			      int trapnr)
+ {
+ 	struct kprobe *cur = __this_cpu_read(kprobe_instance);
+ 
+@@ -1039,8 +1043,9 @@ static int __kprobes aggr_fault_handler(struct kprobe *p, struct pt_regs *regs,
+ 	}
+ 	return 0;
+ }
++NOKPROBE_SYMBOL(aggr_fault_handler);
+ 
+-static int __kprobes aggr_break_handler(struct kprobe *p, struct pt_regs *regs)
++static int aggr_break_handler(struct kprobe *p, struct pt_regs *regs)
+ {
+ 	struct kprobe *cur = __this_cpu_read(kprobe_instance);
+ 	int ret = 0;
+@@ -1052,9 +1057,10 @@ static int __kprobes aggr_break_handler(struct kprobe *p, struct pt_regs *regs)
+ 	reset_kprobe_instance();
+ 	return ret;
+ }
++NOKPROBE_SYMBOL(aggr_break_handler);
+ 
+ /* Walks the list and increments nmissed count for multiprobe case */
+-void __kprobes kprobes_inc_nmissed_count(struct kprobe *p)
++void kprobes_inc_nmissed_count(struct kprobe *p)
+ {
+ 	struct kprobe *kp;
+ 	if (!kprobe_aggrprobe(p)) {
+@@ -1065,9 +1071,10 @@ void __kprobes kprobes_inc_nmissed_count(struct kprobe *p)
+ 	}
+ 	return;
+ }
++NOKPROBE_SYMBOL(kprobes_inc_nmissed_count);
+ 
+-void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
+-				struct hlist_head *head)
++void recycle_rp_inst(struct kretprobe_instance *ri,
++		     struct hlist_head *head)
+ {
+ 	struct kretprobe *rp = ri->rp;
+ 
+@@ -1082,8 +1089,9 @@ void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
+ 		/* Unregistering */
+ 		hlist_add_head(&ri->hlist, head);
+ }
++NOKPROBE_SYMBOL(recycle_rp_inst);
+ 
+-void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
++void kretprobe_hash_lock(struct task_struct *tsk,
+ 			 struct hlist_head **head, unsigned long *flags)
+ __acquires(hlist_lock)
+ {
+@@ -1094,17 +1102,19 @@ __acquires(hlist_lock)
+ 	hlist_lock = kretprobe_table_lock_ptr(hash);
+ 	raw_spin_lock_irqsave(hlist_lock, *flags);
+ }
++NOKPROBE_SYMBOL(kretprobe_hash_lock);
+ 
+-static void __kprobes kretprobe_table_lock(unsigned long hash,
+-	unsigned long *flags)
++static void kretprobe_table_lock(unsigned long hash,
++				 unsigned long *flags)
+ __acquires(hlist_lock)
+ {
+ 	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
+ 	raw_spin_lock_irqsave(hlist_lock, *flags);
+ }
++NOKPROBE_SYMBOL(kretprobe_table_lock);
+ 
+-void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
+-	unsigned long *flags)
++void kretprobe_hash_unlock(struct task_struct *tsk,
++			   unsigned long *flags)
+ __releases(hlist_lock)
+ {
+ 	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
+@@ -1113,14 +1123,16 @@ __releases(hlist_lock)
+ 	hlist_lock = kretprobe_table_lock_ptr(hash);
+ 	raw_spin_unlock_irqrestore(hlist_lock, *flags);
+ }
++NOKPROBE_SYMBOL(kretprobe_hash_unlock);
+ 
+-static void __kprobes kretprobe_table_unlock(unsigned long hash,
+-       unsigned long *flags)
++static void kretprobe_table_unlock(unsigned long hash,
++				   unsigned long *flags)
+ __releases(hlist_lock)
+ {
+ 	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
+ 	raw_spin_unlock_irqrestore(hlist_lock, *flags);
+ }
++NOKPROBE_SYMBOL(kretprobe_table_unlock);
+ 
+ /*
+  * This function is called from finish_task_switch when task tk becomes dead,
+@@ -1128,7 +1140,7 @@ __releases(hlist_lock)
+  * with this task. These left over instances represent probed functions
+  * that have been called but will never return.
+  */
+-void __kprobes kprobe_flush_task(struct task_struct *tk)
++void kprobe_flush_task(struct task_struct *tk)
+ {
+ 	struct kretprobe_instance *ri;
+ 	struct hlist_head *head, empty_rp;
+@@ -1153,6 +1165,7 @@ void __kprobes kprobe_flush_task(struct task_struct *tk)
+ 		kfree(ri);
+ 	}
+ }
++NOKPROBE_SYMBOL(kprobe_flush_task);
+ 
+ static inline void free_rp_inst(struct kretprobe *rp)
+ {
+@@ -1165,7 +1178,7 @@ static inline void free_rp_inst(struct kretprobe *rp)
+ 	}
+ }
+ 
+-static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
++static void cleanup_rp_inst(struct kretprobe *rp)
+ {
+ 	unsigned long flags, hash;
+ 	struct kretprobe_instance *ri;
+@@ -1184,6 +1197,7 @@ static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
+ 	}
+ 	free_rp_inst(rp);
+ }
++NOKPROBE_SYMBOL(cleanup_rp_inst);
+ 
+ /*
+ * Add the new probe to ap->list. Fail if this is the
+@@ -1758,8 +1772,7 @@ EXPORT_SYMBOL_GPL(unregister_jprobes);
+  * This kprobe pre_handler is registered with every kretprobe. When probe
+  * hits it will set up the return probe.
+  */
+-static int __kprobes pre_handler_kretprobe(struct kprobe *p,
+-					   struct pt_regs *regs)
++static int pre_handler_kretprobe(struct kprobe *p, struct pt_regs *regs)
+ {
+ 	struct kretprobe *rp = container_of(p, struct kretprobe, kp);
+ 	unsigned long hash, flags = 0;
+@@ -1797,6 +1810,7 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
+ 	}
+ 	return 0;
+ }
++NOKPROBE_SYMBOL(pre_handler_kretprobe);
+ 
+ int register_kretprobe(struct kretprobe *rp)
+ {
+@@ -1920,11 +1934,11 @@ void unregister_kretprobes(struct kretprobe **rps, int num)
+ }
+ EXPORT_SYMBOL_GPL(unregister_kretprobes);
+ 
+-static int __kprobes pre_handler_kretprobe(struct kprobe *p,
+-					   struct pt_regs *regs)
++static int pre_handler_kretprobe(struct kprobe *p, struct pt_regs *regs)
+ {
+ 	return 0;
+ }
++NOKPROBE_SYMBOL(pre_handler_kretprobe);
+ 
+ #endif /* CONFIG_KRETPROBES */
+ 
+@@ -2002,12 +2016,13 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(enable_kprobe);
+ 
+-void __kprobes dump_kprobe(struct kprobe *kp)
++void dump_kprobe(struct kprobe *kp)
+ {
+ 	printk(KERN_WARNING "Dumping kprobe:\n");
+ 	printk(KERN_WARNING "Name: %s\nAddress: %p\nOffset: %x\n",
+ 	       kp->symbol_name, kp->addr, kp->offset);
+ }
++NOKPROBE_SYMBOL(dump_kprobe);
+ 
+ /*
+  * Lookup and populate the kprobe_blacklist.
 
-> Nothing prevents some archs from moving initialization after setting the
-> pointer, or reading data before reading the pointer to it.
-> 
-> Of course, I will include a detailed description in the next version of
-> this patch.
-> 
-> Thanks.
-> 
-> >> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> >> Cc: Michal Hocko <mhocko@suse.cz>
-> >> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> >> Cc: Glauber Costa <glommer@gmail.com>
-> >> Cc: Christoph Lameter <cl@linux.com>
-> >> Cc: Pekka Enberg <penberg@kernel.org>
-> >> Cc: Andrew Morton <akpm@linux-foundation.org>
-> >> ---
-> >>  mm/memcontrol.c |   24 ++++++++++--------------
-> >>  mm/slab.h       |    6 +++++-
-> >>  2 files changed, 15 insertions(+), 15 deletions(-)
-> >>
-> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> >> index e6ad6ff..e37fdb5 100644
-> >> --- a/mm/memcontrol.c
-> >> +++ b/mm/memcontrol.c
-> >> @@ -3429,12 +3429,14 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
-> >>  
-> >>  	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
-> >>  
-> >> -	cachep->memcg_params->memcg_caches[idx] = new_cachep;
-> >>  	/*
-> >> -	 * the readers won't lock, make sure everybody sees the updated value,
-> >> -	 * so they won't put stuff in the queue again for no reason
-> >> +	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
-> >> +	 * barrier here to ensure nobody will see the kmem_cache partially
-> >> +	 * initialized.
-> >>  	 */
-> >> -	wmb();
-> >> +	smp_wmb();
-> >> +
-> >> +	cachep->memcg_params->memcg_caches[idx] = new_cachep;
-> >>  out:
-> >>  	mutex_unlock(&memcg_cache_mutex);
-> >>  	return new_cachep;
-> >> @@ -3573,7 +3575,7 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
-> >>  					  gfp_t gfp)
-> >>  {
-> >>  	struct mem_cgroup *memcg;
-> >> -	int idx;
-> >> +	struct kmem_cache *memcg_cachep;
-> >>  
-> >>  	VM_BUG_ON(!cachep->memcg_params);
-> >>  	VM_BUG_ON(!cachep->memcg_params->is_root_cache);
-> >> @@ -3587,15 +3589,9 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
-> >>  	if (!memcg_can_account_kmem(memcg))
-> >>  		goto out;
-> >>  
-> >> -	idx = memcg_cache_id(memcg);
-> >> -
-> >> -	/*
-> >> -	 * barrier to mare sure we're always seeing the up to date value.  The
-> >> -	 * code updating memcg_caches will issue a write barrier to match this.
-> >> -	 */
-> >> -	read_barrier_depends();
-> >> -	if (likely(cache_from_memcg_idx(cachep, idx))) {
-> >> -		cachep = cache_from_memcg_idx(cachep, idx);
-> >> +	memcg_cachep = cache_from_memcg_idx(cachep, memcg_cache_id(memcg));
-> >> +	if (likely(memcg_cachep)) {
-> >> +		cachep = memcg_cachep;
-> >>  		goto out;
-> >>  	}
-> >>  
-> >> diff --git a/mm/slab.h b/mm/slab.h
-> >> index 0859c42..1d8b53f 100644
-> >> --- a/mm/slab.h
-> >> +++ b/mm/slab.h
-> >> @@ -163,9 +163,13 @@ static inline const char *cache_name(struct kmem_cache *s)
-> >>  static inline struct kmem_cache *
-> >>  cache_from_memcg_idx(struct kmem_cache *s, int idx)
-> >>  {
-> >> +	struct kmem_cache *cachep;
-> >> +
-> >>  	if (!s->memcg_params)
-> >>  		return NULL;
-> >> -	return s->memcg_params->memcg_caches[idx];
-> >> +	cachep = s->memcg_params->memcg_caches[idx];
-> >> +	smp_read_barrier_depends();	/* see memcg_register_cache() */
-> >> +	return cachep;
-> >>  }
-> >>  
-> >>  static inline struct kmem_cache *memcg_root_cache(struct kmem_cache *s)
-> >> -- 
-> >> 1.7.10.4
-> >>
-> 
 
--- 
-Michal Hocko
-SUSE Labs
