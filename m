@@ -1,121 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab3LSJ5y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:57:54 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:24838 "EHLO song.cn.fujitsu.com"
+	id S1753263Ab3LSJ5x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:57:53 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:11887 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752204Ab3LSJ4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752208Ab3LSJ4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Dec 2013 04:56:49 -0500
 X-IronPort-AV: E=Sophos;i="4.95,512,1384272000"; 
-   d="scan'208";a="9291075"
+   d="scan'208";a="9291076"
 From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org, eranian@google.com, dsahern@gmail.com,
         adrian.hunter@intel.com, acme@ghostprotocols.net
 Cc: mingo@redhat.com, paulus@samba.org, a.p.zijlstra@chello.nl,
         Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 1/4] perf tools: Add support of guest in synthesize_threads.
-Date: Thu, 19 Dec 2013 17:54:51 -0500
-Message-Id: <c1922c3cf1b16ae6fc8c009cf7c02db5144ab001.1387493396.git.yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 3/4] perf tools: Add support of user space symbols for guest in perf kvm top.
+Date: Thu, 19 Dec 2013 17:54:53 -0500
+Message-Id: <5becc77a891111b5513e62e62fe104e73682cd4f.1387493396.git.yangds.fnst@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1387493396.git.yangds.fnst@cn.fujitsu.com>
 References: <cover.1387493396.git.yangds.fnst@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/12/19 17:56:15,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/19 17:56:16,
-	Serialize complete at 2013/12/19 17:56:16
+ 2013/12/19 17:56:17,
+	Serialize complete at 2013/12/19 17:56:17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are using XXX__synthesize_threads() function to synthesize the
-symbols of user space for host. This patch add support of guest
-for these functions.
+	# perf kvm --guestmount /tmp/guestmount/ top
+	Samples: 1K of event 'cycles', Event count (approx.): 259112905
+	 17.34%  libcrypto.so.1.0.1e  [u] 0x000000000007d971
+	  5.60%  [guest.kernel]       [g] kallsyms_expand_symbol
+	  5.44%  libcrypto.so.1.0.1e  [u] md5_block_asm_data_order
+	  4.09%  [guest.kernel]       [g] number.isra.1
+	  3.59%  [guest.kernel]       [g] vsnprintf
+	  3.52%  sshd                 [u] 0x00000000000441c0
+	  2.37%  [guest.kernel]       [g] format_decode
+	  2.36%  [guest.kernel]       [g] memcpy
+	  2.11%  [guest.kernel]       [g] strnlen
 
 Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 ---
- tools/perf/util/event.c | 33 +++++++++++++++++++++++++++------
- 1 file changed, 27 insertions(+), 6 deletions(-)
+ tools/perf/builtin-top.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 6948768..6e36bbb 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -106,8 +106,12 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 03d37a7..670bd0b 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -821,11 +821,9 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+ 			break;
+ 		case PERF_RECORD_MISC_GUEST_USER:
+ 			++top->guest_us_samples;
+-			/*
+-			 * TODO: we don't process guest user from host side
+-			 * except simple counting.
+-			 */
+-			/* Fall thru */
++			machine = perf_session__find_machine(session,
++							     sample.pid);
++			break;
+ 		default:
+ 			goto next_event;
+ 		}
+@@ -912,6 +910,7 @@ static int __cmd_top(struct perf_top *top)
+ 	struct perf_record_opts *opts = &top->record_opts;
+ 	pthread_t thread;
+ 	int ret;
++	struct rb_node *nd;
  
- 	memset(&event->comm, 0, sizeof(event->comm));
+ 	top->session = perf_session__new(NULL, false, NULL);
+ 	if (top->session == NULL)
+@@ -931,6 +930,12 @@ static int __cmd_top(struct perf_top *top)
  
--	tgid = perf_event__get_comm_tgid(pid, event->comm.comm,
--					 sizeof(event->comm.comm));
-+	if (machine__is_host(machine))
-+		tgid = perf_event__get_comm_tgid(pid, event->comm.comm,
-+						 sizeof(event->comm.comm));
-+	else
-+		tgid = machine->pid;
+ 	machine__synthesize_threads(&top->session->machines.host, &opts->target,
+ 				    top->evlist->threads, false);
 +
- 	if (tgid < 0)
- 		goto out;
- 
-@@ -129,7 +133,11 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
- 		goto out;
- 	}
- 
--	snprintf(filename, sizeof(filename), "/proc/%d/task", pid);
-+	if (machine__is_default_guest(machine))
-+		return 0;
++	for (nd = rb_first(&top->session->machines.guests); nd; nd = rb_next(nd)) {
++		struct machine *pos = rb_entry(nd, struct machine, rb_node);
++		machine__synthesize_threads(pos, &opts->target, top->evlist->threads, false);
++	}
 +
-+	snprintf(filename, sizeof(filename), "%s/proc/%d/task",
-+		 machine->root_dir, pid);
- 
- 	tasks = opendir(filename);
- 	if (tasks == NULL) {
-@@ -178,7 +186,11 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 	FILE *fp;
- 	int rc = 0;
- 
--	snprintf(filename, sizeof(filename), "/proc/%d/maps", pid);
-+	if (machine__is_default_guest(machine))
-+		return 0;
-+
-+	snprintf(filename, sizeof(filename), "%s/proc/%d/maps",
-+		 machine->root_dir, pid);
- 
- 	fp = fopen(filename, "r");
- 	if (fp == NULL) {
-@@ -218,7 +230,10 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		/*
- 		 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
- 		 */
--		event->header.misc = PERF_RECORD_MISC_USER;
-+		if (machine__is_host(machine))
-+			event->header.misc = PERF_RECORD_MISC_USER;
-+		else
-+			event->header.misc = PERF_RECORD_MISC_GUEST_USER;
- 
- 		if (prot[2] != 'x') {
- 			if (!mmap_data || prot[0] != 'r')
-@@ -387,6 +402,7 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
- 				   struct machine *machine, bool mmap_data)
- {
- 	DIR *proc;
-+	char proc_path[PATH_MAX];
- 	struct dirent dirent, *next;
- 	union perf_event *comm_event, *mmap_event;
- 	int err = -1;
-@@ -399,7 +415,12 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
- 	if (mmap_event == NULL)
- 		goto out_free_comm;
- 
--	proc = opendir("/proc");
-+	if (machine__is_default_guest(machine))
-+		return 0;
-+
-+	snprintf(proc_path, sizeof(proc_path), "%s/proc", machine->root_dir);
-+	proc = opendir(proc_path);
-+
- 	if (proc == NULL)
- 		goto out_free_mmap;
- 
+ 	ret = perf_top__start_counters(top);
+ 	if (ret)
+ 		goto out_delete;
 -- 
 1.8.2.1
 
