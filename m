@@ -1,80 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751536Ab3LSBMU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 20:12:20 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:34588 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab3LSBMS (ORCPT
+	id S1751880Ab3LSBNK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 20:13:10 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:34027 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583Ab3LSBNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 20:12:18 -0500
-From: Kent Overstreet <kmo@daterainc.com>
-To: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, neilb@suse.de,
-        axboe@kernel.dk
-Cc: Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH] bcache/md: Use raid stripe size
-Date: Wed, 18 Dec 2013 17:12:11 -0800
-Message-Id: <1387415531-10713-1-git-send-email-kmo@daterainc.com>
-X-Mailer: git-send-email 1.8.5.1
+	Wed, 18 Dec 2013 20:13:08 -0500
+X-AuditID: cbfee61b-b7fbf6d0000051a3-e3-52b24822f10e
+From: Chao Yu <chao2.yu@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        linux-fsdevel@vger.kernel.org
+References: <1387244992-7038-1-git-send-email-jaegeuk.kim@samsung.com>
+ <1387325521.2101.212.camel@kjgkr>
+In-reply-to: <1387325521.2101.212.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH] f2fs: introduce a new direct_IO write path
+Date: Thu, 19 Dec 2013 09:12:16 +0800
+Message-id: <000901cefc57$775a6450$660f2cf0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIuN7ZoSJWXSWJORHKD4kLFTtrs2wIHyjEvmYv+g8A=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9jAV1lj01BBisb2S2u7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgymg5NYuxYIpgxa1d
+	2xkbGL/ydjFyckgImEhsWdvCAmGLSVy4t56ti5GLQ0hgEaPE5b2N7BDOD0aJh0c/s4FUsQmo
+	SCzv+M8EYosISEvM+jQPqJuDg1kgU+L84USQsJBAlsSapRvBhnIK6El87z/KBlIiLOAl0fet
+	GCTMIqAqcezvNlYQm1fAUuL+tbeMELagxI/J98BamQW0JNbvPM4EYctLbF7zlhniTgWJHWdf
+	M0JcYCWx7cwTNogacYmNR26xTGAUmoVk1Cwko2YhGTULScsCRpZVjKKpBckFxUnpuUZ6xYm5
+	xaV56XrJ+bmbGMFh/0x6B+OqBotDjAIcjEo8vAHPNwYJsSaWFVfmHmKU4GBWEuG9wrIpSIg3
+	JbGyKrUoP76oNCe1+BCjNAeLkjjvwVbrQCGB9MSS1OzU1ILUIpgsEwenVANjh32cxaQtPo9Z
+	PPu0GOdqO1yf8608y6itWL02LO92g9zvZRJPtJ3708zsrK5OqDd7uTOpoFgmalWRPHctc9Xs
+	ydcn9dVunXaf99y+w2LTnszkVT+bc/bllwBbhmd3rD1b/PZohp4K27frXuVq4417Z6/Ib9z1
+	o6ZNY23Y2Vs2eS/OtPAwH5yrxFKckWioxVxUnAgAXYRJ2HcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we've got code for raid5/6 stripe awareness, bcache just needs
-to know about the stripes and when writing partial stripes is expensive
-- we probably don't want to enable this optimization for raid1 or 10,
-even though they have stripes. So add a flag to queue_limits.
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Wednesday, December 18, 2013 8:12 AM
+> To: linux-fsdevel@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
+> Subject: Re: [f2fs-dev] [PATCH] f2fs: introduce a new direct_IO write path
+> 
+> Change log from v1:
+>  o fix NOSPC error handling
+> 
+> >From b8511a74fe98b67247a9feeed58441e8f5ffd705 Mon Sep 17 00:00:00 2001
+> From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> Date: Mon, 16 Dec 2013 19:04:05 +0900
+> Subject: [PATCH] f2fs: introduce a new direct_IO write path
+> Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+> linux-f2fs-devel@lists.sourceforge.net
+> 
+> Previously, f2fs doesn't support direct IOs with high performance, which
+> throws
+> every write requests via the buffered write path, resulting in highly
+> performance degradation due to memory opeations like copy_from_user.
+> 
+> This patch introduces a new direct IO path in which every write requests
+> are
+> processed by generic blockdev_direct_IO() with enhanced get_block
+> function.
+> 
+> The get_data_block() in f2fs handles:
+> 1. if original data blocks are allocates, then give them to blockdev.
+> 2. otherwise,
+>   a. preallocate requested block addresses
+>   b. do not use extent cache for better performance
+>   c. give the block addresses to blockdev
+> 
+> This policy induces that:
+> - new allocated data are sequentially written to the disk
+> - updated data are randomly written to the disk.
+> - f2fs gives consistency on its file meta, not file data.
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
----
-This is in my pile of bcache stuff queued up for 3.14 - if no one objects it'll
-be in my bcache pull request:
+Looks Nice!
 
- drivers/md/bcache/super.c | 6 ++++++
- drivers/md/raid5.c        | 1 +
- include/linux/blkdev.h    | 1 +
- 3 files changed, 8 insertions(+)
+> 
+> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 63ebef78df..e363efcf2b 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1134,6 +1134,12 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
- 		hlist_add_head(&io->hash, dc->io_hash + RECENT_IO);
- 	}
- 
-+	dc->disk.stripe_size = q->limits.io_opt >> 9;
-+
-+	if (dc->disk.stripe_size)
-+		dc->partial_stripes_expensive =
-+			q->limits.raid_partial_stripes_expensive;
-+
- 	ret = bcache_device_init(&dc->disk, block_size,
- 			 dc->bdev->bd_part->nr_sects - dc->sb.data_offset);
- 	if (ret)
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index bef353c51c..4b5035f286 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -6104,6 +6104,7 @@ static int run(struct mddev *mddev)
- 		blk_queue_io_min(mddev->queue, chunk_size);
- 		blk_queue_io_opt(mddev->queue, chunk_size *
- 				 (conf->raid_disks - conf->max_degraded));
-+		mddev->queue->limits.raid_partial_stripes_expensive = 1;
- 		/*
- 		 * We can only discard a whole stripe. It doesn't make sense to
- 		 * discard data disk but write parity disk
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 02cb6f0ea7..0375654adb 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -291,6 +291,7 @@ struct queue_limits {
- 	unsigned char		discard_misaligned;
- 	unsigned char		cluster;
- 	unsigned char		discard_zeroes_data;
-+	unsigned char		raid_partial_stripes_expensive;
- };
- 
- struct request_queue {
--- 
-1.8.5.1
+Reviewed-by: Chao Yu <chao2.yu@samsung.com>
+
+> +
+> +	end_offset = IS_INODE(dn.node_page) ?
+> +			ADDRS_PER_INODE(F2FS_I(inode)) : ADDRS_PER_BLOCK;
+> +	bh_result->b_size = (((size_t)1) << blkbits);
+> +	dn.ofs_in_node++;
+> +	pgofs++;
+> +
+> +get_next:
+> +	if (dn.ofs_in_node >= end_offset) {
+> +		if (allocated)
+> +			sync_inode_page(&dn);
+> +		allocated = false;
+
+		if (allocated) {
+			sync_inode_page(&dn);
+			allocated = false;
+		}
+Certainly, it's really not a big deal. :)
+
+Thanks
 
