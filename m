@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab3LSX00 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 18:26:26 -0500
-Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.23]:31203 "EHLO
-	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756443Ab3LSX0Y (ORCPT
+	id S1756723Ab3LSX1J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 18:27:09 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:41359 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756008Ab3LSX1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 18:26:24 -0500
-X-Greylist: delayed 14665 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Dec 2013 18:26:24 EST
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Tom Herbert <therbert@google.com>
-CC: Daniel Borkmann <dborkman@redhat.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-Subject: RE: [PATCH net-next] hyperv: Add support for Virtual Receive Side
- Scaling (vRSS)
-Thread-Topic: [PATCH net-next] hyperv: Add support for Virtual Receive Side
- Scaling (vRSS)
-Thread-Index: AQHO/DjpLyfIXxkiYUqDQo2oHD6XuZpcUhsA//+GhuCAAIn5gP//g6IggACQ8YD//4UPEAATARIAAA2nPlA=
-Date: Thu, 19 Dec 2013 23:15:25 +0000
-Message-ID: <3eb3eb6885704b6098c39fad1fdfc443@DFM-DB3MBX15-08.exchange.corp.microsoft.com>
-References: <1387405262-18334-1-git-send-email-haiyangz@microsoft.com>
-	<1387475178.1876.29.camel@bwh-desktop.uk.level5networks.com>
-	<ff7f7541d0164d408b3a4278569c593a@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-	<52B33EC1.5040901@redhat.com>
-	<6ee28c6a94e74c958ee96c3547741fb9@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-	<CA+mtBx-BBBQjVTOrnaow=GNc7VM5D2Zj8xr=fPM4b4f_xT7qkQ@mail.gmail.com>
-	<05be4f23ff784e56b710dd02eb88358a@DFM-DB3MBX15-08.exchange.corp.microsoft.com>
- <CA+mtBx_SSPd6s5519dWCyPGmFvO=kE+Fh3ZQ9w9oo=pJraRAFQ@mail.gmail.com>
-In-Reply-To: <CA+mtBx_SSPd6s5519dWCyPGmFvO=kE+Fh3ZQ9w9oo=pJraRAFQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 19 Dec 2013 18:27:06 -0500
+Date: Thu, 19 Dec 2013 17:26:13 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: David Brown <davidb@codeaurora.org>
+CC: Felipe Balbi <balbi@ti.com>, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        <gregkh@linuxfoundation.org>, <rob.herring@calxeda.com>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 00/15]  usb: phy: msm: Fixes, cleanups and DT support
+Message-ID: <20131219232613.GH707@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1384267910-32066-1-git-send-email-iivanov@mm-sol.com>
+ <20131126163846.GF24310@saruman.home>
+ <20131219230315.GA20875@codeaurora.org>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.159.100;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(164054003)(51704005)(377454003)(13464003)(199002)(189002)(47776003)(20776003)(63696002)(74706001)(87936001)(46102001)(79102001)(66066001)(49866001)(74366001)(87266001)(50466002)(80022001)(65816001)(50986001)(47736001)(47976001)(77982001)(85306002)(2656002)(76482001)(33646001)(6806004)(59766001)(80976001)(85852003)(81342001)(90146001)(56816005)(83072002)(74662001)(4396001)(23676002)(69226001)(31966008)(47446002)(74502001)(81686001)(51856001)(83322001)(81816001)(74876001)(54316002)(81542001)(76786001)(56776001)(44976005)(19580405001)(76796001)(19580395003)(54356001)(53806001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:CH1SR01MB599;H:hybrid.exchange.microsoft.com;CLIP:131.107.159.100;FPR:;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Forefront-PRVS: 006546F32A
-X-OriginatorOrg: microsoft.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZYOWEO2dMm2Af3e3"
+Content-Disposition: inline
+In-Reply-To: <20131219230315.GA20875@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBJNQUlM008684
 
-> -----Original Message-----
-> From: Tom Herbert [mailto:therbert@google.com]
-> Sent: Thursday, December 19, 2013 4:43 PM
-> To: Haiyang Zhang
-> Cc: Daniel Borkmann; Ben Hutchings; davem@davemloft.net;
-> netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
-> jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
-> devel@linuxdriverproject.org
-> Subject: Re: [PATCH net-next] hyperv: Add support for Virtual Receive Side
-> Scaling (vRSS)
-> 
-> Patch is below. This version did most pre-computation of the variants I built,
-> but results in largest table (40*256*4 bytes), This gives performance roughly
-> comparable with jhash (roughly same as jhash for IPv4, about 30% more
-> cycles for IPv6). I have the simpler less memory intensive versions also if
-> you're interested, these are 10x worse cycles so I wouldn't want those in
-> critical path.
-> ----
+--ZYOWEO2dMm2Af3e3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thank you for the code. We like the fast implementation even it uses a bit more
-memory. Are you going to address the comments and re-submit the code soon?
+On Thu, Dec 19, 2013 at 03:03:15PM -0800, David Brown wrote:
+> On Tue, Nov 26, 2013 at 10:38:46AM -0600, Felipe Balbi wrote:
+> >Hi,
+> >
+> >On Tue, Nov 12, 2013 at 04:51:35PM +0200, Ivan T. Ivanov wrote:
+> >>From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> >>
+> >>Hi,
+> >>
+> >>Patches have been tested on top of Stephen's clock controller
+> >>patches[1] and recent fixes for chipidea msm glue layer driver
+> >>posted here[2]. Hardware platform AP8074 DragonBoard. Only gadget
+> >>mode utilized for now.
+> >>
+> >>CV Test Suite engine "Chapter 9 tests" are passing except
+> >>"Halt Endpoint Test".
+> >>
+> >>usbtest driver report following failure:
+> >>test 13 --> 32 (Broken pipe) 		ep 81 couldn't set halt, -32
+> >>
+> >>This will be investigated further.
+> >>Patches could be applied cleanly on top of the usb-3.13-rc1.
+> >>
+> >>Regards,
+> >>Ivan
+> >>
+> >>[1] http://comments.gmane.org/gmane.linux.ports.arm.msm/5375
+> >>[2] https://lkml.org/lkml/2013/11/11/310
+> >
+> >I wonder how will this be taken upstream provided there are
+> >interdependencies between arch/ and drivers/ patches.
+> >
+> >I can Ack patches but I'd really like to avoid merging of topic branches
+> >all over the place :-s
+>=20
+> Ivan's patches are the only ones in this window that touch these board
+> files in MSM.  It's probably easiest if I ack them, and you can bring
+> the whole series through your tree.
 
-Thanks,
-- Haiyang
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+it's getting quite late for me. I still want to leave my stuff soaking
+in linux-next for a while. I'll try my best, though, if you ack it ASAP
+;-)
+
+cheers
+
+--=20
+balbi
+
+--ZYOWEO2dMm2Af3e3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSs4CVAAoJEIaOsuA1yqREVIIP/2mbuStKTgLpARGYtrRbpGg8
+myEuVaka/H4QQ2Xk+3UZk+kk4FnTkKf9wKqRVwvhEz/t0A7UPfHNUCVMKqt7WFgV
+epwoKPENToxoxNz7d6VweB85ch3/A0u7LXA4NYVYST7EhM2dVGFLWriGdaYQUpWK
+0pNEHvf+r8YqpuReTr9919Mu8IN1ObTGaG9kTz48GBse1/GEnuhrwwVU2NTnp/dU
+wg208gsvXMi1TZEXrgdr9gkQLVydmC21pxQI0jiOSO7cZ/6etiC/DlCFtT8Gl+iY
+UkmImldAC0cZZ36rRPjwjaS+eSAKSMm3COdbpQ2cAFoeOO+VrfJEv4xgj3UH4sBB
+csEyx89HcxRbZgLVCr9p0zly0z+7c1xGdls/y3hagndkl2Ie9PueWTVL/8mPXabO
+zMomxQKn51tT90NyoGkO26+i7xHkV7uF0/bic5075RqFbjwWB5hkw5Y571ngHPok
+q0Lpa+yC7dzlCHpmPskHqU1HGr6+OWPY89CK1/LX4IbZseSTLjxnI0+nWQjckmb2
+zYjmBbt+DrUIfrksIRN1T4dkXmdUliHIbgU+gS2lHHcdr3Lc8e/nlIrT+W9CDiYA
+HC+6nw34LAZVwsEZzzh6doX39sU7CiTx25D1h/NVyzuD4HAnHNAkGtMlKgW/NcT+
+ABVVZ0+0iNmrjOqqmfCA
+=Ln38
+-----END PGP SIGNATURE-----
+
+--ZYOWEO2dMm2Af3e3--
