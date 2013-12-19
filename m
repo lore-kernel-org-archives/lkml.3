@@ -1,289 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab3LSJTN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:19:13 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:56757 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752086Ab3LSJKK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:10:10 -0500
-Subject: [PATCH -tip v6 13/22] kprobes: Use NOKPROBE_SYMBOL macro instead of
- __kprobes
-To: Ingo Molnar <mingo@kernel.org>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
-Date: Thu, 19 Dec 2013 09:04:26 +0000
-Message-ID: <20131219090426.14309.53598.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1753492Ab3LSJTL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:19:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49198 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751838Ab3LSJKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 04:10:14 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Subject: [PATCH] mm/memory-failure.c: transfer page count from head page to tail page after split thp
+Date: Thu, 19 Dec 2013 04:09:34 -0500
+Message-Id: <1387444174-16752-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use NOKPROBE_SYMBOL macro to protect functions from
-kprobes instead of __kprobes annotation.
+Memory failures on thp tail pages cause kernel panic like below:
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
+  [  317.361821] mce: [Hardware Error]: Machine check events logged
+  [  317.361831] MCE exception done on CPU 7
+  [  317.362007] BUG: unable to handle kernel NULL pointer dereference at 0000000000000058
+  [  317.362015] IP: [<ffffffff811b7cd1>] dequeue_hwpoisoned_huge_page+0x131/0x1e0
+  [  317.362017] PGD bae42067 PUD ba47d067 PMD 0
+  [  317.362019] Oops: 0000 [#1] SMP
+  ...
+  [  317.362052] CPU: 7 PID: 128 Comm: kworker/7:2 Tainted: G   M       O 3.13.0-rc4-131217-1558-00003-g83b7df08e462 #25
+  ...
+  [  317.362083] Call Trace:
+  [  317.362091]  [<ffffffff811d9bae>] me_huge_page+0x3e/0x50
+  [  317.362094]  [<ffffffff811dab9b>] memory_failure+0x4bb/0xc20
+  [  317.362096]  [<ffffffff8106661e>] mce_process_work+0x3e/0x70
+  [  317.362100]  [<ffffffff810b1e21>] process_one_work+0x171/0x420
+  [  317.362102]  [<ffffffff810b2c1b>] worker_thread+0x11b/0x3a0
+  [  317.362105]  [<ffffffff810b2b00>] ? manage_workers.isra.25+0x2b0/0x2b0
+  [  317.362109]  [<ffffffff810b93c4>] kthread+0xe4/0x100
+  [  317.362112]  [<ffffffff810b92e0>] ? kthread_create_on_node+0x190/0x190
+  [  317.362117]  [<ffffffff816e3c6c>] ret_from_fork+0x7c/0xb0
+  [  317.362119]  [<ffffffff810b92e0>] ? kthread_create_on_node+0x190/0x190
+  ...
+  [  317.362162] RIP  [<ffffffff811b7cd1>] dequeue_hwpoisoned_huge_page+0x131/0x1e0
+  [  317.362163]  RSP <ffff880426699cf0>
+  [  317.362164] CR2: 0000000000000058
+
+The reasoning of this problem is shown below:
+ - when we have a memory error on a thp tail page, the memory error
+   handler grabs a refcount of the head page to keep the thp under us.
+ - Before unmapping the error page from processes, we split the thp,
+   where page refcounts of both of head/tail pages don't change.
+ - Then we call try_to_unmap() over the error page (which was a tail
+   page before). We didn't pin the error page to handle the memory error,
+   this error page is freed and removed from LRU list.
+ - We never have the error page on LRU list, so the first page state
+   check returns "unknown page," then we move to the second check
+   with the saved page flag.
+ - The saved page flag have PG_tail set, so the second page state check
+   returns "hugepage."
+ - We call me_huge_page() for freed error page, then we hit the above panic.
+
+The root cause is that we didn't move refcount from the head page to
+the tail page after split thp. So this patch suggests to do this.
+
+This panic was introduced by commit 524fca1e73 "HWPOISON: fix misjudgement
+of page_action() for errors on mlocked pages."  Note that we did have
+the same refcount problem before this commit, but it was just ignored
+because we had only first page state check which returned "unknown page."
+The commit changed the refcount problem from "doesn't work" to "kernel panic."
+
+Cc: stable@vger.kernel.org # 3.9+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- kernel/kprobes.c |   67 +++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 41 insertions(+), 26 deletions(-)
+ mm/memory-failure.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 4db2cc6..a21b4e6 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -301,7 +301,7 @@ static inline void reset_kprobe_instance(void)
-  * 				OR
-  * 	- with preemption disabled - from arch/xxx/kernel/kprobes.c
-  */
--struct kprobe __kprobes *get_kprobe(void *addr)
-+struct kprobe *get_kprobe(void *addr)
- {
- 	struct hlist_head *head;
- 	struct kprobe *p;
-@@ -314,8 +314,9 @@ struct kprobe __kprobes *get_kprobe(void *addr)
- 
- 	return NULL;
- }
-+NOKPROBE_SYMBOL(get_kprobe);
- 
--static int __kprobes aggr_pre_handler(struct kprobe *p, struct pt_regs *regs);
-+static int aggr_pre_handler(struct kprobe *p, struct pt_regs *regs);
- 
- /* Return true if the kprobe is an aggregator */
- static inline int kprobe_aggrprobe(struct kprobe *p)
-@@ -347,7 +348,7 @@ static bool kprobes_allow_optimization;
-  * Call all pre_handler on the list, but ignores its return value.
-  * This must be called from arch-dep optimized caller.
-  */
--void __kprobes opt_pre_handler(struct kprobe *p, struct pt_regs *regs)
-+void opt_pre_handler(struct kprobe *p, struct pt_regs *regs)
- {
- 	struct kprobe *kp;
- 
-@@ -359,6 +360,7 @@ void __kprobes opt_pre_handler(struct kprobe *p, struct pt_regs *regs)
- 		reset_kprobe_instance();
- 	}
- }
-+NOKPROBE_SYMBOL(opt_pre_handler);
- 
- /* Free optimized instructions and optimized_kprobe */
- static void free_aggr_kprobe(struct kprobe *p)
-@@ -995,7 +997,7 @@ static void disarm_kprobe(struct kprobe *kp, bool reopt)
-  * Aggregate handlers for multiple kprobes support - these handlers
-  * take care of invoking the individual kprobe handlers on p->list
-  */
--static int __kprobes aggr_pre_handler(struct kprobe *p, struct pt_regs *regs)
-+static int aggr_pre_handler(struct kprobe *p, struct pt_regs *regs)
- {
- 	struct kprobe *kp;
- 
-@@ -1009,9 +1011,10 @@ static int __kprobes aggr_pre_handler(struct kprobe *p, struct pt_regs *regs)
- 	}
- 	return 0;
- }
-+NOKPROBE_SYMBOL(aggr_pre_handler);
- 
--static void __kprobes aggr_post_handler(struct kprobe *p, struct pt_regs *regs,
--					unsigned long flags)
-+static void aggr_post_handler(struct kprobe *p, struct pt_regs *regs,
-+			      unsigned long flags)
- {
- 	struct kprobe *kp;
- 
-@@ -1023,9 +1026,10 @@ static void __kprobes aggr_post_handler(struct kprobe *p, struct pt_regs *regs,
+diff --git v3.13-rc4.orig/mm/memory-failure.c v3.13-rc4/mm/memory-failure.c
+index db08af92c6fc..fabe55046c1d 100644
+--- v3.13-rc4.orig/mm/memory-failure.c
++++ v3.13-rc4/mm/memory-failure.c
+@@ -938,6 +938,16 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 				BUG_ON(!PageHWPoison(p));
+ 				return SWAP_FAIL;
+ 			}
++			/*
++			 * We pinned the head page for hwpoison handling,
++			 * now we split the thp and we are interested in
++			 * the hwpoisoned raw page, so move the refcount
++			 * to it.
++			 */
++			if (hpage != p) {
++				put_page(hpage);
++				get_page(p);
++			}
+ 			/* THP is split, so ppage should be the real poisoned page. */
+ 			ppage = p;
  		}
- 	}
- }
-+NOKPROBE_SYMBOL(aggr_post_handler);
- 
--static int __kprobes aggr_fault_handler(struct kprobe *p, struct pt_regs *regs,
--					int trapnr)
-+static int aggr_fault_handler(struct kprobe *p, struct pt_regs *regs,
-+			      int trapnr)
- {
- 	struct kprobe *cur = __this_cpu_read(kprobe_instance);
- 
-@@ -1039,8 +1043,9 @@ static int __kprobes aggr_fault_handler(struct kprobe *p, struct pt_regs *regs,
- 	}
- 	return 0;
- }
-+NOKPROBE_SYMBOL(aggr_fault_handler);
- 
--static int __kprobes aggr_break_handler(struct kprobe *p, struct pt_regs *regs)
-+static int aggr_break_handler(struct kprobe *p, struct pt_regs *regs)
- {
- 	struct kprobe *cur = __this_cpu_read(kprobe_instance);
- 	int ret = 0;
-@@ -1052,9 +1057,10 @@ static int __kprobes aggr_break_handler(struct kprobe *p, struct pt_regs *regs)
- 	reset_kprobe_instance();
- 	return ret;
- }
-+NOKPROBE_SYMBOL(aggr_break_handler);
- 
- /* Walks the list and increments nmissed count for multiprobe case */
--void __kprobes kprobes_inc_nmissed_count(struct kprobe *p)
-+void kprobes_inc_nmissed_count(struct kprobe *p)
- {
- 	struct kprobe *kp;
- 	if (!kprobe_aggrprobe(p)) {
-@@ -1065,9 +1071,10 @@ void __kprobes kprobes_inc_nmissed_count(struct kprobe *p)
- 	}
- 	return;
- }
-+NOKPROBE_SYMBOL(kprobes_inc_nmissed_count);
- 
--void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
--				struct hlist_head *head)
-+void recycle_rp_inst(struct kretprobe_instance *ri,
-+		     struct hlist_head *head)
- {
- 	struct kretprobe *rp = ri->rp;
- 
-@@ -1082,8 +1089,9 @@ void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
- 		/* Unregistering */
- 		hlist_add_head(&ri->hlist, head);
- }
-+NOKPROBE_SYMBOL(recycle_rp_inst);
- 
--void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
-+void kretprobe_hash_lock(struct task_struct *tsk,
- 			 struct hlist_head **head, unsigned long *flags)
- __acquires(hlist_lock)
- {
-@@ -1094,17 +1102,19 @@ __acquires(hlist_lock)
- 	hlist_lock = kretprobe_table_lock_ptr(hash);
- 	raw_spin_lock_irqsave(hlist_lock, *flags);
- }
-+NOKPROBE_SYMBOL(kretprobe_hash_lock);
- 
--static void __kprobes kretprobe_table_lock(unsigned long hash,
--	unsigned long *flags)
-+static void kretprobe_table_lock(unsigned long hash,
-+				 unsigned long *flags)
- __acquires(hlist_lock)
- {
- 	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
- 	raw_spin_lock_irqsave(hlist_lock, *flags);
- }
-+NOKPROBE_SYMBOL(kretprobe_table_lock);
- 
--void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
--	unsigned long *flags)
-+void kretprobe_hash_unlock(struct task_struct *tsk,
-+			   unsigned long *flags)
- __releases(hlist_lock)
- {
- 	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
-@@ -1113,14 +1123,16 @@ __releases(hlist_lock)
- 	hlist_lock = kretprobe_table_lock_ptr(hash);
- 	raw_spin_unlock_irqrestore(hlist_lock, *flags);
- }
-+NOKPROBE_SYMBOL(kretprobe_hash_unlock);
- 
--static void __kprobes kretprobe_table_unlock(unsigned long hash,
--       unsigned long *flags)
-+static void kretprobe_table_unlock(unsigned long hash,
-+				   unsigned long *flags)
- __releases(hlist_lock)
- {
- 	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
- 	raw_spin_unlock_irqrestore(hlist_lock, *flags);
- }
-+NOKPROBE_SYMBOL(kretprobe_table_unlock);
- 
- /*
-  * This function is called from finish_task_switch when task tk becomes dead,
-@@ -1128,7 +1140,7 @@ __releases(hlist_lock)
-  * with this task. These left over instances represent probed functions
-  * that have been called but will never return.
-  */
--void __kprobes kprobe_flush_task(struct task_struct *tk)
-+void kprobe_flush_task(struct task_struct *tk)
- {
- 	struct kretprobe_instance *ri;
- 	struct hlist_head *head, empty_rp;
-@@ -1153,6 +1165,7 @@ void __kprobes kprobe_flush_task(struct task_struct *tk)
- 		kfree(ri);
- 	}
- }
-+NOKPROBE_SYMBOL(kprobe_flush_task);
- 
- static inline void free_rp_inst(struct kretprobe *rp)
- {
-@@ -1165,7 +1178,7 @@ static inline void free_rp_inst(struct kretprobe *rp)
- 	}
- }
- 
--static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
-+static void cleanup_rp_inst(struct kretprobe *rp)
- {
- 	unsigned long flags, hash;
- 	struct kretprobe_instance *ri;
-@@ -1184,6 +1197,7 @@ static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
- 	}
- 	free_rp_inst(rp);
- }
-+NOKPROBE_SYMBOL(cleanup_rp_inst);
- 
- /*
- * Add the new probe to ap->list. Fail if this is the
-@@ -1758,8 +1772,7 @@ EXPORT_SYMBOL_GPL(unregister_jprobes);
-  * This kprobe pre_handler is registered with every kretprobe. When probe
-  * hits it will set up the return probe.
-  */
--static int __kprobes pre_handler_kretprobe(struct kprobe *p,
--					   struct pt_regs *regs)
-+static int pre_handler_kretprobe(struct kprobe *p, struct pt_regs *regs)
- {
- 	struct kretprobe *rp = container_of(p, struct kretprobe, kp);
- 	unsigned long hash, flags = 0;
-@@ -1797,6 +1810,7 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
- 	}
- 	return 0;
- }
-+NOKPROBE_SYMBOL(pre_handler_kretprobe);
- 
- int register_kretprobe(struct kretprobe *rp)
- {
-@@ -1920,11 +1934,11 @@ void unregister_kretprobes(struct kretprobe **rps, int num)
- }
- EXPORT_SYMBOL_GPL(unregister_kretprobes);
- 
--static int __kprobes pre_handler_kretprobe(struct kprobe *p,
--					   struct pt_regs *regs)
-+static int pre_handler_kretprobe(struct kprobe *p, struct pt_regs *regs)
- {
- 	return 0;
- }
-+NOKPROBE_SYMBOL(pre_handler_kretprobe);
- 
- #endif /* CONFIG_KRETPROBES */
- 
-@@ -2002,12 +2016,13 @@ out:
- }
- EXPORT_SYMBOL_GPL(enable_kprobe);
- 
--void __kprobes dump_kprobe(struct kprobe *kp)
-+void dump_kprobe(struct kprobe *kp)
- {
- 	printk(KERN_WARNING "Dumping kprobe:\n");
- 	printk(KERN_WARNING "Name: %s\nAddress: %p\nOffset: %x\n",
- 	       kp->symbol_name, kp->addr, kp->offset);
- }
-+NOKPROBE_SYMBOL(dump_kprobe);
- 
- /*
-  * Lookup and populate the kprobe_blacklist.
-
+-- 
+1.8.3.1
 
