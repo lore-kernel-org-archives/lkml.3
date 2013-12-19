@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab3LSNLU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:11:20 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:62100 "EHLO
-	smtp-relay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756050Ab3LSNLP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:11:15 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Francois Bedard <Francois.Bedard@synopsys.com>,
-        David Howells <dhowells@redhat.com>, "Arnd Bergmann" <arnd@arndb.de>
-Subject: Re: [PATCH] Revert "ARC: Add guard macro to uapi/asm/unistd.h"
-Thread-Topic: [PATCH] Revert "ARC: Add guard macro to uapi/asm/unistd.h"
-Thread-Index: AQHO/KthBWRy4QaiG0mR0SRbAza3qQ==
-Date: Thu, 19 Dec 2013 13:11:09 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA23075172B5E@IN01WEMBXA.internal.synopsys.com>
-References: <1387451598-14490-1-git-send-email-vgupta@synopsys.com>
- <52B2E7D9.4030908@gmail.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.15.84.232]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1757283Ab3LSMoT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:44:19 -0500
+Received: from mga09.intel.com ([134.134.136.24]:26542 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753558Ab3LSMoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 07:44:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
+   d="scan'208";a="427188136"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Lv Zheng <lv.zheng@intel.com>,
+        Len Brown <lenb@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [Patch v2 10/13] ACPI, i2c-hid: replace open-coded _DSM specific code with helper functions
+Date: Thu, 19 Dec 2013 20:38:19 +0800
+Message-Id: <1387456702-4709-11-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 06:04 PM, Chen Gang wrote:
-> On 12/19/2013 07:13 PM, Vineet Gupta wrote:
->> > This reverts commit 97bc386fc12deeb41d5bff33548e3002b258d4e0.
->> > 
->> > Generic syscall table generator relies on ARCH unistd.h as follows:
->> > 
->> > 	void *sys_call_table[NR_syscalls] = {
->> > 		[0 ... NR_syscalls-1] = sys_ni_syscall,
->> > 	#include <asm/unistd.h>
->> > 	};
->> > 
->> > And turns out that prior dependencies already include that header by
->> > the time preprocessor hits the above. Meaning ARCH unistd.h needs to be
->> > able to included twice.
->> > 
-> OK, thanks, it sounds reasonable to me.
->
-> But why many other architectures contents these guard macros? (arm, sh,
-> blackfin, cris, frv, ia64, m32r, m68k, mips, s390, microblaze, mn10300,
-> parisc, powerpc, sparc, x86). Do they need improvement too?
->
-> And for our case, what xtensa has done looks like a better way to me.
+Use helper functions to simplify _DSM related code in i2c-hid driver.
 
-Yeah, looks like that'll work - good find. Linus, please ignore the Revert, I'll
-follow up with a pull request.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/hid/i2c-hid/i2c-hid.c |   26 ++++++--------------------
+ 1 file changed, 6 insertions(+), 20 deletions(-)
 
--Vineet
+diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+index 5f7e55f..d22668f 100644
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -850,37 +850,23 @@ static int i2c_hid_acpi_pdata(struct i2c_client *client,
+ 		0xF7, 0xF6, 0xDF, 0x3C, 0x67, 0x42, 0x55, 0x45,
+ 		0xAD, 0x05, 0xB3, 0x0A, 0x3D, 0x89, 0x38, 0xDE,
+ 	};
+-	union acpi_object params[4];
+-	struct acpi_object_list input;
++	union acpi_object *obj;
+ 	struct acpi_device *adev;
+-	unsigned long long value;
+ 	acpi_handle handle;
+ 
+ 	handle = ACPI_HANDLE(&client->dev);
+ 	if (!handle || acpi_bus_get_device(handle, &adev))
+ 		return -ENODEV;
+ 
+-	input.count = ARRAY_SIZE(params);
+-	input.pointer = params;
+-
+-	params[0].type = ACPI_TYPE_BUFFER;
+-	params[0].buffer.length = sizeof(i2c_hid_guid);
+-	params[0].buffer.pointer = i2c_hid_guid;
+-	params[1].type = ACPI_TYPE_INTEGER;
+-	params[1].integer.value = 1;
+-	params[2].type = ACPI_TYPE_INTEGER;
+-	params[2].integer.value = 1; /* HID function */
+-	params[3].type = ACPI_TYPE_PACKAGE;
+-	params[3].package.count = 0;
+-	params[3].package.elements = NULL;
+-
+-	if (ACPI_FAILURE(acpi_evaluate_integer(handle, "_DSM", &input,
+-								&value))) {
++	obj = acpi_evaluate_dsm_typed(handle, i2c_hid_guid, 1, 1, NULL,
++				      ACPI_TYPE_INTEGER);
++	if (!obj) {
+ 		dev_err(&client->dev, "device _DSM execution failed\n");
+ 		return -ENODEV;
+ 	}
+ 
+-	pdata->hid_descriptor_address = value;
++	pdata->hid_descriptor_address = obj->integer.value;
++	ACPI_FREE(obj);
+ 
+ 	return 0;
+ }
+-- 
+1.7.10.4
+
