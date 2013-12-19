@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757082Ab3LSMfj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:35:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44919 "EHLO
+	id S1756573Ab3LSM4j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:56:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44662 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755088Ab3LSL5s (ORCPT
+	with ESMTP id S1754414Ab3LSL4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:48 -0500
+	Thu, 19 Dec 2013 06:56:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Neil Horman <nhorman@tuxdriver.com>, Joerg Roedel <joro@8bytes.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 099/208] iommu: Remove stack trace from broken irq remapping warning
-Date: Thu, 19 Dec 2013 11:53:17 +0000
-Message-Id: <1387454106-19326-100-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 056/208] can: sja1000: fix {pre,post}_irq() handling and IRQ handler return value
+Date: Thu, 19 Dec 2013 11:52:34 +0000
+Message-Id: <1387454106-19326-57-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -32,55 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-commit 05104a4e8713b27291c7bb49c1e7e68b4e243571 upstream.
+commit 2fea6cd303c0d0cd9067da31d873b6a6d5bd75e7 upstream.
 
-The warning for the irq remapping broken check in intel_irq_remapping.c is
-pretty pointless.  We need the warning, but we know where its comming from, the
-stack trace will always be the same, and it needlessly triggers things like
-Abrt.  This changes the warning to just print a text warning about BIOS being
-broken, without the stack trace, then sets the appropriate taint bit.  Since we
-automatically disable irq remapping, theres no need to contiue making Abrt jump
-at this problem
+This patch fixes the issue that the sja1000_interrupt() function may have
+returned IRQ_NONE without processing the optional pre_irq() and post_irq()
+function before. Further the irq processing counter 'n' is moved to the end of
+the while statement to return correct IRQ_[NONE|HANDLED] values at error
+conditions.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Joerg Roedel <joro@8bytes.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Andy Lutomirski <luto@amacapital.net>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Reported-by: Wolfgang Grandegger <wg@grandegger.com>
+Acked-by: Wolfgang Grandegger <wg@grandegger.com>
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/iommu/intel_irq_remapping.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/net/can/sja1000/sja1000.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index f71673d..b97d70b 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -525,12 +525,13 @@ static int __init intel_irq_remapping_supported(void)
- 	if (disable_irq_remap)
- 		return 0;
- 	if (irq_remap_broken) {
--		WARN_TAINT(1, TAINT_FIRMWARE_WORKAROUND,
--			   "This system BIOS has enabled interrupt remapping\n"
--			   "on a chipset that contains an erratum making that\n"
--			   "feature unstable.  To maintain system stability\n"
--			   "interrupt remapping is being disabled.  Please\n"
--			   "contact your BIOS vendor for an update\n");
-+		printk(KERN_WARNING
-+			"This system BIOS has enabled interrupt remapping\n"
-+			"on a chipset that contains an erratum making that\n"
-+			"feature unstable.  To maintain system stability\n"
-+			"interrupt remapping is being disabled.  Please\n"
-+			"contact your BIOS vendor for an update\n");
-+		add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
- 		disable_irq_remap = 1;
- 		return 0;
+diff --git a/drivers/net/can/sja1000/sja1000.c b/drivers/net/can/sja1000/sja1000.c
+index 7164a99..f17c301 100644
+--- a/drivers/net/can/sja1000/sja1000.c
++++ b/drivers/net/can/sja1000/sja1000.c
+@@ -494,20 +494,20 @@ irqreturn_t sja1000_interrupt(int irq, void *dev_id)
+ 	uint8_t isrc, status;
+ 	int n = 0;
+ 
+-	/* Shared interrupts and IRQ off? */
+-	if (priv->read_reg(priv, SJA1000_IER) == IRQ_OFF)
+-		return IRQ_NONE;
+-
+ 	if (priv->pre_irq)
+ 		priv->pre_irq(priv);
+ 
++	/* Shared interrupts and IRQ off? */
++	if (priv->read_reg(priv, SJA1000_IER) == IRQ_OFF)
++		goto out;
++
+ 	while ((isrc = priv->read_reg(priv, SJA1000_IR)) &&
+ 	       (n < SJA1000_MAX_IRQ)) {
+-		n++;
++
+ 		status = priv->read_reg(priv, SJA1000_SR);
+ 		/* check for absent controller due to hw unplug */
+ 		if (status == 0xFF && sja1000_is_absent(priv))
+-			return IRQ_NONE;
++			goto out;
+ 
+ 		if (isrc & IRQ_WUI)
+ 			netdev_warn(dev, "wakeup interrupt\n");
+@@ -535,7 +535,7 @@ irqreturn_t sja1000_interrupt(int irq, void *dev_id)
+ 				status = priv->read_reg(priv, SJA1000_SR);
+ 				/* check for absent controller */
+ 				if (status == 0xFF && sja1000_is_absent(priv))
+-					return IRQ_NONE;
++					goto out;
+ 			}
+ 		}
+ 		if (isrc & (IRQ_DOI | IRQ_EI | IRQ_BEI | IRQ_EPI | IRQ_ALI)) {
+@@ -543,8 +543,9 @@ irqreturn_t sja1000_interrupt(int irq, void *dev_id)
+ 			if (sja1000_err(dev, isrc, status))
+ 				break;
+ 		}
++		n++;
  	}
+-
++out:
+ 	if (priv->post_irq)
+ 		priv->post_irq(priv);
+ 
 -- 
 1.8.3.2
 
