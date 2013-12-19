@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332Ab3LSGel (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 01:34:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40829 "EHLO
+	id S1752690Ab3LSGfZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 01:35:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40832 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab3LSGej (ORCPT
+	with ESMTP id S1750951Ab3LSGfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 01:34:39 -0500
-Date: Wed, 18 Dec 2013 22:34:41 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/118] 3.12.6-stable review
-Message-ID: <20131219063441.GA18820@kroah.com>
-References: <20131218211219.461663463@linuxfoundation.org>
- <20131219032745.GA29603@kroah.com>
- <52B28F73.7080800@roeck-us.net>
+	Thu, 19 Dec 2013 01:35:23 -0500
+Date: Wed, 18 Dec 2013 22:35:25 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Roger Quadros <rogerq@ti.com>
+Cc: Huang Rui <ray.huang@amd.com>, stern@rowland.harvard.edu, balbi@ti.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] usb: usbtest: Always clear halt else further tests
+ will fail
+Message-ID: <20131219063525.GB18820@kroah.com>
+References: <1387361411-15139-1-git-send-email-rogerq@ti.com>
+ <1387361411-15139-2-git-send-email-rogerq@ti.com>
+ <20131219040146.GC19091@hr-dev.amd.com>
+ <20131219054651.GD19091@hr-dev.amd.com>
+ <52B29079.2040704@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52B28F73.7080800@roeck-us.net>
+In-Reply-To: <52B29079.2040704@ti.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 10:17:23PM -0800, Guenter Roeck wrote:
-> On 12/18/2013 07:27 PM, Greg Kroah-Hartman wrote:
-> > On Wed, Dec 18, 2013 at 01:10:37PM -0800, Greg Kroah-Hartman wrote:
-> >> This is the start of the stable review cycle for the 3.12.6 release.
-> >> There are 118 patches in this series, all will be posted as a response
-> >> to this one.  If anyone has any issues with these being applied, please
-> >> let me know.
-> >>
-> >> Responses should be made by Fri Dec 20 21:12:03 UTC 2013.
-> >> Anything received after that time might be too late.
-> >>
-> >> The whole patch series can be found in one patch at:
-> >> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.12.6-rc1.gz
-> >> and the diffstat can be found below.
-> >
-> > Thanks to a bug on my part, there's now a -rc2 out for people to test
-> > with:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.12.6-rc2.gz
-> >
-> > Note, if you didn't have a build-failure with -rc1 then no need to test
-> > -rc2, it's only a specific staging driver that had an issue.
-> >
+On Thu, Dec 19, 2013 at 11:51:45AM +0530, Roger Quadros wrote:
+> On 12/19/2013 11:16 AM, Huang Rui wrote:
+> > On Thu, Dec 19, 2013 at 12:01:47PM +0800, Huang Rui wrote:
+> >> On Wed, Dec 18, 2013 at 03:40:11PM +0530, Roger Quadros wrote:
+> >>> In test_halt() we set an endpoint halt condition and return on halt verification
+> >>> failure, then the enpoint will remain halted and all further tests related
+> >                       ^^^^^^^
+> >>> to that enpoint will fail. This is because we don't tackle endpoint halt error condition
+> >             ^^^^^^^
+> > BTW, please fix these typo.
 > 
-> Build results are much better:
-> 	total: 110 pass: 107 skipped: 3 fail: 0
+> Hi Rui,
 > 
-> qemu tests still all pass.
+> These patches have been already applied to Greg's usb tree without your Ack's or the typo fix.
+> 
+> Greg,
+> 
+> do you want me to resend the patches?
 
-Wonderful, thanks for testing and letting me know.
+Nope, it's not a big deal, typo's in changelog comments isn't a worry.
 
 greg k-h
