@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756320Ab3LSMQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:16:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45187 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755624Ab3LSL7E (ORCPT
+	id S1753726Ab3LSL0o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:26:44 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:47963 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243Ab3LSLZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:04 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Julius Werner <jwerner@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 157/208] usb: hub: Use correct reset for wedged USB3 devices that are NOTATTACHED
-Date: Thu, 19 Dec 2013 11:54:15 +0000
-Message-Id: <1387454106-19326-158-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 06:25:19 -0500
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, josh@joshtriplett.org
+Subject: =?UTF-8?q?=5BPATCH=20v2=5D=20drivers=3A=20base=3A=20Add=20prototype=20declaration=20to=20the=20header=20file?=
+Date: Thu, 19 Dec 2013 16:54:57 +0530
+Message-Id: <1387452297-28836-1-git-send-email-rashika.kheria@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20131218063953.GA3180@rashika>
+References: <20131218063953.GA3180@rashika>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+Add prototype declaration of function memory_block_size_bytes() to
+the header file include/linux/memory.h.
 
-------------------
+This eliminates the following warning in memory.c:
+drivers/base/memory.c:87:1: warning: no previous prototype for ‘memory_block_size_bytes’ [-Wmissing-prototypes]
 
-From: Julius Werner <jwerner@chromium.org>
-
-commit 2d51f3cd11f414c56a87dc018196b85fd50b04a4 upstream.
-
-This patch adds a check for USB_STATE_NOTATTACHED to the
-hub_port_warm_reset_required() workaround for ports that end up in
-Compliance Mode in hub_events() when trying to decide which reset
-function to use. Trying to call usb_reset_device() with a NOTATTACHED
-device will just fail and leave the port broken.
-
-Signed-off-by: Julius Werner <jwerner@chromium.org>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 ---
- drivers/usb/core/hub.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 9ba5fcd4..8bbe1b8 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -4837,8 +4837,9 @@ static void hub_events(void)
- 					hub->ports[i - 1]->child;
+Changes since v1:
+Incorrect Fix
+
+ include/linux/memory.h |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/linux/memory.h b/include/linux/memory.h
+index 9a6bbf7..8c8f51c 100644
+--- a/include/linux/memory.h
++++ b/include/linux/memory.h
+@@ -35,6 +35,7 @@ struct memory_block {
+ };
  
- 				dev_dbg(hub_dev, "warm reset port %d\n", i);
--				if (!udev || !(portstatus &
--						USB_PORT_STAT_CONNECTION)) {
-+				if (!udev ||
-+				    !(portstatus & USB_PORT_STAT_CONNECTION) ||
-+				    udev->state == USB_STATE_NOTATTACHED) {
- 					status = hub_port_reset(hub, i,
- 							NULL, HUB_BH_RESET_TIME,
- 							true);
+ int arch_get_memory_phys_device(unsigned long start_pfn);
++unsigned long __weak memory_block_size_bytes(void);	
+ 
+ /* These states are exposed to userspace as text strings in sysfs */
+ #define	MEM_ONLINE		(1<<0) /* exposed to userspace */
 -- 
-1.8.3.2
+1.7.9.5
 
