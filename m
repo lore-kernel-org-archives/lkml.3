@@ -1,111 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab3LSLkm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:40:42 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:37084 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592Ab3LSLkj (ORCPT
+	id S1753670Ab3LSLzY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:55:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44358 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978Ab3LSLzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:40:39 -0500
-Date: Thu, 19 Dec 2013 11:30:51 +0000
-From: Graeme Gregory <graeme.gregory@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Mark Rutland <Mark.Rutland@arm.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Linaro-acpi] [RFC part1 PATCH 1/7] ACPI: Make ACPI core running
- without PCI on ARM64
-Message-ID: <20131219113051.GL2736@xora-haswell.xora.org.uk>
-References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
- <201312091735.05014.arnd@arndb.de>
- <20131209165548.GE19163@arm.com>
- <201312091820.23006.arnd@arndb.de>
- <20131209180155.GG19163@arm.com>
- <20131216205133.GI5617@xora-haswell.xora.org.uk>
- <20131217112914.GB32118@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131217112914.GB32118@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Dec 2013 06:55:16 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mateusz Guzik <mguzik@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>, linux-aio@kvack.org,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 002/208] aio: restore locking of ioctx list on removal
+Date: Thu, 19 Dec 2013 11:51:40 +0000
+Message-Id: <1387454106-19326-3-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 11:29:14AM +0000, Catalin Marinas wrote:
-> Hi Graeme,
-> 
-> On Mon, Dec 16, 2013 at 08:51:33PM +0000, Graeme Gregory wrote:
-> > So the real question now is how do we progress with these ACPI patches? After
-> > repeated incorrect accusations of developing behind closed doors I am loath
-> > to dissapear back into linaro with them for another few months.
-> 
-> Well, just follow the Linux community process, no need to disappear
-> back. There was feedback that needs to be addressed, work on getting
-> acks from maintainers. The first version has only been posted two weeks
-> ago, I don't see any reason to panic ;).
-> 
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Ok, thanks for that, we will continue to work on v2, v3, ... as normal then
+------------------
 
-> Reviews/acks is the first step and you are on the right track here. The
-> following step would be upstreaming with good arguments on why and when
-> the code needs to be merged. Code quality on its own is not an argument
-> for merging. Backlog in Linaro's trees is not an argument either. You
-> could of course start upstreaming clean-up code that is necessary
-> whether you have ACPI on arm64 or not.
->
+From: Mateusz Guzik <mguzik@redhat.com>
 
-Yes coming out of the reviews some of the patches which we initially thought
-were ARM64 work turned out to be general cleanups and they will go via
-the appropriate channel.
+Commit 36f5588905c10a8c4568a210d601fe8c3c27e0f0
+"aio: refcounting cleanup" resulted in ioctx_lock not being held
+during ctx removal, leaving the list susceptible to corruptions.
 
-> So while waiting to debate the good arguments for when to merge the code
-> (once reviewed), I have several concerns which I want addressed before
-> enabling ACPI for arm64:
-> 
-> - Does anyone have a wider view of how ACPI on ARM looks like? There is
->   a lot of effort going into the next version of ACPI but for now I
->   don't see how we can enable a feature and hope we sort it out later.
-> - Who is coordinating the non-standard ACPI descriptors being pushed to
->   various drivers in the kernel? Do we trust the hw vendors to do the
->   right thing (and also talk to each other)?
-> - What if two hw vendors have different descriptors for the same device?
-> - Have we agreed what we do about clocks, voltage regulators?
-> - Do we actually have a real platform which requires ACPI at this point?
-> 
-> Just to be clear, I'm not against ACPI for arm64 and I am aware of
-> hardware vendors requiring this. But I'm looking forward to them being
-> more open and explain what (rather than why) they need because I don't
-> think ACPI solves anything for the ARM kernel community. It's rather a
-> favour we do to them and OS distros.
-> 
+In mainline kernel the issue went away as a side effect of
+db446a08c23d5475e6b08c87acca79ebb20f283c "aio: convert the ioctx list to
+table lookup v3".
 
-You have some good points here, obviously we are currently working on
-preperation work based on the RTSM/FVP (whatever they are called next week)
-models which currently are not a good representation of an armv8 server.
+Fix the problem by restoring appropriate locking.
 
-Hopefully the documenation of what real armv8 server architecture will look
-like will come in the new year. Things like regulators and clocks I do not
-have answers to yet as obviously in Intel world these things are hidden
-from view, I do not know what the plan is for armv8 silicon/motherboards.
+Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
+Reported-by: Eryu Guan <eguan@redhat.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Cc: linux-aio@kvack.org
+Cc: linux-kernel@vger.kernel.org
+Acked-by: Benjamin LaHaise <bcrl@kvack.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/aio.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-On the multiple venders same hardware issue I guess Intel guys must have
-already seen this happen. We shall have to ask them what their solution was?
-
-Graeme
+diff --git a/fs/aio.c b/fs/aio.c
+index 9b5ca11..975a5d5 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -425,10 +425,12 @@ static void kill_ioctx_rcu(struct rcu_head *head)
+  *	when the processes owning a context have all exited to encourage
+  *	the rapid destruction of the kioctx.
+  */
+-static void kill_ioctx(struct kioctx *ctx)
++static void kill_ioctx(struct mm_struct *mm, struct kioctx *ctx)
+ {
+ 	if (!atomic_xchg(&ctx->dead, 1)) {
++		spin_lock(&mm->ioctx_lock);
+ 		hlist_del_rcu(&ctx->list);
++		spin_unlock(&mm->ioctx_lock);
+ 
+ 		/*
+ 		 * It'd be more correct to do this in free_ioctx(), after all
+@@ -496,7 +498,7 @@ void exit_aio(struct mm_struct *mm)
+ 		 */
+ 		ctx->mmap_size = 0;
+ 
+-		kill_ioctx(ctx);
++		kill_ioctx(mm, ctx);
+ 	}
+ }
+ 
+@@ -854,7 +856,7 @@ SYSCALL_DEFINE2(io_setup, unsigned, nr_events, aio_context_t __user *, ctxp)
+ 	if (!IS_ERR(ioctx)) {
+ 		ret = put_user(ioctx->user_id, ctxp);
+ 		if (ret)
+-			kill_ioctx(ioctx);
++			kill_ioctx(current->mm, ioctx);
+ 		put_ioctx(ioctx);
+ 	}
+ 
+@@ -872,7 +874,7 @@ SYSCALL_DEFINE1(io_destroy, aio_context_t, ctx)
+ {
+ 	struct kioctx *ioctx = lookup_ioctx(ctx);
+ 	if (likely(NULL != ioctx)) {
+-		kill_ioctx(ioctx);
++		kill_ioctx(current->mm, ioctx);
+ 		put_ioctx(ioctx);
+ 		return 0;
+ 	}
+-- 
+1.8.3.2
 
