@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab3LSPFQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:05:16 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:40344 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab3LSPFK (ORCPT
+	id S1757533Ab3LSNLU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:11:20 -0500
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:62100 "EHLO
+	smtp-relay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756050Ab3LSNLP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:05:10 -0500
-From: Levente Kurusa <levex@linux.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Levente Kurusa <levex@linux.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        xen-devel@lists.xenproject.org
-Subject: [PATCH 26/38] xen: xenbus: add missing put_device call
-Date: Thu, 19 Dec 2013 16:03:37 +0100
-Message-Id: <1387465429-3568-27-git-send-email-levex@linux.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1387465429-3568-2-git-send-email-levex@linux.com>
-References: <1387465429-3568-2-git-send-email-levex@linux.com>
+	Thu, 19 Dec 2013 08:11:15 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Francois Bedard <Francois.Bedard@synopsys.com>,
+        David Howells <dhowells@redhat.com>, "Arnd Bergmann" <arnd@arndb.de>
+Subject: Re: [PATCH] Revert "ARC: Add guard macro to uapi/asm/unistd.h"
+Thread-Topic: [PATCH] Revert "ARC: Add guard macro to uapi/asm/unistd.h"
+Thread-Index: AQHO/KthBWRy4QaiG0mR0SRbAza3qQ==
+Date: Thu, 19 Dec 2013 13:11:09 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA23075172B5E@IN01WEMBXA.internal.synopsys.com>
+References: <1387451598-14490-1-git-send-email-vgupta@synopsys.com>
+ <52B2E7D9.4030908@gmail.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.15.84.232]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is required so that we give up the last reference to the device.
+On 12/19/2013 06:04 PM, Chen Gang wrote:
+> On 12/19/2013 07:13 PM, Vineet Gupta wrote:
+>> > This reverts commit 97bc386fc12deeb41d5bff33548e3002b258d4e0.
+>> > 
+>> > Generic syscall table generator relies on ARCH unistd.h as follows:
+>> > 
+>> > 	void *sys_call_table[NR_syscalls] = {
+>> > 		[0 ... NR_syscalls-1] = sys_ni_syscall,
+>> > 	#include <asm/unistd.h>
+>> > 	};
+>> > 
+>> > And turns out that prior dependencies already include that header by
+>> > the time preprocessor hits the above. Meaning ARCH unistd.h needs to be
+>> > able to included twice.
+>> > 
+> OK, thanks, it sounds reasonable to me.
+>
+> But why many other architectures contents these guard macros? (arm, sh,
+> blackfin, cris, frv, ia64, m32r, m68k, mips, s390, microblaze, mn10300,
+> parisc, powerpc, sparc, x86). Do they need improvement too?
+>
+> And for our case, what xtensa has done looks like a better way to me.
 
-Signed-off-by: Levente Kurusa <levex@linux.com>
----
- drivers/xen/xenbus/xenbus_probe.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Yeah, looks like that'll work - good find. Linus, please ignore the Revert, I'll
+follow up with a pull request.
 
-diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
-index 3c0a74b..4abb9ee 100644
---- a/drivers/xen/xenbus/xenbus_probe.c
-+++ b/drivers/xen/xenbus/xenbus_probe.c
-@@ -465,8 +465,10 @@ int xenbus_probe_node(struct xen_bus_type *bus,
- 
- 	/* Register with generic device framework. */
- 	err = device_register(&xendev->dev);
--	if (err)
-+	if (err) {
-+		put_device(&xendev->dev);
- 		goto fail;
-+	}
- 
- 	return 0;
- fail:
--- 
-1.8.3.1
-
+-Vineet
