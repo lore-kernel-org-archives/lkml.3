@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756860Ab3LSM1A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:27:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45030 "EHLO
+	id S1755952Ab3LSL72 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:59:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45251 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755250Ab3LSL6U (ORCPT
+	with ESMTP id S1755896Ab3LSL7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:20 -0500
+	Thu, 19 Dec 2013 06:59:21 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>,
+Cc: Paul Mackerras <paulus@samba.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Hong H. Pham" <hong.pham@windriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 126/208] usb: musb: cancel work on removal
-Date: Thu, 19 Dec 2013 11:53:44 +0000
-Message-Id: <1387454106-19326-127-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 167/208] powerpc: Fix PTE page address mismatch in pgtable ctor/dtor
+Date: Thu, 19 Dec 2013 11:54:25 +0000
+Message-Id: <1387454106-19326-168-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,60 +30,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: "Hong H. Pham" <hong.pham@windriver.com>
 
-commit c5340bd14336b902604ab95212a8877de109d9ae upstream.
+commit cf77ee54362a245f9a01f240adce03a06c05eb68 upstream.
 
-So I captured this:
+In pte_alloc_one(), pgtable_page_ctor() is passed an address that has
+not been converted by page_address() to the newly allocated PTE page.
 
-|WARNING: CPU: 0 PID: 2078 at /home/bigeasy/work/new/TI/linux/lib/debugobjects.c:260 debug_print_object+0x94/0xc4()
-|ODEBUG: free active (active state 0) object type: work_struct hint: musb_irq_work+0x0/0x38 [musb_hdrc]
-|CPU: 0 PID: 2078 Comm: rmmod Not tainted 3.12.0-rc4+ #338
-|[<c0014d38>] (unwind_backtrace+0x0/0xf4) from [<c001249c>] (show_stack+0x14/0x1c)
-|[<c001249c>] (show_stack+0x14/0x1c) from [<c0037720>] (warn_slowpath_common+0x64/0x84)
-|[<c0037720>] (warn_slowpath_common+0x64/0x84) from [<c00377d4>] (warn_slowpath_fmt+0x30/0x40)
-|[<c00377d4>] (warn_slowpath_fmt+0x30/0x40) from [<c022ae90>] (debug_print_object+0x94/0xc4)
-|[<c022ae90>] (debug_print_object+0x94/0xc4) from [<c022b7e0>] (debug_check_no_obj_freed+0x1c0/0x228)
-|[<c022b7e0>] (debug_check_no_obj_freed+0x1c0/0x228) from [<c00f1f38>] (kfree+0xf8/0x228)
-|[<c00f1f38>] (kfree+0xf8/0x228) from [<c02921c4>] (release_nodes+0x1a8/0x248)
-|[<c02921c4>] (release_nodes+0x1a8/0x248) from [<c028f70c>] (__device_release_driver+0x98/0xf0)
-|[<c028f70c>] (__device_release_driver+0x98/0xf0) from [<c028f840>] (device_release_driver+0x24/0x34)
-|[<c028f840>] (device_release_driver+0x24/0x34) from [<c028ebe8>] (bus_remove_device+0x148/0x15c)
-|[<c028ebe8>] (bus_remove_device+0x148/0x15c) from [<c028d120>] (device_del+0x104/0x1c0)
-|[<c028d120>] (device_del+0x104/0x1c0) from [<c02911e4>] (platform_device_del+0x18/0xac)
-|[<c02911e4>] (platform_device_del+0x18/0xac) from [<c029179c>] (platform_device_unregister+0xc/0x18)
-|[<c029179c>] (platform_device_unregister+0xc/0x18) from [<bf1902fc>] (dsps_remove+0x20/0x4c [musb_dsps])
-|[<bf1902fc>] (dsps_remove+0x20/0x4c [musb_dsps]) from [<c0290d7c>] (platform_drv_remove+0x1c/0x24)
-|[<c0290d7c>] (platform_drv_remove+0x1c/0x24) from [<c028f704>] (__device_release_driver+0x90/0xf0)
-|[<c028f704>] (__device_release_driver+0x90/0xf0) from [<c028f818>] (driver_detach+0xb4/0xb8)
-|[<c028f818>] (driver_detach+0xb4/0xb8) from [<c028e6e8>] (bus_remove_driver+0x98/0xec)
-|[<c028e6e8>] (bus_remove_driver+0x98/0xec) from [<c008fc70>] (SyS_delete_module+0x1e0/0x24c)
-|[<c008fc70>] (SyS_delete_module+0x1e0/0x24c) from [<c000e680>] (ret_fast_syscall+0x0/0x48)
-|---[ end trace d79045419a3e51ec ]---
+When the PTE is freed, __pte_free_tlb() calls pgtable_page_dtor()
+with an address to the PTE page that has been converted by page_address().
+The mismatch in the PTE's page address causes pgtable_page_dtor() to access
+invalid memory, so resources for that PTE (such as the page lock) is not
+properly cleaned up.
 
-The workqueue is only scheduled from the ep0 and never canceled in case
-the musb is removed before the work has a chance to run.
+On PPC32, only SMP kernels are affected.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[ luis: backported to 3.11: adjusted context ]
+On PPC64, only SMP kernels with 4K page size are affected.
+
+This bug was introduced by commit d614bb041209fd7cb5e4b35e11a7b2f6ee8f62b8
+"powerpc: Move the pte free routines from common header".
+
+On a preempt-rt kernel, a spinlock is dynamically allocated for each
+PTE in pgtable_page_ctor().  When the PTE is freed, calling
+pgtable_page_dtor() with a mismatched page address causes a memory leak,
+as the pointer to the PTE's spinlock is bogus.
+
+On mainline, there isn't any immediately obvious symptoms, but the
+problem still exists here.
+
+Fixes: d614bb041209fd7c "powerpc: Move the pte free routes from common header"
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Hong H. Pham <hong.pham@windriver.com>
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/musb/musb_core.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/include/asm/pgalloc-32.h | 6 ++----
+ arch/powerpc/include/asm/pgalloc-64.h | 6 ++----
+ 2 files changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index 41b9d6f..a3c6000 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1810,6 +1810,7 @@ static void musb_free(struct musb *musb)
- 			disable_irq_wake(musb->nIrq);
- 		free_irq(musb->nIrq, musb);
- 	}
-+	cancel_work_sync(&musb->irq_work);
- 	if (is_dma_capable() && musb->dma_controller) {
- 		struct dma_controller	*c = musb->dma_controller;
+diff --git a/arch/powerpc/include/asm/pgalloc-32.h b/arch/powerpc/include/asm/pgalloc-32.h
+index 27b2386..842846c 100644
+--- a/arch/powerpc/include/asm/pgalloc-32.h
++++ b/arch/powerpc/include/asm/pgalloc-32.h
+@@ -84,10 +84,8 @@ static inline void pgtable_free_tlb(struct mmu_gather *tlb,
+ static inline void __pte_free_tlb(struct mmu_gather *tlb, pgtable_t table,
+ 				  unsigned long address)
+ {
+-	struct page *page = page_address(table);
+-
+ 	tlb_flush_pgtable(tlb, address);
+-	pgtable_page_dtor(page);
+-	pgtable_free_tlb(tlb, page, 0);
++	pgtable_page_dtor(table);
++	pgtable_free_tlb(tlb, page_address(table), 0);
+ }
+ #endif /* _ASM_POWERPC_PGALLOC_32_H */
+diff --git a/arch/powerpc/include/asm/pgalloc-64.h b/arch/powerpc/include/asm/pgalloc-64.h
+index f65e27b..256d6f8 100644
+--- a/arch/powerpc/include/asm/pgalloc-64.h
++++ b/arch/powerpc/include/asm/pgalloc-64.h
+@@ -144,11 +144,9 @@ static inline void pgtable_free_tlb(struct mmu_gather *tlb,
+ static inline void __pte_free_tlb(struct mmu_gather *tlb, pgtable_t table,
+ 				  unsigned long address)
+ {
+-	struct page *page = page_address(table);
+-
+ 	tlb_flush_pgtable(tlb, address);
+-	pgtable_page_dtor(page);
+-	pgtable_free_tlb(tlb, page, 0);
++	pgtable_page_dtor(table);
++	pgtable_free_tlb(tlb, page_address(table), 0);
+ }
  
+ #else /* if CONFIG_PPC_64K_PAGES */
 -- 
 1.8.3.2
 
