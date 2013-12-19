@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453Ab3LSL4l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:56:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44656 "EHLO
+	id S1756404Ab3LSMyi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:54:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44710 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244Ab3LSL4h (ORCPT
+	with ESMTP id S1754517Ab3LSL4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:37 -0500
+	Thu, 19 Dec 2013 06:56:48 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Joel Fernandes <joelf@ti.com>, Tony Lindgren <tony@atomide.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 055/208] ARM: mvebu: use the virtual CPU registers to access coherency registers
-Date: Thu, 19 Dec 2013 11:52:33 +0000
-Message-Id: <1387454106-19326-56-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 062/208] ARM: OMAP2+: Disable POSTED mode for errata i103 and i767
+Date: Thu, 19 Dec 2013 11:52:40 +0000
+Message-Id: <1387454106-19326-63-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -29,48 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+From: Joel Fernandes <joelf@ti.com>
 
-commit b6dda00cddcc71d2030668bc0cc0fed758c411c2 upstream.
+commit 912e663127c5f700da6805ce21635dce703cb2cc upstream.
 
-The Armada XP provides a mechanism called "virtual CPU registers" or
-"per-CPU register banking", to access the per-CPU registers of the
-current CPU, without having to worry about finding on which CPU we're
-running. CPU0 has its registers at 0x21800, CPU1 at 0x21900, CPU2 at
-0x21A00 and CPU3 at 0x21B00. The virtual registers accessing the
-current CPU registers are at 0x21000.
+Enabling of Posted mode is seen to cause problems on dmtimer modules on AM33xx
+(much like other OMAPs).  Reference discussions on forums [1] [2]. Earlier
+patch solving this on other OMAPs [3].
 
-However, in the Device Tree node that provides the register addresses
-for the coherency unit (which is responsible for ensuring coherency
-between processors, and I/O coherency between processors and the
-DMA-capable devices), a mistake was made: the CPU0-specific registers
-were specified instead of the virtual CPU registers. This means that
-the coherency barrier needed for I/O coherency was not behaving
-properly when executed from a CPU different from CPU0. This patch
-fixes that by using the virtual CPU registers.
+For OMAP SoCs with this errata, the fix has been to not enable Posted mode.
+However, on some SoCs (atleast AM33xx) which carry this errata, Posted mode
+is enabled on reset. So we not only need to ignore enabling of the POSTED bit
+when the timer is requested, but also disable Posted mode if errata is present.
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Fixes: e60304f8cb7bb5 "arm: mvebu: Add hardware I/O Coherency support"
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+[1] http://e2e.ti.com/support/arm/sitara_arm/f/791/t/285744.aspx
+[2] http://e2e.ti.com/support/arm/sitara_arm/f/791/t/270632.aspx
+[3] http://www.spinics.net/lists/linux-omap/msg81770.html
+
+Reported-by: Russ Dill <russ.dill@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/boot/dts/armada-370-xp.dtsi | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/plat-omap/include/plat/dmtimer.h | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
-index 90b1176..c058ce1 100644
---- a/arch/arm/boot/dts/armada-370-xp.dtsi
-+++ b/arch/arm/boot/dts/armada-370-xp.dtsi
-@@ -60,7 +60,7 @@
+diff --git a/arch/arm/plat-omap/include/plat/dmtimer.h b/arch/arm/plat-omap/include/plat/dmtimer.h
+index fb92abb..2861b15 100644
+--- a/arch/arm/plat-omap/include/plat/dmtimer.h
++++ b/arch/arm/plat-omap/include/plat/dmtimer.h
+@@ -336,8 +336,11 @@ static inline void __omap_dm_timer_enable_posted(struct omap_dm_timer *timer)
+ 	if (timer->posted)
+ 		return;
  
- 			coherency-fabric@20200 {
- 				compatible = "marvell,coherency-fabric";
--				reg = <0x20200 0xb0>, <0x21810 0x1c>;
-+				reg = <0x20200 0xb0>, <0x21010 0x1c>;
- 			};
+-	if (timer->errata & OMAP_TIMER_ERRATA_I103_I767)
++	if (timer->errata & OMAP_TIMER_ERRATA_I103_I767) {
++		timer->posted = OMAP_TIMER_NONPOSTED;
++		__omap_dm_timer_write(timer, OMAP_TIMER_IF_CTRL_REG, 0, 0);
+ 		return;
++	}
  
- 			serial@12000 {
+ 	__omap_dm_timer_write(timer, OMAP_TIMER_IF_CTRL_REG,
+ 			      OMAP_TIMER_CTRL_POSTED, 0);
 -- 
 1.8.3.2
 
