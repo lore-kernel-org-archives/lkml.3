@@ -1,173 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab3LSQXX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:23:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752777Ab3LSQXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:23:21 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Edel Maks <edelmaks@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 3/3] HID: multitouch: add support of other generic collections in hid-mt
-Date: Thu, 19 Dec 2013 11:23:11 -0500
-Message-Id: <1387470191-9725-4-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1387470191-9725-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1387470191-9725-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1756055Ab3LSQYU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:24:20 -0500
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:35540 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617Ab3LSQYS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 11:24:18 -0500
+Date: Thu, 19 Dec 2013 11:24:11 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        tomaz.solc@tablix.org, aaron.lu@intel.com,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: Writeback threads and freezable
+Message-ID: <20131219162411.GD16994@htj.dyndns.org>
+References: <20131213174932.GA27070@htj.dyndns.org>
+ <20131214015343.GP31386@dastard>
+ <20131214202324.GA4020@htj.dyndns.org>
+ <20131216035652.GY31386@dastard>
+ <20131216125124.GC32509@htj.dyndns.org>
+ <20131216125604.GD32509@htj.dyndns.org>
+ <20131218003510.GD20579@dastard>
+ <20131218114343.GA4324@htj.dyndns.org>
+ <20131219040821.GW31386@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131219040821.GW31386@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ANTEC Touch Pad is a device which can switch from a multitouch
-touchpad to a mouse. It thus presents several generic collections which
-are currently ignored by hid-multitouch. Enable them by using the generic
-protocol. Adding also a suffix for them depending on their application.
+Yo, Dave.
 
-Reported-by: Edel Maks <edelmaks@gmail.com>
-Tested-by: Edel Maks <edelmaks@gmail.com>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- drivers/hid/hid-ids.h        |  3 +++
- drivers/hid/hid-multitouch.c | 43 ++++++++++++++++++++++++++++++++++++++++---
- include/linux/hid.h          |  3 +++
- 3 files changed, 46 insertions(+), 3 deletions(-)
+On Thu, Dec 19, 2013 at 03:08:21PM +1100, Dave Chinner wrote:
+> > If knowing that the underlying device has gone away somehow helps
+> > filesystem, maybe we can expose that interface and avoid flushing
+> > after hotunplug but that merely hides the possible deadlock scenario
+> > that you're concerned about.  Nothing is really solved.
+> 
+> Except that a user of the block device has been informed that it is
+> now gone and has been freed from under it. i.e. we can *immediately*
+> inform the user that their mounted filesystem is now stuffed and
+> supress all the errors that are going to occur as a result of
+> sync_filesystem() triggering IO failures all over the place and then
+> having to react to that.i
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 2bf397f..4221494 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -67,6 +67,9 @@
- #define USB_VENDOR_ID_ALPS		0x0433
- #define USB_DEVICE_ID_IBM_GAMEPAD	0x1101
- 
-+#define USB_VENDOR_ID_ANTON		0x1130
-+#define USB_DEVICE_ID_ANTON_TOUCH_PAD	0x3101
-+
- #define USB_VENDOR_ID_APPLE		0x05ac
- #define USB_DEVICE_ID_APPLE_MIGHTYMOUSE	0x0304
- #define USB_DEVICE_ID_APPLE_MAGICMOUSE	0x030d
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 4dd6c6c..502e5bb 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -84,6 +84,7 @@ struct mt_class {
- 	__s32 sn_pressure;	/* Signal/noise ratio for pressure events */
- 	__u8 maxcontacts;
- 	bool is_indirect;	/* true for touchpads */
-+	bool export_all_inputs;	/* do not ignore mouse, keyboards, etc... */
- };
- 
- struct mt_fields {
-@@ -217,6 +218,7 @@ static struct mt_protocol mt_protocol_ignore = { 0 };
- #define MT_CLS_FLATFROG				0x0107
- #define MT_CLS_GENERALTOUCH_TWOFINGERS		0x0108
- #define MT_CLS_GENERALTOUCH_PWT_TENFINGERS	0x0109
-+#define MT_CLS_ANTON_TP				0x010a
- 
- #define MT_DEFAULT_MAXCONTACT	10
- #define MT_MAX_MAXCONTACT	250
-@@ -329,13 +331,18 @@ static struct mt_class mt_classes[] = {
- 		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
- 			MT_QUIRK_SLOT_IS_CONTACTID
- 	},
--
- 	{ .name = MT_CLS_FLATFROG,
- 		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP |
- 			MT_QUIRK_NO_AREA,
- 		.sn_move = 2048,
- 		.maxcontacts = 40,
- 	},
-+	{ .name = MT_CLS_ANTON_TP,
-+		.quirks = MT_QUIRK_ALWAYS_VALID |
-+			MT_QUIRK_CONTACT_CNT_ACCURATE,
-+		.is_indirect = true,
-+		.export_all_inputs = true,
-+	},
- 	{ }
- };
- 
-@@ -846,10 +853,32 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 	struct mt_device *td = hid_get_drvdata(hdev);
- 	unsigned report_id = field->report->id;
- 
-+	if (td->mtclass.export_all_inputs) {
-+		td->protocols[report_id] = mt_protocol_generic;
-+		switch (field->application) {
-+		case HID_GD_KEYPAD:
-+			td->protocols[report_id].suffix = "Keypad";
-+			break;
-+		case HID_GD_MOUSE:
-+			td->protocols[report_id].suffix = "Mouse";
-+			break;
-+		case HID_DG_TOUCHSCREEN:
-+			td->protocols[report_id].suffix = "Touchscreen";
-+			break;
-+		case HID_GD_SYSTEM_CONTROL:
-+			td->protocols[report_id].suffix = "System Control";
-+			break;
-+		case HID_CP_CONSUMER_CONTROL:
-+			td->protocols[report_id].suffix = "Consumer Control";
-+			break;
-+		}
-+	}
-+
- 	/* Only map fields from TouchScreen or TouchPad collections.
- 	* We need to ignore fields that belong to other collections
- 	* such as Mouse that might have the same GenericDesktop usages. */
--	if (field->application != HID_DG_TOUCHSCREEN &&
-+	if (!td->mtclass.export_all_inputs &&
-+	    field->application != HID_DG_TOUCHSCREEN &&
- 	    field->application != HID_DG_PEN &&
- 	    field->application != HID_DG_TOUCHPAD)
- 		td->protocols[report_id] = mt_protocol_ignore;
-@@ -859,8 +888,11 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 
- 	else if (field->application == HID_DG_TOUCHSCREEN ||
- 	    field->application == HID_DG_PEN ||
--	    field->application == HID_DG_TOUCHPAD)
-+	    field->application == HID_DG_TOUCHPAD) {
- 		td->protocols[report_id] = mt_protocol_touch;
-+		if (td->mtclass.export_all_inputs)
-+			td->protocols[report_id].suffix = "Touch";
-+	}
- 
- 	if (td->protocols[report_id].input_mapping)
- 		return td->protocols[report_id].input_mapping(hdev, hi,
-@@ -1128,6 +1160,11 @@ static const struct hid_device_id mt_devices[] = {
- 		MT_USB_DEVICE(USB_VENDOR_ID_ACTIONSTAR,
- 			USB_DEVICE_ID_ACTIONSTAR_1011) },
- 
-+	/* Anton Touch Pad */
-+	{ .driver_data = MT_CLS_ANTON_TP,
-+		MT_USB_DEVICE(USB_VENDOR_ID_ANTON,
-+			USB_DEVICE_ID_ANTON_TOUCH_PAD) },
-+
- 	/* Atmel panels */
- 	{ .driver_data = MT_CLS_SERIAL,
- 		MT_USB_DEVICE(USB_VENDOR_ID_ATMEL,
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 31b9d29..2b2041a 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -201,6 +201,7 @@ struct hid_item {
- #define HID_GD_VBRZ		0x00010045
- #define HID_GD_VNO		0x00010046
- #define HID_GD_FEATURE		0x00010047
-+#define HID_GD_SYSTEM_CONTROL	0x00010080
- #define HID_GD_UP		0x00010090
- #define HID_GD_DOWN		0x00010091
- #define HID_GD_RIGHT		0x00010092
-@@ -208,6 +209,8 @@ struct hid_item {
- 
- #define HID_DC_BATTERYSTRENGTH	0x00060020
- 
-+#define HID_CP_CONSUMER_CONTROL	0x000c0001
-+
- #define HID_DG_DIGITIZER	0x000d0001
- #define HID_DG_PEN		0x000d0002
- #define HID_DG_LIGHTPEN		0x000d0003
+Please note that there's no real "immediacy" in that it's inherently
+racy and that the extent of the usefulness of such notification can't
+reach much further than suppressing error messages.  Even that benefit
+is kinda dubious.  Don't we want to generate errors when a device is
+removed while dirty data / IOs are pending on it?  I fail to see how
+"supressing all the errors" would be a sane thing to do.
+
+Another thing is that I think it's actually healthier in terms of
+excercise of code paths to travel those error paths on hot unplugs
+which are relatively common than taking a different behavior on them.
+It'll inevitably lower our test coverage.
+
+> Indeed, there is no guarantee that sync_filesystem will result in
+> the filesystem being shut down - if the filesystem is clean then
+> nothing will happen, and it won't be until the user modifies some
+> metadata that a shutdown will be triggered. That could be a long
+> time after the device has been removed....
+
+I still fail to see that why that is a problem.  Filesystems should be
+able to handle hot unplug or IO failures at any point in a reasonable
+way, so what difference would having a notification make other than
+introducing yet another exception code path?
+
+> I don't see that there is a difference between a warm and hot unplug
+> from a filesystem point of view - both result in the filesystem's
+> backing device being deleted and freed, and in both cases we have to
+> take the same action....
+
+Yeah, exactly, so what'd be the point of getting separate notification
+for hot unplug events?
+
+> > Do you mean xfs never gives up after IO failures?
+> 
+> There's this thing called a transient IO failure which we have to
+> handle. e.g multipath taking several minutes to detect a path
+> failure and fail over, whilst in the mean time IO errors are
+> reported after a 30s timeout. So some types of async metadata write
+> IO failures are simply rescheduled for a short time in the future.
+> They'll either succeed, or continual failure will eventually trigger
+> some kind of filesystem failure.
+> 
+> If it's a synchronous write or a write that we cannot tolerate even
+> transient errors on (e.g. journal writes), then we'll shut down the
+> filesystem immediately.
+
+Sure, filesystems should (be able to) react to different types of
+errors in different ways.  We still have a long way to go to do that
+properly but that should be done through IO failures not some side
+channel one-off "hotunplug" happened call.  Again, it doesn't solve
+anything.  It just side steps one very specific case in a half-assed
+way.
+
+> > If filesystems need an indication that the underlying device is no
+> > longer functional, please go ahead and add it, but please keep in mind
+> > all these are completely asynchronous.  Nothing guarantees you that
+> > such events would happen in any specific order.  IOW, you can be at
+> > *ANY* point in your warm unplug path and the device is hot unplugged,
+> > which essentially forces all the code paths to be ready for the worst,
+> > and that's exactly why there isn't much effort in trying to separate
+> > out warm and hot unplug paths.
+> 
+> I'm not concerned about the problems that might happen if you hot
+> unplug during a warm unplug. All I care about is when a device is
+> invalidated the filesystem on top of it can take appropriate action.
+
+I can't follow your logic here.  You started with a deadlock scenario
+where lower layer calls into upper layer while blocking its own
+operation, which apparently is a bug to be fixed in the lower layer as
+discussed above; otherwise, we'd be chasing the symptoms rather than
+plugging the source.  Combined with the fact that you can't really
+prevent hotunplug happening during warmunplug (it doesn't even have to
+be hotunplug, there are other conditions which would match such IO
+failure pattern), this reduces the benefit of such notification to
+optimizations far from correctness issues.
+
+These are all logically connected; yet, you claim that you're not
+concerned about part of it and then continue to assert your original
+position.  It doesn't compute.  You proposed it as a fix for a
+deadlock issue, but it turns out your proposal can't fix the deadlock
+issue exactly because of the part you aren't concerned about and you
+continue to assert the original proposal.  What's going on here?
+
+Thanks.
+
 -- 
-1.8.3.1
-
+tejun
