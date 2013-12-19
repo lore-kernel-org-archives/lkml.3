@@ -1,88 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756728Ab3LTAAd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 19:00:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46853 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756397Ab3LTAAc (ORCPT
+	id S1756793Ab3LTABm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 19:01:42 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:46092 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756461Ab3LTABj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 19:00:32 -0500
-Date: Thu, 19 Dec 2013 16:00:35 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Stuart Yoder <stuart.yoder@freescale.com>
-Cc: Scott Wood <scottwood@freescale.com>,
-        Kim Phillips <kim.phillips@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>,
-        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Subject: Re: [REPOST][PATCH 1/2] driver core: Add new device_driver flag to
- allow binding via sysfs only
-Message-ID: <20131220000035.GA5462@kroah.com>
-References: <20131203123446.42fbff34a8ebd7afd38159a5@linaro.org>
- <20131219010729.GC23055@kroah.com>
- <1387484531.3140.134.camel@snotra.buserror.net>
- <20131219203401.GA11290@kroah.com>
- <dd683e36cc334893b193f4d36a33238c@BY2PR03MB348.namprd03.prod.outlook.com>
- <20131219214336.GA24629@kroah.com>
- <1387491303.3140.156.camel@snotra.buserror.net>
- <20131219223223.GA2801@kroah.com>
- <e5b60a9c612c4a30b62d702f84ef400e@DM2PR03MB352.namprd03.prod.outlook.com>
+	Thu, 19 Dec 2013 19:01:39 -0500
+Date: Fri, 20 Dec 2013 00:01:31 +0500
+From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] mfd: input: iio: ti_amm335x: Rework TSC/ADC
+ synchronization
+Message-ID: <20131219190126.GA5123@gmail.com>
+References: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
+ <1387466911-3732-6-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <e5b60a9c612c4a30b62d702f84ef400e@DM2PR03MB352.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1387466911-3732-6-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 11:08:55PM +0000, Stuart Yoder wrote:
-> > > How will it "know not to grab the device"?  The knowledge of whether
-> > the
-> > > binding was explicitly requested or not does not get passed through to
-> > > the probe function.
-> > 
-> > Nor should it, as a driver should not know, nor care about this.
-> > 
-> > It's up to the BUS to handle this if it really wants to, and I'm afraid
-> > that I really am not convinced that the driver core needs to handle it
-> > either.
-> > 
-> > But again, as you don't have anything that could actually use this code
-> > that is mergable, it's a totally moot point, sorry.
+On Thu, Dec 19, 2013 at 04:28:31PM +0100, Sebastian Andrzej Siewior wrote:
+> The ADC driver always programs all possible ADC values and discards
+> them except for the value IIO asked for. On the am335x-evm the driver
+> programs four values and it takes 500us to gather them. Reducing the number
+> of conversations down to the (required) one also reduces the busy loop down
+> to 125us.
 > 
-> Understand, but what assumption do we develop vfio-plaform with?  That
-> a driver core 'sysfs_bind_only' flag is not an option, period?  If that
-> is the case we need to go back to square one and invent some new mechanism
-> to bind devices to the vfio-platform driver.
+> This leads to another error, namely the FIFOCOUNT register is sometimes
+> (like one out of 10 attempts) not updated in time leading to EBUSY.
+> The next read has the FIFOCOUNT register updated.
+> Checking for the ADCSTAT register for being idle isn't a good choice either.
+> The problem is that if TSC is used at the same time, the HW completes the
+> conversation for ADC *and* before the driver noticed it, the HW begins to
+> perform a TSC conversation and so the driver never seen the HW idle. The
+> next time we would have two values in the FIFO but since the driver reads
+> everything we always see the current one.
+> So instead of polling for the IDLE bit in ADCStatus register, we should
+> check the FIFOCOUNT register. It should be one instead of zero because we
+> request one value.
+> 
+> This change in turn leads to another error. Sometimes if TSC & ADC are
+> used together the TSC starts becoming interrupts even if nobody
+> actually touched the touchscreen. The interrupts seem valid because TSC's
+> FIFO is filled with values for each channel of the TSC. This condition stops
+> after a few ADC reads but will occur again. Not good.
+> 
+> On top of this (even without the changes I just mentioned) there is a ADC
+> & TSC lockup condition which was reported to me by Jeff Lance including the
+> following test case:
+> A busy loop of "cat /sys/bus/iio/devices/iio\:device0/in_voltage4_raw"
+> and a mug on touch screen. With this setup, the hardware will lockup after
+> something between 20 minutes and it could take up to a couple of hours.
+> During that lockup, the ADCSTAT register says 0x30 (or 0x70) which means
+> STEP_ID = IDLE and FSM_BUSY = yes. That means the hardware says that it is
+> idle and busy at the same time which is an invalid condition.
+I knew about FSM messing up. But couldn't investigate thouroughly
+and didn't want to rework so much while adding continuous mode. 
 
-Ok, why the total confusion between PCI and platform devices here?  Why
-keep mentioning both of them in a semi-interchangeable way?
+Good work :)
+> 
+> For all this reasons I decided to rework this TSC/ADC part and add a
+> handshake / synchronization here:
+> First the ADC signals that it needs the HW and writes a 0 mask into the
+> SE register. The HW (if active) will complete the current conversation
+> and become idle. The TSC driver will gather the values from the FIFO
+> (woken up by an interrupt) and won't "enable" another conversation.
+> Instead it will wake up the ADC driver which is already waiting. The ADC
+> driver will start "its" conversation and once it is done, it will
+> enable the TSC steps so the TSC will work again.
+> 
+> After this rework I haven't observed the lockup so far. Plus the busy
+> loop has been reduced from 500us to 125us.
+> 
+> The continues-read mode remains unchanged.
 
-> I guess it would need to be the platform bus equivalent of new_id.
+For one-shot reading from ADC, the TSC is 'disabled' for that moment.
+Ok. But for continuous mode, reading from ADC disables TSC for that long time?
 
-Then add it, there's nothing stopping the platform bus from supporting
-this.
+If it doesn't disable the TSC, does that mean that this fix would
+correct the one-shot read. But the continuous mode is still prone to the 
+FSM hanging up?
 
-> But, then we're left with the potential racy situation where multiple drivers
-> can potentially grab a device and it's ambiguous and non-deterministic at to which
-> driver binds to it.
+> 
+> diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+...
+> @@ -329,34 +347,43 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
+>  	unsigned int fifo1count, read, stepid;
+>  	bool found = false;
+>  	u32 step_en;
+> -	unsigned long timeout = jiffies + usecs_to_jiffies
+> -				(IDLE_TIMEOUT * adc_dev->channels);
+> +	unsigned long timeout;
+>  
+>  	if (iio_buffer_enabled(indio_dev))
+>  		return -EBUSY;
+>  
+> -	step_en = get_adc_step_mask(adc_dev);
+> +	step_en = get_adc_chan_step_mask(adc_dev, chan);
+> +	if (!step_en)
+> +		return -EINVAL;
+> +
+> +	fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
+> +	while (fifo1count--)
+> +		tiadc_readl(adc_dev, REG_FIFO1);
+> +
+Would this flush be needed ideally?
 
-Welcome to life in hotpluggable systems, this is nothing new :)
-
-Seriously, userspace has the ability to sort this all out after devices
-show up, use it.  Don't try to create convoluted schemes in the driver
-core that are confusing and don't really seem to work.
-
-People have asked for a "priority" of drivers binding to devices for
-over a decade now, as "other" operating systems have it.  Turns out, no
-one has ever needed it badly enough to actually implement it...
-
-good luck,
-
-greg k-h
+Thanks
+Zubair 
