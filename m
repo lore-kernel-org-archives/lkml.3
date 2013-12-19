@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab3LSL5n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:57:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44881 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755013Ab3LSL5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:38 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Julian Stecklina <jsteckli@os.inf.tu-dresden.de>,
-        Joerg Roedel <joro@8bytes.org>, Josh Boyer <jwboyer@fedoraproject.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 096/208] iommu/vt-d: Fixed interaction of VFIO_IOMMU_MAP_DMA with IOMMU address limits
-Date: Thu, 19 Dec 2013 11:53:14 +0000
-Message-Id: <1387454106-19326-97-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1753130Ab3LSOez (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:34:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57694 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751332Ab3LSOey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 09:34:54 -0500
+Date: Thu, 19 Dec 2013 14:34:50 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Alex Shi <alex.shi@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        H Peter Anvin <hpa@zytor.com>, Linux-X86 <x86@kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
+ range flush v2
+Message-ID: <20131219143449.GN11295@suse.de>
+References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
+ <20131218072814.GA798@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131218072814.GA798@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, Dec 18, 2013 at 03:28:14PM +0800, Fengguang Wu wrote:
+> Hi Mel,
+> 
+> I'd like to share some test numbers with your patches applied on top of v3.13-rc3.
+> 
+> Basically there are
+> 
+> 1) no big performance changes
+> 
+>   76628486           -0.7%   76107841       TOTAL vm-scalability.throughput
+>     407038           +1.2%     412032       TOTAL hackbench.throughput
+>      50307           -1.5%      49549       TOTAL ebizzy.throughput
+> 
 
-------------------
+I'm assuming this was an ivybridge processor. How many threads were ebizzy
+tested with? The memory ranges used by the vm scalability benchmarks are
+probably too large to be affected by the series but I'm guessing. I doubt
+hackbench is doing any flushes and the 1.2% is noise.
 
-From: Julian Stecklina <jsteckli@os.inf.tu-dresden.de>
+> 2) huge proc-vmstat.nr_tlb_* increases
+> 
+>   99986527         +3e+14%  2.988e+20       TOTAL proc-vmstat.nr_tlb_local_flush_one
+>  3.812e+08       +2.2e+13%  8.393e+19       TOTAL proc-vmstat.nr_tlb_remote_flush_received
+>  3.301e+08       +2.2e+13%  7.241e+19       TOTAL proc-vmstat.nr_tlb_remote_flush
+>    5990864       +1.2e+15%  7.032e+19       TOTAL proc-vmstat.nr_tlb_local_flush_all
+> 
 
-commit f9423606ade08653dd8a43334f0a7fb45504c5cc upstream.
+The accounting changes can be mostly explained by "x86: mm: Clean up
+inconsistencies when flushing TLB ranges". flush_all was simply not
+being counted before so I would claim that the old figure was simply
+wrong and did not reflect reality.
 
-The BUG_ON in drivers/iommu/intel-iommu.c:785 can be triggered from userspace via
-VFIO by calling the VFIO_IOMMU_MAP_DMA ioctl on a vfio device with any address
-beyond the addressing capabilities of the IOMMU. The problem is that the ioctl code
-calls iommu_iova_to_phys before it calls iommu_map. iommu_map handles the case that
-it gets addresses beyond the addressing capabilities of its IOMMU.
-intel_iommu_iova_to_phys does not.
+Alterations on when range versus global flushes would affect the other
+counters but arguably it's now behaving as originally intended by the tlb
+flush shift.
 
-This patch fixes iommu_iova_to_phys to return NULL for addresses beyond what the
-IOMMU can handle. This in turn causes the ioctl call to fail in iommu_map and
-(correctly) return EFAULT to the user with a helpful warning message in the kernel
-log.
+> Here are the detailed numbers. eabb1f89905a0c809d13 is the HEAD commit
+> with 4 patches applied. The "~ N%" notations are the stddev percent.
+> The "[+-] N%" notations are the increase/decrease percent. The
+> brickland2, lkp-snb01, lkp-ib03 etc. are testbox names.
+> 
 
-Signed-off-by: Julian Stecklina <jsteckli@os.inf.tu-dresden.de>
-Acked-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/iommu/intel-iommu.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Are positive numbers always better? If so, most of these figures look good
+to me and support the series being merged. Please speak up if that is in
+error.
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 15e9b57..40203ad 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -782,7 +782,11 @@ static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
- 	int offset;
- 
- 	BUG_ON(!domain->pgd);
--	BUG_ON(addr_width < BITS_PER_LONG && pfn >> addr_width);
-+
-+	if (addr_width < BITS_PER_LONG && pfn >> addr_width)
-+		/* Address beyond IOMMU's addressing capabilities. */
-+		return NULL;
-+
- 	parent = domain->pgd;
- 
- 	while (level > 0) {
+I do see a few major regressions like this
+
+>     324497 ~ 0%    -100.0%          0 ~ 0%  brickland2/micro/vm-scalability/16G-truncate
+
+but I have no idea what the test is doing and whether something happened
+that the test broke that time or if it's something to be really
+concerned about.
+
+Thanks
+
 -- 
-1.8.3.2
-
+Mel Gorman
+SUSE Labs
