@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab3LSLzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:55:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44421 "EHLO
+	id S932155Ab3LSMPj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:15:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45202 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717Ab3LSLzf (ORCPT
+	with ESMTP id S1755788Ab3LSL7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:55:35 -0500
+	Thu, 19 Dec 2013 06:59:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jukka Rissanen <jukka.rissanen@linux.intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Steve Capper <steve.capper@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 012/208] 6lowpan: Uncompression of traffic class field was incorrect
-Date: Thu, 19 Dec 2013 11:51:50 +0000
-Message-Id: <1387454106-19326-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 160/208] arm64: mm: Fix PMD_SECT_PROT_NONE definition
+Date: Thu, 19 Dec 2013 11:54:18 +0000
+Message-Id: <1387454106-19326-161-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,69 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+From: Steve Capper <steve.capper@linaro.org>
 
-commit 1188f05497e7bd2f2614b99c54adfbe7413d5749 upstream.
+commit db4ed53cfe9f5a00355891a631d47dfa3fd4541f upstream.
 
-If priority/traffic class field in IPv6 header is set (seen when
-using ssh), the uncompression sets the TC and Flow fields incorrectly.
+Modify the value of PMD_SECT_PROT_NONE to match that of PTE_NONE. This
+should have been in commit 3676f9ef5481 (Move PTE_PROT_NONE higher up).
 
-Example:
-
-This is IPv6 header of a sent packet. Note the priority/TC (=1) in
-the first byte.
-
-00000000: 61 00 00 00 00 2c 06 40 fe 80 00 00 00 00 00 00
-00000010: 02 02 72 ff fe c6 42 10 fe 80 00 00 00 00 00 00
-00000020: 02 1e ab ff fe 4c 52 57
-
-This gets compressed like this in the sending side
-
-00000000: 72 31 04 06 02 1e ab ff fe 4c 52 57 ec c2 00 16
-00000010: aa 2d fe 92 86 4e be c6 ....
-
-In the receiving end, the packet gets uncompressed to this
-IPv6 header
-
-00000000: 60 06 06 02 00 2a 1e 40 fe 80 00 00 00 00 00 00
-00000010: 02 02 72 ff fe c6 42 10 fe 80 00 00 00 00 00 00
-00000020: ab ff fe 4c 52 57 ec c2
-
-First four bytes are set incorrectly and we have also lost
-two bytes from destination address.
-
-The fix is to switch the case values in switch statement
-when checking the TC field.
-
-Signed-off-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Steve Capper <steve.capper@linaro.org>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ieee802154/6lowpan.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm64/include/asm/pgtable-hwdef.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
-index 3b9d5f2..a47f582 100644
---- a/net/ieee802154/6lowpan.c
-+++ b/net/ieee802154/6lowpan.c
-@@ -862,7 +862,7 @@ lowpan_process_data(struct sk_buff *skb)
- 	 * Traffic class carried in-line
- 	 * ECN + DSCP (1 byte), Flow Label is elided
- 	 */
--	case 1: /* 10b */
-+	case 2: /* 10b */
- 		if (lowpan_fetch_skb_u8(skb, &tmp))
- 			goto drop;
- 
-@@ -875,7 +875,7 @@ lowpan_process_data(struct sk_buff *skb)
- 	 * Flow Label carried in-line
- 	 * ECN + 2-bit Pad + Flow Label (3 bytes), DSCP is elided
- 	 */
--	case 2: /* 01b */
-+	case 1: /* 01b */
- 		if (lowpan_fetch_skb_u8(skb, &tmp))
- 			goto drop;
- 
+diff --git a/arch/arm64/include/asm/pgtable-hwdef.h b/arch/arm64/include/asm/pgtable-hwdef.h
+index e182a35..ccfeeee 100644
+--- a/arch/arm64/include/asm/pgtable-hwdef.h
++++ b/arch/arm64/include/asm/pgtable-hwdef.h
+@@ -43,7 +43,7 @@
+  * Section
+  */
+ #define PMD_SECT_VALID		(_AT(pmdval_t, 1) << 0)
+-#define PMD_SECT_PROT_NONE	(_AT(pmdval_t, 1) << 2)
++#define PMD_SECT_PROT_NONE	(_AT(pmdval_t, 1) << 58)
+ #define PMD_SECT_USER		(_AT(pmdval_t, 1) << 6)		/* AP[1] */
+ #define PMD_SECT_RDONLY		(_AT(pmdval_t, 1) << 7)		/* AP[2] */
+ #define PMD_SECT_S		(_AT(pmdval_t, 3) << 8)
 -- 
 1.8.3.2
 
