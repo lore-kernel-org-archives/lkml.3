@@ -1,82 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab3LSLvV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:51:21 -0500
-Received: from mx0a-0016ce01.pphosted.com ([67.231.148.157]:32513 "EHLO
-	mx0a-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752438Ab3LSLvT (ORCPT
+	id S1756917Ab3LSNAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:00:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44611 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754254Ab3LSL40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:51:19 -0500
-From: Shahed Shaikh <shahed.shaikh@qlogic.com>
-To: Rashika Kheria <rashika.kheria@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Himanshu Madhani <himanshu.madhani@qlogic.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Sony Chacko <sony.chacko@qlogic.com>,
-        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>,
-        Dept-Eng Linux Driver <Linux-Driver@qlogic.com>,
-        netdev <netdev@vger.kernel.org>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>
-Subject: RE: [PATCH v3 2/8] drivers: net: Mark functions as static in
- qlcnic_83xx_hw.c
-Thread-Topic: [PATCH v3 2/8] drivers: net: Mark functions as static in
- qlcnic_83xx_hw.c
-Thread-Index: AQHO/JcgVX1oMlM+F0eXQ5ihYwVKeppbZ9Ow
-Date: Thu, 19 Dec 2013 11:51:13 +0000
-Message-ID: <262CB373A6D1F14F9B81E82F74F77D5A46F49D4B@avmb2.qlogic.org>
-References: <04fe932bc3585620c91d511bb0894e45bb762ffa.1387382457.git.rashika.kheria@gmail.com>
- <e50a81d6fd512838c98cd46a0ce66262da5cf811.1387382457.git.rashika.kheria@gmail.com>
-In-Reply-To: <e50a81d6fd512838c98cd46a0ce66262da5cf811.1387382457.git.rashika.kheria@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.4.10]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7293 signatures=668857
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1305240000 definitions=main-1312190040
+	Thu, 19 Dec 2013 06:56:26 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 046/208] gro: Clean up tcpX_gro_receive checksum verification
+Date: Thu, 19 Dec 2013 11:52:24 +0000
+Message-Id: <1387454106-19326-47-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBJExuHg003016
 
-> -----Original Message-----
-> From: Rashika Kheria [mailto:rashika.kheria@gmail.com]
-> Sent: Thursday, December 19, 2013 2:18 PM
-> To: linux-kernel; Himanshu Madhani; Rajesh Borundia; Shahed Shaikh;
-> Jitendra Kalsaria; Sony Chacko; Sucheta Chakraborty; Dept-Eng Linux Driver;
-> netdev; josh@joshtriplett.org
-> Subject: [PATCH v3 2/8] drivers: net: Mark functions as static in
-> qlcnic_83xx_hw.c
-> 
-> This patch marks the function qlcnic_83xx_clear_legacy_intr_mask(),
-> qlcnic_83xx_set_legacy_intr_mask() and
-> qlcnic_83xx_enable_legacy_msix_mbx_intr() in qlcnic_83xx_hw.c as static
-> because they are not used outside this file.
-> 
-> Thus, it also removes the following warnings in
-> ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c:
-> 
-> drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c:318:13: warning: no
-> previous prototype for â€˜qlcnic_83xx_clear_legacy_intr_maskâ€™ [-Wmissing-
-> prototypes]
-> drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c:323:13: warning: no
-> previous prototype for â€˜qlcnic_83xx_set_legacy_intr_maskâ€™ [-Wmissing-
-> prototypes]
-> drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c:343:13: warning: no
-> previous prototype for â€˜qlcnic_83xx_enable_legacy_msix_mbx_intrâ€™ [-
-> Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Shahed Shaikh <shahed.shaikh@qlogic.com>
+------------------
 
-Thanks,
-Shahed
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+From: Herbert Xu <herbert@gondor.apana.org.au>
+
+commit b8ee93ba80b5a0b6c3c06b65c34dd1276f16c047 upstream.
+
+This patch simplifies the checksum verification in tcpX_gro_receive
+by reusing the CHECKSUM_COMPLETE code for CHECKSUM_NONE.  All it
+does for CHECKSUM_NONE is compute the partial checksum and then
+treat it as if it came from the hardware (CHECKSUM_COMPLETE).
+
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+
+Cheers,
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/ipv4/tcp_offload.c   | 26 ++++++++++----------------
+ net/ipv6/tcpv6_offload.c | 27 ++++++++++-----------------
+ 2 files changed, 20 insertions(+), 33 deletions(-)
+
+diff --git a/net/ipv4/tcp_offload.c b/net/ipv4/tcp_offload.c
+index 44c8678..910ab81 100644
+--- a/net/ipv4/tcp_offload.c
++++ b/net/ipv4/tcp_offload.c
+@@ -272,35 +272,29 @@ static struct sk_buff **tcp4_gro_receive(struct sk_buff **head, struct sk_buff *
+ {
+ 	const struct iphdr *iph = skb_gro_network_header(skb);
+ 	__wsum wsum;
+-	__sum16 sum;
+ 
+ 	/* Don't bother verifying checksum if we're going to flush anyway. */
+ 	if (NAPI_GRO_CB(skb)->flush)
+ 		goto skip_csum;
+ 
++	wsum = skb->csum;
++
+ 	switch (skb->ip_summed) {
++	case CHECKSUM_NONE:
++		wsum = skb_checksum(skb, skb_gro_offset(skb), skb_gro_len(skb),
++				    0);
++
++		/* fall through */
++
+ 	case CHECKSUM_COMPLETE:
+ 		if (!tcp_v4_check(skb_gro_len(skb), iph->saddr, iph->daddr,
+-				  skb->csum)) {
++				  wsum)) {
+ 			skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 			break;
+ 		}
+-flush:
++
+ 		NAPI_GRO_CB(skb)->flush = 1;
+ 		return NULL;
+-
+-	case CHECKSUM_NONE:
+-		wsum = csum_tcpudp_nofold(iph->saddr, iph->daddr,
+-					  skb_gro_len(skb), IPPROTO_TCP, 0);
+-		sum = csum_fold(skb_checksum(skb,
+-					     skb_gro_offset(skb),
+-					     skb_gro_len(skb),
+-					     wsum));
+-		if (sum)
+-			goto flush;
+-
+-		skb->ip_summed = CHECKSUM_UNNECESSARY;
+-		break;
+ 	}
+ 
+ skip_csum:
+diff --git a/net/ipv6/tcpv6_offload.c b/net/ipv6/tcpv6_offload.c
+index 78081d8..a7a2384 100644
+--- a/net/ipv6/tcpv6_offload.c
++++ b/net/ipv6/tcpv6_offload.c
+@@ -37,36 +37,29 @@ static struct sk_buff **tcp6_gro_receive(struct sk_buff **head,
+ {
+ 	const struct ipv6hdr *iph = skb_gro_network_header(skb);
+ 	__wsum wsum;
+-	__sum16 sum;
+ 
+ 	/* Don't bother verifying checksum if we're going to flush anyway. */
+ 	if (NAPI_GRO_CB(skb)->flush)
+ 		goto skip_csum;
+ 
++	wsum = skb->csum;
++
+ 	switch (skb->ip_summed) {
++	case CHECKSUM_NONE:
++		wsum = skb_checksum(skb, skb_gro_offset(skb), skb_gro_len(skb),
++				    wsum);
++
++		/* fall through */
++
+ 	case CHECKSUM_COMPLETE:
+ 		if (!tcp_v6_check(skb_gro_len(skb), &iph->saddr, &iph->daddr,
+-				  skb->csum)) {
++				  wsum)) {
+ 			skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 			break;
+ 		}
+-flush:
++
+ 		NAPI_GRO_CB(skb)->flush = 1;
+ 		return NULL;
+-
+-	case CHECKSUM_NONE:
+-		wsum = ~csum_unfold(csum_ipv6_magic(&iph->saddr, &iph->daddr,
+-						    skb_gro_len(skb),
+-						    IPPROTO_TCP, 0));
+-		sum = csum_fold(skb_checksum(skb,
+-					     skb_gro_offset(skb),
+-					     skb_gro_len(skb),
+-					     wsum));
+-		if (sum)
+-			goto flush;
+-
+-		skb->ip_summed = CHECKSUM_UNNECESSARY;
+-		break;
+ 	}
+ 
+ skip_csum:
+-- 
+1.8.3.2
+
