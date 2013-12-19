@@ -1,85 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab3LSM6R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:58:17 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51330 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756444Ab3LSM6P (ORCPT
+	id S1757134Ab3LSMhi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:37:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44891 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755025Ab3LSL5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:58:15 -0500
-Date: Thu, 19 Dec 2013 13:57:59 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
- tracing units
-Message-ID: <20131219125759.GU3694@twins.programming.kicks-ass.net>
-References: <20131218133439.GR21999@twins.programming.kicks-ass.net>
- <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218141125.GT21999@twins.programming.kicks-ass.net>
- <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218150900.GU21999@twins.programming.kicks-ass.net>
- <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219103134.GD30183@twins.programming.kicks-ass.net>
- <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219112812.GY21999@twins.programming.kicks-ass.net>
- <20131219115759.GS3694@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131219115759.GS3694@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 19 Dec 2013 06:57:41 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 098/208] HID: lg: fix Report Descriptor for Logitech MOMO Force (Black)
+Date: Thu, 19 Dec 2013 11:53:16 +0000
+Message-Id: <1387454106-19326-99-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 12:57:59PM +0100, Peter Zijlstra wrote:
-> On Thu, Dec 19, 2013 at 12:28:12PM +0100, Peter Zijlstra wrote:
-> > This document you referred me to looks to specify something with a
-> > proper s/g implementation; called ToPA. There doesn't appear to be a
-> > limit to the linked entries and you can specify a size per entry, and I
-> > don't see anywhere why 4k would be bad.
-> > 
-> > That said, I'm still reading..
-> 
-> Found it:
-> 
-> "Single Output Region ToPA Implementation
-> 
-> The first processor generation to implement Intel PT supports only ToPA
-> configurations with a single ToPA entry followed by an END entry that
-> points back to the first entry (creating one circular output buffer).
-> Such processors enumerate CPUID.(EAX=14H,ECX=0):EBX[bit 1] as 0."
-> 
-> So basically you guys buggered the hardware.
-> 
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-"ToPA PMI and Single Output Region ToPA Implementation
+------------------
 
-A processor that supports only a single ToPA output region
-implementation (such that only one output region is supported; see
-above) will attempt to signal a ToPA PMI interrupt before the output
-wraps and overwrites the top of the buffer. To support this
-functionality, the PMI handler should disable packet generation as soon
-as possible.  Due to PMI skid, it is possible, in rare cases, that the
-wrap will have occurred before the PMI is delivered. Software can avoid
-this by setting the STOP bit in the ToPA entry (see Table 11-3); this
-will disable tracing once the region is filled, and no wrap will occur.
-This approach has the downside of disabling packet generation so that
-some of the instructions that led up to the PMI will not be traced. If
-the PMI skid is significant enough to cause the region to fill and
-tracing to be disabled, the PMI handler will need to clear the
-IA32_RTIT_STATUS.Stopped indication before tracing can resume."
+From: Simon Wood <simon@mungewell.org>
 
+commit 348cbaa800f8161168b20f85f72abb541c145132 upstream.
 
-So you're basically forced to stop the tracing on PMI anyhow; so your
-continuous tracing argument goes out the window.
+By default the Logitech MOMO Force (Black) presents a combined accel/brake
+axis ('Y'). This patch modifies the HID descriptor to present seperate
+accel/brake axes ('Y' and 'Z').
 
-Also, what a complete clusterfuck. I think we're far better of
-pretending PT doesn't exist until its fixed.
+Signed-off-by: Simon Wood <simon@mungewell.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/hid/hid-lg.c | 58 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 58 insertions(+)
+
+diff --git a/drivers/hid/hid-lg.c b/drivers/hid/hid-lg.c
+index 1bfd292..06eb45f 100644
+--- a/drivers/hid/hid-lg.c
++++ b/drivers/hid/hid-lg.c
+@@ -47,6 +47,7 @@
+ #define DFP_RDESC_ORIG_SIZE	97
+ #define FV_RDESC_ORIG_SIZE	130
+ #define MOMO_RDESC_ORIG_SIZE	87
++#define MOMO2_RDESC_ORIG_SIZE	87
+ 
+ /* Fixed report descriptors for Logitech Driving Force (and Pro)
+  * wheel controllers
+@@ -284,6 +285,54 @@ static __u8 momo_rdesc_fixed[] = {
+ 0xC0                /*  End Collection                      */
+ };
+ 
++static __u8 momo2_rdesc_fixed[] = {
++0x05, 0x01,         /*  Usage Page (Desktop),               */
++0x09, 0x04,         /*  Usage (Joystik),                    */
++0xA1, 0x01,         /*  Collection (Application),           */
++0xA1, 0x02,         /*      Collection (Logical),           */
++0x95, 0x01,         /*          Report Count (1),           */
++0x75, 0x0A,         /*          Report Size (10),           */
++0x15, 0x00,         /*          Logical Minimum (0),        */
++0x26, 0xFF, 0x03,   /*          Logical Maximum (1023),     */
++0x35, 0x00,         /*          Physical Minimum (0),       */
++0x46, 0xFF, 0x03,   /*          Physical Maximum (1023),    */
++0x09, 0x30,         /*          Usage (X),                  */
++0x81, 0x02,         /*          Input (Variable),           */
++0x95, 0x0A,         /*          Report Count (10),          */
++0x75, 0x01,         /*          Report Size (1),            */
++0x25, 0x01,         /*          Logical Maximum (1),        */
++0x45, 0x01,         /*          Physical Maximum (1),       */
++0x05, 0x09,         /*          Usage Page (Button),        */
++0x19, 0x01,         /*          Usage Minimum (01h),        */
++0x29, 0x0A,         /*          Usage Maximum (0Ah),        */
++0x81, 0x02,         /*          Input (Variable),           */
++0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),         */
++0x09, 0x00,         /*          Usage (00h),                */
++0x95, 0x04,         /*          Report Count (4),           */
++0x81, 0x02,         /*          Input (Variable),           */
++0x95, 0x01,         /*          Report Count (1),           */
++0x75, 0x08,         /*          Report Size (8),            */
++0x26, 0xFF, 0x00,   /*          Logical Maximum (255),      */
++0x46, 0xFF, 0x00,   /*          Physical Maximum (255),     */
++0x09, 0x01,         /*          Usage (01h),                */
++0x81, 0x02,         /*          Input (Variable),           */
++0x05, 0x01,         /*          Usage Page (Desktop),       */
++0x09, 0x31,         /*          Usage (Y),                  */
++0x81, 0x02,         /*          Input (Variable),           */
++0x09, 0x32,         /*          Usage (Z),                  */
++0x81, 0x02,         /*          Input (Variable),           */
++0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),         */
++0x09, 0x00,         /*          Usage (00h),                */
++0x81, 0x02,         /*          Input (Variable),           */
++0xC0,               /*      End Collection,                 */
++0xA1, 0x02,         /*      Collection (Logical),           */
++0x09, 0x02,         /*          Usage (02h),                */
++0x95, 0x07,         /*          Report Count (7),           */
++0x91, 0x02,         /*          Output (Variable),          */
++0xC0,               /*      End Collection,                 */
++0xC0                /*  End Collection                      */
++};
++
+ /*
+  * Certain Logitech keyboards send in report #3 keys which are far
+  * above the logical maximum described in descriptor. This extends
+@@ -343,6 +392,15 @@ static __u8 *lg_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		}
+ 		break;
+ 
++	case USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2:
++		if (*rsize == MOMO2_RDESC_ORIG_SIZE) {
++			hid_info(hdev,
++				"fixing up Logitech Momo Racing Force (Black) report descriptor\n");
++			rdesc = momo2_rdesc_fixed;
++			*rsize = sizeof(momo2_rdesc_fixed);
++		}
++		break;
++
+ 	case USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL:
+ 		if (*rsize == FV_RDESC_ORIG_SIZE) {
+ 			hid_info(hdev,
+-- 
+1.8.3.2
+
