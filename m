@@ -1,95 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab3LSU3k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 15:29:40 -0500
-Received: from [207.46.163.184] ([207.46.163.184]:34561 "EHLO
-	na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755724Ab3LSU3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 15:29:39 -0500
-Message-ID: <1387484961.3140.141.camel@snotra.buserror.net>
-Subject: Re: [REPOST][PATCH 2/2] driver core: platform: allow platform
- drivers to bind to any device
-From: Scott Wood <scottwood@freescale.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Kim Phillips <kim.phillips@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <kvm@vger.kernel.org>, <R65777@freescale.com>, <B07421@freescale.com>,
-        <B08248@freescale.com>, <christoffer.dall@linaro.org>,
-        <alex.williamson@redhat.com>, <a.motakis@virtualopensystems.com>,
-        <agraf@suse.de>, <B16395@freescale.com>
-Date: Thu, 19 Dec 2013 14:29:21 -0600
-In-Reply-To: <20131219010340.GA23055@kroah.com>
-References: <20131203123454.3ab18749ed0d0d943b10df9a@linaro.org>
-	 <20131219010340.GA23055@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1756125Ab3LSUaS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 15:30:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45920 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755619Ab3LSUaP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 15:30:15 -0500
+Date: Thu, 19 Dec 2013 12:30:17 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Neil Horman <nhorman@tuxdriver.com>, Bjorn Helgaas <bhelgaas@google.com>
+Cc: Veaceslav Falico <vfalico@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] PCI: export MSI mode using attributes, not kobjects
+Message-ID: <20131219203017.GA1768@kroah.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: DM2PR05CA004.namprd05.prod.outlook.com (10.141.96.24) To
- BL2PR03MB387.namprd03.prod.outlook.com (10.141.91.152)
-X-Forefront-PRVS: 006546F32A
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(189002)(199002)(377424004)(24454002)(51704005)(65816001)(83322001)(79102001)(54316002)(80022001)(81816001)(80976001)(15975445006)(81342001)(19580395003)(47776003)(88136002)(63696002)(81542001)(19580405001)(87976001)(77982001)(59766001)(62966002)(85852003)(83072002)(56816005)(56776001)(76786001)(76796001)(90146001)(69226001)(81686001)(87286001)(87266001)(31966008)(89996001)(85306002)(74502001)(74662001)(47446002)(4396001)(50226001)(47736001)(47976001)(49866001)(46102001)(77156001)(50986001)(33646001)(74876001)(50466002)(74706001)(19300405004)(51856001)(77096001)(53806001)(15202345003)(42186004)(23676002)(76482001)(74366001)(3826001)(562404015);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB387;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];CLIP:2601:2:5800:3f7:12bf:48ff:fe84:c9a0;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-12-18 at 17:03 -0800, Greg Kroah-Hartman wrote:
-> On Tue, Dec 03, 2013 at 12:34:54PM +0000, Kim Phillips wrote:
-> > Platform drivers such as the vfio-platform "meta-" driver [1]
-> > should be allowed to specify that they can bind to any device,
-> > much like PCI drivers can with PCI_ANY_ID.
-> > 
-> > Currently, binding platform drivers to devices depends on:
-> > 
-> > - a string match in the device node's compatible entry (OF)
-> > - a string match in the ACPI id list (ACPI)
-> > - a string match in the id_table (platform data)
-> > - a string match on the driver name (fall-back)
-> > 
-> > none of which allow for the notion of "match any."
-> > 
-> > This patch adds the notion by adding a "match any device" boolean to
-> > struct platform_driver, for drivers to be able to set and thus not cause
-> > platform_match() to fail when a bind is requested.
-> > 
-> > [1] http://www.spinics.net/lists/kvm/msg96701.html
-> > 
-> > Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
-> > ---
-> > rebased onto 3.13-rc2, and reposted from first submission which
-> > received no comments:
-> > 
-> > https://lkml.org/lkml/2013/10/11/48
-> > 
-> >  drivers/base/platform.c         | 4 ++++
-> >  include/linux/platform_device.h | 1 +
-> >  2 files changed, 5 insertions(+)
-> > 
-> > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> > index 3a94b79..78a5b62 100644
-> > --- a/drivers/base/platform.c
-> > +++ b/drivers/base/platform.c
-> > @@ -736,6 +736,10 @@ static int platform_match(struct device *dev, struct device_driver *drv)
-> >  	struct platform_device *pdev = to_platform_device(dev);
-> >  	struct platform_driver *pdrv = to_platform_driver(drv);
-> >  
-> > +	/* the driver matches any device */
-> > +	if (pdrv->match_any_dev)
-> > +		return 1;
-> 
-> This breaks userspace in that it will never know to load the module that
-> can "bind to anything".
-> 
-> You need a way to encode this in the platform device id that can be a
-> wildcard type of thing, so that userspace can know about this.
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-How is userspace broken?  vfio platform is a new thing; there's nothing
-existing to break.  I don't see how automatic module loading makes sense
-for it.  Whether the module needs to be loaded depends on the user's
-intentions, not based on what hardware you have.
+The PCI MSI sysfs code is a mess with kobjects for things that don't
+really need to be kobjects.  This patch creates attributes dynamically
+for the MSI interrupts instead of using kobjects.
 
--Scott
+Note, this removes a directory from the current MSI interrupt sysfs
+code:
 
+old MSI kobjects:
+pci_device
+   └── msi_irqs
+       └── 40
+           └── mode
 
+new MSI attributes:
+pci_device
+   └── msi_irqs
+       └── 40
+
+As there was only one file "mode" with the kobject model, the interrupt
+number is now a file that returns the "mode" of the interrupt (msi vs.
+msix).
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+v3: attribute creation properly tagged for lockdep.
+    error handling if creation of attributes fails.
+
+v2: add documentation for sysfs attributes
+
+ Documentation/ABI/testing/sysfs-bus-pci |   11 --
+ drivers/pci/msi.c                       |  166 +++++++++++++++++---------------
+ include/linux/pci.h                     |    2 
+ 3 files changed, 96 insertions(+), 83 deletions(-)
+
+--- a/Documentation/ABI/testing/sysfs-bus-pci
++++ b/Documentation/ABI/testing/sysfs-bus-pci
+@@ -70,18 +70,15 @@ Date:		September, 2011
+ Contact:	Neil Horman <nhorman@tuxdriver.com>
+ Description:
+ 		The /sys/devices/.../msi_irqs directory contains a variable set
+-		of sub-directories, with each sub-directory being named after a
+-		corresponding msi irq vector allocated to that device.  Each
+-		numbered sub-directory N contains attributes of that irq.
+-		Note that this directory is not created for device drivers which
+-		do not support msi irqs
++		of files, with each file being named after a corresponding msi
++		irq vector allocated to that device.
+ 
+-What:		/sys/bus/pci/devices/.../msi_irqs/<N>/mode
++What:		/sys/bus/pci/devices/.../msi_irqs/<N>
+ Date:		September 2011
+ Contact:	Neil Horman <nhorman@tuxdriver.com>
+ Description:
+ 		This attribute indicates the mode that the irq vector named by
+-		the parent directory is in (msi vs. msix)
++		the file is in (msi vs. msix)
+ 
+ What:		/sys/bus/pci/devices/.../remove
+ Date:		January 2009
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -363,6 +363,9 @@ void write_msi_msg(unsigned int irq, str
+ static void free_msi_irqs(struct pci_dev *dev)
+ {
+ 	struct msi_desc *entry, *tmp;
++	struct attribute **msi_attrs;
++	struct device_attribute *dev_attr;
++	int count = 0;
+ 
+ 	list_for_each_entry(entry, &dev->msi_list, list) {
+ 		int i, nvec;
+@@ -398,6 +401,22 @@ static void free_msi_irqs(struct pci_dev
+ 		list_del(&entry->list);
+ 		kfree(entry);
+ 	}
++
++	if (dev->msi_irq_groups) {
++		sysfs_remove_groups(&dev->dev.kobj, dev->msi_irq_groups);
++		msi_attrs = dev->msi_irq_groups[0]->attrs;
++		list_for_each_entry(entry, &dev->msi_list, list) {
++			dev_attr = container_of(msi_attrs[count],
++						struct device_attribute, attr);
++			kfree(dev_attr->attr.name);
++			kfree(dev_attr);
++			++count;
++		}
++		kfree(msi_attrs);
++		kfree(dev->msi_irq_groups[0]);
++		kfree(dev->msi_irq_groups);
++		dev->msi_irq_groups = NULL;
++	}
+ }
+ 
+ static struct msi_desc *alloc_msi_entry(struct pci_dev *dev)
+@@ -471,94 +490,95 @@ void pci_restore_msi_state(struct pci_de
+ }
+ EXPORT_SYMBOL_GPL(pci_restore_msi_state);
+ 
+-
+-#define to_msi_attr(obj) container_of(obj, struct msi_attribute, attr)
+-#define to_msi_desc(obj) container_of(obj, struct msi_desc, kobj)
+-
+-struct msi_attribute {
+-	struct attribute        attr;
+-	ssize_t (*show)(struct msi_desc *entry, struct msi_attribute *attr,
+-			char *buf);
+-	ssize_t (*store)(struct msi_desc *entry, struct msi_attribute *attr,
+-			 const char *buf, size_t count);
+-};
+-
+-static ssize_t show_msi_mode(struct msi_desc *entry, struct msi_attribute *atr,
++static ssize_t msi_mode_show(struct device *dev, struct device_attribute *attr,
+ 			     char *buf)
+ {
+-	return sprintf(buf, "%s\n", entry->msi_attrib.is_msix ? "msix" : "msi");
+-}
+-
+-static ssize_t msi_irq_attr_show(struct kobject *kobj,
+-				 struct attribute *attr, char *buf)
+-{
+-	struct msi_attribute *attribute = to_msi_attr(attr);
+-	struct msi_desc *entry = to_msi_desc(kobj);
+-
+-	if (!attribute->show)
+-		return -EIO;
+-
+-	return attribute->show(entry, attribute, buf);
+-}
+-
+-static const struct sysfs_ops msi_irq_sysfs_ops = {
+-	.show = msi_irq_attr_show,
+-};
+-
+-static struct msi_attribute mode_attribute =
+-	__ATTR(mode, S_IRUGO, show_msi_mode, NULL);
+-
+-
+-static struct attribute *msi_irq_default_attrs[] = {
+-	&mode_attribute.attr,
+-	NULL
+-};
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct msi_desc *entry;
++	unsigned long irq;
++	int retval;
+ 
+-static void msi_kobj_release(struct kobject *kobj)
+-{
+-	struct msi_desc *entry = to_msi_desc(kobj);
++	retval = kstrtoul(attr->attr.name, 10, &irq);
++	if (retval)
++		return retval;
+ 
+-	pci_dev_put(entry->dev);
++	list_for_each_entry(entry, &pdev->msi_list, list) {
++		if (entry->irq == irq) {
++			return sprintf(buf, "%s\n",
++				       entry->msi_attrib.is_msix ? "msix" : "msi");
++		}
++	}
++	return -ENODEV;
+ }
+ 
+-static struct kobj_type msi_irq_ktype = {
+-	.release = msi_kobj_release,
+-	.sysfs_ops = &msi_irq_sysfs_ops,
+-	.default_attrs = msi_irq_default_attrs,
+-};
+-
+ static int populate_msi_sysfs(struct pci_dev *pdev)
+ {
++	struct attribute **msi_attrs;
++	struct attribute *msi_attr;
++	struct device_attribute *msi_dev_attr;
++	struct attribute_group *msi_irq_group;
++	const struct attribute_group **msi_irq_groups;
+ 	struct msi_desc *entry;
+-	struct kobject *kobj;
+-	int ret;
++	int ret = -ENOMEM;
++	int num_msi = 0;
+ 	int count = 0;
+ 
+-	pdev->msi_kset = kset_create_and_add("msi_irqs", NULL, &pdev->dev.kobj);
+-	if (!pdev->msi_kset)
+-		return -ENOMEM;
++	/* Determine how many msi entries we have */
++	list_for_each_entry(entry, &pdev->msi_list, list) {
++		++num_msi;
++	}
++	if (!num_msi)
++		return 0;
+ 
++	/* Dynamically create the MSI attributes for the PCI device */
++	msi_attrs = kzalloc(sizeof(void *) * (num_msi + 1), GFP_KERNEL);
++	if (!msi_attrs)
++		return -ENOMEM;
+ 	list_for_each_entry(entry, &pdev->msi_list, list) {
+-		kobj = &entry->kobj;
+-		kobj->kset = pdev->msi_kset;
+-		pci_dev_get(pdev);
+-		ret = kobject_init_and_add(kobj, &msi_irq_ktype, NULL,
+-				     "%u", entry->irq);
+-		if (ret)
+-			goto out_unroll;
++		char *name = kmalloc(20, GFP_KERNEL);
++		msi_dev_attr = kzalloc(sizeof(*msi_dev_attr), GFP_KERNEL);
++		if (!msi_dev_attr)
++			goto error_attrs;
++		sprintf(name, "%d", entry->irq);
++		sysfs_attr_init(&msi_dev_attr->attr);
++		msi_dev_attr->attr.name = name;
++		msi_dev_attr->attr.mode = S_IRUGO;
++		msi_dev_attr->show = msi_mode_show;
++		msi_attrs[count] = &msi_dev_attr->attr;
++		++count;
++	}
++
++	msi_irq_group = kzalloc(sizeof(*msi_irq_group), GFP_KERNEL);
++	if (!msi_irq_group)
++		goto error_attrs;
++	msi_irq_group->name = "msi_irqs";
++	msi_irq_group->attrs = msi_attrs;
++
++	msi_irq_groups = kzalloc(sizeof(void *) * 2, GFP_KERNEL);
++	if (!msi_irq_groups)
++		goto error_irq_group;
++	msi_irq_groups[0] = msi_irq_group;
+ 
+-		count++;
+-	}
++	ret = sysfs_create_groups(&pdev->dev.kobj, msi_irq_groups);
++	if (ret)
++		goto error_irq_groups;
++	pdev->msi_irq_groups = msi_irq_groups;
+ 
+ 	return 0;
+ 
+-out_unroll:
+-	list_for_each_entry(entry, &pdev->msi_list, list) {
+-		if (!count)
+-			break;
+-		kobject_del(&entry->kobj);
+-		kobject_put(&entry->kobj);
+-		count--;
++error_irq_groups:
++	kfree(msi_irq_groups);
++error_irq_group:
++	kfree(msi_irq_group);
++error_attrs:
++	count = 0;
++	msi_attr = msi_attrs[count];
++	while (msi_attr) {
++		msi_dev_attr = container_of(msi_attr, struct device_attribute, attr);
++		kfree(msi_attr->name);
++		kfree(msi_dev_attr);
++		++count;
++		msi_attr = msi_attrs[count];
+ 	}
+ 	return ret;
+ }
+@@ -925,8 +945,6 @@ void pci_disable_msi(struct pci_dev *dev
+ 
+ 	pci_msi_shutdown(dev);
+ 	free_msi_irqs(dev);
+-	kset_unregister(dev->msi_kset);
+-	dev->msi_kset = NULL;
+ }
+ EXPORT_SYMBOL(pci_disable_msi);
+ 
+@@ -1023,8 +1041,6 @@ void pci_disable_msix(struct pci_dev *de
+ 
+ 	pci_msix_shutdown(dev);
+ 	free_msi_irqs(dev);
+-	kset_unregister(dev->msi_kset);
+-	dev->msi_kset = NULL;
+ }
+ EXPORT_SYMBOL(pci_disable_msix);
+ 
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -351,7 +351,7 @@ struct pci_dev {
+ 	struct bin_attribute *res_attr_wc[DEVICE_COUNT_RESOURCE]; /* sysfs file for WC mapping of resources */
+ #ifdef CONFIG_PCI_MSI
+ 	struct list_head msi_list;
+-	struct kset *msi_kset;
++	const struct attribute_group **msi_irq_groups;
+ #endif
+ 	struct pci_vpd *vpd;
+ #ifdef CONFIG_PCI_ATS
