@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932117Ab3LSNnG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:43:06 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:41029 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547Ab3LSNnC (ORCPT
+	id S1756259Ab3LSNk4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:40:56 -0500
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:49953 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755715Ab3LSNep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:43:02 -0500
-Message-ID: <52B2F7E2.6020403@gmail.com>
-Date: Thu, 19 Dec 2013 21:42:58 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Francois Bedard <Francois.Bedard@synopsys.com>,
-        David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] Revert "ARC: Add guard macro to uapi/asm/unistd.h"
-References: <1387451598-14490-1-git-send-email-vgupta@synopsys.com> <52B2E7D9.4030908@gmail.com> <C2D7FE5348E1B147BCA15975FBA23075172B5E@IN01WEMBXA.internal.synopsys.com>
-In-Reply-To: <C2D7FE5348E1B147BCA15975FBA23075172B5E@IN01WEMBXA.internal.synopsys.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Dec 2013 08:34:45 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: nfs-ganesha-devel@lists.sourceforge.net, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 02/13] locks: clean up comment typo
+Date: Thu, 19 Dec 2013 08:34:14 -0500
+Message-Id: <1387460065-28269-3-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
+References: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 09:11 PM, Vineet Gupta wrote:
-> On 12/19/2013 06:04 PM, Chen Gang wrote:
->> On 12/19/2013 07:13 PM, Vineet Gupta wrote:
->>>> This reverts commit 97bc386fc12deeb41d5bff33548e3002b258d4e0.
->>>>
->>>> Generic syscall table generator relies on ARCH unistd.h as follows:
->>>>
->>>> 	void *sys_call_table[NR_syscalls] = {
->>>> 		[0 ... NR_syscalls-1] = sys_ni_syscall,
->>>> 	#include <asm/unistd.h>
->>>> 	};
->>>>
->>>> And turns out that prior dependencies already include that header by
->>>> the time preprocessor hits the above. Meaning ARCH unistd.h needs to be
->>>> able to included twice.
->>>>
->> OK, thanks, it sounds reasonable to me.
->>
->> But why many other architectures contents these guard macros? (arm, sh,
->> blackfin, cris, frv, ia64, m32r, m68k, mips, s390, microblaze, mn10300,
->> parisc, powerpc, sparc, x86). Do they need improvement too?
->>
->> And for our case, what xtensa has done looks like a better way to me.
-> 
-> Yeah, looks like that'll work - good find. Linus, please ignore the Revert, I'll
-> follow up with a pull request.
-> 
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/locks.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks.  :-)
-
-> -Vineet
-> 
-
-
+diff --git a/fs/locks.c b/fs/locks.c
+index 2cfeea6..5e28612 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -581,7 +581,7 @@ static void locks_delete_block(struct file_lock *waiter)
+  * it seems like the reasonable thing to do.
+  *
+  * Must be called with both the i_lock and blocked_lock_lock held. The fl_block
+- * list itself is protected by the file_lock_list, but by ensuring that the
++ * list itself is protected by the blocked_lock_lock, but by ensuring that the
+  * i_lock is also held on insertions we can avoid taking the blocked_lock_lock
+  * in some cases when we see that the fl_block list is empty.
+  */
 -- 
-Chen Gang
+1.8.4.2
 
-Open, share and attitude like air, water and life which God blessed
