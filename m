@@ -1,203 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932227Ab3LSMk3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:40:29 -0500
-Received: from mga09.intel.com ([134.134.136.24]:40586 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755496Ab3LSMkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:40:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="427186487"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Lv Zheng <lv.zheng@intel.com>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Robert Moore <robert.moore@intel.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        Ashley Lai <ashley@ashleylai.com>, Peter Huewe <peterhuewe@gmx.de>,
-        Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Sirrix AG <tpmdd@sirrix.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, Jiri Kosina <jkosina@suse.cz>,
-        devel@acpica.org
-Subject: [Patch v2 01/13] ACPI: introduce helper interfaces to support ACPI _DSM method
-Date: Thu, 19 Dec 2013 20:38:10 +0800
-Message-Id: <1387456702-4709-2-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1755902Ab3LSL7V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:59:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45234 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755849Ab3LSL7S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:59:18 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "Sunil K. Pandey" <sunil.k.pandey@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. J. Lu" <hjl.tools@gmail.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 166/208] x86, build: Pass in additional -mno-mmx, -mno-sse options
+Date: Thu, 19 Dec 2013 11:54:24 +0000
+Message-Id: <1387454106-19326-167-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several drivers making use of ACPI _DSM method to detect
-and invoke device specific methods. Currently every driver has
-implemented its private version to support ACPI _DSM method.
-So this patch introduces three helper functions to support ACPI _DSM
-method, which will be used to replace open-coded versions.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-It helps to simplify code and improve code readability.
+------------------
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
-Cc: Ashley Lai <ashley@ashleylai.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>
-Cc: Rajiv Andrade <mail@srajiv.net>
-Cc: Marcel Selhorst <tpmdd@selhorst.net>
-Cc: Sirrix AG <tpmdd@sirrix.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: David Airlie <airlied@linux.ie>
-Cc: Jiri Kosina <jkosina@suse.cz>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+
+commit 8b3b005d675726e38bc504d2e35a991e55819155 upstream.
+
+In checkin
+
+    5551a34e5aea x86-64, build: Always pass in -mno-sse
+
+we unconditionally added -mno-sse to the main build, to keep newer
+compilers from generating SSE instructions from autovectorization.
+However, this did not extend to the special environments
+(arch/x86/boot, arch/x86/boot/compressed, and arch/x86/realmode/rm).
+Add -mno-sse to the compiler command line for these environments, and
+add -mno-mmx to all the environments as well, as we don't want a
+compiler to generate MMX code either.
+
+This patch also removes a $(cc-option) call for -m32, since we have
+long since stopped supporting compilers too old for the -m32 option,
+and in fact hardcode it in other places in the Makefiles.
+
+Reported-by: Kevin B. Smith <kevin.b.smith@intel.com>
+Cc: Sunil K. Pandey <sunil.k.pandey@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: H. J. Lu <hjl.tools@gmail.com>
+Link: http://lkml.kernel.org/n/tip-j21wzqv790q834n7yc6g80j1@git.kernel.org
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/utils.c    |   98 +++++++++++++++++++++++++++++++++++++++++++++++
- include/acpi/acpi_bus.h |   26 +++++++++++++
- 2 files changed, 124 insertions(+)
+ arch/x86/Makefile                 | 8 ++++----
+ arch/x86/boot/Makefile            | 6 +++---
+ arch/x86/boot/compressed/Makefile | 1 +
+ arch/x86/realmode/rm/Makefile     | 3 ++-
+ 4 files changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-index 6d408bf..9517b0a 100644
---- a/drivers/acpi/utils.c
-+++ b/drivers/acpi/utils.c
-@@ -574,3 +574,101 @@ acpi_status acpi_evaluate_lck(acpi_handle handle, int lock)
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 39e5f1a..6218fcb 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -31,8 +31,8 @@ ifeq ($(CONFIG_X86_32),y)
  
- 	return status;
- }
-+
-+/**
-+ * acpi_evaluate_dsm: evaluate device's _DSM method
-+ * @handle: ACPI device handle
-+ * @uuid: UUID of requested functions, should be 16 bytes
-+ * @rev: revision number of requested function
-+ * @func: requested function number
-+ * @argv4: the function specific parameter
-+ *
-+ * Evaluate device's _DSM method with specified UUID, revision id and
-+ * function number. Caller needs to free the returned object.
-+ *
-+ * Though ACPI defines the fourth parameter for _DSM should be a package,
-+ * some old BIOSes do expect a buffer or an integer etc.
-+ */
-+union acpi_object *
-+acpi_evaluate_dsm(acpi_handle handle, const u8 *uuid, int rev, int func,
-+		  union acpi_object *argv4)
-+{
-+	acpi_status ret;
-+	struct acpi_buffer buf = {ACPI_ALLOCATE_BUFFER, NULL};
-+	union acpi_object params[4];
-+	struct acpi_object_list input = {
-+		.count = 4,
-+		.pointer = params,
-+	};
-+
-+	params[0].type = ACPI_TYPE_BUFFER;
-+	params[0].buffer.length = 16;
-+	params[0].buffer.pointer = (char *)uuid;
-+	params[1].type = ACPI_TYPE_INTEGER;
-+	params[1].integer.value = rev;
-+	params[2].type = ACPI_TYPE_INTEGER;
-+	params[2].integer.value = func;
-+	if (argv4) {
-+		params[3] = *argv4;
-+	} else {
-+		params[3].type = ACPI_TYPE_PACKAGE;
-+		params[3].package.count = 0;
-+		params[3].package.elements = NULL;
-+	}
-+
-+	ret = acpi_evaluate_object(handle, "_DSM", &input, &buf);
-+	if (ACPI_SUCCESS(ret))
-+		return (union acpi_object *)buf.pointer;
-+
-+	if (ret != AE_NOT_FOUND)
-+		acpi_handle_warn(handle,
-+				"failed to evaluate _DSM method (0x%x)\n", ret);
-+
-+	return NULL;
-+}
-+EXPORT_SYMBOL(acpi_evaluate_dsm);
-+
-+/**
-+ * acpi_check_dsm: check whether _DSM method under @handle supports
-+ *		   requested functions.
-+ * @handle: ACPI device handle
-+ * @uuid: UUID of requested functions, should be 16 bytes at least
-+ * @rev: revision number of requested functions
-+ * @funcs: bitmap of requested functions
-+ * @exclude: excluding special value, used to support i915 and nouveau
-+ *
-+ * Evaluate device's _DSM method to check whether it supports requested
-+ * functions. Currently only support 64 functions at maximum, should be
-+ * enough for now.
-+ */
-+bool acpi_check_dsm(acpi_handle handle, const u8 *uuid, int rev, u64 funcs)
-+{
-+	int i;
-+	u64 mask = 0;
-+	union acpi_object *obj;
-+
-+	if (funcs == 0)
-+		return false;
-+
-+	obj = acpi_evaluate_dsm(handle, uuid, rev, 0, NULL);
-+	if (!obj)
-+		return false;
-+
-+	/* For compatibility, old BIOSes may return an integer */
-+	if (obj->type == ACPI_TYPE_INTEGER)
-+		mask = obj->integer.value;
-+	else if (obj->type == ACPI_TYPE_BUFFER)
-+		for (i = 0; i < obj->buffer.length && i < 8; i++)
-+			mask |= (((u8)obj->buffer.pointer[i]) << (i * 8));
-+	ACPI_FREE(obj);
-+
-+	/*
-+	 * Bit 0 indicates whether there's support for any functions other than
-+	 * function 0 for the specified UUID and revision.
-+	 */
-+	if ((mask & 0x1) && (mask & funcs) == funcs)
-+		return true;
-+
-+	return false;
-+}
-+EXPORT_SYMBOL(acpi_check_dsm);
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index c602c77..6db129b 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -66,6 +66,32 @@ bool acpi_ata_match(acpi_handle handle);
- bool acpi_bay_match(acpi_handle handle);
- bool acpi_dock_match(acpi_handle handle);
+         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
  
-+bool acpi_check_dsm(acpi_handle handle, const u8 *uuid, int rev, u64 funcs);
-+union acpi_object *acpi_evaluate_dsm(acpi_handle handle, const u8 *uuid,
-+			int rev, int func, union acpi_object *argv4);
-+
-+static inline union acpi_object *
-+acpi_evaluate_dsm_typed(acpi_handle handle, const u8 *uuid, int rev, int func,
-+			union acpi_object *argv4, acpi_object_type type)
-+{
-+	union acpi_object *obj;
-+
-+	obj = acpi_evaluate_dsm(handle, uuid, rev, func, argv4);
-+	if (obj && obj->type != type) {
-+		ACPI_FREE(obj);
-+		obj = NULL;
-+	}
-+
-+	return obj;
-+}
-+
-+#define	ACPI_INIT_DSM_ARGV4(cnt, eles)			\
-+	{						\
-+	  .package.type = ACPI_TYPE_PACKAGE,		\
-+	  .package.count = (cnt),			\
-+	  .package.elements = (eles)			\
-+	}
-+
- #ifdef CONFIG_ACPI
+-        # Don't autogenerate SSE instructions
+-	KBUILD_CFLAGS += -mno-sse
++        # Don't autogenerate MMX or SSE instructions
++        KBUILD_CFLAGS += -mno-mmx -mno-sse
  
- #include <linux/proc_fs.h>
+         # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
+         # with nonstandard options
+@@ -60,8 +60,8 @@ else
+         KBUILD_AFLAGS += -m64
+         KBUILD_CFLAGS += -m64
+ 
+-        # Don't autogenerate SSE instructions
+-	KBUILD_CFLAGS += -mno-sse
++        # Don't autogenerate MMX or SSE instructions
++        KBUILD_CFLAGS += -mno-mmx -mno-sse
+ 
+ 	# Use -mpreferred-stack-boundary=3 if supported.
+ 	KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
+diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
+index 379814b..6cf0111 100644
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -53,18 +53,18 @@ $(obj)/cpustr.h: $(obj)/mkcpustr FORCE
+ 
+ # How to compile the 16-bit code.  Note we always compile for -march=i386,
+ # that way we can complain to the user if the CPU is insufficient.
+-KBUILD_CFLAGS	:= $(USERINCLUDE) -g -Os -D_SETUP -D__KERNEL__ \
++KBUILD_CFLAGS	:= $(USERINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ \
+ 		   -DDISABLE_BRANCH_PROFILING \
+ 		   -Wall -Wstrict-prototypes \
+ 		   -march=i386 -mregparm=3 \
+ 		   -include $(srctree)/$(src)/code16gcc.h \
+ 		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
++		   -mno-mmx -mno-sse \
+ 		   $(call cc-option, -ffreestanding) \
+ 		   $(call cc-option, -fno-toplevel-reorder,\
+-			$(call cc-option, -fno-unit-at-a-time)) \
++		   $(call cc-option, -fno-unit-at-a-time)) \
+ 		   $(call cc-option, -fno-stack-protector) \
+ 		   $(call cc-option, -mpreferred-stack-boundary=2)
+-KBUILD_CFLAGS	+= $(call cc-option, -m32)
+ KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
+ GCOV_PROFILE := n
+ 
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index dcd90df..c8a6792 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -13,6 +13,7 @@ KBUILD_CFLAGS += -DDISABLE_BRANCH_PROFILING
+ cflags-$(CONFIG_X86_32) := -march=i386
+ cflags-$(CONFIG_X86_64) := -mcmodel=small
+ KBUILD_CFLAGS += $(cflags-y)
++KBUILD_CFLAGS += -mno-mmx -mno-sse
+ KBUILD_CFLAGS += $(call cc-option,-ffreestanding)
+ KBUILD_CFLAGS += $(call cc-option,-fno-stack-protector)
+ 
+diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
+index 8869287..9cac825 100644
+--- a/arch/x86/realmode/rm/Makefile
++++ b/arch/x86/realmode/rm/Makefile
+@@ -73,9 +73,10 @@ KBUILD_CFLAGS	:= $(LINUXINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ -D_WAKEUP \
+ 		   -march=i386 -mregparm=3 \
+ 		   -include $(srctree)/$(src)/../../boot/code16gcc.h \
+ 		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
++		   -mno-mmx -mno-sse \
+ 		   $(call cc-option, -ffreestanding) \
+ 		   $(call cc-option, -fno-toplevel-reorder,\
+-			$(call cc-option, -fno-unit-at-a-time)) \
++		   $(call cc-option, -fno-unit-at-a-time)) \
+ 		   $(call cc-option, -fno-stack-protector) \
+ 		   $(call cc-option, -mpreferred-stack-boundary=2)
+ KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
 -- 
-1.7.10.4
+1.8.3.2
 
