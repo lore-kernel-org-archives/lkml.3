@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab3LSUOK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 15:14:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35770 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756023Ab3LSUOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 15:14:08 -0500
-Message-ID: <52B35369.6070208@zytor.com>
-Date: Thu, 19 Dec 2013 12:13:29 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1756065Ab3LSUPn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 15:15:43 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:60174 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754704Ab3LSUPl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 15:15:41 -0500
 MIME-Version: 1.0
-To: mingo@kernel.org, linux-kernel@vger.kernel.org, arjan@linux.intel.com,
-        peterz@infradead.org, rui.zhang@intel.com, bitbucket@online.de,
-        rafael.j.wysocki@intel.com, lenb@kernel.org, tglx@linutronix.de,
-        jacob.jun.pan@linux.intel.com, hpa@linux.intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/idle] x86, acpi, idle: Restructure the mwait idle routines
-References: <20131212141654.616820819@infradead.org> <tip-16824255394f55adf31b9a96a9965d8c15bdac4c@git.kernel.org>
-In-Reply-To: <tip-16824255394f55adf31b9a96a9965d8c15bdac4c@git.kernel.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131213015158.11981.27135@quantum>
+References: <1379506478-16625-1-git-send-email-lee.jones@linaro.org>
+	<1379506478-16625-23-git-send-email-lee.jones@linaro.org>
+	<CACRpkdZ+kg8VEMZ6gy6CG=YK0Ycj-Ud-UuRohzKgE4UW_VUMjg@mail.gmail.com>
+	<20131213015158.11981.27135@quantum>
+Date: Thu, 19 Dec 2013 21:15:39 +0100
+Message-ID: <CAPDyKFoVDP=wcV0FcKYMtf-y8uq2ob2Ahge2y9_HL-bVojTcgQ@mail.gmail.com>
+Subject: Re: [PATCH 22/41] clk: ux500: Copy u8500_clk_init() ready for DT enablement
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 12:09 PM, tip-bot for Peter Zijlstra wrote:
-> diff --git a/drivers/thermal/intel_powerclamp.c b/drivers/thermal/intel_powerclamp.c
-> index 8f181b3..e8275f2 100644
-> --- a/drivers/thermal/intel_powerclamp.c
-> +++ b/drivers/thermal/intel_powerclamp.c
-> @@ -438,9 +438,7 @@ static int clamp_thread(void *arg)
->  			 */
->  			local_touch_nmi();
->  			stop_critical_timings();
-> -			__monitor((void *)&current_thread_info()->flags, 0, 0);
-> -			cpu_relax(); /* allow HT sibling to run */
-> -			__mwait(eax, ecx);
-> +			mwait_idle_with_hints(eax, ecx);
->  			start_critical_timings();
->  			atomic_inc(&idle_wakeup_counter);
->  		}
-> 
+On 13 December 2013 02:51, Mike Turquette <mturquette@linaro.org> wrote:
+> Quoting Linus Walleij (2013-09-20 13:59:46)
+>> On Wed, Sep 18, 2013 at 2:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>>
+>> > Here we're using the old clock initialisation function as a template.
+>> > It's necessary to remove all of the clk_register_clkdev() calls as
+>> > they don't make sense when booting with Device Tree.
+>> >
+>> > Cc: Mike Turquette <mturquette@linaro.org>
+>> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>
+>> I *really* like the looks of this! Mike can we have your ACK on this?
+>
+> Acked-by: Mike Turquette <mturquette@linaro.org>
 
-Should this cpu_relax() be in the common code as well?
+Hi Mike,
 
-	-hpa
+This went in through arm soc a while ago, it is present in 3.13 rc.
+Thanks for your ack, anyway.
 
+Kind regards
+Uffe
+
+>
+>>
+>> Yours,
+>> Linus Walleij
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
