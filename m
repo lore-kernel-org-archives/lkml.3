@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab3LSPEp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:04:45 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:40438 "EHLO
+	id S1754672Ab3LSPMa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:12:30 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:35819 "EHLO
 	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937Ab3LSPEl (ORCPT
+	with ESMTP id S1754215Ab3LSPFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:04:41 -0500
+	Thu, 19 Dec 2013 10:05:00 -0500
 From: Levente Kurusa <levex@linux.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Levente Kurusa <levex@linux.com>, Ralf Baechle <ralf@linux-mips.org>,
-        linux-mips@linux-mips.org
-Subject: [PATCH 16/38] mips: sgi-ip22: add missing put_device call
-Date: Thu, 19 Dec 2013 16:03:27 +0100
-Message-Id: <1387465429-3568-17-git-send-email-levex@linux.com>
+Cc: Levente Kurusa <levex@linux.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org
+Subject: [PATCH 23/38] sound: soc: add missing put_device call
+Date: Thu, 19 Dec 2013 16:03:34 +0100
+Message-Id: <1387465429-3568-24-git-send-email-levex@linux.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1387465429-3568-2-git-send-email-levex@linux.com>
 References: <1387465429-3568-2-git-send-email-levex@linux.com>
@@ -23,44 +24,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is required so that we give up the last reference to the device.
 
-Also, create a gio_bus_release() that calls kfree on the device argument to
-properly kfree() the memory allocated for the device.
-
 Signed-off-by: Levente Kurusa <levex@linux.com>
 ---
- arch/mips/sgi-ip22/ip22-gio.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ sound/soc/soc-core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/mips/sgi-ip22/ip22-gio.c b/arch/mips/sgi-ip22/ip22-gio.c
-index ab0e379..931da33 100644
---- a/arch/mips/sgi-ip22/ip22-gio.c
-+++ b/arch/mips/sgi-ip22/ip22-gio.c
-@@ -24,8 +24,13 @@ static struct {
- 	{ .name = "SGI GR2/GR3", .id = 0x7f },
- };
- 
-+void gio_bus_release(struct device *dev) {
-+	kfree(dev);
-+}
-+
- static struct device gio_bus = {
- 	.init_name = "gio",
-+	.release = &gio_bus_release,
- };
- 
- /**
-@@ -400,8 +405,10 @@ int __init ip22_gio_init(void)
- 	int ret;
- 
- 	ret = device_register(&gio_bus);
--	if (ret)
-+	if (ret) {
-+		put_device(&gio_bus);
- 		return ret;
-+	}
- 
- 	ret = bus_register(&gio_bus_type);
- 	if (!ret) {
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index 4e53d87..21caa09 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -536,6 +536,7 @@ static int soc_ac97_dev_register(struct snd_soc_codec *codec)
+ 	err = device_register(&codec->ac97->dev);
+ 	if (err < 0) {
+ 		dev_err(codec->dev, "ASoC: Can't register ac97 bus\n");
++		put_device(&codec->ac97->dev);
+ 		codec->ac97->dev.bus = NULL;
+ 		return err;
+ 	}
 -- 
 1.8.3.1
 
