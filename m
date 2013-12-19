@@ -1,62 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab3LSSgN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:36:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20158 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753698Ab3LSSgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:36:12 -0500
-Message-ID: <52B33C93.2020006@redhat.com>
-Date: Thu, 19 Dec 2013 13:36:03 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1755655Ab3LSShF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:37:05 -0500
+Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.90]:14282 "EHLO
+	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754636Ab3LSShB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 13:37:01 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+Subject: RE: [PATCH net-next] hyperv: Add support for Virtual Receive Side
+ Scaling (vRSS)
+Thread-Topic: [PATCH net-next] hyperv: Add support for Virtual Receive Side
+ Scaling (vRSS)
+Thread-Index: AQHO/DjpLyfIXxkiYUqDQo2oHD6XuZpcUhsA//+GhuA=
+Date: Thu, 19 Dec 2013 18:36:27 +0000
+Message-ID: <ff7f7541d0164d408b3a4278569c593a@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1387405262-18334-1-git-send-email-haiyangz@microsoft.com>
+ <1387475178.1876.29.camel@bwh-desktop.uk.level5networks.com>
+In-Reply-To: <1387475178.1876.29.camel@bwh-desktop.uk.level5networks.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.59.235.233]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>
-CC: Alex Thorlton <athorlton@sgi.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: Remove bogus warning in copy_huge_pmd
-References: <1386690695-27380-1-git-send-email-mgorman@suse.de> <1386690695-27380-11-git-send-email-mgorman@suse.de> <52B0D5F9.5030208@oracle.com> <20131219120007.GJ11295@suse.de>
-In-Reply-To: <20131219120007.GJ11295@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.100;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(13464003)(377454003)(164054003)(377424004)(51704005)(189002)(199002)(24454002)(83072002)(47776003)(66066001)(63696002)(76482001)(74706001)(47736001)(2656002)(49866001)(54316002)(47446002)(20776003)(65816001)(80022001)(46102001)(47976001)(81686001)(59766001)(81342001)(77982001)(85306002)(80976001)(87266001)(85852003)(50986001)(56776001)(74662001)(76786001)(76796001)(81542001)(74876001)(50466002)(53806001)(4396001)(69226001)(79102001)(19580395003)(83322001)(19580405001)(54356001)(6806004)(74366001)(87936001)(90146001)(44976005)(81816001)(31966008)(51856001)(74502001)(33646001)(23676002)(56816005)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2SR01MB595;H:hybrid.exchange.microsoft.com;CLIP:131.107.159.100;FPR:;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 006546F32A
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBJIbCBJ006822
 
-On 12/19/2013 07:00 AM, Mel Gorman wrote:
-> Sasha Levin reported the following warning being triggered
->
-> [ 1704.594807] WARNING: CPU: 28 PID: 35287 at mm/huge_memory.c:887 copy_huge_pmd+0x145/ 0x3a0()
-> [ 1704.597258] Modules linked in:
-> [ 1704.597844] CPU: 28 PID: 35287 Comm: trinity-main Tainted: G        W    3.13.0-rc4-next-20131217-sasha-00013-ga878504-dirty #4149
-> [ 1704.599924]  0000000000000377e delta! pid slot 27 [36258]: old:2 now:537927697 diff: 537927695 ffff8803593ddb90 ffffffff8439501c ffffffff854722c1
-> [ 1704.604846]  0000000000000000 ffff8803593ddbd0 ffffffff8112f8ac ffff8803593ddbe0
-> [ 1704.606391]  ffff88034bc137f0 ffff880e41677000 8000000b47c009e4 ffff88034a638000
-> [ 1704.608008] Call Trace:
-> [ 1704.608511]  [<ffffffff8439501c>] dump_stack+0x52/0x7f
-> [ 1704.609699]  [<ffffffff8112f8ac>] warn_slowpath_common+0x8c/0xc0
-> [ 1704.612617]  [<ffffffff8112f8fa>] warn_slowpath_null+0x1a/0x20
-> [ 1704.614043]  [<ffffffff812b91c5>] copy_huge_pmd+0x145/0x3a0
-> [ 1704.615587]  [<ffffffff8127e032>] copy_page_range+0x3f2/0x560
-> [ 1704.616869]  [<ffffffff81199ef1>] ? rwsem_wake+0x51/0x70
-> [ 1704.617942]  [<ffffffff8112cf59>] dup_mmap+0x2c9/0x3d0
-> [ 1704.619146]  [<ffffffff8112d54d>] dup_mm+0xad/0x150
-> [ 1704.620051]  [<ffffffff8112e178>] copy_process+0xa68/0x12e0
-> [ 1704.622976]  [<ffffffff81194eda>] ? __lock_release+0x1da/0x1f0
-> [ 1704.624234]  [<ffffffff8112eee6>] do_fork+0x96/0x270
-> [ 1704.624975]  [<ffffffff81249465>] ? context_tracking_user_exit+0x195/0x1d0
-> [ 1704.626427]  [<ffffffff811930ed>] ? trace_hardirqs_on+0xd/0x10
-> [ 1704.627681]  [<ffffffff8112f0d6>] SyS_clone+0x16/0x20
-> [ 1704.628833]  [<ffffffff843a6309>] stub_clone+0x69/0x90
-> [ 1704.629672]  [<ffffffff843a6150>] ? tracesys+0xdd/0xe2
->
-> This warning was introduced by "mm: numa: Avoid unnecessary disruption
-> of NUMA hinting during migration" for paranoia reasons but the warning
-> is bogus. I was thinking of parallel races between NUMA hinting faults
-> and forks but this warning would also be triggered by a parallel reclaim
-> splitting a THP during a fork. Remote the bogus warning.
->
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Acked-by: Rik van Riel <riel@redhat.com>
 
+> -----Original Message-----
+> From: Ben Hutchings [mailto:bhutchings@solarflare.com]
+> Sent: Thursday, December 19, 2013 12:46 PM
+> To: Haiyang Zhang
+> Cc: davem@davemloft.net; netdev@vger.kernel.org; KY Srinivasan;
+> olaf@aepfle.de; jasowang@redhat.com; linux-kernel@vger.kernel.org;
+> driverdev-devel@linuxdriverproject.org
+> Subject: Re: [PATCH net-next] hyperv: Add support for Virtual Receive Side
+> Scaling (vRSS)
+> 
+> On Wed, 2013-12-18 at 14:21 -0800, Haiyang Zhang wrote:
+> > This feature allows multiple channels to be used by each virtual NIC.
+> > It is available on Hyper-V host 2012 R2.
+> >  	} else if (ret == -EAGAIN) {
+> > -		netif_stop_queue(ndev);
+> > +		netif_tx_stop_all_queues(ndev);
+> >  		if (atomic_read(&net_device->num_outstanding_sends) < 1) {
+> > -			netif_wake_queue(ndev);
+> > +			netif_tx_wake_all_queues(ndev);
+> >  			ret = -ENOSPC;
+> >  		}
+> >  	} else {
+> 
+> This doesn't makes any sense to me.  How can you safely share the same
+> channels between all TX queues?
+> 
+> I think you need to associate TX queues and channels 1-1.  If you are required to
+> map packets to TX queues using the Toeplitz hash, you should implement
+> ndo_select_queue and do the mapping there.  Then in
+> netvsc_send() you would use the queue number from the skb to find which
+> channel to use and which queue may need to be stopped/woken.
+> 
+> [...]
+> > --- a/drivers/net/hyperv/netvsc_drv.c
+> > +++ b/drivers/net/hyperv/netvsc_drv.c
+> [...]
+> > +/* Toeplitz hash function
+> > + * data: network byte order
+> > + * return: host byte order
+> > + */
+> 
+> This looks incredibly slow.  I've seen software implementations that are likely to
+> be more efficient, e.g.
+> <http://thread.gmane.org/gmane.linux.network/284612/>
+> 
+> [...]
+> > int netvsc_probe(struct hv_device *dev,
+> >  		return ret;
+> >  	}
+> >  	memcpy(net->dev_addr, device_info.mac_adr, ETH_ALEN);
+> > +	nvdev = hv_get_drvdata(dev);
+> > +	rtnl_lock();
+> > +	netif_set_real_num_tx_queues(net, nvdev->num_chn);
+> > +	netif_set_real_num_rx_queues(net, nvdev->num_chn);
+> [...]
+> 
+> These functions can fail if called after registering the net device, so you should
+> either call them with the final values earlier or handle failure here.
+> 
+> Also, I notice that dev_addr is only set after registering; that should be fixed.
+> 
+
+Thank you for the suggestions! I will re-write the send queue selection, enhance
+the hash calculation, also fix the initialization sequence.
+
+Thanks,
+- Haiyang
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
