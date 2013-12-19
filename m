@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab3LSSKy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:10:54 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:43196 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755358Ab3LSSKv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:10:51 -0500
-Date: Thu, 19 Dec 2013 10:10:49 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Anthony Olech <anthony.olech.opensource@diasemi.com>,
-        lm-sensors@lm-sensors.org, Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [lm-sensors] [PATCH V1] fix adc to voltage calculation in da9052
- power driver
-Message-ID: <20131219181049.GA6854@roeck-us.net>
-References: <201312181524.rBIFOv96017094@swsrvapps-02.lan>
- <20131218163234.714a166c@endymion.delvare>
- <24DF37198A1E704D9811D8F72B87EB51847ABF61@NB-EX-MBX02.diasemi.com>
- <20131218172402.GA18892@roeck-us.net>
- <24DF37198A1E704D9811D8F72B87EB51847AC2C3@NB-EX-MBX02.diasemi.com>
- <20131219155454.40100f4d@endymion.delvare>
+	id S1755564Ab3LSSMB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:12:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53304 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754556Ab3LSSL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 13:11:59 -0500
+Message-ID: <52B336D4.8010809@redhat.com>
+Date: Thu, 19 Dec 2013 13:11:32 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131219155454.40100f4d@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tony Luck <tony.luck@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86-ML <x86@kernel.org>,
+        Michel Lespinasse <walken@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@intel.com,
+        "Yu, Fenghua" <fenghua.yu@intel.com>
+Subject: Re: [PATCH] x86: Add check for number of available vectors before
+ CPU down [v2]
+References: <1387394945-5704-1-git-send-email-prarit@redhat.com>	<CA+8MBbKHZ0i0mEYLUrmWwaofvnRcxc7Dvm+w0CfZf2uQydjdjQ@mail.gmail.com> <CA+8MBbLMFW5fnUdgNRFpPv9+U1DqB5AeoDOV44kZHozibxjqSg@mail.gmail.com>
+In-Reply-To: <CA+8MBbLMFW5fnUdgNRFpPv9+U1DqB5AeoDOV44kZHozibxjqSg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 03:54:54PM +0100, Jean Delvare wrote:
-> Hi Anthony,
-> 
-[ ... ]
-> 
-> BTW, you (and we) probably shouldn't waste too much energy on this.
-> ADCs are only accurate to some degree anyway. If you take the
-> components connected to the input into consideration, the accuracy gets
-> even worse. For example, if the input voltage must be scaled down to
-> fit in the ADC's range, you need at least one resistor, which in best
-> cases will have a 1% accurate value (known as tolerance.) That's ten
-> times the LSB of your 10-bit ADC, at which point / 1023 or / 1024
-> really makes no practical difference. Sub-percent tolerant resistors are
-> expensive and rare in consumer electronics in my experience.
-> 
-True, but on the other side (and after looking into the datasheet)
-the driver already calculated the voltage on adc4..6 correctly,
-so unless you disagree I would like to apply the hwmon patch to -next
-for consistency.
 
-Thanks,
-Guenter
+
+On 12/19/2013 01:05 PM, Tony Luck wrote:
+> On Wed, Dec 18, 2013 at 11:50 AM, Tony Luck <tony.luck@intel.com> wrote:
+>> Looks good to me.
+> 
+> Though now I've been confused by an offline question about affinity.
+
+Heh :)  I'm pursuing it now.  Rui has asked a pretty good question that I don't
+know the answer to off the top of my head.  I'm still looking at the code.
+
+> 
+> Suppose we have some interrupt that has affinity to multiple cpus. E.g.
+> (real example from one of my machines):
+> 
+> # cat /proc/irq/94/smp_affinity_list
+> 26,54
+> 
+> Now If I want to take either cpu26 or cpu54 offline - I'm guessing that I don't
+> really need to find a new home for vector 94 - because the other one of that
+> pair already has that set up.  But your check_vectors code doesn't look like
+> it accounts for that - if we take cpu26 offline - it would see that
+> cpu54 doesn't
+> have 94 free - but doesn't check that it is for the same interrupt.
+> 
+> But I may be mixing "vectors" and "irqs" here.
+
+Yep.  The question really is this: is the irq mapped to a single vector or
+multiple vectors. (I think)
+
+P.
+
+> 
+> -Tony
