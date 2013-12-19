@@ -1,102 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab3LSL4o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:56:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44673 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754444Ab3LSL4l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:41 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Andrew Glen <AGlen@bepmarine.com>, Marc Kleine-Budde <mkl@pengutronix.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 057/208] can: c_can: don't call pm_runtime_get_sync() from interrupt context
-Date: Thu, 19 Dec 2013 11:52:35 +0000
-Message-Id: <1387454106-19326-58-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1756368Ab3LSNn7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:43:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15347 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753152Ab3LSNmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 08:42:40 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 6/9] tools lib traceevent: Use global QUIET_LINK build output
+Date: Thu, 19 Dec 2013 14:42:04 +0100
+Message-Id: <1387460527-15030-7-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
+References: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+Using global QUIET_LINK build output variable and getting
+rid of local print_static_lib_build, print_plugin_build
+and print_shared_lib_compile.
 
-------------------
+We no longer distinguish between shared and static
+library in the build message. It's differenced by
+the built file suffix, like:
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+  $ make
+    ...
+    LINK     libtraceevent.a
+    LINK     libtraceevent.so
 
-commit e35d46adc49b469fd92bdb64fea8af93640e6651 upstream.
-
-The c_can driver contians a callpath (c_can_poll -> c_can_state_change ->
-c_can_get_berr_counter) which may call pm_runtime_get_sync() from the IRQ
-handler, which is not allowed and results in "BUG: scheduling while atomic".
-
-This problem is fixed by introducing __c_can_get_berr_counter, which will not
-call pm_runtime_get_sync().
-
-Reported-by: Andrew Glen <AGlen@bepmarine.com>
-Tested-by: Andrew Glen <AGlen@bepmarine.com>
-Signed-off-by: Andrew Glen <AGlen@bepmarine.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Ahern <dsahern@gmail.com>
 ---
- drivers/net/can/c_can/c_can.c | 21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
+ tools/lib/traceevent/Makefile | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
-index e3fc07c..e59c42b 100644
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -712,22 +712,31 @@ static int c_can_set_mode(struct net_device *dev, enum can_mode mode)
- 	return 0;
- }
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 24203cc..51be8ab 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -152,14 +152,9 @@ override CFLAGS += $(udis86-flags) -D_GNU_SOURCE
  
--static int c_can_get_berr_counter(const struct net_device *dev,
--					struct can_berr_counter *bec)
-+static int __c_can_get_berr_counter(const struct net_device *dev,
-+				    struct can_berr_counter *bec)
- {
- 	unsigned int reg_err_counter;
- 	struct c_can_priv *priv = netdev_priv(dev);
+ ifeq ($(VERBOSE),1)
+   Q =
+-  print_shared_lib_compile =
+-  print_plugin_build =
+   print_install =
+ else
+   Q = @
+-  print_shared_lib_compile =	echo '  BUILD    SHARED LIB '$(OBJ);
+-  print_plugin_build =		echo '  BUILD    PLUGIN '$(OBJ);
+-  print_static_lib_build =	echo '  BUILD    STATIC LIB '$(OBJ);
+   print_install =		echo '  INSTALL  '$1;
+ endif
  
--	c_can_pm_runtime_get_sync(priv);
--
- 	reg_err_counter = priv->read_reg(priv, C_CAN_ERR_CNT_REG);
- 	bec->rxerr = (reg_err_counter & ERR_CNT_REC_MASK) >>
- 				ERR_CNT_REC_SHIFT;
- 	bec->txerr = reg_err_counter & ERR_CNT_TEC_MASK;
+@@ -216,10 +211,10 @@ all: all_cmd
+ all_cmd: $(CMD_TARGETS)
  
-+	return 0;
-+}
-+
-+static int c_can_get_berr_counter(const struct net_device *dev,
-+				  struct can_berr_counter *bec)
-+{
-+	struct c_can_priv *priv = netdev_priv(dev);
-+	int err;
-+
-+	c_can_pm_runtime_get_sync(priv);
-+	err = __c_can_get_berr_counter(dev, bec);
- 	c_can_pm_runtime_put_sync(priv);
+ libtraceevent.so: $(PEVENT_LIB_OBJS)
+-	$(Q)$(do_compile_shared_library)
++	$(QUIET_LINK)$(CC) --shared $^ -o $@
  
--	return 0;
-+	return err;
- }
+ libtraceevent.a: $(PEVENT_LIB_OBJS)
+-	$(Q)$(do_build_static_lib)
++	$(QUIET_LINK)$(RM) $@; $(AR) rcs $@ $^
  
- /*
-@@ -872,7 +881,7 @@ static int c_can_handle_state_change(struct net_device *dev,
- 	if (unlikely(!skb))
- 		return 0;
+ plugins: $(PLUGINS)
  
--	c_can_get_berr_counter(dev, &bec);
-+	__c_can_get_berr_counter(dev, &bec);
- 	reg_err_counter = priv->read_reg(priv, C_CAN_ERR_CNT_REG);
- 	rx_err_passive = (reg_err_counter & ERR_CNT_RP_MASK) >>
- 				ERR_CNT_RP_SHIFT;
+@@ -230,7 +225,7 @@ $(PLUGIN_OBJS): %.o : $(src)/%.c
+ 	$(QUIET_CC_FPIC)$(CC) -c $(CFLAGS) -fPIC -o $@ $<
+ 
+ $(PLUGINS): %.so: %.o
+-	$(Q)$(do_plugin_build)
++	$(QUIET_LINK)$(CC) $(CFLAGS) -shared -nostartfiles -o $@ $<
+ 
+ define make_version.h
+ 	(echo '/* This file is automatically generated. Do not modify. */';		\
 -- 
-1.8.3.2
+1.8.3.1
 
