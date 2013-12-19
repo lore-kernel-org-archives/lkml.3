@@ -1,91 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab3LSMVf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:21:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45121 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755535Ab3LSL6q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:46 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Colin Leitner <colin.leitner@gmail.com>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 144/208] USB: spcp8x5: correct handling of CS5 setting
-Date: Thu, 19 Dec 2013 11:54:02 +0000
-Message-Id: <1387454106-19326-145-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1757217Ab3LSMnN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:43:13 -0500
+Received: from mga02.intel.com ([134.134.136.20]:54577 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756769Ab3LSMnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 07:43:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
+   d="scan'208";a="427187662"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Lv Zheng <lv.zheng@intel.com>,
+        Len Brown <lenb@kernel.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [Patch v2 04/13] ACPI, PCI: replace open-coded _DSM specific code with helper functions
+Date: Thu, 19 Dec 2013 20:38:13 +0800
+Message-Id: <1387456702-4709-5-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+Use helper functions to simplify _DSM related code in pci-label driver.
+Also enforce more strict checks on objects returned by _DSM method.
 
-------------------
-
-From: Colin Leitner <colin.leitner@googlemail.com>
-
-commit 711fbdfbf2bc4827214a650afe3f64767a1aba16 upstream.
-
-This patch removes an erroneous check of CSIZE, which made it impossible to set
-CS5.
-
-Compiles clean, but couldn't test against hardware.
-
-Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/usb/serial/spcp8x5.c | 30 ++++++++++++++----------------
- 1 file changed, 14 insertions(+), 16 deletions(-)
+ drivers/pci/pci-label.c |  121 +++++++++++++----------------------------------
+ 1 file changed, 34 insertions(+), 87 deletions(-)
 
-diff --git a/drivers/usb/serial/spcp8x5.c b/drivers/usb/serial/spcp8x5.c
-index ddf6c47..1694d4f 100644
---- a/drivers/usb/serial/spcp8x5.c
-+++ b/drivers/usb/serial/spcp8x5.c
-@@ -346,22 +346,20 @@ static void spcp8x5_set_termios(struct tty_struct *tty,
+diff --git a/drivers/pci/pci-label.c b/drivers/pci/pci-label.c
+index f6e01a5..f12dcd1 100644
+--- a/drivers/pci/pci-label.c
++++ b/drivers/pci/pci-label.c
+@@ -195,80 +195,58 @@ enum acpi_attr_enum {
+ static void dsm_label_utf16s_to_utf8s(union acpi_object *obj, char *buf)
+ {
+ 	int len;
+-	len = utf16s_to_utf8s((const wchar_t *)obj->
+-			      package.elements[1].string.pointer,
+-			      obj->package.elements[1].string.length,
++	len = utf16s_to_utf8s((const wchar_t *)obj->string.pointer,
++			      obj->string.length,
+ 			      UTF16_LITTLE_ENDIAN,
+ 			      buf, PAGE_SIZE);
+ 	buf[len] = '\n';
+ }
+ 
+ static int
+-dsm_get_label(acpi_handle handle, int func,
+-	      struct acpi_buffer *output,
+-	      char *buf, enum acpi_attr_enum attribute)
++dsm_get_label(struct device *dev, char *buf, enum acpi_attr_enum attr)
+ {
+-	struct acpi_object_list input;
+-	union acpi_object params[4];
+-	union acpi_object *obj;
+-	int len = 0;
+-
+-	int err;
+-
+-	input.count = 4;
+-	input.pointer = params;
+-	params[0].type = ACPI_TYPE_BUFFER;
+-	params[0].buffer.length = sizeof(device_label_dsm_uuid);
+-	params[0].buffer.pointer = (char *)device_label_dsm_uuid;
+-	params[1].type = ACPI_TYPE_INTEGER;
+-	params[1].integer.value = 0x02;
+-	params[2].type = ACPI_TYPE_INTEGER;
+-	params[2].integer.value = func;
+-	params[3].type = ACPI_TYPE_PACKAGE;
+-	params[3].package.count = 0;
+-	params[3].package.elements = NULL;
+-
+-	err = acpi_evaluate_object(handle, "_DSM", &input, output);
+-	if (err)
++	acpi_handle handle;
++	union acpi_object *obj, *tmp;
++	int len = -1;
++
++	handle = ACPI_HANDLE(dev);
++	if (!handle)
+ 		return -1;
+ 
+-	obj = (union acpi_object *)output->pointer;
+-	if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 2) {
+-		len = obj->package.elements[0].integer.value;
++	obj = acpi_evaluate_dsm(handle, device_label_dsm_uuid, 0x2,
++				DEVICE_LABEL_DSM, NULL);
++	if (!obj)
++		return -1;
++
++	tmp = obj->package.elements;
++	if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 2 &&
++	    tmp[0].type == ACPI_TYPE_INTEGER &&
++	    tmp[1].type == ACPI_TYPE_STRING) {
++		len = tmp[0].integer.value;
+ 		if (buf) {
+-			if (attribute == ACPI_ATTR_INDEX_SHOW)
++			/*
++			 * This second string element is optional even when
++			 * this _DSM is implemented; when not implemented,
++			 * this entry must return a null string.
++			 */
++			if (attr == ACPI_ATTR_INDEX_SHOW)
+ 				scnprintf(buf, PAGE_SIZE, "%llu\n",
+-				obj->package.elements[0].integer.value);
+-			else if (attribute == ACPI_ATTR_LABEL_SHOW)
+-				dsm_label_utf16s_to_utf8s(obj, buf);
+-			kfree(output->pointer);
+-			return strlen(buf);
++				tmp->integer.value);
++			else if (attr == ACPI_ATTR_LABEL_SHOW)
++				dsm_label_utf16s_to_utf8s(tmp + 1, buf);
++			len = strlen(buf) > 0 ? strlen(buf) : -1;
+ 		}
+-		kfree(output->pointer);
+-		return len;
  	}
  
- 	/* Set Data Length : 00:5bit, 01:6bit, 10:7bit, 11:8bit */
--	if (cflag & CSIZE) {
--		switch (cflag & CSIZE) {
--		case CS5:
--			buf[1] |= SET_UART_FORMAT_SIZE_5;
--			break;
--		case CS6:
--			buf[1] |= SET_UART_FORMAT_SIZE_6;
--			break;
--		case CS7:
--			buf[1] |= SET_UART_FORMAT_SIZE_7;
--			break;
--		default:
--		case CS8:
--			buf[1] |= SET_UART_FORMAT_SIZE_8;
--			break;
--		}
-+	switch (cflag & CSIZE) {
-+	case CS5:
-+		buf[1] |= SET_UART_FORMAT_SIZE_5;
-+		break;
-+	case CS6:
-+		buf[1] |= SET_UART_FORMAT_SIZE_6;
-+		break;
-+	case CS7:
-+		buf[1] |= SET_UART_FORMAT_SIZE_7;
-+		break;
-+	default:
-+	case CS8:
-+		buf[1] |= SET_UART_FORMAT_SIZE_8;
-+		break;
- 	}
+-	kfree(output->pointer);
++	ACPI_FREE(obj);
  
- 	/* Set Stop bit2 : 0:1bit 1:2bit */
+-	return -1;
++	return len;
+ }
+ 
+ static bool
+ device_has_dsm(struct device *dev)
+ {
+-	acpi_handle handle;
+-	struct acpi_buffer output = {ACPI_ALLOCATE_BUFFER, NULL};
+-
+-	handle = ACPI_HANDLE(dev);
+-
+-	if (!handle)
+-		return FALSE;
+-
+-	if (dsm_get_label(handle, DEVICE_LABEL_DSM, &output, NULL,
+-			  ACPI_ATTR_NONE) > 0)
+-		return TRUE;
+-
+-	return FALSE;
++	return dsm_get_label(dev, NULL, ACPI_ATTR_NONE) > 0;
+ }
+ 
+ static umode_t
+@@ -287,44 +265,13 @@ acpi_index_string_exist(struct kobject *kobj, struct attribute *attr, int n)
+ static ssize_t
+ acpilabel_show(struct device *dev, struct device_attribute *attr, char *buf)
+ {
+-	struct acpi_buffer output = {ACPI_ALLOCATE_BUFFER, NULL};
+-	acpi_handle handle;
+-	int length;
+-
+-	handle = ACPI_HANDLE(dev);
+-
+-	if (!handle)
+-		return -1;
+-
+-	length = dsm_get_label(handle, DEVICE_LABEL_DSM,
+-			       &output, buf, ACPI_ATTR_LABEL_SHOW);
+-
+-	if (length < 1)
+-		return -1;
+-
+-	return length;
++	return dsm_get_label(dev, buf, ACPI_ATTR_LABEL_SHOW);
+ }
+ 
+ static ssize_t
+ acpiindex_show(struct device *dev, struct device_attribute *attr, char *buf)
+ {
+-	struct acpi_buffer output = {ACPI_ALLOCATE_BUFFER, NULL};
+-	acpi_handle handle;
+-	int length;
+-
+-	handle = ACPI_HANDLE(dev);
+-
+-	if (!handle)
+-		return -1;
+-
+-	length = dsm_get_label(handle, DEVICE_LABEL_DSM,
+-			       &output, buf, ACPI_ATTR_INDEX_SHOW);
+-
+-	if (length < 0)
+-		return -1;
+-
+-	return length;
+-
++	return dsm_get_label(dev, buf, ACPI_ATTR_INDEX_SHOW);
+ }
+ 
+ static struct device_attribute acpi_attr_label = {
 -- 
-1.8.3.2
+1.7.10.4
 
