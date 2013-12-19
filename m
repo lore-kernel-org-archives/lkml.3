@@ -1,114 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab3LSOzg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:55:36 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:43740 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753246Ab3LSOze convert rfc822-to-8bit (ORCPT
+	id S1754118Ab3LSOm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:42:57 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:59201 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896Ab3LSOmz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:55:34 -0500
-Date: Thu, 19 Dec 2013 15:54:54 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
-        Anton Vorontsov <anton@enomsg.org>,
-        "David Woodhouse" <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [lm-sensors] [PATCH V1] fix adc to voltage calculation in 
- da9052 power driver
-Message-ID: <20131219155454.40100f4d@endymion.delvare>
-In-Reply-To: <24DF37198A1E704D9811D8F72B87EB51847AC2C3@NB-EX-MBX02.diasemi.com>
-References: <201312181524.rBIFOv96017094@swsrvapps-02.lan>
-	<20131218163234.714a166c@endymion.delvare>
-	<24DF37198A1E704D9811D8F72B87EB51847ABF61@NB-EX-MBX02.diasemi.com>
-	<20131218172402.GA18892@roeck-us.net>
-	<24DF37198A1E704D9811D8F72B87EB51847AC2C3@NB-EX-MBX02.diasemi.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
+	Thu, 19 Dec 2013 09:42:55 -0500
+Date: Thu, 19 Dec 2013 16:42:51 +0200
+From: Timo Teras <timo.teras@iki.fi>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] fs/binfmt_elf: fix memory map for PIE applications
+Message-ID: <20131219164251.3ebd124a@vostro>
+In-Reply-To: <alpine.LNX.2.00.1312191516270.11852@pobox.suse.cz>
+References: <1380698395-5784-1-git-send-email-timo.teras@iki.fi>
+	<alpine.LNX.2.00.1312191516270.11852@pobox.suse.cz>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; i486-alpine-linux-uclibc)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anthony,
+On Thu, 19 Dec 2013 15:17:03 +0100 (CET)
+Jiri Kosina <jkosina@suse.cz> wrote:
 
-On Thu, 19 Dec 2013 14:13:09 +0000, Opensource [Anthony Olech] wrote:
-> > -----Original Message-----
-> > From: Guenter Roeck [mailto:groeck7@gmail.com] On Behalf Of Guenter
-> > Roeck
-> > Sent: 18 December 2013 17:24
-> > To: Opensource [Anthony Olech]
-> > Cc: Jean Delvare; open list:HARDWARE MONITORING; Anton Vorontsov;
-> > David Woodhouse; open list; David Dajun Chen
-> > Subject: Re: [lm-sensors] [PATCH V1] fix adc to voltage calculation in da9052
-> > power driver
-> > On Wed, Dec 18, 2013 at 03:45:32PM +0000, Opensource [Anthony Olech]
-> > wrote:
-> > > > -----Original Message-----
-> > > > From: Jean Delvare [mailto:khali@linux-fr.org]
-> > > > Sent: 18 December 2013 15:33
-> > > > To: Opensource [Anthony Olech]
-> > > > Cc: Anton Vorontsov; David Woodhouse; David Dajun Chen; open list;
-> > > > open list:HARDWARE MONITORING
-> > > > Subject: Re: [lm-sensors] [PATCH V1] fix adc to voltage calculation
-> > > > in da9052 power driver On Wed, 18 Dec 2013 15:21:13 +0000, Anthony
-> > > > Olech wrote:
-> > > > > The ADC resolution of the PMIC is 10-bits, this means that the
-> > > > > maximum possible value is 1023 and not the 1024 as in the code.
-> > > > The conversion from register value to mV depends on the ADC's LSB,
-> > > > not its range. So the maximum value which can be represented is
-> > irrelevant.
-> > > thanks for the speedy response, but the converted value returned by
-> > > the function does depend on the scaling.
-> > > For example take the two cases where value in 0x1F0, then the
-> > > erroneous previous calculation yields 3469 and the new corrected
-> > > calculation yields 3470
-> > > So please apply the patch as it truly fixes an error.
-> > AFAICS the previous calculation should return 3468. Replacing the division by
-> > 512 with DIV_ROUND_CLOSEST would return 3469, and the new calculation
-> > would return 3470.
-> > Still, an ADC would typically have an LSB. Question here is what that LSB is (in
-> > mV), or in other words what the maximim voltage represented by 0x3ff is.
-> > Current assumption is that it is 1.9531 mV or 2000/1024, which admittedly is
-> > odd. It might be 2000/1023 = 1.9550 mV, or it might be 2 mV.
+> On Wed, 2 Oct 2013, Timo Teräs wrote:
 > 
-> the maximum voltage represented by 0x3ff is 2000 mV, so the existing code is
-> incorrect and the patch is to correct the error.
+> > arch/*/include/asm/elf.h comments say:
+> >   ELF_ET_DYN_BASE is the location that an ET_DYN program is loaded
+> >   if exec'ed.  Typical use of this is to invoke "./ld.so someprog"
+> >   to test out a new version of the loader.  We need to make sure
+> >   that it is out of the way of the program that it will "exec",
+> >   and that there is sufficient room for the brk.
+> > 
+> > In case we have main application linked as PIE, this can cause
+> > problems as the main program itself is being loaded to this
+> > alternate address. And this allows limited heap size. While
+> > this is inevitable when exec'ing the interpreter directly,
+> > we should do better for PIE applications.
+> 
+> could you please provide more specific example of the breakage
+> scenario you are talking about? It's not completely clear to me from
+> your commit message.
 
-What makes you think so? The datasheet is not public so unfortunately I
-cannot check it myself. Please quote the parts of the datasheet which
-you think are relevant to convince us.
+The problem is that if PF_RANDOMIZE is on, the PIE application will be
+mapped by letting mmap() to randomize the area for the main app (that
+is used to base heap).
 
-I and Guenter are only speaking by experience. Product briefs often
-mention the ADC range as an informative value and this is not something
-you can rely on. For example 8-bit ADC are often referred to as having
-a 2 V, 3 V or 4 V range, while when you look at the datasheet, they
-have a 8 mV, 12 mV or 16 mV LSB, which means their actual range is
-2.048 V, 3.072 V and 4.096 V respectively.
+Example memory layout from x86, running PIE compiled busybox with
+randomization enabled:
 
-Additionally, due to the limited resolution, each ADC value represents
-a range of input values, rather than an input value. 0x00 doesn't mean
-"0 mV", is typically means "less than whatever 1 LSB represents". Some
-datasheets are very clear on that, see for example the ADT7490
-datasheet, page 16, table 7, "10−Bit ADC Output Code vs. V IN". This
-means that what the drivers report (register value * LSB) is off by 0.5
-LSB on average. All drivers do that and this is considered OK.
+5756c000-57570000 rw-p 00000000 00:00 0 
+57570000-575dd000 r-xp 00000000 00:0f 2039       /lib/libuClibc-0.9.33.2-git.so
+575dd000-575de000 r--p 0006c000 00:0f 2039       /lib/libuClibc-0.9.33.2-git.so
+575de000-575df000 rw-p 0006d000 00:0f 2039       /lib/libuClibc-0.9.33.2-git.so
+575df000-575e5000 rw-p 00000000 00:00 0 
+575e5000-575f5000 r-xp 00000000 00:0f 2038       /lib/libm-0.9.33.2-git.so
+575f5000-575f6000 r--p 0000f000 00:0f 2038       /lib/libm-0.9.33.2-git.so
+575f6000-575f7000 rw-p 00010000 00:0f 2038       /lib/libm-0.9.33.2-git.so
+575f7000-575fd000 r-xp 00000000 00:0f 2042       /lib/libcrypt-0.9.33.2-git.so
+575fd000-575fe000 r--p 00005000 00:0f 2042       /lib/libcrypt-0.9.33.2-git.so
+575fe000-57610000 rw-p 00000000 00:00 0 
+57611000-57613000 rw-p 00000000 00:00 0 
+57613000-57614000 r-xp 00000000 00:00 0          [vdso]
+57614000-5761e000 r-xp 00000000 00:0f 2044       /lib/ld-uClibc-0.9.33.2-git.so
+5761e000-5761f000 r--p 00009000 00:0f 2044       /lib/ld-uClibc-0.9.33.2-git.so
+5761f000-57620000 rw-p 0000a000 00:0f 2044       /lib/ld-uClibc-0.9.33.2-git.so
+57620000-57708000 r-xp 00000000 00:0f 234487046  /root/busybox
+57708000-5770a000 rw-p 000e8000 00:0f 234487046  /root/busybox
+5770a000-5770c000 rw-p 00000000 00:00 0          [heap]
+5ffdf000-60000000 rw-p 00000000 00:00 0          [stack]
+b7570000-b75dd000 r-xp 00000000 00:0f 2039       /lib/libuClibc-0.9.33.2-git.so
+b75e5000-b75f5000 r-xp 00000000 00:0f 2038       /lib/libm-0.9.33.2-git.so
+b75f7000-b75fd000 r-xp 00000000 00:0f 2042       /lib/libcrypt-0.9.33.2-git.so
+b7613000-b7614000 r-xp 00000000 00:00 0          [vdso]
+b7614000-b761e000 r-xp 00000000 00:0f 2044       /lib/ld-uClibc-0.9.33.2-git.so
+b7620000-b7708000 r-xp 00000000 00:0f 234487046  /root/busybox
 
-This also means that the top value of the range is never reported.
-Consider an 8-bit ADC with a LSB of 16 mV, it's range is 4.096 V but
-the top value (0xff) really means "4.080 V <= input value". Which
-the driver will report as 4.080 V by convention.
+As you see, the main executable is mapped 57620000-57708000 and
+57708000-5770a000. Heap follow immediately after that
+5770a000-5770c000 followed by anything mmaped after it (stack or some
+other libraries). Heap can grow only up to 5ffdf000 meaning the
+application is limited to 140 megs or so in this instance. This limit
+can go much lower depending how the randomization went. And even 140
+megs is very little for big apps.
 
-BTW, you (and we) probably shouldn't waste too much energy on this.
-ADCs are only accurate to some degree anyway. If you take the
-components connected to the input into consideration, the accuracy gets
-even worse. For example, if the input voltage must be scaled down to
-fit in the ADC's range, you need at least one resistor, which in best
-cases will have a 1% accurate value (known as tolerance.) That's ten
-times the LSB of your 10-bit ADC, at which point / 1023 or / 1024
-really makes no practical difference. Sub-percent tolerant resistors are
-expensive and rare in consumer electronics in my experience.
+Hope this clarifies the issue.
 
--- 
-Jean Delvare
+- Timo
