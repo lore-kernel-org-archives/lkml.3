@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab3LSCoW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 21:44:22 -0500
-Received: from [213.199.154.207] ([213.199.154.207]:53559 "EHLO
-	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751277Ab3LSCoV (ORCPT
+	id S1752521Ab3LSCqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 21:46:53 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:18912 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751239Ab3LSCqw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 21:44:21 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 19 Dec 2013 10:44:19 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: dts: mxs: Add iio-hwmon to mx28 soc
-Message-ID: <20131219024417.GN6691@S2101-09.ap.freescale.net>
-References: <1387392656-28037-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Wed, 18 Dec 2013 21:46:52 -0500
+X-IronPort-AV: E=Sophos;i="4.95,511,1384272000"; 
+   d="scan'208";a="9287858"
+Message-ID: <52B25CA8.8090806@cn.fujitsu.com>
+Date: Thu, 19 Dec 2013 10:40:40 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1387392656-28037-1-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Gao feng <gaofeng@cn.fujitsu.com>, linux-audit@redhat.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] audit: fix build error when disable audit
+References: <1387420469-27665-1-git-send-email-gaofeng@cn.fujitsu.com>
+In-Reply-To: <1387420469-27665-1-git-send-email-gaofeng@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/19 10:39:10,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/19 10:39:10
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 07:50:55PM +0100, Alexandre Belloni wrote:
-> This allows to read the SoC on-die temperature sensor available on the LRADC by
-> using:
->  cat /sys/class/hwmon/hwmon0/device/temp1_input
+On 12/19/2013 10:34 AM, Gao feng wrote:
+> kernel/capability.c: In function ‘SYSC_capset’:
+> kernel/capability.c:280:2: warning: passing argument 1 of ‘audit_log_capset’ makes integer from pointer without a cast [enabled by default]
+>   audit_log_capset(new, current_cred());
+>   ^
+> In file included from kernel/capability.c:10:0:
+> include/linux/audit.h:400:20: note: expected ‘pid_t’ but argument is of type ‘struct cred *’
+>  static inline void audit_log_capset(pid_t pid, const struct cred *new,
+>                     ^
+> kernel/capability.c:280:2: error: too few arguments to function ‘audit_log_capset’
+>   audit_log_capset(new, current_cred());
+>   ^
+> In file included from kernel/capability.c:10:0:
+> include/linux/audit.h:400:20: note: declared here
+>  static inline void audit_log_capset(pid_t pid, const struct cred *new,
+>                     ^
+> make[1]: *** [kernel/capability.o] Error 1
 > 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-Applied both, thanks.
-
+BTW, bug introduced by commmit 26b81eb408c411d86c7cc93278fb88fbcd785f65
+audit: Simplify and correct audit_log_capset
