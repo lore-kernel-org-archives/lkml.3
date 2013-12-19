@@ -1,168 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab3LSOvO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:51:14 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49463 "EHLO arroyo.ext.ti.com"
+	id S1753907Ab3LSObA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:31:00 -0500
+Received: from mga01.intel.com ([192.55.52.88]:24049 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750896Ab3LSOvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:51:11 -0500
-Message-ID: <52B307CC.2020704@ti.com>
-Date: Thu, 19 Dec 2013 10:50:52 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751486Ab3LSOa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 09:30:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
+   d="scan'208";a="446996223"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
+In-Reply-To: <20131219123955.GA18186@gmail.com>
+References: <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com> <20131218133439.GR21999@twins.programming.kicks-ass.net> <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com> <20131218141125.GT21999@twins.programming.kicks-ass.net> <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com> <20131218150900.GU21999@twins.programming.kicks-ass.net> <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com> <20131219103134.GD30183@twins.programming.kicks-ass.net> <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com> <20131219112812.GY21999@twins.programming.kicks-ass.net> <20131219123955.GA18186@gmail.com>
+User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Thu, 19 Dec 2013 16:30:53 +0200
+Message-ID: <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-To: Lukasz Majewski <l.majewski@samsung.com>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, <durgadoss.r@intel.com>,
-        <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH v11 7/7] thermal:exynos:boost: Automatic enable/disable
- of BOOST feature (at Exynos4412)
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com> <1386952717-30947-1-git-send-email-l.majewski@samsung.com> <1386952717-30947-8-git-send-email-l.majewski@samsung.com>
-In-Reply-To: <1386952717-30947-8-git-send-email-l.majewski@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="OuK5HSlsKdmIsMRgfIpauCespVANEeE4a"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---OuK5HSlsKdmIsMRgfIpauCespVANEeE4a
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Ingo Molnar <mingo@kernel.org> writes:
 
-On 13-12-2013 12:38, Lukasz Majewski wrote:
-> This patch provides auto disable/enable operation for boost. It uses al=
-ready
-> present thermal infrastructure to provide boost hysteresis.
-> The TMU data has been modified to work properly with or without boost.
->=20
-> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>> On Thu, Dec 19, 2013 at 01:17:51PM +0200, Alexander Shishkin wrote:
+>> > Peter Zijlstra <peterz@infradead.org> writes:
+>> > 
+>> > > On Thu, Dec 19, 2013 at 09:53:44AM +0200, Alexander Shishkin wrote:
+>> > >> Yes and some implementations of PT have the same issue, but you can do a
+>> > >> sufficiently large high order allocation and map it to userspace and
+>> > >> still no copying (or parsing/decoding) in kernel space required.
+>> > >
+>> > > What's sufficiently large? The largest we could possibly allocate is
+>> > > something like 4k^11 which is 8M or so. That's not all that big given
+>> > > you keep saying it generates in the order of 100 MB/s.
+>> > 
+>> > One chunk is 8M. You can have as many as the buddy allocator permits you
+>> > to have. When you get a PMI, you simply switch one chunk for another and
+>> > on the tracing goes.
+>> 
+>> This document you referred me to looks to specify something with a
+>> proper s/g implementation; called ToPA. There doesn't appear to be a
+>> limit to the linked entries and you can specify a size per entry, and I
+>> don't see anywhere why 4k would be bad.
+>> 
+>> That said, I'm still reading..
+>> 
+>> > > Also, 'some implementations', that sounds like a fail right there. Why
+>> > > are there already different implementations, and some which such stupid
+>> > > design, of something this new?
+>> > >
+>> > > How about just saying NO to the ones that requires physically contiguous
+>> > > allocations?
+>> > 
+>> > No reason to leave those out, because they are still extremely useful
+>> > for tracing and fit perfectly fine in a model with two buffers.
+>> 
+>> Maybe; but lets start with the sane hardware. Then we'll look at the 
+>> amount of pain needed to support these broken pieces of crap and 
+>> decide later.
+>> 
+>> So drop all support for crappy hardware now.
+>
+> Absolutely agreed ...
+>
+> The thing is, BTS itself is rarely used (and not primarily because 
+> it's slow, but because its tooling and thus its utility is poor), so 
+> the last thing we want is another piece of broken hardware with a 
+> quirky software interface to it that tooling has trouble utilizing.
 
-Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
+Or the interface and implementation of BTS support in the kernel
+discourage its use and that is why it is so rarely used.
 
-Looks better to me now. You might consider refactoring this driver to be
-frequency independent, if possible. But that is a different subject
-other than this patch.
+What I'm proposing is a unified interface for trace units to export
+their traces and not only the "non-crappy" ones, in a way that won't
+discourage its use from day one.
 
->=20
-> ---
-> Changes for v11:
->     - Use only one thermal data set
->     - Adjust Exynos4412 thermal data to work with or without BOOST
->=20
-> Changes for v10:
->     - Remove boost related code from thermal_core.c
->     - Use already present thermal infrastructure to provide thermal hys=
-teresis
->     - Introduce special set of TMU data for BOOST
->=20
-> Changes for v9:
->     - None
->=20
-> Changes for v8:
->     - Move cpufreq_boost_* stub functions definition (needed when cpufr=
-eq
->       is not compiled in) to cpufreq.h at cpufreq core support commit
->=20
-> Changes for v7:
->     - None
->=20
-> Changes for v6:
->     - Disable boost only when supported and enabled
->     - Protect boost related thermal_zone_device struct fields with mute=
-x
->     - Evaluate temperature trend during boost enable decision
->     - Create separate methods to handle boost enable/disable
->       (thermal_boost_{enable|disable}) operations
->     - Boost is disabled at any trip point passage (not only the non cri=
-tical one)
->     - Add stub definitions for cpufreq boost functions used when
->       CONFIG_CPU_FREQ is NOT defined.
->=20
-> Changes for v5:
->     - Move boost disable code from cpu_cooling.c to thermal_core.c
->       (to handle_non_critical_trips)
->     - Extent struct thermal_zone_device by adding overheated bool flag
->     - Implement auto enable of boost after device cools down
->     - Introduce boost_polling flag, which indicates if thermal uses it'=
-s predefined
->       pool delay or has woken up thermal workqueue only to wait until d=
-evice
->       cools down.
->=20
-> Changes for v4:
->     - New patch
->=20
->  drivers/thermal/samsung/exynos_tmu_data.c |   12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
->=20
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/therma=
-l/samsung/exynos_tmu_data.c
-> index 073c292..476b768 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.c
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-> @@ -131,8 +131,8 @@ static const struct exynos_tmu_registers exynos4412=
-_tmu_registers =3D {
-> =20
->  #define EXYNOS4412_TMU_DATA \
->  	.threshold_falling =3D 10, \
-> -	.trigger_levels[0] =3D 85, \
-> -	.trigger_levels[1] =3D 103, \
-> +	.trigger_levels[0] =3D 70, \
-> +	.trigger_levels[1] =3D 95, \
->  	.trigger_levels[2] =3D 110, \
->  	.trigger_levels[3] =3D 120, \
->  	.trigger_enable[0] =3D true, \
-> @@ -155,12 +155,12 @@ static const struct exynos_tmu_registers exynos44=
-12_tmu_registers =3D {
->  	.second_point_trim =3D 85, \
->  	.default_temp_offset =3D 50, \
->  	.freq_tab[0] =3D { \
-> -		.freq_clip_max =3D 800 * 1000, \
-> -		.temp_level =3D 85, \
-> +		.freq_clip_max =3D 1400 * 1000, \
-> +		.temp_level =3D 70, \
->  	}, \
->  	.freq_tab[1] =3D { \
-> -		.freq_clip_max =3D 200 * 1000, \
-> -		.temp_level =3D 103, \
-> +		.freq_clip_max =3D 400 * 1000, \
-> +		.temp_level =3D 95, \
->  	}, \
->  	.freq_tab_count =3D 2, \
->  	.registers =3D &exynos4412_tmu_registers, \
->=20
+So I'd like to steer away from the ways in which hardware can be broken
+and talk about a usable interface, to begin with.
 
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
---OuK5HSlsKdmIsMRgfIpauCespVANEeE4a
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlKzB88ACgkQCXcVR3XQvP1MKQD/XLfPfRu43RY75bep6m2CrUsW
-0yyREHxyUNtUr6t5QT0BAJBUCFwXLF1xcT3OFrQZwa2uOY3bx2kqGAb1XYkKsfWc
-=Hsi/
------END PGP SIGNATURE-----
-
---OuK5HSlsKdmIsMRgfIpauCespVANEeE4a--
+Regargs,
+--
+Alex
