@@ -1,97 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab3LSQJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:09:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59851 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752369Ab3LSQJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:09:13 -0500
-From: Takashi Iwai <tiwai@suse.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Renninger <trenn@suse.de>
-Subject: [PATCH] ACPI: Blacklist Win8 OSI for some HP laptop 2013 models
-Date: Thu, 19 Dec 2013 17:09:12 +0100
-Message-Id: <1387469352-23798-1-git-send-email-tiwai@suse.de>
-X-Mailer: git-send-email 1.8.5
+	id S1756634Ab3LSQIv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:08:51 -0500
+Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:56339 "EHLO
+	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754368Ab3LSPui (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 10:50:38 -0500
+Message-Id: <20131219155032.456604660@linux.com>
+Date: Thu, 19 Dec 2013 09:50:31 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 16/40] modules: Use raw_cpu_write for initialization of per cpu refcount.
+References: <20131219155015.443763038@linux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=preempt_module
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BIOS on recent HP laptops behaves differently with Win8 OSI,
-e.g. no backlight control and no rfkill are available.  List them in
-the blacklist as a workaround.
+[Patch depends on another patch in this series that introduces raw_cpu_ops]
 
-This patch tries to reduce the added items by matching "G1" suffix,
-e.g. machines are named like "HP ProBook 430 G1".
+The initialization of a structure is not subject to synchronization.
+The use of __this_cpu would trigger a false positive with the
+additional preemption checks for __this_cpu ops.
 
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=856294
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
----
- drivers/acpi/blacklist.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 50 insertions(+)
+So simply disable the check through the use of raw_cpu ops.
 
-diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
-index 078c4f7fe2dd..40c91f5052ef 100644
---- a/drivers/acpi/blacklist.c
-+++ b/drivers/acpi/blacklist.c
-@@ -323,6 +323,56 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
- 		     DMI_MATCH(DMI_PRODUCT_VERSION, "2349D15"),
- 		},
- 	},
-+	{
-+	.callback = dmi_disable_osi_win8,
-+	.ident = "HP ProBook 2013 models",
-+	.matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "HP ProBook "),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, " G1"),
-+		},
-+	},
-+	{
-+	.callback = dmi_disable_osi_win8,
-+	.ident = "HP EliteBook 2013 models",
-+	.matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook "),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, " G1"),
-+		},
-+	},
-+	{
-+	.callback = dmi_disable_osi_win8,
-+	.ident = "HP ZBook 14",
-+	.matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "HP ZBook 14"),
-+		},
-+	},
-+	{
-+	.callback = dmi_disable_osi_win8,
-+	.ident = "HP ZBook 15",
-+	.matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "HP ZBook 15"),
-+		},
-+	},
-+	{
-+	.callback = dmi_disable_osi_win8,
-+	.ident = "HP ZBook 17",
-+	.matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "HP ZBook 17"),
-+		},
-+	},
-+	{
-+	.callback = dmi_disable_osi_win8,
-+	.ident = "HP EliteBook 8780w",
-+	.matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook 8780w"),
-+		},
-+	},
+Trace:
+
+[    0.668066] __this_cpu_write operation in preemptible [00000000] code: modprobe/286
+[    0.668108] caller is __this_cpu_preempt_check+0x38/0x60
+[    0.668111] CPU: 3 PID: 286 Comm: modprobe Tainted: GF            3.12.0-rc4+ #187
+[    0.668112] Hardware name: FUJITSU CELSIUS W530 Power/D3227-A1, BIOS V4.6.5.4 R1.10.0 for D3227-A1x 09/16/2013
+[    0.668113]  0000000000000003 ffff8807edda1d18 ffffffff816d5a57 ffff8807edda1fd8
+[    0.668117]  ffff8807edda1d48 ffffffff8137359c ffff8807edda1ef8 ffffffffa0002178
+[    0.668121]  ffffc90000067730 ffff8807edda1e48 ffff8807edda1d88 ffffffff813735f8
+[    0.668124] Call Trace:
+[    0.668129]  [<ffffffff816d5a57>] dump_stack+0x4e/0x82
+[    0.668132]  [<ffffffff8137359c>] check_preemption_disabled+0xec/0x110
+[    0.668135]  [<ffffffff813735f8>] __this_cpu_preempt_check+0x38/0x60
+[    0.668139]  [<ffffffff810c24fd>] load_module+0xcfd/0x2650
+[    0.668143]  [<ffffffff816dd922>] ? page_fault+0x22/0x30
+[    0.668146]  [<ffffffff810c3ef6>] SyS_init_module+0xa6/0xd0
+[    0.668150]  [<ffffffff816e4fd3>] tracesys+0xe1/0xe6
+
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/kernel/module.c
+===================================================================
+--- linux.orig/kernel/module.c	2013-12-02 16:07:51.644582143 -0600
++++ linux/kernel/module.c	2013-12-02 16:07:51.634582418 -0600
+@@ -640,7 +640,7 @@ static int module_unload_init(struct mod
+ 	INIT_LIST_HEAD(&mod->target_list);
  
- 	/*
- 	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
--- 
-1.8.5
+ 	/* Hold reference count during initialization. */
+-	__this_cpu_write(mod->refptr->incs, 1);
++	raw_cpu_write(mod->refptr->incs, 1);
+ 
+ 	return 0;
+ }
 
