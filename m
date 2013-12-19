@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343Ab3LSNEl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:04:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44521 "EHLO
+	id S1755875Ab3LSL7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:59:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45225 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050Ab3LSL4F (ORCPT
+	with ESMTP id S1755849Ab3LSL7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:05 -0500
+	Thu, 19 Dec 2013 06:59:15 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexei Starovoitov <ast@plumgrid.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 032/208] ipv4: fix race in concurrent ip_route_input_slow()
-Date: Thu, 19 Dec 2013 11:52:10 +0000
-Message-Id: <1387454106-19326-33-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 164/208] ARM: 7912/1: check stack pointer in get_wchan
+Date: Thu, 19 Dec 2013 11:54:22 +0000
+Message-Id: <1387454106-19326-165-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,52 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexei Starovoitov <ast@plumgrid.com>
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 
-commit dcdfdf56b4a6c9437fc37dbc9cee94a788f9b0c4 upstream.
+commit 1b15ec7a7427d4188ba91b9bbac696250a059d22 upstream.
 
-CPUs can ask for local route via ip_route_input_noref() concurrently.
-if nh_rth_input is not cached yet, CPUs will proceed to allocate
-equivalent DSTs on 'lo' and then will try to cache them in nh_rth_input
-via rt_cache_route()
-Most of the time they succeed, but on occasion the following two lines:
-	orig = *p;
-	prev = cmpxchg(p, orig, rt);
-in rt_cache_route() do race and one of the cpus fails to complete cmpxchg.
-But ip_route_input_slow() doesn't check the return code of rt_cache_route(),
-so dst is leaking. dst_destroy() is never called and 'lo' device
-refcnt doesn't go to zero, which can be seen in the logs as:
-	unregister_netdevice: waiting for lo to become free. Usage count = 1
-Adding mdelay() between above two lines makes it easily reproducible.
-Fix it similar to nh_pcpu_rth_output case.
+get_wchan() is lockless. Task may wakeup at any time and change its own stack,
+thus each next stack frame may be overwritten and filled with random stuff.
 
-Fixes: d2d68ba9fe8b ("ipv4: Cache input routes in fib_info nexthops.")
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+/proc/$pid/stack interface had been disabled for non-current tasks, see [1]
+But 'wchan' still allows to trigger stack frame unwinding on volatile stack.
+
+This patch fixes oops in unwind_frame() by adding stack pointer validation on
+each step (as x86 code do), unwind_frame() already checks frame pointer.
+
+Also I've found another report of this oops on stackoverflow (irony).
+
+Link: http://www.spinics.net/lists/arm-kernel/msg110589.html [1]
+Link: http://stackoverflow.com/questions/18479894/unwind-frame-cause-a-kernel-paging-error
+
+Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/route.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/arm/kernel/process.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 2de16d9..52e15e8 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1774,8 +1774,12 @@ local_input:
- 		rth->dst.error= -err;
- 		rth->rt_flags 	&= ~RTCF_LOCAL;
- 	}
--	if (do_cache)
--		rt_cache_route(&FIB_RES_NH(res), rth);
-+	if (do_cache) {
-+		if (unlikely(!rt_cache_route(&FIB_RES_NH(res), rth))) {
-+			rth->dst.flags |= DST_NOCACHE;
-+			rt_add_uncached_list(rth);
-+		}
-+	}
- 	skb_dst_set(skb, &rth->dst);
- 	err = 0;
- 	goto out;
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 94f6b05..92f7b15 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -404,6 +404,7 @@ EXPORT_SYMBOL(dump_fpu);
+ unsigned long get_wchan(struct task_struct *p)
+ {
+ 	struct stackframe frame;
++	unsigned long stack_page;
+ 	int count = 0;
+ 	if (!p || p == current || p->state == TASK_RUNNING)
+ 		return 0;
+@@ -412,9 +413,11 @@ unsigned long get_wchan(struct task_struct *p)
+ 	frame.sp = thread_saved_sp(p);
+ 	frame.lr = 0;			/* recovered from the stack */
+ 	frame.pc = thread_saved_pc(p);
++	stack_page = (unsigned long)task_stack_page(p);
+ 	do {
+-		int ret = unwind_frame(&frame);
+-		if (ret < 0)
++		if (frame.sp < stack_page ||
++		    frame.sp >= stack_page + THREAD_SIZE ||
++		    unwind_frame(&frame) < 0)
+ 			return 0;
+ 		if (!in_sched_functions(frame.pc))
+ 			return frame.pc;
 -- 
 1.8.3.2
 
