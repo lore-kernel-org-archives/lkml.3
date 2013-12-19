@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab3LSNIo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:08:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44428 "EHLO
+	id S1753930Ab3LSLzr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:55:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44444 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742Ab3LSLzi (ORCPT
+	with ESMTP id S1753794Ab3LSLzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:55:38 -0500
+	Thu, 19 Dec 2013 06:55:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stefan Hajnoczi <stefanha@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
+Cc: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 014/208] macvtap: limit head length of skb allocated
-Date: Thu, 19 Dec 2013 11:51:52 +0000
-Message-Id: <1387454106-19326-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 016/208] bonding: fix two race conditions in bond_store_updelay/downdelay
+Date: Thu, 19 Dec 2013 11:51:54 +0000
+Message-Id: <1387454106-19326-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -30,61 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Nikolay Aleksandrov <nikolay@redhat.com>
 
-commit 16a3fa28630331e28208872fa5341ce210b901c7 upstream.
+commit b869ccfab1e324507fa3596e3e1308444fb68227 upstream.
 
-We currently use hdr_len as a hint of head length which is advertised by
-guest. But when guest advertise a very big value, it can lead to an 64K+
-allocating of kmalloc() which has a very high possibility of failure when host
-memory is fragmented or under heavy stress. The huge hdr_len also reduce the
-effect of zerocopy or even disable if a gso skb is linearized in guest.
+This patch fixes two race conditions between bond_store_updelay/downdelay
+and bond_store_miimon which could lead to division by zero as miimon can
+be set to 0 while either updelay/downdelay are being set and thus miss the
+zero check in the beginning, the zero div happens because updelay/downdelay
+are stored as new_value / bond->params.miimon. Use rtnl to synchronize with
+miimon setting.
 
-To solves those issues, this patch introduces an upper limit (PAGE_SIZE) of the
-head, which guarantees an order 0 allocation each time.
-
-Cc: Stefan Hajnoczi <stefanha@redhat.com>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+CC: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Acked-by: Veaceslav Falico <vfalico@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/macvtap.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/net/bonding/bond_sysfs.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index ea53abb..3c87e53 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -731,6 +731,7 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 				const struct iovec *iv, unsigned long total_len,
- 				size_t count, int noblock)
- {
-+	int good_linear = SKB_MAX_HEAD(NET_IP_ALIGN);
- 	struct sk_buff *skb;
- 	struct macvlan_dev *vlan;
- 	unsigned long len = total_len;
-@@ -773,6 +774,8 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
+index 076f8af..ee7a5ee 100644
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -733,6 +733,8 @@ static ssize_t bonding_store_downdelay(struct device *d,
+ 	int new_value, ret = count;
+ 	struct bonding *bond = to_bond(d);
  
- 	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
- 		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
-+		if (copylen > good_linear)
-+			copylen = good_linear;
- 		linear = copylen;
- 		if (iov_pages(iv, vnet_hdr_len + copylen, count)
- 		    <= MAX_SKB_FRAGS)
-@@ -781,7 +784,10 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 
- 	if (!zerocopy) {
- 		copylen = len;
--		linear = vnet_hdr.hdr_len;
-+		if (vnet_hdr.hdr_len > good_linear)
-+			linear = good_linear;
-+		else
-+			linear = vnet_hdr.hdr_len;
++	if (!rtnl_trylock())
++		return restart_syscall();
+ 	if (!(bond->params.miimon)) {
+ 		pr_err("%s: Unable to set down delay as MII monitoring is disabled\n",
+ 		       bond->dev->name);
+@@ -766,6 +768,7 @@ static ssize_t bonding_store_downdelay(struct device *d,
  	}
  
- 	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
+ out:
++	rtnl_unlock();
+ 	return ret;
+ }
+ static DEVICE_ATTR(downdelay, S_IRUGO | S_IWUSR,
+@@ -788,6 +791,8 @@ static ssize_t bonding_store_updelay(struct device *d,
+ 	int new_value, ret = count;
+ 	struct bonding *bond = to_bond(d);
+ 
++	if (!rtnl_trylock())
++		return restart_syscall();
+ 	if (!(bond->params.miimon)) {
+ 		pr_err("%s: Unable to set up delay as MII monitoring is disabled\n",
+ 		       bond->dev->name);
+@@ -821,6 +826,7 @@ static ssize_t bonding_store_updelay(struct device *d,
+ 	}
+ 
+ out:
++	rtnl_unlock();
+ 	return ret;
+ }
+ static DEVICE_ATTR(updelay, S_IRUGO | S_IWUSR,
 -- 
 1.8.3.2
 
