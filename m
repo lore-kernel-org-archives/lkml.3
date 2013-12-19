@@ -1,74 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab3LSIug (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 03:50:36 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:52546 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab3LSIuc (ORCPT
+	id S1752821Ab3LSIvr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 03:51:47 -0500
+Received: from relay.parallels.com ([195.214.232.42]:56717 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954Ab3LSIvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 03:50:32 -0500
-X-AuditID: cbfee68f-b7fe36d0000016f8-58-52b2b3506629
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH] f2fs: add description about small_discards in document
-Date: Thu, 19 Dec 2013 17:49:13 +0900
-Message-id: <1387442953-13476-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsVy+t8zA92AzZuCDGbdk7e4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK+PNmuVMBd2cFSde
-	7GNsYLzP1sXIySEhYCKxclcfM4QtJnHh3nqgOBeHkMAyRokLp06wwBTNmPYArEFIYBGjxJHl
-	phB2M5PE42P5XYwcHGwC2hKb9xuAhEUEmCUWTD3PCDKHWWACo8T/Re/B5ggLuEuc3XCOEcRm
-	EVCVeHhqFTNILy9Q/P8lSYhV2hLbnk8E65UQuM0m8WnjKWaIegGJb5MPsYDUSwjISmw6AHWz
-	pMTBFTdYJjAKLmBkWMUomlqQXFCclF5krFecmFtcmpeul5yfu4kREn79OxjvHrA+xJgMNG4i
-	s5Rocj4wfPNK4g2NzYwsTE1MjY3MLc1IE1YS573/MClISCA9sSQ1OzW1ILUovqg0J7X4ECMT
-	B6dUA6MNk1G137I1Vju6Dr+OiJ34WEvG06jvxF8/KVW+iQUXp4hKOqY+c1J99z0zfbNgxS1X
-	nfuHGYXu/nhsl8m677/065PpzsEqp7ceO2aVqaH6h7ffZ86JJb3zj/pcYGR6Lbvpw5XG7Wa9
-	5UHsYacNYlZ99PLinTK7mEnMykRNiSX8zHfDMOcT25VYijMSDbWYi4oTAdW83cVVAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPIsWRmVeSWpSXmKPExsVy+t9jAd2AzZuCDLY/kba4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON45
-	3tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2ibkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3f
-	kCC4HiMDNJCwjjHjzZrlTAXdnBUnXuxjbGC8z9bFyMkhIWAiMWPaAyhbTOLCvfVgtpDAIkaJ
-	I8tNIexmJonHx/K7GDk42AS0JTbvNwAJiwgwSyyYep6xi5GLg1lgAqPE/0XvWUASwgLuEmc3
-	nGMEsVkEVCUenlrFDNLLCxT/f0kSYpW2xLbnExknMHIvYGRYxSiaWpBcUJyUnmukV5yYW1ya
-	l66XnJ+7iREc3M+kdzCuarA4xCjAwajEwxvwfGOQEGtiWXFl7iFGCQ5mJRFezeWbgoR4UxIr
-	q1KL8uOLSnNSiw8xJgMtn8gsJZqcD4y8vJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7ZaBwoJpCeW
-	pGanphakFsFsYeLglGpgVM0M0FWYKXvA8UTZDIHWf99mMcxSzGpt5Vn+azHXJB/PE2nHb1iK
-	Nda+Cj+/mplbhkNbyvH9i5ebVs8+vX9XkpN5SUa4i72rU/SZV8X2C/tcOI+XZmfPkFdymrSA
-	aRZr2+71R8wirSfenyPD3bTFW6h0WoBUyuw+p0WaCQxX17w6vMEx5SC/EktxRqKhFnNRcSIA
-	cV2cvbICAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 19 Dec 2013 03:51:45 -0500
+Message-ID: <52B2B39A.7070303@parallels.com>
+Date: Thu, 19 Dec 2013 12:51:38 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/6] slab: cleanup kmem_cache_create_memcg()
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com> <20131218165603.GB31080@dhcp22.suse.cz> <52B292CF.5030002@parallels.com> <20131219084447.GA9331@dhcp22.suse.cz>
+In-Reply-To: <20131219084447.GA9331@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a description about small_disacrds in the f2fs document.
+On 12/19/2013 12:44 PM, Michal Hocko wrote:
+> On Thu 19-12-13 10:31:43, Vladimir Davydov wrote:
+>> On 12/18/2013 08:56 PM, Michal Hocko wrote:
+>>> On Wed 18-12-13 17:16:52, Vladimir Davydov wrote:
+>>>> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+>>>> Cc: Michal Hocko <mhocko@suse.cz>
+>>>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>>>> Cc: Glauber Costa <glommer@gmail.com>
+>>>> Cc: Christoph Lameter <cl@linux.com>
+>>>> Cc: Pekka Enberg <penberg@kernel.org>
+>>>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>>> Dunno, is this really better to be worth the code churn?
+>>>
+>>> It even makes the generated code tiny bit bigger:
+>>> text    data     bss     dec     hex filename
+>>> 4355     171     236    4762    129a mm/slab_common.o.after
+>>> 4342     171     236    4749    128d mm/slab_common.o.before
+>>>
+>>> Or does it make the further changes much more easier? Be explicit in the
+>>> patch description if so.
+>> Hi, Michal
+>>
+>> IMO, undoing under labels looks better than inside conditionals, because
+>> we don't have to repeat the same deinitialization code then, like this
+>> (note three calls to kmem_cache_free()):
+> Agreed but the resulting code is far from doing nice undo on different
+> conditions. You have out_free_cache which frees everything regardless
+> whether name or cache registration failed. So it doesn't help with
+> readability much IMO.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- Documentation/filesystems/f2fs.txt | 6 ++++++
- 1 file changed, 6 insertions(+)
+AFAIK it's common practice not to split kfree's to be called under
+different labels on fail paths, because kfree(NULL) results in a no-op.
+Since on undo, we only call kfree, I introduce the only label. Of course
+I could do something like
 
-diff --git a/Documentation/filesystems/f2fs.txt b/Documentation/filesystems/f2fs.txt
-index 6de2102..1073970 100644
---- a/Documentation/filesystems/f2fs.txt
-+++ b/Documentation/filesystems/f2fs.txt
-@@ -173,6 +173,12 @@ Files in /sys/fs/f2fs/<devname>
- 			      conduct checkpoint to reclaim the prefree segments
- 			      to free segments. By default, 100 segments, 200MB.
- 
-+ max_small_discards	      This parameter controls the number of discard
-+			      commands that consist small blocks less than 2MB.
-+			      The candidates to be discarded are cached until
-+			      checkpoint is triggered, and issued during the
-+			      checkpoint. By default, it is disabled with 0.
-+
-  ipu_policy                   This parameter controls the policy of in-place
-                               updates in f2fs. There are five policies:
-                                0: F2FS_IPU_FORCE, 1: F2FS_IPU_SSR,
--- 
-1.8.4.474.g128a96c
+    s->name=...
+    if (!s->name)
+        goto out_free_name;
+    err = __kmem_new_cache(...)
+    if (err)
+        goto out_free_name;
+<...>
+out_free_name:
+    kfree(s->name);
+out_free_cache:
+    kfree(s);
+    goto out_unlock;
 
+But I think using only out_free_cache makes the code look clearer.
+
+>
+>>     s = kmem_cache_zalloc(kmem_cache, GFP_KERNEL);
+>>     if (s) {
+>>         s->object_size = s->size = size;
+>>         s->align = calculate_alignment(flags, align, size);
+>>         s->ctor = ctor;
+>>
+>>         if (memcg_register_cache(memcg, s, parent_cache)) {
+>>             kmem_cache_free(kmem_cache, s);
+>>             err = -ENOMEM;
+>>             goto out_locked;
+>>         }
+>>
+>>         s->name = kstrdup(name, GFP_KERNEL);
+>>         if (!s->name) {
+>>             kmem_cache_free(kmem_cache, s);
+>>             err = -ENOMEM;
+>>             goto out_locked;
+>>         }
+>>
+>>         err = __kmem_cache_create(s, flags);
+>>         if (!err) {
+>>             s->refcount = 1;
+>>             list_add(&s->list, &slab_caches);
+>>             memcg_cache_list_add(memcg, s);
+>>         } else {
+>>             kfree(s->name);
+>>             kmem_cache_free(kmem_cache, s);
+>>         }
+>>     } else
+>>         err = -ENOMEM;
+>>
+>> The next patch, which fixes the memcg_params leakage on error, would
+>> make it even worse introducing two calls to memcg_free_cache_params()
+>> after kstrdup and __kmem_cache_create.
+>>
+>> If you think it isn't worthwhile applying this patch, just let me know,
+>> I don't mind dropping it.
+> As I've said if it helps with the later patches then I do not mind but
+> on its own it doesn't sound like a huge improvement.
+>
+> Btw. you do not have to set err = -ENOMEM before goto out_locked. Just
+> set before kmem_cache_zalloc. You also do not need to initialize it to 0
+> because kmem_cache_sanity_check will set it.
+
+OK, thanks.
