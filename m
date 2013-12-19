@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755839Ab3LSSSS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:18:18 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:61946 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690Ab3LSSSQ (ORCPT
+	id S1755856Ab3LSSTz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:19:55 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:55141 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753757Ab3LSSTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:18:16 -0500
-Date: Thu, 19 Dec 2013 19:18:12 +0100
+	Thu, 19 Dec 2013 13:19:52 -0500
+Date: Thu, 19 Dec 2013 19:19:48 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Len Brown <lenb@kernel.org>,
         x86@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Len Brown <len.brown@intel.com>, stable@vger.kernel.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
@@ -18,7 +18,7 @@ Cc: "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
         Borislav Petkov <bp@alien8.de>
 Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power
  regression
-Message-ID: <20131219181812.GC32508@gmail.com>
+Message-ID: <20131219181948.GD32508@gmail.com>
 References: <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com>
  <20131219122257.GC11279@gmail.com>
  <52B316FF.50906@zytor.com>
@@ -27,48 +27,37 @@ References: <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@i
  <20131219162136.GM16438@laptop.programming.kicks-ass.net>
  <52B323BE.7090108@zytor.com>
  <20131219170741.GB30382@gmail.com>
- <20131219172535.GN16438@laptop.programming.kicks-ass.net>
- <20131219175037.GK2480@laptop.programming.kicks-ass.net>
+ <52B33640.3020204@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131219175037.GK2480@laptop.programming.kicks-ass.net>
+In-Reply-To: <52B33640.3020204@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-> On Thu, Dec 19, 2013 at 06:25:35PM +0100, Peter Zijlstra wrote:
-> > On Thu, Dec 19, 2013 at 06:07:41PM +0100, Ingo Molnar wrote:
-> > > Likewise, having a barrier before the MONITOR looks sensible as well. 
+> On 12/19/2013 09:07 AM, Ingo Molnar wrote:
 > > 
-> > I again have to disagree, one would expect monitor to flush all that is
-> > required to start the monitor -- and it actually does so. As is
-> > testified by this extra CLFLUSH being called a bug workaround.
+> > Likewise, having a barrier before the MONITOR looks sensible as 
+> > well. Having it _after_ monitor looks weird and is probably wrong. 
+> > [It might have been the effects of someone seeing the spurious 
+> > wakeup problems with realizing the true source, or so.]
 > 
-> SDM states that MONITOR is ordered like a LOAD, and a LOAD cannot 
-> pass a previous STORE to the same address.
+> Does anyone know the history of this barrier after the monitor?  I 
+> know Len is looking for a minimal patchset that can go into -stable, 
+> and it seems prudent to not preturb the code more than necessary, 
+> but going forward it would be nice to know...
 
-Yes ... but you could argue that CLFLUSH is neither a load nor a 
-store, it's a _cache sync_ operation, with its special ordering 
-properties.
+For the minimal fix I don't think we should change it - but for v3.14 
+it looks like a speedup for the from-idle codepath, which is 
+performance sensitive.
 
-> That said; there's enough holes in there to swim a titanic through, 
-> seeing how MONITOR stares at an entire cacheline and LOAD/STORE 
-> order is specified on location, whatever that means.
-
-I think assuming that MONITOR is ordered as a load or better is a 
-pretty safe one (and in fact the Intel documentation seems to say so) 
-- I'd say MONITOR is in micro-code and essentially snoops on cache 
-events on that specific cache line, and loads the cache line on a 
-snoop hit?
-
-Btw., what state is the cache line after a MONITOR instruction, is it 
-loaded as shared, or as excusive? (exclusive would probably be better 
-for performance.)
+( It would also be nice to know whether MONITOR loads that cacheline 
+  into the CPUs cache, and in what state it loads it. )
 
 Thanks,
 
