@@ -1,141 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab3LSJOX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:14:23 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:56862 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab3LSJK3 (ORCPT
+	id S1753381Ab3LSJSM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:18:12 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55177 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751832Ab3LSJSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:10:29 -0500
-Subject: [PATCH -tip v6 21/22] kprobes/x86: Remove unneeded
- preempt_disable/enable in interrupt handlers
-To: Ingo Molnar <mingo@kernel.org>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Thu, 19 Dec 2013 09:04:45 +0000
-Message-ID: <20131219090445.14309.42834.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Dec 2013 04:18:08 -0500
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: broonie@kernel.org, sameo@linux.intel.com, lgirdwood@gmail.com,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: [PATCH 2/2] ASoC: wm5110: Expose switch controls for DRE
+Date: Thu, 19 Dec 2013 09:11:02 +0000
+Message-Id: <1387444262-26456-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1387444262-26456-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1387444262-26456-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the int3 itself disables the local_irq and kprobes
-keeps it disabled while the single step has done, the
-kernel preemption never happen while processing a kprobe.
-This means that we don't need to disable/enable preemption.
-Also, this changes kprobe_int3_handler to use goto-out style.
+Certain use-cases require the DRE to be disabled so expose controls for
+the enables.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- arch/x86/kernel/kprobes/core.c |   24 +++++++-----------------
- 1 file changed, 7 insertions(+), 17 deletions(-)
+ sound/soc/codecs/wm5110.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index 060641e..6b4d9bd 100644
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -506,7 +506,6 @@ static void setup_singlestep(struct kprobe *p, struct pt_regs *regs,
- 		 * stepping.
- 		 */
- 		regs->ip = (unsigned long)p->ainsn.insn;
--		preempt_enable_no_resched();
- 		return;
- 	}
- #endif
-@@ -574,13 +573,6 @@ int kprobe_int3_handler(struct pt_regs *regs)
- 	struct kprobe_ctlblk *kcb;
+diff --git a/sound/soc/codecs/wm5110.c b/sound/soc/codecs/wm5110.c
+index 7fb8599..3fb9abb 100644
+--- a/sound/soc/codecs/wm5110.c
++++ b/sound/soc/codecs/wm5110.c
+@@ -346,6 +346,13 @@ SOC_DOUBLE("SPKDAT1 Switch", ARIZONA_PDM_SPK1_CTRL_1, ARIZONA_SPK1L_MUTE_SHIFT,
+ SOC_DOUBLE("SPKDAT2 Switch", ARIZONA_PDM_SPK2_CTRL_1, ARIZONA_SPK2L_MUTE_SHIFT,
+ 	   ARIZONA_SPK2R_MUTE_SHIFT, 1, 1),
  
- 	addr = (kprobe_opcode_t *)(regs->ip - sizeof(kprobe_opcode_t));
--	/*
--	 * We don't want to be preempted for the entire
--	 * duration of kprobe processing. We conditionally
--	 * re-enable preemption at the end of this function,
--	 * and also in reenter_kprobe() and setup_singlestep().
--	 */
--	preempt_disable();
- 
- 	kcb = get_kprobe_ctlblk();
- 	p = get_kprobe(addr);
-@@ -588,7 +580,7 @@ int kprobe_int3_handler(struct pt_regs *regs)
- 	if (p) {
- 		if (kprobe_running()) {
- 			if (reenter_kprobe(p, regs, kcb))
--				return 1;
-+				goto handled;
- 		} else {
- 			set_current_kprobe(p, regs, kcb);
- 			kcb->kprobe_status = KPROBE_HIT_ACTIVE;
-@@ -603,7 +595,7 @@ int kprobe_int3_handler(struct pt_regs *regs)
- 			 */
- 			if (!p->pre_handler || !p->pre_handler(p, regs))
- 				setup_singlestep(p, regs, kcb, 0);
--			return 1;
-+			goto handled;
- 		}
- 	} else if (*addr != BREAKPOINT_INSTRUCTION) {
- 		/*
-@@ -616,19 +608,20 @@ int kprobe_int3_handler(struct pt_regs *regs)
- 		 * the original instruction.
- 		 */
- 		regs->ip = (unsigned long)addr;
--		preempt_enable_no_resched();
--		return 1;
-+		goto handled;
- 	} else if (kprobe_running()) {
- 		p = __this_cpu_read(current_kprobe);
- 		if (p->break_handler && p->break_handler(p, regs)) {
- 			if (!skip_singlestep(p, regs, kcb))
- 				setup_singlestep(p, regs, kcb, 0);
--			return 1;
-+			goto handled;
- 		}
- 	} /* else: not a kprobe fault; let the kernel handle it */
- 
--	preempt_enable_no_resched();
- 	return 0;
++SOC_DOUBLE("HPOUT1 DRE Switch", ARIZONA_DRE_ENABLE,
++	   ARIZONA_DRE1L_ENA_SHIFT, ARIZONA_DRE1R_ENA_SHIFT, 1, 0),
++SOC_DOUBLE("HPOUT2 DRE Switch", ARIZONA_DRE_ENABLE,
++	   ARIZONA_DRE2L_ENA_SHIFT, ARIZONA_DRE2R_ENA_SHIFT, 1, 0),
++SOC_DOUBLE("HPOUT3 DRE Switch", ARIZONA_DRE_ENABLE,
++	   ARIZONA_DRE3L_ENA_SHIFT, ARIZONA_DRE3R_ENA_SHIFT, 1, 0),
 +
-+handled:
-+	return 1;
- }
- NOKPROBE_SYMBOL(kprobe_int3_handler);
+ SOC_ENUM("Output Ramp Up", arizona_out_vi_ramp),
+ SOC_ENUM("Output Ramp Down", arizona_out_vd_ramp),
  
-@@ -893,7 +886,6 @@ int kprobe_debug_handler(struct pt_regs *regs)
- 	}
- 	reset_current_kprobe();
- out:
--	preempt_enable_no_resched();
- 
- 	/*
- 	 * if somebody else is singlestepping across a probe point, flags
-@@ -928,7 +920,6 @@ int kprobe_fault_handler(struct pt_regs *regs, int trapnr)
- 			restore_previous_kprobe(kcb);
- 		else
- 			reset_current_kprobe();
--		preempt_enable_no_resched();
- 		break;
- 	case KPROBE_HIT_ACTIVE:
- 	case KPROBE_HIT_SSDONE:
-@@ -1062,7 +1053,6 @@ int longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- 		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
- 		       kcb->jprobes_stack,
- 		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
--		preempt_enable_no_resched();
- 		return 1;
- 	}
- 	return 0;
-
+-- 
+1.7.2.5
 
