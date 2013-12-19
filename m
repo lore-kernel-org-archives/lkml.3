@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab3LSL5F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:57:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44746 "EHLO
+	id S1756036Ab3LSL7l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:59:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45295 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754629Ab3LSL46 (ORCPT
+	with ESMTP id S1755995Ab3LSL7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:58 -0500
+	Thu, 19 Dec 2013 06:59:35 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>,
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 069/208] ALSA: hda - Add mono speaker quirk for Dell Inspiron 5439
-Date: Thu, 19 Dec 2013 11:52:47 +0000
-Message-Id: <1387454106-19326-70-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 179/208] net: allwinner: emac: Add missing free_irq
+Date: Thu, 19 Dec 2013 11:54:37 +0000
+Message-Id: <1387454106-19326-180-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-commit eb82594b75b0cf54c667189e061934b7c49b5d42 upstream.
+commit e9c56f8d2f851fb6d6ce6794c0f5463b862a878e upstream.
 
-This machine also has mono output if run through DAC node 0x03.
+The sun4i-emac driver uses devm_request_irq at .ndo_open time, but relies on
+the managed device mechanism to actually free it. This causes an issue whenever
+someone wants to restart the interface, the interrupt still being held, and not
+yet released.
 
-BugLink: https://bugs.launchpad.net/bugs/1256212
-Tested-by: David Chen <david.chen@canonical.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[ luis: backported to 3.11: adjusted context ]
+Fall back to using the regular request_irq at .ndo_open time, and introduce a
+free_irq during .ndo_stop.
+
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/allwinner/sun4i-emac.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 69d784f..7559fa8 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3752,6 +3752,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1028, 0x0613, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0614, "Dell Inspiron 3135", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0616, "Dell Vostro 5470", ALC290_FIXUP_MONO_SPEAKERS),
-+	SND_PCI_QUIRK(0x1028, 0x0638, "Dell Inspiron 5439", ALC290_FIXUP_MONO_SPEAKERS),
- 	SND_PCI_QUIRK(0x1028, 0x15cc, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x15cd, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC2),
+diff --git a/drivers/net/ethernet/allwinner/sun4i-emac.c b/drivers/net/ethernet/allwinner/sun4i-emac.c
+index 50b853a..46dfb13 100644
+--- a/drivers/net/ethernet/allwinner/sun4i-emac.c
++++ b/drivers/net/ethernet/allwinner/sun4i-emac.c
+@@ -717,8 +717,7 @@ static int emac_open(struct net_device *dev)
+ 	if (netif_msg_ifup(db))
+ 		dev_dbg(db->dev, "enabling %s\n", dev->name);
+ 
+-	if (devm_request_irq(db->dev, dev->irq, &emac_interrupt,
+-			     0, dev->name, dev))
++	if (request_irq(dev->irq, &emac_interrupt, 0, dev->name, dev))
+ 		return -EAGAIN;
+ 
+ 	/* Initialize EMAC board */
+@@ -774,6 +773,8 @@ static int emac_stop(struct net_device *ndev)
+ 
+ 	emac_shutdown(ndev);
+ 
++	free_irq(ndev->irq, ndev);
++
+ 	return 0;
+ }
+ 
 -- 
 1.8.3.2
 
