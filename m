@@ -1,179 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab3LSJeg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:34:36 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52821 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab3LSJee (ORCPT
+	id S1752882Ab3LSJfE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:35:04 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:44285 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752823Ab3LSJe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:34:34 -0500
-X-AuditID: 9c930179-b7bedae000000f15-97-52b2bda88be6
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/4] tools lib traceevent: Add state member to struct trace_seq
-Date: Thu, 19 Dec 2013 18:34:23 +0900
-Message-Id: <1387445666-7821-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 19 Dec 2013 04:34:59 -0500
+Date: Thu, 19 Dec 2013 15:04:47 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Lars Ellenberg <drbd-dev@lists.linbit.com>, drbd-user@lists.linbit.com,
+        josh@joshtriplett.org
+Subject: [PATCH 03/13] drivers: block: Mark function
+ seq_printf_with_thousands_grouping() as static in drbd_proc.c
+Message-ID: <1c21b4a9a0d6c82e201d6e1ee8336414caa56c60.1387445396.git.rashika.kheria@gmail.com>
+References: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Mark function seq_printf_with_thousands_grouping() as static in
+drbd/drbd_proc.c because it is not used outside this file.
 
-The trace_seq->state is for tracking errors during the use of
-trace_seq APIs and getting rid of die() in it.
+This eliminates the following warning in drbd/drbd_proc.c:
+drivers/block/drbd/drbd_proc.c:49:6: warning: no previous prototype for ‘seq_printf_with_thousands_grouping’ [-Wmissing-prototypes]
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- tools/lib/traceevent/event-parse.h |  7 +++++++
- tools/lib/traceevent/trace-seq.c   | 41 ++++++++++++++++++++++++++++++++++----
- 2 files changed, 44 insertions(+), 4 deletions(-)
+ drivers/block/drbd/drbd_proc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index cf5db9013f2c..3c890cb28db7 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -58,6 +58,12 @@ struct pevent_record {
- #endif
+diff --git a/drivers/block/drbd/drbd_proc.c b/drivers/block/drbd/drbd_proc.c
+index bf31d41..84fbe33 100644
+--- a/drivers/block/drbd/drbd_proc.c
++++ b/drivers/block/drbd/drbd_proc.c
+@@ -46,7 +46,7 @@ const struct file_operations drbd_proc_fops = {
+ 	.release	= drbd_proc_release,
  };
  
-+enum trace_seq_fail {
-+	TRACE_SEQ__GOOD,
-+	TRACE_SEQ__BUFFER_POISONED,
-+	TRACE_SEQ__MEM_ALLOC_FAILED,
-+};
-+
- /*
-  * Trace sequences are used to allow a function to call several other functions
-  * to create a string of data to use (up to a max of PAGE_SIZE).
-@@ -68,6 +74,7 @@ struct trace_seq {
- 	unsigned int		buffer_size;
- 	unsigned int		len;
- 	unsigned int		readpos;
-+	enum trace_seq_fail	state;
- };
- 
- void trace_seq_init(struct trace_seq *s);
-diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
-index d7f2e68bc5b9..976ad2a146b3 100644
---- a/tools/lib/traceevent/trace-seq.c
-+++ b/tools/lib/traceevent/trace-seq.c
-@@ -32,8 +32,8 @@
- #define TRACE_SEQ_POISON	((void *)0xdeadbeef)
- #define TRACE_SEQ_CHECK(s)						\
- do {									\
--	if ((s)->buffer == TRACE_SEQ_POISON)			\
--		die("Usage of trace_seq after it was destroyed");	\
-+	if ((s)->buffer == TRACE_SEQ_POISON)				\
-+		(s)->state = TRACE_SEQ__BUFFER_POISONED;		\
- } while (0)
- 
- /**
-@@ -46,6 +46,7 @@ void trace_seq_init(struct trace_seq *s)
- 	s->readpos = 0;
- 	s->buffer_size = TRACE_SEQ_BUF_SIZE;
- 	s->buffer = malloc_or_die(s->buffer_size);
-+	s->state = TRACE_SEQ__GOOD;
- }
- 
- /**
-@@ -81,7 +82,7 @@ static void expand_buffer(struct trace_seq *s)
- 	s->buffer_size += TRACE_SEQ_BUF_SIZE;
- 	s->buffer = realloc(s->buffer, s->buffer_size);
- 	if (!s->buffer)
--		die("Can't allocate trace_seq buffer memory");
-+		s->state = TRACE_SEQ__MEM_ALLOC_FAILED;
- }
- 
- /**
-@@ -108,6 +109,9 @@ trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
- 	TRACE_SEQ_CHECK(s);
- 
-  try_again:
-+	if (s->state != TRACE_SEQ__GOOD)
-+		return 0;
-+
- 	len = (s->buffer_size - 1) - s->len;
- 
- 	va_start(ap, fmt);
-@@ -144,6 +148,9 @@ trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args)
- 	TRACE_SEQ_CHECK(s);
- 
-  try_again:
-+	if (s->state != TRACE_SEQ__GOOD)
-+		return 0;
-+
- 	len = (s->buffer_size - 1) - s->len;
- 
- 	ret = vsnprintf(s->buffer + s->len, len, fmt, args);
-@@ -174,11 +181,17 @@ int trace_seq_puts(struct trace_seq *s, const char *str)
- 
- 	TRACE_SEQ_CHECK(s);
- 
-+	if (s->state != TRACE_SEQ__GOOD)
-+		return 0;
-+
- 	len = strlen(str);
- 
- 	while (len > ((s->buffer_size - 1) - s->len))
- 		expand_buffer(s);
- 
-+	if (s->state != TRACE_SEQ__GOOD)
-+		return 0;
-+
- 	memcpy(s->buffer + s->len, str, len);
- 	s->len += len;
- 
-@@ -189,9 +202,15 @@ int trace_seq_putc(struct trace_seq *s, unsigned char c)
+-void seq_printf_with_thousands_grouping(struct seq_file *seq, long v)
++static void seq_printf_with_thousands_grouping(struct seq_file *seq, long v)
  {
- 	TRACE_SEQ_CHECK(s);
- 
-+	if (s->state != TRACE_SEQ__GOOD)
-+		return 0;
-+
- 	while (s->len >= (s->buffer_size - 1))
- 		expand_buffer(s);
- 
-+	if (s->state != TRACE_SEQ__GOOD)
-+		return 0;
-+
- 	s->buffer[s->len++] = c;
- 
- 	return 1;
-@@ -201,6 +220,9 @@ void trace_seq_terminate(struct trace_seq *s)
- {
- 	TRACE_SEQ_CHECK(s);
- 
-+	if (s->state != TRACE_SEQ__GOOD)
-+		return;
-+
- 	/* There's always one character left on the buffer */
- 	s->buffer[s->len] = 0;
- }
-@@ -208,5 +230,16 @@ void trace_seq_terminate(struct trace_seq *s)
- int trace_seq_do_printf(struct trace_seq *s)
- {
- 	TRACE_SEQ_CHECK(s);
--	return printf("%.*s", s->len, s->buffer);
-+
-+	switch (s->state) {
-+	case TRACE_SEQ__GOOD:
-+		return printf("%.*s", s->len, s->buffer);
-+	case TRACE_SEQ__BUFFER_POISONED:
-+		puts("Usage of trace_seq after it was destroyed");
-+		break;
-+	case TRACE_SEQ__MEM_ALLOC_FAILED:
-+		puts("Can't allocate trace_seq buffer memory");
-+		break;
-+	}
-+	return -1;
- }
+ 	/* v is in kB/sec. We don't expect TiByte/sec yet. */
+ 	if (unlikely(v >= 1000000)) {
 -- 
-1.7.11.7
+1.7.9.5
 
