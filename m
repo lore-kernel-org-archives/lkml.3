@@ -1,173 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab3LSM50 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:57:26 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:12514 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756646Ab3LSM5X (ORCPT
+	id S1757413Ab3LSNHT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:07:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44462 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753903Ab3LSLzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:57:23 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 19 Dec 2013 04:58:38 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <anton@enomsg.org>, <dwmw2@infradead.org>
-CC: <mark.rutland@arm.com>, <rob@landley.net>, <ijc+devicetree@hellion.org.uk>,
-        <swarren@nvidia.com>, <lee.jones@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 2/2] power: reset: as3722: add power-off driver
-Date: Thu, 19 Dec 2013 18:27:01 +0530
-Message-ID: <1387457821-12509-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1387457821-12509-1-git-send-email-ldewangan@nvidia.com>
-References: <1387457821-12509-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 19 Dec 2013 06:55:46 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 020/208] ipv4: fix possible seqlock deadlock
+Date: Thu, 19 Dec 2013 11:51:58 +0000
+Message-Id: <1387454106-19326-21-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ams AS3722 supports the power off functionality to turn off
-system.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Add power off driver for ams AS3722.
+------------------
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+From: Eric Dumazet <edumazet@google.com>
+
+commit c9e9042994d37cbc1ee538c500e9da1bb9d1bcdf upstream.
+
+ip4_datagram_connect() being called from process context,
+it should use IP_INC_STATS() instead of IP_INC_STATS_BH()
+otherwise we can deadlock on 32bit arches, or get corruptions of
+SNMP counters.
+
+Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/power/reset/Kconfig           |    6 +++
- drivers/power/reset/Makefile          |    1 +
- drivers/power/reset/as3722-poweroff.c |   96 +++++++++++++++++++++++++++++++++
- 3 files changed, 103 insertions(+)
- create mode 100644 drivers/power/reset/as3722-poweroff.c
+ net/ipv4/datagram.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index 9b3ea53..6d452a7 100644
---- a/drivers/power/reset/Kconfig
-+++ b/drivers/power/reset/Kconfig
-@@ -6,6 +6,12 @@ menuconfig POWER_RESET
+diff --git a/net/ipv4/datagram.c b/net/ipv4/datagram.c
+index b28e863..19e3637 100644
+--- a/net/ipv4/datagram.c
++++ b/net/ipv4/datagram.c
+@@ -57,7 +57,7 @@ int ip4_datagram_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 	if (IS_ERR(rt)) {
+ 		err = PTR_ERR(rt);
+ 		if (err == -ENETUNREACH)
+-			IP_INC_STATS_BH(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
++			IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
+ 		goto out;
+ 	}
  
- 	  Say Y here to enable board reset and power off
- 
-+config POWER_RESET_AS3722
-+	bool "ams AS3722 power-off driver"
-+	depends on MFD_AS3722 && POWER_RESET
-+	help
-+	  This driver supports turning off board via a ams AS3722 power-off.
-+
- config POWER_RESET_GPIO
- 	bool "GPIO power-off driver"
- 	depends on OF_GPIO && POWER_RESET
-diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-index 3e6ed88..a5b4a77 100644
---- a/drivers/power/reset/Makefile
-+++ b/drivers/power/reset/Makefile
-@@ -1,3 +1,4 @@
-+obj-$(CONFIG_POWER_RESET_AS3722) += as3722-poweroff.o
- obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
- obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
- obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
-diff --git a/drivers/power/reset/as3722-poweroff.c b/drivers/power/reset/as3722-poweroff.c
-new file mode 100644
-index 0000000..6849711
---- /dev/null
-+++ b/drivers/power/reset/as3722-poweroff.c
-@@ -0,0 +1,96 @@
-+/*
-+ * Power off driver for ams AS3722 device.
-+ *
-+ * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
-+ *
-+ * Author: Laxman Dewangan <ldewangan@nvidia.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+#include <linux/mfd/as3722.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+
-+struct as3722_poweroff {
-+	struct device *dev;
-+	struct as3722 *as3722;
-+};
-+
-+static struct as3722_poweroff *as3722_pm_poweroff;
-+
-+static void as3722_pm_power_off(void)
-+{
-+	int ret;
-+
-+	if (!as3722_pm_poweroff) {
-+		pr_err("AS3722 poweroff is not initialised\n");
-+		return;
-+	}
-+
-+	ret = as3722_update_bits(as3722_pm_poweroff->as3722,
-+		AS3722_RESET_CONTROL_REG, AS3722_POWER_OFF, AS3722_POWER_OFF);
-+	if (ret < 0)
-+		dev_err(as3722_pm_poweroff->dev,
-+			"RESET_CONTROL_REG update failed, %d\n", ret);
-+}
-+
-+static int as3722_poweroff_probe(struct platform_device *pdev)
-+{
-+	struct as3722_poweroff *as3722_poweroff;
-+	struct device_node *np = pdev->dev.parent->of_node;
-+
-+	if (!np)
-+		return -EINVAL;
-+
-+	if (!of_property_read_bool(np, "ams,system-power-controller"))
-+		return 0;
-+
-+	as3722_poweroff = devm_kzalloc(&pdev->dev, sizeof(*as3722_poweroff),
-+				GFP_KERNEL);
-+	if (!as3722_poweroff)
-+		return -ENOMEM;
-+
-+	as3722_poweroff->as3722 = dev_get_drvdata(pdev->dev.parent);
-+	as3722_poweroff->dev = &pdev->dev;
-+	as3722_pm_poweroff = as3722_poweroff;
-+	if (!pm_power_off)
-+		pm_power_off = as3722_pm_power_off;
-+
-+	return 0;
-+}
-+
-+static int as3722_poweroff_remove(struct platform_device *pdev)
-+{
-+	if (pm_power_off == as3722_pm_power_off)
-+		pm_power_off = NULL;
-+	as3722_pm_poweroff = NULL;
-+
-+	return 0;
-+}
-+
-+static struct platform_driver as3722_poweroff_driver = {
-+	.driver = {
-+		.name = "as3722-power-off",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = as3722_poweroff_probe,
-+	.remove = as3722_poweroff_remove,
-+};
-+
-+module_platform_driver(as3722_poweroff_driver);
-+
-+MODULE_DESCRIPTION("Power off driver for ams AS3722 PMIC Device");
-+MODULE_ALIAS("platform:as3722-power-off");
-+MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
-+MODULE_LICENSE("GPL v2");
 -- 
-1.7.9.5
+1.8.3.2
 
