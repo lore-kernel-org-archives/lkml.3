@@ -1,222 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab3LSP7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:59:50 -0500
-Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:37638 "EHLO
-	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756143Ab3LSP7q (ORCPT
+	id S1756207Ab3LSQA3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:00:29 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:42121 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866Ab3LSQA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:59:46 -0500
-Message-Id: <20131219155034.661090897@linux.com>
-Date: Thu, 19 Dec 2013 09:50:52 -0600
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>
-Subject: [PATCH 37/40] alpha: Replace __get_cpu_var
-References: <20131219155015.443763038@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_alpha
+	Thu, 19 Dec 2013 11:00:27 -0500
+Date: Thu, 19 Dec 2013 08:00:21 -0800
+From: josh@joshtriplett.org
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 4/7] drivers: usb: Include appropriate header file in
+ pci-quirks.c
+Message-ID: <20131219160021.GA1658@cloud>
+References: <e0ff2366ddbd62f75e8597008b1f3f9001224ad6.1387439261.git.rashika.kheria@gmail.com>
+ <Pine.LNX.4.44L0.1312191047440.984-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <Pine.LNX.4.44L0.1312191047440.984-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of
-them is address calculation via the form &__get_cpu_var(x).  This calculates
-the address for the instance of the percpu variable of the current processor
-based on an offset.
+On Thu, Dec 19, 2013 at 10:51:50AM -0500, Alan Stern wrote:
+> On Thu, 19 Dec 2013, Rashika Kheria wrote:
+> 
+> > Include header file include/linux/usb/hcd.h in host/pci-quirks.c because
+> > function usb_hcd_amd_remote_wakeup_quirk() has its prototype declaration
+> > in include/linux/usb/hcd.h.
+> > 
+> > This eliminates the following warning in host/pci-quirks.c:
+> > drivers/usb/host/pci-quirks.c:253:5: warning: no previous prototype for ‘usb_hcd_amd_remote_wakeup_quirk’ [-Wmissing-prototypes]
+> 
+> Since when does the compiler complain about functions with no 
+> prototype?
 
-Other use cases are for storing and retrieving data from the current
-processors percpu area.  __get_cpu_var() can be used as an lvalue when
-writing data or on the right side of an assignment.
+Sparse has warned about this for years, and GCC warns about it (for
+functions only, not data) when given -Wmissing-prototypes, which it does
+with "make W=1".  The intent is to call attention to functions that may
+need to be marked static or removed, and to require inclusion of an
+appropriate header for non-static functions, which then allows the
+compiler to ensure that the prototype matches the definition.
 
-__get_cpu_var() is defined as :
+> In any case, I think it would make more sense to move the prototype 
+> declaration into drivers/usb/host/pci-quirks.h, and have 
+> drivers/usb/core/hcd-pci.c include that file.  After all, it's 
+> perfectly reasonable for hcd-pci to want to know about the quirks of 
+> various PCI-based controllers, but it's not reasonable for pci-quirks.c 
+> to need to know about the details of HCDs.
 
+Sounds reasonable.
 
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
-
-
-
-__get_cpu_var() always only does an address determination. However, store
-and retrieve operations could use a segment prefix (or global register on
-other platforms) to avoid the address calculation.
-
-this_cpu_write() and this_cpu_read() can directly take an offset into a
-percpu area and use optimized assembly code to read and write per cpu
-variables.
-
-
-This patch converts __get_cpu_var into either an explicit address
-calculation using this_cpu_ptr() or into a use of this_cpu operations that
-use the offset.  Thereby address calculations are avoided and less registers
-are used when code is generated.
-
-At the end of the patch set all uses of __get_cpu_var have been removed so
-the macro is removed too.
-
-The patch set includes passes over all arches as well. Once these operations
-are used throughout then specialized macros can be defined in non -x86
-arches as well in order to optimize per cpu access by f.e.  using a global
-register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu
-variable.
-
-	DEFINE_PER_CPU(int, y);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(&x, this_cpu_ptr(&y), sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	this_cpu_inc(y)
-
-Cc: Richard Henderson <rth@twiddle.net>
-CC: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/arch/alpha/kernel/perf_event.c
-===================================================================
---- linux.orig/arch/alpha/kernel/perf_event.c	2013-12-02 16:08:01.194316776 -0600
-+++ linux/arch/alpha/kernel/perf_event.c	2013-12-02 16:08:01.194316776 -0600
-@@ -431,7 +431,7 @@ static void maybe_change_configuration(s
-  */
- static int alpha_pmu_add(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int n0;
- 	int ret;
-@@ -483,7 +483,7 @@ static int alpha_pmu_add(struct perf_eve
-  */
- static void alpha_pmu_del(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	unsigned long irq_flags;
- 	int j;
-@@ -531,7 +531,7 @@ static void alpha_pmu_read(struct perf_e
- static void alpha_pmu_stop(struct perf_event *event, int flags)
- {
- 	struct hw_perf_event *hwc = &event->hw;
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (!(hwc->state & PERF_HES_STOPPED)) {
- 		cpuc->idx_mask &= ~(1UL<<hwc->idx);
-@@ -551,7 +551,7 @@ static void alpha_pmu_stop(struct perf_e
- static void alpha_pmu_start(struct perf_event *event, int flags)
- {
- 	struct hw_perf_event *hwc = &event->hw;
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (WARN_ON_ONCE(!(hwc->state & PERF_HES_STOPPED)))
- 		return;
-@@ -724,7 +724,7 @@ static int alpha_pmu_event_init(struct p
-  */
- static void alpha_pmu_enable(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (cpuc->enabled)
- 		return;
-@@ -750,7 +750,7 @@ static void alpha_pmu_enable(struct pmu
- 
- static void alpha_pmu_disable(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (!cpuc->enabled)
- 		return;
-@@ -815,7 +815,7 @@ static void alpha_perf_event_irq_handler
- 	int idx, j;
- 
- 	__this_cpu_inc(irq_pmi_count);
--	cpuc = &__get_cpu_var(cpu_hw_events);
-+	cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	/* Completely counting through the PMC's period to trigger a new PMC
- 	 * overflow interrupt while in this interrupt routine is utterly
-Index: linux/arch/alpha/kernel/time.c
-===================================================================
---- linux.orig/arch/alpha/kernel/time.c	2013-12-02 16:08:01.194316776 -0600
-+++ linux/arch/alpha/kernel/time.c	2013-12-02 16:08:01.194316776 -0600
-@@ -56,9 +56,9 @@ unsigned long est_cycle_freq;
- 
- DEFINE_PER_CPU(u8, irq_work_pending);
- 
--#define set_irq_work_pending_flag()  __get_cpu_var(irq_work_pending) = 1
--#define test_irq_work_pending()      __get_cpu_var(irq_work_pending)
--#define clear_irq_work_pending()     __get_cpu_var(irq_work_pending) = 0
-+#define set_irq_work_pending_flag()  __this_cpu_write(irq_work_pending, 1)
-+#define test_irq_work_pending()      __this_cpu_read(irq_work_pending)
-+#define clear_irq_work_pending()     __this_cpu_writeirq_work_pending, 0)
- 
- void arch_irq_work_raise(void)
- {
-
+- Josh Triplett
