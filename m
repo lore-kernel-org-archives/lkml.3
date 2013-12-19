@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab3LSMsS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:48:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44805 "EHLO
+	id S1752872Ab3LSL63 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:58:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45040 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754786Ab3LSL5S (ORCPT
+	with ESMTP id S1752165Ab3LSL6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:18 -0500
+	Thu, 19 Dec 2013 06:58:24 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 082/208] vfs: fix subtle use-after-free of pipe_inode_info
-Date: Thu, 19 Dec 2013 11:53:00 +0000
-Message-Id: <1387454106-19326-83-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 128/208] usb: dwc3: fix implementation of endpoint wedge
+Date: Thu, 19 Dec 2013 11:53:46 +0000
+Message-Id: <1387454106-19326-129-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,135 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit b0d8d2292160bb63de1972361ebed100c64b5b37 upstream.
+commit a535d81c92615b8ffb99b7e1fd1fb01effaed1af upstream.
 
-The pipe code was trying (and failing) to be very careful about freeing
-the pipe info only after the last access, with a pattern like:
+The dwc3 UDC driver doesn't implement endpoint wedging correctly.
+When an endpoint is wedged, the gadget driver should be allowed to
+clear the wedge by calling usb_ep_clear_halt().  Only the host is
+prevented from resetting the endpoint.
 
-        spin_lock(&inode->i_lock);
-        if (!--pipe->files) {
-                inode->i_pipe = NULL;
-                kill = 1;
-        }
-        spin_unlock(&inode->i_lock);
-        __pipe_unlock(pipe);
-        if (kill)
-                free_pipe_info(pipe);
+This patch fixes the implementation.
 
-where the final freeing is done last.
-
-HOWEVER.  The above is actually broken, because while the freeing is
-done at the end, if we have two racing processes releasing the pipe
-inode info, the one that *doesn't* free it will decrement the ->files
-count, and unlock the inode i_lock, but then still use the
-"pipe_inode_info" afterwards when it does the "__pipe_unlock(pipe)".
-
-This is *very* hard to trigger in practice, since the race window is
-very small, and adding debug options seems to just hide it by slowing
-things down.
-
-Simon originally reported this way back in July as an Oops in
-kmem_cache_allocate due to a single bit corruption (due to the final
-"spin_unlock(pipe->mutex.wait_lock)" incrementing a field in a different
-allocation that had re-used the free'd pipe-info), it's taken this long
-to figure out.
-
-Since the 'pipe->files' accesses aren't even protected by the pipe lock
-(we very much use the inode lock for that), the simple solution is to
-just drop the pipe lock early.  And since there were two users of this
-pattern, create a helper function for it.
-
-Introduced commit ba5bb147330a ("pipe: take allocation and freeing of
-pipe_inode_info out of ->i_mutex").
-
-Reported-by: Simon Kirby <sim@hostway.ca>
-Reported-by: Ian Applegate <ia@cloudflare.com>
-Acked-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Pratyush Anand <pratyush.anand@st.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/pipe.c | 39 +++++++++++++++++++--------------------
- 1 file changed, 19 insertions(+), 20 deletions(-)
+ drivers/usb/dwc3/ep0.c    | 2 ++
+ drivers/usb/dwc3/gadget.c | 5 +----
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/fs/pipe.c b/fs/pipe.c
-index d2c45e1..0e0752e 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -726,11 +726,25 @@ pipe_poll(struct file *filp, poll_table *wait)
- 	return mask;
- }
- 
-+static void put_pipe_info(struct inode *inode, struct pipe_inode_info *pipe)
-+{
-+	int kill = 0;
-+
-+	spin_lock(&inode->i_lock);
-+	if (!--pipe->files) {
-+		inode->i_pipe = NULL;
-+		kill = 1;
-+	}
-+	spin_unlock(&inode->i_lock);
-+
-+	if (kill)
-+		free_pipe_info(pipe);
-+}
-+
- static int
- pipe_release(struct inode *inode, struct file *file)
- {
--	struct pipe_inode_info *pipe = inode->i_pipe;
--	int kill = 0;
-+	struct pipe_inode_info *pipe = file->private_data;
- 
- 	__pipe_lock(pipe);
- 	if (file->f_mode & FMODE_READ)
-@@ -743,17 +757,9 @@ pipe_release(struct inode *inode, struct file *file)
- 		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
- 		kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
- 	}
--	spin_lock(&inode->i_lock);
--	if (!--pipe->files) {
--		inode->i_pipe = NULL;
--		kill = 1;
--	}
--	spin_unlock(&inode->i_lock);
- 	__pipe_unlock(pipe);
- 
--	if (kill)
--		free_pipe_info(pipe);
+diff --git a/drivers/usb/dwc3/ep0.c b/drivers/usb/dwc3/ep0.c
+index 5acbb94..3cea676 100644
+--- a/drivers/usb/dwc3/ep0.c
++++ b/drivers/usb/dwc3/ep0.c
+@@ -478,6 +478,8 @@ static int dwc3_ep0_handle_feature(struct dwc3 *dwc,
+ 			dep = dwc3_wIndex_to_dep(dwc, wIndex);
+ 			if (!dep)
+ 				return -EINVAL;
++			if (set == 0 && (dep->flags & DWC3_EP_WEDGE))
++				break;
+ 			ret = __dwc3_gadget_ep_set_halt(dep, set);
+ 			if (ret)
+ 				return -EINVAL;
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index 14d28d6..69948ad 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -1220,9 +1220,6 @@ int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value)
+ 		else
+ 			dep->flags |= DWC3_EP_STALL;
+ 	} else {
+-		if (dep->flags & DWC3_EP_WEDGE)
+-			return 0;
 -
-+	put_pipe_info(inode, pipe);
- 	return 0;
- }
+ 		ret = dwc3_send_gadget_ep_cmd(dwc, dep->number,
+ 			DWC3_DEPCMD_CLEARSTALL, &params);
+ 		if (ret)
+@@ -1230,7 +1227,7 @@ int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value)
+ 					value ? "set" : "clear",
+ 					dep->name);
+ 		else
+-			dep->flags &= ~DWC3_EP_STALL;
++			dep->flags &= ~(DWC3_EP_STALL | DWC3_EP_WEDGE);
+ 	}
  
-@@ -1014,7 +1020,6 @@ static int fifo_open(struct inode *inode, struct file *filp)
- {
- 	struct pipe_inode_info *pipe;
- 	bool is_pipe = inode->i_sb->s_magic == PIPEFS_MAGIC;
--	int kill = 0;
- 	int ret;
- 
- 	filp->f_version = 0;
-@@ -1130,15 +1135,9 @@ err_wr:
- 	goto err;
- 
- err:
--	spin_lock(&inode->i_lock);
--	if (!--pipe->files) {
--		inode->i_pipe = NULL;
--		kill = 1;
--	}
--	spin_unlock(&inode->i_lock);
- 	__pipe_unlock(pipe);
--	if (kill)
--		free_pipe_info(pipe);
-+
-+	put_pipe_info(inode, pipe);
  	return ret;
- }
- 
 -- 
 1.8.3.2
 
