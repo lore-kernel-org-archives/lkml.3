@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab3LSPE2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:04:28 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:54486 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667Ab3LSPEW (ORCPT
+	id S1754522Ab3LSOXf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:23:35 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61595 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754917Ab3LSOXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:04:22 -0500
-From: Levente Kurusa <levex@linux.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Levente Kurusa <levex@linux.com>, Sascha Hauer <kernel@pengutronix.de>,
+	Thu, 19 Dec 2013 09:23:30 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>
+Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>,
         Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 09/38] arm: mach-imx: add missing put_device calls
-Date: Thu, 19 Dec 2013 16:03:20 +0100
-Message-Id: <1387465429-3568-10-git-send-email-levex@linux.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1387465429-3568-2-git-send-email-levex@linux.com>
-References: <1387465429-3568-2-git-send-email-levex@linux.com>
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: [PATCH v8 4/9] usb: gadget: s3c-hsotg: add snps,dwc2 compatible string
+Date: Thu, 19 Dec 2013 09:23:05 -0500
+Message-Id: <1387462990-12039-5-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1387462990-12039-1-git-send-email-mporter@linaro.org>
+References: <1387462990-12039-1-git-send-email-mporter@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is required so that we give up the last reference to the device.
+Enable support for the dwc2 binding.
 
-Signed-off-by: Levente Kurusa <levex@linux.com>
+Signed-off-by: Matt Porter <mporter@linaro.org>
 ---
- arch/arm/mach-imx/devices/devices.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/s3c-hsotg.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/mach-imx/devices/devices.c b/arch/arm/mach-imx/devices/devices.c
-index 1b4366a..0b17c89 100644
---- a/arch/arm/mach-imx/devices/devices.c
-+++ b/arch/arm/mach-imx/devices/devices.c
-@@ -37,11 +37,14 @@ int __init mxc_device_init(void)
- 	int ret;
- 
- 	ret = device_register(&mxc_aips_bus);
--	if (ret < 0)
-+	if (ret < 0) {
-+		put_device(&mxc_aips_bus);
- 		goto done;
-+	}
- 
- 	ret = device_register(&mxc_ahb_bus);
--
-+	if(ret < 0)
-+		put_device(&mxc_ahb_bus);
- done:
- 	return ret;
- }
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index db797f2..cbfbf41 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -3726,6 +3726,7 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
+ #ifdef CONFIG_OF
+ static const struct of_device_id s3c_hsotg_of_ids[] = {
+ 	{ .compatible = "samsung,s3c6400-hsotg", },
++	{ .compatible = "snps,dwc2", },
+ 	{ /* sentinel */ }
+ };
+ MODULE_DEVICE_TABLE(of, s3c_hsotg_of_ids);
 -- 
-1.8.3.1
+1.8.4
 
