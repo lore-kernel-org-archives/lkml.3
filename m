@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab3LSH5c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 02:57:32 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:59662 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407Ab3LSH5a convert rfc822-to-8bit (ORCPT
+	id S1752446Ab3LSIBB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 03:01:01 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64087 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab3LSIA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 02:57:30 -0500
-Content-Type: text/plain; charset="utf-8"
+	Thu, 19 Dec 2013 03:00:58 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "Boris BREZILLON" <b.brezillon@overkiz.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <52B01A50.4080209@atmel.com>
-Cc: "Fengguang Wu" <fengguang.wu@intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1387229127-7605-1-git-send-email-b.brezillon@overkiz.com>
- <52B01A50.4080209@atmel.com>
-Message-ID: <20131219075725.18119.80803@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH] clk: at91: fix pmc_clk_ids data type attriubte
-Date: Wed, 18 Dec 2013 23:57:25 -0800
+In-Reply-To: <52B29B2F.7050909@parallels.com>
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
+	<afc6d5e85d805c7313e928497b4ebcf1815703dd.1387372122.git.vdavydov@parallels.com>
+	<20131218174105.GE31080@dhcp22.suse.cz>
+	<52B29B2F.7050909@parallels.com>
+Date: Thu, 19 Dec 2013 12:00:58 +0400
+Message-ID: <CAA6-i6r=hW+Y2+kdKME=GTWN6sCbi37kh4sX5dT3AKkatpQzGg@mail.gmail.com>
+Subject: Re: [PATCH 4/6] memcg, slab: check and init memcg_cahes under slab_mutex
+From: Glauber Costa <glommer@gmail.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Nicolas Ferre (2013-12-17 01:33:04)
-> On 16/12/2013 22:25, Boris BREZILLON :
-> > Fix pmc_clk_ids data type attribute (__initdata -> __initconst).
-> > 
-> > Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> > Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> 
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> 
-> I take it in at91-3.14-cleanup2 branch and send it upstream through
-> arm-soc like any other CCF material for AT91 for the 3.14 release.
-> 
-> I guess that even without Mike Acked-by, this little fix can follow this
-> path.
+On Thu, Dec 19, 2013 at 11:07 AM, Vladimir Davydov
+<vdavydov@parallels.com> wrote:
+> On 12/18/2013 09:41 PM, Michal Hocko wrote:
+>> On Wed 18-12-13 17:16:55, Vladimir Davydov wrote:
+>>> The memcg_params::memcg_caches array can be updated concurrently from
+>>> memcg_update_cache_size() and memcg_create_kmem_cache(). Although both
+>>> of these functions take the slab_mutex during their operation, the
+>>> latter checks if memcg's cache has already been allocated w/o taking the
+>>> mutex. This can result in a race as described below.
+>>>
+>>> Asume two threads schedule kmem_cache creation works for the same
+>>> kmem_cache of the same memcg from __memcg_kmem_get_cache(). One of the
+>>> works successfully creates it. Another work should fail then, but if it
+>>> interleaves with memcg_update_cache_size() as follows, it does not:
+>> I am not sure I understand the race. memcg_update_cache_size is called
+>> when we start accounting a new memcg or a child is created and it
+>> inherits accounting from the parent. memcg_create_kmem_cache is called
+>> when a new cache is first allocated from, right?
+>
+> memcg_update_cache_size() is called when kmem accounting is activated
+> for a memcg, no matter how.
+>
+> memcg_create_kmem_cache() is scheduled from __memcg_kmem_get_cache().
+> It's OK to have a bunch of such methods trying to create the same memcg
+> cache concurrently, but only one of them should succeed.
+>
+>> Why cannot we simply take slab_mutex inside memcg_create_kmem_cache?
+>> it is running from the workqueue context so it should clash with other
+>> locks.
+>
+> Hmm, Glauber's code never takes the slab_mutex inside memcontrol.c. I
+> have always been wondering why, because it could simplify flow paths
+> significantly (e.g. update_cache_sizes() -> update_all_caches() ->
+> update_cache_size() - from memcontrol.c to slab_common.c and back again
+> just to take the mutex).
+>
 
-I can take it into the clk tree if you prefer.
-
-Regards,
-Mike
-
-> 
-> Bye,
-> 
-> > ---
-> >  drivers/clk/at91/pmc.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
-> > index 7b9db60..4c03eda 100644
-> > --- a/drivers/clk/at91/pmc.c
-> > +++ b/drivers/clk/at91/pmc.c
-> > @@ -228,7 +228,7 @@ out_free_pmc:
-> >       return NULL;
-> >  }
-> >  
-> > -static const struct of_device_id pmc_clk_ids[] __initdata = {
-> > +static const struct of_device_id pmc_clk_ids[] __initconst = {
-> >       /* Main clock */
-> >       {
-> >               .compatible = "atmel,at91rm9200-clk-main",
-> > 
-> 
-> 
-> -- 
-> Nicolas Ferre
+Because that is a layering violation and exposes implementation
+details of the slab to
+the outside world. I agree this would make things a lot simpler, but
+please check with Christoph
+if this is acceptable before going forward.
