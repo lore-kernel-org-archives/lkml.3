@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab3LSSWf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:22:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44411 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814Ab3LSSWe (ORCPT
+	id S1755970Ab3LSSWp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:22:45 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:62518 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755938Ab3LSSWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:22:34 -0500
-Date: Thu, 19 Dec 2013 10:22:36 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Matthias Beyer <mail@beyermatthias.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Hans de Goede <hdegoede@redhat.com>, linux-usb@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: Re: [PATCH 1/7] drivers: usb: Include appropriate header file in
- hcd.c
-Message-ID: <20131219182236.GA6253@kroah.com>
-References: <0e0e74b4487edd341b66674333d734d5828c7e64.1387439261.git.rashika.kheria@gmail.com>
+	Thu, 19 Dec 2013 13:22:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <0e0e74b4487edd341b66674333d734d5828c7e64.1387439261.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1387456702-4709-4-git-send-email-jiang.liu@linux.intel.com>
+References: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com> <1387456702-4709-4-git-send-email-jiang.liu@linux.intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 19 Dec 2013 11:22:22 -0700
+Message-ID: <CAErSpo4oKsJCKxUhxT8E745BkX+veOD-tMEeHULHOuH-3suMRA@mail.gmail.com>
+Subject: Re: [Patch v2 03/13] PCI, pci-label: release allocated ACPI object on
+ error recovery path
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Lv Zheng <lv.zheng@intel.com>, Len Brown <lenb@kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 03:36:00PM +0530, Rashika Kheria wrote:
-> Include appropriate header file include/linux/usb/otg.h in core/hcd.c
-> because function usb_bus_start_enum() has its prototype declaration in
-> include/linux/usb/otg.h.
-> 
-> This eliminates the following warning in core/hcd.c:
-> drivers/usb/core/hcd.c:2295:5: warning: no previous prototype for ‘usb_bus_start_enum’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+On Thu, Dec 19, 2013 at 5:38 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+> Function dsm_get_label() leaks the returned ACPI object if
+> obj->package.count is not 2, so fix the possible memory leak.
+>
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+
+Rafael, if you want to take these through your tree, feel free.  I'm
+guessing it probably makes sense to keep the whole series together.
+
 > ---
->  drivers/usb/core/hcd.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-> index 6bffb8c..077be7c 100644
-> --- a/drivers/usb/core/hcd.c
-> +++ b/drivers/usb/core/hcd.c
-> @@ -44,6 +44,7 @@
->  
->  #include <linux/usb.h>
->  #include <linux/usb/hcd.h>
-> +#include <linux/usb/otg.h>
-
-This patch fails to apply to my usb-next branch of my usb.git tree, so I
-can't accept it.
-
-Can you refresh it against that branch and resend it please?
-
-thanks,
-
-greg k-h
+>  drivers/pci/pci-label.c |   12 ++++--------
+>  1 file changed, 4 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/pci/pci-label.c b/drivers/pci/pci-label.c
+> index d51f45a..f6e01a5 100644
+> --- a/drivers/pci/pci-label.c
+> +++ b/drivers/pci/pci-label.c
+> @@ -233,11 +233,7 @@ dsm_get_label(acpi_handle handle, int func,
+>                 return -1;
+>
+>         obj = (union acpi_object *)output->pointer;
+> -
+> -       switch (obj->type) {
+> -       case ACPI_TYPE_PACKAGE:
+> -               if (obj->package.count != 2)
+> -                       break;
+> +       if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 2) {
+>                 len = obj->package.elements[0].integer.value;
+>                 if (buf) {
+>                         if (attribute == ACPI_ATTR_INDEX_SHOW)
+> @@ -250,10 +246,10 @@ dsm_get_label(acpi_handle handle, int func,
+>                 }
+>                 kfree(output->pointer);
+>                 return len;
+> -       break;
+> -       default:
+> -               kfree(output->pointer);
+>         }
+> +
+> +       kfree(output->pointer);
+> +
+>         return -1;
+>  }
+>
+> --
+> 1.7.10.4
+>
