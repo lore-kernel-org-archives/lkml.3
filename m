@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab3LSOXf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:23:35 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:61595 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754917Ab3LSOXa (ORCPT
+	id S1754099Ab3LSL4H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:56:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44514 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752859Ab3LSL4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:23:30 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>
-Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: [PATCH v8 4/9] usb: gadget: s3c-hsotg: add snps,dwc2 compatible string
-Date: Thu, 19 Dec 2013 09:23:05 -0500
-Message-Id: <1387462990-12039-5-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1387462990-12039-1-git-send-email-mporter@linaro.org>
-References: <1387462990-12039-1-git-send-email-mporter@linaro.org>
+	Thu, 19 Dec 2013 06:56:02 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Fan Du <fan.du@windriver.com>, "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 029/208] xfrm: Release dst if this dst is improper for vti tunnel
+Date: Thu, 19 Dec 2013 11:52:07 +0000
+Message-Id: <1387454106-19326-30-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable support for the dwc2 binding.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Matt Porter <mporter@linaro.org>
+------------------
+
+From: "fan.du" <fan.du@windriver.com>
+
+commit 236c9f84868534c718b6889aa624de64763281f9 upstream.
+
+After searching rt by the vti tunnel dst/src parameter,
+if this rt has neither attached to any transformation
+nor the transformation is not tunnel oriented, this rt
+should be released back to ip layer.
+
+otherwise causing dst memory leakage.
+
+Signed-off-by: Fan Du <fan.du@windriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/gadget/s3c-hsotg.c | 1 +
+ net/ipv4/ip_vti.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index db797f2..cbfbf41 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -3726,6 +3726,7 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
- #ifdef CONFIG_OF
- static const struct of_device_id s3c_hsotg_of_ids[] = {
- 	{ .compatible = "samsung,s3c6400-hsotg", },
-+	{ .compatible = "snps,dwc2", },
- 	{ /* sentinel */ }
- };
- MODULE_DEVICE_TABLE(of, s3c_hsotg_of_ids);
+diff --git a/net/ipv4/ip_vti.c b/net/ipv4/ip_vti.c
+index 0656041..feb19db 100644
+--- a/net/ipv4/ip_vti.c
++++ b/net/ipv4/ip_vti.c
+@@ -350,6 +350,7 @@ static netdev_tx_t vti_tunnel_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	if (!rt->dst.xfrm ||
+ 	    rt->dst.xfrm->props.mode != XFRM_MODE_TUNNEL) {
+ 		dev->stats.tx_carrier_errors++;
++		ip_rt_put(rt);
+ 		goto tx_error_icmp;
+ 	}
+ 	tdev = rt->dst.dev;
 -- 
-1.8.4
+1.8.3.2
 
