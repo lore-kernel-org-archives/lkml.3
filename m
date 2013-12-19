@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320Ab3LSMbJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:31:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44974 "EHLO
+	id S1753961Ab3LSMBU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:01:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45435 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353Ab3LSL6D (ORCPT
+	with ESMTP id S1756201Ab3LSMAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:03 -0500
+	Thu, 19 Dec 2013 07:00:19 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Jim Quinlan <jim2101024@gmail.com>, linux-mips@linux-mips.org,
+        cernekee@gmail.com, Ralf Baechle <ralf@linux-mips.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 114/208] NFSv4 wait on recovery for async session errors
-Date: Thu, 19 Dec 2013 11:53:32 +0000
-Message-Id: <1387454106-19326-115-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 206/208] MIPS: DMA: For BMIPS5000 cores flush region just like non-coherent R10000
+Date: Thu, 19 Dec 2013 11:55:04 +0000
+Message-Id: <1387454106-19326-207-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,76 +28,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Adamson <andros@netapp.com>
+From: Jim Quinlan <jim2101024@gmail.com>
 
-commit 4a82fd7c4e78a1b7a224f9ae8bb7e1fd95f670e0 upstream.
+commit f86f55d3ad21b21b736bdeb29bee0f0937b77138 upstream.
 
-When the state manager is processing the NFS4CLNT_DELEGRETURN flag, session
-draining is off, but DELEGRETURN can still get a session error.
-The async handler calls nfs4_schedule_session_recovery returns -EAGAIN, and
-the DELEGRETURN done then restarts the RPC task in the prepare state.
-With the state manager still processing the NFS4CLNT_DELEGRETURN flag with
-session draining off, these DELEGRETURNs will cycle with errors filling up the
-session slots.
+The BMIPS5000 (Zephyr) processor utilizes instruction speculation. A
+stale misprediction address in either the JTB or the CRS may trigger
+a prefetch inside a region that is currently being used by a DMA engine,
+which is not IO-coherent.  This prefetch will fetch a line into the
+scache, and that line will soon become stale (ie wrong) during/after the
+DMA.  Mayhem ensues.
 
-This prevents OPEN reclaims (from nfs_delegation_claim_opens) required by the
-NFS4CLNT_DELEGRETURN state manager processing from completing, hanging the
-state manager in the __rpc_wait_for_completion_task in nfs4_run_open_task
-as seen in this kernel thread dump:
+In dma-default.c, the r10000 is handled as a special case in the same way
+that we want to handle Zephyr.  So we generalize the exception cases into
+a function, and include Zephyr as one of the processors that needs this
+special care.
 
-kernel: 4.12.32.53-ma D 0000000000000000     0  3393      2 0x00000000
-kernel: ffff88013995fb60 0000000000000046 ffff880138cc5400 ffff88013a9df140
-kernel: ffff8800000265c0 ffffffff8116eef0 ffff88013fc10080 0000000300000001
-kernel: ffff88013a4ad058 ffff88013995ffd8 000000000000fbc8 ffff88013a4ad058
-kernel: Call Trace:
-kernel: [<ffffffff8116eef0>] ? cache_alloc_refill+0x1c0/0x240
-kernel: [<ffffffffa0358110>] ? rpc_wait_bit_killable+0x0/0xa0 [sunrpc]
-kernel: [<ffffffffa0358152>] rpc_wait_bit_killable+0x42/0xa0 [sunrpc]
-kernel: [<ffffffff8152914f>] __wait_on_bit+0x5f/0x90
-kernel: [<ffffffffa0358110>] ? rpc_wait_bit_killable+0x0/0xa0 [sunrpc]
-kernel: [<ffffffff815291f8>] out_of_line_wait_on_bit+0x78/0x90
-kernel: [<ffffffff8109b520>] ? wake_bit_function+0x0/0x50
-kernel: [<ffffffffa035810d>] __rpc_wait_for_completion_task+0x2d/0x30 [sunrpc]
-kernel: [<ffffffffa040d44c>] nfs4_run_open_task+0x11c/0x160 [nfs]
-kernel: [<ffffffffa04114e7>] nfs4_open_recover_helper+0x87/0x120 [nfs]
-kernel: [<ffffffffa0411646>] nfs4_open_recover+0xc6/0x150 [nfs]
-kernel: [<ffffffffa040cc6f>] ? nfs4_open_recoverdata_alloc+0x2f/0x60 [nfs]
-kernel: [<ffffffffa0414e1a>] nfs4_open_delegation_recall+0x6a/0xa0 [nfs]
-kernel: [<ffffffffa0424020>] nfs_end_delegation_return+0x120/0x2e0 [nfs]
-kernel: [<ffffffff8109580f>] ? queue_work+0x1f/0x30
-kernel: [<ffffffffa0424347>] nfs_client_return_marked_delegations+0xd7/0x110 [nfs]
-kernel: [<ffffffffa04225d8>] nfs4_run_state_manager+0x548/0x620 [nfs]
-kernel: [<ffffffffa0422090>] ? nfs4_run_state_manager+0x0/0x620 [nfs]
-kernel: [<ffffffff8109b0f6>] kthread+0x96/0xa0
-kernel: [<ffffffff8100c20a>] child_rip+0xa/0x20
-kernel: [<ffffffff8109b060>] ? kthread+0x0/0xa0
-kernel: [<ffffffff8100c200>] ? child_rip+0x0/0x20
-
-The state manager can not therefore process the DELEGRETURN session errors.
-Change the async handler to wait for recovery on session errors.
-
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-[ luis: backport to 3.11: used Andy's backport to 3.12 ]
+Signed-off-by: Jim Quinlan <jim2101024@gmail.com>
+Cc: linux-mips@linux-mips.org
+Cc: cernekee@gmail.com
+Patchwork: https://patchwork.linux-mips.org/patch/5776/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfs/nfs4proc.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/mips/mm/dma-default.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 412e800..a1e1f2f 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4589,8 +4589,7 @@ nfs4_async_handle_error(struct rpc_task *task, const struct nfs_server *server,
- 			dprintk("%s ERROR %d, Reset session\n", __func__,
- 				task->tk_status);
- 			nfs4_schedule_session_recovery(clp->cl_session, task->tk_status);
--			task->tk_status = 0;
--			return -EAGAIN;
-+			goto wait_on_recovery;
- #endif /* CONFIG_NFS_V4_1 */
- 		case -NFS4ERR_DELAY:
- 			nfs_inc_server_stats(server, NFSIOS_DELAY);
+diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+index aaccf1c..468f7f9 100644
+--- a/arch/mips/mm/dma-default.c
++++ b/arch/mips/mm/dma-default.c
+@@ -50,16 +50,20 @@ static inline struct page *dma_addr_to_page(struct device *dev,
+ }
+ 
+ /*
++ * The affected CPUs below in 'cpu_needs_post_dma_flush()' can
++ * speculatively fill random cachelines with stale data at any time,
++ * requiring an extra flush post-DMA.
++ *
+  * Warning on the terminology - Linux calls an uncached area coherent;
+  * MIPS terminology calls memory areas with hardware maintained coherency
+  * coherent.
+  */
+-
+-static inline int cpu_is_noncoherent_r10000(struct device *dev)
++static inline int cpu_needs_post_dma_flush(struct device *dev)
+ {
+ 	return !plat_device_is_coherent(dev) &&
+ 	       (current_cpu_type() == CPU_R10000 ||
+-	       current_cpu_type() == CPU_R12000);
++		current_cpu_type() == CPU_R12000 ||
++		current_cpu_type() == CPU_BMIPS5000);
+ }
+ 
+ static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
+@@ -230,7 +234,7 @@ static inline void __dma_sync(struct page *page,
+ static void mips_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
+ 	size_t size, enum dma_data_direction direction, struct dma_attrs *attrs)
+ {
+-	if (cpu_is_noncoherent_r10000(dev))
++	if (cpu_needs_post_dma_flush(dev))
+ 		__dma_sync(dma_addr_to_page(dev, dma_addr),
+ 			   dma_addr & ~PAGE_MASK, size, direction);
+ 
+@@ -284,7 +288,7 @@ static void mips_dma_unmap_sg(struct device *dev, struct scatterlist *sg,
+ static void mips_dma_sync_single_for_cpu(struct device *dev,
+ 	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction)
+ {
+-	if (cpu_is_noncoherent_r10000(dev))
++	if (cpu_needs_post_dma_flush(dev))
+ 		__dma_sync(dma_addr_to_page(dev, dma_handle),
+ 			   dma_handle & ~PAGE_MASK, size, direction);
+ }
+@@ -305,7 +309,7 @@ static void mips_dma_sync_sg_for_cpu(struct device *dev,
+ 
+ 	/* Make sure that gcc doesn't leave the empty loop body.  */
+ 	for (i = 0; i < nelems; i++, sg++) {
+-		if (cpu_is_noncoherent_r10000(dev))
++		if (cpu_needs_post_dma_flush(dev))
+ 			__dma_sync(sg_page(sg), sg->offset, sg->length,
+ 				   direction);
+ 	}
 -- 
 1.8.3.2
 
