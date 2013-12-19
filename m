@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309Ab3LSOSi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:18:38 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:15541 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751525Ab3LSOSh (ORCPT
+	id S1756981Ab3LSMdH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:33:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44955 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755183Ab3LSL56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:18:37 -0500
-Date: Thu, 19 Dec 2013 09:18:30 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 10/17] tracing/probes: Move 'symbol' fetch method to
- kprobes
-Message-ID: <20131219091830.5719b195@gandalf.local.home>
-In-Reply-To: <87d2ktfg5q.fsf@sejong.aot.lge.com>
-References: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
-	<1387168336-13213-11-git-send-email-namhyung@kernel.org>
-	<20131218152338.56c10937@gandalf.local.home>
-	<87d2ktfg5q.fsf@sejong.aot.lge.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Thu, 19 Dec 2013 06:57:58 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tomas Winkler <tomas.winkler@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 110/208] mei: add 9 series PCH mei device ids
+Date: Thu, 19 Dec 2013 11:53:28 +0000
+Message-Id: <1387454106-19326-111-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Dec 2013 16:34:09 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-> Hi Steve,
-> 
-> On Wed, 18 Dec 2013 15:23:38 -0500, Steven Rostedt wrote:
-> > On Mon, 16 Dec 2013 13:32:09 +0900
-> > Namhyung Kim <namhyung@kernel.org> wrote:
-> >
-> >> index 5395d37e5e72..adc9ac70fd3c 100644
-> >> --- a/kernel/trace/trace_uprobe.c
-> >> +++ b/kernel/trace/trace_uprobe.c
-> >> @@ -115,6 +115,14 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
-> >>  #define fetch_stack_string_size	NULL
-> >>  
-> >>  
-> >> +/* uprobes don't support symbol fetch methods */
-> >
-> > "uprobes does not support symbol fetch methods"
-> 
-> I was confused since the "uprobes" looks like a plural..
-> 
+------------------
 
-Heh, yeah I guess it can be. I was thinking of it as singular. I was
-thinking of ftrace, perf, kprobes, uprobes, all being the same. As in
-"kprobes system" or "uprobes system". I implicitly added in my mind
-"system" to that sentence.
+From: Tomas Winkler <tomas.winkler@intel.com>
 
- uprobes (system) does not support fetch methods
+commit 76a9635979e543f04a5885198e68ff28e3311b67 upstream.
 
-But I guess one can think of it as each individual uprobe does not
-support fetch methods, so "uprobes do not support fetch methods" would
-then be correct.
+And Lynx Point H Refresh and Wildcat Point LP
+device ids.
 
-But still, I would use the full "do not" as the "don't" here just
-sounds funny to me (sounds like a boxer talking "Dey don't do dat to
-me! Dey don't support fetch methods either!")
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/misc/mei/hw-me-regs.h | 5 ++++-
+ drivers/misc/mei/pci-me.c     | 4 +++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
--- Steve
+diff --git a/drivers/misc/mei/hw-me-regs.h b/drivers/misc/mei/hw-me-regs.h
+index 6c0fde5..66f411a 100644
+--- a/drivers/misc/mei/hw-me-regs.h
++++ b/drivers/misc/mei/hw-me-regs.h
+@@ -109,9 +109,12 @@
+ #define MEI_DEV_ID_PPT_2      0x1CBA  /* Panther Point */
+ #define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
+ 
+-#define MEI_DEV_ID_LPT        0x8C3A  /* Lynx Point */
++#define MEI_DEV_ID_LPT_H      0x8C3A  /* Lynx Point H */
+ #define MEI_DEV_ID_LPT_W      0x8D3A  /* Lynx Point - Wellsburg */
+ #define MEI_DEV_ID_LPT_LP     0x9C3A  /* Lynx Point LP */
++#define MEI_DEV_ID_LPT_HR     0x8CBA  /* Lynx Point H Refresh */
++
++#define MEI_DEV_ID_WPT_LP     0x9CBA  /* Wildcat Point LP */
+ /*
+  * MEI HW Section
+  */
+diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
+index a0a5e72..e637318 100644
+--- a/drivers/misc/mei/pci-me.c
++++ b/drivers/misc/mei/pci-me.c
+@@ -76,9 +76,11 @@ static DEFINE_PCI_DEVICE_TABLE(mei_me_pci_tbl) = {
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_1)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_2)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_3)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT)},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_H)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_W)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_LP)},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_HR)},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_WPT_LP)},
+ 
+ 	/* required last entry */
+ 	{0, }
+-- 
+1.8.3.2
+
