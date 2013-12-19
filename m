@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab3LSQ3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:29:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4150 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754669Ab3LSQ32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:29:28 -0500
-Date: Thu, 19 Dec 2013 17:29:47 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 6/7] mm: thp: introduce get_lock_thp_head()
-Message-ID: <20131219162947.GA16884@redhat.com>
-References: <20131218191913.GA6464@redhat.com> <20131218192005.GA8340@redhat.com> <CA+55aFyVNDFY87V2TZ9ViS7TUMyH7n88g-V=CdB5_c9+=M+fNQ@mail.gmail.com>
+	id S1753900Ab3LSQcK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:32:10 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22871 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854Ab3LSQcI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 11:32:08 -0500
+Date: Thu, 19 Dec 2013 19:31:37 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Sebastian Rachuj <sebastian.rachuj@studium.uni-erlangen.de>
+Cc: linux@rationality.eu, devel@driverdev.osuosl.org,
+        linux-kernel@i4.cs.fau.de, tvboxspy@gmail.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        forest@alittletooquiet.net, more.andres@gmail.com
+Subject: Re: [PATCH 1/2] vt6656: Make checkpatch happier
+Message-ID: <20131219163136.GJ28413@mwanda>
+References: <1387466826-2410-1-git-send-email-sebastian.rachuj@studium.uni-erlangen.de>
+ <1387466826-2410-2-git-send-email-sebastian.rachuj@studium.uni-erlangen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyVNDFY87V2TZ9ViS7TUMyH7n88g-V=CdB5_c9+=M+fNQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1387466826-2410-2-git-send-email-sebastian.rachuj@studium.uni-erlangen.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 19, 2013 at 04:27:05PM +0100, Sebastian Rachuj wrote:
+> From: Simon Schuster <linux@rationality.eu>
+> 
+> This patch reformats bssdb.c of the vt6656 driver (in staging) to
+> conform to the linux coding guidelines.
+> 
+> The indentation is adjusted to use tabs, the argument lists and
+> conditions are aligned to reduce line lengths and preserve
+> readability. Curly braces around one-line blocks are removed and
+> the C99-style comments are converted to C89-style ones. Previously
+> commented code is removed.
+> 
 
-On 12/18, Linus Torvalds wrote:
->
-> On Wed, Dec 18, 2013 at 11:20 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > Both __put_page_tail() and __get_page_tail() need to carefully
-> > take a reference on page_head, take compound_lock() and recheck
-> > PageTail(page) under this lock.
->
-> Btw I suspect this is just disgustingly expensive, and I don't think
-> there's a really good reason for it.
->
-> May I suggest:
->
->  - getting rid of the PG_compound_lock bit-lock
->
->    bitlocks are expensive and unfair, and don't even get lockdep checking
->
->  - replace it with a (small, say 32-256 entries) array of hashed sequence locks
->
->  - just hash based on the "struct page" pointer, and teach this code
-> to do a read_seqcount_begin/read_seqcount_retry sequence instead for
-> the page lookup.
+Too many changes at once.  This is like an automatic rejection before I
+even read the patch.  Sorry.  Each item in this list should be a
+separate patch.
 
-Yes, I thought about this too but didn't dare to suggest. Not sure
-about seqlock/irqs and other details, this needs more discussion anyway.
-And of course I am not sure this will be actually better.
+> Unfortunately these measures do not satisfy checkpatch completely
+> since the code contains too many nested blocks which do not allow to
+> keep the lines below 80 characters. Nevertheless the file should be
+> more readable after applying this patch.
+> 
+> Signed-off-by: Sebastian Rachuj <sebastian.rachuj@studium.uni-erlangen.de>
+> Signed-off-by: Simon Schuster <linux@rationality.eu>
+> ---
 
-> This is obviously orthogonal to your series,
 
-Yes.
+> +		if ((!is_broadcast_ether_addr(pbyDesireBSSID))
+> +		    && (memcmp(pbyDesireBSSID, ZeroBSSID, 6) != 0))
 
-But please note that one of the reasons for the new helper is simplify
-the potential locking changes. The changelog only mentions "even more
-bitlocks" change, but this doesn't matter.
+In the original it was written like this:
 
-And in fact I think that this allows to do more cleanups even if we
-do not change the locking, get_lock_thp_head() should return page_head
-or NULL, tail != head is just another PageTail() check. Perhaps.
+		if ((!is_broadcast_ether_addr(pbyDesireBSSID)) &&
+		    (memcmp(pbyDesireBSSID, ZeroBSSID, 6) != 0))
 
-Oleg.
+That's actually better kernel style to do it that way.  (The original
+didn't actually look exactly like I said, it looked like garbage, but
+you understand what I mean about the position of the "&&" characters.)
 
+Btw, really it should be:
+
+		if (is_valid_ether_addr(pbyDesireBSSID))
+
+regards,
+dan carpenter
