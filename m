@@ -1,115 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab3LSAYU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 19:24:20 -0500
-Received: from www.sr71.net ([198.145.64.142]:33679 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752211Ab3LSAYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 19:24:19 -0500
-Message-ID: <52B23CAF.809@sr71.net>
-Date: Wed, 18 Dec 2013 16:24:15 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753090Ab3LSAZU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 19:25:20 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:43706 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab3LSAZS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 19:25:18 -0500
+Message-ID: <52B23CEA.7090405@oracle.com>
+Date: Wed, 18 Dec 2013 19:25:14 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Pravin B Shelar <pshelar@nicira.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: [RFC][PATCH 0/7] re-shrink 'struct page' when SLUB is on.
-References: <20131213235903.8236C539@viggo.jf.intel.com> <20131216160128.aa1f1eb8039f5eee578cf560@linux-foundation.org> <52AF9EB9.7080606@sr71.net> <0000014301223b3e-a73f3d59-8234-48f1-9888-9af32709a879-000000@email.amazonses.com>
-In-Reply-To: <0000014301223b3e-a73f3d59-8234-48f1-9888-9af32709a879-000000@email.amazonses.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: fs: gpf in simple_setattr
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2013 07:17 AM, Christoph Lameter wrote:
-> On Mon, 16 Dec 2013, Dave Hansen wrote:
-> 
->> I'll do some testing and see if I can coax out any delta from the
->> optimization myself.  Christoph went to a lot of trouble to put this
->> together, so I assumed that he had a really good reason, although the
->> changelogs don't really mention any.
-> 
-> The cmpxchg on the struct page avoids disabling interrupts etc and
-> therefore simplifies the code significantly.
-> 
->> I honestly can't imagine that a cmpxchg16 is going to be *THAT* much
->> cheaper than a per-page spinlock.  The contended case of the cmpxchg is
->> way more expensive than spinlock contention for sure.
-> 
-> Make sure slub does not set __CMPXCHG_DOUBLE in the kmem_cache flags
-> and it will fall back to spinlocks if you want to do a comparison. Most
-> non x86 arches will use that fallback code.
+Hi all,
+
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel, I've stumbled on 
+the following spew.
+
+This happens when sb is dereferenced in __mark_inode_dirty():
+
+                 if (sb->s_op->dirty_inode) <--- HERE
+                         sb->s_op->dirty_inode(inode, flags);
+
+'sb' is pointing to a memory full of poisoned memory (6b6b6b6b6b6b6b6b).
+
+[  590.469520] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  590.470737] Dumping ftrace buffer:
+[  590.471331]    (ftrace buffer empty)
+[  590.471903] Modules linked in:
+[  590.472349] CPU: 3 PID: 9685 Comm: trinity-child97 Tainted: G        W 
+3.13.0-rc4-next-20131218-sasha-00013-g2cebb9b-dirty #4156
+[  590.472396] task: ffff8800bc520000 ti: ffff8800bc4fa000 task.ti: ffff8800bc4fa000
+[  590.472396] RIP: 0010:[<ffffffff81302d34>]  [<ffffffff81302d34>] __mark_inode_dirty+0xd4/0x360
+[  590.475691] RSP: 0018:ffff8800bc4fbda8  EFLAGS: 00010246
+[  590.475691] RAX: 6b6b6b6b6b6b6b6b RBX: ffff8802f9002530 RCX: 000000006b6b6b6b
+[  590.475691] RDX: 0000000000000000 RSI: 0000000000000007 RDI: ffff8802f9002530
+[  590.475691] RBP: ffff8800bc4fbdc8 R08: 0000000000000000 R09: 0000000000000000
+[  590.475691] R10: 0000000000000001 R11: 0000000000000002 R12: 0000000000000007
+[  590.475691] R13: 0000000000000000 R14: ffff8802f8795668 R15: ffff8802f9002530
+[  590.475691] FS:  00007f9bba1b7700(0000) GS:ffff8801c8000000(0000) knlGS:0000000000000000
+[  590.475691] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  590.475691] CR2: 00007f9bba17da44 CR3: 00000000bc4e6000 CR4: 00000000000006e0
+[  590.475691] Stack:
+[  590.475691]  ffff8802f9002530 ffff8800bc4fbe98 0000000000000000 ffff880161244000
+[  590.475691]  ffff8800bc4fbdf8 ffffffff8130001b ffff8800bc4fbde8 0000000000001846
+[  590.475691]  ffff8800bc4fbe98 0000000000000000 ffff8800bc4fbe78 ffffffff812f3016
+[  590.475691] Call Trace:
+[  590.475691]  [<ffffffff8130001b>] simple_setattr+0x5b/0x70
+[  590.475691]  [<ffffffff812f3016>] notify_change+0x216/0x300
+[  590.475691]  [<ffffffff812d0180>] ? zs_malloc+0x1b0/0x200
+[  590.475691]  [<ffffffff812d0b15>] chown_common+0x135/0x1c0
+[  590.475691]  [<ffffffff812d0c20>] SyS_fchown+0x80/0xd0
+[  590.475691]  [<ffffffff843a6d50>] tracesys+0xdd/0xe2
+[  590.494436] VFS: Warning: trinity-child15 using old stat() call. Recompile your binary.
+[  590.475691] Code: c5 10 48 89 de ff d0 49 8b 45 00 48 85 c0 75 e7 65 ff 0c 25 5c da 00 00 0f 94 
+c0 84 c0 74 08 e8 b3 33 d7 ff 0f 1f 00 49 8b 46 30 <48> 8b 40 10 48 85 c0 74 08 44 89 e6 48 89 df ff 
+d0 8b 05 bd 6b
+[  590.475691] RIP  [<ffffffff81302d34>] __mark_inode_dirty+0xd4/0x360
+[  590.475691]  RSP <ffff8800bc4fbda8>
 
 
-I did four tests.  The first workload allocs a bunch of stuff, then
-frees it all with both the cmpxchg-enabled 64-byte struct page and the
-48-byte one that is supposed to use a spinlock.  I confirmed the 'struct
-page' size in both cases by looking at dmesg.
-
-Essentially, I see no worthwhile benefit from using the double-cmpxchg
-over the spinlock.  In fact, the increased cache footprint makes it
-*substantially* worse when doing a tight loop.
-
-Unless somebody can find some holes in this, I think we have no choice
-but to unset the HAVE_ALIGNED_STRUCT_PAGE config option and revert using
-the cmpxchg, at least for now.
-
-Kernel config:
-https://www.sr71.net/~dave/intel/config-20131218-structpagesize
-System was an 80-core "Westmere" Xeon
-
-I suspect that the original data:
-
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=8a5ec0b
-
-are invalid because the data there were not done with the increased
-'struct page' padding.
-
----------------------------
-
-First test:
-
-	for (i = 0; i < kmalloc_iterations; i++)
-        	gunk[i] = kmalloc(kmalloc_size, GFP_KERNEL);
-	for (i = 0; i < kmalloc_iterations; i++)
-		kfree(gunk[i]);
-
-All units are all in nanoseconds, lower is better.
-
-		size of 'struct page':
-kmalloc size	64-byte 48-byte
-8		98.2	105.7
-32		123.7	125.8
-128		293.9	289.9
-256		572.4	577.9
-1024		621.0	639.3
-4096		733.3	746.7
-8192		968.3	948.6
-
-As you can see, it's mostly a wash.  The 64-byte one looks to have a
-~8ns advantage, but any advantage disappears in to the noise on the
-other sizes.
-
----------------------------
-
-Second test did the same 'struct page sizes', but instead did a
-kmalloc() immediately followed by a kfree:
-
-	for (i = 0; i < kmalloc_iterations; i++) {
-        	gunk[i] = kmalloc(kmalloc_size, GFP_KERNEL);
-		kfree(gunk[i]);
-	}
-
-		size of 'struct page':
-kmalloc size	64-byte 48-byte
-8		58.6	43.0
-32		59.3	43.0
-128		59.4	43.2
-256		57.4	42.8
-1024		80.4	43.0
-4096		76.0	43.8
-8192		79.9	43.0
+Thanks,
+Sasha
