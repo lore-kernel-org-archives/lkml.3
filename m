@@ -1,112 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab3LSMMw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:12:52 -0500
-Received: from smtp03.stone-is.org ([87.238.162.66]:54190 "EHLO
-	smtpgw.stone-is.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756611Ab3LSMMs (ORCPT
+	id S1753765Ab3LSLzi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:55:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44421 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717Ab3LSLzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:12:48 -0500
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-Message-ID: <52B2E2B9.1040706@acm.org>
-Date: Thu, 19 Dec 2013 13:12:41 +0100
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Greg KH <greg@kroah.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
+	Thu, 19 Dec 2013 06:55:35 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jukka Rissanen <jukka.rissanen@linux.intel.com>,
         "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: netfilter: active obj WARN when cleaning up
-References: <20131127233415.GB19270@kroah.com> <00000142b4282aaf-913f5e4c-314c-4351-9d24-615e66928157-000000@email.amazonses.com> <20131202164039.GA19937@kroah.com> <00000142b4514eb5-2e8f675d-0ecc-423b-9906-58c5f383089b-000000@email.amazonses.com> <20131202172615.GA4722@kroah.com> <00000142b4aeca89-186fc179-92b8-492f-956c-38a7c196d187-000000@email.amazonses.com> <20131202190814.GA2267@kroah.com> <00000142b4d4360c-5755af87-b9b0-4847-b5fa-7a9dd13b49c5-000000@email.amazonses.com> <20131202212235.GA1297@kroah.com> <00000142b54f6694-c51e81b1-f1a2-483b-a1ce-a2d4cb6b155c-000000@email.amazonses.com> <20131202222208.GB13034@kroah.com> <00000142b90da700-19f6b465-ff15-4b2b-9bcd-b91d71958b7f-000000@email.amazonses.com> <52B0ABB6.8090205@oracle.com>
-In-Reply-To: <52B0ABB6.8090205@oracle.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 012/208] 6lowpan: Uncompression of traffic class field was incorrect
+Date: Thu, 19 Dec 2013 11:51:50 +0000
+Message-Id: <1387454106-19326-13-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/13 20:53, Sasha Levin wrote:
-> I'm still seeing warnings with this patch applied:
-> 
-> [   24.900482] WARNING: CPU: 12 PID: 3654 at lib/debugobjects.c:260
-> debug_print_object+
-> 0x8d/0xb0()
-> [   24.900482] ODEBUG: free active (active state 0) object type:
-> timer_list hint: delay
-> ed_work_timer_fn+0x0/0x20
-> [   24.900482] Modules linked in:
-> [   24.900482] CPU: 12 PID: 3654 Comm: kworker/12:1 Tainted: G       
-> W    3.13.0-rc4-n
-> ext-20131217-sasha-00013-ga878504-dirty #4149
-> [   24.900482] Workqueue: events kobject_delayed_cleanup
-> [   24.900482]  0000000000000104 ffff8804f429bae8 ffffffff8439501c
-> ffffffff8555a92c
-> [   24.900482]  ffff8804f429bb38 ffff8804f429bb28 ffffffff8112f8ac
-> ffff8804f429bb58
-> [   24.900482]  ffffffff856a9413 ffff880826333530 ffffffff85c68c40
-> ffffffff8801bb58
-> [   24.900482] Call Trace:
-> [   24.900482]  [<ffffffff8439501c>] dump_stack+0x52/0x7f
-> [   24.900482]  [<ffffffff8112f8ac>] warn_slowpath_common+0x8c/0xc0
-> [   24.900482]  [<ffffffff8112f996>] warn_slowpath_fmt+0x46/0x50
-> [   24.900482]  [<ffffffff81adb50d>] debug_print_object+0x8d/0xb0
-> [   24.900482]  [<ffffffff81153090>] ? __queue_work+0x3f0/0x3f0
-> [   24.900482]  [<ffffffff81adbd15>] __debug_check_no_obj_freed+0xa5/0x220
-> [   24.900482]  [<ffffffff832b1acb>] ? rtc_device_release+0x2b/0x40
-> [   24.900482]  [<ffffffff832b1acb>] ? rtc_device_release+0x2b/0x40
-> [   24.900482]  [<ffffffff81adbea5>] debug_check_no_obj_freed+0x15/0x20
-> [   24.900482]  [<ffffffff812ad54f>] kfree+0x21f/0x2e0
-> [   24.900482]  [<ffffffff832b1acb>] rtc_device_release+0x2b/0x40
-> [   24.900482]  [<ffffffff8207efd5>] device_release+0x65/0xc0
-> [   24.900482]  [<ffffffff81ab05e5>] kobject_cleanup+0x145/0x190
-> [   24.900482]  [<ffffffff81ab063d>] kobject_delayed_cleanup+0xd/0x10
-> [   24.900482]  [<ffffffff81153a60>] process_one_work+0x320/0x530
-> [   24.900482]  [<ffffffff81153940>] ? process_one_work+0x200/0x530
-> [   24.900482]  [<ffffffff81155fe5>] worker_thread+0x215/0x350
-> [   24.900482]  [<ffffffff81155dd0>] ? manage_workers+0x180/0x180
-> [   24.900482]  [<ffffffff8115c9c5>] kthread+0x105/0x110
-> [   24.900482]  [<ffffffff8115c8c0>] ? set_kthreadd_affinity+0x30/0x30
-> [   24.900482]  [<ffffffff843a5e7c>] ret_from_fork+0x7c/0xb0
-> [   24.900482]  [<ffffffff8115c8c0>] ? set_kthreadd_affinity+0x30/0x30
-> [   24.900482] ---[ end trace 45529ebf79b2573e ]---
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Can anyone tell me whether the patch below makes sense ? Please note
-that I'm not familiar with the timer subsystem.
+------------------
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index accfd24..828b666 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -969,6 +969,8 @@ int del_timer(struct timer_list *timer)
-                base = lock_timer_base(timer, &flags);
-                ret = detach_if_pending(timer, base, true);
-                spin_unlock_irqrestore(&base->lock, flags);
-+       } else {
-+               debug_deactivate(timer);
-        }
+From: Jukka Rissanen <jukka.rissanen@linux.intel.com>
 
-        return ret;
+commit 1188f05497e7bd2f2614b99c54adfbe7413d5749 upstream.
+
+If priority/traffic class field in IPv6 header is set (seen when
+using ssh), the uncompression sets the TC and Flow fields incorrectly.
+
+Example:
+
+This is IPv6 header of a sent packet. Note the priority/TC (=1) in
+the first byte.
+
+00000000: 61 00 00 00 00 2c 06 40 fe 80 00 00 00 00 00 00
+00000010: 02 02 72 ff fe c6 42 10 fe 80 00 00 00 00 00 00
+00000020: 02 1e ab ff fe 4c 52 57
+
+This gets compressed like this in the sending side
+
+00000000: 72 31 04 06 02 1e ab ff fe 4c 52 57 ec c2 00 16
+00000010: aa 2d fe 92 86 4e be c6 ....
+
+In the receiving end, the packet gets uncompressed to this
+IPv6 header
+
+00000000: 60 06 06 02 00 2a 1e 40 fe 80 00 00 00 00 00 00
+00000010: 02 02 72 ff fe c6 42 10 fe 80 00 00 00 00 00 00
+00000020: ab ff fe 4c 52 57 ec c2
+
+First four bytes are set incorrectly and we have also lost
+two bytes from destination address.
+
+The fix is to switch the case values in switch statement
+when checking the TC field.
+
+Signed-off-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/ieee802154/6lowpan.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
+index 3b9d5f2..a47f582 100644
+--- a/net/ieee802154/6lowpan.c
++++ b/net/ieee802154/6lowpan.c
+@@ -862,7 +862,7 @@ lowpan_process_data(struct sk_buff *skb)
+ 	 * Traffic class carried in-line
+ 	 * ECN + DSCP (1 byte), Flow Label is elided
+ 	 */
+-	case 1: /* 10b */
++	case 2: /* 10b */
+ 		if (lowpan_fetch_skb_u8(skb, &tmp))
+ 			goto drop;
+ 
+@@ -875,7 +875,7 @@ lowpan_process_data(struct sk_buff *skb)
+ 	 * Flow Label carried in-line
+ 	 * ECN + 2-bit Pad + Flow Label (3 bytes), DSCP is elided
+ 	 */
+-	case 2: /* 01b */
++	case 1: /* 01b */
+ 		if (lowpan_fetch_skb_u8(skb, &tmp))
+ 			goto drop;
+ 
+-- 
+1.8.3.2
 
