@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab3LSL7f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:59:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45280 "EHLO
+	id S1754896Ab3LSL51 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:57:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44809 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755965Ab3LSL7b (ORCPT
+	with ESMTP id S1754811Ab3LSL5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:31 -0500
+	Thu, 19 Dec 2013 06:57:19 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: James Bottomley <JBottomley@Parallels.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 176/208] dm thin: re-establish read-only state when switching to fail mode
-Date: Thu, 19 Dec 2013 11:54:34 +0000
-Message-Id: <1387454106-19326-177-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 083/208] [SCSI] enclosure: fix WARN_ON in dual path device removing
+Date: Thu, 19 Dec 2013 11:53:01 +0000
+Message-Id: <1387454106-19326-84-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: James Bottomley <JBottomley@Parallels.com>
 
-commit 5383ef3a929a1366e2ced45cd6d74be7aa2a2281 upstream.
+commit a1470c7bf3a4676e62e4c0fb204e339399eb5c59 upstream.
 
-If the thin-pool transitioned to fail mode and the thin-pool's table
-were reloaded for some reason: the new table's default pool mode would
-be read-write, though it will transition to fail mode during resume.
+Bug report from: wenxiong@linux.vnet.ibm.com
 
-When the pool mode transitions directly from PM_WRITE to PM_FAIL we need
-to re-establish the intermediate read-only state in both the metadata
-and persistent-data block manager (as is usually done with the normal
-pool mode transition sequence: PM_WRITE -> PM_READ_ONLY -> PM_FAIL).
+The issue is happened in dual controller configuration. We got the
+sysfs warnings when rmmod the ipr module.
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-[ luis: backported to 3.11: adjusted context ]
+enclosure_unregister() in drivers/msic/enclosure.c, call device_unregister()
+for each componment deivce, device_unregister() ->device_del()->kobject_del()
+->sysfs_remove_dir(). In sysfs_remove_dir(), set kobj->sd = NULL.
+
+For each componment device,
+enclosure_component_release()->enclosure_remove_links()->sysfs_remove_link()
+in which checking kobj->sd again, it has been set as NULL when doing
+device_unregister. So we saw all these sysfs WARNING.
+
+Tested-by: wenxiong@linux.vnet.ibm.com
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-thin.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/misc/enclosure.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
-index e36f81e..930a7e3 100644
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -1389,6 +1389,7 @@ static void set_pool_mode(struct pool *pool, enum pool_mode mode)
- 	switch (mode) {
- 	case PM_FAIL:
- 		DMERR("switching pool to failure mode");
-+		dm_pool_metadata_read_only(pool->pmd);
- 		pool->process_bio = process_bio_fail;
- 		pool->process_discard = process_bio_fail;
- 		pool->process_prepared_mapping = process_prepared_mapping_fail;
+diff --git a/drivers/misc/enclosure.c b/drivers/misc/enclosure.c
+index 00e5fcac8..cbee842 100644
+--- a/drivers/misc/enclosure.c
++++ b/drivers/misc/enclosure.c
+@@ -198,6 +198,13 @@ static void enclosure_remove_links(struct enclosure_component *cdev)
+ {
+ 	char name[ENCLOSURE_NAME_SIZE];
+ 
++	/*
++	 * In odd circumstances, like multipath devices, something else may
++	 * already have removed the links, so check for this condition first.
++	 */
++	if (!cdev->dev->kobj.sd)
++		return;
++
+ 	enclosure_link_name(cdev, name);
+ 	sysfs_remove_link(&cdev->dev->kobj, name);
+ 	sysfs_remove_link(&cdev->cdev.kobj, "device");
 -- 
 1.8.3.2
 
