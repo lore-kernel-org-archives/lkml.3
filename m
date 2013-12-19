@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab3LSQiU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:38:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43601 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073Ab3LSQiT (ORCPT
+	id S1755575Ab3LSQig (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:38:36 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:55925 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753944Ab3LSQif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:38:19 -0500
-Date: Thu, 19 Dec 2013 08:38:21 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Denis Turischev <denis.turischev@compulab.co.il>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: xhci: Switch Intel Lynx Point ports to EHCI on shutdown
-Message-ID: <20131219163821.GA27409@kroah.com>
-References: <52B31EDA.60908@compulab.co.il>
+	Thu, 19 Dec 2013 11:38:35 -0500
+Date: Thu, 19 Dec 2013 11:38:34 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+cc: Rashika Kheria <rashika.kheria@gmail.com>, <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <josh@joshtriplett.org>
+Subject: Re: [PATCH 3/7] drivers: usb: Include appropriate header file in
+ hcd.h
+In-Reply-To: <52B32987.7070402@cogentembedded.com>
+Message-ID: <Pine.LNX.4.44L0.1312191128500.984-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B31EDA.60908@compulab.co.il>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 06:29:14PM +0200, Denis Turischev wrote:
-> The same issue like with Panther Point chipsets. If the USB ports are
-> switched to xHCI on shutdown, the xHCI host will send a spurious interrupt,
-> which will wake the system. Some BIOS have work around for this, but not all.
+On Thu, 19 Dec 2013, Sergei Shtylyov wrote:
+
+> Hello.
 > 
-> The bug can be avoided if the USB ports are switched back to EHCI on
-> shutdown.
+> On 12/19/2013 06:45 PM, Alan Stern wrote:
 > 
-> Signed-off-by: Denis Turischev <denis@compulab.co.il>
+> >> Include header file include/linux/usb.h in include/linux/usb/hcd.h
+> >> because structures usb_device, usb_host_config and usb_interface have
+> >> their definitions in include/linux/usb.h.
 > 
-> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-> --- a/drivers/usb/host/xhci-pci.c	2013-12-19 11:36:12.049589400 +0200
-> +++ b/drivers/usb/host/xhci-pci.c	2013-12-19 11:37:27.261590385 +0200
-> @@ -91,8 +91,9 @@
->  		xhci->quirks |= XHCI_LPM_SUPPORT;
->  		xhci->quirks |= XHCI_INTEL_HOST;
->  	}
-> -	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
-> -			pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) {
-> +	if (pdev->vendor == PCI_VENDOR_ID_INTEL && (
-> +			(pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) ||
-> +			(pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI))) {
->  		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
->  		xhci->limit_active_eps = 64;
->  		xhci->quirks |= XHCI_SW_BW_CHECKING;
-> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-> --- a/include/linux/pci_ids.h	2013-12-19 11:36:11.945589398 +0200
-> +++ b/include/linux/pci_ids.h	2013-12-19 11:35:57.817589213 +0200
-> @@ -2576,6 +2576,7 @@
->  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX	0x1c5f
->  #define PCI_DEVICE_ID_INTEL_PATSBURG_LPC_0	0x1d40
->  #define PCI_DEVICE_ID_INTEL_PATSBURG_LPC_1	0x1d41
-> +#define PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI	0x9c31
+> >> This eliminates the following warning in include/linux/usb/hcd.h:
+> >> include/linux/usb/hcd.h:311:44: warning: ‘struct usb_device’ declared inside parameter list [enabled by default]
+> >> include/linux/usb/hcd.h:412:10: warning: ‘struct usb_host_config’ declared inside parameter list [enabled by default]
+> >> include/linux/usb/hcd.h:614:9: warning: ‘struct usb_interface’ declared inside parameter list [enabled by default]
+> 
+>     Rashika, would it be enough to forward-declare these structures ISO 
+> #include'ing the whole header?
 
-Please read the top of this file for why to not add new device ids to
-it.
+I agree, that would fix the problem.
 
-And if you really need to do so, please do it in sorted order:
+> > Where does this problem show up?
+> >
+> > Any file that include linux/usb/hcd.h should include linux/usb.h first.
+> > IMO it would be better to fix the source files that don't do the
+> > includes properly.
+> 
+>     Yeah, let's fix the consequency instead of the cause. :-)
 
->  #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI	0x1e31
->  #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_LPC_MIN	0x1e40
->  #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_LPC_MAX	0x1e5f
+The _real_ cause is that the Linux source code is extremely
+complicated, and it is remarkably difficult to insure that all header
+files have no unsatisfied dependencies.  How do you suggest fixing
+_that_?
 
-Which you didn't do :(
+For example, suppose A.c includes B.h, and B.h includes C.h, and C.h
+defines struct foo.  Then A.c can use struct foo freely without
+including C.h directly (and this sort of thing happens quite a lot in
+the kernel source).  But consider what happens when B.h is changed so
+that it no longer includes C.h.
 
-greg k-h
+> > Of course, people have varying opinions on this issue.  As far as I
+> > know, there is no fixed policy in the kernel about nested includes.
+> 
+>     So far, I've only encountered the dubious policy of satisfying header's 
+> dependencies in the files that include them is the USB tree.
+
+Have you looked in any other places?  For that matter, how do you know
+that the USB tree has such a policy?  Is it documented anywhere?
+
+Alan Stern
+
