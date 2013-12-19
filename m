@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab3LSHyR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 02:54:17 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37335 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919Ab3LSHyN (ORCPT
+	id S1753046Ab3LSHy0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 02:54:26 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:50485 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752919Ab3LSHyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 02:54:13 -0500
+	Thu, 19 Dec 2013 02:54:21 -0500
 From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Alessandro Zummo <a.zummo@towertech.it>,
@@ -18,14 +18,10 @@ Cc: Elliott@hp.com, samer.el-haj-mahmoud@hp.com,
         JBeulich@suse.com, linux-kernel@vger.kernel.org,
         rtc-linux@googlegroups.com, x86@kernel.org,
         "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: [RFC PATCH 06/14] rtc-efi: register rtc-efi device when EFI enabled
-Date: Thu, 19 Dec 2013 15:51:47 +0800
-Message-Id: <1387439515-8926-7-git-send-email-jlee@suse.com>
+        linux-acpi@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>
+Subject: [RFC PATCH 07/14] rtc-efi: add GMTOFF support to rtc_efi
+Date: Thu, 19 Dec 2013 15:51:48 +0800
+Message-Id: <1387439515-8926-8-git-send-email-jlee@suse.com>
 X-Mailer: git-send-email 1.6.0.2
 In-Reply-To: <1387439515-8926-1-git-send-email-jlee@suse.com>
 References: <1387439515-8926-1-git-send-email-jlee@suse.com>
@@ -33,72 +29,175 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UEFI time services, GetTime(), SetTime(), GetWakeupTime(), SetWakeupTime() are also
-supported by other non-IA64 architecutre with UEFI BIOS, e.g. x86.
+Per UEFI 2.3.1 spec, we can use SetTime() to store the timezone value to
+BIOS and get it back by GetTime(). It's good for installation system to
+gain the default timezone setting from BIOS that was set by
+manufacturer.
 
-This patch changed RTC_DRV_EFI configuration to depend on EFI but not just IA64. It
-checks efi_enabled flag and efi-rtc driver should enabled.
+This patch adds 2 new iotrl: RTC_RD_GMTOFF and RTC_SET_GMTOFF to rtc_efi
+support get/set gmt offset that mapping to the GUN's tm_gmtoff extension
+(Seconds east of UTC).
+Due the timezone definition of UEFI is "Localtime = UTC - TimeZone",
+rtc_efi driver will transfer the format between GNU and EFI.
 
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jan Beulich <JBeulich@suse.com>
+The logic of timezone only affect on x86 architecture and keep the
+original EFI_UNSPECIFIED_TIMEZONE value on IA64.
+
 Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
 ---
- arch/x86/platform/efi/efi.c |   17 +++++++++++++++++
- drivers/rtc/Kconfig         |    2 +-
- 2 files changed, 18 insertions(+), 1 deletions(-)
+ drivers/rtc/rtc-efi.c |  100 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 99 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 7a7a692..42d6052 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -42,6 +42,7 @@
- #include <linux/io.h>
- #include <linux/reboot.h>
- #include <linux/bcd.h>
-+#include <linux/platform_device.h>
- 
- #include <asm/setup.h>
- #include <asm/efi.h>
-@@ -876,6 +877,22 @@ void __init efi_enter_virtual_mode(void)
- 			 0, NULL);
+diff --git a/drivers/rtc/rtc-efi.c b/drivers/rtc/rtc-efi.c
+index c4c3843..e0e3c7e 100644
+--- a/drivers/rtc/rtc-efi.c
++++ b/drivers/rtc/rtc-efi.c
+@@ -75,7 +75,10 @@ convert_to_efi_time(struct rtc_time *wtime, efi_time_t *eft)
+ 	eft->second	= wtime->tm_sec;
+ 	eft->nanosecond = 0;
+ 	eft->daylight	= wtime->tm_isdst ? EFI_ISDST : 0;
++#ifdef CONFIG_IA64
++	/* avoid overwrite timezone on non-IA64 platform. e.g. x86_64 */
+ 	eft->timezone	= EFI_UNSPECIFIED_TIMEZONE;
++#endif
  }
  
-+static struct platform_device rtc_efi_dev = {
-+	.name = "rtc-efi",
-+	.id = -1,
-+};
-+
-+static int __init rtc_init(void)
+ static void
+@@ -108,6 +111,84 @@ convert_from_efi_time(efi_time_t *eft, struct rtc_time *wtime)
+ 	}
+ }
+ 
++static int efi_read_gmtoff(struct device *dev, long int *arg)
 +{
-+	if (efi_enabled(EFI_RUNTIME_SERVICES) &&
-+	    platform_device_register(&rtc_efi_dev) < 0)
-+		pr_err("unable to register rtc-efi device...\n");
++	efi_status_t status;
++	efi_time_t eft;
++	efi_time_cap_t cap;
++	s16 timezone;
 +
-+	/* not necessarily an error */
++	status = efi.get_time(&eft, &cap);
++
++	if (status != EFI_SUCCESS) {
++		/* should never happen */
++		pr_err("efitime: can't read time\n");
++		return -EINVAL;
++	}
++
++	timezone = (s16)le16_to_cpu(eft.timezone);
++	*arg = EFI_UNSPECIFIED_TIMEZONE * 60;
++	if (abs(timezone) != EFI_UNSPECIFIED_TIMEZONE &&
++	    abs(timezone) <= 1440)
++		*arg = timezone * 60 * -1;
++
 +	return 0;
 +}
-+arch_initcall(rtc_init);
 +
- /*
-  * Convenience functions to obtain memory types and attributes
-  */
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 349dbc4..bee13de 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -726,7 +726,7 @@ config RTC_DRV_DA9055
++static int efi_set_gmtoff(struct device *dev, long int arg)
++{
++	efi_status_t status;
++	efi_time_t eft;
++	efi_time_cap_t cap;
++	s16 timezone;
++
++	/* transfer seconds east of UTC to minutes for ACPI */
++	timezone = arg / 60 * -1;
++	if (abs(timezone) > 1440 &&
++	    abs(timezone) != EFI_UNSPECIFIED_TIMEZONE)
++		return -EINVAL;
++
++	/* can not use -2047 */
++	if (timezone == EFI_UNSPECIFIED_TIMEZONE * -1)
++		timezone = EFI_UNSPECIFIED_TIMEZONE;
++
++	status = efi.get_time(&eft, &cap);
++
++	if (status != EFI_SUCCESS) {
++		pr_err("efitime: can't read time\n");
++		return -EINVAL;
++	}
++
++	eft.timezone = (s16)cpu_to_le16(timezone);
++	status = efi.set_time(&eft);
++	if (status != EFI_SUCCESS) {
++		pr_err("efitime: can't set timezone\n");
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static int efi_rtc_ioctl(struct device *dev, unsigned int cmd, unsigned long arg)
++{
++	long int gmtoff;
++	int err;
++
++	switch (cmd) {
++	case RTC_RD_GMTOFF:
++		err = efi_read_gmtoff(dev, &gmtoff);
++		if (err)
++			return err;
++		return put_user(gmtoff, (unsigned long __user *)arg);
++	case RTC_SET_GMTOFF:
++		return efi_set_gmtoff(dev, arg);
++	default:
++		return -ENOIOCTLCMD;
++	}
++
++	return 0;
++}
++
+ static int efi_read_alarm(struct device *dev, struct rtc_wkalrm *wkalrm)
+ {
+ 	efi_time_t eft;
+@@ -172,6 +253,17 @@ static int efi_set_time(struct device *dev, struct rtc_time *tm)
+ {
+ 	efi_status_t status;
+ 	efi_time_t eft;
++#ifdef CONFIG_X86
++	efi_time_cap_t cap;
++
++	/* read time for grab timezone to avoid overwrite it */
++	status = efi.get_time(&eft, &cap);
++
++	if (status != EFI_SUCCESS) {
++		pr_err("efitime: can't read time\n");
++		return -EINVAL;
++	}
++#endif
  
- config RTC_DRV_EFI
- 	tristate "EFI RTC"
--	depends on IA64
-+	depends on EFI
- 	help
- 	  If you say yes here you will get support for the EFI
- 	  Real Time Clock.
+ 	convert_to_efi_time(tm, &eft);
+ 
+@@ -181,13 +273,16 @@ static int efi_set_time(struct device *dev, struct rtc_time *tm)
+ }
+ 
+ static const struct rtc_class_ops efi_rtc_ops = {
++#ifdef CONFIG_X86
++	.ioctl = efi_rtc_ioctl,
++#endif
+ 	.read_time = efi_read_time,
+ 	.set_time = efi_set_time,
+ 	.read_alarm = efi_read_alarm,
+ 	.set_alarm = efi_set_alarm,
+ };
+ 
+-static int __init efi_rtc_probe(struct platform_device *dev)
++static int efi_rtc_probe(struct platform_device *dev)
+ {
+ 	struct rtc_device *rtc;
+ 
+@@ -196,6 +291,8 @@ static int __init efi_rtc_probe(struct platform_device *dev)
+ 	if (IS_ERR(rtc))
+ 		return PTR_ERR(rtc);
+ 
++	rtc->caps = (RTC_TZ_CAP | RTC_DST_CAP);
++
+ 	platform_set_drvdata(dev, rtc);
+ 
+ 	return 0;
+@@ -213,3 +310,4 @@ module_platform_driver_probe(efi_rtc_driver, efi_rtc_probe);
+ MODULE_AUTHOR("dann frazier <dannf@hp.com>");
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("EFI RTC driver");
++MODULE_ALIAS("platform:rtc-efi");
 -- 
 1.6.4.2
 
