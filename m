@@ -1,112 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab3LSOXr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:23:47 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:62301 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755017Ab3LSOXk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:23:40 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>
-Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: [PATCH v8 9/9] ARM: dts: add usb udc support to bcm281xx
-Date: Thu, 19 Dec 2013 09:23:10 -0500
-Message-Id: <1387462990-12039-10-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1387462990-12039-1-git-send-email-mporter@linaro.org>
-References: <1387462990-12039-1-git-send-email-mporter@linaro.org>
+	id S1754995Ab3LSN3L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:29:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55531 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752314Ab3LSN3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 08:29:09 -0500
+Date: Thu, 19 Dec 2013 13:29:05 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/6] Configurable fair allocation zone policy v4
+Message-ID: <20131219132905.GL11295@suse.de>
+References: <1387395723-25391-1-git-send-email-mgorman@suse.de>
+ <20131218210617.GC20038@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131218210617.GC20038@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds USB OTG/PHY and clock support to BCM281xx and enables
-UDC support on the bcm11351-brt and bcm28155-ap boards.
+On Wed, Dec 18, 2013 at 04:06:17PM -0500, Johannes Weiner wrote:
+> On Wed, Dec 18, 2013 at 07:41:57PM +0000, Mel Gorman wrote:
+> > This is still a work in progress. I know Johannes is maintaining his own
+> > patch which takes a different approach and has different priorities. Michal
+> > Hocko has raised concerns potentially affecting both. I'm releasing this so
+> > there is a basis of comparison with Johannes' patch. It's not necessarily
+> > the final shape of what we want to merge but the test results highlight
+> > the current behaviour has regressed performance for basic workloads.
+> > 
+> > A big concern is the semantics and tradeoffs of the tunable are quite
+> > involved.  Basically no matter what workload you get right, there will be
+> > a workload that will be wrong. This might indicate that this really needs
+> > to be controlled via memory policies or some means of detecting online
+> > which policy should be used on a per-process basis.
+> 
+> I'm more and more agreeing with this.  As I stated in my answer to
+> Michal, I may have seen this too black and white and the flipside of
+> the coin as not important enough.
+> 
+> But it really does point to a mempolicy.  As long as we can agree on a
+> default that makes most sense for users, there is no harm in offering
+> a choice.  E.g. aging artifacts are simply irrelevant without reclaim
+> going on, so a workload that mostly avoids it can benefit from a
+> placement policy that strives for locality without any downsides.
+> 
 
-Signed-off-by: Matt Porter <mporter@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
----
- arch/arm/boot/dts/bcm11351-brt.dts |  6 ++++++
- arch/arm/boot/dts/bcm11351.dtsi    | 18 ++++++++++++++++++
- arch/arm/boot/dts/bcm28155-ap.dts  |  8 ++++++++
- 3 files changed, 32 insertions(+)
+Agreed.
 
-diff --git a/arch/arm/boot/dts/bcm11351-brt.dts b/arch/arm/boot/dts/bcm11351-brt.dts
-index 23cd16d..396b704 100644
---- a/arch/arm/boot/dts/bcm11351-brt.dts
-+++ b/arch/arm/boot/dts/bcm11351-brt.dts
-@@ -44,5 +44,11 @@
- 		status = "okay";
- 	};
- 
-+	usbotg: usb@3f120000 {
-+		status = "okay";
-+	};
- 
-+	usbphy: usb-phy@3f130000 {
-+		status = "okay";
-+	};
- };
-diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-index 1246885..0fbb455 100644
---- a/arch/arm/boot/dts/bcm11351.dtsi
-+++ b/arch/arm/boot/dts/bcm11351.dtsi
-@@ -243,4 +243,22 @@
- 			#clock-cells = <0>;
- 		};
- 	};
-+
-+	usbotg: usb@3f120000 {
-+		compatible = "snps,dwc2";
-+		reg = <0x3f120000 0x10000>;
-+		interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&usb_otg_ahb_clk>;
-+		clock-names = "otg";
-+		phys = <&usbphy>;
-+		phy-names = "usb2-phy";
-+		status = "disabled";
-+	};
-+
-+	usbphy: usb-phy@3f130000 {
-+		compatible = "brcm,kona-usb2-phy";
-+		reg = <0x3f130000 0x28>;
-+		#phy-cells = <0>;
-+		status = "disabled";
-+	};
- };
-diff --git a/arch/arm/boot/dts/bcm28155-ap.dts b/arch/arm/boot/dts/bcm28155-ap.dts
-index 08e47c2..a3bc436 100644
---- a/arch/arm/boot/dts/bcm28155-ap.dts
-+++ b/arch/arm/boot/dts/bcm28155-ap.dts
-@@ -43,4 +43,12 @@
- 		cd-gpios = <&gpio 14 0>;
- 		status = "okay";
- 	};
-+
-+	usbotg: usb@3f120000 {
-+		status = "okay";
-+	};
-+
-+	usbphy: usb-phy@3f130000 {
-+		status = "okay";
-+	};
- };
+In a land of free ponies we could try detecting online if a process should
+be using MPOL_LOCAL or MPOL_INTERLEAVE_FILE (or whatever the policy gets
+called) automatically if the process is using teh system default memory
+policy. Possible detection methods
+
+1. Recent excessive fallback to remote nodes clean local node
+2. If kswapd awake for long periods of time receiving excessive wakeups
+   then switch the processes waking it to MPOL_INTERLEAVE_FILE. kswapd
+   could track who is keeping it awake on a list. Processes switch back
+   to MPOL_LOCAL after some period of time.
+3. Crystal ball instruction
+
+> > By default, this series does *not* interleave pagecache across nodes but
+> > it will interleave between local zones.
+> > 
+> > Changelog since V3
+> > o Add documentation
+> > o Bring tunable in line with Johannes
+> > o Common code when deciding to update the batch count and skip zones
+> > 
+> > Changelog since v2
+> > o Drop an accounting patch, behaviour is deliberate
+> > o Special case tmpfs and shmem pages for discussion
+> > 
+> > Changelog since v1
+> > o Fix lot of brain damage in the configurable policy patch
+> > o Yoink a page cache annotation patch
+> > o Only account batch pages against allocations eligible for the fair policy
+> > o Add patch that default distributes file pages on remote nodes
+> > 
+> > Commit 81c0a2bb ("mm: page_alloc: fair zone allocator policy") solved a
+> > bug whereby new pages could be reclaimed before old pages because of how
+> > the page allocator and kswapd interacted on the per-zone LRU lists.
+> > 
+> > Unfortunately a side-effect missed during review was that it's now very
+> > easy to allocate remote memory on NUMA machines. The problem is that
+> > it is not a simple case of just restoring local allocation policies as
+> > there are genuine reasons why global page aging may be prefereable. It's
+> > still a major change to default behaviour so this patch makes the policy
+> > configurable and sets what I think is a sensible default.
+> 
+> I wrote this to Michal, too: as 3.12 was only recently released and
+> its NUMA placement quite broken, I doubt that people running NUMA
+> machines already rely on this aspect of global page cache placement.
+> 
+
+Doubtful. I bet some people are already depending on the local zone
+interleaving though. It's nice, we want that thing.
+
+> We should be able to restrict placement fairness to node-local zones
+> exclusively for 3.12-stable and possibly for 3.13, depending on how
+> fast we can agree on the interface.
+> 
+> I would prefer fixing the worst first so that we don't have to rush a
+> user interface in order to keep global cache aging, which nobody knows
+> exists yet.  But that part is simply not ready, so let's revert it.
+> And then place any subsequent attempts of implementing this for NUMA
+> on top of it, without depending on them for 3.12-stable and 3.13.
+> 
+> The following fix should produce the same outcomes on your tests:
+> 
+> ---
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Subject: [patch] mm: page_alloc: revert NUMA aspect of fair allocation
+>  policy
+> 
+
+Yes, it should.
+
+I see no harm in including the change to zone_local to avoid calling
+node_distance as well. I would be very surprised if there are machines
+that are multiple nodes that are at LOCAL_DISTANCE. Whether you include
+that or not;
+
+Acked-by: Mel Gorman <mgorman@suse.de>
+
+Thanks.
+
+
 -- 
-1.8.4
-
+Mel Gorman
+SUSE Labs
