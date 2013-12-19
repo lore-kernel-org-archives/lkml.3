@@ -1,89 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab3LSXFW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 18:05:22 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39264 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755213Ab3LSXFU (ORCPT
+	id S1756601Ab3LSXIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 18:08:13 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:41892 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755875Ab3LSXIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 18:05:20 -0500
-Message-ID: <52B37BAA.60200@infradead.org>
-Date: Thu, 19 Dec 2013 15:05:14 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 19 Dec 2013 18:08:12 -0500
+Message-ID: <52B37C56.7090302@gmail.com>
+Date: Thu, 19 Dec 2013 15:08:06 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Darren Hart <dvhart@linux.intel.com>, Davidlohr Bueso <davidlohr@hp.com>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
-        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
-        aswin@hp.com, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH v4 3/4] futex: Document ordering guarantees
-References: <1387485950-7320-1-git-send-email-davidlohr@hp.com>	 <1387485950-7320-4-git-send-email-davidlohr@hp.com>	 <52B35C64.3050504@infradead.org>	 <1387486823.5494.5.camel@buesod1.americas.hpqcorp.net> <1387487274.3510.18.camel@dvhart-mobl4.amr.corp.intel.com>
-In-Reply-To: <1387487274.3510.18.camel@dvhart-mobl4.amr.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Christoph Lameter <cl@linux.com>, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips <linux-mips@linux-mips.org>
+CC: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 29/40] mips: Replace __get_cpu_var uses
+References: <20131219155015.443763038@linux.com> <20131219155033.834416420@linux.com> <52B330F3.4090603@gmail.com> <alpine.DEB.2.10.1312191506370.17603@nuc>
+In-Reply-To: <alpine.DEB.2.10.1312191506370.17603@nuc>
+Content-Type: multipart/mixed;
+ boundary="------------070507070702050801040409"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/13 13:07, Darren Hart wrote:
-> On Thu, 2013-12-19 at 13:00 -0800, Davidlohr Bueso wrote:
->> On Thu, 2013-12-19 at 12:51 -0800, Randy Dunlap wrote:
->>> On 12/19/13 12:45, Davidlohr Bueso wrote:
->>>> From: Thomas Gleixner <tglx@linutronix.de>
->>>>
->>>> That's essential, if you want to hack on futexes.
->>>>
->>>> Cc: Ingo Molnar <mingo@kernel.org>
->>>> Cc: Darren Hart <dvhart@linux.intel.com>
->>>> Acked-by: Peter Zijlstra <peterz@infradead.org>
->>>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>>> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->>>> Cc: Mike Galbraith <efault@gmx.de>
->>>> Cc: Jeff Mahoney <jeffm@suse.com>
->>>> Cc: Linus Torvalds <torvalds@linux-foundation.org>
->>>> Cc: Scott Norton <scott.norton@hp.com>
->>>> Cc: Tom Vaden <tom.vaden@hp.com>
->>>> Cc: Aswin Chandramouleeswaran <aswin@hp.com>
->>>> Cc: Waiman Long <Waiman.Long@hp.com>
->>>> Cc: Jason Low <jason.low2@hp.com>
->>>> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->>>> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
->>>> ---
->>>>  kernel/futex.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>>>  1 file changed, 57 insertions(+)
->>>>
->>>> diff --git a/kernel/futex.c b/kernel/futex.c
->>>> index 577481d..af1fc31 100644
->>>> --- a/kernel/futex.c
->>>> +++ b/kernel/futex.c
->>>> @@ -69,6 +69,63 @@
->>>>  
->>>>  #include "locking/rtmutex_common.h"
->>>>  
->>>> +/*
->>>> + * Basic futex operation and ordering guarantees:
->>>> + *
->>>> + * The waiter reads the futex value in user space and calls
->>>> + * futex_wait(). It computes the hash bucket and acquires the hash
->>>
->>> does                It
->>> refer to "the waiter" or to futex_wait()?
->>> I read it as referring to the waiter, but ISTM that the comments are using It
->>> to refer to futex_wait()... ???
+This is a multi-part message in MIME format.
+--------------070507070702050801040409
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+
+On 12/19/2013 01:10 PM, Christoph Lameter wrote:
+> On Thu, 19 Dec 2013, David Daney wrote:
+>
+>>> 16:07:58.244398747 -0600
+>>> @@ -43,7 +43,7 @@ DECLARE_PER_CPU(struct mips_fpu_emulator
+>>>    #define MIPS_FPU_EMU_INC_STATS(M)					\
+>>>    do {
+>>> \
+>>>    	preempt_disable();						\
+>>> -	__local_inc(&__get_cpu_var(fpuemustats).M);			\
+>>> +	__this_cpu_inc(fpuemustats.M);					\
+>>>    	preempt_enable();						\
+>>>    } while (0)
 >>>
 >>
->> Yes, it refers to futex_wait(), which IMO in a futex context is pretty
->> clear.
-> 
-> 
-> Agreed.
-> 
-> 
+>> Something seems to be incorrect in this bit.
+>
+> Hrmm.. yes this is a local_t so the this_cpu_inc would not work unless
+> fpuemustats is defined differently.
+>
 
-I'll just have to get by with disagreeing with both of you then.
-I say that the pronoun's antecedent is ambiguous (unclear).
+See the attached patch.  Feel free to include it as part of your patch set.
 
+I tested it on a 64-bit OCTEON system.  I think it will work on 32-bit 
+systems as well.
+
+> Use
+>
+> __local_inc(this_cpu_ptr(fpuemustats.M);
+>
+
+No, I couldn't get various incantations of that to work either.
+
+> instead until then.
+>
+
+
+--------------070507070702050801040409
+Content-Type: text/x-patch;
+ name="0001-MIPS-Replace-__get_cpu_var-uses-in-FPU-emulator.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-MIPS-Replace-__get_cpu_var-uses-in-FPU-emulator.patch"
+
+>From cc9590cf4d75cf7fd36a58be132d35fbbe536a64 Mon Sep 17 00:00:00 2001
+From: David Daney <david.daney@cavium.com>
+Date: Thu, 19 Dec 2013 14:00:17 -0800
+Subject: [PATCH] MIPS: Replace __get_cpu_var uses in FPU emulator.
+
+The use of __this_cpu_inc() requires a fundamental integer type, so
+change the type of all the counters to unsigned long, which is the
+same width they were before, but not wrapped in local_t.
+
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ arch/mips/include/asm/fpu_emulator.h | 14 +++++++-------
+ arch/mips/math-emu/cp1emu.c          |  6 +++---
+ 2 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/arch/mips/include/asm/fpu_emulator.h b/arch/mips/include/asm/fpu_emulator.h
+index 2abb587..619fa5f 100644
+--- a/arch/mips/include/asm/fpu_emulator.h
++++ b/arch/mips/include/asm/fpu_emulator.h
+@@ -30,12 +30,12 @@
+ #ifdef CONFIG_DEBUG_FS
+ 
+ struct mips_fpu_emulator_stats {
+-	local_t emulated;
+-	local_t loads;
+-	local_t stores;
+-	local_t cp1ops;
+-	local_t cp1xops;
+-	local_t errors;
++	unsigned long emulated;
++	unsigned long loads;
++	unsigned long stores;
++	unsigned long cp1ops;
++	unsigned long cp1xops;
++	unsigned long errors;
+ };
+ 
+ DECLARE_PER_CPU(struct mips_fpu_emulator_stats, fpuemustats);
+@@ -43,7 +43,7 @@ DECLARE_PER_CPU(struct mips_fpu_emulator_stats, fpuemustats);
+ #define MIPS_FPU_EMU_INC_STATS(M)					\
+ do {									\
+ 	preempt_disable();						\
+-	__local_inc(&__get_cpu_var(fpuemustats).M);			\
++	__this_cpu_inc(fpuemustats.M);					\
+ 	preempt_enable();						\
+ } while (0)
+ 
+diff --git a/arch/mips/math-emu/cp1emu.c b/arch/mips/math-emu/cp1emu.c
+index efe0088..b853d05 100644
+--- a/arch/mips/math-emu/cp1emu.c
++++ b/arch/mips/math-emu/cp1emu.c
+@@ -2110,13 +2110,13 @@ int fpu_emulator_cop1Handler(struct pt_regs *xcp, struct mips_fpu_struct *ctx,
+ static int fpuemu_stat_get(void *data, u64 *val)
+ {
+ 	int cpu;
+-	unsigned long sum = 0;
++	u64 sum = 0;
+ 	for_each_online_cpu(cpu) {
+ 		struct mips_fpu_emulator_stats *ps;
+-		local_t *pv;
++		unsigned long *pv;
+ 		ps = &per_cpu(fpuemustats, cpu);
+ 		pv = (void *)ps + (unsigned long)data;
+-		sum += local_read(pv);
++		sum += *pv;
+ 	}
+ 	*val = sum;
+ 	return 0;
 -- 
-~Randy
+1.7.11.7
+
+
+--------------070507070702050801040409--
