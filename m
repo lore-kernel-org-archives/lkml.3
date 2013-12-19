@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab3LSMVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:21:18 -0500
-Received: from mga01.intel.com ([192.55.52.88]:48385 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755538Ab3LSL6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="452578391"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
-In-Reply-To: <20131219112812.GY21999@twins.programming.kicks-ass.net>
-References: <20131217161126.GL13532@twins.programming.kicks-ass.net> <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com> <20131218133439.GR21999@twins.programming.kicks-ass.net> <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com> <20131218141125.GT21999@twins.programming.kicks-ass.net> <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com> <20131218150900.GU21999@twins.programming.kicks-ass.net> <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com> <20131219103134.GD30183@twins.programming.kicks-ass.net> <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com> <20131219112812.GY21999@twins.programming.kicks-ass.net>
-User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Thu, 19 Dec 2013 13:58:42 +0200
-Message-ID: <87ioulrr0t.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756328Ab3LSMyT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:54:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44715 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754533Ab3LSL4u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:56:50 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 063/208] [SCSI] libsas: fix usage of ata_tf_to_fis
+Date: Thu, 19 Dec 2013 11:52:41 +0000
+Message-Id: <1387454106-19326-64-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Thu, Dec 19, 2013 at 01:17:51PM +0200, Alexander Shishkin wrote:
->> Peter Zijlstra <peterz@infradead.org> writes:
->> 
->> > On Thu, Dec 19, 2013 at 09:53:44AM +0200, Alexander Shishkin wrote:
->> >> Yes and some implementations of PT have the same issue, but you can do a
->> >> sufficiently large high order allocation and map it to userspace and
->> >> still no copying (or parsing/decoding) in kernel space required.
->> >
->> > What's sufficiently large? The largest we could possibly allocate is
->> > something like 4k^11 which is 8M or so. That's not all that big given
->> > you keep saying it generates in the order of 100 MB/s.
->> 
->> One chunk is 8M. You can have as many as the buddy allocator permits you
->> to have. When you get a PMI, you simply switch one chunk for another and
->> on the tracing goes.
->
-> This document you referred me to looks to specify something with a
-> proper s/g implementation; called ToPA. There doesn't appear to be a
-> limit to the linked entries and you can specify a size per entry, and I
-> don't see anywhere why 4k would be bad.
+------------------
 
-JFYI, 11.2.4.1, "Single Output Region ToPA Implementation".
+From: Dan Williams <dan.j.williams@intel.com>
 
-Regards,
---
-Alex
+commit ae5fbae0ccd982dfca0ce363036ed92f5b13f150 upstream.
+
+Since commit 110dd8f19df5 "[SCSI] libsas: fix scr_read/write users and
+update the libata documentation" we have been passing pmp=1 and is_cmd=0
+to ata_tf_to_fis().  Praveen reports that eSATA attached drives do not
+discover correctly.  His investigation found that the BIOS was passing
+pmp=0 while Linux was passing pmp=1 and failing to discover the drives.
+Update libsas to follow the libata example of pulling the pmp setting
+from the ata_link and correct is_cmd to be 1 since all tf's submitted
+through ->qc_issue are commands.  Presumably libsas lldds do not care
+about is_cmd as they have sideband mechanisms to perform link
+management.
+
+http://marc.info/?l=linux-scsi&m=138179681726990
+
+[jejb: checkpatch fix]
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Reported-by: Praveen Murali <pmurali@logicube.com>
+Tested-by: Praveen Murali <pmurali@logicube.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/scsi/libsas/sas_ata.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/scsi/libsas/sas_ata.c b/drivers/scsi/libsas/sas_ata.c
+index 161c98e..d289583 100644
+--- a/drivers/scsi/libsas/sas_ata.c
++++ b/drivers/scsi/libsas/sas_ata.c
+@@ -211,7 +211,7 @@ static unsigned int sas_ata_qc_issue(struct ata_queued_cmd *qc)
+ 		qc->tf.nsect = 0;
+ 	}
+ 
+-	ata_tf_to_fis(&qc->tf, 1, 0, (u8*)&task->ata_task.fis);
++	ata_tf_to_fis(&qc->tf, qc->dev->link->pmp, 1, (u8 *)&task->ata_task.fis);
+ 	task->uldd_task = qc;
+ 	if (ata_is_atapi(qc->tf.protocol)) {
+ 		memcpy(task->ata_task.atapi_packet, qc->cdb, qc->dev->cdb_len);
+-- 
+1.8.3.2
+
