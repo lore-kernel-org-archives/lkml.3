@@ -1,102 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab3LSMnY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:43:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:17205 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753246Ab3LSMnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:43:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="427187739"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Lv Zheng <lv.zheng@intel.com>,
-        Len Brown <lenb@kernel.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [Patch v2 05/13] PCI, pci-label: treat PCI label with index 0 as valid label
-Date: Thu, 19 Dec 2013 20:38:14 +0800
-Message-Id: <1387456702-4709-6-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com>
+	id S932260Ab3LSMyx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:54:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44708 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754512Ab3LSL4s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:56:48 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        xen-devel@lists.xenproject.org, Matt Wilson <msw@amazon.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 061/208] xen/gnttab: leave lazy MMU mode in the case of a m2p override failure
+Date: Thu, 19 Dec 2013 11:52:39 +0000
+Message-Id: <1387454106-19326-62-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current pci-label driver detects ACPI label by checking label index
-returned by ACPI _DSM method, and treat it as valid if label index
-is positive. According to ACPI Firmware specification 3.1, zero is
-also an valid label index. So change code to detect availability of
-ACPI slot label by checking availaiblity of ACPI _DSM function for
-PCI label.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+------------------
+
+From: Matt Wilson <msw@amazon.com>
+
+commit 14883a75ec76b44759385fb12629f4a0f1aef4e3 upstream.
+
+Commit f62805f1 introduced a bug where lazy MMU mode isn't exited if a
+m2p_add/remove_override call fails.
+
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Reviewed-by: Anthony Liguori <aliguori@amazon.com>
+Cc: xen-devel@lists.xenproject.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Matt Wilson <msw@amazon.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pci/pci-label.c |   34 ++++++++++++++++++----------------
- 1 file changed, 18 insertions(+), 16 deletions(-)
+ drivers/xen/grant-table.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pci/pci-label.c b/drivers/pci/pci-label.c
-index f12dcd1..0260b14 100644
---- a/drivers/pci/pci-label.c
-+++ b/drivers/pci/pci-label.c
-@@ -187,7 +187,6 @@ static const char device_label_dsm_uuid[] = {
- };
- 
- enum acpi_attr_enum {
--	ACPI_ATTR_NONE = 0,
- 	ACPI_ATTR_LABEL_SHOW,
- 	ACPI_ATTR_INDEX_SHOW,
- };
-@@ -222,20 +221,16 @@ dsm_get_label(struct device *dev, char *buf, enum acpi_attr_enum attr)
- 	if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 2 &&
- 	    tmp[0].type == ACPI_TYPE_INTEGER &&
- 	    tmp[1].type == ACPI_TYPE_STRING) {
--		len = tmp[0].integer.value;
--		if (buf) {
--			/*
--			 * This second string element is optional even when
--			 * this _DSM is implemented; when not implemented,
--			 * this entry must return a null string.
--			 */
--			if (attr == ACPI_ATTR_INDEX_SHOW)
--				scnprintf(buf, PAGE_SIZE, "%llu\n",
--				tmp->integer.value);
--			else if (attr == ACPI_ATTR_LABEL_SHOW)
--				dsm_label_utf16s_to_utf8s(tmp + 1, buf);
--			len = strlen(buf) > 0 ? strlen(buf) : -1;
--		}
-+		/*
-+		 * The second string element is optional even when
-+		 * this _DSM is implemented; when not implemented,
-+		 * this entry must return a null string.
-+		 */
-+		if (attr == ACPI_ATTR_INDEX_SHOW)
-+			scnprintf(buf, PAGE_SIZE, "%llu\n", tmp->integer.value);
-+		else if (attr == ACPI_ATTR_LABEL_SHOW)
-+			dsm_label_utf16s_to_utf8s(tmp + 1, buf);
-+		len = strlen(buf) > 0 ? strlen(buf) : -1;
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index c4d2298..255e828 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -921,9 +921,10 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+ 				       &kmap_ops[i] : NULL);
+ 		if (ret)
+-			return ret;
++			goto out;
  	}
  
- 	ACPI_FREE(obj);
-@@ -246,7 +241,14 @@ dsm_get_label(struct device *dev, char *buf, enum acpi_attr_enum attr)
- static bool
- device_has_dsm(struct device *dev)
- {
--	return dsm_get_label(dev, NULL, ACPI_ATTR_NONE) > 0;
-+	acpi_handle handle;
-+
-+	handle = ACPI_HANDLE(dev);
-+	if (!handle)
-+		return false;
-+
-+	return !!acpi_check_dsm(handle, device_label_dsm_uuid, 0x2,
-+				1 << DEVICE_LABEL_DSM);
- }
++ out:
+ 	if (lazy)
+ 		arch_leave_lazy_mmu_mode();
  
- static umode_t
+@@ -954,9 +955,10 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+ 		ret = m2p_remove_override(pages[i], kmap_ops ?
+ 				       &kmap_ops[i] : NULL);
+ 		if (ret)
+-			return ret;
++			goto out;
+ 	}
+ 
++ out:
+ 	if (lazy)
+ 		arch_leave_lazy_mmu_mode();
+ 
 -- 
-1.7.10.4
+1.8.3.2
 
