@@ -1,113 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab3LSLiW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:38:22 -0500
-Received: from 12.mo4.mail-out.ovh.net ([178.33.104.253]:40483 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751465Ab3LSLiU (ORCPT
+	id S1756274Ab3LSMCl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:02:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45419 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756161Ab3LSMAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:38:20 -0500
-X-Greylist: delayed 151099 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Dec 2013 06:38:20 EST
-MIME-Version: 1.0
-In-Reply-To: <CAAVeFuKAGfnnsbtBg=zfmciyMdZHgrX_EpecqPjG=oO6rZdWag@mail.gmail.com>
-References: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
-	<CAAVeFuKAGfnnsbtBg=zfmciyMdZHgrX_EpecqPjG=oO6rZdWag@mail.gmail.com>
-Date: Thu, 19 Dec 2013 12:38:13 +0100
-Message-ID: <CACh+v5MUsYW-=qaVubzt8CWRGxibKDB3PjMZ6AaeDYgeTNzONA@mail.gmail.com>
-Subject: Re: [PATCH] Tracing events with GPIOs
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-Ovh-Tracer-Id: 15802568144155793432
-X-Ovh-Remote: 209.85.192.176 (mail-pd0-f176.google.com)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 19 Dec 2013 07:00:14 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 203/208] HID: kye: Add report fixup for Genius Manticore Keyboard
+Date: Thu, 19 Dec 2013 11:55:01 +0000
+Message-Id: <1387454106-19326-204-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/12/19 Alexandre Courbot <gnurou@gmail.com>:
-> On Tue, Dec 17, 2013 at 9:22 AM, Jean-Jacques Hiblot
-> <jjhiblot@traphandler.com> wrote:
->>
->> This patch implements a new tracing mechanism based on kprobes and using GPIO.
->> Debugging with GPIO is very common in the embedded world. At least for those of us
->> fortunate enough to have an oscilloscope or a logic analyzer on their bench...
->> This is especially true if the issue results of a hardware/sofware interaction.
->>
->> Typical use cases are :
->> * mixed software/hardware debugging. For example when the software detects a
->>   situation of interest (typically an error) it toggles a GPIO to trigger the
->>   oscilloscope acquisition.
->> * direct latency/duration measurements.
->>
->> examples:
->> To trig the oscilloscope whenever a mmc command error:
->>   echo "p:my_mmc_blk_error mmc_blk_cmd_error gpiopulse@13" > /sys/kernel/debug/tracing/kprobe_events
->>   echo 1 > /sys/kernel/debug/tracing/events/kprobes/my_mmc_blk_error/enable
->
-> I do like this idea, however I wonder if you could try and make it use
-> the new gpio descriptor API (see Documentation/gpio/) instead of the
-> GPIO integers we are trying to deprecate (well ok, we just *started*
-> claiming they are deprecated).
->
-I'll make the gpio event trigger work with the old API first. Then
-I'll adapt it to use the gpio descriptor interface.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-> This would probably make things a little bit more complicated on your
-> side, due to the fact the gpiod API is new and probably does not cover
-> all your needs. But it would also make your approach safer and more
-> future proof, on top of helping us refine gpiod for various use cases.
->
-> The problems I can see so far:
->
-> - Using gpiod, GPIOs are not specified as integers, but are typically
-> mapped to a given (device, function) pair (device can be NULL) using
-> device tree/platform data/ACPI and obtained by the corresponding
-> device driver through gpiod_get(). You would need to find a different
-> way to specify GPIOs, maybe using the gpio_chip's label and the GPIO
-> hardware number.
->
-> - Even if you do so, there is currently no way to arbitrarily obtain a
-> GPIO that has not been explicitly mapped to a (device, function), and
-> IIUC you need to specify the tracing GPIO freely from user-space. This
-> hints that we will need to add a function that is sensibly the same as
-> gpio_request_one() to the gpiod API, but I wonder if that does not
-> defeats the purpose somehow.
+------------------
 
-This is something I was wondering about for another reason. In many
-cases the GPIOs that are physically available for probing will be
-limited to the GPIOs already assigned a function (backlight control
-for example), others are usually not routed except in eval boards or
-early prototypes. And consequently those GPIOs will be requested by a
-driver long before a probe is set.
-It would be nice not to have to remove the driver to be able to use
-this GPIO  as a probe. Maybe a gpiod_steal() interface and a flag
-indicating that the GPIO can be safely stolen?
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
->
-> So using gpiod we would have the dual problem of how to represent the
-> GPIO you need from user-space, and how you can safely obtain it. It
-> would be interesting to hear what Linus thinks about it, and if he has
-> better ideas about how we could solve these issues (as he usually has
-> ;) ).
->
-> (note that it is *not* a hard requirement to use gpiod over the legacy
-> integer API, but considering this is the direction we are taking, it
-> would be nice to consider it and see how we could solve the issues
-> mentioned above)
->
-> Thanks,
-> Alex.
+commit 4a2c94c9b6c03af61b04993340bd9559e2277de4 upstream.
+
+Genius Manticore Keyboard presents the same problem in its report
+descriptors than Genius Gila Gaming Mouse and Genius Imperator Keyboard.
+Use the same fixup.
+
+Reported-and-tested-by: Adam Kulagowski <fidor@fidor.org>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/hid/hid-core.c | 1 +
+ drivers/hid/hid-ids.h  | 1 +
+ drivers/hid/hid-kye.c  | 5 +++++
+ 3 files changed, 7 insertions(+)
+
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index d22cc95..016aab4 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1682,6 +1682,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KEYTOUCH, USB_DEVICE_ID_KEYTOUCH_IEC) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_MANTICORE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_GX_IMPERATOR) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_I405X) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index b4e3716..7c85918 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -489,6 +489,7 @@
+ #define USB_VENDOR_ID_KYE		0x0458
+ #define USB_DEVICE_ID_KYE_ERGO_525V	0x0087
+ #define USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE	0x0138
++#define USB_DEVICE_ID_GENIUS_MANTICORE	0x0153
+ #define USB_DEVICE_ID_GENIUS_GX_IMPERATOR	0x4018
+ #define USB_DEVICE_ID_KYE_GPEN_560	0x5003
+ #define USB_DEVICE_ID_KYE_EASYPEN_I405X	0x5010
+diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
+index 7384512..35a4f9c 100644
+--- a/drivers/hid/hid-kye.c
++++ b/drivers/hid/hid-kye.c
+@@ -341,6 +341,9 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
+ 		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
+ 					"Genius Gx Imperator Keyboard");
++	case USB_DEVICE_ID_GENIUS_MANTICORE:
++		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
++					"Genius Manticore Keyboard");
+ 		break;
+ 	}
+ 	return rdesc;
+@@ -439,6 +442,8 @@ static const struct hid_device_id kye_devices[] = {
+ 				USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
+ 				USB_DEVICE_ID_GENIUS_GX_IMPERATOR) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
++				USB_DEVICE_ID_GENIUS_MANTICORE) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, kye_devices);
+-- 
+1.8.3.2
+
