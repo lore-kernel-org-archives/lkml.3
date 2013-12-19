@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab3LSQIx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:08:53 -0500
-Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:36853 "EHLO
-	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754145Ab3LSPui (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:50:38 -0500
-Message-Id: <20131219155031.935326462@linux.com>
-Date: Thu, 19 Dec 2013 09:50:26 -0600
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org
-Subject: [PATCH 11/40] parisc: Replace __get_cpu_var uses for address calculation
-References: <20131219155015.443763038@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_parisc
+	id S1756695Ab3LSQJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:09:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59851 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752369Ab3LSQJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 11:09:13 -0500
+From: Takashi Iwai <tiwai@suse.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Renninger <trenn@suse.de>
+Subject: [PATCH] ACPI: Blacklist Win8 OSI for some HP laptop 2013 models
+Date: Thu, 19 Dec 2013 17:09:12 +0100
+Message-Id: <1387469352-23798-1-git-send-email-tiwai@suse.de>
+X-Mailer: git-send-email 1.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to the use of this_cpu_ptr().
+The BIOS on recent HP laptops behaves differently with Win8 OSI,
+e.g. no backlight control and no rfkill are available.  List them in
+the blacklist as a workaround.
 
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Helge Deller <deller@gmx.de>
-Cc: linux-parisc@vger.kernel.org
-Signed-off-by: Christoph Lameter <cl@linux.com>
+This patch tries to reduce the added items by matching "G1" suffix,
+e.g. machines are named like "HP ProBook 430 G1".
 
-Index: linux/arch/parisc/lib/memcpy.c
-===================================================================
---- linux.orig/arch/parisc/lib/memcpy.c	2013-12-02 16:07:49.844632157 -0600
-+++ linux/arch/parisc/lib/memcpy.c	2013-12-02 16:07:49.844632157 -0600
-@@ -470,7 +470,7 @@ static unsigned long pa_memcpy(void *dst
- 		return 0;
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=856294
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+ drivers/acpi/blacklist.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
+
+diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+index 078c4f7fe2dd..40c91f5052ef 100644
+--- a/drivers/acpi/blacklist.c
++++ b/drivers/acpi/blacklist.c
+@@ -323,6 +323,56 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+ 		     DMI_MATCH(DMI_PRODUCT_VERSION, "2349D15"),
+ 		},
+ 	},
++	{
++	.callback = dmi_disable_osi_win8,
++	.ident = "HP ProBook 2013 models",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "HP ProBook "),
++		     DMI_MATCH(DMI_PRODUCT_NAME, " G1"),
++		},
++	},
++	{
++	.callback = dmi_disable_osi_win8,
++	.ident = "HP EliteBook 2013 models",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook "),
++		     DMI_MATCH(DMI_PRODUCT_NAME, " G1"),
++		},
++	},
++	{
++	.callback = dmi_disable_osi_win8,
++	.ident = "HP ZBook 14",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "HP ZBook 14"),
++		},
++	},
++	{
++	.callback = dmi_disable_osi_win8,
++	.ident = "HP ZBook 15",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "HP ZBook 15"),
++		},
++	},
++	{
++	.callback = dmi_disable_osi_win8,
++	.ident = "HP ZBook 17",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "HP ZBook 17"),
++		},
++	},
++	{
++	.callback = dmi_disable_osi_win8,
++	.ident = "HP EliteBook 8780w",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook 8780w"),
++		},
++	},
  
- 	/* if a load or store fault occured we can get the faulty addr */
--	d = &__get_cpu_var(exception_data);
-+	d = this_cpu_ptr(&exception_data);
- 	fault_addr = d->fault_addr;
- 
- 	/* error in load or store? */
-Index: linux/arch/parisc/mm/fault.c
-===================================================================
---- linux.orig/arch/parisc/mm/fault.c	2013-12-02 16:07:49.844632157 -0600
-+++ linux/arch/parisc/mm/fault.c	2013-12-02 16:07:49.844632157 -0600
-@@ -151,7 +151,7 @@ int fixup_exception(struct pt_regs *regs
- 	fix = search_exception_tables(regs->iaoq[0]);
- 	if (fix) {
- 		struct exception_data *d;
--		d = &__get_cpu_var(exception_data);
-+		d = this_cpu_ptr(&exception_data);
- 		d->fault_ip = regs->iaoq[0];
- 		d->fault_space = regs->isr;
- 		d->fault_addr = regs->ior;
+ 	/*
+ 	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
+-- 
+1.8.5
 
