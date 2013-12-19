@@ -1,182 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab3LSL7J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:59:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45197 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753044Ab3LSL7H (ORCPT
+	id S1756816Ab3LSM6R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:58:17 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51330 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756444Ab3LSM6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:07 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Will Deacon <will.deacon@arm.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 159/208] iommu/arm-smmu: use mutex instead of spinlock for locking page tables
-Date: Thu, 19 Dec 2013 11:54:17 +0000
-Message-Id: <1387454106-19326-160-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 07:58:15 -0500
+Date: Thu, 19 Dec 2013 13:57:59 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
+ tracing units
+Message-ID: <20131219125759.GU3694@twins.programming.kicks-ass.net>
+References: <20131218133439.GR21999@twins.programming.kicks-ass.net>
+ <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131218141125.GT21999@twins.programming.kicks-ass.net>
+ <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131218150900.GU21999@twins.programming.kicks-ass.net>
+ <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219103134.GD30183@twins.programming.kicks-ass.net>
+ <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
+ <20131219112812.GY21999@twins.programming.kicks-ass.net>
+ <20131219115759.GS3694@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131219115759.GS3694@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Dec 19, 2013 at 12:57:59PM +0100, Peter Zijlstra wrote:
+> On Thu, Dec 19, 2013 at 12:28:12PM +0100, Peter Zijlstra wrote:
+> > This document you referred me to looks to specify something with a
+> > proper s/g implementation; called ToPA. There doesn't appear to be a
+> > limit to the linked entries and you can specify a size per entry, and I
+> > don't see anywhere why 4k would be bad.
+> > 
+> > That said, I'm still reading..
+> 
+> Found it:
+> 
+> "Single Output Region ToPA Implementation
+> 
+> The first processor generation to implement Intel PT supports only ToPA
+> configurations with a single ToPA entry followed by an END entry that
+> points back to the first entry (creating one circular output buffer).
+> Such processors enumerate CPUID.(EAX=14H,ECX=0):EBX[bit 1] as 0."
+> 
+> So basically you guys buggered the hardware.
+> 
 
-------------------
+"ToPA PMI and Single Output Region ToPA Implementation
 
-From: Will Deacon <will.deacon@arm.com>
+A processor that supports only a single ToPA output region
+implementation (such that only one output region is supported; see
+above) will attempt to signal a ToPA PMI interrupt before the output
+wraps and overwrites the top of the buffer. To support this
+functionality, the PMI handler should disable packet generation as soon
+as possible.  Due to PMI skid, it is possible, in rare cases, that the
+wrap will have occurred before the PMI is delivered. Software can avoid
+this by setting the STOP bit in the ToPA entry (see Table 11-3); this
+will disable tracing once the region is filled, and no wrap will occur.
+This approach has the downside of disabling packet generation so that
+some of the instructions that led up to the PMI will not be traced. If
+the PMI skid is significant enough to cause the region to fill and
+tracing to be disabled, the PMI handler will need to clear the
+IA32_RTIT_STATUS.Stopped indication before tracing can resume."
 
-commit a44a9791e778d9ccda50d5534028ed4057a9a45b upstream.
 
-When creating IO mappings, we lazily allocate our page tables using the
-standard, non-atomic allocator functions. This presents us with a
-problem, since our page tables are protected with a spinlock.
+So you're basically forced to stop the tracing on PMI anyhow; so your
+continuous tracing argument goes out the window.
 
-This patch reworks the smmu_domain lock to use a mutex instead of a
-spinlock. iova_to_phys is then reworked so that it only reads the page
-tables, and can run in a lockless fashion, leaving the mutex to guard
-against concurrent mapping threads.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/iommu/arm-smmu.c | 62 ++++++++++++++++++++----------------------------
- 1 file changed, 26 insertions(+), 36 deletions(-)
-
-diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
-index 44e5276..320894b 100644
---- a/drivers/iommu/arm-smmu.c
-+++ b/drivers/iommu/arm-smmu.c
-@@ -391,7 +391,7 @@ struct arm_smmu_domain {
- 	struct arm_smmu_cfg		root_cfg;
- 	phys_addr_t			output_mask;
- 
--	spinlock_t			lock;
-+	struct mutex			lock;
- };
- 
- static DEFINE_SPINLOCK(arm_smmu_devices_lock);
-@@ -884,7 +884,7 @@ static int arm_smmu_domain_init(struct iommu_domain *domain)
- 		goto out_free_domain;
- 	smmu_domain->root_cfg.pgd = pgd;
- 
--	spin_lock_init(&smmu_domain->lock);
-+	mutex_init(&smmu_domain->lock);
- 	domain->priv = smmu_domain;
- 	return 0;
- 
-@@ -1116,7 +1116,7 @@ static int arm_smmu_attach_dev(struct iommu_domain *domain, struct device *dev)
- 	 * Sanity check the domain. We don't currently support domains
- 	 * that cross between different SMMU chains.
- 	 */
--	spin_lock(&smmu_domain->lock);
-+	mutex_lock(&smmu_domain->lock);
- 	if (!smmu_domain->leaf_smmu) {
- 		/* Now that we have a master, we can finalise the domain */
- 		ret = arm_smmu_init_domain_context(domain, dev);
-@@ -1131,7 +1131,7 @@ static int arm_smmu_attach_dev(struct iommu_domain *domain, struct device *dev)
- 			dev_name(device_smmu->dev));
- 		goto err_unlock;
- 	}
--	spin_unlock(&smmu_domain->lock);
-+	mutex_unlock(&smmu_domain->lock);
- 
- 	/* Looks ok, so add the device to the domain */
- 	master = find_smmu_master(smmu_domain->leaf_smmu, dev->of_node);
-@@ -1141,7 +1141,7 @@ static int arm_smmu_attach_dev(struct iommu_domain *domain, struct device *dev)
- 	return arm_smmu_domain_add_master(smmu_domain, master);
- 
- err_unlock:
--	spin_unlock(&smmu_domain->lock);
-+	mutex_unlock(&smmu_domain->lock);
- 	return ret;
- }
- 
-@@ -1370,7 +1370,7 @@ static int arm_smmu_handle_mapping(struct arm_smmu_domain *smmu_domain,
- 	if (paddr & ~output_mask)
- 		return -ERANGE;
- 
--	spin_lock(&smmu_domain->lock);
-+	mutex_lock(&smmu_domain->lock);
- 	pgd += pgd_index(iova);
- 	end = iova + size;
- 	do {
-@@ -1386,7 +1386,7 @@ static int arm_smmu_handle_mapping(struct arm_smmu_domain *smmu_domain,
- 	} while (pgd++, iova != end);
- 
- out_unlock:
--	spin_unlock(&smmu_domain->lock);
-+	mutex_unlock(&smmu_domain->lock);
- 
- 	/* Ensure new page tables are visible to the hardware walker */
- 	if (smmu->features & ARM_SMMU_FEAT_COHERENT_WALK)
-@@ -1429,44 +1429,34 @@ static size_t arm_smmu_unmap(struct iommu_domain *domain, unsigned long iova,
- static phys_addr_t arm_smmu_iova_to_phys(struct iommu_domain *domain,
- 					 dma_addr_t iova)
- {
--	pgd_t *pgd;
--	pud_t *pud;
--	pmd_t *pmd;
--	pte_t *pte;
-+	pgd_t *pgdp, pgd;
-+	pud_t pud;
-+	pmd_t pmd;
-+	pte_t pte;
- 	struct arm_smmu_domain *smmu_domain = domain->priv;
- 	struct arm_smmu_cfg *root_cfg = &smmu_domain->root_cfg;
--	struct arm_smmu_device *smmu = root_cfg->smmu;
- 
--	spin_lock(&smmu_domain->lock);
--	pgd = root_cfg->pgd;
--	if (!pgd)
--		goto err_unlock;
-+	pgdp = root_cfg->pgd;
-+	if (!pgdp)
-+		return 0;
- 
--	pgd += pgd_index(iova);
--	if (pgd_none_or_clear_bad(pgd))
--		goto err_unlock;
-+	pgd = *(pgdp + pgd_index(iova));
-+	if (pgd_none(pgd))
-+		return 0;
- 
--	pud = pud_offset(pgd, iova);
--	if (pud_none_or_clear_bad(pud))
--		goto err_unlock;
-+	pud = *pud_offset(&pgd, iova);
-+	if (pud_none(pud))
-+		return 0;
- 
--	pmd = pmd_offset(pud, iova);
--	if (pmd_none_or_clear_bad(pmd))
--		goto err_unlock;
-+	pmd = *pmd_offset(&pud, iova);
-+	if (pmd_none(pmd))
-+		return 0;
- 
--	pte = pmd_page_vaddr(*pmd) + pte_index(iova);
-+	pte = *(pmd_page_vaddr(pmd) + pte_index(iova));
- 	if (pte_none(pte))
--		goto err_unlock;
--
--	spin_unlock(&smmu_domain->lock);
--	return __pfn_to_phys(pte_pfn(*pte)) | (iova & ~PAGE_MASK);
-+		return 0;
- 
--err_unlock:
--	spin_unlock(&smmu_domain->lock);
--	dev_warn(smmu->dev,
--		 "invalid (corrupt?) page tables detected for iova 0x%llx\n",
--		 (unsigned long long)iova);
--	return -EINVAL;
-+	return __pfn_to_phys(pte_pfn(pte)) | (iova & ~PAGE_MASK);
- }
- 
- static int arm_smmu_domain_has_cap(struct iommu_domain *domain,
--- 
-1.8.3.2
-
+Also, what a complete clusterfuck. I think we're far better of
+pretending PT doesn't exist until its fixed.
