@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab3LSL5p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:57:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44880 "EHLO
+	id S1754453Ab3LSL4l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:56:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44656 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754879Ab3LSL5i (ORCPT
+	with ESMTP id S1754244Ab3LSL4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:38 -0500
+	Thu, 19 Dec 2013 06:56:37 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pierre Ossman <pierre@ossman.eu>, Alex Deucher <alexander.deucher@amd.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 095/208] drm/radeon/audio: correct ACR table
-Date: Thu, 19 Dec 2013 11:53:13 +0000
-Message-Id: <1387454106-19326-96-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 055/208] ARM: mvebu: use the virtual CPU registers to access coherency registers
+Date: Thu, 19 Dec 2013 11:52:33 +0000
+Message-Id: <1387454106-19326-56-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,52 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pierre Ossman <pierre@ossman.eu>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit 3e71985f2439d8c4090dc2820e497e6f3d72dcff upstream.
+commit b6dda00cddcc71d2030668bc0cc0fed758c411c2 upstream.
 
-The values were taken from the HDMI spec, but they assumed
-exact x/1.001 clocks. Since we round the clocks, we also need
-to calculate different N and CTS values.
+The Armada XP provides a mechanism called "virtual CPU registers" or
+"per-CPU register banking", to access the per-CPU registers of the
+current CPU, without having to worry about finding on which CPU we're
+running. CPU0 has its registers at 0x21800, CPU1 at 0x21900, CPU2 at
+0x21A00 and CPU3 at 0x21B00. The virtual registers accessing the
+current CPU registers are at 0x21000.
 
-Note that the N for 25.2/1.001 MHz at 44.1 kHz audio is out of
-spec. Hopefully this mode is rarely used and/or HDMI sinks
-tolerate overly large values of N.
+However, in the Device Tree node that provides the register addresses
+for the coherency unit (which is responsible for ensuring coherency
+between processors, and I/O coherency between processors and the
+DMA-capable devices), a mistake was made: the CPU0-specific registers
+were specified instead of the virtual CPU registers. This means that
+the coherency barrier needed for I/O coherency was not behaving
+properly when executed from a CPU different from CPU0. This patch
+fixes that by using the virtual CPU registers.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=69675
-
-Signed-off-by: Pierre Ossman <pierre@ossman.eu>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Fixes: e60304f8cb7bb5 "arm: mvebu: Add hardware I/O Coherency support"
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/r600_hdmi.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/boot/dts/armada-370-xp.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/r600_hdmi.c b/drivers/gpu/drm/radeon/r600_hdmi.c
-index 01a2e1c..92c6df7 100644
---- a/drivers/gpu/drm/radeon/r600_hdmi.c
-+++ b/drivers/gpu/drm/radeon/r600_hdmi.c
-@@ -58,15 +58,15 @@ enum r600_hdmi_iec_status_bits {
- static const struct radeon_hdmi_acr r600_hdmi_predefined_acr[] = {
-     /*	     32kHz	  44.1kHz	48kHz    */
-     /* Clock      N     CTS      N     CTS      N     CTS */
--    {  25175,  4576,  28125,  7007,  31250,  6864,  28125 }, /*  25,20/1.001 MHz */
-+    {  25175,  4096,  25175, 28224, 125875,  6144,  25175 }, /*  25,20/1.001 MHz */
-     {  25200,  4096,  25200,  6272,  28000,  6144,  25200 }, /*  25.20       MHz */
-     {  27000,  4096,  27000,  6272,  30000,  6144,  27000 }, /*  27.00       MHz */
-     {  27027,  4096,  27027,  6272,  30030,  6144,  27027 }, /*  27.00*1.001 MHz */
-     {  54000,  4096,  54000,  6272,  60000,  6144,  54000 }, /*  54.00       MHz */
-     {  54054,  4096,  54054,  6272,  60060,  6144,  54054 }, /*  54.00*1.001 MHz */
--    {  74176, 11648, 210937, 17836, 234375, 11648, 140625 }, /*  74.25/1.001 MHz */
-+    {  74176,  4096,  74176,  5733,  75335,  6144,  74176 }, /*  74.25/1.001 MHz */
-     {  74250,  4096,  74250,  6272,  82500,  6144,  74250 }, /*  74.25       MHz */
--    { 148352, 11648, 421875,  8918, 234375,  5824, 140625 }, /* 148.50/1.001 MHz */
-+    { 148352,  4096, 148352,  5733, 150670,  6144, 148352 }, /* 148.50/1.001 MHz */
-     { 148500,  4096, 148500,  6272, 165000,  6144, 148500 }, /* 148.50       MHz */
- };
+diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
+index 90b1176..c058ce1 100644
+--- a/arch/arm/boot/dts/armada-370-xp.dtsi
++++ b/arch/arm/boot/dts/armada-370-xp.dtsi
+@@ -60,7 +60,7 @@
  
+ 			coherency-fabric@20200 {
+ 				compatible = "marvell,coherency-fabric";
+-				reg = <0x20200 0xb0>, <0x21810 0x1c>;
++				reg = <0x20200 0xb0>, <0x21010 0x1c>;
+ 			};
+ 
+ 			serial@12000 {
 -- 
 1.8.3.2
 
