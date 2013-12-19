@@ -1,31 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab3LSHPo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 02:15:44 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64592 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599Ab3LSHPm (ORCPT
+	id S1752223Ab3LSHRh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 02:17:37 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43631 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab3LSHRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 02:15:42 -0500
-X-AuditID: 9c930197-b7cefae000007949-37-52b29d1ceddb
+	Thu, 19 Dec 2013 02:17:36 -0500
+X-AuditID: 9c93016f-b7cc5ae000007121-dc-52b29d8e37c6
 From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Arun Sharma <asharma@fb.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>,
         Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 04/18] perf tools: Introduce struct add_entry_iter
+Subject: Re: [PATCH 01/18] perf sort: Compare addresses if no symbol info
 References: <1387344086-12744-1-git-send-email-namhyung@kernel.org>
-	<1387344086-12744-5-git-send-email-namhyung@kernel.org>
-	<20131218155040.GI4146@krava.brq.redhat.com>
-Date: Thu, 19 Dec 2013 16:15:40 +0900
-In-Reply-To: <20131218155040.GI4146@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Wed, 18 Dec 2013 16:50:40 +0100")
-Message-ID: <87ppotfh0j.fsf@sejong.aot.lge.com>
+	<1387344086-12744-2-git-send-email-namhyung@kernel.org>
+	<20131218153849.GF4146@krava.brq.redhat.com>
+	<20131218173528.GA4819@ghostprotocols.net>
+	<20131218173907.GB4819@ghostprotocols.net>
+Date: Thu, 19 Dec 2013 16:17:34 +0900
+In-Reply-To: <20131218173907.GB4819@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Wed, 18 Dec 2013 14:39:07 -0300")
+Message-ID: <87lhzhfgxd.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -34,33 +35,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+Hi Arnaldo,
 
-On Wed, 18 Dec 2013 16:50:40 +0100, Jiri Olsa wrote:
-> On Wed, Dec 18, 2013 at 02:21:12PM +0900, Namhyung Kim wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
+On Wed, 18 Dec 2013 14:39:07 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Dec 18, 2013 at 02:35:28PM -0300, Arnaldo Carvalho de Melo escreveu:
+>> Em Wed, Dec 18, 2013 at 04:38:49PM +0100, Jiri Olsa escreveu:
+>> > > +static int64_t _sort__addr_cmp(u64 left_ip, u64 right_ip)
+>> > > +{
+>> > > +	return (int64_t)(right_ip - left_ip);
+>> > > +}
+>> > > +
+>> > 
+>> > what's the reason for the leading '_' in the name?
 >> 
->> There're some duplicate code when adding hist entries.  They are
->> different in that some have branch info or mem info but generally do
->> same thing.  So introduce new struct add_entry_iter and add callbacks
->> to customize each case in general way.
+>> Yeah, I'm curious as well, the convention is to only use double _ in
+>> front of functions when it does a little less than a function of the
+>> same name without such prefix, like locking, etc.
 >> 
->> The new perf_evsel__add_entry() function will look like:
->> 
->>   iter->prepare_entry();
->>   iter->add_single_entry();
->> 
->>   while (iter->next_entry())
->>     iter->add_next_entry();
->> 
->>   iter->finish_entry();
->> 
->> This will help further work like the cumulative callchain patchset.
+>> - Arnaldo
+>>  
+>> > otherwise:
+>> > 
+>> > Acked-by: Jiri Olsa <jolsa@redhat.com>
 >
-> cool, I was waiting for this one! I have another user
-> for it, I'll test by rebasing my code ;-)
+> Yeah, I'll apply it, it just keeps whatever convention that is there
+> already.
 
-Great!  I'd look forward to your feedback! :)
+Exactly.  It's not a top-level sort/compare function, hence the leading
+'_', I guess.
 
-Thanks,
+
+> I'll take a stab at fixing it all up after merging this
+> --whatever-the-cumulate-option-becomes new code :-)
+
+Thank you!
 Namhyung
