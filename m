@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab3LSL7n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:59:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45305 "EHLO
+	id S1756602Ab3LSM5N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:57:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44644 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756002Ab3LSL7i (ORCPT
+	with ESMTP id S1754385Ab3LSL4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:38 -0500
+	Thu, 19 Dec 2013 06:56:35 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 180/208] x86, efi: Don't use (U)EFI time services on 32 bit
-Date: Thu, 19 Dec 2013 11:54:38 +0000
-Message-Id: <1387454106-19326-181-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 053/208] spi/pxa2xx: add new ACPI IDs
+Date: Thu, 19 Dec 2013 11:52:31 +0000
+Message-Id: <1387454106-19326-54-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -29,43 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <matthew.garrett@nebula.com>
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-commit 04bf9ba720fcc4fa313fa122b799ae0989b6cd50 upstream.
+commit 54acbd9688e6324470671525c7916011f1ff8081 upstream.
 
-UEFI time services are often broken once we're in virtual mode. We were
-already refusing to use them on 64-bit systems, but it turns out that
-they're also broken on some 32-bit firmware, including the Dell Venue.
-Disable them for now, we can revisit once we have the 1:1 mappings code
-incorporated.
+Newer Intel PCHs with LPSS have the same SPI controllers than Haswell but
+ACPI IDs are different. Add these IDs to the driver list.
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-Link: http://lkml.kernel.org/r/1385754283-2464-1-git-send-email-matthew.garrett@nebula.com
-Cc: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/platform/efi/efi.c | 7 -------
- 1 file changed, 7 deletions(-)
+ drivers/spi/spi-pxa2xx.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index c7e22ab..220fa52 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -768,13 +768,6 @@ void __init efi_init(void)
- 
- 	set_bit(EFI_MEMMAP, &x86_efi_facility);
- 
--#ifdef CONFIG_X86_32
--	if (efi_is_native()) {
--		x86_platform.get_wallclock = efi_get_time;
--		x86_platform.set_wallclock = efi_set_rtc_mmss;
--	}
--#endif
--
- #if EFI_DEBUG
- 	print_efi_memmap();
- #endif
+diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
+index f440dce..46e481f 100644
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -1071,6 +1071,8 @@ pxa2xx_spi_acpi_get_pdata(struct platform_device *pdev)
+ static struct acpi_device_id pxa2xx_spi_acpi_match[] = {
+ 	{ "INT33C0", 0 },
+ 	{ "INT33C1", 0 },
++	{ "INT3430", 0 },
++	{ "INT3431", 0 },
+ 	{ "80860F0E", 0 },
+ 	{ },
+ };
 -- 
 1.8.3.2
 
