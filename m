@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756950Ab3LSNAy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:00:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44585 "EHLO
+	id S1755619Ab3LSL6v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:58:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45131 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232Ab3LSL4S (ORCPT
+	with ESMTP id S1755517Ab3LSL6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:18 -0500
+	Thu, 19 Dec 2013 06:58:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Colin Leitner <colin.leitner@gmail.com>, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 041/208] inet: fix possible seqlock deadlocks
-Date: Thu, 19 Dec 2013 11:52:19 +0000
-Message-Id: <1387454106-19326-42-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 146/208] USB: ftdi_sio: fixed handling of unsupported CSIZE setting
+Date: Thu, 19 Dec 2013 11:54:04 +0000
+Message-Id: <1387454106-19326-147-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -29,71 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Colin Leitner <colin.leitner@googlemail.com>
 
-commit f1d8cba61c3c4b1eb88e507249c4cb8d635d9a76 upstream.
+commit 8704211f65a2106ba01b6ac9727cdaf9ca11594c upstream.
 
-In commit c9e9042994d3 ("ipv4: fix possible seqlock deadlock") I left
-another places where IP_INC_STATS_BH() were improperly used.
+FTDI UARTs support only 7 or 8 data bits. Until now the ftdi_sio driver would
+only report this limitation for CS6 to dmesg and fail to reflect this fact to
+tcgetattr.
 
-udp_sendmsg(), ping_v4_sendmsg() and tcp_v4_connect() are called from
-process context, not from softirq context.
+This patch reverts the unsupported CSIZE setting and reports the fact with less
+severance to dmesg for both CS5 and CS6.
 
-This was detected by lockdep seqlock support.
+To test the patch it's sufficient to call
 
-Reported-by: jongman heo <jongman.heo@samsung.com>
-Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
-Fixes: c319b4d76b9e ("net: ipv4: add IPPROTO_ICMP socket kind")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+    stty -F /dev/ttyUSB0 cs5
+
+which will succeed without the patch and report an error with the patch
+applied.
+
+As an additional fix this patch ensures that the control request will always
+include a data bit size.
+
+Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/ping.c     | 2 +-
- net/ipv4/tcp_ipv4.c | 2 +-
- net/ipv4/udp.c      | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/serial/ftdi_sio.c | 37 ++++++++++++++++++++++++-------------
+ 1 file changed, 24 insertions(+), 13 deletions(-)
 
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-index 09ee970..d7886b2 100644
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -769,7 +769,7 @@ int ping_v4_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		err = PTR_ERR(rt);
- 		rt = NULL;
- 		if (err == -ENETUNREACH)
--			IP_INC_STATS_BH(net, IPSTATS_MIB_OUTNOROUTES);
-+			IP_INC_STATS(net, IPSTATS_MIB_OUTNOROUTES);
- 		goto out;
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index aa3aed5..92549cc 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2131,6 +2131,20 @@ static void ftdi_set_termios(struct tty_struct *tty,
+ 		termios->c_cflag |= CRTSCTS;
  	}
  
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index b299da5..0f20350 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -177,7 +177,7 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
- 	if (IS_ERR(rt)) {
- 		err = PTR_ERR(rt);
- 		if (err == -ENETUNREACH)
--			IP_INC_STATS_BH(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
-+			IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
- 		return err;
++	/*
++	 * All FTDI UART chips are limited to CS7/8. We won't pretend to
++	 * support CS5/6 and revert the CSIZE setting instead.
++	 */
++	if ((C_CSIZE(tty) != CS8) && (C_CSIZE(tty) != CS7)) {
++		dev_warn(ddev, "requested CSIZE setting not supported\n");
++
++		termios->c_cflag &= ~CSIZE;
++		if (old_termios)
++			termios->c_cflag |= old_termios->c_cflag & CSIZE;
++		else
++			termios->c_cflag |= CS8;
++	}
++
+ 	cflag = termios->c_cflag;
+ 
+ 	if (!old_termios)
+@@ -2167,19 +2181,16 @@ no_skip:
+ 	} else {
+ 		urb_value |= FTDI_SIO_SET_DATA_PARITY_NONE;
+ 	}
+-	if (cflag & CSIZE) {
+-		switch (cflag & CSIZE) {
+-		case CS7:
+-			urb_value |= 7;
+-			dev_dbg(ddev, "Setting CS7\n");
+-			break;
+-		case CS8:
+-			urb_value |= 8;
+-			dev_dbg(ddev, "Setting CS8\n");
+-			break;
+-		default:
+-			dev_err(ddev, "CSIZE was set but not CS7-CS8\n");
+-		}
++	switch (cflag & CSIZE) {
++	case CS7:
++		urb_value |= 7;
++		dev_dbg(ddev, "Setting CS7\n");
++		break;
++	default:
++	case CS8:
++		urb_value |= 8;
++		dev_dbg(ddev, "Setting CS8\n");
++		break;
  	}
  
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index a1787101d..b30deb9 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -972,7 +972,7 @@ int udp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 			err = PTR_ERR(rt);
- 			rt = NULL;
- 			if (err == -ENETUNREACH)
--				IP_INC_STATS_BH(net, IPSTATS_MIB_OUTNOROUTES);
-+				IP_INC_STATS(net, IPSTATS_MIB_OUTNOROUTES);
- 			goto out;
- 		}
- 
+ 	/* This is needed by the break command since it uses the same command
 -- 
 1.8.3.2
 
