@@ -1,79 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab3LSJRV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:17:21 -0500
-Received: from relay.parallels.com ([195.214.232.42]:60786 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368Ab3LSJRQ (ORCPT
+	id S1752968Ab3LSJOX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:14:23 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:56862 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab3LSJK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:17:16 -0500
-Message-ID: <52B2B995.2040801@parallels.com>
-Date: Thu, 19 Dec 2013 13:17:09 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	Thu, 19 Dec 2013 04:10:29 -0500
+Subject: [PATCH -tip v6 21/22] kprobes/x86: Remove unneeded
+ preempt_disable/enable in interrupt handlers
+To: Ingo Molnar <mingo@kernel.org>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Thu, 19 Dec 2013 09:04:45 +0000
+Message-ID: <20131219090445.14309.42834.stgit@kbuild-fedora.novalocal>
+In-Reply-To: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
+References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Glauber Costa <glommer@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/6] memcg, slab: check and init memcg_cahes under slab_mutex
-References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com> <afc6d5e85d805c7313e928497b4ebcf1815703dd.1387372122.git.vdavydov@parallels.com> <20131218174105.GE31080@dhcp22.suse.cz> <52B29B2F.7050909@parallels.com> <CAA6-i6r=hW+Y2+kdKME=GTWN6sCbi37kh4sX5dT3AKkatpQzGg@mail.gmail.com> <20131219091215.GD9331@dhcp22.suse.cz>
-In-Reply-To: <20131219091215.GD9331@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 01:12 PM, Michal Hocko wrote:
-> On Thu 19-12-13 12:00:58, Glauber Costa wrote:
->> On Thu, Dec 19, 2013 at 11:07 AM, Vladimir Davydov
->> <vdavydov@parallels.com> wrote:
->>> On 12/18/2013 09:41 PM, Michal Hocko wrote:
->>>> On Wed 18-12-13 17:16:55, Vladimir Davydov wrote:
->>>>> The memcg_params::memcg_caches array can be updated concurrently from
->>>>> memcg_update_cache_size() and memcg_create_kmem_cache(). Although both
->>>>> of these functions take the slab_mutex during their operation, the
->>>>> latter checks if memcg's cache has already been allocated w/o taking the
->>>>> mutex. This can result in a race as described below.
->>>>>
->>>>> Asume two threads schedule kmem_cache creation works for the same
->>>>> kmem_cache of the same memcg from __memcg_kmem_get_cache(). One of the
->>>>> works successfully creates it. Another work should fail then, but if it
->>>>> interleaves with memcg_update_cache_size() as follows, it does not:
->>>> I am not sure I understand the race. memcg_update_cache_size is called
->>>> when we start accounting a new memcg or a child is created and it
->>>> inherits accounting from the parent. memcg_create_kmem_cache is called
->>>> when a new cache is first allocated from, right?
->>> memcg_update_cache_size() is called when kmem accounting is activated
->>> for a memcg, no matter how.
->>>
->>> memcg_create_kmem_cache() is scheduled from __memcg_kmem_get_cache().
->>> It's OK to have a bunch of such methods trying to create the same memcg
->>> cache concurrently, but only one of them should succeed.
->>>
->>>> Why cannot we simply take slab_mutex inside memcg_create_kmem_cache?
->>>> it is running from the workqueue context so it should clash with other
->>>> locks.
->>> Hmm, Glauber's code never takes the slab_mutex inside memcontrol.c. I
->>> have always been wondering why, because it could simplify flow paths
->>> significantly (e.g. update_cache_sizes() -> update_all_caches() ->
->>> update_cache_size() - from memcontrol.c to slab_common.c and back again
->>> just to take the mutex).
->>>
->> Because that is a layering violation and exposes implementation
->> details of the slab to
->> the outside world. I agree this would make things a lot simpler, but
->> please check with Christoph
->> if this is acceptable before going forward.
-> We do not have to expose the lock directly. We can hide it behind a
-> helper function. Relying on the lock silently at many places is worse
-> then expose it IMHO.
+Since the int3 itself disables the local_irq and kprobes
+keeps it disabled while the single step has done, the
+kernel preemption never happen while processing a kprobe.
+This means that we don't need to disable/enable preemption.
+Also, this changes kprobe_int3_handler to use goto-out style.
 
-BTW, the lock is already exposed by mm/slab.h, which is included into
-mm/memcontrol.c :-) So we have immediate access to the lock right now.
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+---
+ arch/x86/kernel/kprobes/core.c |   24 +++++++-----------------
+ 1 file changed, 7 insertions(+), 17 deletions(-)
 
-Thanks.
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index 060641e..6b4d9bd 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -506,7 +506,6 @@ static void setup_singlestep(struct kprobe *p, struct pt_regs *regs,
+ 		 * stepping.
+ 		 */
+ 		regs->ip = (unsigned long)p->ainsn.insn;
+-		preempt_enable_no_resched();
+ 		return;
+ 	}
+ #endif
+@@ -574,13 +573,6 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 	struct kprobe_ctlblk *kcb;
+ 
+ 	addr = (kprobe_opcode_t *)(regs->ip - sizeof(kprobe_opcode_t));
+-	/*
+-	 * We don't want to be preempted for the entire
+-	 * duration of kprobe processing. We conditionally
+-	 * re-enable preemption at the end of this function,
+-	 * and also in reenter_kprobe() and setup_singlestep().
+-	 */
+-	preempt_disable();
+ 
+ 	kcb = get_kprobe_ctlblk();
+ 	p = get_kprobe(addr);
+@@ -588,7 +580,7 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 	if (p) {
+ 		if (kprobe_running()) {
+ 			if (reenter_kprobe(p, regs, kcb))
+-				return 1;
++				goto handled;
+ 		} else {
+ 			set_current_kprobe(p, regs, kcb);
+ 			kcb->kprobe_status = KPROBE_HIT_ACTIVE;
+@@ -603,7 +595,7 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 			 */
+ 			if (!p->pre_handler || !p->pre_handler(p, regs))
+ 				setup_singlestep(p, regs, kcb, 0);
+-			return 1;
++			goto handled;
+ 		}
+ 	} else if (*addr != BREAKPOINT_INSTRUCTION) {
+ 		/*
+@@ -616,19 +608,20 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 		 * the original instruction.
+ 		 */
+ 		regs->ip = (unsigned long)addr;
+-		preempt_enable_no_resched();
+-		return 1;
++		goto handled;
+ 	} else if (kprobe_running()) {
+ 		p = __this_cpu_read(current_kprobe);
+ 		if (p->break_handler && p->break_handler(p, regs)) {
+ 			if (!skip_singlestep(p, regs, kcb))
+ 				setup_singlestep(p, regs, kcb, 0);
+-			return 1;
++			goto handled;
+ 		}
+ 	} /* else: not a kprobe fault; let the kernel handle it */
+ 
+-	preempt_enable_no_resched();
+ 	return 0;
++
++handled:
++	return 1;
+ }
+ NOKPROBE_SYMBOL(kprobe_int3_handler);
+ 
+@@ -893,7 +886,6 @@ int kprobe_debug_handler(struct pt_regs *regs)
+ 	}
+ 	reset_current_kprobe();
+ out:
+-	preempt_enable_no_resched();
+ 
+ 	/*
+ 	 * if somebody else is singlestepping across a probe point, flags
+@@ -928,7 +920,6 @@ int kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+ 			restore_previous_kprobe(kcb);
+ 		else
+ 			reset_current_kprobe();
+-		preempt_enable_no_resched();
+ 		break;
+ 	case KPROBE_HIT_ACTIVE:
+ 	case KPROBE_HIT_SSDONE:
+@@ -1062,7 +1053,6 @@ int longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+ 		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
+ 		       kcb->jprobes_stack,
+ 		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
+-		preempt_enable_no_resched();
+ 		return 1;
+ 	}
+ 	return 0;
+
+
