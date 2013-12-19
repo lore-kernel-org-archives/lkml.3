@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab3LSIDq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 03:03:46 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:37328 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab3LSIDo (ORCPT
+	id S1753265Ab3LSID7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 03:03:59 -0500
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:54924 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753029Ab3LSID5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 03:03:44 -0500
-Message-ID: <52B2A85C.9060303@gmail.com>
-Date: Thu, 19 Dec 2013 16:03:40 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 19 Dec 2013 03:03:57 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: linux-metag@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arch: metag: kernel: export 'cpu_core_map' in "topology.c"
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+To: Boris BREZILLON <b.brezillon@overkiz.com>,
+        "Fengguang Wu" <fengguang.wu@intel.com>,
+        "Nicolas Ferre" <nicolas.ferre@atmel.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1387229127-7605-1-git-send-email-b.brezillon@overkiz.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Boris BREZILLON" <b.brezillon@overkiz.com>
+References: <1387229127-7605-1-git-send-email-b.brezillon@overkiz.com>
+Message-ID: <20131219075636.18119.74853@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH] clk: at91: fix pmc_clk_ids data type attriubte
+Date: Wed, 18 Dec 2013 23:56:36 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need export 'cpu_core_map', or cann't pass compiling with allmodconfig,
-the related error:
+Quoting Boris BREZILLON (2013-12-16 13:25:27)
+> Fix pmc_clk_ids data type attribute (__initdata -> __initconst).
+> 
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 
-    MODPOST 2909 modules
-  ERROR: "cpu_core_map" [drivers/staging/lustre/lustre/libcfs/libcfs.ko] undefined!
+Acked-by: Mike Turquette <mturquette@linaro.org>
 
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- arch/metag/kernel/topology.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/metag/kernel/topology.c b/arch/metag/kernel/topology.c
-index bec3dec..4ba5957 100644
---- a/arch/metag/kernel/topology.c
-+++ b/arch/metag/kernel/topology.c
-@@ -19,6 +19,7 @@
- DEFINE_PER_CPU(struct cpuinfo_metag, cpu_data);
- 
- cpumask_t cpu_core_map[NR_CPUS];
-+EXPORT_SYMBOL(cpu_core_map);
- 
- static cpumask_t cpu_coregroup_map(unsigned int cpu)
- {
--- 
-1.7.11.7
+> ---
+>  drivers/clk/at91/pmc.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
+> index 7b9db60..4c03eda 100644
+> --- a/drivers/clk/at91/pmc.c
+> +++ b/drivers/clk/at91/pmc.c
+> @@ -228,7 +228,7 @@ out_free_pmc:
+>         return NULL;
+>  }
+>  
+> -static const struct of_device_id pmc_clk_ids[] __initdata = {
+> +static const struct of_device_id pmc_clk_ids[] __initconst = {
+>         /* Main clock */
+>         {
+>                 .compatible = "atmel,at91rm9200-clk-main",
+> -- 
+> 1.7.9.5
+> 
