@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454Ab3LSBhK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 20:37:10 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:38199 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab3LSBhI (ORCPT
+	id S1752479Ab3LSBv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 20:51:58 -0500
+Received: from www62.your-server.de ([213.133.104.62]:52150 "EHLO
+	www62.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab3LSBv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 20:37:08 -0500
-Date: Wed, 18 Dec 2013 17:37:04 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH] closures: move to lib/
-Message-ID: <20131219013704.GE4054@kmo>
-References: <1387416594-23930-1-git-send-email-kmo@daterainc.com>
- <CAPcyv4gBN4M312WRmAvwHbTjMspiSTPuFyir_fc3nH6akpgosw@mail.gmail.com>
+	Wed, 18 Dec 2013 20:51:57 -0500
+X-Greylist: delayed 1182 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Dec 2013 20:51:57 EST
+Message-ID: <52B24C92.8050201@iogearbox.net>
+Date: Thu, 19 Dec 2013 02:32:02 +0100
+From: Daniel Borkmann <borkmann@iogearbox.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPcyv4gBN4M312WRmAvwHbTjMspiSTPuFyir_fc3nH6akpgosw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Wanlong Gao <gaowanlong@cn.fujitsu.com>, davem@davemloft.net,
+        ffusco@redhat.com, kbuild-all@01.org, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [net-next/master PATCH] lib: fix compile warning in hashlib_init
+References: <1387415314-21786-1-git-send-email-gaowanlong@cn.fujitsu.com> <20131219011506.GA27326@localhost>
+In-Reply-To: <20131219011506.GA27326@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: borkmann@iogearbox.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 05:34:31PM -0800, Dan Williams wrote:
-> On Wed, Dec 18, 2013 at 5:29 PM, Kent Overstreet <kmo@daterainc.com> wrote:
-> > the closure code was never intended to be bcache specific - hopefully it can be
-> > useful elsewhere in the kernel.
-> >
-> > Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-> > Cc: Tejun Heo <tj@kernel.org>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Oleg Nesterov <oleg@redhat.com>
-> > Cc: Arjan van de Ven <arjan@linux.intel.com>
-> > Cc: Dan Williams <dan.j.williams@intel.com>
-> > ---
-> >  drivers/md/bcache/Kconfig   |   9 -
-> >  drivers/md/bcache/Makefile  |   2 +-
-> >  drivers/md/bcache/bcache.h  |   2 +-
-> >  drivers/md/bcache/closure.c | 222 ----------------------
-> >  drivers/md/bcache/closure.h | 453 --------------------------------------------
-> >  drivers/md/bcache/util.h    |   3 +-
-> >  include/linux/closure.h     | 451 +++++++++++++++++++++++++++++++++++++++++++
-> >  lib/Kconfig.debug           |   8 +
-> >  lib/Makefile                |   2 +-
-> >  lib/closure.c               | 218 +++++++++++++++++++++
-> >  10 files changed, 681 insertions(+), 689 deletions(-)
-> >  delete mode 100644 drivers/md/bcache/closure.c
-> >  delete mode 100644 drivers/md/bcache/closure.h
-> >  create mode 100644 include/linux/closure.h
-> >  create mode 100644 lib/closure.c
-> 
-> This would be smaller to review with git diff -M
+On 12/19/2013 02:15 AM, Fengguang Wu wrote:
+> CC the list.
+>
+> On Thu, Dec 19, 2013 at 09:08:34AM +0800, Wanlong Gao wrote:
+>> /git/linux/lib/hash.c: In function 'hashlib_init':
+>> /git/linux/lib/hash.c:35:2: warning: passing argument 1 of 'setup_arch_fast_hash' from incompatible pointer type [enabled by default]
+>> /git/linux/include/asm-generic/hash.h:5:20: note: expected 'struct arch_hash_ops *' but argument is of type 'struct fast_hash_ops *'
+>>
+>> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+>> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 
-I forgot to mention - this is on top of other stuff I have queued up which
-deletes a fair amount of code in closure.[ch] (finally got rid of some stuff
-Tejun hated).
+That's already in netdev patchwork:
+
+http://patchwork.ozlabs.org/patch/302908/
+
+Thanks !
