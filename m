@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab3LSQ4t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:56:49 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:50410 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724Ab3LSQ4r (ORCPT
+	id S1754643Ab3LSQ5m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:57:42 -0500
+Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:41557 "EHLO
+	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752212Ab3LSQ5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:56:47 -0500
-Date: Thu, 19 Dec 2013 17:56:43 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@suse.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] don't select EFI from certain special ACPI drivers
-Message-ID: <20131219165643.GA30382@gmail.com>
-References: <52AF1EBC020000780010DBF9@nat28.tlf.novell.com>
- <3908561D78D1C84285E8C5FCA982C28F31D8A4C2@ORSMSX106.amr.corp.intel.com>
- <52B013E8020000780010E009@nat28.tlf.novell.com>
- <3908561D78D1C84285E8C5FCA982C28F31D8B8CE@ORSMSX106.amr.corp.intel.com>
- <52B16533020000780010E890@nat28.tlf.novell.com>
- <CA+8MBb+7e03UxmJCnXSDh=8m+9LFT2R3h0v6g-wDWnn=N8vFWg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+8MBb+7e03UxmJCnXSDh=8m+9LFT2R3h0v6g-wDWnn=N8vFWg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Dec 2013 11:57:40 -0500
+Date: Thu, 19 Dec 2013 17:57:38 +0100
+From: Alessandro Zummo <a.zummo@towertech.it>
+To: rtc-linux@googlegroups.com
+Cc: jason@lakedaemon.net, Arnaud Ebalard <arno@natisbad.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>,
+        Peter Huewe <peter.huewe@infineon.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Thierry Reding <treding@nvidia.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, Rob Landley <rob@landley.net>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [rtc-linux] Re: Can someone Ack and queue a patch for RTC
+ subsytem?
+Message-ID: <20131219175738.1dad3ade@linux.lan.towertech.it>
+In-Reply-To: <20131219164624.GV2609@titan.lakedaemon.net>
+References: <87siton6ke.fsf@natisbad.org>
+	<20131219164624.GV2609@titan.lakedaemon.net>
+Organization: Tower Technologies
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 19 Dec 2013 11:46:24 -0500
+Jason Cooper <jason@lakedaemon.net> wrote:
 
-* Tony Luck <tony.luck@intel.com> wrote:
+> In the long term, should we seek out a co-maintainer for drivers/rtc?
+> Can anyone get a hold of Alessandro to get his opinion on this?
 
-> On Wed, Dec 18, 2013 at 12:04 AM, Jan Beulich <JBeulich@suse.com> wrote:
-> >>>> On 17.12.13 at 23:34, "Luck, Tony" <tony.luck@intel.com> wrote:
-> >>>  No, it hasn't. But I explicitly checked the relevant EFI=n and EFI=y
-> >>> cases.
-> >>
-> >> I pushed your patch into my "next" tree - the robots will notice soon and
-> >> send us e-mail if they find any issues.
-> >
-> > Thanks, Tony. I'm afraid though that fixing this only in 3.14 would
-> > be a little late: Any "select" in a Kconfig results in the user not being
-> > asked again when that "select" goes away, so people having got EFI
-> > forcibly enabled in 3.13 and updating their configs to 3.14 would
-> > then need to remember to manually disable CONFIG_EFI again (of
-> > course that's already true for anyone using 3.13-rc?, but those
-> > should mostly be people more knowledgeable than folks just
-> > consuming final releases).
-> >
-> > I think it should generally be the exception to "select" options that
-> > have visible prompts (i.e. are user configurable).
-> 
-> Ingo: Jan makes a good point that people running "make oldconfig"
-> may get suckered into selecting CONFIG_EFI when they don't really
-> need it.  I've not seen any complaints from the robot randconfig testers,
-> so this patch is:
-> 
-> Acked-by: Tony Luck <tony.luck@intel.com>
-> 
-> Can you push it to Linus before 3.13-final releases?
+ I'd surely appreciate if someone can take some time to give
+ a look to the patches. Most of them go thru subsystem's tree and, as far as I
+ can see, I saw very relevant comments and fixes in all those years.
 
-Ok, agreed, I've queued it up in the tip:x86/urgent tree.
+ I'd love to devote more time to Linux but I'd need to find
+ someone that hires me just to do that the whole day :)
 
-Thanks,
+-- 
 
-	Ingo
+ Best regards,
+
+ Alessandro Zummo,
+  Tower Technologies - Torino, Italy
+
+  http://www.towertech.it
+
