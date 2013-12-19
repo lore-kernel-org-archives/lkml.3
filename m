@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756330Ab3LSUNn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 15:13:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45821 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755704Ab3LSUNm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 15:13:42 -0500
-Date: Thu, 19 Dec 2013 12:13:45 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.4 00/31] 3.4.75-stable review
-Message-ID: <20131219201345.GA26827@kroah.com>
-References: <20131218210522.790152625@linuxfoundation.org>
- <20131219195446.GB27311@roeck-us.net>
+	id S1756401Ab3LSUOK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 15:14:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35770 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756023Ab3LSUOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 15:14:08 -0500
+Message-ID: <52B35369.6070208@zytor.com>
+Date: Thu, 19 Dec 2013 12:13:29 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131219195446.GB27311@roeck-us.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: mingo@kernel.org, linux-kernel@vger.kernel.org, arjan@linux.intel.com,
+        peterz@infradead.org, rui.zhang@intel.com, bitbucket@online.de,
+        rafael.j.wysocki@intel.com, lenb@kernel.org, tglx@linutronix.de,
+        jacob.jun.pan@linux.intel.com, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/idle] x86, acpi, idle: Restructure the mwait idle routines
+References: <20131212141654.616820819@infradead.org> <tip-16824255394f55adf31b9a96a9965d8c15bdac4c@git.kernel.org>
+In-Reply-To: <tip-16824255394f55adf31b9a96a9965d8c15bdac4c@git.kernel.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 11:54:46AM -0800, Guenter Roeck wrote:
-> On Wed, Dec 18, 2013 at 01:08:08PM -0800, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.4.75 release.
-> > There are 31 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> > 
-> > Responses should be made by Fri Dec 20 21:05:11 UTC 2013.
-> > Anything received after that time might be too late.
-> > 
-> My builder noticed that you added one more patch to all releases
-> and triggered a rebuild.
+On 12/19/2013 12:09 PM, tip-bot for Peter Zijlstra wrote:
+> diff --git a/drivers/thermal/intel_powerclamp.c b/drivers/thermal/intel_powerclamp.c
+> index 8f181b3..e8275f2 100644
+> --- a/drivers/thermal/intel_powerclamp.c
+> +++ b/drivers/thermal/intel_powerclamp.c
+> @@ -438,9 +438,7 @@ static int clamp_thread(void *arg)
+>  			 */
+>  			local_touch_nmi();
+>  			stop_critical_timings();
+> -			__monitor((void *)&current_thread_info()->flags, 0, 0);
+> -			cpu_relax(); /* allow HT sibling to run */
+> -			__mwait(eax, ecx);
+> +			mwait_idle_with_hints(eax, ecx);
+>  			start_critical_timings();
+>  			atomic_inc(&idle_wakeup_counter);
+>  		}
 > 
-> v3.4.74-32:	total: 103 pass: 89 skipped: 10 fail: 4
-> v3.10.24-79:	total: 110 pass: 109 skipped: 0 fail: 1
-> v3.12.5-119:	total: 110 pass: 107 skipped: 3 fail: 0
-> 
-> Everything still as expected, with all qemu tests passed as well.
 
-Thanks, yes, there was a missing patch for one of the various omap
-patches that needed to be included, thanks for testing and verifying
-nothing broke.
+Should this cpu_relax() be in the common code as well?
 
-greg k-h
+	-hpa
+
