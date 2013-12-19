@@ -1,98 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab3LSPuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:50:40 -0500
-Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:41691 "EHLO
-	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751373Ab3LSPue (ORCPT
+	id S1754597Ab3LSPuu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:50:50 -0500
+Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:59985
+	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754392Ab3LSPuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:50:34 -0500
-Message-Id: <20131219155015.443763038@linux.com>
-Date: Thu, 19 Dec 2013 09:50:15 -0600
+	Thu, 19 Dec 2013 10:50:39 -0500
+Message-Id: <20131219155032.365009133@linux.com>
+Date: Thu, 19 Dec 2013 09:50:30 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 00/40] percpu: Consistent per cpu operations V2
+        Thomas Gleixner <tglx@linutronix.de>, linux-mm@kvack.org,
+        Alex Shi <alex.shi@intel.com>
+Subject: [PATCH 15/40] mm: Use raw_cpu ops for determining current NUMA node
+References: <20131219155015.443763038@linux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=preempt_fix_numa_node
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V1->V2:
-- Move legacy definition for __this_cpu_ptr into include/asm-generic/percpu.h
-  so that users bypassing include/linux/percpu.h do not break (affects
-  tile and s390)
-- Merge raw_cpu_ops core and the patch to rename x86 __this_cpu primitives
-  into one. Otherwise breakage will occur since x86 __this_cpu ops will fall
-  back to generic ops which is not tolerated well by the preempt hackery
-  in x86.
-- Add notes to each patch that depends on another to avoid mismerges.
-  Add acks etc.
-- Use quilt-0.61 with the bug fix that ensures all mailing lists
-  receive the postings intended for them.
+[Patch depends on another patch in this series that introduces raw_cpu_ops]
+
+With the preempt checking logic for __this_cpu_ops we will get false
+positives from locations in the code that use numa_node_id.
+
+Before the  __this_cpu ops where introduced there were
+no checks for preemption present either. smp_raw_processor_id()
+was used. See http://www.spinics.net/lists/linux-numa/msg00641.html
+
+Therefore we need to use raw_cpu_read here to avoid false postives.
+
+Note that this issue has been discussed in prior years.
+If the process changes nodes after retrieving the current numa node then
+that is acceptable since most uses of numa_node etc are for optimization
+and not for correctness.
+
+There were suggestions to implement a raw_numa_node_id in order to
+do preempt checks for numa_node_id as well. But I think we better
+defer that to another patch since that would mean investigating
+how numa_node_id() is used throughout the kernel which would increase
+the scope of this patchset significantly. After all preemption was never
+checked before when numa_node_id() was used.
+
+Some sample traces:
+
+__this_cpu_read operation in preemptible [00000000] code: login/1456
+caller is __this_cpu_preempt_check+0x2b/0x2d
+CPU: 0 PID: 1456 Comm: login Not tainted 3.12.0-rc4-cl-00062-g2fe80d3-dirty #185
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+ 000000000000013c ffff88001f31ba58 ffffffff8147cf5e ffff88001f31bfd8
+ ffff88001f31ba88 ffffffff8127eea9 0000000000000000 ffff88001f3975c0
+ 00000000f7707000 ffff88001f3975c0 ffff88001f31bac0 ffffffff8127eeef
+Call Trace:
+ [<ffffffff8147cf5e>] dump_stack+0x4e/0x82
+ [<ffffffff8127eea9>] check_preemption_disabled+0xc5/0xe0
+ [<ffffffff8127eeef>] __this_cpu_preempt_check+0x2b/0x2d
+ [<ffffffff81030ff5>] ? show_stack+0x3b/0x3d
+ [<ffffffff810ebee3>] get_task_policy+0x1d/0x49
+ [<ffffffff810ed705>] get_vma_policy+0x14/0x76
+ [<ffffffff810ed8ff>] alloc_pages_vma+0x35/0xff
+ [<ffffffff810dad97>] handle_mm_fault+0x290/0x73b
+ [<ffffffff810503da>] __do_page_fault+0x3fe/0x44d
+ [<ffffffff8109b360>] ? trace_hardirqs_on_caller+0x142/0x19e
+ [<ffffffff8109b3c9>] ? trace_hardirqs_on+0xd/0xf
+ [<ffffffff81278bed>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff81050451>] do_page_fault+0x9/0xc
+ [<ffffffff81483602>] page_fault+0x22/0x30
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810be4c3>] ? file_read_actor+0x3a/0x15a
+ [<ffffffff810be97f>] ? find_get_pages_contig+0x18e/0x18e
+ [<ffffffff810bffab>] generic_file_aio_read+0x38e/0x624
+ [<ffffffff810f6d69>] do_sync_read+0x54/0x73
+ [<ffffffff810f7890>] vfs_read+0x9d/0x12a
+ [<ffffffff810f7a59>] SyS_read+0x47/0x7e
+ [<ffffffff81484f21>] cstar_dispatch+0x7/0x23
 
 
-The kernel has never been audited to ensure that this_cpu operations are
-consistently used throughout the kernel. The code generated in many
-places can be improved through the use of this_cpu operations (which uses
-a segment register for relocation of per cpu offsets instead of
-performing address calculations).
+caller is __this_cpu_preempt_check+0x2b/0x2d
+CPU: 0 PID: 1456 Comm: login Not tainted 3.12.0-rc4-cl-00062-g2fe80d3-dirty #185
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+ 00000000000000e8 ffff88001f31bbf8 ffffffff8147cf5e ffff88001f31bfd8
+ ffff88001f31bc28 ffffffff8127eea9 ffffffff823c5c40 00000000000213da
+ 0000000000000000 0000000000000000 ffff88001f31bc60 ffffffff8127eeef
+Call Trace:
+ [<ffffffff8147cf5e>] dump_stack+0x4e/0x82
+ [<ffffffff8127eea9>] check_preemption_disabled+0xc5/0xe0
+ [<ffffffff8127eeef>] __this_cpu_preempt_check+0x2b/0x2d
+ [<ffffffff810e006e>] ? install_special_mapping+0x11/0xe4
+ [<ffffffff810ec8a8>] alloc_pages_current+0x8f/0xbc
+ [<ffffffff810bec6b>] __page_cache_alloc+0xb/0xd
+ [<ffffffff810c7e90>] __do_page_cache_readahead+0xf4/0x219
+ [<ffffffff810c7e0e>] ? __do_page_cache_readahead+0x72/0x219
+ [<ffffffff810c827c>] ra_submit+0x1c/0x20
+ [<ffffffff810c850c>] ondemand_readahead+0x28c/0x2b4
+ [<ffffffff810c85e9>] page_cache_sync_readahead+0x38/0x3a
+ [<ffffffff810bfe7e>] generic_file_aio_read+0x261/0x624
+ [<ffffffff810f6d69>] do_sync_read+0x54/0x73
+ [<ffffffff810f7890>] vfs_read+0x9d/0x12a
+ [<ffffffff810f7a59>] SyS_read+0x47/0x7e
+ [<ffffffff81484f21>] cstar_dispatch+0x7/0x23
 
-The patch set also addresses various consistency issues in general with
-the per cpu macros.
+Cc: linux-mm@kvack.org
+Cc: Alex Shi <alex.shi@intel.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-A. The semantics of __this_cpu_ptr() differs from this_cpu_ptr only
-   because checks are skipped. This is typically shown through a raw_
-   prefix. So this patch set changes the places where __this_cpu_ptr()
-   is used to raw_cpu_ptr().
-
-B. There has been the long term wish by some that __this_cpu operations
-   would check for preemption. However, there are cases where preemption
-   checks need to be skipped. This patch set adds raw_cpu operations that
-   do not check for preemption and then adds preemption checks to the
-   __this_cpu operations.
-
-C. The use of __get_cpu_var is always a reference to a percpu variable
-   that can also be handled via a this_cpu operation. This patch set
-   replaces all uses of __get_cpu_var with this_cpu operations.
-
-D. We can then use this_cpu RMW operations in various places replacing
-   sequences of instructions by a single one.
-
-E. The use of this_cpu operations throughout will allow other arches than
-   x86 to implement optimized references and RMV operations to work with
-   per cpu local data.
-
-F. The use of this_cpu operations opens up the possibility to
-   further optimize code that relies on synchronization through
-   per cpu data.
-
-
-The patch set works in a couple of stages:
-
-I. Patches 1-13 are patches that simply replace uses of __get_cpu_var
-   with this_cpu_ptr. They do not depend on any changes to the percpu
-   code. No preemption tests are skipped if they are applied.
-
-II. Patch 14 adds the additional raw_cpu operations and raw_cpu_ptr().
-    Also converts the existing __this_cpu_xx_# primitive in the x86
-    code to raw_cpu_xx_#.
-
-III. Patch 15-17 use the raw_cpu operations in places that would give
-     us false positives once they are enabled.
-
-IV. Patch 18 adds preemption checks to __this_cpu operations to allow
-    checking if preemption is properly disabled when these functions
-    are used.
-
-V. Patches 19-38 are conversion patches that use this_cpu operations
-   in various kernel subsystems/drivers or arch code.
-
-VI. Patches 39/40 remove no longer used functions (__this_cpu_ptr
-    and __get_cpu_var).  These should only be applied after all the
-    conversion patches have made it and after we have done additional
-    passes through the kernel to ensure that none of the uses of these
-    functions remain.
+Index: linux/include/linux/topology.h
+===================================================================
+--- linux.orig/include/linux/topology.h	2013-12-02 16:07:51.304591590 -0600
++++ linux/include/linux/topology.h	2013-12-02 16:07:51.304591590 -0600
+@@ -188,7 +188,7 @@ DECLARE_PER_CPU(int, numa_node);
+ /* Returns the number of the current Node. */
+ static inline int numa_node_id(void)
+ {
+-	return __this_cpu_read(numa_node);
++	return raw_cpu_read(numa_node);
+ }
+ #endif
+ 
+@@ -245,7 +245,7 @@ static inline void set_numa_mem(int node
+ /* Returns the number of the nearest Node with memory */
+ static inline int numa_mem_id(void)
+ {
+-	return __this_cpu_read(_numa_mem_);
++	return raw_cpu_read(_numa_mem_);
+ }
+ #endif
+ 
 
