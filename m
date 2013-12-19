@@ -1,219 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab3LSHB7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 02:01:59 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47860 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab3LSHAQ (ORCPT
+	id S1751934Ab3LSHHg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 02:07:36 -0500
+Received: from relay.parallels.com ([195.214.232.42]:40545 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954Ab3LSHHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 02:00:16 -0500
-X-AuditID: 9c930179-b7bedae000000f15-74-52b2997d4ebc
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH 2/6] perf tools: Introduce struct perf_log
-Date: Thu, 19 Dec 2013 16:00:07 +0900
-Message-Id: <1387436411-20160-3-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
-References: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 19 Dec 2013 02:07:34 -0500
+Message-ID: <52B29B2F.7050909@parallels.com>
+Date: Thu, 19 Dec 2013 11:07:27 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 4/6] memcg, slab: check and init memcg_cahes under slab_mutex
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com> <afc6d5e85d805c7313e928497b4ebcf1815703dd.1387372122.git.vdavydov@parallels.com> <20131218174105.GE31080@dhcp22.suse.cz>
+In-Reply-To: <20131218174105.GE31080@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 12/18/2013 09:41 PM, Michal Hocko wrote:
+> On Wed 18-12-13 17:16:55, Vladimir Davydov wrote:
+>> The memcg_params::memcg_caches array can be updated concurrently from
+>> memcg_update_cache_size() and memcg_create_kmem_cache(). Although both
+>> of these functions take the slab_mutex during their operation, the
+>> latter checks if memcg's cache has already been allocated w/o taking the
+>> mutex. This can result in a race as described below.
+>>
+>> Asume two threads schedule kmem_cache creation works for the same
+>> kmem_cache of the same memcg from __memcg_kmem_get_cache(). One of the
+>> works successfully creates it. Another work should fail then, but if it
+>> interleaves with memcg_update_cache_size() as follows, it does not:
+> I am not sure I understand the race. memcg_update_cache_size is called
+> when we start accounting a new memcg or a child is created and it
+> inherits accounting from the parent. memcg_create_kmem_cache is called
+> when a new cache is first allocated from, right?
 
-Add new functions to save error messages in a temp file.  It'll be
-used by some UI front-ends to see the messages.
+memcg_update_cache_size() is called when kmem accounting is activated
+for a memcg, no matter how.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/Makefile.perf |   1 +
- tools/perf/perf.c        |   3 ++
- tools/perf/util/debug.h  |  15 +++++++
- tools/perf/util/log.c    | 105 +++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 124 insertions(+)
- create mode 100644 tools/perf/util/log.c
+memcg_create_kmem_cache() is scheduled from __memcg_kmem_get_cache().
+It's OK to have a bunch of such methods trying to create the same memcg
+cache concurrently, but only one of them should succeed.
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 97a2145e4cc6..ec8184014a76 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -372,6 +372,7 @@ LIB_OBJS += $(OUTPUT)util/stat.o
- LIB_OBJS += $(OUTPUT)util/record.o
- LIB_OBJS += $(OUTPUT)util/srcline.o
- LIB_OBJS += $(OUTPUT)util/data.o
-+LIB_OBJS += $(OUTPUT)util/log.o
- 
- LIB_OBJS += $(OUTPUT)ui/setup.o
- LIB_OBJS += $(OUTPUT)ui/helpline.o
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 431798a4110d..bdf7bd8e4394 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -10,6 +10,7 @@
- 
- #include "util/exec_cmd.h"
- #include "util/cache.h"
-+#include "util/debug.h"
- #include "util/quote.h"
- #include "util/run-command.h"
- #include "util/parse-events.h"
-@@ -524,6 +525,7 @@ int main(int argc, const char **argv)
- 	 */
- 	pthread__block_sigwinch();
- 
-+	perf_log_init();
- 	while (1) {
- 		static int done_help;
- 		int was_alias = run_argv(&argc, &argv);
-@@ -543,6 +545,7 @@ int main(int argc, const char **argv)
- 		} else
- 			break;
- 	}
-+	perf_log_exit();
- 
- 	fprintf(stderr, "Failed to run command '%s': %s\n",
- 		cmd, strerror(errno));
-diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
-index 443694c36b03..ea160abc2ae0 100644
---- a/tools/perf/util/debug.h
-+++ b/tools/perf/util/debug.h
-@@ -19,4 +19,19 @@ int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
- 
- void pr_stat(const char *fmt, ...);
- 
-+struct perf_log {
-+	FILE *fp;
-+	off_t *linemap;
-+	u32 lines;
-+	u32 nr_alloc;
-+	bool seen_newline;
-+};
-+
-+extern struct perf_log perf_log;
-+
-+int perf_log_init(void);
-+int perf_log_exit(void);
-+void perf_log_add(const char *msg);
-+void perf_log_addv(const char *fmt, va_list ap);
-+
- #endif	/* __PERF_DEBUG_H */
-diff --git a/tools/perf/util/log.c b/tools/perf/util/log.c
-new file mode 100644
-index 000000000000..4a34bed2af44
---- /dev/null
-+++ b/tools/perf/util/log.c
-@@ -0,0 +1,105 @@
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include "util/debug.h"
-+
-+#define LINEMAP_GROW  128
-+
-+struct perf_log perf_log = {
-+	.seen_newline = true,
-+};
-+
-+int perf_log_init(void)
-+{
-+	FILE *fp;
-+	char name[] = "/tmp/perf-tui-log-XXXXXX";
-+	int fd = mkstemp(name);
-+
-+	if (fd < 0)
-+		return -1;
-+
-+	fp = fdopen(fd, "r+");
-+	if (fp == NULL) {
-+		close(fd);
-+		return -1;
-+	}
-+
-+	perf_log.fp = fp;
-+
-+	return 0;
-+}
-+
-+int perf_log_exit(void)
-+{
-+	FILE *fp = perf_log.fp;
-+	if (fp)
-+		fclose(fp);
-+
-+	free(perf_log.linemap);
-+
-+	perf_log.fp = NULL;
-+	perf_log.linemap = NULL;
-+	return 0;
-+}
-+
-+static int grow_linemap(struct perf_log *log)
-+{
-+	off_t *newmap;
-+	int newsize = log->nr_alloc + LINEMAP_GROW;
-+
-+	newmap = realloc(log->linemap, newsize * sizeof(*log->linemap));
-+	if (newmap == NULL)
-+		return -1;
-+
-+	log->nr_alloc = newsize;
-+	log->linemap = newmap;
-+	return 0;
-+}
-+
-+static int __add_to_linemap(struct perf_log *log, off_t index)
-+{
-+	if (log->lines == log->nr_alloc)
-+		if (grow_linemap(log) < 0)
-+			return -1;
-+
-+	log->linemap[log->lines++] = index;
-+	return 0;
-+}
-+
-+static void add_to_linemap(struct perf_log *log, const char *msg, off_t base)
-+{
-+	const char *pos;
-+
-+	if (strlen(msg) == 0)
-+		return;
-+
-+	if (log->seen_newline) {
-+		if (__add_to_linemap(log, base) < 0)
-+			return;
-+	}
-+
-+	if ((pos = strchr(msg, '\n')) != NULL) {
-+		log->seen_newline = true;
-+		pos++;
-+		add_to_linemap(log, pos, base + (pos - msg));
-+	} else {
-+		log->seen_newline = false;
-+	}
-+}
-+
-+void perf_log_add(const char *msg)
-+{
-+	FILE *fp = perf_log.fp;
-+	off_t offset = ftello(fp);
-+
-+	add_to_linemap(&perf_log, msg, offset);
-+
-+	fwrite(msg, 1, strlen(msg), fp);
-+}
-+
-+void perf_log_addv(const char *fmt, va_list ap)
-+{
-+	char buf[4096];
-+
-+	vsnprintf(buf, sizeof(buf), fmt, ap);
-+	perf_log_add(buf);
-+}
--- 
-1.7.11.7
+> Why cannot we simply take slab_mutex inside memcg_create_kmem_cache?
+> it is running from the workqueue context so it should clash with other
+> locks.
+
+Hmm, Glauber's code never takes the slab_mutex inside memcontrol.c. I
+have always been wondering why, because it could simplify flow paths
+significantly (e.g. update_cache_sizes() -> update_all_caches() ->
+update_cache_size() - from memcontrol.c to slab_common.c and back again
+just to take the mutex).
+
+I don't see any reason preventing us from taking the mutex in
+memcontrol.c. This would allow us to move all memcg-related kmem cache
+initialization (addition to the memcg slab list, initialization of the
+pointer in memcg_caches) to memcg_kmem_cache_create() and remove a bunch
+of public functions. I guess I'll do this in my next iteration.
+
+Thanks.
+
+>
+>>   memcg_create_kmem_cache()                     memcg_update_cache_size()
+>>   (called w/o mutexes held)                     (called with slab_mutex held)
+>>   -------------------------                     -------------------------
+>>   mutex_lock(&memcg_cache_mutex)
+>>                                                 s->memcg_params=kzalloc(...)
+>>   new_cachep=cache_from_memcg_idx(cachep,idx)
+>>   // new_cachep==NULL => proceed to creation
+>>                                                 s->memcg_params->memcg_caches[i]
+>>                                                     =cur_params->memcg_caches[i]
+>>   // kmem_cache_dup takes slab_mutex so we will
+>>   // hang around here until memcg_update_cache_size()
+>>   // finishes, but ...
+>>   new_cachep = kmem_cache_dup(memcg, cachep)
+>>   // nothing will prevent kmem_cache_dup from
+>>   // succeeding so ...
+>>   cachep->memcg_params->memcg_caches[idx]=new_cachep
+>>   // we've overwritten an existing cache ptr!
+>>
+>> Let's fix this by moving both the check and the update of
+>> memcg_params::memcg_caches from memcg_create_kmem_cache() to
+>> kmem_cache_create_memcg() to be called under the slab_mutex.
+>>
+>> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+>> Cc: Michal Hocko <mhocko@suse.cz>
+>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>> Cc: Glauber Costa <glommer@gmail.com>
+>> Cc: Christoph Lameter <cl@linux.com>
+>> Cc: Pekka Enberg <penberg@kernel.org>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> ---
+>>  include/linux/memcontrol.h |    9 ++--
+>>  mm/memcontrol.c            |   98 +++++++++++++++-----------------------------
+>>  mm/slab_common.c           |    8 +++-
+>>  3 files changed, 44 insertions(+), 71 deletions(-)
+>>
+>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>> index b357ae3..fdd3f30 100644
+>> --- a/include/linux/memcontrol.h
+>> +++ b/include/linux/memcontrol.h
+>> @@ -500,8 +500,8 @@ int memcg_cache_id(struct mem_cgroup *memcg);
+>>  int memcg_init_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+>>  			    struct kmem_cache *root_cache);
+>>  void memcg_free_cache_params(struct kmem_cache *s);
+>> -void memcg_release_cache(struct kmem_cache *cachep);
+>> -void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep);
+>> +void memcg_register_cache(struct kmem_cache *s);
+>> +void memcg_release_cache(struct kmem_cache *s);
+>>  
+>>  int memcg_update_cache_size(struct kmem_cache *s, int num_groups);
+>>  void memcg_update_array_size(int num_groups);
+>> @@ -652,12 +652,11 @@ static inline void memcg_free_cache_params(struct kmem_cache *s);
+>>  {
+>>  }
+>>  
+>> -static inline void memcg_release_cache(struct kmem_cache *cachep)
+>> +static inline void memcg_register_cache(struct kmem_cache *s)
+>>  {
+>>  }
+>>  
+>> -static inline void memcg_cache_list_add(struct mem_cgroup *memcg,
+>> -					struct kmem_cache *s)
+>> +static inline void memcg_release_cache(struct kmem_cache *s)
+>>  {
+>>  }
+>>  
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index e37fdb5..62b9991 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -3059,16 +3059,6 @@ static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
+>>  		css_put(&memcg->css);
+>>  }
+>>  
+>> -void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
+>> -{
+>> -	if (!memcg)
+>> -		return;
+>> -
+>> -	mutex_lock(&memcg->slab_caches_mutex);
+>> -	list_add(&cachep->memcg_params->list, &memcg->memcg_slab_caches);
+>> -	mutex_unlock(&memcg->slab_caches_mutex);
+>> -}
+>> -
+>>  /*
+>>   * helper for acessing a memcg's index. It will be used as an index in the
+>>   * child cache array in kmem_cache, and also to derive its name. This function
+>> @@ -3229,6 +3219,35 @@ void memcg_free_cache_params(struct kmem_cache *s)
+>>  	kfree(s->memcg_params);
+>>  }
+>>  
+>> +void memcg_register_cache(struct kmem_cache *s)
+>> +{
+>> +	struct kmem_cache *root;
+>> +	struct mem_cgroup *memcg;
+>> +	int id;
+>> +
+>> +	if (is_root_cache(s))
+>> +		return;
+>> +
+>> +	memcg = s->memcg_params->memcg;
+>> +	id = memcg_cache_id(memcg);
+>> +	root = s->memcg_params->root_cache;
+>> +
+>> +	css_get(&memcg->css);
+>> +
+>> +	/*
+>> +	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
+>> +	 * barrier here to ensure nobody will see the kmem_cache partially
+>> +	 * initialized.
+>> +	 */
+>> +	smp_wmb();
+>> +
+>> +	root->memcg_params->memcg_caches[id] = s;
+>> +
+>> +	mutex_lock(&memcg->slab_caches_mutex);
+>> +	list_add(&s->memcg_params->list, &memcg->memcg_slab_caches);
+>> +	mutex_unlock(&memcg->slab_caches_mutex);
+>> +}
+>> +
+>>  void memcg_release_cache(struct kmem_cache *s)
+>>  {
+>>  	struct kmem_cache *root;
+>> @@ -3356,26 +3375,13 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
+>>  	schedule_work(&cachep->memcg_params->destroy);
+>>  }
+>>  
+>> -/*
+>> - * This lock protects updaters, not readers. We want readers to be as fast as
+>> - * they can, and they will either see NULL or a valid cache value. Our model
+>> - * allow them to see NULL, in which case the root memcg will be selected.
+>> - *
+>> - * We need this lock because multiple allocations to the same cache from a non
+>> - * will span more than one worker. Only one of them can create the cache.
+>> - */
+>> -static DEFINE_MUTEX(memcg_cache_mutex);
+>> -
+>> -/*
+>> - * Called with memcg_cache_mutex held
+>> - */
+>> -static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+>> -					 struct kmem_cache *s)
+>> +static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+>> +						  struct kmem_cache *s)
+>>  {
+>>  	struct kmem_cache *new;
+>>  	static char *tmp_name = NULL;
+>>  
+>> -	lockdep_assert_held(&memcg_cache_mutex);
+>> +	BUG_ON(!memcg_can_account_kmem(memcg));
+>>  
+>>  	/*
+>>  	 * kmem_cache_create_memcg duplicates the given name and
+>> @@ -3403,45 +3409,6 @@ static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+>>  	return new;
+>>  }
+>>  
+>> -static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+>> -						  struct kmem_cache *cachep)
+>> -{
+>> -	struct kmem_cache *new_cachep;
+>> -	int idx;
+>> -
+>> -	BUG_ON(!memcg_can_account_kmem(memcg));
+>> -
+>> -	idx = memcg_cache_id(memcg);
+>> -
+>> -	mutex_lock(&memcg_cache_mutex);
+>> -	new_cachep = cache_from_memcg_idx(cachep, idx);
+>> -	if (new_cachep) {
+>> -		css_put(&memcg->css);
+>> -		goto out;
+>> -	}
+>> -
+>> -	new_cachep = kmem_cache_dup(memcg, cachep);
+>> -	if (new_cachep == NULL) {
+>> -		new_cachep = cachep;
+>> -		css_put(&memcg->css);
+>> -		goto out;
+>> -	}
+>> -
+>> -	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
+>> -
+>> -	/*
+>> -	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
+>> -	 * barrier here to ensure nobody will see the kmem_cache partially
+>> -	 * initialized.
+>> -	 */
+>> -	smp_wmb();
+>> -
+>> -	cachep->memcg_params->memcg_caches[idx] = new_cachep;
+>> -out:
+>> -	mutex_unlock(&memcg_cache_mutex);
+>> -	return new_cachep;
+>> -}
+>> -
+>>  void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
+>>  {
+>>  	struct kmem_cache *c;
+>> @@ -3516,6 +3483,7 @@ static void memcg_create_cache_work_func(struct work_struct *w)
+>>  
+>>  	cw = container_of(w, struct create_work, work);
+>>  	memcg_create_kmem_cache(cw->memcg, cw->cachep);
+>> +	css_put(&cw->memcg->css);
+>>  	kfree(cw);
+>>  }
+>>  
+>> diff --git a/mm/slab_common.c b/mm/slab_common.c
+>> index 62712fe..51dc106 100644
+>> --- a/mm/slab_common.c
+>> +++ b/mm/slab_common.c
+>> @@ -176,6 +176,12 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+>>  	get_online_cpus();
+>>  	mutex_lock(&slab_mutex);
+>>  
+>> +	if (memcg) {
+>> +		s = cache_from_memcg_idx(parent_cache, memcg_cache_id(memcg));
+>> +		if (s)
+>> +			goto out_unlock;
+>> +	}
+>> +
+>>  	err = kmem_cache_sanity_check(memcg, name, size);
+>>  	if (err)
+>>  		goto out_unlock;
+>> @@ -218,7 +224,7 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+>>  
+>>  	s->refcount = 1;
+>>  	list_add(&s->list, &slab_caches);
+>> -	memcg_cache_list_add(memcg, s);
+>> +	memcg_register_cache(s);
+>>  
+>>  out_unlock:
+>>  	mutex_unlock(&slab_mutex);
+>> -- 
+>> 1.7.10.4
+>>
 
