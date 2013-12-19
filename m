@@ -1,54 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab3LSVLp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 16:11:45 -0500
-Received: from seketeli.net ([91.121.166.71]:38291 "EHLO ms.seketeli.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756207Ab3LSVLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 16:11:44 -0500
-From: Apelete Seketeli <apelete@seketeli.net>
-To: linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: [PATCH] Update platform data for JZ4740 usb device controller
-Date: Thu, 19 Dec 2013 22:11:42 +0100
-Message-Id: <1387487503-26161-1-git-send-email-apelete@seketeli.net>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756577Ab3LSVON (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 16:14:13 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47503 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756206Ab3LSVOL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 16:14:11 -0500
+Date: Thu, 19 Dec 2013 22:14:06 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Anvin <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Anvin <hpa@linux.intel.com>, Len Brown <len.brown@intel.com>,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/idle] x86, idle: Use static_cpu_has() for CLFLUSH
+ workaround, add barriers
+Message-ID: <20131219211406.GA3464@gmail.com>
+References: <CA+55aFzGxcML7j8CEvQPYzh0W81uVoAAVmGctMOUZ7CZ1yYd2A@mail.gmail.com>
+ <tip-7e98b71920464b8d15fa95c74366416cd3c88861@git.kernel.org>
+ <20131219204051.GA2253@gmail.com>
+ <CA+55aFyr5VcONQKp_yDRDy+BFpMy9=P--+U8d1uYeDVNWcAM8Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyr5VcONQKp_yDRDy+BFpMy9=P--+U8d1uYeDVNWcAM8Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-Following a few patches sent to the linux-usb mailing list to add USB
-support for the Ingenic JZ4740 MIPS SoC found in the Ben Nanonote,
-here is a patch that updates platform data for JZ4740 usb device
-controller.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-The patch that comes as a follow-up of this message was originally
-part of the patch set sent to linux-usb but was split out to separate
-arch/ from drivers/ files.
+> On Fri, Dec 20, 2013 at 5:40 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > The first mb() looks superfluous, because see
+> > current_set_polling_and_test():
+> >
+> > static inline bool __must_check current_set_polling_and_test(void)
+> > {
+> >         __current_set_polling();
+> >
+> >         /*
+> >          * Polling state must be visible before we test NEED_RESCHED,
+> >          * paired by resched_task()
+> >          */
+> >         smp_mb();
+> >
+> >         return unlikely(tif_need_resched());
+> > }
+> >
+> > So it already has a (MFENCE) barrier after ->flags is modified.
+> 
+> So what?
+> 
+> The mb() isn't necessarily against the *write*, it is also against 
+> the *read*.
+> 
+> If the cflush is needed before the monitor, it's likely because the 
+> monitor instruction has some bug with already-existing cachelines in 
+> shared state or whatever.
 
-Changes were rebased on top of Ralf Baechle's Linux MIPS master
-branch, built and tested on device successfully.
+So, my thinking was that maybe it's the other way around: the problem 
+is with the write not being drained to cache yet.
 
-The following changes since commit a9b7663:
+One possibility would be that the bug is that MONITOR will not see the 
+previous write in the store buffer and when shortly afterwards the 
+store hits the cache, it falsely 'wakes up' the MWAIT.
 
-  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux
+(If so then the race window roughly depends on the the number of 
+cycles the current_set_polling_and_test() modification retires and 
+explains how small reorganizations of the code triggered the hw bug.)
 
-are available in the git repository at:
+The CLFLUSH ensures that the modification is visible in the cache 
+before MONITOR is run.
 
-  git://seketeli.fr/~apelete/linux-mips.git update-jz4740-arch
+If this guess is true then the need_resched() read is immaterial to 
+the bug. On the flip side, if my guess is wrong then I'm leaving 
+another subtle race window in the code...
 
-Apelete Seketeli (1):
-  arch: mips: update platform data for JZ4740 usb device controller
+So yeah I agree that without more information from Intel we are better 
+off with a more conservative approach, the bug took relatively long to 
+find, Thomas did the original 7d1a941731fab back in March, 3 kernel 
+releases ago ...
 
- arch/mips/include/asm/mach-jz4740/platform.h |    1 +
- arch/mips/jz4740/board-qi_lb60.c             |    1 +
- arch/mips/jz4740/platform.c                  |   40 +++++++++++++++-----------
- 3 files changed, 26 insertions(+), 16 deletions(-)
+If only there were Intel employees on Cc: who could tell us more about 
+the background of the bug ;-)
 
--- 
-1.7.10.4
+> Which means that we want to make sure that the cflush is ordered wrt 
+> *reads* from that cacheline too.
+> 
+> cflush has nothing specifically to do with writes.
 
+Yes.
+
+Thanks,
+
+	Ingo
