@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab3LSK7A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 05:59:00 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:32913 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab3LSK66 (ORCPT
+	id S1755997Ab3LSNkl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:40:41 -0500
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:61845 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755771Ab3LSNeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 05:58:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAEgOgz4sxg6khQwKtj5owPrm_Jsz+i-bV9-u7Wh9U_YBWvNtmw@mail.gmail.com>
-References: <1387371526-15309-1-git-send-email-jonas.jensen@gmail.com>
-	<1387371526-15309-3-git-send-email-jonas.jensen@gmail.com>
-	<CAEgOgz4sxg6khQwKtj5owPrm_Jsz+i-bV9-u7Wh9U_YBWvNtmw@mail.gmail.com>
-Date: Thu, 19 Dec 2013 11:58:57 +0100
-Message-ID: <CACmBeS2WaRDwvq=WvDgK_eodw90AGbjK3+OiV6Ts03d5h4wtCg@mail.gmail.com>
-Subject: Re: [PATCH v6 2/2] ARM: mach-moxart: add MOXA ART SoC device tree files
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        "linux@roeck-us.net" <linux@roeck-us.net>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 19 Dec 2013 08:34:46 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: nfs-ganesha-devel@lists.sourceforge.net, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 03/13] locks: remove "inline" qualifier from fl_link manipulation functions
+Date: Thu, 19 Dec 2013 08:34:15 -0500
+Message-Id: <1387460065-28269-4-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
+References: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 December 2013 00:41, Peter Crosthwaite
-<peter.crosthwaite@xilinx.com> wrote:
->> +       clocks {
->> +               #address-cells = <1>;
->> +               #size-cells = <0>;
->> +
->> +               ref12: ref12M {
->> +                       compatible = "fixed-clock";
->
-> Is the correct split to perhaps have the fixed-clock node in dtsi as
-> you have here but ...
->
->> +                       #clock-cells = <0>;
->> +                       clock-frequency = <12000000>;
->
-> The board is responsible for the frequency?
->
-> I guess in this schema,
->
-> 1. the "fixed-clock" node corresponds to the existence of clock input
-> pins on the SoC level - hence the node is DTSI.
-> 2. setting the clock-frequency corresponds to populatation of those
-> input pins with a soldered crystal - hence done in DTS
+It's best to let the compiler decide that.
 
-Yes, the soldered crystal belongs to board. Changes in v7 should reflect that.
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/locks.c | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-I tried to doing what you said above, it didn't quite work, I got the
-same error from of_clk_get() / of_clk_get_by_name(), but came up with
-another solution please have a look at v7.
+diff --git a/fs/locks.c b/fs/locks.c
+index 5e28612..049a144 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -511,8 +511,7 @@ static int posix_same_owner(struct file_lock *fl1, struct file_lock *fl2)
+ }
+ 
+ /* Must be called with the i_lock held! */
+-static inline void
+-locks_insert_global_locks(struct file_lock *fl)
++static void locks_insert_global_locks(struct file_lock *fl)
+ {
+ 	lg_local_lock(&file_lock_lglock);
+ 	fl->fl_link_cpu = smp_processor_id();
+@@ -521,8 +520,7 @@ locks_insert_global_locks(struct file_lock *fl)
+ }
+ 
+ /* Must be called with the i_lock held! */
+-static inline void
+-locks_delete_global_locks(struct file_lock *fl)
++static void locks_delete_global_locks(struct file_lock *fl)
+ {
+ 	/*
+ 	 * Avoid taking lock if already unhashed. This is safe since this check
+@@ -544,14 +542,12 @@ posix_owner_key(struct file_lock *fl)
+ 	return (unsigned long)fl->fl_owner;
+ }
+ 
+-static inline void
+-locks_insert_global_blocked(struct file_lock *waiter)
++static void locks_insert_global_blocked(struct file_lock *waiter)
+ {
+ 	hash_add(blocked_hash, &waiter->fl_link, posix_owner_key(waiter));
+ }
+ 
+-static inline void
+-locks_delete_global_blocked(struct file_lock *waiter)
++static void locks_delete_global_blocked(struct file_lock *waiter)
+ {
+ 	hash_del(&waiter->fl_link);
+ }
+-- 
+1.8.4.2
 
-Thanks,
-Jonas
