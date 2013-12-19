@@ -1,90 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab3LSMer (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:34:47 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:44339 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756460Ab3LSMeg (ORCPT
+	id S1756215Ab3LSMAU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:00:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45382 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270Ab3LSMAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:34:36 -0500
-Message-ID: <52B2E7D9.4030908@gmail.com>
-Date: Thu, 19 Dec 2013 20:34:33 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Francois Bedard <Francois.Bedard@synopsys.com>,
-        David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] Revert "ARC: Add guard macro to uapi/asm/unistd.h"
-References: <1387451598-14490-1-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1387451598-14490-1-git-send-email-vgupta@synopsys.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Dec 2013 07:00:05 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 196/208] KVM: x86: Convert vapic synchronization to _cached functions (CVE-2013-6368)
+Date: Thu, 19 Dec 2013 11:54:54 +0000
+Message-Id: <1387454106-19326-197-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 07:13 PM, Vineet Gupta wrote:
-> This reverts commit 97bc386fc12deeb41d5bff33548e3002b258d4e0.
-> 
-> Generic syscall table generator relies on ARCH unistd.h as follows:
-> 
-> 	void *sys_call_table[NR_syscalls] = {
-> 		[0 ... NR_syscalls-1] = sys_ni_syscall,
-> 	#include <asm/unistd.h>
-> 	};
-> 
-> And turns out that prior dependencies already include that header by
-> the time preprocessor hits the above. Meaning ARCH unistd.h needs to be
-> able to included twice.
-> 
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-OK, thanks, it sounds reasonable to me.
+------------------
 
-But why many other architectures contents these guard macros? (arm, sh,
-blackfin, cris, frv, ia64, m32r, m68k, mips, s390, microblaze, mn10300,
-parisc, powerpc, sparc, x86). Do they need improvement too?
+From: Andy Honig <ahonig@google.com>
 
-And for our case, what xtensa has done looks like a better way to me.
+commit fda4e2e85589191b123d31cdc21fd33ee70f50fd upstream.
 
+In kvm_lapic_sync_from_vapic and kvm_lapic_sync_to_vapic there is the
+potential to corrupt kernel memory if userspace provides an address that
+is at the end of a page.  This patches concerts those functions to use
+kvm_write_guest_cached and kvm_read_guest_cached.  It also checks the
+vapic_address specified by userspace during ioctl processing and returns
+an error to userspace if the address is not a valid GPA.
 
-Thanks.
+This is generally not guest triggerable, because the required write is
+done by firmware that runs before the guest.  Also, it only affects AMD
+processors and oldish Intel that do not have the FlexPriority feature
+(unless you disable FlexPriority, of course; then newer processors are
+also affected).
 
-> This however means that perf cross comilation warning will re-appear
-> which needs to be discussed with perf folks (why they need to include
-> both libc variant as well as kernel internal header directly).
-> 
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> ---
->  arch/arc/include/uapi/asm/unistd.h | 5 -----
->  1 file changed, 5 deletions(-)
-> 
-> diff --git a/arch/arc/include/uapi/asm/unistd.h b/arch/arc/include/uapi/asm/unistd.h
-> index 68125dd766c6..6f30484f34b7 100644
-> --- a/arch/arc/include/uapi/asm/unistd.h
-> +++ b/arch/arc/include/uapi/asm/unistd.h
-> @@ -8,9 +8,6 @@
->  
->  /******** no-legacy-syscalls-ABI *******/
->  
-> -#ifndef _UAPI_ASM_ARC_UNISTD_H
-> -#define _UAPI_ASM_ARC_UNISTD_H
-> -
->  #define __ARCH_WANT_SYS_EXECVE
->  #define __ARCH_WANT_SYS_CLONE
->  #define __ARCH_WANT_SYS_VFORK
-> @@ -35,5 +32,3 @@ __SYSCALL(__NR_arc_gettls, sys_arc_gettls)
->  /* Generic syscall (fs/filesystems.c - lost in asm-generic/unistd.h */
->  #define __NR_sysfs		(__NR_arch_specific_syscall + 3)
->  __SYSCALL(__NR_sysfs, sys_sysfs)
-> -
-> -#endif
-> 
+Fixes: b93463aa59d6 ('KVM: Accelerated apic support')
 
+Reported-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/x86/kvm/lapic.c | 27 +++++++++++++++------------
+ arch/x86/kvm/lapic.h |  4 ++--
+ arch/x86/kvm/x86.c   | 40 +---------------------------------------
+ 3 files changed, 18 insertions(+), 53 deletions(-)
 
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index adbcc08..1dae459 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1706,7 +1706,6 @@ static void apic_sync_pv_eoi_from_guest(struct kvm_vcpu *vcpu,
+ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
+ {
+ 	u32 data;
+-	void *vapic;
+ 
+ 	if (test_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention))
+ 		apic_sync_pv_eoi_from_guest(vcpu, vcpu->arch.apic);
+@@ -1714,9 +1713,8 @@ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
+ 	if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
+ 		return;
+ 
+-	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
+-	data = *(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr));
+-	kunmap_atomic(vapic);
++	kvm_read_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
++				sizeof(u32));
+ 
+ 	apic_set_tpr(vcpu->arch.apic, data & 0xff);
+ }
+@@ -1752,7 +1750,6 @@ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu)
+ 	u32 data, tpr;
+ 	int max_irr, max_isr;
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+-	void *vapic;
+ 
+ 	apic_sync_pv_eoi_to_guest(vcpu, apic);
+ 
+@@ -1768,18 +1765,24 @@ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu)
+ 		max_isr = 0;
+ 	data = (tpr & 0xff) | ((max_isr & 0xf0) << 8) | (max_irr << 24);
+ 
+-	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
+-	*(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr)) = data;
+-	kunmap_atomic(vapic);
++	kvm_write_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
++				sizeof(u32));
+ }
+ 
+-void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
++int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
+ {
+-	vcpu->arch.apic->vapic_addr = vapic_addr;
+-	if (vapic_addr)
++	if (vapic_addr) {
++		if (kvm_gfn_to_hva_cache_init(vcpu->kvm,
++					&vcpu->arch.apic->vapic_cache,
++					vapic_addr, sizeof(u32)))
++			return -EINVAL;
+ 		__set_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention);
+-	else
++	} else {
+ 		__clear_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention);
++	}
++
++	vcpu->arch.apic->vapic_addr = vapic_addr;
++	return 0;
+ }
+ 
+ int kvm_x2apic_msr_write(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
+index c730ac9..c8b0d0d 100644
+--- a/arch/x86/kvm/lapic.h
++++ b/arch/x86/kvm/lapic.h
+@@ -34,7 +34,7 @@ struct kvm_lapic {
+ 	 */
+ 	void *regs;
+ 	gpa_t vapic_addr;
+-	struct page *vapic_page;
++	struct gfn_to_hva_cache vapic_cache;
+ 	unsigned long pending_events;
+ 	unsigned int sipi_vector;
+ };
+@@ -76,7 +76,7 @@ void kvm_set_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu, u64 data);
+ void kvm_apic_write_nodecode(struct kvm_vcpu *vcpu, u32 offset);
+ void kvm_apic_set_eoi_accelerated(struct kvm_vcpu *vcpu, int vector);
+ 
+-void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
++int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
+ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu);
+ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu);
+ 
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index d21bce5..34e2e19 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3179,8 +3179,7 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
+ 		r = -EFAULT;
+ 		if (copy_from_user(&va, argp, sizeof va))
+ 			goto out;
+-		r = 0;
+-		kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
++		r = kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
+ 		break;
+ 	}
+ 	case KVM_X86_SETUP_MCE: {
+@@ -5579,36 +5578,6 @@ static void post_kvm_run_save(struct kvm_vcpu *vcpu)
+ 			!kvm_event_needs_reinjection(vcpu);
+ }
+ 
+-static int vapic_enter(struct kvm_vcpu *vcpu)
+-{
+-	struct kvm_lapic *apic = vcpu->arch.apic;
+-	struct page *page;
+-
+-	if (!apic || !apic->vapic_addr)
+-		return 0;
+-
+-	page = gfn_to_page(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
+-	if (is_error_page(page))
+-		return -EFAULT;
+-
+-	vcpu->arch.apic->vapic_page = page;
+-	return 0;
+-}
+-
+-static void vapic_exit(struct kvm_vcpu *vcpu)
+-{
+-	struct kvm_lapic *apic = vcpu->arch.apic;
+-	int idx;
+-
+-	if (!apic || !apic->vapic_addr)
+-		return;
+-
+-	idx = srcu_read_lock(&vcpu->kvm->srcu);
+-	kvm_release_page_dirty(apic->vapic_page);
+-	mark_page_dirty(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
+-	srcu_read_unlock(&vcpu->kvm->srcu, idx);
+-}
+-
+ static void update_cr8_intercept(struct kvm_vcpu *vcpu)
+ {
+ 	int max_irr, tpr;
+@@ -5931,11 +5900,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+ 	struct kvm *kvm = vcpu->kvm;
+ 
+ 	vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
+-	r = vapic_enter(vcpu);
+-	if (r) {
+-		srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
+-		return r;
+-	}
+ 
+ 	r = 1;
+ 	while (r > 0) {
+@@ -5993,8 +5957,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+ 
+ 	srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
+ 
+-	vapic_exit(vcpu);
+-
+ 	return r;
+ }
+ 
 -- 
-Chen Gang
+1.8.3.2
 
-Open, share and attitude like air, water and life which God blessed
