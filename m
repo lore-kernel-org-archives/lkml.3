@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab3LSJWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:22:48 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:56710 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab3LSJKC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:10:02 -0500
-Subject: [PATCH -tip v6 10/22] ftrace/kprobes: Allow probing on some
- preparation functions
-To: Ingo Molnar <mingo@kernel.org>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
-Date: Thu, 19 Dec 2013 09:04:18 +0000
-Message-ID: <20131219090418.14309.96576.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.16
+	id S1752137Ab3LSJ1J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:27:09 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:43053 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751075Ab3LSJ1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 04:27:07 -0500
+Message-ID: <52B2BBB4.3090209@parallels.com>
+Date: Thu, 19 Dec 2013 13:26:12 +0400
+From: Vasily Averin <vvs@parallels.com>
+Organization: Parallels
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Vladimir Davydov <vdavydov@parallels.com>
+CC: Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@gmail.com>,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        cgroups@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>, devel@openvz.org
+Subject: Re: [Devel] [PATCH 1/6] slab: cleanup kmem_cache_create_memcg()
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com> <52B2AB7C.1010803@parallels.com> <52B2B0A4.8050009@parallels.com>
+In-Reply-To: <52B2B0A4.8050009@parallels.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to prohibit probing on the functions
-used for preparation. Those are safely probed because
-those are not invoked from breakpoint/fault/debug handlers,
-there is no chance to cause recursive exceptions.
+On 12/19/2013 12:39 PM, Vladimir Davydov wrote:
+> On 12/19/2013 12:17 PM, Vasily Averin wrote:
+>> On 12/18/2013 05:16 PM, Vladimir Davydov wrote:
+>>> --- a/mm/slab_common.c
+>>> +++ b/mm/slab_common.c
+>>> @@ -176,8 +176,9 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+>>>  	get_online_cpus();
+>>>  	mutex_lock(&slab_mutex);
+>>>  
+>>> -	if (!kmem_cache_sanity_check(memcg, name, size) == 0)
+>>> -		goto out_locked;
+>>> +	err = kmem_cache_sanity_check(memcg, name, size);
+>>> +	if (err)
+>>> +		goto out_unlock;
+>>>  
+>>>  	/*
+>>>  	 * Some allocators will constraint the set of valid flags to a subset
+>> Theoretically in future kmem_cache_sanity_check() can return positive value.
+>> Probably it's better to check (err < 0) in caller ?
+> 
+> Hmm, why? What information could positive retval carry here? We have
+> plenty of places throughout the code where we check for (err), not
+> (err<0), simply because it looks clearer, e.g. look at
+> __kmem_cache_create() calls. If it returns a positive value one day, we
+> will have to parse every place where it's called. Anyway, if someone
+> wants to change a function behavior, he must check every place where
+> this function is called and fix them accordingly.
 
-Following functions are now removed from the kprobes blacklist.
-update_bitfield_fetch_param
-free_bitfield_fetch_param
-kprobe_register
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- kernel/trace/trace_kprobe.c |    2 +-
- kernel/trace/trace_probe.c  |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index dae9541..f8fa5bc 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -1151,7 +1151,7 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
-  * kprobe_trace_self_tests_init() does enable_trace_probe/disable_trace_probe
-  * lockless, but we can't race with this __init function.
-  */
--static __kprobes
-+static
- int kprobe_register(struct ftrace_event_call *event,
- 		    enum trace_reg type, void *data)
- {
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index 412e959..43638a2 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -346,7 +346,7 @@ DEFINE_BASIC_FETCH_FUNCS(bitfield)
- #define fetch_bitfield_string		NULL
- #define fetch_bitfield_string_size	NULL
- 
--static __kprobes void
-+static void
- update_bitfield_fetch_param(struct bitfield_fetch_param *data)
- {
- 	/*
-@@ -359,7 +359,7 @@ update_bitfield_fetch_param(struct bitfield_fetch_param *data)
- 		update_symbol_cache(data->orig.data);
- }
- 
--static __kprobes void
-+static void
- free_bitfield_fetch_param(struct bitfield_fetch_param *data)
- {
- 	/*
-
+I believe expected semantic of function -- return negative in case of error.
+So correct error cheek should be (err < 0).
+(err) check is semantically incorrect, and it can lead to troubles in future.
 
