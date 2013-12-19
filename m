@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756366Ab3LSMLv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:11:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45264 "EHLO
+	id S1756235Ab3LSMA0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:00:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45448 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755915Ab3LSL7Z (ORCPT
+	with ESMTP id S1756217Ab3LSMAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:25 -0500
+	Thu, 19 Dec 2013 07:00:21 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Ben Myers <bpm@sgi.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Kees Cook <keescook@google.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 172/208] dm snapshot: avoid snapshot space leak on crash
-Date: Thu, 19 Dec 2013 11:54:30 +0000
-Message-Id: <1387454106-19326-173-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 207/208] xfs: underflow bug in xfs_attrlist_by_handle()
+Date: Thu, 19 Dec 2013 11:55:05 +0000
+Message-Id: <1387454106-19326-208-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,196 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 230c83afdd9cd384348475bea1e14b80b3b6b1b8 upstream.
+commit 31978b5cc66b8ba8a7e8eef60b12395d41b7b890 upstream.
 
-There is a possible leak of snapshot space in case of crash.
+If we allocate less than sizeof(struct attrlist) then we end up
+corrupting memory or doing a ZERO_PTR_SIZE dereference.
 
-The reason for space leaking is that chunks in the snapshot device are
-allocated sequentially, but they are finished (and stored in the metadata)
-out of order, depending on the order in which copying finished.
+This can only be triggered with CAP_SYS_ADMIN.
 
-For example, supposed that the metadata contains the following records
-SUPERBLOCK
-METADATA (blocks 0 ... 250)
-DATA 0
-DATA 1
-DATA 2
-...
-DATA 250
-
-Now suppose that you allocate 10 new data blocks 251-260. Suppose that
-copying of these blocks finish out of order (block 260 finished first
-and the block 251 finished last). Now, the snapshot device looks like
-this:
-SUPERBLOCK
-METADATA (blocks 0 ... 250, 260, 259, 258, 257, 256)
-DATA 0
-DATA 1
-DATA 2
-...
-DATA 250
-DATA 251
-DATA 252
-DATA 253
-DATA 254
-DATA 255
-METADATA (blocks 255, 254, 253, 252, 251)
-DATA 256
-DATA 257
-DATA 258
-DATA 259
-DATA 260
-
-Now, if the machine crashes after writing the first metadata block but
-before writing the second metadata block, the space for areas DATA 250-255
-is leaked, it contains no valid data and it will never be used in the
-future.
-
-This patch makes dm-snapshot complete exceptions in the same order they
-were allocated, thus fixing this bug.
-
-Note: when backporting this patch to the stable kernel, change the version
-field in the following way:
-* if version in the stable kernel is {1, 11, 1}, change it to {1, 12, 0}
-* if version in the stable kernel is {1, 10, 0} or {1, 10, 1}, change it
-  to {1, 10, 2}
-Userspace reads the version to determine if the bug was fixed, so the
-version change is needed.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Kees Cook <keescook@google.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-snap.c | 71 ++++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 64 insertions(+), 7 deletions(-)
+ fs/xfs/xfs_ioctl.c   | 3 ++-
+ fs/xfs/xfs_ioctl32.c | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/dm-snap.c b/drivers/md/dm-snap.c
-index aec57d7..944690b 100644
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -66,6 +66,18 @@ struct dm_snapshot {
+diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
+index bccd2a3..e0bf6f9 100644
+--- a/fs/xfs/xfs_ioctl.c
++++ b/fs/xfs/xfs_ioctl.c
+@@ -409,7 +409,8 @@ xfs_attrlist_by_handle(
+ 		return -XFS_ERROR(EPERM);
+ 	if (copy_from_user(&al_hreq, arg, sizeof(xfs_fsop_attrlist_handlereq_t)))
+ 		return -XFS_ERROR(EFAULT);
+-	if (al_hreq.buflen > XATTR_LIST_MAX)
++	if (al_hreq.buflen < sizeof(struct attrlist) ||
++	    al_hreq.buflen > XATTR_LIST_MAX)
+ 		return -XFS_ERROR(EINVAL);
  
- 	atomic_t pending_exceptions_count;
- 
-+	/* Protected by "lock" */
-+	sector_t exception_start_sequence;
-+
-+	/* Protected by kcopyd single-threaded callback */
-+	sector_t exception_complete_sequence;
-+
-+	/*
-+	 * A list of pending exceptions that completed out of order.
-+	 * Protected by kcopyd single-threaded callback.
-+	 */
-+	struct list_head out_of_order_list;
-+
- 	mempool_t *pending_pool;
- 
- 	struct dm_exception_table pending;
-@@ -173,6 +185,14 @@ struct dm_snap_pending_exception {
- 	 */
- 	int started;
- 
-+	/* There was copying error. */
-+	int copy_error;
-+
-+	/* A sequence number, it is used for in-order completion. */
-+	sector_t exception_sequence;
-+
-+	struct list_head out_of_order_entry;
-+
  	/*
- 	 * For writing a complete chunk, bypassing the copy.
- 	 */
-@@ -1094,6 +1114,9 @@ static int snapshot_ctr(struct dm_target *ti, unsigned int argc, char **argv)
- 	s->valid = 1;
- 	s->active = 0;
- 	atomic_set(&s->pending_exceptions_count, 0);
-+	s->exception_start_sequence = 0;
-+	s->exception_complete_sequence = 0;
-+	INIT_LIST_HEAD(&s->out_of_order_list);
- 	init_rwsem(&s->lock);
- 	INIT_LIST_HEAD(&s->list);
- 	spin_lock_init(&s->pe_lock);
-@@ -1443,6 +1466,19 @@ static void commit_callback(void *context, int success)
- 	pending_complete(pe, success);
- }
+diff --git a/fs/xfs/xfs_ioctl32.c b/fs/xfs/xfs_ioctl32.c
+index c0c6625..68799d7 100644
+--- a/fs/xfs/xfs_ioctl32.c
++++ b/fs/xfs/xfs_ioctl32.c
+@@ -359,7 +359,8 @@ xfs_compat_attrlist_by_handle(
+ 	if (copy_from_user(&al_hreq, arg,
+ 			   sizeof(compat_xfs_fsop_attrlist_handlereq_t)))
+ 		return -XFS_ERROR(EFAULT);
+-	if (al_hreq.buflen > XATTR_LIST_MAX)
++	if (al_hreq.buflen < sizeof(struct attrlist) ||
++	    al_hreq.buflen > XATTR_LIST_MAX)
+ 		return -XFS_ERROR(EINVAL);
  
-+static void complete_exception(struct dm_snap_pending_exception *pe)
-+{
-+	struct dm_snapshot *s = pe->snap;
-+
-+	if (unlikely(pe->copy_error))
-+		pending_complete(pe, 0);
-+
-+	else
-+		/* Update the metadata if we are persistent */
-+		s->store->type->commit_exception(s->store, &pe->e,
-+						 commit_callback, pe);
-+}
-+
- /*
-  * Called when the copy I/O has finished.  kcopyd actually runs
-  * this code so don't block.
-@@ -1452,13 +1488,32 @@ static void copy_callback(int read_err, unsigned long write_err, void *context)
- 	struct dm_snap_pending_exception *pe = context;
- 	struct dm_snapshot *s = pe->snap;
- 
--	if (read_err || write_err)
--		pending_complete(pe, 0);
-+	pe->copy_error = read_err || write_err;
- 
--	else
--		/* Update the metadata if we are persistent */
--		s->store->type->commit_exception(s->store, &pe->e,
--						 commit_callback, pe);
-+	if (pe->exception_sequence == s->exception_complete_sequence) {
-+		s->exception_complete_sequence++;
-+		complete_exception(pe);
-+
-+		while (!list_empty(&s->out_of_order_list)) {
-+			pe = list_entry(s->out_of_order_list.next,
-+					struct dm_snap_pending_exception, out_of_order_entry);
-+			if (pe->exception_sequence != s->exception_complete_sequence)
-+				break;
-+			s->exception_complete_sequence++;
-+			list_del(&pe->out_of_order_entry);
-+			complete_exception(pe);
-+		}
-+	} else {
-+		struct list_head *lh;
-+		struct dm_snap_pending_exception *pe2;
-+
-+		list_for_each_prev(lh, &s->out_of_order_list) {
-+			pe2 = list_entry(lh, struct dm_snap_pending_exception, out_of_order_entry);
-+			if (pe2->exception_sequence < pe->exception_sequence)
-+				break;
-+		}
-+		list_add(&pe->out_of_order_entry, lh);
-+	}
- }
- 
- /*
-@@ -1553,6 +1608,8 @@ __find_pending_exception(struct dm_snapshot *s,
- 		return NULL;
- 	}
- 
-+	pe->exception_sequence = s->exception_start_sequence++;
-+
- 	dm_insert_exception(&s->pending, &pe->e);
- 
- 	return pe;
-@@ -2192,7 +2249,7 @@ static struct target_type origin_target = {
- 
- static struct target_type snapshot_target = {
- 	.name    = "snapshot",
--	.version = {1, 11, 1},
-+	.version = {1, 12, 0},
- 	.module  = THIS_MODULE,
- 	.ctr     = snapshot_ctr,
- 	.dtr     = snapshot_dtr,
+ 	/*
 -- 
 1.8.3.2
 
