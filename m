@@ -1,66 +1,431 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab3LSWfX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 17:35:23 -0500
-Received: from smtprelay0248.hostedemail.com ([216.40.44.248]:38435 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755201Ab3LSWfV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 17:35:21 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 30,2,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2731:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4250:4321:5007:6119:7652:7901:7903:7974:10004:10400:10848:11232:11658:11914:12517:
-X-HE-Tag: smile78_4b5627202da20
-X-Filterd-Recvd-Size: 2409
-Message-ID: <1387492517.2353.29.camel@joe-AO722>
-Subject: Re: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
-From: Joe Perches <joe@perches.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, dvhart@linux.intel.com, peterz@infradead.org,
-        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
-        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
-        aswin@hp.com
-Date: Thu, 19 Dec 2013 14:35:17 -0800
-In-Reply-To: <20131219194213.GA824@gmail.com>
-References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
-	 <1387478746-5436-5-git-send-email-davidlohr@hp.com>
-	 <20131219192532.GB564@gmail.com>
-	 <1387481345.5494.1.camel@buesod1.americas.hpqcorp.net>
-	 <20131219194213.GA824@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756365Ab3LSWjX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 17:39:23 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36169 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754249Ab3LSWjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 17:39:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,515,1384329600"; 
+   d="scan'208";a="427482460"
+From: "David E. Box" <david.e.box@linux.intel.com>
+To: mjg59@srcf.ucam.org, rjw@rjwysocki.net
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        "David E. Box" <david.e.box@linux.intel.com>
+Subject: [PATCH v5][RESEND] X86 platform: New BayTrail IOSF-SB MBI driver
+Date: Thu, 19 Dec 2013 14:37:46 -0800
+Message-Id: <1387492666-5398-1-git-send-email-david.e.box@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1386363573-2008-1-git-send-email-david.e.box@linux.intel.com>
+References: <1386363573-2008-1-git-send-email-david.e.box@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-19 at 20:42 +0100, Ingo Molnar wrote:
-> * Davidlohr Bueso <davidlohr@hp.com> wrote:
-> 
-> > On Thu, 2013-12-19 at 20:25 +0100, Ingo Molnar wrote:
-> > > * Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > > 
-> > > > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> > > > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-> > > > Signed-off-by: Jason Low <jason.low2@hp.com>
-> > > 
-> > > So, that's not a valid SOB sequence either, the person sending me a 
-> > > patch should be the last person in the SOB chain 
-> > 
-> > Which is why I had it like that in the original version.
-> 
-> The problem with that order was that the first person should be the 
-> primary author and in the 'From' tag.
-> 
-> A SOB chain is intended to depict the true propagation/route of a 
-> patch, from author, through maintainers who handle and forward it, to 
-> the maintainer who applies it to a Git tree. The patch starts up with 
-> a single SOB (the primary author's) and every 'hop' after that adds a 
-> SOB to the tail of the existing SOB chain.
+From: "David E. Box" <david.e.box@linux.intel.com>
 
-Multiple "Signed-off-by:"s are also used when there are
-multiple authors of a single patch.
+Current Intel SOC cores use a MailBox Interface (MBI) to provide access to unit
+devices connected to the system fabric. This driver implements access to this
+interface on BayTrail platforms. This is a requirement for drivers that need
+access to unit registers on the platform (e.g. accessing the PUNIT for power
+management features such as RAPL). Serialized access is handled by all exported
+routines with spinlocks.
 
+The API includes 3 functions for access to unit registers:
+
+int bt_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr)
+int bt_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr)
+int bt_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
+
+port:	indicating the unit being accessed
+opcode:	the read or write port specific opcode
+offset:	the register offset within the port
+mdr:	the register data to be read, written, or modified
+mask:	bit locations in mdr to change
+
+Returns nonzero on error
+
+Note: GPU code handles access to the GFX unit. Therefore access to that unit
+with this driver is disallowed to avoid conflicts.
+
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+---
+v5: Converted from pnpacpi/mmio driver to pci/config_space driver as
+    necessitated by firmware change.
+
+v4: Define driver as platform specific to BayTrail as some platforms cannot
+    enumerate the MBI using ACPI as noted by Bin Gao <bin.gao@linux.intel.com>
+    Renamed register macros and API funcitons to platform specific names.
+    Changed dependency to PNPACPI as sugessted by Rafael Wysocki <rjw@rjwysocki.net>
+
+v3: Converted to PNP ACPI driver as sugessted by Rafael Wysocki <rjw@rjwysocki.net>
+    Removed config visibility to user as suggested by Andi Kleen <andi@firstfloor.org>
+
+v2: Made modular since there was no longer a reason not to
+    Moved to x86 platform as suggested by Mathhew Garrett <mjg59@srcf.ucam.org>
+    Added probe to init to cause driver load to fail if device not detected.
+
+ drivers/platform/x86/Kconfig          |    8 ++
+ drivers/platform/x86/Makefile         |    1 +
+ drivers/platform/x86/intel_baytrail.c |  224 +++++++++++++++++++++++++++++++++
+ drivers/platform/x86/intel_baytrail.h |   90 +++++++++++++
+ 4 files changed, 323 insertions(+)
+ create mode 100644 drivers/platform/x86/intel_baytrail.c
+ create mode 100644 drivers/platform/x86/intel_baytrail.h
+
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index b51a746..b482e22 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -819,4 +819,12 @@ config PVPANIC
+ 	  a paravirtualized device provided by QEMU; it lets a virtual machine
+ 	  (guest) communicate panic events to the host.
+ 
++config INTEL_BAYTRAIL_MBI
++	tristate
++	depends on PCI
++	---help---
++	  Needed on Baytrail platforms for access to the IOSF Sideband Mailbox
++	  Interface. This is a requirement for systems that need to configure
++	  the PUNIT for power management features such as RAPL.
++
+ endif # X86_PLATFORM_DEVICES
+diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+index 5dbe193..b3d4cfd 100644
+--- a/drivers/platform/x86/Makefile
++++ b/drivers/platform/x86/Makefile
+@@ -55,3 +55,4 @@ obj-$(CONFIG_INTEL_RST)		+= intel-rst.o
+ obj-$(CONFIG_INTEL_SMARTCONNECT)	+= intel-smartconnect.o
+ 
+ obj-$(CONFIG_PVPANIC)           += pvpanic.o
++obj-$(CONFIG_INTEL_BAYTRAIL_MBI)	+= intel_baytrail.o
+diff --git a/drivers/platform/x86/intel_baytrail.c b/drivers/platform/x86/intel_baytrail.c
+new file mode 100644
+index 0000000..f96626b
+--- /dev/null
++++ b/drivers/platform/x86/intel_baytrail.c
+@@ -0,0 +1,224 @@
++/*
++ * Baytrail IOSF-SB MailBox Interface Driver
++ * Copyright (c) 2013, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ *
++ * The IOSF-SB is a fabric bus available on Atom based SOC's that uses a
++ * mailbox interface (MBI) to communicate with mutiple devices. This
++ * driver implements BayTrail-specific access to this interface.
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/spinlock.h>
++#include <linux/pci.h>
++
++#include "intel_baytrail.h"
++
++static DEFINE_SPINLOCK(iosf_mbi_lock);
++
++static inline u32 iosf_mbi_form_mcr(u8 op, u8 port, u8 offset)
++{
++	return (op << 24) | (port << 16) | (offset << 8) | BT_MBI_ENABLE;
++}
++
++static struct pci_dev *mbi_pdev;	/* one mbi device */
++
++/* Hold lock before calling */
++static int iosf_mbi_pci_read_mdr(u32 mcrx, u32 mcr, u32 *mdr)
++{
++	int result;
++
++	if (!mbi_pdev)
++		return -ENODEV;
++
++	if (mcrx) {
++		result = pci_write_config_dword(mbi_pdev,
++						BT_MBI_MCRX_OFFSET, mcrx);
++		if (result < 0)
++			goto iosf_mbi_read_err;
++	}
++
++	result = pci_write_config_dword(mbi_pdev,
++					BT_MBI_MCR_OFFSET, mcr);
++	if (result < 0)
++		goto iosf_mbi_read_err;
++
++	result = pci_read_config_dword(mbi_pdev,
++				       BT_MBI_MDR_OFFSET, mdr);
++	if (result < 0)
++		goto iosf_mbi_read_err;
++
++	return 0;
++
++iosf_mbi_read_err:
++	dev_err(&mbi_pdev->dev, "error: PCI config operation returned %d\n",
++		result);
++	return result;
++}
++
++/* Hold lock before calling */
++static int iosf_mbi_pci_write_mdr(u32 mcrx, u32 mcr, u32 mdr)
++{
++	int result;
++
++	if (!mbi_pdev)
++		return -ENODEV;
++
++	result = pci_write_config_dword(mbi_pdev,
++					BT_MBI_MDR_OFFSET, mdr);
++	if (result < 0)
++		goto iosf_mbi_write_err;
++
++	if (mcrx) {
++		result = pci_write_config_dword(mbi_pdev,
++			 BT_MBI_MCRX_OFFSET, mcrx);
++		if (result < 0)
++			goto iosf_mbi_write_err;
++	}
++
++	result = pci_write_config_dword(mbi_pdev,
++					BT_MBI_MCR_OFFSET, mcr);
++	if (result < 0)
++		goto iosf_mbi_write_err;
++
++	return 0;
++
++iosf_mbi_write_err:
++	dev_err(&mbi_pdev->dev, "error: PCI config operation returned %d\n",
++		result);
++	return result;
++}
++
++int bt_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr)
++{
++	u32 mcr, mcrx;
++	unsigned long flags;
++	int ret;
++
++	/*Access to the GFX unit is handled by GPU code */
++	BUG_ON(port == BT_MBI_UNIT_GFX);
++
++	mcr = iosf_mbi_form_mcr(opcode, port, offset & BT_MBI_MASK_LO);
++	mcrx = offset & BT_MBI_MASK_HI;
++
++	spin_lock_irqsave(&iosf_mbi_lock, flags);
++	ret = iosf_mbi_pci_read_mdr(mcrx, mcr, mdr);
++	spin_unlock_irqrestore(&iosf_mbi_lock, flags);
++
++	return ret;
++}
++EXPORT_SYMBOL(bt_mbi_read);
++
++int bt_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr)
++{
++	u32 mcr, mcrx;
++	unsigned long flags;
++	int ret;
++
++	/*Access to the GFX unit is handled by GPU code */
++	BUG_ON(port == BT_MBI_UNIT_GFX);
++
++	mcr = iosf_mbi_form_mcr(opcode, port, offset & BT_MBI_MASK_LO);
++	mcrx = offset & BT_MBI_MASK_HI;
++
++	spin_lock_irqsave(&iosf_mbi_lock, flags);
++	ret = iosf_mbi_pci_write_mdr(mcrx, mcr, mdr);
++	spin_unlock_irqrestore(&iosf_mbi_lock, flags);
++
++	return ret;
++}
++EXPORT_SYMBOL(bt_mbi_write);
++
++int bt_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
++{
++	u32 mcr, mcrx;
++	u32 value;
++	unsigned long flags;
++	int ret;
++
++	/*Access to the GFX unit is handled by GPU code */
++	BUG_ON(port == BT_MBI_UNIT_GFX);
++
++	mcr = iosf_mbi_form_mcr(opcode, port, offset & BT_MBI_MASK_LO);
++	mcrx = offset & BT_MBI_MASK_HI;
++
++	spin_lock_irqsave(&iosf_mbi_lock, flags);
++
++	/* Read current mdr value */
++	ret = iosf_mbi_pci_read_mdr(mcrx, mcr & BT_MBI_RD_MASK, &value);
++	if (ret < 0) {
++		spin_unlock_irqrestore(&iosf_mbi_lock, flags);
++		return ret;
++	}
++
++	/* Apply mask */
++	value &= ~mask;
++	mdr &= mask;
++	value |= mdr;
++
++	/* Write back */
++	ret = iosf_mbi_pci_write_mdr(mcrx, mcr | BT_MBI_WR_MASK, value);
++
++	spin_unlock_irqrestore(&iosf_mbi_lock, flags);
++
++	return ret;
++}
++EXPORT_SYMBOL(bt_mbi_modify);
++
++static int iosf_mbi_probe(struct pci_dev *pdev,
++			  const struct pci_device_id *unused)
++{
++	int ret;
++
++	ret = pci_enable_device(pdev);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "error: could not enable device\n");
++		return ret;
++	}
++
++	mbi_pdev = pci_dev_get(pdev);
++	return 0;
++}
++
++static DEFINE_PCI_DEVICE_TABLE(iosf_mbi_pci_ids) = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0F00) },
++	{ 0, },
++};
++MODULE_DEVICE_TABLE(pci, iosf_mbi_pci_ids);
++
++static struct pci_driver iosf_mbi_pci_driver = {
++	.name		= "iosf_mbi_pci",
++	.probe		= iosf_mbi_probe,
++	.id_table	= iosf_mbi_pci_ids,
++};
++
++static int __init bt_mbi_init(void)
++{
++	return pci_register_driver(&iosf_mbi_pci_driver);
++}
++
++static void __exit bt_mbi_exit(void)
++{
++	pci_unregister_driver(&iosf_mbi_pci_driver);
++	if (mbi_pdev) {
++		pci_dev_put(mbi_pdev);
++		mbi_pdev = NULL;
++	}
++}
++
++module_init(bt_mbi_init);
++module_exit(bt_mbi_exit);
++
++MODULE_AUTHOR("David E. Box <david.e.box@linux.intel.com>");
++MODULE_DESCRIPTION("BayTrail Mailbox Interface accessor");
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/platform/x86/intel_baytrail.h b/drivers/platform/x86/intel_baytrail.h
+new file mode 100644
+index 0000000..8bcc311
+--- /dev/null
++++ b/drivers/platform/x86/intel_baytrail.h
+@@ -0,0 +1,90 @@
++/*
++ * intel_baytrail.h: MailBox access support for Intel BayTrail platforms
++ */
++
++#ifndef INTEL_BAYTRAIL_MBI_SYMS_H
++#define INTEL_BAYTRAIL_MBI_SYMS_H
++
++#define BT_MBI_MCR_OFFSET	0xD0
++#define BT_MBI_MDR_OFFSET	0xD4
++#define BT_MBI_MCRX_OFFSET	0xD8
++
++#define BT_MBI_RD_MASK		0xFEFFFFFF
++#define BT_MBI_WR_MASK		0X01000000
++
++#define BT_MBI_MASK_HI		0xFFFFFF00
++#define BT_MBI_MASK_LO		0x000000FF
++#define BT_MBI_ENABLE		0xF0
++
++/* BT-SB unit access methods */
++#define BT_MBI_UNIT_AUNIT	0x00
++#define BT_MBI_UNIT_SMC		0x01
++#define BT_MBI_UNIT_CPU		0x02
++#define BT_MBI_UNIT_BUNIT	0x03
++#define BT_MBI_UNIT_PMC		0x04
++#define BT_MBI_UNIT_GFX		0x06
++#define BT_MBI_UNIT_SMI		0x0C
++#define BT_MBI_UNIT_USB		0x43
++#define BT_MBI_UNIT_SATA	0xA3
++#define BT_MBI_UNIT_PCIE	0xA6
++
++/* Read/write opcodes */
++#define BT_MBI_AUNIT_READ	0x10
++#define BT_MBI_AUNIT_WRITE	0x11
++#define BT_MBI_SMC_READ		0x10
++#define BT_MBI_SMC_WRITE	0x11
++#define BT_MBI_CPU_READ		0x10
++#define BT_MBI_CPU_WRITE	0x11
++#define BT_MBI_BUNIT_READ	0x10
++#define BT_MBI_BUNIT_WRITE	0x11
++#define BT_MBI_PMC_READ		0x06
++#define BT_MBI_PMC_WRITE	0x07
++#define BT_MBI_GFX_READ		0x00
++#define BT_MBI_GFX_WRITE	0x01
++#define BT_MBI_SMIO_READ	0x06
++#define BT_MBI_SMIO_WRITE	0x07
++#define BT_MBI_USB_READ		0x06
++#define BT_MBI_USB_WRITE	0x07
++#define BT_MBI_SATA_READ	0x00
++#define BT_MBI_SATA_WRITE	0x01
++#define BT_MBI_PCIE_READ	0x00
++#define BT_MBI_PCIE_WRITE	0x01
++
++/**
++ * bt_mbi_read() - MailBox Interface read command
++ * @port:	port indicating subunit being accessed
++ * @opcode:	port specific read or write opcode
++ * @offset:	register address offset
++ * @mdr:	register data to be read
++ *
++ * Locking is handled by spinlock - cannot sleep.
++ * Return: Nonzero on error
++ */
++int bt_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr);
++
++/**
++ * bt_mbi_write() - MailBox unmasked write command
++ * @port:	port indicating subunit being accessed
++ * @opcode:	port specific read or write opcode
++ * @offset:	register address offset
++ * @mdr:	register data to be written
++ *
++ * Locking is handled by spinlock - cannot sleep.
++ * Return: Nonzero on error
++ */
++int bt_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr);
++
++/**
++ * bt_mbi_modify() - MailBox masked write command
++ * @port:	port indicating subunit being accessed
++ * @opcode:	port specific read or write opcode
++ * @offset:	register address offset
++ * @mdr:	register data being modified
++ * @mask:	mask indicating bits in mdr to be modified
++ *
++ * Locking is handled by spinlock - cannot sleep.
++ * Return: Nonzero on error
++ */
++int bt_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask);
++
++#endif /* INTEL_BAYTRAIL_MBI_SYMS_H */
+-- 
+1.7.10.4
 
