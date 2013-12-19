@@ -1,110 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab3LSNmi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:42:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20647 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756784Ab3LSNme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:42:34 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 5/9] tools lib traceevent: Add global QUIET_CC_FPIC build output
-Date: Thu, 19 Dec 2013 14:42:03 +0100
-Message-Id: <1387460527-15030-6-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
-References: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
+	id S1755973Ab3LSL7b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:59:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45272 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755949Ab3LSL72 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:59:28 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mike Snitzer <snitzer@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 174/208] dm space map metadata: return on failure in sm_metadata_new_block
+Date: Thu, 19 Dec 2013 11:54:32 +0000
+Message-Id: <1387454106-19326-175-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding global QUIET_CC_FPIC build output variable and getting
-rid of local print_fpic_compile and print_plugin_obj_compile.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Ahern <dsahern@gmail.com>
+------------------
+
+From: Mike Snitzer <snitzer@redhat.com>
+
+commit f62b6b8f498658a9d537c7d380e9966f15e1b2a1 upstream.
+
+Commit 2fc48021f4afdd109b9e52b6eef5db89ca80bac7 ("dm persistent
+metadata: add space map threshold callback") introduced a regression
+to the metadata block allocation path that resulted in errors being
+ignored.  This regression was uncovered by running the following
+device-mapper-test-suite test:
+dmtest run --suite thin-provisioning -n /exhausting_metadata_space_causes_fail_mode/
+
+The ignored error codes in sm_metadata_new_block() could crash the
+kernel through use of either the dm-thin or dm-cache targets, e.g.:
+
+device-mapper: thin: 253:4: reached low water mark for metadata device: sending event.
+device-mapper: space map metadata: unable to allocate new metadata block
+general protection fault: 0000 [#1] SMP
+...
+Workqueue: dm-thin do_worker [dm_thin_pool]
+task: ffff880035ce2ab0 ti: ffff88021a054000 task.ti: ffff88021a054000
+RIP: 0010:[<ffffffffa0331385>]  [<ffffffffa0331385>] metadata_ll_load_ie+0x15/0x30 [dm_persistent_data]
+RSP: 0018:ffff88021a055a68  EFLAGS: 00010202
+RAX: 003fc8243d212ba0 RBX: ffff88021a780070 RCX: ffff88021a055a78
+RDX: ffff88021a055a78 RSI: 0040402222a92a80 RDI: ffff88021a780070
+RBP: ffff88021a055a68 R08: ffff88021a055ba4 R09: 0000000000000010
+R10: 0000000000000000 R11: 00000002a02e1000 R12: ffff88021a055ad4
+R13: 0000000000000598 R14: ffffffffa0338470 R15: ffff88021a055ba4
+FS:  0000000000000000(0000) GS:ffff88033fca0000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007f467c0291b8 CR3: 0000000001a0b000 CR4: 00000000000007e0
+Stack:
+ ffff88021a055ab8 ffffffffa0332020 ffff88021a055b30 0000000000000001
+ ffff88021a055b30 0000000000000000 ffff88021a055b18 0000000000000000
+ ffff88021a055ba4 ffff88021a055b98 ffff88021a055ae8 ffffffffa033304c
+Call Trace:
+ [<ffffffffa0332020>] sm_ll_lookup_bitmap+0x40/0xa0 [dm_persistent_data]
+ [<ffffffffa033304c>] sm_metadata_count_is_more_than_one+0x8c/0xc0 [dm_persistent_data]
+ [<ffffffffa0333825>] dm_tm_shadow_block+0x65/0x110 [dm_persistent_data]
+ [<ffffffffa0331b00>] sm_ll_mutate+0x80/0x300 [dm_persistent_data]
+ [<ffffffffa0330e60>] ? set_ref_count+0x10/0x10 [dm_persistent_data]
+ [<ffffffffa0331dba>] sm_ll_inc+0x1a/0x20 [dm_persistent_data]
+ [<ffffffffa0332270>] sm_disk_new_block+0x60/0x80 [dm_persistent_data]
+ [<ffffffff81520036>] ? down_write+0x16/0x40
+ [<ffffffffa001e5c4>] dm_pool_alloc_data_block+0x54/0x80 [dm_thin_pool]
+ [<ffffffffa001b23c>] alloc_data_block+0x9c/0x130 [dm_thin_pool]
+ [<ffffffffa001c27e>] provision_block+0x4e/0x180 [dm_thin_pool]
+ [<ffffffffa001fe9a>] ? dm_thin_find_block+0x6a/0x110 [dm_thin_pool]
+ [<ffffffffa001c57a>] process_bio+0x1ca/0x1f0 [dm_thin_pool]
+ [<ffffffff8111e2ed>] ? mempool_free+0x8d/0xa0
+ [<ffffffffa001d755>] process_deferred_bios+0xc5/0x230 [dm_thin_pool]
+ [<ffffffffa001d911>] do_worker+0x51/0x60 [dm_thin_pool]
+ [<ffffffff81067872>] process_one_work+0x182/0x3b0
+ [<ffffffff81068c90>] worker_thread+0x120/0x3a0
+ [<ffffffff81068b70>] ? manage_workers+0x160/0x160
+ [<ffffffff8106eb2e>] kthread+0xce/0xe0
+ [<ffffffff8106ea60>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff8152af6c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8106ea60>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff8152af6c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8106ea60>] ? kthread_freezable_should_stop+0x70/0x70
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- tools/lib/traceevent/Makefile  | 16 ++--------------
- tools/scripts/Makefile.include |  1 +
- 2 files changed, 3 insertions(+), 14 deletions(-)
+ drivers/md/persistent-data/dm-space-map-metadata.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index e852a8d..24203cc 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -152,33 +152,21 @@ override CFLAGS += $(udis86-flags) -D_GNU_SOURCE
+diff --git a/drivers/md/persistent-data/dm-space-map-metadata.c b/drivers/md/persistent-data/dm-space-map-metadata.c
+index 1c95968..58fc1ee 100644
+--- a/drivers/md/persistent-data/dm-space-map-metadata.c
++++ b/drivers/md/persistent-data/dm-space-map-metadata.c
+@@ -384,12 +384,16 @@ static int sm_metadata_new_block(struct dm_space_map *sm, dm_block_t *b)
+ 	struct sm_metadata *smm = container_of(sm, struct sm_metadata, sm);
  
- ifeq ($(VERBOSE),1)
-   Q =
--  print_fpic_compile =
-   print_shared_lib_compile =
--  print_plugin_obj_compile =
-   print_plugin_build =
-   print_install =
- else
-   Q = @
--  print_fpic_compile =		echo '  CC FPIC  '$(OBJ);
-   print_shared_lib_compile =	echo '  BUILD    SHARED LIB '$(OBJ);
--  print_plugin_obj_compile =	echo '  CC FPIC  '$(OBJ);
-   print_plugin_build =		echo '  BUILD    PLUGIN '$(OBJ);
-   print_static_lib_build =	echo '  BUILD    STATIC LIB '$(OBJ);
-   print_install =		echo '  INSTALL  '$1;
- endif
+ 	int r = sm_metadata_new_block_(sm, b);
+-	if (r)
++	if (r) {
+ 		DMERR("unable to allocate new metadata block");
++		return r;
++	}
  
--do_fpic_compile =					\
--	($(print_fpic_compile)				\
--	$(CC) -c $(CFLAGS) $(EXT) -fPIC $< -o $@)
--
- do_compile_shared_library =			\
- 	($(print_shared_lib_compile)		\
- 	$(CC) --shared $^ -o $@)
+ 	r = sm_metadata_get_nr_free(sm, &count);
+-	if (r)
++	if (r) {
+ 		DMERR("couldn't get free block count");
++		return r;
++	}
  
--do_compile_plugin_obj =				\
--	($(print_plugin_obj_compile)		\
--	$(CC) -c $(CFLAGS) -fPIC -o $@ $<)
--
- do_plugin_build =				\
- 	($(print_plugin_build)			\
- 	$(CC) $(CFLAGS) -shared -nostartfiles -o $@ $<)
-@@ -236,10 +224,10 @@ libtraceevent.a: $(PEVENT_LIB_OBJS)
- plugins: $(PLUGINS)
+ 	check_threshold(&smm->threshold, count);
  
- $(PEVENT_LIB_OBJS): %.o: $(src)/%.c TRACEEVENT-CFLAGS
--	$(Q)$(do_fpic_compile)
-+	$(QUIET_CC_FPIC)$(CC) -c $(CFLAGS) $(EXT) -fPIC $< -o $@
- 
- $(PLUGIN_OBJS): %.o : $(src)/%.c
--	$(Q)$(do_compile_plugin_obj)
-+	$(QUIET_CC_FPIC)$(CC) -c $(CFLAGS) -fPIC -o $@ $<
- 
- $(PLUGINS): %.so: %.o
- 	$(Q)$(do_plugin_build)
-diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
-index e4cfbed..8abbef1 100644
---- a/tools/scripts/Makefile.include
-+++ b/tools/scripts/Makefile.include
-@@ -61,6 +61,7 @@ QUIET_SUBDIR1  =
- ifneq ($(findstring $(MAKEFLAGS),s),s)
-   ifneq ($(V),1)
- 	QUIET_CC       = @echo '  CC       '$@;
-+	QUIET_CC_FPIC  = @echo '  CC FPIC  '$@;
- 	QUIET_AR       = @echo '  AR       '$@;
- 	QUIET_LINK     = @echo '  LINK     '$@;
- 	QUIET_MKDIR    = @echo '  MKDIR    '$@;
 -- 
-1.8.3.1
+1.8.3.2
 
