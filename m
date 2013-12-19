@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab3LSRHi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 12:07:38 -0500
-Received: from softlayer.compulab.co.il ([50.23.254.55]:50343 "EHLO
-	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753884Ab3LSRHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 12:07:36 -0500
-Message-ID: <52B327D5.3080805@compulab.co.il>
-Date: Thu, 19 Dec 2013 19:07:33 +0200
-From: Denis Turischev <denis.turischev@compulab.co.il>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1755446Ab3LSRHt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 12:07:49 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:44937 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754670Ab3LSRHq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 12:07:46 -0500
+Date: Thu, 19 Dec 2013 18:07:41 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Len Brown <lenb@kernel.org>,
+        x86@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, stable@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power
+ regression
+Message-ID: <20131219170741.GB30382@gmail.com>
+References: <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com>
+ <20131219122257.GC11279@gmail.com>
+ <52B316FF.50906@zytor.com>
+ <20131219160210.GA28426@gmail.com>
+ <52B31B21.6010901@zytor.com>
+ <20131219162136.GM16438@laptop.programming.kicks-ass.net>
+ <52B323BE.7090108@zytor.com>
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [PATCH v1] xhci: Switch Intel Lynx Point ports to EHCI on shutdown
-References: <52B31EDA.60908@compulab.co.il>
-In-Reply-To: <52B31EDA.60908@compulab.co.il>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: -unknown-@compulab.co.il|compulab.co.il
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B323BE.7090108@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The same issue like with Panther Point chipsets. If the USB ports are
-switched to xHCI on shutdown, the xHCI host will send a spurious interrupt,
-which will wake the system. Some BIOS have work around for this, but not all.
 
-The bug can be avoided if the USB ports are switched back to EHCI on
-shutdown.
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-v1: add new device id locally, not in <linux/pci_ids.h>
+> On 12/19/2013 08:21 AM, Peter Zijlstra wrote:
+> > 
+> > What's that mb for?
+> > 
+> 
+> It already exists in mwait_idle_with_hints(); I just moved it into 
+> this common function.  It is a bit odd, I have to admit; it seems 
+> like it should be *before* the monitor (and possibly we should have 
+> one after the CLFLUSH as well?)
 
-Signed-off-by: Denis Turischev <denis@compulab.co.il>
+Yes, I think we need a barrier before the CLFLUSH, because according 
+to my reading of the Intel documentation CLFLUSH has no implicit 
+ordering so it might get reordered with the store to ->flags in 
+current_set_polling_and_test(), which might result in spurious wakeup 
+problems again.
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
---- a/drivers/usb/host/xhci-pci.c	2013-12-19 11:36:12.049589400 +0200
-+++ b/drivers/usb/host/xhci-pci.c	2013-12-19 11:37:27.261590385 +0200
-@@ -34,6 +34,8 @@
- #define PCI_VENDOR_ID_ETRON		0x1b6f
- #define PCI_DEVICE_ID_ASROCK_P67	0x7023
+(And CLFLUSH is a store in a sense, so special in that the regular 
+ordering for stores does not apply.)
 
-+#define PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI	0x9c31
-+
- static const char hcd_name[] = "xhci_hcd";
+Likewise, having a barrier before the MONITOR looks sensible as well. 
+Having it _after_ monitor looks weird and is probably wrong. [It might 
+have been the effects of someone seeing the spurious wakeup problems 
+with realizing the true source, or so.]
 
- /* called after powerup, by probe or system-pm "wakeup" */
-@@ -91,8 +93,9 @@
- 		xhci->quirks |= XHCI_LPM_SUPPORT;
- 		xhci->quirks |= XHCI_INTEL_HOST;
- 	}
--	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
--			pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) {
-+	if (pdev->vendor == PCI_VENDOR_ID_INTEL && (
-+			(pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) ||
-+			(pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI))) {
- 		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
- 		xhci->limit_active_eps = 64;
- 		xhci->quirks |= XHCI_SW_BW_CHECKING;
+Thanks,
+
+	Ingo
