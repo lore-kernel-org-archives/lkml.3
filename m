@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab3LSPGK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:06:10 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:43635 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754482Ab3LSPFZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:05:25 -0500
-From: Levente Kurusa <levex@linux.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Levente Kurusa <levex@linux.com>, Florian Fainelli <florian@openwrt.org>
-Subject: [PATCH 30/38] vlynq: add missing put_device call
-Date: Thu, 19 Dec 2013 16:03:41 +0100
-Message-Id: <1387465429-3568-31-git-send-email-levex@linux.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1387465429-3568-2-git-send-email-levex@linux.com>
-References: <1387465429-3568-2-git-send-email-levex@linux.com>
+	id S1757207Ab3LSMm7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:42:59 -0500
+Received: from mga09.intel.com ([134.134.136.24]:19259 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756809Ab3LSMm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 07:42:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
+   d="scan'208";a="427187558"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Lv Zheng <lv.zheng@intel.com>,
+        Len Brown <lenb@kernel.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [Patch v2 03/13] PCI, pci-label: release allocated ACPI object on error recovery path
+Date: Thu, 19 Dec 2013 20:38:12 +0800
+Message-Id: <1387456702-4709-4-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1387456702-4709-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is required so that we give up the last reference to the device.
-This will result in vlynq_device_release being called making the kfree()
-in the errorpath unneccessary.
+Function dsm_get_label() leaks the returned ACPI object if
+obj->package.count is not 2, so fix the possible memory leak.
 
-Signed-off-by: Levente Kurusa <levex@linux.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/vlynq/vlynq.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/pci/pci-label.c |   12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/vlynq/vlynq.c b/drivers/vlynq/vlynq.c
-index 7b07135..71d5905 100644
---- a/drivers/vlynq/vlynq.c
-+++ b/drivers/vlynq/vlynq.c
-@@ -748,11 +748,14 @@ static int vlynq_probe(struct platform_device *pdev)
- 	return 0;
+diff --git a/drivers/pci/pci-label.c b/drivers/pci/pci-label.c
+index d51f45a..f6e01a5 100644
+--- a/drivers/pci/pci-label.c
++++ b/drivers/pci/pci-label.c
+@@ -233,11 +233,7 @@ dsm_get_label(acpi_handle handle, int func,
+ 		return -1;
  
- fail_register:
-+	put_device(&dev->dev);
-+	dev->dev = 0;
- 	iounmap(dev->local);
- fail_remap:
- fail_request:
- 	release_mem_region(regs_res->start, len);
--	kfree(dev);
-+	if(dev)
-+		kfree(dev);
- 	return result;
+ 	obj = (union acpi_object *)output->pointer;
+-
+-	switch (obj->type) {
+-	case ACPI_TYPE_PACKAGE:
+-		if (obj->package.count != 2)
+-			break;
++	if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 2) {
+ 		len = obj->package.elements[0].integer.value;
+ 		if (buf) {
+ 			if (attribute == ACPI_ATTR_INDEX_SHOW)
+@@ -250,10 +246,10 @@ dsm_get_label(acpi_handle handle, int func,
+ 		}
+ 		kfree(output->pointer);
+ 		return len;
+-	break;
+-	default:
+-		kfree(output->pointer);
+ 	}
++
++	kfree(output->pointer);
++
+ 	return -1;
  }
  
 -- 
-1.8.3.1
+1.7.10.4
 
