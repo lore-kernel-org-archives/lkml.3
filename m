@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab3LSL63 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:58:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45040 "EHLO
+	id S1756550Ab3LSMH1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:07:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45340 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab3LSL6Y (ORCPT
+	with ESMTP id S1753651Ab3LSL7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:24 -0500
+	Thu, 19 Dec 2013 06:59:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+Cc: Brian Carnes <bmcarnes@gmail.com>, Jean Delvare <khali@linux-fr.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 128/208] usb: dwc3: fix implementation of endpoint wedge
-Date: Thu, 19 Dec 2013 11:53:46 +0000
-Message-Id: <1387454106-19326-129-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 188/208] hwmon: (w83l786ng) Fix fan speed control mode setting and reporting
+Date: Thu, 19 Dec 2013 11:54:46 +0000
+Message-Id: <1387454106-19326-189-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,62 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Brian Carnes <bmcarnes@gmail.com>
 
-commit a535d81c92615b8ffb99b7e1fd1fb01effaed1af upstream.
+commit cf7559bc053471f32373d71d04a9aa19e0b48d59 upstream.
 
-The dwc3 UDC driver doesn't implement endpoint wedging correctly.
-When an endpoint is wedged, the gadget driver should be allowed to
-clear the wedge by calling usb_ep_clear_halt().  Only the host is
-prevented from resetting the endpoint.
+The wrong mask is used, which causes some fan speed control modes
+(pwmX_enable) to be incorrectly reported, and some modes to be
+impossible to set.
 
-This patch fixes the implementation.
+[JD: add subject and description.]
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Pratyush Anand <pratyush.anand@st.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Brian Carnes <bmcarnes@gmail.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/dwc3/ep0.c    | 2 ++
- drivers/usb/dwc3/gadget.c | 5 +----
- 2 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/hwmon/w83l786ng.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/dwc3/ep0.c b/drivers/usb/dwc3/ep0.c
-index 5acbb94..3cea676 100644
---- a/drivers/usb/dwc3/ep0.c
-+++ b/drivers/usb/dwc3/ep0.c
-@@ -478,6 +478,8 @@ static int dwc3_ep0_handle_feature(struct dwc3 *dwc,
- 			dep = dwc3_wIndex_to_dep(dwc, wIndex);
- 			if (!dep)
- 				return -EINVAL;
-+			if (set == 0 && (dep->flags & DWC3_EP_WEDGE))
-+				break;
- 			ret = __dwc3_gadget_ep_set_halt(dep, set);
- 			if (ret)
- 				return -EINVAL;
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 14d28d6..69948ad 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1220,9 +1220,6 @@ int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value)
- 		else
- 			dep->flags |= DWC3_EP_STALL;
- 	} else {
--		if (dep->flags & DWC3_EP_WEDGE)
--			return 0;
--
- 		ret = dwc3_send_gadget_ep_cmd(dwc, dep->number,
- 			DWC3_DEPCMD_CLEARSTALL, &params);
- 		if (ret)
-@@ -1230,7 +1227,7 @@ int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value)
- 					value ? "set" : "clear",
- 					dep->name);
- 		else
--			dep->flags &= ~DWC3_EP_STALL;
-+			dep->flags &= ~(DWC3_EP_STALL | DWC3_EP_WEDGE);
- 	}
- 
- 	return ret;
+diff --git a/drivers/hwmon/w83l786ng.c b/drivers/hwmon/w83l786ng.c
+index edb06cd..f190219 100644
+--- a/drivers/hwmon/w83l786ng.c
++++ b/drivers/hwmon/w83l786ng.c
+@@ -510,7 +510,7 @@ store_pwm_enable(struct device *dev, struct device_attribute *attr,
+ 	mutex_lock(&data->update_lock);
+ 	reg = w83l786ng_read_value(client, W83L786NG_REG_FAN_CFG);
+ 	data->pwm_enable[nr] = val;
+-	reg &= ~(0x02 << W83L786NG_PWM_ENABLE_SHIFT[nr]);
++	reg &= ~(0x03 << W83L786NG_PWM_ENABLE_SHIFT[nr]);
+ 	reg |= (val - 1) << W83L786NG_PWM_ENABLE_SHIFT[nr];
+ 	w83l786ng_write_value(client, W83L786NG_REG_FAN_CFG, reg);
+ 	mutex_unlock(&data->update_lock);
+@@ -776,7 +776,7 @@ static struct w83l786ng_data *w83l786ng_update_device(struct device *dev)
+ 			    ((pwmcfg >> W83L786NG_PWM_MODE_SHIFT[i]) & 1)
+ 			    ? 0 : 1;
+ 			data->pwm_enable[i] =
+-			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 2) + 1;
++			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 3) + 1;
+ 			data->pwm[i] = w83l786ng_read_value(client,
+ 			    W83L786NG_REG_PWM[i]);
+ 		}
 -- 
 1.8.3.2
 
