@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab3LSOye (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:54:34 -0500
-Received: from mga09.intel.com ([134.134.136.24]:60641 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab3LSOyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:54:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="427256841"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
-In-Reply-To: <20131219125759.GU3694@twins.programming.kicks-ass.net>
-References: <20131218133439.GR21999@twins.programming.kicks-ass.net> <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com> <20131218141125.GT21999@twins.programming.kicks-ass.net> <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com> <20131218150900.GU21999@twins.programming.kicks-ass.net> <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com> <20131219103134.GD30183@twins.programming.kicks-ass.net> <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com> <20131219112812.GY21999@twins.programming.kicks-ass.net> <20131219115759.GS3694@twins.programming.kicks-ass.net> <20131219125759.GU3694@twins.programming.kicks-ass.net>
-User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Thu, 19 Dec 2013 16:54:27 +0200
-Message-ID: <87eh58ki1o.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755581Ab3LSMrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:47:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44828 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754856Ab3LSL5Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:57:25 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Bo Shen <voice.shen@atmel.com>, Mark Brown <broonie@linaro.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 087/208] ASoC: wm8731: fix dsp mode configuration
+Date: Thu, 19 Dec 2013 11:53:05 +0000
+Message-Id: <1387454106-19326-88-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Thu, Dec 19, 2013 at 12:57:59PM +0100, Peter Zijlstra wrote:
-> So you're basically forced to stop the tracing on PMI anyhow; so your
-> continuous tracing argument goes out the window.
+------------------
 
-It's only stopped inside the PMI handler to set up another buffer, and
-is then started again, so no useful trace is lost. PMI handler is not
-traced. What you're proposing is stopping it for good till perf collects
-the previous data, which will lose us a lot of trace. So my argument
-stands.
+From: Bo Shen <voice.shen@atmel.com>
 
-Regards,
---
-Alex
+commit b4af6ef99a60c5b56df137d7accd81ba1ee1254e upstream.
+
+According to WM8731 "PD, Rev 4.9 October 2012" datasheet, when it
+works in DSP mode A, LRP = 1, while works in DSP mode B, LRP = 0.
+So, fix LRP for DSP mode as the datesheet specification.
+
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ sound/soc/codecs/wm8731.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sound/soc/codecs/wm8731.c b/sound/soc/codecs/wm8731.c
+index 5276062..10d492b 100644
+--- a/sound/soc/codecs/wm8731.c
++++ b/sound/soc/codecs/wm8731.c
+@@ -407,10 +407,10 @@ static int wm8731_set_dai_fmt(struct snd_soc_dai *codec_dai,
+ 		iface |= 0x0001;
+ 		break;
+ 	case SND_SOC_DAIFMT_DSP_A:
+-		iface |= 0x0003;
++		iface |= 0x0013;
+ 		break;
+ 	case SND_SOC_DAIFMT_DSP_B:
+-		iface |= 0x0013;
++		iface |= 0x0003;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+-- 
+1.8.3.2
+
