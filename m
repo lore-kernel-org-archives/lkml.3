@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555Ab3LSNLt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:11:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44380 "EHLO
+	id S1755044Ab3LSL5n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:57:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44881 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab3LSLzV (ORCPT
+	with ESMTP id S1755013Ab3LSL5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:55:21 -0500
+	Thu, 19 Dec 2013 06:57:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andreas Henriksson <andreas@fatal.se>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Julian Stecklina <jsteckli@os.inf.tu-dresden.de>,
+        Joerg Roedel <joro@8bytes.org>, Josh Boyer <jwboyer@fedoraproject.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 006/208] net: Fix "ip rule delete table 256"
-Date: Thu, 19 Dec 2013 11:51:44 +0000
-Message-Id: <1387454106-19326-7-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 096/208] iommu/vt-d: Fixed interaction of VFIO_IOMMU_MAP_DMA with IOMMU address limits
+Date: Thu, 19 Dec 2013 11:53:14 +0000
+Message-Id: <1387454106-19326-97-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,44 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Henriksson <andreas@fatal.se>
+From: Julian Stecklina <jsteckli@os.inf.tu-dresden.de>
 
-commit 13eb2ab2d33c57ebddc57437a7d341995fc9138c upstream.
+commit f9423606ade08653dd8a43334f0a7fb45504c5cc upstream.
 
-When trying to delete a table >= 256 using iproute2 the local table
-will be deleted.
-The table id is specified as a netlink attribute when it needs more then
-8 bits and iproute2 then sets the table field to RT_TABLE_UNSPEC (0).
-Preconditions to matching the table id in the rule delete code
-doesn't seem to take the "table id in netlink attribute" into condition
-so the frh_get_table helper function never gets to do its job when
-matching against current rule.
-Use the helper function twice instead of peaking at the table value directly.
+The BUG_ON in drivers/iommu/intel-iommu.c:785 can be triggered from userspace via
+VFIO by calling the VFIO_IOMMU_MAP_DMA ioctl on a vfio device with any address
+beyond the addressing capabilities of the IOMMU. The problem is that the ioctl code
+calls iommu_iova_to_phys before it calls iommu_map. iommu_map handles the case that
+it gets addresses beyond the addressing capabilities of its IOMMU.
+intel_iommu_iova_to_phys does not.
 
-Originally reported at: http://bugs.debian.org/724783
+This patch fixes iommu_iova_to_phys to return NULL for addresses beyond what the
+IOMMU can handle. This in turn causes the ioctl call to fail in iommu_map and
+(correctly) return EFAULT to the user with a helpful warning message in the kernel
+log.
 
-Reported-by: Nicolas HICHER <nhicher@avencall.com>
-Signed-off-by: Andreas Henriksson <andreas@fatal.se>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Julian Stecklina <jsteckli@os.inf.tu-dresden.de>
+Acked-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/fib_rules.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/iommu/intel-iommu.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
-index 2173544..b1cd856 100644
---- a/net/core/fib_rules.c
-+++ b/net/core/fib_rules.c
-@@ -445,7 +445,8 @@ static int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr* nlh)
- 		if (frh->action && (frh->action != rule->action))
- 			continue;
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 15e9b57..40203ad 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -782,7 +782,11 @@ static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
+ 	int offset;
  
--		if (frh->table && (frh_get_table(frh, tb) != rule->table))
-+		if (frh_get_table(frh, tb) &&
-+		    (frh_get_table(frh, tb) != rule->table))
- 			continue;
+ 	BUG_ON(!domain->pgd);
+-	BUG_ON(addr_width < BITS_PER_LONG && pfn >> addr_width);
++
++	if (addr_width < BITS_PER_LONG && pfn >> addr_width)
++		/* Address beyond IOMMU's addressing capabilities. */
++		return NULL;
++
+ 	parent = domain->pgd;
  
- 		if (tb[FRA_PRIORITY] &&
+ 	while (level > 0) {
 -- 
 1.8.3.2
 
