@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab3LSSXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:23:44 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:35872 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755821Ab3LSSXT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:23:19 -0500
-Date: Thu, 19 Dec 2013 19:23:14 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Len Brown <lenb@kernel.org>,
-        x86@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power
- regression
-Message-ID: <20131219182314.GE32508@gmail.com>
-References: <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com>
- <20131219122257.GC11279@gmail.com>
- <52B316FF.50906@zytor.com>
- <20131219160210.GA28426@gmail.com>
- <52B31B21.6010901@zytor.com>
- <20131219162136.GM16438@laptop.programming.kicks-ass.net>
- <52B323BE.7090108@zytor.com>
- <20131219170741.GB30382@gmail.com>
- <52B33640.3020204@zytor.com>
- <52B338AA.1020307@zytor.com>
-MIME-Version: 1.0
+	id S1753473Ab3LSS3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:29:23 -0500
+Received: from kanga.kvack.org ([205.233.56.17]:51609 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750866Ab3LSS3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 13:29:22 -0500
+Date: Thu, 19 Dec 2013 13:29:21 -0500
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@gentwo.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: bad page state in 3.13-rc4
+Message-ID: <20131219182920.GG30640@kvack.org>
+References: <20131219040738.GA10316@redhat.com> <CA+55aFwweoGs3eGWXFULcqnbRbpDhpj2qrefXB5OpQOiWW8wYA@mail.gmail.com> <20131219155313.GA25771@redhat.com> <CA+55aFyoXCDNfHb+r5b=CgKQLPA1wrU_Tmh4ROZNEt5TPjpODA@mail.gmail.com> <20131219181134.GC25385@kmo-pixel>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52B338AA.1020307@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131219181134.GC25385@kmo-pixel>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* H. Peter Anvin <hpa@zytor.com> wrote:
-
-> On 12/19/2013 10:09 AM, H. Peter Anvin wrote:
-> > On 12/19/2013 09:07 AM, Ingo Molnar wrote:
-> >>
-> >> Likewise, having a barrier before the MONITOR looks sensible as well. 
-> >> Having it _after_ monitor looks weird and is probably wrong. [It might 
-> >> have been the effects of someone seeing the spurious wakeup problems 
-> >> with realizing the true source, or so.]
-> >>
+On Thu, Dec 19, 2013 at 10:11:34AM -0800, Kent Overstreet wrote:
+> On Thu, Dec 19, 2013 at 09:07:27AM -0800, Linus Torvalds wrote:
+> > On Thu, Dec 19, 2013 at 7:53 AM, Dave Jones <davej@redhat.com> wrote:
+> > >
+> > > Interesting that CPU2 was doing sys_io_setup again. Different trace though.
 > > 
-> > Does anyone know the history of this barrier after the monitor?  I know
-> > Len is looking for a minimal patchset that can go into -stable, and it
-> > seems prudent to not preturb the code more than necessary, but going
-> > forward it would be nice to know...
+> > Well, it was once again in aio_free_ring() - double free or freeing
+> > while already in use? And this time the other end of the complaint was
+> > allocating a new page that definitely was still busily in use (it's
+> > locked).
 > > 
+> > And there's no sign of migration, although obviously that could have
+> > happened or be in progress on another CPU and just didn't notice the
+> > mess. But yes, based on the two traces, fs/aio.c:io_setup() would seem
+> > to be the main point of interest.
+> > 
+> > Have you started doing something new in trinity wrt AIO, and
+> > io_setup() in particular? Or anything else different that might have
+> > started triggering this?
+> > 
+> > But we do have new AIO code, and these two in particular look suspicious:
+> > 
+> >  - new page migration logic:
+> > 
+> >     71ad7490c1f3 rework aio migrate pages to use aio fs
+> > 
+> >  - trying to fix double frees and error cases:
+> > 
+> >     e34ecee2ae79 aio: Fix a trinity splat
+> >     d558023207e0 aio: prevent double free in ioctx_alloc
+> >     d1b9432712a2 aio: clean up aio ring in the fail path
+> > 
+> > and some kind of double free in an error path would certainly explain
+> > this (with io_setup() . And the first oops reported obviously had that
+> > migration thing. So maybe those "fixes" weren't fixing things at all
+> > (or just moved the error case around).
+> > 
+> > Btw, that "rework aio migrate pages to use aio fs" looks odd. It has
+> > Ben LaHaise marked as author, but no sign-off, instead "Tested-by" and
+> > "Acked-by".
 > 
-> Hmm... it *looks* like it is intended to be part of the construct:
-> 
-> 	smp_mb();
-> 	if (!need_resched())
-> 		...
-> 
-> I found a note in the HLT variant of the function saying:
-> 
-> /*
->  * TS_POLLING-cleared state must be visible before we
->  * test NEED_RESCHED:
->  */
+> I could certainly believe a double free, but rereading the current code
+> I can't find anything, and I just manually tested all the relevant error
+> paths in ioctx_alloc() and aio_setup_ring() without finding anything.
 
-Yes, that makes sense: the need_resched test is a load, and MONITOR is 
-a load as well. Can the two ever cross, or does the CPU guarantee that 
-because it's the same address, the loads don't cross?
+The same here.  It would be very helpful to know what syscalls trinity is 
+issuing in the lead up to the bug.
 
-Thanks,
+> I don't get wtf that loop at line 350 is supposed to be for though.
+> You'd think if it was doing anything important it would be doing
+> something more intelligent than just breaking on error (?). But I
+> haven't slept yet and maybe I'm just being dumb.
 
-	Ingo
+The loop at 350 is just instantiating the page cache pages for the ring 
+buffer with freshly zeroed pages.
+
+> I don't understand this page migration stuff at all, and I actually
+> don't think I understand the refcounting w.r.t. the page cache either.
+> But looking at (say) the aio_free_ring() call at line 409 - we just did
+> one put_page() in aio_setup_ring(), and then _another_ put_page() in
+> aio_free_ring()... ok, one of those corresponds to the get
+> get_user_pages() did, but what's the other correspond to?
+
+The second put_page() should be dropping the page from the page cache.  
+Perhaps it would be better to rely on a truncate of the file to remove the 
+pages from the page cache.  I'd hoped someone with a clue about how 
+migration is supposed to work would have chimed in during the review, but 
+nobody has stepped up with expertise in this area yet.
+
+		-ben
+-- 
+"Thought is the essence of where you are now."
