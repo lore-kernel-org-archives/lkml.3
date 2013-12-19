@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab3LST13 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 14:27:29 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34674 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677Ab3LST11 (ORCPT
+	id S1756059Ab3LST1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 14:27:54 -0500
+Received: from doppler.thel33t.co.uk ([193.110.88.198]:42956 "EHLO
+	doppler.thel33t.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754228Ab3LST1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 14:27:27 -0500
-Date: Thu, 19 Dec 2013 20:27:14 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Len Brown <lenb@kernel.org>,
-        x86@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power
- regression
-Message-ID: <20131219192714.GP16438@laptop.programming.kicks-ass.net>
-References: <20131219122257.GC11279@gmail.com>
- <52B316FF.50906@zytor.com>
- <20131219160210.GA28426@gmail.com>
- <52B31B21.6010901@zytor.com>
- <20131219162136.GM16438@laptop.programming.kicks-ass.net>
- <52B323BE.7090108@zytor.com>
- <20131219170741.GB30382@gmail.com>
- <52B33640.3020204@zytor.com>
- <20131219181948.GD32508@gmail.com>
- <52B34759.3010009@zytor.com>
+	Thu, 19 Dec 2013 14:27:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B34759.3010009@zytor.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Thu, 19 Dec 2013 19:35:01 +0000
+From: Leigh Brown <leigh@solinno.co.uk>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Schichan <nschichan@freebox.fr>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Florian Fainelli <florian@openwrt.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v2] net: mvmdio: fix interrupt timeout handling
+In-Reply-To: <20131219174334.GB10227@obsidianresearch.com>
+References: <52B2D97F.4070200@gmail.com>
+ <1387458588-17231-1-git-send-email-leigh@solinno.co.uk>
+ <20131219174334.GB10227@obsidianresearch.com>
+Message-ID: <aff941cf1be9b91cc58198b4c23a3e41@doppler.thel33t.co.uk>
+User-Agent: Roundcube Webmail/0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 11:22:01AM -0800, H. Peter Anvin wrote:
-> On 12/19/2013 10:19 AM, Ingo Molnar wrote:
-> > 
-> > ( It would also be nice to know whether MONITOR loads that cacheline 
-> >   into the CPUs cache, and in what state it loads it. )
-> > 
+On 2013-12-19 17:43, Jason Gunthorpe wrote:
+> On Thu, Dec 19, 2013 at 01:09:48PM +0000, Leigh Brown wrote:
+>> This version corrects the whitespace issue.
+>> 
+>> orion_mdio_wait_ready uses wait_event_timeout to wait for the
+>> SMI interrupt to fire.  wait_event_timeout waits for between
+>> "timeout - 1" and "timeout" jiffies.  In this case a 1ms timeout
+>> when HZ is 1000 results in a wait of 0 to 1 jiffies, causing
+>> premature timeouts.
+>> 
+>> This fix ensures a minimum timeout of 2 jiffies, ensuring
+>> wait_event_timeout will always wait at least 1 jiffie.
+>> 
+>> Issue reported by Nicolas Schichan.
+>> 
+>> Tested-by: Nicolas Schichan <nschichan@freebox.fr>
+>> Signed-off-by: Leigh Brown <leigh@solinno.co.uk>
+>>  drivers/net/ethernet/marvell/mvmdio.c | 6 ++++++
+>>  1 file changed, 6 insertions(+)
 > 
-> I would assume that is implementation-dependent.  However, one plausible
-> implementation is to load the cache line into the cache in shared state
-> and monitor for evictions.
+> Leigh, I have just noticed a regression in 3.13-rc3 vs 3.10, on
+> kirkwood where 3.13 occasionally prints:
+> 
+> 3 12/11 13:59:02 kernel: orion-mdio f1072004.mdio: Timeout: SMI busy
+> for too long
+> 
+> Is that the same issue that this patch is addressing?
 
-I suppose the monitor part is the important part because certain C
-states drop all cache, presumably including the cacheline we're actually
-monitoring.
+Yes, absolutely.
 
+Regards,
+
+Leigh.
 
