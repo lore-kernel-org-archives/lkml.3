@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab3LSL6M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:58:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44991 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab3LSL6J (ORCPT
+	id S1756318Ab3LSNgV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:36:21 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:39885 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756059Ab3LSNfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:09 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: David Henningsson <david.henningsson@canonical.com>,
-        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 118/208] ALSA: hda - Another Dell headset detection quirk
-Date: Thu, 19 Dec 2013 11:53:36 +0000
-Message-Id: <1387454106-19326-119-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 08:35:03 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: nfs-ganesha-devel@lists.sourceforge.net, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 10/13] locks: rename locks_remove_flock to locks_remove_file
+Date: Thu, 19 Dec 2013 08:34:22 -0500
+Message-Id: <1387460065-28269-11-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
+References: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+This function currently removes leases in addition to flock locks and in
+a later patch we'll have it deal with a new type of POSIX lock too.
+Rename it to locks_remove_file to indicate that it removes locks that
+are associated with a particular struct file, and not just flock locks.
 
-------------------
-
-From: Hui Wang <hui.wang@canonical.com>
-
-commit 0dfb9809e93b60946d1915b554138eb93595860c upstream.
-
-On the Dell Inspiron 3045 machine (codec Subsystem Id: 0x10280628),
-no external microphone can be detected when plugging a 3-ring
-headset. If we add "model=dell-headset-multi" for the
-snd-hda-intel.ko, the problem will disappear.
-
-BugLink: https://bugs.launchpad.net/hwe-somerville/+bug/1259437
-CC: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[ luis: backported to 3.11: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- sound/pci/hda/patch_realtek.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/file_table.c    | 2 +-
+ fs/locks.c         | 2 +-
+ include/linux/fs.h | 4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index f9e0fb0..43fb90a 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4509,6 +4509,7 @@ static const struct snd_pci_quirk alc662_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1028, 0x05d8, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x05db, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0623, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
-+	SND_PCI_QUIRK(0x1028, 0x0628, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
- 	SND_PCI_QUIRK(0x1043, 0x1477, "ASUS N56VZ", ALC662_FIXUP_ASUS_MODE4),
- 	SND_PCI_QUIRK(0x1043, 0x1bf3, "ASUS N76VZ", ALC662_FIXUP_ASUS_MODE4),
+diff --git a/fs/file_table.c b/fs/file_table.c
+index 5fff903..468543c 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -234,7 +234,7 @@ static void __fput(struct file *file)
+ 	 * in the file cleanup chain.
+ 	 */
+ 	eventpoll_release(file);
+-	locks_remove_flock(file);
++	locks_remove_file(file);
+ 
+ 	if (unlikely(file->f_flags & FASYNC)) {
+ 		if (file->f_op->fasync)
+diff --git a/fs/locks.c b/fs/locks.c
+index 8180141..a217c2c 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -2197,7 +2197,7 @@ EXPORT_SYMBOL(locks_remove_posix);
+ /*
+  * This function is called on the last close of an open file.
+  */
+-void locks_remove_flock(struct file *filp)
++void locks_remove_file(struct file *filp)
+ {
+ 	struct inode * inode = file_inode(filp);
+ 	struct file_lock *fl;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 04be202..51974e0 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1012,7 +1012,7 @@ extern struct file_lock * locks_alloc_lock(void);
+ extern void locks_copy_lock(struct file_lock *, struct file_lock *);
+ extern void __locks_copy_lock(struct file_lock *, const struct file_lock *);
+ extern void locks_remove_posix(struct file *, fl_owner_t);
+-extern void locks_remove_flock(struct file *);
++extern void locks_remove_file(struct file *);
+ extern void locks_release_private(struct file_lock *);
+ extern void posix_test_lock(struct file *, struct file_lock *);
+ extern int posix_lock_file(struct file *, struct file_lock *, struct file_lock *);
+@@ -1083,7 +1083,7 @@ static inline void locks_remove_posix(struct file *filp, fl_owner_t owner)
+ 	return;
+ }
+ 
+-static inline void locks_remove_flock(struct file *filp)
++static inline void locks_remove_file(struct file *filp)
+ {
+ 	return;
+ }
 -- 
-1.8.3.2
+1.8.4.2
 
