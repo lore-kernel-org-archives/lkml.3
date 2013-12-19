@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab3LSI5C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 03:57:02 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:35052 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab3LSI5A (ORCPT
+	id S1752446Ab3LSJAt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:00:49 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:61010 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845Ab3LSJAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 03:57:00 -0500
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, josh@joshtriplett.org
-Subject: =?UTF-8?q?=5BPATCH=20v3=208/8=5D=20drivers=3A=20net=3A=20Mark=20function=20xenvif=5Fcount=5Ffrag=5Fslots=28=29=20as=20static=20in=20netback=2Ec?=
-Date: Thu, 19 Dec 2013 14:26:47 +0530
-Message-Id: <72d6fe114ba7cc2f09f51e279313860f83142d46.1387382457.git.rashika.kheria@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <04fe932bc3585620c91d511bb0894e45bb762ffa.1387382457.git.rashika.kheria@gmail.com>
-References: <04fe932bc3585620c91d511bb0894e45bb762ffa.1387382457.git.rashika.kheria@gmail.com>
+	Thu, 19 Dec 2013 04:00:47 -0500
+Date: Thu, 19 Dec 2013 09:00:40 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Jonathan Cameron <jic23@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] mfd: ti_am335x: drop am335x_tsc_se_update() from
+ resume path
+Message-ID: <20131219090040.GH2621@lee--X1>
+References: <1387385577-24447-1-git-send-email-bigeasy@linutronix.de>
+ <1387385577-24447-5-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1387385577-24447-5-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch marks the function xenvif_count_frag_slots() in netback.c as
-static because they are not used outside this file.
+> The update of the SE register in MFD doesn't look right as it has
+> nothing to do with it. The better place to do it is in TSC driver (which
+> is already doint it) and in the ADC driver which needs this only in the
+> continues mode.
 
-Thus, it also removes the following warning in xen-netback/netback.c:
-drivers/net/xen-netback/netback.c:218:14: warning: no previous prototype for ‘xenvif_count_frag_slots’ [-Wmissing-prototypes]
+When you resubmit the patch-set complete with Acks, please ensure you
+spell check and proof read _all_ of your commit logs.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
----
- drivers/net/xen-netback/netback.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> ---
+>  drivers/iio/adc/ti_am335x_adc.c | 2 ++
+>  drivers/mfd/ti_am335x_tscadc.c  | 1 -
+>  2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 64f0e0d..9e4f399 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -215,7 +215,7 @@ struct xenvif_count_slot_state {
- 	bool head;
- };
- 
--unsigned int xenvif_count_frag_slots(struct xenvif *vif,
-+static unsigned int xenvif_count_frag_slots(struct xenvif *vif,
- 				     unsigned long offset, unsigned long size,
- 				     struct xenvif_count_slot_state *state)
- {
+For the MFD part:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
+
+It's probably best that we suck these changes up through the MFD tree,
+so once the review comments have been satisfied and we have all
+relevant Acks I can take them in and create an immutable branch for
+you guys to pull from if you like.
+
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
