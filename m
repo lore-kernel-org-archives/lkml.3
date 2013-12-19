@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab3LSL7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:59:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45225 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849Ab3LSL7P (ORCPT
+	id S1757505Ab3LSNKU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:10:20 -0500
+Received: from doppler.thel33t.co.uk ([193.110.88.198]:42344 "EHLO
+	doppler.thel33t.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754960Ab3LSNKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:15 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 164/208] ARM: 7912/1: check stack pointer in get_wchan
-Date: Thu, 19 Dec 2013 11:54:22 +0000
-Message-Id: <1387454106-19326-165-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 08:10:17 -0500
+From: Leigh Brown <leigh@solinno.co.uk>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Leigh Brown <leigh@solinno.co.uk>, Nicolas Schichan <nschichan@freebox.fr>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Florian Fainelli <florian@openwrt.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v2] net: mvmdio: fix interrupt timeout handling
+Date: Thu, 19 Dec 2013 13:09:48 +0000
+Message-Id: <1387458588-17231-1-git-send-email-leigh@solinno.co.uk>
+X-Mailer: git-send-email 1.8.5.1
+In-Reply-To: <52B2D97F.4070200@gmail.com>
+References: <52B2D97F.4070200@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+This version corrects the whitespace issue.
 
-------------------
+orion_mdio_wait_ready uses wait_event_timeout to wait for the
+SMI interrupt to fire.  wait_event_timeout waits for between
+"timeout - 1" and "timeout" jiffies.  In this case a 1ms timeout
+when HZ is 1000 results in a wait of 0 to 1 jiffies, causing
+premature timeouts.
 
-From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+This fix ensures a minimum timeout of 2 jiffies, ensuring
+wait_event_timeout will always wait at least 1 jiffie.
 
-commit 1b15ec7a7427d4188ba91b9bbac696250a059d22 upstream.
+Issue reported by Nicolas Schichan.
 
-get_wchan() is lockless. Task may wakeup at any time and change its own stack,
-thus each next stack frame may be overwritten and filled with random stuff.
-
-/proc/$pid/stack interface had been disabled for non-current tasks, see [1]
-But 'wchan' still allows to trigger stack frame unwinding on volatile stack.
-
-This patch fixes oops in unwind_frame() by adding stack pointer validation on
-each step (as x86 code do), unwind_frame() already checks frame pointer.
-
-Also I've found another report of this oops on stackoverflow (irony).
-
-Link: http://www.spinics.net/lists/arm-kernel/msg110589.html [1]
-Link: http://stackoverflow.com/questions/18479894/unwind-frame-cause-a-kernel-paging-error
-
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Tested-by: Nicolas Schichan <nschichan@freebox.fr>
+Signed-off-by: Leigh Brown <leigh@solinno.co.uk>
 ---
- arch/arm/kernel/process.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/marvell/mvmdio.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index 94f6b05..92f7b15 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -404,6 +404,7 @@ EXPORT_SYMBOL(dump_fpu);
- unsigned long get_wchan(struct task_struct *p)
- {
- 	struct stackframe frame;
-+	unsigned long stack_page;
- 	int count = 0;
- 	if (!p || p == current || p->state == TASK_RUNNING)
- 		return 0;
-@@ -412,9 +413,11 @@ unsigned long get_wchan(struct task_struct *p)
- 	frame.sp = thread_saved_sp(p);
- 	frame.lr = 0;			/* recovered from the stack */
- 	frame.pc = thread_saved_pc(p);
-+	stack_page = (unsigned long)task_stack_page(p);
- 	do {
--		int ret = unwind_frame(&frame);
--		if (ret < 0)
-+		if (frame.sp < stack_page ||
-+		    frame.sp >= stack_page + THREAD_SIZE ||
-+		    unwind_frame(&frame) < 0)
- 			return 0;
- 		if (!in_sched_functions(frame.pc))
- 			return frame.pc;
+diff --git a/drivers/net/ethernet/marvell/mvmdio.c b/drivers/net/ethernet/marvell/mvmdio.c
+index 7354960..c4eeb69 100644
+--- a/drivers/net/ethernet/marvell/mvmdio.c
++++ b/drivers/net/ethernet/marvell/mvmdio.c
+@@ -92,6 +92,12 @@ static int orion_mdio_wait_ready(struct mii_bus *bus)
+ 			if (time_is_before_jiffies(end))
+ 				++timedout;
+ 	        } else {
++			/* wait_event_timeout does not guarantee a delay of at
++			 * least one whole jiffie, so timeout must be no less
++			 * than two.
++			 */
++			if (timeout < 2)
++				timeout = 2;
+ 			wait_event_timeout(dev->smi_busy_wait,
+ 				           orion_mdio_smi_is_done(dev),
+ 				           timeout);
 -- 
-1.8.3.2
+1.8.5.1
 
