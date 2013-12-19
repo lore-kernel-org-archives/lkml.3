@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab3LSL4Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:56:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44554 "EHLO
+	id S1756488Ab3LSME6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:04:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45369 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab3LSL4N (ORCPT
+	with ESMTP id S1756116Ab3LSMAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:13 -0500
+	Thu, 19 Dec 2013 07:00:01 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Willem de Bruijn <willemb@google.com>, Phil Sutter <phil@nwl.cc>,
-        Eric Dumazet <edumazet@google.com>,
-        Veaceslav Falico <vfalico@redhat.com>,
+Cc: Mel Gorman <mgorman@suse.de>, Darren Hart <dvhart@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 036/208] af_packet: block BH in prb_shutdown_retire_blk_timer()
-Date: Thu, 19 Dec 2013 11:52:14 +0000
-Message-Id: <1387454106-19326-37-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 193/208] futex: fix handling of read-only-mapped hugepages
+Date: Thu, 19 Dec 2013 11:54:51 +0000
+Message-Id: <1387454106-19326-194-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -31,48 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Veaceslav Falico <vfalico@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit ec6f809ff6f19fafba3212f6aff0dda71dfac8e8 upstream.
+commit f12d5bfceb7e1f9051563381ec047f7f13956c3c upstream.
 
-Currently we're using plain spin_lock() in prb_shutdown_retire_blk_timer(),
-however the timer might fire right in the middle and thus try to re-aquire
-the same spinlock, leaving us in a endless loop.
+The hugepage code had the exact same bug that regular pages had in
+commit 7485d0d3758e ("futexes: Remove rw parameter from
+get_futex_key()").
 
-To fix that, use the spin_lock_bh() to block it.
+The regular page case was fixed by commit 9ea71503a8ed ("futex: Fix
+regression with read only mappings"), but the transparent hugepage case
+(added in a5b338f2b0b1: "thp: update futex compound knowledge") case
+remained broken.
 
-Fixes: f6fb8f100b80 ("af-packet: TPACKET_V3 flexible buffer implementation.")
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Daniel Borkmann <dborkman@redhat.com>
-CC: Willem de Bruijn <willemb@google.com>
-CC: Phil Sutter <phil@nwl.cc>
-CC: Eric Dumazet <edumazet@google.com>
-Reported-by: Jan Stancek <jstancek@redhat.com>
-Tested-by: Jan Stancek <jstancek@redhat.com>
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Found by Dave Jones and his trinity tool.
+
+Reported-and-tested-by: Dave Jones <davej@fedoraproject.org>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Darren Hart <dvhart@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/packet/af_packet.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/futex.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index e7fdbd8..151e8ae 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -439,9 +439,9 @@ static void prb_shutdown_retire_blk_timer(struct packet_sock *po,
- 
- 	pkc = tx_ring ? &po->tx_ring.prb_bdqc : &po->rx_ring.prb_bdqc;
- 
--	spin_lock(&rb_queue->lock);
-+	spin_lock_bh(&rb_queue->lock);
- 	pkc->delete_blk_timer = 1;
--	spin_unlock(&rb_queue->lock);
-+	spin_unlock_bh(&rb_queue->lock);
- 
- 	prb_del_retire_blk_timer(pkc);
- }
+diff --git a/kernel/futex.c b/kernel/futex.c
+index c3a1a55..221a58f 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -288,7 +288,7 @@ again:
+ 		put_page(page);
+ 		/* serialize against __split_huge_page_splitting() */
+ 		local_irq_disable();
+-		if (likely(__get_user_pages_fast(address, 1, 1, &page) == 1)) {
++		if (likely(__get_user_pages_fast(address, 1, !ro, &page) == 1)) {
+ 			page_head = compound_head(page);
+ 			/*
+ 			 * page_head is valid pointer but we must pin
 -- 
 1.8.3.2
 
