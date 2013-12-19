@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab3LSCkV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 21:40:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38871 "EHLO
+	id S1752727Ab3LSCk1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 21:40:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38882 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab3LSCkT (ORCPT
+	with ESMTP id S1752677Ab3LSCkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 21:40:19 -0500
-Date: Wed, 18 Dec 2013 16:55:58 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
-        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
-        cascardo@linux.vnet.ibm.com, michael@ibmra.de
-Subject: Re: [RFC 1/2] CRC32 Add GenWQE CRC to kernel CRC code
-Message-ID: <20131219005557.GB32112@kroah.com>
-References: <1386592244-2521-7-git-send-email-haver@linux.vnet.ibm.com>
- <1386780563-1722-1-git-send-email-haver@linux.vnet.ibm.com>
+	Wed, 18 Dec 2013 21:40:23 -0500
+Date: Wed, 18 Dec 2013 17:03:40 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Kim Phillips <kim.phillips@linaro.org>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, scottwood@freescale.com,
+        R65777@freescale.com, B07421@freescale.com, B08248@freescale.com,
+        christoffer.dall@linaro.org, alex.williamson@redhat.com,
+        a.motakis@virtualopensystems.com, agraf@suse.de, B16395@freescale.com
+Subject: Re: [REPOST][PATCH 2/2] driver core: platform: allow platform
+ drivers to bind to any device
+Message-ID: <20131219010340.GA23055@kroah.com>
+References: <20131203123454.3ab18749ed0d0d943b10df9a@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386780563-1722-1-git-send-email-haver@linux.vnet.ibm.com>
+In-Reply-To: <20131203123454.3ab18749ed0d0d943b10df9a@linaro.org>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 05:49:22PM +0100, Frank Haverkamp wrote:
-> Our GenWQE driver is using a CRC32 polynom, which as far as I could
-> see, no one else is using in the kernel. In its original version we
-> implemented our own CRC32, but I think it is nicer to use the common
-> code as suggested by Greg.
+On Tue, Dec 03, 2013 at 12:34:54PM +0000, Kim Phillips wrote:
+> Platform drivers such as the vfio-platform "meta-" driver [1]
+> should be allowed to specify that they can bind to any device,
+> much like PCI drivers can with PCI_ANY_ID.
 > 
-> I did not want to add yet another crc32g_table and waste (1KiB) memory
-> when no one else is using it. I tried to externalize the
-> crc32init_be_generic and crc32_be_generic functions. I failed. The
-> crc32init* I found is used to autogenerate code can is itself not part
-> of the resulting kernel.
+> Currently, binding platform drivers to devices depends on:
 > 
-> As result I gave up on that approach and just added the GenWQE special
-> polynom in addition to the other 3 crc tables. I wanted to figure out
-> if it is possible in principle to use the generic code.
+> - a string match in the device node's compatible entry (OF)
+> - a string match in the ACPI id list (ACPI)
+> - a string match in the id_table (platform data)
+> - a string match on the driver name (fall-back)
 > 
-> Is the consumption of 1KiB for a little table justifyable if it 
-> currently has just one user?
+> none of which allow for the notion of "match any."
 > 
-> Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
+> This patch adds the notion by adding a "match any device" boolean to
+> struct platform_driver, for drivers to be able to set and thus not cause
+> platform_match() to fail when a bind is requested.
+> 
+> [1] http://www.spinics.net/lists/kvm/msg96701.html
+> 
+> Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
 > ---
->  include/linux/crc32.h |    2 	2 +	0 -	0 !
->  lib/crc32.c           |   10 	10 +	0 -	0 !
->  lib/crc32defs.h       |    5 	5 +	0 -	0 !
->  lib/gen_crc32table.c  |   39 	31 +	8 -	0 !
->  4 files changed, 48 insertions(+), 8 deletions(-)
-
-What kind of crazy diffstat is that?  What generated it?
-
+> rebased onto 3.13-rc2, and reposted from first submission which
+> received no comments:
 > 
-> --- a/include/linux/crc32.h
-> +++ b/include/linux/crc32.h
-> @@ -11,6 +11,8 @@
->  extern u32  crc32_le(u32 crc, unsigned char const *p, size_t len);
->  extern u32  crc32_be(u32 crc, unsigned char const *p, size_t len);
+> https://lkml.org/lkml/2013/10/11/48
+> 
+>  drivers/base/platform.c         | 4 ++++
+>  include/linux/platform_device.h | 1 +
+>  2 files changed, 5 insertions(+)
+> 
+> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> index 3a94b79..78a5b62 100644
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -736,6 +736,10 @@ static int platform_match(struct device *dev, struct device_driver *drv)
+>  	struct platform_device *pdev = to_platform_device(dev);
+>  	struct platform_driver *pdrv = to_platform_driver(drv);
 >  
-> +extern u32  __crc32g_be(u32 crc, unsigned char const *p, size_t len);
+> +	/* the driver matches any device */
+> +	if (pdrv->match_any_dev)
+> +		return 1;
 
-Ick, don't export __ functions, that means something is not quite right
-with the api, don't you agree?
+This breaks userspace in that it will never know to load the module that
+can "bind to anything".
 
-Why not just export crc32g_be() and make the changes inside the crc32.c
-file to handle that?
+You need a way to encode this in the platform device id that can be a
+wildcard type of thing, so that userspace can know about this.
 
 thanks,
 
