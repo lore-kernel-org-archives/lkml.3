@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab3LSI4R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 03:56:17 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:53662 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752757Ab3LSI4N (ORCPT
+	id S1753100Ab3LSI5C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 03:57:02 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:35052 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954Ab3LSI5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 03:56:13 -0500
-Date: Thu, 19 Dec 2013 08:56:07 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] mfd: ti_am335x_tscadc: don't read back REG_SE
-Message-ID: <20131219085607.GG2621@lee--X1>
-References: <1387385577-24447-1-git-send-email-bigeasy@linutronix.de>
- <1387385577-24447-4-git-send-email-bigeasy@linutronix.de>
+	Thu, 19 Dec 2013 03:57:00 -0500
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, josh@joshtriplett.org
+Subject: =?UTF-8?q?=5BPATCH=20v3=208/8=5D=20drivers=3A=20net=3A=20Mark=20function=20xenvif=5Fcount=5Ffrag=5Fslots=28=29=20as=20static=20in=20netback=2Ec?=
+Date: Thu, 19 Dec 2013 14:26:47 +0530
+Message-Id: <72d6fe114ba7cc2f09f51e279313860f83142d46.1387382457.git.rashika.kheria@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <04fe932bc3585620c91d511bb0894e45bb762ffa.1387382457.git.rashika.kheria@gmail.com>
+References: <04fe932bc3585620c91d511bb0894e45bb762ffa.1387382457.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1387385577-24447-4-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Dec 2013, Sebastian Andrzej Siewior wrote:
+This patch marks the function xenvif_count_frag_slots() in netback.c as
+static because they are not used outside this file.
 
-> The purpose of reg_se_cache has been defeated. It should avoid the
-> read-back of the register to avoid the latency and the fact that the
-> bits are reset to 0 after the individual conversation took place.
-> 
-> The reason why this is required like this to work, is that read-back of
-> the register removes the bits of the ADC so they do not start another
-> conversation after the register is re-written from the TSC side for the
-> update.
-> To avoid the unrequired read-back I introduce a "set adc" variant which
-> does not update the cache mask. After the conversation completes, the
-> register bit is removed from the SE reister anyway and we don't plan a
-> new conversation "any time soon".
-> This is a small preparation for a larger sync-rework.
-> 
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  drivers/iio/adc/ti_am335x_adc.c      |  2 +-
->  drivers/mfd/ti_am335x_tscadc.c       | 12 ++++++++++--
->  include/linux/mfd/ti_am335x_tscadc.h |  1 +
->  3 files changed, 12 insertions(+), 3 deletions(-)
+Thus, it also removes the following warning in xen-netback/netback.c:
+drivers/net/xen-netback/netback.c:218:14: warning: no previous prototype for ‘xenvif_count_frag_slots’ [-Wmissing-prototypes]
 
-Looks about right: Acked-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+---
+ drivers/net/xen-netback/netback.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 64f0e0d..9e4f399 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -215,7 +215,7 @@ struct xenvif_count_slot_state {
+ 	bool head;
+ };
+ 
+-unsigned int xenvif_count_frag_slots(struct xenvif *vif,
++static unsigned int xenvif_count_frag_slots(struct xenvif *vif,
+ 				     unsigned long offset, unsigned long size,
+ 				     struct xenvif_count_slot_state *state)
+ {
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
