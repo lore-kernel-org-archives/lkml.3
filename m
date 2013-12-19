@@ -1,151 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756601Ab3LSXIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 18:08:13 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:41892 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755875Ab3LSXIM (ORCPT
+	id S1756708Ab3LSXJA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 18:09:00 -0500
+Received: from mail-by2lp0238.outbound.protection.outlook.com ([207.46.163.238]:14386
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754470Ab3LSXI6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 18:08:12 -0500
-Message-ID: <52B37C56.7090302@gmail.com>
-Date: Thu, 19 Dec 2013 15:08:06 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 19 Dec 2013 18:08:58 -0500
+From: Stuart Yoder <stuart.yoder@freescale.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Scott Wood <scottwood@freescale.com>
+CC: Kim Phillips <kim.phillips@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>,
+        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Subject: RE: [REPOST][PATCH 1/2] driver core: Add new device_driver flag to
+ allow binding via sysfs only
+Thread-Topic: [REPOST][PATCH 1/2] driver core: Add new device_driver flag to
+ allow binding via sysfs only
+Thread-Index: AQHO/GO/mMi+aThEXEWI8i8J6hWd3ppb9zeAgAADToCAAAVTkIAADh4AgAAIyYCAAATYgIAABy4w
+Date: Thu, 19 Dec 2013 23:08:55 +0000
+Message-ID: <e5b60a9c612c4a30b62d702f84ef400e@DM2PR03MB352.namprd03.prod.outlook.com>
+References: <20131203123446.42fbff34a8ebd7afd38159a5@linaro.org>
+ <20131219010729.GC23055@kroah.com>
+ <1387484531.3140.134.camel@snotra.buserror.net>
+ <20131219203401.GA11290@kroah.com>
+ <dd683e36cc334893b193f4d36a33238c@BY2PR03MB348.namprd03.prod.outlook.com>
+ <20131219214336.GA24629@kroah.com>
+ <1387491303.3140.156.camel@snotra.buserror.net>
+ <20131219223223.GA2801@kroah.com>
+In-Reply-To: <20131219223223.GA2801@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.168.50]
+x-forefront-prvs: 006546F32A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(13464003)(377454003)(51704005)(199002)(377424004)(24454002)(189002)(66066001)(80022001)(83322001)(19580405001)(74706001)(19580395003)(76576001)(80976001)(54316002)(76796001)(65816001)(76786001)(56776001)(77982001)(74366001)(90146001)(81542001)(69226001)(63696002)(50986001)(47736001)(56816005)(47976001)(49866001)(4396001)(33646001)(74662001)(31966008)(51856001)(74502001)(47446002)(46102001)(85852003)(74876001)(83072002)(2656002)(59766001)(81342001)(79102001)(81686001)(54356001)(81816001)(87266001)(74316001)(87936001)(53806001)(76482001)(85306002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB399;H:DM2PR03MB352.namprd03.prod.outlook.com;CLIP:192.88.168.50;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>, Ralf Baechle <ralf@linux-mips.org>,
-        linux-mips <linux-mips@linux-mips.org>
-CC: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 29/40] mips: Replace __get_cpu_var uses
-References: <20131219155015.443763038@linux.com> <20131219155033.834416420@linux.com> <52B330F3.4090603@gmail.com> <alpine.DEB.2.10.1312191506370.17603@nuc>
-In-Reply-To: <alpine.DEB.2.10.1312191506370.17603@nuc>
-Content-Type: multipart/mixed;
- boundary="------------070507070702050801040409"
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070507070702050801040409
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-
-On 12/19/2013 01:10 PM, Christoph Lameter wrote:
-> On Thu, 19 Dec 2013, David Daney wrote:
->
->>> 16:07:58.244398747 -0600
->>> @@ -43,7 +43,7 @@ DECLARE_PER_CPU(struct mips_fpu_emulator
->>>    #define MIPS_FPU_EMU_INC_STATS(M)					\
->>>    do {
->>> \
->>>    	preempt_disable();						\
->>> -	__local_inc(&__get_cpu_var(fpuemustats).M);			\
->>> +	__this_cpu_inc(fpuemustats.M);					\
->>>    	preempt_enable();						\
->>>    } while (0)
->>>
->>
->> Something seems to be incorrect in this bit.
->
-> Hrmm.. yes this is a local_t so the this_cpu_inc would not work unless
-> fpuemustats is defined differently.
->
-
-See the attached patch.  Feel free to include it as part of your patch set.
-
-I tested it on a 64-bit OCTEON system.  I think it will work on 32-bit 
-systems as well.
-
-> Use
->
-> __local_inc(this_cpu_ptr(fpuemustats.M);
->
-
-No, I couldn't get various incantations of that to work either.
-
-> instead until then.
->
 
 
---------------070507070702050801040409
-Content-Type: text/x-patch;
- name="0001-MIPS-Replace-__get_cpu_var-uses-in-FPU-emulator.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-MIPS-Replace-__get_cpu_var-uses-in-FPU-emulator.patch"
+> -----Original Message-----
+> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
+> Sent: Thursday, December 19, 2013 4:32 PM
+> To: Wood Scott-B07421
+> Cc: Yoder Stuart-B08248; Kim Phillips; linux-kernel@vger.kernel.org;
+> kvm@vger.kernel.org; Bhushan Bharat-R65777; christoffer.dall@linaro.org;
+> alex.williamson@redhat.com; a.motakis@virtualopensystems.com;
+> agraf@suse.de; Sethi Varun-B16395
+> Subject: Re: [REPOST][PATCH 1/2] driver core: Add new device_driver flag
+> to allow binding via sysfs only
+> 
+> On Thu, Dec 19, 2013 at 04:15:03PM -0600, Scott Wood wrote:
+> > On Thu, 2013-12-19 at 13:43 -0800, Greg Kroah-Hartman wrote:
+> > > On Thu, Dec 19, 2013 at 09:06:21PM +0000, Stuart Yoder wrote:
+> > > >
+> > > >
+> > > > > -----Original Message-----
+> > > > > From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
+> > > > > Sent: Thursday, December 19, 2013 2:34 PM
+> > > > > To: Wood Scott-B07421
+> > > > > Cc: Kim Phillips; linux-kernel@vger.kernel.org;
+> kvm@vger.kernel.org;
+> > > > > Bhushan Bharat-R65777; Yoder Stuart-B08248;
+> christoffer.dall@linaro.org;
+> > > > > alex.williamson@redhat.com; a.motakis@virtualopensystems.com;
+> > > > > agraf@suse.de; Sethi Varun-B16395
+> > > > > Subject: Re: [REPOST][PATCH 1/2] driver core: Add new
+> device_driver flag
+> > > > > to allow binding via sysfs only
+> > > > >
+> > > > > No.  But you can use bind/unbind along with the existing new_id
+> file to
+> > > > > get what you want today.
+> > > >
+> > > > Yes, but that only works for PCI.
+> > >
+> > > No, not only PCI.
+> > >
+> > > > There is no such concept for platform drivers.
+> > >
+> > > Then fix that.
+> >
+> > We've already explained why that would be bad.
+> 
+> No you haven't, or if you have, my squirrel-brain doesn't remember it...
+> 
+> > > Or make your device not be a platform device, odds are that's the
+> better
+> > > solution in the end, right?
+> >
+> > How would that solve anything?  We'd just be talking about there not
+> > being such a mechanism for the device tree "bus" instead.
+> 
+> Nope, you could add it there, like PCI and other busses have.
+> 
+> > > > > I don't like this patch as we are adding lots of special and odd
+> logic
+> > > > > to the core, for use by almost no one, which ensures that it will
+> never
+> > > > > get tested, and will probably get broken in some subtle way in
+> the
+> > > > > future.
+> > > >
+> > > > It certainly will be used by users of vfio-platform.
+> > > >
+> > > > Here is the problem-- the new platform device "match_any_dev"
+> mechanism
+> > > > in patch 2 of this series is not going to work without
+> "sysfs_bind_only".
+> > > > A platform driver that just sets "match_any_dev" will grab any or
+> all
+> > > > platform devices during normal bus probing.
+> > >
+> > > No it will not, it will fail in the probe function as it knows to not
+> > > grab the device, just like any driver for other busses that say it
+> can
+> > > "handle all Intel PCI devices" and the like.
+> >
+> > How will it "know not to grab the device"?  The knowledge of whether
+> the
+> > binding was explicitly requested or not does not get passed through to
+> > the probe function.
+> 
+> Nor should it, as a driver should not know, nor care about this.
+> 
+> It's up to the BUS to handle this if it really wants to, and I'm afraid
+> that I really am not convinced that the driver core needs to handle it
+> either.
+> 
+> But again, as you don't have anything that could actually use this code
+> that is mergable, it's a totally moot point, sorry.
 
->From cc9590cf4d75cf7fd36a58be132d35fbbe536a64 Mon Sep 17 00:00:00 2001
-From: David Daney <david.daney@cavium.com>
-Date: Thu, 19 Dec 2013 14:00:17 -0800
-Subject: [PATCH] MIPS: Replace __get_cpu_var uses in FPU emulator.
+Understand, but what assumption do we develop vfio-plaform with?  That
+a driver core 'sysfs_bind_only' flag is not an option, period?  If that
+is the case we need to go back to square one and invent some new mechanism
+to bind devices to the vfio-platform driver.
 
-The use of __this_cpu_inc() requires a fundamental integer type, so
-change the type of all the counters to unsigned long, which is the
-same width they were before, but not wrapped in local_t.
+I guess it would need to be the platform bus equivalent of new_id.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- arch/mips/include/asm/fpu_emulator.h | 14 +++++++-------
- arch/mips/math-emu/cp1emu.c          |  6 +++---
- 2 files changed, 10 insertions(+), 10 deletions(-)
+But, then we're left with the potential racy situation where multiple drivers
+can potentially grab a device and it's ambiguous and non-deterministic at to which
+driver binds to it.
 
-diff --git a/arch/mips/include/asm/fpu_emulator.h b/arch/mips/include/asm/fpu_emulator.h
-index 2abb587..619fa5f 100644
---- a/arch/mips/include/asm/fpu_emulator.h
-+++ b/arch/mips/include/asm/fpu_emulator.h
-@@ -30,12 +30,12 @@
- #ifdef CONFIG_DEBUG_FS
- 
- struct mips_fpu_emulator_stats {
--	local_t emulated;
--	local_t loads;
--	local_t stores;
--	local_t cp1ops;
--	local_t cp1xops;
--	local_t errors;
-+	unsigned long emulated;
-+	unsigned long loads;
-+	unsigned long stores;
-+	unsigned long cp1ops;
-+	unsigned long cp1xops;
-+	unsigned long errors;
- };
- 
- DECLARE_PER_CPU(struct mips_fpu_emulator_stats, fpuemustats);
-@@ -43,7 +43,7 @@ DECLARE_PER_CPU(struct mips_fpu_emulator_stats, fpuemustats);
- #define MIPS_FPU_EMU_INC_STATS(M)					\
- do {									\
- 	preempt_disable();						\
--	__local_inc(&__get_cpu_var(fpuemustats).M);			\
-+	__this_cpu_inc(fpuemustats.M);					\
- 	preempt_enable();						\
- } while (0)
- 
-diff --git a/arch/mips/math-emu/cp1emu.c b/arch/mips/math-emu/cp1emu.c
-index efe0088..b853d05 100644
---- a/arch/mips/math-emu/cp1emu.c
-+++ b/arch/mips/math-emu/cp1emu.c
-@@ -2110,13 +2110,13 @@ int fpu_emulator_cop1Handler(struct pt_regs *xcp, struct mips_fpu_struct *ctx,
- static int fpuemu_stat_get(void *data, u64 *val)
- {
- 	int cpu;
--	unsigned long sum = 0;
-+	u64 sum = 0;
- 	for_each_online_cpu(cpu) {
- 		struct mips_fpu_emulator_stats *ps;
--		local_t *pv;
-+		unsigned long *pv;
- 		ps = &per_cpu(fpuemustats, cpu);
- 		pv = (void *)ps + (unsigned long)data;
--		sum += local_read(pv);
-+		sum += *pv;
- 	}
- 	*val = sum;
- 	return 0;
--- 
-1.7.11.7
-
-
---------------070507070702050801040409--
+Stuart
