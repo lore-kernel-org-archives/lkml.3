@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab3LSJK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:10:56 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:59117 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273Ab3LSJJv (ORCPT
+	id S1752723Ab3LSJM1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:12:27 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:60319 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab3LSJKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:09:51 -0500
-Subject: [PATCH -tip v6 05/22] [BUGFIX] x86: Prohibit probing on thunk
- functions and restore
-To: Ingo Molnar <mingo@kernel.org>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Thu, 19 Dec 2013 09:04:06 +0000
-Message-ID: <20131219090406.14309.37009.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Thu, 19 Dec 2013 04:10:55 -0500
+Subject: Re: [RFC 1/2] CRC32 Add GenWQE CRC to kernel CRC code
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
+        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
+        cascardo@linux.vnet.ibm.com, michael@ibmra.de
+In-Reply-To: <20131219005557.GB32112@kroah.com>
+References: <1386592244-2521-7-git-send-email-haver@linux.vnet.ibm.com>
+	 <1386780563-1722-1-git-send-email-haver@linux.vnet.ibm.com>
+	 <20131219005557.GB32112@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Thu, 19 Dec 2013 10:10:42 +0100
+Message-ID: <1387444242.10173.3.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121909-3548-0000-0000-0000078934D5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thunk/restore functions are also used for tracing irqoff etc.
-and those are involved in kprobe's exception handling.
-Prohibit probing on them to avoid kernel crash.
+Hi Greg,
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
+Am Mittwoch, den 18.12.2013, 16:55 -0800 schrieb Greg KH:
+> > ---
+> >  include/linux/crc32.h |    2         2 +     0 -     0 !
+> >  lib/crc32.c           |   10         10 +    0 -     0 !
+> >  lib/crc32defs.h       |    5         5 +     0 -     0 !
+> >  lib/gen_crc32table.c  |   39         31 +    8 -     0 !
+> >  4 files changed, 48 insertions(+), 8 deletions(-)
+> 
+> What kind of crazy diffstat is that?  What generated it? 
+
+Those two patches I generated with quilt. I used an obviously strange
+setting in my .quiltrc which was:
+
+  QUILT_DIFFSTAT_OPTS="-f0"
+
+Removing this it looks better now:
 ---
- arch/x86/lib/thunk_32.S |    3 ++-
- arch/x86/lib/thunk_64.S |    3 +++
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ include/linux/crc32.h |    2 ++
+ lib/crc32.c           |   10 ++++++++++
+ lib/crc32defs.h       |    6 ++++++
+ lib/gen_crc32table.c  |   39 +++++++++++++++++++++++++++++++--------
+ 4 files changed, 49 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/lib/thunk_32.S b/arch/x86/lib/thunk_32.S
-index 2930ae0..28f85c91 100644
---- a/arch/x86/lib/thunk_32.S
-+++ b/arch/x86/lib/thunk_32.S
-@@ -4,8 +4,8 @@
-  *  (inspired by Andi Kleen's thunk_64.S)
-  * Subject to the GNU public license, v.2. No warranty of any kind.
-  */
--
- 	#include <linux/linkage.h>
-+	#include <asm/asm.h>
- 
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	/* put return address in eax (arg1) */
-@@ -22,6 +22,7 @@
- 	popl %ecx
- 	popl %eax
- 	ret
-+	_ASM_NOKPROBE(\name)
- 	.endm
- 
- 	thunk_ra trace_hardirqs_on_thunk,trace_hardirqs_on_caller
-diff --git a/arch/x86/lib/thunk_64.S b/arch/x86/lib/thunk_64.S
-index a63efd6..92d9fea 100644
---- a/arch/x86/lib/thunk_64.S
-+++ b/arch/x86/lib/thunk_64.S
-@@ -8,6 +8,7 @@
- #include <linux/linkage.h>
- #include <asm/dwarf2.h>
- #include <asm/calling.h>
-+#include <asm/asm.h>
- 
- 	/* rdi:	arg1 ... normal C conventions. rax is saved/restored. */
- 	.macro THUNK name, func, put_ret_addr_in_rdi=0
-@@ -25,6 +26,7 @@
- 	call \func
- 	jmp  restore
- 	CFI_ENDPROC
-+	_ASM_NOKPROBE(\name)
- 	.endm
- 
- #ifdef CONFIG_TRACE_IRQFLAGS
-@@ -43,3 +45,4 @@ restore:
- 	RESTORE_ARGS
- 	ret
- 	CFI_ENDPROC
-+	_ASM_NOKPROBE(restore)
+The other patches I generated with git.
 
+Regards
+
+Frank
 
