@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab3LSJ5x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:57:53 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:11887 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752208Ab3LSJ4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:56:49 -0500
-X-IronPort-AV: E=Sophos;i="4.95,512,1384272000"; 
-   d="scan'208";a="9291076"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org, eranian@google.com, dsahern@gmail.com,
-        adrian.hunter@intel.com, acme@ghostprotocols.net
-Cc: mingo@redhat.com, paulus@samba.org, a.p.zijlstra@chello.nl,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 3/4] perf tools: Add support of user space symbols for guest in perf kvm top.
-Date: Thu, 19 Dec 2013 17:54:53 -0500
-Message-Id: <5becc77a891111b5513e62e62fe104e73682cd4f.1387493396.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1387493396.git.yangds.fnst@cn.fujitsu.com>
-References: <cover.1387493396.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/19 17:56:15,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/19 17:56:17,
-	Serialize complete at 2013/12/19 17:56:17
+	id S1753100Ab3LSJ7J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:59:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46738 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751090Ab3LSJ7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 04:59:07 -0500
+Date: Thu, 19 Dec 2013 10:59:03 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: David Herrmann <dh.herrmann@gmail.com>
+cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, thomas@m3y3r.de,
+        list@osuosl.org, Haiyang Zhang <haiyangz@microsoft.com>,
+        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
+        HID CORE LAYER <linux-input@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<devel@linuxdriverproject.org>
+Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to
+ memdup
+In-Reply-To: <CANq1E4QriATWbfruwj7oVnEBHvtLe_s2yhSSU5COXFjomt5R_A@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1312191058100.28730@pobox.suse.cz>
+References: <5237430B.5040009@canonical.com> <20130916203824.GP25896@mwanda> <52376ED9.5080208@canonical.com> <20130916210503.GQ25896@mwanda> <5237A5D5.8010006@canonical.com> <alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz> <52432152.3030100@canonical.com>
+ <alpine.LNX.2.00.1309271250130.18703@pobox.suse.cz> <52459942.3020600@canonical.com> <alpine.LNX.2.00.1312161401100.12882@pobox.suse.cz> <CANq1E4QriATWbfruwj7oVnEBHvtLe_s2yhSSU5COXFjomt5R_A@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	# perf kvm --guestmount /tmp/guestmount/ top
-	Samples: 1K of event 'cycles', Event count (approx.): 259112905
-	 17.34%  libcrypto.so.1.0.1e  [u] 0x000000000007d971
-	  5.60%  [guest.kernel]       [g] kallsyms_expand_symbol
-	  5.44%  libcrypto.so.1.0.1e  [u] md5_block_asm_data_order
-	  4.09%  [guest.kernel]       [g] number.isra.1
-	  3.59%  [guest.kernel]       [g] vsnprintf
-	  3.52%  sshd                 [u] 0x00000000000441c0
-	  2.37%  [guest.kernel]       [g] format_decode
-	  2.36%  [guest.kernel]       [g] memcpy
-	  2.11%  [guest.kernel]       [g] strnlen
+On Thu, 19 Dec 2013, David Herrmann wrote:
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- tools/perf/builtin-top.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+> > diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> > index 253fe23..81eacd3 100644
+> > --- a/drivers/hid/hid-core.c
+> > +++ b/drivers/hid/hid-core.c
+> > @@ -1334,7 +1334,7 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
+> >                 csize--;
+> >         }
+> >
+> > -       rsize = ((report->size - 1) >> 3) + 1;
+> > +       rsize = ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
+> 
+> Isn't "report->id" already covered by "if (report_enum->numbered)"
+> above? The test for "id > 0" won't work here as in this case
+> "report_enum->numbered" must already be set to true by the hid-desc
+> parser, doesn't it?
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 03d37a7..670bd0b 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -821,11 +821,9 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
- 			break;
- 		case PERF_RECORD_MISC_GUEST_USER:
- 			++top->guest_us_samples;
--			/*
--			 * TODO: we don't process guest user from host side
--			 * except simple counting.
--			 */
--			/* Fall thru */
-+			machine = perf_session__find_machine(session,
-+							     sample.pid);
-+			break;
- 		default:
- 			goto next_event;
- 		}
-@@ -912,6 +910,7 @@ static int __cmd_top(struct perf_top *top)
- 	struct perf_record_opts *opts = &top->record_opts;
- 	pthread_t thread;
- 	int ret;
-+	struct rb_node *nd;
- 
- 	top->session = perf_session__new(NULL, false, NULL);
- 	if (top->session == NULL)
-@@ -931,6 +930,12 @@ static int __cmd_top(struct perf_top *top)
- 
- 	machine__synthesize_threads(&top->session->machines.host, &opts->target,
- 				    top->evlist->threads, false);
-+
-+	for (nd = rb_first(&top->session->machines.guests); nd; nd = rb_next(nd)) {
-+		struct machine *pos = rb_entry(nd, struct machine, rb_node);
-+		machine__synthesize_threads(pos, &opts->target, top->evlist->threads, false);
-+	}
-+
- 	ret = perf_top__start_counters(top);
- 	if (ret)
- 		goto out_delete;
+Right, that one is not correct here, thanks.
+
+> Where exactly did you get the +7 from?
+
+Please see commit (the one I am not really proud of) 27ce405039bfe6d3.
+
 -- 
-1.8.2.1
-
+Jiri Kosina
+SUSE Labs
