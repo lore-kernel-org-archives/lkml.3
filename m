@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab3LSMA0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:00:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45448 "EHLO
+	id S1756538Ab3LSMHZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:07:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45344 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756217Ab3LSMAV (ORCPT
+	with ESMTP id S1756002Ab3LSL7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:00:21 -0500
+	Thu, 19 Dec 2013 06:59:50 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Ben Myers <bpm@sgi.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Kees Cook <keescook@google.com>,
+Cc: Jean Delvare <khali@linux-fr.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 207/208] xfs: underflow bug in xfs_attrlist_by_handle()
-Date: Thu, 19 Dec 2013 11:55:05 +0000
-Message-Id: <1387454106-19326-208-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 189/208] hwmon: (w83l768ng) Fix fan speed control range
+Date: Thu, 19 Dec 2013 11:54:47 +0000
+Message-Id: <1387454106-19326-190-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -29,56 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 31978b5cc66b8ba8a7e8eef60b12395d41b7b890 upstream.
+commit 33a7ab91d509fa33b4bcd3ce0038cc80298050da upstream.
 
-If we allocate less than sizeof(struct attrlist) then we end up
-corrupting memory or doing a ZERO_PTR_SIZE dereference.
+The W83L786NG stores the fan speed on 4 bits while the sysfs interface
+uses a 0-255 range. Thus the driver should scale the user input down
+to map it to the device range, and scale up the value read from the
+device before presenting it to the user. The reserved register nibble
+should be left unchanged.
 
-This can only be triggered with CAP_SYS_ADMIN.
-
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Kees Cook <keescook@google.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/xfs/xfs_ioctl.c   | 3 ++-
- fs/xfs/xfs_ioctl32.c | 3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/hwmon/w83l786ng.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
-index bccd2a3..e0bf6f9 100644
---- a/fs/xfs/xfs_ioctl.c
-+++ b/fs/xfs/xfs_ioctl.c
-@@ -409,7 +409,8 @@ xfs_attrlist_by_handle(
- 		return -XFS_ERROR(EPERM);
- 	if (copy_from_user(&al_hreq, arg, sizeof(xfs_fsop_attrlist_handlereq_t)))
- 		return -XFS_ERROR(EFAULT);
--	if (al_hreq.buflen > XATTR_LIST_MAX)
-+	if (al_hreq.buflen < sizeof(struct attrlist) ||
-+	    al_hreq.buflen > XATTR_LIST_MAX)
- 		return -XFS_ERROR(EINVAL);
+diff --git a/drivers/hwmon/w83l786ng.c b/drivers/hwmon/w83l786ng.c
+index f190219..6ed76ce 100644
+--- a/drivers/hwmon/w83l786ng.c
++++ b/drivers/hwmon/w83l786ng.c
+@@ -481,9 +481,11 @@ store_pwm(struct device *dev, struct device_attribute *attr,
+ 	if (err)
+ 		return err;
+ 	val = clamp_val(val, 0, 255);
++	val = DIV_ROUND_CLOSEST(val, 0x11);
  
- 	/*
-diff --git a/fs/xfs/xfs_ioctl32.c b/fs/xfs/xfs_ioctl32.c
-index c0c6625..68799d7 100644
---- a/fs/xfs/xfs_ioctl32.c
-+++ b/fs/xfs/xfs_ioctl32.c
-@@ -359,7 +359,8 @@ xfs_compat_attrlist_by_handle(
- 	if (copy_from_user(&al_hreq, arg,
- 			   sizeof(compat_xfs_fsop_attrlist_handlereq_t)))
- 		return -XFS_ERROR(EFAULT);
--	if (al_hreq.buflen > XATTR_LIST_MAX)
-+	if (al_hreq.buflen < sizeof(struct attrlist) ||
-+	    al_hreq.buflen > XATTR_LIST_MAX)
- 		return -XFS_ERROR(EINVAL);
+ 	mutex_lock(&data->update_lock);
+-	data->pwm[nr] = val;
++	data->pwm[nr] = val * 0x11;
++	val |= w83l786ng_read_value(client, W83L786NG_REG_PWM[nr]) & 0xf0;
+ 	w83l786ng_write_value(client, W83L786NG_REG_PWM[nr], val);
+ 	mutex_unlock(&data->update_lock);
+ 	return count;
+@@ -777,8 +779,9 @@ static struct w83l786ng_data *w83l786ng_update_device(struct device *dev)
+ 			    ? 0 : 1;
+ 			data->pwm_enable[i] =
+ 			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 3) + 1;
+-			data->pwm[i] = w83l786ng_read_value(client,
+-			    W83L786NG_REG_PWM[i]);
++			data->pwm[i] =
++			    (w83l786ng_read_value(client, W83L786NG_REG_PWM[i])
++			     & 0x0f) * 0x11;
+ 		}
  
- 	/*
+ 
 -- 
 1.8.3.2
 
