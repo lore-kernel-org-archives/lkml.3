@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab3LSBOk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 20:14:40 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:62903 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817Ab3LSBOj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 20:14:39 -0500
-X-AuditID: 9c93017e-b7c17ae000003961-5e-52b2487d18b3
-Date: Thu, 19 Dec 2013 10:14:40 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/rmap: fix BUG at rmap_walk
-Message-ID: <20131219011440.GB25161@lge.com>
-References: <1387412195-26498-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <20131218162858.6ec808c067baf4644532e110@linux-foundation.org>
- <20131219005805.GA25161@lge.com>
- <20131218170429.0858bb069d51a469e8c237d8@linux-foundation.org>
+	id S1752204Ab3LSBPX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 20:15:23 -0500
+Received: from mga01.intel.com ([192.55.52.88]:36052 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751942Ab3LSBPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 20:15:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,510,1384329600"; 
+   d="scan'208";a="446687799"
+Date: Thu, 19 Dec 2013 09:15:06 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Cc: davem@davemloft.net, ffusco@redhat.com, kbuild-all@01.org,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [net-next/master PATCH] lib: fix compile warning in hashlib_init
+Message-ID: <20131219011506.GA27326@localhost>
+References: <1387415314-21786-1-git-send-email-gaowanlong@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131218170429.0858bb069d51a469e8c237d8@linux-foundation.org>
+In-Reply-To: <1387415314-21786-1-git-send-email-gaowanlong@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 05:04:29PM -0800, Andrew Morton wrote:
-> On Thu, 19 Dec 2013 09:58:05 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> 
-> > On Wed, Dec 18, 2013 at 04:28:58PM -0800, Andrew Morton wrote:
-> > > On Thu, 19 Dec 2013 08:16:35 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > page_get_anon_vma() called in page_referenced_anon() will lock and 
-> > > > increase the refcount of anon_vma, page won't be locked for anonymous 
-> > > > page. This patch fix it by skip check anonymous page locked.
-> > > > 
-> > > > [  588.698828] kernel BUG at mm/rmap.c:1663!
-> > > 
-> > > Why is all this suddenly happening.  Did we change something, or did a
-> > > new test get added to trinity?
-> > 
-> > It is my fault.
-> > I should remove this VM_BUG_ON() since rmap_walk() can be called
-> > without holding PageLock() in this case.
-> > 
-> > I think that adding VM_BUG_ON() to each rmap_walk calllers is better
-> > than this patch, because, now, rmap_walk() is called by many places and
-> > each places has different contexts.
-> 
-> I don't think that putting the assertion into the caller makes a lot of
-> sense, particularly if that code just did a lock_page()!  If a *callee*
-> needs PageLocked() then that callee should assert that the page is
-> locked.  So
-> 
-> 	VM_BUG_ON(!PageLocked(page));
-> 
-> means "this code requires that the page be locked".  And if that code
-> requires PageLocked(), there must be reasons for this.  Let's also
-> include an explanation of those reasons.
+CC the list.
 
-Yes, if this condition is invariant for rmap_walk(), we should put this on
-rmap_walk(). But if not, we should put this on the other place. I will
-investigate more and send good solution :)
-
-Thanks.
+On Thu, Dec 19, 2013 at 09:08:34AM +0800, Wanlong Gao wrote:
+> /git/linux/lib/hash.c: In function 'hashlib_init':
+> /git/linux/lib/hash.c:35:2: warning: passing argument 1 of 'setup_arch_fast_hash' from incompatible pointer type [enabled by default]
+> /git/linux/include/asm-generic/hash.h:5:20: note: expected 'struct arch_hash_ops *' but argument is of type 'struct fast_hash_ops *'
+> 
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> ---
+>  include/asm-generic/hash.h | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/asm-generic/hash.h b/include/asm-generic/hash.h
+> index 05cb342..b631284 100644
+> --- a/include/asm-generic/hash.h
+> +++ b/include/asm-generic/hash.h
+> @@ -1,8 +1,8 @@
+>  #ifndef __ASM_GENERIC_HASH_H
+>  #define __ASM_GENERIC_HASH_H
+>  
+> -struct arch_hash_ops;
+> -static inline void setup_arch_fast_hash(struct arch_hash_ops *ops)
+> +struct fast_hash_ops;
+> +static inline void setup_arch_fast_hash(struct fast_hash_ops *ops)
+>  {
+>  }
+>  
+> -- 
+> 1.8.5.2.192.g7794a68
