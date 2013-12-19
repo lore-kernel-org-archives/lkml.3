@@ -1,58 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab3LSSlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:41:20 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:59878 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753473Ab3LSSlT convert rfc822-to-8bit (ORCPT
+	id S1754420Ab3LSSnq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:43:46 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:36403 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab3LSSnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:41:19 -0500
-X-Originating-IP: 173.246.103.110
-Date: Thu, 19 Dec 2013 10:41:11 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] drivers: base: Add prototype declaration to the
- header file
-Message-ID: <20131219184110.GC17741@jtriplet-mobl1>
-References: <20131218063953.GA3180@rashika>
- <1387452297-28836-1-git-send-email-rashika.kheria@gmail.com>
- <20131219181357.GA27658@kroah.com>
+	Thu, 19 Dec 2013 13:43:43 -0500
+Date: Thu, 19 Dec 2013 19:43:39 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Borislav Petkov <bp@alien8.de>, Mike Galbraith <efault@gmx.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
+        linux-pm@vger.kernel.org, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Len Brown <lenb@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power
+ regression
+Message-ID: <20131219184339.GA32669@gmail.com>
+References: <52B316FF.50906@zytor.com>
+ <20131219160210.GA28426@gmail.com>
+ <52B31B21.6010901@zytor.com>
+ <20131219162136.GM16438@laptop.programming.kicks-ass.net>
+ <52B323BE.7090108@zytor.com>
+ <20131219170741.GB30382@gmail.com>
+ <52B33640.3020204@zytor.com>
+ <52B338AA.1020307@zytor.com>
+ <20131219182314.GE32508@gmail.com>
+ <CA+55aFzGxcML7j8CEvQPYzh0W81uVoAAVmGctMOUZ7CZ1yYd2A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20131219181357.GA27658@kroah.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFzGxcML7j8CEvQPYzh0W81uVoAAVmGctMOUZ7CZ1yYd2A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 10:13:57AM -0800, Greg Kroah-Hartman wrote:
-> On Thu, Dec 19, 2013 at 04:54:57PM +0530, Rashika Kheria wrote:
-> > Add prototype declaration of function memory_block_size_bytes() to
-> > the header file include/linux/memory.h.
-> > 
-> > This eliminates the following warning in memory.c:
-> > drivers/base/memory.c:87:1: warning: no previous prototype for ‘memory_block_size_bytes’ [-Wmissing-prototypes]
-> > 
-> > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> The x86 memory rules are that two loads always execute in order (ie 
+> rmb is a no-op).
 > 
-> Please ALWAYS run your patches through checkpatch.pl so a maintainer
-> doesn't have to write you an email like this reminding you to do that...
-> 
-> Josh, come on, you should have caught this as well, fix up your email
-> client to flag stuff like this easier...
+> So I see no reason for a memory barrier after the monitor. [...]
 
-If you're referring to the trailing whitespace on the line that was
-added, I did indeed miss that.  Sorry about that.
+Yes, I'm leaning towards that interpretation as well, but the reason 
+I'm a bit catious is the somewhat curious (to me!) wording of the 
+MONITOR instruction:
 
-I don't see any option in mutt that would make trailing whitespace
-visible; if you know of one, I'd love to hear about it.  I do have vim
-configured to highlight trailing whitespace, but I normally review
-patches in mutt and then hit reply and use vim to provide a Reviewed-by
-or line-by-line feedback if needed.  I should get in the habit of
-reviewing patches in vim instead; if I had, I'd have caught this.
+  Sets up a linear address range to be monitored by hardware and 
+  activates the monitor.
 
-- Josh Triplett
+  ...
+
+  The MONITOR instruction is ordered as a load operation with respect 
+  to other memory trans�actions. The instruction can be used at all 
+  privilege levels and is subject to all permission checking and 
+  faults associated with a byte load. Like a load, the MONITOR 
+  instruction sets the A-bit but not the D-bit in page tables.
+
+Where apparently the 'range' means 'full cache line surrounding the 
+memory address in question'.
+
+We have no other load instructions that operate on such a large 
+'range' of addresses, and I wanted to make sure it's a true (single 
+byte) load for that specific address. The documentation does not 
+appear to explicitly state that it's a load for that address - only 
+that it's ordered as a load.
+
+The reason I'm asking is because 'flags' itself might not be at the 
+beginning of the cache line, as it's in the middle of thread_info:
+
+ struct thread_info {
+        struct task_struct      *task;          /* main task structure */
+        struct exec_domain      *exec_domain;   /* execution domain */
+        __u32                   flags;          /* low level flags */
+
+while 'MONITOR' appears to work on the cache line. So are all 
+addresses within that cache line ordered? Only the specific address 
+given to the instruction itself? Only the first word of the cacheline 
+itself?
+
+The documentation is a bit vague, at least in my reading, and 
+depending on which actual word the instruction reads (if it reads any 
+word at all ... it's probably just setting up an address for MWAIT) 
+from that cacheline, its ordering properties might be surprising.
+
+> [...] But both sides of clflush sounds sane, and as mentioned the 
+> "go to sleep" side isn't as critical as the "wake up" side if the 
+> monitor.
+
+Yeah.
+
+> Please let's just make that pre-monitor hack be a static key, and do 
+> mfence explicitly around the clflush inside that conditional 
+> section.
+
+Agreed.
+
+Thanks,
+
+	Ingo
