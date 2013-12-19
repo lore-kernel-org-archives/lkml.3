@@ -1,153 +1,1105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab3LSDpg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 22:45:36 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:42045 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987Ab3LSDpf (ORCPT
+	id S1752803Ab3LSEHv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 23:07:51 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:61565 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab3LSEHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 22:45:35 -0500
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v2] mm/rmap: fix BUG at rmap_walk 
-Date: Thu, 19 Dec 2013 11:45:20 +0800
-Message-Id: <1387424720-22826-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121903-8878-0000-0000-00000A2297AB
+	Wed, 18 Dec 2013 23:07:48 -0500
+Message-ID: <52B2710B.8060107@gmail.com>
+Date: Thu, 19 Dec 2013 12:07:39 +0800
+From: Hui Zhu <teawater@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gdb@sourceware.org" <gdb@sourceware.org>, kgtp <kgtp@freelists.org>
+CC: Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Geunsik Lim <leemgs1@gmail.com>,
+        "Andi Kleen" <andi@firstfloor.org>, "Tao Ma" <taoma.tm@gmail.com>,
+        "Oliver Yang" <yangoliver@gmail.com>,
+        "Dixon, Brad" <Brad_Dixon@mentor.com>
+Subject: KGTP (dynamic tracer for Linux kernel and applications) 20131218
+ release (support Uprobes to trace user applications)
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-page_get_anon_vma() called in page_referenced_anon() will lock and increase 
-the refcount of anon_vma, page won't be locked for anonymous page if the page 
-is not locked by the caller. This patch fix the BUG_ON by reuse referenced 
-field in page_referenced_arg to capture locked anonymous page for page_referenced(), 
-if the anonymous page is locked by the caller, the referenced field will remember 
-it, rmap_walk_anon will check if page locked if caller lock it. 
+KGTP (http://kgtp.googlecode.com/) is a comprehensive dynamic tracer for
+analysing Linux kernel and application (including Android) problems on
+production systems in real time.
+To use it, you don't need patch or rebuild the Linux kernel. Just build
+KGTP module and insmod it is OK.
+http://www.youtube.com/watch?v=7nfGAbNsEZY
+or http://www.tudou.com/programs/view/fPu_koiKo38/ is the video that
+introduced KGTP in English.
+http://www.infoq.com/cn/presentations/gdb-sharp-knife-kgtp-linux-kernel
+is the video that introduced KGTP in Chinese.
 
-[  588.698828] kernel BUG at mm/rmap.c:1663!
-[  588.699380] invalid opcode: 0000 [#2] PREEMPT SMP DEBUG_PAGEALLOC
-[  588.700347] Dumping ftrace buffer:
-[  588.701186]    (ftrace buffer empty)
-[  588.702062] Modules linked in:
-[  588.702759] CPU: 0 PID: 4647 Comm: kswapd0 Tainted: G      D W    3.13.0-rc4-next-20131218-sasha-00012-g1962367-dirty #4155
-[  588.704330] task: ffff880062bcb000 ti: ffff880062450000 task.ti: ffff880062450000
-[  588.705507] RIP: 0010:[<ffffffff81289c80>]  [<ffffffff81289c80>] rmap_walk+0x10/0x50
-[  588.706800] RSP: 0018:ffff8800624518d8  EFLAGS: 00010246
-[  588.707515] RAX: 000fffff80080048 RBX: ffffea00000227c0 RCX: 0000000000000000
-[  588.707515] RDX: 0000000000000000 RSI: ffff8800624518e8 RDI: ffffea00000227c0
-[  588.707515] RBP: ffff8800624518d8 R08: ffff8800624518e8 R09: 0000000000000000
-[  588.707515] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800624519d8
-[  588.707515] R13: 0000000000000000 R14: ffffea00000227e0 R15: 0000000000000000
-[  588.707515] FS:  0000000000000000(0000) GS:ffff880065200000(0000) knlGS:0000000000000000
-[  588.707515] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  588.707515] CR2: 00007fec40cbe0f8 CR3: 00000000c2382000 CR4: 00000000000006f0
-[  588.707515] Stack:
-[  588.707515]  ffff880062451958 ffffffff81289f4b ffff880062451918 ffffffff81289f80
-[  588.707515]  0000000000000000 0000000000000000 ffffffff8128af60 0000000000000000
-[  588.707515]  0000000000000024 0000000000000000 0000000000000000 0000000000000286
-[  588.707515] Call Trace:
-[  588.707515]  [<ffffffff81289f4b>] page_referenced+0xcb/0x100
-[  588.707515]  [<ffffffff81289f80>] ? page_referenced+0x100/0x100
-[  588.707515]  [<ffffffff8128af60>] ? invalid_page_referenced_vma+0x170/0x170
-[  588.707515]  [<ffffffff81264302>] shrink_active_list+0x212/0x330
-[  588.707515]  [<ffffffff81260e23>] ? inactive_file_is_low+0x33/0x50
-[  588.707515]  [<ffffffff812646f5>] shrink_lruvec+0x2d5/0x300
-[  588.707515]  [<ffffffff812647b6>] shrink_zone+0x96/0x1e0
-[  588.707515]  [<ffffffff81265b06>] kswapd_shrink_zone+0xf6/0x1c0
-[  588.707515]  [<ffffffff81265f43>] balance_pgdat+0x373/0x550
-[  588.707515]  [<ffffffff81266d63>] kswapd+0x2f3/0x350
-[  588.707515]  [<ffffffff81266a70>] ? perf_trace_mm_vmscan_lru_isolate_template+0x120/0x120
-[  588.707515]  [<ffffffff8115c9c5>] kthread+0x105/0x110
-[  588.707515]  [<ffffffff8115c8c0>] ? set_kthreadd_affinity+0x30/0x30
-[  588.707515]  [<ffffffff843a6a7c>] ret_from_fork+0x7c/0xb0
-[  588.707515]  [<ffffffff8115c8c0>] ? set_kthreadd_affinity+0x30/0x30
-[  588.707515] Code: c0 48 83 c4 18 89 d0 5b 41 5c 41 5d 41 5e 41 5f c9 c3 66 0f 1f 84
-00 00 00 00 00 55 48 89 e5 66 66 66 66 90 48 8b 07 a8 01 75 10 <0f> 0b 66 0f 1f 44 00 0
-0 eb fe 66 0f 1f 44 00 00 f6 47 08 01 74
-[  588.707515] RIP  [<ffffffff81289c80>] rmap_walk+0x10/0x50
-[  588.707515]  RSP <ffff8800624518d8>
+Please goto https://code.google.com/p/kgtp/wiki/HOWTO (English)
+or https://code.google.com/p/kgtp/wiki/HOWTOCN (Chinese) to get howto use KGTP.
+Or download the pdf version in https://raw.github.com/teawater/kgtp/master/kgtp.pdf (English)
+or https://raw.github.com/teawater/kgtp/master/kgtpcn.pdf(Chinese).
 
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Now, KGTP 20131218 release.
+To get it in github:
+Get through https:
+https://github.com/teawater/kgtp/archive/20131218.tar.gz
+Get through git:
+git clone https://github.com/teawater/kgtp.git
+git checkout 20131218 -b 20131218
+
+To get it in CSDN:
+Get through https:
+https://code.csdn.net/teawater/kgtp/repository/archive?ref=20131218
+Get through git:
+git clone git://code.csdn.net/teawater/kgtp.git
+git checkout 20131218 -b 20131218
+
+The main change of this release is:
+Support Uprobes to trace user applications.  So now, you can use GDB
+trace or access the memory of user applications through KGTP without
+stop them like what KGTP can do with Linux kernel.  Please goto
+https://code.google.com/p/kgtp/wiki/HOWTO#Use_KGTP_with_user_applications
+get more info about howto use it.
+Please goto https://github.com/teawater/kgtp/blob/20131218/UPDATE
+get more info about this release.
+
+The howto of KGTP doesn't introcue trace more than one user applications
+or Linux kernel in same time.  This is because multiprocess support of
+GDB tracepoint is not complete.  Without this support, KGTP need add
+a special line in actions to support multiprocess tracepoint.  So I make
+some patches for GDB to make it works:
+https://sourceware.org/ml/gdb-patches/2013-12/msg00730.html
+https://sourceware.org/ml/gdb-patches/2013-12/msg00731.html
+https://sourceware.org/ml/gdb-patches/2013-12/msg00732.html
+https://sourceware.org/ml/gdb-patches/2013-12/msg00733.html
+Hope they can get review before GDB 7.7 release. Maybe I need add them
+to https://code.google.com/p/gdbt/ first.
+So in the next release of KGTP, GDB can very easy to trace user applications
+and Linux kernel through KGTP in same time.
+
+According to the comments of Christoph, Geoff and Andi.  I make KGTP
+function lite patch for Linux kernel upstream.  Please goto
+http://lkml.org/lkml/2013/11/21/7 to got it.
+And I also post it with this mail.
+
+Signed-off-by: Hui Zhu <teawater@gmail.com>
 ---
- mm/ksm.c  |  5 +++++
- mm/rmap.c | 20 ++++++++++++++++++--
- 2 files changed, 23 insertions(+), 2 deletions(-)
-
-diff --git a/mm/ksm.c b/mm/ksm.c
-index c9a28dd..76d96df 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1899,6 +1899,11 @@ int rmap_walk_ksm(struct page *page, struct rmap_walk_control *rwc)
- 	int search_new_forks = 0;
- 
- 	VM_BUG_ON(!PageKsm(page));
+--- a/arch/arc/kernel/kgdb.c
++++ b/arch/arc/kernel/kgdb.c
+@@ -61,6 +61,7 @@ void pt_regs_to_gdb_regs(unsigned long *
+  	to_gdb_regs(gdb_regs, kernel_regs, (struct callee_regs *)
+  		current->thread.callee_reg);
+  }
++EXPORT_SYMBOL_GPL(pt_regs_to_gdb_regs);
+  
+  void gdb_regs_to_pt_regs(unsigned long *gdb_regs, struct pt_regs *kernel_regs)
+  {
+--- a/arch/blackfin/kernel/kgdb.c
++++ b/arch/blackfin/kernel/kgdb.c
+@@ -73,6 +73,7 @@ void pt_regs_to_gdb_regs(unsigned long *
+  	gdb_regs[BFIN_EXTRA3] = 0;
+  	gdb_regs[BFIN_IPEND] = regs->ipend;
+  }
++EXPORT_SYMBOL_GPL(pt_regs_to_gdb_regs);
+  
+  /*
+   * Extracts ebp, esp and eip values understandable by gdb from the values
+--- a/arch/microblaze/kernel/kgdb.c
++++ b/arch/microblaze/kernel/kgdb.c
+@@ -64,6 +64,7 @@ void pt_regs_to_gdb_regs(unsigned long *
+  	__asm__ __volatile__ ("mfs %0, rtlbhi;" : "=r"(temp) : );
+  	gdb_regs[GDB_RTLBHI] = temp;
+  }
++EXPORT_SYMBOL_GPL(pt_regs_to_gdb_regs);
+  
+  void gdb_regs_to_pt_regs(unsigned long *gdb_regs, struct pt_regs *regs)
+  {
+--- a/arch/mn10300/kernel/kgdb.c
++++ b/arch/mn10300/kernel/kgdb.c
+@@ -66,6 +66,7 @@ void pt_regs_to_gdb_regs(unsigned long *
+  	gdb_regs[GDB_FR_DUMMY1]	= 0;
+  	gdb_regs[GDB_FR_FS0]	= 0;
+  }
++EXPORT_SYMBOL_GPL(pt_regs_to_gdb_regs);
+  
+  /*
+   * Extracts kernel SP/PC values understandable by gdb from the values
+--- a/arch/sparc/kernel/kgdb_32.c
++++ b/arch/sparc/kernel/kgdb_32.c
+@@ -41,6 +41,7 @@ void pt_regs_to_gdb_regs(unsigned long *
+  	gdb_regs[GDB_FSR] = 0;
+  	gdb_regs[GDB_CSR] = 0;
+  }
++EXPORT_SYMBOL_GPL(pt_regs_to_gdb_regs);
+  
+  void sleeping_thread_to_gdb_regs(unsigned long *gdb_regs, struct task_struct *p)
+  {
+--- a/arch/sparc/kernel/kgdb_64.c
++++ b/arch/sparc/kernel/kgdb_64.c
+@@ -37,6 +37,7 @@ void pt_regs_to_gdb_regs(unsigned long *
+  	gdb_regs[GDB_FPRS] = 0;
+  	gdb_regs[GDB_Y] = regs->y;
+  }
++EXPORT_SYMBOL_GPL(pt_regs_to_gdb_regs);
+  
+  void sleeping_thread_to_gdb_regs(unsigned long *gdb_regs, struct task_struct *p)
+  {
+--- /dev/null
++++ b/arch/x86/include/asm/gtp.h
+@@ -0,0 +1,16 @@
++#ifndef _ASM_X86_GTP_H_
++#define _ASM_X86_GTP_H_
 +
-+	/*
-+	 * Rely on the page lock to protect against concurrent modifications
-+	 * to that page's node of the stable tree.
-+	 */
- 	VM_BUG_ON(!PageLocked(page));
- 
- 	stable_node = page_stable_node(page);
-diff --git a/mm/rmap.c b/mm/rmap.c
-index d792e71..db83961 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -769,6 +769,10 @@ int page_referenced(struct page *page,
- 	struct page_referenced_arg pra = {
- 		.mapcount = page_mapcount(page),
- 		.memcg = memcg,
-+		/*
-+		 * reuse referenced field for the locked anonymous page check
-+		 */
-+		.referenced = is_locked && PageAnon(page) && !PageKsm(page),
- 	};
- 	struct rmap_walk_control rwc = {
- 		.rmap_one = page_referenced_one,
-@@ -1587,6 +1591,12 @@ static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
- 	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
- 	struct anon_vma_chain *avc;
- 	int ret = SWAP_AGAIN;
-+	struct page_referenced_arg *pra = rwc->arg;
++static inline void gtp_copy_and_adjuest_regs(struct pt_regs *dest,
++					     struct pt_regs *src)
++{
++	memcpy(dest, src, sizeof(struct pt_regs));
 +
-+	if (pra->referenced) {
-+		VM_BUG_ON(!PageLocked(page));
-+		pra->referenced = 0;
++#ifdef CONFIG_X86_32
++	dest->sp = (unsigned long)&src->sp;
++#endif	/* CONFIG_X86_32 */
++
++	dest->ip -= 1;
++}
++
++#endif
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -94,6 +94,8 @@ obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
+  obj-$(CONFIG_JUMP_LABEL) += jump_label.o
+  obj-$(CONFIG_CONTEXT_TRACKING) += context_tracking.o
+  
++obj-$(CONFIG_GTP) += gtp.o
++
+  $(obj)/configs.o: $(obj)/config_data.h
+  
+  # config_data.h contains the same information as ikconfig.h but gzipped.
+--- a/kernel/debug/gdbstub.c
++++ b/kernel/debug/gdbstub.c
+@@ -258,6 +258,7 @@ char *kgdb_mem2hex(char *mem, char *buf,
+  
+  	return buf;
+  }
++EXPORT_SYMBOL_GPL(kgdb_mem2hex);
+  
+  /*
+   * Convert the hex array pointed to by buf into binary to be placed in
+@@ -349,6 +350,7 @@ void pt_regs_to_gdb_regs(unsigned long *
+  		idx += dbg_reg_def[i].size;
+  	}
+  }
++EXPORT_SYMBOL_GPL(pt_regs_to_gdb_regs);
+  
+  void gdb_regs_to_pt_regs(unsigned long *gdb_regs, struct pt_regs *regs)
+  {
+--- /dev/null
++++ b/kernel/gtp.c
+@@ -0,0 +1,876 @@
++/*
++ * KGTP is a realtime and lightweight Linux debugger and tracer.
++ * It makes Linux Kernel supply a GDB remote debug interface.
++ *
++ * Copyright(C) KGTP team (kgtp.googlecode.com), 2010-2013
++ *
++ */
++
++#include <linux/version.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/uaccess.h>
++#include <linux/vmalloc.h>
++#include <linux/poll.h>
++#include <linux/kprobes.h>
++#include <linux/interrupt.h>
++#include <linux/debugfs.h>
++#include <linux/slab.h>
++#include <linux/kgdb.h>
++#include <asm/gtp.h>
++
++#define GTP_RW_MAX		16384
++#define GTP_RW_BUFP_MAX		(GTP_RW_MAX - 4 - gtp_rw_size)
++
++#define GTP_FRAME_SIZE		5242880
++#define GTP_FRAME_HEAD_SIZE	(1 + sizeof(struct gtp_frame_head))
++#define GTP_FRAME_REG_SIZE	(1 + sizeof(struct gtp_frame_reg))
++
++#define TOHEX(h)		((h) > 9 ? (h) + 'a' - 10 : (h) + '0')
++
++struct action {
++	struct list_head	node;
++	char			type;
++	union {
++		uint64_t	reg_mask;
++	} u;
++};
++
++struct gtp_entry {
++	struct list_head	node;
++	uint64_t		num;
++	uint64_t		addr;
++	uint64_t		step;
++	uint64_t		pass;
++	int			nopass;
++	int			kpreg;
++	struct kprobe		kp;
++	struct list_head	action_list;
++};
++
++static LIST_HEAD(gtp_list);
++
++struct gtp_frame_head {
++	int		frame_num;
++	uint64_t	trace_num;
++	char		*next;
++};
++
++struct gtp_frame_reg {
++	struct pt_regs	regs;
++	char		*next;
++};
++
++static char			gtp_read_ack;
++static char			*gtp_rw_buf;
++static char			*gtp_rw_bufp;
++static size_t			gtp_rw_size;
++
++static int			gtp_start;
++
++static int			gtp_circular;
++
++static DEFINE_SPINLOCK(gtp_frame_lock);
++static int			gtp_frame_num;
++static char			*gtp_frame;
++static char			*gtp_frame_r_start;
++static char			*gtp_frame_w_start;
++static char			*gtp_frame_w_end;
++static char			*gtp_frame_r_cache;
++static int			gtp_frame_is_circular;
++static struct gtp_frame_head	*gtp_frame_current;
++
++static DEFINE_SEMAPHORE(gtp_rw_lock);
++static int	gtp_rw_count;
++
++static char *gtp_frame_alloc(size_t size)
++{
++	char	*ret = NULL;
++
++	if (size > GTP_FRAME_SIZE)
++		return NULL;
++
++	spin_lock(&gtp_frame_lock);
++
++	if (gtp_frame_w_start + size > gtp_frame_w_end) {
++		if (gtp_circular) {
++			gtp_frame_is_circular = 1;
++			gtp_frame_w_start = gtp_frame;
++			gtp_frame_r_start = gtp_frame;
++		} else
++			goto out;
 +	}
- 
- 	anon_vma = rmap_walk_anon_lock(page, rwc);
- 	if (!anon_vma)
-@@ -1629,6 +1639,14 @@ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
- 	struct vm_area_struct *vma;
- 	int ret = SWAP_AGAIN;
- 
-+	/*
-+	 * The page lock not only makes sure that page->mapping cannot
-+	 * suddenly be NULLified by truncation, it makes sure that the
-+	 * structure at mapping cannot be freed and reused yet,
-+	 * so we can safely take mapping->i_mmap_mutex.
-+	 */
-+	VM_BUG_ON(!PageLocked(page));
 +
- 	if (!mapping)
- 		return ret;
- 	mutex_lock(&mapping->i_mmap_mutex);
-@@ -1660,8 +1678,6 @@ done:
- 
- int rmap_walk(struct page *page, struct rmap_walk_control *rwc)
- {
--	VM_BUG_ON(!PageLocked(page));
--
- 	if (unlikely(PageKsm(page)))
- 		return rmap_walk_ksm(page, rwc);
- 	else if (PageAnon(page))
--- 
-1.8.3.2
-
++	if (gtp_frame_is_circular) {
++		/* Release some frame entry to get some place.
++		   When support new frame type, need add new handler
++		   to switch.  */
++		while (gtp_frame_w_start + size > gtp_frame_r_start) {
++			switch (gtp_frame_r_start[0]) {
++			case 'h':
++				gtp_frame_r_start += GTP_FRAME_HEAD_SIZE;
++				break;
++			case 'r':
++				gtp_frame_r_start += GTP_FRAME_REG_SIZE;
++				break;
++			default:
++				goto out;
++			}
++		}
++	}
++
++	ret = gtp_frame_w_start;
++	gtp_frame_w_start += size;
++
++out:
++	spin_unlock(&gtp_frame_lock);
++	return ret;
++}
++
++static inline char **gtp_action_r(struct pt_regs *regs, struct action *ae,
++				  char **next)
++{
++	struct gtp_frame_reg	*freg;
++	char			*tmp;
++
++	tmp = gtp_frame_alloc(GTP_FRAME_REG_SIZE);
++	if (!tmp)
++		return NULL;
++
++	*next = tmp;
++	tmp[0] = 'r';
++	freg = (struct gtp_frame_reg *) (tmp + 1);
++	gtp_copy_and_adjuest_regs(&freg->regs, regs);
++	freg->next = NULL;
++
++	return &freg->next;
++}
++
++static int gtp_kp_pre_handler(struct kprobe *p, struct pt_regs *regs)
++{
++	struct gtp_entry	*tpe = container_of(p, struct gtp_entry, kp);
++	struct gtp_frame_head	*head;
++	char			*tmp;
++	struct action		*ae;
++	struct list_head	*cur;
++	char			**next;
++
++	pr_devel("gtp_kp_pre_handler: tracepoint %d\n", (int)tpe->num);
++
++	/* Get the head.  */
++	tmp = gtp_frame_alloc(GTP_FRAME_HEAD_SIZE);
++	if (!tmp)
++		goto no_memory;
++	tmp[0] = 'h';
++	head = (struct gtp_frame_head *) (tmp + 1);
++	/* Get a new frame num from gtp_frame_num.  */
++	spin_lock(&gtp_frame_lock);
++	if (gtp_frame_num < 0)
++		gtp_frame_num = head->frame_num = 0;
++	else
++		head->frame_num = gtp_frame_num++;
++	spin_unlock(&gtp_frame_lock);
++	head->trace_num = tpe->num;
++	head->next = NULL;
++	next = &head->next;
++
++	/* Handle actions.  */
++	list_for_each(cur, &tpe->action_list) {
++		ae = list_entry(cur, struct action, node);
++		switch (ae->type) {
++		case 'r':
++			next = gtp_action_r(regs, ae, next);
++			if (!next)
++				goto no_memory;
++			break;
++		}
++	}
++
++	return 0;
++
++no_memory:
++	pr_devel("gtp_kp_pre_handler: tracepoint %d no memory.\n",
++		 (int)tpe->num);
++	return 0;
++}
++
++static struct action *gtp_action_alloc(char type)
++{
++	struct action	*ret;
++
++	ret = kzalloc(sizeof(struct action), GFP_KERNEL);
++	if (!ret)
++		goto out;
++
++	ret->type = type;
++
++out:
++	return ret;
++}
++
++static struct gtp_entry *gtp_list_add(uint64_t num, uint64_t addr)
++{
++	struct gtp_entry	*ret = kzalloc(sizeof(struct gtp_entry),
++					       GFP_KERNEL);
++
++	if (!ret)
++		goto out;
++	ret->num = num;
++	ret->addr = addr;
++	ret->kp.addr = (kprobe_opcode_t *) (unsigned long)addr;
++	ret->kp.pre_handler = gtp_kp_pre_handler;
++	INIT_LIST_HEAD(&ret->action_list);
++
++	list_add(&ret->node, &gtp_list);
++
++out:
++	return ret;
++}
++
++static struct gtp_entry *gtp_list_find(uint64_t num, uint64_t addr)
++{
++	struct gtp_entry	*tpe;
++	struct list_head	*cur;
++
++	list_for_each(cur, &gtp_list) {
++		tpe = list_entry(cur, struct gtp_entry, node);
++		if (tpe->num == num && tpe->addr == addr)
++			return tpe;
++	}
++
++	return NULL;
++}
++
++static void gtp_list_release(void)
++{
++	struct gtp_entry	*tpe;
++	struct list_head	*cur, *next;
++
++	list_for_each_safe(cur, next, &gtp_list) {
++		struct action		*ae;
++		struct list_head	*cur_ae, *next_ae;
++
++		tpe = list_entry(cur, struct gtp_entry, node);
++
++		list_for_each_safe(cur_ae, next_ae, &tpe->action_list) {
++			ae = list_entry(cur_ae, struct action, node);
++			kfree(ae);
++		}
++
++		kfree(tpe);
++	}
++}
++
++static void gtp_frame_reset(void)
++{
++	gtp_frame_num = 0;
++	gtp_frame_r_start = gtp_frame;
++	gtp_frame_w_start = gtp_frame;
++	gtp_frame_w_end = gtp_frame + GTP_FRAME_SIZE;
++	gtp_frame_is_circular = 0;
++	gtp_frame_r_cache = NULL;
++	gtp_frame_current = NULL;
++}
++
++static int gtp_gdbrsp_qtinit(char *pkg)
++{
++	gtp_list_release();
++
++	if (gtp_frame)
++		gtp_frame_reset();
++
++	return 0;
++}
++
++static int gtp_gdbrsp_qtdp(char *pkg)
++{
++	int			addnew = 1;
++	uint64_t		num, addr;
++	struct gtp_entry	*tpe;
++
++	pr_devel("gtp_gdbrsp_qtdp: %s\n", pkg);
++
++	if (pkg[0] == '-') {
++		pkg++;
++		addnew = 0;
++	}
++
++	/* Get num and addr.  */
++	if (pkg[0] == '\0')
++		return -EINVAL;
++	num = simple_strtoull(pkg, &pkg, 16);
++	if (pkg[0] == '\0')
++		return -EINVAL;
++	pkg++;
++	addr = simple_strtoull(pkg, &pkg, 16);
++	if (pkg[0] == '\0')
++		return -EINVAL;
++	pkg++;
++
++	tpe = gtp_list_find(num, addr);
++	if (addnew) {
++		if (tpe)
++			return -EINVAL;
++		if (pkg[0] == 'D')
++			return 0;
++		if (pkg[0] == '\0')
++			return -EINVAL;
++		pkg++;
++
++		tpe = gtp_list_add(num, addr);
++		if (tpe == NULL)
++			return -ENOMEM;
++
++		/* Get step and pass.  */
++		if (pkg[0] == '\0')
++			return -EINVAL;
++		pkg++;
++		tpe->step = simple_strtoull(pkg, &pkg, 16);
++		if (pkg[0] == '\0')
++			return -EINVAL;
++		pkg++;
++		tpe->pass = simple_strtoull(pkg, &pkg, 16);
++		if (tpe->pass == 0)
++			tpe->nopass = 1;
++	} else if (tpe) {
++		/* Add action to tpe.  */
++		int	step_action = 0;
++
++		if (pkg[0] == 'S') {
++			pkg++;
++			step_action = 1;
++			/* Do not support step now.  */
++			return 1;
++		}
++		while (pkg[0]) {
++			struct action	*ae;
++
++			switch (pkg[0]) {
++			case 'R':
++				/* reg_mask is ignore because buffer just
++				   can record all regs.  */
++				ae = gtp_action_alloc(pkg[0]);
++				if (!ae)
++					return -ENOMEM;
++				pkg++;
++				ae->type = 'r';
++				ae->u.reg_mask = simple_strtoull(pkg, &pkg,
++								 16);
++				break;
++			default:
++				return 1;
++			}
++
++			if (ae)
++				list_add(&ae->node, &tpe->action_list);
++		}
++	} else
++		return -EINVAL;
++
++	return 0;
++}
++
++static int gtp_gdbrsp_qtdisconnected(char *pkg)
++{
++	/* Doesn't support disconnected-tracing.  */
++
++	return 1;
++}
++
++static int gtp_gdbrsp_qtbuffer(char *pkg)
++{
++	if (strncmp("circular:", pkg, 9) == 0) {
++		uint64_t setting;
++
++		pkg += 9;
++		if (pkg[0] == '\0')
++			return -EINVAL;
++		setting = simple_strtoull(pkg, NULL, 16);
++		gtp_circular = (int)setting;
++
++		return 0;
++	}
++
++	return 1;
++}
++
++static struct gtp_frame_head *gtp_frame_head_find(int num)
++{
++	struct gtp_frame_head	*ret = NULL;
++	char			*tmp;
++
++	if (gtp_frame_r_cache) {
++		tmp = gtp_frame_r_cache;
++
++		while (tmp < gtp_frame_w_start) {
++			switch (tmp[0]) {
++			case 'h':
++				ret = (struct gtp_frame_head *)(tmp + 1);
++				goto cache_check;
++				break;
++			case 'r':
++				tmp += GTP_FRAME_REG_SIZE;
++				break;
++			default:
++				goto cache_check;
++				break;
++			}
++		}
++
++cache_check:
++		if (ret && ret->frame_num == num)
++			goto out;
++	}
++
++	tmp = gtp_frame_r_start;
++	while (tmp < gtp_frame_w_start) {
++		switch (tmp[0]) {
++		case 'h':
++			ret = (struct gtp_frame_head *) (tmp + 1);
++			if (ret->frame_num == num)
++				goto out;
++			ret = NULL;
++			tmp += GTP_FRAME_HEAD_SIZE;
++			break;
++		case 'r':
++			tmp += GTP_FRAME_REG_SIZE;
++			break;
++		default:
++			goto out;
++		}
++	}
++
++out:
++	return ret;
++}
++
++static int gtp_gdbrsp_qtframe(char *pkg)
++{
++	if (strncmp(pkg, "pc:", 3) == 0)	/* Not support.  */
++		return 1;
++	else if (strncmp(pkg, "tdp:", 4) == 0)	/* Not support.  */
++		return 1;
++	else if (strncmp(pkg, "range:", 6) == 0)	/* Not support.  */
++		return 1;
++	else if (strncmp(pkg, "outside:", 8) == 0)	/* Not support.  */
++		return 1;
++	else {
++		uint64_t		num;
++		struct gtp_frame_head	*ret;
++
++		if (pkg[0] == '\0')
++			return -EINVAL;
++		num = simple_strtoull(pkg, NULL, 16);
++
++		pr_devel("gtp_gdbrsp_qtframe: %d\n", (int) num);
++
++		if (((int) num) < 0) {
++			/* Return to current.  */
++			gtp_frame_current = NULL;
++
++			return 0;
++		}
++		ret = gtp_frame_head_find((int) num);
++		if (ret) {
++			gtp_frame_current = ret;
++			gtp_frame_r_cache = (char *)ret;
++			gtp_frame_r_cache += sizeof(struct gtp_frame_head);
++			sprintf(gtp_rw_bufp, "F%xT%x",
++				gtp_frame_current->frame_num,
++				(unsigned int)gtp_frame_current->trace_num);
++			gtp_rw_size += strlen(gtp_rw_bufp);
++			gtp_rw_bufp += strlen(gtp_rw_bufp);
++		} else {
++			strcpy(gtp_rw_bufp, "F-1");
++			gtp_rw_bufp += 3;
++			gtp_rw_size += 3;
++		}
++	}
++
++	return 1;
++}
++
++static int gtp_gdbrsp_qtstop(char *pkg)
++{
++	struct gtp_entry	*tpe;
++	struct list_head	*cur;
++
++	if (!gtp_start)
++		return -EBUSY;
++
++	list_for_each(cur, &gtp_list) {
++		tpe = list_entry(cur, struct gtp_entry, node);
++		if (tpe->kpreg) {
++			unregister_kprobe(&tpe->kp);
++			tpe->kpreg = 0;
++		}
++	}
++
++	gtp_start = 0;
++
++	return 0;
++}
++
++static int gtp_gdbrsp_qtstart(char *pkg)
++{
++	struct gtp_entry	*tpe;
++	struct list_head	*cur;
++
++	if (!gtp_frame) {
++		gtp_frame = vmalloc(GTP_FRAME_SIZE);
++		if (!gtp_frame)
++			return -ENOMEM;
++
++		gtp_frame_reset();
++	}
++
++	list_for_each(cur, &gtp_list) {
++		tpe = list_entry(cur, struct gtp_entry, node);
++		if (!list_empty(&tpe->action_list)) {
++			int	ret = register_kprobe(&tpe->kp);
++			if (ret < 0) {
++				gtp_gdbrsp_qtstop(NULL);
++				return ret;
++			}
++			tpe->kpreg = 1;
++		}
++	}
++
++	gtp_start = 1;
++
++	return 0;
++}
++
++struct QTpkg_s {
++	const char	*header;
++
++	/* If size is bigger than 0, this is the size of package's header.
++	   And this package has some data after header need send to fun.
++	   If size is 0, this package just has a header.  */
++	int		size;
++
++	/* If check_start is true, before call fun, need check if gtp_start.
++	   If gtp_start, then return -EBUSY.  */
++	int		check_start;
++
++	int		(*fun)(char *pkg);
++};
++
++struct QTpkg_s QTpkgs[] = {
++	{"init", 		0, 1,	gtp_gdbrsp_qtinit},
++	{"DP:",			3, 1,	gtp_gdbrsp_qtdp},
++	{"Disconnected:",	13, 0,	gtp_gdbrsp_qtdisconnected},
++	{"Buffer:",		7, 0,	gtp_gdbrsp_qtbuffer},
++	{"Frame:",		6, 1,	gtp_gdbrsp_qtframe},
++	{"Start",		0, 1,	gtp_gdbrsp_qtstart},
++	{"Stop",			0, 0,	gtp_gdbrsp_qtstop},
++};
++
++static int gtp_gdbrsp_QT(char *pkg)
++{
++	int	ret = 1;
++	int	i;
++
++	pr_devel("gtp_gdbrsp_QT: %s\n", pkg);
++
++	for (i = 0; i < sizeof (QTpkgs) / sizeof (struct QTpkg_s); i++) {
++		int	not_same;
++
++		if (QTpkgs[i].size == 0)
++			not_same = strcmp(QTpkgs[i].header, pkg);
++		else
++			not_same = strncmp(QTpkgs[i].header, pkg,
++					       QTpkgs[i].size);
++		if (not_same)
++			continue;
++		if (QTpkgs[i].check_start && gtp_start)
++			ret = -EBUSY;
++		else
++			ret =  QTpkgs[i].fun(pkg + QTpkgs[i].size);
++	}
++
++	return ret;
++}
++
++static unsigned char	gtp_m_buffer[0xffff];
++
++static int gtp_gdbrsp_m(char *pkg)
++{
++	int		i;
++	uint64_t	addr, len;
++
++	/* Get add and len.  */
++	if (pkg[0] == '\0')
++		return -EINVAL;
++	addr = simple_strtoull(pkg, &pkg, 16);
++	if (pkg[0] != ',')
++		return -EINVAL;
++	pkg++;
++	len = simple_strtoull(pkg, &pkg, 16);
++	if (len == 0)
++		return -EINVAL;
++	len &= 0xffff;
++	len = (uint64_t) min((int)(GTP_RW_BUFP_MAX / 2),
++			     (int)len);
++
++	pr_devel("gtp_gdbrsp_m: addr = 0x%lx len = %d\n",
++		 (unsigned long) addr, (int) len);
++
++	if (probe_kernel_read(gtp_m_buffer, (void *)(unsigned long)addr,
++			      (size_t)len))
++		return -EFAULT;
++
++	for (i = 0; i < (int)len; i++) {
++		sprintf(gtp_rw_bufp, "%02x", gtp_m_buffer[i]);
++		gtp_rw_bufp += 2;
++		gtp_rw_size += 2;
++	}
++
++	return 1;
++}
++
++static int gtp_gdbrsp_g(void)
++{
++	char			*next;
++	struct gtp_frame_reg	*fr = NULL;
++
++	if (GTP_RW_BUFP_MAX < NUMREGBYTES * 2)
++		return -E2BIG;
++
++	if (gtp_start || !gtp_frame_current)
++		goto empty_out;
++
++	/* Get the fr.  */
++	next = gtp_frame_current->next;
++	if (next[0] == 'r') {
++		unsigned long		gdb_regs[(NUMREGBYTES +
++					sizeof(unsigned long) - 1) /
++					sizeof(unsigned long)];
++		fr = (struct gtp_frame_reg *) (next + 1);
++		pt_regs_to_gdb_regs(gdb_regs, &fr->regs);
++		kgdb_mem2hex((char *)gdb_regs, gtp_rw_bufp, NUMREGBYTES);
++	} else {
++empty_out:
++		memset(gtp_rw_bufp, '0', NUMREGBYTES * 2);
++	}
++	gtp_rw_bufp += NUMREGBYTES * 2;
++	gtp_rw_size += NUMREGBYTES * 2;
++	return 1;
++}
++
++static int gtp_open(struct inode *inode, struct file *file)
++{
++	int	ret = 0;
++
++	down(&gtp_rw_lock);
++
++	if (gtp_rw_count > 0) {
++		ret = -EBUSY;
++		goto out;
++	}
++
++	gtp_read_ack = 0;
++	gtp_rw_buf = vmalloc(GTP_RW_MAX);
++	if (!gtp_rw_buf) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	gtp_rw_count++;
++
++out:
++	up(&gtp_rw_lock);
++	return ret;
++}
++
++static int gtp_release(struct inode *inode, struct file *file)
++{
++	down(&gtp_rw_lock);
++	vfree(gtp_rw_buf);
++
++	gtp_gdbrsp_qtstop(NULL);
++	gtp_gdbrsp_qtinit(NULL);
++	vfree(gtp_frame);
++	gtp_frame = NULL;
++
++	gtp_rw_count--;
++
++	up(&gtp_rw_lock);
++
++	return 0;
++}
++
++static long gtp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	/* This function will make GDB happy.  */
++	pr_devel("gtp_ioctl: %x\n", cmd);
++
++	return 0;
++}
++
++static ssize_t gtp_write(struct file *file, const char __user *buf,
++			 size_t size, loff_t *ppos)
++{
++	char		*rsppkg = NULL;
++	int		i, ret;
++	unsigned char	csum = 0;
++
++	down(&gtp_rw_lock);
++
++	size = min_t(size_t, size, GTP_RW_MAX);
++	if (copy_from_user(gtp_rw_buf, buf, size)) {
++		size = -EFAULT;
++		goto out;
++	}
++
++	if (gtp_rw_buf[0] == '+' || gtp_rw_buf[0] == '-'
++	    || gtp_rw_buf[0] == '\3')
++		goto out;
++
++	/* Check format and crc and get the rsppkg.  */
++	for (i = 0; i < size - 2; i++) {
++		if (rsppkg == NULL) {
++			if (gtp_rw_buf[i] == '$')
++				rsppkg = gtp_rw_buf + i + 1;
++		} else {
++			if (gtp_rw_buf[i] == '#')
++				break;
++			else
++				csum += gtp_rw_buf[i];
++		}
++	}
++	if (rsppkg && gtp_rw_buf[i] == '#') {
++		/* Format is OK.  Check crc.  */
++		unsigned char	c1, c2;
++
++		gtp_rw_buf[i] = '\0';
++
++		c1 = gtp_rw_buf[i+1];
++		c2 = gtp_rw_buf[i+2];
++		if (csum == (c1 << 4) + c2) {
++			pr_devel("gtp_write: crc error\n");
++			gtp_read_ack = '-';
++			goto out;
++		}
++	} else {
++		pr_devel("gtp_write: format error\n");
++		gtp_read_ack = '-';
++		goto out;
++	}
++	gtp_read_ack = '+';
++
++	pr_devel("gtp_write: %s\n", rsppkg);
++
++	/* Handle rsppkg and put return to gtp_rw_buf.  */
++	gtp_rw_buf[0] = '$';
++	gtp_rw_bufp = gtp_rw_buf + 1;
++	gtp_rw_size = 0;
++	ret = 1;
++	switch (rsppkg[0]) {
++	case '?':
++		strcpy(gtp_rw_bufp, "S05");
++		gtp_rw_bufp += 3;
++		gtp_rw_size += 3;
++		break;
++	case 'g':
++		ret = gtp_gdbrsp_g();
++		break;
++	case 'm':
++		ret = gtp_gdbrsp_m(rsppkg + 1);
++		break;
++	case 'Q':
++		if (rsppkg[1] == 'T')
++			ret = gtp_gdbrsp_QT(rsppkg + 2);
++		break;
++	}
++	if (ret == 0) {
++		strcpy(gtp_rw_bufp, "OK");
++		gtp_rw_bufp += 2;
++		gtp_rw_size += 2;
++	} else if (ret < 0) {
++		sprintf(gtp_rw_bufp, "E%02x", -ret);
++		gtp_rw_bufp += 3;
++		gtp_rw_size += 3;
++	}
++
++	gtp_rw_bufp[0] = '#';
++	csum = 0;
++	for (i = 1; i < gtp_rw_size + 1; i++)
++		csum += gtp_rw_buf[i];
++	gtp_rw_bufp[1] = TOHEX(csum >> 4);
++	gtp_rw_bufp[2] = TOHEX(csum & 0x0f);
++	gtp_rw_bufp = gtp_rw_buf;
++	gtp_rw_size += 4;
++
++out:
++	up(&gtp_rw_lock);
++	return size;
++}
++
++static ssize_t gtp_read(struct file *file, char __user *buf, size_t size,
++	 loff_t *ppos)
++{
++	if (size == 0)
++		return 0;
++
++	down(&gtp_rw_lock);
++
++	if (gtp_read_ack) {
++		int err = put_user(gtp_read_ack, buf);
++		if (err) {
++			size = -err;
++			goto out;
++		}
++		gtp_read_ack = 0;
++		size = 1;
++		goto out;
++	}
++
++	size = min(gtp_rw_size, size);
++
++	if (copy_to_user(buf, gtp_rw_bufp, size)) {
++		size = -EFAULT;
++		goto out;
++	}
++	gtp_rw_bufp += size;
++	gtp_rw_size -= size;
++
++out:
++	up(&gtp_rw_lock);
++	return size;
++}
++
++static const struct file_operations gtp_operations = {
++	.owner		= THIS_MODULE,
++	.open		= gtp_open,
++	.release	= gtp_release,
++	.unlocked_ioctl	= gtp_ioctl,
++	.compat_ioctl	= gtp_ioctl,
++	.read		= gtp_read,
++	.write		= gtp_write,
++};
++
++struct dentry	*gtp_dir;
++
++static int __init gtp_init(void)
++{
++	gtp_dir = debugfs_create_file("gtp",
++				      S_IFREG | S_IRUSR | S_IWUSR,
++				      NULL, NULL, &gtp_operations);
++	if (gtp_dir == NULL || gtp_dir == ERR_PTR(-ENODEV))
++		return -ENOMEM;
++
++	return 0;
++}
++
++static void __exit gtp_exit(void)
++{
++	if (gtp_dir)
++		debugfs_remove_recursive(gtp_dir);
++}
++
++module_init(gtp_init)
++module_exit(gtp_exit)
++
++MODULE_AUTHOR("Hui Zhu <teawater@gmail.com>");
++MODULE_LICENSE("GPL");
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1578,6 +1578,21 @@ config DMA_API_DEBUG
+  	  This option causes a performance degredation.  Use only if you want
+  	  to debug device drivers. If unsure, say N.
+  
++config GTP
++	tristate "KGTP"
++	depends on X86
++	select KPROBES
++	select DEBUG_FS
++	select KGDB
++	---help---
++	  KGTP is a flexible, lightweight and realtime Linux (include
++	  Android) debugger and tracer.
++	  It makes Linux Kernel supply a GDB remote debug interface.
++	  Then GDB in current machine or remote machine can debug and
++	  trace Linux kernel and user space program through GDB tracepoint
++	  and some other functions without stopping the Linux Kernel.
++	  http://kgtp.googlecode.com/
++
+  source "samples/Kconfig"
+  
+  source "lib/Kconfig.kgdb"
