@@ -1,105 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab3LSIlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 03:41:20 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:49091 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab3LSIlT (ORCPT
+	id S1752771Ab3LSImO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 03:42:14 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:45135 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab3LSImM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 03:41:19 -0500
-Date: Thu, 19 Dec 2013 14:11:10 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Philipp Zabel <p.zabel@pengutronix.de>, Pavel Machek <pavel@ucw.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Shawn Guo <shawn.guo@linaro.org>, josh@joshtriplett.org
-Subject: [PATCH v2] drivers: reset: Mark function as static and remove unused
- function in core.c
-Message-ID: <20131219084110.GA14098@rashika>
+	Thu, 19 Dec 2013 03:42:12 -0500
+Date: Thu, 19 Dec 2013 08:42:06 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Jonathan Cameron <jic23@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] mfd: input: iio: ti_amm335x: rework TSC/ADC
+ synchronisation
+Message-ID: <20131219084206.GC2621@lee--X1>
+References: <1387385577-24447-1-git-send-email-bigeasy@linutronix.de>
+ <1387385577-24447-6-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1387385577-24447-6-git-send-email-bigeasy@linutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark function of_reset_simple_xlate() as static in core.c
-because it is not used outside this file.
-Also, remove functions devm_reset_control_put() and
-devm_reset_control_match() because they are unused.
+> The ADC driver always programms all possible ADC values and discards
+> them except for the value IIO asked for. On the am335x-evm the driver
+> programs four values and it takes 500us to gather them. Reducing the number
+> of coversations down to (required) one also reduces the busy loop down to
+> 125us.
+> This leads to another error, namely the FIFOCOUNT register is sometimes
+> (like one out of 10 attempts) not updated in time leading to timeouts.
+> The next read has the fifocount register updated.
+> Checking for the ADCStatus status register for beeing idle isn't a good
+> choice either. The problem is that it often times out if the TSC is used
+> at the same time. The problem is that the HW compelted the conversaton for
+> the ADC *and* before the driver noticed it, the HW began to perfom a
+> TSC conversation and so the driver never seen the HW idle. The next time
+> we would have two values in the fifo but since the driver reads
+> everything we always see the current one.
+> So instead of polling for the IDLE bit, we check for the fifocount. It
+> should be one instead of zero because we request one value.
+> This change in turn lead to another error :) Sometimes if TSC & ADC are
+> used together the TSC starts becomming interrupts even if nobody
+> actually touched the touchscreen. The interrupts are valid because TSC's
+> fifo is filled with values. This condition stops after a few ADC reads but
+> will occur once TSC & ADC are used at the same time. So not good.
+> 
+> On top of this (even without the changes I just mentioned) there is a ADC
+> & TSC lockup condition which was reported to my Jeff Lance including a test
+> case:
+> A busyloop of loop of "cat /sys/bus/iio/devices/iio\:device0/in_voltage4_raw"
+> and a mug on touch screen. Whith this setup, the hardware will lockup after
+> something between 20min and it could take up to a couple of hours. During that
+> lockup, the ADCSTAT says 0x30 (or 0x70) which means STEP_ID = IDLE and
+> FSM_BUSY = yes. That means it says that it is idle and busy at the same
+> time which is an invalid condition.
+> 
+> For all this reasons I decided to rework this TSC/ADC part and add a
+> handshake / synchronisation here:
+> First the ADC signals that it needs the HW and writes a 0 mask into the
+> SE register. The HW (if active) will complete the current conversation
+> and become idle. The TSC driver will gather the values from the FIFO
+> (woken up by an interrupt) and won't "enable" another conversation.
+> Instead it will wake up the ADC driver which is already waiting. The ADC
+> driver will start "its" converstation and once it is done, it will
+> enable the TSC events so the TSC will work again.
 
-This eliminates the following warnings in core.c:
-drivers/reset/core.c:46:5: warning: no previous prototype for ‘of_reset_simple_xlate’ [-Wmissing-prototypes]
-drivers/reset/core.c:262:6: warning: no previous prototype for ‘devm_reset_control_put’ [-Wmissing-prototypes]
+Spell check this entire block.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
+Smileys in commit messages are generally a bad idea.
 
-Changes since v1:
-Incorrect Fix
+Please insert '\n's between paragraphs.
 
- drivers/reset/core.c |   30 +-----------------------------
- 1 file changed, 1 insertion(+), 29 deletions(-)
+Proof read, as some of the sentences are not comprehensible.
 
-diff --git a/drivers/reset/core.c b/drivers/reset/core.c
-index d1b6089..129bb85 100644
---- a/drivers/reset/core.c
-+++ b/drivers/reset/core.c
-@@ -43,7 +43,7 @@ struct reset_control {
-  * This simple translation function should be used for reset controllers
-  * with 1:1 mapping, where reset lines can be indexed by number without gaps.
-  */
--int of_reset_simple_xlate(struct reset_controller_dev *rcdev,
-+static int of_reset_simple_xlate(struct reset_controller_dev *rcdev,
- 			  const struct of_phandle_args *reset_spec)
- {
- 	if (WARN_ON(reset_spec->args_count != rcdev->of_reset_n_cells))
-@@ -54,7 +54,6 @@ int of_reset_simple_xlate(struct reset_controller_dev *rcdev,
- 
- 	return reset_spec->args[0];
- }
--EXPORT_SYMBOL_GPL(of_reset_simple_xlate);
- 
- /**
-  * reset_controller_register - register a reset controller device
-@@ -243,33 +242,6 @@ struct reset_control *devm_reset_control_get(struct device *dev, const char *id)
- }
- EXPORT_SYMBOL_GPL(devm_reset_control_get);
- 
--static int devm_reset_control_match(struct device *dev, void *res, void *data)
--{
--	struct reset_control **rstc = res;
--	if (WARN_ON(!rstc || !*rstc))
--		return 0;
--	return *rstc == data;
--}
--
--/**
-- * devm_reset_control_put - resource managed reset_control_put()
-- * @rstc: reset controller to free
-- *
-- * Deallocate a reset control allocated withd devm_reset_control_get().
-- * This function will not need to be called normally, as devres will take
-- * care of freeing the resource.
-- */
--void devm_reset_control_put(struct reset_control *rstc)
--{
--	int ret;
--
--	ret = devres_release(rstc->dev, devm_reset_control_release,
--			     devm_reset_control_match, rstc);
--	if (ret)
--		WARN_ON(ret);
--}
--EXPORT_SYMBOL_GPL(devm_reset_control_put);
--
- /**
-  * device_reset - find reset controller associated with the device
-  *                and perform reset
+/* MFD Parts */
+
+> --- a/drivers/mfd/ti_am335x_tscadc.c
+> +++ b/drivers/mfd/ti_am335x_tscadc.c
+> @@ -24,6 +24,7 @@
+
+> -static void am335x_tsc_se_update(struct ti_tscadc_dev *tsadc)
+> +void am335x_tsc_se_set(struct ti_tscadc_dev *tsadc, u32 val)
+>  {
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&tsadc->reg_lock, flags);
+> +	tsadc->reg_se_cache |= val;
+>  	tscadc_writel(tsadc, REG_SE, tsadc->reg_se_cache);
+> +	spin_unlock_irqrestore(&tsadc->reg_lock, flags);
+>  }
+> +EXPORT_SYMBOL_GPL(am335x_tsc_se_set);
+>  
+> -void am335x_tsc_se_set(struct ti_tscadc_dev *tsadc, u32 val)
+> +void am335x_tsc_se_tsc_set(struct ti_tscadc_dev *tsadc, u32 val)
+
+What's the difference between:
+
+am335x_tsc_se_set()
+and
+am335x_tsc_se_tsc_set()
+
+Why don't you have a am335x_tsc_se_tsc_set_tsc_se_tsc_set() ;)
+
+Perhaps a better function name might be in order.
+
+>  {
+>  	unsigned long flags;
+>  
+>  	spin_lock_irqsave(&tsadc->reg_lock, flags);
+> -	tsadc->reg_se_cache |= val;
+> -	am335x_tsc_se_update(tsadc);
+> +	tsadc->reg_se_cache = val;
+> +	if (tsadc->adc_in_use || tsadc->adc_waiting) {
+> +		if (tsadc->adc_waiting)
+> +			wake_up(&tsadc->reg_se_wait);
+
+So if we're either in-use or waiting, the step mask is never set?
+
+But I guess that the touchscreen driver assumes it has been set.
+
+Is this okay?
+
+> +	} else {
+> +		tscadc_writel(tsadc, REG_SE, val);
+> +	}
+
+I think this would be better represented as:
+
+        if (tsadc->adc_waiting)
+                wake_up(&tsadc->reg_se_wait);
+        else if (!tsadc->adc_in_use)
+                tscadc_writel(tsadc, REG_SE, val);
+
+>  	spin_unlock_irqrestore(&tsadc->reg_lock, flags);
+>  }
+> -EXPORT_SYMBOL_GPL(am335x_tsc_se_set);
+> +EXPORT_SYMBOL_GPL(am335x_tsc_se_tsc_set);
+
+<snip>
+
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
