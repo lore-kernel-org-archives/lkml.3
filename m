@@ -1,61 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab3LSWat (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 17:30:49 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:56000 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755230Ab3LSWaQ (ORCPT
+	id S1756577Ab3LSWcV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 17:32:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46474 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754699Ab3LSWcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 17:30:16 -0500
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org, dinguyen@altera.com,
-        baruch@tkos.co.il, tglx@linutronix.de
-Subject: [PATCH-3.12.y 2/2] clocksource: dw_apb_timer_of: Fix support for dts binding "snps,dw-apb-timer"
-Date: Thu, 19 Dec 2013 23:30:14 +0100
-Message-Id: <1387492214-27911-2-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1387492214-27911-1-git-send-email-daniel.lezcano@linaro.org>
-References: <1387492214-27911-1-git-send-email-daniel.lezcano@linaro.org>
+	Thu, 19 Dec 2013 17:32:20 -0500
+Date: Thu, 19 Dec 2013 14:32:23 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Stuart Yoder <stuart.yoder@freescale.com>,
+        Kim Phillips <kim.phillips@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>,
+        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Subject: Re: [REPOST][PATCH 1/2] driver core: Add new device_driver flag to
+ allow binding via sysfs only
+Message-ID: <20131219223223.GA2801@kroah.com>
+References: <20131203123446.42fbff34a8ebd7afd38159a5@linaro.org>
+ <20131219010729.GC23055@kroah.com>
+ <1387484531.3140.134.camel@snotra.buserror.net>
+ <20131219203401.GA11290@kroah.com>
+ <dd683e36cc334893b193f4d36a33238c@BY2PR03MB348.namprd03.prod.outlook.com>
+ <20131219214336.GA24629@kroah.com>
+ <1387491303.3140.156.camel@snotra.buserror.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387491303.3140.156.camel@snotra.buserror.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <dinguyen@altera.com>
+On Thu, Dec 19, 2013 at 04:15:03PM -0600, Scott Wood wrote:
+> On Thu, 2013-12-19 at 13:43 -0800, Greg Kroah-Hartman wrote:
+> > On Thu, Dec 19, 2013 at 09:06:21PM +0000, Stuart Yoder wrote:
+> > > 
+> > > 
+> > > > -----Original Message-----
+> > > > From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
+> > > > Sent: Thursday, December 19, 2013 2:34 PM
+> > > > To: Wood Scott-B07421
+> > > > Cc: Kim Phillips; linux-kernel@vger.kernel.org; kvm@vger.kernel.org;
+> > > > Bhushan Bharat-R65777; Yoder Stuart-B08248; christoffer.dall@linaro.org;
+> > > > alex.williamson@redhat.com; a.motakis@virtualopensystems.com;
+> > > > agraf@suse.de; Sethi Varun-B16395
+> > > > Subject: Re: [REPOST][PATCH 1/2] driver core: Add new device_driver flag
+> > > > to allow binding via sysfs only
+> > > > 
+> > > > No.  But you can use bind/unbind along with the existing new_id file to
+> > > > get what you want today.
+> > > 
+> > > Yes, but that only works for PCI.
+> > 
+> > No, not only PCI.
+> > 
+> > > There is no such concept for platform drivers.
+> > 
+> > Then fix that.
+> 
+> We've already explained why that would be bad.
 
-Upstream commit 9ab4727
+No you haven't, or if you have, my squirrel-brain doesn't remember it...
 
-In commit 620f5e1cbf (dts: Rename DW APB timer compatible strings), both
-"snps,dw-apb-timer-sp" and "snps,dw-apb-timer-osc" were deprecated in place
-of "snps,dw-apb-timer". But the driver also needs to be udpated in order to
-support this new binding "snps,dw-apb-timer".
+> > Or make your device not be a platform device, odds are that's the better
+> > solution in the end, right?
+> 
+> How would that solve anything?  We'd just be talking about there not
+> being such a mechanism for the device tree "bus" instead.
 
-Signed-off-by: Dinh Nguyen <dinguyen@altera.com>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
----
- drivers/clocksource/dw_apb_timer_of.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Nope, you could add it there, like PCI and other busses have.
 
-diff --git a/drivers/clocksource/dw_apb_timer_of.c b/drivers/clocksource/dw_apb_timer_of.c
-index 33fd4ff..b386be6 100644
---- a/drivers/clocksource/dw_apb_timer_of.c
-+++ b/drivers/clocksource/dw_apb_timer_of.c
-@@ -113,7 +113,6 @@ static u32 read_sched_clock(void)
- 
- static const struct of_device_id sptimer_ids[] __initconst = {
- 	{ .compatible = "picochip,pc3x2-rtc" },
--	{ .compatible = "snps,dw-apb-timer-sp" },
- 	{ /* Sentinel */ },
- };
- 
-@@ -153,4 +152,6 @@ static void __init dw_apb_timer_init(struct device_node *timer)
- 	num_called++;
- }
- CLOCKSOURCE_OF_DECLARE(pc3x2_timer, "picochip,pc3x2-timer", dw_apb_timer_init);
--CLOCKSOURCE_OF_DECLARE(apb_timer, "snps,dw-apb-timer-osc", dw_apb_timer_init);
-+CLOCKSOURCE_OF_DECLARE(apb_timer_osc, "snps,dw-apb-timer-osc", dw_apb_timer_init);
-+CLOCKSOURCE_OF_DECLARE(apb_timer_sp, "snps,dw-apb-timer-sp", dw_apb_timer_init);
-+CLOCKSOURCE_OF_DECLARE(apb_timer, "snps,dw-apb-timer", dw_apb_timer_init);
--- 
-1.7.9.5
+> > > > I don't like this patch as we are adding lots of special and odd logic
+> > > > to the core, for use by almost no one, which ensures that it will never
+> > > > get tested, and will probably get broken in some subtle way in the
+> > > > future.
+> > > 
+> > > It certainly will be used by users of vfio-platform.
+> > > 
+> > > Here is the problem-- the new platform device "match_any_dev" mechanism
+> > > in patch 2 of this series is not going to work without "sysfs_bind_only".
+> > > A platform driver that just sets "match_any_dev" will grab any or all 
+> > > platform devices during normal bus probing.
+> > 
+> > No it will not, it will fail in the probe function as it knows to not
+> > grab the device, just like any driver for other busses that say it can
+> > "handle all Intel PCI devices" and the like.
+> 
+> How will it "know not to grab the device"?  The knowledge of whether the
+> binding was explicitly requested or not does not get passed through to
+> the probe function.
 
+Nor should it, as a driver should not know, nor care about this.
+
+It's up to the BUS to handle this if it really wants to, and I'm afraid
+that I really am not convinced that the driver core needs to handle it
+either.
+
+But again, as you don't have anything that could actually use this code
+that is mergable, it's a totally moot point, sorry.
+
+greg k-h
