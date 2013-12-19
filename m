@@ -1,92 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587Ab3LSJTT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:19:19 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:32925 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab3LSJKF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:10:05 -0500
-Subject: [PATCH -tip v6 11/22] x86: Allow kprobes on text_poke/hw_breakpoint
-To: Ingo Molnar <mingo@kernel.org>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
-Date: Thu, 19 Dec 2013 09:04:21 +0000
-Message-ID: <20131219090421.14309.55455.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.16
+	id S1753552Ab3LSJTR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:19:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44897 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752037Ab3LSJKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 04:10:09 -0500
+Date: Thu, 19 Dec 2013 10:10:07 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/6] memcg, slab: cleanup barrier usage when accessing
+ memcg_caches
+Message-ID: <20131219091007.GC9331@dhcp22.suse.cz>
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
+ <bd0a7ffc57e4a0b0c3d456c0cf8801e829e14717.1387372122.git.vdavydov@parallels.com>
+ <20131218171411.GD31080@dhcp22.suse.cz>
+ <52B29427.9010909@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B29427.9010909@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow kprobes on text_poke/hw_breakpoint because
-those are not related to the critical int3-debug
-recursive path of kprobes at this moment.
+On Thu 19-12-13 10:37:27, Vladimir Davydov wrote:
+> On 12/18/2013 09:14 PM, Michal Hocko wrote:
+> > On Wed 18-12-13 17:16:54, Vladimir Davydov wrote:
+> >> First, in memcg_create_kmem_cache() we should issue the write barrier
+> >> after the kmem_cache is initialized, but before storing the pointer to
+> >> it in its parent's memcg_params.
+> >>
+> >> Second, we should always issue the read barrier after
+> >> cache_from_memcg_idx() to conform with the write barrier.
+> >>
+> >> Third, its better to use smp_* versions of barriers, because we don't
+> >> need them on UP systems.
+> > Please be (much) more verbose on Why. Barriers are tricky and should be
+> > documented accordingly. So if you say that we should issue a barrier
+> > always be specific why we should do it.
+> 
+> In short, we have kmem_cache::memcg_params::memcg_caches is an array of
+> pointers to per-memcg caches. We access it lock-free so we should use
+> memory barriers during initialization. Obviously we should place a write
+> barrier just before we set the pointer in order to make sure nobody will
+> see a partially initialized structure. Besides there must be a read
+> barrier between reading the pointer and accessing the structure, to
+> conform with the write barrier. It's all that similar to rcu_assign and
+> rcu_deref. Currently the barrier usage looks rather strange:
+> 
+> memcg_create_kmem_cache:
+>     initialize kmem
+>     set the pointer in memcg_caches
+>     wmb() // ???
+> 
+> __memcg_kmem_get_cache:
+>     <...>
+>     read_barrier_depends() // ???
+>     cachep = root_cache->memcg_params->memcg_caches[memcg_id]
+>     <...>
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
----
- arch/x86/kernel/alternative.c   |    3 +--
- arch/x86/kernel/hw_breakpoint.c |    5 ++---
- 2 files changed, 3 insertions(+), 5 deletions(-)
+Why do we need explicit memory barriers when we can use RCU?
+__memcg_kmem_get_cache already dereferences within rcu_read_lock.
 
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index df94598..703130f 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -5,7 +5,6 @@
- #include <linux/mutex.h>
- #include <linux/list.h>
- #include <linux/stringify.h>
--#include <linux/kprobes.h>
- #include <linux/mm.h>
- #include <linux/vmalloc.h>
- #include <linux/memory.h>
-@@ -551,7 +550,7 @@ void *__init_or_module text_poke_early(void *addr, const void *opcode,
-  *
-  * Note: Must be called under text_mutex.
-  */
--void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
-+void *text_poke(void *addr, const void *opcode, size_t len)
- {
- 	unsigned long flags;
- 	char *vaddr;
-diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
-index f66ff16..312497c 100644
---- a/arch/x86/kernel/hw_breakpoint.c
-+++ b/arch/x86/kernel/hw_breakpoint.c
-@@ -32,7 +32,6 @@
- #include <linux/irqflags.h>
- #include <linux/notifier.h>
- #include <linux/kallsyms.h>
--#include <linux/kprobes.h>
- #include <linux/percpu.h>
- #include <linux/kdebug.h>
- #include <linux/kernel.h>
-@@ -425,7 +424,7 @@ EXPORT_SYMBOL_GPL(hw_breakpoint_restore);
-  * NOTIFY_STOP returned for all other cases
-  *
-  */
--static int __kprobes hw_breakpoint_handler(struct die_args *args)
-+static int hw_breakpoint_handler(struct die_args *args)
- {
- 	int i, cpu, rc = NOTIFY_STOP;
- 	struct perf_event *bp;
-@@ -512,7 +511,7 @@ static int __kprobes hw_breakpoint_handler(struct die_args *args)
- /*
-  * Handle debug exception notifications.
-  */
--int __kprobes hw_breakpoint_exceptions_notify(
-+int hw_breakpoint_exceptions_notify(
- 		struct notifier_block *unused, unsigned long val, void *data)
- {
- 	if (val != DIE_DEBUG)
+Btw. cache_from_memcg_idx is desperately asking for a comment about
+required locking.
 
+> Nothing prevents some archs from moving initialization after setting the
+> pointer, or reading data before reading the pointer to it.
+> 
+> Of course, I will include a detailed description in the next version of
+> this patch.
+> 
+> Thanks.
+> 
+> >> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> >> Cc: Michal Hocko <mhocko@suse.cz>
+> >> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> >> Cc: Glauber Costa <glommer@gmail.com>
+> >> Cc: Christoph Lameter <cl@linux.com>
+> >> Cc: Pekka Enberg <penberg@kernel.org>
+> >> Cc: Andrew Morton <akpm@linux-foundation.org>
+> >> ---
+> >>  mm/memcontrol.c |   24 ++++++++++--------------
+> >>  mm/slab.h       |    6 +++++-
+> >>  2 files changed, 15 insertions(+), 15 deletions(-)
+> >>
+> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> >> index e6ad6ff..e37fdb5 100644
+> >> --- a/mm/memcontrol.c
+> >> +++ b/mm/memcontrol.c
+> >> @@ -3429,12 +3429,14 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+> >>  
+> >>  	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
+> >>  
+> >> -	cachep->memcg_params->memcg_caches[idx] = new_cachep;
+> >>  	/*
+> >> -	 * the readers won't lock, make sure everybody sees the updated value,
+> >> -	 * so they won't put stuff in the queue again for no reason
+> >> +	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
+> >> +	 * barrier here to ensure nobody will see the kmem_cache partially
+> >> +	 * initialized.
+> >>  	 */
+> >> -	wmb();
+> >> +	smp_wmb();
+> >> +
+> >> +	cachep->memcg_params->memcg_caches[idx] = new_cachep;
+> >>  out:
+> >>  	mutex_unlock(&memcg_cache_mutex);
+> >>  	return new_cachep;
+> >> @@ -3573,7 +3575,7 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
+> >>  					  gfp_t gfp)
+> >>  {
+> >>  	struct mem_cgroup *memcg;
+> >> -	int idx;
+> >> +	struct kmem_cache *memcg_cachep;
+> >>  
+> >>  	VM_BUG_ON(!cachep->memcg_params);
+> >>  	VM_BUG_ON(!cachep->memcg_params->is_root_cache);
+> >> @@ -3587,15 +3589,9 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
+> >>  	if (!memcg_can_account_kmem(memcg))
+> >>  		goto out;
+> >>  
+> >> -	idx = memcg_cache_id(memcg);
+> >> -
+> >> -	/*
+> >> -	 * barrier to mare sure we're always seeing the up to date value.  The
+> >> -	 * code updating memcg_caches will issue a write barrier to match this.
+> >> -	 */
+> >> -	read_barrier_depends();
+> >> -	if (likely(cache_from_memcg_idx(cachep, idx))) {
+> >> -		cachep = cache_from_memcg_idx(cachep, idx);
+> >> +	memcg_cachep = cache_from_memcg_idx(cachep, memcg_cache_id(memcg));
+> >> +	if (likely(memcg_cachep)) {
+> >> +		cachep = memcg_cachep;
+> >>  		goto out;
+> >>  	}
+> >>  
+> >> diff --git a/mm/slab.h b/mm/slab.h
+> >> index 0859c42..1d8b53f 100644
+> >> --- a/mm/slab.h
+> >> +++ b/mm/slab.h
+> >> @@ -163,9 +163,13 @@ static inline const char *cache_name(struct kmem_cache *s)
+> >>  static inline struct kmem_cache *
+> >>  cache_from_memcg_idx(struct kmem_cache *s, int idx)
+> >>  {
+> >> +	struct kmem_cache *cachep;
+> >> +
+> >>  	if (!s->memcg_params)
+> >>  		return NULL;
+> >> -	return s->memcg_params->memcg_caches[idx];
+> >> +	cachep = s->memcg_params->memcg_caches[idx];
+> >> +	smp_read_barrier_depends();	/* see memcg_register_cache() */
+> >> +	return cachep;
+> >>  }
+> >>  
+> >>  static inline struct kmem_cache *memcg_root_cache(struct kmem_cache *s)
+> >> -- 
+> >> 1.7.10.4
+> >>
+> 
 
+-- 
+Michal Hocko
+SUSE Labs
