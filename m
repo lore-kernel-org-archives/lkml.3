@@ -1,228 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab3LSN2O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:28:14 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:34783 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926Ab3LSN2M (ORCPT
+	id S1756743Ab3LSM50 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:57:26 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:12514 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756646Ab3LSM5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:28:12 -0500
-Date: Thu, 19 Dec 2013 10:28:06 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 2/6] perf tools: Introduce struct perf_log
-Message-ID: <20131219132806.GJ4819@ghostprotocols.net>
-References: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
- <1387436411-20160-3-git-send-email-namhyung@kernel.org>
+	Thu, 19 Dec 2013 07:57:23 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 19 Dec 2013 04:58:38 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <anton@enomsg.org>, <dwmw2@infradead.org>
+CC: <mark.rutland@arm.com>, <rob@landley.net>, <ijc+devicetree@hellion.org.uk>,
+        <swarren@nvidia.com>, <lee.jones@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 2/2] power: reset: as3722: add power-off driver
+Date: Thu, 19 Dec 2013 18:27:01 +0530
+Message-ID: <1387457821-12509-2-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387457821-12509-1-git-send-email-ldewangan@nvidia.com>
+References: <1387457821-12509-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387436411-20160-3-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Dec 19, 2013 at 04:00:07PM +0900, Namhyung Kim escreveu:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Add new functions to save error messages in a temp file.  It'll be
-> used by some UI front-ends to see the messages.
+ams AS3722 supports the power off functionality to turn off
+system.
 
-Do we really have to grow a logging facility like this? Can't we somehow
-openlog/syslog/closelog? Just a first gut reaction, continuing to read
-the series...
+Add power off driver for ams AS3722.
 
-- Arnaldo
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/power/reset/Kconfig           |    6 +++
+ drivers/power/reset/Makefile          |    1 +
+ drivers/power/reset/as3722-poweroff.c |   96 +++++++++++++++++++++++++++++++++
+ 3 files changed, 103 insertions(+)
+ create mode 100644 drivers/power/reset/as3722-poweroff.c
+
+diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+index 9b3ea53..6d452a7 100644
+--- a/drivers/power/reset/Kconfig
++++ b/drivers/power/reset/Kconfig
+@@ -6,6 +6,12 @@ menuconfig POWER_RESET
  
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/Makefile.perf |   1 +
->  tools/perf/perf.c        |   3 ++
->  tools/perf/util/debug.h  |  15 +++++++
->  tools/perf/util/log.c    | 105 +++++++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 124 insertions(+)
->  create mode 100644 tools/perf/util/log.c
-> 
-> diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-> index 97a2145e4cc6..ec8184014a76 100644
-> --- a/tools/perf/Makefile.perf
-> +++ b/tools/perf/Makefile.perf
-> @@ -372,6 +372,7 @@ LIB_OBJS += $(OUTPUT)util/stat.o
->  LIB_OBJS += $(OUTPUT)util/record.o
->  LIB_OBJS += $(OUTPUT)util/srcline.o
->  LIB_OBJS += $(OUTPUT)util/data.o
-> +LIB_OBJS += $(OUTPUT)util/log.o
->  
->  LIB_OBJS += $(OUTPUT)ui/setup.o
->  LIB_OBJS += $(OUTPUT)ui/helpline.o
-> diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-> index 431798a4110d..bdf7bd8e4394 100644
-> --- a/tools/perf/perf.c
-> +++ b/tools/perf/perf.c
-> @@ -10,6 +10,7 @@
->  
->  #include "util/exec_cmd.h"
->  #include "util/cache.h"
-> +#include "util/debug.h"
->  #include "util/quote.h"
->  #include "util/run-command.h"
->  #include "util/parse-events.h"
-> @@ -524,6 +525,7 @@ int main(int argc, const char **argv)
->  	 */
->  	pthread__block_sigwinch();
->  
-> +	perf_log_init();
->  	while (1) {
->  		static int done_help;
->  		int was_alias = run_argv(&argc, &argv);
-> @@ -543,6 +545,7 @@ int main(int argc, const char **argv)
->  		} else
->  			break;
->  	}
-> +	perf_log_exit();
->  
->  	fprintf(stderr, "Failed to run command '%s': %s\n",
->  		cmd, strerror(errno));
-> diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
-> index 443694c36b03..ea160abc2ae0 100644
-> --- a/tools/perf/util/debug.h
-> +++ b/tools/perf/util/debug.h
-> @@ -19,4 +19,19 @@ int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
->  
->  void pr_stat(const char *fmt, ...);
->  
-> +struct perf_log {
-> +	FILE *fp;
-> +	off_t *linemap;
-> +	u32 lines;
-> +	u32 nr_alloc;
-> +	bool seen_newline;
-> +};
-> +
-> +extern struct perf_log perf_log;
-> +
-> +int perf_log_init(void);
-> +int perf_log_exit(void);
-> +void perf_log_add(const char *msg);
-> +void perf_log_addv(const char *fmt, va_list ap);
-> +
->  #endif	/* __PERF_DEBUG_H */
-> diff --git a/tools/perf/util/log.c b/tools/perf/util/log.c
-> new file mode 100644
-> index 000000000000..4a34bed2af44
-> --- /dev/null
-> +++ b/tools/perf/util/log.c
-> @@ -0,0 +1,105 @@
-> +#include <stdio.h>
-> +#include <stdlib.h>
-> +#include "util/debug.h"
-> +
-> +#define LINEMAP_GROW  128
-> +
-> +struct perf_log perf_log = {
-> +	.seen_newline = true,
-> +};
-> +
-> +int perf_log_init(void)
-> +{
-> +	FILE *fp;
-> +	char name[] = "/tmp/perf-tui-log-XXXXXX";
-> +	int fd = mkstemp(name);
-> +
-> +	if (fd < 0)
-> +		return -1;
-> +
-> +	fp = fdopen(fd, "r+");
-> +	if (fp == NULL) {
-> +		close(fd);
-> +		return -1;
-> +	}
-> +
-> +	perf_log.fp = fp;
-> +
-> +	return 0;
-> +}
-> +
-> +int perf_log_exit(void)
-> +{
-> +	FILE *fp = perf_log.fp;
-> +	if (fp)
-> +		fclose(fp);
-> +
-> +	free(perf_log.linemap);
-> +
-> +	perf_log.fp = NULL;
-> +	perf_log.linemap = NULL;
-> +	return 0;
-> +}
-> +
-> +static int grow_linemap(struct perf_log *log)
-> +{
-> +	off_t *newmap;
-> +	int newsize = log->nr_alloc + LINEMAP_GROW;
-> +
-> +	newmap = realloc(log->linemap, newsize * sizeof(*log->linemap));
-> +	if (newmap == NULL)
-> +		return -1;
-> +
-> +	log->nr_alloc = newsize;
-> +	log->linemap = newmap;
-> +	return 0;
-> +}
-> +
-> +static int __add_to_linemap(struct perf_log *log, off_t index)
-> +{
-> +	if (log->lines == log->nr_alloc)
-> +		if (grow_linemap(log) < 0)
-> +			return -1;
-> +
-> +	log->linemap[log->lines++] = index;
-> +	return 0;
-> +}
-> +
-> +static void add_to_linemap(struct perf_log *log, const char *msg, off_t base)
-> +{
-> +	const char *pos;
-> +
-> +	if (strlen(msg) == 0)
-> +		return;
-> +
-> +	if (log->seen_newline) {
-> +		if (__add_to_linemap(log, base) < 0)
-> +			return;
-> +	}
-> +
-> +	if ((pos = strchr(msg, '\n')) != NULL) {
-> +		log->seen_newline = true;
-> +		pos++;
-> +		add_to_linemap(log, pos, base + (pos - msg));
-> +	} else {
-> +		log->seen_newline = false;
-> +	}
-> +}
-> +
-> +void perf_log_add(const char *msg)
-> +{
-> +	FILE *fp = perf_log.fp;
-> +	off_t offset = ftello(fp);
-> +
-> +	add_to_linemap(&perf_log, msg, offset);
-> +
-> +	fwrite(msg, 1, strlen(msg), fp);
-> +}
-> +
-> +void perf_log_addv(const char *fmt, va_list ap)
-> +{
-> +	char buf[4096];
-> +
-> +	vsnprintf(buf, sizeof(buf), fmt, ap);
-> +	perf_log_add(buf);
-> +}
-> -- 
-> 1.7.11.7
+ 	  Say Y here to enable board reset and power off
+ 
++config POWER_RESET_AS3722
++	bool "ams AS3722 power-off driver"
++	depends on MFD_AS3722 && POWER_RESET
++	help
++	  This driver supports turning off board via a ams AS3722 power-off.
++
+ config POWER_RESET_GPIO
+ 	bool "GPIO power-off driver"
+ 	depends on OF_GPIO && POWER_RESET
+diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
+index 3e6ed88..a5b4a77 100644
+--- a/drivers/power/reset/Makefile
++++ b/drivers/power/reset/Makefile
+@@ -1,3 +1,4 @@
++obj-$(CONFIG_POWER_RESET_AS3722) += as3722-poweroff.o
+ obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
+ obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
+ obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
+diff --git a/drivers/power/reset/as3722-poweroff.c b/drivers/power/reset/as3722-poweroff.c
+new file mode 100644
+index 0000000..6849711
+--- /dev/null
++++ b/drivers/power/reset/as3722-poweroff.c
+@@ -0,0 +1,96 @@
++/*
++ * Power off driver for ams AS3722 device.
++ *
++ * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * Author: Laxman Dewangan <ldewangan@nvidia.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ */
++
++#include <linux/mfd/as3722.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++
++struct as3722_poweroff {
++	struct device *dev;
++	struct as3722 *as3722;
++};
++
++static struct as3722_poweroff *as3722_pm_poweroff;
++
++static void as3722_pm_power_off(void)
++{
++	int ret;
++
++	if (!as3722_pm_poweroff) {
++		pr_err("AS3722 poweroff is not initialised\n");
++		return;
++	}
++
++	ret = as3722_update_bits(as3722_pm_poweroff->as3722,
++		AS3722_RESET_CONTROL_REG, AS3722_POWER_OFF, AS3722_POWER_OFF);
++	if (ret < 0)
++		dev_err(as3722_pm_poweroff->dev,
++			"RESET_CONTROL_REG update failed, %d\n", ret);
++}
++
++static int as3722_poweroff_probe(struct platform_device *pdev)
++{
++	struct as3722_poweroff *as3722_poweroff;
++	struct device_node *np = pdev->dev.parent->of_node;
++
++	if (!np)
++		return -EINVAL;
++
++	if (!of_property_read_bool(np, "ams,system-power-controller"))
++		return 0;
++
++	as3722_poweroff = devm_kzalloc(&pdev->dev, sizeof(*as3722_poweroff),
++				GFP_KERNEL);
++	if (!as3722_poweroff)
++		return -ENOMEM;
++
++	as3722_poweroff->as3722 = dev_get_drvdata(pdev->dev.parent);
++	as3722_poweroff->dev = &pdev->dev;
++	as3722_pm_poweroff = as3722_poweroff;
++	if (!pm_power_off)
++		pm_power_off = as3722_pm_power_off;
++
++	return 0;
++}
++
++static int as3722_poweroff_remove(struct platform_device *pdev)
++{
++	if (pm_power_off == as3722_pm_power_off)
++		pm_power_off = NULL;
++	as3722_pm_poweroff = NULL;
++
++	return 0;
++}
++
++static struct platform_driver as3722_poweroff_driver = {
++	.driver = {
++		.name = "as3722-power-off",
++		.owner = THIS_MODULE,
++	},
++	.probe = as3722_poweroff_probe,
++	.remove = as3722_poweroff_remove,
++};
++
++module_platform_driver(as3722_poweroff_driver);
++
++MODULE_DESCRIPTION("Power off driver for ams AS3722 PMIC Device");
++MODULE_ALIAS("platform:as3722-power-off");
++MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.9.5
+
