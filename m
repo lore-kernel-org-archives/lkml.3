@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab3LSMHZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:07:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45344 "EHLO
+	id S1756471Ab3LSME5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:04:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45371 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756002Ab3LSL7u (ORCPT
+	with ESMTP id S1756119Ab3LSMAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:50 -0500
+	Thu, 19 Dec 2013 07:00:01 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jean Delvare <khali@linux-fr.org>,
+Cc: Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 189/208] hwmon: (w83l768ng) Fix fan speed control range
-Date: Thu, 19 Dec 2013 11:54:47 +0000
-Message-Id: <1387454106-19326-190-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 194/208] KVM: Improve create VCPU parameter (CVE-2013-4587)
+Date: Thu, 19 Dec 2013 11:54:52 +0000
+Message-Id: <1387454106-19326-195-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,52 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Andy Honig <ahonig@google.com>
 
-commit 33a7ab91d509fa33b4bcd3ce0038cc80298050da upstream.
+commit 338c7dbadd2671189cec7faf64c84d01071b3f96 upstream.
 
-The W83L786NG stores the fan speed on 4 bits while the sysfs interface
-uses a 0-255 range. Thus the driver should scale the user input down
-to map it to the device range, and scale up the value read from the
-device before presenting it to the user. The reserved register nibble
-should be left unchanged.
+In multiple functions the vcpu_id is used as an offset into a bitfield.  Ag
+malicious user could specify a vcpu_id greater than 255 in order to set or
+clear bits in kernel memory.  This could be used to elevate priveges in the
+kernel.  This patch verifies that the vcpu_id provided is less than 255.
+The api documentation already specifies that the vcpu_id must be less than
+max_vcpus, but this is currently not checked.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Reported-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hwmon/w83l786ng.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ virt/kvm/kvm_main.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/hwmon/w83l786ng.c b/drivers/hwmon/w83l786ng.c
-index f190219..6ed76ce 100644
---- a/drivers/hwmon/w83l786ng.c
-+++ b/drivers/hwmon/w83l786ng.c
-@@ -481,9 +481,11 @@ store_pwm(struct device *dev, struct device_attribute *attr,
- 	if (err)
- 		return err;
- 	val = clamp_val(val, 0, 255);
-+	val = DIV_ROUND_CLOSEST(val, 0x11);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 1580dd4..a80076c 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1904,6 +1904,9 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
+ 	int r;
+ 	struct kvm_vcpu *vcpu, *v;
  
- 	mutex_lock(&data->update_lock);
--	data->pwm[nr] = val;
-+	data->pwm[nr] = val * 0x11;
-+	val |= w83l786ng_read_value(client, W83L786NG_REG_PWM[nr]) & 0xf0;
- 	w83l786ng_write_value(client, W83L786NG_REG_PWM[nr], val);
- 	mutex_unlock(&data->update_lock);
- 	return count;
-@@ -777,8 +779,9 @@ static struct w83l786ng_data *w83l786ng_update_device(struct device *dev)
- 			    ? 0 : 1;
- 			data->pwm_enable[i] =
- 			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 3) + 1;
--			data->pwm[i] = w83l786ng_read_value(client,
--			    W83L786NG_REG_PWM[i]);
-+			data->pwm[i] =
-+			    (w83l786ng_read_value(client, W83L786NG_REG_PWM[i])
-+			     & 0x0f) * 0x11;
- 		}
- 
- 
++	if (id >= KVM_MAX_VCPUS)
++		return -EINVAL;
++
+ 	vcpu = kvm_arch_vcpu_create(kvm, id);
+ 	if (IS_ERR(vcpu))
+ 		return PTR_ERR(vcpu);
 -- 
 1.8.3.2
 
