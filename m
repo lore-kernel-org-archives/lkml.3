@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757040Ab3LSNBx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:01:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44575 "EHLO
+	id S1756415Ab3LSMRQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:17:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45182 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754209Ab3LSL4Q (ORCPT
+	with ESMTP id S1755721Ab3LSL7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:16 -0500
+	Thu, 19 Dec 2013 06:59:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pavel Emelyanov <xemul@parallels.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, Andrey Vagin <avagin@openvz.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 031/208] tcp: don't update snd_nxt, when a socket is switched from repair mode
-Date: Thu, 19 Dec 2013 11:52:09 +0000
-Message-Id: <1387454106-19326-32-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 156/208] drm/radeon/atom: fix bus probes when hw_i2c is set (v2)
+Date: Thu, 19 Dec 2013 11:54:14 +0000
+Message-Id: <1387454106-19326-157-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -32,91 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit dbde497966804e63a38fdedc1e3815e77097efc2 upstream.
+commit ffd3d3361d583cb73fa65a5fed3a196ba6f261bb upstream.
 
-snd_nxt must be updated synchronously with sk_send_head.  Otherwise
-tp->packets_out may be updated incorrectly, what may bring a kernel panic.
+When probing the bus, we need to set the byte count
+to 0 rather than 1.
 
-Here is a kernel panic from my host.
-[  103.043194] BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
-[  103.044025] IP: [<ffffffff815aaaaf>] tcp_rearm_rto+0xcf/0x150
-...
-[  146.301158] Call Trace:
-[  146.301158]  [<ffffffff815ab7f0>] tcp_ack+0xcc0/0x12c0
+v2: Don't count the first byte.
 
-Before this panic a tcp socket was restored. This socket had sent and
-unsent data in the write queue. Sent data was restored in repair mode,
-then the socket was switched from reapair mode and unsent data was
-restored. After that the socket was switched back into repair mode.
+bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=66241
 
-In that moment we had a socket where write queue looks like this:
-snd_una    snd_nxt   write_seq
-   |_________|________|
-             |
-	  sk_send_head
-
-After a second switching from repair mode the state of socket was
-changed:
-
-snd_una          snd_nxt, write_seq
-   |_________ ________|
-             |
-	  sk_send_head
-
-This state is inconsistent, because snd_nxt and sk_send_head are not
-synchronized.
-
-Bellow you can find a call trace, how packets_out can be incremented
-twice for one skb, if snd_nxt and sk_send_head are not synchronized.
-In this case packets_out will be always positive, even when
-sk_write_queue is empty.
-
-tcp_write_wakeup
-	skb = tcp_send_head(sk);
-	tcp_fragment
-		if (!before(tp->snd_nxt, TCP_SKB_CB(buff)->end_seq))
-			tcp_adjust_pcount(sk, skb, diff);
-	tcp_event_new_data_sent
-		tp->packets_out += tcp_skb_pcount(skb);
-
-I think update of snd_nxt isn't required, when a socket is switched from
-repair mode.  Because it's initialized in tcp_connect_init. Then when a
-write queue is restored, snd_nxt is incremented in tcp_event_new_data_sent,
-so it's always is in consistent state.
-
-I have checked, that the bug is not reproduced with this patch and
-all tests about restoring tcp connections work fine.
-
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/tcp_output.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_i2c.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index d673814..d26060b 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -3108,7 +3108,6 @@ void tcp_send_window_probe(struct sock *sk)
- {
- 	if (sk->sk_state == TCP_ESTABLISHED) {
- 		tcp_sk(sk)->snd_wl1 = tcp_sk(sk)->rcv_nxt - 1;
--		tcp_sk(sk)->snd_nxt = tcp_sk(sk)->write_seq;
- 		tcp_xmit_probe_skb(sk, 0);
- 	}
- }
+diff --git a/drivers/gpu/drm/radeon/atombios_i2c.c b/drivers/gpu/drm/radeon/atombios_i2c.c
+index 0652ee0..f685035dbe 100644
+--- a/drivers/gpu/drm/radeon/atombios_i2c.c
++++ b/drivers/gpu/drm/radeon/atombios_i2c.c
+@@ -44,7 +44,7 @@ static int radeon_process_i2c_ch(struct radeon_i2c_chan *chan,
+ 	PROCESS_I2C_CHANNEL_TRANSACTION_PS_ALLOCATION args;
+ 	int index = GetIndexIntoMasterTable(COMMAND, ProcessI2cChannelTransaction);
+ 	unsigned char *base;
+-	u16 out;
++	u16 out = cpu_to_le16(0);
+ 
+ 	memset(&args, 0, sizeof(args));
+ 
+@@ -55,11 +55,14 @@ static int radeon_process_i2c_ch(struct radeon_i2c_chan *chan,
+ 			DRM_ERROR("hw i2c: tried to write too many bytes (%d vs 3)\n", num);
+ 			return -EINVAL;
+ 		}
+-		args.ucRegIndex = buf[0];
+-		if (num > 1) {
++		if (buf == NULL)
++			args.ucRegIndex = 0;
++		else
++			args.ucRegIndex = buf[0];
++		if (num)
+ 			num--;
++		if (num)
+ 			memcpy(&out, &buf[1], num);
+-		}
+ 		args.lpI2CDataOut = cpu_to_le16(out);
+ 	} else {
+ 		if (num > ATOM_MAX_HW_I2C_READ) {
+@@ -96,14 +99,14 @@ int radeon_atom_hw_i2c_xfer(struct i2c_adapter *i2c_adap,
+ 	struct radeon_i2c_chan *i2c = i2c_get_adapdata(i2c_adap);
+ 	struct i2c_msg *p;
+ 	int i, remaining, current_count, buffer_offset, max_bytes, ret;
+-	u8 buf = 0, flags;
++	u8 flags;
+ 
+ 	/* check for bus probe */
+ 	p = &msgs[0];
+ 	if ((num == 1) && (p->len == 0)) {
+ 		ret = radeon_process_i2c_ch(i2c,
+ 					    p->addr, HW_I2C_WRITE,
+-					    &buf, 1);
++					    NULL, 0);
+ 		if (ret)
+ 			return ret;
+ 		else
 -- 
 1.8.3.2
 
