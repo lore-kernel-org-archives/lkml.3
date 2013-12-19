@@ -1,168 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab3LSOZn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:25:43 -0500
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:56292 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754920Ab3LSOZe (ORCPT
+	id S1754493Ab3LSOVE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:21:04 -0500
+Received: from smtp03.stone-is.org ([87.238.162.66]:41170 "EHLO
+	smtpgw.stone-is.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753435Ab3LSOVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:25:34 -0500
-Date: Thu, 19 Dec 2013 15:24:02 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kumar Gala <galak@kernel.crashing.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        Alexey Lugovskoy <lugovskoy@dev.rtsoft.ru>,
-        Dmitry Krivoschekov <dkrivoschokov@dev.rtsoft.ru>
-Subject: Re: commit e38c0a1f breaks powerpc boards with uli1575 chip
-Message-ID: <20131219142400.GA13878@ulmo.nvidia.com>
-References: <201312171135.38576@blacky.localdomain>
- <52B1EC15.5070606@gmail.com>
+	Thu, 19 Dec 2013 09:21:01 -0500
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+Message-ID: <52B300C7.7090808@acm.org>
+Date: Thu, 19 Dec 2013 15:20:55 +0100
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
-Content-Disposition: inline
-In-Reply-To: <52B1EC15.5070606@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Greg KH <greg@kroah.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: netfilter: active obj WARN when cleaning up
+References: <20131127233415.GB19270@kroah.com> <00000142b4282aaf-913f5e4c-314c-4351-9d24-615e66928157-000000@email.amazonses.com> <20131202164039.GA19937@kroah.com> <00000142b4514eb5-2e8f675d-0ecc-423b-9906-58c5f383089b-000000@email.amazonses.com> <20131202172615.GA4722@kroah.com> <00000142b4aeca89-186fc179-92b8-492f-956c-38a7c196d187-000000@email.amazonses.com> <20131202190814.GA2267@kroah.com> <00000142b4d4360c-5755af87-b9b0-4847-b5fa-7a9dd13b49c5-000000@email.amazonses.com> <20131202212235.GA1297@kroah.com> <00000142b54f6694-c51e81b1-f1a2-483b-a1ce-a2d4cb6b155c-000000@email.amazonses.com> <20131202222208.GB13034@kroah.com> <00000142b90da700-19f6b465-ff15-4b2b-9bcd-b91d71958b7f-000000@email.amazonses.com> <52B0ABB6.8090205@oracle.com> <52B2E2B9.1040706@acm.org>
+In-Reply-To: <52B2E2B9.1040706@acm.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/19/13 13:12, Bart Van Assche wrote:
+> On 12/17/13 20:53, Sasha Levin wrote:
+>> I'm still seeing warnings with this patch applied:
+>>
+>> [   24.900482] WARNING: CPU: 12 PID: 3654 at lib/debugobjects.c:260
+>> debug_print_object+0x8d/0xb0()
+>> [   24.900482] ODEBUG: free active (active state 0) object type:
+>> timer_list hint: delayed_work_timer_fn+0x0/0x20
+>> [   24.900482] Modules linked in:
+>> [   24.900482] CPU: 12 PID: 3654 Comm: kworker/12:1 Tainted: G       
+>> W    3.13.0-rc4-n
+>> ext-20131217-sasha-00013-ga878504-dirty #4149
+>> [   24.900482] Workqueue: events kobject_delayed_cleanup
+>> [   24.900482]  0000000000000104 ffff8804f429bae8 ffffffff8439501c
+>> ffffffff8555a92c
+>> [   24.900482]  ffff8804f429bb38 ffff8804f429bb28 ffffffff8112f8ac
+>> ffff8804f429bb58
+>> [   24.900482]  ffffffff856a9413 ffff880826333530 ffffffff85c68c40
+>> ffffffff8801bb58
+>> [   24.900482] Call Trace:
+>> [   24.900482]  [<ffffffff8439501c>] dump_stack+0x52/0x7f
+>> [   24.900482]  [<ffffffff8112f8ac>] warn_slowpath_common+0x8c/0xc0
+>> [   24.900482]  [<ffffffff8112f996>] warn_slowpath_fmt+0x46/0x50
+>> [   24.900482]  [<ffffffff81adb50d>] debug_print_object+0x8d/0xb0
+>> [   24.900482]  [<ffffffff81153090>] ? __queue_work+0x3f0/0x3f0
+>> [   24.900482]  [<ffffffff81adbd15>] __debug_check_no_obj_freed+0xa5/0x220
+>> [   24.900482]  [<ffffffff832b1acb>] ? rtc_device_release+0x2b/0x40
+>> [   24.900482]  [<ffffffff832b1acb>] ? rtc_device_release+0x2b/0x40
+>> [   24.900482]  [<ffffffff81adbea5>] debug_check_no_obj_freed+0x15/0x20
+>> [   24.900482]  [<ffffffff812ad54f>] kfree+0x21f/0x2e0
+>> [   24.900482]  [<ffffffff832b1acb>] rtc_device_release+0x2b/0x40
+>> [   24.900482]  [<ffffffff8207efd5>] device_release+0x65/0xc0
+>> [   24.900482]  [<ffffffff81ab05e5>] kobject_cleanup+0x145/0x190
+>> [   24.900482]  [<ffffffff81ab063d>] kobject_delayed_cleanup+0xd/0x10
+>> [   24.900482]  [<ffffffff81153a60>] process_one_work+0x320/0x530
+>> [   24.900482]  [<ffffffff81153940>] ? process_one_work+0x200/0x530
+>> [   24.900482]  [<ffffffff81155fe5>] worker_thread+0x215/0x350
+>> [   24.900482]  [<ffffffff81155dd0>] ? manage_workers+0x180/0x180
+>> [   24.900482]  [<ffffffff8115c9c5>] kthread+0x105/0x110
+>> [   24.900482]  [<ffffffff8115c8c0>] ? set_kthreadd_affinity+0x30/0x30
+>> [   24.900482]  [<ffffffff843a5e7c>] ret_from_fork+0x7c/0xb0
+>> [   24.900482]  [<ffffffff8115c8c0>] ? set_kthreadd_affinity+0x30/0x30
+>> [   24.900482] ---[ end trace 45529ebf79b2573e ]---
+> 
+> Can anyone tell me whether the patch below makes sense ?
+> 
+> [ ... ]
 
---vtzGhvizbBRQ85DL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(replying to my own e-mail)
 
-On Wed, Dec 18, 2013 at 12:40:21PM -0600, Rob Herring wrote:
-> [fixed DT maillist address]
->=20
-> On 12/17/2013 01:35 AM, Nikita Yushchenko wrote:
-> > Hi
-> >=20
-> > While trying to make freescale p2020ds and  mpc8572ds boards working wi=
-th mainline kernel, I faced that commit=20
-> > e38c0a1f (Handle #address-cells > 2 specially) breaks things with these=
- boards.
->=20
-> Good to see this broke in v3.7 and is just now found...
->=20
-> >=20
-> > Both these boards have uli1575 chip.
-> > Corresponding part in device tree is something like
-> >=20
-> >                 uli1575@0 {
-> >                         reg =3D <0x0 0x0 0x0 0x0 0x0>;
-> >                         #size-cells =3D <2>;
-> >                         #address-cells =3D <3>;
-> >                         ranges =3D <0x2000000 0x0 0x80000000
-> >                                   0x2000000 0x0 0x80000000
-> >                                   0x0 0x20000000
-> >=20
-> >                                   0x1000000 0x0 0x0
-> >                                   0x1000000 0x0 0x0
-> >                                   0x0 0x10000>;
-> >                         isa@1e {
-> > ...
-> >=20
-> > I.e. it has #address-cells =3D <3>
-> >=20
-> >=20
-> > With commit e38c0a1f reverted, devices under uli1575 are registered cor=
-rectly, e.g. for rtc
-> >=20
-> > OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rt=
-c@70 **
-> > OF: bus is isa (na=3D2, ns=3D1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@=
-1e
-> > OF: translating address: 00000001 00000070
-> > OF: parent bus is default (na=3D3, ns=3D2) on /pcie@ffe09000/pcie@0/uli=
-1575@0
-> > OF: walking ranges...
-> > OF: ISA map, cp=3D0, s=3D1000, da=3D70
-> > OF: parent translation for: 01000000 00000000 00000000
-> > OF: with offset: 70
-> > OF: one level translation: 00000000 00000000 00000070
-> > OF: parent bus is pci (na=3D3, ns=3D2) on /pcie@ffe09000/pcie@0
-> > OF: walking ranges...
-> > OF: default map, cp=3Da0000000, s=3D20000000, da=3D70
-> > OF: default map, cp=3D0, s=3D10000, da=3D70
-> > OF: parent translation for: 01000000 00000000 00000000
-> > OF: with offset: 70
-> > OF: one level translation: 01000000 00000000 00000070
-> > OF: parent bus is pci (na=3D3, ns=3D2) on /pcie@ffe09000
-> > OF: walking ranges...
-> > OF: PCI map, cp=3D0, s=3D10000, da=3D70
-> > OF: parent translation for: 01000000 00000000 00000000
-> > OF: with offset: 70
-> > OF: one level translation: 01000000 00000000 00000070
-> > OF: parent bus is default (na=3D2, ns=3D2) on /
-> > OF: walking ranges...
-> > OF: PCI map, cp=3D0, s=3D10000, da=3D70
-> > OF: parent translation for: 00000000 ffc10000
-> > OF: with offset: 70
-> > OF: one level translation: 00000000 ffc10070
-> > OF: reached root node
-> >=20
-> > With commit e38c0a1f in place, address translation fails:
-> >=20
-> > OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rt=
-c@70 **
-> > OF: bus is isa (na=3D2, ns=3D1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@=
-1e
-> > OF: translating address: 00000001 00000070
-> > OF: parent bus is default (na=3D3, ns=3D2) on /pcie@ffe09000/pcie@0/uli=
-1575@0
-> > OF: walking ranges...
-> > OF: ISA map, cp=3D0, s=3D1000, da=3D70
-> > OF: parent translation for: 01000000 00000000 00000000
-> > OF: with offset: 70
-> > OF: one level translation: 00000000 00000000 00000070
-> > OF: parent bus is pci (na=3D3, ns=3D2) on /pcie@ffe09000/pcie@0
-> > OF: walking ranges...
-> > OF: default map, cp=3Da0000000, s=3D20000000, da=3D70
-> > OF: default map, cp=3D0, s=3D10000, da=3D70
-> > OF: not found !
-> >=20
-> > Either e38c0a1f should be reverted, or uli1575 (and perhaps other simil=
-ar devices) have to be described in device=20
-> > trees differently.
->=20
-> Reverting would break Tegra PCIe, but you should not have to change the
-> DT either. So we need a solution.
+Please ignore the patch in the previous e-mail - it did not make sense.
 
-We ended up merging a different address representation for Tegra PCIe
-and I've confirmed that reverting this commit doesn't cause any obvious
-regressions. I think all other drivers in drivers/pci/host ended up
-copying what we did on Tegra, so I wouldn't expect any other breakage
-either.
+Regarding the warning above: the "delayed_work_timer_fn+0x0/0x20" hint
+probably indicates an attempt to free a delayed_work structure that is
+embedded in struct rtc_device and that is still scheduled. It's
+unfortunate that debug_check_no_obj_freed() does not print the address
+of the offending object and the argument passed to kfree(). That
+information would allow to compute the offset of the embedded
+delayed_work structure make it easier to figure out what's going on.
 
-Thierry
-
---vtzGhvizbBRQ85DL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSswGAAAoJEN0jrNd/PrOhBwgQAJDizHJfZzFT1RDzdd6TKM28
-cR658qJqY+s3bAAz8te+exfItB8iuIIfBujtJVivq2mJsmQvVKJX5TPD4YwCrPKz
-Zz7BAx0XmYCoU+e2uhLN5RlFPE25fp+vGB6Py9Ri6wmrx/s5BFJuxwfaMEmrnJRO
-WZXIDY2iXx+1/Ysp4fWIMDA6yWSaP5LHeyxW5JUEs1PbDv5lTO9cZhgNiRt3Vl1P
-0QB6xIUDJ9KFBrUEy+UVqzlYF3dc4bQyWpMsOeHXAtB1bzToFT4vWbNaWW0FpTbs
-GssNqrXRnnmH4RkJJ74CDJKiZ3d4X2mldKJqclGVsIkDKzHzc5DaFzP6sqWHSwGR
-UaTyVJaiD+vCQG3HKkBhCResU3DCIdLYPNpkCr93Amgn+0Y0zqsIpTdp8h4aRLnm
-8/HNyyJLxbfyFlmOBqymb6t2LPw9JCr/wlqCHW3Q6GwE1iwVbb6Tt3qkxQfd2elZ
-PUQNJgizYl612BWAPXSJ9+bhACBjRSqZO8ZDYwjpxq6Muf2thjsTe+xcbjQSoXVZ
-Q0IcfY6vHu8+zGSpSc95T9sfQjUksv9AO00qVjX8F2NLYiOOneA9CqHwG+M0QI1U
-XnCx/mOXzYNlWhIDwMY18Adlbo39eaqUnB6MYfzAUXweyRtOCOYM5C0oMNqkJqe/
-HAVXM6+MoRDDT+jg+OYF
-=rrN2
------END PGP SIGNATURE-----
-
---vtzGhvizbBRQ85DL--
+Bart.
