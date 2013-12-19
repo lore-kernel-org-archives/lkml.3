@@ -1,94 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab3LSPGe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:06:34 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:59765 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754487Ab3LSPFW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:05:22 -0500
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu, wsa@the-dreams.de,
-        joe@perches.com
-Cc: Jingoo Han <jg1.han@samsung.com>, Jean Delvare <khali@linux-fr.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>, linux-i2c@vger.kernel.org
-Subject: [PATCH v5 2/3] i2c: xilinx: Do not enable irq before irq handler
-Date: Thu, 19 Dec 2013 16:05:05 +0100
-Message-Id: <b07282b4ed686555ad76b4c3a1ccac4db973b180.1387465488.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <c220f51fd2ee7a5d65afa805a62582bd23e4d599.1387465488.git.michal.simek@xilinx.com>
-References: <c220f51fd2ee7a5d65afa805a62582bd23e4d599.1387465488.git.michal.simek@xilinx.com>
-In-Reply-To: <c220f51fd2ee7a5d65afa805a62582bd23e4d599.1387465488.git.michal.simek@xilinx.com>
-References: <c220f51fd2ee7a5d65afa805a62582bd23e4d599.1387465488.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-14312-1387465518-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1756876Ab3LSM71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:59:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54824 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755717Ab3LSM7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 07:59:23 -0500
+Date: Thu, 19 Dec 2013 13:59:21 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/6] Configurable fair allocation zone policy v3
+Message-ID: <20131219125921.GF10855@dhcp22.suse.cz>
+References: <1387298904-8824-1-git-send-email-mgorman@suse.de>
+ <20131217200210.GG21724@cmpxchg.org>
+ <20131218145111.GA27510@dhcp22.suse.cz>
+ <20131218151846.GM21724@cmpxchg.org>
+ <20131218162050.GB27510@dhcp22.suse.cz>
+ <20131218192015.GA20038@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131218192015.GA20038@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On Wed 18-12-13 14:20:15, Johannes Weiner wrote:
+> On Wed, Dec 18, 2013 at 05:20:50PM +0100, Michal Hocko wrote:
+[...]
+> > Currently we have a per-process (cpuset in fact) flag but this will
+> > change it to all or nothing. Is this really a good step?
+> > Btw. I do not mind having PF_SPREAD_PAGE enabled by default.
+> 
+> I don't want to muck around with cpusets too much, tbh...  but I agree
+> that the behavior of PF_SPREAD_PAGE should be the default.  Except it
+> should honor zone_reclaim_mode and round-robin nodes that are within
+> RECLAIM_DISTANCE of the local one.
 
---=_mimegpg-monstr-desktop-14312-1387465518-0001
+Agreed.
 
-IRQ handler has to be register first before IRQ
-is enabled in xiic_reinit().
+> I will have spotty access to internet starting tomorrow night until
+> New Year's.  Is there a chance we can maybe revert the NUMA aspects of
+> the original patch for now and leave it as a node-local zone fairness
+> thing?
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Yes, that sounds perfectly reasonable to me.
 
----
+> The NUMA behavior was so broken on 3.12 that I doubt that
+> people have come to rely on the cache fairness on such machines in
+> that one release.  So we should be able to release 3.12-stable and
+> 3.13 with node-local zone fairness without regressing anybody, and
+> then give the NUMA aspect of it another try in 3.14.
+> 
+> Something like the following should restore NUMA behavior while still
+> fixing the kswapd vs. page allocator interaction bug of thrashing on
+> the highest zone. 
 
-Changes in v5: None
-Changes in v4: None
-Changes in v3:
-- New patch in this patchset based on my discussion with Wolfram
-  https://lkml.org/lkml/2013/10/4/148
+Yes, it looks good to me. I guess zone_local could have stayed as it
+was because it shouldn't be a big deal to fall-back to a different node
+if the distance is LOCAL, but taking a conservative approach is not
+harmfull.
 
-Changes in v2: None
+> PS: zone_local() is in a CONFIG_NUMA block, which
+> is why accessing zone->node is safe :-)
+> 
+> ---
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index dd886fac451a..317ea747d2cd 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1822,7 +1822,7 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
+>  
+>  static bool zone_local(struct zone *local_zone, struct zone *zone)
+>  {
+> -	return node_distance(local_zone->node, zone->node) == LOCAL_DISTANCE;
+> +	return local_zone->node == zone->node;
+>  }
+>  
+>  static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
+> @@ -1919,18 +1919,17 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
+>  		 * page was allocated in should have no effect on the
+>  		 * time the page has in memory before being reclaimed.
+>  		 *
+> -		 * When zone_reclaim_mode is enabled, try to stay in
+> -		 * local zones in the fastpath.  If that fails, the
+> -		 * slowpath is entered, which will do another pass
+> -		 * starting with the local zones, but ultimately fall
+> -		 * back to remote zones that do not partake in the
+> -		 * fairness round-robin cycle of this zonelist.
+> +		 * Try to stay in local zones in the fastpath.  If
+> +		 * that fails, the slowpath is entered, which will do
+> +		 * another pass starting with the local zones, but
+> +		 * ultimately fall back to remote zones that do not
+> +		 * partake in the fairness round-robin cycle of this
+> +		 * zonelist.
+>  		 */
+>  		if (alloc_flags & ALLOC_WMARK_LOW) {
+>  			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+>  				continue;
+> -			if (zone_reclaim_mode &&
+> -			    !zone_local(preferred_zone, zone))
+> +			if (!zone_local(preferred_zone, zone))
+>  				continue;
+>  		}
+>  		/*
+> @@ -2396,7 +2395,7 @@ static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
+>  		 * thrash fairness information for zones that are not
+>  		 * actually part of this zonelist's round-robin cycle.
+>  		 */
+> -		if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
+> +		if (!zone_local(preferred_zone, zone))
+>  			continue;
+>  		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+>  				    high_wmark_pages(zone) -
+> 
+> 
 
- drivers/i2c/busses/i2c-xiic.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
-index 5e5fae7..2d55989 100644
---- a/drivers/i2c/busses/i2c-xiic.c
-+++ b/drivers/i2c/busses/i2c-xiic.c
-@@ -731,8 +731,6 @@ static int xiic_i2c_probe(struct platform_device *pdev)
- 	i2c->adap.dev.parent = &pdev->dev;
- 	i2c->adap.dev.of_node = pdev->dev.of_node;
-
--	xiic_reinit(i2c);
--
- 	spin_lock_init(&i2c->lock);
- 	init_waitqueue_head(&i2c->wait);
- 	ret = request_irq(irq, xiic_isr, 0, pdev->name, i2c);
-@@ -741,6 +739,8 @@ static int xiic_i2c_probe(struct platform_device *pdev)
- 		goto request_irq_failed;
- 	}
-
-+	xiic_reinit(i2c);
-+
- 	/* add i2c adapter to i2c tree */
- 	ret = i2c_add_adapter(&i2c->adap);
- 	if (ret) {
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-14312-1387465518-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlKzCy4ACgkQykllyylKDCFlUACeMoVWMIfNTNZ7setMQ1xPWX7Y
-RzwAn1nyUcfbZvtLNtDlQCef4xK4vYR5
-=rNCD
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-14312-1387465518-0001--
+-- 
+Michal Hocko
+SUSE Labs
