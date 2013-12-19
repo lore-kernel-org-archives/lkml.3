@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab3LSP0w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:26:52 -0500
-Received: from mail-lb0-f194.google.com ([209.85.217.194]:42072 "EHLO
-	mail-lb0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab3LSP0u (ORCPT
+	id S1753904Ab3LSP1H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:27:07 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:42888 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724Ab3LSP1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:26:50 -0500
-Date: Thu, 19 Dec 2013 17:26:44 +0200
-From: Timo Teras <timo.teras@iki.fi>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] fs/binfmt_elf: fix memory map for PIE applications
-Message-ID: <20131219172644.7bb5f332@vostro>
-In-Reply-To: <alpine.LNX.2.00.1312191558140.11852@pobox.suse.cz>
-References: <1380698395-5784-1-git-send-email-timo.teras@iki.fi>
-	<alpine.LNX.2.00.1312191516270.11852@pobox.suse.cz>
-	<20131219164251.3ebd124a@vostro>
-	<alpine.LNX.2.00.1312191558140.11852@pobox.suse.cz>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; i486-alpine-linux-uclibc)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Dec 2013 10:27:05 -0500
+Date: Thu, 19 Dec 2013 10:27:01 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Kent Overstreet <kmo@daterainc.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH] closures: move to lib/
+Message-ID: <20131219152701.GC16994@htj.dyndns.org>
+References: <1387416594-23930-1-git-send-email-kmo@daterainc.com>
+ <20131219120516.GA26089@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131219120516.GA26089@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Dec 2013 16:02:19 +0100 (CET)
-Jiri Kosina <jkosina@suse.cz> wrote:
+Hello,
 
-> On Thu, 19 Dec 2013, Timo Teras wrote:
+On Thu, Dec 19, 2013 at 04:05:16AM -0800, Christoph Hellwig wrote:
+> On Wed, Dec 18, 2013 at 05:29:54PM -0800, Kent Overstreet wrote:
+> > the closure code was never intended to be bcache specific - hopefully it can be
+> > useful elsewhere in the kernel.
 > 
-> > As you see, the main executable is mapped 57620000-57708000 and
-> > 57708000-5770a000. Heap follow immediately after that
-> > 5770a000-5770c000 followed by anything mmaped after it (stack or
-> > some other libraries). Heap can grow only up to 5ffdf000 meaning the
-> > application is limited to 140 megs or so in this instance. This
-> > limit can go much lower depending how the randomization went. And
-> > even 140 megs is very little for big apps.
-> 
-> So what is the real problem again (i.e. the actual symptoms), please?
-> Is it that your userspace memory allocator doesn't use mmap() for
-> allocations at all?
+> They are not.  They aren't closures in the CS sense, and they are an
+> ugly mess.  Please work on removing them instead.
 
-Random application failures with uclibc and musl c-libraries. Both seem
-to use mmap() for large allocations, and brk() for small ones. IIRC,
-there was also some minor breakage with other applications that use
-brk() to do some self-accounting / other funny stuff.
+I pretty much agree with Christoph here.  Compared to all other
+generic utilities we have, the proposed mechanism is giant in its
+conceptual complexity.  This is a lot worse than semaphores.  I
+personally think inclusion of it in the upstream kernel at all was a
+bad idea.
 
-While this is not strictly a bug, I would still hope that the memory
-layout is configured for maximum compatibility... or do you see it
-introducing unwanted side effects?
+ Nacked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
+-- 
+tejun
