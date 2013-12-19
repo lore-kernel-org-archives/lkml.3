@@ -1,85 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab3LSQsg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:48:36 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:59434 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755146Ab3LSQsd (ORCPT
+	id S1755976Ab3LSQsr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:48:47 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:38477 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755916Ab3LSQso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:48:33 -0500
-Date: Thu, 19 Dec 2013 16:48:24 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, broonie@kernel.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 02/11] ASoC: ab8500: Revert back to find_next_bit()
-Message-ID: <20131219164824.GA16145@lee--X1>
-References: <1387468508-12286-1-git-send-email-lee.jones@linaro.org>
- <1387468508-12286-3-git-send-email-lee.jones@linaro.org>
- <s5hd2kssu4g.wl%tiwai@suse.de>
+	Thu, 19 Dec 2013 11:48:44 -0500
+Message-ID: <52B33180.60701@cogentembedded.com>
+Date: Thu, 19 Dec 2013 20:48:48 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, josh@joshtriplett.org
+Subject: Re: [PATCH 3/7] drivers: usb: Include appropriate header file in
+ hcd.h
+References: <Pine.LNX.4.44L0.1312191128500.984-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1312191128500.984-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <s5hd2kssu4g.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Commit '166a34d ASoC: ab8500: Fix invalid cast to long pointer'
-> > rather carelessly converts find_next_bit() to fls() (find last
-> > bit set), which are not the same.
-> 
-> Does it break on the real machines?
+Hello.
 
-It does, that's how I found the bug.
+On 12/19/2013 07:38 PM, Alan Stern wrote:
 
-> fls() behaves differently from find_next_bit(), of course, but in this
-> case, it should work same in the end, since there are at most two
-> bits.
+>>>> Include header file include/linux/usb.h in include/linux/usb/hcd.h
+>>>> because structures usb_device, usb_host_config and usb_interface have
+>>>> their definitions in include/linux/usb.h.
 
-Unfortunately it doesn't work at all. This patch brings audio back to
-a working state. It took me the best part of a day to track down the
-issue. :(
+>>>> This eliminates the following warning in include/linux/usb/hcd.h:
+>>>> include/linux/usb/hcd.h:311:44: warning: ‘struct usb_device’ declared inside parameter list [enabled by default]
+>>>> include/linux/usb/hcd.h:412:10: warning: ‘struct usb_host_config’ declared inside parameter list [enabled by default]
+>>>> include/linux/usb/hcd.h:614:9: warning: ‘struct usb_interface’ declared inside parameter list [enabled by default]
 
-> > Although this implementation may not be portable, the alternative
-> > breaks audio on anything using the AB8500 CODEC, which is a much
-> > greater evil. Besides, this driver will never run on anything
-> > else.
-> > 
-> > Cc: Takashi Iwai <tiwai@suse.de>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  sound/soc/codecs/ab8500-codec.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/sound/soc/codecs/ab8500-codec.c b/sound/soc/codecs/ab8500-codec.c
-> > index 1ad92cb..51ae3e9 100644
-> > --- a/sound/soc/codecs/ab8500-codec.c
-> > +++ b/sound/soc/codecs/ab8500-codec.c
-> > @@ -2322,7 +2322,7 @@ static int ab8500_codec_set_dai_tdm_slot(struct snd_soc_dai *dai,
-> >  		slot = ffs(tx_mask);
-> >  		snd_soc_update_bits(codec, AB8500_DASLOTCONF1, mask, slot);
-> >  		snd_soc_update_bits(codec, AB8500_DASLOTCONF3, mask, slot);
-> > -		slot = fls(tx_mask);
-> > +		slot = find_next_bit((unsigned long *)&tx_mask, 32, slot + 1);
-> >  		snd_soc_update_bits(codec, AB8500_DASLOTCONF2, mask, slot);
-> >  		snd_soc_update_bits(codec, AB8500_DASLOTCONF4, mask, slot);
-> >  		break;
-> > @@ -2364,7 +2364,7 @@ static int ab8500_codec_set_dai_tdm_slot(struct snd_soc_dai *dai,
-> >  				AB8500_ADSLOTSEL(slot),
-> >  				AB8500_MASK_SLOT(slot),
-> >  				AB8500_ADSLOTSELX_AD_OUT_TO_SLOT(AB8500_AD_OUT3, slot));
-> > -		slot = fls(rx_mask);
-> > +		slot = find_next_bit((unsigned long *)&rx_mask, 32, slot + 1);
-> >  		snd_soc_update_bits(codec,
-> >  				AB8500_ADSLOTSEL(slot),
-> >  				AB8500_MASK_SLOT(slot),
+>>      Rashika, would it be enough to forward-declare these structures ISO
+>> #include'ing the whole header?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> I agree, that would fix the problem.
+
+    It should also make Greg happier. :-)
+
+>>> Where does this problem show up?
+
+>>> Any file that include linux/usb/hcd.h should include linux/usb.h first.
+>>> IMO it would be better to fix the source files that don't do the
+>>> includes properly.
+
+>>      Yeah, let's fix the consequency instead of the cause. :-)
+
+> The _real_ cause is that the Linux source code is extremely
+> complicated, and it is remarkably difficult to insure that all header
+> files have no unsatisfied dependencies.  How do you suggest fixing
+> _that_?
+
+> For example, suppose A.c includes B.h, and B.h includes C.h, and C.h
+> defines struct foo.  Then A.c can use struct foo freely without
+> including C.h directly (and this sort of thing happens quite a lot in
+> the kernel source).  But consider what happens when B.h is changed so
+> that it no longer includes C.h.
+
+    That's a whole different issue than what we're dealing with.
+
+>>> Of course, people have varying opinions on this issue.  As far as I
+>>> know, there is no fixed policy in the kernel about nested includes.
+
+>>      So far, I've only encountered the dubious policy of satisfying header's
+>> dependencies in the files that include them is the USB tree.
+
+> Have you looked in any other places?
+
+    I have over 500 patches in the different areas of the kernel, so 
+apparently I have if I'm telling you this. The only place where my patch to 
+fix a header file so that it would be self-contained has encountered a 
+maintainer's resistance was linux-usb. And note that it wasn't merely a case 
+like this, where incomplete structure declarations would be enough, it was the 
+case where the full structure declarations were needed.
+
+> For that matter, how do you know
+> that the USB tree has such a policy?
+
+    From Greg KH. Also, from the late David Brownell.
+
+>  Is it documented anywhere?
+
+    I don't think so.
+
+> Alan Stern
+
+WBR, Sergei
+
