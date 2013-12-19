@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503Ab3LSKSd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 05:18:33 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52049 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab3LSKSa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 05:18:30 -0500
-Date: Thu, 19 Dec 2013 10:18:03 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: lee.jones@linaro.org, sameo@linux.intel.com, lgirdwood@gmail.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Message-ID: <20131219101803.GP31886@sirena.org.uk>
-References: <1387444262-26456-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	id S1752574Ab3LSKWg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 05:22:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47507 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751008Ab3LSKWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 05:22:33 -0500
+Date: Thu, 19 Dec 2013 11:22:31 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Chao Yang <chayang@redhat.com>, linux-mm@kvack.org,
+        aarcange@redhat.com, mgorman@suse.de,
+        Veaceslav Falico <vfalico@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        David Rientjes <rientjes@google.com>,
+        Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH] mm,numa,THP: initialize hstate for THP page size
+Message-ID: <20131219102231.GE10855@dhcp22.suse.cz>
+References: <20131218170314.1e57bea7@cuia.bos.redhat.com>
+ <20131218140830.924fa0a3bab0d497db5e256c@linux-foundation.org>
+ <52B21FC7.7070905@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WYfJCIN5rqlfy3K0"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1387444262-26456-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Cookie: Go climb a gravity well!
+In-Reply-To: <52B21FC7.7070905@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] mfd: wm5110: Expose DRE control registers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[Adding Dave and Mel]
 
---WYfJCIN5rqlfy3K0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Wed 18-12-13 17:20:55, Rik van Riel wrote:
+> On 12/18/2013 05:08 PM, Andrew Morton wrote:
+> >On Wed, 18 Dec 2013 17:03:14 -0500 Rik van Riel <riel@redhat.com> wrote:
+> >
+> >>When hugetlbfs is started with a non-default page size, it is
+> >>possible that no hstate is initialized for the page sized used
+> >>by transparent huge pages.
+> >>
+> >>This causes copy_huge_page to crash on a null pointer. Make
+> >>sure we always have an hstate initialized for the page sized
+> >>used by THP.
+> >>
+> >
+> >A bit more context is needed here please - so that people can decide
+> >which kernel version(s) need patching.
+> 
+> That is a good question.
+> 
+> Looking at the git log, this might go back to 2008,
+> when the hugepagesz and default_hugepagesz boot
+> options were introduced.
+> 
+> Of course, back then there was no way to use 2MB
+> pages together with 1GB pages.
+> 
+> That did not come until transparent huge pages were
+> introduced back in 2011.  It looks like the transparent
+> huge page code avoids the bug (accidentally?) by calling
+> copy_user_huge_page when COWing a THP, instead of
+> copy_huge_page, this avoids iterating over hstates[].
+> 
+> That means it should not be possible for the bug to
+> have been triggered until the numa balancing code
+> got merged.
+> 
 
-On Thu, Dec 19, 2013 at 09:11:01AM +0000, Charles Keepax wrote:
-> Certain use-cases require the DRE to be disabled so expose registers
-> necessary to control the DRE enables.
+copy_huge_page as hugetlb specific thing. It relies on hstate which is
+obviously not existing for THP pages. So why do we use it for thp pages
+in the first place?
 
-Applied both, thanks.
+Mel, your "mm: numa: Add THP migration for the NUMA working set scanning
+fault case." has added check for PageTransHuge in migrate_page_copy so
+it uses the shared copy_huge_page now. Dave has already tried to fix it
+by https://lkml.org/lkml/2013/10/28/592 but this one has been dropped
+later with "to-be-updated".
 
---WYfJCIN5rqlfy3K0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Dave do you have an alternative for your patch?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSssfYAAoJELSic+t+oim9PhYQAJPiTYAXK6Iq01O0YhzYf+oy
-XZrhhk/QZzEO68zqbwQ+DurSkk3gT8WoNNxqoXdkZxh2zsJBHxpffhmwZTIj1X4P
-mOKKvRIiteWK8N9tW8J4u61vDkmWMtHS0pJubjQbMzk/dy+Vp5Lbf4lF0u3g7Wl2
-Zx6w1sK9zZhhMQKhu5YNH2rqtmlmyI1g5SXsVvwvc76xhVCmWpZlPH2Oze9LKmSy
-cBV4P3xJpBRfDJ2YtOYOijkt5dv8X2rRGYiskZKxCmFyopFvuZn3gn4jMniQSg7d
-zbEpeeHUcTxCqenTh/c90oBfqVuhcneZ1tD8pn2bLmi4Kbm3xc6MnoGpE0GL83D5
-g63Gp23WfFWEvlmGliUn+b5V4YCP59+wVRT8dKSIZxnRnl3cmrVRIrbkQ2DwxAxn
-vznmsfvV1IHcp6GW2wWt6MXpXFeBKVJSvkvng5CUVrjEAB6gfdgqjistNT5+OnHy
-OqV053CADQSU96NhR9zAkxycr6YFtCs+30BIUvk04497qM1ju4piorDE0jwWFJgy
-zxG6FqcR4iPzc3jYPlPL4cZb1fgHtrALnP9ytmhn05Z8PN1dppt88XZo3z5lZWVe
-KWp+P5gw+DhNhAe3CksQ4ZZYzz/D7AXzxZjdqe3H9Q+lT/SqJKYdncb+4abgFwn3
-va6icxAUdyW9A95d4eXc
-=i15E
------END PGP SIGNATURE-----
-
---WYfJCIN5rqlfy3K0--
+-- 
+Michal Hocko
+SUSE Labs
