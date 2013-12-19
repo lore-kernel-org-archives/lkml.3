@@ -1,83 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411Ab3LSJ3h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:29:37 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:4157 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752187Ab3LSJ3e convert rfc822-to-8bit (ORCPT
+	id S1752637Ab3LSJaM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:30:12 -0500
+Received: from relay.parallels.com ([195.214.232.42]:34828 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab3LSJaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:29:34 -0500
-X-IronPort-AV: E=Sophos;i="4.95,512,1384272000"; 
-   d="scan'208";a="9290856"
-Message-ID: <52B2BACA.80600@cn.fujitsu.com>
-Date: Thu, 19 Dec 2013 17:22:18 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Thu, 19 Dec 2013 04:30:04 -0500
+Message-ID: <52B2BC97.4010506@parallels.com>
+Date: Thu, 19 Dec 2013 13:29:59 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-To: jaegeuk.kim@samsung.com
-CC: Chao Yu <chao2.yu@samsung.com>,
-        "'fsdevel'" <linux-fsdevel@vger.kernel.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'f2fs'" <linux-f2fs-devel@lists.sourceforge.net>
-Subject: Re: [f2fs-dev] [PATCH] f2fs: move all the bio initialization into
- __bio_alloc
-References: <52B17905.7040708@cn.fujitsu.com> <000a01cefc59$0a9b4580$1fd1d080$@samsung.com> <1387443585.2101.216.camel@kjgkr>
-In-Reply-To: <1387443585.2101.216.camel@kjgkr>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/19 17:28:54,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/19 17:28:57
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/6] memcg, slab: cleanup barrier usage when accessing
+ memcg_caches
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com> <bd0a7ffc57e4a0b0c3d456c0cf8801e829e14717.1387372122.git.vdavydov@parallels.com> <20131218171411.GD31080@dhcp22.suse.cz> <52B29427.9010909@parallels.com> <20131219091007.GC9331@dhcp22.suse.cz> <52B2B951.5080809@parallels.com> <20131219092137.GG9331@dhcp22.suse.cz>
+In-Reply-To: <20131219092137.GG9331@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kim, Yu,
-Thanks for your review!
+On 12/19/2013 01:21 PM, Michal Hocko wrote:
+> On Thu 19-12-13 13:16:01, Vladimir Davydov wrote:
+>> On 12/19/2013 01:10 PM, Michal Hocko wrote:
+>>> On Thu 19-12-13 10:37:27, Vladimir Davydov wrote:
+>>>> On 12/18/2013 09:14 PM, Michal Hocko wrote:
+>>>>> On Wed 18-12-13 17:16:54, Vladimir Davydov wrote:
+>>>>>> First, in memcg_create_kmem_cache() we should issue the write barrier
+>>>>>> after the kmem_cache is initialized, but before storing the pointer to
+>>>>>> it in its parent's memcg_params.
+>>>>>>
+>>>>>> Second, we should always issue the read barrier after
+>>>>>> cache_from_memcg_idx() to conform with the write barrier.
+>>>>>>
+>>>>>> Third, its better to use smp_* versions of barriers, because we don't
+>>>>>> need them on UP systems.
+>>>>> Please be (much) more verbose on Why. Barriers are tricky and should be
+>>>>> documented accordingly. So if you say that we should issue a barrier
+>>>>> always be specific why we should do it.
+>>>> In short, we have kmem_cache::memcg_params::memcg_caches is an array of
+>>>> pointers to per-memcg caches. We access it lock-free so we should use
+>>>> memory barriers during initialization. Obviously we should place a write
+>>>> barrier just before we set the pointer in order to make sure nobody will
+>>>> see a partially initialized structure. Besides there must be a read
+>>>> barrier between reading the pointer and accessing the structure, to
+>>>> conform with the write barrier. It's all that similar to rcu_assign and
+>>>> rcu_deref. Currently the barrier usage looks rather strange:
+>>>>
+>>>> memcg_create_kmem_cache:
+>>>>     initialize kmem
+>>>>     set the pointer in memcg_caches
+>>>>     wmb() // ???
+>>>>
+>>>> __memcg_kmem_get_cache:
+>>>>     <...>
+>>>>     read_barrier_depends() // ???
+>>>>     cachep = root_cache->memcg_params->memcg_caches[memcg_id]
+>>>>     <...>
+>>> Why do we need explicit memory barriers when we can use RCU?
+>>> __memcg_kmem_get_cache already dereferences within rcu_read_lock.
+>> Because it's not RCU, IMO. RCU implies freeing the old version after a
+>> grace period, while kmem_caches are freed immediately. We simply want to
+>> be sure the kmem_cache is fully initialized. And we do not require
+>> calling this in an RCU critical section.
+> And you can use rcu_dereference and rcu_assign for that as well.
 
-On 12/19/2013 04:59 PM, Jaegeuk Kim wrote:
+rcu_dereference() will complain if called outside an RCU critical
+section, while cache_from_memcg_idx() is called w/o RCU protection from
+some places.
 
-> Hi Gu,
-> 
-> I agreed with Chao.
-> It is more readable to use something like "is_read" instead of "rw".
+> It hides all the juicy details about memory barriers.
 
-Agree. I'll follow it.
+IMO, a memory barrier with a good comment looks better than an
+rcu_dereference() without RCU protection :-)
 
-Regards,
-Gu
+> Besides that nothing prevents us from freeing from rcu callback. Or?
 
-> Thanks,
-> 
-> 2013-12-19 (목), 09:23 +0800, Chao Yu:
->> Hi Gu,
->>
->>> -----Original Message-----
->>> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
->>> Sent: Wednesday, December 18, 2013 6:29 PM
->>> To: Kim
->>> Cc: fsdevel; linux-kernel; f2fs
->>> Subject: [f2fs-dev] [PATCH] f2fs: move all the bio initialization into __bio_alloc
->>>
->>> Move all the bio initialization into __bio_alloc, and some minor cleanups are
->>> also added.
->>
->> Looks more neat!
->>
->>> @@ -178,17 +179,16 @@ void f2fs_submit_page_mbio(struct f2fs_sb_info *sbi, struct page *page,
->>>  			block_t blk_addr, struct f2fs_io_info *fio)
->>>  {
->>>  	enum page_type btype = PAGE_TYPE_OF_BIO(fio->type);
->>> -	struct block_device *bdev = sbi->sb->s_bdev;
->>>  	struct f2fs_bio_info *io;
->>> -	int bio_blocks;
->>> +	int rw = is_read_io(fio->rw);
->>
->> Maybe it's more neat to use 'is_read' to instead of 'rw'.
->>
->> Thanks
->>
-> 
+It's an overhead we can live without there. The point is that we can
+access a cache only if it is active. I mean no allocation can go from a
+cache that has already been destroyed. It would be a bug. So there is no
+point in introducing RCU-protection for kmem_caches there. It would only
+confuse, IMO.
 
-
+Thanks.
