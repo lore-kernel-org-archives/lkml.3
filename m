@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754967Ab3LSL5e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:57:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44834 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754879Ab3LSL51 (ORCPT
+	id S1754346Ab3LSO26 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:28:58 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:60774 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866Ab3LSO24 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:27 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 088/208] cpuidle: Check for dev before deregistering it.
-Date: Thu, 19 Dec 2013 11:53:06 +0000
-Message-Id: <1387454106-19326-89-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 09:28:56 -0500
+X-Originating-IP: 50.43.14.201
+Date: Thu, 19 Dec 2013 06:28:47 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Gordeev <agordeev@redhat.com>
+Subject: Re: [PATCH] drivers: pci: Add prototype declarations of function in
+ appropriate header
+Message-ID: <20131219142846.GA20678@leaf>
+References: <20131219105312.GA23614@rashika>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131219105312.GA23614@rashika>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Dec 19, 2013 at 04:23:12PM +0530, Rashika Kheria wrote:
+> Add prototype declarations of functions arch_msi_mask_irq() and
+> arch_msix_mask_irq() to header file include/linux/msi.h.
+> 
+> This eliminates the following warning in msi.c:
+> drivers/pci/msi.c:202:12: warning: no previous prototype for ‘arch_msi_mask_irq’ [-Wmissing-prototypes]
+> drivers/pci/msi.c:232:12: warning: no previous prototype for ‘arch_msix_mask_irq’ [-Wmissing-prototypes]
+> 
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 
-------------------
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-commit 813e8e3d6aaa0b511126cce15c16a931afffe768 upstream.
-
-If not, we could end up in the unfortunate situation where
-we dereference a NULL pointer b/c we have cpuidle disabled.
-
-This is the case when booting under Xen (which uses the
-ACPI P/C states but disables the CPU idle driver) - and can
-be easily reproduced when booting with cpuidle.off=1.
-
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<ffffffff8156db4a>] cpuidle_unregister_device+0x2a/0x90
-.. snip..
-Call Trace:
- [<ffffffff813b15b4>] acpi_processor_power_exit+0x3c/0x5c
- [<ffffffff813af0a9>] acpi_processor_stop+0x61/0xb6
- [<ffffffff814215bf>] __device_release_driver+0fffff81421653>] device_release_driver+0x23/0x30
- [<ffffffff81420ed8>] bus_remove_device+0x108/0x180
- [<ffffffff8141d9d9>] device_del+0x129/0x1c0
- [<ffffffff813cb4b0>] ? unregister_xenbus_watch+0x1f0/0x1f0
- [<ffffffff8141da8e>] device_unregister+0x1e/0x60
- [<ffffffff814243e9>] unregister_cpu+0x39/0x60
- [<ffffffff81019e03>] arch_unregister_cpu+0x23/0x30
- [<ffffffff813c3c51>] handle_vcpu_hotplug_event+0xc1/0xe0
- [<ffffffff813cb4f5>] xenwatch_thread+0x45/0x120
- [<ffffffff810af010>] ? abort_exclusive_wait+0xb0/0xb0
- [<ffffffff8108ec42>] kthread+0xd2/0xf0
- [<ffffffff8108eb70>] ? kthread_create_on_node+0x180/0x180
- [<ffffffff816ce17c>] ret_from_fork+0x7c/0xb0
- [<ffffffff8108eb70>] ? kthread_create_on_node+0x180/0x180
-
-This problem also appears in 3.12 and could be a candidate for backport.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[ luis: backported to 3.11: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/cpuidle/cpuidle.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index fdc432f..68831be 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -434,7 +434,7 @@ void cpuidle_unregister_device(struct cpuidle_device *dev)
- {
- 	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
- 
--	if (dev->registered == 0)
-+	if (!dev || dev->registered == 0)
- 		return;
- 
- 	cpuidle_pause_and_lock();
--- 
-1.8.3.2
-
+>  include/linux/msi.h |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/include/linux/msi.h b/include/linux/msi.h
+> index 009b024..63b7d14 100644
+> --- a/include/linux/msi.h
+> +++ b/include/linux/msi.h
+> @@ -66,6 +66,8 @@ void default_teardown_msi_irqs(struct pci_dev *dev);
+>  void default_restore_msi_irqs(struct pci_dev *dev, int irq);
+>  u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag);
+>  u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag);
+> +u32 arch_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag);
+> +u32 arch_msix_mask_irq(struct msi_desc *desc, u32 flag);
+>  
+>  struct msi_chip {
+>  	struct module *owner;
+> -- 
+> 1.7.9.5
+> 
