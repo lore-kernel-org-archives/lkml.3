@@ -1,82 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab3LSAeb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 19:34:31 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:38707 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab3LSAe3 (ORCPT
+	id S1752829Ab3LSAgl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 19:36:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53320 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411Ab3LSAgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 19:34:29 -0500
-Date: Wed, 18 Dec 2013 16:34:25 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Peter Hutterer <peter.hutterer@who-t.net>
-Cc: David Herrmann <dh.herrmann@gmail.com>, linux-input@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        linux-kernel@vger.kernel.org, input-tools@lists.freedesktop.org
-Subject: Re: [PATCH 2/4] Input: introduce ABS_MAX2/CNT2 and friends
-Message-ID: <20131219003425.GB838@core.coreip.homeip.net>
-References: <1387295334-1744-1-git-send-email-dh.herrmann@gmail.com>
- <1387295334-1744-3-git-send-email-dh.herrmann@gmail.com>
- <20131218234009.GA9360@yabbi.redhat.com>
- <1950536.BXYYX85NB4@dtor-d630.eng.vmware.com>
- <20131218235504.GA17958@yabbi.redhat.com>
- <20131219000537.GA838@core.coreip.homeip.net>
- <20131219002542.GB6315@yabbi.redhat.com>
+	Wed, 18 Dec 2013 19:36:40 -0500
+Date: Wed, 18 Dec 2013 16:36:25 -0800
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-rd908t9c8kvcojdabtmm94mb@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cleanups] x86, realmode: Pointer walk cleanups,
+  pull out invariant use of __pa()
+Git-Commit-ID: 7306006f103567fcf595d23dd741da0b8642f4c5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20131219002542.GB6315@yabbi.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 18 Dec 2013 16:36:32 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 10:25:42AM +1000, Peter Hutterer wrote:
-> On Wed, Dec 18, 2013 at 04:05:37PM -0800, Dmitry Torokhov wrote:
-> > On Thu, Dec 19, 2013 at 09:55:04AM +1000, Peter Hutterer wrote:
-> > > On Wed, Dec 18, 2013 at 03:48:37PM -0800, Dmitry Torokhov wrote:
-> > > > On Thursday, December 19, 2013 09:40:09 AM Peter Hutterer wrote:
-> > > > > > +     memset(&abs, 0, sizeof(abs));
-> > > > > > +     for (i = valid_cnt; i < cnt; ++i)
-> > > > > > +             if (copy_to_user(&pinfo->info[i], &abs, sizeof(abs)))
-> > > > > > +                     return -EFAULT;
-> > > > > > +
-> > > > > > +     return 0;
-> > > > > 
-> > > > > why don't you return the number of valid copied axes to the user?
-> > > > > that seems better even than forcing the remainder to 0.
-> > > > 
-> > > > Well, if your program messed up buffers that it faulted we do not know
-> > > > for sure if data that did not cause fault ended up where it should have
-> > > > or if it smashed something else. This condition I think should be
-> > > > signaled early.
-> > > 
-> > > not 100% sure I understand but I wasn't proposing to remove the -EFAULT, i
-> > > was proposing to replace "return 0" with "return valid_cnt".
-> > 
-> > I understand what you were saying. Now consider: your program supplied
-> > buffer that is actually smaller than what it said to the kernel.
-> > Depending on the exact placement we may or may not fault when we get
-> > pass the buffer boundary, most likely not. We are likely to fault when
-> > we go way past the buffer boundary and wracked process' memory. If we
-> > return -EFAULT the program will at least notice that something wrong. If
-> > we return count it will try to resubmit the remainder of operation and
-> > not even know that there was something very bad happening.
-> > 
-> > IOW we should not treat fault condition as other partial read/write
-> > conditions.
-> 
-> I'm still not sure we're talking about the same thing :)
+Commit-ID:  7306006f103567fcf595d23dd741da0b8642f4c5
+Gitweb:     http://git.kernel.org/tip/7306006f103567fcf595d23dd741da0b8642f4c5
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Wed, 18 Dec 2013 15:52:13 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 18 Dec 2013 16:07:53 -0800
 
-Hmm, it appears you are right ;)
+x86, realmode: Pointer walk cleanups, pull out invariant use of __pa()
 
-> let me rephrase: why can't we use the behaviour bits_to_user() provides?
-> it limits the output to maxlen and returns that value (or -EFAULT), it's
-> only a small step from that to limit the output to min(maxbit, ABS_CNT2).
+The pointer arithmetic in this function was really bizarre, where in
+fact all we really wanted was a simple pointer array walk.  Use the
+much more idiomatic construction for that (*ptr++).
 
-OK, makes sense.
+Factor an invariant use of __pa() out of the relocation loop.  At
+least on 64 bits it seems gcc isn't capable of doing that
+automatically.
 
--- 
-Dmitry
+Change the scope of a couple of variables to make it extra obvious
+that they are extremely local temp variables.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/n/tip-rd908t9c8kvcojdabtmm94mb@git.kernel.org
+---
+ arch/x86/realmode/init.c | 26 ++++++++++++--------------
+ 1 file changed, 12 insertions(+), 14 deletions(-)
+
+diff --git a/arch/x86/realmode/init.c b/arch/x86/realmode/init.c
+index a44f457..bad628a 100644
+--- a/arch/x86/realmode/init.c
++++ b/arch/x86/realmode/init.c
+@@ -29,12 +29,10 @@ void __init reserve_real_mode(void)
+ void __init setup_real_mode(void)
+ {
+ 	u16 real_mode_seg;
+-	u32 *rel;
++	const u32 *rel;
+ 	u32 count;
+-	u32 *ptr;
+-	u16 *seg;
+-	int i;
+ 	unsigned char *base;
++	unsigned long phys_base;
+ 	struct trampoline_header *trampoline_header;
+ 	size_t size = PAGE_ALIGN(real_mode_blob_end - real_mode_blob);
+ #ifdef CONFIG_X86_64
+@@ -46,23 +44,23 @@ void __init setup_real_mode(void)
+ 
+ 	memcpy(base, real_mode_blob, size);
+ 
+-	real_mode_seg = __pa(base) >> 4;
++	phys_base = __pa(base);
++	real_mode_seg = phys_base >> 4;
++
+ 	rel = (u32 *) real_mode_relocs;
+ 
+ 	/* 16-bit segment relocations. */
+-	count = rel[0];
+-	rel = &rel[1];
+-	for (i = 0; i < count; i++) {
+-		seg = (u16 *) (base + rel[i]);
++	count = *rel++;
++	while (count--) {
++		u16 *seg = (u16 *) (base + *rel++);
+ 		*seg = real_mode_seg;
+ 	}
+ 
+ 	/* 32-bit linear relocations. */
+-	count = rel[i];
+-	rel =  &rel[i + 1];
+-	for (i = 0; i < count; i++) {
+-		ptr = (u32 *) (base + rel[i]);
+-		*ptr += __pa(base);
++	count = *rel++;
++	while (count--) {
++		u32 *ptr = (u32 *) (base + *rel++);
++		*ptr += phys_base;
+ 	}
+ 
+ 	/* Must be perfomed *after* relocation. */
