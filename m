@@ -1,98 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab3LSEID (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 23:08:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6502 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752723Ab3LSEHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 23:07:50 -0500
-Date: Wed, 18 Dec 2013 23:07:38 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>
-Subject: bad page state in 3.13-rc4
-Message-ID: <20131219040738.GA10316@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-	Linus Torvalds <torvalds@linux-foundation.org>
+	id S1752899Ab3LSEI2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 23:08:28 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:18199 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752852Ab3LSEI0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 23:08:26 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmIHADdwslJ5LHyk/2dsb2JhbABZgwu0ToVdgRQXdIIlAQEBAwEnExwjBQsIAw4KCSUPBSUDIROHfAfKUBcWjnwHhDYElDODYpIVgz8o
+Date: Thu, 19 Dec 2013 15:08:21 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        tomaz.solc@tablix.org, aaron.lu@intel.com,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: Writeback threads and freezable
+Message-ID: <20131219040821.GW31386@dastard>
+References: <20131213174932.GA27070@htj.dyndns.org>
+ <20131214015343.GP31386@dastard>
+ <20131214202324.GA4020@htj.dyndns.org>
+ <20131216035652.GY31386@dastard>
+ <20131216125124.GC32509@htj.dyndns.org>
+ <20131216125604.GD32509@htj.dyndns.org>
+ <20131218003510.GD20579@dastard>
+ <20131218114343.GA4324@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20131218114343.GA4324@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just hit this while fuzzing with lots of child processes. 
-(trinity -C128)
+On Wed, Dec 18, 2013 at 06:43:43AM -0500, Tejun Heo wrote:
+> Hello, Dave.
+> 
+> On Wed, Dec 18, 2013 at 11:35:10AM +1100, Dave Chinner wrote:
+> > Perhaps the function "invalidate_partition()" is badly named. To
+> > state the obvious, fsync != invalidation. What it does is:
+> > 
+> > 	1. sync filesystem
+> > 	2. shrink the dcache
+> > 	3. invalidates inodes and kills dirty inodes
+> > 	4. invalidates block device (removes cached bdev pages)
+> > 
+> > Basically, the first step is "flush", the remainder is "invalidate".
+> > 
+> > Indeed, step 3 throws away dirty inodes, so why on earth would we
+> > even bother with step 1 to try to clean them in the first place?
+> > IOWs, the flush is irrelevant in the hot-unplug case as it will
+> > fail to flush stuff, and then we just throw the stuff we
+> > failed to write away.
+> >
+> > But in attempting to flush all the dirty data and metadata, we can
+> > cause all sorts of other potential re-entrancy based deadlocks due
+> > to attempting to issue IO. Whether they be freezer based or through
+> > IO error handling triggering device removal or some other means, it
+> > is irrelevant - it is the flush that causes all the problems.
+> 
+> Isn't the root cause there hotunplug reentering anything above it in
+> the first place.  The problem with your proposal is that filesystem
+> isn't the only place where this could happen.  Even with no filesystem
+> involved, block device could still be dirty and IOs pending in
+> whatever form - dirty bdi, bios queued in dm, requests queued in
+> request_queue, whatever really - and if the hotunplug path reenters
+> any of the higher layers in a way which blocks IO processing, it will
+> deadlock.
 
-BUG: Bad page state in process trinity-c93  pfn:100499
-------------[ cut here ]------------
-kernel BUG at include/linux/mm.h:439!
-invalid opcode: 0000 [#1] PREEMPT SMP 
-Modules linked in: dlci sctp snd_seq_dummy hidp fuse rfcomm bnep tun can_raw can_bcm bluetooth can rose phonet pppoe pppox ppp_generic slhc llc2 af_rxrpc af_key netrom caif_socket caif ipt_ULOG nfnetlink nfc af_802154 irda crc_ccitt rds scsi_transport_iscsi x25 atm appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 rfkill xfs snd_hda_codec_hdmi snd_hda_codec_realtek libcrc32c snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer snd shpchp soundcore coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel microcode serio_raw pcspkr usb_debug e1000e ptp pps_core
-CPU: 0 PID: 4408 Comm: trinity-c39 Not tainted 3.13.0-rc4+ #5 
-task: ffff88021b1d5be0 ti: ffff88011fd40000 task.ti: ffff88011fd40000
-RIP: 0010:[<ffffffff816d8f89>]  [<ffffffff816d8f89>] get_page.part.20+0x4/0x6
-RSP: 0018:ffff88011fd418c8  EFLAGS: 00010246
-RAX: 0000000000000000 RBX: ffff88024e20f780 RCX: 0000000000017151
-RDX: 0000000000000000 RSI: 0000000000000017 RDI: 0000000000000001
-RBP: ffff88011fd418c8 R08: fffffffffffffffd R09: 00000000000170f8
-R10: ffff88024e5d3e80 R11: 0000000000000017 R12: ffffea0004012640
-R13: 0000000000000000 R14: ffffea0004184200 R15: 0000000000000000
-FS:  00007f2203b5e740(0000) GS:ffff88024e200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00000000018ca000 CR3: 000000014dcf4000 CR4: 00000000001407f0
-DR0: 0000000000f88000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-Stack:
- ffff88011fd418e8 ffffffff81141385 ffffea0004012640 ffffea0004012642
- ffff88011fd418f8 ffffffff8114161c ffff88011fd41920 ffffffff81145572
- ffffea0004012640 ffffea0004012600 ffffea0004012660 ffff88011fd419a8
-Call Trace:
- [<ffffffff81141385>] __lru_cache_add+0xa5/0xc0
- [<ffffffff8114161c>] lru_cache_add+0x1c/0x30
- [<ffffffff81145572>] putback_lru_page+0x72/0xb0
- [<ffffffff8118c3f9>] migrate_pages+0x479/0x780
- [<ffffffff81155480>] ? isolate_freepages_block+0x360/0x360
- [<ffffffff8115638a>] compact_zone+0x2aa/0x460
- [<ffffffff8109ff90>] ? debug_check_no_locks_freed+0xb0/0x150
- [<ffffffff811565d4>] compact_zone_order+0x94/0xe0
- [<ffffffff81156911>] try_to_compact_pages+0xe1/0x110
- [<ffffffff816d8c88>] __alloc_pages_direct_compact+0xac/0x1d0
- [<ffffffff8113c86a>] __alloc_pages_nodemask+0x90a/0xab0
- [<ffffffff8117e1b1>] alloc_pages_vma+0xf1/0x1b0
- [<ffffffff81190e0d>] ? do_huge_pmd_anonymous_page+0xfd/0x3a0
- [<ffffffff81190e0d>] do_huge_pmd_anonymous_page+0xfd/0x3a0
- [<ffffffff8115beec>] ? follow_page_mask+0x24c/0x510
- [<ffffffff8115d919>] handle_mm_fault+0x479/0xbb0
- [<ffffffff816e5591>] ? _raw_spin_unlock+0x31/0x50
- [<ffffffff8115e1fe>] __get_user_pages+0x1ae/0x5f0
- [<ffffffff8116028c>] __mlock_vma_pages_range+0x8c/0xa0
- [<ffffffff81160a00>] __mm_populate+0xc0/0x150
- [<ffffffff8114f486>] vm_mmap_pgoff+0xb6/0xc0
- [<ffffffff81162d16>] SyS_mmap_pgoff+0x116/0x270
- [<ffffffff81010495>] ? syscall_trace_enter+0x145/0x270
- [<ffffffff81007b52>] SyS_mmap+0x22/0x30
- [<ffffffff816edb24>] tracesys+0xdd/0xe2
-Code: 48 c8 48 85 d2 48 0f 49 c2 48 01 c8 49 89 06 58 5b 41 5c 41 5d 41 5e 41 5f 5d c3 55 48 89 e5 0f 0b 55 48 89 e5 0f 0b 55 48 89 e5 <0f> 0b 80 3d 59 6a 60 00 00 75 1d 55 be 6c 00 00 00 48 c7 c7 e6 
-RIP  [<ffffffff816d8f89>] get_page.part.20+0x4/0x6
- RSP <ffff88011fd418c8>
-page:ffffea0004012640 count:0 mapcount:0 mapping:          (null) index:0x389
-page flags: 0x2000000000000c(referenced|uptodate)
-Modules linked in: dlci sctp snd_seq_dummy hidp fuse rfcomm bnep tun can_raw can_bcm bluetooth can rose phonet pppoe pppox ppp_generic slhc llc2 af_rxrpc af_key netrom caif_socket caif ipt_ULOG nfnetlink nfc af_802154 irda crc_ccitt rds scsi_transport_iscsi x25 atm appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 rfkill xfs snd_hda_codec_hdmi snd_hda_codec_realtek libcrc32c snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer snd shpchp soundcore coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel microcode serio_raw pcspkr usb_debug e1000e ptp pps_core
-CPU: 2 PID: 4395 Comm: trinity-c93 Tainted: G      D      3.13.0-rc4+ #5 
- 0000000000000000 ffff88004517fde8 ffffffff816db2f5 ffffea0004012640
- ffff88004517fe00 ffffffff816d8b05 ffffea0004012640 ffff88004517fe38
- ffffffff8113a645 ffffea0004012640 0000000000000000 002000000000001d
-Call Trace:
- [<ffffffff816db2f5>] dump_stack+0x4e/0x7a
- [<ffffffff816d8b05>] bad_page.part.71+0xcf/0xe8
- [<ffffffff8113a645>] free_pages_prepare+0x185/0x190
- [<ffffffff8113b085>] free_hot_cold_page+0x35/0x180
- [<ffffffff811403f3>] __put_single_page+0x23/0x30
- [<ffffffff81140665>] put_page+0x35/0x50
- [<ffffffff811e8705>] aio_free_ring+0x55/0xf0
- [<ffffffff811e9c5a>] SyS_io_setup+0x59a/0xbe0
- [<ffffffff816edb24>] tracesys+0xdd/0xe2
+Entirely possible.
 
+> If knowing that the underlying device has gone away somehow helps
+> filesystem, maybe we can expose that interface and avoid flushing
+> after hotunplug but that merely hides the possible deadlock scenario
+> that you're concerned about.  Nothing is really solved.
+
+Except that a user of the block device has been informed that it is
+now gone and has been freed from under it. i.e. we can *immediately*
+inform the user that their mounted filesystem is now stuffed and
+supress all the errors that are going to occur as a result of
+sync_filesystem() triggering IO failures all over the place and then
+having to react to that.i
+
+Indeed, there is no guarantee that sync_filesystem will result in
+the filesystem being shut down - if the filesystem is clean then
+nothing will happen, and it won't be until the user modifies some
+metadata that a shutdown will be triggered. That could be a long
+time after the device has been removed....
+
+> We can try to do the same thing at each layer and implement quick exit
+> path for hot unplug all the way down to the driver but that kinda
+> sounds complex and fragile to me.  It's a lot larger surface to cover
+> when the root cause is hotunplug allowed to reenter anything at all
+> from IO path.  This is especially true because hotunplug can trivially
+> be made fully asynchronous in most cases.  In terms of destruction of
+> higher level objects, warm and hot unplugs can and should behave
+> identical.
+
+I don't see that there is a difference between a warm and hot unplug
+from a filesystem point of view - both result in the filesystem's
+backing device being deleted and freed, and in both cases we have to
+take the same action....
+
+> > We need to either get rid of the flush on device failure/hot-unplug,
+> > or turn it into a callout for the superblock to take an appropriate
+> > action (e.g. shutting down the filesystem) rather than trying to
+> > issue IO. i.e. allow the filesystem to take appropriate action of
+> > shutting down the filesystem and invalidating it's caches.
+> 
+> There could be cases where some optimizations for hot unplug could be
+> useful.  Maybe suppressing pointless duplicate warning messages or
+> whatnot but I'm highly doubtful anything will be actually fixed that
+> way.  We'll be most likely making bugs just less reproducible.
+> 
+> > Indeed, in XFS there's several other caches that could contain dirty
+> > metadata that isn't invalidated by invalidate_partition(), and so
+> > unless the filesystem is shut down it can continue to try to issue
+> > IO on those buffers to the removed device until the filesystem is
+> > shutdown or unmounted.
+> 
+> Do you mean xfs never gives up after IO failures?
+
+There's this thing called a transient IO failure which we have to
+handle. e.g multipath taking several minutes to detect a path
+failure and fail over, whilst in the mean time IO errors are
+reported after a 30s timeout. So some types of async metadata write
+IO failures are simply rescheduled for a short time in the future.
+They'll either succeed, or continual failure will eventually trigger
+some kind of filesystem failure.
+
+If it's a synchronous write or a write that we cannot tolerate even
+transient errors on (e.g. journal writes), then we'll shut down the
+filesystem immediately.
+
+> > Seriously, Tejun, the assumption that invalidate_partition() knows
+> > enough about filesystems to safely "invalidate" them is just broken.
+> > These days, filesystems often reference multiple block devices, and
+> > so the way hotplug currently treats them as "one device, one
+> > filesystem" is also fundamentally wrong.
+> > 
+> > So there's many ways in which the hot-unplug code is broken in it's
+> > use of invalidate_partition(), the least of which is the
+> > dependencies caused by re-entrancy. We really need a
+> > "sb->shutdown()" style callout as step one in the above process, not
+> > fsync_bdev().
+> 
+> If filesystems need an indication that the underlying device is no
+> longer functional, please go ahead and add it, but please keep in mind
+> all these are completely asynchronous.  Nothing guarantees you that
+> such events would happen in any specific order.  IOW, you can be at
+> *ANY* point in your warm unplug path and the device is hot unplugged,
+> which essentially forces all the code paths to be ready for the worst,
+> and that's exactly why there isn't much effort in trying to separate
+> out warm and hot unplug paths.
+
+I'm not concerned about the problems that might happen if you hot
+unplug during a warm unplug. All I care about is when a device is
+invalidated the filesystem on top of it can take appropriate action.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
