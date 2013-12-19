@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab3LST7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 14:59:03 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:42303 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295Ab3LST7A (ORCPT
+	id S1756078Ab3LSUCL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 15:02:11 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35741 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab3LSUCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 14:59:00 -0500
+	Thu, 19 Dec 2013 15:02:09 -0500
+Message-ID: <52B350BC.8000903@infradead.org>
+Date: Thu, 19 Dec 2013 12:02:04 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <6ee28c6a94e74c958ee96c3547741fb9@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <1387405262-18334-1-git-send-email-haiyangz@microsoft.com>
-	<1387475178.1876.29.camel@bwh-desktop.uk.level5networks.com>
-	<ff7f7541d0164d408b3a4278569c593a@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-	<52B33EC1.5040901@redhat.com>
-	<6ee28c6a94e74c958ee96c3547741fb9@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-Date: Thu, 19 Dec 2013 11:58:59 -0800
-Message-ID: <CA+mtBx-BBBQjVTOrnaow=GNc7VM5D2Zj8xr=fPM4b4f_xT7qkQ@mail.gmail.com>
-Subject: Re: [PATCH net-next] hyperv: Add support for Virtual Receive Side
- Scaling (vRSS)
-From: Tom Herbert <therbert@google.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-rdma@vger.kernel.org, umalhi@cisco.com, roland@kernel.org,
+        hal.rosenstock@gmail.com
+Subject: Re: randconfig build error with next-20131211, in drivers/infiniband/hw/usnic/usnic_uiom.c
+References: <CA+r1ZhhA1QDeNwvOb+Yn_eoQ9VPS2VmAkGZXt8HJRiagp-rvTg@mail.gmail.com>
+In-Reply-To: <CA+r1ZhhA1QDeNwvOb+Yn_eoQ9VPS2VmAkGZXt8HJRiagp-rvTg@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I posted an implementation of library functions for Toeplitz (see
-[PATCH 1/2] net: Toeplitz library functions).  This includes some
-pre-computation of the table to get reasonable performance in the
-host. Please take a look.
+On 12/11/13 07:57, Jim Davis wrote:
+> Building with the attached random configuration file,
+> 
+> drivers/infiniband/hw/usnic/usnic_uiom.c: In function
+> ‘usnic_uiom_attach_dev_to_pd’:
+> drivers/infiniband/hw/usnic/usnic_uiom.c:505:2: error: implicit declaration of f
+> unction ‘iommu_domain_has_cap’ [-Werror=implicit-function-declaration]
+>   if (!iommu_domain_has_cap(pd->domain, IOMMU_CAP_CACHE_COHERENCY)) {
+>   ^
+> cc1: some warnings being treated as errors
+> make[3]: *** [drivers/infiniband/hw/usnic/usnic_uiom.o] Error 1
+> 
 
-On the other hand, if you're computing a hash in the host, do you
-really need  Toeplitz, flow_dissector already supports a good hash
-computation and can parse many more packets than just plain UDP/TCP.
-We probably only should be doing Toeplitz in the host if we need to
-match HW computed values.
 
+This build error still happens in linux-next of 20131219.
 
-On Thu, Dec 19, 2013 at 11:21 AM, Haiyang Zhang <haiyangz@microsoft.com> wrote:
->
->
->> -----Original Message-----
->> From: Daniel Borkmann [mailto:dborkman@redhat.com]
->> Sent: Thursday, December 19, 2013 1:45 PM
->> To: Haiyang Zhang
->> Cc: Ben Hutchings; davem@davemloft.net; netdev@vger.kernel.org; KY
->> Srinivasan; olaf@aepfle.de; jasowang@redhat.com; linux-
->> kernel@vger.kernel.org; driverdev-devel@linuxdriverproject.org
->> Subject: Re: [PATCH net-next] hyperv: Add support for Virtual Receive Side
->> Scaling (vRSS)
->>
->> On 12/19/2013 07:36 PM, Haiyang Zhang wrote:
->>
->> > Thank you for the suggestions! I will re-write the send queue
->> > selection, enhance the hash calculation, also fix the initialization sequence.
->>
->> Btw, Toeplitz hash function should either go into lib/hash.c as well or
->> include/linux/hash.h to avoid ending up w/ various implementations in multiple
->> places.
->
-> Will do.
->
-> Thanks,
-> - Haiyang
+-- 
+~Randy
