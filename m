@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab3LSBNK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 20:13:10 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:34027 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583Ab3LSBNI (ORCPT
+	id S1752088Ab3LSBOk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 20:14:40 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:62903 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab3LSBOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 20:13:08 -0500
-X-AuditID: cbfee61b-b7fbf6d0000051a3-e3-52b24822f10e
-From: Chao Yu <chao2.yu@samsung.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        linux-fsdevel@vger.kernel.org
-References: <1387244992-7038-1-git-send-email-jaegeuk.kim@samsung.com>
- <1387325521.2101.212.camel@kjgkr>
-In-reply-to: <1387325521.2101.212.camel@kjgkr>
-Subject: RE: [f2fs-dev] [PATCH] f2fs: introduce a new direct_IO write path
-Date: Thu, 19 Dec 2013 09:12:16 +0800
-Message-id: <000901cefc57$775a6450$660f2cf0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQIuN7ZoSJWXSWJORHKD4kLFTtrs2wIHyjEvmYv+g8A=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9jAV1lj01BBisb2S2u7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgymg5NYuxYIpgxa1d
-	2xkbGL/ydjFyckgImEhsWdvCAmGLSVy4t56ti5GLQ0hgEaPE5b2N7BDOD0aJh0c/s4FUsQmo
-	SCzv+M8EYosISEvM+jQPqJuDg1kgU+L84USQsJBAlsSapRvBhnIK6El87z/KBlIiLOAl0fet
-	GCTMIqAqcezvNlYQm1fAUuL+tbeMELagxI/J98BamQW0JNbvPM4EYctLbF7zlhniTgWJHWdf
-	M0JcYCWx7cwTNogacYmNR26xTGAUmoVk1Cwko2YhGTULScsCRpZVjKKpBckFxUnpuUZ6xYm5
-	xaV56XrJ+bmbGMFh/0x6B+OqBotDjAIcjEo8vAHPNwYJsSaWFVfmHmKU4GBWEuG9wrIpSIg3
-	JbGyKrUoP76oNCe1+BCjNAeLkjjvwVbrQCGB9MSS1OzU1ILUIpgsEwenVANjh32cxaQtPo9Z
-	PPu0GOdqO1yf8608y6itWL02LO92g9zvZRJPtJ3708zsrK5OqDd7uTOpoFgmalWRPHctc9Xs
-	ydcn9dVunXaf99y+w2LTnszkVT+bc/bllwBbhmd3rD1b/PZohp4K27frXuVq4417Z6/Ib9z1
-	o6ZNY23Y2Vs2eS/OtPAwH5yrxFKckWioxVxUnAgAXYRJ2HcCAAA=
+	Wed, 18 Dec 2013 20:14:39 -0500
+X-AuditID: 9c93017e-b7c17ae000003961-5e-52b2487d18b3
+Date: Thu, 19 Dec 2013 10:14:40 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/rmap: fix BUG at rmap_walk
+Message-ID: <20131219011440.GB25161@lge.com>
+References: <1387412195-26498-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <20131218162858.6ec808c067baf4644532e110@linux-foundation.org>
+ <20131219005805.GA25161@lge.com>
+ <20131218170429.0858bb069d51a469e8c237d8@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131218170429.0858bb069d51a469e8c237d8@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
-> Sent: Wednesday, December 18, 2013 8:12 AM
-> To: linux-fsdevel@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
-> Subject: Re: [f2fs-dev] [PATCH] f2fs: introduce a new direct_IO write path
+On Wed, Dec 18, 2013 at 05:04:29PM -0800, Andrew Morton wrote:
+> On Thu, 19 Dec 2013 09:58:05 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
 > 
-> Change log from v1:
->  o fix NOSPC error handling
+> > On Wed, Dec 18, 2013 at 04:28:58PM -0800, Andrew Morton wrote:
+> > > On Thu, 19 Dec 2013 08:16:35 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > page_get_anon_vma() called in page_referenced_anon() will lock and 
+> > > > increase the refcount of anon_vma, page won't be locked for anonymous 
+> > > > page. This patch fix it by skip check anonymous page locked.
+> > > > 
+> > > > [  588.698828] kernel BUG at mm/rmap.c:1663!
+> > > 
+> > > Why is all this suddenly happening.  Did we change something, or did a
+> > > new test get added to trinity?
+> > 
+> > It is my fault.
+> > I should remove this VM_BUG_ON() since rmap_walk() can be called
+> > without holding PageLock() in this case.
+> > 
+> > I think that adding VM_BUG_ON() to each rmap_walk calllers is better
+> > than this patch, because, now, rmap_walk() is called by many places and
+> > each places has different contexts.
 > 
-> >From b8511a74fe98b67247a9feeed58441e8f5ffd705 Mon Sep 17 00:00:00 2001
-> From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-> Date: Mon, 16 Dec 2013 19:04:05 +0900
-> Subject: [PATCH] f2fs: introduce a new direct_IO write path
-> Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-> linux-f2fs-devel@lists.sourceforge.net
+> I don't think that putting the assertion into the caller makes a lot of
+> sense, particularly if that code just did a lock_page()!  If a *callee*
+> needs PageLocked() then that callee should assert that the page is
+> locked.  So
 > 
-> Previously, f2fs doesn't support direct IOs with high performance, which
-> throws
-> every write requests via the buffered write path, resulting in highly
-> performance degradation due to memory opeations like copy_from_user.
+> 	VM_BUG_ON(!PageLocked(page));
 > 
-> This patch introduces a new direct IO path in which every write requests
-> are
-> processed by generic blockdev_direct_IO() with enhanced get_block
-> function.
-> 
-> The get_data_block() in f2fs handles:
-> 1. if original data blocks are allocates, then give them to blockdev.
-> 2. otherwise,
->   a. preallocate requested block addresses
->   b. do not use extent cache for better performance
->   c. give the block addresses to blockdev
-> 
-> This policy induces that:
-> - new allocated data are sequentially written to the disk
-> - updated data are randomly written to the disk.
-> - f2fs gives consistency on its file meta, not file data.
+> means "this code requires that the page be locked".  And if that code
+> requires PageLocked(), there must be reasons for this.  Let's also
+> include an explanation of those reasons.
 
-Looks Nice!
+Yes, if this condition is invariant for rmap_walk(), we should put this on
+rmap_walk(). But if not, we should put this on the other place. I will
+investigate more and send good solution :)
 
-> 
-> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-
-Reviewed-by: Chao Yu <chao2.yu@samsung.com>
-
-> +
-> +	end_offset = IS_INODE(dn.node_page) ?
-> +			ADDRS_PER_INODE(F2FS_I(inode)) : ADDRS_PER_BLOCK;
-> +	bh_result->b_size = (((size_t)1) << blkbits);
-> +	dn.ofs_in_node++;
-> +	pgofs++;
-> +
-> +get_next:
-> +	if (dn.ofs_in_node >= end_offset) {
-> +		if (allocated)
-> +			sync_inode_page(&dn);
-> +		allocated = false;
-
-		if (allocated) {
-			sync_inode_page(&dn);
-			allocated = false;
-		}
-Certainly, it's really not a big deal. :)
-
-Thanks
-
+Thanks.
