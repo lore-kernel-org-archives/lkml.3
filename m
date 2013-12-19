@@ -1,95 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab3LSObA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:31:00 -0500
-Received: from mga01.intel.com ([192.55.52.88]:24049 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486Ab3LSOa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:30:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="446996223"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
-In-Reply-To: <20131219123955.GA18186@gmail.com>
-References: <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com> <20131218133439.GR21999@twins.programming.kicks-ass.net> <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com> <20131218141125.GT21999@twins.programming.kicks-ass.net> <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com> <20131218150900.GU21999@twins.programming.kicks-ass.net> <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com> <20131219103134.GD30183@twins.programming.kicks-ass.net> <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com> <20131219112812.GY21999@twins.programming.kicks-ass.net> <20131219123955.GA18186@gmail.com>
-User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Thu, 19 Dec 2013 16:30:53 +0200
-Message-ID: <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757082Ab3LSMfj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:35:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44919 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755088Ab3LSL5s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:57:48 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Neil Horman <nhorman@tuxdriver.com>, Joerg Roedel <joro@8bytes.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 099/208] iommu: Remove stack trace from broken irq remapping warning
+Date: Thu, 19 Dec 2013 11:53:17 +0000
+Message-Id: <1387454106-19326-100-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo Molnar <mingo@kernel.org> writes:
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
->
->> On Thu, Dec 19, 2013 at 01:17:51PM +0200, Alexander Shishkin wrote:
->> > Peter Zijlstra <peterz@infradead.org> writes:
->> > 
->> > > On Thu, Dec 19, 2013 at 09:53:44AM +0200, Alexander Shishkin wrote:
->> > >> Yes and some implementations of PT have the same issue, but you can do a
->> > >> sufficiently large high order allocation and map it to userspace and
->> > >> still no copying (or parsing/decoding) in kernel space required.
->> > >
->> > > What's sufficiently large? The largest we could possibly allocate is
->> > > something like 4k^11 which is 8M or so. That's not all that big given
->> > > you keep saying it generates in the order of 100 MB/s.
->> > 
->> > One chunk is 8M. You can have as many as the buddy allocator permits you
->> > to have. When you get a PMI, you simply switch one chunk for another and
->> > on the tracing goes.
->> 
->> This document you referred me to looks to specify something with a
->> proper s/g implementation; called ToPA. There doesn't appear to be a
->> limit to the linked entries and you can specify a size per entry, and I
->> don't see anywhere why 4k would be bad.
->> 
->> That said, I'm still reading..
->> 
->> > > Also, 'some implementations', that sounds like a fail right there. Why
->> > > are there already different implementations, and some which such stupid
->> > > design, of something this new?
->> > >
->> > > How about just saying NO to the ones that requires physically contiguous
->> > > allocations?
->> > 
->> > No reason to leave those out, because they are still extremely useful
->> > for tracing and fit perfectly fine in a model with two buffers.
->> 
->> Maybe; but lets start with the sane hardware. Then we'll look at the 
->> amount of pain needed to support these broken pieces of crap and 
->> decide later.
->> 
->> So drop all support for crappy hardware now.
->
-> Absolutely agreed ...
->
-> The thing is, BTS itself is rarely used (and not primarily because 
-> it's slow, but because its tooling and thus its utility is poor), so 
-> the last thing we want is another piece of broken hardware with a 
-> quirky software interface to it that tooling has trouble utilizing.
+------------------
 
-Or the interface and implementation of BTS support in the kernel
-discourage its use and that is why it is so rarely used.
+From: Neil Horman <nhorman@tuxdriver.com>
 
-What I'm proposing is a unified interface for trace units to export
-their traces and not only the "non-crappy" ones, in a way that won't
-discourage its use from day one.
+commit 05104a4e8713b27291c7bb49c1e7e68b4e243571 upstream.
 
-So I'd like to steer away from the ways in which hardware can be broken
-and talk about a usable interface, to begin with.
+The warning for the irq remapping broken check in intel_irq_remapping.c is
+pretty pointless.  We need the warning, but we know where its comming from, the
+stack trace will always be the same, and it needlessly triggers things like
+Abrt.  This changes the warning to just print a text warning about BIOS being
+broken, without the stack trace, then sets the appropriate taint bit.  Since we
+automatically disable irq remapping, theres no need to contiue making Abrt jump
+at this problem
 
-Regargs,
---
-Alex
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Joerg Roedel <joro@8bytes.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Andy Lutomirski <luto@amacapital.net>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/iommu/intel_irq_remapping.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index f71673d..b97d70b 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -525,12 +525,13 @@ static int __init intel_irq_remapping_supported(void)
+ 	if (disable_irq_remap)
+ 		return 0;
+ 	if (irq_remap_broken) {
+-		WARN_TAINT(1, TAINT_FIRMWARE_WORKAROUND,
+-			   "This system BIOS has enabled interrupt remapping\n"
+-			   "on a chipset that contains an erratum making that\n"
+-			   "feature unstable.  To maintain system stability\n"
+-			   "interrupt remapping is being disabled.  Please\n"
+-			   "contact your BIOS vendor for an update\n");
++		printk(KERN_WARNING
++			"This system BIOS has enabled interrupt remapping\n"
++			"on a chipset that contains an erratum making that\n"
++			"feature unstable.  To maintain system stability\n"
++			"interrupt remapping is being disabled.  Please\n"
++			"contact your BIOS vendor for an update\n");
++		add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
+ 		disable_irq_remap = 1;
+ 		return 0;
+ 	}
+-- 
+1.8.3.2
+
