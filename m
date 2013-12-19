@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab3LSJdw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:33:52 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:61886 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab3LSJdt (ORCPT
+	id S1752816Ab3LSJeh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:34:37 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55948 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab3LSJee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:33:49 -0500
-Date: Thu, 19 Dec 2013 15:03:36 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Lars Ellenberg <drbd-dev@lists.linbit.com>, drbd-user@lists.linbit.com,
-        josh@joshtriplett.org
-Subject: [PATCH 02/13] drivers: block: Remove unused function
- drbd_bm_write_lazy() in drbd_bitmap.c
-Message-ID: <107e3f5de68d07bca6eaf3e439eb62bcc8f0a5b6.1387445396.git.rashika.kheria@gmail.com>
-References: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Dec 2013 04:34:34 -0500
+X-AuditID: 9c930179-b7bedae000000f15-98-52b2bda887e1
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 2/4] tools lib traceevent: Check return value of realloc()
+Date: Thu, 19 Dec 2013 18:34:24 +0900
+Message-Id: <1387445666-7821-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1387445666-7821-1-git-send-email-namhyung@kernel.org>
+References: <1387445666-7821-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unused function drbd_bm_write_lazy() in drbd/drbd_bitmap.c.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-This eliminates the following warning in drbd/drbd_bitmap.c:
-drivers/block/drbd/drbd_bitmap.c:1208:5: warning: no previous prototype for ‘drbd_bm_write_lazy’ [-Wmissing-prototypes]
+If realloc() fails, it'll leak the buffer.  Also increate buffer size
+only if the allocation succeeded.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- drivers/block/drbd/drbd_bitmap.c |   10 ----------
- 1 file changed, 10 deletions(-)
+ tools/lib/traceevent/trace-seq.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_bitmap.c b/drivers/block/drbd/drbd_bitmap.c
-index b12c11e..d8e2bf4 100644
---- a/drivers/block/drbd/drbd_bitmap.c
-+++ b/drivers/block/drbd/drbd_bitmap.c
-@@ -1201,16 +1201,6 @@ int drbd_bm_write_all(struct drbd_conf *mdev) __must_hold(local)
+diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
+index 976ad2a146b3..57405652f26d 100644
+--- a/tools/lib/traceevent/trace-seq.c
++++ b/tools/lib/traceevent/trace-seq.c
+@@ -79,10 +79,16 @@ void trace_seq_destroy(struct trace_seq *s)
+ 
+ static void expand_buffer(struct trace_seq *s)
+ {
+-	s->buffer_size += TRACE_SEQ_BUF_SIZE;
+-	s->buffer = realloc(s->buffer, s->buffer_size);
+-	if (!s->buffer)
++	char *buf;
++
++	buf = realloc(s->buffer, s->buffer_size + TRACE_SEQ_BUF_SIZE);
++	if (!buf) {
+ 		s->state = TRACE_SEQ__MEM_ALLOC_FAILED;
++		return;
++	}
++
++	s->buffer = buf;
++	s->buffer_size += TRACE_SEQ_BUF_SIZE;
  }
  
  /**
-- * drbd_bm_lazy_write_out() - Write bitmap pages 0 to @upper_idx-1, if they have changed.
-- * @mdev:	DRBD device.
-- * @upper_idx:	0: write all changed pages; +ve: page index to stop scanning for changed pages
-- */
--int drbd_bm_write_lazy(struct drbd_conf *mdev, unsigned upper_idx) __must_hold(local)
--{
--	return bm_rw(mdev, WRITE, BM_AIO_COPY_PAGES, upper_idx);
--}
--
--/**
-  * drbd_bm_write_copy_pages() - Write the whole bitmap to its on disk location.
-  * @mdev:	DRBD device.
-  *
 -- 
-1.7.9.5
+1.7.11.7
 
