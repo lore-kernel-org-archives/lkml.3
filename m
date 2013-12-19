@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab3LSCC5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 21:02:57 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:45391 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab3LSCCz (ORCPT
+	id S1752614Ab3LSCEN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 21:04:13 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:50163 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab3LSCEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 21:02:55 -0500
+	Wed, 18 Dec 2013 21:04:10 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52B25419.9000807@roeck-us.net>
+Date: Wed, 18 Dec 2013 18:04:09 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 18 Dec 2013 18:02:34 -0800
-Message-ID: <CALCETrVmWAVwLtEbK0AZGBmcqUEkM_Zhz1WGSY5wSpLsaHiOkA@mail.gmail.com>
-Subject: Possible SNB throttling erratum in need of workaround?
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/78] 3.10.25-stable review
+References: <20131218211111.903835960@linuxfoundation.org>
+In-Reply-To: <20131218211111.903835960@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a box running 3.9.4.  For a few hundred ms, all packages and
-cores* exceeded their power limits, and then they all came back to
-normal.
+On 12/18/2013 01:10 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.25 release.
+> There are 78 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Fri Dec 20 21:10:56 UTC 2013.
+> Anything received after that time might be too late.
+>
 
-Since then, turbo boost went away.
+Build results:
+     total: 110 pass: 109 skipped: 0 fail: 1
 
-The first thing I tried was writing 0 to msr 0x19C to clear the
-throttling "log" bit.  The bit was clear, but still no turbo.  (I only
-did this on one package to avoid destroying information.)
+Build avr32:atngw100mkii_evklcd101_defconfig still fails.
 
-I have the performance governor set, so there are never any
-software-initiated performance transitions.  As an experiment, I
-switched core 0 to powersave (aka very low frequency) and then back to
-performance.  The entire package's turbo came back.  I did the same
-thing to the cores on package 1 (all of them, sorry), and that
-package's turbo boost came back.
+qemu tests all passed.
 
-Does the kernel need to reprogram CPU frequencies after thermal/power
-throttling conditions clear?
+Results are as expected.
+Details are available as usual at http://server.roeck-us.net:8010/builders.
 
-My CPUs are:
+Guenter
 
-processor       : 31
-vendor_id       : GenuineIntel
-cpu family      : 6
-model           : 45
-model name      : Intel(R) Xeon(R) CPU E5-2690 0 @ 2.90GHz
-stepping        : 7
-microcode       : 0x710
-
-
-* Slight lie here.  CPU18 exceeded core limit but not power limit.
