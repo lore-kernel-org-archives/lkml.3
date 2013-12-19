@@ -1,95 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276Ab3LSUMF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 15:12:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35555 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756252Ab3LSUMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 15:12:03 -0500
-Date: Thu, 19 Dec 2013 20:11:58 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: bad page state in 3.13-rc4
-Message-ID: <20131219201158.GT11295@suse.de>
-References: <20131219040738.GA10316@redhat.com>
- <CA+55aFwweoGs3eGWXFULcqnbRbpDhpj2qrefXB5OpQOiWW8wYA@mail.gmail.com>
- <alpine.DEB.2.10.1312190930190.4238@nuc>
+	id S1756330Ab3LSUNn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 15:13:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45821 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755704Ab3LSUNm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 15:13:42 -0500
+Date: Thu, 19 Dec 2013 12:13:45 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.4 00/31] 3.4.75-stable review
+Message-ID: <20131219201345.GA26827@kroah.com>
+References: <20131218210522.790152625@linuxfoundation.org>
+ <20131219195446.GB27311@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1312190930190.4238@nuc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131219195446.GB27311@roeck-us.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 09:41:50AM -0600, Christoph Lameter wrote:
-> On Wed, 18 Dec 2013, Linus Torvalds wrote:
+On Thu, Dec 19, 2013 at 11:54:46AM -0800, Guenter Roeck wrote:
+> On Wed, Dec 18, 2013 at 01:08:08PM -0800, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.4.75 release.
+> > There are 31 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> > 
+> > Responses should be made by Fri Dec 20 21:05:11 UTC 2013.
+> > Anything received after that time might be too late.
+> > 
+> My builder noticed that you added one more patch to all releases
+> and triggered a rebuild.
 > 
-> > Somebody who knows the migration code needs to look at this. ChristophL?
+> v3.4.74-32:	total: 103 pass: 89 skipped: 10 fail: 4
+> v3.10.24-79:	total: 110 pass: 109 skipped: 0 fail: 1
+> v3.12.5-119:	total: 110 pass: 107 skipped: 3 fail: 0
 > 
-> Its been awhile sorry and there has been a huge amount of work done on top
-> of my earlier work. Cannot debug that anymore and I am finding myself in
-> the role of the old guy who just complains a lot.
+> Everything still as expected, with all qemu tests passed as well.
 
-Shake your fist and tell the kids to get off your lawn.
+Thanks, yes, there was a missing patch for one of the various omap
+patches that needed to be included, thanks for testing and verifying
+nothing broke.
 
-> Some of that
-> functionality seems bizarre to me like the on the fly conversion between
-> huge pages and regular pages, weird and complex page count handling etc
-> etc.
-> 
-> The last time I looked at the code I was horrified to find that the new
-> huge page migration does not use migration ptes to create a cooldown phase
-> but directly swaps the pmd. That used to cause huge problems with regular
-> pages in the past. But I was told that was all safe. Mel?
-
-THP migration is specific to automatic NUMA balancing and the safety of
-how it works is dependant upon how pmds are marked NUMA and how they are
-cleared and migrated.
-
-Dave, was this a NUMA machine? If yes, was CONFIG_NUMA_BALANCING set? If
-yes, was NUMA_BALANCING_DEFAULT_ENABLED set or was numa_balancing=enable
-specified on the kernel command line? I'm skeptical that this is related to
-THP migration largely because the initial stack trace was in the compaction
-path which does not deal with THP migration.
-
-If this is recent, then an outside possibility is that this is related to
-pmd-level split locks and mm->page_table_lock was protecting us from some
-split THP vs migration race or possibly a gup page for aio vs migration
-race we were previously unaware of (e.g. aio taking a reference on a page
-that migration has frozen the references on, bug would be a case where
-get_page instead of get_page_unless_zero was used) . Dave, when this this
-bug start triggering? If it's due to a recent change in trinity, can you
-check if 3.12 is also affected? If not, can you check if the bug started
-happening somewhere around these commits?
-
-ea1e7ed33708c7a760419ff9ded0a6cb90586a50 mm: create a separate slab for page->ptl allocation
-539edb5846c740d78a8b6c2e43a99ca4323df68f mm: properly separate the bloated ptl from the regular case
-49076ec2ccaf68610aa03d96bced9a6694b93ca1 mm: dynamically allocate page->ptl if it cannot be embedded to struct page
-e009bb30c8df8a52a9622b616b67436b6a03a0cd mm: implement split page table lock for PMD level
-c4088ebdca64c9a2e34a38177d2249805ede1f4b mm: convert the rest to new page table lock api
-cb900f41215447433cbc456d1c4294e858a84d7c mm, hugetlb: convert hugetlbfs to use split pmd lock
-c389a250ab4cfa4a3775d9f2c45271618af6d5b2 mm, thp: do not access mm->pmd_huge_pte directly
-117b0791ac42f2ec447bc864e70ad622b5604059 mm, thp: move ptl taking inside page_check_address_pmd()
-bf929152e9f6c49b66fad4ebf08cc95b02ce48f5 mm, thp: change pmd_trans_huge_lock() to return taken lock
-e1f56c89b040134add93f686931cc266541d239a mm: convert mm->nr_ptes to atomic_long_t
-e9bb18c7b95d4dcf8c7f0e14f920ca6f03109e75 mm: avoid increase sizeof(struct page) due to split page table lock
-b77d88d493b8fc7a4c2dadd3bb86d1dee2f53a56 mm: drop actor argument of do_generic_file_read()
-
-A few bad state bugs have shown up on linux-mm recently but my impression
-was that they were related to rmap_walk changes currently in next. The
-initial log indicated that this was 3.13-rc4 but is it really 3.13-rc4 or
-are there any -next patches applied?
-
--- 
-Mel Gorman
-SUSE Labs
+greg k-h
