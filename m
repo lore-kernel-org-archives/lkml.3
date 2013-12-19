@@ -1,310 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab3LSHHg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 02:07:36 -0500
-Received: from relay.parallels.com ([195.214.232.42]:40545 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab3LSHHe (ORCPT
+	id S1751744Ab3LSHOh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 02:14:37 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:18906 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab3LSHOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 02:07:34 -0500
-Message-ID: <52B29B2F.7050909@parallels.com>
-Date: Thu, 19 Dec 2013 11:07:27 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	Thu, 19 Dec 2013 02:14:36 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 18 Dec 2013 23:16:41 -0800
+Message-ID: <52B29CD0.1000801@nvidia.com>
+Date: Thu, 19 Dec 2013 12:44:24 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/6] memcg, slab: check and init memcg_cahes under slab_mutex
-References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com> <afc6d5e85d805c7313e928497b4ebcf1815703dd.1387372122.git.vdavydov@parallels.com> <20131218174105.GE31080@dhcp22.suse.cz>
-In-Reply-To: <20131218174105.GE31080@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
+CC: "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ARM: tegra: fix missing pincontrol configuration
+ for Venice2
+References: <1387371179-16725-1-git-send-email-ldewangan@nvidia.com> <52B20C0D.9030200@wwwdotorg.org>
+In-Reply-To: <52B20C0D.9030200@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 09:41 PM, Michal Hocko wrote:
-> On Wed 18-12-13 17:16:55, Vladimir Davydov wrote:
->> The memcg_params::memcg_caches array can be updated concurrently from
->> memcg_update_cache_size() and memcg_create_kmem_cache(). Although both
->> of these functions take the slab_mutex during their operation, the
->> latter checks if memcg's cache has already been allocated w/o taking the
->> mutex. This can result in a race as described below.
->>
->> Asume two threads schedule kmem_cache creation works for the same
->> kmem_cache of the same memcg from __memcg_kmem_get_cache(). One of the
->> works successfully creates it. Another work should fail then, but if it
->> interleaves with memcg_update_cache_size() as follows, it does not:
-> I am not sure I understand the race. memcg_update_cache_size is called
-> when we start accounting a new memcg or a child is created and it
-> inherits accounting from the parent. memcg_create_kmem_cache is called
-> when a new cache is first allocated from, right?
+On Thursday 19 December 2013 02:26 AM, Stephen Warren wrote:
+> On 12/18/2013 05:52 AM, Laxman Dewangan wrote:
+>> Compare the initial population of default pinmux configuration of Venice2
+>> with the chrome branch and add/fix the missing configurations.
+> Wow, that's a big chunk of changes. Are you sure this is correct? Why
+> was the original patch (which added the pinctrl nodes) so incorrect?
 
-memcg_update_cache_size() is called when kmem accounting is activated
-for a memcg, no matter how.
+The pinmux which got added is based on the venice2 pinmux spreadsheet 
+where I covered only the SFIO pin groups.
 
-memcg_create_kmem_cache() is scheduled from __memcg_kmem_get_cache().
-It's OK to have a bunch of such methods trying to create the same memcg
-cache concurrently, but only one of them should succeed.
+https://wiki.nvidia.com/engwiki/index.php/Platform_Design_Center/Projects_Archive/PM371#pinmux
 
-> Why cannot we simply take slab_mutex inside memcg_create_kmem_cache?
-> it is running from the workqueue context so it should clash with other
-> locks.
 
-Hmm, Glauber's code never takes the slab_mutex inside memcontrol.c. I
-have always been wondering why, because it could simplify flow paths
-significantly (e.g. update_cache_sizes() -> update_all_caches() ->
-update_cache_size() - from memcontrol.c to slab_common.c and back again
-just to take the mutex).
+After comparing with the chrome, I also added the pinmux for all pins 
+which are used as GPIO and hence the change is big.
+This is complete pinmux based on chrome kernel-next.
+I booted chrome with this pinmux and not observe any behavioral change.
 
-I don't see any reason preventing us from taking the mutex in
-memcontrol.c. This would allow us to move all memcg-related kmem cache
-initialization (addition to the memcg slab list, initialization of the
-pointer in memcg_caches) to memcg_kmem_cache_create() and remove a bunch
-of public functions. I guess I'll do this in my next iteration.
-
-Thanks.
-
->
->>   memcg_create_kmem_cache()                     memcg_update_cache_size()
->>   (called w/o mutexes held)                     (called with slab_mutex held)
->>   -------------------------                     -------------------------
->>   mutex_lock(&memcg_cache_mutex)
->>                                                 s->memcg_params=kzalloc(...)
->>   new_cachep=cache_from_memcg_idx(cachep,idx)
->>   // new_cachep==NULL => proceed to creation
->>                                                 s->memcg_params->memcg_caches[i]
->>                                                     =cur_params->memcg_caches[i]
->>   // kmem_cache_dup takes slab_mutex so we will
->>   // hang around here until memcg_update_cache_size()
->>   // finishes, but ...
->>   new_cachep = kmem_cache_dup(memcg, cachep)
->>   // nothing will prevent kmem_cache_dup from
->>   // succeeding so ...
->>   cachep->memcg_params->memcg_caches[idx]=new_cachep
->>   // we've overwritten an existing cache ptr!
->>
->> Let's fix this by moving both the check and the update of
->> memcg_params::memcg_caches from memcg_create_kmem_cache() to
->> kmem_cache_create_memcg() to be called under the slab_mutex.
->>
->> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
->> Cc: Michal Hocko <mhocko@suse.cz>
->> Cc: Johannes Weiner <hannes@cmpxchg.org>
->> Cc: Glauber Costa <glommer@gmail.com>
->> Cc: Christoph Lameter <cl@linux.com>
->> Cc: Pekka Enberg <penberg@kernel.org>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> ---
->>  include/linux/memcontrol.h |    9 ++--
->>  mm/memcontrol.c            |   98 +++++++++++++++-----------------------------
->>  mm/slab_common.c           |    8 +++-
->>  3 files changed, 44 insertions(+), 71 deletions(-)
->>
->> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> index b357ae3..fdd3f30 100644
->> --- a/include/linux/memcontrol.h
->> +++ b/include/linux/memcontrol.h
->> @@ -500,8 +500,8 @@ int memcg_cache_id(struct mem_cgroup *memcg);
->>  int memcg_init_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
->>  			    struct kmem_cache *root_cache);
->>  void memcg_free_cache_params(struct kmem_cache *s);
->> -void memcg_release_cache(struct kmem_cache *cachep);
->> -void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep);
->> +void memcg_register_cache(struct kmem_cache *s);
->> +void memcg_release_cache(struct kmem_cache *s);
->>  
->>  int memcg_update_cache_size(struct kmem_cache *s, int num_groups);
->>  void memcg_update_array_size(int num_groups);
->> @@ -652,12 +652,11 @@ static inline void memcg_free_cache_params(struct kmem_cache *s);
->>  {
->>  }
->>  
->> -static inline void memcg_release_cache(struct kmem_cache *cachep)
->> +static inline void memcg_register_cache(struct kmem_cache *s)
->>  {
->>  }
->>  
->> -static inline void memcg_cache_list_add(struct mem_cgroup *memcg,
->> -					struct kmem_cache *s)
->> +static inline void memcg_release_cache(struct kmem_cache *s)
->>  {
->>  }
->>  
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index e37fdb5..62b9991 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -3059,16 +3059,6 @@ static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
->>  		css_put(&memcg->css);
->>  }
->>  
->> -void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
->> -{
->> -	if (!memcg)
->> -		return;
->> -
->> -	mutex_lock(&memcg->slab_caches_mutex);
->> -	list_add(&cachep->memcg_params->list, &memcg->memcg_slab_caches);
->> -	mutex_unlock(&memcg->slab_caches_mutex);
->> -}
->> -
->>  /*
->>   * helper for acessing a memcg's index. It will be used as an index in the
->>   * child cache array in kmem_cache, and also to derive its name. This function
->> @@ -3229,6 +3219,35 @@ void memcg_free_cache_params(struct kmem_cache *s)
->>  	kfree(s->memcg_params);
->>  }
->>  
->> +void memcg_register_cache(struct kmem_cache *s)
->> +{
->> +	struct kmem_cache *root;
->> +	struct mem_cgroup *memcg;
->> +	int id;
->> +
->> +	if (is_root_cache(s))
->> +		return;
->> +
->> +	memcg = s->memcg_params->memcg;
->> +	id = memcg_cache_id(memcg);
->> +	root = s->memcg_params->root_cache;
->> +
->> +	css_get(&memcg->css);
->> +
->> +	/*
->> +	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
->> +	 * barrier here to ensure nobody will see the kmem_cache partially
->> +	 * initialized.
->> +	 */
->> +	smp_wmb();
->> +
->> +	root->memcg_params->memcg_caches[id] = s;
->> +
->> +	mutex_lock(&memcg->slab_caches_mutex);
->> +	list_add(&s->memcg_params->list, &memcg->memcg_slab_caches);
->> +	mutex_unlock(&memcg->slab_caches_mutex);
->> +}
->> +
->>  void memcg_release_cache(struct kmem_cache *s)
->>  {
->>  	struct kmem_cache *root;
->> @@ -3356,26 +3375,13 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
->>  	schedule_work(&cachep->memcg_params->destroy);
->>  }
->>  
->> -/*
->> - * This lock protects updaters, not readers. We want readers to be as fast as
->> - * they can, and they will either see NULL or a valid cache value. Our model
->> - * allow them to see NULL, in which case the root memcg will be selected.
->> - *
->> - * We need this lock because multiple allocations to the same cache from a non
->> - * will span more than one worker. Only one of them can create the cache.
->> - */
->> -static DEFINE_MUTEX(memcg_cache_mutex);
->> -
->> -/*
->> - * Called with memcg_cache_mutex held
->> - */
->> -static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
->> -					 struct kmem_cache *s)
->> +static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
->> +						  struct kmem_cache *s)
->>  {
->>  	struct kmem_cache *new;
->>  	static char *tmp_name = NULL;
->>  
->> -	lockdep_assert_held(&memcg_cache_mutex);
->> +	BUG_ON(!memcg_can_account_kmem(memcg));
->>  
->>  	/*
->>  	 * kmem_cache_create_memcg duplicates the given name and
->> @@ -3403,45 +3409,6 @@ static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
->>  	return new;
->>  }
->>  
->> -static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
->> -						  struct kmem_cache *cachep)
->> -{
->> -	struct kmem_cache *new_cachep;
->> -	int idx;
->> -
->> -	BUG_ON(!memcg_can_account_kmem(memcg));
->> -
->> -	idx = memcg_cache_id(memcg);
->> -
->> -	mutex_lock(&memcg_cache_mutex);
->> -	new_cachep = cache_from_memcg_idx(cachep, idx);
->> -	if (new_cachep) {
->> -		css_put(&memcg->css);
->> -		goto out;
->> -	}
->> -
->> -	new_cachep = kmem_cache_dup(memcg, cachep);
->> -	if (new_cachep == NULL) {
->> -		new_cachep = cachep;
->> -		css_put(&memcg->css);
->> -		goto out;
->> -	}
->> -
->> -	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
->> -
->> -	/*
->> -	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
->> -	 * barrier here to ensure nobody will see the kmem_cache partially
->> -	 * initialized.
->> -	 */
->> -	smp_wmb();
->> -
->> -	cachep->memcg_params->memcg_caches[idx] = new_cachep;
->> -out:
->> -	mutex_unlock(&memcg_cache_mutex);
->> -	return new_cachep;
->> -}
->> -
->>  void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
->>  {
->>  	struct kmem_cache *c;
->> @@ -3516,6 +3483,7 @@ static void memcg_create_cache_work_func(struct work_struct *w)
->>  
->>  	cw = container_of(w, struct create_work, work);
->>  	memcg_create_kmem_cache(cw->memcg, cw->cachep);
->> +	css_put(&cw->memcg->css);
->>  	kfree(cw);
->>  }
->>  
->> diff --git a/mm/slab_common.c b/mm/slab_common.c
->> index 62712fe..51dc106 100644
->> --- a/mm/slab_common.c
->> +++ b/mm/slab_common.c
->> @@ -176,6 +176,12 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
->>  	get_online_cpus();
->>  	mutex_lock(&slab_mutex);
->>  
->> +	if (memcg) {
->> +		s = cache_from_memcg_idx(parent_cache, memcg_cache_id(memcg));
->> +		if (s)
->> +			goto out_unlock;
->> +	}
->> +
->>  	err = kmem_cache_sanity_check(memcg, name, size);
->>  	if (err)
->>  		goto out_unlock;
->> @@ -218,7 +224,7 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
->>  
->>  	s->refcount = 1;
->>  	list_add(&s->list, &slab_caches);
->> -	memcg_cache_list_add(memcg, s);
->> +	memcg_register_cache(s);
->>  
->>  out_unlock:
->>  	mutex_unlock(&slab_mutex);
->> -- 
->> 1.7.10.4
->>
+> Thierry, I thought you had mentioned comparing the pinctrl setup in
+> linux-next with the downstream kernel for Venice2 and only found a
+> difference in the PWM settings, which you sent a patch for. However,
+> this patch is much larger than that. Where's the disconnect?
 
