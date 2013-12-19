@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab3LSL5Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:57:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44813 "EHLO
+	id S1756923Ab3LSMbP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:31:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44960 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754776Ab3LSL5U (ORCPT
+	with ESMTP id S1752469Ab3LSL6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:20 -0500
+	Thu, 19 Dec 2013 06:58:00 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>,
+Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 084/208] ALSA: hda - Fix headset mic input after muted internal mic (Dell/Realtek)
-Date: Thu, 19 Dec 2013 11:53:02 +0000
-Message-Id: <1387454106-19326-85-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 111/208] intel_pstate: fix no_turbo
+Date: Thu, 19 Dec 2013 11:53:29 +0000
+Message-Id: <1387454106-19326-112-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,53 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 
-commit d59915d0655c5864b514f21daaeac98c047875dc upstream.
+commit 1ccf7a1cdafadd02e33e8f3d74370685a0600ec6 upstream.
 
-By trial and error, I found this patch could work around an issue
-where the headset mic would stop working if you switch between the
-internal mic and the headset mic, and the internal mic was muted.
+When sysfs for no_turbo is set, then also some p states in turbo regions
+are observed. This patch will set IDA Engage bit when no_turbo is set to
+explicitly disengage turbo.
 
-It still takes a second or two before the headset mic actually starts
-working, but still better than nothing.
-
-Information update from Kailang:
-  The verb was ADC digital mute(bit 6 default 1).
-  Switch internal mic and headset mic will run alc_headset_mode_default.
-  The coef index 0x11 will set to 0x0041.
-  Because headset mode was fixed type. It doesn't need to run
-  alc_determine_headset_type.
-  So, the value still keep 0x0041. ADC was muted.
-
-BugLink: https://bugs.launchpad.net/bugs/1256840
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/cpufreq/intel_pstate.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 9eace98..40407f4 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3149,6 +3149,7 @@ static void alc_headset_mode_ctia(struct hda_codec *codec)
- 		alc_write_coef_idx(codec, 0x18, 0x7388);
- 		break;
- 	case 0x10ec0668:
-+		alc_write_coef_idx(codec, 0x11, 0x0001);
- 		alc_write_coef_idx(codec, 0x15, 0x0d60);
- 		alc_write_coef_idx(codec, 0xc3, 0x0000);
- 		break;
-@@ -3171,6 +3172,7 @@ static void alc_headset_mode_omtp(struct hda_codec *codec)
- 		alc_write_coef_idx(codec, 0x18, 0x7388);
- 		break;
- 	case 0x10ec0668:
-+		alc_write_coef_idx(codec, 0x11, 0x0001);
- 		alc_write_coef_idx(codec, 0x15, 0x0d50);
- 		alc_write_coef_idx(codec, 0xc3, 0x0000);
- 		break;
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index e8c3db8..f112f7d 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -394,7 +394,10 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
+ 	trace_cpu_frequency(pstate * 100000, cpu->cpu);
+ 
+ 	cpu->pstate.current_pstate = pstate;
+-	wrmsrl(MSR_IA32_PERF_CTL, pstate << 8);
++	if (limits.no_turbo)
++		wrmsrl(MSR_IA32_PERF_CTL, BIT(32) | (pstate << 8));
++	else
++		wrmsrl(MSR_IA32_PERF_CTL, pstate << 8);
+ 
+ }
+ 
 -- 
 1.8.3.2
 
