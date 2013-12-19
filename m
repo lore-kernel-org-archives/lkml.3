@@ -1,138 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab3LSVVH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 16:21:07 -0500
-Received: from mail-bn1lp0158.outbound.protection.outlook.com ([207.46.163.158]:31936
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756274Ab3LSVVD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 16:21:03 -0500
-X-Greylist: delayed 877 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Dec 2013 16:21:03 EST
-From: Stuart Yoder <stuart.yoder@freescale.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Scott Wood <scottwood@freescale.com>
-CC: Kim Phillips <kim.phillips@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>,
-        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Subject: RE: [REPOST][PATCH 1/2] driver core: Add new device_driver flag to
- allow binding via sysfs only
-Thread-Topic: [REPOST][PATCH 1/2] driver core: Add new device_driver flag to
- allow binding via sysfs only
-Thread-Index: AQHO/GO/mMi+aThEXEWI8i8J6hWd3ppb9zeAgAADToCAAAVTkA==
-Date: Thu, 19 Dec 2013 21:06:21 +0000
-Message-ID: <dd683e36cc334893b193f4d36a33238c@BY2PR03MB348.namprd03.prod.outlook.com>
-References: <20131203123446.42fbff34a8ebd7afd38159a5@linaro.org>
- <20131219010729.GC23055@kroah.com>
- <1387484531.3140.134.camel@snotra.buserror.net>
- <20131219203401.GA11290@kroah.com>
-In-Reply-To: <20131219203401.GA11290@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.168.50]
-x-forefront-prvs: 006546F32A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(13464003)(199002)(189002)(164054003)(51704005)(377424004)(377454003)(24454002)(50986001)(33646001)(46102001)(74876001)(74706001)(47736001)(47976001)(49866001)(4396001)(74316001)(74366001)(76482001)(51856001)(53806001)(54356001)(63696002)(81542001)(19580405001)(19580395003)(81342001)(79102001)(54316002)(83322001)(65816001)(80976001)(66066001)(80022001)(81816001)(81686001)(69226001)(31966008)(87266001)(85306002)(74502001)(74662001)(47446002)(85852003)(59766001)(77982001)(87936001)(76576001)(76786001)(76796001)(56776001)(90146001)(83072002)(2656002)(56816005)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB394;H:BY2PR03MB348.namprd03.prod.outlook.com;CLIP:192.88.168.50;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756514Ab3LSVXv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 16:23:51 -0500
+Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:43909
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756139Ab3LSVXt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 16:23:49 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -8
+X-BigFish: VPS-8(z579ehzbb2dI98dI9371Ic89bh146fI103dK154dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h906i1155h)
+Date: Thu, 19 Dec 2013 13:23:36 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH v2 3/9] clocksource/cadence_ttc: Store timer frequency in
+ driver data
+References: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1385514296-26702-4-git-send-email-soren.brinkmann@xilinx.com>
+ <5cff3201-db97-4061-a686-bf79ac17d4fe@CO1EHSMHS006.ehs.local>
+ <52B1B6FF.7000400@linaro.org>
+ <ce29829b-3727-46ba-8c46-54273ce04745@DB8EHSMHS003.ehs.local>
+ <52B21A82.7050608@linaro.org>
+ <0d7ba9e5-6a62-415d-86e1-763335645406@CH1EHSMHS002.ehs.local>
+ <52B35CBA.7020202@linaro.org>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <52B35CBA.7020202@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <f5bcb974-8645-48d3-b03c-f894c0bb5b7b@DB8EHSMHS014.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Daniel,
 
-
-> -----Original Message-----
-> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
-> Sent: Thursday, December 19, 2013 2:34 PM
-> To: Wood Scott-B07421
-> Cc: Kim Phillips; linux-kernel@vger.kernel.org; kvm@vger.kernel.org;
-> Bhushan Bharat-R65777; Yoder Stuart-B08248; christoffer.dall@linaro.org;
-> alex.williamson@redhat.com; a.motakis@virtualopensystems.com;
-> agraf@suse.de; Sethi Varun-B16395
-> Subject: Re: [REPOST][PATCH 1/2] driver core: Add new device_driver flag
-> to allow binding via sysfs only
-> 
-> On Thu, Dec 19, 2013 at 02:22:11PM -0600, Scott Wood wrote:
-> > On Wed, 2013-12-18 at 17:07 -0800, Greg Kroah-Hartman wrote:
-> > > On Tue, Dec 03, 2013 at 12:34:46PM +0000, Kim Phillips wrote:
-> > > > VFIO supports pass-through of devices to user space - for sake
-> > > > of illustration, say a PCI e1000 device:
-> > > >
-> > > > - the e1000 is first unbound from the PCI e1000 driver via sysfs
-> > > > - the vfio-pci driver is told via new_id that it now handles e1000
-> devices
-> > > > - the e1000 is explicitly bound to vfio-pci through sysfs
-> > > >
-> > > > However, now we have two drivers in the system that both handle
-> e1000
-> > > > devices.  A hotplug event could then occur and it is ambiguous as
-> to which
-> > > > driver will claim the device.  The desired semantics is that vfio-
-> pci is
-> > > > only bound to devices by explicit request in sysfs.  This patch
-> makes this
-> > > > possible by introducing a sysfs_bind_only flag in struct
-> device_driver.
-> > >
-> > > Why deal with this at all and not just deal with the "bind" sysfs
-> file
-> > > instead?  That way no driver core logic needs to be changed at all,
-> and
-> > > your userspace tools know _exactly_ which device is being bound to
-> the
-> > > new device.
-> > >
-> > > Don't mess with the "new_id" file for stuff like this, as you point
-> out,
-> > > it's "tricky"...
+On Thu, Dec 19, 2013 at 09:53:14PM +0100, Daniel Lezcano wrote:
+> On 12/19/2013 07:32 PM, Sören Brinkmann wrote:
+> >Hi Daniel,
 > >
-> > As discussed before, "bind" does not bypass the ID checks, and thus it
-> > does not work without either "new_id" or a wildcard match.
+> >On Wed, Dec 18, 2013 at 10:58:26PM +0100, Daniel Lezcano wrote:
+> >>On 12/18/2013 05:47 PM, Sören Brinkmann wrote:
+> >>>Hi Daniel,
+> >>>
+> >>>On Wed, Dec 18, 2013 at 03:53:51PM +0100, Daniel Lezcano wrote:
+> >>>>On 12/17/2013 08:21 PM, Sören Brinkmann wrote:
+> >>>>>Hi Daniel,
+> >>>>>
+> >>>>>On Tue, Nov 26, 2013 at 05:04:50PM -0800, Soren Brinkmann wrote:
+> >>>>>>It is not allowed to call clk_get_rate() from interrupt context. To
+> >>>>>>avoid such calls the timer input frequency is stored in the driver's
+> >>>>>>data struct which makes it accessible to the driver in any context.
+> >>>>>>
+> >>>>>>Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> >>>>>>Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> >>>>>
+> >>>>>I doubt that we'll resolve all issues with this series before the
+> >>>>>holidays or even the next merge window. Could you take this patch into
+> >>>>>your tree for 3.14? It is not directly related to the cpufreq work and
+> >>>>>fixes an actual issue that triggers a kernel WARN under some condition
+> >>>>>(I missed preserving the details and the trace). That would take the
+> >>>>>easy stuff out of the way and we can focus on the more controversial
+> >>>>>changes.
+> >>>>
+> >>>>You are asking to take it for 3.14 but shouldn't it go as a 3.13 fix ?
+> >>>
+> >>>That's also an option. As I remember, the patch fixes a kernel WARN. The
+> >>>system still seemed operational though. Up to you whether this is
+> >>>considered severe enough for the 3.13 series. I'm happy either way.
+> >>
+> >>I was not able to reproduce the WARN with my board.
+> >>
+> >>Please, could you give the WARN or give the procedure to reproduce it ?
+> >
+> >I can't either... I thought I saw the WARN on a vanilla kernel during
+> >boot (IIRC, when cpuidle started). Is there any chance the timer core
+> >calls the timer's set_mode() from interrupt context?
+> >Anyway, let's drop it for now. I'll make sure to record more information
+> >in case it reappears.
 > 
-> Ah, forgot about that.
+> Finally I was able to reproduce it with the highres timers disabled,
+> the periodic tick system and the locks debug.
 > 
-> > Or are you proposing changing "bind" so that it does bypass the ID
-> > checks?  Or perhaps a new "force_bind" file that does?
-> 
-> No.  But you can use bind/unbind along with the existing new_id file to
-> get what you want today.
+> Indeed, we are in an interrupt context (IPI) and we are calling
+> clk_get_rate in the the set_mode function which in turn ends up by
+> getting a mutex... Even if that does not hang, it is a potential
+> kernel crash so I will apply the patch with an updated changelog.
 
-Yes, but that only works for PCI.  There is no such concept for platform
-drivers.
+Thanks! Kind of comforting to know that the issue I tried to fix actually exists.
 
-> If you just happen to bind a device to a wrong
-> driver for a while, that's not really a problem, right?
+	Sören
 
-It's annoying but not the end of the world.
 
-> I don't like this patch as we are adding lots of special and odd logic
-> to the core, for use by almost no one, which ensures that it will never
-> get tested, and will probably get broken in some subtle way in the
-> future.
-
-It certainly will be used by users of vfio-platform.
-
-Here is the problem-- the new platform device "match_any_dev" mechanism
-in patch 2 of this series is not going to work without "sysfs_bind_only".
-A platform driver that just sets "match_any_dev" will grab any or all 
-platform devices during normal bus probing.
-
-> Heck, I can't even ensure that you got it right now, with this tiny
-> patch, how do you know it works given that there are no users of this
-> flag anywhere (hint, you never showed me any...)
-
-It has been tested on both vfio-pci and vfio-platform in some limited
-experiments as far as I know, but that code is not ready for upstream
-yet.
-
-Thanks,
-Stuart
