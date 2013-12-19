@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab3LSMBU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:01:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45435 "EHLO
+	id S1757555Ab3LSNLt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:11:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44380 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756201Ab3LSMAT (ORCPT
+	with ESMTP id S1752338Ab3LSLzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:00:19 -0500
+	Thu, 19 Dec 2013 06:55:21 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jim Quinlan <jim2101024@gmail.com>, linux-mips@linux-mips.org,
-        cernekee@gmail.com, Ralf Baechle <ralf@linux-mips.org>,
+Cc: Andreas Henriksson <andreas@fatal.se>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 206/208] MIPS: DMA: For BMIPS5000 cores flush region just like non-coherent R10000
-Date: Thu, 19 Dec 2013 11:55:04 +0000
-Message-Id: <1387454106-19326-207-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 006/208] net: Fix "ip rule delete table 256"
+Date: Thu, 19 Dec 2013 11:51:44 +0000
+Message-Id: <1387454106-19326-7-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,87 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jim Quinlan <jim2101024@gmail.com>
+From: Andreas Henriksson <andreas@fatal.se>
 
-commit f86f55d3ad21b21b736bdeb29bee0f0937b77138 upstream.
+commit 13eb2ab2d33c57ebddc57437a7d341995fc9138c upstream.
 
-The BMIPS5000 (Zephyr) processor utilizes instruction speculation. A
-stale misprediction address in either the JTB or the CRS may trigger
-a prefetch inside a region that is currently being used by a DMA engine,
-which is not IO-coherent.  This prefetch will fetch a line into the
-scache, and that line will soon become stale (ie wrong) during/after the
-DMA.  Mayhem ensues.
+When trying to delete a table >= 256 using iproute2 the local table
+will be deleted.
+The table id is specified as a netlink attribute when it needs more then
+8 bits and iproute2 then sets the table field to RT_TABLE_UNSPEC (0).
+Preconditions to matching the table id in the rule delete code
+doesn't seem to take the "table id in netlink attribute" into condition
+so the frh_get_table helper function never gets to do its job when
+matching against current rule.
+Use the helper function twice instead of peaking at the table value directly.
 
-In dma-default.c, the r10000 is handled as a special case in the same way
-that we want to handle Zephyr.  So we generalize the exception cases into
-a function, and include Zephyr as one of the processors that needs this
-special care.
+Originally reported at: http://bugs.debian.org/724783
 
-Signed-off-by: Jim Quinlan <jim2101024@gmail.com>
-Cc: linux-mips@linux-mips.org
-Cc: cernekee@gmail.com
-Patchwork: https://patchwork.linux-mips.org/patch/5776/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Reported-by: Nicolas HICHER <nhicher@avencall.com>
+Signed-off-by: Andreas Henriksson <andreas@fatal.se>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/mips/mm/dma-default.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ net/core/fib_rules.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
-index aaccf1c..468f7f9 100644
---- a/arch/mips/mm/dma-default.c
-+++ b/arch/mips/mm/dma-default.c
-@@ -50,16 +50,20 @@ static inline struct page *dma_addr_to_page(struct device *dev,
- }
+diff --git a/net/core/fib_rules.c b/net/core/fib_rules.c
+index 2173544..b1cd856 100644
+--- a/net/core/fib_rules.c
++++ b/net/core/fib_rules.c
+@@ -445,7 +445,8 @@ static int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr* nlh)
+ 		if (frh->action && (frh->action != rule->action))
+ 			continue;
  
- /*
-+ * The affected CPUs below in 'cpu_needs_post_dma_flush()' can
-+ * speculatively fill random cachelines with stale data at any time,
-+ * requiring an extra flush post-DMA.
-+ *
-  * Warning on the terminology - Linux calls an uncached area coherent;
-  * MIPS terminology calls memory areas with hardware maintained coherency
-  * coherent.
-  */
--
--static inline int cpu_is_noncoherent_r10000(struct device *dev)
-+static inline int cpu_needs_post_dma_flush(struct device *dev)
- {
- 	return !plat_device_is_coherent(dev) &&
- 	       (current_cpu_type() == CPU_R10000 ||
--	       current_cpu_type() == CPU_R12000);
-+		current_cpu_type() == CPU_R12000 ||
-+		current_cpu_type() == CPU_BMIPS5000);
- }
+-		if (frh->table && (frh_get_table(frh, tb) != rule->table))
++		if (frh_get_table(frh, tb) &&
++		    (frh_get_table(frh, tb) != rule->table))
+ 			continue;
  
- static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
-@@ -230,7 +234,7 @@ static inline void __dma_sync(struct page *page,
- static void mips_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
- 	size_t size, enum dma_data_direction direction, struct dma_attrs *attrs)
- {
--	if (cpu_is_noncoherent_r10000(dev))
-+	if (cpu_needs_post_dma_flush(dev))
- 		__dma_sync(dma_addr_to_page(dev, dma_addr),
- 			   dma_addr & ~PAGE_MASK, size, direction);
- 
-@@ -284,7 +288,7 @@ static void mips_dma_unmap_sg(struct device *dev, struct scatterlist *sg,
- static void mips_dma_sync_single_for_cpu(struct device *dev,
- 	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction)
- {
--	if (cpu_is_noncoherent_r10000(dev))
-+	if (cpu_needs_post_dma_flush(dev))
- 		__dma_sync(dma_addr_to_page(dev, dma_handle),
- 			   dma_handle & ~PAGE_MASK, size, direction);
- }
-@@ -305,7 +309,7 @@ static void mips_dma_sync_sg_for_cpu(struct device *dev,
- 
- 	/* Make sure that gcc doesn't leave the empty loop body.  */
- 	for (i = 0; i < nelems; i++, sg++) {
--		if (cpu_is_noncoherent_r10000(dev))
-+		if (cpu_needs_post_dma_flush(dev))
- 			__dma_sync(sg_page(sg), sg->offset, sg->length,
- 				   direction);
- 	}
+ 		if (tb[FRA_PRIORITY] &&
 -- 
 1.8.3.2
 
