@@ -1,174 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611Ab3LSQIu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:08:50 -0500
-Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:50400 "EHLO
-	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754372Ab3LSPui (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:50:38 -0500
-Message-Id: <20131219155032.657725367@linux.com>
-Date: Thu, 19 Dec 2013 09:50:33 -0600
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 18/40] percpu: Add preemption checks to __this_cpu ops
-References: <20131219155015.443763038@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=preempt_check_this_cpu_ops
+	id S1756702Ab3LSQKJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:10:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33232 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753311Ab3LSQKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 11:10:04 -0500
+Message-ID: <52B31A39.5030700@zytor.com>
+Date: Thu, 19 Dec 2013 08:09:29 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Len Brown <lenb@kernel.org>, x86@kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        stable@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power regression
+References: <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com> <20131219122257.GC11279@gmail.com> <52B316FF.50906@zytor.com> <20131219160210.GA28426@gmail.com>
+In-Reply-To: <20131219160210.GA28426@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Patch depends on another patch in this series that introduces raw_cpu_ops]
+On 12/19/2013 08:02 AM, Ingo Molnar wrote:
+>>
+>> __monitor() currently doesn't, which is idiotic.
+> 
+> Hm, __monitor() seems to take a void *:
+> 
+>  arch/x86/include/asm/processor.h:static inline void __monitor(const void *eax, unsigned long ecx,
+> 
+> So writing:
+> 
+> 		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
+> 			clflush(&current_thread_info()->flags);
+> 
+>   		__monitor(&current_thread_info()->flags, 0, 0);
+> 
 
-We define a check function in order to avoid trouble with the
-include files. Then the higher level __this_cpu macros are
-modified to invoke the preemption check.
+Yes, brain failure on my part.
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Christoph Lameter <cl@linux.com>
+	-hpa
 
-Index: linux/include/linux/percpu.h
-===================================================================
---- linux.orig/include/linux/percpu.h	2013-12-18 14:12:06.840663602 -0600
-+++ linux/include/linux/percpu.h	2013-12-18 14:12:06.830663926 -0600
-@@ -172,6 +172,12 @@ extern phys_addr_t per_cpu_ptr_to_phys(v
- 
- extern void __bad_size_call_parameter(void);
- 
-+#ifdef CONFIG_DEBUG_PREEMPT
-+extern void __this_cpu_preempt_check(const char *op);
-+#else
-+static inline void __this_cpu_preempt_check(const char *op) { }
-+#endif
-+
- #define __pcpu_size_call_return(stem, variable)				\
- ({	typeof(variable) pscr_ret__;					\
- 	__verify_pcpu_ptr(&(variable));					\
-@@ -724,18 +730,24 @@ do {									\
- 
- /*
-  * Generic percpu operations for context that are safe from preemption/interrupts.
-- * Checks will be added here soon.
-  */
- #ifndef __this_cpu_read
--# define __this_cpu_read(pcp)	__pcpu_size_call_return(raw_cpu_read_, (pcp))
-+# define __this_cpu_read(pcp) \
-+	(__this_cpu_preempt_check("read"),__pcpu_size_call_return(raw_cpu_read_, (pcp)))
- #endif
- 
- #ifndef __this_cpu_write
--# define __this_cpu_write(pcp, val)	__pcpu_size_call(raw_cpu_write_, (pcp), (val))
-+# define __this_cpu_write(pcp, val)					\
-+do { __this_cpu_preempt_check("write");					\
-+     __pcpu_size_call(raw_cpu_write_, (pcp), (val));			\
-+} while (0)
- #endif
- 
- #ifndef __this_cpu_add
--# define __this_cpu_add(pcp, val)	__pcpu_size_call(raw_cpu_add_, (pcp), (val))
-+# define __this_cpu_add(pcp, val)					 \
-+do { __this_cpu_preempt_check("add");					\
-+	__pcpu_size_call(raw_cpu_add_, (pcp), (val));			\
-+} while (0)
- #endif
- 
- #ifndef __this_cpu_sub
-@@ -751,16 +763,23 @@ do {									\
- #endif
- 
- #ifndef __this_cpu_and
--# define __this_cpu_and(pcp, val)	__pcpu_size_call(raw_cpu_and_, (pcp), (val))
-+# define __this_cpu_and(pcp, val)					\
-+do { __this_cpu_preempt_check("and");					\
-+	__pcpu_size_call(raw_cpu_and_, (pcp), (val));			\
-+} while (0)
-+
- #endif
- 
- #ifndef __this_cpu_or
--# define __this_cpu_or(pcp, val)	__pcpu_size_call(raw_cpu_or_, (pcp), (val))
-+# define __this_cpu_or(pcp, val)					\
-+do { __this_cpu_preempt_check("or");					\
-+	__pcpu_size_call(raw_cpu_or_, (pcp), (val));			\
-+} while (0)
- #endif
- 
- #ifndef __this_cpu_add_return
- # define __this_cpu_add_return(pcp, val)	\
--	__pcpu_size_call_return2(raw_cpu_add_return_, pcp, val)
-+	(__this_cpu_preempt_check("add_return"),__pcpu_size_call_return2(raw_cpu_add_return_, pcp, val))
- #endif
- 
- #define __this_cpu_sub_return(pcp, val)	__this_cpu_add_return(pcp, -(typeof(pcp))(val))
-@@ -769,17 +788,17 @@ do {									\
- 
- #ifndef __this_cpu_xchg
- # define __this_cpu_xchg(pcp, nval)	\
--	__pcpu_size_call_return2(raw_cpu_xchg_, (pcp), nval)
-+	(__this_cpu_preempt_check("xchg"),__pcpu_size_call_return2(raw_cpu_xchg_, (pcp), nval))
- #endif
- 
- #ifndef __this_cpu_cmpxchg
- # define __this_cpu_cmpxchg(pcp, oval, nval)	\
--	__pcpu_size_call_return2(raw_cpu_cmpxchg_, pcp, oval, nval)
-+	(__this_cpu_preempt_check("cmpxchg"),__pcpu_size_call_return2(raw_cpu_cmpxchg_, pcp, oval, nval))
- #endif
- 
- #ifndef __this_cpu_cmpxchg_double
- # define __this_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
--	__pcpu_double_call_return_bool(raw_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2))
-+	(__this_cpu_preempt_check("cmpxchg_double"),__pcpu_double_call_return_bool(raw_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2)))
- #endif
- 
- #endif /* __LINUX_PERCPU_H */
-Index: linux/lib/smp_processor_id.c
-===================================================================
---- linux.orig/lib/smp_processor_id.c	2013-12-18 14:12:06.840663602 -0600
-+++ linux/lib/smp_processor_id.c	2013-12-18 14:12:06.840663602 -0600
-@@ -7,7 +7,7 @@
- #include <linux/kallsyms.h>
- #include <linux/sched.h>
- 
--notrace unsigned int debug_smp_processor_id(void)
-+notrace static unsigned int check_preemption_disabled(char *what)
- {
- 	int this_cpu = raw_smp_processor_id();
- 
-@@ -38,9 +38,9 @@ notrace unsigned int debug_smp_processor
- 	if (!printk_ratelimit())
- 		goto out_enable;
- 
--	printk(KERN_ERR "BUG: using smp_processor_id() in preemptible [%08x] "
--			"code: %s/%d\n",
--			preempt_count() - 1, current->comm, current->pid);
-+	printk(KERN_ERR "BUG: using %s in preemptible [%08x] code: %s/%d\n",
-+		what, preempt_count() - 1, current->comm, current->pid);
-+
- 	print_symbol("caller is %s\n", (long)__builtin_return_address(0));
- 	dump_stack();
- 
-@@ -50,5 +50,18 @@ out:
- 	return this_cpu;
- }
- 
-+notrace unsigned int debug_smp_processor_id(void)
-+{
-+	return check_preemption_disabled("smp_processor_id()");
-+}
- EXPORT_SYMBOL(debug_smp_processor_id);
- 
-+notrace void __this_cpu_preempt_check(const char *op)
-+{
-+	char text[40];
-+
-+	snprintf(text, sizeof(text), "__this_cpu_%s()", op);
-+	check_preemption_disabled(text);
-+}
-+EXPORT_SYMBOL(__this_cpu_preempt_check);
-+
 
