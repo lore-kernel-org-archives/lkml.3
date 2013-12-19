@@ -1,76 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab3LSHyN (ORCPT <rfc822;w@1wt.eu>);
+	id S1753001Ab3LSHyR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 02:54:17 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37335 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752919Ab3LSHyN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Dec 2013 02:54:13 -0500
-Received: from mga11.intel.com ([192.55.52.93]:27341 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951Ab3LSHyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 02:54:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="446822367"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
-In-Reply-To: <20131218150900.GU21999@twins.programming.kicks-ass.net>
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-5-git-send-email-alexander.shishkin@linux.intel.com> <20131217161126.GL13532@twins.programming.kicks-ass.net> <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com> <20131218133439.GR21999@twins.programming.kicks-ass.net> <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com> <20131218141125.GT21999@twins.programming.kicks-ass.net> <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com> <20131218150900.GU21999@twins.programming.kicks-ass.net>
-User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Thu, 19 Dec 2013 09:53:44 +0200
-Message-ID: <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Elliott@hp.com, samer.el-haj-mahmoud@hp.com,
+        Oliver Neukum <oneukum@suse.de>, werner@suse.com, trenn@suse.de,
+        JBeulich@suse.com, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, x86@kernel.org,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: [RFC PATCH 06/14] rtc-efi: register rtc-efi device when EFI enabled
+Date: Thu, 19 Dec 2013 15:51:47 +0800
+Message-Id: <1387439515-8926-7-git-send-email-jlee@suse.com>
+X-Mailer: git-send-email 1.6.0.2
+In-Reply-To: <1387439515-8926-1-git-send-email-jlee@suse.com>
+References: <1387439515-8926-1-git-send-email-jlee@suse.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+UEFI time services, GetTime(), SetTime(), GetWakeupTime(), SetWakeupTime() are also
+supported by other non-IA64 architecutre with UEFI BIOS, e.g. x86.
 
-> On Wed, Dec 18, 2013 at 04:22:36PM +0200, Alexander Shishkin wrote:
->> > Still confused, if you cannot copy it into one buffer, then why can you
->> > copy it into a second buffer?
->> 
->> It's not copied, hardware writes directly into that second buffer.
->
-> Where's the PT documentation? I can't find it in the SDM and your ISA
-> extensions link is a generic Intel website which is friggin useless
-> (like all corporate websites strive to be).
+This patch changed RTC_DRV_EFI configuration to depend on EFI but not just IA64. It
+checks efi_enabled flag and efi-rtc driver should enabled.
 
-[1]
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+---
+ arch/x86/platform/efi/efi.c |   17 +++++++++++++++++
+ drivers/rtc/Kconfig         |    2 +-
+ 2 files changed, 18 insertions(+), 1 deletions(-)
 
-> Your actual PT patch doesn't describe how the things works either, and
-> while I could go read the code, I'm too lazy.
->
-> The thing is; why can't you zero-copy whatever buffer the hardware
-> writes into, into the normal buffer?
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 7a7a692..42d6052 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -42,6 +42,7 @@
+ #include <linux/io.h>
+ #include <linux/reboot.h>
+ #include <linux/bcd.h>
++#include <linux/platform_device.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/efi.h>
+@@ -876,6 +877,22 @@ void __init efi_enter_virtual_mode(void)
+ 			 0, NULL);
+ }
+ 
++static struct platform_device rtc_efi_dev = {
++	.name = "rtc-efi",
++	.id = -1,
++};
++
++static int __init rtc_init(void)
++{
++	if (efi_enabled(EFI_RUNTIME_SERVICES) &&
++	    platform_device_register(&rtc_efi_dev) < 0)
++		pr_err("unable to register rtc-efi device...\n");
++
++	/* not necessarily an error */
++	return 0;
++}
++arch_initcall(rtc_init);
++
+ /*
+  * Convenience functions to obtain memory types and attributes
+  */
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 349dbc4..bee13de 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -726,7 +726,7 @@ config RTC_DRV_DA9055
+ 
+ config RTC_DRV_EFI
+ 	tristate "EFI RTC"
+-	depends on IA64
++	depends on EFI
+ 	help
+ 	  If you say yes here you will get support for the EFI
+ 	  Real Time Clock.
+-- 
+1.6.4.2
 
-I'm not sure I understand. You mean, have the buffer split between perf
-data and trace data?
-
-> Machinery like that would also be useful to zero-copy bits out of the
-> buffer right into the page-cache.
-
-Please elaborate.
-
->> I've done the same with BTS now (as Ingo suggested) and it also benefits
->> from this approach.
->
-> The problem with DS is that it needs physically contiguous pages is it
-> not? So you cannot really allocate a large buffer, and you end up
-> needing to copy or swizzle stuff.
-
-Yes and some implementations of PT have the same issue, but you can do a
-sufficiently large high order allocation and map it to userspace and
-still no copying (or parsing/decoding) in kernel space required.
-
-[1] http://download-software.intel.com/sites/default/files/managed/71/2e/319433-017.pdf
-
-Regards,
---
-Alex
