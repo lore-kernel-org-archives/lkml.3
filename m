@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab3LSNLv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:11:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44378 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753457Ab3LSLzV (ORCPT
+	id S1754204Ab3LSOoN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:44:13 -0500
+Received: from mo3.mail-out.ovh.net ([178.32.228.3]:40196 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753184Ab3LSOoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:55:21 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Pravin B Shelar <pshelar@nicira.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 004/208] ipv6: fix headroom calculation in udp6_ufo_fragment
-Date: Thu, 19 Dec 2013 11:51:42 +0000
-Message-Id: <1387454106-19326-5-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 09:44:11 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Landley <rob@landley.net>, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org, devicetree@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+Subject: [RFC PATCH] gpio: add GPIO hogging mechanism
+Date: Thu, 19 Dec 2013 15:34:30 +0100
+Message-Id: <1387463671-1164-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 292452500827175010
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+Hello,
 
-------------------
+This a proposal for the GPIO hog concept described by Linus (Walleij).
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+I know there were work in progress on this subject (Jiri and Ben at least:
+https://www.mail-archive.com/linux-gpio@vger.kernel.org/msg00864.html),
+so don't hesitate to point out if something similar has already been posted.
 
-commit 0e033e04c2678dbbe74a46b23fffb7bb918c288e upstream.
+Best Regards,
 
-Commit 1e2bd517c108816220f262d7954b697af03b5f9c ("udp6: Fix udp
-fragmentation for tunnel traffic.") changed the calculation if
-there is enough space to include a fragment header in the skb from a
-skb->mac_header dervived one to skb_headroom. Because we already peeled
-off the skb to transport_header this is wrong. Change this back to check
-if we have enough room before the mac_header.
+Boris 
 
-This fixes a panic Saran Neti reported. He used the tbf scheduler which
-skb_gso_segments the skb. The offsets get negative and we panic in memcpy
-because the skb was erroneously not expanded at the head.
+Boris BREZILLON (1):
+  gpio: add GPIO hogging mechanism
 
-Reported-by: Saran Neti <Saran.Neti@telus.com>
-Cc: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.11: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/ipv6/udp_offload.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/devicetree/bindings/gpio/gpio.txt |   47 ++++++++
+ drivers/base/Makefile                           |    1 +
+ drivers/base/dd.c                               |    5 +
+ drivers/base/gpio.c                             |   59 ++++++++++
+ drivers/gpio/devres.c                           |   39 +++++++
+ drivers/gpio/gpiolib-of.c                       |  134 +++++++++++++++++++++++
+ drivers/gpio/gpiolib.c                          |  103 +++++++++++++++++
+ include/linux/device.h                          |    5 +
+ include/linux/gpio/consumer.h                   |   25 +++++
+ include/linux/gpio/devinfo.h                    |   38 +++++++
+ include/linux/of_gpio.h                         |   19 ++++
+ 11 files changed, 475 insertions(+)
+ create mode 100644 drivers/base/gpio.c
+ create mode 100644 include/linux/gpio/devinfo.h
 
-diff --git a/net/ipv6/udp_offload.c b/net/ipv6/udp_offload.c
-index 5d1b8d7..657914b 100644
---- a/net/ipv6/udp_offload.c
-+++ b/net/ipv6/udp_offload.c
-@@ -86,7 +86,7 @@ static struct sk_buff *udp6_ufo_fragment(struct sk_buff *skb,
- 
- 	/* Check if there is enough headroom to insert fragment header. */
- 	tnl_hlen = skb_tnl_header_len(skb);
--	if (skb_headroom(skb) < (tnl_hlen + frag_hdr_sz)) {
-+	if (skb->mac_header < (tnl_hlen + frag_hdr_sz)) {
- 		if (gso_pskb_expand_head(skb, tnl_hlen + frag_hdr_sz))
- 			goto out;
- 	}
 -- 
-1.8.3.2
+1.7.9.5
 
