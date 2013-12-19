@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3LSQ0T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:26:19 -0500
-Received: from www.linutronix.de ([62.245.132.108]:54435 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442Ab3LSQ0Q (ORCPT
+	id S1754253Ab3LSQ3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:29:00 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:54275 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753648Ab3LSQ26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:26:16 -0500
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Felipe Balbi <balbi@ti.com>, devicetree@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 2/2] input: ti_am33x_tsc: make the documentation for the ti,wire-config parameter clear
-Date: Thu, 19 Dec 2013 17:25:51 +0100
-Message-Id: <1387470351-4696-2-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.8.5.1
-In-Reply-To: <1387470351-4696-1-git-send-email-bigeasy@linutronix.de>
-References: <1387470351-4696-1-git-send-email-bigeasy@linutronix.de>
+	Thu, 19 Dec 2013 11:28:58 -0500
+Message-ID: <52B31EC1.6050403@gmail.com>
+Date: Thu, 19 Dec 2013 09:28:49 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+To: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        eranian@google.com, adrian.hunter@intel.com, mingo@redhat.com,
+        paulus@samba.org, a.p.zijlstra@chello.nl,
+        Pekka Enberg <penberg@iki.fi>
+Subject: Re: [PATCH 0/4] Add support of guest user space symbols for perf
+ kvm command.
+References: <cover.1387493396.git.yangds.fnst@cn.fujitsu.com> <20131219141232.GM4819@ghostprotocols.net> <20131219153453.GA20044@gmail.com>
+In-Reply-To: <20131219153453.GA20044@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The document says "first four bits" and means the upper nibble. Most
-people would probably agree that the first four bits are bits 0…3 and
-that is the lower nibble.
-This patch updates the documentation so it is clear what is meant.
+On 12/19/13, 8:34 AM, Ingo Molnar wrote:
 
-Acked-by: Kumar Gala <galak@codeaurora.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- .../devicetree/bindings/input/touchscreen/ti-tsc-adc.txt    | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+> Btw., having to specify a '--guestmount /tmp/guestmount/' just to
+> achieve a natural feature (proper guest symbol resolution) is a poor
+> user interface, obviously.
+>
+> Is there perhaps a predictable pattern as to where qemu (or libvirt)
+> puts a user's guest mounts, or some other discovery method?
 
-diff --git a/Documentation/devicetree/bindings/input/touchscreen/ti-tsc-adc.txt b/Documentation/devicetree/bindings/input/touchscreen/ti-tsc-adc.txt
-index 878549b..fa15500 100644
---- a/Documentation/devicetree/bindings/input/touchscreen/ti-tsc-adc.txt
-+++ b/Documentation/devicetree/bindings/input/touchscreen/ti-tsc-adc.txt
-@@ -17,13 +17,16 @@
- 				remaining 4 can be used by the ADC.
- 	ti,wire-config: Different boards could have a different order for
- 			connecting wires on touchscreen. We need to provide an
--			8 bit number where in the 1st four bits represent the
--			analog lines and the next 4 bits represent positive/
--			negative terminal on that input line. Notations to
--			represent the input lines and terminals resoectively
--			is as follows:
-+			8 bit number where the most significant nibble represent
-+			the analog lines and the least significant nibble
-+			represent positive/ negative terminal on that input
-+			line. Notations to represent the input lines and
-+			terminals resoectively is as follows:
- 			AIN0 = 0, AIN1 = 1 and so on till AIN7 = 7.
- 			XP  = 0, XN = 1, YP = 2, YN = 3.
-+
-+			Example: ti,wire-config = <0x71>;
-+			=> line AIN7, configuration XN
- - child "adc"
- 	ti,adc-channels: List of analog inputs available for ADC.
- 			 AIN0 = 0, AIN1 = 1 and so on till AIN7 = 7.
--- 
-1.8.5.1
+No, qemu does not export guest info to the host. A user has to create it 
+-- either using something like sshfs or copying the files. I tend to use 
+the latter as it is simpler.
+
+David
+
+>
+> If yes then it would be possible to automatically look for that
+> pattern, and use the guest filesystem when it's available, without the
+> user having to manually configure the path.
+>
+> ( Ideally we'd have kernel help for discovering this, but last time I
+>    raised that with the KVM folks there was resistence. )
+
 
