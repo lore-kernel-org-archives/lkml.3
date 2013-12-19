@@ -1,106 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab3LSLWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:22:34 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:33101 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab3LSLWb (ORCPT
+	id S1754242Ab3LSL4T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:56:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44549 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754159Ab3LSL4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:22:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <CANq1E4RuteNfo23DQ5SvGXpsrpTmotLoJ6Wv1L8hAbE1ict6aA@mail.gmail.com>
-References: <5237430B.5040009@canonical.com>
-	<20130916203824.GP25896@mwanda>
-	<52376ED9.5080208@canonical.com>
-	<20130916210503.GQ25896@mwanda>
-	<5237A5D5.8010006@canonical.com>
-	<alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz>
-	<52432152.3030100@canonical.com>
-	<alpine.LNX.2.00.1309271250130.18703@pobox.suse.cz>
-	<52459942.3020600@canonical.com>
-	<alpine.LNX.2.00.1312161401100.12882@pobox.suse.cz>
-	<CANq1E4QriATWbfruwj7oVnEBHvtLe_s2yhSSU5COXFjomt5R_A@mail.gmail.com>
-	<alpine.LNX.2.00.1312191058100.28730@pobox.suse.cz>
-	<CANq1E4RuteNfo23DQ5SvGXpsrpTmotLoJ6Wv1L8hAbE1ict6aA@mail.gmail.com>
-Date: Thu, 19 Dec 2013 12:22:30 +0100
-Message-ID: <CANq1E4R3LSx7pYncZ1dWf-BYY5gvC15=AjhFvurFqp0jaTUqYg@mail.gmail.com>
-Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to memdup
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, thomas@m3y3r.de,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
-        HID CORE LAYER <linux-input@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<devel@linuxdriverproject.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 Dec 2013 06:56:12 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Salam Noureddine <noureddine@aristanetworks.com>,
+        Ben Greear <greearb@candelatech.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 035/208] packet: fix use after free race in send path when dev is released
+Date: Thu, 19 Dec 2013 11:52:13 +0000
+Message-Id: <1387454106-19326-36-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-On Thu, Dec 19, 2013 at 11:08 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
->
-> On Thu, Dec 19, 2013 at 10:59 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->> On Thu, 19 Dec 2013, David Herrmann wrote:
->>
->>> > diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
->>> > index 253fe23..81eacd3 100644
->>> > --- a/drivers/hid/hid-core.c
->>> > +++ b/drivers/hid/hid-core.c
->>> > @@ -1334,7 +1334,7 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
->>> >                 csize--;
->>> >         }
->>> >
->>> > -       rsize = ((report->size - 1) >> 3) + 1;
->>> > +       rsize = ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
->>>
->>> Isn't "report->id" already covered by "if (report_enum->numbered)"
->>> above? The test for "id > 0" won't work here as in this case
->>> "report_enum->numbered" must already be set to true by the hid-desc
->>> parser, doesn't it?
->>
->> Right, that one is not correct here, thanks.
->>
->>> Where exactly did you get the +7 from?
->>
->> Please see commit (the one I am not really proud of) 27ce405039bfe6d3.
->
-> Eh, I remember.. Ok, but the magic-mouse is BT right? So this commit
-> really breaks BT drivers:
->
-> commit b1a1442a23776756b254b69786848a94d92445ba
-> Author: Jiri Kosina <jkosina@suse.cz>
-> Date:   Mon Jun 3 11:27:48 2013 +0200
->
->     HID: core: fix reporting of raw events
->
-> Problem is, if the raw_event() callback returned 0 earlier, we just
-> skipped raw input reports. However, we now always call the
-> hid_report_raw_event() helper. Which is normally fine, but the helper
-> expects the input buffer to be of size HID_MAX_REPORT_SIZE, which is
-> *not* true for HIDP. So the memset() writes over some random memory.
->
-> I don't know exactly how to fix it. HID_MAX_BUFFER_SIZE is too big to
-> be allocated on the stack, but we're in atomic-context here so a
-> kzalloc(rsize, GFP_ATOMIC) seems overkill. So I guess we'd have to
-> look into HIDP to make the skb big enough, but I'm not sure how we can
-> achieve that.
->
-> So off the top of my head, the best idea is to add "char
-> inbuf[HID_MAX_BUFFER_SIZE];" to the hidp_session object in HIDP and
-> copy every input-report into the buffer before passing to
-> hid_input_report().
+------------------
 
-As this thread doesn't really contain any oops message nor the exact
-driver name (except mentioning hyperv and magicmouse), I fixed a
-related bug for HIDP:
-  http://thread.gmane.org/gmane.linux.bluez.kernel/41969
+From: Daniel Borkmann <dborkman@redhat.com>
 
-A similar patch is *really* required for hid-hyperv.c as it also does
-not provide a properly sized buffer to hid_input_report().
+commit e40526cb20b5ee53419452e1f03d97092f144418 upstream.
 
-David
+Salam reported a use after free bug in PF_PACKET that occurs when
+we're sending out frames on a socket bound device and suddenly the
+net device is being unregistered. It appears that commit 827d9780
+introduced a possible race condition between {t,}packet_snd() and
+packet_notifier(). In the case of a bound socket, packet_notifier()
+can drop the last reference to the net_device and {t,}packet_snd()
+might end up suddenly sending a packet over a freed net_device.
+
+To avoid reverting 827d9780 and thus introducing a performance
+regression compared to the current state of things, we decided to
+hold a cached RCU protected pointer to the net device and maintain
+it on write side via bind spin_lock protected register_prot_hook()
+and __unregister_prot_hook() calls.
+
+In {t,}packet_snd() path, we access this pointer under rcu_read_lock
+through packet_cached_dev_get() that holds reference to the device
+to prevent it from being freed through packet_notifier() while
+we're in send path. This is okay to do as dev_put()/dev_hold() are
+per-cpu counters, so this should not be a performance issue. Also,
+the code simplifies a bit as we don't need need_rls_dev anymore.
+
+Fixes: 827d978037d7 ("af-packet: Use existing netdev reference for bound sockets.")
+Reported-by: Salam Noureddine <noureddine@aristanetworks.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
+Cc: Ben Greear <greearb@candelatech.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/packet/af_packet.c | 59 ++++++++++++++++++++++++++++++--------------------
+ net/packet/internal.h  |  1 +
+ 2 files changed, 37 insertions(+), 23 deletions(-)
+
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 739c50d..e7fdbd8 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -244,11 +244,15 @@ static void __fanout_link(struct sock *sk, struct packet_sock *po);
+ static void register_prot_hook(struct sock *sk)
+ {
+ 	struct packet_sock *po = pkt_sk(sk);
++
+ 	if (!po->running) {
+-		if (po->fanout)
++		if (po->fanout) {
+ 			__fanout_link(sk, po);
+-		else
++		} else {
+ 			dev_add_pack(&po->prot_hook);
++			rcu_assign_pointer(po->cached_dev, po->prot_hook.dev);
++		}
++
+ 		sock_hold(sk);
+ 		po->running = 1;
+ 	}
+@@ -266,10 +270,13 @@ static void __unregister_prot_hook(struct sock *sk, bool sync)
+ 	struct packet_sock *po = pkt_sk(sk);
+ 
+ 	po->running = 0;
+-	if (po->fanout)
++	if (po->fanout) {
+ 		__fanout_unlink(sk, po);
+-	else
++	} else {
+ 		__dev_remove_pack(&po->prot_hook);
++		RCU_INIT_POINTER(po->cached_dev, NULL);
++	}
++
+ 	__sock_put(sk);
+ 
+ 	if (sync) {
+@@ -2041,12 +2048,24 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
+ 	return tp_len;
+ }
+ 
++static struct net_device *packet_cached_dev_get(struct packet_sock *po)
++{
++	struct net_device *dev;
++
++	rcu_read_lock();
++	dev = rcu_dereference(po->cached_dev);
++	if (dev)
++		dev_hold(dev);
++	rcu_read_unlock();
++
++	return dev;
++}
++
+ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
+ {
+ 	struct sk_buff *skb;
+ 	struct net_device *dev;
+ 	__be16 proto;
+-	bool need_rls_dev = false;
+ 	int err, reserve = 0;
+ 	void *ph;
+ 	struct sockaddr_ll *saddr = (struct sockaddr_ll *)msg->msg_name;
+@@ -2059,7 +2078,7 @@ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
+ 	mutex_lock(&po->pg_vec_lock);
+ 
+ 	if (saddr == NULL) {
+-		dev = po->prot_hook.dev;
++		dev	= packet_cached_dev_get(po);
+ 		proto	= po->num;
+ 		addr	= NULL;
+ 	} else {
+@@ -2073,19 +2092,17 @@ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
+ 		proto	= saddr->sll_protocol;
+ 		addr	= saddr->sll_addr;
+ 		dev = dev_get_by_index(sock_net(&po->sk), saddr->sll_ifindex);
+-		need_rls_dev = true;
+ 	}
+ 
+ 	err = -ENXIO;
+ 	if (unlikely(dev == NULL))
+ 		goto out;
+-
+-	reserve = dev->hard_header_len;
+-
+ 	err = -ENETDOWN;
+ 	if (unlikely(!(dev->flags & IFF_UP)))
+ 		goto out_put;
+ 
++	reserve = dev->hard_header_len;
++
+ 	size_max = po->tx_ring.frame_size
+ 		- (po->tp_hdrlen - sizeof(struct sockaddr_ll));
+ 
+@@ -2162,8 +2179,7 @@ out_status:
+ 	__packet_set_status(po, ph, status);
+ 	kfree_skb(skb);
+ out_put:
+-	if (need_rls_dev)
+-		dev_put(dev);
++	dev_put(dev);
+ out:
+ 	mutex_unlock(&po->pg_vec_lock);
+ 	return err;
+@@ -2201,7 +2217,6 @@ static int packet_snd(struct socket *sock,
+ 	struct sk_buff *skb;
+ 	struct net_device *dev;
+ 	__be16 proto;
+-	bool need_rls_dev = false;
+ 	unsigned char *addr;
+ 	int err, reserve = 0;
+ 	struct virtio_net_hdr vnet_hdr = { 0 };
+@@ -2217,7 +2232,7 @@ static int packet_snd(struct socket *sock,
+ 	 */
+ 
+ 	if (saddr == NULL) {
+-		dev = po->prot_hook.dev;
++		dev	= packet_cached_dev_get(po);
+ 		proto	= po->num;
+ 		addr	= NULL;
+ 	} else {
+@@ -2229,19 +2244,17 @@ static int packet_snd(struct socket *sock,
+ 		proto	= saddr->sll_protocol;
+ 		addr	= saddr->sll_addr;
+ 		dev = dev_get_by_index(sock_net(sk), saddr->sll_ifindex);
+-		need_rls_dev = true;
+ 	}
+ 
+ 	err = -ENXIO;
+-	if (dev == NULL)
++	if (unlikely(dev == NULL))
+ 		goto out_unlock;
+-	if (sock->type == SOCK_RAW)
+-		reserve = dev->hard_header_len;
+-
+ 	err = -ENETDOWN;
+-	if (!(dev->flags & IFF_UP))
++	if (unlikely(!(dev->flags & IFF_UP)))
+ 		goto out_unlock;
+ 
++	if (sock->type == SOCK_RAW)
++		reserve = dev->hard_header_len;
+ 	if (po->has_vnet_hdr) {
+ 		vnet_hdr_len = sizeof(vnet_hdr);
+ 
+@@ -2375,15 +2388,14 @@ static int packet_snd(struct socket *sock,
+ 	if (err > 0 && (err = net_xmit_errno(err)) != 0)
+ 		goto out_unlock;
+ 
+-	if (need_rls_dev)
+-		dev_put(dev);
++	dev_put(dev);
+ 
+ 	return len;
+ 
+ out_free:
+ 	kfree_skb(skb);
+ out_unlock:
+-	if (dev && need_rls_dev)
++	if (dev)
+ 		dev_put(dev);
+ out:
+ 	return err;
+@@ -2603,6 +2615,7 @@ static int packet_create(struct net *net, struct socket *sock, int protocol,
+ 	po = pkt_sk(sk);
+ 	sk->sk_family = PF_PACKET;
+ 	po->num = proto;
++	RCU_INIT_POINTER(po->cached_dev, NULL);
+ 
+ 	sk->sk_destruct = packet_sock_destruct;
+ 	sk_refcnt_debug_inc(sk);
+diff --git a/net/packet/internal.h b/net/packet/internal.h
+index c4e4b45..1035fa2 100644
+--- a/net/packet/internal.h
++++ b/net/packet/internal.h
+@@ -113,6 +113,7 @@ struct packet_sock {
+ 	unsigned int		tp_loss:1;
+ 	unsigned int		tp_tx_has_off:1;
+ 	unsigned int		tp_tstamp;
++	struct net_device __rcu	*cached_dev;
+ 	struct packet_type	prot_hook ____cacheline_aligned_in_smp;
+ };
+ 
+-- 
+1.8.3.2
+
