@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757518Ab3LSNKW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:10:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44404 "EHLO
+	id S1754493Ab3LSL4o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:56:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44673 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753676Ab3LSLza (ORCPT
+	with ESMTP id S1754444Ab3LSL4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:55:30 -0500
+	Thu, 19 Dec 2013 06:56:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Hemminger <stephen@networkplumber.org>,
-        Florian Weimer <fweimer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Andrew Glen <AGlen@bepmarine.com>, Marc Kleine-Budde <mkl@pengutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 009/208] random32: fix off-by-one in seeding requirement
-Date: Thu, 19 Dec 2013 11:51:47 +0000
-Message-Id: <1387454106-19326-10-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 057/208] can: c_can: don't call pm_runtime_get_sync() from interrupt context
+Date: Thu, 19 Dec 2013 11:52:35 +0000
+Message-Id: <1387454106-19326-58-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -31,101 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit 51c37a70aaa3f95773af560e6db3073520513912 upstream.
+commit e35d46adc49b469fd92bdb64fea8af93640e6651 upstream.
 
-For properly initialising the Tausworthe generator [1], we have
-a strict seeding requirement, that is, s1 > 1, s2 > 7, s3 > 15.
+The c_can driver contians a callpath (c_can_poll -> c_can_state_change ->
+c_can_get_berr_counter) which may call pm_runtime_get_sync() from the IRQ
+handler, which is not allowed and results in "BUG: scheduling while atomic".
 
-Commit 697f8d0348 ("random32: seeding improvement") introduced
-a __seed() function that imposes boundary checks proposed by the
-errata paper [2] to properly ensure above conditions.
+This problem is fixed by introducing __c_can_get_berr_counter, which will not
+call pm_runtime_get_sync().
 
-However, we're off by one, as the function is implemented as:
-"return (x < m) ? x + m : x;", and called with __seed(X, 1),
-__seed(X, 7), __seed(X, 15). Thus, an unwanted seed of 1, 7, 15
-would be possible, whereas the lower boundary should actually
-be of at least 2, 8, 16, just as GSL does. Fix this, as otherwise
-an initialization with an unwanted seed could have the effect
-that Tausworthe's PRNG properties cannot not be ensured.
-
-Note that this PRNG is *not* used for cryptography in the kernel.
-
- [1] http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps
- [2] http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme2.ps
-
-Joint work with Hannes Frederic Sowa.
-
-Fixes: 697f8d0348a6 ("random32: seeding improvement")
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Florian Weimer <fweimer@redhat.com>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Andrew Glen <AGlen@bepmarine.com>
+Tested-by: Andrew Glen <AGlen@bepmarine.com>
+Signed-off-by: Andrew Glen <AGlen@bepmarine.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/random.h |  6 +++---
- lib/random32.c         | 14 +++++++-------
- 2 files changed, 10 insertions(+), 10 deletions(-)
+ drivers/net/can/c_can/c_can.c | 21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/random.h b/include/linux/random.h
-index 6312dd9..bf9085e 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -50,9 +50,9 @@ static inline void prandom_seed_state(struct rnd_state *state, u64 seed)
+diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
+index e3fc07c..e59c42b 100644
+--- a/drivers/net/can/c_can/c_can.c
++++ b/drivers/net/can/c_can/c_can.c
+@@ -712,22 +712,31 @@ static int c_can_set_mode(struct net_device *dev, enum can_mode mode)
+ 	return 0;
+ }
+ 
+-static int c_can_get_berr_counter(const struct net_device *dev,
+-					struct can_berr_counter *bec)
++static int __c_can_get_berr_counter(const struct net_device *dev,
++				    struct can_berr_counter *bec)
  {
- 	u32 i = (seed >> 32) ^ (seed << 10) ^ seed;
+ 	unsigned int reg_err_counter;
+ 	struct c_can_priv *priv = netdev_priv(dev);
  
--	state->s1 = __seed(i, 1);
--	state->s2 = __seed(i, 7);
--	state->s3 = __seed(i, 15);
-+	state->s1 = __seed(i, 2);
-+	state->s2 = __seed(i, 8);
-+	state->s3 = __seed(i, 16);
+-	c_can_pm_runtime_get_sync(priv);
+-
+ 	reg_err_counter = priv->read_reg(priv, C_CAN_ERR_CNT_REG);
+ 	bec->rxerr = (reg_err_counter & ERR_CNT_REC_MASK) >>
+ 				ERR_CNT_REC_SHIFT;
+ 	bec->txerr = reg_err_counter & ERR_CNT_TEC_MASK;
+ 
++	return 0;
++}
++
++static int c_can_get_berr_counter(const struct net_device *dev,
++				  struct can_berr_counter *bec)
++{
++	struct c_can_priv *priv = netdev_priv(dev);
++	int err;
++
++	c_can_pm_runtime_get_sync(priv);
++	err = __c_can_get_berr_counter(dev, bec);
+ 	c_can_pm_runtime_put_sync(priv);
+ 
+-	return 0;
++	return err;
  }
  
- #ifdef CONFIG_ARCH_RANDOM
-diff --git a/lib/random32.c b/lib/random32.c
-index 52280d5..01e8890 100644
---- a/lib/random32.c
-+++ b/lib/random32.c
-@@ -141,7 +141,7 @@ void prandom_seed(u32 entropy)
- 	 */
- 	for_each_possible_cpu (i) {
- 		struct rnd_state *state = &per_cpu(net_rand_state, i);
--		state->s1 = __seed(state->s1 ^ entropy, 1);
-+		state->s1 = __seed(state->s1 ^ entropy, 2);
- 	}
- }
- EXPORT_SYMBOL(prandom_seed);
-@@ -158,9 +158,9 @@ static int __init prandom_init(void)
- 		struct rnd_state *state = &per_cpu(net_rand_state,i);
+ /*
+@@ -872,7 +881,7 @@ static int c_can_handle_state_change(struct net_device *dev,
+ 	if (unlikely(!skb))
+ 		return 0;
  
- #define LCG(x)	((x) * 69069)	/* super-duper LCG */
--		state->s1 = __seed(LCG(i + jiffies), 1);
--		state->s2 = __seed(LCG(state->s1), 7);
--		state->s3 = __seed(LCG(state->s2), 15);
-+		state->s1 = __seed(LCG(i + jiffies), 2);
-+		state->s2 = __seed(LCG(state->s1), 8);
-+		state->s3 = __seed(LCG(state->s2), 16);
- 
- 		/* "warm it up" */
- 		prandom_u32_state(state);
-@@ -187,9 +187,9 @@ static int __init prandom_reseed(void)
- 		u32 seeds[3];
- 
- 		get_random_bytes(&seeds, sizeof(seeds));
--		state->s1 = __seed(seeds[0], 1);
--		state->s2 = __seed(seeds[1], 7);
--		state->s3 = __seed(seeds[2], 15);
-+		state->s1 = __seed(seeds[0], 2);
-+		state->s2 = __seed(seeds[1], 8);
-+		state->s3 = __seed(seeds[2], 16);
- 
- 		/* mix it in */
- 		prandom_u32_state(state);
+-	c_can_get_berr_counter(dev, &bec);
++	__c_can_get_berr_counter(dev, &bec);
+ 	reg_err_counter = priv->read_reg(priv, C_CAN_ERR_CNT_REG);
+ 	rx_err_passive = (reg_err_counter & ERR_CNT_RP_MASK) >>
+ 				ERR_CNT_RP_SHIFT;
 -- 
 1.8.3.2
 
