@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab3LSNpb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:45:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39828 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754578Ab3LSNma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:42:30 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 2/9] perf tools: Making QUIET_(CLEAN|INSTAL) variables global
-Date: Thu, 19 Dec 2013 14:42:00 +0100
-Message-Id: <1387460527-15030-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
-References: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
+	id S1753965Ab3LSLzt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:55:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44451 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717Ab3LSLzn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:55:43 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 018/208] isdnloop: use strlcpy() instead of strcpy()
+Date: Thu, 19 Dec 2013 11:51:56 +0000
+Message-Id: <1387454106-19326-19-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving QUIET_(CLEAN|INSTAL) variables into:
-  tools/scripts/Makefile.include
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-to be usable by other tools. The change to use them
-in libtraceevent is in following patches.
+------------------
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Ahern <dsahern@gmail.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
+
+commit f9a23c84486ed350cce7bb1b2828abd1f6658796 upstream.
+
+These strings come from a copy_from_user() and there is no way to be
+sure they are NUL terminated.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- tools/perf/config/utilities.mak | 7 -------
- tools/scripts/Makefile.include  | 3 +++
- 2 files changed, 3 insertions(+), 7 deletions(-)
+ drivers/isdn/isdnloop/isdnloop.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/config/utilities.mak b/tools/perf/config/utilities.mak
-index f168deb..4d985e0 100644
---- a/tools/perf/config/utilities.mak
-+++ b/tools/perf/config/utilities.mak
-@@ -178,10 +178,3 @@ endef
- _ge_attempt = $(if $(get-executable),$(get-executable),$(_gea_warn)$(call _gea_err,$(2)))
- _gea_warn = $(warning The path '$(1)' is not executable.)
- _gea_err  = $(if $(1),$(error Please set '$(1)' appropriately))
--
--ifneq ($(findstring $(MAKEFLAGS),s),s)
--  ifneq ($(V),1)
--    QUIET_CLEAN		= @printf '  CLEAN    %s\n' $1;
--    QUIET_INSTALL	= @printf '  INSTALL  %s\n' $1;
--  endif
--endif
-diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
-index ee76544..e4cfbed 100644
---- a/tools/scripts/Makefile.include
-+++ b/tools/scripts/Makefile.include
-@@ -76,5 +76,8 @@ ifneq ($(findstring $(MAKEFLAGS),s),s)
- 		+@echo	       '  DESCEND  '$(1); \
- 		mkdir -p $(OUTPUT)$(1) && \
- 		$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1) $(2)
-+
-+	QUIET_CLEAN    = @printf '  CLEAN    %s\n' $1;
-+	QUIET_INSTALL  = @printf '  INSTALL  %s\n' $1;
-   endif
- endif
+diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
+index baf2686..02125e6 100644
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -1083,8 +1083,10 @@ isdnloop_start(isdnloop_card *card, isdnloop_sdef *sdefp)
+ 			spin_unlock_irqrestore(&card->isdnloop_lock, flags);
+ 			return -ENOMEM;
+ 		}
+-		for (i = 0; i < 3; i++)
+-			strcpy(card->s0num[i], sdef.num[i]);
++		for (i = 0; i < 3; i++) {
++			strlcpy(card->s0num[i], sdef.num[i],
++				sizeof(card->s0num[0]));
++		}
+ 		break;
+ 	case ISDN_PTYPE_1TR6:
+ 		if (isdnloop_fake(card, "DRV1.04TC-1TR6-CAPI-CNS-BASIS-29.11.95",
+@@ -1097,7 +1099,7 @@ isdnloop_start(isdnloop_card *card, isdnloop_sdef *sdefp)
+ 			spin_unlock_irqrestore(&card->isdnloop_lock, flags);
+ 			return -ENOMEM;
+ 		}
+-		strcpy(card->s0num[0], sdef.num[0]);
++		strlcpy(card->s0num[0], sdef.num[0], sizeof(card->s0num[0]));
+ 		card->s0num[1][0] = '\0';
+ 		card->s0num[2][0] = '\0';
+ 		break;
 -- 
-1.8.3.1
+1.8.3.2
 
