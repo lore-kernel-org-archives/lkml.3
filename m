@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab3LSTJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 14:09:18 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:35221 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814Ab3LSTJQ (ORCPT
+	id S1754936Ab3LSTNV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 14:13:21 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:56968 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab3LSTNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 14:09:16 -0500
-Date: Thu, 19 Dec 2013 14:09:14 -0500 (EST)
-Message-Id: <20131219.140914.1059872546032993195.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ffusco@redhat.com
-Subject: Re: linux-next: build failure after merge of the net-next tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20131219115710.598bdf6314b4784703a07100@canb.auug.org.au>
-References: <20131219115710.598bdf6314b4784703a07100@canb.auug.org.au>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 19 Dec 2013 11:09:16 -0800 (PST)
+	Thu, 19 Dec 2013 14:13:19 -0500
+X-Auth-Info: RLxmvWTJ0FO+cedl5bqDW3ISg2TlsFmCuorm6jRHMuA=
+Date: Thu, 19 Dec 2013 20:13:15 +0100
+From: Gerhard Sittig <gsi@denx.de>
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+Cc: Rob Landley <rob@landley.net>, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
+Subject: Re: [PATCH] gpio: add missing word in gpio dt binding doc
+Message-ID: <20131219191315.GP8064@book.gsilab.sittig.org>
+Mail-Followup-To: Boris BREZILLON <b.brezillon@overkiz.com>,
+	Rob Landley <rob@landley.net>,
+	Linus Walleij <linus.walleij@linaro.org>,
+	Alexandre Courbot <gnurou@gmail.com>, linux-doc@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
+References: <1387462890-675-1-git-send-email-b.brezillon@overkiz.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387462890-675-1-git-send-email-b.brezillon@overkiz.com>
+Organization: DENX Software Engineering GmbH
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 19 Dec 2013 11:57:10 +1100
-
-> Caused by commit 71ae8aac3e19 ("lib: introduce arch optimized hash
-> library").  Read Rule 1 in Documentation/SubmitChecklist :-(  Hint:
-> __read_mostly is defined in linux/cache.h ...
+On Thu, Dec 19, 2013 at 15:21 +0100, Boris BREZILLON wrote:
 > 
-> I have used the net-next tree from next-20131217 again today.
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> ---
+>  Documentation/devicetree/bindings/gpio/gpio.txt |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
+> index e2295e3..4019ce1 100644
+> --- a/Documentation/devicetree/bindings/gpio/gpio.txt
+> +++ b/Documentation/devicetree/bindings/gpio/gpio.txt
+> @@ -56,7 +56,7 @@ and empty GPIO flags as accepted by the "qe_pio_e" gpio-controller.
+>  2) gpio-controller nodes
+>  ------------------------
+>  
+> -Every GPIO controller node must both an empty "gpio-controller"
+> +Every GPIO controller node must contain both an empty "gpio-controller"
+>  property, and have #gpio-cells contain the size of the gpio-specifier.
+>  
+>  It might contain GPIO hog definitions. GPIO hogging is a mechanism providing
+> -- 
+> 1.7.9.5
 
-Sorry for this breaking in two different ways two days in a row :-/
+The context of the patch appears to contain stuff that gets
+introduced with the RFC patch you sent out after this one.  If
+this suspicion(sp?) is true, you may have to re-create the patch
+on top of something official. :)  And you may want to mark this
+patch as "trivial".
 
-I hope with the following commit everything is good now:
 
-====================
->From 237217546d44fe06c16b8895eecaef22f18ba5ee Mon Sep 17 00:00:00 2001
-From: Francesco Fusco <ffusco@redhat.com>
-Date: Wed, 18 Dec 2013 16:05:48 +0100
-Subject: [PATCH] lib: hash: follow-up fixups for arch hash
-
-This patch adds the include file to pull in __read_mostly on some
-architectures e.g. ppc and also fixes up signatures in generic
-asm.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Francesco Fusco <ffusco@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- include/asm-generic/hash.h | 4 ++--
- lib/hash.c                 | 1 +
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/include/asm-generic/hash.h b/include/asm-generic/hash.h
-index 05cb342..b631284 100644
---- a/include/asm-generic/hash.h
-+++ b/include/asm-generic/hash.h
-@@ -1,8 +1,8 @@
- #ifndef __ASM_GENERIC_HASH_H
- #define __ASM_GENERIC_HASH_H
- 
--struct arch_hash_ops;
--static inline void setup_arch_fast_hash(struct arch_hash_ops *ops)
-+struct fast_hash_ops;
-+static inline void setup_arch_fast_hash(struct fast_hash_ops *ops)
- {
- }
- 
-diff --git a/lib/hash.c b/lib/hash.c
-index b89f06a..fea973f 100644
---- a/lib/hash.c
-+++ b/lib/hash.c
-@@ -12,6 +12,7 @@
- 
- #include <linux/jhash.h>
- #include <linux/hash.h>
-+#include <linux/cache.h>
- 
- static struct fast_hash_ops arch_hash_ops __read_mostly = {
- 	.hash  = jhash,
+virtually yours
+Gerhard Sittig
 -- 
-1.7.11.7
-
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
+Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
