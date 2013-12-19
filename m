@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab3LSHB3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 02:01:29 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47179 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078Ab3LSHAQ (ORCPT
+	id S1752575Ab3LSHB2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 02:01:28 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:50167 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab3LSHBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 02:00:16 -0500
-X-AuditID: 9c930179-b7bedae000000f15-77-52b2997d8d1e
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH 3/6] perf tools: Get rid of a duplicate va_end()
-Date: Thu, 19 Dec 2013 16:00:08 +0900
-Message-Id: <1387436411-20160-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
-References: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 19 Dec 2013 02:01:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
+References: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 19 Dec 2013 15:52:47 +0900
+Message-ID: <CAAVeFuKAGfnnsbtBg=zfmciyMdZHgrX_EpecqPjG=oO6rZdWag@mail.gmail.com>
+Subject: Re: [PATCH] Tracing events with GPIOs
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, masami.hiramatsu.pt@hitachi.com,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Tue, Dec 17, 2013 at 9:22 AM, Jean-Jacques Hiblot
+<jjhiblot@traphandler.com> wrote:
+>
+> This patch implements a new tracing mechanism based on kprobes and using GPIO.
+> Debugging with GPIO is very common in the embedded world. At least for those of us
+> fortunate enough to have an oscilloscope or a logic analyzer on their bench...
+> This is especially true if the issue results of a hardware/sofware interaction.
+>
+> Typical use cases are :
+> * mixed software/hardware debugging. For example when the software detects a
+>   situation of interest (typically an error) it toggles a GPIO to trigger the
+>   oscilloscope acquisition.
+> * direct latency/duration measurements.
+>
+> examples:
+> To trig the oscilloscope whenever a mmc command error:
+>   echo "p:my_mmc_blk_error mmc_blk_cmd_error gpiopulse@13" > /sys/kernel/debug/tracing/kprobe_events
+>   echo 1 > /sys/kernel/debug/tracing/events/kprobes/my_mmc_blk_error/enable
 
-The va_end() in _eprintf() should be removed since the caller also
-invokes va_end().
+I do like this idea, however I wonder if you could try and make it use
+the new gpio descriptor API (see Documentation/gpio/) instead of the
+GPIO integers we are trying to deprecate (well ok, we just *started*
+claiming they are deprecated).
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/debug.c | 1 -
- 1 file changed, 1 deletion(-)
+This would probably make things a little bit more complicated on your
+side, due to the fact the gpiod API is new and probably does not cover
+all your needs. But it would also make your approach safer and more
+future proof, on top of helping us refine gpiod for various use cases.
 
-diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
-index 8640a9121e72..299b55586502 100644
---- a/tools/perf/util/debug.c
-+++ b/tools/perf/util/debug.c
-@@ -25,7 +25,6 @@ static int _eprintf(int level, const char *fmt, va_list args)
- 			ui_helpline__vshow(fmt, args);
- 		else
- 			ret = vfprintf(stderr, fmt, args);
--		va_end(args);
- 	}
- 
- 	return ret;
--- 
-1.7.11.7
+The problems I can see so far:
 
+- Using gpiod, GPIOs are not specified as integers, but are typically
+mapped to a given (device, function) pair (device can be NULL) using
+device tree/platform data/ACPI and obtained by the corresponding
+device driver through gpiod_get(). You would need to find a different
+way to specify GPIOs, maybe using the gpio_chip's label and the GPIO
+hardware number.
+
+- Even if you do so, there is currently no way to arbitrarily obtain a
+GPIO that has not been explicitly mapped to a (device, function), and
+IIUC you need to specify the tracing GPIO freely from user-space. This
+hints that we will need to add a function that is sensibly the same as
+gpio_request_one() to the gpiod API, but I wonder if that does not
+defeats the purpose somehow.
+
+So using gpiod we would have the dual problem of how to represent the
+GPIO you need from user-space, and how you can safely obtain it. It
+would be interesting to hear what Linus thinks about it, and if he has
+better ideas about how we could solve these issues (as he usually has
+;) ).
+
+(note that it is *not* a hard requirement to use gpiod over the legacy
+integer API, but considering this is the direction we are taking, it
+would be nice to consider it and see how we could solve the issues
+mentioned above)
+
+Thanks,
+Alex.
