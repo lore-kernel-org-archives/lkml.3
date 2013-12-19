@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab3LSL0B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:26:01 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:18903 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510Ab3LSLZ5 (ORCPT
+	id S1755581Ab3LSL6s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:58:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45110 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755517Ab3LSL6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:25:57 -0500
-X-IronPort-AV: E=Sophos;i="4.95,512,1384300800"; 
-   d="scan'208";a="83866104"
-Date: Thu, 19 Dec 2013 11:25:22 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
-        <jbeulich@suse.com>
-Subject: Re: [Xen-devel] [PATCH v11 05/12] xen/pvh: Update E820 to work with
- PVH
-In-Reply-To: <20131218154438.364f6d74@mantra.us.oracle.com>
-Message-ID: <alpine.DEB.2.02.1312191124590.8667@kaball.uk.xensource.com>
-References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com> <1387313503-31362-6-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1312181813260.8667@kaball.uk.xensource.com> <20131218154438.364f6d74@mantra.us.oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+	Thu, 19 Dec 2013 06:58:43 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Gustavo Zacarias <gustavo@zacarias.com.ar>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 142/208] USB: serial: option: blacklist interface 1 for Huawei E173s-6
+Date: Thu, 19 Dec 2013 11:54:00 +0000
+Message-Id: <1387454106-19326-143-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Dec 2013, Mukesh Rathor wrote:
-> On Wed, 18 Dec 2013 18:25:15 +0000
-> Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> 
-> > On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > > 
-> > > In xen_add_extra_mem() we can skip updating P2M as it's managed
-> > > by Xen. PVH maps the entire IO space, but only RAM pages need
-> > > to be repopulated.
-> > > 
-> > > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > ---
-> > >  arch/x86/xen/setup.c | 19 +++++++++++++++++--
-> > >  1 file changed, 17 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> ........
-> > > @@ -231,7 +246,7 @@ static void __init
-> > > xen_set_identity_and_release_chunk( (void)HYPERVISOR_update_va_mapping(
-> > >  			(unsigned long)__va(pfn << PAGE_SHIFT),
-> > > pte, 0); }
-> > > -
-> > > +skip:
-> > >  	if (start_pfn < nr_pages)
-> > >  		*released += xen_release_chunk(
-> > >  			start_pfn, min(end_pfn, nr_pages));
-> ... 
-> > Also considering that you are turning xen_release_chunk into a nop,
-> > the only purpose of this function on PVH is to call
-> > set_phys_range_identity. Can't we just do that?
-> 
-> xen_release_chunk() is called for PVH to give us the count of released,
-> altho we don't need to release anything for pvh as it was already done in
-> xen. The released count is then used later to add memory.
-> 
-> I had separate function to just adjust the stats, which is all we need
-> to do for pvh, konrad just merged it with pv functions.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-I see. I'll let Konrad decide which way is nicer.
+------------------
+
+From: Gustavo Zacarias <gustavo@zacarias.com.ar>
+
+commit 8f173e22abf2258ddfa73f46eadbb6a6c29f1631 upstream.
+
+Interface 1 on this device isn't for option to bind to otherwise an oops
+on usb_wwan with log flooding will happen when accessing the port:
+
+tty_release: ttyUSB1: read/write wait queue active!
+
+It doesn't seem to respond to QMI if it's added to qmi_wwan so don't add
+it there - it's likely used by the card reader.
+
+Signed-off-by: Gustavo Zacarias <gustavo@zacarias.com.ar>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/usb/serial/option.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index c3d9485..0415d40 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -85,6 +85,7 @@ static void option_instat_callback(struct urb *urb);
+ #define HUAWEI_PRODUCT_K4505			0x1464
+ #define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_K4605			0x14C6
++#define HUAWEI_PRODUCT_E173S6			0x1C07
+ 
+ #define QUANTA_VENDOR_ID			0x0408
+ #define QUANTA_PRODUCT_Q101			0xEA02
+@@ -572,6 +573,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173S6, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E1750, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
+-- 
+1.8.3.2
+
