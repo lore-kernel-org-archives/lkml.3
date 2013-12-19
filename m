@@ -1,47 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab3LSMRp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:17:45 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:37986 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756494Ab3LSMRn (ORCPT
+	id S1753395Ab3LSLWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:22:34 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:33101 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753130Ab3LSLWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:17:43 -0500
-Date: Thu, 19 Dec 2013 04:18:30 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH] closures: move to lib/
-Message-ID: <20131219121830.GA25385@kmo-pixel>
-References: <1387416594-23930-1-git-send-email-kmo@daterainc.com>
- <20131219120516.GA26089@infradead.org>
+	Thu, 19 Dec 2013 06:22:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131219120516.GA26089@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANq1E4RuteNfo23DQ5SvGXpsrpTmotLoJ6Wv1L8hAbE1ict6aA@mail.gmail.com>
+References: <5237430B.5040009@canonical.com>
+	<20130916203824.GP25896@mwanda>
+	<52376ED9.5080208@canonical.com>
+	<20130916210503.GQ25896@mwanda>
+	<5237A5D5.8010006@canonical.com>
+	<alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz>
+	<52432152.3030100@canonical.com>
+	<alpine.LNX.2.00.1309271250130.18703@pobox.suse.cz>
+	<52459942.3020600@canonical.com>
+	<alpine.LNX.2.00.1312161401100.12882@pobox.suse.cz>
+	<CANq1E4QriATWbfruwj7oVnEBHvtLe_s2yhSSU5COXFjomt5R_A@mail.gmail.com>
+	<alpine.LNX.2.00.1312191058100.28730@pobox.suse.cz>
+	<CANq1E4RuteNfo23DQ5SvGXpsrpTmotLoJ6Wv1L8hAbE1ict6aA@mail.gmail.com>
+Date: Thu, 19 Dec 2013 12:22:30 +0100
+Message-ID: <CANq1E4R3LSx7pYncZ1dWf-BYY5gvC15=AjhFvurFqp0jaTUqYg@mail.gmail.com>
+Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to memdup
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, thomas@m3y3r.de,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
+        HID CORE LAYER <linux-input@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<devel@linuxdriverproject.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 04:05:16AM -0800, Christoph Hellwig wrote:
-> On Wed, Dec 18, 2013 at 05:29:54PM -0800, Kent Overstreet wrote:
-> > the closure code was never intended to be bcache specific - hopefully it can be
-> > useful elsewhere in the kernel.
-> 
-> They are not.  They aren't closures in the CS sense,
+Hi
 
-If you consider the key thing behind CS closures to be spaghetti stacks,
-then actually these kind of are.
+On Thu, Dec 19, 2013 at 11:08 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Thu, Dec 19, 2013 at 10:59 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+>> On Thu, 19 Dec 2013, David Herrmann wrote:
+>>
+>>> > diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+>>> > index 253fe23..81eacd3 100644
+>>> > --- a/drivers/hid/hid-core.c
+>>> > +++ b/drivers/hid/hid-core.c
+>>> > @@ -1334,7 +1334,7 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
+>>> >                 csize--;
+>>> >         }
+>>> >
+>>> > -       rsize = ((report->size - 1) >> 3) + 1;
+>>> > +       rsize = ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
+>>>
+>>> Isn't "report->id" already covered by "if (report_enum->numbered)"
+>>> above? The test for "id > 0" won't work here as in this case
+>>> "report_enum->numbered" must already be set to true by the hid-desc
+>>> parser, doesn't it?
+>>
+>> Right, that one is not correct here, thanks.
+>>
+>>> Where exactly did you get the +7 from?
+>>
+>> Please see commit (the one I am not really proud of) 27ce405039bfe6d3.
+>
+> Eh, I remember.. Ok, but the magic-mouse is BT right? So this commit
+> really breaks BT drivers:
+>
+> commit b1a1442a23776756b254b69786848a94d92445ba
+> Author: Jiri Kosina <jkosina@suse.cz>
+> Date:   Mon Jun 3 11:27:48 2013 +0200
+>
+>     HID: core: fix reporting of raw events
+>
+> Problem is, if the raw_event() callback returned 0 earlier, we just
+> skipped raw input reports. However, we now always call the
+> hid_report_raw_event() helper. Which is normally fine, but the helper
+> expects the input buffer to be of size HID_MAX_REPORT_SIZE, which is
+> *not* true for HIDP. So the memset() writes over some random memory.
+>
+> I don't know exactly how to fix it. HID_MAX_BUFFER_SIZE is too big to
+> be allocated on the stack, but we're in atomic-context here so a
+> kzalloc(rsize, GFP_ATOMIC) seems overkill. So I guess we'd have to
+> look into HIDP to make the skb big enough, but I'm not sure how we can
+> achieve that.
+>
+> So off the top of my head, the best idea is to add "char
+> inbuf[HID_MAX_BUFFER_SIZE];" to the hidp_session object in HIDP and
+> copy every input-report into the buffer before passing to
+> hid_input_report().
 
-> and they are an
-> ugly mess.  Please work on removing them instead.
+As this thread doesn't really contain any oops message nor the exact
+driver name (except mentioning hyperv and magicmouse), I fixed a
+related bug for HIDP:
+  http://thread.gmane.org/gmane.linux.bluez.kernel/41969
 
-That's not really the kind of technical objection one can respond to. If
-you think there's a better way of doing this kind of asynchronous stuff,
-or a better mechanism already in the kernel (ha!) - please, by all
-means, enlighten us.
+A similar patch is *really* required for hid-hyperv.c as it also does
+not provide a properly sized buffer to hid_input_report().
+
+David
