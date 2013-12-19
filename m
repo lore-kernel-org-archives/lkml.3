@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab3LSL6H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:58:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44943 "EHLO
+	id S1756935Ab3LSNAx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:00:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44609 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755165Ab3LSL54 (ORCPT
+	with ESMTP id S1754250Ab3LSL4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:56 -0500
+	Thu, 19 Dec 2013 06:56:25 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>, Ivan Vecera <ivecera@redhat.com>,
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 107/208] tg3: avoid double-freeing of rx data memory
-Date: Thu, 19 Dec 2013 11:53:25 +0000
-Message-Id: <1387454106-19326-108-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 045/208] gro: Only verify TCP checksums for candidates
+Date: Thu, 19 Dec 2013 11:52:23 +0000
+Message-Id: <1387454106-19326-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -29,56 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ivan Vecera <ivecera@redhat.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-commit 85aec73d595b8847f9c4ea571deb127913f0d508 upstream.
+commit cc5c00bbb44c5d68b883aa5cb9d01514a2525d94 upstream.
 
-If build_skb fails the memory associated with the ring buffer is freed but
-the ri->data member is not zeroed in this case. This causes a double-free
-of this memory in tg3_free_rings->... path. The patch moves this block after
-setting ri->data to NULL.
-It would be nice to fix this bug also in stable >= v3.4 trees.
+In some cases we may receive IP packets that are longer than
+their stated lengths.  Such packets are never merged in GRO.
+However, we may end up computing their checksums incorrectly
+and end up allowing packets with a bogus checksum enter our
+stack with the checksum status set as verified.
 
-Cc: Nithin Nayak Sujir <nsujir@broadcom.com>
-Cc: Michael Chan <mchan@broadcom.com>
-Signed-off-by: Ivan Vecera <ivecera@redhat.com>
-Acked-by: Michael Chan <mchan@broadcom.com>
+Since such packets are rare and not performance-critical, this
+patch simply skips the checksum verification for them.
+
+Reported-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Acked-by: Alexander Duyck <alexander.h.duyck@intel.com>
+
+Thanks,
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ net/ipv4/tcp_offload.c   | 5 +++++
+ net/ipv6/tcpv6_offload.c | 5 +++++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index a04d2da..9f535de 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -6795,12 +6795,6 @@ static int tg3_rx(struct tg3_napi *tnapi, int budget)
- 			pci_unmap_single(tp->pdev, dma_addr, skb_size,
- 					 PCI_DMA_FROMDEVICE);
+diff --git a/net/ipv4/tcp_offload.c b/net/ipv4/tcp_offload.c
+index 533c58a..44c8678 100644
+--- a/net/ipv4/tcp_offload.c
++++ b/net/ipv4/tcp_offload.c
+@@ -274,6 +274,10 @@ static struct sk_buff **tcp4_gro_receive(struct sk_buff **head, struct sk_buff *
+ 	__wsum wsum;
+ 	__sum16 sum;
  
--			skb = build_skb(data, frag_size);
--			if (!skb) {
--				tg3_frag_free(frag_size != 0, data);
--				goto drop_it_no_recycle;
--			}
--			skb_reserve(skb, TG3_RX_OFFSET(tp));
- 			/* Ensure that the update to the data happens
- 			 * after the usage of the old DMA mapping.
- 			 */
-@@ -6808,6 +6802,12 @@ static int tg3_rx(struct tg3_napi *tnapi, int budget)
++	/* Don't bother verifying checksum if we're going to flush anyway. */
++	if (NAPI_GRO_CB(skb)->flush)
++		goto skip_csum;
++
+ 	switch (skb->ip_summed) {
+ 	case CHECKSUM_COMPLETE:
+ 		if (!tcp_v4_check(skb_gro_len(skb), iph->saddr, iph->daddr,
+@@ -299,6 +303,7 @@ flush:
+ 		break;
+ 	}
  
- 			ri->data = NULL;
++skip_csum:
+ 	return tcp_gro_receive(head, skb);
+ }
  
-+			skb = build_skb(data, frag_size);
-+			if (!skb) {
-+				tg3_frag_free(frag_size != 0, data);
-+				goto drop_it_no_recycle;
-+			}
-+			skb_reserve(skb, TG3_RX_OFFSET(tp));
- 		} else {
- 			tg3_recycle_rx(tnapi, tpr, opaque_key,
- 				       desc_idx, *post_ptr);
+diff --git a/net/ipv6/tcpv6_offload.c b/net/ipv6/tcpv6_offload.c
+index 2ec6bf6..78081d8 100644
+--- a/net/ipv6/tcpv6_offload.c
++++ b/net/ipv6/tcpv6_offload.c
+@@ -39,6 +39,10 @@ static struct sk_buff **tcp6_gro_receive(struct sk_buff **head,
+ 	__wsum wsum;
+ 	__sum16 sum;
+ 
++	/* Don't bother verifying checksum if we're going to flush anyway. */
++	if (NAPI_GRO_CB(skb)->flush)
++		goto skip_csum;
++
+ 	switch (skb->ip_summed) {
+ 	case CHECKSUM_COMPLETE:
+ 		if (!tcp_v6_check(skb_gro_len(skb), &iph->saddr, &iph->daddr,
+@@ -65,6 +69,7 @@ flush:
+ 		break;
+ 	}
+ 
++skip_csum:
+ 	return tcp_gro_receive(head, skb);
+ }
+ 
 -- 
 1.8.3.2
 
