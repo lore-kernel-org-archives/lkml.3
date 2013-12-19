@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab3LSICt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 03:02:49 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:29924 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136Ab3LSICq (ORCPT
+	id S1753205Ab3LSIDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 03:03:46 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:37328 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab3LSIDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 03:02:46 -0500
-Date: Thu, 19 Dec 2013 09:02:42 +0100
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-CC: Rob Landley <rob@landley.net>, Wolfram Sang <wsa@the-dreams.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH] i2c: at91: document clock properties
-Message-ID: <20131219080242.GA3842@ldesroches-Latitude-E6320>
-Mail-Followup-To: Boris BREZILLON <b.brezillon@overkiz.com>,
-	Rob Landley <rob@landley.net>, Wolfram Sang <wsa@the-dreams.de>,
-	Nicolas Ferre <nicolas.ferre@atmel.com>,
-	Arnd Bergmann <arnd@arndb.de>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	linux-i2c@vger.kernel.org
-References: <1387295644-7382-1-git-send-email-b.brezillon@overkiz.com>
+	Thu, 19 Dec 2013 03:03:44 -0500
+Message-ID: <52B2A85C.9060303@gmail.com>
+Date: Thu, 19 Dec 2013 16:03:40 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1387295644-7382-1-git-send-email-b.brezillon@overkiz.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: James Hogan <james.hogan@imgtec.com>
+CC: linux-metag@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arch: metag: kernel: export 'cpu_core_map' in "topology.c"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 04:54:04PM +0100, Boris BREZILLON wrote:
-> Document the clock properties required by the at91 i2c bus driver.
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Need export 'cpu_core_map', or cann't pass compiling with allmodconfig,
+the related error:
 
-> ---
->  Documentation/devicetree/bindings/i2c/i2c-at91.txt |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/i2c/i2c-at91.txt b/Documentation/devicetree/bindings/i2c/i2c-at91.txt
-> index b689a0d..4fade84 100644
-> --- a/Documentation/devicetree/bindings/i2c/i2c-at91.txt
-> +++ b/Documentation/devicetree/bindings/i2c/i2c-at91.txt
-> @@ -9,6 +9,7 @@ Required properties :
->  - interrupts: interrupt number to the cpu.
->  - #address-cells = <1>;
->  - #size-cells = <0>;
-> +- clocks: phandles to input clocks.
->  
->  Optional properties:
->  - Child nodes conforming to i2c bus binding
-> @@ -21,6 +22,7 @@ i2c0: i2c@fff84000 {
->  	interrupts = <12 4 6>;
->  	#address-cells = <1>;
->  	#size-cells = <0>;
-> +	clocks = <&twi0_clk>;
->  
->  	24c512@50 {
->  		compatible = "24c512";
-> -- 
-> 1.7.9.5
-> 
+    MODPOST 2909 modules
+  ERROR: "cpu_core_map" [drivers/staging/lustre/lustre/libcfs/libcfs.ko] undefined!
+
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ arch/metag/kernel/topology.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/metag/kernel/topology.c b/arch/metag/kernel/topology.c
+index bec3dec..4ba5957 100644
+--- a/arch/metag/kernel/topology.c
++++ b/arch/metag/kernel/topology.c
+@@ -19,6 +19,7 @@
+ DEFINE_PER_CPU(struct cpuinfo_metag, cpu_data);
+ 
+ cpumask_t cpu_core_map[NR_CPUS];
++EXPORT_SYMBOL(cpu_core_map);
+ 
+ static cpumask_t cpu_coregroup_map(unsigned int cpu)
+ {
+-- 
+1.7.11.7
