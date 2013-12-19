@@ -1,91 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab3LSNio (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:38:44 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:37994 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756015Ab3LSNe5 (ORCPT
+	id S1754845Ab3LSNa5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:30:57 -0500
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:47922 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345Ab3LSNaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:34:57 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: nfs-ganesha-devel@lists.sourceforge.net, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 07/13] locks: simplify overflow checking
-Date: Thu, 19 Dec 2013 08:34:19 -0500
-Message-Id: <1387460065-28269-8-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
-References: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
+	Thu, 19 Dec 2013 08:30:55 -0500
+Date: Thu, 19 Dec 2013 10:30:47 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/6] perf report: Use pr_*() functions if possible
+Message-ID: <20131219133047.GK4819@ghostprotocols.net>
+References: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
+ <1387436411-20160-2-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387436411-20160-2-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "J. Bruce Fields" <bfields@fieldses.org>
+Em Thu, Dec 19, 2013 at 04:00:06PM +0900, Namhyung Kim escreveu:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> There're some places printing a message to stdout/err directly.  It
+> should be converted to use proper error printing functions instead.
+> 
+> If it's not possible, just do it when --stdio was enabled only.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-report.c | 24 +++++++++++++-----------
+>  1 file changed, 13 insertions(+), 11 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> index 3a14dbed387c..a1f72b471a96 100644
+> --- a/tools/perf/builtin-report.c
+> +++ b/tools/perf/builtin-report.c
+> @@ -321,8 +321,8 @@ static int process_sample_event(struct perf_tool *tool,
+>  	int ret;
+>  
+>  	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
+> -		fprintf(stderr, "problem processing %d event, skipping it.\n",
+> -			event->header.type);
+> +		pr_debug("problem processing %d event, skipping it.\n",
+> +			 event->header.type);
+>  		return -1;
+>  	}
+>  
+> @@ -552,15 +552,17 @@ static int __cmd_report(struct perf_report *rep)
+>  		desc);
+>  	}
+>  
+> -	if (verbose > 3)
+> -		perf_session__fprintf(session, stdout);
+> +	if (use_browser == 0) {
+> +		if (verbose > 3)
+> +			perf_session__fprintf(session, stdout);
+>  
+> -	if (verbose > 2)
+> -		perf_session__fprintf_dsos(session, stdout);
+> +		if (verbose > 2)
+> +			perf_session__fprintf_dsos(session, stdout);
+>  
+> -	if (dump_trace) {
+> -		perf_session__fprintf_nr_events(session, stdout);
+> -		return 0;
+> +		if (dump_trace) {
+> +			perf_session__fprintf_nr_events(session, stdout);
+> +			return 0;
+> +		}
+>  	}
 
-Or maybe we don't actually care about indicating overflow in the 32-bit
-case: sure we could fail if e.g. f_pos+start or f_pos+start+len would
-exceed 32-bits, but do we really need to?
+This should be in a different patch, one that is related just to
+dump_trace, i.e. if -D, aka dump_trace (right?) is enabled, then
+probably we won't be initializing the TUI/GUI, no?
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
----
- fs/locks.c | 23 +++++------------------
- 1 file changed, 5 insertions(+), 18 deletions(-)
+So having a patch that deals just with conversions of fprintf ->
+pr_{err,etc} and another that deals with dump_trace related seems to be
+the best course of action.
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 863f4df..1555b05 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -344,8 +344,8 @@ static int assign_type(struct file_lock *fl, long type)
- 	return 0;
- }
- 
--static int flock_to_posix_lock_common(struct file *filp, struct file_lock *fl,
--					struct flock64 *l, loff_t offset_max)
-+static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
-+				 struct flock64 *l)
- {
- 	switch (l->l_whence) {
- 	case SEEK_SET:
-@@ -360,12 +360,12 @@ static int flock_to_posix_lock_common(struct file *filp, struct file_lock *fl,
- 	default:
- 		return -EINVAL;
- 	}
--	if (l->l_start > offset_max - fl->fl_start)
-+	if (l->l_start > OFFSET_MAX - fl->fl_start)
- 		return -EOVERFLOW;
- 	fl->fl_start += l->l_start;
- 	if (fl->fl_start < 0)
- 		return -EINVAL;
--	if (l->l_len > offset_max - fl->fl_start)
-+	if (l->l_len > OFFSET_MAX - fl->fl_start)
- 		return -EOVERFLOW;
- 	if (fl->fl_start + l->l_len < 0)
- 		return -EINVAL;
-@@ -403,22 +403,9 @@ static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
- 		.l_len = l->l_len,
- 	};
- 
--	/*
--	 * The use of OFFT_OFFSET_MAX here ensures we return -EOVERFLOW
--	 * if the start or end of the lock could not be represented as
--	 * an off_t, following SUSv3.
--	 */
--	return flock_to_posix_lock_common(filp, fl, &ll, OFFT_OFFSET_MAX);
-+	return flock64_to_posix_lock(filp, fl, &ll);
- }
- 
--#if BITS_PER_LONG == 32
--static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
--				 struct flock64 *l)
--{
--	return flock_to_posix_lock_common(filp, fl, l, OFFSET_MAX);
--}
--#endif
--
- /* default lease lock manager operations */
- static void lease_break_callback(struct file_lock *fl)
- {
--- 
-1.8.4.2
-
+- Arnaldo
+  
+>  	nr_samples = 0;
+> @@ -720,7 +722,7 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
+>  		return -1;
+>  setup:
+>  	if (callchain_register_param(&callchain_param) < 0) {
+> -		fprintf(stderr, "Can't register callchain params\n");
+> +		pr_err("Can't register callchain params\n");
+>  		return -1;
+>  	}
+>  	return 0;
+> @@ -942,7 +944,7 @@ repeat:
+>  	}
+>  	if (report.mem_mode) {
+>  		if (sort__mode == SORT_MODE__BRANCH) {
+> -			fprintf(stderr, "branch and mem mode incompatible\n");
+> +			pr_err("branch and mem mode incompatible\n");
+>  			goto error;
+>  		}
+>  		sort__mode = SORT_MODE__MEMORY;
+> -- 
+> 1.7.11.7
