@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919Ab3LSOtr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:49:47 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:62171 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab3LSOtp (ORCPT
+	id S1756639Ab3LSM5X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:57:23 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:16106 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755195Ab3LSM5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:49:45 -0500
-Date: Thu, 19 Dec 2013 15:49:42 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
- tracing units
-Message-ID: <20131219144926.GB19788@localhost.localdomain>
-References: <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218141125.GT21999@twins.programming.kicks-ass.net>
- <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218150900.GU21999@twins.programming.kicks-ass.net>
- <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219103134.GD30183@twins.programming.kicks-ass.net>
- <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219112812.GY21999@twins.programming.kicks-ass.net>
- <20131219123955.GA18186@gmail.com>
- <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
+	Thu, 19 Dec 2013 07:57:20 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 19 Dec 2013 04:59:24 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <anton@enomsg.org>, <dwmw2@infradead.org>
+CC: <mark.rutland@arm.com>, <rob@landley.net>, <ijc+devicetree@hellion.org.uk>,
+        <swarren@nvidia.com>, <lee.jones@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 1/2] mfd: AS3722: add dt node properties for system power controller
+Date: Thu, 19 Dec 2013 18:27:00 +0530
+Message-ID: <1387457821-12509-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 04:30:53PM +0200, Alexander Shishkin wrote:
-> Or the interface and implementation of BTS support in the kernel
-> discourage its use and that is why it is so rarely used.
+ams AS3722 device supports the power off by turning off its all rails.
 
-I never heard complains about it. It's a simple dump of from/to address couples.
-I just think nobody take the time to develop userspace tooling to exploit it.
-But it's famous slowness might have had a bad influence on this. And may be
-also the fact that it's very architecture specific. AMD doesn't support BTS if I recall
-correctly. Or may be it has its own different implementation?
+Add dt node properties to enable this functionality on this device.
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ Documentation/devicetree/bindings/mfd/as3722.txt |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/mfd/as3722.txt b/Documentation/devicetree/bindings/mfd/as3722.txt
+index fc2191e..1e54937 100644
+--- a/Documentation/devicetree/bindings/mfd/as3722.txt
++++ b/Documentation/devicetree/bindings/mfd/as3722.txt
+@@ -112,6 +112,15 @@ Following are properties of regulator subnode.
+ 		ams,enable-tracking: Enable tracking with SD1, only supported
+ 			by LDO3.
+ 
++Power-off:
++=========
++AS3722 supports the system power off by turning off all its rail. The power off
++is provided through pm power off.
++The device node should have the following properties to enable power-off
++functionality from ams AS3722:
++ams,system-power-controller: To enable the power off functionality through
++	device.
++
+ Example:
+ --------
+ #include <dt-bindings/mfd/as3722.h>
+-- 
+1.7.9.5
+
