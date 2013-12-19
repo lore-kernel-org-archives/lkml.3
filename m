@@ -1,212 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756767Ab3LSUqa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 15:46:30 -0500
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:13716 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756743Ab3LSUq1 (ORCPT
+	id S932092Ab3LSUqm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 15:46:42 -0500
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:64118 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756743Ab3LSUqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 15:46:27 -0500
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@redhat.com, dvhart@linux.intel.com, peterz@infradead.org,
-        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
-        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
-        aswin@hp.com, davidlohr@hp.com, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH v4 1/4] futex: Misc cleanups
-Date: Thu, 19 Dec 2013 12:45:47 -0800
-Message-Id: <1387485950-7320-2-git-send-email-davidlohr@hp.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1387485950-7320-1-git-send-email-davidlohr@hp.com>
-References: <1387485950-7320-1-git-send-email-davidlohr@hp.com>
+	Thu, 19 Dec 2013 15:46:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131219204051.GA2253@gmail.com>
+References: <CA+55aFzGxcML7j8CEvQPYzh0W81uVoAAVmGctMOUZ7CZ1yYd2A@mail.gmail.com>
+	<tip-7e98b71920464b8d15fa95c74366416cd3c88861@git.kernel.org>
+	<20131219204051.GA2253@gmail.com>
+Date: Fri, 20 Dec 2013 05:46:37 +0900
+X-Google-Sender-Auth: Xh2BRuOUkbKeTOG7DA-y6-KI68o
+Message-ID: <CA+55aFyr5VcONQKp_yDRDy+BFpMy9=P--+U8d1uYeDVNWcAM8Q@mail.gmail.com>
+Subject: Re: [tip:x86/idle] x86, idle: Use static_cpu_has() for CLFLUSH
+ workaround, add barriers
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Anvin <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Anvin <hpa@linux.intel.com>, Len Brown <len.brown@intel.com>,
+        linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Low <jason.low2@hp.com>
+On Fri, Dec 20, 2013 at 5:40 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> The first mb() looks superfluous, because see
+> current_set_polling_and_test():
+>
+> static inline bool __must_check current_set_polling_and_test(void)
+> {
+>         __current_set_polling();
+>
+>         /*
+>          * Polling state must be visible before we test NEED_RESCHED,
+>          * paired by resched_task()
+>          */
+>         smp_mb();
+>
+>         return unlikely(tif_need_resched());
+> }
+>
+> So it already has a (MFENCE) barrier after ->flags is modified.
 
-- Remove unnecessary head variables.
-- Delete unused parameter in queue_unlock().
+So what?
 
-Cc: Ingo Molnar <mingo@kernel.org>
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Jeff Mahoney <jeffm@suse.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Scott Norton <scott.norton@hp.com>
-Cc: Tom Vaden <tom.vaden@hp.com>
-Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>
-Signed-off-by: Jason Low <jason.low2@hp.com>
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
----
- kernel/futex.c | 39 ++++++++++++---------------------------
- 1 file changed, 12 insertions(+), 27 deletions(-)
+The mb() isn't necessarily against the *write*, it is also against the *read*.
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index f6ff019..085f5fa 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -598,13 +598,10 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- {
- 	struct futex_pi_state *pi_state = NULL;
- 	struct futex_q *this, *next;
--	struct plist_head *head;
- 	struct task_struct *p;
- 	pid_t pid = uval & FUTEX_TID_MASK;
- 
--	head = &hb->chain;
--
--	plist_for_each_entry_safe(this, next, head, list) {
-+	plist_for_each_entry_safe(this, next, &hb->chain, list) {
- 		if (match_futex(&this->key, key)) {
- 			/*
- 			 * Another waiter already exists - bump up
-@@ -986,7 +983,6 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
- {
- 	struct futex_hash_bucket *hb;
- 	struct futex_q *this, *next;
--	struct plist_head *head;
- 	union futex_key key = FUTEX_KEY_INIT;
- 	int ret;
- 
-@@ -999,9 +995,8 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
- 
- 	hb = hash_futex(&key);
- 	spin_lock(&hb->lock);
--	head = &hb->chain;
- 
--	plist_for_each_entry_safe(this, next, head, list) {
-+	plist_for_each_entry_safe(this, next, &hb->chain, list) {
- 		if (match_futex (&this->key, &key)) {
- 			if (this->pi_state || this->rt_waiter) {
- 				ret = -EINVAL;
-@@ -1034,7 +1029,6 @@ futex_wake_op(u32 __user *uaddr1, unsigned int flags, u32 __user *uaddr2,
- {
- 	union futex_key key1 = FUTEX_KEY_INIT, key2 = FUTEX_KEY_INIT;
- 	struct futex_hash_bucket *hb1, *hb2;
--	struct plist_head *head;
- 	struct futex_q *this, *next;
- 	int ret, op_ret;
- 
-@@ -1082,9 +1076,7 @@ retry_private:
- 		goto retry;
- 	}
- 
--	head = &hb1->chain;
--
--	plist_for_each_entry_safe(this, next, head, list) {
-+	plist_for_each_entry_safe(this, next, &hb1->chain, list) {
- 		if (match_futex (&this->key, &key1)) {
- 			if (this->pi_state || this->rt_waiter) {
- 				ret = -EINVAL;
-@@ -1097,10 +1089,8 @@ retry_private:
- 	}
- 
- 	if (op_ret > 0) {
--		head = &hb2->chain;
--
- 		op_ret = 0;
--		plist_for_each_entry_safe(this, next, head, list) {
-+		plist_for_each_entry_safe(this, next, &hb2->chain, list) {
- 			if (match_futex (&this->key, &key2)) {
- 				if (this->pi_state || this->rt_waiter) {
- 					ret = -EINVAL;
-@@ -1270,7 +1260,6 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
- 	int drop_count = 0, task_count = 0, ret;
- 	struct futex_pi_state *pi_state = NULL;
- 	struct futex_hash_bucket *hb1, *hb2;
--	struct plist_head *head1;
- 	struct futex_q *this, *next;
- 	u32 curval2;
- 
-@@ -1393,8 +1382,7 @@ retry_private:
- 		}
- 	}
- 
--	head1 = &hb1->chain;
--	plist_for_each_entry_safe(this, next, head1, list) {
-+	plist_for_each_entry_safe(this, next, &hb1->chain, list) {
- 		if (task_count - nr_wake >= nr_requeue)
- 			break;
- 
-@@ -1494,7 +1482,7 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
- }
- 
- static inline void
--queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
-+queue_unlock(struct futex_hash_bucket *hb)
- 	__releases(&hb->lock)
- {
- 	spin_unlock(&hb->lock);
-@@ -1867,7 +1855,7 @@ retry_private:
- 	ret = get_futex_value_locked(&uval, uaddr);
- 
- 	if (ret) {
--		queue_unlock(q, *hb);
-+		queue_unlock(*hb);
- 
- 		ret = get_user(uval, uaddr);
- 		if (ret)
-@@ -1881,7 +1869,7 @@ retry_private:
- 	}
- 
- 	if (uval != val) {
--		queue_unlock(q, *hb);
-+		queue_unlock(*hb);
- 		ret = -EWOULDBLOCK;
- 	}
- 
-@@ -2029,7 +2017,7 @@ retry_private:
- 			 * Task is exiting and we just wait for the
- 			 * exit to complete.
- 			 */
--			queue_unlock(&q, hb);
-+			queue_unlock(hb);
- 			put_futex_key(&q.key);
- 			cond_resched();
- 			goto retry;
-@@ -2081,7 +2069,7 @@ retry_private:
- 	goto out_put_key;
- 
- out_unlock_put_key:
--	queue_unlock(&q, hb);
-+	queue_unlock(hb);
- 
- out_put_key:
- 	put_futex_key(&q.key);
-@@ -2091,7 +2079,7 @@ out:
- 	return ret != -EINTR ? ret : -ERESTARTNOINTR;
- 
- uaddr_faulted:
--	queue_unlock(&q, hb);
-+	queue_unlock(hb);
- 
- 	ret = fault_in_user_writeable(uaddr);
- 	if (ret)
-@@ -2113,7 +2101,6 @@ static int futex_unlock_pi(u32 __user *uaddr, unsigned int flags)
- {
- 	struct futex_hash_bucket *hb;
- 	struct futex_q *this, *next;
--	struct plist_head *head;
- 	union futex_key key = FUTEX_KEY_INIT;
- 	u32 uval, vpid = task_pid_vnr(current);
- 	int ret;
-@@ -2153,9 +2140,7 @@ retry:
- 	 * Ok, other tasks may need to be woken up - check waiters
- 	 * and do the wakeup if necessary:
- 	 */
--	head = &hb->chain;
--
--	plist_for_each_entry_safe(this, next, head, list) {
-+	plist_for_each_entry_safe(this, next, &hb->chain, list) {
- 		if (!match_futex (&this->key, &key))
- 			continue;
- 		ret = wake_futex_pi(uaddr, uval, this);
--- 
-1.8.1.4
+If the cflush is needed before the monitor, it's likely because the
+monitor instruction has some bug with already-existing cachelines in
+shared state or whatever.
 
+Which means that we want to make sure that the cflush is ordered wrt
+*reads* from that cacheline too.
+
+cflush has nothing specifically to do with writes.
+
+             Linus
