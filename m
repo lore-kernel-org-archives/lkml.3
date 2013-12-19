@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab3LSR3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 12:29:15 -0500
-Received: from 16.mo3.mail-out.ovh.net ([188.165.56.217]:36471 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754111Ab3LSR3L (ORCPT
+	id S1755165Ab3LSRaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 12:30:08 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:50635 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591Ab3LSRaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 12:29:11 -0500
-Message-ID: <52B32A70.1080700@overkiz.com>
-Date: Thu, 19 Dec 2013 18:18:40 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 19 Dec 2013 12:30:03 -0500
 MIME-Version: 1.0
-To: balbi@ti.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Rob Landley <rob@landley.net>, Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [RFC PATCH] gpio: add GPIO hogging mechanism
-References: <1387463671-1164-1-git-send-email-b.brezillon@overkiz.com> <1387463671-1164-2-git-send-email-b.brezillon@overkiz.com> <20131219164109.GB27409@kroah.com> <20131219164737.GA4536@saruman.home>
-In-Reply-To: <20131219164737.GA4536@saruman.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 3064136597336848581
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <1387470731.2353.7.camel@joe-AO722>
+References: <CAOMwXhPPN2h2boAOn1=BaHuWa+9nYw=oe1u1bYHtHGyad9Kw8A@mail.gmail.com>
+	<1387310726.8859.5.camel@joe-AO722>
+	<CAOMwXhNVJ8HPCe6t=VkCthEiOqNtOczz5Xqy_ciM7rsqWRVOYw@mail.gmail.com>
+	<1387470731.2353.7.camel@joe-AO722>
+Date: Thu, 19 Dec 2013 17:30:02 +0000
+X-Google-Sender-Auth: DNTAYdV4r_fyLebYIaGBz8r9r6o
+Message-ID: <CAOMwXhPceCtCRvD8i7VO=QOuDX=M0gQuERwTConkrF9ohPfs=g@mail.gmail.com>
+Subject: Re: Lindent formatting issues
+From: Laszlo Papp <lpapp@kde.org>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Felipe,
-
-On 19/12/2013 17:47, Felipe Balbi wrote:
-> On Thu, Dec 19, 2013 at 08:41:09AM -0800, Greg Kroah-Hartman wrote:
->> On Thu, Dec 19, 2013 at 03:34:31PM +0100, Boris BREZILLON wrote:
->>> GPIO hogging is a way to request and configure specific GPIO without
->>> explicitly requesting it in the device driver.
->>>
->>> The request and configuration procedure is handled in the core device
->>> driver code before the driver probe function is called.
->>>
->>> It allows specific GPIOs to be configured without any driver specific code.
->>>
->>> Particularly usefull when a external device is connected to a bus and the
->>> bus connections depends on an external switch controlled by a GPIO pin.
-> for external switches, you probably need a pinctrl-gpio driver.
+On Thu, Dec 19, 2013 at 4:32 PM, Joe Perches <joe@perches.com> wrote:
+> On Thu, 2013-12-19 at 16:17 +0000, Laszlo Papp wrote:
+>> On Tue, Dec 17, 2013 at 8:05 PM, Joe Perches <joe@perches.com> wrote:
+> []
+>> > You could also use scripts/checkpatch.pl with
+>> > the --fix option.
+>> >
+>> > ./scripts/checkpatch.pl -f --fix <file>
+>> >
+>> > with various --types=<TYPE,...> options.
+>> >
+>> > Maybe use: https://lkml.org/lkml/2013/9/23/504
+>>
+>> Thanks Joe. I seem to have further issues with this tool... I tried to
+>> run it on a file I patched, but it generated a lot of noise unrelated
+>> to my logical change... :(
 >
-Do you mean using pinctrl pinconf to configure the PIN as output-high or
-output-low ?
+> checkpatch is really for patches.  Using -f is a
+> convenience ability.  You can limit what messages
+> checkpatch emits by using "--types=<FOO[,BAR...]>"
+>
+> You can show what message classifications are being
+> used by adding "--show-types".
+>
+>> Do you happen to know what the best way is to fix it in such cases? I
+>> am providing some examples below:
+>>
+>>         if (devattr == &sensor_dev_attr_fan1_max_alarm.dev_attr
+>> -        || devattr == &sensor_dev_attr_fan1_min_alarm.dev_attr
+>> -        || devattr == &sensor_dev_attr_fan1_fault.dev_attr
+>> -        || devattr == &sensor_dev_attr_gpio1_alarm.dev_attr
+>> -        || devattr == &sensor_dev_attr_gpio2_alarm.dev_attr) {
+>> +           || devattr == &sensor_dev_attr_fan1_min_alarm.dev_attr
+>> +           || devattr == &sensor_dev_attr_fan1_fault.dev_attr
+>> +           || devattr == &sensor_dev_attr_gpio1_alarm.dev_attr
+>> +           || devattr == &sensor_dev_attr_gpio2_alarm.dev_attr) {
+>
+> Well, here the general kernel style is to put
+> the logical && or || test at the end of the
+> previous line so:
+>
+>         if (devattr == &sensor_dev_attr_fan1_max_alarm.dev_attr ||
+>             devattr == &sensor_dev_attr_fan1_min_alarm.dev_attr ||
+>             devattr == &sensor_dev_attr_fan1_fault.dev_attr ||
+>             devattr == &sensor_dev_attr_gpio1_alarm.dev_attr ||
+>             devattr == &sensor_dev_attr_gpio2_alarm.dev_attr) {
+>
+> would likely be preferred.
+>
+>> -                                   int n)
+>> +                                    int n)
+>
+> This may be indentation alignment but I don't follow
+> how this is a problem.
 
-This was my first proposal
-(see https://www.mail-archive.com/devicetree@vger.kernel.org/msg05829.html).
+It is a problem because it is a noise for a logical change that is not
+about whitespace fixup. The kernel maintainer would probably
+rightfully reject it with such a line in.
 
+>
+>> -       int sysfs_modes[4] = {0, 1, 2, 1};
+>> +       int sysfs_modes[4] = { 0, 1, 2, 1 };
+>
+> Is this change from Lindent or checkpatch?
 
-Best Regards,
+I have used Lindent when these lines were generated. Here is some more:
 
-Boris
+-               data->dac = 180 - (180 * pwm)/255;
++               data->dac = 180 - (180 * pwm) / 255;
+        else
+-               data->dac = 76 - (76 * pwm)/255;
++               data->dac = 76 - (76 * pwm) / 255;
+
+...
+
+-       .probe          = max6650_probe,
+-       .remove         = max6650_remove,
+-       .id_table       = max6650_id,
++       .probe          = max6650_probe,
++       .remove = max6650_remove,
++       .id_table = max6650_id,
+
+...
+
+-                        const char *buf, size_t count)
++                         const char *buf, size_t count)
