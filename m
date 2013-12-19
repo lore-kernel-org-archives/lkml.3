@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab3LSIpp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 03:45:45 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:48322 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752153Ab3LSIpn (ORCPT
+	id S1752899Ab3LSIro (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 03:47:44 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:58357 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752185Ab3LSIrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 03:45:43 -0500
-Message-ID: <52B2B232.4070608@atmel.com>
-Date: Thu, 19 Dec 2013 09:45:38 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 19 Dec 2013 03:47:42 -0500
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org,
+        Himanshu Madhani <himanshu.madhani@qlogic.com>,
+        Rajesh Borundia <rajesh.borundia@qlogic.com>,
+        Shahed Shaikh <shahed.shaikh@qlogic.com>,
+        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
+        Sony Chacko <sony.chacko@qlogic.com>,
+        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>,
+        linux-driver@qlogic.com, netdev@vger.kernel.org, josh@joshtriplett.org
+Subject: =?UTF-8?q?=5BPATCH=20v3=201/8=5D=20drivers=3A=20net=3A=20Mark=20functions=20as=20static=20in=20qlcnic=5Fio=2Ec?=
+Date: Thu, 19 Dec 2013 14:17:27 +0530
+Message-Id: <04fe932bc3585620c91d511bb0894e45bb762ffa.1387382457.git.rashika.kheria@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <e03d2664d5490bf7af673fc66b83a9684c8758ed.1386911123.git.rashika.kheria@gmail.com>
+References: <e03d2664d5490bf7af673fc66b83a9684c8758ed.1386911123.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Landley <rob@landley.net>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mmc: atmel-mci: document clock properties
-References: <1387272977-4523-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1387272977-4523-1-git-send-email-b.brezillon@overkiz.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/12/2013 10:36, Boris BREZILLON :
-> Document the clock properties required by the atmel-mci driver.
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+This patch marks the function qlcnic_enable_tx_intr(),
+qlcnic_83xx_enable_tx_intr() and qlcnic_83xx_disable_tx_intr() in
+qlcnic_io.c as static because they are not used outside this file.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Thus, it also removes the following warnings in
+ethernet/qlogic/qlcnic/qlcnic_io.c:
 
-> ---
->  .../devicetree/bindings/mmc/atmel-hsmci.txt        |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/mmc/atmel-hsmci.txt b/Documentation/devicetree/bindings/mmc/atmel-hsmci.txt
-> index 0a85c70..07ad020 100644
-> --- a/Documentation/devicetree/bindings/mmc/atmel-hsmci.txt
-> +++ b/Documentation/devicetree/bindings/mmc/atmel-hsmci.txt
-> @@ -13,6 +13,9 @@ Required properties:
->  - #address-cells: should be one. The cell is the slot id.
->  - #size-cells: should be zero.
->  - at least one slot node
-> +- clock-names: tuple listing input clock names.
-> +	Required elements: "mci_clk"
-> +- clocks: phandles to input clocks.
->  
->  The node contains child nodes for each slot that the platform uses
->  
-> @@ -24,6 +27,8 @@ mmc0: mmc@f0008000 {
->  	interrupts = <12 4>;
->  	#address-cells = <1>;
->  	#size-cells = <0>;
-> +	clock-names = "mci_clk";
-> +	clocks = <&mci0_clk>;
->  
->  	[ child node definitions...]
->  };
-> 
+drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:130:13: warning: no previous prototype for ‘qlcnic_enable_tx_intr’ [-Wmissing-prototypes]
+drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:147:13: warning: no previous prototype for ‘qlcnic_83xx_enable_tx_intr’ [-Wmissing-prototypes]
+drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:153:13: warning: no previous prototype for ‘qlcnic_83xx_disable_tx_intr’ [-Wmissing-prototypes]
 
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
+index 0149c94..ac7ffc5 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
+@@ -127,7 +127,7 @@
+ struct sk_buff *qlcnic_process_rxbuf(struct qlcnic_adapter *,
+ 				     struct qlcnic_host_rds_ring *, u16, u16);
+ 
+-inline void qlcnic_enable_tx_intr(struct qlcnic_adapter *adapter,
++static inline void qlcnic_enable_tx_intr(struct qlcnic_adapter *adapter,
+ 				  struct qlcnic_host_tx_ring *tx_ring)
+ {
+ 	if (qlcnic_check_multi_tx(adapter) &&
+@@ -144,13 +144,13 @@ static inline void qlcnic_disable_tx_int(struct qlcnic_adapter *adapter,
+ 		writel(1, tx_ring->crb_intr_mask);
+ }
+ 
+-inline void qlcnic_83xx_enable_tx_intr(struct qlcnic_adapter *adapter,
++static inline void qlcnic_83xx_enable_tx_intr(struct qlcnic_adapter *adapter,
+ 				       struct qlcnic_host_tx_ring *tx_ring)
+ {
+ 	writel(0, tx_ring->crb_intr_mask);
+ }
+ 
+-inline void qlcnic_83xx_disable_tx_intr(struct qlcnic_adapter *adapter,
++static inline void qlcnic_83xx_disable_tx_intr(struct qlcnic_adapter *adapter,
+ 					struct qlcnic_host_tx_ring *tx_ring)
+ {
+ 	writel(1, tx_ring->crb_intr_mask);
 -- 
-Nicolas Ferre
+1.7.9.5
+
