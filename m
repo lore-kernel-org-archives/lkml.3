@@ -1,125 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab3LSFyu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 00:54:50 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:37311 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751660Ab3LSFyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 00:54:47 -0500
-Message-ID: <52B28A1B.3030209@ti.com>
-Date: Thu, 19 Dec 2013 11:24:35 +0530
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752064Ab3LSFzL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 00:55:11 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48184 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab3LSFzJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 00:55:09 -0500
+X-AuditID: 9c930179-b7bedae000000f15-b5-52b28a3b9477
+Date: Thu, 19 Dec 2013 14:55:10 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] mm/rmap: fix BUG at rmap_walk
+Message-ID: <20131219055510.GA27532@lge.com>
+References: <1387431715-6786-1-git-send-email-liwanp@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <rydberg@euromail.se>, <jcbian@pixcir.com.cn>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 5/9] Input: pixcir_i2c_ts: Get rid of pdata->attb_read_val()
-References: <1387358480-8313-1-git-send-email-rogerq@ti.com> <1387358480-8313-6-git-send-email-rogerq@ti.com> <20131218142056.GF28504@core.coreip.homeip.net>
-In-Reply-To: <20131218142056.GF28504@core.coreip.homeip.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387431715-6786-1-git-send-email-liwanp@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 07:50 PM, Dmitry Torokhov wrote:
-> On Wed, Dec 18, 2013 at 02:51:16PM +0530, Roger Quadros wrote:
->> Get rid of the attb_read_val() platform hook. Instead,
->> read the ATTB gpio directly from the driver.
->>
->> Fail if valid ATTB gpio is not provided by patform data.
+On Thu, Dec 19, 2013 at 01:41:55PM +0800, Wanpeng Li wrote:
+> This bug is introduced by commit 37f093cdf(mm/rmap: use rmap_walk() in 
+> page_referenced()). page_get_anon_vma() called in page_referenced_anon() 
+> will lock and increase the refcount of anon_vma. PageLocked is not required 
+> by page_referenced_anon() and there is not any assertion before, commit 
+> 37f093cdf introduced this extra BUG_ON() checking for anon page by mistake.
+> This patch fix it by remove rmap_walk()'s VM_BUG_ON() and comment reason why 
+> the page must be locked for rmap_walk_ksm() and rmap_walk_file().
 > 
-> Do you also need to define polarity?
+> [  588.698828] kernel BUG at mm/rmap.c:1663!
+> [  588.699380] invalid opcode: 0000 [#2] PREEMPT SMP DEBUG_PAGEALLOC
+> [  588.700347] Dumping ftrace buffer:
+> [  588.701186]    (ftrace buffer empty)
+> [  588.702062] Modules linked in:
+> [  588.702759] CPU: 0 PID: 4647 Comm: kswapd0 Tainted: G      D W    3.13.0-rc4-next-20131218-sasha-00012-g1962367-dirty #4155
+> [  588.704330] task: ffff880062bcb000 ti: ffff880062450000 task.ti: ffff880062450000
+> [  588.705507] RIP: 0010:[<ffffffff81289c80>]  [<ffffffff81289c80>] rmap_walk+0x10/0x50
+> [  588.706800] RSP: 0018:ffff8800624518d8  EFLAGS: 00010246
+> [  588.707515] RAX: 000fffff80080048 RBX: ffffea00000227c0 RCX: 0000000000000000
+> [  588.707515] RDX: 0000000000000000 RSI: ffff8800624518e8 RDI: ffffea00000227c0
+> [  588.707515] RBP: ffff8800624518d8 R08: ffff8800624518e8 R09: 0000000000000000
+> [  588.707515] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800624519d8
+> [  588.707515] R13: 0000000000000000 R14: ffffea00000227e0 R15: 0000000000000000
+> [  588.707515] FS:  0000000000000000(0000) GS:ffff880065200000(0000) knlGS:0000000000000000
+> [  588.707515] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  588.707515] CR2: 00007fec40cbe0f8 CR3: 00000000c2382000 CR4: 00000000000006f0
+> [  588.707515] Stack:
+> [  588.707515]  ffff880062451958 ffffffff81289f4b ffff880062451918 ffffffff81289f80
+> [  588.707515]  0000000000000000 0000000000000000 ffffffff8128af60 0000000000000000
+> [  588.707515]  0000000000000024 0000000000000000 0000000000000000 0000000000000286
+> [  588.707515] Call Trace:
+> [  588.707515]  [<ffffffff81289f4b>] page_referenced+0xcb/0x100
+> [  588.707515]  [<ffffffff81289f80>] ? page_referenced+0x100/0x100
+> [  588.707515]  [<ffffffff8128af60>] ? invalid_page_referenced_vma+0x170/0x170
+> [  588.707515]  [<ffffffff81264302>] shrink_active_list+0x212/0x330
+> [  588.707515]  [<ffffffff81260e23>] ? inactive_file_is_low+0x33/0x50
+> [  588.707515]  [<ffffffff812646f5>] shrink_lruvec+0x2d5/0x300
+> [  588.707515]  [<ffffffff812647b6>] shrink_zone+0x96/0x1e0
+> [  588.707515]  [<ffffffff81265b06>] kswapd_shrink_zone+0xf6/0x1c0
+> [  588.707515]  [<ffffffff81265f43>] balance_pgdat+0x373/0x550
+> [  588.707515]  [<ffffffff81266d63>] kswapd+0x2f3/0x350
+> [  588.707515]  [<ffffffff81266a70>] ? perf_trace_mm_vmscan_lru_isolate_template+0x120/0x120
+> [  588.707515]  [<ffffffff8115c9c5>] kthread+0x105/0x110
+> [  588.707515]  [<ffffffff8115c8c0>] ? set_kthreadd_affinity+0x30/0x30
+> [  588.707515]  [<ffffffff843a6a7c>] ret_from_fork+0x7c/0xb0
+> [  588.707515]  [<ffffffff8115c8c0>] ? set_kthreadd_affinity+0x30/0x30
+> [  588.707515] Code: c0 48 83 c4 18 89 d0 5b 41 5c 41 5d 41 5e 41 5f c9 c3 66 0f 1f 84
+> 00 00 00 00 00 55 48 89 e5 66 66 66 66 90 48 8b 07 a8 01 75 10 <0f> 0b 66 0f 1f 44 00 0
+> 0 eb fe 66 0f 1f 44 00 00 f6 47 08 01 74
+> [  588.707515] RIP  [<ffffffff81289c80>] rmap_walk+0x10/0x50
+> [  588.707515]  RSP <ffff8800624518d8>
 > 
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-In patch 3, in pixcir_start(), we explicitly configure the GPIO output
-polarity as /* LEVEL_TOUCH interrupt with active low polarity */
+Reviewed-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-So I don't think we need to define polarity.
-
-cheers,
--roger
-
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
->> ---
->>  drivers/input/touchscreen/pixcir_i2c_ts.c | 19 +++++++++++++++++--
->>  include/linux/input/pixcir_ts.h           |  1 -
->>  2 files changed, 17 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
->> index 3370fd9..a783d94 100644
->> --- a/drivers/input/touchscreen/pixcir_i2c_ts.c
->> +++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
->> @@ -91,11 +91,12 @@ static void pixcir_ts_poscheck(struct pixcir_i2c_ts_data *data)
->>  static irqreturn_t pixcir_ts_isr(int irq, void *dev_id)
->>  {
->>  	struct pixcir_i2c_ts_data *tsdata = dev_id;
->> +	const struct pixcir_ts_platform_data *pdata = tsdata->chip;
->>  
->>  	while (!tsdata->exiting) {
->>  		pixcir_ts_poscheck(tsdata);
->>  
->> -		if (tsdata->chip->attb_read_val())
->> +		if (gpio_get_value(pdata->gpio_attb))
->>  			break;
->>  
->>  		msleep(20);
->> @@ -301,8 +302,10 @@ static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
->>  		return ERR_PTR(-ENOMEM);
->>  
->>  	pdata->gpio_attb = of_get_named_gpio(np, "attb-gpio", 0);
->> -	if (!gpio_is_valid(pdata->gpio_attb))
->> +	if (!gpio_is_valid(pdata->gpio_attb)) {
->>  		dev_err(dev, "Failed to get ATTB GPIO\n");
->> +		return ERR_PTR(-EINVAL);
->> +	}
->>  
->>  	if (of_property_read_u32(np, "x-size", &pdata->x_size)) {
->>  		dev_err(dev, "Failed to get x-size property\n");
->> @@ -344,6 +347,11 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
->>  	} else if (!pdata) {
->>  		dev_err(&client->dev, "platform data not defined\n");
->>  		return -EINVAL;
->> +	} else {
->> +		if (!gpio_is_valid(pdata->gpio_attb)) {
->> +			dev_err(dev, "Invalid gpio_attb in pdata\n");
->> +			return -EINVAL;
->> +		}
->>  	}
->>  
->>  	tsdata = devm_kzalloc(dev, sizeof(*tsdata), GFP_KERNEL);
->> @@ -380,6 +388,13 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
->>  
->>  	input_set_drvdata(input, tsdata);
->>  
->> +	error = devm_gpio_request_one(dev, pdata->gpio_attb,
->> +			GPIOF_DIR_IN, "pixcir_i2c_attb");
->> +	if (error) {
->> +		dev_err(dev, "Failed to request ATTB gpio\n");
->> +		return error;
->> +	}
->> +
->>  	error = devm_request_threaded_irq(dev, client->irq, NULL, pixcir_ts_isr,
->>  				     IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
->>  				     client->name, tsdata);
->> diff --git a/include/linux/input/pixcir_ts.h b/include/linux/input/pixcir_ts.h
->> index f17c192..88ffdb50 100644
->> --- a/include/linux/input/pixcir_ts.h
->> +++ b/include/linux/input/pixcir_ts.h
->> @@ -44,7 +44,6 @@ enum pixcir_int_mode {
->>  #define PIXCIR_INT_POL_HIGH	(1UL << 2)
->>  
->>  struct pixcir_ts_platform_data {
->> -	int (*attb_read_val)(void);
->>  	unsigned int x_size;	/* X axis resolution */
->>  	unsigned int y_size;	/* Y axis resolution */
->>  	int gpio_attb;		/* GPIO connected to ATTB line */
->> -- 
->> 1.8.3.2
->>
-> 
+Thanks for all relevant people. :)
 
