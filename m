@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751315Ab3LSFtt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 00:49:49 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58720 "EHLO arroyo.ext.ti.com"
+	id S1751690Ab3LSFup (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 00:50:45 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:37173 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750872Ab3LSFtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 00:49:47 -0500
-Message-ID: <52B288ED.80904@ti.com>
-Date: Thu, 19 Dec 2013 11:19:33 +0530
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1750848Ab3LSFun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 00:50:43 -0500
+Message-ID: <52B288EF.1040006@ti.com>
+Date: Thu, 19 Dec 2013 11:19:35 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <rydberg@euromail.se>, <jcbian@pixcir.com.cn>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 7/9] Input: pixcir_i2c_ts: Implement Type B Multi Touch
- reporting
-References: <1387358480-8313-1-git-send-email-rogerq@ti.com> <1387358480-8313-8-git-send-email-rogerq@ti.com> <20131218141841.GE28504@core.coreip.homeip.net>
-In-Reply-To: <20131218141841.GE28504@core.coreip.homeip.net>
+To: <balbi@ti.com>, Matt Porter <mporter@linaro.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>, Tomasz Figa <t.figa@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: Re: [PATCH v7 8/9] phy: add Broadcom Kona USB2 PHY driver
+References: <1387309356-17195-1-git-send-email-mporter@linaro.org> <1387309356-17195-9-git-send-email-mporter@linaro.org> <20131218162554.GF4970@saruman.home>
+In-Reply-To: <20131218162554.GF4970@saruman.home>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+Hi Felipe,
 
-On 12/18/2013 07:48 PM, Dmitry Torokhov wrote:
-> On Wed, Dec 18, 2013 at 02:51:18PM +0530, Roger Quadros wrote:
->> Some pixcir controllers e.g. tangoC family report finger IDs with
->> the co-ordinates and are more suitable for Type-B MT protocol.
+On Wednesday 18 December 2013 09:55 PM, Felipe Balbi wrote:
+> On Tue, Dec 17, 2013 at 02:42:35PM -0500, Matt Porter wrote:
+>> Add a driver for the internal Broadcom Kona USB 2.0 PHY found
+>> on the BCM281xx family of SoCs.
 >>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
->> ---
->>  drivers/input/touchscreen/pixcir_i2c_ts.c | 202 +++++++++++++++++++++++-------
->>  1 file changed, 155 insertions(+), 47 deletions(-)
->>
->> diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
->> index ff68246..9e14415 100644
->> --- a/drivers/input/touchscreen/pixcir_i2c_ts.c
->> +++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
->> @@ -23,84 +23,173 @@
->>  #include <linux/slab.h>
->>  #include <linux/i2c.h>
->>  #include <linux/input.h>
->> +#include <linux/input/mt.h>
->>  #include <linux/input/pixcir_ts.h>
->>  #include <linux/gpio.h>
->>  #include <linux/of.h>
->>  #include <linux/of_gpio.h>
->>  #include <linux/of_device.h>
->>  
->> +#define MAX_FINGERS	5	/* Maximum supported by the driver */
+>> Signed-off-by: Matt Porter <mporter@linaro.org>
+> 
+> Kishon, are you ok with this driver ?
+
+yeah. Since this patch touches phy/Kconfig (and Makefile) and there is one more
+PHY driver to be merged that also modifies Kconfig there might be conflicts. So
+thought I should be taking this patch?
+> 
+>> +static int bcm_kona_usb2_probe(struct platform_device *pdev)
+>> +{
+>> +	struct device *dev = &pdev->dev;
+>> +	struct bcm_kona_usb *phy;
+>> +	struct resource *res;
+>> +	struct phy *gphy;
+>> +	struct phy_provider *phy_provider;
 >> +
->>  struct pixcir_i2c_ts_data {
->>  	struct i2c_client *client;
->>  	struct input_dev *input;
->>  	const struct pixcir_ts_platform_data *pdata;
->>  	bool exiting;
->> +	u8 max_fingers;		/* Maximum supported by the chip */
->>  };
->>  
->> -static void pixcir_ts_poscheck(struct pixcir_i2c_ts_data *data)
->> +static void pixcir_ts_typea_report(struct pixcir_i2c_ts_data *tsdata)
+>> +	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
+>> +	if (!phy)
+>> +		return -ENOMEM;
+>> +
+>> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +	phy->regs = devm_ioremap_resource(&pdev->dev, res);
+>> +	if (IS_ERR(phy->regs))
+>> +		return PTR_ERR(phy->regs);
+>> +
+>> +	platform_set_drvdata(pdev, phy);
+>> +
+>> +	phy_provider = devm_of_phy_provider_register(dev,
+>> +			of_phy_simple_xlate);
+>> +	if (IS_ERR(phy_provider))
+>> +		return PTR_ERR(phy_provider);
+>> +
+>> +	gphy = devm_phy_create(dev, &ops, NULL);
+>> +	if (IS_ERR(gphy))
+>> +		return PTR_ERR(gphy);
+>> +
+>> +	/* The Kona PHY supports an 8-bit wide UTMI interface */
+>> +	phy_set_bus_width(gphy, 8);
+>> +
+>> +	phy_set_drvdata(gphy, phy);
 > 
-> Hmm, I do not think we should keep Type A reports if we can do Type B.
-> The protocols are not new and userspace should be able to handle MT-B by
-> now.
-> 
+> I think this set_drvdata() should be done before registering the
+> provider, no ?
 
-It seems the controller the original driver was written for does not report
-touch ID and just reports 2 touch co-ordinates. I'm not sure how this fits into
-Type B reporting model.
+hmm, right.
 
-cheers,
--roger
+Thanks
+Kishon
