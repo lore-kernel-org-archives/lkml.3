@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab3LSPXc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:23:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60846 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895Ab3LSPXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:23:30 -0500
-Message-ID: <52B30F43.1060306@zytor.com>
-Date: Thu, 19 Dec 2013 07:22:43 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-CC: Elliott@hp.com, samer.el-haj-mahmoud@hp.com,
-        Oliver Neukum <oneukum@suse.de>, werner@suse.com, trenn@suse.de,
-        JBeulich@suse.com, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>
-Subject: Re: [RFC PATCH 04/14] ACPI: Add ACPI 5.0 Time and Alarm Device driver
-References: <1387439515-8926-1-git-send-email-jlee@suse.com> <1387439515-8926-5-git-send-email-jlee@suse.com>
-In-Reply-To: <1387439515-8926-5-git-send-email-jlee@suse.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753353Ab3LSP0Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:26:16 -0500
+Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:49789 "EHLO
+	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751373Ab3LSP0P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 10:26:15 -0500
+Date: Thu, 19 Dec 2013 09:26:12 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Dave Chinner <david@fromorbit.com>
+cc: Dave Chinner <dchinner@redhat.com>, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [fs] inode_lru_isolate(): Move counter increment into spinlock
+ section
+In-Reply-To: <20131219042322.GX31386@dastard>
+Message-ID: <alpine.DEB.2.10.1312190921450.4238@nuc>
+References: <00000143072add16-956bfa6c-d7d5-4df9-aabc-05a904a0edc4-000000@email.amazonses.com> <20131219042322.GX31386@dastard>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 11:51 PM, Lee, Chun-Yi wrote:
-> This patch add the driver of Time and Alarm Device in ACPI 5.0.
-> Currently it only implemented get/set time functions and grab
-> the capabilities of device when driver initial.
-> 
-> This driver also register rtc-acpitad platform device for RTC ACPITAD
-> stub driver using.
-> 
-> Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+On Thu, 19 Dec 2013, Dave Chinner wrote:
 
-What platform do you have that has TAD support?  I am wondering how this
-was tested.
+> On Wed, Dec 18, 2013 at 07:24:46PM +0000, Christoph Lameter wrote:
+> > The counter increment in inode_lru_isolate is happening after
+> > spinlocks have been dropped with preemption on using __count_vm_events
+> > making counter increment races possible.
+>
+> That's a nasty, undocumented problem that __count_vm_events() has.
 
-	-hpa
+AFACIT that is a pretty well established and known issue. It only
+affects cases where the fallback code for the counter increments is used.
 
+> Nobody who is modifying the fs/inode.c code is likely to know about
+> this, so just moving the code under an unrelated lock is not
+> sufficient to prevent this from happening again. Hence I'd prefer
+> that you just change it to use count_vm_events() rather than try to
+> be tricksy by replacing the landmine in the code that we've already
+> stepped on once.
+
+I have a patchset here that is supposed to be merged soon that will detect
+these cases.
+
+Moving the code is IMHO the simplest solution. count_vm_events
+will have to disable interrupts on platforms that do not support fast RMV
+operations otherwise.
 
