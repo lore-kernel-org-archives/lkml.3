@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab3LSPKf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:10:35 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55044 "EHLO
+	id S1754713Ab3LSPHS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:07:18 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54916 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617Ab3LSPKc (ORCPT
+	with ESMTP id S1753264Ab3LSPHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:10:32 -0500
-Date: Thu, 19 Dec 2013 16:10:24 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
- tracing units
-Message-ID: <20131219151024.GI16438@laptop.programming.kicks-ass.net>
-References: <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218141125.GT21999@twins.programming.kicks-ass.net>
- <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218150900.GU21999@twins.programming.kicks-ass.net>
- <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219103134.GD30183@twins.programming.kicks-ass.net>
- <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219112812.GY21999@twins.programming.kicks-ass.net>
- <20131219123955.GA18186@gmail.com>
- <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
+	Thu, 19 Dec 2013 10:07:15 -0500
+Date: Thu, 19 Dec 2013 08:07:01 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
+        Akhil Bhansali <abhansali@stec-inc.com>, josh@joshtriplett.org
+Subject: Re: [PATCH 01/13] drivers: block: Mark the functions as static in
+ skd_main.c
+Message-ID: <20131219150701.GD30200@kernel.dk>
+References: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 04:30:53PM +0200, Alexander Shishkin wrote:
-> So I'd like to steer away from the ways in which hardware can be broken
-> and talk about a usable interface, to begin with.
+On Thu, Dec 19 2013, Rashika Kheria wrote:
+> Mark functions skd_skmsg_state_to_str() and skd_skreq_state_to_str() as
+> static in skd_main.c because they are not used outside this file.
+> 
+> This eliminates the following warnings in skd_main.c:
+> drivers/block/skd_main.c:5272:13: warning: no previous prototype for ‘skd_skmsg_state_to_str’ [-Wmissing-prototypes]
+> drivers/block/skd_main.c:5284:13: warning: no previous prototype for ‘skd_skreq_state_to_str’ [-Wmissing-prototypes]
 
-Just dump it into the regular one buffer like I outlined.
+Thanks, applied.
 
-That said; we very much need to have at least two architectures
-implemented for any of this code to move.
+-- 
+Jens Axboe
 
-But we cannot ignore the hardware trainwreck; we cannot shape our
-interface around something that's utterly broken.
-
-Some hardware is just too broken to support.
