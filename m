@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3LSRDN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 12:03:13 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:38595 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab3LSRDK (ORCPT
+	id S1755429Ab3LSRD0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 12:03:26 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:58681 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812Ab3LSRDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 12:03:10 -0500
+	Thu, 19 Dec 2013 12:03:23 -0500
+Message-ID: <52B334EF.1090202@cogentembedded.com>
+Date: Thu, 19 Dec 2013 21:03:27 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20131219163606.GA29243@gmail.com>
-References: <1387374611-12493-1-git-send-email-dh.herrmann@gmail.com>
-	<1387448038-8260-1-git-send-email-dh.herrmann@gmail.com>
-	<20131219163606.GA29243@gmail.com>
-Date: Thu, 19 Dec 2013 18:03:08 +0100
-Message-ID: <CANq1E4Ss30G72t3R1iza9vOO7ESYQynjS74mB+nJ-zT2zAvyzQ@mail.gmail.com>
-Subject: Re: [PATCH v3] x86: sysfb: remove sysfb when probing real hw
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alan Stern <stern@rowland.harvard.edu>, josh@joshtriplett.org
+CC: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 3/7] drivers: usb: Include appropriate header file in
+ hcd.h
+References: <Pine.LNX.4.44L0.1312191142501.984-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1312191142501.984-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hello.
 
-On Thu, Dec 19, 2013 at 5:36 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * David Herrmann <dh.herrmann@gmail.com> wrote:
->
->> --- a/drivers/video/fbmem.c
->> +++ b/drivers/video/fbmem.c
->> @@ -35,6 +35,9 @@
->>
->>  #include <asm/fb.h>
->>
->> +#if IS_ENABLED(CONFIG_X86)
->> +#include <asm/sysfb.h>
->> +#endif
->
-> I think this can be written as:
->
-> #ifdef CONFIG_X86
-> # include <asm/sysfb.h>
-> #endif
->
-> also ... the dependency on a large, unrelated option like CONFIG_X86
-> looks pretty ugly here - is there no other, more specific CONFIG_
-> option that can be used here - such as CONFIG_FB_SIMPLE or
-> CONFIG_X86_SYSFB?
->
->> +#if IS_ENABLED(CONFIG_X86)
->> +     sysfb_unregister(apert, primary);
->> +#endif
->
-> Ditto.
+On 12/19/2013 07:48 PM, Alan Stern wrote:
 
-CONFIG_X86 is probably never 'm'.. will fix that.
-It was CONFIG_X86_SYSFB before and that works, too, but the broader
-X86 seemed more appropriate as sysfb is available on all x86.
+>>> Of course, people have varying opinions on this issue.  As far as I
+>>> know, there is no fixed policy in the kernel about nested includes.
 
-Note that I have patches here locally which move
-sysfb_register/unregister to drivers/video/sysfb.c and add
-include/linux/sysfb.h with dummies if CONFIG_SYSFB is not selected to
-avoid the #ifdef. This will allow other architectures to do
-gfx-hand-over, too. They seem too big for stable, though. That's why I
-split them up and added it to x86/kernel/sysfb.c first.
+>> True.  I personally prefer the policy of making all headers
+>> self-contained, and then only including headers that define things used
+>> in the source file.  That has the advantage of not including any
+>> unnecessary headers if the dependencies shrink, and not requiring
+>> changes to multiple source files if the dependencies grow.
 
-Thanks
-David
+>> Any particular objection to making the headers self-contained?
+
+> I guess it depends on what you mean by "self-contained".  The only
+> reasonable definition I can think of at the moment is that you don't
+> get any errors or warnings when you compile the .h file by itself.
+
+> But what use is that in practice?  Nobody ever compiles .h files by
+> themselves.
+
+    It's enough to verify that a .c file containing the given .h file would 
+not cause errors *located in that .h file*. This is not really such an 
+improbable situation, e.g. at the early stages of development. I did discover 
+header fiel errors this way.
+
+> For that matter, how can you tell that you are including only headers
+> that define things used in the source file?
+
+    I still think that's a whole different issue.
+
+> Remove each #include line,
+> one at a time, and see if you then get an error?  Do you do this after
+> each change to the source file to make sure it remains true over time?
+
+    That's what #include cleanup patches are for. Somebody has to do them from 
+time to time when the #include's accumulate -- they tend to accumulate as 
+people often forget to remove no longer needed one while removing some feature 
+from the .c file.
+
+> My point is that the C language design and compiler infrastructure make
+> it virtually impossible to enforce any fixed policy.
+
+    I don't really see how C language design can justify header files that 
+once included, require each .c file to #include other headers ahead of them, 
+each time such header is used. In my opinion, it's just crazy.
+
+> Alan Stern
+
+WBR, Sergei
+
