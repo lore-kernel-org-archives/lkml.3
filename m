@@ -1,93 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab3LSGJv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 01:09:51 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:51746 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab3LSGJf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 01:09:35 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Guo Chao <yan@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v5 3/3] PCI: Sort pci root bus resources list
-Date: Wed, 18 Dec 2013 22:09:40 -0800
-Message-Id: <1387433380-18564-4-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1387433380-18564-1-git-send-email-yinghai@kernel.org>
-References: <1387433380-18564-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1752000Ab3LSGNN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 01:13:13 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60115 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750807Ab3LSGNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 01:13:11 -0500
+Message-ID: <52B28E69.3030703@ti.com>
+Date: Thu, 19 Dec 2013 11:42:57 +0530
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: <rydberg@euromail.se>, <jcbian@pixcir.com.cn>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/9] Input: pixcir_i2c_ts: Add device tree support
+References: <1387358480-8313-1-git-send-email-rogerq@ti.com> <1387358480-8313-2-git-send-email-rogerq@ti.com> <20131218140918.GA28504@core.coreip.homeip.net>
+In-Reply-To: <20131218140918.GA28504@core.coreip.homeip.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some x86 systems expose above 4G 64bit mmio in _CRS as non-pref mmio range.
-[   49.415281] PCI host bridge to bus 0000:00
-[   49.419921] pci_bus 0000:00: root bus resource [bus 00-1e]
-[   49.426107] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7]
-[   49.433041] pci_bus 0000:00: root bus resource [io  0x1000-0x5fff]
-[   49.440010] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff]
-[   49.447768] pci_bus 0000:00: root bus resource [mem 0xfed8c000-0xfedfffff]
-[   49.455532] pci_bus 0000:00: root bus resource [mem 0x90000000-0x9fffbfff]
-[   49.463259] pci_bus 0000:00: root bus resource [mem 0x380000000000-0x381fffffffff]
+On 12/18/2013 07:39 PM, Dmitry Torokhov wrote:
+> Hi Roger,
+> 
+> On Wed, Dec 18, 2013 at 02:51:12PM +0530, Roger Quadros wrote:
+>> Provide device tree support and binding information.
+>> Change platform data parameters from x/y_max to x/y_size..
+> 
+> I'd rather keep them as they were.
 
-During assign unassigned 64bit mmio resource, it will go through
-every non-pref mmio for root bus in pci_bus_alloc_resource().
-As the loop is with pci_bus_for_each_resource(), and could have chance
-to use under 4G mmio range instead of above 4G mmio range if the requested
-range is not big enough, even it could handle above 4G 64bit pref mmio.
+OK.
 
-For root bus, we can order list from high to low in pci_add_resource_offset(),
-during creating root bus, it will still keep the same order in final bus
-resource list.
-	pci_acpi_scan_root
-		==> add_resources
-			==> pci_add_resource_offset: # Add to temp resources
-		==> pci_create_root_bus
-			==> pci_bus_add_resource # add to final bus resources.
+> 
+>>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
+>> ---
+>>  .../bindings/input/touchscreen/pixcir_i2c_ts.txt   | 26 ++++++++
+>>  drivers/input/touchscreen/pixcir_i2c_ts.c          | 77 ++++++++++++++++++++--
+>>  include/linux/input/pixcir_ts.h                    |  5 +-
+>>  3 files changed, 101 insertions(+), 7 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt b/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
+>> new file mode 100644
+>> index 0000000..c0b0b270
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
+>> @@ -0,0 +1,26 @@
+>> +* Pixcir I2C touchscreen controllers
+>> +
+>> +Required properties:
+>> +- compatible: must be "pixcir,pixcir_ts"
+>> +- reg: I2C address of the chip
+>> +- interrupts: interrupt to which the chip is connected
+>> +- attb-gpio: GPIO connected to the ATTB line of the chip
+>> +- x-size: horizontal resolution of touchscreen
+>> +- y-size: vertical resolution of touchscreen
+>> +
+>> +Example:
+>> +
+>> +	i2c@00000000 {
+>> +		/* ... */
+>> +
+>> +		pixcir_ts@5c {
+>> +			compatible = "pixcir,pixcir_ts";
+>> +			reg = <0x5c>;
+>> +			interrupts = <2 0>;
+>> +			attb-gpio = <&gpf 2 0 2>;
+>> +			x-size = <800>;
+>> +			y-size = <600>;
+>> +		};
+>> +
+>> +		/* ... */
+>> +	};
+>> diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
+>> index 6cc6b36..3a447c9 100644
+>> --- a/drivers/input/touchscreen/pixcir_i2c_ts.c
+>> +++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
+>> @@ -24,6 +24,10 @@
+>>  #include <linux/i2c.h>
+>>  #include <linux/input.h>
+>>  #include <linux/input/pixcir_ts.h>
+>> +#include <linux/gpio.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_gpio.h>
+>> +#include <linux/of_device.h>
+>>  
+>>  struct pixcir_i2c_ts_data {
+>>  	struct i2c_client *client;
+>> @@ -125,15 +129,65 @@ static int pixcir_i2c_ts_resume(struct device *dev)
+>>  static SIMPLE_DEV_PM_OPS(pixcir_dev_pm_ops,
+>>  			 pixcir_i2c_ts_suspend, pixcir_i2c_ts_resume);
+>>  
+>> +#if defined(CONFIG_OF)
+> 
+> #ifdef is preferred for simple conditions.
+> 
+>> +static const struct of_device_id pixcir_of_match[];
+>> +
+>> +static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
+>> +{
+>> +	struct pixcir_ts_platform_data *pdata;
+>> +	struct device_node *np = dev->of_node;
+>> +	const struct of_device_id *match;
+>> +
+>> +	match = of_match_device(of_match_ptr(pixcir_of_match), dev);
+>> +	if (!match)
+>> +		return ERR_PTR(-EINVAL);
+> 
+> Why do you need an explicit match here?
+> 
 
-After that, we can make sure 64bit pref mmio for pci bridges will be allocated
-higest of mmio non-pref, and in this case it is above 4G instead of under 4G.
+Right, it is not needed here for this patch but used later in patch 6
+to get chip specific data. I'll fix this while re-arranging the patches.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/bus.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+>> +
+>> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+>> +	if (!pdata)
+>> +		return ERR_PTR(-ENOMEM);
+>> +
+>> +	pdata->gpio_attb = of_get_named_gpio(np, "attb-gpio", 0);
+>> +	if (!gpio_is_valid(pdata->gpio_attb))
+>> +		dev_err(dev, "Failed to get ATTB GPIO\n");
+>> +
+>> +	if (of_property_read_u32(np, "x-size", &pdata->x_size)) {
+>> +		dev_err(dev, "Failed to get x-size property\n");
+>> +		return ERR_PTR(-EINVAL);
+>> +	}
+>> +
+>> +	if (of_property_read_u32(np, "y-size", &pdata->y_size)) {
+>> +		dev_err(dev, "Failed to get y-size property\n");
+>> +		return ERR_PTR(-EINVAL);
+>> +	}
+>> +
+>> +	dev_dbg(dev, "%s: x %d, y %d, gpio %d\n", __func__,
+>> +				pdata->x_size, pdata->y_size, pdata->gpio_attb);
+>> +
+>> +	return pdata;
+>> +}
+>> +#else
+>> +static struct pixcir_ts_platform_data *pixcir_parse_dt(struct device *dev)
+>> +{
+>> +	return NULL;
+> 
+> This should be
+> 
+> 	return ERR_PTR(-EINVAL);
+> 
+> since you test it with IS_ERR() later.
 
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index 1fd0bf8..b8a2370 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -21,7 +21,8 @@
- void pci_add_resource_offset(struct list_head *resources, struct resource *res,
- 			     resource_size_t offset)
- {
--	struct pci_host_bridge_window *window;
-+	struct pci_host_bridge_window *window, *tmp;
-+	struct list_head *n;
- 
- 	window = kzalloc(sizeof(struct pci_host_bridge_window), GFP_KERNEL);
- 	if (!window) {
-@@ -31,7 +32,17 @@ void pci_add_resource_offset(struct list_head *resources, struct resource *res,
- 
- 	window->res = res;
- 	window->offset = offset;
--	list_add_tail(&window->list, resources);
-+
-+	/* Keep list sorted according to res end */
-+	n = resources;
-+	list_for_each_entry(tmp, resources, list)
-+		if (window->res->end > tmp->res->end) {
-+			n = &tmp->list;
-+			break;
-+		}
-+
-+	/* Insert it just before n */
-+	list_add_tail(&window->list, n);
- }
- EXPORT_SYMBOL(pci_add_resource_offset);
- 
--- 
-1.8.4
+OK.
 
+> 
+>> +}
+>> +#endif
+>> +
+>>  static int pixcir_i2c_ts_probe(struct i2c_client *client,
+>>  					 const struct i2c_device_id *id)
+>>  {
+>>  	const struct pixcir_ts_platform_data *pdata = client->dev.platform_data;
+>> +	struct device *dev = &client->dev;
+>> +	struct device_node *np = dev->of_node;
+>>  	struct pixcir_i2c_ts_data *tsdata;
+>>  	struct input_dev *input;
+>>  	int error;
+>>  
+>> -	if (!pdata) {
+>> +	if (np) {
+>> +		pdata = pixcir_parse_dt(dev);
+>> +		if (IS_ERR(pdata))
+>> +			return PTR_ERR(pdata);
+> 
+> We should be favoring kernel-provided platform data if it is pesent even
+> if there is dt-data available. This way user can override firmware,m if
+> needed.
+> 
+OK. But how can the user override kernel provided platform data? Can't device
+tree overlays be used to patch DT data in the same fashion.
+
+I've not tried either so I don't know which one is more user friendly.
+
+>> +
+>> +	} else if (!pdata) {
+>>  		dev_err(&client->dev, "platform data not defined\n");
+>>  		return -EINVAL;
+>>  	}
+>> @@ -157,10 +211,14 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
+>>  	__set_bit(EV_KEY, input->evbit);
+>>  	__set_bit(EV_ABS, input->evbit);
+>>  	__set_bit(BTN_TOUCH, input->keybit);
+>> -	input_set_abs_params(input, ABS_X, 0, pdata->x_max, 0, 0);
+>> -	input_set_abs_params(input, ABS_Y, 0, pdata->y_max, 0, 0);
+>> -	input_set_abs_params(input, ABS_MT_POSITION_X, 0, pdata->x_max, 0, 0);
+>> -	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, pdata->y_max, 0, 0);
+>> +	input_set_abs_params(input, ABS_X,
+>> +					0, pdata->x_size - 1, 0, 0);
+>> +	input_set_abs_params(input, ABS_Y,
+>> +					0, pdata->y_size - 1, 0, 0);
+>> +	input_set_abs_params(input, ABS_MT_POSITION_X,
+>> +					0, pdata->x_size - 1, 0, 0);
+>> +	input_set_abs_params(input, ABS_MT_POSITION_Y,
+>> +					0, pdata->y_size - 1, 0, 0);
+>>  
+>>  	input_set_drvdata(input, tsdata);
+>>  
+>> @@ -211,11 +269,20 @@ static const struct i2c_device_id pixcir_i2c_ts_id[] = {
+>>  };
+>>  MODULE_DEVICE_TABLE(i2c, pixcir_i2c_ts_id);
+>>  
+>> +#if defined(CONFIG_OF)
+>> +static const struct of_device_id pixcir_of_match[] = {
+>> +	{ .compatible = "pixcir,pixcir_ts", },
+>> +	{ }
+>> +};
+>> +MODULE_DEVICE_TABLE(of, pixcir_of_match);
+>> +#endif
+> 
+> #ifdef is preferred for simple conditions.
+> 
+OK.
+
+>> +
+>>  static struct i2c_driver pixcir_i2c_ts_driver = {
+>>  	.driver = {
+>>  		.owner	= THIS_MODULE,
+>>  		.name	= "pixcir_ts",
+>>  		.pm	= &pixcir_dev_pm_ops,
+>> +		.of_match_table = of_match_ptr(pixcir_of_match),
+>>  	},
+>>  	.probe		= pixcir_i2c_ts_probe,
+>>  	.remove		= pixcir_i2c_ts_remove,
+>> diff --git a/include/linux/input/pixcir_ts.h b/include/linux/input/pixcir_ts.h
+>> index 7163d91..b34ff7e 100644
+>> --- a/include/linux/input/pixcir_ts.h
+>> +++ b/include/linux/input/pixcir_ts.h
+>> @@ -3,8 +3,9 @@
+>>  
+>>  struct pixcir_ts_platform_data {
+>>  	int (*attb_read_val)(void);
+>> -	int x_max;
+>> -	int y_max;
+>> +	unsigned int x_size;	/* X axis resolution */
+>> +	unsigned int y_size;	/* Y axis resolution */
+>> +	int gpio_attb;		/* GPIO connected to ATTB line */
+>>  };
+> 
+> OK, it looks like the series were split awkwardly: you are defining data
+> that is used by follow-up patches and its purpose is unclear when
+> reviewing patch-by-patch. I'd recommend rearranging so that DT support
+> patch is the very last in the series.
+> 
+Got it.
+
+>>  
+>>  #endif
+>> -- 
+>> 1.8.3.2
+
+cheers,
+-roger
