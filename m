@@ -1,102 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab3LSOzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:55:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58153 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752187Ab3LSOzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:55:19 -0500
-Date: Thu, 19 Dec 2013 14:55:11 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Michel Lespinasse <walken@google.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+	id S1756266Ab3LSNgR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:36:17 -0500
+Received: from mail-qe0-f47.google.com ([209.85.128.47]:58844 "EHLO
+	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756087Ab3LSNfE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 08:35:04 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: nfs-ganesha-devel@lists.sourceforge.net, samba-technical@lists.samba.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/3] Change how we determine when to hand out THPs
-Message-ID: <20131219145511.GO11295@suse.de>
-References: <20131212180037.GA134240@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20131212180037.GA134240@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: [PATCH v4 11/13] locks: show private lock types in /proc/locks
+Date: Thu, 19 Dec 2013 08:34:23 -0500
+Message-Id: <1387460065-28269-12-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
+References: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 12:00:37PM -0600, Alex Thorlton wrote:
-> This patch changes the way we decide whether or not to give out THPs to
-> processes when they fault in pages.  The way things are right now,
-> touching one byte in a 2M chunk where no pages have been faulted in
-> results in a process being handed a 2M hugepage, which, in some cases,
-> is undesirable.  The most common issue seems to arise when a process
-> uses many cores to work on small portions of an allocated chunk of
-> memory.
-> 
-> <SNIP>
-> 
-> As you can see there's a significant performance increase when running
-> this test with THP off.  Here's a pointer to the test, for those who are
-> interested:
-> 
-> http://oss.sgi.com/projects/memtests/thp_pthread.tar.gz
-> 
-> My proposed solution to the problem is to allow users to set a
-> threshold at which THPs will be handed out.  The idea here is that, when
-> a user faults in a page in an area where they would usually be handed a
-> THP, we pull 512 pages off the free list, as we would with a regular
-> THP, but we only fault in single pages from that chunk, until the user
-> has faulted in enough pages to pass the threshold we've set. 
+In a later patch, we'll be adding a new type of lock that's owned by
+the struct file instead of the files_struct. Those sorts of locks
+will be flagged with a new IS_FILE_PVT flag.
 
-I have not read this thread yet so this is just me initial reaction to
-just this part.
+Show "private" locks in /proc/locks with a 'P' suffix. This does mean
+that we need to widen the column by one character.
 
-First, you say that the propose solution is to allow users to set a
-threshold at which THPs will be handed out but you actually allocate all
-the pages up front so it's not just that. There a few things in play
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/locks.c         | 9 ++++++---
+ include/linux/fs.h | 1 +
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-1. Deferred zeroing cost
-2. Deferred THP set cost
-3. Different TLB pressure
-4. Alignment issues and NUMA
-
-All are important. It is common for there to be fewer large TLB entries
-than small ones. Workloads that sparsely reference data may suffer badly
-when using large pages as the TLB gets trashed. Your workload could be
-specifically testing for the TLB pressure (optimising point 3 above) in
-which case the procesor used for benchmarking is a major factor and it's
-not a universal win.
-
-For example, your workload may optimise 3 but other workloads may suffer
-because more faults are incurred until the threshold is reached, the
-page tables must be walked to initialse the remaining pages and then the
-THP setup and TLB flushed. 
-
-Keep these details in mind when measuring your patches if at all possible.
-
-Otherwise, on the face of it this is actually a similar proposal to "page
-reservation" described one of the more important large page papers written
-by Talluri (http://dl.acm.org/citation.cfm?id=195531). Right now you could
-consider Linux to be reserving pages with a promotion threshold of 1 and
-you're aiming to alter that threshold. Seems like a reasonable idea that
-will eventually work out even though I have not seen the implementation yet.
-
+diff --git a/fs/locks.c b/fs/locks.c
+index a217c2c..995583b 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -135,6 +135,7 @@
+ #define IS_POSIX(fl)	(fl->fl_flags & FL_POSIX)
+ #define IS_FLOCK(fl)	(fl->fl_flags & FL_FLOCK)
+ #define IS_LEASE(fl)	(fl->fl_flags & (FL_LEASE|FL_DELEG))
++#define IS_FILE_PVT(fl)	(fl->fl_flags & FL_FILE_PVT)
+ 
+ static bool lease_breaking(struct file_lock *fl)
+ {
+@@ -2336,13 +2337,15 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
+ 		seq_printf(f, "UNKNOWN UNKNOWN  ");
+ 	}
+ 	if (fl->fl_type & LOCK_MAND) {
+-		seq_printf(f, "%s ",
++		seq_printf(f, "%s  ",
+ 			       (fl->fl_type & LOCK_READ)
+ 			       ? (fl->fl_type & LOCK_WRITE) ? "RW   " : "READ "
+ 			       : (fl->fl_type & LOCK_WRITE) ? "WRITE" : "NONE ");
++	} else if (IS_FILE_PVT(fl)) {
++		seq_printf(f, "%s ", fl->fl_type == F_WRLCK ?  "WRITEP" : "READP ");
+ 	} else {
+-		seq_printf(f, "%s ",
+-			       (lease_breaking(fl))
++		seq_printf(f, "%s  ",
++			       lease_breaking(fl)
+ 			       ? (fl->fl_type == F_UNLCK) ? "UNLCK" : "READ "
+ 			       : (fl->fl_type == F_WRLCK) ? "WRITE" : "READ ");
+ 	}
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 51974e0..639a3b7 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -888,6 +888,7 @@ static inline int file_check_writeable(struct file *filp)
+ #define FL_SLEEP	128	/* A blocking lock */
+ #define FL_DOWNGRADE_PENDING	256 /* Lease is being downgraded */
+ #define FL_UNLOCK_PENDING	512 /* Lease is being broken */
++#define FL_FILE_PVT	1024	/* lock is private to the file */
+ 
+ /*
+  * Special return value from posix_lock_file() and vfs_lock_file() for
 -- 
-Mel Gorman
-SUSE Labs
+1.8.4.2
+
