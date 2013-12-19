@@ -1,138 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995Ab3LSN3L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:29:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55531 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752314Ab3LSN3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:29:09 -0500
-Date: Thu, 19 Dec 2013 13:29:05 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/6] Configurable fair allocation zone policy v4
-Message-ID: <20131219132905.GL11295@suse.de>
-References: <1387395723-25391-1-git-send-email-mgorman@suse.de>
- <20131218210617.GC20038@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20131218210617.GC20038@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755713Ab3LSMsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:48:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44819 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813Ab3LSL5W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:57:22 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Liu Gang <Gang.Liu@freescale.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 085/208] powerpc/gpio: Fix the wrong GPIO input data on MPC8572/MPC8536
+Date: Thu, 19 Dec 2013 11:53:03 +0000
+Message-Id: <1387454106-19326-86-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 04:06:17PM -0500, Johannes Weiner wrote:
-> On Wed, Dec 18, 2013 at 07:41:57PM +0000, Mel Gorman wrote:
-> > This is still a work in progress. I know Johannes is maintaining his own
-> > patch which takes a different approach and has different priorities. Michal
-> > Hocko has raised concerns potentially affecting both. I'm releasing this so
-> > there is a basis of comparison with Johannes' patch. It's not necessarily
-> > the final shape of what we want to merge but the test results highlight
-> > the current behaviour has regressed performance for basic workloads.
-> > 
-> > A big concern is the semantics and tradeoffs of the tunable are quite
-> > involved.  Basically no matter what workload you get right, there will be
-> > a workload that will be wrong. This might indicate that this really needs
-> > to be controlled via memory policies or some means of detecting online
-> > which policy should be used on a per-process basis.
-> 
-> I'm more and more agreeing with this.  As I stated in my answer to
-> Michal, I may have seen this too black and white and the flipside of
-> the coin as not important enough.
-> 
-> But it really does point to a mempolicy.  As long as we can agree on a
-> default that makes most sense for users, there is no harm in offering
-> a choice.  E.g. aging artifacts are simply irrelevant without reclaim
-> going on, so a workload that mostly avoids it can benefit from a
-> placement policy that strives for locality without any downsides.
-> 
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Agreed.
+------------------
 
-In a land of free ponies we could try detecting online if a process should
-be using MPOL_LOCAL or MPOL_INTERLEAVE_FILE (or whatever the policy gets
-called) automatically if the process is using teh system default memory
-policy. Possible detection methods
+From: Liu Gang <Gang.Liu@freescale.com>
 
-1. Recent excessive fallback to remote nodes clean local node
-2. If kswapd awake for long periods of time receiving excessive wakeups
-   then switch the processes waking it to MPOL_INTERLEAVE_FILE. kswapd
-   could track who is keeping it awake on a list. Processes switch back
-   to MPOL_LOCAL after some period of time.
-3. Crystal ball instruction
+commit 1aeef303b5d9e243c41d5b80f8bb059366514a10 upstream.
 
-> > By default, this series does *not* interleave pagecache across nodes but
-> > it will interleave between local zones.
-> > 
-> > Changelog since V3
-> > o Add documentation
-> > o Bring tunable in line with Johannes
-> > o Common code when deciding to update the batch count and skip zones
-> > 
-> > Changelog since v2
-> > o Drop an accounting patch, behaviour is deliberate
-> > o Special case tmpfs and shmem pages for discussion
-> > 
-> > Changelog since v1
-> > o Fix lot of brain damage in the configurable policy patch
-> > o Yoink a page cache annotation patch
-> > o Only account batch pages against allocations eligible for the fair policy
-> > o Add patch that default distributes file pages on remote nodes
-> > 
-> > Commit 81c0a2bb ("mm: page_alloc: fair zone allocator policy") solved a
-> > bug whereby new pages could be reclaimed before old pages because of how
-> > the page allocator and kswapd interacted on the per-zone LRU lists.
-> > 
-> > Unfortunately a side-effect missed during review was that it's now very
-> > easy to allocate remote memory on NUMA machines. The problem is that
-> > it is not a simple case of just restoring local allocation policies as
-> > there are genuine reasons why global page aging may be prefereable. It's
-> > still a major change to default behaviour so this patch makes the policy
-> > configurable and sets what I think is a sensible default.
-> 
-> I wrote this to Michal, too: as 3.12 was only recently released and
-> its NUMA placement quite broken, I doubt that people running NUMA
-> machines already rely on this aspect of global page cache placement.
-> 
+For MPC8572/MPC8536, the status of GPIOs defined as output
+cannot be determined by reading GPDAT register, so the code
+use shadow data register instead. But the code may give the
+wrong status of GPIOs defined as input under some scenarios:
 
-Doubtful. I bet some people are already depending on the local zone
-interleaving though. It's nice, we want that thing.
+1. If some pins were configured as inputs and were asserted
+high before booting the kernel, the shadow data has been
+initialized with those pin values.
+2. Some pins have been configured as output first and have
+been set to the high value, then reconfigured as input.
 
-> We should be able to restrict placement fairness to node-local zones
-> exclusively for 3.12-stable and possibly for 3.13, depending on how
-> fast we can agree on the interface.
-> 
-> I would prefer fixing the worst first so that we don't have to rush a
-> user interface in order to keep global cache aging, which nobody knows
-> exists yet.  But that part is simply not ready, so let's revert it.
-> And then place any subsequent attempts of implementing this for NUMA
-> on top of it, without depending on them for 3.12-stable and 3.13.
-> 
-> The following fix should produce the same outcomes on your tests:
-> 
-> ---
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Subject: [patch] mm: page_alloc: revert NUMA aspect of fair allocation
->  policy
-> 
+The above cases will make the shadow data for those input
+pins to be set to high. Then reading the pin status will
+always return high even if the actual pin status is low.
 
-Yes, it should.
+The code should eliminate the effects of the shadow data to
+the input pins, and the status of those pins should be
+read directly from GPDAT.
 
-I see no harm in including the change to zone_local to avoid calling
-node_distance as well. I would be very surprised if there are machines
-that are multiple nodes that are at LOCAL_DISTANCE. Whether you include
-that or not;
+Acked-by: Scott Wood <scottwood@freescale.com>
+Acked-by: Anatolij Gustschin <agust@denx.de>
+Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/gpio/gpio-mpc8xxx.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-Acked-by: Mel Gorman <mgorman@suse.de>
-
-Thanks.
-
-
+diff --git a/drivers/gpio/gpio-mpc8xxx.c b/drivers/gpio/gpio-mpc8xxx.c
+index a0b33a2..2aa3ca2 100644
+--- a/drivers/gpio/gpio-mpc8xxx.c
++++ b/drivers/gpio/gpio-mpc8xxx.c
+@@ -69,10 +69,14 @@ static int mpc8572_gpio_get(struct gpio_chip *gc, unsigned int gpio)
+ 	u32 val;
+ 	struct of_mm_gpio_chip *mm = to_of_mm_gpio_chip(gc);
+ 	struct mpc8xxx_gpio_chip *mpc8xxx_gc = to_mpc8xxx_gpio_chip(mm);
++	u32 out_mask, out_shadow;
+ 
+-	val = in_be32(mm->regs + GPIO_DAT) & ~in_be32(mm->regs + GPIO_DIR);
++	out_mask = in_be32(mm->regs + GPIO_DIR);
+ 
+-	return (val | mpc8xxx_gc->data) & mpc8xxx_gpio2mask(gpio);
++	val = in_be32(mm->regs + GPIO_DAT) & ~out_mask;
++	out_shadow = mpc8xxx_gc->data & out_mask;
++
++	return (val | out_shadow) & mpc8xxx_gpio2mask(gpio);
+ }
+ 
+ static int mpc8xxx_gpio_get(struct gpio_chip *gc, unsigned int gpio)
 -- 
-Mel Gorman
-SUSE Labs
+1.8.3.2
+
