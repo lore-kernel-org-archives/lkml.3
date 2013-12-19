@@ -1,83 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab3LSUrs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 15:47:48 -0500
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:55915 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094Ab3LSUro (ORCPT
+	id S1756413Ab3LSUsG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 15:48:06 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:13702 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756211Ab3LSUq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 15:47:44 -0500
-X-AuditID: cbfec37d-b7ff46d000005528-57-52b35b6f4ab3
-Message-id: <52B35B6A.7000502@samsung.com>
-Date: Thu, 19 Dec 2013 13:47:38 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, akpm@linux-foundation.org,
-        stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.10 00/78] 3.10.25-stable review
-References: <20131218211111.903835960@linuxfoundation.org>
-In-reply-to: <20131218211111.903835960@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9hX9386M1BBisfSVvMWb+GzaJ58Xo2
-	i8u75rBZfP3pYLFg4yNGi0d9b9kd2Dx2zrrL7nFixm8Wj/1z17B7fN4kF8ASxWWTkpqTWZZa
-	pG+XwJVxfFc/S8Elzor5y+awNzCeYe9i5OSQEDCR+LyyGcoWk7hwbz1bFyMXh5DAMkaJvR83
-	skM4vUwSszdtZQSpEhLYyChx61UFiM0roCXROKkFLM4ioCrxa9YVMJtNQF3i8+sd7BD1chJN
-	S1Yzg9iiAhESR1c/Y4XoFZT4MfkeC4gtIhAssfbrQkaQZcwCOxklni19AZYQFjCVuNO2iAVi
-	kJXEhw/ngAZxcHAKWEss2e4BEmYWMJN41LKOGcKWl9i85i0zRLmyxJ/Lp5hAyiUEFCW2r7aa
-	wCgyC8nmWUi6ZyHpXsDIvIpRrLQ4uaA4KT21wkSvODG3uDQvXS85P3cTIyRiancw3v9qc4hR
-	gINRiYe3wmxzkBBrYllxZe4hRgkOZiUR3p+RQCHelMTKqtSi/Pii0pzU4kOMTBycUg2MVinG
-	ydMWL7DYVGRiYH/B+XnRh9I/q95xcm8unnb1h97jZ3XpG5TVCrU9Ur5qXmrUlcxLWXladbu1
-	7KZERX1GXrcTzwWn77pQ173C7ex77q3XFOae+q76LmjvyiRDab7fK79OdPi73blx9lN9/03R
-	R07yG07QzrvfxHnMky3DL7/myBeJ+3pFSizFGYmGWsxFxYkAZdfZcHYCAAA=
+	Thu, 19 Dec 2013 15:46:26 -0500
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@redhat.com, dvhart@linux.intel.com, peterz@infradead.org,
+        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
+        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
+        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
+        aswin@hp.com, davidlohr@hp.com
+Subject: [PATCH v4 0/4] futex: Wakeup optimizations
+Date: Thu, 19 Dec 2013 12:45:46 -0800
+Message-Id: <1387485950-7320-1-git-send-email-davidlohr@hp.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 02:10 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.25 release.
-> There are 78 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Fri Dec 20 21:10:56 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.25-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+Changes from v3:
+ - Fix SOB tags.
 
-Patch applied cleanly
-Compile testing - passed
-Boot testing - passed
-dmesg regression testing - passed
+Changes from v2 [http://lwn.net/Articles/575449/]:
+ - Reordered SOB tags to reflect me as primary author.
 
-dmesgs look good. No regressions compared to the previous dmesgs for 
-this release. dmesg emerg, crit, alert, err are clean. No regressions in 
-warn.
+ - Improved ordering guarantee comments for patch 4.
 
-Test systems
+ - Rebased patch 4 against Linus' tree (this patch didn't
+   apply after the recent futex changes/fixes).
 
-     Samsung Series 9 900X4C Intel Corei5 (3.4 and later)
-     HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
-     Dell OptiPlex 790 Intel(R) Core(TM) i5-2400
+Changes from v1 [https://lkml.org/lkml/2013/11/22/525]:
+ - Removed patch "futex: Check for pi futex_q only once".
 
--- Shuah
+ - Cleaned up ifdefs for larger hash table.
+
+ - Added a doc patch from tglx that describes the futex 
+   ordering guarantees.
+
+ - Improved the lockless plist check for the wake calls.
+   Based on the community feedback, the necessary abstractions
+   and barriers are added to maintain ordering guarantees.
+   Code documentation is also updated.
+
+ - Removed patch "sched,futex: Provide delayed wakeup list".
+   Based on feedback from PeterZ, I will look into this as
+   a separate issue once the other patches are settled.
+ 
+
+We have been dealing with a customer database workload on large
+12Tb, 240 core 16 socket NUMA system that exhibits high amounts 
+of contention on some of the locks that serialize internal futex 
+data structures. This workload specially suffers in the wakeup 
+paths, where waiting on the corresponding hb->lock can account for 
+up to ~60% of the time. The result of such calls can mostly be 
+classified as (i) nothing to wake up and (ii) wakeup large amount 
+of tasks.
+
+Before these patches are applied, we can see this pathological behavior:
+
+ 37.12%  826174  xxx  [kernel.kallsyms] [k] _raw_spin_lock
+            --- _raw_spin_lock
+             |
+             |--97.14%-- futex_wake
+             |          do_futex
+             |          sys_futex
+             |          system_call_fastpath
+             |          |
+             |          |--99.70%-- 0x7f383fbdea1f
+             |          |           yyy
+
+ 43.71%  762296  xxx  [kernel.kallsyms] [k] _raw_spin_lock
+            --- _raw_spin_lock
+             |
+             |--53.74%-- futex_wake
+             |          do_futex
+             |          sys_futex
+             |          system_call_fastpath
+             |          |
+             |          |--99.40%-- 0x7fe7d44a4c05
+             |          |           zzz
+             |--45.90%-- futex_wait_setup
+             |          futex_wait
+             |          do_futex
+             |          sys_futex
+             |          system_call_fastpath
+             |          0x7fe7ba315789
+             |          syscall
+
+
+With these patches, contention is practically non existent:
+
+ 0.10%     49   xxx  [kernel.kallsyms]   [k] _raw_spin_lock
+               --- _raw_spin_lock
+                |
+                |--76.06%-- futex_wait_setup
+                |          futex_wait
+                |          do_futex
+                |          sys_futex
+                |          system_call_fastpath
+                |          |
+                |          |--99.90%-- 0x7f3165e63789
+                |          |          syscall|
+                           ...
+                |--6.27%-- futex_wake
+                |          do_futex
+                |          sys_futex
+                |          system_call_fastpath
+                |          |
+                |          |--54.56%-- 0x7f317fff2c05
+                ...
+
+Patch 1 is a cleanup.
+
+Patch 2 addresses the well known issue of the global hash table.
+By creating a larger and NUMA aware table, we can reduce the false
+sharing and collisions, thus reducing the chance of different futexes 
+using hb->lock.
+
+Patch 3 documents the futex ordering guarantees.
+
+Patch 4 reduces contention on the corresponding hb->lock by not trying to
+acquire it if there are no blocked tasks in the waitqueue.
+This particularly deals with point (i) above, where we see that it is not
+uncommon for up to 90% of wakeup calls end up returning 0, indicating that no
+tasks were woken.
+
+This patchset has also been tested on smaller systems for a variety of
+benchmarks, including java workloads, kernel builds and custom bang-the-hell-out-of
+hb locks programs. So far, no functional or performance regressions have been seen.
+Furthermore, no issues were found when running the different tests in the futextest 
+suite: http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/
+
+This patchset applies on top of Linus' tree as of v3.13-rc4 (f7556698).
+
+Special thanks to Scott Norton, Tom Vanden, Mark Ray and Aswin Chandramouleeswaran
+for help presenting, debugging and analyzing the data.
+
+  futex: Misc cleanups
+  futex: Larger hash table
+  futex: Document ordering guarantees
+  futex: Avoid taking hb lock if nothing to wakeup
+
+ kernel/futex.c | 236 +++++++++++++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 196 insertions(+), 40 deletions(-)
 
 -- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+1.8.1.4
+
