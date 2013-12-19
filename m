@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845Ab3LSHeM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 02:34:12 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44156 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab3LSHeL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 02:34:11 -0500
-X-AuditID: 9c93016f-b7cc5ae000007121-d0-52b2a1715524
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 10/17] tracing/probes: Move 'symbol' fetch method to kprobes
-References: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
-	<1387168336-13213-11-git-send-email-namhyung@kernel.org>
-	<20131218152338.56c10937@gandalf.local.home>
-Date: Thu, 19 Dec 2013 16:34:09 +0900
-In-Reply-To: <20131218152338.56c10937@gandalf.local.home> (Steven Rostedt's
-	message of "Wed, 18 Dec 2013 15:23:38 -0500")
-Message-ID: <87d2ktfg5q.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752278Ab3LSHex (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 02:34:53 -0500
+Received: from ja.ssi.bg ([178.16.129.10]:35248 "EHLO ja.home.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751992Ab3LSHew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 02:34:52 -0500
+X-Greylist: delayed 563 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Dec 2013 02:34:52 EST
+Date: Thu, 19 Dec 2013 09:23:51 +0200 (EET)
+From: Julian Anastasov <ja@ssi.bg>
+X-X-Sender: ja@ja.home.ssi.bg
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Simon Horman <horms@verge.net.au>, Fabio Estevam <festevam@gmail.com>
+Subject: Re: [PATCH -v2] ipvs: Remove unused variable ret from
+ sync_thread_master()
+In-Reply-To: <alpine.LFD.2.03.1311130934390.1647@ssi.bg>
+Message-ID: <alpine.LFD.2.11.1312190919160.2940@ja.home.ssi.bg>
+References: <1384266864-564-1-git-send-email-geert@linux-m68k.org> <alpine.LFD.2.03.1311130934390.1647@ssi.bg>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
 
-On Wed, 18 Dec 2013 15:23:38 -0500, Steven Rostedt wrote:
-> On Mon, 16 Dec 2013 13:32:09 +0900
-> Namhyung Kim <namhyung@kernel.org> wrote:
->
->> index 5395d37e5e72..adc9ac70fd3c 100644
->> --- a/kernel/trace/trace_uprobe.c
->> +++ b/kernel/trace/trace_uprobe.c
->> @@ -115,6 +115,14 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
->>  #define fetch_stack_string_size	NULL
->>  
->>  
->> +/* uprobes don't support symbol fetch methods */
->
-> "uprobes does not support symbol fetch methods"
+	Hello,
 
-I was confused since the "uprobes" looks like a plural..
+On Wed, 13 Nov 2013, Julian Anastasov wrote:
 
-Thanks,
-Namhyung
+> On Tue, 12 Nov 2013, Geert Uytterhoeven wrote:
+> 
+> > net/netfilter/ipvs/ip_vs_sync.c: In function 'sync_thread_master':
+> > net/netfilter/ipvs/ip_vs_sync.c:1640:8: warning: unused variable 'ret' [-Wunused-variable]
+> > 
+> > Commit 35a2af94c7ce7130ca292c68b1d27fcfdb648f6b ("sched/wait: Make the
+> > __wait_event*() interface more friendly") changed how the interruption
+> > state is returned. However, sync_thread_master() ignores this state,
+> > now causing a compile warning.
+> > 
+> > According to Julian Anastasov <ja@ssi.bg>, this behavior is OK:
+> > 
+> >     "Yes, your patch looks ok to me. In the past we used ssleep() but IPVS
+> >      users were confused why IPVS threads increase the load average. So, we
+> >      switched to _interruptible calls and later the socket polling was
+> >      added."
+> > 
+> > Document this, as requested by Peter Zijlstra, to avoid precious developers
+> > disappearing in this pitfall in the future.
+> > 
+> > Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> > ---
+> > v2: Document that sync_thread_master() ignores the interruption state,
+> > 
+> >  net/netfilter/ipvs/ip_vs_sync.c |    5 ++++-
+> >  1 file changed, 4 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
+> > index f63c2388f38d..db801263ee9f 100644
+> > --- a/net/netfilter/ipvs/ip_vs_sync.c
+> > +++ b/net/netfilter/ipvs/ip_vs_sync.c
+> > @@ -1637,7 +1637,10 @@ static int sync_thread_master(void *data)
+> >  			continue;
+> >  		}
+> >  		while (ip_vs_send_sync_msg(tinfo->sock, sb->mesg) < 0) {
+> > -			int ret = __wait_event_interruptible(*sk_sleep(sk),
+> > +			/* (Ab)use interruptible sleep to avoid increasing
+> > +			 * the load avg.
+> > +			 */
+> > +			__wait_event_interruptible(*sk_sleep(sk),
+> >  						   sock_writeable(sk) ||
+> >  						   kthread_should_stop());
+> >  			if (unlikely(kthread_should_stop()))
+> 
+> 	Fabio Estevam posted similar change too early but
+> we are better with such comment.
+> 
+> Acked-by: Julian Anastasov <ja@ssi.bg>
+> 
+> 	Also, the TASK_UNINTERRUPTIBLE | TASK_IDLE idea looks good
+> to me. If such change is planned may be the above patch
+> better not to go via the ipvs-next tree to avoid conflicts?
+> As we don't have any changes in this area let us know if
+> someone takes the above patch for another tree.
+
+	Simon, lets apply this patch to ipvs-next tree...
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
