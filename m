@@ -1,88 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab3LSMIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:08:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45335 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056Ab3LSL7s (ORCPT
+	id S1756962Ab3LSMcR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:32:17 -0500
+Received: from doppler.thel33t.co.uk ([193.110.88.198]:42286 "EHLO
+	doppler.thel33t.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961Ab3LSMcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:48 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Sergei Ianovich <ynvich@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Olof Johansson <olof@lixom.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 187/208] ARM: pxa: prevent PXA270 occasional reboot freezes
-Date: Thu, 19 Dec 2013 11:54:45 +0000
-Message-Id: <1387454106-19326-188-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 07:32:14 -0500
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Thu, 19 Dec 2013 12:39:22 +0000
+From: Leigh Brown <leigh@solinno.co.uk>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Nicolas Schichan <nschichan@freebox.fr>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Florian Fainelli <florian@openwrt.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] net: mvmdio: fix interrupt timeout handling
+In-Reply-To: <52B2D97F.4070200@gmail.com>
+References: <1387451589-15491-1-git-send-email-leigh@solinno.co.uk>
+ <52B2D97F.4070200@gmail.com>
+Message-ID: <a1205db8e38fbdc0cf64f235de54cc67@doppler.thel33t.co.uk>
+User-Agent: Roundcube Webmail/0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+On 2013-12-19 11:33, Sebastian Hesselbarth wrote:
+>> +			 if (timeout < 2)
+>> +			 	timeout = 2;
+> 
+> Hi Leigh,
+> 
+> above two lines have a whitespace issue.
 
-------------------
+Crap, you are correct.  I will fix it and send another patch.
 
-From: Sergei Ianovich <ynvich@gmail.com>
+Regards,
 
-commit ff88b4724fde18056a4c539f7327389aec0f4c2d upstream.
-
-Erratum 71 of PXA270M Processor Family Specification Update
-(April 19, 2010) explains that watchdog reset time is just
-8us insead of 10ms in EMTS.
-
-If SDRAM is not reset, it causes memory bus congestion and
-the device hangs. We put SDRAM in selfresh mode before watchdog
-reset, removing potential freezes.
-
-Without this patch PXA270-based ICP DAS LP-8x4x hangs after up to 40
-reboots. With this patch it has successfully rebooted 500 times.
-
-Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
-Tested-by: Marek Vasut <marex@denx.de>
-Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/arm/mach-pxa/reset.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/mach-pxa/reset.c b/arch/arm/mach-pxa/reset.c
-index 0d5dd64..263b152 100644
---- a/arch/arm/mach-pxa/reset.c
-+++ b/arch/arm/mach-pxa/reset.c
-@@ -13,6 +13,7 @@
- 
- #include <mach/regs-ost.h>
- #include <mach/reset.h>
-+#include <mach/smemc.h>
- 
- unsigned int reset_status;
- EXPORT_SYMBOL(reset_status);
-@@ -81,6 +82,12 @@ static void do_hw_reset(void)
- 	writel_relaxed(OSSR_M3, OSSR);
- 	/* ... in 100 ms */
- 	writel_relaxed(readl_relaxed(OSCR) + 368640, OSMR3);
-+	/*
-+	 * SDRAM hangs on watchdog reset on Marvell PXA270 (erratum 71)
-+	 * we put SDRAM into self-refresh to prevent that
-+	 */
-+	while (1)
-+		writel_relaxed(MDREFR_SLFRSH, MDREFR);
- }
- 
- void pxa_restart(enum reboot_mode mode, const char *cmd)
-@@ -104,4 +111,3 @@ void pxa_restart(enum reboot_mode mode, const char *cmd)
- 		break;
- 	}
- }
--
--- 
-1.8.3.2
+Leigh.
 
