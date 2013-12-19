@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab3LSCvL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 21:51:11 -0500
-Received: from ozlabs.org ([203.10.76.45]:55515 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751386Ab3LSCvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 21:51:09 -0500
-Date: Thu, 19 Dec 2013 13:51:03 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James Solner <solner@alcatel-lucent.com>,
-        David Howells <dhowells@redhat.com>
-Subject: linux-next: manual merge of the modules tree with Linus' tree
-Message-Id: <20131219135103.a679236c1c4ec0f614fe3357@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__19_Dec_2013_13_51_03_+1100_EoeSjd=9ulGg2wFv"
+	id S1752020Ab3LSC45 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 21:56:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39003 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140Ab3LSC44 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 21:56:56 -0500
+Date: Wed, 18 Dec 2013 18:56:58 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/118] 3.12.6-stable review
+Message-ID: <20131219025658.GA9372@kroah.com>
+References: <20131218211219.461663463@linuxfoundation.org>
+ <20131218234857.GA23500@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131218234857.GA23500@roeck-us.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__19_Dec_2013_13_51_03_+1100_EoeSjd=9ulGg2wFv
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Dec 18, 2013 at 03:48:57PM -0800, Guenter Roeck wrote:
+> On Wed, Dec 18, 2013 at 01:10:37PM -0800, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.12.6 release.
+> > There are 118 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> > 
+> > Responses should be made by Fri Dec 20 21:12:03 UTC 2013.
+> > Anything received after that time might be too late.
+> > 
+> 
+> Hi greg,
+> 
+> I see a couple of failed builds.
+> 
+> m68k:allmodconfig ... failed
+> mips:allmodconfig ... failed
+> sparc64:allmodconfig ... failed
+> x86_64:allyesconfig ... failed
+> x86_64:allmodconfig ... failed
+> 
+> Build is still going on, so there may be more.
+> 
+> Error log:
+> 
+> drivers/staging/comedi/drivers/ssv_dnp.c: In function 'dnp_dio_insn_bits':
+> drivers/staging/comedi/drivers/ssv_dnp.c:63:2: error: implicit declaration of function 'comedi_dio_update_state' [-Werror=implicit-function-declaration]
+> cc1: some warnings being treated as errors
+> make[4]: *** [drivers/staging/comedi/drivers/ssv_dnp.o] Error 1
+> 
+> Function comedi_dio_update_state() is not defined anywhere in 3.12,
+> so patches
+> 	 staging: comedi: ssv_dnp: use comedi_dio_update_state()
+> 	 staging: comedi: drivers: use comedi_dio_update_state() for simple cases
+> 
+> won't apply without additional changes.
 
-Hi Rusty,
+Odd, let me see what happened, as I thought this was building properly
+on my test boxes...
 
-Today's linux-next merge of the modules tree got a conflict in Documentatio=
-n/module-signing.txt between commit 3cafea307642 ("Add Documentation/module=
--signing.txt file") from the  tree and commit 160e01aca3da ("Add Documentat=
-ion/module-signing.txt file") from the modules tree.
-
-I fixed it up (I arbitrarily chose the version from Linus' tree) and can
-carry the fix as necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__19_Dec_2013_13_51_03_+1100_EoeSjd=9ulGg2wFv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSsl8bAAoJEMDTa8Ir7ZwV4o8P/1dbX9cQkuJ4hW4HEoyrBpQe
-ztRAhthKb6RD41r5wxz48FBlZIGVJmHq/3YDL3ARX06kSBmrkZGXqYSBN/MP/l+g
-I7PsTOgwKh0ZudjG3js30ISJSSKrO5uEb4sP3vmwbWu5Iffwe5BqixM2Qij0lhd6
-gkmI5XctFLLkhAb5Y0/u5pRGzCYoxpabZWgBMfIRrwkZMUk46ini34iVgvizlBdN
-m4g2B54aOZUM7dFglXvC4EPYGR7i0r7mQebf1o5RpVYOQDXmtoUvDPzldBVWzlSZ
-OCw0VtFa1omFZwIEUD+TY5bUBfK8FQOIZeNHVO4qKrdS/Du7DYbslJ8K8QS4A/Cc
-hoQJNOOOyWdtkM85puaAdBuifBrbaT4X+U20z4vUo7j75akcXiIdnr0gzYT2oB4X
-kPo7m1LYt73XHK3dBSFQbxAyOIk3zLjidt1y5nEEUevISmg5GxGPXbQ2osJYUrw2
-Yidxni1anXo4xxl/6zNUO0aRYVns1L1NwcE7EJMwa8Lh7acgVFRpg4PEzUy5dJ2Y
-6XE2tsIce/FaMfESkDJMc2wUMVRr28Y1SjdMEVFAocQdjMF1QWeo+joAH6GlaIgs
-pPOC/UytqEMAzTDiMJO5xA3XocBRrwfLRX2V1ddmES20NfVf3xbX3uc+UtQVLb7V
-ucdFzBly6cMHgHbe+csj
-=7CiP
------END PGP SIGNATURE-----
-
---Signature=_Thu__19_Dec_2013_13_51_03_+1100_EoeSjd=9ulGg2wFv--
+greg k-h
