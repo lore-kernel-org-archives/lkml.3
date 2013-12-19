@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab3LSVYD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 16:24:03 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:47008 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454Ab3LSVYA (ORCPT
+	id S1756425Ab3LSVZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 16:25:08 -0500
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:59486 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754220Ab3LSVZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 16:24:00 -0500
-Message-ID: <52B363F1.2080209@linaro.org>
-Date: Thu, 19 Dec 2013 22:24:01 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Thu, 19 Dec 2013 16:25:06 -0500
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+In-Reply-To: <20131219211406.GA3464@gmail.com>
+References: <CA+55aFzGxcML7j8CEvQPYzh0W81uVoAAVmGctMOUZ7CZ1yYd2A@mail.gmail.com>
+	<tip-7e98b71920464b8d15fa95c74366416cd3c88861@git.kernel.org>
+	<20131219204051.GA2253@gmail.com>
+	<CA+55aFyr5VcONQKp_yDRDy+BFpMy9=P--+U8d1uYeDVNWcAM8Q@mail.gmail.com>
+	<20131219211406.GA3464@gmail.com>
+Date: Fri, 20 Dec 2013 06:25:05 +0900
+X-Google-Sender-Auth: MReELVJNBkabvN7NLq8O8hRaZPU
+Message-ID: <CA+55aFzRUBrMUgFsJ6tfPrH2k_9gEqwUFEHvJZUz6o+Tf4QSoA@mail.gmail.com>
+Subject: Re: [tip:x86/idle] x86, idle: Use static_cpu_has() for CLFLUSH
+ workaround, add barriers
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Anvin <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Could you include clockevents/clocksource tree in linux-next ?
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+        Peter Anvin <hpa@linux.intel.com>, Len Brown <len.brown@intel.com>,
+        linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 20, 2013 at 6:14 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+>
+> So, my thinking was that maybe it's the other way around: the problem
+> is with the write not being drained to cache yet.
 
-Hi Stephen,
+That is possible. I haven't seen the exact details of the monitor
+errata . If it's just about the write buffer and cache interaction,
+then I agree that the barrier after the write in
+current_set_polling_and_test() is sufficient.  But in the absense of
+knowledge, I think we should have it after the read too.
 
-is it possible to add the clockevents/clocksource tree in linux-next.
-
-git://git.linaro.org/people/daniel.lezcano/linux.git clockevents/next
-
-It will be based on top of tip/timers/core.
-
-Thanks
-   -- Daniel
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+              Linus
