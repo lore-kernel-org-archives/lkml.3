@@ -1,166 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab3LSAU2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 19:20:28 -0500
-Received: from mga01.intel.com ([192.55.52.88]:15085 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751909Ab3LSAU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 19:20:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,510,1384329600"; 
-   d="scan'208";a="446664333"
-Date: Wed, 18 Dec 2013 16:25:19 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: matthew.garrett@nebula.com
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ipc: simplify platform data approach
-Message-ID: <20131219002519.GB24731@psi-dev26.jf.intel.com>
-References: <1386030001-18348-1-git-send-email-david.a.cohen@linux.intel.com>
+	id S1752981Ab3LSAWY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 19:22:24 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:47639 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751367Ab3LSAWW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 19:22:22 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AokHAGo7slJ5LHyk/2dsb2JhbABSB4MKgzyxFYVdgRYXdIIlAQEBAwE6HCMFCwgDGAklDwUlAyETh3wHyk0XFo4uBkgHhDYEmBWSFYFtgVIogSwj
+Date: Thu, 19 Dec 2013 11:22:16 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, Nigel Cunningham <nigel@tuxonice.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system
+ suspend/hibernation
+Message-ID: <20131219002216.GT31386@dastard>
+References: <201202172159.15396.rjw@sisk.pl>
+ <CA+5PVA50UA1oP1jKgnQjHh8APp=cNWREw3bkfrkV1OW_Tg1g+A@mail.gmail.com>
+ <201205252113.50900.rjw@sisk.pl>
+ <CA+5PVA5GWsTdNky-K1-hu5_R55hdKfr-Oa26HpX=FdA1cRZsbQ@mail.gmail.com>
+ <CA+5PVA7vsZPd9eXwN-Q+d8c9+0bAmVdr698vv+LFyrn+3iFOMA@mail.gmail.com>
+ <20131217230843.GA2911@amd.pavel.ucw.cz>
+ <20131217233152.GC20579@dastard>
+ <20131218000128.GA3737@amd.pavel.ucw.cz>
+ <20131218123952.GI31386@dastard>
+ <20131218140842.GA20488@amd.pavel.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386030001-18348-1-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <20131218140842.GA20488@amd.pavel.ucw.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 04:20:00PM -0800, David Cohen wrote:
-> This patch removes the unnecessary enum for platform type to handle the
-> array of pdatas. We can set pdata directly to pci_device_id struct
-> instead.
+On Wed, Dec 18, 2013 at 03:08:42PM +0100, Pavel Machek wrote:
+> > > > I disagree - given the problem it is resolving leads to silent
+> > > > filesystem corruption, this patch should be considered somewhat of a
+> > > > priority to push...
+> > > 
+> > > Umm. Ok, I forgot what it does, really.
+> > 
+> > It ensures that the filesystem is in an quiescent state both in
+> > memory and on disk, and it cannot be modified in memory or on disk
+> > whilst the suspend image is being generated, or by log recovery
+> > after a resume before the suspended image has been restored.
 > 
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> If someone attempts to run log recovery before resume, that's a bug
+> and yes, it will corrupt filesystems. (Including ext3). Don't do that.
 
-Ping. Comments here?
+Freezing the filesystem prevents that accidental mount of the
+filesystem from being an issue. It fixes a bug that:
 
-Br, David
-
-> ---
->  drivers/platform/x86/intel_scu_ipc.c | 84 +++++++++++++++++-------------------
->  1 file changed, 40 insertions(+), 44 deletions(-)
+> Documentation/power/swsusp.txt:
 > 
-> diff --git a/drivers/platform/x86/intel_scu_ipc.c b/drivers/platform/x86/intel_scu_ipc.c
-> index 60ea476a9130..259969d31055 100644
-> --- a/drivers/platform/x86/intel_scu_ipc.c
-> +++ b/drivers/platform/x86/intel_scu_ipc.c
-> @@ -62,13 +62,6 @@
->  #define IPC_RWBUF_SIZE    20		/* IPC Read buffer Size */
->  #define IPC_IOC	          0x100		/* IPC command register IOC bit */
->  
-> -enum {
-> -	SCU_IPC_LINCROFT,
-> -	SCU_IPC_PENWELL,
-> -	SCU_IPC_CLOVERVIEW,
-> -	SCU_IPC_TANGIER,
-> -};
-> -
->  /* intel scu ipc driver data*/
->  struct intel_scu_ipc_pdata_t {
->  	u32 ipc_base;
-> @@ -78,35 +71,29 @@ struct intel_scu_ipc_pdata_t {
->  	u8 irq_mode;
->  };
->  
-> -static struct intel_scu_ipc_pdata_t intel_scu_ipc_pdata[] = {
-> -	[SCU_IPC_LINCROFT] = {
-> -		.ipc_base = 0xff11c000,
-> -		.i2c_base = 0xff12b000,
-> -		.ipc_len = 0x100,
-> -		.i2c_len = 0x10,
-> -		.irq_mode = 0,
-> -	},
-> -	[SCU_IPC_PENWELL] = {
-> -		.ipc_base = 0xff11c000,
-> -		.i2c_base = 0xff12b000,
-> -		.ipc_len = 0x100,
-> -		.i2c_len = 0x10,
-> -		.irq_mode = 1,
-> -	},
-> -	[SCU_IPC_CLOVERVIEW] = {
-> -		.ipc_base = 0xff11c000,
-> -		.i2c_base = 0xff12b000,
-> -		.ipc_len = 0x100,
-> -		.i2c_len = 0x10,
-> -		.irq_mode = 1,
-> -	},
-> -	[SCU_IPC_TANGIER] = {
-> -		.ipc_base = 0xff009000,
-> -		.i2c_base  = 0xff00d000,
-> -		.ipc_len  = 0x100,
-> -		.i2c_len = 0x10,
-> -		.irq_mode = 0,
-> -	},
-> +static struct intel_scu_ipc_pdata_t intel_scu_ipc_lincroft_pdata = {
-> +	.ipc_base = 0xff11c000,
-> +	.i2c_base = 0xff12b000,
-> +	.ipc_len = 0x100,
-> +	.i2c_len = 0x10,
-> +	.irq_mode = 0,
-> +};
-> +
-> +/* Penwell and Cloverview */
-> +static struct intel_scu_ipc_pdata_t intel_scu_ipc_penwell_pdata = {
-> +	.ipc_base = 0xff11c000,
-> +	.i2c_base = 0xff12b000,
-> +	.ipc_len = 0x100,
-> +	.i2c_len = 0x10,
-> +	.irq_mode = 1,
-> +};
-> +
-> +static struct intel_scu_ipc_pdata_t intel_scu_ipc_tangier_pdata = {
-> +	.ipc_base = 0xff009000,
-> +	.i2c_base  = 0xff00d000,
-> +	.ipc_len  = 0x100,
-> +	.i2c_len = 0x10,
-> +	.irq_mode = 0,
->  };
->  
->  static int ipc_probe(struct pci_dev *dev, const struct pci_device_id *id);
-> @@ -583,15 +570,14 @@ static irqreturn_t ioc(int irq, void *dev_id)
->   */
->  static int ipc_probe(struct pci_dev *dev, const struct pci_device_id *id)
->  {
-> -	int err, pid;
-> +	int err;
->  	struct intel_scu_ipc_pdata_t *pdata;
->  	resource_size_t pci_resource;
->  
->  	if (ipcdev.pdev)		/* We support only one SCU */
->  		return -EBUSY;
->  
-> -	pid = id->driver_data;
-> -	pdata = &intel_scu_ipc_pdata[pid];
-> +	pdata = (struct intel_scu_ipc_pdata_t *)id->driver_data;
->  
->  	ipcdev.pdev = pci_dev_get(dev);
->  	ipcdev.irq_mode = pdata->irq_mode;
-> @@ -650,11 +636,21 @@ static void ipc_remove(struct pci_dev *pdev)
->  }
->  
->  static DEFINE_PCI_DEVICE_TABLE(pci_ids) = {
-> -	{PCI_VDEVICE(INTEL, 0x082a), SCU_IPC_LINCROFT},
-> -	{PCI_VDEVICE(INTEL, 0x080e), SCU_IPC_PENWELL},
-> -	{PCI_VDEVICE(INTEL, 0x08ea), SCU_IPC_CLOVERVIEW},
-> -	{PCI_VDEVICE(INTEL, 0x11a0), SCU_IPC_TANGIER},
-> -	{ 0,}
-> +	{
-> +		PCI_VDEVICE(INTEL, 0x082a),
-> +		(kernel_ulong_t)&intel_scu_ipc_lincroft_pdata,
-> +	}, {
-> +		PCI_VDEVICE(INTEL, 0x080e),
-> +		(kernel_ulong_t)&intel_scu_ipc_penwell_pdata,
-> +	}, {
-> +		PCI_VDEVICE(INTEL, 0x08ea),
-> +		(kernel_ulong_t)&intel_scu_ipc_penwell_pdata,
-> +	}, {
-> +		PCI_VDEVICE(INTEL, 0x11a0),
-> +		(kernel_ulong_t)&intel_scu_ipc_tangier_pdata,
-> +	}, {
-> +		0,
-> +	}
->  };
->  MODULE_DEVICE_TABLE(pci, pci_ids);
->  
-> -- 
-> 1.8.4.2
+>  * BIG FAT WARNING
+>    *********************************************************
+>  *
+>  * If you touch anything on disk between suspend and resume...
+>  *                              ...kiss your data goodbye.
+
+Makes this a whole lot less dangerous.
+
+> > > So... for few years now suspend corrupts data on XFS? And Fedora has
+> > > the fix but it is not in mainline? That does not sound right...
+> > 
+> > The issues freezing the filesystem before the suspend image is
+> > created affect every journalled filesystem linux supports, be
+> > it XFS, ext4, reiser, btrfs, etc.
+> 
+> Did not it have some problems with ext3?
+
+Please read more carefully: "affect every journalled filesystem
+linux supports". So, ext3 is affected because it's a journalling
+filesystem.  I didn't list every journalled filesystem Linux
+supports - "etc" means there are more examples that aren't
+explicitly listed.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
