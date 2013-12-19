@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab3LSGip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 01:38:45 -0500
-Received: from mga09.intel.com ([134.134.136.24]:49723 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848Ab3LSGin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 01:38:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="454694301"
-Message-ID: <52B29455.6010109@intel.com>
-Date: Wed, 18 Dec 2013 22:38:13 -0800
-From: John Fastabend <john.r.fastabend@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>
-CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jacob Keller <jacob.e.keller@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] ixgbe: acquire RCU read lock when calling netdev_for_each_all_upper_dev_rcu()
-References: <1387432860-14021-1-git-send-email-jiang.liu@linux.intel.com>
-In-Reply-To: <1387432860-14021-1-git-send-email-jiang.liu@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751887Ab3LSHAT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 02:00:19 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47179 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab3LSHAP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 02:00:15 -0500
+X-AuditID: 9c930179-b7bedae000000f15-6f-52b2997d3c6d
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 1/6] perf report: Use pr_*() functions if possible
+Date: Thu, 19 Dec 2013 16:00:06 +0900
+Message-Id: <1387436411-20160-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
+References: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 10:00 PM, Jiang Liu wrote:
-> According to documentation for netdev_for_each_all_upper_dev_rcu(),
-> caller should take RCU read lock, otherwise it will trigger following
-> warnings. The simplest fix is to protect with rcu_read_lock()/
-> rcu_read_unlock(). And this solutions passes basic tests.
->
-> Otherwise we may need to introduce  netdev_for_each_all_upper_dev()
-> as netdev_lower_get_next_private(), which assumes the caller has
-> gained the lock to protect the list.
->
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> ---
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Jiang,
+There're some places printing a message to stdout/err directly.  It
+should be converted to use proper error printing functions instead.
 
-The following patch addresses the same issue,
+If it's not possible, just do it when --stdio was enabled only.
 
-http://patchwork.ozlabs.org/patch/302711/
-  [net,1/5] net: allow netdev_all_upper_get_next_dev_rcu with rtnl lock held
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-report.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-It is under review and solves the problem by having the call check for
-the rtnl lock as well. Take a look. I think it is a slightly better fix
-in that it doesn't clutter the driver with unnecessary rcu_read_lock()
-and rcu_read_unlock() calls.
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 3a14dbed387c..a1f72b471a96 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -321,8 +321,8 @@ static int process_sample_event(struct perf_tool *tool,
+ 	int ret;
+ 
+ 	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
+-		fprintf(stderr, "problem processing %d event, skipping it.\n",
+-			event->header.type);
++		pr_debug("problem processing %d event, skipping it.\n",
++			 event->header.type);
+ 		return -1;
+ 	}
+ 
+@@ -552,15 +552,17 @@ static int __cmd_report(struct perf_report *rep)
+ 		desc);
+ 	}
+ 
+-	if (verbose > 3)
+-		perf_session__fprintf(session, stdout);
++	if (use_browser == 0) {
++		if (verbose > 3)
++			perf_session__fprintf(session, stdout);
+ 
+-	if (verbose > 2)
+-		perf_session__fprintf_dsos(session, stdout);
++		if (verbose > 2)
++			perf_session__fprintf_dsos(session, stdout);
+ 
+-	if (dump_trace) {
+-		perf_session__fprintf_nr_events(session, stdout);
+-		return 0;
++		if (dump_trace) {
++			perf_session__fprintf_nr_events(session, stdout);
++			return 0;
++		}
+ 	}
+ 
+ 	nr_samples = 0;
+@@ -720,7 +722,7 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
+ 		return -1;
+ setup:
+ 	if (callchain_register_param(&callchain_param) < 0) {
+-		fprintf(stderr, "Can't register callchain params\n");
++		pr_err("Can't register callchain params\n");
+ 		return -1;
+ 	}
+ 	return 0;
+@@ -942,7 +944,7 @@ repeat:
+ 	}
+ 	if (report.mem_mode) {
+ 		if (sort__mode == SORT_MODE__BRANCH) {
+-			fprintf(stderr, "branch and mem mode incompatible\n");
++			pr_err("branch and mem mode incompatible\n");
+ 			goto error;
+ 		}
+ 		sort__mode = SORT_MODE__MEMORY;
+-- 
+1.7.11.7
 
-Thanks,
-John
