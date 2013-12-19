@@ -1,202 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab3LSNes (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:34:48 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:52080 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755714Ab3LSNeo (ORCPT
+	id S1757339Ab3LSNDt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:03:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44528 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754093Ab3LSL4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:34:44 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: nfs-ganesha-devel@lists.sourceforge.net, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 01/13] locks: close potential race between setlease and open
-Date: Thu, 19 Dec 2013 08:34:13 -0500
-Message-Id: <1387460065-28269-2-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
-References: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
+	Thu, 19 Dec 2013 06:56:07 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 033/208] net: core: Always propagate flag changes to interfaces
+Date: Thu, 19 Dec 2013 11:52:11 +0000
+Message-Id: <1387454106-19326-34-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2:
-- fix potential double-free of lease if second check finds conflict
-- add smp_mb's to ensure that other CPUs see i_flock changes
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-v3:
-- remove smp_mb calls. Partial ordering is unlikely to help here.
+------------------
 
-v4:
-- add back smp_mb calls. While we have implicit barriers in place
-  that enforce this today, it's best to be explicit about it as a
-  defensive coding measure.
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-As Al Viro points out, there is an unlikely, but possible race between
-opening a file and setting a lease on it. generic_add_lease is done with
-the i_lock held, but the inode->i_flock check in break_lease is
-lockless. It's possible for another task doing an open to do the entire
-pathwalk and call break_lease between the point where generic_add_lease
-checks for a conflicting open and adds the lease to the list. If this
-occurs, we can end up with a lease set on the file with a conflicting
-open.
+commit d2615bf450694c1302d86b9cc8a8958edfe4c3a4 upstream.
 
-To guard against that, check again for a conflicting open after adding
-the lease to the i_flock list. If the above race occurs, then we can
-simply unwind the lease setting and return -EAGAIN.
+The following commit:
+    b6c40d68ff6498b7f63ddf97cf0aa818d748dee7
+    net: only invoke dev->change_rx_flags when device is UP
 
-Because we take dentry references and acquire write access on the file
-before calling break_lease, we know that if the i_flock list is empty
-when the open caller goes to check it then the necessary refcounts have
-already been incremented. Thus the additional check for a conflicting
-open will see that there is one and the setlease call will fail.
+tried to fix a problem with VLAN devices and promiscuouse flag setting.
+The issue was that VLAN device was setting a flag on an interface that
+was down, thus resulting in bad promiscuity count.
+This commit blocked flag propagation to any device that is currently
+down.
 
-Cc: Bruce Fields <bfields@fieldses.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+A later commit:
+    deede2fabe24e00bd7e246eb81cd5767dc6fcfc7
+    vlan: Don't propagate flag changes on down interfaces
+
+fixed VLAN code to only propagate flags when the VLAN interface is up,
+thus fixing the same issue as above, only localized to VLAN.
+
+The problem we have now is that if we have create a complex stack
+involving multiple software devices like bridges, bonds, and vlans,
+then it is possible that the flags would not propagate properly to
+the physical devices.  A simple examle of the scenario is the
+following:
+
+  eth0----> bond0 ----> bridge0 ---> vlan50
+
+If bond0 or eth0 happen to be down at the time bond0 is added to
+the bridge, then eth0 will never have promisc mode set which is
+currently required for operation as part of the bridge.  As a
+result, packets with vlan50 will be dropped by the interface.
+
+The only 2 devices that implement the special flag handling are
+VLAN and DSA and they both have required code to prevent incorrect
+flag propagation.  As a result we can remove the generic solution
+introduced in b6c40d68ff6498b7f63ddf97cf0aa818d748dee7 and leave
+it to the individual devices to decide whether they will block
+flag propagation or not.
+
+Reported-by: Stefan Priebe <s.priebe@profihost.ag>
+Suggested-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/locks.c         | 75 ++++++++++++++++++++++++++++++++++++++++++++----------
- include/linux/fs.h |  6 +++++
- 2 files changed, 68 insertions(+), 13 deletions(-)
+ net/core/dev.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 92a0f0a..2cfeea6 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -652,15 +652,18 @@ static void locks_insert_lock(struct file_lock **pos, struct file_lock *fl)
- 	locks_insert_global_locks(fl);
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 26755dd..bf33219 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4598,7 +4598,7 @@ static void dev_change_rx_flags(struct net_device *dev, int flags)
+ {
+ 	const struct net_device_ops *ops = dev->netdev_ops;
+ 
+-	if ((dev->flags & IFF_UP) && ops->ndo_change_rx_flags)
++	if (ops->ndo_change_rx_flags)
+ 		ops->ndo_change_rx_flags(dev, flags);
  }
  
--/*
-- * Delete a lock and then free it.
-- * Wake up processes that are blocked waiting for this lock,
-- * notify the FS that the lock has been cleared and
-- * finally free the lock.
-+/**
-+ * locks_delete_lock - Delete a lock and then free it.
-+ * @thisfl_p: pointer that points to the fl_next field of the previous
-+ * 	      inode->i_flock list entry
-+ *
-+ * Unlink a lock from all lists and free the namespace reference, but don't
-+ * free it yet. Wake up processes that are blocked waiting for this lock and
-+ * notify the FS that the lock has been cleared.
-  *
-  * Must be called with the i_lock held!
-  */
--static void locks_delete_lock(struct file_lock **thisfl_p)
-+static void locks_unlink_lock(struct file_lock **thisfl_p)
- {
- 	struct file_lock *fl = *thisfl_p;
- 
-@@ -675,6 +678,18 @@ static void locks_delete_lock(struct file_lock **thisfl_p)
- 	}
- 
- 	locks_wake_up_blocks(fl);
-+}
-+
-+/*
-+ * Unlink a lock from all lists and free it.
-+ *
-+ * Must be called with i_lock held!
-+ */
-+static void locks_delete_lock(struct file_lock **thisfl_p)
-+{
-+	struct file_lock *fl = *thisfl_p;
-+
-+	locks_unlink_lock(thisfl_p);
- 	locks_free_lock(fl);
- }
- 
-@@ -1472,6 +1487,32 @@ int fcntl_getlease(struct file *filp)
- 	return type;
- }
- 
-+/**
-+ * check_conflicting_open - see if the given dentry points to a file that has
-+ * 			    an existing open that would conflict with the
-+ * 			    desired lease.
-+ * @dentry:	dentry to check
-+ * @arg:	type of lease that we're trying to acquire
-+ *
-+ * Check to see if there's an existing open fd on this file that would
-+ * conflict with the lease we're trying to set.
-+ */
-+static int
-+check_conflicting_open(const struct dentry *dentry, const long arg)
-+{
-+	int ret = 0;
-+	struct inode *inode = dentry->d_inode;
-+
-+	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
-+		return -EAGAIN;
-+
-+	if ((arg == F_WRLCK) && ((d_count(dentry) > 1) ||
-+	    (atomic_read(&inode->i_count) > 1)))
-+		ret = -EAGAIN;
-+
-+	return ret;
-+}
-+
- static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
- {
- 	struct file_lock *fl, **before, **my_before = NULL, *lease;
-@@ -1499,12 +1540,8 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
- 		return -EINVAL;
- 	}
- 
--	error = -EAGAIN;
--	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
--		goto out;
--	if ((arg == F_WRLCK)
--	    && ((d_count(dentry) > 1)
--		|| (atomic_read(&inode->i_count) > 1)))
-+	error = check_conflicting_open(dentry, arg);
-+	if (error)
- 		goto out;
- 
- 	/*
-@@ -1549,7 +1586,19 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
- 		goto out;
- 
- 	locks_insert_lock(before, lease);
--	error = 0;
-+	/*
-+	 * The check in break_lease() is lockless. It's possible for another
-+	 * open to race in after we did the earlier check for a conflicting
-+	 * open but before the lease was inserted. Check again for a
-+	 * conflicting open and cancel the lease if there is one.
-+	 *
-+	 * We also add a barrier here to ensure that the insertion of the lock
-+	 * precedes these checks.
-+	 */
-+	smp_mb();
-+	error = check_conflicting_open(dentry, arg);
-+	if (error)
-+		locks_unlink_lock(flp);
- out:
- 	if (is_deleg)
- 		mutex_unlock(&inode->i_mutex);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 121f11f..04be202 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1963,6 +1963,12 @@ static inline int locks_verify_truncate(struct inode *inode,
- 
- static inline int break_lease(struct inode *inode, unsigned int mode)
- {
-+	/*
-+	 * Since this check is lockless, we must ensure that any refcounts
-+	 * taken are done before checking inode->i_flock. Otherwise, we could
-+	 * end up racing with tasks trying to set a new lease on this file.
-+	 */
-+	smp_mb();
- 	if (inode->i_flock)
- 		return __break_lease(inode, mode, FL_LEASE);
- 	return 0;
 -- 
-1.8.4.2
+1.8.3.2
 
