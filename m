@@ -1,54 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab3LSVRJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 16:17:09 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:44725 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab3LSVRH (ORCPT
+	id S1756378Ab3LSVTG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 16:19:06 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:34769 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753746Ab3LSVTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 16:17:07 -0500
-Date: Thu, 19 Dec 2013 22:17:01 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Len Brown <lenb@kernel.org>,
-        x86@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH] x86 idle: repair large-server 50-watt idle-power
- regression
-Message-ID: <20131219211701.GB3464@gmail.com>
-References: <52B316FF.50906@zytor.com>
- <20131219160210.GA28426@gmail.com>
- <52B31B21.6010901@zytor.com>
- <20131219162136.GM16438@laptop.programming.kicks-ass.net>
- <52B323BE.7090108@zytor.com>
- <20131219170741.GB30382@gmail.com>
- <20131219172535.GN16438@laptop.programming.kicks-ass.net>
- <20131219175037.GK2480@laptop.programming.kicks-ass.net>
- <20131219181812.GC32508@gmail.com>
- <44cc7c3a-7114-4f37-a844-77e552dbc7aa@email.android.com>
+	Thu, 19 Dec 2013 16:19:04 -0500
+Message-ID: <52B362C2.8000407@twiddle.net>
+Date: Thu, 19 Dec 2013 13:18:58 -0800
+From: Richard Henderson <rth@twiddle.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <44cc7c3a-7114-4f37-a844-77e552dbc7aa@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>
+CC: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>
+Subject: Re: [PATCH 37/40] alpha: Replace __get_cpu_var
+References: <20131219155015.443763038@linux.com> <20131219155034.661090897@linux.com>
+In-Reply-To: <20131219155034.661090897@linux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/19/2013 07:50 AM, Christoph Lameter wrote:
+> __get_cpu_var() is used for multiple purposes in the kernel source. One of
+> them is address calculation via the form &__get_cpu_var(x).  This calculates
+> the address for the instance of the percpu variable of the current processor
+> based on an offset.
+> 
+> Other use cases are for storing and retrieving data from the current
+> processors percpu area.  __get_cpu_var() can be used as an lvalue when
+> writing data or on the right side of an assignment.
+> 
+> __get_cpu_var() is defined as :
+> 
+> 
+> #define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
+> 
+> 
+> 
+> __get_cpu_var() always only does an address determination. However, store
+> and retrieve operations could use a segment prefix (or global register on
+> other platforms) to avoid the address calculation.
+> 
+> this_cpu_write() and this_cpu_read() can directly take an offset into a
+> percpu area and use optimized assembly code to read and write per cpu
+> variables.
+> 
+> 
+> This patch converts __get_cpu_var into either an explicit address
+> calculation using this_cpu_ptr() or into a use of this_cpu operations that
+> use the offset.  Thereby address calculations are avoided and less registers
+> are used when code is generated.
+> 
+> At the end of the patch set all uses of __get_cpu_var have been removed so
+> the macro is removed too.
+> 
+> The patch set includes passes over all arches as well. Once these operations
+> are used throughout then specialized macros can be defined in non -x86
+> arches as well in order to optimize per cpu access by f.e.  using a global
+> register that may be set to the per cpu base.
+> 
+> 
+> 
+> 
+> Transformations done to __get_cpu_var()
+> 
+> 
+> 1. Determine the address of the percpu instance of the current processor.
+> 
+> 	DEFINE_PER_CPU(int, y);
+> 	int *x = &__get_cpu_var(y);
+> 
+>     Converts to
+> 
+> 	int *x = this_cpu_ptr(&y);
+> 
+> 
+> 2. Same as #1 but this time an array structure is involved.
+> 
+> 	DEFINE_PER_CPU(int, y[20]);
+> 	int *x = __get_cpu_var(y);
+> 
+>     Converts to
+> 
+> 	int *x = this_cpu_ptr(y);
+> 
+> 
+> 3. Retrieve the content of the current processors instance of a per cpu
+> variable.
+> 
+> 	DEFINE_PER_CPU(int, y);
+> 	int x = __get_cpu_var(y)
+> 
+>    Converts to
+> 
+> 	int x = __this_cpu_read(y);
+> 
+> 
+> 4. Retrieve the content of a percpu struct
+> 
+> 	DEFINE_PER_CPU(struct mystruct, y);
+> 	struct mystruct x = __get_cpu_var(y);
+> 
+>    Converts to
+> 
+> 	memcpy(&x, this_cpu_ptr(&y), sizeof(x));
+> 
+> 
+> 5. Assignment to a per cpu variable
+> 
+> 	DEFINE_PER_CPU(int, y)
+> 	__get_cpu_var(y) = x;
+> 
+>    Converts to
+> 
+> 	this_cpu_write(y, x);
+> 
+> 
+> 6. Increment/Decrement etc of a per cpu variable
+> 
+> 	DEFINE_PER_CPU(int, y);
+> 	__get_cpu_var(y)++
+> 
+>    Converts to
+> 
+> 	this_cpu_inc(y)
+> 
+> Cc: Richard Henderson <rth@twiddle.net>
+> CC: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+> Cc: Matt Turner <mattst88@gmail.com>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+Acked-by: Richard Henderson <rth@twiddle.net>
 
-> CLFLUSH is only (guaranteed to be) ordered with respect to MFENCE 
-> according to the SDM.
 
-Yes, I quoted the relevant text a couple of hours ago, CLFLUSH is 
-pretty special, so it's not ordered against atomics or serializing 
-instructions for example - only ordered against explict MFENCE calls, 
-which on x86 is mb()/smp_mb().
-
-Thanks,
-
-	Ingo
+r~
