@@ -1,49 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab3LSJh3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:37:29 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:56192 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677Ab3LSJh0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:37:26 -0500
+	id S1752428Ab3LSJiA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:38:00 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:55252 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751140Ab3LSJh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 04:37:56 -0500
+X-IronPort-AV: E=Sophos;i="4.95,512,1384272000"; 
+   d="scan'208";a="9290930"
+Message-ID: <52B2BCC7.7060303@cn.fujitsu.com>
+Date: Thu, 19 Dec 2013 17:30:47 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <20131219090409.14309.25677.stgit@kbuild-fedora.novalocal>
-References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
-	<20131219090409.14309.25677.stgit@kbuild-fedora.novalocal>
-Date: Thu, 19 Dec 2013 17:37:25 +0800
-Message-ID: <CAGdX0WFKYHqXrVQ6LBw0YgH_H6cP=LZVCBe1iOvEXsHQPD8Zmg@mail.gmail.com>
-Subject: Re: [PATCH -tip v6 06/22] [BUGFIX] x86: Prohibit probing on memcpy/memset
-From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kim <jaegeuk.kim@samsung.com>
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        =?UTF-8?B?5L+e6LaF?= <chao2.yu@samsung.com>
+Subject: [f2fs-dev][PATCH v2] f2fs: move all the bio initialization into __bio_alloc
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/19 17:37:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/19 17:37:23,
+	Serialize complete at 2013/12/19 17:37:23
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
+Move all the bio initialization into __bio_alloc, and some minor cleanups are
+also added.
 
-On Thu, Dec 19, 2013 at 5:04 PM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> memcpy/memset functions are fundamental functions and
-> those are involved in kprobe's exception handling.
-> Prohibit probing on them to avoid kernel crash.
->
-Would you please let me know the LKML link of that bugfix, I cannot
-find it in my LKML fold.
+v2:
+  Use 'is_read' rather than 'rw' as Yu Chao suggested.
+  Remove the needless initialization of bio->bi_private.
 
-No objection on this patch. :) just want to know more, It seems there
-have no problem to probe memcpy in my box, maybe I didn't hit the
-crash code path.
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/f2fs/data.c |   92 +++++++++++++++++++++++++------------------------------
+ 1 files changed, 42 insertions(+), 50 deletions(-)
 
-Thanks.
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 9bdacc6..701e6fc 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -24,20 +24,6 @@
+ #include "segment.h"
+ #include <trace/events/f2fs.h>
+ 
+-/*
+- * Low-level block read/write IO operations.
+- */
+-static struct bio *__bio_alloc(struct block_device *bdev, int npages)
+-{
+-	struct bio *bio;
+-
+-	/* No failure on bio allocation */
+-	bio = bio_alloc(GFP_NOIO, npages);
+-	bio->bi_bdev = bdev;
+-	bio->bi_private = NULL;
+-	return bio;
+-}
+-
+ static void f2fs_read_end_io(struct bio *bio, int err)
+ {
+ 	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+@@ -93,6 +79,24 @@ static void f2fs_write_end_io(struct bio *bio, int err)
+ 	bio_put(bio);
+ }
+ 
++/*
++ * Low-level block read/write IO operations.
++ */
++static struct bio *__bio_alloc(struct f2fs_sb_info *sbi, block_t blk_addr,
++				int npages, int rw)
++{
++	struct bio *bio;
++
++	/* No failure on bio allocation */
++	bio = bio_alloc(GFP_NOIO, npages);
++
++	bio->bi_bdev = sbi->sb->s_bdev;
++	bio->bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
++	bio->bi_end_io = rw ? f2fs_read_end_io : f2fs_write_end_io;
++
++	return bio;
++}
++
+ static void __submit_merged_bio(struct f2fs_bio_info *io)
+ {
+ 	struct f2fs_io_info *fio = &io->fio;
+@@ -104,25 +108,26 @@ static void __submit_merged_bio(struct f2fs_bio_info *io)
+ 	rw = fio->rw | fio->rw_flag;
+ 
+ 	if (is_read_io(rw)) {
+-		trace_f2fs_submit_read_bio(io->sbi->sb, rw, fio->type, io->bio);
++		trace_f2fs_submit_read_bio(io->sbi->sb, rw,
++						fio->type, io->bio);
+ 		submit_bio(rw, io->bio);
+-		io->bio = NULL;
+-		return;
+-	}
+-	trace_f2fs_submit_write_bio(io->sbi->sb, rw, fio->type, io->bio);
+-
+-	/*
+-	 * META_FLUSH is only from the checkpoint procedure, and we should wait
+-	 * this metadata bio for FS consistency.
+-	 */
+-	if (fio->type == META_FLUSH) {
+-		DECLARE_COMPLETION_ONSTACK(wait);
+-		io->bio->bi_private = &wait;
+-		submit_bio(rw, io->bio);
+-		wait_for_completion(&wait);
+ 	} else {
+-		submit_bio(rw, io->bio);
++		trace_f2fs_submit_write_bio(io->sbi->sb, rw,
++						fio->type, io->bio);
++		/*
++		 * META_FLUSH is only from the checkpoint procedure, and we
++		 * should wait this metadata bio for FS consistency.
++		 */
++		if (fio->type == META_FLUSH) {
++			DECLARE_COMPLETION_ONSTACK(wait);
++			io->bio->bi_private = &wait;
++			submit_bio(rw, io->bio);
++			wait_for_completion(&wait);
++		} else {
++			submit_bio(rw, io->bio);
++		}
+ 	}
++
+ 	io->bio = NULL;
+ }
+ 
+@@ -152,17 +157,12 @@ void f2fs_submit_merged_bio(struct f2fs_sb_info *sbi,
+ int f2fs_submit_page_bio(struct f2fs_sb_info *sbi, struct page *page,
+ 					block_t blk_addr, int rw)
+ {
+-	struct block_device *bdev = sbi->sb->s_bdev;
+ 	struct bio *bio;
+ 
+ 	trace_f2fs_submit_page_bio(page, blk_addr, rw);
+ 
+ 	/* Allocate a new bio */
+-	bio = __bio_alloc(bdev, 1);
+-
+-	/* Initialize the bio */
+-	bio->bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
+-	bio->bi_end_io = is_read_io(rw) ? f2fs_read_end_io : f2fs_write_end_io;
++	bio = __bio_alloc(sbi, blk_addr, 1, is_read_io(rw));
+ 
+ 	if (bio_add_page(bio, page, PAGE_CACHE_SIZE, 0) < PAGE_CACHE_SIZE) {
+ 		bio_put(bio);
+@@ -178,17 +178,16 @@ void f2fs_submit_page_mbio(struct f2fs_sb_info *sbi, struct page *page,
+ 			block_t blk_addr, struct f2fs_io_info *fio)
+ {
+ 	enum page_type btype = PAGE_TYPE_OF_BIO(fio->type);
+-	struct block_device *bdev = sbi->sb->s_bdev;
+ 	struct f2fs_bio_info *io;
+-	int bio_blocks;
++	int is_read = is_read_io(fio->rw);
+ 
+-	io = is_read_io(fio->rw) ? &sbi->read_io : &sbi->write_io[btype];
++	io = is_read ? &sbi->read_io : &sbi->write_io[btype];
+ 
+ 	verify_block_addr(sbi, blk_addr);
+ 
+ 	mutex_lock(&io->io_mutex);
+ 
+-	if (!is_read_io(fio->rw))
++	if (!is_read)
+ 		inc_page_count(sbi, F2FS_WRITEBACK);
+ 
+ 	if (io->bio && (io->last_block_in_bio != blk_addr - 1 ||
+@@ -196,17 +195,10 @@ void f2fs_submit_page_mbio(struct f2fs_sb_info *sbi, struct page *page,
+ 		__submit_merged_bio(io);
+ alloc_new:
+ 	if (io->bio == NULL) {
+-		bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
+-		io->bio = __bio_alloc(bdev, bio_blocks);
+-		io->bio->bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
+-		io->bio->bi_end_io = is_read_io(fio->rw) ? f2fs_read_end_io :
+-							f2fs_write_end_io;
++		int bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
++
++		io->bio = __bio_alloc(sbi, blk_addr, bio_blocks, is_read);
+ 		io->fio = *fio;
+-		/*
+-		 * The end_io will be assigned at the sumbission phase.
+-		 * Until then, let bio_add_page() merge consecutive IOs as much
+-		 * as possible.
+-		 */
+ 	}
+ 
+ 	if (bio_add_page(io->bio, page, PAGE_CACHE_SIZE, 0) <
+-- 
+1.7.7
 
-Jovi
+
