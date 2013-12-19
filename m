@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab3LSL5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:57:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44839 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754811Ab3LSL52 (ORCPT
+	id S1752896Ab3LSNrZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:47:25 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:41308 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab3LSNrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:28 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, "H. J. Lu" <hjl.tools@gmail.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 089/208] x86-64, build: Always pass in -mno-sse
-Date: Thu, 19 Dec 2013 11:53:07 +0000
-Message-Id: <1387454106-19326-90-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 08:47:23 -0500
+Date: Thu, 19 Dec 2013 08:47:19 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Laight <David.Laight@aculab.com>, Mark Lord <kernel@start.ca>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v4 9/9] PCI/MSI: Introduce pci_auto_enable_msi*() family
+ helpers
+Message-ID: <20131219134719.GA16994@htj.dyndns.org>
+References: <cover.1387140921.git.agordeev@redhat.com>
+ <bbf6f73ef3e16e5dfd7d41fc1e4412f641acb0f3.1387140921.git.agordeev@redhat.com>
+ <20131218003002.GA15119@google.com>
+ <20131218132349.GA29552@dhcp-26-207.brq.redhat.com>
+ <CAErSpo6Km5N+Cfpaj5JEsb966rwcBjrAT4SFvG6Q9QkwkDFXCA@mail.gmail.com>
+ <20131219134244.GA32238@dhcp-26-207.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131219134244.GA32238@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+Hello,
 
-------------------
+On Thu, Dec 19, 2013 at 02:42:45PM +0100, Alexander Gordeev wrote:
+> I have troubles with this fallback logic. On each failed step we get an
+> error and we do not know if this is indeed an error or an indication of
+> insufficient MSI resources. Even -ENOSPC would not tell much, since it
+> could be thrown from a lower level.
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+Well, it's not hard to define what -ENOSPC should mean.
 
-commit 5551a34e5aeab868f8d37f70d8754868921b4ee5 upstream.
+> By contrast, with the tri-state return value we can distinguish and bail
+> out on errors right away.
 
-Always pass in the -mno-sse argument, regardless if
--preferred-stack-boundary is supported.  We never want to generate SSE
-instructions in the kernel unless we *really* know what we're doing.
+I kinda like that the available options are listed explicitly on the
+caller side (even if it ends up being a loop).  It decreases the
+chance of the caller going "oh I didn't expect _that_" and generaly
+makes things easier to follow.
 
-According to H. J. Lu, any version of gcc new enough that we support
-it at all should handle the -mno-sse option, so just add it
-unconditionally.
+> So the above is bit ungraceful for me. Combined with a possible waste in
+> logs (if we're hitting the same error) it is quite enough for me to keep
+> current the interfaces, at least for a time being.
 
-Reported-by: Kevin B. Smith <kevin.b.smith@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: H. J. Lu <hjl.tools@gmail.com>
-Link: http://lkml.kernel.org/n/tip-j21wzqv790q834n7yc6g80j1@git.kernel.org
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/x86/Makefile | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+FWIW, I like Bjorn's suggestion.  Given that this is mostly corner
+case thing, it isn't as important as the common ones but we might as
+well while we're at it.
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 07639c6..39e5f1a 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -31,6 +31,9 @@ ifeq ($(CONFIG_X86_32),y)
- 
-         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
- 
-+        # Don't autogenerate SSE instructions
-+	KBUILD_CFLAGS += -mno-sse
-+
-         # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
-         # with nonstandard options
-         KBUILD_CFLAGS += -fno-pic
-@@ -57,8 +60,11 @@ else
-         KBUILD_AFLAGS += -m64
-         KBUILD_CFLAGS += -m64
- 
-+        # Don't autogenerate SSE instructions
-+	KBUILD_CFLAGS += -mno-sse
-+
- 	# Use -mpreferred-stack-boundary=3 if supported.
--	KBUILD_CFLAGS += $(call cc-option,-mno-sse -mpreferred-stack-boundary=3)
-+	KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
- 
-         # FIXME - should be integrated in Makefile.cpu (Makefile_32.cpu)
-         cflags-$(CONFIG_MK8) += $(call cc-option,-march=k8)
+Thanks a lot for your work in the area!  :)
+
 -- 
-1.8.3.2
-
+tejun
