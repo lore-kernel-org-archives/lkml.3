@@ -1,78 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab3LSTDz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 14:03:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4522 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752791Ab3LSTDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 14:03:54 -0500
-Message-ID: <52B34313.8050905@redhat.com>
-Date: Thu, 19 Dec 2013 14:03:47 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1754814Ab3LSTEF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 14:04:05 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:60993 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754453Ab3LSTEB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 14:04:01 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 64.17.244.34
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/Bafh+kXobdIDX8NV6PPUO
+Date: Thu, 19 Dec 2013 11:03:44 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        "=?utf-8?Q?'Beno=C3=AEt?= Cousson'" <bcousson@baylibre.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org,
+        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: [RFCv4 05/11] Documentation: DT: omap-ssi binding documentation
+Message-ID: <20131219190344.GW27438@atomide.com>
+References: <1387150085-23173-1-git-send-email-sre@debian.org>
+ <1387150085-23173-6-git-send-email-sre@debian.org>
 MIME-Version: 1.0
-To: rui wang <ruiv.wang@gmail.com>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org,
-        "Chen, Gong" <gong.chen@intel.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>
-Subject: Re: [PATCH] x86: Add check for number of available vectors before
- CPU down
-References: <1384878243-5086-1-git-send-email-prarit@redhat.com>	<CANVTcTZo8pN8y7UiSFyGNLWNwRm8nwQyzCFdQJy50z95vV15oQ@mail.gmail.com>	<52B1F75A.6090403@redhat.com> <CANVTcTbCeQKa_cSY6XMg3OwMA2GJJCNWuExL_qQsBYe_Ozj6BQ@mail.gmail.com>
-In-Reply-To: <CANVTcTbCeQKa_cSY6XMg3OwMA2GJJCNWuExL_qQsBYe_Ozj6BQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387150085-23173-6-git-send-email-sre@debian.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 12/19/2013 02:19 AM, rui wang wrote:
-> On 12/19/13, Prarit Bhargava <prarit@redhat.com> wrote:
->>
->>
->> On 12/03/2013 09:48 PM, rui wang wrote:
->>> On 11/20/13, Prarit Bhargava <prarit@redhat.com> wrote:
->>> Have you considered the case when an IRQ is destined to more than one CPU?
->>> e.g.:
->>>
->>> bash# cat /proc/irq/89/smp_affinity_list
->>> 30,62
->>> bash#
->>>
->>> In this case offlining CPU30 does not seem to require an empty vector
->>> slot. It seems that we only need to change the affinity mask of irq89.
->>> Your check_vectors() assumed that each irq on the offlining cpu
->>> requires a new vector slot.
->>>
->>
->> Rui,
->>
->> The smp_affinity_list only indicates a preferred destination of the IRQ, not
->> the
->> *actual* location of the CPU.  So the IRQ is on one of cpu 30 or 62 but not
->> both
->> simultaneously.
->>
+* Sebastian Reichel <sre@debian.org> [131215 15:30]:
+> Create device tree binding documentation for
+> OMAP Synchronous Serial Interface (SSI) device.
 > 
-> It depends on how IOAPIC (or MSI/MSIx) is configured. An IRQ can be
-> simultaneously broadcast to all destination CPUs (Fixed Mode) or
-> delivered to the CPU with the lowest priority task (Lowest Priority
-> Mode). It's programmed in the Delivery Mode bits of the IOAPIC's IO
-> Redirection table registers, or the Message Data Register in the case
-> of MSI/MSIx
+> Signed-off-by: Sebastian Reichel <sre@debian.org>
+> ---
+>  Documentation/devicetree/bindings/hsi/omap_ssi.txt | 69 ++++++++++++++++++++++
+>  1 file changed, 69 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/hsi/omap_ssi.txt
 > 
+> diff --git a/Documentation/devicetree/bindings/hsi/omap_ssi.txt b/Documentation/devicetree/bindings/hsi/omap_ssi.txt
+> new file mode 100644
+> index 0000000..0a9efd8
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/hsi/omap_ssi.txt
+> @@ -0,0 +1,69 @@
+> +OMAP SSI controller bindings
+> +
+> +Required properties:
+> +- compatible:		Should include "ti,omap3-ssi".
+> +- reg-names:		Contains the values "sys" and "gdd".
 
-Thanks for clueing me in Rui :).  You're right.  I do need to do a
+Do you need the reg-names? The order won't change so you can just
+document the order in the binding?
 
-                        if (irq_has_action(irq) || !irqd_is_per_cpu(data) ||
-                            !cpumask_subset(affinity, cpu_online_mask))
+> +- reg:			Contains a register specifier for each entry in
+> +			reg-names.
+> +- interrupt-names:      Contains the value "gdd_mpu".
 
-instead of just
+Maybe interrupt-names are not needed either?
 
-			if  (!irqd_is_per_cpu(data))
+> +- interrupts: 		Contains interrupt information for each entry in
+> +			interrupt-names.
+> +- ranges		Represents the bus address mapping between the main
+> +			controller node and the child nodes below.
+> +- #address-cells	Should be set to <1>
+> +- #size-cells		Should be set to <1>
+> +
+> +Each port is represented as a sub-node of the ti,omap3-ssi device.
+> +
+> +Required Port sub-node properties:
+> +- compatible:		Should be set to the following value
+> +                        ti,omap3-ssi-port (applicable to OMAP34xx devices)
+> +- reg-names:		Contains the values "rx" and "tx".
 
-I'm going to do some additional testing tonight across various systems and will
-repost tomorrow if the testing is successful.
+Here too?
 
-P.
+> +- reg:			Contains a register specifier for each entry in
+> +			reg-names.
+> +- interrupt-parent	Should be a phandle for the interrupt controller
+> +- interrupt-names:	Contains the values "mpu_irq0" and "mpu_irq1".
+
+And here?
+
+> +- interrupts:		Contains interrupt information for each entry in
+> +			interrupt-names.
+> +- ti,ssi-cawake-gpio:	Defines which GPIO pin is used to signify CAWAKE
+> +			events for the port. This is an optional board-specific
+> +			property. If it's missing the port will not be
+> +			enabled.
+
+Hmm this might be just a wake-up GPIO? If so, you should be able to
+just set it up as an interrupt and do a request_irq on the pinctrl-single
+entry for it.
+
+It might even be one of the already mapped interrupt lines that the code is
+remuxing to a GPIO for idle? If so, then you can just use the new binding
+for interrupts-extended to handle the wake-up events.
+
+If you post the GPIO number for ti,ssi-cawake-gpio and the interrupt
+numbers I can check if there's a need to handle it separately as a GPIO
+pin or if it already can be automatically handled for the wake-up events.
+
+Regards,
+
+Tony
