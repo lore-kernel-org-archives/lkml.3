@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab3LSPVU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:21:20 -0500
-Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:34849 "EHLO
-	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754009Ab3LSPVT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:21:19 -0500
-Date: Thu, 19 Dec 2013 09:21:15 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@nuc
-To: Dave Hansen <dave@sr71.net>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Pravin B Shelar <pshelar@nicira.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: [RFC][PATCH 0/7] re-shrink 'struct page' when SLUB is on.
-In-Reply-To: <52B2424F.7050406@sr71.net>
-Message-ID: <alpine.DEB.2.10.1312190920340.4238@nuc>
-References: <20131213235903.8236C539@viggo.jf.intel.com> <20131216160128.aa1f1eb8039f5eee578cf560@linux-foundation.org> <52AF9EB9.7080606@sr71.net> <0000014301223b3e-a73f3d59-8234-48f1-9888-9af32709a879-000000@email.amazonses.com> <52B23CAF.809@sr71.net>
- <20131218164109.5e169e258378fac44ec5212d@linux-foundation.org> <52B2424F.7050406@sr71.net>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752816Ab3LSPXc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:23:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60846 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750895Ab3LSPXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 10:23:30 -0500
+Message-ID: <52B30F43.1060306@zytor.com>
+Date: Thu, 19 Dec 2013 07:22:43 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+CC: Elliott@hp.com, samer.el-haj-mahmoud@hp.com,
+        Oliver Neukum <oneukum@suse.de>, werner@suse.com, trenn@suse.de,
+        JBeulich@suse.com, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, x86@kernel.org,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>
+Subject: Re: [RFC PATCH 04/14] ACPI: Add ACPI 5.0 Time and Alarm Device driver
+References: <1387439515-8926-1-git-send-email-jlee@suse.com> <1387439515-8926-5-git-send-email-jlee@suse.com>
+In-Reply-To: <1387439515-8926-5-git-send-email-jlee@suse.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Dec 2013, Dave Hansen wrote:
+On 12/18/2013 11:51 PM, Lee, Chun-Yi wrote:
+> This patch add the driver of Time and Alarm Device in ACPI 5.0.
+> Currently it only implemented get/set time functions and grab
+> the capabilities of device when driver initial.
+> 
+> This driver also register rtc-acpitad platform device for RTC ACPITAD
+> stub driver using.
+> 
+> Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
 
-> On 12/18/2013 04:41 PM, Andrew Morton wrote:
-> >> > Unless somebody can find some holes in this, I think we have no choice
-> >> > but to unset the HAVE_ALIGNED_STRUCT_PAGE config option and revert using
-> >> > the cmpxchg, at least for now.
-> >
-> > So your scary patch series which shrinks struct page while retaining
-> > the cmpxchg_double() might reclaim most of this loss?
->
-> That's what I'll test next, but I hope so.
->
-> The config tweak is important because it shows a low-risk way to get a
-> small 'struct page', plus get back some performance that we lost and
-> evidently never noticed.  A distro that was nearing a release might want
-> to go with this, for instance.
+What platform do you have that has TAD support?  I am wondering how this
+was tested.
 
-Ok then lets just drop the cmpxchg updates to the page struct. The
-spinlock code is already in there so just removing the __CMPXCHG flag
-related processing should do the trick.
+	-hpa
+
 
