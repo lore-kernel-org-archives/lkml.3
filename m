@@ -1,115 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab3LSOcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 09:32:12 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:45507 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747Ab3LSOcL (ORCPT
+	id S1756717Ab3LSMTY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:19:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45147 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755635Ab3LSL6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 09:32:11 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <balbi@ti.com>, <kishon@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <s.nawrocki@samsung.com>, <jg1.han@samsung.com>, <mporter@linaro.org>,
-        <andrew@lunn.ch>, <k.debski@samsung.com>, <gautamvivek1987@gmail.com>,
-        <heikki.krogerus@linux.intel.com>, <yuvaraj.cd@gmail.com>
-Subject: [PATCH 1/2] phy: phy-core: increment refcounting variables only on 'success'
-Date: Thu, 19 Dec 2013 20:01:43 +0530
-Message-ID: <1387463504-4415-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 19 Dec 2013 06:58:54 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Antti Palosaari <crope@iki.fi>, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 149/208] [media] af9033: fix broken I2C
+Date: Thu, 19 Dec 2013 11:54:07 +0000
+Message-Id: <1387454106-19326-150-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Increment 'init_count' only if the 'init' callback succeeded and decrement
-'init_count' only if the 'exit' callback succeded. Increment 'power_count'
-only if 'power_on' callback succeded and if it failed disable the clocks using
-phy_pm_runtime_put_sync(). Also decrement 'power_count' only if 'power_off'
-callback succeded and if it failed do not disable the clocks.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+------------------
+
+From: Antti Palosaari <crope@iki.fi>
+
+commit d18a88b1f535d627412b2a265d71b2f7d464860e upstream.
+
+Driver did not work anymore since I2C has gone broken due
+to recent commit:
+commit 37ebaf6891ee81687bb558e8375c0712d8264ed8
+[media] dvb-frontends: Don't use dynamic static allocation
+
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/phy/phy-core.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ drivers/media/dvb-frontends/af9033.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 03cf8fb..e198259 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -155,13 +155,14 @@ int phy_init(struct phy *phy)
- 		return ret;
+diff --git a/drivers/media/dvb-frontends/af9033.c b/drivers/media/dvb-frontends/af9033.c
+index 30ee590..65728c2 100644
+--- a/drivers/media/dvb-frontends/af9033.c
++++ b/drivers/media/dvb-frontends/af9033.c
+@@ -170,18 +170,18 @@ static int af9033_rd_reg_mask(struct af9033_state *state, u32 reg, u8 *val,
+ static int af9033_wr_reg_val_tab(struct af9033_state *state,
+ 		const struct reg_val *tab, int tab_len)
+ {
++#define MAX_TAB_LEN 212
+ 	int ret, i, j;
+-	u8 buf[MAX_XFER_SIZE];
++	u8 buf[1 + MAX_TAB_LEN];
++
++	dev_dbg(&state->i2c->dev, "%s: tab_len=%d\n", __func__, tab_len);
  
- 	mutex_lock(&phy->mutex);
--	if (phy->init_count++ == 0 && phy->ops->init) {
-+	if (phy->init_count == 0 && phy->ops->init) {
- 		ret = phy->ops->init(phy);
- 		if (ret < 0) {
- 			dev_err(&phy->dev, "phy init failed --> %d\n", ret);
- 			goto out;
- 		}
+ 	if (tab_len > sizeof(buf)) {
+-		dev_warn(&state->i2c->dev,
+-			 "%s: i2c wr len=%d is too big!\n",
+-			 KBUILD_MODNAME, tab_len);
++		dev_warn(&state->i2c->dev, "%s: tab len %d is too big\n",
++				KBUILD_MODNAME, tab_len);
+ 		return -EINVAL;
  	}
-+	++phy->init_count;
  
- out:
- 	mutex_unlock(&phy->mutex);
-@@ -179,13 +180,14 @@ int phy_exit(struct phy *phy)
- 		return ret;
+-	dev_dbg(&state->i2c->dev, "%s: tab_len=%d\n", __func__, tab_len);
+-
+ 	for (i = 0, j = 0; i < tab_len; i++) {
+ 		buf[j] = tab[i].val;
  
- 	mutex_lock(&phy->mutex);
--	if (--phy->init_count == 0 && phy->ops->exit) {
-+	if (phy->init_count == 1 && phy->ops->exit) {
- 		ret = phy->ops->exit(phy);
- 		if (ret < 0) {
- 			dev_err(&phy->dev, "phy exit failed --> %d\n", ret);
- 			goto out;
- 		}
- 	}
-+	--phy->init_count;
- 
- out:
- 	mutex_unlock(&phy->mutex);
-@@ -203,16 +205,20 @@ int phy_power_on(struct phy *phy)
- 		return ret;
- 
- 	mutex_lock(&phy->mutex);
--	if (phy->power_count++ == 0 && phy->ops->power_on) {
-+	if (phy->power_count == 0 && phy->ops->power_on) {
- 		ret = phy->ops->power_on(phy);
- 		if (ret < 0) {
- 			dev_err(&phy->dev, "phy poweron failed --> %d\n", ret);
- 			goto out;
- 		}
- 	}
-+	++phy->power_count;
-+	mutex_unlock(&phy->mutex);
-+	return 0;
- 
- out:
- 	mutex_unlock(&phy->mutex);
-+	phy_pm_runtime_put_sync(phy);
- 
- 	return ret;
- }
-@@ -223,13 +229,16 @@ int phy_power_off(struct phy *phy)
- 	int ret = -ENOTSUPP;
- 
- 	mutex_lock(&phy->mutex);
--	if (--phy->power_count == 0 && phy->ops->power_off) {
-+	if (phy->power_count == 1 && phy->ops->power_off) {
- 		ret =  phy->ops->power_off(phy);
- 		if (ret < 0) {
- 			dev_err(&phy->dev, "phy poweroff failed --> %d\n", ret);
- 			goto out;
- 		}
- 	}
-+	--phy->power_count;
-+	mutex_unlock(&phy->mutex);
-+	return 0;
- 
- out:
- 	mutex_unlock(&phy->mutex);
 -- 
-1.7.10.4
+1.8.3.2
 
