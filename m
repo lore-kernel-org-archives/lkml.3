@@ -1,100 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab3LSJVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:21:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45523 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752165Ab3LSJTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:19:05 -0500
-Date: Thu, 19 Dec 2013 10:19:03 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/6] memcg, slab: kmem_cache_create_memcg(): free memcg
- params on error
-Message-ID: <20131219091903.GF9331@dhcp22.suse.cz>
-References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
- <9420ad797a2cfa14c23ad1ba6db615a2a51ffee0.1387372122.git.vdavydov@parallels.com>
- <20131218170649.GC31080@dhcp22.suse.cz>
- <52B292FD.8040603@parallels.com>
- <20131219084845.GB9331@dhcp22.suse.cz>
- <52B2B5E8.6020307@parallels.com>
+	id S1753444Ab3LSJTE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:19:04 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:56798 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab3LSJKQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 04:10:16 -0500
+Subject: [PATCH -tip v6 15/22] notifier: Use NOKPROBE_SYMBOL macro in
+ notifier
+To: Ingo Molnar <mingo@kernel.org>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Date: Thu, 19 Dec 2013 09:04:31 +0000
+Message-ID: <20131219090431.14309.19334.stgit@kbuild-fedora.novalocal>
+In-Reply-To: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
+References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B2B5E8.6020307@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 19-12-13 13:01:28, Vladimir Davydov wrote:
-> On 12/19/2013 12:48 PM, Michal Hocko wrote:
-> > On Thu 19-12-13 10:32:29, Vladimir Davydov wrote:
-> >> On 12/18/2013 09:06 PM, Michal Hocko wrote:
-> >>> On Wed 18-12-13 17:16:53, Vladimir Davydov wrote:
-> >>>> Plus, rename memcg_register_cache() to memcg_init_cache_params(),
-> >>>> because it actually does not register the cache anywhere, but simply
-> >>>> initialize kmem_cache::memcg_params.
-> >>> I've almost missed this is a memory leak fix.
-> >> Yeah, the comment is poor, sorry about that. Will fix it.
-> >>
-> >>> I do not mind renaming and the name but wouldn't
-> >>> memcg_alloc_cache_params suit better?
-> >> As you wish. I don't have a strong preference for memcg_init_cache_params.
-> > I really hate naming... but it seems that alloc is a better fit. _init_
-> > would expect an already allocated object.
-> >
-> > Btw. memcg_free_cache_params is called only once which sounds
-> > suspicious. The regular destroy path should use it as well?
-> > [...]
-> 
-> The usual destroy path uses memcg_release_cache(), which does the trick.
-> Plus, it actually "unregisters" the cache. BTW, I forgot to substitute
-> kfree(s->memcg_params) with the new memcg_free_cache_params() there.
-> Although it currently does not break anything, better to fix it in case
-> new memcg_free_cache_params() will have to do something else.
-> 
-> And you're right about the naming is not good.
-> 
-> Currently we have:
-> 
->   on create:
->     memcg_register_cache()
->     memcg_cache_list_add()
->   on destroy:
->     memcg_release_cache()
-> 
-> After this patch we would have:
-> 
->   on create:
->     memcg_alloc_cache_params()
->     memcg_register_cache()
->   on destroy:
->     memcg_release_cache()
-> 
-> Still not perfect: "alloc" does not have corresponding "free", while
-> "register" does not have corresponding "unregister", everything is done
-> by "release".
-> 
-> What do you think about splitting memcg_release_cache() into two functions:
-> 
->     memcg_unregister_cache()
->     memcg_free_cache_params()
+Use NOKPROBE_SYMBOL macro to protect functions from
+kprobes instead of __kprobes annotation in notifier.
 
-yes I am all for cleaning up this mess. I am still trying to wrap my
-head around what is each of this function responsible for.
-Absolute lack of documentation is not helping at all...
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+---
+ kernel/notifier.c |   22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
-> 
-> ?
-> 
-> Thanks.
+diff --git a/kernel/notifier.c b/kernel/notifier.c
+index 2d5cc4c..61fc78a 100644
+--- a/kernel/notifier.c
++++ b/kernel/notifier.c
+@@ -71,9 +71,9 @@ static int notifier_chain_unregister(struct notifier_block **nl,
+  *	@returns:	notifier_call_chain returns the value returned by the
+  *			last notifier function called.
+  */
+-static int __kprobes notifier_call_chain(struct notifier_block **nl,
+-					unsigned long val, void *v,
+-					int nr_to_call,	int *nr_calls)
++static int notifier_call_chain(struct notifier_block **nl,
++			       unsigned long val, void *v,
++			       int nr_to_call, int *nr_calls)
+ {
+ 	int ret = NOTIFY_DONE;
+ 	struct notifier_block *nb, *next_nb;
+@@ -102,6 +102,7 @@ static int __kprobes notifier_call_chain(struct notifier_block **nl,
+ 	}
+ 	return ret;
+ }
++NOKPROBE_SYMBOL(notifier_call_chain);
+ 
+ /*
+  *	Atomic notifier chain routines.  Registration and unregistration
+@@ -172,9 +173,9 @@ EXPORT_SYMBOL_GPL(atomic_notifier_chain_unregister);
+  *	Otherwise the return value is the return value
+  *	of the last notifier function called.
+  */
+-int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+-					unsigned long val, void *v,
+-					int nr_to_call, int *nr_calls)
++int __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
++				 unsigned long val, void *v,
++				 int nr_to_call, int *nr_calls)
+ {
+ 	int ret;
+ 
+@@ -184,13 +185,15 @@ int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(__atomic_notifier_call_chain);
++NOKPROBE_SYMBOL(__atomic_notifier_call_chain);
+ 
+-int __kprobes atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+-		unsigned long val, void *v)
++int atomic_notifier_call_chain(struct atomic_notifier_head *nh,
++			       unsigned long val, void *v)
+ {
+ 	return __atomic_notifier_call_chain(nh, val, v, -1, NULL);
+ }
+ EXPORT_SYMBOL_GPL(atomic_notifier_call_chain);
++NOKPROBE_SYMBOL(atomic_notifier_call_chain);
+ 
+ /*
+  *	Blocking notifier chain routines.  All access to the chain is
+@@ -527,7 +530,7 @@ EXPORT_SYMBOL_GPL(srcu_init_notifier_head);
+ 
+ static ATOMIC_NOTIFIER_HEAD(die_chain);
+ 
+-int notrace __kprobes notify_die(enum die_val val, const char *str,
++int notrace notify_die(enum die_val val, const char *str,
+ 	       struct pt_regs *regs, long err, int trap, int sig)
+ {
+ 	struct die_args args = {
+@@ -540,6 +543,7 @@ int notrace __kprobes notify_die(enum die_val val, const char *str,
+ 	};
+ 	return atomic_notifier_call_chain(&die_chain, val, &args);
+ }
++NOKPROBE_SYMBOL(notify_die);
+ 
+ int register_die_notifier(struct notifier_block *nb)
+ {
 
--- 
-Michal Hocko
-SUSE Labs
+
