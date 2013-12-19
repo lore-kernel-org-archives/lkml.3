@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab3LSMAE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:00:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45359 "EHLO
+	id S1754409Ab3LSL4h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:56:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44634 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184Ab3LSL77 (ORCPT
+	with ESMTP id S1754244Ab3LSL4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:59 -0500
+	Thu, 19 Dec 2013 06:56:33 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Chris Mason <clm@fb.com>,
+Cc: Hong Zhiguo <zhiguohong@tencent.com>, Jens Axboe <axboe@kernel.dk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 192/208] Btrfs: fix access_ok() check in btrfs_ioctl_send()
-Date: Thu, 19 Dec 2013 11:54:50 +0000
-Message-Id: <1387454106-19326-193-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 051/208] Update of blkg_stat and blkg_rwstat may happen in bh context. While u64_stats_fetch_retry is only preempt_disable on 32bit UP system. This is not enough to avoid preemption by bh and may read strange 64 bit value.
+Date: Thu, 19 Dec 2013 11:52:29 +0000
+Message-Id: <1387454106-19326-52-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,37 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Hong Zhiguo <zhiguohong@tencent.com>
 
-commit 700ff4f095d78af0998953e922e041d75254518b upstream.
+commit 2c575026fae6e63771bd2a4c1d407214a8096a89 upstream.
 
-The closing parenthesis is in the wrong place.  We want to check
-"sizeof(*arg->clone_sources) * arg->clone_sources_count" instead of
-"sizeof(*arg->clone_sources * arg->clone_sources_count)".
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Reviewed-by: Jie Liu <jeff.liu@oracle.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Hong Zhiguo <zhiguohong@tencent.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/btrfs/send.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ block/blk-cgroup.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/btrfs/send.c b/fs/btrfs/send.c
-index 0c87c6b..d4c34c8 100644
---- a/fs/btrfs/send.c
-+++ b/fs/btrfs/send.c
-@@ -4613,8 +4613,8 @@ long btrfs_ioctl_send(struct file *mnt_file, void __user *arg_)
- 	}
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 8056c03..f50082d 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -433,9 +433,9 @@ static inline uint64_t blkg_stat_read(struct blkg_stat *stat)
+ 	uint64_t v;
  
- 	if (!access_ok(VERIFY_READ, arg->clone_sources,
--			sizeof(*arg->clone_sources *
--			arg->clone_sources_count))) {
-+			sizeof(*arg->clone_sources) *
-+			arg->clone_sources_count)) {
- 		ret = -EFAULT;
- 		goto out;
- 	}
+ 	do {
+-		start = u64_stats_fetch_begin(&stat->syncp);
++		start = u64_stats_fetch_begin_bh(&stat->syncp);
+ 		v = stat->cnt;
+-	} while (u64_stats_fetch_retry(&stat->syncp, start));
++	} while (u64_stats_fetch_retry_bh(&stat->syncp, start));
+ 
+ 	return v;
+ }
+@@ -501,9 +501,9 @@ static inline struct blkg_rwstat blkg_rwstat_read(struct blkg_rwstat *rwstat)
+ 	struct blkg_rwstat tmp;
+ 
+ 	do {
+-		start = u64_stats_fetch_begin(&rwstat->syncp);
++		start = u64_stats_fetch_begin_bh(&rwstat->syncp);
+ 		tmp = *rwstat;
+-	} while (u64_stats_fetch_retry(&rwstat->syncp, start));
++	} while (u64_stats_fetch_retry_bh(&rwstat->syncp, start));
+ 
+ 	return tmp;
+ }
 -- 
 1.8.3.2
 
