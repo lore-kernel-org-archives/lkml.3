@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab3LSKOp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 05:14:45 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:60623 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752938Ab3LSKOm (ORCPT
+	id S1752503Ab3LSKSd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 05:18:33 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:52049 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab3LSKSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 05:14:42 -0500
-Date: Thu, 19 Dec 2013 15:44:34 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 7/7] drivers: usb: Include appropriate header file in
- phy-am335x-control.c
-Message-ID: <117b58d812d640846b3ff1f522585f1c3344f47f.1387439261.git.rashika.kheria@gmail.com>
-References: <0e0e74b4487edd341b66674333d734d5828c7e64.1387439261.git.rashika.kheria@gmail.com>
+	Thu, 19 Dec 2013 05:18:30 -0500
+Date: Thu, 19 Dec 2013 10:18:03 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: lee.jones@linaro.org, sameo@linux.intel.com, lgirdwood@gmail.com,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Message-ID: <20131219101803.GP31886@sirena.org.uk>
+References: <1387444262-26456-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WYfJCIN5rqlfy3K0"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <0e0e74b4487edd341b66674333d734d5828c7e64.1387439261.git.rashika.kheria@gmail.com>
+In-Reply-To: <1387444262-26456-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Cookie: Go climb a gravity well!
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] mfd: wm5110: Expose DRE control registers
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include header file drivers/usb/phy/am35x-phy-control.h in
-phy/phy-am335x-control.c because function am335x_get_phy_control() has
-its prototype declaration in drivers/usb/phy/am35x-phy-control.h.
 
-Also, remove definition of structure phy_control because it is already
-defined in the included header.
+--WYfJCIN5rqlfy3K0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This eliminates the following warning in phy/phy-am335x-control.c:
-drivers/usb/phy/phy-am335x-control.c:114:21: warning: no previous prototype for ‘am335x_get_phy_control’ [-Wmissing-prototypes]
+On Thu, Dec 19, 2013 at 09:11:01AM +0000, Charles Keepax wrote:
+> Certain use-cases require the DRE to be disabled so expose registers
+> necessary to control the DRE enables.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/usb/phy/phy-am335x-control.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+Applied both, thanks.
 
-diff --git a/drivers/usb/phy/phy-am335x-control.c b/drivers/usb/phy/phy-am335x-control.c
-index 634f49a..d75196a 100644
---- a/drivers/usb/phy/phy-am335x-control.c
-+++ b/drivers/usb/phy/phy-am335x-control.c
-@@ -3,11 +3,7 @@
- #include <linux/err.h>
- #include <linux/of.h>
- #include <linux/io.h>
--
--struct phy_control {
--	void (*phy_power)(struct phy_control *phy_ctrl, u32 id, bool on);
--	void (*phy_wkup)(struct phy_control *phy_ctrl, u32 id, bool on);
--};
-+#include "am35x-phy-control.h"
- 
- struct am335x_control_usb {
- 	struct device *dev;
--- 
-1.7.9.5
+--WYfJCIN5rqlfy3K0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSssfYAAoJELSic+t+oim9PhYQAJPiTYAXK6Iq01O0YhzYf+oy
+XZrhhk/QZzEO68zqbwQ+DurSkk3gT8WoNNxqoXdkZxh2zsJBHxpffhmwZTIj1X4P
+mOKKvRIiteWK8N9tW8J4u61vDkmWMtHS0pJubjQbMzk/dy+Vp5Lbf4lF0u3g7Wl2
+Zx6w1sK9zZhhMQKhu5YNH2rqtmlmyI1g5SXsVvwvc76xhVCmWpZlPH2Oze9LKmSy
+cBV4P3xJpBRfDJ2YtOYOijkt5dv8X2rRGYiskZKxCmFyopFvuZn3gn4jMniQSg7d
+zbEpeeHUcTxCqenTh/c90oBfqVuhcneZ1tD8pn2bLmi4Kbm3xc6MnoGpE0GL83D5
+g63Gp23WfFWEvlmGliUn+b5V4YCP59+wVRT8dKSIZxnRnl3cmrVRIrbkQ2DwxAxn
+vznmsfvV1IHcp6GW2wWt6MXpXFeBKVJSvkvng5CUVrjEAB6gfdgqjistNT5+OnHy
+OqV053CADQSU96NhR9zAkxycr6YFtCs+30BIUvk04497qM1ju4piorDE0jwWFJgy
+zxG6FqcR4iPzc3jYPlPL4cZb1fgHtrALnP9ytmhn05Z8PN1dppt88XZo3z5lZWVe
+KWp+P5gw+DhNhAe3CksQ4ZZYzz/D7AXzxZjdqe3H9Q+lT/SqJKYdncb+4abgFwn3
+va6icxAUdyW9A95d4eXc
+=i15E
+-----END PGP SIGNATURE-----
+
+--WYfJCIN5rqlfy3K0--
