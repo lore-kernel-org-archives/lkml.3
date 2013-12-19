@@ -1,44 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636Ab3LSDOg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 22:14:36 -0500
-Received: from asix.com.tw ([113.196.140.82]:35988 "EHLO freebsd1.asix.com.tw"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751707Ab3LSDOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 22:14:35 -0500
-Message-ID: <52B2648C.80500@asix.com.tw>
-Date: Thu, 19 Dec 2013 11:14:20 +0800
-From: Freddy Xin <freddy@asix.com.tw>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752413Ab3LSDUf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 22:20:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39157 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707Ab3LSDUd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Dec 2013 22:20:33 -0500
+Date: Wed, 18 Dec 2013 19:20:36 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/118] 3.12.6-stable review
+Message-ID: <20131219032036.GA4951@kroah.com>
+References: <20131218211219.461663463@linuxfoundation.org>
+ <20131218234857.GA23500@roeck-us.net>
+ <20131219025658.GA9372@kroah.com>
+ <20131219030022.GA15867@kroah.com>
 MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>, netdev@vger.kernel.org,
-        davem@davemloft.net, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, louis@asix.com.tw, allan@asix.com.tw
-Subject: Re: [PATCH 1/1] AX88179_178A: Add FLAG_HW_IPALIGN to determine whether
- reserving NET_IP_ALIGN bytes for an SKB.
-References: <1386926708-2343-1-git-send-email-freddy@asix.com.tw> <AE90C24D6B3A694183C094C60CF0A2F6026B748A@saturn3.aculab.com> <52AEA3A8.2020906@asix.com.tw> <AE90C24D6B3A694183C094C60CF0A2F6026B7490@saturn3.aculab.com>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7490@saturn3.aculab.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131219030022.GA15867@kroah.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 18, 2013 at 07:00:22PM -0800, Greg Kroah-Hartman wrote:
+> On Wed, Dec 18, 2013 at 06:56:58PM -0800, Greg Kroah-Hartman wrote:
+> > On Wed, Dec 18, 2013 at 03:48:57PM -0800, Guenter Roeck wrote:
+> > > On Wed, Dec 18, 2013 at 01:10:37PM -0800, Greg Kroah-Hartman wrote:
+> > > > This is the start of the stable review cycle for the 3.12.6 release.
+> > > > There are 118 patches in this series, all will be posted as a response
+> > > > to this one.  If anyone has any issues with these being applied, please
+> > > > let me know.
+> > > > 
+> > > > Responses should be made by Fri Dec 20 21:12:03 UTC 2013.
+> > > > Anything received after that time might be too late.
+> > > > 
+> > > 
+> > > Hi greg,
+> > > 
+> > > I see a couple of failed builds.
+> > > 
+> > > m68k:allmodconfig ... failed
+> > > mips:allmodconfig ... failed
+> > > sparc64:allmodconfig ... failed
+> > > x86_64:allyesconfig ... failed
+> > > x86_64:allmodconfig ... failed
+> > > 
+> > > Build is still going on, so there may be more.
+> > > 
+> > > Error log:
+> > > 
+> > > drivers/staging/comedi/drivers/ssv_dnp.c: In function 'dnp_dio_insn_bits':
+> > > drivers/staging/comedi/drivers/ssv_dnp.c:63:2: error: implicit declaration of function 'comedi_dio_update_state' [-Werror=implicit-function-declaration]
+> > > cc1: some warnings being treated as errors
+> > > make[4]: *** [drivers/staging/comedi/drivers/ssv_dnp.o] Error 1
+> > > 
+> > > Function comedi_dio_update_state() is not defined anywhere in 3.12,
+> > > so patches
+> > > 	 staging: comedi: ssv_dnp: use comedi_dio_update_state()
+> > > 	 staging: comedi: drivers: use comedi_dio_update_state() for simple cases
+> > > 
+> > > won't apply without additional changes.
+> > 
+> > Odd, let me see what happened, as I thought this was building properly
+> > on my test boxes...
+> 
+> Ah, I didn't have COMPILE_TEST enabled, now I see the problem, my fault,
+> I'll go fix this up now...
 
-On 2013年12月16日 18:09, David Laight wrote:
->> I was thinking of something like: skb = netdev_alloc_skb(dev, length 
->> + dev->skb_align, gfp); if (NET_IP_ALIGN && skb && !(ev->driver_flags 
->> & FLAG_HW_IPALIGN)) skb_reserve(skb, NET_IP_ALIGN); It might even be 
->> reasonable to remove the length adjustment - provided that all the 
->> later code uses the skb length. David 
+Ok, found this, it was my fault, I tried to take more of one of Ian's
+patches than what he had actually sent me.  I'll do a -rc2 in a few
+minutes, thanks so much for the build testing.
 
-Thanks for your advice.
-In the way you advised, does the dev->skb_align equal
-to NET_IP_ALIGN in the case that HW doesn't supoort
-IP alignment?
-In other words, dev->skb_align should be initialized to
-NET_IP_ALIGN in USBNET, and I can change its value to
-0 in AX88179_178A driver, right?
-
-     Freddy
-
+greg k-h
