@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981Ab3LSAWY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Dec 2013 19:22:24 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:47639 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751367Ab3LSAWW (ORCPT
+	id S1753048Ab3LSAXG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Dec 2013 19:23:06 -0500
+Received: from leo.clearchain.com ([199.73.29.74]:42775 "EHLO
+	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020Ab3LSAXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Dec 2013 19:22:22 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AokHAGo7slJ5LHyk/2dsb2JhbABSB4MKgzyxFYVdgRYXdIIlAQEBAwE6HCMFCwgDGAklDwUlAyETh3wHyk0XFo4uBkgHhDYEmBWSFYFtgVIogSwj
-Date: Thu, 19 Dec 2013 11:22:16 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, Nigel Cunningham <nigel@tuxonice.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system
- suspend/hibernation
-Message-ID: <20131219002216.GT31386@dastard>
-References: <201202172159.15396.rjw@sisk.pl>
- <CA+5PVA50UA1oP1jKgnQjHh8APp=cNWREw3bkfrkV1OW_Tg1g+A@mail.gmail.com>
- <201205252113.50900.rjw@sisk.pl>
- <CA+5PVA5GWsTdNky-K1-hu5_R55hdKfr-Oa26HpX=FdA1cRZsbQ@mail.gmail.com>
- <CA+5PVA7vsZPd9eXwN-Q+d8c9+0bAmVdr698vv+LFyrn+3iFOMA@mail.gmail.com>
- <20131217230843.GA2911@amd.pavel.ucw.cz>
- <20131217233152.GC20579@dastard>
- <20131218000128.GA3737@amd.pavel.ucw.cz>
- <20131218123952.GI31386@dastard>
- <20131218140842.GA20488@amd.pavel.ucw.cz>
+	Wed, 18 Dec 2013 19:23:04 -0500
+Date: Thu, 19 Dec 2013 10:25:42 +1000
+From: Peter Hutterer <peter.hutterer@who-t.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: David Herrmann <dh.herrmann@gmail.com>, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        linux-kernel@vger.kernel.org, input-tools@lists.freedesktop.org
+Subject: Re: [PATCH 2/4] Input: introduce ABS_MAX2/CNT2 and friends
+Message-ID: <20131219002542.GB6315@yabbi.redhat.com>
+References: <1387295334-1744-1-git-send-email-dh.herrmann@gmail.com>
+ <1387295334-1744-3-git-send-email-dh.herrmann@gmail.com>
+ <20131218234009.GA9360@yabbi.redhat.com>
+ <1950536.BXYYX85NB4@dtor-d630.eng.vmware.com>
+ <20131218235504.GA17958@yabbi.redhat.com>
+ <20131219000537.GA838@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131218140842.GA20488@amd.pavel.ucw.cz>
+In-Reply-To: <20131219000537.GA838@core.coreip.homeip.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.2.7 (mail.clearchain.com [127.0.0.1]); Thu, 19 Dec 2013 10:52:57 +1030 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 03:08:42PM +0100, Pavel Machek wrote:
-> > > > I disagree - given the problem it is resolving leads to silent
-> > > > filesystem corruption, this patch should be considered somewhat of a
-> > > > priority to push...
+On Wed, Dec 18, 2013 at 04:05:37PM -0800, Dmitry Torokhov wrote:
+> On Thu, Dec 19, 2013 at 09:55:04AM +1000, Peter Hutterer wrote:
+> > On Wed, Dec 18, 2013 at 03:48:37PM -0800, Dmitry Torokhov wrote:
+> > > On Thursday, December 19, 2013 09:40:09 AM Peter Hutterer wrote:
+> > > > > +     memset(&abs, 0, sizeof(abs));
+> > > > > +     for (i = valid_cnt; i < cnt; ++i)
+> > > > > +             if (copy_to_user(&pinfo->info[i], &abs, sizeof(abs)))
+> > > > > +                     return -EFAULT;
+> > > > > +
+> > > > > +     return 0;
+> > > > 
+> > > > why don't you return the number of valid copied axes to the user?
+> > > > that seems better even than forcing the remainder to 0.
 > > > 
-> > > Umm. Ok, I forgot what it does, really.
+> > > Well, if your program messed up buffers that it faulted we do not know
+> > > for sure if data that did not cause fault ended up where it should have
+> > > or if it smashed something else. This condition I think should be
+> > > signaled early.
 > > 
-> > It ensures that the filesystem is in an quiescent state both in
-> > memory and on disk, and it cannot be modified in memory or on disk
-> > whilst the suspend image is being generated, or by log recovery
-> > after a resume before the suspended image has been restored.
+> > not 100% sure I understand but I wasn't proposing to remove the -EFAULT, i
+> > was proposing to replace "return 0" with "return valid_cnt".
 > 
-> If someone attempts to run log recovery before resume, that's a bug
-> and yes, it will corrupt filesystems. (Including ext3). Don't do that.
-
-Freezing the filesystem prevents that accidental mount of the
-filesystem from being an issue. It fixes a bug that:
-
-> Documentation/power/swsusp.txt:
+> I understand what you were saying. Now consider: your program supplied
+> buffer that is actually smaller than what it said to the kernel.
+> Depending on the exact placement we may or may not fault when we get
+> pass the buffer boundary, most likely not. We are likely to fault when
+> we go way past the buffer boundary and wracked process' memory. If we
+> return -EFAULT the program will at least notice that something wrong. If
+> we return count it will try to resubmit the remainder of operation and
+> not even know that there was something very bad happening.
 > 
->  * BIG FAT WARNING
->    *********************************************************
->  *
->  * If you touch anything on disk between suspend and resume...
->  *                              ...kiss your data goodbye.
+> IOW we should not treat fault condition as other partial read/write
+> conditions.
 
-Makes this a whole lot less dangerous.
-
-> > > So... for few years now suspend corrupts data on XFS? And Fedora has
-> > > the fix but it is not in mainline? That does not sound right...
-> > 
-> > The issues freezing the filesystem before the suspend image is
-> > created affect every journalled filesystem linux supports, be
-> > it XFS, ext4, reiser, btrfs, etc.
-> 
-> Did not it have some problems with ext3?
-
-Please read more carefully: "affect every journalled filesystem
-linux supports". So, ext3 is affected because it's a journalling
-filesystem.  I didn't list every journalled filesystem Linux
-supports - "etc" means there are more examples that aren't
-explicitly listed.
+I'm still not sure we're talking about the same thing :)
+let me rephrase: why can't we use the behaviour bits_to_user() provides?
+it limits the output to maxlen and returns that value (or -EFAULT), it's
+only a small step from that to limit the output to min(maxbit, ABS_CNT2).
 
 Cheers,
+   Peter
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+ 
