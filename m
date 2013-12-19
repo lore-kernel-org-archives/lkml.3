@@ -1,124 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab3LSSPP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:15:15 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:55256 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754345Ab3LSSPL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:15:11 -0500
-X-Greylist: delayed 864 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Dec 2013 13:15:11 EST
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: next-20131218 - WARNING in qdisc_list_add
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1387476879_3146P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 19 Dec 2013 13:14:39 -0500
-Message-ID: <7625.1387476879@turing-police.cc.vt.edu>
+	id S1755423Ab3LSSQF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:16:05 -0500
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.166]:14035 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754320Ab3LSSQD convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 13:16:03 -0500
+X-Env-Sender: anthony.olech.opensource@diasemi.com
+X-Msg-Ref: server-3.tower-39.messagelabs.com!1387476959!15258821!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
+CC: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "David Dajun Chen" <david.chen@diasemi.com>
+Subject: RE: [lm-sensors] [PATCH V1] fix adc to voltage calculation in
+ da9052 power driver
+Thread-Topic: [lm-sensors] [PATCH V1] fix adc to voltage calculation in
+ da9052 power driver
+Thread-Index: AQHO/OWp3CDZH5Rk5EWcdbF+IlJzu5pb0rZg
+Date: Thu, 19 Dec 2013 18:15:57 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB51847AC44F@NB-EX-MBX02.diasemi.com>
+References: <201312181524.rBIFOv96017094@swsrvapps-02.lan>
+ <20131218163234.714a166c@endymion.delvare>
+ <24DF37198A1E704D9811D8F72B87EB51847ABF61@NB-EX-MBX02.diasemi.com>
+ <20131218172402.GA18892@roeck-us.net>
+ <24DF37198A1E704D9811D8F72B87EB51847AC2C3@NB-EX-MBX02.diasemi.com>
+ <20131219155454.40100f4d@endymion.delvare>
+ <20131219181049.GA6854@roeck-us.net>
+In-Reply-To: <20131219181049.GA6854@roeck-us.net>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.24.126]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1387476879_3146P
-Content-Type: text/plain; charset=us-ascii
+> -----Original Message-----
+> From: Guenter Roeck [mailto:groeck7@gmail.com] On Behalf Of Guenter
+> Roeck
+> Sent: 19 December 2013 18:11
+> To: Jean Delvare
+> Cc: Opensource [Anthony Olech]; lm-sensors@lm-sensors.org; Anton
+> Vorontsov; David Woodhouse; linux-kernel@vger.kernel.org; David Dajun
+> Chen
+> Subject: Re: [lm-sensors] [PATCH V1] fix adc to voltage calculation in da9052
+> power driver
+> On Thu, Dec 19, 2013 at 03:54:54PM +0100, Jean Delvare wrote:
+> > Hi Anthony,
+> >
+> [ ... ]
+> > BTW, you (and we) probably shouldn't waste too much energy on this.
+> > ADCs are only accurate to some degree anyway. If you take the
+> > components connected to the input into consideration, the accuracy
+> > gets even worse. For example, if the input voltage must be scaled down
+> > to fit in the ADC's range, you need at least one resistor, which in
+> > best cases will have a 1% accurate value (known as tolerance.) That's
+> > ten times the LSB of your 10-bit ADC, at which point / 1023 or / 1024
+> > really makes no practical difference. Sub-percent tolerant resistors
+> > are expensive and rare in consumer electronics in my experience.
+> True, but on the other side (and after looking into the datasheet) the driver
+> already calculated the voltage on adc4..6 correctly, so unless you disagree I
+> would like to apply the hwmon patch to -next for consistency.
+> Thanks,
+> Guenter
 
-Seen once while booting next-20131218 (different boot than the BUG
-I hit). Command that triggered it would have been one of these 2:
-
-/usr/sbin/tc qdisc add dev em1 root codel
-/usr/sbin/tc qdisc add dev wlp3s0 root codel
-
-It's possible that wlp3s0 wasn't there yet due to rfkill switch having
-nuked the wireless.
-
-'git blame' points at the message being added in this commit:
-
-commit e57a784d8cae429f5b697fe55abf420181d9ff09
-Author: Eric Dumazet <edumazet@google.com>
-Date:   Thu Dec 12 15:41:56 2013 -0800
-
-    pkt_sched: set root qdisc before change() in attach_default_qdiscs()
-
-    After commit 95dc19299f74 ("pkt_sched: give visibility to mq slave
-    qdiscs") we call disc_list_add() while the device qdisc might be
-    the noop_qdisc one.
-
-    This shows up as duplicates in "tc qdisc show", as all inactive devices
-    point to noop_qdisc.
-
-    Fix this by setting dev->qdisc to the new qdisc before calling
-    ops->change() in attach_default_qdiscs()
-
-    Add a WARN_ON_ONCE() to catch any future similar problem.
-
-    Signed-off-by: Eric Dumazet <edumazet@google.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-
- [  153.876539] ------------[ cut here ]------------
- [  153.878667] WARNING: CPU: 1 PID: 1446 at net/sched/sch_api.c:278 qdisc_list_add+0x79/0xcf()
- [  153.897042] CPU: 3 PID: 1446 Comm: tc Tainted: G           O 3.13.0-rc4-next-20131218 #129
- [  153.898877] Hardware name: Dell Inc. Latitude E6530/07Y85M, BIOS A11 03/12/2013
- [  153.900666]  0000000000000000 ffff880121195950 ffffffff8164c74f 0000000000000000
- [  153.905666]  ffff880121195988 ffffffff8103875e ffffffff814afe73 ffff88012828f600
- [  153.910847]  0000000000000001 ffffffff81c8cac0 0000000000000001 ffff880121195998
- [  153.916012] Call Trace:
- [  153.917237]  [<ffffffff8164c74f>] dump_stack+0x4f/0xa2
- [  153.918659]  [<ffffffff8103875e>] warn_slowpath_common+0x7a/0x93
- [  153.920222]  [<ffffffff814afe73>] ? qdisc_list_add+0x79/0xcf
- [  153.921896]  [<ffffffff81038816>] warn_slowpath_null+0x15/0x17
- [  153.923579]  [<ffffffff814afe73>] qdisc_list_add+0x79/0xcf
- [  153.925134]  [<ffffffff814b1466>] qdisc_create+0x237/0x350
- [  153.926658]  [<ffffffff814b1a05>] tc_modify_qdisc+0x486/0x4af
- [  153.928173]  [<ffffffff814a2bb0>] rtnetlink_rcv_msg+0x180/0x193
- [  153.929753]  [<ffffffff810c7c32>] ? trace_preempt_on+0x12/0x2f
- [  153.931453]  [<ffffffff814a2a30>] ? rtnl_newlink+0x4ba/0x4ba
- [  153.933107]  [<ffffffff814b67e4>] netlink_rcv_skb+0x44/0x86
- [  153.934586]  [<ffffffff8149fbeb>] rtnetlink_rcv+0x1e/0x25
- [  153.936133]  [<ffffffff814b62ef>] netlink_unicast+0xf1/0x175
- [  153.937587]  [<ffffffff814b6677>] netlink_sendmsg+0x304/0x34e
- [  153.939088]  [<ffffffff814794ac>] __sock_sendmsg_nosec+0x25/0x27
- [  153.940638]  [<ffffffff8147b0c2>] sock_sendmsg+0x52/0x6c
- [  153.942278]  [<ffffffff811009ce>] ? might_fault+0x9b/0x9f
- [  153.943980]  [<ffffffff81100985>] ? might_fault+0x52/0x9f
- [  153.945439]  [<ffffffff81487cec>] ? verify_iovec+0x5e/0xac
- [  153.946993]  [<ffffffff8147cd41>] ___sys_sendmsg+0x20d/0x29d
- [  153.948540]  [<ffffffff81073236>] ? arch_local_irq_save+0x9/0xc
- [  153.950087]  [<ffffffff81072708>] ? up_read+0x22/0x25
- [  153.951743]  [<ffffffff8165a21b>] ? __do_page_fault+0x56f/0x600
- [  153.953495]  [<ffffffff810c7bdd>] ? time_hardirqs_on+0x1b/0x2f
- [  153.955175]  [<ffffffff8113fdee>] ? fcheck_files+0x80/0xe0
- [  153.956720]  [<ffffffff8114062d>] ? fget_light+0x30/0x90
- [  153.958195]  [<ffffffff8147d20a>] __sys_sendmsg+0x3d/0x5b
- [  153.959645]  [<ffffffff8147d235>] SyS_sendmsg+0xd/0x17
- [  153.961092]  [<ffffffff8165d722>] system_call_fastpath+0x16/0x1b
- [  153.965229] ---[ end trace ec29ec2eecd5a461 ]---
-
-
---==_Exmh_1387476879_3146P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBUrM3jwdmEQWDXROgAQKrbQ/+P9oJjyif0HRm0prl5J+//j09jovoAEuw
-Nqt1FI6gi6Eit13vTSsLrkJptfJ6KIKU4LVQkCrRNskp51rDHqrre7FVs5JgHCoQ
-j8JMAcCLYZsKNNPWt0L7QNp7z0Ps9NOdnrj/IelisBKEHkQaK0OscO7oV+r1Q4EE
-XDMedzqZyp+ND8/4U7g5qh3uUPVAgmeABid2WK+4ZwUtUfI7jSU3j1xQAF+hGMNT
-uKyC9eKPYEDWPPL2RT/B4mtZ5i9wTl+20CF6XS10l9RwH88IRo18MS5za/CO5mUm
-bpHS55386nw0NlNuhdW4zU/pGPXyPVvv7I/XHhgSQhi0qf2stdeBrJ4ljIxKA+mw
-9w3lYjapWAYmbdl8vq1v3dyAJqgbWXQCtq0/Au99TnrRkSTMXXvbnuigDpfFweGD
-xLbQAyf8Uqik+itUPZxWpad0x/o5jBsCh9iXc9hxAZaNzRCzqRXXFAOCPbih9kLf
-oi8c2uzg6mjL3QEcLRJD5NnARRCeb0ETxbY1GbJ4o46Amavo1+aMeF5e+68BxFv1
-ASDPMgs1GW0gliPjziOvJZhdSK45+INrWPYqs2+ymE1cIYILAERsoyiwIanBh+7I
-EdUq7slpIkZwSK76gbCxVIV+OVcC22d7OIfnykiKc6UJt4kmmatmu+CYo8VzZi33
-UFQ3luOorAQ=
-=PSwe
------END PGP SIGNATURE-----
-
---==_Exmh_1387476879_3146P--
+OK, thanks,
+Tony Olech
