@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab3LSJgM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:36:12 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52821 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752313Ab3LSJef (ORCPT
+	id S1753311Ab3LSJjf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:39:35 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:37603 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab3LSJjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:34:35 -0500
-X-AuditID: 9c930179-b7bedae000000f15-9c-52b2bda8f6f5
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/4] tools lib traceevent: Get rid of malloc_or_die() in trace_seq_init()
-Date: Thu, 19 Dec 2013 18:34:25 +0900
-Message-Id: <1387445666-7821-3-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1387445666-7821-1-git-send-email-namhyung@kernel.org>
-References: <1387445666-7821-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 19 Dec 2013 04:39:33 -0500
+Date: Thu, 19 Dec 2013 09:39:28 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: broonie@kernel.org, sameo@linux.intel.com, lgirdwood@gmail.com,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 1/2] mfd: wm5110: Expose DRE control registers
+Message-ID: <20131219093928.GB27373@lee--X1>
+References: <1387444262-26456-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1387444262-26456-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Thu, 19 Dec 2013, Charles Keepax wrote:
 
-Use plain malloc() and check its return value.
+> Certain use-cases require the DRE to be disabled so expose registers
+> necessary to control the DRE enables.
+> 
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/wm5110-tables.c           |    2 ++
+>  include/linux/mfd/arizona/registers.h |    4 ++++
+>  2 files changed, 6 insertions(+), 0 deletions(-)
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/trace-seq.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
-index 57405652f26d..d24a33190bb8 100644
---- a/tools/lib/traceevent/trace-seq.c
-+++ b/tools/lib/traceevent/trace-seq.c
-@@ -45,8 +45,11 @@ void trace_seq_init(struct trace_seq *s)
- 	s->len = 0;
- 	s->readpos = 0;
- 	s->buffer_size = TRACE_SEQ_BUF_SIZE;
--	s->buffer = malloc_or_die(s->buffer_size);
--	s->state = TRACE_SEQ__GOOD;
-+	s->buffer = malloc(s->buffer_size);
-+	if (s->buffer != NULL)
-+		s->state = TRACE_SEQ__GOOD;
-+	else
-+		s->state = TRACE_SEQ__MEM_ALLOC_FAILED;
- }
- 
- /**
 -- 
-1.7.11.7
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
