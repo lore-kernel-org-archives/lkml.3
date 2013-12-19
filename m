@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab3LSM0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:26:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45050 "EHLO
+	id S1755991Ab3LSL7f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:59:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45280 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499Ab3LSL60 (ORCPT
+	with ESMTP id S1755965Ab3LSL7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:26 -0500
+	Thu, 19 Dec 2013 06:59:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 130/208] iwlwifi: mvm: check sta_id/drain values in debugfs
-Date: Thu, 19 Dec 2013 11:53:48 +0000
-Message-Id: <1387454106-19326-131-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 176/208] dm thin: re-establish read-only state when switching to fail mode
+Date: Thu, 19 Dec 2013 11:54:34 +0000
+Message-Id: <1387454106-19326-177-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,38 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 60765a47a433d54e4744c285ad127f182dcd80aa upstream.
+commit 5383ef3a929a1366e2ced45cd6d74be7aa2a2281 upstream.
 
-The station ID must be valid, if it's out of range then
-the array access may crash. Validate the station ID to
-the array length, and also validate the drain value even
-if that doesn't matter all that much.
+If the thin-pool transitioned to fail mode and the thin-pool's table
+were reloaded for some reason: the new table's default pool mode would
+be read-write, though it will transition to fail mode during resume.
 
-Fixes: 8ca151b568b6 ("iwlwifi: add the MVM driver")
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+When the pool mode transitions directly from PM_WRITE to PM_FAIL we need
+to re-establish the intermediate read-only state in both the metadata
+and persistent-data block manager (as is usually done with the normal
+pool mode transition sequence: PM_WRITE -> PM_READ_ONLY -> PM_FAIL).
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/mvm/debugfs.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/md/dm-thin.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/iwlwifi/mvm/debugfs.c b/drivers/net/wireless/iwlwifi/mvm/debugfs.c
-index c24a744..b52e8b6 100644
---- a/drivers/net/wireless/iwlwifi/mvm/debugfs.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/debugfs.c
-@@ -119,6 +119,10 @@ static ssize_t iwl_dbgfs_sta_drain_write(struct file *file,
- 
- 	if (sscanf(buf, "%d %d", &sta_id, &drain) != 2)
- 		return -EINVAL;
-+	if (sta_id < 0 || sta_id >= IWL_MVM_STATION_COUNT)
-+		return -EINVAL;
-+	if (drain < 0 || drain > 1)
-+		return -EINVAL;
- 
- 	mutex_lock(&mvm->mutex);
- 
+diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
+index e36f81e..930a7e3 100644
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -1389,6 +1389,7 @@ static void set_pool_mode(struct pool *pool, enum pool_mode mode)
+ 	switch (mode) {
+ 	case PM_FAIL:
+ 		DMERR("switching pool to failure mode");
++		dm_pool_metadata_read_only(pool->pmd);
+ 		pool->process_bio = process_bio_fail;
+ 		pool->process_discard = process_bio_fail;
+ 		pool->process_prepared_mapping = process_prepared_mapping_fail;
 -- 
 1.8.3.2
 
