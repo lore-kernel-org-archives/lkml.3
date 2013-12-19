@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab3LSJBf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:01:35 -0500
-Received: from relay.parallels.com ([195.214.232.42]:58359 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752610Ab3LSJBd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:01:33 -0500
-Message-ID: <52B2B5E8.6020307@parallels.com>
-Date: Thu, 19 Dec 2013 13:01:28 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	id S1752541Ab3LSJDd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:03:33 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:26418 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751249Ab3LSJD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 04:03:29 -0500
+X-Greylist: delayed 2760 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Dec 2013 04:03:28 EST
+Message-ID: <52B2AB7C.1010803@parallels.com>
+Date: Thu, 19 Dec 2013 12:17:00 +0400
+From: Vasily Averin <vvs@parallels.com>
+Organization: Parallels
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/6] memcg, slab: kmem_cache_create_memcg(): free memcg
- params on error
-References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com> <9420ad797a2cfa14c23ad1ba6db615a2a51ffee0.1387372122.git.vdavydov@parallels.com> <20131218170649.GC31080@dhcp22.suse.cz> <52B292FD.8040603@parallels.com> <20131219084845.GB9331@dhcp22.suse.cz>
-In-Reply-To: <20131219084845.GB9331@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Vladimir Davydov <vdavydov@parallels.com>
+CC: Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@gmail.com>,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        cgroups@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>, devel@openvz.org
+Subject: Re: [Devel] [PATCH 1/6] slab: cleanup kmem_cache_create_memcg()
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
+In-Reply-To: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 12:48 PM, Michal Hocko wrote:
-> On Thu 19-12-13 10:32:29, Vladimir Davydov wrote:
->> On 12/18/2013 09:06 PM, Michal Hocko wrote:
->>> On Wed 18-12-13 17:16:53, Vladimir Davydov wrote:
->>>> Plus, rename memcg_register_cache() to memcg_init_cache_params(),
->>>> because it actually does not register the cache anywhere, but simply
->>>> initialize kmem_cache::memcg_params.
->>> I've almost missed this is a memory leak fix.
->> Yeah, the comment is poor, sorry about that. Will fix it.
->>
->>> I do not mind renaming and the name but wouldn't
->>> memcg_alloc_cache_params suit better?
->> As you wish. I don't have a strong preference for memcg_init_cache_params.
-> I really hate naming... but it seems that alloc is a better fit. _init_
-> would expect an already allocated object.
->
-> Btw. memcg_free_cache_params is called only once which sounds
-> suspicious. The regular destroy path should use it as well?
-> [...]
+On 12/18/2013 05:16 PM, Vladimir Davydov wrote:
+> --- a/mm/slab_common.c
+> +++ b/mm/slab_common.c
+> @@ -176,8 +176,9 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+>  	get_online_cpus();
+>  	mutex_lock(&slab_mutex);
+>  
+> -	if (!kmem_cache_sanity_check(memcg, name, size) == 0)
+> -		goto out_locked;
+> +	err = kmem_cache_sanity_check(memcg, name, size);
+> +	if (err)
+> +		goto out_unlock;
+>  
+>  	/*
+>  	 * Some allocators will constraint the set of valid flags to a subset
 
-The usual destroy path uses memcg_release_cache(), which does the trick.
-Plus, it actually "unregisters" the cache. BTW, I forgot to substitute
-kfree(s->memcg_params) with the new memcg_free_cache_params() there.
-Although it currently does not break anything, better to fix it in case
-new memcg_free_cache_params() will have to do something else.
+Theoretically in future kmem_cache_sanity_check() can return positive value.
+Probably it's better to check (err < 0) in caller ?
 
-And you're right about the naming is not good.
-
-Currently we have:
-
-  on create:
-    memcg_register_cache()
-    memcg_cache_list_add()
-  on destroy:
-    memcg_release_cache()
-
-After this patch we would have:
-
-  on create:
-    memcg_alloc_cache_params()
-    memcg_register_cache()
-  on destroy:
-    memcg_release_cache()
-
-Still not perfect: "alloc" does not have corresponding "free", while
-"register" does not have corresponding "unregister", everything is done
-by "release".
-
-What do you think about splitting memcg_release_cache() into two functions:
-
-    memcg_unregister_cache()
-    memcg_free_cache_params()
-
-?
-
-Thanks.
+Thank you,
+	Vasily Averin
