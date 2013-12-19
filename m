@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab3LSMcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:32:17 -0500
-Received: from doppler.thel33t.co.uk ([193.110.88.198]:42286 "EHLO
-	doppler.thel33t.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961Ab3LSMcO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:32:14 -0500
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Thu, 19 Dec 2013 12:39:22 +0000
-From: Leigh Brown <leigh@solinno.co.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Nicolas Schichan <nschichan@freebox.fr>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Florian Fainelli <florian@openwrt.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] net: mvmdio: fix interrupt timeout handling
-In-Reply-To: <52B2D97F.4070200@gmail.com>
-References: <1387451589-15491-1-git-send-email-leigh@solinno.co.uk>
- <52B2D97F.4070200@gmail.com>
-Message-ID: <a1205db8e38fbdc0cf64f235de54cc67@doppler.thel33t.co.uk>
-User-Agent: Roundcube Webmail/0.6
+	id S932127Ab3LSNpb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:45:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39828 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754578Ab3LSNma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 08:42:30 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 2/9] perf tools: Making QUIET_(CLEAN|INSTAL) variables global
+Date: Thu, 19 Dec 2013 14:42:00 +0100
+Message-Id: <1387460527-15030-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
+References: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-12-19 11:33, Sebastian Hesselbarth wrote:
->> +			 if (timeout < 2)
->> +			 	timeout = 2;
-> 
-> Hi Leigh,
-> 
-> above two lines have a whitespace issue.
+Moving QUIET_(CLEAN|INSTAL) variables into:
+  tools/scripts/Makefile.include
 
-Crap, you are correct.  I will fix it and send another patch.
+to be usable by other tools. The change to use them
+in libtraceevent is in following patches.
 
-Regards,
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/config/utilities.mak | 7 -------
+ tools/scripts/Makefile.include  | 3 +++
+ 2 files changed, 3 insertions(+), 7 deletions(-)
 
-Leigh.
+diff --git a/tools/perf/config/utilities.mak b/tools/perf/config/utilities.mak
+index f168deb..4d985e0 100644
+--- a/tools/perf/config/utilities.mak
++++ b/tools/perf/config/utilities.mak
+@@ -178,10 +178,3 @@ endef
+ _ge_attempt = $(if $(get-executable),$(get-executable),$(_gea_warn)$(call _gea_err,$(2)))
+ _gea_warn = $(warning The path '$(1)' is not executable.)
+ _gea_err  = $(if $(1),$(error Please set '$(1)' appropriately))
+-
+-ifneq ($(findstring $(MAKEFLAGS),s),s)
+-  ifneq ($(V),1)
+-    QUIET_CLEAN		= @printf '  CLEAN    %s\n' $1;
+-    QUIET_INSTALL	= @printf '  INSTALL  %s\n' $1;
+-  endif
+-endif
+diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
+index ee76544..e4cfbed 100644
+--- a/tools/scripts/Makefile.include
++++ b/tools/scripts/Makefile.include
+@@ -76,5 +76,8 @@ ifneq ($(findstring $(MAKEFLAGS),s),s)
+ 		+@echo	       '  DESCEND  '$(1); \
+ 		mkdir -p $(OUTPUT)$(1) && \
+ 		$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1) $(2)
++
++	QUIET_CLEAN    = @printf '  CLEAN    %s\n' $1;
++	QUIET_INSTALL  = @printf '  INSTALL  %s\n' $1;
+   endif
+ endif
+-- 
+1.8.3.1
 
