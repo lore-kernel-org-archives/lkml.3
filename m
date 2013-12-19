@@ -1,58 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab3LSK0q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 05:26:46 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:46480 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab3LSK0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 05:26:44 -0500
-Date: Thu, 19 Dec 2013 11:26:25 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
- tracing units
-Message-ID: <20131219102625.GC30183@twins.programming.kicks-ass.net>
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1386765443-26966-5-git-send-email-alexander.shishkin@linux.intel.com>
- <20131217161126.GL13532@twins.programming.kicks-ass.net>
- <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218133439.GR21999@twins.programming.kicks-ass.net>
- <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218141125.GT21999@twins.programming.kicks-ass.net>
- <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com>
- <20131218150900.GU21999@twins.programming.kicks-ass.net>
- <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1755186Ab3LSMqr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:46:47 -0500
+Received: from mga14.intel.com ([143.182.124.37]:49109 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753042Ab3LSMqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 07:46:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
+   d="scan'208";a="397864166"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Lv Zheng <lv.zheng@intel.com>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chen Gong <gong.chen@linux.intel.com>
+Subject: [Patch v2 02/13] ACPI, extlog: replace open-coded _DSM specific code with helper functions
+Date: Thu, 19 Dec 2013 20:47:46 +0800
+Message-Id: <1387457266-4854-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 09:53:44AM +0200, Alexander Shishkin wrote:
-> Peter Zijlstra <peterz@infradead.org> writes:
-> > The thing is; why can't you zero-copy whatever buffer the hardware
-> > writes into, into the normal buffer?
-> 
-> I'm not sure I understand. You mean, have the buffer split between perf
-> data and trace data?
+Use helper functions to simplify _DSM related code in acpi_extlog driver.
+Also mark initialization data and functions with __init and __initdata
+to reduce memory footprint.
 
-Yep, I don't see any reason why this wouldn't work.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Chen Gong <gong.chen@linux.intel.com>
+---
+ drivers/acpi/acpi_extlog.c |   61 +++++++++-----------------------------------
+ 1 file changed, 12 insertions(+), 49 deletions(-)
 
-When the hardware thing sends an interrupt to notify us its buffer is
-'full', stop the recorder, try to create a single record in the buffer
-that's big enough + 1 page, then swizzle the hardware pages and the
-buffer pages for that record, using the +1 page to page align the actual
-data. Then (re)start the hardware on the 'new' pages.
-
+diff --git a/drivers/acpi/acpi_extlog.c b/drivers/acpi/acpi_extlog.c
+index a6869e1..928c4db 100644
+--- a/drivers/acpi/acpi_extlog.c
++++ b/drivers/acpi/acpi_extlog.c
+@@ -20,11 +20,9 @@
+ #define EXT_ELOG_ENTRY_MASK	GENMASK_ULL(51, 0) /* elog entry address mask */
+ 
+ #define EXTLOG_DSM_REV		0x0
+-#define	EXTLOG_FN_QUERY		0x0
+ #define	EXTLOG_FN_ADDR		0x1
+ 
+ #define FLAG_OS_OPTIN		BIT(0)
+-#define EXTLOG_QUERY_L1_EXIST	BIT(1)
+ #define ELOG_ENTRY_VALID	(1ULL<<63)
+ #define ELOG_ENTRY_LEN		0x1000
+ 
+@@ -43,7 +41,7 @@ struct extlog_l1_head {
+ 	u8  rev1[12];
+ };
+ 
+-static u8 extlog_dsm_uuid[] = "663E35AF-CC10-41A4-88EA-5470AF055295";
++static u8 extlog_dsm_uuid[] __initdata = "663E35AF-CC10-41A4-88EA-5470AF055295";
+ 
+ /* L1 table related physical address */
+ static u64 elog_base;
+@@ -153,62 +151,27 @@ static int extlog_print(struct notifier_block *nb, unsigned long val,
+ 	return NOTIFY_DONE;
+ }
+ 
+-static int extlog_get_dsm(acpi_handle handle, int rev, int func, u64 *ret)
++static bool __init extlog_get_l1addr(void)
+ {
+-	struct acpi_buffer buf = {ACPI_ALLOCATE_BUFFER, NULL};
+-	struct acpi_object_list input;
+-	union acpi_object params[4], *obj;
+ 	u8 uuid[16];
+-	int i;
++	acpi_handle handle;
++	union acpi_object *obj;
+ 
+ 	acpi_str_to_uuid(extlog_dsm_uuid, uuid);
+-	input.count = 4;
+-	input.pointer = params;
+-	params[0].type = ACPI_TYPE_BUFFER;
+-	params[0].buffer.length = 16;
+-	params[0].buffer.pointer = uuid;
+-	params[1].type = ACPI_TYPE_INTEGER;
+-	params[1].integer.value = rev;
+-	params[2].type = ACPI_TYPE_INTEGER;
+-	params[2].integer.value = func;
+-	params[3].type = ACPI_TYPE_PACKAGE;
+-	params[3].package.count = 0;
+-	params[3].package.elements = NULL;
+-
+-	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_DSM", &input, &buf)))
+-		return -1;
+-
+-	*ret = 0;
+-	obj = (union acpi_object *)buf.pointer;
+-	if (obj->type == ACPI_TYPE_INTEGER) {
+-		*ret = obj->integer.value;
+-	} else if (obj->type == ACPI_TYPE_BUFFER) {
+-		if (obj->buffer.length <= 8) {
+-			for (i = 0; i < obj->buffer.length; i++)
+-				*ret |= (obj->buffer.pointer[i] << (i * 8));
+-		}
+-	}
+-	kfree(buf.pointer);
+-
+-	return 0;
+-}
+-
+-static bool extlog_get_l1addr(void)
+-{
+-	acpi_handle handle;
+-	u64 ret;
+ 
+ 	if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle)))
+ 		return false;
+-
+-	if (extlog_get_dsm(handle, EXTLOG_DSM_REV, EXTLOG_FN_QUERY, &ret) ||
+-	    !(ret & EXTLOG_QUERY_L1_EXIST))
++	if (!acpi_check_dsm(handle, uuid, EXTLOG_DSM_REV, 1 << EXTLOG_FN_ADDR))
+ 		return false;
+-
+-	if (extlog_get_dsm(handle, EXTLOG_DSM_REV, EXTLOG_FN_ADDR, &ret))
++	obj = acpi_evaluate_dsm_typed(handle, uuid, EXTLOG_DSM_REV,
++				      EXTLOG_FN_ADDR, NULL, ACPI_TYPE_INTEGER);
++	if (!obj) {
+ 		return false;
++	} else {
++		l1_dirbase = obj->integer.value;
++		ACPI_FREE(obj);
++	}
+ 
+-	l1_dirbase = ret;
+ 	/* Spec says L1 directory must be 4K aligned, bail out if it isn't */
+ 	if (l1_dirbase & ((1 << 12) - 1)) {
+ 		pr_warn(FW_BUG "L1 Directory is invalid at physical %llx\n",
+-- 
+1.7.10.4
 
