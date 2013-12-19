@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab3LSTmY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 14:42:24 -0500
-Received: from 4.mo6.mail-out.ovh.net ([87.98.184.159]:60785 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755513Ab3LSTmV (ORCPT
+	id S1756055Ab3LSTnj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 14:43:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45245 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755886Ab3LSTnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 14:42:21 -0500
-Message-ID: <52B34BE3.7000208@overkiz.com>
-Date: Thu, 19 Dec 2013 20:41:23 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 19 Dec 2013 14:43:37 -0500
+Date: Thu, 19 Dec 2013 11:43:40 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Danny Huang <dahuang@nvidia.com>, devicetree@vger.kernel.org
+Subject: Re: [PATCH 2/6] misc: fuse: Add efuse driver for Tegra
+Message-ID: <20131219194340.GB1443@kroah.com>
+References: <1387468474-26521-1-git-send-email-pdeschrijver@nvidia.com>
+ <1387468474-26521-3-git-send-email-pdeschrijver@nvidia.com>
+ <20131219175931.GA18004@kroah.com>
+ <52B346E1.2030508@wwwdotorg.org>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>, Rob Landley <rob@landley.net>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaQ==?= =?UTF-8?B?Zw==?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] clk: add clk accuracy retrieval support
-References: <1387290983-6236-1-git-send-email-b.brezillon@overkiz.com> <1387290983-6236-2-git-send-email-b.brezillon@overkiz.com> <20131219060431.18119.64699@quantum> <52B2B42F.9010202@overkiz.com> <20131219193633.18119.57678@quantum>
-In-Reply-To: <20131219193633.18119.57678@quantum>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 5461177500003694620
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52B346E1.2030508@wwwdotorg.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 19/12/2013 20:36, Mike Turquette a écrit :
-> Quoting boris brezillon (2013-12-19 00:54:07)
->> Hello Mike,
->>
->> On 19/12/2013 07:04, Mike Turquette wrote:
->>> Quoting Boris BREZILLON (2013-12-17 06:36:22)
->>>> +unsigned long __clk_get_accuracy(struct clk *clk)
->>>> +{
->>>> +       unsigned long ret;
->>>> +
->>>> +       if (!clk)
->>>> +               return 0;
->>>> +
->>>> +       return clk->accuracy;
->>>> +}
->>>> +EXPORT_SYMBOL_GPL(__clk_get_accuracy);
->>> Any reason for exporting this?
->> This might be used by clk drivers to choose the most accurate clk
->> among its parent clks (within the determinate_rate callback).
->>
->> And as some clk drivers might be compiled as modules we need
->> to export the symbol (__clk_get_name helper function is exported
->> too).
-> Does your driver need this or is this just following the existing
-> __clk_get_rate / clk_get_rate model?
+On Thu, Dec 19, 2013 at 12:20:01PM -0700, Stephen Warren wrote:
+> On 12/19/2013 10:59 AM, Greg KH wrote:
+> > On Thu, Dec 19, 2013 at 05:54:30PM +0200, Peter De Schrijver wrote:
+> 
+> >> +	pr_info("Tegra Revision: %s SKU: %d CPU Process: %d Core Process: %d\n",
+> >> +		tegra_revision_name[sku_info->revision],
+> >> +		sku_info->sku_id, sku_info->cpu_process_id,
+> >> +		sku_info->core_process_id);
+> > 
+> > Why pollute the kernel log with this type of thing?  Who really needs
+> > it?
+> 
+> We already print this; I guess this series is just moving where that
+> happens. It has proved useful to me in the past so I know which chip rev
+> I'm using, but I guess if this all gets exported to sysfs somewhere else
+> in this series, I could just go read those files in the future...
 
-No, I don't need this for my driver, at least for the moment.
+I don't see this being exported anywhere else, or at least, if it is, it
+sure isn't being documented...
 
-Do you want me to drop this EXPORT_SYMBOL ?
->
-> Regards,
-> Mike
->
->> Best Regards,
->>
->> Boris
->>> Regards,
->>> Mike
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
+greg k-h
