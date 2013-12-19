@@ -1,107 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab3LSIv4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 03:51:56 -0500
-Received: from mga02.intel.com ([134.134.136.20]:35293 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751089Ab3LSIvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 03:51:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="454741184"
-Date: Thu, 19 Dec 2013 10:51:45 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Sergei Ianovich <ynvich@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	id S1753068Ab3LSIxD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 03:53:03 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:47286 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752162Ab3LSIxA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 03:53:00 -0500
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Jiri Slaby <jslaby@suse.cz>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        James Cameron <quozl@laptop.org>, Zhou Zhu <zzhu3@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "open list:SERIAL DRIVERS" <linux-serial@vger.kernel.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 01/21 resend] serial: rewrite pxa2xx-uart to use
- 8250_core
-Message-ID: <20131219085145.GB20686@xps8300>
-References: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
- <1387309071-22382-1-git-send-email-ynvich@gmail.com>
- <1387309071-22382-2-git-send-email-ynvich@gmail.com>
+        Guenter Roeck <linux@roeck-us.net>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, josh@joshtriplett.org
+Subject: =?UTF-8?q?=5BPATCH=20v3=204/8=5D=20drivers=3A=20net=3A=20Include=20new=20header=20file=20in=20sbni=2Ec?=
+Date: Thu, 19 Dec 2013 14:22:37 +0530
+Message-Id: <036b203aec94b1e688b7bd6ad09c72b3d481bf18.1387382457.git.rashika.kheria@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <04fe932bc3585620c91d511bb0894e45bb762ffa.1387382457.git.rashika.kheria@gmail.com>
+References: <04fe932bc3585620c91d511bb0894e45bb762ffa.1387382457.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387309071-22382-2-git-send-email-ynvich@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sergei,
+Create a new header file include/net/Space.h which contains
+prototype declaration of sbni_probe().
 
-I noticed one more thing. I'm sorry about commenting this late.
+Include the new header file in drivers/net/Space.c and
+drivers/net/wan/sbni.c because they use this function.
 
-On Tue, Dec 17, 2013 at 11:37:31PM +0400, Sergei Ianovich wrote:
-> +static int serial_pxa_probe(struct platform_device *pdev)
-> +{
-> +	struct uart_8250_port uart = {};
-> +	struct pxa8250_data *data;
-> +	struct resource *mmres, *irqres;
-> +	int ret;
-> +
-> +	mmres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	irqres = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-> +	if (!mmres || !irqres)
-> +		return -ENODEV;
-> +
-> +	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-> +	if (!data)
-> +		return -ENOMEM;
-> +
-> +	data->clk = devm_clk_get(&pdev->dev, NULL);
-> +	if (IS_ERR(data->clk))
-> +		return PTR_ERR(data->clk);
-> +
-> +	ret = clk_prepare(data->clk);
-> +	if (ret)
-> +		return ret;
-> +
-> +	uart.port.type = PORT_XSCALE;
-> +	uart.port.iotype = UPIO_MEM32;
-> +	uart.port.mapbase = mmres->start;
-> +	uart.port.regshift = 2;
-> +	uart.port.irq = irqres->start;
-> +	uart.port.fifosize = 64;
-> +	uart.port.flags = UPF_IOREMAP | UPF_SKIP_TEST;
+This eliminates the following warning in wan/sbni.c:
+drivers/net/wan/sbni.c:224:12: warning: no previous prototype for ‘sbni_probe’ [-Wmissing-prototypes]
 
-Since you set the type PORT_XSCALE, don's you want to use
-UPF_FIXED_TYPE flag instead of the UPF_SKIP_TEST here? Otherwise the
-type will just get overridden and autoconfig() will be executed.
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
 
-I'm guessing you also want to prevent things like the irq and the
-uartclk from being changed by anybody by using the flag
-UPF_FIXED_PORT, right?
+Changes since v2:
+Incorrect fix
 
-> +	uart.port.dev = &pdev->dev;
-> +	uart.port.uartclk = clk_get_rate(data->clk);
-> +	uart.port.pm = serial_pxa_pm;
-> +	uart.port.private_data = data;
-> +	uart.dl_write = serial_pxa_dl_write;
-> +
-> +	ret = serial8250_register_8250_port(&uart);
-> +	if (ret < 0)
-> +		goto err_clk;
-> +
-> +	data->line = ret;
-> +
-> +	platform_set_drvdata(pdev, data);
-> +
-> +	return 0;
-> +
-> + err_clk:
-> +	clk_unprepare(data->clk);
-> +	return ret;
-> +}
+ drivers/net/Space.c    |   29 +----------------------------
+ drivers/net/wan/sbni.c |    1 +
+ include/net/Space.h    |   31 +++++++++++++++++++++++++++++++
+ 3 files changed, 33 insertions(+), 28 deletions(-)
+ create mode 100644 include/net/Space.h
 
+diff --git a/drivers/net/Space.c b/drivers/net/Space.c
+index a7271e0..67977f1 100644
+--- a/drivers/net/Space.c
++++ b/drivers/net/Space.c
+@@ -32,39 +32,12 @@
+ #include <linux/errno.h>
+ #include <linux/init.h>
+ #include <linux/netlink.h>
++#include <net/Space.h>
+ 
+ /* A unified ethernet device probe.  This is the easiest way to have every
+    ethernet adaptor have the name "eth[0123...]".
+    */
+ 
+-extern struct net_device *hp100_probe(int unit);
+-extern struct net_device *ultra_probe(int unit);
+-extern struct net_device *wd_probe(int unit);
+-extern struct net_device *ne_probe(int unit);
+-extern struct net_device *fmv18x_probe(int unit);
+-extern struct net_device *i82596_probe(int unit);
+-extern struct net_device *ni65_probe(int unit);
+-extern struct net_device *sonic_probe(int unit);
+-extern struct net_device *smc_init(int unit);
+-extern struct net_device *atarilance_probe(int unit);
+-extern struct net_device *sun3lance_probe(int unit);
+-extern struct net_device *sun3_82586_probe(int unit);
+-extern struct net_device *apne_probe(int unit);
+-extern struct net_device *cs89x0_probe(int unit);
+-extern struct net_device *mvme147lance_probe(int unit);
+-extern struct net_device *tc515_probe(int unit);
+-extern struct net_device *lance_probe(int unit);
+-extern struct net_device *mac8390_probe(int unit);
+-extern struct net_device *mac89x0_probe(int unit);
+-extern struct net_device *cops_probe(int unit);
+-extern struct net_device *ltpc_probe(void);
+-
+-/* Fibre Channel adapters */
+-extern int iph5526_probe(struct net_device *dev);
+-
+-/* SBNI adapters */
+-extern int sbni_probe(int unit);
+-
+ struct devprobe2 {
+ 	struct net_device *(*probe)(int unit);
+ 	int status;	/* non-zero if autoprobe has failed */
+diff --git a/drivers/net/wan/sbni.c b/drivers/net/wan/sbni.c
+index 388ddf6..1b89ecf 100644
+--- a/drivers/net/wan/sbni.c
++++ b/drivers/net/wan/sbni.c
+@@ -57,6 +57,7 @@
+ 
+ #include <net/net_namespace.h>
+ #include <net/arp.h>
++#include <net/Space.h>
+ 
+ #include <asm/io.h>
+ #include <asm/types.h>
+diff --git a/include/net/Space.h b/include/net/Space.h
+new file mode 100644
+index 0000000..8a32771
+--- /dev/null
++++ b/include/net/Space.h
+@@ -0,0 +1,31 @@
++/* A unified ethernet device probe.  This is the easiest way to have every
++ * ethernet adaptor have the name "eth[0123...]".
++ */
++
++struct net_device *hp100_probe(int unit);
++struct net_device *ultra_probe(int unit);
++struct net_device *wd_probe(int unit);
++struct net_device *ne_probe(int unit);
++struct net_device *fmv18x_probe(int unit);
++struct net_device *i82596_probe(int unit);
++struct net_device *ni65_probe(int unit);
++struct net_device *sonic_probe(int unit);
++struct net_device *smc_init(int unit);
++struct net_device *atarilance_probe(int unit);
++struct net_device *sun3lance_probe(int unit);
++struct net_device *sun3_82586_probe(int unit);
++struct net_device *apne_probe(int unit);
++struct net_device *cs89x0_probe(int unit);
++struct net_device *mvme147lance_probe(int unit);
++struct net_device *tc515_probe(int unit);
++struct net_device *lance_probe(int unit);
++struct net_device *mac8390_probe(int unit);
++struct net_device *mac89x0_probe(int unit);
++struct net_device *cops_probe(int unit);
++struct net_device *ltpc_probe(void);
++
++/* Fibre Channel adapters */
++int iph5526_probe(struct net_device *dev);
++
++/* SBNI adapters */
++int sbni_probe(int unit);
 -- 
-heikki
+1.7.9.5
+
