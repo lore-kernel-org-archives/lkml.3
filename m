@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab3LSQgN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 11:36:13 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:33917 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791Ab3LSQgK (ORCPT
+	id S1754966Ab3LSQgX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 11:36:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43590 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522Ab3LSQgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 11:36:10 -0500
-Date: Thu, 19 Dec 2013 17:36:06 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        the arch/x86 maintainers <x86@kernel.org>, linux-fbdev@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>, stable@vger.kernel.org
-Subject: Re: [PATCH v3] x86: sysfb: remove sysfb when probing real hw
-Message-ID: <20131219163606.GA29243@gmail.com>
-References: <1387374611-12493-1-git-send-email-dh.herrmann@gmail.com>
- <1387448038-8260-1-git-send-email-dh.herrmann@gmail.com>
+	Thu, 19 Dec 2013 11:36:21 -0500
+Date: Thu, 19 Dec 2013 08:36:23 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Matthias Beyer <mail@beyermatthias.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Hans de Goede <hdegoede@redhat.com>, linux-usb@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: Re: [PATCH 1/7] drivers: usb: Include appropriate header file in
+ hcd.c
+Message-ID: <20131219163623.GB12255@kroah.com>
+References: <0e0e74b4487edd341b66674333d734d5828c7e64.1387439261.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1387448038-8260-1-git-send-email-dh.herrmann@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <0e0e74b4487edd341b66674333d734d5828c7e64.1387439261.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 19, 2013 at 03:36:00PM +0530, Rashika Kheria wrote:
+> Include appropriate header file include/linux/usb/otg.h in core/hcd.c
+> because function usb_bus_start_enum() has its prototype declaration in
+> include/linux/usb/otg.h.
+> 
+> This eliminates the following warning in core/hcd.c:
+> drivers/usb/core/hcd.c:2295:5: warning: no previous prototype for ‘usb_bus_start_enum’ [-Wmissing-prototypes]
 
-* David Herrmann <dh.herrmann@gmail.com> wrote:
+What is generating this warning?  I don't see it here on my machines,
+nor do I see any of the other warnings you have fixed in this series.
+How do I duplicate them?
 
-> --- a/drivers/video/fbmem.c
-> +++ b/drivers/video/fbmem.c
-> @@ -35,6 +35,9 @@
->  
->  #include <asm/fb.h>
->  
-> +#if IS_ENABLED(CONFIG_X86)
-> +#include <asm/sysfb.h>
-> +#endif
+thanks,
 
-I think this can be written as:
-
-#ifdef CONFIG_X86
-# include <asm/sysfb.h>
-#endif
-
-also ... the dependency on a large, unrelated option like CONFIG_X86 
-looks pretty ugly here - is there no other, more specific CONFIG_ 
-option that can be used here - such as CONFIG_FB_SIMPLE or 
-CONFIG_X86_SYSFB?
-
-> +#if IS_ENABLED(CONFIG_X86)
-> +	sysfb_unregister(apert, primary);
-> +#endif
-
-Ditto.
-
-Thanks,
-
-	Ingo 
+greg k-h
