@@ -1,108 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab3LSJgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:36:45 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:60166 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108Ab3LSJgm (ORCPT
+	id S1753216Ab3LSJgw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:36:52 -0500
+Received: from relay.parallels.com ([195.214.232.42]:36484 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753179Ab3LSJgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:36:42 -0500
-Date: Thu, 19 Dec 2013 15:06:10 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Lars Ellenberg <drbd-dev@lists.linbit.com>, drbd-user@lists.linbit.com,
-        josh@joshtriplett.org
-Subject: [PATCH 04/13] drivers: block: Mark the function as static in
- drbd_worker.c
-Message-ID: <34369b05532be286682cad1591276af1d6b702fb.1387445396.git.rashika.kheria@gmail.com>
-References: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
+	Thu, 19 Dec 2013 04:36:48 -0500
+Message-ID: <52B2BE2A.2080509@parallels.com>
+Date: Thu, 19 Dec 2013 13:36:42 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <f460591345e87defe53122cf056991c7f2eefa10.1387445396.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 6/6] memcg, slab: RCU protect memcg_params for root caches
+References: <6f02b2d079ffd0990ae335339c803337b13ecd8c.1387372122.git.vdavydov@parallels.com> <be8f2fede0fbc45496c06f7bc6cc2272b9b81cc4.1387372122.git.vdavydov@parallels.com> <20131219092836.GH9331@dhcp22.suse.cz>
+In-Reply-To: <20131219092836.GH9331@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions drbd_endio_read_sec_final(), drbd_send_barrier(),
-need_to_send_barrier(), dequeue_work_batch(), dequeue_work_item() and
-wait_for_work() as static in drbd/drbd_worker.c because they are not
-used outside this file.
+On 12/19/2013 01:28 PM, Michal Hocko wrote:
+> On Wed 18-12-13 17:16:57, Vladimir Davydov wrote:
+>> We update root cache's memcg_params whenever we need to grow the
+>> memcg_caches array to accommodate all kmem-active memory cgroups.
+>> Currently we free the old version immediately then, which can lead to
+>> use-after-free, because the memcg_caches array is accessed lock-free.
+>> This patch fixes this by making memcg_params RCU-protected.
+> yes, I was thinking about something like this when talking about RCU
+> usage.
 
-This eliminates the following warnings in drbd/drbd_worker.c:
-drivers/block/drbd/drbd_worker.c:99:6: warning: no previous prototype for ‘drbd_endio_read_sec_final’ [-Wmissing-prototypes]
-drivers/block/drbd/drbd_worker.c:1276:5: warning: no previous prototype for ‘drbd_send_barrier’ [-Wmissing-prototypes]
-drivers/block/drbd/drbd_worker.c:1774:6: warning: no previous prototype for ‘need_to_send_barrier’ [-Wmissing-prototypes]
-drivers/block/drbd/drbd_worker.c:1798:6: warning: no previous prototype for ‘dequeue_work_batch’ [-Wmissing-prototypes]
-drivers/block/drbd/drbd_worker.c:1806:6: warning: no previous prototype for ‘dequeue_work_item’ [-Wmissing-prototypes]
-drivers/block/drbd/drbd_worker.c:1815:6: warning: no previous prototype for ‘wait_for_work’ [-Wmissing-prototypes]
+Not exactly (if you mean your replies to this series). We do not protect
+kmem_caches, but we do protect the memcg_caches array, which can grow.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/block/drbd/drbd_worker.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+>
+>> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+>> Cc: Michal Hocko <mhocko@suse.cz>
+>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>> Cc: Glauber Costa <glommer@gmail.com>
+>> Cc: Christoph Lameter <cl@linux.com>
+>> Cc: Pekka Enberg <penberg@kernel.org>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> ---
+>>  include/linux/slab.h |    5 ++++-
+>>  mm/memcontrol.c      |   15 ++++++++-------
+>>  mm/slab.h            |    8 +++++++-
+>>  3 files changed, 19 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/include/linux/slab.h b/include/linux/slab.h
+>> index 1e2f4fe..f7e5649 100644
+>> --- a/include/linux/slab.h
+>> +++ b/include/linux/slab.h
+>> @@ -528,7 +528,10 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+>>  struct memcg_cache_params {
+>>  	bool is_root_cache;
+>>  	union {
+>> -		struct kmem_cache *memcg_caches[0];
+>> +		struct {
+>> +			struct rcu_head rcu_head;
+>> +			struct kmem_cache *memcg_caches[0];
+>> +		};
+>>  		struct {
+>>  			struct mem_cgroup *memcg;
+>>  			struct list_head list;
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index ad8de6a..379fc5f 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -3142,18 +3142,17 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+>>  
+>>  	if (num_groups > memcg_limited_groups_array_size) {
+>>  		int i;
+>> +		struct memcg_cache_params *new_params;
+>>  		ssize_t size = memcg_caches_array_size(num_groups);
+>>  
+>>  		size *= sizeof(void *);
+>>  		size += offsetof(struct memcg_cache_params, memcg_caches);
+>>  
+>> -		s->memcg_params = kzalloc(size, GFP_KERNEL);
+>> -		if (!s->memcg_params) {
+>> -			s->memcg_params = cur_params;
+>> +		new_params = kzalloc(size, GFP_KERNEL);
+>> +		if (!new_params)
+>>  			return -ENOMEM;
+>> -		}
+>>  
+>> -		s->memcg_params->is_root_cache = true;
+>> +		new_params->is_root_cache = true;
+>>  
+>>  		/*
+>>  		 * There is the chance it will be bigger than
+>> @@ -3167,7 +3166,7 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+>>  		for (i = 0; i < memcg_limited_groups_array_size; i++) {
+>>  			if (!cur_params->memcg_caches[i])
+>>  				continue;
+>> -			s->memcg_params->memcg_caches[i] =
+>> +			new_params->memcg_caches[i] =
+>>  						cur_params->memcg_caches[i];
+>>  		}
+>>  
+>> @@ -3180,7 +3179,9 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+>>  		 * bigger than the others. And all updates will reset this
+>>  		 * anyway.
+>>  		 */
+>> -		kfree(cur_params);
+>> +		rcu_assign_pointer(s->memcg_params, new_params);
+>> +		if (cur_params)
+>> +			kfree_rcu(cur_params, rcu_head);
+>>  	}
+>>  	return 0;
+>>  }
+>> diff --git a/mm/slab.h b/mm/slab.h
+>> index 1d8b53f..53b81a9 100644
+>> --- a/mm/slab.h
+>> +++ b/mm/slab.h
+>> @@ -164,10 +164,16 @@ static inline struct kmem_cache *
+>>  cache_from_memcg_idx(struct kmem_cache *s, int idx)
+>>  {
+>>  	struct kmem_cache *cachep;
+>> +	struct memcg_cache_params *params;
+>>  
+>>  	if (!s->memcg_params)
+>>  		return NULL;
+>> -	cachep = s->memcg_params->memcg_caches[idx];
+>> +
+>> +	rcu_read_lock();
+>> +	params = rcu_dereference(s->memcg_params);
+>> +	cachep = params->memcg_caches[idx];
+>> +	rcu_read_unlock();
+>> +
+> Consumer has to be covered by the same rcu section otherwise
+> memcg_params might be freed right after rcu unlock here.
 
-diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
-index 891c0ec..2733ae3 100644
---- a/drivers/block/drbd/drbd_worker.c
-+++ b/drivers/block/drbd/drbd_worker.c
-@@ -96,7 +96,7 @@ void drbd_md_io_complete(struct bio *bio, int error)
- /* reads on behalf of the partner,
-  * "submitted" by the receiver
-  */
--void drbd_endio_read_sec_final(struct drbd_peer_request *peer_req) __releases(local)
-+static void drbd_endio_read_sec_final(struct drbd_peer_request *peer_req) __releases(local)
- {
- 	unsigned long flags = 0;
- 	struct drbd_conf *mdev = peer_req->w.mdev;
-@@ -1273,7 +1273,7 @@ int w_prev_work_done(struct drbd_work *w, int cancel)
-  * and to be able to wait for them.
-  * See also comment in drbd_adm_attach before drbd_suspend_io.
-  */
--int drbd_send_barrier(struct drbd_tconn *tconn)
-+static int drbd_send_barrier(struct drbd_tconn *tconn)
- {
- 	struct p_barrier *p;
- 	struct drbd_socket *sock;
-@@ -1771,7 +1771,7 @@ void drbd_start_resync(struct drbd_conf *mdev, enum drbd_conns side)
-  * (because we have not yet seen new requests), we should send the
-  * corresponding barrier now.  Must be checked within the same spinlock
-  * that is used to check for new requests. */
--bool need_to_send_barrier(struct drbd_tconn *connection)
-+static bool need_to_send_barrier(struct drbd_tconn *connection)
- {
- 	if (!connection->send.seen_any_write_yet)
- 		return false;
-@@ -1795,7 +1795,7 @@ bool need_to_send_barrier(struct drbd_tconn *connection)
- 	return true;
- }
- 
--bool dequeue_work_batch(struct drbd_work_queue *queue, struct list_head *work_list)
-+static bool dequeue_work_batch(struct drbd_work_queue *queue, struct list_head *work_list)
- {
- 	spin_lock_irq(&queue->q_lock);
- 	list_splice_init(&queue->q, work_list);
-@@ -1803,7 +1803,7 @@ bool dequeue_work_batch(struct drbd_work_queue *queue, struct list_head *work_li
- 	return !list_empty(work_list);
- }
- 
--bool dequeue_work_item(struct drbd_work_queue *queue, struct list_head *work_list)
-+static bool dequeue_work_item(struct drbd_work_queue *queue, struct list_head *work_list)
- {
- 	spin_lock_irq(&queue->q_lock);
- 	if (!list_empty(&queue->q))
-@@ -1812,7 +1812,7 @@ bool dequeue_work_item(struct drbd_work_queue *queue, struct list_head *work_lis
- 	return !list_empty(work_list);
- }
- 
--void wait_for_work(struct drbd_tconn *connection, struct list_head *work_list)
-+static void wait_for_work(struct drbd_tconn *connection, struct list_head *work_list)
- {
- 	DEFINE_WAIT(wait);
- 	struct net_conf *nc;
--- 
-1.7.9.5
+No. We protect only accesses to kmem_cache::memcg_params, which can
+potentially be relocated for root caches. But as soon as we get the
+pointer to a kmem_cache from this array, we can freely dereference it,
+because the cache cannot be freed when we use it. This is, because we
+access a kmem_cache either under the slab_mutex or
+memcg->slab_caches_mutex, or when we allocate/free from it. While doing
+the latter, the cache can't go away, it would be a bug. IMO.
 
+Thanks.
