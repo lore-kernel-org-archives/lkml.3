@@ -1,110 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab3LSJzl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 04:55:41 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:32780 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab3LSJzi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 04:55:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1312161401100.12882@pobox.suse.cz>
-References: <5237430B.5040009@canonical.com>
-	<20130916203824.GP25896@mwanda>
-	<52376ED9.5080208@canonical.com>
-	<20130916210503.GQ25896@mwanda>
-	<5237A5D5.8010006@canonical.com>
-	<alpine.LNX.2.00.1309241129370.18703@pobox.suse.cz>
-	<52432152.3030100@canonical.com>
-	<alpine.LNX.2.00.1309271250130.18703@pobox.suse.cz>
-	<52459942.3020600@canonical.com>
-	<alpine.LNX.2.00.1312161401100.12882@pobox.suse.cz>
-Date: Thu, 19 Dec 2013 10:55:37 +0100
-Message-ID: <CANq1E4QriATWbfruwj7oVnEBHvtLe_s2yhSSU5COXFjomt5R_A@mail.gmail.com>
-Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to memdup
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, thomas@m3y3r.de,
-        list@osuosl.org, Haiyang Zhang <haiyangz@microsoft.com>,
-        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
-        HID CORE LAYER <linux-input@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<devel@linuxdriverproject.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752961Ab3LSJ4u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 04:56:50 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:11887 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752165Ab3LSJ4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 04:56:48 -0500
+X-IronPort-AV: E=Sophos;i="4.95,512,1384272000"; 
+   d="scan'208";a="9291074"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org, eranian@google.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, acme@ghostprotocols.net
+Cc: mingo@redhat.com, paulus@samba.org, a.p.zijlstra@chello.nl,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 0/4] Add support of guest user space symbols for perf kvm command.
+Date: Thu, 19 Dec 2013 17:54:50 -0500
+Message-Id: <cover.1387493396.git.yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/19 17:56:15,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/19 17:56:16,
+	Serialize complete at 2013/12/19 17:56:16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hi all,
+	This patch add support of guest user space symbols for perf kvm command.
 
-On Mon, Dec 16, 2013 at 2:01 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Fri, 27 Sep 2013, Joseph Salisbury wrote:
->
->> >> commit b1a1442a23776756b254b69786848a94d92445ba
->> >> Author: Jiri Kosina <jkosina@suse.cz>
->> >> Date: Mon Jun 3 11:27:48 2013 +0200
->> >>
->> >>     HID: core: fix reporting of raw events
->> >>
->> >> Reverting this commit in v3.12-rc2 prevents the system from locking up,
->> >> which happens when connecting a bluetooth trackpad.
->> >>
->> >> Jiri, do you think we should revert this patch, or is there some further
->> >> debugging/data collecting you would like to do?
->> > Hi Joseph,
->> >
->> > in this mail:
->> >
->> >     Message-ID: <5241992E.3090805@canonical.com>
->> >     Date: Tue, 24 Sep 2013 09:52:46 -0400
->> >
->> > you said that reverting this commit doesn't prevent the lockups, so I am
->> > rather confused ... ?
->> >
->> > Thanks,
->> >
->> The testing was invalid.  Reverting commit b1a1442 does resolve the bug
->> and stop the lockups.
->
-> Okay, I finally got some sense of this, sorry for the delay.
->
-> Could you please test with the patch below, instead of reverting
-> b1a1442a23? Thanks a lot.
->
->
->
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 253fe23..81eacd3 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1334,7 +1334,7 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
->                 csize--;
->         }
->
-> -       rsize = ((report->size - 1) >> 3) + 1;
-> +       rsize = ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
+Example:
+        # perf kvm --guestmount /tmp/guestmount/ top
+        Samples: 1K of event 'cycles', Event count (approx.): 259112905
+         17.34%  libcrypto.so.1.0.1e  [u] 0x000000000007d971
+          5.60%  [guest.kernel]       [g] kallsyms_expand_symbol
+          5.44%  libcrypto.so.1.0.1e  [u] md5_block_asm_data_order
+          4.09%  [guest.kernel]       [g] number.isra.1
+          3.59%  [guest.kernel]       [g] vsnprintf
+          3.52%  sshd                 [u] 0x00000000000441c0
+          2.37%  [guest.kernel]       [g] format_decode
+          2.36%  [guest.kernel]       [g] memcpy
+          2.11%  [guest.kernel]       [g] strnlen
 
-Isn't "report->id" already covered by "if (report_enum->numbered)"
-above? The test for "id > 0" won't work here as in this case
-"report_enum->numbered" must already be set to true by the hid-desc
-parser, doesn't it?
+        # perf kvm --guestmount /tmp/guestmount/ record -a sleep 1
+        [ perf record: Woken up 1 times to write data ]
+        [ perf record: Captured and wrote 0.828 MB perf.data.guest (~36163 samples) ]
+    
+        # perf kvm --guestmount /tmp/guestmount/ report
+        Samples: 4K of event 'cycles', Event count (approx.): 2662750816
+          8.67%  [guest/9217]  dd                            [u] 0x0000000000004e90
+          6.62%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] fget_light
+          6.17%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] system_call
+          5.97%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] __srcu_read_lock
+          5.53%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] __srcu_read_unlock
+          5.47%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] __audit_syscall_exit
+          5.38%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] fsnotify
+          5.32%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] system_call_after_swapgs
+          4.45%  [guest/9217]  libc-2.17.so                  [u] __GI___libc_write
+          4.15%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] sys_write
+          3.97%  [guest/9217]  [guest.kernel.kallsyms.9217]  [g] vfs_read
+          3.78%  [guest/9217]  libc-2.17.so                  [u] __GI___libc_read
 
-Where exactly did you get the +7 from?
 
-What worries me here is that we write over the @data buffer from the
-hid-ll-driver if the report is too short. I don't think the BT driver
-accounts for that, mhh.
+Dongsheng Yang (4):
+  perf tools: Add support of guest in synthesize_threads.
+  perf tools: Add support for PERF_RECORD_MISC_GUEST_USER in
+    thread__find_addr_map().
+  perf tools: Add support of user space symbols for guest in perf kvm
+    top.
+  perf tools: Add support of user space symbols for guest in perf kvm
+    record.
 
-David
+ tools/perf/builtin-record.c | 10 ++++++++++
+ tools/perf/builtin-top.c    | 15 ++++++++++-----
+ tools/perf/util/event.c     | 44 ++++++++++++++++++++++++++++++--------------
+ 3 files changed, 50 insertions(+), 19 deletions(-)
 
->         if (rsize > HID_MAX_BUFFER_SIZE)
->                 rsize = HID_MAX_BUFFER_SIZE;
->
-> --
-> Jiri Kosina
-> SUSE Labs
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+1.8.2.1
+
