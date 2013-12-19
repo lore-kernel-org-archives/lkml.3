@@ -1,37 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab3LSMF0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:05:26 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:49589 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756490Ab3LSMFR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 07:05:17 -0500
-Date: Thu, 19 Dec 2013 04:05:16 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH] closures: move to lib/
-Message-ID: <20131219120516.GA26089@infradead.org>
-References: <1387416594-23930-1-git-send-email-kmo@daterainc.com>
+	id S1754138Ab3LSORI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:17:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57131 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752816Ab3LSORH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 09:17:07 -0500
+Date: Thu, 19 Dec 2013 15:17:03 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Timo_Ter=E4s?= <timo.teras@iki.fi>
+cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] fs/binfmt_elf: fix memory map for PIE applications
+In-Reply-To: <1380698395-5784-1-git-send-email-timo.teras@iki.fi>
+Message-ID: <alpine.LNX.2.00.1312191516270.11852@pobox.suse.cz>
+References: <1380698395-5784-1-git-send-email-timo.teras@iki.fi>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387416594-23930-1-git-send-email-kmo@daterainc.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 05:29:54PM -0800, Kent Overstreet wrote:
-> the closure code was never intended to be bcache specific - hopefully it can be
-> useful elsewhere in the kernel.
+On Wed, 2 Oct 2013, Timo Teräs wrote:
 
-They are not.  They aren't closures in the CS sense, and they are an
-ugly mess.  Please work on removing them instead.
+> arch/*/include/asm/elf.h comments say:
+>   ELF_ET_DYN_BASE is the location that an ET_DYN program is loaded
+>   if exec'ed.  Typical use of this is to invoke "./ld.so someprog"
+>   to test out a new version of the loader.  We need to make sure
+>   that it is out of the way of the program that it will "exec",
+>   and that there is sufficient room for the brk.
+> 
+> In case we have main application linked as PIE, this can cause
+> problems as the main program itself is being loaded to this
+> alternate address. And this allows limited heap size. While
+> this is inevitable when exec'ing the interpreter directly,
+> we should do better for PIE applications.
+
+Timo,
+
+could you please provide more specific example of the breakage scenario 
+you are talking about? It's not completely clear to me from your commit 
+message.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
