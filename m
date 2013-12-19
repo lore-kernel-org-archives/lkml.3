@@ -1,122 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab3LSTEF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 14:04:05 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:60993 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754453Ab3LSTEB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 14:04:01 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 64.17.244.34
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/Bafh+kXobdIDX8NV6PPUO
-Date: Thu, 19 Dec 2013 11:03:44 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        "=?utf-8?Q?'Beno=C3=AEt?= Cousson'" <bcousson@baylibre.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org,
-        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [RFCv4 05/11] Documentation: DT: omap-ssi binding documentation
-Message-ID: <20131219190344.GW27438@atomide.com>
-References: <1387150085-23173-1-git-send-email-sre@debian.org>
- <1387150085-23173-6-git-send-email-sre@debian.org>
+	id S1754785Ab3LSTIZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 14:08:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9363 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753911Ab3LSTIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 14:08:23 -0500
+Date: Thu, 19 Dec 2013 20:08:46 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH 0/1] mm: fix the theoretical compound_lock() vs
+	prep_new_page() race
+Message-ID: <20131219190846.GA24566@redhat.com>
+References: <CA+55aFw_emAUOr5BYx0TfTCGEOrW6-ZRATWbm00DvCXsGD7=DQ@mail.gmail.com> <20131211170844.GA21700@redhat.com> <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de> <20131211175615.GA24546@redhat.com> <20131211191855.GA32485@redhat.com> <20131213151035.GE5408@redhat.com> <20131213162240.GA11762@redhat.com> <20131213173406.GG5408@redhat.com> <20131216183618.GA28252@redhat.com> <20131216201952.GE21218@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1387150085-23173-6-git-send-email-sre@debian.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131216201952.GE21218@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Reichel <sre@debian.org> [131215 15:30]:
-> Create device tree binding documentation for
-> OMAP Synchronous Serial Interface (SSI) device.
-> 
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
-> ---
->  Documentation/devicetree/bindings/hsi/omap_ssi.txt | 69 ++++++++++++++++++++++
->  1 file changed, 69 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/hsi/omap_ssi.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/hsi/omap_ssi.txt b/Documentation/devicetree/bindings/hsi/omap_ssi.txt
-> new file mode 100644
-> index 0000000..0a9efd8
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/hsi/omap_ssi.txt
-> @@ -0,0 +1,69 @@
-> +OMAP SSI controller bindings
-> +
-> +Required properties:
-> +- compatible:		Should include "ti,omap3-ssi".
-> +- reg-names:		Contains the values "sys" and "gdd".
+On 12/16, Andrea Arcangeli wrote:
+>
+> Can you reorder set_page_refcount in your v2?
 
-Do you need the reg-names? The order won't change so you can just
-document the order in the binding?
+Please see the patch.
 
-> +- reg:			Contains a register specifier for each entry in
-> +			reg-names.
-> +- interrupt-names:      Contains the value "gdd_mpu".
+> I wonder if arch_alloc_page needs refcount 1, it sets the page as
+> stable on s390.
 
-Maybe interrupt-names are not needed either?
+Obviously I have no idea what set_page_stable() does, but it works
+with page_to_phys(), unlikely the content of "struct page" can matter.
+And only s390 HAVE_ARCH_ALLOC_PAGE, I added Martin and Heiko.
 
-> +- interrupts: 		Contains interrupt information for each entry in
-> +			interrupt-names.
-> +- ranges		Represents the bus address mapping between the main
-> +			controller node and the child nodes below.
-> +- #address-cells	Should be set to <1>
-> +- #size-cells		Should be set to <1>
-> +
-> +Each port is represented as a sub-node of the ti,omap3-ssi device.
-> +
-> +Required Port sub-node properties:
-> +- compatible:		Should be set to the following value
-> +                        ti,omap3-ssi-port (applicable to OMAP34xx devices)
-> +- reg-names:		Contains the values "rx" and "tx".
+> the other way around is to move prep_compound_page
+> before set_page_refcounted (though I think if we can, keeping the
+> refcounted at the very last with a comment is preferable).
 
-Here too?
+Yes, yes, this looks much more natural.
 
-> +- reg:			Contains a register specifier for each entry in
-> +			reg-names.
-> +- interrupt-parent	Should be a phandle for the interrupt controller
-> +- interrupt-names:	Contains the values "mpu_irq0" and "mpu_irq1".
+Oleg.
 
-And here?
-
-> +- interrupts:		Contains interrupt information for each entry in
-> +			interrupt-names.
-> +- ti,ssi-cawake-gpio:	Defines which GPIO pin is used to signify CAWAKE
-> +			events for the port. This is an optional board-specific
-> +			property. If it's missing the port will not be
-> +			enabled.
-
-Hmm this might be just a wake-up GPIO? If so, you should be able to
-just set it up as an interrupt and do a request_irq on the pinctrl-single
-entry for it.
-
-It might even be one of the already mapped interrupt lines that the code is
-remuxing to a GPIO for idle? If so, then you can just use the new binding
-for interrupts-extended to handle the wake-up events.
-
-If you post the GPIO number for ti,ssi-cawake-gpio and the interrupt
-numbers I can check if there's a need to handle it separately as a GPIO
-pin or if it already can be automatically handled for the wake-up events.
-
-Regards,
-
-Tony
