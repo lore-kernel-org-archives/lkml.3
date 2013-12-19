@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab3LSNHT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:07:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44462 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753903Ab3LSLzq (ORCPT
+	id S1757175Ab3LSMmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:42:14 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:62509 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756730Ab3LSMmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:55:46 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 020/208] ipv4: fix possible seqlock deadlock
-Date: Thu, 19 Dec 2013 11:51:58 +0000
-Message-Id: <1387454106-19326-21-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 07:42:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <52B2E7D9.4030908@gmail.com>
+References: <1387451598-14490-1-git-send-email-vgupta@synopsys.com>
+	<52B2E7D9.4030908@gmail.com>
+Date: Thu, 19 Dec 2013 13:42:08 +0100
+X-Google-Sender-Auth: C0s2dzM1nYp4Ejs4q2kxD6fVHGU
+Message-ID: <CAMuHMdUYuf8+d+ahiHW4g-wfmjXOuR1T_g9LQ3_L3zy3ON=URw@mail.gmail.com>
+Subject: Re: [PATCH] Revert "ARC: Add guard macro to uapi/asm/unistd.h"
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Francois Bedard <Francois.Bedard@synopsys.com>,
+        David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Dec 19, 2013 at 1:34 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+> On 12/19/2013 07:13 PM, Vineet Gupta wrote:
+>> This reverts commit 97bc386fc12deeb41d5bff33548e3002b258d4e0.
+>>
+>> Generic syscall table generator relies on ARCH unistd.h as follows:
+>>
+>>       void *sys_call_table[NR_syscalls] = {
+>>               [0 ... NR_syscalls-1] = sys_ni_syscall,
+>>       #include <asm/unistd.h>
+>>       };
+>>
+>> And turns out that prior dependencies already include that header by
+>> the time preprocessor hits the above. Meaning ARCH unistd.h needs to be
+>> able to included twice.
+>
+> OK, thanks, it sounds reasonable to me.
+>
+> But why many other architectures contents these guard macros? (arm, sh,
+> blackfin, cris, frv, ia64, m32r, m68k, mips, s390, microblaze, mn10300,
+> parisc, powerpc, sparc, x86). Do they need improvement too?
 
-------------------
+Those architectures don't use the generic syscall table generator.
 
-From: Eric Dumazet <edumazet@google.com>
+Gr{oetje,eeting}s,
 
-commit c9e9042994d37cbc1ee538c500e9da1bb9d1bcdf upstream.
+                        Geert
 
-ip4_datagram_connect() being called from process context,
-it should use IP_INC_STATS() instead of IP_INC_STATS_BH()
-otherwise we can deadlock on 32bit arches, or get corruptions of
-SNMP counters.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/ipv4/datagram.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/ipv4/datagram.c b/net/ipv4/datagram.c
-index b28e863..19e3637 100644
---- a/net/ipv4/datagram.c
-+++ b/net/ipv4/datagram.c
-@@ -57,7 +57,7 @@ int ip4_datagram_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
- 	if (IS_ERR(rt)) {
- 		err = PTR_ERR(rt);
- 		if (err == -ENETUNREACH)
--			IP_INC_STATS_BH(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
-+			IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
- 		goto out;
- 	}
- 
--- 
-1.8.3.2
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
