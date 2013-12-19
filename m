@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab3LSM34 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:29:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44995 "EHLO
+	id S1756018Ab3LSMuH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:50:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44787 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755265Ab3LSL6K (ORCPT
+	with ESMTP id S1754720Ab3LSL5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:10 -0500
+	Thu, 19 Dec 2013 06:57:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Henningsson <david.henningsson@canonical.com>,
-        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 119/208] ALSA: hda - One more Dell headset detection quirk
-Date: Thu, 19 Dec 2013 11:53:37 +0000
-Message-Id: <1387454106-19326-120-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 078/208] ALSA: hda - Fix bad EAPD setup for HP machines with AD1984A
+Date: Thu, 19 Dec 2013 11:52:56 +0000
+Message-Id: <1387454106-19326-79-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,37 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hui Wang <hui.wang@canonical.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 7dca4bc6f34829db50d9723ac3bcd1c6518ee6c3 upstream.
+commit 1cd9b2f78bf29d5282e02b32f9b3ecebc5842a7c upstream.
 
-On the Dell machines with codec whose Subsystem Id is 0x10280624,
-no external microphone can be detected when plugging a 3-ring
-headset. If we add "model=dell-headset-multi" for the
-snd-hda-intel.ko, the problem will disappear.
+It seems that EAPD on NID 0x16 is the only control over all outputs on
+HP machines with AD1984A while turning EAPD on NID 0x12 breaks the
+output.  Thus we need to avoid fiddling EAPD on NID.  As a quick
+workaround, just set own_eapd_ctrl flag for the wrong EAPD, then
+implement finer EAPD controls.
 
-BugLink: https://bugs.launchpad.net/bugs/1259790
-Cc: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Hui Wang <hui.wang@canonical.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66321
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 [ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 1 +
+ sound/pci/hda/patch_analog.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 43fb90a..93d30c0 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4509,6 +4509,7 @@ static const struct snd_pci_quirk alc662_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1028, 0x05d8, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x05db, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0623, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
-+	SND_PCI_QUIRK(0x1028, 0x0624, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0628, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
- 	SND_PCI_QUIRK(0x1043, 0x1477, "ASUS N56VZ", ALC662_FIXUP_ASUS_MODE4),
+diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
+index e17b55a..9eccfba 100644
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -3611,6 +3611,7 @@ static void ad1884_fixup_hp_eapd(struct hda_codec *codec,
+ 	switch (action) {
+ 	case HDA_FIXUP_ACT_PRE_PROBE:
+ 		spec->gen.vmaster_mute.hook = ad_vmaster_eapd_hook;
++		spec->gen.own_eapd_ctl = 1;
+ 		break;
+ 	case HDA_FIXUP_ACT_PROBE:
+ 		if (spec->gen.autocfg.line_out_type == AUTO_PIN_SPEAKER_OUT)
 -- 
 1.8.3.2
 
