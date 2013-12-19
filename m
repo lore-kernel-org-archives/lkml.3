@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198Ab3LSF5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 00:57:31 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:54558 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637Ab3LSF5a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 00:57:30 -0500
-Message-ID: <52B28AB9.5080405@ti.com>
-Date: Thu, 19 Dec 2013 11:27:13 +0530
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <rydberg@euromail.se>, <jcbian@pixcir.com.cn>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 3/9] Input: pixcir_i2c_ts: Initialize interrupt mode and
- power mode
-References: <1387358480-8313-1-git-send-email-rogerq@ti.com> <1387358480-8313-4-git-send-email-rogerq@ti.com> <20131218141408.GC28504@core.coreip.homeip.net>
-In-Reply-To: <20131218141408.GC28504@core.coreip.homeip.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1751477Ab3LSGAL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 01:00:11 -0500
+Received: from mga14.intel.com ([143.182.124.37]:18126 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750848Ab3LSGAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 01:00:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
+   d="scan'208";a="328943595"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jacob Keller <jacob.e.keller@intel.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH] ixgbe: acquire RCU read lock when calling netdev_for_each_all_upper_dev_rcu()
+Date: Thu, 19 Dec 2013 14:00:56 +0800
+Message-Id: <1387432860-14021-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2013 07:44 PM, Dmitry Torokhov wrote:
-> On Wed, Dec 18, 2013 at 02:51:14PM +0530, Roger Quadros wrote:
->> +
->> +static int pixcir_stop(struct pixcir_i2c_ts_data *ts)
->> +{
->> +	struct device *dev = &ts->client->dev;
->> +	int ret;
->> +
->> +	/* disable interrupt generation */
->> +	ret = pixcir_int_enable(ts, 0);
->> +	if (ret) {
->> +		dev_err(dev, "Failed to disable interrupt generation\n");
->> +		return ret;
->> +	}
->> +
->> +	disable_irq(ts->client->irq);
-> 
-> Why do you need to disable IRQ? If you disable interrupt generation in
-> the chip I think you only need to call synchronize_irq() to make sure
-> it's completed if it happens to be running. Also you need to move the
-> code:
+According to documentation for netdev_for_each_all_upper_dev_rcu(),
+caller should take RCU read lock, otherwise it will trigger following
+warnings. The simplest fix is to protect with rcu_read_lock()/
+rcu_read_unlock(). And this solutions passes basic tests.
 
-Agreed, no need to call disable_irq().
+Otherwise we may need to introduce  netdev_for_each_all_upper_dev()
+as netdev_lower_get_next_private(), which assumes the caller has
+gained the lock to protect the list.
 
-> 
-> 	tsdata->exiting = true;
-> 	mb();
-> 
-> here from pixcir_i2c_ts_remove() to make sure handler exits promptly.
-> 
-> You will also need to reset tsdata->exiting in your start method.
-> 
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-OK.
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index cc06854..da72a5f 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -4336,6 +4336,7 @@ static void ixgbe_configure_dfwd(struct ixgbe_adapter *adapter)
+ 	struct list_head *iter;
+ 	int err;
+ 
++	rcu_read_lock();
+ 	netdev_for_each_all_upper_dev_rcu(adapter->netdev, upper, iter) {
+ 		if (netif_is_macvlan(upper)) {
+ 			struct macvlan_dev *dfwd = netdev_priv(upper);
+@@ -4348,6 +4349,7 @@ static void ixgbe_configure_dfwd(struct ixgbe_adapter *adapter)
+ 			}
+ 		}
+ 	}
++	rcu_read_unlock();
+ }
+ 
+ static void ixgbe_configure(struct ixgbe_adapter *adapter)
+@@ -4601,6 +4603,7 @@ static void ixgbe_up_complete(struct ixgbe_adapter *adapter)
+ 	netif_tx_start_all_queues(adapter->netdev);
+ 
+ 	/* enable any upper devices */
++	rcu_read_lock();
+ 	netdev_for_each_all_upper_dev_rcu(adapter->netdev, upper, iter) {
+ 		if (netif_is_macvlan(upper)) {
+ 			struct macvlan_dev *vlan = netdev_priv(upper);
+@@ -4609,6 +4612,7 @@ static void ixgbe_up_complete(struct ixgbe_adapter *adapter)
+ 				netif_tx_start_all_queues(upper);
+ 		}
+ 	}
++	rcu_read_unlock();
+ 
+ 	/* bring the link up in the watchdog, this could race with our first
+ 	 * link up interrupt but shouldn't be a problem */
+@@ -4803,6 +4807,7 @@ void ixgbe_down(struct ixgbe_adapter *adapter)
+ 	netif_tx_disable(netdev);
+ 
+ 	/* disable any upper devices */
++	rcu_read_lock();
+ 	netdev_for_each_all_upper_dev_rcu(adapter->netdev, upper, iter) {
+ 		if (netif_is_macvlan(upper)) {
+ 			struct macvlan_dev *vlan = netdev_priv(upper);
+@@ -4814,6 +4819,7 @@ void ixgbe_down(struct ixgbe_adapter *adapter)
+ 			}
+ 		}
+ 	}
++	rcu_read_unlock();
+ 
+ 	ixgbe_irq_disable(adapter);
+ 
+-- 
+1.7.10.4
 
-cheers,
--roger
