@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab3LSSdR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 13:33:17 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:65478 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab3LSSdO (ORCPT
+	id S1754844Ab3LSSdb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 13:33:31 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:51556 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754392Ab3LSSd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 13:33:14 -0500
-Date: Thu, 19 Dec 2013 19:33:10 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        linux-fbdev@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH v4] x86: sysfb: remove sysfb when probing real hw
-Message-ID: <20131219183310.GF32508@gmail.com>
-References: <1387448038-8260-1-git-send-email-dh.herrmann@gmail.com>
- <1387473881-26179-1-git-send-email-dh.herrmann@gmail.com>
+	Thu, 19 Dec 2013 13:33:29 -0500
+Date: Thu, 19 Dec 2013 18:33:08 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] arm64 ptrace fix for 3.13
+Message-ID: <20131219183303.GA12876@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1387473881-26179-1-git-send-email-dh.herrmann@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-* David Herrmann <dh.herrmann@gmail.com> wrote:
+Please pull the arm64 patch below. Thanks.
 
-> +/*
-> + * Unregister the sysfb and prevent new sysfbs from getting registered. Can be
-> + * called from any context except recursively or from sysfb_register().
-> + * Used by remove_conflicting_framebuffers() and friends.
-> + */
-> +void sysfb_unregister(const struct apertures_struct *apert, bool primary)
-> +{
-> +	mutex_lock(&sysfb_lock);
-> +	if (!IS_ERR(sysfb_dev) && sysfb_dev) {
-> +		if (sysfb_match(apert, primary)) {
-> +			platform_device_unregister(sysfb_dev);
-> +			sysfb_dev = ERR_PTR(-EALREADY);
-> +		}
-> +	} else {
-> +		/* if !sysfb_dev, set err so no new sysfb is probed later */
-> +		sysfb_dev = ERR_PTR(-EALREADY);
 
-Just a small detail: we can get into this 'else' branch not just with 
-NULL, but also with IS_ERR(sysfb_dev). In that case we override 
-whatever error code is contained in sysfb_dev and overwrite it with 
-ERR_PTR(-EALREADY).
+The following changes since commit 319e2e3f63c348a9b66db4667efa73178e18b17d:
 
-(Probably not a big deal, because we don't actually ever seem to 
-extract the error code from the pointer, but wanted to mention it.)
+  Linux 3.13-rc4 (2013-12-15 12:31:33 -0800)
 
-> +#ifdef CONFIG_X86_SYSFB
-> +#include <asm/sysfb.h>
-> +#endif
+are available in the git repository at:
 
-Pet peeve, this looks sexier:
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux tags/arm64-fixes
 
-#ifdef CONFIG_X86_SYSFB
-# include <asm/sysfb.h>
-#endif
+for you to fetch changes up to cdc27c27843248ae7eb0df5fc261dd004eaa5670:
 
-> @@ -1604,6 +1607,17 @@ static void do_remove_conflicting_framebuffers(struct apertures_struct *a,
->  	}
->  }
->  
-> +static void remove_conflicting_sysfb(const struct apertures_struct *apert,
-> +				     bool primary)
-> +{
-> +	if (!apert)
-> +		return;
-> +
-> +#ifdef CONFIG_X86_SYSFB
-> +	sysfb_unregister(apert, primary);
-> +#endif
-> +}
+  arm64: ptrace: avoid using HW_BREAKPOINT_EMPTY for disabled events (2013-12-19 17:41:25 +0000)
 
-So why not make sysfb_unregister() accept a !apert parameter (it would 
-simply return), at which point remove_conflicting_sysfb() could be 
-eliminated and just be replaced with a direct sysfb_unregister() call 
-- with no #ifdefs.
+----------------------------------------------------------------
+- arm64 ptrace fix.
 
-We only need #ifdefs for the sysfb_unregister() declaration in the .h 
-file.
+----------------------------------------------------------------
+Will Deacon (1):
+      arm64: ptrace: avoid using HW_BREAKPOINT_EMPTY for disabled events
 
-At first sight this looks simpler and cleaner for the fix itself - no 
-need for extra cleanups for this detail.
+ arch/arm64/kernel/ptrace.c | 38 ++++++++++++++++++--------------------
+ 1 file changed, 18 insertions(+), 20 deletions(-)
 
-Thanks,
-
-	Ingo
+-- 
+Catalin
