@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364Ab3LSL4d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:56:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44591 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244Ab3LSL4T (ORCPT
+	id S1754837Ab3LSPIT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:08:19 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:61493 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754787Ab3LSPIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:56:19 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 042/208] ipv6: fix possible seqlock deadlock in ip6_finish_output2
-Date: Thu, 19 Dec 2013 11:52:20 +0000
-Message-Id: <1387454106-19326-43-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 10:08:16 -0500
+From: Levente Kurusa <levex@linux.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Levente Kurusa <levex@linux.com>, Mike Christie <michaelc@cs.wisc.edu>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        open-iscsi@googlegroups.com, linux-scsi@vger.kernel.org
+Subject: [PATCH 33/38] scsi: transport: add missing put_device call
+Date: Thu, 19 Dec 2013 16:06:47 +0100
+Message-Id: <1387465612-3673-34-git-send-email-levex@linux.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1387465612-3673-33-git-send-email-levex@linux.com>
+References: <1387465612-3673-33-git-send-email-levex@linux.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+This is required so that we give up the last reference to the device.
+Remove the kfree() as well, because the put_device() will result in
+iscsi_endpoint_release being called and hence it will be kfree'd.
 
-------------------
-
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-
-commit 7f88c6b23afbd31545c676dea77ba9593a1a14bf upstream.
-
-IPv6 stats are 64 bits and thus are protected with a seqlock. By not
-disabling bottom-half we could deadlock here if we don't disable bh and
-a softirq reentrantly updates the same mib.
-
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Levente Kurusa <levex@linux.com>
 ---
- net/ipv6/ip6_output.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/scsi_transport_iscsi.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index f80f2fa..e50a9e3 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -141,8 +141,8 @@ static int ip6_finish_output2(struct sk_buff *skb)
- 	}
- 	rcu_read_unlock_bh();
+diff --git a/drivers/scsi/scsi_transport_iscsi.c b/drivers/scsi/scsi_transport_iscsi.c
+index 63a6ca4..ff20f35 100644
+--- a/drivers/scsi/scsi_transport_iscsi.c
++++ b/drivers/scsi/scsi_transport_iscsi.c
+@@ -219,8 +219,10 @@ iscsi_create_endpoint(int dd_size)
+ 	ep->dev.class = &iscsi_endpoint_class;
+ 	dev_set_name(&ep->dev, "ep-%llu", (unsigned long long) id);
+ 	err = device_register(&ep->dev);
+-        if (err)
+-                goto free_ep;
++        if (err) {
++        	put_device(&ep->dev);
++	        return NULL;
++	}
  
--	IP6_INC_STATS_BH(dev_net(dst->dev),
--			 ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
-+	IP6_INC_STATS(dev_net(dst->dev),
-+		      ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
- 	kfree_skb(skb);
- 	return -EINVAL;
+ 	err = sysfs_create_group(&ep->dev.kobj, &iscsi_endpoint_group);
+ 	if (err)
+@@ -233,10 +235,6 @@ iscsi_create_endpoint(int dd_size)
+ unregister_dev:
+ 	device_unregister(&ep->dev);
+ 	return NULL;
+-
+-free_ep:
+-	kfree(ep);
+-	return NULL;
  }
+ EXPORT_SYMBOL_GPL(iscsi_create_endpoint);
+ 
 -- 
-1.8.3.2
+1.8.3.1
 
