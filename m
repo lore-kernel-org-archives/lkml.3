@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290Ab3LSHzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 02:55:21 -0500
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:51323 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263Ab3LSHzP convert rfc822-to-8bit (ORCPT
+	id S1753458Ab3LSH5c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 02:57:32 -0500
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:59662 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753407Ab3LSH5a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 02:55:15 -0500
+	Thu, 19 Dec 2013 02:57:30 -0500
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "Boris BREZILLON" <b.brezillon@overkiz.com>
 From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <52B01A50.4080209@atmel.com>
+Cc: "Fengguang Wu" <fengguang.wu@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1387229127-7605-1-git-send-email-b.brezillon@overkiz.com>
+ <52B01A50.4080209@atmel.com>
+Message-ID: <20131219075725.18119.80803@quantum>
 User-Agent: alot/0.3.5
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        "Kukjin Kim" <kgene.kim@samsung.com>,
-        "Stephen Boyd" <sboyd@codeaurora.org>,
-        "Stephen Warren" <swarren@nvidia.com>,
-        "Tomasz Figa" <t.figa@samsung.com>,
-        "Krzysztof Kozlowski" <k.kozlowski@samsung.com>,
-        "James Hogan" <james.hogan@imgtec.com>,
-        "Padmavathi Venna" <padma.v@samsung.com>,
-        "Sachin Kamat" <sachin.kamat@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1387274199-470-1-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1387274199-470-1-git-send-email-k.kozlowski@samsung.com>
-Message-ID: <20131219075510.18119.67210@quantum>
-Subject: Re: [PATCH] clk: exynos: File scope reg_save array should depend on PM_SLEEP
-Date: Wed, 18 Dec 2013 23:55:10 -0800
+Subject: Re: [PATCH] clk: at91: fix pmc_clk_ids data type attriubte
+Date: Wed, 18 Dec 2013 23:57:25 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Krzysztof Kozlowski (2013-12-17 01:56:39)
-> Move reg_save[] into CONFIG_PM_SLEEP dependency block as it is used only
-> by suspend and resume functions.
+Quoting Nicolas Ferre (2013-12-17 01:33:04)
+> On 16/12/2013 22:25, Boris BREZILLON :
+> > Fix pmc_clk_ids data type attribute (__initdata -> __initconst).
+> > 
+> > Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> > Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 > 
-> This fixes the warning on CONFIG_PM_SLEEP=n:
-> drivers/clk/samsung/clk-exynos-audss.c:29:22: warning: ‘reg_save’ defined but not used [-Wunused-variable]
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> I take it in at91-3.14-cleanup2 branch and send it upstream through
+> arm-soc like any other CCF material for AT91 for the 3.14 release.
+> 
+> I guess that even without Mike Acked-by, this little fix can follow this
+> path.
 
-Acked-by: Mike Turquette <mturquette@linaro.org>
+I can take it into the clk tree if you prefer.
 
-> ---
->  drivers/clk/samsung/clk-exynos-audss.c |   10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
+Regards,
+Mike
+
 > 
-> diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
-> index 39b40aaede2b..68e515d093d8 100644
-> --- a/drivers/clk/samsung/clk-exynos-audss.c
-> +++ b/drivers/clk/samsung/clk-exynos-audss.c
-> @@ -26,17 +26,17 @@ static struct clk_onecell_data clk_data;
->  #define ASS_CLK_DIV 0x4
->  #define ASS_CLK_GATE 0x8
->  
-> +/* list of all parent clock list */
-> +static const char *mout_audss_p[] = { "fin_pll", "fout_epll" };
-> +static const char *mout_i2s_p[] = { "mout_audss", "cdclk0", "sclk_audio0" };
-> +
-> +#ifdef CONFIG_PM_SLEEP
->  static unsigned long reg_save[][2] = {
->         {ASS_CLK_SRC,  0},
->         {ASS_CLK_DIV,  0},
->         {ASS_CLK_GATE, 0},
->  };
->  
-> -/* list of all parent clock list */
-> -static const char *mout_audss_p[] = { "fin_pll", "fout_epll" };
-> -static const char *mout_i2s_p[] = { "mout_audss", "cdclk0", "sclk_audio0" };
-> -
-> -#ifdef CONFIG_PM_SLEEP
->  static int exynos_audss_clk_suspend(void)
->  {
->         int i;
+> Bye,
+> 
+> > ---
+> >  drivers/clk/at91/pmc.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
+> > index 7b9db60..4c03eda 100644
+> > --- a/drivers/clk/at91/pmc.c
+> > +++ b/drivers/clk/at91/pmc.c
+> > @@ -228,7 +228,7 @@ out_free_pmc:
+> >       return NULL;
+> >  }
+> >  
+> > -static const struct of_device_id pmc_clk_ids[] __initdata = {
+> > +static const struct of_device_id pmc_clk_ids[] __initconst = {
+> >       /* Main clock */
+> >       {
+> >               .compatible = "atmel,at91rm9200-clk-main",
+> > 
+> 
+> 
 > -- 
-> 1.7.9.5
-> 
+> Nicolas Ferre
