@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab3LSMMn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:12:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45260 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904Ab3LSL7X (ORCPT
+	id S1755388Ab3LSPLn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:11:43 -0500
+Received: from mo3.mail-out.ovh.net ([178.32.228.3]:34699 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752926Ab3LSPLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:23 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 171/208] ALSA: hda - Mute all aamix inputs as default
-Date: Thu, 19 Dec 2013 11:54:29 +0000
-Message-Id: <1387454106-19326-172-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 10:11:21 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+Subject: [PATCH 2/3] ARM: at91/dt: add clk properties to sama5d3 AES device node
+Date: Thu, 19 Dec 2013 16:11:14 +0100
+Message-Id: <1387465875-4548-3-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387465875-4548-1-git-send-email-b.brezillon@overkiz.com>
+References: <1387465875-4548-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 912823350806214766
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrtdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Takashi Iwai <tiwai@suse.de>
-
-commit ebb93c057dda376414fbc499ad6ace9b527dff5a upstream.
-
-Not all channels have been initialized, so far, especially when aamix
-NID itself doesn't have amps but its leaves have.  This patch fixes
-these holes.  Otherwise you might get unexpected loopback inputs,
-e.g. from surround channels.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 ---
- sound/pci/hda/hda_generic.c | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ arch/arm/boot/dts/sama5d3.dtsi |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/sound/pci/hda/hda_generic.c b/sound/pci/hda/hda_generic.c
-index c6cb67b..bd7efe8 100644
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -4246,6 +4246,26 @@ static unsigned int snd_hda_gen_path_power_filter(struct hda_codec *codec,
- 	return AC_PWRST_D3;
- }
+diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+index 4d290ad..ae0c5b3 100644
+--- a/arch/arm/boot/dts/sama5d3.dtsi
++++ b/arch/arm/boot/dts/sama5d3.dtsi
+@@ -344,6 +344,8 @@
+ 				compatible = "atmel,sam9g46-aes";
+ 				reg = <0xf8038000 0x100>;
+ 				interrupts = <43 4 0>;
++				clocks = <&aes_clk>;
++				clock-names = "aes_clk";
+ 			};
  
-+/* mute all aamix inputs initially; parse up to the first leaves */
-+static void mute_all_mixer_nid(struct hda_codec *codec, hda_nid_t mix)
-+{
-+	int i, nums;
-+	const hda_nid_t *conn;
-+	bool has_amp;
-+
-+	nums = snd_hda_get_conn_list(codec, mix, &conn);
-+	has_amp = nid_has_mute(codec, mix, HDA_INPUT);
-+	for (i = 0; i < nums; i++) {
-+		if (has_amp)
-+			snd_hda_codec_amp_stereo(codec, mix,
-+						 HDA_INPUT, i,
-+						 0xff, HDA_AMP_MUTE);
-+		else if (nid_has_volume(codec, conn[i], HDA_OUTPUT))
-+			snd_hda_codec_amp_stereo(codec, conn[i],
-+						 HDA_OUTPUT, 0,
-+						 0xff, HDA_AMP_MUTE);
-+	}
-+}
- 
- /*
-  * Parse the given BIOS configuration and set up the hda_gen_spec
-@@ -4384,6 +4404,10 @@ int snd_hda_gen_parse_auto_config(struct hda_codec *codec,
- 		}
- 	}
- 
-+	/* mute all aamix input initially */
-+	if (spec->mixer_nid)
-+		mute_all_mixer_nid(codec, spec->mixer_nid);
-+
-  dig_only:
- 	parse_digital(codec);
- 
+ 			tdes@f803c000 {
 -- 
-1.8.3.2
+1.7.9.5
 
