@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616Ab3LSM1t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:27:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45010 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755316Ab3LSL6P (ORCPT
+	id S932131Ab3LSMjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:39:12 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:35767 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757164Ab3LSMjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:58:15 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 122/208] mac80211: fix scheduled scan rtnl deadlock
-Date: Thu, 19 Dec 2013 11:53:40 +0000
-Message-Id: <1387454106-19326-123-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 07:39:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131219123137.GC18110@gmail.com>
+References: <s5hlhzik3kk.wl%tiwai@suse.de>
+	<CANq1E4TFKDduy71jCXy+8CMS1_OFxWEpsHY3AA0RUJPW4VE8hg@mail.gmail.com>
+	<20131218092941.GA19210@gmail.com>
+	<20131219000346.0f722b65@alan.etchedpixels.co.uk>
+	<CANq1E4Q3KiLMC-ETFs+FAmTv3yWdCyqG2c+KzGFX4xZmcxLbJg@mail.gmail.com>
+	<20131219123137.GC18110@gmail.com>
+Date: Thu, 19 Dec 2013 13:39:08 +0100
+Message-ID: <CANq1E4R5fF+Xtub8E_64bh6akZi8uU6d2ntG-rzsc_D7KFBY=g@mail.gmail.com>
+Subject: Re: cirrusdrmfb broken with simplefb
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Takashi Iwai <tiwai@suse.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+Hi
 
-------------------
+On Thu, Dec 19, 2013 at 1:31 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * David Herrmann <dh.herrmann@gmail.com> wrote:
+>
+>> Hi
+>>
+>> On Thu, Dec 19, 2013 at 1:03 AM, One Thousand Gnomes
+>> <gnomes@lxorguk.ukuu.org.uk> wrote:
+>> >> > That bug always existed, simplefb is just the first driver to hit it
+>> >> > (vesafb/efifb didn't use resources). I'm aware of the issue but as a
+>> >> > workaround you can simply disable CONFIG_X86_SYSFB. That restores
+>> >> > the old behavior.
+>> >>
+>> >> This looks like a regression, so we'll either need a fix or we'll have
+>> >> to mark CONFIG_X86_SYSFB as CONFIG_BROKEN.
+>> >
+>> > Kernel bugzilla has entries for simplefb breaking both vesafb and
+>> > matrox mga.
+>>
+>> Thanks for the hints. I've read through all I could find and tried
+>> to provide some help.
+>>
+>> I'm kind of confused, most of them enable CONFIG_X86_SYSFB (which is
+>> 'n' by default) but don't read the help text. I did my best to tell
+>> people that this option requires CONFIG_FB_SIMPLE, but if you don't
+>> read the help-text you won't notice that. Don't know what to do
+>> about that..
+>
+> People generally don't read the help text - still the kernel should
+> not break. So please the Kconfig angle (and the bootup logic, etc.)
+> fool-proof, graphics failures are not fun to debug!
 
-From: Johannes Berg <johannes.berg@intel.com>
+There're dozens of combinations that break gfx-boot. Even non-obvious
+things like disabling VT_HW_CONSOLE_BINDING will break gfx-handover.
+Anyhow, bad examples are no excuse.. I will send patches to fool-proof
+sysfb.
 
-commit 18db594a1005d908d995a2fc8f5a7bf4286fdca0 upstream.
-
-When changing cfg80211 to use RTNL locking, this caused a
-deadlock in mac80211 as it calls cfg80211_sched_scan_stopped()
-from a work item that's on a workqueue that is flushed with
-the RTNL held.
-
-Fix this by simply using schedule_work(), the work only needs
-to finish running before the wiphy is unregistered, no other
-synchronisation (e.g. with suspend) is really required since
-for suspend userspace is already blocked anyway when we flush
-the workqueue so will only pick up the event after resume.
-
-Fixes: 5fe231e87372 ("cfg80211: vastly simplify locking")
-Reported-and-tested-by: Eliad Peller <eliadx.peller@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/mac80211/main.c | 1 +
- net/mac80211/scan.c | 2 +-
- 2 files changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/net/mac80211/main.c b/net/mac80211/main.c
-index 091088a..ec53369 100644
---- a/net/mac80211/main.c
-+++ b/net/mac80211/main.c
-@@ -1059,6 +1059,7 @@ void ieee80211_unregister_hw(struct ieee80211_hw *hw)
- 
- 	cancel_work_sync(&local->restart_work);
- 	cancel_work_sync(&local->reconfig_filter);
-+	flush_work(&local->sched_scan_stopped_work);
- 
- 	ieee80211_clear_tx_pending(local);
- 	rate_control_deinitialize(local);
-diff --git a/net/mac80211/scan.c b/net/mac80211/scan.c
-index 7aafa54..89fb87b 100644
---- a/net/mac80211/scan.c
-+++ b/net/mac80211/scan.c
-@@ -1033,6 +1033,6 @@ void ieee80211_sched_scan_stopped(struct ieee80211_hw *hw)
- 
- 	trace_api_sched_scan_stopped(local);
- 
--	ieee80211_queue_work(&local->hw, &local->sched_scan_stopped_work);
-+	schedule_work(&local->sched_scan_stopped_work);
- }
- EXPORT_SYMBOL(ieee80211_sched_scan_stopped);
--- 
-1.8.3.2
-
+David
