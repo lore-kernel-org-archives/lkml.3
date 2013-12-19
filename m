@@ -1,80 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab3LSMkb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:40:31 -0500
-Received: from mga01.intel.com ([192.55.52.88]:5565 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754953Ab3LSL5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,512,1384329600"; 
-   d="scan'208";a="452577940"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
-In-Reply-To: <20131219112519.GX21999@twins.programming.kicks-ass.net>
-References: <20131217161126.GL13532@twins.programming.kicks-ass.net> <8761qmthr6.fsf@ashishki-desk.ger.corp.intel.com> <20131218133439.GR21999@twins.programming.kicks-ass.net> <8738lqtg0v.fsf@ashishki-desk.ger.corp.intel.com> <20131218141125.GT21999@twins.programming.kicks-ass.net> <87zjnys0gj.fsf@ashishki-desk.ger.corp.intel.com> <20131218150900.GU21999@twins.programming.kicks-ass.net> <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com> <20131219102625.GC30183@twins.programming.kicks-ass.net> <87r499rt32.fsf@ashishki-desk.ger.corp.intel.com> <20131219112519.GX21999@twins.programming.kicks-ass.net>
-User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Thu, 19 Dec 2013 13:57:27 +0200
-Message-ID: <87lhzhrr2w.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756987Ab3LSMdt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 07:33:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44924 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755105Ab3LSL5t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:57:49 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tom Gundersen <teg@jklm.no>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 104/208] Input: allow deselecting serio drivers even without CONFIG_EXPERT
+Date: Thu, 19 Dec 2013 11:53:22 +0000
+Message-Id: <1387454106-19326-105-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Thu, Dec 19, 2013 at 01:14:09PM +0200, Alexander Shishkin wrote:
->> Peter Zijlstra <peterz@infradead.org> writes:
->> 
->> > On Thu, Dec 19, 2013 at 09:53:44AM +0200, Alexander Shishkin wrote:
->> >> Peter Zijlstra <peterz@infradead.org> writes:
->> >> > The thing is; why can't you zero-copy whatever buffer the hardware
->> >> > writes into, into the normal buffer?
->> >> 
->> >> I'm not sure I understand. You mean, have the buffer split between perf
->> >> data and trace data?
->> >
->> > Yep, I don't see any reason why this wouldn't work.
->> >
->> > When the hardware thing sends an interrupt to notify us its buffer is
->> > 'full', stop the recorder, try to create a single record in the buffer
->> > that's big enough + 1 page, then swizzle the hardware pages and the
->> > buffer pages for that record, using the +1 page to page align the actual
->> > data. Then (re)start the hardware on the 'new' pages.
->> 
->> We configure the hardware thing to send an interrupt *before* the buffer
->> is full, keep the recorder running while userspace saves stuff to
->> perf.data file. Recording only stops if perf fails to read the trace
->> data out fast enough and the buffer fills up. So you'd have a complete
->> trace.
->> 
->> Also, we have what we call a "snapshot" mode, where we keep the hardware
->> thing running, writing data to a circular buffer till it's stopped, in
->> case we're only interested in the most recent trace data to see what it
->> is that takes too long to respond, etc. And while it is running, we're
->> getting new records in the perf stream all the time (mmaps, etc).
->> 
->> Put simple: perf data and trace data are two different separate types of
->> information that originate from two different sources, can exist and
->> make sense separately from one another and should not be mixed.
->
-> Well you're either having to change your stance or we're done talking
-> right now.
+------------------
 
-I'm making a case in favor of 2 separate buffers just like you asked in
-one of the previous emails. It's backed by some very real usecases. That
-said, I'm not personally attached to any one design, only what makes
-sense. There is no 'stance'.
+From: Tom Gundersen <teg@jklm.no>
 
-Regards,
---
-Alex
+commit bcd2623073e98f69f84720308db0b142c4da0bd6 upstream.
+
+There is plenty of consumer hardware (e.g., mac books) that does not use AT
+keyboards or PS/2 mice. It therefore makes sense for distro kernels to
+build the related drivers as modules to avoid loading them on hardware that
+does not need them. As such, these options should no longer be protected by
+EXPERT.
+
+Moreover, building these drivers as modules gets rid of the following ugly
+error during boot:
+
+[    2.337745] i8042: PNP: No PS/2 controller found. Probing ports directly.
+[    3.439537] i8042: No controller found
+
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/input/keyboard/Kconfig | 4 ++--
+ drivers/input/serio/Kconfig    | 6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+index 269d4c3..2d31cec 100644
+--- a/drivers/input/keyboard/Kconfig
++++ b/drivers/input/keyboard/Kconfig
+@@ -2,7 +2,7 @@
+ # Input core configuration
+ #
+ menuconfig INPUT_KEYBOARD
+-	bool "Keyboards" if EXPERT || !X86
++	bool "Keyboards"
+ 	default y
+ 	help
+ 	  Say Y here, and a list of supported keyboards will be displayed.
+@@ -67,7 +67,7 @@ config KEYBOARD_ATARI
+ 	  module will be called atakbd.
+ 
+ config KEYBOARD_ATKBD
+-	tristate "AT keyboard" if EXPERT || !X86
++	tristate "AT keyboard"
+ 	default y
+ 	select SERIO
+ 	select SERIO_LIBPS2
+diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
+index 1e691a3..39c869d 100644
+--- a/drivers/input/serio/Kconfig
++++ b/drivers/input/serio/Kconfig
+@@ -2,7 +2,7 @@
+ # Input core configuration
+ #
+ config SERIO
+-	tristate "Serial I/O support" if EXPERT || !X86
++	tristate "Serial I/O support"
+ 	default y
+ 	help
+ 	  Say Yes here if you have any input device that uses serial I/O to
+@@ -19,7 +19,7 @@ config SERIO
+ if SERIO
+ 
+ config SERIO_I8042
+-	tristate "i8042 PC Keyboard controller" if EXPERT || !X86
++	tristate "i8042 PC Keyboard controller"
+ 	default y
+ 	depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
+ 		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN && !S390 && \
+@@ -170,7 +170,7 @@ config SERIO_MACEPS2
+ 	  module will be called maceps2.
+ 
+ config SERIO_LIBPS2
+-	tristate "PS/2 driver library" if EXPERT
++	tristate "PS/2 driver library"
+ 	depends on SERIO_I8042 || SERIO_I8042=n
+ 	help
+ 	  Say Y here if you are using a driver for device connected
+-- 
+1.8.3.2
+
