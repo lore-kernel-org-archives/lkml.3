@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746Ab3LSRQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 12:16:26 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:48590 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab3LSRQY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 12:16:24 -0500
-Date: Thu, 19 Dec 2013 17:16:17 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] mfd: ti_am335x_tscadc: Make am335x_tsc_se_update()
- local
-Message-ID: <20131219171617.GB16145@lee--X1>
-References: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
- <1387466911-3732-3-git-send-email-bigeasy@linutronix.de>
+	id S1754351Ab3LSRRy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 12:17:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30064 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752296Ab3LSRRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 12:17:53 -0500
+Date: Thu, 19 Dec 2013 12:17:40 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Christoph Lameter <cl@gentwo.org>, Benjamin LaHaise <bcrl@kvack.org>,
+        Kent Overstreet <kmo@daterainc.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: bad page state in 3.13-rc4
+Message-ID: <20131219171740.GA881@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@gentwo.org>,
+	Benjamin LaHaise <bcrl@kvack.org>,
+	Kent Overstreet <kmo@daterainc.com>,
+	Al Viro <viro@zeniv.linux.org.uk>
+References: <20131219040738.GA10316@redhat.com>
+ <CA+55aFwweoGs3eGWXFULcqnbRbpDhpj2qrefXB5OpQOiWW8wYA@mail.gmail.com>
+ <20131219155313.GA25771@redhat.com>
+ <CA+55aFyoXCDNfHb+r5b=CgKQLPA1wrU_Tmh4ROZNEt5TPjpODA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1387466911-3732-3-git-send-email-bigeasy@linutronix.de>
+In-Reply-To: <CA+55aFyoXCDNfHb+r5b=CgKQLPA1wrU_Tmh4ROZNEt5TPjpODA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Dec 2013, Sebastian Andrzej Siewior wrote:
+On Thu, Dec 19, 2013 at 09:07:27AM -0800, Linus Torvalds wrote:
+ > On Thu, Dec 19, 2013 at 7:53 AM, Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > Interesting that CPU2 was doing sys_io_setup again. Different trace though.
+ > 
+ > Well, it was once again in aio_free_ring() - double free or freeing
+ > while already in use? And this time the other end of the complaint was
+ > allocating a new page that definitely was still busily in use (it's
+ > locked).
+ > 
+ > And there's no sign of migration, although obviously that could have
+ > happened or be in progress on another CPU and just didn't notice the
+ > mess. But yes, based on the two traces, fs/aio.c:io_setup() would seem
+ > to be the main point of interest.
+ > 
+ > Have you started doing something new in trinity wrt AIO, and
+ > io_setup() in particular? Or anything else different that might have
+ > started triggering this?
 
-> Since the "recent" changes, am335x_tsc_se_update() has no longer any
-> users outside of this file so make it local.
-> 
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Nothing special for aio, it's always had support for creating things that
+look like iovecs, though now maybe it's filling those iovec's with mmaps
+that it created (including potentially huge pages) instead of just mallocs.
 
-I'm pretty sure I Acked this already.
+	Dave
 
-> ---
->  drivers/mfd/ti_am335x_tscadc.c       | 3 +--
->  include/linux/mfd/ti_am335x_tscadc.h | 1 -
->  2 files changed, 1 insertion(+), 3 deletions(-)
-> 
-> diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-> index 88718ab..67d0eb4 100644
-> --- a/drivers/mfd/ti_am335x_tscadc.c
-> +++ b/drivers/mfd/ti_am335x_tscadc.c
-> @@ -48,11 +48,10 @@ static const struct regmap_config tscadc_regmap_config = {
->  	.val_bits = 32,
->  };
->  
-> -void am335x_tsc_se_update(struct ti_tscadc_dev *tsadc)
-> +static void am335x_tsc_se_update(struct ti_tscadc_dev *tsadc)
->  {
->  	tscadc_writel(tsadc, REG_SE, tsadc->reg_se_cache);
->  }
-> -EXPORT_SYMBOL_GPL(am335x_tsc_se_update);
->  
->  void am335x_tsc_se_set(struct ti_tscadc_dev *tsadc, u32 val)
->  {
-> diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-> index d498d98f..1fe7219 100644
-> --- a/include/linux/mfd/ti_am335x_tscadc.h
-> +++ b/include/linux/mfd/ti_am335x_tscadc.h
-> @@ -176,7 +176,6 @@ static inline struct ti_tscadc_dev *ti_tscadc_dev_get(struct platform_device *p)
->  	return *tscadc_dev;
->  }
->  
-> -void am335x_tsc_se_update(struct ti_tscadc_dev *tsadc);
->  void am335x_tsc_se_set(struct ti_tscadc_dev *tsadc, u32 val);
->  void am335x_tsc_se_clr(struct ti_tscadc_dev *tsadc, u32 val);
->  
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
