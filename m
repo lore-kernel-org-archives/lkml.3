@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757134Ab3LSMhi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:37:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44891 "EHLO
+	id S1754643Ab3LSL46 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:56:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44732 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755025Ab3LSL5l (ORCPT
+	with ESMTP id S1754610Ab3LSL4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:41 -0500
+	Thu, 19 Dec 2013 06:56:54 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        Horia Geanta <horia.geanta@freescale.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 098/208] HID: lg: fix Report Descriptor for Logitech MOMO Force (Black)
-Date: Thu, 19 Dec 2013 11:53:16 +0000
-Message-Id: <1387454106-19326-99-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 066/208] crypto: ccm - Fix handling of zero plaintext when computing mac
+Date: Thu, 19 Dec 2013 11:52:44 +0000
+Message-Id: <1387454106-19326-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -27,104 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Wood <simon@mungewell.org>
+From: Horia Geanta <horia.geanta@freescale.com>
 
-commit 348cbaa800f8161168b20f85f72abb541c145132 upstream.
+commit 5638cabf3e4883f38dfb246c30980cebf694fbda upstream.
 
-By default the Logitech MOMO Force (Black) presents a combined accel/brake
-axis ('Y'). This patch modifies the HID descriptor to present seperate
-accel/brake axes ('Y' and 'Z').
+There are cases when cryptlen can be zero in crypto_ccm_auth():
+-encryptiom: input scatterlist length is zero (no plaintext)
+-decryption: input scatterlist contains only the mac
+plus the condition of having different source and destination buffers
+(or else scatterlist length = max(plaintext_len, ciphertext_len)).
 
-Signed-off-by: Simon Wood <simon@mungewell.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+These are not handled correctly, leading to crashes like:
+
+root@p4080ds:~/crypto# insmod tcrypt.ko mode=45
+------------[ cut here ]------------
+kernel BUG at crypto/scatterwalk.c:37!
+Oops: Exception in kernel mode, sig: 5 [#1]
+SMP NR_CPUS=8 P4080 DS
+Modules linked in: tcrypt(+) crc32c xts xcbc vmac pcbc ecb gcm ghash_generic gf128mul ccm ctr seqiv
+CPU: 3 PID: 1082 Comm: cryptomgr_test Not tainted 3.11.0 #14
+task: ee12c5b0 ti: eecd0000 task.ti: eecd0000
+NIP: c0204d98 LR: f9225848 CTR: c0204d80
+REGS: eecd1b70 TRAP: 0700   Not tainted  (3.11.0)
+MSR: 00029002 <CE,EE,ME>  CR: 22044022  XER: 20000000
+
+GPR00: f9225c94 eecd1c20 ee12c5b0 eecd1c28 ee879400 ee879400 00000000 ee607464
+GPR08: 00000001 00000001 00000000 006b0000 c0204d80 00000000 00000002 c0698e20
+GPR16: ee987000 ee895000 fffffff4 ee879500 00000100 eecd1d58 00000001 00000000
+GPR24: ee879400 00000020 00000000 00000000 ee5b2800 ee607430 00000004 ee607460
+NIP [c0204d98] scatterwalk_start+0x18/0x30
+LR [f9225848] get_data_to_compute+0x28/0x2f0 [ccm]
+Call Trace:
+[eecd1c20] [f9225974] get_data_to_compute+0x154/0x2f0 [ccm] (unreliable)
+[eecd1c70] [f9225c94] crypto_ccm_auth+0x184/0x1d0 [ccm]
+[eecd1cb0] [f9225d40] crypto_ccm_encrypt+0x60/0x2d0 [ccm]
+[eecd1cf0] [c020d77c] __test_aead+0x3ec/0xe20
+[eecd1e20] [c020f35c] test_aead+0x6c/0xe0
+[eecd1e40] [c020f420] alg_test_aead+0x50/0xd0
+[eecd1e60] [c020e5e4] alg_test+0x114/0x2e0
+[eecd1ee0] [c020bd1c] cryptomgr_test+0x4c/0x60
+[eecd1ef0] [c0047058] kthread+0xa8/0xb0
+[eecd1f40] [c000eb0c] ret_from_kernel_thread+0x5c/0x64
+Instruction dump:
+0f080000 81290024 552807fe 0f080000 5529003a 4bffffb4 90830000 39400000
+39000001 8124000c 2f890000 7d28579e <0f090000> 81240008 91230004 4e800020
+---[ end trace 6d652dfcd1be37bd ]---
+
+Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Signed-off-by: Horia Geanta <horia.geanta@freescale.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-lg.c | 58 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 58 insertions(+)
+ crypto/ccm.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hid/hid-lg.c b/drivers/hid/hid-lg.c
-index 1bfd292..06eb45f 100644
---- a/drivers/hid/hid-lg.c
-+++ b/drivers/hid/hid-lg.c
-@@ -47,6 +47,7 @@
- #define DFP_RDESC_ORIG_SIZE	97
- #define FV_RDESC_ORIG_SIZE	130
- #define MOMO_RDESC_ORIG_SIZE	87
-+#define MOMO2_RDESC_ORIG_SIZE	87
+diff --git a/crypto/ccm.c b/crypto/ccm.c
+index 499c917..ed009b7 100644
+--- a/crypto/ccm.c
++++ b/crypto/ccm.c
+@@ -271,7 +271,8 @@ static int crypto_ccm_auth(struct aead_request *req, struct scatterlist *plain,
+ 	}
  
- /* Fixed report descriptors for Logitech Driving Force (and Pro)
-  * wheel controllers
-@@ -284,6 +285,54 @@ static __u8 momo_rdesc_fixed[] = {
- 0xC0                /*  End Collection                      */
- };
+ 	/* compute plaintext into mac */
+-	get_data_to_compute(cipher, pctx, plain, cryptlen);
++	if (cryptlen)
++		get_data_to_compute(cipher, pctx, plain, cryptlen);
  
-+static __u8 momo2_rdesc_fixed[] = {
-+0x05, 0x01,         /*  Usage Page (Desktop),               */
-+0x09, 0x04,         /*  Usage (Joystik),                    */
-+0xA1, 0x01,         /*  Collection (Application),           */
-+0xA1, 0x02,         /*      Collection (Logical),           */
-+0x95, 0x01,         /*          Report Count (1),           */
-+0x75, 0x0A,         /*          Report Size (10),           */
-+0x15, 0x00,         /*          Logical Minimum (0),        */
-+0x26, 0xFF, 0x03,   /*          Logical Maximum (1023),     */
-+0x35, 0x00,         /*          Physical Minimum (0),       */
-+0x46, 0xFF, 0x03,   /*          Physical Maximum (1023),    */
-+0x09, 0x30,         /*          Usage (X),                  */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x95, 0x0A,         /*          Report Count (10),          */
-+0x75, 0x01,         /*          Report Size (1),            */
-+0x25, 0x01,         /*          Logical Maximum (1),        */
-+0x45, 0x01,         /*          Physical Maximum (1),       */
-+0x05, 0x09,         /*          Usage Page (Button),        */
-+0x19, 0x01,         /*          Usage Minimum (01h),        */
-+0x29, 0x0A,         /*          Usage Maximum (0Ah),        */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),         */
-+0x09, 0x00,         /*          Usage (00h),                */
-+0x95, 0x04,         /*          Report Count (4),           */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x95, 0x01,         /*          Report Count (1),           */
-+0x75, 0x08,         /*          Report Size (8),            */
-+0x26, 0xFF, 0x00,   /*          Logical Maximum (255),      */
-+0x46, 0xFF, 0x00,   /*          Physical Maximum (255),     */
-+0x09, 0x01,         /*          Usage (01h),                */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x05, 0x01,         /*          Usage Page (Desktop),       */
-+0x09, 0x31,         /*          Usage (Y),                  */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x09, 0x32,         /*          Usage (Z),                  */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),         */
-+0x09, 0x00,         /*          Usage (00h),                */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0xC0,               /*      End Collection,                 */
-+0xA1, 0x02,         /*      Collection (Logical),           */
-+0x09, 0x02,         /*          Usage (02h),                */
-+0x95, 0x07,         /*          Report Count (7),           */
-+0x91, 0x02,         /*          Output (Variable),          */
-+0xC0,               /*      End Collection,                 */
-+0xC0                /*  End Collection                      */
-+};
-+
- /*
-  * Certain Logitech keyboards send in report #3 keys which are far
-  * above the logical maximum described in descriptor. This extends
-@@ -343,6 +392,15 @@ static __u8 *lg_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		}
- 		break;
- 
-+	case USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2:
-+		if (*rsize == MOMO2_RDESC_ORIG_SIZE) {
-+			hid_info(hdev,
-+				"fixing up Logitech Momo Racing Force (Black) report descriptor\n");
-+			rdesc = momo2_rdesc_fixed;
-+			*rsize = sizeof(momo2_rdesc_fixed);
-+		}
-+		break;
-+
- 	case USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL:
- 		if (*rsize == FV_RDESC_ORIG_SIZE) {
- 			hid_info(hdev,
+ out:
+ 	return err;
 -- 
 1.8.3.2
 
