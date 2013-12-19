@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab3LSP2w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:28:52 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53647 "EHLO
+	id S1754111Ab3LSP2v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 10:28:51 -0500
+Received: from www.linutronix.de ([62.245.132.108]:53645 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866Ab3LSP2r (ORCPT
+	with ESMTP id S1753711Ab3LSP2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:28:47 -0500
+	Thu, 19 Dec 2013 10:28:46 -0500
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
 Cc: Jonathan Cameron <jic23@kernel.org>,
@@ -15,15 +15,12 @@ Cc: Jonathan Cameron <jic23@kernel.org>,
         Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 3/5] mfd: ti_am335x_tscadc: Don't read back REG_SE
-Date: Thu, 19 Dec 2013 16:28:29 +0100
-Message-Id: <1387466911-3732-4-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 4/5] mfd: ti_am335x: Drop am335x_tsc_se_update() from resume path
+Date: Thu, 19 Dec 2013 16:28:30 +0100
+Message-Id: <1387466911-3732-5-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.8.5.1
 In-Reply-To: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
 References: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
@@ -31,129 +28,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The purpose of reg_se_cache has been defeated. It should avoid the
-read-back of the register to avoid the latency and the fact that the
-bits are reset to 0 after the individual conversation took place.
+The update of the SE register in MFD doesn't look right as it has
+nothing to do with it. The better place to do it is in TSC driver (which
+is already doing it) and in the ADC driver which needs this only in the
+continues mode.
 
-The reason why this is required like this to work, is that read-back of
-the register removes the bits of the ADC so they do not start another
-conversation after the register is re-written from the TSC side for the
-update.
-To avoid the not required read-back I introduce a "set once" variant which
-does not update the cache mask. After the conversation completes, the
-bit is removed from the SE register anyway and we don't plan a new
-conversation "any time soon". The current set function is renamed to
-set_cache to distinguish the two operations.
-This is a small preparation for a larger sync-rework.
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>  [MFD part]
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/iio/adc/ti_am335x_adc.c           |  4 ++--
- drivers/input/touchscreen/ti_am335x_tsc.c |  4 ++--
- drivers/mfd/ti_am335x_tscadc.c            | 16 ++++++++++++----
- include/linux/mfd/ti_am335x_tscadc.h      |  3 ++-
- 4 files changed, 18 insertions(+), 9 deletions(-)
+ drivers/iio/adc/ti_am335x_adc.c | 2 ++
+ drivers/mfd/ti_am335x_tscadc.c  | 1 -
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index e948454..b5197a0 100644
+index b5197a0..6822b9f 100644
 --- a/drivers/iio/adc/ti_am335x_adc.c
 +++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -181,7 +181,7 @@ static int tiadc_buffer_postenable(struct iio_dev *indio_dev)
- 		enb |= (get_adc_step_bit(adc_dev, bit) << 1);
- 	adc_dev->buffer_en_ch_steps = enb;
+@@ -199,6 +199,7 @@ static int tiadc_buffer_predisable(struct iio_dev *indio_dev)
+ 	tiadc_writel(adc_dev, REG_IRQCLR, (IRQENB_FIFO1THRES |
+ 				IRQENB_FIFO1OVRRUN | IRQENB_FIFO1UNDRFLW));
+ 	am335x_tsc_se_clr(adc_dev->mfd_tscadc, adc_dev->buffer_en_ch_steps);
++	adc_dev->buffer_en_ch_steps = 0;
  
--	am335x_tsc_se_set(adc_dev->mfd_tscadc, enb);
-+	am335x_tsc_se_set_cache(adc_dev->mfd_tscadc, enb);
+ 	/* Flush FIFO of leftover data in the time it takes to disable adc */
+ 	fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
+@@ -494,6 +495,7 @@ static int tiadc_resume(struct device *dev)
+ 	tiadc_writel(adc_dev, REG_CTRL, restore);
  
- 	tiadc_writel(adc_dev,  REG_IRQSTATUS, IRQENB_FIFO1THRES
- 				| IRQENB_FIFO1OVRRUN | IRQENB_FIFO1UNDRFLW);
-@@ -335,7 +335,7 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
- 		return -EBUSY;
+ 	tiadc_step_config(indio_dev);
++	am335x_tsc_se_set(adc_dev->mfd_tscadc, adc_dev->buffer_en_ch_steps);
  
- 	step_en = get_adc_step_mask(adc_dev);
--	am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
-+	am335x_tsc_se_set_once(adc_dev->mfd_tscadc, step_en);
- 
- 	/* Wait for ADC sequencer to complete sampling */
- 	while (tiadc_readl(adc_dev, REG_ADCFSM) & SEQ_STATUS) {
-diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-index 68beada..2ca5a7b 100644
---- a/drivers/input/touchscreen/ti_am335x_tsc.c
-+++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-@@ -198,7 +198,7 @@ static void titsc_step_config(struct titsc *ts_dev)
- 	/* The steps1 … end and bit 0 for TS_Charge */
- 	stepenable = (1 << (end_step + 2)) - 1;
- 	ts_dev->step_mask = stepenable;
--	am335x_tsc_se_set(ts_dev->mfd_tscadc, ts_dev->step_mask);
-+	am335x_tsc_se_set_cache(ts_dev->mfd_tscadc, ts_dev->step_mask);
+ 	return 0;
  }
- 
- static void titsc_read_coordinates(struct titsc *ts_dev,
-@@ -322,7 +322,7 @@ static irqreturn_t titsc_irq(int irq, void *dev)
- 
- 	if (irqclr) {
- 		titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
--		am335x_tsc_se_set(ts_dev->mfd_tscadc, ts_dev->step_mask);
-+		am335x_tsc_se_set_cache(ts_dev->mfd_tscadc, ts_dev->step_mask);
- 		return IRQ_HANDLED;
- 	}
- 	return IRQ_NONE;
 diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index 67d0eb4..cb0c211 100644
+index cb0c211..157f569 100644
 --- a/drivers/mfd/ti_am335x_tscadc.c
 +++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -53,24 +53,32 @@ static void am335x_tsc_se_update(struct ti_tscadc_dev *tsadc)
- 	tscadc_writel(tsadc, REG_SE, tsadc->reg_se_cache);
- }
+@@ -309,7 +309,6 @@ static int tscadc_resume(struct device *dev)
  
--void am335x_tsc_se_set(struct ti_tscadc_dev *tsadc, u32 val)
-+void am335x_tsc_se_set_cache(struct ti_tscadc_dev *tsadc, u32 val)
- {
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&tsadc->reg_lock, flags);
--	tsadc->reg_se_cache = tscadc_readl(tsadc, REG_SE);
- 	tsadc->reg_se_cache |= val;
- 	am335x_tsc_se_update(tsadc);
- 	spin_unlock_irqrestore(&tsadc->reg_lock, flags);
- }
--EXPORT_SYMBOL_GPL(am335x_tsc_se_set);
-+EXPORT_SYMBOL_GPL(am335x_tsc_se_set_cache);
-+
-+void am335x_tsc_se_set_once(struct ti_tscadc_dev *tsadc, u32 val)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&tsadc->reg_lock, flags);
-+	tscadc_writel(tsadc, REG_SE, tsadc->reg_se_cache | val);
-+	spin_unlock_irqrestore(&tsadc->reg_lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(am335x_tsc_se_set_once);
- 
- void am335x_tsc_se_clr(struct ti_tscadc_dev *tsadc, u32 val)
- {
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&tsadc->reg_lock, flags);
--	tsadc->reg_se_cache = tscadc_readl(tsadc, REG_SE);
- 	tsadc->reg_se_cache &= ~val;
- 	am335x_tsc_se_update(tsadc);
- 	spin_unlock_irqrestore(&tsadc->reg_lock, flags);
-diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-index 1fe7219..2fa9c06 100644
---- a/include/linux/mfd/ti_am335x_tscadc.h
-+++ b/include/linux/mfd/ti_am335x_tscadc.h
-@@ -176,7 +176,8 @@ static inline struct ti_tscadc_dev *ti_tscadc_dev_get(struct platform_device *p)
- 	return *tscadc_dev;
- }
- 
--void am335x_tsc_se_set(struct ti_tscadc_dev *tsadc, u32 val);
-+void am335x_tsc_se_set_cache(struct ti_tscadc_dev *tsadc, u32 val);
-+void am335x_tsc_se_set_once(struct ti_tscadc_dev *tsadc, u32 val);
- void am335x_tsc_se_clr(struct ti_tscadc_dev *tsadc, u32 val);
- 
- #endif
+ 	if (tscadc_dev->tsc_cell != -1)
+ 		tscadc_idle_config(tscadc_dev);
+-	am335x_tsc_se_update(tscadc_dev);
+ 	restore = tscadc_readl(tscadc_dev, REG_CTRL);
+ 	tscadc_writel(tscadc_dev, REG_CTRL,
+ 			(restore | CNTRLREG_TSCSSENB));
 -- 
 1.8.5.1
 
