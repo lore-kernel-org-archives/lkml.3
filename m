@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425Ab3LSWad (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 17:30:33 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:51574 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756314Ab3LSWa3 (ORCPT
+	id S1756534Ab3LSWat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 17:30:49 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:56000 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755230Ab3LSWaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 17:30:29 -0500
-Date: Thu, 19 Dec 2013 15:30:23 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
-        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v4 0/9] PCI/MSI: Introduce pci_auto_enable_msi*() family
- helpers
-Message-ID: <20131219223023.GD15201@google.com>
-References: <cover.1387140921.git.agordeev@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1387140921.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Dec 2013 17:30:16 -0500
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org, dinguyen@altera.com,
+        baruch@tkos.co.il, tglx@linutronix.de
+Subject: [PATCH-3.12.y 2/2] clocksource: dw_apb_timer_of: Fix support for dts binding "snps,dw-apb-timer"
+Date: Thu, 19 Dec 2013 23:30:14 +0100
+Message-Id: <1387492214-27911-2-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1387492214-27911-1-git-send-email-daniel.lezcano@linaro.org>
+References: <1387492214-27911-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 09:34:53AM +0100, Alexander Gordeev wrote:
-> Alexander Gordeev (9):
->   PCI/MSI/s390: Fix single MSI only check
->   PCI/MSI/s390: Remove superfluous check of MSI type
->   PCI/MSI: Fix return value when populate_msi_sysfs() failed
->   PCI/MSI: Return -ENOSYS for unimplemented interfaces, not -1
->   PCI/MSI: Make pci_enable_msi/msix() 'nvec' argument type as int
+From: Dinh Nguyen <dinguyen@altera.com>
 
-I applied the patches above to pci/msi for v3.14 to get them out of the
-way.
+Upstream commit 9ab4727
 
->   PCI/MSI: Factor out pci_get_msi_vec_count() interface
->   PCI/MSI: Get rid of pci_enable_msi_block_auto() interface
->   PCI/MSI: Introduce pci_get_msix_vec_count() interface
->   PCI/MSI: Introduce pci_auto_enable_msi*() family helpers
+In commit 620f5e1cbf (dts: Rename DW APB timer compatible strings), both
+"snps,dw-apb-timer-sp" and "snps,dw-apb-timer-osc" were deprecated in place
+of "snps,dw-apb-timer". But the driver also needs to be udpated in order to
+support this new binding "snps,dw-apb-timer".
+
+Signed-off-by: Dinh Nguyen <dinguyen@altera.com>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+---
+ drivers/clocksource/dw_apb_timer_of.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/clocksource/dw_apb_timer_of.c b/drivers/clocksource/dw_apb_timer_of.c
+index 33fd4ff..b386be6 100644
+--- a/drivers/clocksource/dw_apb_timer_of.c
++++ b/drivers/clocksource/dw_apb_timer_of.c
+@@ -113,7 +113,6 @@ static u32 read_sched_clock(void)
+ 
+ static const struct of_device_id sptimer_ids[] __initconst = {
+ 	{ .compatible = "picochip,pc3x2-rtc" },
+-	{ .compatible = "snps,dw-apb-timer-sp" },
+ 	{ /* Sentinel */ },
+ };
+ 
+@@ -153,4 +152,6 @@ static void __init dw_apb_timer_init(struct device_node *timer)
+ 	num_called++;
+ }
+ CLOCKSOURCE_OF_DECLARE(pc3x2_timer, "picochip,pc3x2-timer", dw_apb_timer_init);
+-CLOCKSOURCE_OF_DECLARE(apb_timer, "snps,dw-apb-timer-osc", dw_apb_timer_init);
++CLOCKSOURCE_OF_DECLARE(apb_timer_osc, "snps,dw-apb-timer-osc", dw_apb_timer_init);
++CLOCKSOURCE_OF_DECLARE(apb_timer_sp, "snps,dw-apb-timer-sp", dw_apb_timer_init);
++CLOCKSOURCE_OF_DECLARE(apb_timer, "snps,dw-apb-timer", dw_apb_timer_init);
+-- 
+1.7.9.5
+
