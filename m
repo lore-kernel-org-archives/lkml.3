@@ -1,82 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295Ab3LSWSH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 17:18:07 -0500
-Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:51686
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755386Ab3LSWSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 17:18:05 -0500
-Message-ID: <1387491465.3140.159.camel@snotra.buserror.net>
-Subject: Re: [REPOST][PATCH 2/2] driver core: platform: allow platform
- drivers to bind to any device
-From: Scott Wood <scottwood@freescale.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Kim Phillips <kim.phillips@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <kvm@vger.kernel.org>, <R65777@freescale.com>, <B07421@freescale.com>,
-        <B08248@freescale.com>, <christoffer.dall@linaro.org>,
-        <alex.williamson@redhat.com>, <a.motakis@virtualopensystems.com>,
-        <agraf@suse.de>, <B16395@freescale.com>
-Date: Thu, 19 Dec 2013 16:17:45 -0600
-In-Reply-To: <20131219204452.GA13301@kroah.com>
-References: <20131203123454.3ab18749ed0d0d943b10df9a@linaro.org>
-	 <20131219010340.GA23055@kroah.com>
-	 <1387484961.3140.141.camel@snotra.buserror.net>
-	 <20131219204452.GA13301@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1756436Ab3LSWSn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 17:18:43 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:51459 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756323Ab3LSWSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 17:18:41 -0500
+From: arno@natisbad.org (Arnaud Ebalard)
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: rtc-linux@googlegroups.com, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>, jason@lakedaemon.net,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Mark Brown <broonie@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Peter Huewe <peter.huewe@infineon.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thierry Reding <treding@nvidia.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [rtc-linux] Re: Can someone Ack and queue a patch for RTC subsytem?
+References: <87siton6ke.fsf@natisbad.org>
+	<20131219164624.GV2609@titan.lakedaemon.net>
+	<20131219175738.1dad3ade@linux.lan.towertech.it>
+X-PGP-Key-URL: http://natisbad.org/arno@natisbad.org.asc
+X-Fingerprint: D3A5 B68A 839B 38A5 815A 781B B77C 0748 A7AE 341B
+X-Hashcash: 1:20:131219:linux-kernel@vger.kernel.org::u3bhfUvEU/EInOio:0000000000000000000000000000000000FjZ
+X-Hashcash: 1:20:131219:ijc+devicetree@hellion.org.uk::YVo3HjvJ/HCMxLpx:0000000000000000000000000000000000dc
+X-Hashcash: 1:20:131219:treding@nvidia.com::hY67wSKN4iRpqvYC:00000000000000000000000000000000000000000000TTo
+X-Hashcash: 1:20:131219:broonie@kernel.org::5XfdJwTsHdvxEAg4:00000000000000000000000000000000000000000000VpH
+X-Hashcash: 1:20:131219:a.zummo@towertech.it::wqQSv7s12dhft5z7:000000000000000000000000000000000000000001EY3
+X-Hashcash: 1:20:131219:mark.rutland@arm.com::ieiY5zoWZqAzeE0Z:0000000000000000000000000000000000000000018hZ
+X-Hashcash: 1:20:131219:akpm@linux-foundation.org::c+WiY1OwliO/z+0G:0000000000000000000000000000000000001D0d
+X-Hashcash: 1:20:131219:pawel.moll@arm.com::15fJiFUjD72czEKQ:00000000000000000000000000000000000000000001H85
+X-Hashcash: 1:20:131219:sfr@canb.auug.org.au::kzfbemUkasIluoJE:000000000000000000000000000000000000000001oSA
+X-Hashcash: 1:20:131219:galak@codeaurora.org::oGJY64JfwNtsosVj:000000000000000000000000000000000000000001t5k
+X-Hashcash: 1:20:131219:rob@landley.net::mGMCFuizGnsQ8dMl:002AZH
+X-Hashcash: 1:20:131219:linux-arm-kernel@lists.infradead.org::o9pSFz81aSwThDKA:00000000000000000000000003TOD
+X-Hashcash: 1:20:131219:jason@lakedaemon.net::W3EgON4BYwlJbj1i:000000000000000000000000000000000000000003gQd
+X-Hashcash: 1:20:131219:swarren@wwwdotorg.org::DEJxQbZ/Lu0UadiQ:00000000000000000000000000000000000000003H99
+X-Hashcash: 1:20:131219:rtc-linux@googlegroups.com::Ml5XoCr0mZNyACaA:0000000000000000000000000000000000031Ak
+X-Hashcash: 1:20:131219:grant.likely@linaro.org::JRdnvyLnsb4Gu+kM:0000000000000000000000000000000000000058ON
+X-Hashcash: 1:20:131219:linux@roeck-us.net::ae/YYOubV2wmbk4q:00000000000000000000000000000000000000000003qTR
+X-Hashcash: 1:20:131219:rob.herring@calxeda.com::v2Nk7RPuLhW/2/BQ:0000000000000000000000000000000000000070M+
+X-Hashcash: 1:20:131219:peter.huewe@infineon.com::TEjTtho3G2PsRzEL:00000000000000000000000000000000000008G77
+X-Hashcash: 1:20:131219:jgunthorpe@obsidianresearch.com::R9kmZSKfAsnc4TXK:0000000000000000000000000000007uLh
+X-Hashcash: 1:20:131219:linus.walleij@linaro.org::jcIlX2BUeVL74fh1:000000000000000000000000000000000000078hq
+Date: Thu, 19 Dec 2013 23:17:44 +0100
+In-Reply-To: <20131219175738.1dad3ade@linux.lan.towertech.it> (Alessandro
+	Zummo's message of "Thu, 19 Dec 2013 17:57:38 +0100")
+Message-ID: <8761qk32pj.fsf@natisbad.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: BN1PR04CA004.namprd04.prod.outlook.com (10.255.197.14) To
- BL2PR03MB387.namprd03.prod.outlook.com (10.141.91.152)
-X-Forefront-PRVS: 006546F32A
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(199002)(189002)(51704005)(377424004)(24454002)(33646001)(74876001)(50986001)(77156001)(46102001)(74706001)(50466002)(49866001)(50226001)(47736001)(47976001)(74366001)(76482001)(23676002)(51856001)(77096001)(53806001)(42186004)(81542001)(63696002)(81342001)(47776003)(88136002)(79102001)(54316002)(83322001)(65816001)(80976001)(80022001)(81816001)(87286001)(81686001)(87266001)(31966008)(74502001)(47446002)(85306002)(74662001)(4396001)(89996001)(85852003)(62966002)(59766001)(87976001)(77982001)(76796001)(76786001)(69226001)(90146001)(83072002)(56776001)(56816005)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB387;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];CLIP:2601:2:5800:3f7:12bf:48ff:fe84:c9a0;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-19 at 12:44 -0800, Greg Kroah-Hartman wrote:
-> On Thu, Dec 19, 2013 at 02:29:21PM -0600, Scott Wood wrote:
-> > On Wed, 2013-12-18 at 17:03 -0800, Greg Kroah-Hartman wrote:
-> > > On Tue, Dec 03, 2013 at 12:34:54PM +0000, Kim Phillips wrote:
-> > > > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> > > > index 3a94b79..78a5b62 100644
-> > > > --- a/drivers/base/platform.c
-> > > > +++ b/drivers/base/platform.c
-> > > > @@ -736,6 +736,10 @@ static int platform_match(struct device *dev, struct device_driver *drv)
-> > > >  	struct platform_device *pdev = to_platform_device(dev);
-> > > >  	struct platform_driver *pdrv = to_platform_driver(drv);
-> > > >  
-> > > > +	/* the driver matches any device */
-> > > > +	if (pdrv->match_any_dev)
-> > > > +		return 1;
-> > > 
-> > > This breaks userspace in that it will never know to load the module that
-> > > can "bind to anything".
-> > > 
-> > > You need a way to encode this in the platform device id that can be a
-> > > wildcard type of thing, so that userspace can know about this.
-> > 
-> > How is userspace broken?  vfio platform is a new thing; there's nothing
-> > existing to break.  I don't see how automatic module loading makes sense
-> > for it.  Whether the module needs to be loaded depends on the user's
-> > intentions, not based on what hardware you have.
-> 
-> As your driver is saying it can "match any device", you need to tell
-> userspace that, which you aren't doing here.
+Hi,
 
-Userspace either knows how to set up VFIO platform devices, in which
-case it knows what to do, or it doesn't, in which case why would we want
-the module loaded?
+Alessandro Zummo <a.zummo@towertech.it> writes:
 
-> That's what the ids that are exported to userspace do, please add some for platform devices to
-> allow this to work properly, like almost all other busses have.
+> On Thu, 19 Dec 2013 11:46:24 -0500
+> Jason Cooper <jason@lakedaemon.net> wrote:
+>
+>> In the long term, should we seek out a co-maintainer for drivers/rtc?
+>> Can anyone get a hold of Alessandro to get his opinion on this?
+>
+>  I'd surely appreciate if someone can take some time to give
+>  a look to the patches. Most of them go thru subsystem's tree and, as
+>  far as I can see, I saw very relevant comments and fixes in all those
+>  years.
 
-This isn't about platform devices versus "almost all other buses", it's
-about VFIO being fundamentally different from normal drivers.
+While I am at it, I wonder if you can give me some directions on the
+following to add back alarm support to the ISL12057 on the specific
+hardware I have.
 
--Scott
+All NETGEAR ReadyNAS 102, 104 and 2120 have an ISL 12057 RTC chip which
+is used as main RTC clock but can also provide alarm. But the alarm
+interrupt line of the chip is *not* connected to the SoC. It is
+connected to some power component and can be used to wake up the NAS
+when it is completely off and the alarm rings.
 
+To me this kind of setup seems logical but it does not seem to be
+directly supported by current RTC logic:
 
+ - first, I cannot test an interrupt handler implementation I had
+   written as the SoC will never receive any interrupt. This limits
+   my ability to provide one to the driver.
+ - what can/should be done in my .dts file to indicate that the
+   device does not have any IRQ line connected (and hence no interrupt
+   handler) to the SoC but still supports an alarm.
+
+As a side note, the implementation I had was a working one on my
+hardware (i.e. was able to wake up the device at a given time) but I had
+to remove alarm code to get a basic driver accepted upstream.
+
+To be honest, I tried and understand what RTC subsystem expects from
+documentation and code w/o success. Any help appreciated on that topic.
+
+Cheers,
+
+a+
