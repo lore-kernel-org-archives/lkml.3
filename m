@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018Ab3LSMuH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 07:50:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44787 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754720Ab3LSL5M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:57:12 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 078/208] ALSA: hda - Fix bad EAPD setup for HP machines with AD1984A
-Date: Thu, 19 Dec 2013 11:52:56 +0000
-Message-Id: <1387454106-19326-79-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1756810Ab3LSNmg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:42:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754417Ab3LSNme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 08:42:34 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 3/9] tools lib traceevent: Remove print_app_build variable
+Date: Thu, 19 Dec 2013 14:42:01 +0100
+Message-Id: <1387460527-15030-4-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
+References: <1387460527-15030-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+Removing print_app_build variable, because it's not needed.
 
-------------------
-
-From: Takashi Iwai <tiwai@suse.de>
-
-commit 1cd9b2f78bf29d5282e02b32f9b3ecebc5842a7c upstream.
-
-It seems that EAPD on NID 0x16 is the only control over all outputs on
-HP machines with AD1984A while turning EAPD on NID 0x12 breaks the
-output.  Thus we need to avoid fiddling EAPD on NID.  As a quick
-workaround, just set own_eapd_ctrl flag for the wrong EAPD, then
-implement finer EAPD controls.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66321
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[ luis: backported to 3.11: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Ahern <dsahern@gmail.com>
 ---
- sound/pci/hda/patch_analog.c | 1 +
- 1 file changed, 1 insertion(+)
+ tools/lib/traceevent/Makefile | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
-index e17b55a..9eccfba 100644
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -3611,6 +3611,7 @@ static void ad1884_fixup_hp_eapd(struct hda_codec *codec,
- 	switch (action) {
- 	case HDA_FIXUP_ACT_PRE_PROBE:
- 		spec->gen.vmaster_mute.hook = ad_vmaster_eapd_hook;
-+		spec->gen.own_eapd_ctl = 1;
- 		break;
- 	case HDA_FIXUP_ACT_PROBE:
- 		if (spec->gen.autocfg.line_out_type == AUTO_PIN_SPEAKER_OUT)
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 0d9cbb4..022c987 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -151,7 +151,6 @@ override CFLAGS += $(udis86-flags) -D_GNU_SOURCE
+ ifeq ($(VERBOSE),1)
+   Q =
+   print_compile =
+-  print_app_build =
+   print_fpic_compile =
+   print_shared_lib_compile =
+   print_plugin_obj_compile =
+@@ -160,7 +159,6 @@ ifeq ($(VERBOSE),1)
+ else
+   Q = @
+   print_compile =		echo '  CC       '$(OBJ);
+-  print_app_build =		echo '  BUILD    '$(OBJ);
+   print_fpic_compile =		echo '  CC FPIC  '$(OBJ);
+   print_shared_lib_compile =	echo '  BUILD    SHARED LIB '$(OBJ);
+   print_plugin_obj_compile =	echo '  CC FPIC  '$(OBJ);
+@@ -173,10 +171,6 @@ do_fpic_compile =					\
+ 	($(print_fpic_compile)				\
+ 	$(CC) -c $(CFLAGS) $(EXT) -fPIC $< -o $@)
+ 
+-do_app_build =						\
+-	($(print_app_build)				\
+-	$(CC) $^ -rdynamic -o $@ $(CONFIG_LIBS) $(LIBS))
+-
+ do_compile_shared_library =			\
+ 	($(print_shared_lib_compile)		\
+ 	$(CC) --shared $^ -o $@)
 -- 
-1.8.3.2
+1.8.3.1
 
