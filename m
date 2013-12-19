@@ -1,164 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab3LSL7t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:59:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45330 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753651Ab3LSL7q (ORCPT
+	id S1754832Ab3LSOXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 09:23:23 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:47841 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754563Ab3LSOXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:46 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Olof Johansson <olof@lixom.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 186/208] ARM: pxa: tosa: fix keys mapping
-Date: Thu, 19 Dec 2013 11:54:44 +0000
-Message-Id: <1387454106-19326-187-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 19 Dec 2013 09:23:20 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>
+Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: [PATCH v8 0/9] USB Device Controller support for BCM281xx
+Date: Thu, 19 Dec 2013 09:23:01 -0500
+Message-Id: <1387462990-12039-1-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
+Changes since v7:
+	- Register phy provider with generic phy subsystem only after
+	  the generic phy has been allocated and configured.
 
-------------------
+Changes since v6:
+	- Drop dependency on the Exynos generic phy conversion series
+	- Bring back original patch that converts s3c-hsotg to use the
+	  generic phy layer with a fall back to the old usb style phy
+	  support.
 
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Changes since v5:
+	- tweak s3c-hsotg Kconfig help message to be more generic
 
-commit 506cac15ac86f204b83e3cfccde73eeb4e7c5f34 upstream.
+Changes since v4:
+	- phy_set/get_bus_width now use an int for bus_width
 
-When converting from tosa-keyboard driver to matrix keyboard, tosa keys
-received extra 1 column shift. Replace that with correct values to make
-keyboard work again.
+Changes since v3:
+	- Rebased on 3.13-rc3
+	- Move struct phy bus_width attribute back into struct phy_attrs
+	- Fix build issue on !GENERIC_PHY
+	- Update dwc2 binding to reflect optional phy properties
+	- Rename bcm-kona-phy.txt binding to bcm-phy.txt
+	- Reorder bcm kona phy includes and use bitops
+	- phy-names changed to "usb2-phy" to match updated s3c-hsotg
+	  generic phy-ification series
 
-Fixes: f69a6548c9d5 ('[ARM] pxa/tosa: make use of the matrix keypad driver')
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/arm/mach-pxa/tosa.c | 102 +++++++++++++++++++++++------------------------
- 1 file changed, 51 insertions(+), 51 deletions(-)
+Changes since v2:
+	- Rebased on 3.13-rc1
+	- Fix braces in phy_get_bus_width()/phy_set_bus_width()
+	- Drop generic phy conversion to use the same support from
+	  the Exynos generic phy conversion series
+	- Modify dts support to match the "device" phy name required
+	  in the v3 Exynos generic phy conversion
+	- Add s3c-hsotg phy_init/phy_exit support
+	- Fix typo on reg property in kona phy binding
+	- Replace phy driver reg struct with offset defines
+	- Move phy soft reset to phy driver init
+	- Fix dts node names to match ePAPR conventions
 
-diff --git a/arch/arm/mach-pxa/tosa.c b/arch/arm/mach-pxa/tosa.c
-index 0206b91..ef5557b 100644
---- a/arch/arm/mach-pxa/tosa.c
-+++ b/arch/arm/mach-pxa/tosa.c
-@@ -425,57 +425,57 @@ static struct platform_device tosa_power_device = {
-  * Tosa Keyboard
-  */
- static const uint32_t tosakbd_keymap[] = {
--	KEY(0, 2, KEY_W),
--	KEY(0, 6, KEY_K),
--	KEY(0, 7, KEY_BACKSPACE),
--	KEY(0, 8, KEY_P),
--	KEY(1, 1, KEY_Q),
--	KEY(1, 2, KEY_E),
--	KEY(1, 3, KEY_T),
--	KEY(1, 4, KEY_Y),
--	KEY(1, 6, KEY_O),
--	KEY(1, 7, KEY_I),
--	KEY(1, 8, KEY_COMMA),
--	KEY(2, 1, KEY_A),
--	KEY(2, 2, KEY_D),
--	KEY(2, 3, KEY_G),
--	KEY(2, 4, KEY_U),
--	KEY(2, 6, KEY_L),
--	KEY(2, 7, KEY_ENTER),
--	KEY(2, 8, KEY_DOT),
--	KEY(3, 1, KEY_Z),
--	KEY(3, 2, KEY_C),
--	KEY(3, 3, KEY_V),
--	KEY(3, 4, KEY_J),
--	KEY(3, 5, TOSA_KEY_ADDRESSBOOK),
--	KEY(3, 6, TOSA_KEY_CANCEL),
--	KEY(3, 7, TOSA_KEY_CENTER),
--	KEY(3, 8, TOSA_KEY_OK),
--	KEY(3, 9, KEY_LEFTSHIFT),
--	KEY(4, 1, KEY_S),
--	KEY(4, 2, KEY_R),
--	KEY(4, 3, KEY_B),
--	KEY(4, 4, KEY_N),
--	KEY(4, 5, TOSA_KEY_CALENDAR),
--	KEY(4, 6, TOSA_KEY_HOMEPAGE),
--	KEY(4, 7, KEY_LEFTCTRL),
--	KEY(4, 8, TOSA_KEY_LIGHT),
--	KEY(4, 10, KEY_RIGHTSHIFT),
--	KEY(5, 1, KEY_TAB),
--	KEY(5, 2, KEY_SLASH),
--	KEY(5, 3, KEY_H),
--	KEY(5, 4, KEY_M),
--	KEY(5, 5, TOSA_KEY_MENU),
--	KEY(5, 7, KEY_UP),
--	KEY(5, 11, TOSA_KEY_FN),
--	KEY(6, 1, KEY_X),
--	KEY(6, 2, KEY_F),
--	KEY(6, 3, KEY_SPACE),
--	KEY(6, 4, KEY_APOSTROPHE),
--	KEY(6, 5, TOSA_KEY_MAIL),
--	KEY(6, 6, KEY_LEFT),
--	KEY(6, 7, KEY_DOWN),
--	KEY(6, 8, KEY_RIGHT),
-+	KEY(0, 1, KEY_W),
-+	KEY(0, 5, KEY_K),
-+	KEY(0, 6, KEY_BACKSPACE),
-+	KEY(0, 7, KEY_P),
-+	KEY(1, 0, KEY_Q),
-+	KEY(1, 1, KEY_E),
-+	KEY(1, 2, KEY_T),
-+	KEY(1, 3, KEY_Y),
-+	KEY(1, 5, KEY_O),
-+	KEY(1, 6, KEY_I),
-+	KEY(1, 7, KEY_COMMA),
-+	KEY(2, 0, KEY_A),
-+	KEY(2, 1, KEY_D),
-+	KEY(2, 2, KEY_G),
-+	KEY(2, 3, KEY_U),
-+	KEY(2, 5, KEY_L),
-+	KEY(2, 6, KEY_ENTER),
-+	KEY(2, 7, KEY_DOT),
-+	KEY(3, 0, KEY_Z),
-+	KEY(3, 1, KEY_C),
-+	KEY(3, 2, KEY_V),
-+	KEY(3, 3, KEY_J),
-+	KEY(3, 4, TOSA_KEY_ADDRESSBOOK),
-+	KEY(3, 5, TOSA_KEY_CANCEL),
-+	KEY(3, 6, TOSA_KEY_CENTER),
-+	KEY(3, 7, TOSA_KEY_OK),
-+	KEY(3, 8, KEY_LEFTSHIFT),
-+	KEY(4, 0, KEY_S),
-+	KEY(4, 1, KEY_R),
-+	KEY(4, 2, KEY_B),
-+	KEY(4, 3, KEY_N),
-+	KEY(4, 4, TOSA_KEY_CALENDAR),
-+	KEY(4, 5, TOSA_KEY_HOMEPAGE),
-+	KEY(4, 6, KEY_LEFTCTRL),
-+	KEY(4, 7, TOSA_KEY_LIGHT),
-+	KEY(4, 9, KEY_RIGHTSHIFT),
-+	KEY(5, 0, KEY_TAB),
-+	KEY(5, 1, KEY_SLASH),
-+	KEY(5, 2, KEY_H),
-+	KEY(5, 3, KEY_M),
-+	KEY(5, 4, TOSA_KEY_MENU),
-+	KEY(5, 6, KEY_UP),
-+	KEY(5, 10, TOSA_KEY_FN),
-+	KEY(6, 0, KEY_X),
-+	KEY(6, 1, KEY_F),
-+	KEY(6, 2, KEY_SPACE),
-+	KEY(6, 3, KEY_APOSTROPHE),
-+	KEY(6, 4, TOSA_KEY_MAIL),
-+	KEY(6, 5, KEY_LEFT),
-+	KEY(6, 6, KEY_DOWN),
-+	KEY(6, 7, KEY_RIGHT),
- };
- 
- static struct matrix_keymap_data tosakbd_keymap_data = {
+Changes since v1:
+	- Convert USB phy driver to generic phy subsystem
+	- Add phy bus width apis
+	- Drop dwc2 phy bus width DT property in favor of querying the
+	  phy provider for bus width
+	- Add generic phy/clock properties to dwc2 DT binding
+	- Add generic phy subsystem support to s3c-hsotg with the
+	  existing usb phy and pdata phy methods as a fallback
+	- Split bindings out to separate patches to match the latest
+	  DT binding review guidelines
+
+This series adds USB Device Controller support for the Broadcom
+BCM281xx family of parts. BCM281xx contains a DWC2 OTG block and
+s3c-hsotg is used to support UDC operation.
+
+Part 1 adds phy bus width support to the generic phy subsystem
+
+Parts 2-6 allows s3c-hsotg to build on non-Samsung platforms, supports
+the dwc2 binding, adds generic phy layer support, and supports fetching
+phy bus width using the generic phy layer.
+
+Parts 7-8 add a generic phy binding and driver for the BCM Kona USB PHY.
+
+Part 9 adds the DT nodes to enable UDC support on both BCM281xx boards
+in the kernel.
+
+This series depends on:
+	- "Update Kona drivers to use clocks" v4 series
+	  https://lkml.org/lkml/2013/12/5/508
+	  (relevant portion now queued for 3.14)
+
+
+
+Matt Porter (9):
+  phy: add phy_get_bus_width()/phy_set_bus_width() calls
+  staging: dwc2: update DT binding to add generic clock/phy properties
+  usb: gadget: s3c-hsotg: enable build for other platforms
+  usb: gadget: s3c-hsotg: add snps,dwc2 compatible string
+  usb: gadget: s3c-hsotg: enable generic phy support
+  usb: gadget: s3c-hsotg: get phy bus width from phy subsystem
+  phy: add Broadcom Kona USB2 PHY DT binding
+  phy: add Broadcom Kona USB2 PHY driver
+  ARM: dts: add usb udc support to bcm281xx
+
+ Documentation/devicetree/bindings/phy/bcm-phy.txt  |  15 ++
+ Documentation/devicetree/bindings/staging/dwc2.txt |  12 ++
+ arch/arm/boot/dts/bcm11351-brt.dts                 |   6 +
+ arch/arm/boot/dts/bcm11351.dtsi                    |  18 +++
+ arch/arm/boot/dts/bcm28155-ap.dts                  |   8 ++
+ drivers/phy/Kconfig                                |   6 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-bcm-kona-usb2.c                    | 158 +++++++++++++++++++++
+ drivers/usb/gadget/Kconfig                         |   7 +-
+ drivers/usb/gadget/s3c-hsotg.c                     |  72 +++++++---
+ drivers/usb/gadget/s3c-hsotg.h                     |   1 +
+ include/linux/phy/phy.h                            |  28 ++++
+ 12 files changed, 309 insertions(+), 23 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/phy/bcm-phy.txt
+ create mode 100644 drivers/phy/phy-bcm-kona-usb2.c
+
 -- 
-1.8.3.2
+1.8.4
 
