@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab3LSNiE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 08:38:04 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:46111 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755860Ab3LSNhV (ORCPT
+	id S1755975Ab3LSNex (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 08:34:53 -0500
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:38104 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755857Ab3LSNes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 08:37:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131219115833.GA11279@gmail.com>
-References: <1387441761-2153-1-git-send-email-tuxoko@gmail.com>
-	<20131219115833.GA11279@gmail.com>
-Date: Thu, 19 Dec 2013 21:37:19 +0800
-Message-ID: <CAK1sfuYn1iLUHWwUTdm755D0YpuAcROsj5rp=4-Vg5qc57bFfw@mail.gmail.com>
-Subject: Re: [PATCH] perf config: ignore generated files in feature-checks
-From: David Chen <tuxoko@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 Dec 2013 08:34:48 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: nfs-ganesha-devel@lists.sourceforge.net, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 04/13] locks: add __acquires and __releases annotations to locks_start and locks_stop
+Date: Thu, 19 Dec 2013 08:34:16 -0500
+Message-Id: <1387460065-28269-5-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
+References: <1387460065-28269-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Why not? They're generated files aren't they?
+...to make sparse happy.
 
-By the way, I just found out that test-* will be built depend on the
-detected features.
-Should I include them all?
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/locks.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Thanks,
-Chunwei Chen
+diff --git a/fs/locks.c b/fs/locks.c
+index 049a144..6084f5a 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -2430,6 +2430,7 @@ static int locks_show(struct seq_file *f, void *v)
+ }
+ 
+ static void *locks_start(struct seq_file *f, loff_t *pos)
++	__acquires(&blocked_lock_lock)
+ {
+ 	struct locks_iterator *iter = f->private;
+ 
+@@ -2448,6 +2449,7 @@ static void *locks_next(struct seq_file *f, void *v, loff_t *pos)
+ }
+ 
+ static void locks_stop(struct seq_file *f, void *v)
++	__releases(&blocked_lock_lock)
+ {
+ 	spin_unlock(&blocked_lock_lock);
+ 	lg_global_unlock(&file_lock_lglock);
+-- 
+1.8.4.2
 
-2013/12/19 Ingo Molnar <mingo@kernel.org>:
->
-> * Chunwei Chen <tuxoko@gmail.com> wrote:
->
->> Signed-off-by: Chunwei Chen <tuxoko@gmail.com>
->> ---
->>  tools/perf/config/feature-checks/.gitignore |    2 ++
->>  1 file changed, 2 insertions(+)
->>  create mode 100644 tools/perf/config/feature-checks/.gitignore
->>
->> diff --git a/tools/perf/config/feature-checks/.gitignore b/tools/perf/config/feature-checks/.gitignore
->> new file mode 100644
->> index 0000000..9662c68
->> --- /dev/null
->> +++ b/tools/perf/config/feature-checks/.gitignore
->> @@ -0,0 +1,2 @@
->> +test-all
->> +*.d
->
-> Why? These are cleaned out on 'make clean'.
->
-> Thanks,
->
->         Ingo
