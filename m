@@ -1,92 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab3LSPEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 10:04:39 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:35705 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937Ab3LSPEf (ORCPT
+	id S1754753Ab3LSL5Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:57:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44776 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754711Ab3LSL5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 10:04:35 -0500
-From: Levente Kurusa <levex@linux.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Levente Kurusa <levex@linux.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        "Steven J. Hill" <Steven.Hill@imgtec.com>, linux-mips@linux-mips.org
-Subject: [PATCH 14/38] mips: txx9: add missing put_device call
-Date: Thu, 19 Dec 2013 16:03:25 +0100
-Message-Id: <1387465429-3568-15-git-send-email-levex@linux.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1387465429-3568-2-git-send-email-levex@linux.com>
-References: <1387465429-3568-2-git-send-email-levex@linux.com>
+	Thu, 19 Dec 2013 06:57:09 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 076/208] ARM: footbridge: fix EBSA285 LEDs
+Date: Thu, 19 Dec 2013 11:52:54 +0000
+Message-Id: <1387454106-19326-77-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is required so that we give up the last reference to the device.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-Also, rework error path so that it is easier to read.
+------------------
 
-Signed-off-by: Levente Kurusa <levex@linux.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
+
+commit 67130c5464f50428aea0b4526a6729d61f9a1d53 upstream.
+
+- The LEDs register is write-only: it can't be read-modify-written.
+- The LEDs are write-1-for-off not 0.
+- The check for the platform was inverted.
+
+Fixes: cf6856d693dd ("ARM: mach-footbridge: retire custom LED code")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/mips/txx9/generic/setup.c | 27 +++++++++++++++++----------
- 1 file changed, 17 insertions(+), 10 deletions(-)
+ arch/arm/mach-footbridge/ebsa285.c | 22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
-diff --git a/arch/mips/txx9/generic/setup.c b/arch/mips/txx9/generic/setup.c
-index 2b0b83c..24332f5 100644
---- a/arch/mips/txx9/generic/setup.c
-+++ b/arch/mips/txx9/generic/setup.c
-@@ -937,6 +937,12 @@ static ssize_t txx9_sram_write(struct file *filp, struct kobject *kobj,
- 	return size;
+diff --git a/arch/arm/mach-footbridge/ebsa285.c b/arch/arm/mach-footbridge/ebsa285.c
+index b082435..1a7235f 100644
+--- a/arch/arm/mach-footbridge/ebsa285.c
++++ b/arch/arm/mach-footbridge/ebsa285.c
+@@ -30,21 +30,24 @@ static const struct {
+ 	const char *name;
+ 	const char *trigger;
+ } ebsa285_leds[] = {
+-	{ "ebsa285:amber", "heartbeat", },
+-	{ "ebsa285:green", "cpu0", },
++	{ "ebsa285:amber", "cpu0", },
++	{ "ebsa285:green", "heartbeat", },
+ 	{ "ebsa285:red",},
+ };
+ 
++static unsigned char hw_led_state;
++
+ static void ebsa285_led_set(struct led_classdev *cdev,
+ 		enum led_brightness b)
+ {
+ 	struct ebsa285_led *led = container_of(cdev,
+ 			struct ebsa285_led, cdev);
+ 
+-	if (b != LED_OFF)
+-		*XBUS_LEDS |= led->mask;
++	if (b == LED_OFF)
++		hw_led_state |= led->mask;
+ 	else
+-		*XBUS_LEDS &= ~led->mask;
++		hw_led_state &= ~led->mask;
++	*XBUS_LEDS = hw_led_state;
  }
  
-+void txx9_device_release(struct device *dev) {
-+	struct txx9_sramc_dev *sramc_dev;
-+	txx9_sramc_dev = container_of(dev, struct txx9_sramc_dev, dev);
-+	kfree(txx9_sramc_dev);
-+}
-+
- void __init txx9_sramc_init(struct resource *r)
- {
- 	struct txx9_sramc_dev *dev;
-@@ -951,8 +957,11 @@ void __init txx9_sramc_init(struct resource *r)
- 		return;
- 	size = resource_size(r);
- 	dev->base = ioremap(r->start, size);
--	if (!dev->base)
--		goto exit;
-+	if (!dev->base) {
-+		kfree(dev);
-+		return;
-+	}
-+	dev->dev.release = &txx9_device_release;
- 	dev->dev.bus = &txx9_sramc_subsys;
- 	sysfs_bin_attr_init(&dev->bindata_attr);
- 	dev->bindata_attr.attr.name = "bindata";
-@@ -963,17 +972,15 @@ void __init txx9_sramc_init(struct resource *r)
- 	dev->bindata_attr.private = dev;
- 	err = device_register(&dev->dev);
- 	if (err)
--		goto exit;
-+		goto exit_put;
- 	err = sysfs_create_bin_file(&dev->dev.kobj, &dev->bindata_attr);
- 	if (err) {
- 		device_unregister(&dev->dev);
--		goto exit;
--	}
--	return;
--exit:
--	if (dev) {
--		if (dev->base)
--			iounmap(dev->base);
-+		iounmap(dev->base);
- 		kfree(dev);
- 	}
-+	return;
-+exit_put:
-+	put_device(&dev->dev);
-+	return;
+ static enum led_brightness ebsa285_led_get(struct led_classdev *cdev)
+@@ -52,18 +55,19 @@ static enum led_brightness ebsa285_led_get(struct led_classdev *cdev)
+ 	struct ebsa285_led *led = container_of(cdev,
+ 			struct ebsa285_led, cdev);
+ 
+-	return (*XBUS_LEDS & led->mask) ? LED_FULL : LED_OFF;
++	return hw_led_state & led->mask ? LED_OFF : LED_FULL;
  }
+ 
+ static int __init ebsa285_leds_init(void)
+ {
+ 	int i;
+ 
+-	if (machine_is_ebsa285())
++	if (!machine_is_ebsa285())
+ 		return -ENODEV;
+ 
+-	/* 3 LEDS All ON */
+-	*XBUS_LEDS |= XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
++	/* 3 LEDS all off */
++	hw_led_state = XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
++	*XBUS_LEDS = hw_led_state;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(ebsa285_leds); i++) {
+ 		struct ebsa285_led *led;
 -- 
-1.8.3.1
+1.8.3.2
 
