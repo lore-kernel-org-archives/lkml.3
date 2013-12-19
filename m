@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036Ab3LSL7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 06:59:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45295 "EHLO
+	id S1751599Ab3LSL6B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:58:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44950 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755995Ab3LSL7f (ORCPT
+	with ESMTP id S1754879Ab3LSL55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 06:59:35 -0500
+	Thu, 19 Dec 2013 06:57:57 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Tomas Winkler <tomas.winkler@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 179/208] net: allwinner: emac: Add missing free_irq
-Date: Thu, 19 Dec 2013 11:54:37 +0000
-Message-Id: <1387454106-19326-180-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 109/208] mei: me: add Lynx Point Wellsburg work station device id
+Date: Thu, 19 Dec 2013 11:53:27 +0000
+Message-Id: <1387454106-19326-110-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
 References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
@@ -28,48 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-commit e9c56f8d2f851fb6d6ce6794c0f5463b862a878e upstream.
+commit 838b3a6d62413b336f3dde15ecff161070358957 upstream.
 
-The sun4i-emac driver uses devm_request_irq at .ndo_open time, but relies on
-the managed device mechanism to actually free it. This causes an issue whenever
-someone wants to restart the interface, the interrupt still being held, and not
-yet released.
+add missing device id for LPT based work station
 
-Fall back to using the regular request_irq at .ndo_open time, and introduce a
-free_irq during .ndo_stop.
-
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/allwinner/sun4i-emac.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/misc/mei/hw-me-regs.h | 1 +
+ drivers/misc/mei/pci-me.c     | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/drivers/net/ethernet/allwinner/sun4i-emac.c b/drivers/net/ethernet/allwinner/sun4i-emac.c
-index 50b853a..46dfb13 100644
---- a/drivers/net/ethernet/allwinner/sun4i-emac.c
-+++ b/drivers/net/ethernet/allwinner/sun4i-emac.c
-@@ -717,8 +717,7 @@ static int emac_open(struct net_device *dev)
- 	if (netif_msg_ifup(db))
- 		dev_dbg(db->dev, "enabling %s\n", dev->name);
+diff --git a/drivers/misc/mei/hw-me-regs.h b/drivers/misc/mei/hw-me-regs.h
+index 6a203b6..6c0fde5 100644
+--- a/drivers/misc/mei/hw-me-regs.h
++++ b/drivers/misc/mei/hw-me-regs.h
+@@ -110,6 +110,7 @@
+ #define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
  
--	if (devm_request_irq(db->dev, dev->irq, &emac_interrupt,
--			     0, dev->name, dev))
-+	if (request_irq(dev->irq, &emac_interrupt, 0, dev->name, dev))
- 		return -EAGAIN;
+ #define MEI_DEV_ID_LPT        0x8C3A  /* Lynx Point */
++#define MEI_DEV_ID_LPT_W      0x8D3A  /* Lynx Point - Wellsburg */
+ #define MEI_DEV_ID_LPT_LP     0x9C3A  /* Lynx Point LP */
+ /*
+  * MEI HW Section
+diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
+index 1b3844e..a0a5e72 100644
+--- a/drivers/misc/mei/pci-me.c
++++ b/drivers/misc/mei/pci-me.c
+@@ -77,6 +77,7 @@ static DEFINE_PCI_DEVICE_TABLE(mei_me_pci_tbl) = {
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_2)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_3)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT)},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_W)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_LP)},
  
- 	/* Initialize EMAC board */
-@@ -774,6 +773,8 @@ static int emac_stop(struct net_device *ndev)
- 
- 	emac_shutdown(ndev);
- 
-+	free_irq(ndev->irq, ndev);
-+
- 	return 0;
- }
- 
+ 	/* required last entry */
 -- 
 1.8.3.2
 
