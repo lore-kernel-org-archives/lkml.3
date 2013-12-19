@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab3LSK2X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 05:28:23 -0500
-Received: from m13-110.163.com ([220.181.13.110]:45993 "EHLO m13-110.163.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751089Ab3LSK2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 05:28:21 -0500
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Dec 2013 05:28:20 EST
-X-Originating-IP: [166.111.131.12]
-Date: Thu, 19 Dec 2013 18:12:40 +0800 (CST)
-From: xiaoqixue_1 <xiaoqixue_1@163.com>
-To: "Greg KH" <gregkh@linuxfoundation.org>
-Cc: xqx12 <s2exqx@gmail.com>, jslaby@suse.cz, linux-kernel@vger.kernel.org,
-        chyyuu@gmail.com, xuyongjiande@gmail.com
-Subject: Re:Re: [PATCH] tty: an overflow of multiplication in
- drivers/tty/cyclades.c
-X-Priority: 3
-X-Mailer: Coremail Webmail Server Version SP_ntes V3.5 build
- 20131204(24406.5820.5783) Copyright (c) 2002-2013 www.mailtech.cn 163com
-In-Reply-To: <20131219005740.GA6257@kroah.com>
-References: <1387328429-15172-1-git-send-email-xiaoqixue_1@163.com>
- <20131219005740.GA6257@kroah.com>
-Content-Type: text/plain; charset=us-ascii
-MIME-Version: 1.0
-Message-ID: <22cc7e30.8cb3.1430a57c434.Coremail.xiaoqixue_1@163.com>
-X-CM-TRANSID: bsGowEBZK0KZxrJS9NsKAA--.6173W
-X-CM-SenderInfo: 50ld015l0xvsqr6rljoofrz/1tbivwD4vVD+QtE-yQABsw
-X-Coremail-Antispam: 1U5529EdanIXcx71UUUUU7vcSsGvfC2KfnxnUU==
+	id S1752049Ab3LSL6l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 06:58:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45080 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926Ab3LSL6f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 06:58:35 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 135/208] [media] saa7164: fix return value check in saa7164_initdev()
+Date: Thu, 19 Dec 2013 11:53:53 +0000
+Message-Id: <1387454106-19326-136-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+References: <1387454106-19326-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBJF5MGL004176
 
-I am sorry for it because my git configure is not sound.
+3.11.10.2 -stable review patch.  If anyone has any objections, please let me know.
 
-my real name Qixue Xiao , and my email  &lt;xiaoqixue_1@163.com&gt;.
-At 2013-12-19 08:57:40,"Greg KH" <gregkh@linuxfoundation.org> wrote:
->On Wed, Dec 18, 2013 at 09:00:29AM +0800, xqx12 wrote:
->> there is an overflow in the code :
->> cyz_polling_cycle = (arg * HZ) / 1000,
->> the multiplicator arg comes from user, so it may be an overflow if
->> arg is a big number. And the value of cyc_polling_cycle will be
->> wrong when it is used next time.
->> 
->> Reported-by: Qixue Xiao <xiaoqixue_1@163.com>
->> Suggested-by: Yongjian Xu <xuyongjiande@gmail.com>
->> Suggested-by: Yu Chen <chyyuu@gmail.com>
->> Signed-off-by: Qixue Xiao <xiaoqixue_1@163.com>
->
->I need a "real" name as the "From:" line here, especially as it doesn't
->match any of these lines either :(
->
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+------------------
+
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+
+commit 89f4d45b2752df5d222b5f63919ce59e2d8afaf4 upstream.
+
+In case of error, the function kthread_run() returns ERR_PTR()
+and never returns NULL. The NULL test in the return value check
+should be replaced with IS_ERR().
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/media/pci/saa7164/saa7164-core.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/pci/saa7164/saa7164-core.c b/drivers/media/pci/saa7164/saa7164-core.c
+index d37ee37..896bd8b 100644
+--- a/drivers/media/pci/saa7164/saa7164-core.c
++++ b/drivers/media/pci/saa7164/saa7164-core.c
+@@ -1354,9 +1354,11 @@ static int saa7164_initdev(struct pci_dev *pci_dev,
+ 		if (fw_debug) {
+ 			dev->kthread = kthread_run(saa7164_thread_function, dev,
+ 				"saa7164 debug");
+-			if (!dev->kthread)
++			if (IS_ERR(dev->kthread)) {
++				dev->kthread = NULL;
+ 				printk(KERN_ERR "%s() Failed to create "
+ 					"debug kernel thread\n", __func__);
++			}
+ 		}
+ 
+ 	} /* != BOARD_UNKNOWN */
+-- 
+1.8.3.2
+
