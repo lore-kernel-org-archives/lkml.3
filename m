@@ -1,129 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751325Ab3LTFHJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 00:07:09 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52637 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750766Ab3LTFHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 00:07:08 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <balbi@ti.com>, <kishon@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <s.nawrocki@samsung.com>, <jg1.han@samsung.com>, <mporter@linaro.org>,
-        <andrew@lunn.ch>, <k.debski@samsung.com>, <gautamvivek1987@gmail.com>,
-        <heikki.krogerus@linux.intel.com>, <yuvaraj.cd@gmail.com>,
-        <george.cherian@ti.com>
-Subject: [PATCH v2 1/2] phy: phy-core: increment refcounting variables only on 'success'
-Date: Fri, 20 Dec 2013 10:36:49 +0530
-Message-ID: <1387516009-12804-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1387463504-4415-1-git-send-email-kishon@ti.com>
-References: <1387463504-4415-1-git-send-email-kishon@ti.com>
+	id S1752237Ab3LTFIc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 00:08:32 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:50266 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab3LTFI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 00:08:29 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: remove sysfs files for CPU which failed to come back after resume
+Date: Fri, 20 Dec 2013 10:38:20 +0530
+Message-Id: <c6b53b186145559668722120ea1f37d28ddb3177.1387516043.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Increment 'init_count' only if the 'init' callback succeeded and decrement
-'init_count' only if the 'exit' callback succeded. Increment 'power_count'
-only if 'power_on' callback succeded and if it failed disable the clocks using
-phy_pm_runtime_put_sync(). Also decrement 'power_count' only if 'power_off'
-callback succeded and if it failed do not disable the clocks.
+There are cases where cpufreq_add_dev() may fail for some CPUs during resume.
+With the current code we will still have sysfs cpufreq files for such CPUs, and
+struct cpufreq_policy would be already freed for them. Hence any operation on
+those sysfs files would result in kernel warnings.
 
-Reported-by: George Cherian <george.cherian@ti.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+To fix this, lets remove those sysfs files or put the associated kobject in case
+of such errors. Also, to make it simple lets remove the sysfs links from all the
+CPUs (except policy->cpu) during suspend as that operation wouldn't result with a
+loss of sysfs file permissions. And so we will create those links during resume
+as well.
+
+Reported-and-tested-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
-Changes from v1:
-Fixed power_off to call phy_pm_runtime_put only when there is no error in
-power_off callback
+ drivers/cpufreq/cpufreq.c | 61 ++++++++++++++++++++++++-----------------------
+ 1 file changed, 31 insertions(+), 30 deletions(-)
 
- drivers/phy/phy-core.c |   22 ++++++++++++++--------
- 1 file changed, 14 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 03cf8fb..27b8f3f 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -155,13 +155,14 @@ int phy_init(struct phy *phy)
- 		return ret;
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 02d534d..cea96c9 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -845,8 +845,7 @@ static void cpufreq_init_policy(struct cpufreq_policy *policy)
  
- 	mutex_lock(&phy->mutex);
--	if (phy->init_count++ == 0 && phy->ops->init) {
-+	if (phy->init_count == 0 && phy->ops->init) {
- 		ret = phy->ops->init(phy);
- 		if (ret < 0) {
- 			dev_err(&phy->dev, "phy init failed --> %d\n", ret);
- 			goto out;
+ #ifdef CONFIG_HOTPLUG_CPU
+ static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
+-				  unsigned int cpu, struct device *dev,
+-				  bool frozen)
++				  unsigned int cpu, struct device *dev)
+ {
+ 	int ret = 0;
+ 	unsigned long flags;
+@@ -877,9 +876,7 @@ static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
  		}
  	}
-+	++phy->init_count;
  
- out:
- 	mutex_unlock(&phy->mutex);
-@@ -179,13 +180,14 @@ int phy_exit(struct phy *phy)
- 		return ret;
- 
- 	mutex_lock(&phy->mutex);
--	if (--phy->init_count == 0 && phy->ops->exit) {
-+	if (phy->init_count == 1 && phy->ops->exit) {
- 		ret = phy->ops->exit(phy);
- 		if (ret < 0) {
- 			dev_err(&phy->dev, "phy exit failed --> %d\n", ret);
- 			goto out;
- 		}
- 	}
-+	--phy->init_count;
- 
- out:
- 	mutex_unlock(&phy->mutex);
-@@ -203,16 +205,20 @@ int phy_power_on(struct phy *phy)
- 		return ret;
- 
- 	mutex_lock(&phy->mutex);
--	if (phy->power_count++ == 0 && phy->ops->power_on) {
-+	if (phy->power_count == 0 && phy->ops->power_on) {
- 		ret = phy->ops->power_on(phy);
- 		if (ret < 0) {
- 			dev_err(&phy->dev, "phy poweron failed --> %d\n", ret);
- 			goto out;
- 		}
- 	}
-+	++phy->power_count;
-+	mutex_unlock(&phy->mutex);
-+	return 0;
- 
- out:
- 	mutex_unlock(&phy->mutex);
-+	phy_pm_runtime_put_sync(phy);
+-	/* Don't touch sysfs links during light-weight init */
+-	if (!frozen)
+-		ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
++	ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
  
  	return ret;
  }
-@@ -223,19 +229,19 @@ int phy_power_off(struct phy *phy)
- 	int ret = -ENOTSUPP;
- 
- 	mutex_lock(&phy->mutex);
--	if (--phy->power_count == 0 && phy->ops->power_off) {
-+	if (phy->power_count == 1 && phy->ops->power_off) {
- 		ret =  phy->ops->power_off(phy);
- 		if (ret < 0) {
- 			dev_err(&phy->dev, "phy poweroff failed --> %d\n", ret);
--			goto out;
-+			mutex_unlock(&phy->mutex);
-+			return ret;
- 		}
- 	}
--
--out:
-+	--phy->power_count;
- 	mutex_unlock(&phy->mutex);
- 	phy_pm_runtime_put(phy);
- 
--	return ret;
-+	return 0;
+@@ -926,6 +923,27 @@ err_free_policy:
+ 	return NULL;
  }
- EXPORT_SYMBOL_GPL(phy_power_off);
  
++static void cpufreq_policy_put_kobj(struct cpufreq_policy *policy)
++{
++	struct kobject *kobj;
++	struct completion *cmp;
++
++	down_read(&policy->rwsem);
++	kobj = &policy->kobj;
++	cmp = &policy->kobj_unregister;
++	up_read(&policy->rwsem);
++	kobject_put(kobj);
++
++	/*
++	 * We need to make sure that the underlying kobj is
++	 * actually not referenced anymore by anybody before we
++	 * proceed with unloading.
++	 */
++	pr_debug("waiting for dropping of refcount\n");
++	wait_for_completion(cmp);
++	pr_debug("wait complete\n");
++}
++
+ static void cpufreq_policy_free(struct cpufreq_policy *policy)
+ {
+ 	free_cpumask_var(policy->related_cpus);
+@@ -986,7 +1004,7 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+ 	list_for_each_entry(tpolicy, &cpufreq_policy_list, policy_list) {
+ 		if (cpumask_test_cpu(cpu, tpolicy->related_cpus)) {
+ 			read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+-			ret = cpufreq_add_policy_cpu(tpolicy, cpu, dev, frozen);
++			ret = cpufreq_add_policy_cpu(tpolicy, cpu, dev);
+ 			up_read(&cpufreq_rwsem);
+ 			return ret;
+ 		}
+@@ -1096,7 +1114,10 @@ err_get_freq:
+ 	if (cpufreq_driver->exit)
+ 		cpufreq_driver->exit(policy);
+ err_set_policy_cpu:
++	if (frozen)
++		cpufreq_policy_put_kobj(policy);
+ 	cpufreq_policy_free(policy);
++
+ nomem_out:
+ 	up_read(&cpufreq_rwsem);
+ 
+@@ -1118,7 +1139,7 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+ }
+ 
+ static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
+-					   unsigned int old_cpu, bool frozen)
++					   unsigned int old_cpu)
+ {
+ 	struct device *cpu_dev;
+ 	int ret;
+@@ -1126,10 +1147,6 @@ static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
+ 	/* first sibling now owns the new sysfs dir */
+ 	cpu_dev = get_cpu_device(cpumask_any_but(policy->cpus, old_cpu));
+ 
+-	/* Don't touch sysfs files during light-weight tear-down */
+-	if (frozen)
+-		return cpu_dev->id;
+-
+ 	sysfs_remove_link(&cpu_dev->kobj, "cpufreq");
+ 	ret = kobject_move(&policy->kobj, &cpu_dev->kobj);
+ 	if (ret) {
+@@ -1196,7 +1213,7 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+ 		if (!frozen)
+ 			sysfs_remove_link(&dev->kobj, "cpufreq");
+ 	} else if (cpus > 1) {
+-		new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu, frozen);
++		new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu);
+ 		if (new_cpu >= 0) {
+ 			update_policy_cpu(policy, new_cpu);
+ 
+@@ -1218,8 +1235,6 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
+ 	int ret;
+ 	unsigned long flags;
+ 	struct cpufreq_policy *policy;
+-	struct kobject *kobj;
+-	struct completion *cmp;
+ 
+ 	read_lock_irqsave(&cpufreq_driver_lock, flags);
+ 	policy = per_cpu(cpufreq_cpu_data, cpu);
+@@ -1249,22 +1264,8 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
+ 			}
+ 		}
+ 
+-		if (!frozen) {
+-			down_read(&policy->rwsem);
+-			kobj = &policy->kobj;
+-			cmp = &policy->kobj_unregister;
+-			up_read(&policy->rwsem);
+-			kobject_put(kobj);
+-
+-			/*
+-			 * We need to make sure that the underlying kobj is
+-			 * actually not referenced anymore by anybody before we
+-			 * proceed with unloading.
+-			 */
+-			pr_debug("waiting for dropping of refcount\n");
+-			wait_for_completion(cmp);
+-			pr_debug("wait complete\n");
+-		}
++		if (!frozen)
++			cpufreq_policy_put_kobj(policy);
+ 
+ 		/*
+ 		 * Perform the ->exit() even during light-weight tear-down,
 -- 
-1.7.10.4
+1.7.12.rc2.18.g61b472e
 
