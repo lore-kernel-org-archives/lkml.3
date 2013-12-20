@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab3LTSG0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 13:06:26 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:45067 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab3LTSGZ (ORCPT
+	id S1751797Ab3LTSUK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 13:20:10 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:41923 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab3LTSUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 13:06:25 -0500
-Message-ID: <1387562470.21140.57.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v7 00/12] kexec kernel efi runtime support
-From: Toshi Kani <toshi.kani@hp.com>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de, greg@kroah.com, matt@console-pimps.org,
-        akpm@linux-foundation.org, mingo@kernel.org, msalter@redhat.com,
-        leif.lindholm@linaro.org
-Date: Fri, 20 Dec 2013 11:01:10 -0700
-In-Reply-To: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
-References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Dec 2013 13:20:08 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Cc: kvm@vger.kernel.org, gleb@kernel.org, agraf@suse.de
+Subject: [GIT PULL] KVM changes for 3.13-rc5
+Date: Fri, 20 Dec 2013 19:19:51 +0100
+Message-Id: <1387563591-2137-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-12-20 at 18:02 +0800, Dave Young wrote:
-> Here is the V7 patchset for supporting kexec kernel efi runtime.
-> Per pervious discussion I pass the 1st kernel efi runtime mapping
-> via setup_data to 2nd kernel. Besides of the runtime mapping
-> info I also pass the fw_vendor, runtime, config table, smbios
-> physical address in setup_data. EFI spec mentioned fw_vendor,
-> runtime, config table addresses will be converted to virt address
-> after entering virtual mode, but we will use it as physical address
-> in efi_init. For smbios EFI spec did not mention about the address
-> updating, but during my test on a HP workstation, the bios will
-> convert it to Virt addr, thus pass it in setup_data as well.
-> 
-> For fw_vendor, runtime, config table, I export them in /sys/firmware/
-> efi/, smbios is already in /sys/firmware/efi/systab.
-> 
-> For efi runtime mapping I add a new directory /sys/firmware/efi/
-> runtime-map/ like below
-> [dave@darkstar ~]$ tree /sys/firmware/efi/runtime-map/
-> /sys/firmware/efi/runtime-map/
-> |__ 0
-> |   |__ attribute
-> |   |__ num_pages
-> |   |__ phys_addr
-> |   |__ type
-> |   |__ virt_addr
-> |__ 1
-> [snip]
-> 
-> kexec-tools will assemble them as setup_data and pass to 2nd kernel.
-> I will send userspace patches as well.
-> 
-> Limitation is I only write support for x86_64, test on below machines:
-> Lenovo thinkpad t420
-> Dell inspiron 14 - 3421
-> HP Z420 workstation
-> Qemu + OVMF
+Linus,
 
-Tested on an HP 60-way UEFI platform (proto).  For the series:
+The following changes since commit 319e2e3f63c348a9b66db4667efa73178e18b17d:
 
-Tested-by: Toshi Kani <toshi.kani@hp.com>
+  Linux 3.13-rc4 (2013-12-15 12:31:33 -0800)
 
-Thanks,
--Toshi
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
 
+for you to fetch changes up to 5e6d26cf4857a98032a4b71b13d5b33163803523:
+
+  Merge tag 'signed-for-3.13' of git://github.com/agraf/linux-2.6 into kvm-master (2013-12-20 19:13:58 +0100)
+
+----------------------------------------------------------------
+
+The PPC folks had a large amount of changes queued for 3.13, and now they
+are fixing the bugs.
+
+----------------------------------------------------------------
+Alexander Graf (4):
+      KVM: PPC: Book3S: PR: Don't clobber our exit handler id
+      KVM: PPC: Book3S: PR: Export kvmppc_copy_to|from_svcpu
+      KVM: PPC: Book3S: PR: Make svcpu -> vcpu store preempt savvy
+      KVM: PPC: Book3S: PR: Enable interrupts earlier
+
+Aneesh Kumar K.V (1):
+      powerpc: book3s: kvm: Don't abuse host r2 in exit path
+
+Paolo Bonzini (1):
+      Merge tag 'signed-for-3.13' of git://github.com/agraf/linux-2.6 into kvm-master
+
+Paul Mackerras (5):
+      KVM: PPC: Book3S HV: Fix physical address calculations
+      KVM: PPC: Book3S HV: Refine barriers in guest entry/exit
+      KVM: PPC: Book3S HV: Make tbacct_lock irq-safe
+      KVM: PPC: Book3S HV: Take SRCU read lock around kvm_read_guest() call
+      KVM: PPC: Book3S HV: Don't drop low-order page address bits
+
+Scott Wood (1):
+      powerpc/kvm/booke: Fix build break due to stack frame size warning
+
+pingfan liu (1):
+      powerpc: kvm: fix rare but potential deadlock scene
+
+ arch/powerpc/include/asm/kvm_book3s.h     |  4 ++++
+ arch/powerpc/include/asm/kvm_book3s_asm.h |  2 ++
+ arch/powerpc/include/asm/switch_to.h      |  2 +-
+ arch/powerpc/kernel/asm-offsets.c         |  1 +
+ arch/powerpc/kernel/process.c             | 32 +++++++++++++++----------------
+ arch/powerpc/kvm/book3s_64_mmu_hv.c       | 18 +++++++++++++----
+ arch/powerpc/kvm/book3s_hv.c              | 24 +++++++++++++----------
+ arch/powerpc/kvm/book3s_hv_rm_mmu.c       |  9 +++++++--
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S   | 23 ++++++++++++----------
+ arch/powerpc/kvm/book3s_interrupts.S      | 19 ++++++++++--------
+ arch/powerpc/kvm/book3s_pr.c              | 22 +++++++++++++++++++++
+ arch/powerpc/kvm/book3s_rmhandlers.S      |  6 +-----
+ arch/powerpc/kvm/booke.c                  | 12 ++++++------
+ 13 files changed, 112 insertions(+), 62 deletions(-)
