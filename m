@@ -1,111 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab3LTO57 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 09:57:59 -0500
-Received: from imp01.mtu.ru ([62.5.255.10]:46808 "EHLO imp01.mtu.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751748Ab3LTO55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 09:57:57 -0500
-X-Spam-Flag: NO
-Message-ID: <52B45AEB.2060508@pavlinux.ru>
-Date: Fri, 20 Dec 2013 18:57:47 +0400
-From: Pavel Vasilyev <pavel@pavlinux.ru>
-Reply-To: pavel@pavlinux.ru
-Organization: Pavlinux. Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131118 Thunderbird/17.0.11
-MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: RT <linux-rt-users@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.12.5 CRASH/FREEZE
-References: <52A9CC77.20904@linaro.org> <52AA1CC0.30307@pavlinux.ru> <20131220141008.GE10249@linutronix.de>
-In-Reply-To: <20131220141008.GE10249@linutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="AEubbuL1t5eJKN8bmIC5kjnp2jJE3aXDS"
+	id S1753268Ab3LTO6o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 09:58:44 -0500
+Received: from smarthost01b.mail.zen.net.uk ([212.23.1.3]:59662 "EHLO
+	smarthost01b.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751101Ab3LTO6n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 09:58:43 -0500
+Message-ID: <1387551482.3404.63.camel@linaro1.home>
+Subject: Re: [PATCH v4 13/16] ARM: Add an emulate flag to the
+ kprobes/uprobes instruction decode functions
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: David Long <dave.long@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Rabin Vincent <rabin@rab.in>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 20 Dec 2013 14:58:02 +0000
+In-Reply-To: <1387166930-13182-14-git-send-email-dave.long@linaro.org>
+References: <1387166930-13182-1-git-send-email-dave.long@linaro.org>
+	 <1387166930-13182-14-git-send-email-dave.long@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-smarthost01b-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---AEubbuL1t5eJKN8bmIC5kjnp2jJE3aXDS
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Sun, 2013-12-15 at 23:08 -0500, David Long wrote:
+> From: "David A. Long" <dave.long@linaro.org>
+> 
+> Add an emulate flag into the instruction interpreter, primarily for uprobes
+> support.
+> 
+> Signed-off-by: David A. Long <dave.long@linaro.org>
+> ---
+>  arch/arm/kernel/kprobes.c      |  3 ++-
+>  arch/arm/kernel/kprobes.h      |  1 +
+>  arch/arm/kernel/probes-arm.c   |  4 ++--
+>  arch/arm/kernel/probes-arm.h   |  2 +-
+>  arch/arm/kernel/probes-thumb.c |  8 ++++----
+>  arch/arm/kernel/probes-thumb.h |  4 ++--
+>  arch/arm/kernel/probes.c       | 32 +++++++++++++++++++++++---------
+>  arch/arm/kernel/probes.h       |  2 +-
+>  8 files changed, 36 insertions(+), 20 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
+> index 0d9d49b..04690f9 100644
+> --- a/arch/arm/kernel/kprobes.c
+> +++ b/arch/arm/kernel/kprobes.c
+> @@ -87,7 +87,8 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+>  	p->opcode = insn;
+>  	p->ainsn.insn = tmp_insn;
+>  
+> -	switch ((*decode_insn)(insn, &p->ainsn, actions)) {
+> +	switch ((*decode_insn)(insn, &p->ainsn,
+> +			       true, actions)) {
 
-20.12.2013 18:10, Sebastian Andrzej Siewior =D0=BF=D0=B8=D1=88=D0=B5=D1=82=
-:
-> * Pavel Vasilyev | 2013-12-13 00:29:52 [+0400]:
->=20
->> On startup, if USB webcam (uvcvideo) attached in usb-hole
->>
->> NMI backtrace for cpu 0
->> CPU: 0 PID: 35 Comm: irq/43-xhci_hcd Not tainted 3.12.5-plx #6
->=20
->> [<c13aa59c>] xhci_queue_isoc_tx_prepare+0x39c/0x950
->> [<c139d35f>] xhci_urb_enqueue+0x22f/0x540
->> [<c1375745>] usb_hcd_submit_urb+0x65/0x280
->> [<c13777a0>] usb_submit_urb+0x170/0x3a0
->> [<c13e1ee8>] uvc_video_complete+0xb8/0xd0
->> [<c1374625>] __usb_hcd_giveback_urb+0x45/0xa0
->> [<c1374bd8>] usb_hcd_giveback_urb+0x38/0xf0
->> [<c13a84cf>] handle_tx_event+0x3af/0xda0
->> [<c13a9082>] xhci_irq+0x1a2/0x6c0
->> [<c13a95aa>] xhci_msi_irq+0xa/0x10
->> [<c1084c31>] irq_forced_thread_fn+0x21/0x70
->> [<c1085046>] irq_thread+0x106/0x220
->> [<c1057110>] kthread+0xd0/0xe0
->> [<c15083b7>] ret_from_kernel_thread+0x1b/0x28
->=20
-> This looks like uvc is resubmitting the URB on completion. Nothing
-> unusual. Howver it seems that then CPU gets stuck in
-> xhci_queue_isoc_tx_prepare() for some reason. Could you try map c13aa59=
-c
+Any reason why the function args need splitting over two lines?
 
-Same bug if attach to ehci hub.
+>  	case INSN_REJECTED:	/* not supported */
+>  		return -EINVAL;
+>  
 
-ksoftird/0 process of loading the CPU upto 100%
-Sometimes process irq17/0 - ehci_hcd  or xhci_hcd.
-After taking the camera out of the socket, the load does not fall,
-keyboard and console blocked
+[...]
 
+> --- a/arch/arm/kernel/probes.c
+> +++ b/arch/arm/kernel/probes.c
+> @@ -193,7 +193,7 @@ void __kprobes probes_emulate_none(probes_opcode_t opcode,
+>   */
+>  static probes_opcode_t __kprobes
+>  prepare_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+> -								bool thumb)
+> +			bool thumb)
 
-> to the source line? Something like
->   addr2lin -e xhci-hcd.ko -i c13aa59c
->=20
-> should do the trick but of the module of this trace.
-> What does the -plx stand for in localversion? Do you have any custom
-> patches on your kernel?
+Seems like a spurious indentation change.
 
-No patches, just local flag.
+>  {
+>  #ifdef CONFIG_THUMB2_KERNEL
+>  	if (thumb) {
+> @@ -218,7 +218,7 @@ prepare_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+>   */
+>  static void  __kprobes
+>  set_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+> -								bool thumb)
+> +			bool thumb)
 
+Another spurious whitespace change.
 
+>  {
+>  #ifdef CONFIG_THUMB2_KERNEL
+>  	if (thumb) {
+> @@ -253,7 +253,7 @@ set_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+>   * non-zero value, the corresponding nibble in pinsn is validated and modified
+>   * according to the type.
+>   */
+> -static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs)
+> +static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs, bool modify)
+>  {
+>  	probes_opcode_t insn = *pinsn;
+>  	probes_opcode_t mask = 0xf; /* Start at least significant nibble */
+> @@ -317,9 +317,16 @@ static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs)
+>  		/* Replace value of nibble with new register number... */
+>  		insn &= ~mask;
+>  		insn |= new_bits & mask;
+> +		if (modify) {
+> +			/* Replace value of nibble with new register number */
+> +			insn &= ~mask;
+> +			insn |= new_bits & mask;
+> +		}
 
---=20
+Huh? As is, the above addition doesn't do anything because insn has
+already been modified. I guess you played with the idea that you needed
+to avoid changing insn (you don't) and then didn't undo the experiment
+quite right. :-)
 
-                                                         Pavel.
+>  	}
+>  
+> -	*pinsn = insn;
+> +	if (modify)
+> +		*pinsn = insn;
+> +
+>  	return true;
+>  
+>  reject:
+> @@ -380,14 +387,15 @@ static const int decode_struct_sizes[NUM_DECODE_TYPES] = {
+>   */
+>  int __kprobes
+>  probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+> -				const union decode_item *table, bool thumb,
+> -				const union decode_item *actions)
+> +		   const union decode_item *table, bool thumb,
+> +		   bool emulate, const union decode_item *actions)
+>  {
+>  	struct decode_header *h = (struct decode_header *)table;
+>  	struct decode_header *next;
+>  	bool matched = false;
+>  
+> -	insn = prepare_emulated_insn(insn, asi, thumb);
+> +	if (emulate)
+> +		insn = prepare_emulated_insn(insn, asi, thumb);
+>  
+>  	for (;; h = next) {
+>  		enum decode_type type = h->type_regs.bits & DECODE_TYPE_MASK;
+> @@ -402,7 +410,7 @@ probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+>  		if (!matched && (insn & h->mask.bits) != h->value.bits)
+>  			continue;
+>  
+> -		if (!decode_regs(&insn, regs))
+> +		if (!decode_regs(&insn, regs, emulate))
+>  			return INSN_REJECTED;
+>  
+>  		switch (type) {
+> @@ -415,7 +423,8 @@ probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+>  
+>  		case DECODE_TYPE_CUSTOM: {
+>  			struct decode_custom *d = (struct decode_custom *)h;
+> -			return actions[d->decoder.bits].decoder(insn, asi, h);
+> +			return actions[d->decoder.bits].decoder(insn,
+> +					asi, h);
 
+No need to split the above line, you haven't changed it and it doesn't
+exceed 80 characters anyway.
 
---AEubbuL1t5eJKN8bmIC5kjnp2jJE3aXDS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+[Rest of patch cut]
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+-- 
+Tixy
 
-iQIcBAEBCgAGBQJStFrrAAoJEPtok08Dny2hCGIQAMPwpx5II+muOaQzkVjBins5
-c6c0DW+PsODwIqdMFzuYllk0apxJgm2o8P9v5diU3AulZKxd8PvspcrB4yGR9nSe
-hRj78ZQpU0rvydXesnmn00scs8ixE2X43HRAfHREzyWqU09q7BnUUfxeLjYaDBsY
-XrcwNQSVRWKi/D5ZnvdZJKfkl2PaTZ5iYcganUsL+9At6alPJh+YQWEKjsxKCiCu
-Rd7p2Hmh0y0wE1C8JUpwdx+XtfHSBA5bDyuZt9WXOx+IrvjjabzNGAHuMf3M81Fc
-aNsmEa0br/YD/dDKqL3a05wFj36reZqkU63/zYNryVBiww0SYYadvHbI8PGiH1Ic
-ThoOd77J6im/ZwVe1eYwjkAN+JHYZqkGEEN6jR9zPfGlBUQAyOlsqjtBIb0U77sZ
-OHptMTUajjm6V/7RQ6B9lxyELKDOm7AyXLZGyPGZim8RhnZ1vtzeLzU4pqHJ3HvH
-tTWIeIyr+buCky45uccJV3+HOtGFCdXGQcjM4On5cm2N/sDdtX0fTUCql1naHTEt
-v2hw8mroiZh6fQczBi9ywXRIaidqCBm/el0KS/BYYiMshf2uVhP9IHe2f/tZIVWN
-NZ/wT0IJmS7k5Bzl2uKLWCaPnHCPur5VtmW8lhfD1o5JgVNAKwS7BzKz6o0G4OMW
-fAD7yCzDPPUY+GZh8Wpf
-=vgL6
------END PGP SIGNATURE-----
-
---AEubbuL1t5eJKN8bmIC5kjnp2jJE3aXDS--
