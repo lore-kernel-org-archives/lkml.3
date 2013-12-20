@@ -1,104 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab3LTJ3Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 04:29:25 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:56214 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752682Ab3LTJ3W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 04:29:22 -0500
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Cc: David Daney <david.daney@cavium.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, microblaze-uclinux@itee.uq.edu.au
-Subject: [PATCH] microblaze: extable: Sort the exception table at build time
-Date: Fri, 20 Dec 2013 10:29:18 +0100
-Message-Id: <3e05730caf4d945ac510b4657c4c4cf6f2e1b6f4.1387531751.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-17448-1387531758-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1755870Ab3LTJad (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 04:30:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43761 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755536Ab3LTJa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 04:30:27 -0500
+Date: Fri, 20 Dec 2013 09:30:22 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, lsf-pc@lists.linux-foundation.org
+Subject: LSF/MM 2014 Call For Proposals
+Message-ID: <20131220093022.GV11295@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+The annual Linux Storage, Filesystem and Memory Management Summit for
+2014 will be held on March 24th and 25th before the Linux Foundation
+Collaboration summit at The Meritage Resort, Napa Valley, CA.
 
---=_mimegpg-monstr-desktop-17448-1387531758-0001
+	http://events.linuxfoundation.org/events/linux-storage-filesystem-and-mm-summit
+	http://events.linuxfoundation.org/events/collaboration-summit
 
-Sort the exception table at build-time rather than during boot.
+Note that we are running LSF/MM a little earlier in 2014 than in previous
+years.
 
-Microblaze is the same case as AARCH64 that's why
-EM_MICROBLAZE conditional check was added to allow
-cross-compilation on machines which are not running
-the latest libc-dev.
+On behalf of the committee I would like to issue a call for agenda proposals
+that are suitable for cross-track discussion as well as more technical
+subjects for discussion in the breakout sessions.
 
-Inspired by AARCH64 commit:
-"arm64: extable: sort the exception table at build time"
-(sha1: adace89562c7a9645b8dc84f6e1ac7ba8756094e)
+1) Suggestions for agenda topics should be sent before January 31st
+2014 to:
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
+	lsf-pc@lists.linux-foundation.org
 
- arch/microblaze/Kconfig | 1 +
- scripts/sortextable.c   | 5 +++++
- 2 files changed, 6 insertions(+)
+and cc the Linux list or lists that are most interested in it:
 
-diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
-index e23cccd..8d581ab 100644
---- a/arch/microblaze/Kconfig
-+++ b/arch/microblaze/Kconfig
-@@ -30,6 +30,7 @@ config MICROBLAZE
- 	select MODULES_USE_ELF_RELA
- 	select CLONE_BACKWARDS3
- 	select CLKSRC_OF
-+	select BUILDTIME_EXTABLE_SORT
+	ATA: linux-ide@vger.kernel.org
+	FS: linux-fsdevel@vger.kernel.org
+	MM: linux-mm@kvack.org
+	SCSI: linux-scsi@vger.kernel.org
 
- config SWAP
- 	def_bool n
-diff --git a/scripts/sortextable.c b/scripts/sortextable.c
-index 7941fbd..cc49062 100644
---- a/scripts/sortextable.c
-+++ b/scripts/sortextable.c
-@@ -39,6 +39,10 @@
- #define EM_AARCH64	183
- #endif
+People who need more time for visa applications should send proposals before
+January 15th. The committee will complete the first round of selections
+on that date to accommodate applications.
 
-+#ifndef EM_MICROBLAZE
-+#define EM_MICROBLAZE	189
-+#endif
-+
- static int fd_map;	/* File descriptor for file being modified. */
- static int mmap_failed; /* Boolean flag. */
- static void *ehdr_curr; /* current ElfXX_Ehdr *  for resource cleanup */
-@@ -275,6 +279,7 @@ do_file(char const *const fname)
- 	case EM_ARCOMPACT:
- 	case EM_ARM:
- 	case EM_AARCH64:
-+	case EM_MICROBLAZE:
- 	case EM_MIPS:
- 		break;
- 	}  /* end switch */
---
-1.8.2.3
+Please remember to tag your subject with [LSF/MM TOPIC] to make it
+easier to track. Agenda topics and attendees will be selected by the
+program committee, but the final agenda will be formed by consensus of
+the attendees on the day.
 
+We will try to cap attendance at around 25-30 per track to facilitate
+discussions although the final numbers will depend on the room sizes at
+the venue.
 
---=_mimegpg-monstr-desktop-17448-1387531758-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
+2) Requests to attend the summit should be sent to:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+	lsf-pc@lists.linux-foundation.org
 
-iEYEABECAAYFAlK0De4ACgkQykllyylKDCE/fwCgmGHyCX/9gS4AIkmRf6tL+y9b
-t6UAn3uk4t29+Xn94j5xGxCL/heebcbm
-=lgq1
------END PGP SIGNATURE-----
+Please summarize what expertise you will bring to the meeting, and what
+you would like to discuss. Please also tag your email with [LSF/MM ATTEND]
+so there is less chance of it getting lost in the large mail pile.
 
---=_mimegpg-monstr-desktop-17448-1387531758-0001--
+Presentations are allowed to guide discussion, but are strongly
+discouraged. There will be no recording or audio bridge. However, we expect
+that written minutes will be published as we did in previous years
+
+2013:
+	http://lwn.net/Articles/548089/
+
+2012:
+	http://lwn.net/Articles/490114/
+	http://lwn.net/Articles/490501/
+
+2011:
+	http://lwn.net/Articles/436871/
+	http://lwn.net/Articles/437066/
+
+3) If you have feedback on last year's meeting that we can use to
+improve this year's, please also send that to:
+
+	lsf-pc@lists.linux-foundation.org
+
+Thank you on behalf of the program committee:
+
+Storage:
+	James Bottomley
+	Martin K. Petersen
+
+Filesystems:
+	Trond Myklebust
+	Jeff Layton
+	Dave Chinner
+	Jan Kara
+	Ted Ts'o
+
+MM:
+	Rik van Riel
+	Michel Lespinasse
+
+-- 
+Mel Gorman
+SUSE Labs
