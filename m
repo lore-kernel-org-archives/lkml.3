@@ -1,100 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab3LTFqM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 00:46:12 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:47105 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab3LTFqJ (ORCPT
+	id S1753610Ab3LTFwf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 00:52:35 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:41773 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab3LTFwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 00:46:09 -0500
-Message-ID: <52B3D99E.8030104@gmail.com>
-Date: Thu, 19 Dec 2013 22:46:06 -0700
+	Fri, 20 Dec 2013 00:52:34 -0500
 From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: acme@ghostprotocols.net
-CC: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] perf tools: Fix bug for perf kvm report without guestmount.
-References: <52B48E5A.8090106@cn.fujitsu.com> <1387564907-3045-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-In-Reply-To: <1387564907-3045-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH] perf stat: Do not show stats if workload fails
+Date: Thu, 19 Dec 2013 22:52:28 -0700
+Message-Id: <1387518748-25340-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo:
+Currently perf-stat attempts to show counter stats even if the workload
+is bogus:
 
-This should go into all stable releases from v3.3 up.
+$ perf stat -- foo
+foo: No such file or directory
 
+ Performance counter stats for 'foo':
 
-On 12/20/13, 11:41 AM, Dongsheng Yang wrote:
-> Currently, if we use perf kvm --guestkallsyms --guestmodules report,
-> we can not get the perf information from perf data file. The all sample
-> are shown as unknown.
->
-> Reproducing steps:
-> 	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
-> 	[ perf record: Woken up 1 times to write data ]
-> 	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
-> 	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
-> 	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
->
-> This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
-> In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
-> which has the same pid, if no machine found, deliver it to *default* guest. But if we use
-> perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
-> and added. Then the default guest which with pid == 0 will never get a symbol.
->
-> And because the new machine initialized here has no kernel map created, the symbol delivered to
-> it will be marked as "unknown".
->
-> This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
->
-> Verification steps:
-> 	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
-> 	[ perf record: Woken up 1 times to write data ]
-> 	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
-> 	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
-> 	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
-> 	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
-> 	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
-> 	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
-> 	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
-> 	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
-> 	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
-> 	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
->
-> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> Acked-by: David Ahern <dsahern@gmail.com>
-> ---
->   tools/perf/util/session.c | 7 ++++++-
->   1 file changed, 6 insertions(+), 1 deletion(-)
->
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 989b2e3..a12dfdd 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -830,6 +830,7 @@ static struct machine *
->   					       struct perf_sample *sample)
->   {
->   	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-> +	struct machine *machine;
->
->   	if (perf_guest &&
->   	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
-> @@ -842,7 +843,11 @@ static struct machine *
->   		else
->   			pid = sample->pid;
->
-> -		return perf_session__findnew_machine(session, pid);
-> +		machine = perf_session__find_machine(session, pid);
-> +		if (!machine)
-> +			machine = perf_session__findnew_machine(session,
-> +						DEFAULT_GUEST_KERNEL_ID);
-> +		return machine;
->   	}
->
->   	return &session->machines.host;
->
+     <not counted>      task-clock
+     <not counted>      context-switches
+     <not counted>      cpu-migrations
+     <not counted>      page-faults
+     <not counted>      cycles
+     <not counted>      stalled-cycles-frontend
+     <not counted>      stalled-cycles-backend
+     <not counted>      instructions
+     <not counted>      branches
+     <not counted>      branch-misses
+
+       0.009769943 seconds time elapsed
+
+It is impossible to differentiate all the failure modes, but it seems
+reasonable that if the workload handling fails, perf-stat should not try
+to print stats.
+
+With this change:
+
+$ perf stat  -v -- foo
+Failed to start workload
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Stephane Eranian <eranian@google.com>
+---
+ tools/perf/builtin-stat.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index dab98b50c9fe..d6e6a0b031d9 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -586,7 +586,11 @@ static int __run_perf_stat(int argc, const char **argv)
+ 	clock_gettime(CLOCK_MONOTONIC, &ref_time);
+ 
+ 	if (forks) {
+-		perf_evlist__start_workload(evsel_list);
++		if (perf_evlist__start_workload(evsel_list) != 0) {
++			pr_err("Failed to start workload\n");
++			return -1;
++		}
++
+ 		handle_initial_delay();
+ 
+ 		if (interval) {
+@@ -1793,7 +1797,10 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 				run_idx + 1);
+ 
+ 		status = run_perf_stat(argc, argv);
+-		if (forever && status != -1) {
++		if (status < 0)
++			break;
++
++		if (forever) {
+ 			print_stat(argc, argv);
+ 			perf_stat__reset_stats(evsel_list);
+ 		}
+-- 
+1.8.3.4 (Apple Git-47)
 
