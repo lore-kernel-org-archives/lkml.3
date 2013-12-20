@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab3LTLMs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 06:12:48 -0500
-Received: from mail-bn1lp0151.outbound.protection.outlook.com ([207.46.163.151]:12967
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S932236Ab3LTLNL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 06:13:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45520 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755831Ab3LTLMr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 06:12:47 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jingchang Lu <jingchang.lu@freescale.com>
-Subject: RE: [PATCHv4 2/4] ARM: dts: Add Freescale SAI ALSA SoC Digital
- Audio Interface node for VF610.
-Thread-Topic: [PATCHv4 2/4] ARM: dts: Add Freescale SAI ALSA SoC Digital
- Audio Interface node for VF610.
-Thread-Index: AQHO/Sa+uGbX95GUw0WP/tIzSnlqC5pc7UaAgAAA5JA=
-Date: Fri, 20 Dec 2013 11:12:41 +0000
-Message-ID: <ac0851831f964288a5f01bbd64556725@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1387501387-2151-1-git-send-email-Li.Xiubo@freescale.com>
- <1387501387-2151-2-git-send-email-Li.Xiubo@freescale.com>
- <20131220110819.GM31886@sirena.org.uk>
-In-Reply-To: <20131220110819.GM31886@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0066D63CE6
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(199002)(189002)(164054003)(51704005)(24454002)(50986001)(33646001)(46102001)(74876001)(74706001)(47736001)(47976001)(49866001)(4396001)(74316001)(74366001)(76482001)(51856001)(53806001)(54356001)(63696002)(81542001)(81342001)(79102001)(54316002)(83322001)(65816001)(80976001)(66066001)(80022001)(81816001)(81686001)(69226001)(31966008)(87266001)(85306002)(74502001)(74662001)(47446002)(85852003)(59766001)(77982001)(87936001)(76576001)(76786001)(76796001)(56776001)(90146001)(83072002)(2656002)(56816005)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB476;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932152Ab3LTLNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 06:13:09 -0500
+Date: Fri, 20 Dec 2013 11:13:03 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alex Shi <alex.shi@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
+        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 0/4] Fix ebizzy performance regression due to X86 TLB
+ range flush v2
+Message-ID: <20131220111303.GZ11295@suse.de>
+References: <1386964870-6690-1-git-send-email-mgorman@suse.de>
+ <CA+55aFyNAigQqBk07xLpf0nkhZ_x-QkBYG8otRzsqg_8A2eg-Q@mail.gmail.com>
+ <20131215155539.GM11295@suse.de>
+ <20131216102439.GA21624@gmail.com>
+ <20131216125923.GS11295@suse.de>
+ <20131216134449.GA3034@gmail.com>
+ <20131217092124.GV11295@suse.de>
+ <20131217110051.GA27701@gmail.com>
+ <20131219142405.GM11295@suse.de>
+ <20131219164925.GA29546@gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131219164925.GA29546@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Subject: Re: [PATCHv4 2/4] ARM: dts: Add Freescale SAI ALSA SoC Digital Audio
-> Interface node for VF610.
+On Thu, Dec 19, 2013 at 05:49:25PM +0100, Ingo Molnar wrote:
 > 
-> On Fri, Dec 20, 2013 at 09:03:05AM +0800, Xiubo Li wrote:
-> > This patch adds the SAI's edma mux Tx and Rx support.
+> * Mel Gorman <mgorman@suse.de> wrote:
 > 
-> DTS changes should be merged via arm-soc.
+> > [...]
+> > 
+> > Because we lack data on TLB range flush distributions I think we 
+> > should still go with the conservative choice for the TLB flush 
+> > shift. The worst case is really bad here and it's painfully obvious 
+> > on ebizzy.
+> 
+> So I'm obviously much in favor of this - I'd in fact suggest making 
+> the conservative choice on _all_ CPU models that have aggressive TLB 
+> range values right now, because frankly the testing used to pick those 
+> values does not look all that convincing to me.
+> 
 
-Okey, Got it.
+I think the choices there are already reasonably conservative. I'd be
+reluctant to support merging a patch that made a choice on all CPU models
+without having access to the machines to run tests on. I don't see the
+Intel people volunteering to do the necessary testing.
 
-Thanks,
-
-Best Regards
-Xiubo
-
+-- 
+Mel Gorman
+SUSE Labs
