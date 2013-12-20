@@ -1,229 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab3LTJlp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 04:41:45 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:56182 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755547Ab3LTJlk (ORCPT
+	id S1756648Ab3LTJmE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 04:42:04 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:41747 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756496Ab3LTJl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 04:41:40 -0500
-X-AuditID: 85900ec0-d3b2cb9000001514-c1-52b410d1be90
-Subject: [PATCH 1/2] printk: Add dictionary information in structure cont
-To: linux-kernel@vger.kernel.org
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Tejun Heo <tj@kernel.org>, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-Date: Fri, 20 Dec 2013 18:41:37 +0900
-Message-ID: <20131220094137.24233.46216.stgit@yunodevel>
-In-Reply-To: <20131220094134.24233.2969.stgit@yunodevel>
-References: <20131220094134.24233.2969.stgit@yunodevel>
-User-Agent: StGit/0.16
+	Fri, 20 Dec 2013 04:41:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <52B336D4.8010809@redhat.com>
+References: <1387394945-5704-1-git-send-email-prarit@redhat.com>
+	<CA+8MBbKHZ0i0mEYLUrmWwaofvnRcxc7Dvm+w0CfZf2uQydjdjQ@mail.gmail.com>
+	<CA+8MBbLMFW5fnUdgNRFpPv9+U1DqB5AeoDOV44kZHozibxjqSg@mail.gmail.com>
+	<52B336D4.8010809@redhat.com>
+Date: Fri, 20 Dec 2013 17:41:55 +0800
+Message-ID: <CANVTcTa2AiHYrLQt-P_=4GmER_mqbSCZwY13phOkSA4XxrzF=A@mail.gmail.com>
+Subject: Re: [PATCH] x86: Add check for number of available vectors before CPU
+ down [v2]
+From: rui wang <ruiv.wang@gmail.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86-ML <x86@kernel.org>,
+        Michel Lespinasse <walken@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@intel.com,
+        "Yu, Fenghua" <fenghua.yu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add dictionary information in structure cont.
-Dictionary information is added when a driver uses structured printk, and the
-information is shown in /dev/kmsg. Current kernel directly stores the
-information to log_buf. This patch stores the dict information in structure cont
-first, then the information in cont is stored to log_buf.
+On 12/20/13, Prarit Bhargava <prarit@redhat.com> wrote:
+>
+>
+> On 12/19/2013 01:05 PM, Tony Luck wrote:
+>> On Wed, Dec 18, 2013 at 11:50 AM, Tony Luck <tony.luck@intel.com> wrote:
+>>> Looks good to me.
+>>
+>> Though now I've been confused by an offline question about affinity.
+>
+> Heh :)  I'm pursuing it now.  Rui has asked a pretty good question that I
+> don't
+> know the answer to off the top of my head.  I'm still looking at the code.
+>
+>>
+>> Suppose we have some interrupt that has affinity to multiple cpus. E.g.
+>> (real example from one of my machines):
+>>
+>> # cat /proc/irq/94/smp_affinity_list
+>> 26,54
+>>
+>> Now If I want to take either cpu26 or cpu54 offline - I'm guessing that I
+>> don't
+>> really need to find a new home for vector 94 - because the other one of
+>> that
+>> pair already has that set up.  But your check_vectors code doesn't look
+>> like
+>> it accounts for that - if we take cpu26 offline - it would see that
+>> cpu54 doesn't
+>> have 94 free - but doesn't check that it is for the same interrupt.
+>>
+>> But I may be mixing "vectors" and "irqs" here.
+>
+> Yep.  The question really is this: is the irq mapped to a single vector or
+> multiple vectors. (I think)
+>
 
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org
----
- kernel/printk/printk.c |   70 ++++++++++++++++++++++++++++++++----------------
- 1 file changed, 47 insertions(+), 23 deletions(-)
+The vector number for an irq is programmed in the LSB of the IOAPIC
+IRTE (or MSI data register in the case of MSI/MSIx). So there can be
+only one vector number (although multiple CPUs can be specified
+through DM). An MSI-capable device can dynamically change the lower
+few bits in the LSB to signal multiple interrupts with a contiguous
+range of vectors in powers of 2,but each of these vectors is treated
+as a separate IRQ. i.e. each of them has a separate irq desc, or a
+separate line in the /proc/interrupt file. This patch shows the MSI
+irq allocation in detail:
+http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=51906e779f2b13b38f8153774c4c7163d412ffd9
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index be7c86b..c3662e6 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1391,8 +1391,10 @@ static inline void printk_delay(void)
-  * reached the console in case of a kernel crash.
-  */
- static struct cont {
--	char buf[LOG_LINE_MAX];
--	size_t len;			/* length == 0 means unused buffer */
-+	char text[LOG_LINE_MAX];
-+	size_t text_len;		/* length == 0 means unused buffer */
-+	char dict[LOG_LINE_MAX];	/* stores dict */
-+	size_t dict_len;		/* 0 means dict is unstored */
- 	size_t cons;			/* bytes written to console */
- 	struct task_struct *owner;	/* task of first print*/
- 	u64 ts_nsec;			/* time of first print */
-@@ -1406,7 +1408,7 @@ static void cont_flush(enum log_flags flags)
- {
- 	if (cont.flushed)
- 		return;
--	if (cont.len == 0)
-+	if (cont.text_len == 0)
- 		return;
- 
- 	if (cont.cons) {
-@@ -1416,7 +1418,7 @@ static void cont_flush(enum log_flags flags)
- 		 * line. LOG_NOCONS suppresses a duplicated output.
- 		 */
- 		log_store(cont.facility, cont.level, flags | LOG_NOCONS,
--			  cont.ts_nsec, NULL, 0, cont.buf, cont.len);
-+			  cont.ts_nsec, NULL, 0, cont.text, cont.text_len);
- 		cont.flags = flags;
- 		cont.flushed = true;
- 	} else {
-@@ -1425,23 +1427,32 @@ static void cont_flush(enum log_flags flags)
- 		 * just submit it to the store and free the buffer.
- 		 */
- 		log_store(cont.facility, cont.level, flags, 0,
--			  NULL, 0, cont.buf, cont.len);
--		cont.len = 0;
-+			  NULL, 0, cont.text, cont.text_len);
-+		cont.text_len = 0;
- 	}
- }
- 
--static bool cont_add(int facility, int level, const char *text, size_t len)
-+static void cont_dict_add(const char *dict, size_t dict_len)
- {
--	if (cont.len && cont.flushed)
-+	if (cont.dict_len + dict_len > sizeof(cont.dict))
-+		return;
-+
-+	memcpy(cont.dict + cont.dict_len, dict, dict_len);
-+	cont.dict_len += dict_len;
-+}
-+
-+static bool cont_add(int facility, int level, const char *text, size_t text_len)
-+{
-+	if (cont.text_len && cont.flushed)
- 		return false;
- 
--	if (cont.len + len > sizeof(cont.buf)) {
-+	if (cont.text_len + text_len > sizeof(cont.text)) {
- 		/* the line gets too long, split it up in separate records */
- 		cont_flush(LOG_CONT);
- 		return false;
- 	}
- 
--	if (!cont.len) {
-+	if (!cont.text_len) {
- 		cont.facility = facility;
- 		cont.level = level;
- 		cont.owner = current;
-@@ -1451,10 +1462,10 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
- 		cont.flushed = false;
- 	}
- 
--	memcpy(cont.buf + cont.len, text, len);
--	cont.len += len;
-+	memcpy(cont.text + cont.text_len, text, text_len);
-+	cont.text_len += text_len;
- 
--	if (cont.len > (sizeof(cont.buf) * 80) / 100)
-+	if (cont.text_len > (sizeof(cont.text) * 80) / 100)
- 		cont_flush(LOG_CONT);
- 
- 	return true;
-@@ -1470,20 +1481,20 @@ static size_t cont_print_text(char *text, size_t size)
- 		size -= textlen;
- 	}
- 
--	len = cont.len - cont.cons;
-+	len = cont.text_len - cont.cons;
- 	if (len > 0) {
- 		if (len+1 > size)
- 			len = size-1;
--		memcpy(text + textlen, cont.buf + cont.cons, len);
-+		memcpy(text + textlen, cont.text + cont.cons, len);
- 		textlen += len;
--		cont.cons = cont.len;
-+		cont.cons = cont.text_len;
- 	}
- 
- 	if (cont.flushed) {
- 		if (cont.flags & LOG_NEWLINE)
- 			text[textlen++] = '\n';
- 		/* got everything, release buffer */
--		cont.len = 0;
-+		cont.text_len = 0;
- 	}
- 	return textlen;
- }
-@@ -1576,21 +1587,29 @@ asmlinkage int vprintk_emit(int facility, int level,
- 	if (level == -1)
- 		level = default_message_loglevel;
- 
--	if (dict)
-+	if (dict) {
- 		lflags |= LOG_PREFIX|LOG_NEWLINE;
- 
-+		/* Another task is trying to output a message */
-+		if (cont.text_len && cont.owner != current)
-+			cont_flush(LOG_NEWLINE);
-+
-+		cont_dict_add(dict, dictlen);
-+	}
-+
- 	if (!(lflags & LOG_NEWLINE)) {
- 		/*
- 		 * Flush the conflicting buffer. An earlier newline was missing,
- 		 * or another task also prints continuation lines.
- 		 */
--		if (cont.len && (lflags & LOG_PREFIX || cont.owner != current))
-+		if (cont.text_len &&
-+		    (lflags & LOG_PREFIX || cont.owner != current))
- 			cont_flush(LOG_NEWLINE);
- 
- 		/* buffer line if possible, otherwise store it right away */
- 		if (!cont_add(facility, level, text, text_len))
- 			log_store(facility, level, lflags | LOG_CONT, 0,
--				  dict, dictlen, text, text_len);
-+				  NULL, 0, text, text_len);
- 	} else {
- 		bool stored = false;
- 
-@@ -1600,7 +1619,7 @@ asmlinkage int vprintk_emit(int facility, int level,
- 		 * there was a race with interrupts (prefix == true) then just
- 		 * flush it out and store this line separately.
- 		 */
--		if (cont.len && cont.owner == current) {
-+		if (cont.text_len && cont.owner == current) {
- 			if (!(lflags & LOG_PREFIX))
- 				stored = cont_add(facility, level, text, text_len);
- 			cont_flush(LOG_NEWLINE);
-@@ -1608,7 +1627,12 @@ asmlinkage int vprintk_emit(int facility, int level,
- 
- 		if (!stored)
- 			log_store(facility, level, lflags, 0,
--				  dict, dictlen, text, text_len);
-+				  cont.dict, cont.dict_len, text, text_len);
-+		/*
-+		 * Structured printk always starts a new line now, so clear
-+		 * current dictionary information for next structured printk.
-+		 */
-+		cont.dict_len = 0;
- 	}
- 	printed_len += text_len;
- 
-@@ -1974,7 +1998,7 @@ static void console_cont_flush(char *text, size_t size)
- 
- 	raw_spin_lock_irqsave(&logbuf_lock, flags);
- 
--	if (!cont.len)
-+	if (!cont.text_len)
- 		goto out;
- 
- 	/*
+Thanks
+Rui
 
+
+> P.
+>
+>>
+>> -Tony
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
