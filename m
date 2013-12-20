@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab3LTGbb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 01:31:31 -0500
-Received: from spork.scientician.org ([66.228.35.160]:42442 "EHLO
-	spork.scientician.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab3LTGb3 (ORCPT
+	id S1754175Ab3LTGcq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 01:32:46 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:16833 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab3LTGcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 01:31:29 -0500
-X-Greylist: delayed 714 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Dec 2013 01:31:29 EST
-X-Submitted: to spork.scientician.org (Postfix) with ESMTPSA id 85909488E1
-X-Submitted: to mail.scientician.org (Postfix) with ESMTPSA id 4D1D220167
-Message-ID: <52B3E16F.7070409@rhansen.org>
-Date: Fri, 20 Dec 2013 01:19:27 -0500
-From: Richard Hansen <rhansen@rhansen.org>
+	Fri, 20 Dec 2013 01:32:45 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 19 Dec 2013 22:34:45 -0800
+Message-ID: <52B3E47E.7070508@nvidia.com>
+Date: Fri, 20 Dec 2013 12:02:30 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-CC: Miklos Szeredi <miklos@szeredi.hu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, fuse-devel@lists.sourceforge.net,
-        Aurelien Jarno <aurelien@aurel32.net>,
-        Christoph Hellwig <hch@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] fuse: Fix IOC_[GS]ETFLAGS argument size brokenness
-References: <20131219232739.GA10192@birch.djwong.org>
-In-Reply-To: <20131219232739.GA10192@birch.djwong.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 2/2] ARM: tegra: add ams AS3722 device to Venice2 DT
+References: <1387371179-16725-1-git-send-email-ldewangan@nvidia.com> <1387371179-16725-2-git-send-email-ldewangan@nvidia.com> <52B20BB4.50506@wwwdotorg.org> <52B2A01D.2000207@nvidia.com> <52B33986.5020508@wwwdotorg.org>
+In-Reply-To: <52B33986.5020508@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-12-19 18:27, Darrick J. Wong wrote:
-> The IOC_[GS]ETFLAGS ioctls, despite being defined to take a "long"
-> parameter, actually take "int" parameters.  FUSE unfortunately assumed
-> that the ioctl definitions never lie, and transfers a long's worth of
-> data in and out of userspace, which causes stack smashing in chattr,
-> and other bugs elsewhere.
-> 
-> So, special-case this in FUSE, and document this int/long quirk in
-> include/uapi/linux/fs.h.
-> 
-> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> ---
->  fs/fuse/file.c          |   11 +++++++++++
->  include/uapi/linux/fs.h |    1 +
->  2 files changed, 12 insertions(+)
-> 
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index 7e70506..5fa8181 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -2385,6 +2385,17 @@ long fuse_do_ioctl(struct file *file, unsigned int cmd, unsigned long arg,
->  		iov->iov_base = (void __user *)arg;
->  		iov->iov_len = _IOC_SIZE(cmd);
->  
-> +		/*
-> +		 * The IOC_[GS]ETFLAGS ioctls take int parameters even though
-> +		 * the ioctl definition specifies long.  Userland has been
-> +		 * expecting int for ages (and chattr segfaults on FUSE
-> +		 * filesystems), so special case that here.  The IOC32
-> +		 * variants were declared with int, so they don't need this.
-> +		 */
-> +		if (cmd == FS_IOC_GETFLAGS || cmd == FS_IOC_SETFLAGS) {
-> +			iov->iov_len = sizeof(int);
-> +		}
-> +
->  		if (_IOC_DIR(cmd) & _IOC_WRITE) {
->  			in_iov = iov;
->  			in_iovs = 1;
-> diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
-> index 6c28b61..bc8aa8e 100644
-> --- a/include/uapi/linux/fs.h
-> +++ b/include/uapi/linux/fs.h
-> @@ -154,6 +154,7 @@ struct inodes_stat_t {
->  #define FITHAW		_IOWR('X', 120, int)	/* Thaw */
->  #define FITRIM		_IOWR('X', 121, struct fstrim_range)	/* Trim */
->  
-> +/* IOC_[GS]ETFLAGS take an int argument despite being defined to take long. */
->  #define	FS_IOC_GETFLAGS			_IOR('f', 1, long)
->  #define	FS_IOC_SETFLAGS			_IOW('f', 2, long)
->  #define	FS_IOC_GETVERSION		_IOR('v', 1, long)
+On Thursday 19 December 2013 11:53 PM, Stephen Warren wrote:
+> On 12/19/2013 12:28 AM, Laxman Dewangan wrote:
+>> On Thursday 19 December 2013 02:25 AM, Stephen Warren wrote:
+>>> On 12/18/2013 05:52 AM, Laxman Dewangan wrote:
+>>>> Add ams AS3722 entry for gpio/pincontrol and regulators
+>>>> to venice2 DT.
+>>> This patch still causes:
+>>>
+>>>> [    0.726545] as3722-pinctrl as3722-pinctrl: pin gpio0 already
+>>>> requested by as3722-pinctrl; cannot claim for as3722-regulator
+>>>> [    0.737681] as3722-pinctrl as3722-pinctrl: pin-0
+>>>> (as3722-regulator) status -22
+>>>> [    0.744895] as3722-pinctrl as3722-pinctrl: could not request pin 0
+>>>> (gpio0) from group gpio0  on device as3722-pinctrl
+>>>> [    0.755500] as3722-regulator as3722-regulator: Error applying
+>>>> setting, reverse things back
+>> This error is nothing related to the ams dt or driver. This came from
+>> the framework from the driver/base for adding pinmux call before calling
+>> any diver's probe.
+> OK, after reverting the problematic MFD commit (which I assume will
+> happen upstream too), I see no errors caused by this patch.
+>
+> As such, I've applied the series to Tegra's for-3.14/dt branch.
+Thanks for taking care.
 
-This change to include/uapi/linux/fs.h is similar to but not as thorough as:
+>
+> Note that I couldn't verify if the pinctrl setup in patch 1/2 matched
+> the ChromeOS kernel, since the node order is different there, and the
+> property values don't use named constants there. I'll have to trust you.
+> I'll be annoyed if it turns out we need to churn the pinctrl
+> configuration in the future...
 
-http://mid.gmane.org/1385548839-16617-1-git-send-email-aurelien@aurel32.net
-https://lkml.org/lkml/2013/11/27/93
+I referred the configuration from chrome branch. I assume that good 
+amount of testing has already been done on this configuration.
+I manually check all configuration and run chrome on this change which 
+works properly. Did not see any abnormal behavior.
+So if something missed then it is just human error which did not catch 
+on 2 level of self review.
 
-(The above linked patch is the patch Aurelien referenced in the
-"Argument type for FS_IOC_GETFLAGS/FS_IOC_SETFLAGS ioctls" thread on
-linux-fsdevel; see
-<http://mid.gmane.org/20131127231430.GG29912@hall.aurel32.net>.)
+Again  any change on this configuration can be expected based on new 
+testing or bringung new modules.
 
--Richard
+
