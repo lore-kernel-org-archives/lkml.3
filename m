@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318Ab3LTRBd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 12:01:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10383 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753454Ab3LTRBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 12:01:31 -0500
-Date: Fri, 20 Dec 2013 12:00:59 -0500
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Glauber Costa <glommer@gmail.com>
-Cc: Vladimir Davydov <vdavydov@parallels.com>, dchinner@redhat.com,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, devel@openvz.org,
-        Glauber Costa <glommer@openvz.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v14 16/18] vmpressure: in-kernel notifications
-Message-ID: <20131220120059.7cc0744e@redhat.com>
-In-Reply-To: <CAA6-i6pDQqhv+h0mP2mDacFUExDEy0oCJ7Lcqat0FSuv0NQUog@mail.gmail.com>
-References: <cover.1387193771.git.vdavydov@parallels.com>
-	<abff42910c131a9c94a7518de59b283ee0a2dcd1.1387193771.git.vdavydov@parallels.com>
-	<20131220092659.0ed23cf5@redhat.com>
-	<CAA6-i6pDqDemeQ+s4EorOx39qmNAtAfVYfg0Z2wtTEu-S7mY=A@mail.gmail.com>
-	<20131220100332.0c5c1ad5@redhat.com>
-	<20131220114439.23af09fc@redhat.com>
-	<CAA6-i6oJrUquFa3Y=+vGCDjh7z8ZOxT20QuyWweyrrKGOeBGAA@mail.gmail.com>
-	<20131220115359.225f7503@redhat.com>
-	<CAA6-i6pDQqhv+h0mP2mDacFUExDEy0oCJ7Lcqat0FSuv0NQUog@mail.gmail.com>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756530Ab3LTRBv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 12:01:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53105 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754955Ab3LTRBu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 12:01:50 -0500
+Date: Fri, 20 Dec 2013 09:01:59 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Gokulnath A <gokul.linux@gmail.com>
+Cc: Michael Hoefler <michael.hoefler@studium.uni-erlangen.de>,
+        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
+        linux-kernel@i4.cs.fau.de, Christoph Kohl <christoph.kohl@t-online.de>,
+        open list <linux-kernel@vger.kernel.org>,
+        Rupert Muchembled <rupert@rmuch.net>
+Subject: Re: [PATCHv2 1/3] silicom: fix whitespace issues in bypass.c
+Message-ID: <20131220170159.GA15634@kroah.com>
+References: <1387547475-7135-1-git-send-email-michael.hoefler@studium.uni-erlangen.de>
+ <1387547475-7135-2-git-send-email-michael.hoefler@studium.uni-erlangen.de>
+ <CADKvho6HF9A6agDXwrg7UPcOS0YQh3bPmGzPjOAEO8tZ8cveTw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADKvho6HF9A6agDXwrg7UPcOS0YQh3bPmGzPjOAEO8tZ8cveTw@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Dec 2013 20:58:52 +0400
-Glauber Costa <glommer@gmail.com> wrote:
-
-> On Fri, Dec 20, 2013 at 8:53 PM, Luiz Capitulino <lcapitulino@redhat.com> wrote:
-> > On Fri, 20 Dec 2013 20:46:05 +0400
-> > Glauber Costa <glommer@gmail.com> wrote:
-> >
-> >> On Fri, Dec 20, 2013 at 8:44 PM, Luiz Capitulino <lcapitulino@redhat.com> wrote:
-> >> > On Fri, 20 Dec 2013 10:03:32 -0500
-> >> > Luiz Capitulino <lcapitulino@redhat.com> wrote:
-> >> >
-> >> >> > The answer for all of your questions above can be summarized by noting
-> >> >> > that for the lack of other users (at the time), this patch does the bare minimum
-> >> >> > for memcg needs. I agree, for instance, that it would be good to pass the level
-> >> >> > but since memcg won't do anything with thta, I didn't pass it.
-> >> >> >
-> >> >> > That should be extended if you need to.
-> >> >>
-> >> >> That works for me. That is, including this minimal version first and
-> >> >> extending it when we get in-tree users.
-> >> >
-> >> > Btw, there's something I was thinking just right now. If/when we
-> >> > convert shrink functions to use this API, they will come to depend
-> >> > on CONFIG_MEMCG=y. IOW, they won't work if CONFIG_MEMCG=n.
-> >> >
-> >> > Is this acceptable (this is an honest question)? Because today, they
-> >> > do work when CONFIG_MEMCG=n. Should those shrink functions use the
-> >> > shrinker API as a fallback?
-> >>
-> >> If you have a non-memcg user, that should obviously be available for
-> >> CONFIG_MEMCG=n
-> >
-> > OK, which means we'll have to change it, right? Because, if I'm not
-> > missing something, today vmpressure does depend on CONFIG_MEMCG=y.
+On Fri, Dec 20, 2013 at 08:36:48PM +0530, Gokulnath A wrote:
+> Hello Michael,
 > 
-> You mean the main vmpressure mechanism?
-> Sorry, this was out of my mental cachelines. Yes, vmpressure depends
-> on MEMCG, because
-> the pressure interface is memcg-specific (global == root memcg)
+> On Fri, Dec 20, 2013 at 7:21 PM, Michael Hoefler
+> <michael.hoefler@studium.uni-erlangen.de> wrote:
+> > This patch addresses several problems in bypass.c found by checkpatch.
+> > Furthermore it removes/adds some empty lines to make the code more readable.
+> >
+> > The following problems are fixed:
+> >  - line over 80 characters
+> >  - space after logical operator !
+> >  - spaces instead of tabs
+> >  - missing empty line after local declarations
+> >  - empty line after {
+> >
 > 
-> You might want to change that so you can reuse the mechanism and let
-> only the user interface
-> depend on memcg.
+> Please do one thing per patch, As Greg suggested for me in previous mail
+> conversations. Here you could have at least 3 or 4 patches.
+> For example, first patch would be a fix for line over 80 characters,
+> followed by the other problems as mentioned above by you.
 
-OK, that makes sense. Thanks Glauber.
+Nah, all of these are affecting the same macros, so it's ok, I'll take
+it as-is.
+
+thanks,
+
+greg k-h
