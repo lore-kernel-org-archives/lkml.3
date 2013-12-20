@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266Ab3LTTKT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 14:10:19 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38557 "EHLO
+	id S1751771Ab3LTTKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 14:10:16 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38556 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726Ab3LTTJe (ORCPT
+	with ESMTP id S1753656Ab3LTTJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Dec 2013 14:09:34 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 21/35] tools lib traceevent: Use global QUIET_CC build output
-Date: Fri, 20 Dec 2013 16:08:56 -0300
-Message-Id: <1387566550-3524-22-git-send-email-acme@infradead.org>
+Subject: [PATCH 19/35] perf tools: Making QUIET_(CLEAN|INSTAL) variables global
+Date: Fri, 20 Dec 2013 16:08:54 -0300
+Message-Id: <1387566550-3524-20-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1387566550-3524-1-git-send-email-acme@infradead.org>
 References: <1387566550-3524-1-git-send-email-acme@infradead.org>
@@ -31,8 +31,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Using global QUIET_CC build output variable and getting rid of local
-print_compile.
+Moving QUIET_(CLEAN|INSTAL) variables into:
+
+  tools/scripts/Makefile.include
+
+to be usable by other tools. The change to use them in libtraceevent is
+in following patches.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -43,61 +47,41 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1387460527-15030-5-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1387460527-15030-3-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/Makefile | 13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ tools/perf/config/utilities.mak | 7 -------
+ tools/scripts/Makefile.include  | 3 +++
+ 2 files changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 022c987d25b6..e852a8d54d84 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -67,6 +67,8 @@ PLUGIN_DIR = -DPLUGIN_DIR="$(DESTDIR)/$(plugin_dir)"
- PLUGIN_DIR_SQ = '$(subst ','\'',$(PLUGIN_DIR))'
- endif
- 
-+include $(if $(BUILD_SRC),$(BUILD_SRC)/)../../scripts/Makefile.include
+diff --git a/tools/perf/config/utilities.mak b/tools/perf/config/utilities.mak
+index f168debc5be2..4d985e0f03f5 100644
+--- a/tools/perf/config/utilities.mak
++++ b/tools/perf/config/utilities.mak
+@@ -178,10 +178,3 @@ endef
+ _ge_attempt = $(if $(get-executable),$(get-executable),$(_gea_warn)$(call _gea_err,$(2)))
+ _gea_warn = $(warning The path '$(1)' is not executable.)
+ _gea_err  = $(if $(1),$(error Please set '$(1)' appropriately))
+-
+-ifneq ($(findstring $(MAKEFLAGS),s),s)
+-  ifneq ($(V),1)
+-    QUIET_CLEAN		= @printf '  CLEAN    %s\n' $1;
+-    QUIET_INSTALL	= @printf '  INSTALL  %s\n' $1;
+-  endif
+-endif
+diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
+index ee76544deecb..e4cfbedcaf11 100644
+--- a/tools/scripts/Makefile.include
++++ b/tools/scripts/Makefile.include
+@@ -76,5 +76,8 @@ ifneq ($(findstring $(MAKEFLAGS),s),s)
+ 		+@echo	       '  DESCEND  '$(1); \
+ 		mkdir -p $(OUTPUT)$(1) && \
+ 		$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1) $(2)
 +
- # copy a bit from Linux kbuild
- 
- ifeq ("$(origin V)", "command line")
-@@ -150,7 +152,6 @@ override CFLAGS += $(udis86-flags) -D_GNU_SOURCE
- 
- ifeq ($(VERBOSE),1)
-   Q =
--  print_compile =
-   print_fpic_compile =
-   print_shared_lib_compile =
-   print_plugin_obj_compile =
-@@ -158,7 +159,6 @@ ifeq ($(VERBOSE),1)
-   print_install =
- else
-   Q = @
--  print_compile =		echo '  CC       '$(OBJ);
-   print_fpic_compile =		echo '  CC FPIC  '$(OBJ);
-   print_shared_lib_compile =	echo '  BUILD    SHARED LIB '$(OBJ);
-   print_plugin_obj_compile =	echo '  CC FPIC  '$(OBJ);
-@@ -188,16 +188,13 @@ do_build_static_lib =				\
- 	$(RM) $@;  $(AR) rcs $@ $^)
- 
- 
--define do_compile
--	$(print_compile)						\
--	$(CC) -c $(CFLAGS) $(EXT) $< -o $(obj)/$@;
--endef
-+do_compile = $(QUIET_CC)$(CC) -c $(CFLAGS) $(EXT) $< -o $(obj)/$@;
- 
- $(obj)/%.o: $(src)/%.c
--	$(Q)$(call do_compile)
-+	$(call do_compile)
- 
- %.o: $(src)/%.c
--	$(Q)$(call do_compile)
-+	$(call do_compile)
- 
- PEVENT_LIB_OBJS  = event-parse.o
- PEVENT_LIB_OBJS += event-plugin.o
++	QUIET_CLEAN    = @printf '  CLEAN    %s\n' $1;
++	QUIET_INSTALL  = @printf '  INSTALL  %s\n' $1;
+   endif
+ endif
 -- 
 1.8.1.4
 
