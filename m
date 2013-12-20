@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab3LTCqR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 21:46:17 -0500
-Received: from mail-gg0-f176.google.com ([209.85.161.176]:40722 "EHLO
-	mail-gg0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755938Ab3LTCqP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 21:46:15 -0500
-Content-Type: text/plain; charset="utf-8"
+	id S1756665Ab3LTCsW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 21:48:22 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:9925 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751031Ab3LTCsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 21:48:21 -0500
+X-IronPort-AV: E=Sophos;i="4.95,517,1384272000"; 
+   d="scan'208";a="9294941"
+Message-ID: <52B3AF8F.5040607@cn.fujitsu.com>
+Date: Fri, 20 Dec 2013 10:46:39 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        "Peter De Schrijver" <pdeschrijver@nvidia.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <52B3478A.2030405@wwwdotorg.org>
-Cc: "Prashant Gaikwad" <pgaikwad@nvidia.com>,
-        "Thierry Reding" <thierry.reding@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1387469676-17693-1-git-send-email-pdeschrijver@nvidia.com>
- <52B3478A.2030405@wwwdotorg.org>
-Message-ID: <20131220024609.18119.76686@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH] clk: tegra: Add missing Tegra20 fuse clks
-Date: Thu, 19 Dec 2013 18:46:09 -0800
+To: Eric Paris <eparis@redhat.com>
+CC: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
+        Steve Grubb <sgrubb@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH] audit: listen in all network namespaces
+References: <1374006760-7687-1-git-send-email-rgb@redhat.com>	 <52B26F1A.9070308@cn.fujitsu.com> <1387478422.29366.33.camel@flatline.rdu.redhat.com>
+In-Reply-To: <1387478422.29366.33.camel@flatline.rdu.redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/20 10:45:10,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/20 10:47:44,
+	Serialize complete at 2013/12/20 10:47:44
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Warren (2013-12-19 11:22:50)
-> On 12/19/2013 09:14 AM, Peter De Schrijver wrote:
+On 12/20/2013 02:40 AM, Eric Paris wrote:
+> On Thu, 2013-12-19 at 11:59 +0800, Gao feng wrote:
+>> On 07/17/2013 04:32 AM, Richard Guy Briggs wrote:
+>>> Convert audit from only listening in init_net to use register_pernet_subsys()
+>>> to dynamically manage the netlink socket list.
+>>>
+>>> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+>>> ---
+>>
+>> I think it's the time for us to discuss if we should revert this
+>> commit, since this one prevent me from continuing to achieve
+>> audit namespace.
+>>
+>>
+>> The major problem is in kaudit_send_skb, we have no idea which
+>> audit sock the skb should send to.
 > 
-> A patch description would be nice.
+> right, we have problems here no matter what...
 > 
-> Acked-by: Stephen Warren <swarren@nvidia.com>
+> If we stick with the current approach you will need to know socket +
+> portid.  With your approach one only needs to know portid.  Since these
+> are can both be part of the audit_ns structure I don't see a huge
+> difference...
 > 
-> I assume this is going through the clock tree, and there aren't any
-> dependencies between this patch and the other series touching fuses that
-> showed up today? (or the dependencies will be resolved by deferring
-> dependant patches to 3.15...)
+>> we have to store audit_sock
+>> into auditns(auditns will be passed to kauditd_send_skb),
+>> this will cause auditns have to get a reference of netns.
+>> and for some reason(netfilter audit target), netns will
+>> get reference of auditns too. this is terrible...
+> 
+> I'm not sure I agree/understand this entirely...
 > 
 
-Acked-by: Mike Turquette <mturquette@linaro.org>
+Yes, the audit_sock is created and destroyed by net namespace,
+so if auditns wants to use audit_sock, it must prevent netns
+from being destroyed. so auditns has to get reference of netns.
 
-Quick note: now that we're using pull requests for the Nvidia clock
-patches I'll just Ack patches that look good to me and at some point
-I'll expect that patch to wind up in a future pull request.
+and in some case, netns will get reference of auditns too. this
+is complex than making audit_sock global and getting rid of this
+reference.
 
-If you just want me to take the patch directly it is no problem but
-please let me know explicitly.
-
-Thanks!
-Mike
