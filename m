@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107Ab3LTS4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 13:56:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53620 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab3LTS4l (ORCPT
+	id S1753450Ab3LTS6T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 13:58:19 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38024 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab3LTS6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 13:56:41 -0500
-Date: Fri, 20 Dec 2013 10:56:50 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Aaro Koskinen <aaro.koskinen@nsn.com>, "Hans J. Koch" <hjk@hansjkoch.de>,
-        linux-kernel@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH] uio: fix devm_request_irq usage
-Message-ID: <20131220185650.GA26584@kroah.com>
-References: <1387549187-10068-1-git-send-email-aaro.koskinen@nsn.com>
- <20131220164913.GA29422@kroah.com>
- <20131220180113.GF2881@blackmetal.musicnaut.iki.fi>
+	Fri, 20 Dec 2013 13:58:18 -0500
+Message-ID: <52B49347.3090209@infradead.org>
+Date: Fri, 20 Dec 2013 10:58:15 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131220180113.GF2881@blackmetal.musicnaut.iki.fi>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        David Airlie <airlied@linux.ie>, alevy@redhat.com
+Subject: [PATCH -next] gpu: fix qxl missing crc32_le
+References: <20131220172503.b2b7cb92f437d974f032e1a4@canb.auug.org.au>
+In-Reply-To: <20131220172503.b2b7cb92f437d974f032e1a4@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 08:01:13PM +0200, Aaro Koskinen wrote:
-> Hi,
-> 
-> On Fri, Dec 20, 2013 at 08:49:13AM -0800, Greg Kroah-Hartman wrote:
-> > On Fri, Dec 20, 2013 at 04:19:47PM +0200, Aaro Koskinen wrote:
-> > > Commit e6789cd3dfb553077606ccafeb05e0043f072481 (uio: Simplify uio error
-> > > path by using devres functions) converted uio to use devm_request_irq().
-> > > This introduced a change in behaviour since the IRQ is associated with
-> > > the parent device instead of the created UIO device. The IRQ will remain
-> > > active after uio_unregister_device() is called, and some drivers will
-> > > crash because of this. The patch fixes this.
-> > 
-> > What drivers crash because of this?  Any in-kernel drivers?
-> 
-> I saw a crash with Intel DPDK (http://www.dpdk.org/) igb_uio
-> driver. Basically, they do:
-> 
-> 	uio_unregister_device
-> 	pci_disable_msix <-- this will BUG() if there is an active IRQ
-> 
-> I cannot test any of the in-tree UIO drivers, but at least some
-> of them seem to release resources the IRQ handler might use after
-> uio_unregister_device(). So if the IRQ fires results would not probably
-> be very good.
+From: Randy Dunlap <rdunlap@infradead.org>
 
-Ok, thanks, I'll queue this up for 3.14-rc1 and tag it for 3.13-stable
-so that people who have external modules can get the fix then.
+Fix build error: qxl uses crc32 functions so it needs to select
+CRC32.
 
-greg k-h
+Also use angle quotes around a kernel header file name.
+
+drivers/built-in.o: In function `qxl_display_read_client_monitors_config':
+(.text+0x19d754): undefined reference to `crc32_le'
+
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+---
+ drivers/gpu/drm/qxl/Kconfig       |    1 +
+ drivers/gpu/drm/qxl/qxl_display.c |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+--- linux-next-20131220.orig/drivers/gpu/drm/qxl/qxl_display.c
++++ linux-next-20131220/drivers/gpu/drm/qxl/qxl_display.c
+@@ -24,7 +24,7 @@
+  */
+ 
+ 
+-#include "linux/crc32.h"
++#include <linux/crc32.h>
+ 
+ #include "qxl_drv.h"
+ #include "qxl_object.h"
+--- linux-next-20131220.orig/drivers/gpu/drm/qxl/Kconfig
++++ linux-next-20131220/drivers/gpu/drm/qxl/Kconfig
+@@ -8,6 +8,7 @@ config DRM_QXL
+ 	select DRM_KMS_HELPER
+ 	select DRM_KMS_FB_HELPER
+ 	select DRM_TTM
++	select CRC32
+ 	help
+ 	  QXL virtual GPU for Spice virtualization desktop integration.
+ 	  Do not enable this driver unless your distro ships a corresponding
