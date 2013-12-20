@@ -1,299 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab3LTQeW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 11:34:22 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33993 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754458Ab3LTQeU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 11:34:20 -0500
-Date: Fri, 20 Dec 2013 13:34:13 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Chunwei Chen <tuxoko@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH] perf config: ignore generated files in feature-checks
-Message-ID: <20131220163413.GB17780@ghostprotocols.net>
-References: <1387441761-2153-1-git-send-email-tuxoko@gmail.com>
- <20131219115833.GA11279@gmail.com>
- <CAK1sfuYn1iLUHWwUTdm755D0YpuAcROsj5rp=4-Vg5qc57bFfw@mail.gmail.com>
- <20131219154642.GA24658@gmail.com>
- <CAK1sfubfVtqfoKMpeB1h+ooq0+ogJvM0FFDu1Wyc9i16CqGfaw@mail.gmail.com>
- <20131219171027.GD30382@gmail.com>
- <52B3C4A8.3070809@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52B3C4A8.3070809@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754955Ab3LTQjs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 11:39:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10691 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753327Ab3LTQjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 11:39:46 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Michel Lespinasse <walken@google.com>,
+        Andi Kleen <ak@linux.intel.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@Intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@Intel.com,
+        tony.luck@Intel.com, ruiv.wang@gmail.com, gong.chen@linux.intel.com
+Subject: [PATCH] x86: Add check for number of available vectors before CPU down [v3]
+Date: Fri, 20 Dec 2013 10:50:09 -0500
+Message-Id: <1387554609-9823-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Dec 20, 2013 at 12:16:40PM +0800, Chunwei Chen escreveu:
-> >From 362201bf3259cc01c99531766395fdba0c0f3789 Mon Sep 17 00:00:00 2001
-> From: Chunwei Chen <tuxoko@gmail.com>
-> Date: Thu, 19 Dec 2013 15:41:22 +0800
-> Subject: [PATCH] perf config: ignore generated files in feature-checks
-> 
-> 1. Rename the test-* binary files to test-*.bin for easier pattern matching as
->    suggested by Ingo.
-> 2. Ignore *.bin and *.d files.
-> 
-> Signed-off-by: Chunwei Chen <tuxoko@gmail.com>
+I tested across various systems with both the linux.git and linux-next.git
+trees and do not see any false positives.  The patch behaves as expected on
+a system with 590 IRQs allocated at boot time; the system refuses to down cpu
+62.
 
-Please make sure it applies to the perf/core branch in:
+P.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git
+----8<----
 
-Just tried and it didn't applies.
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64791
 
-- Arnaldo
+When a cpu is downed on a system, the irqs on the cpu are assigned to other cpus.  It is possible, however, that when a cpu is downed there aren't enough free vectors on the remaining cpus to account for the vectors from the cpu that is being downed.
 
-> ---
->  tools/perf/config/Makefile                  |   6 +-
->  tools/perf/config/feature-checks/.gitignore |   2 +
->  tools/perf/config/feature-checks/Makefile   | 114 ++++++++++++++--------------
->  3 files changed, 62 insertions(+), 60 deletions(-)
->  create mode 100644 tools/perf/config/feature-checks/.gitignore
-> 
-> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> index f7d11a8..40e08d1 100644
-> --- a/tools/perf/config/Makefile
-> +++ b/tools/perf/config/Makefile
-> @@ -102,7 +102,7 @@ endif
->  
->  feature_check = $(eval $(feature_check_code))
->  define feature_check_code
-> -  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS="$(LDFLAGS)" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-> +  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS="$(LDFLAGS)" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1.bin >/dev/null 2>/dev/null && echo 1 || echo 0)
->  endef
->  
->  feature_set = $(eval $(feature_set_code))
-> @@ -150,7 +150,7 @@ CORE_FEATURE_TESTS =			\
->  # to skip the print-out of the long features list if the file
->  # existed before and after it was built:
->  #
-> -ifeq ($(wildcard $(OUTPUT)config/feature-checks/test-all),)
-> +ifeq ($(wildcard $(OUTPUT)config/feature-checks/test-all.bin),)
->    test-all-failed := 1
->  else
->    test-all-failed := 0
-> @@ -180,7 +180,7 @@ ifeq ($(feature-all), 1)
->    #
->    $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
->  else
-> -  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(CORE_FEATURE_TESTS) >/dev/null 2>&1)
-> +  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(addsuffix .bin,$(CORE_FEATURE_TESTS)) >/dev/null 2>&1)
->    $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
->  endif
->  
-> diff --git a/tools/perf/config/feature-checks/.gitignore b/tools/perf/config/feature-checks/.gitignore
-> new file mode 100644
-> index 0000000..80f3da0
-> --- /dev/null
-> +++ b/tools/perf/config/feature-checks/.gitignore
-> @@ -0,0 +1,2 @@
-> +*.d
-> +*.bin
-> diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-> index 87e7900..e2bc0ed 100644
-> --- a/tools/perf/config/feature-checks/Makefile
-> +++ b/tools/perf/config/feature-checks/Makefile
-> @@ -1,94 +1,94 @@
->  
->  FILES=					\
-> -	test-all			\
-> -	test-backtrace			\
-> -	test-bionic			\
-> -	test-dwarf			\
-> -	test-fortify-source		\
-> -	test-glibc			\
-> -	test-gtk2			\
-> -	test-gtk2-infobar		\
-> -	test-hello			\
-> -	test-libaudit			\
-> -	test-libbfd			\
-> -	test-liberty			\
-> -	test-liberty-z			\
-> -	test-cplus-demangle		\
-> -	test-libelf			\
-> -	test-libelf-getphdrnum		\
-> -	test-libelf-mmap		\
-> -	test-libnuma			\
-> -	test-libperl			\
-> -	test-libpython			\
-> -	test-libpython-version		\
-> -	test-libslang			\
-> -	test-libunwind			\
-> -	test-libunwind-debug-frame	\
-> -	test-on-exit			\
-> -	test-stackprotector-all		\
-> -	test-stackprotector		\
-> -	test-timerfd
-> +	test-all.bin			\
-> +	test-backtrace.bin		\
-> +	test-bionic.bin			\
-> +	test-dwarf.bin			\
-> +	test-fortify-source.bin		\
-> +	test-glibc.bin			\
-> +	test-gtk2.bin			\
-> +	test-gtk2-infobar.bin		\
-> +	test-hello.bin			\
-> +	test-libaudit.bin		\
-> +	test-libbfd.bin			\
-> +	test-liberty.bin		\
-> +	test-liberty-z.bin		\
-> +	test-cplus-demangle.bin		\
-> +	test-libelf.bin			\
-> +	test-libelf-getphdrnum.bin	\
-> +	test-libelf-mmap.bin		\
-> +	test-libnuma.bin		\
-> +	test-libperl.bin		\
-> +	test-libpython.bin		\
-> +	test-libpython-version.bin	\
-> +	test-libslang.bin		\
-> +	test-libunwind.bin		\
-> +	test-libunwind-debug-frame.bin	\
-> +	test-on-exit.bin		\
-> +	test-stackprotector-all.bin	\
-> +	test-stackprotector.bin		\
-> +	test-timerfd.bin
->  
->  CC := $(CC) -MD
->  
->  all: $(FILES)
->  
-> -BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
-> +BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $(patsubst %.bin,%.c,$@)
->  
->  ###############################
->  
-> -test-all:
-> +test-all.bin:
->  	$(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
->  
-> -test-hello:
-> +test-hello.bin:
->  	$(BUILD)
->  
-> -test-stackprotector-all:
-> +test-stackprotector-all.bin:
->  	$(BUILD) -Werror -fstack-protector-all
->  
-> -test-stackprotector:
-> +test-stackprotector.bin:
->  	$(BUILD) -Werror -fstack-protector -Wstack-protector
->  
-> -test-fortify-source:
-> +test-fortify-source.bin:
->  	$(BUILD) -O2 -Werror -D_FORTIFY_SOURCE=2
->  
-> -test-bionic:
-> +test-bionic.bin:
->  	$(BUILD)
->  
-> -test-libelf:
-> +test-libelf.bin:
->  	$(BUILD) -lelf
->  
-> -test-glibc:
-> +test-glibc.bin:
->  	$(BUILD)
->  
-> -test-dwarf:
-> +test-dwarf.bin:
->  	$(BUILD) -ldw
->  
-> -test-libelf-mmap:
-> +test-libelf-mmap.bin:
->  	$(BUILD) -lelf
->  
-> -test-libelf-getphdrnum:
-> +test-libelf-getphdrnum.bin:
->  	$(BUILD) -lelf
->  
-> -test-libnuma:
-> +test-libnuma.bin:
->  	$(BUILD) -lnuma
->  
-> -test-libunwind:
-> +test-libunwind.bin:
->  	$(BUILD) $(LIBUNWIND_LIBS) -lelf
->  
-> -test-libunwind-debug-frame:
-> +test-libunwind-debug-frame.bin:
->  	$(BUILD) $(LIBUNWIND_LIBS) -lelf
->  
-> -test-libaudit:
-> +test-libaudit.bin:
->  	$(BUILD) -laudit
->  
-> -test-libslang:
-> +test-libslang.bin:
->  	$(BUILD) -I/usr/include/slang -lslang
->  
-> -test-gtk2:
-> +test-gtk2.bin:
->  	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
->  
-> -test-gtk2-infobar:
-> +test-gtk2-infobar.bin:
->  	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
->  
->  grep-libs  = $(filter -l%,$(1))
-> @@ -100,7 +100,7 @@ PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
->  PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
->  FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
->  
-> -test-libperl:
-> +test-libperl.bin:
->  	$(BUILD) $(FLAGS_PERL_EMBED)
->  
->  override PYTHON := python
-> @@ -117,31 +117,31 @@ PYTHON_EMBED_LIBADD = $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
->  PYTHON_EMBED_CCOPTS = $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
->  FLAGS_PYTHON_EMBED = $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
->  
-> -test-libpython:
-> +test-libpython.bin:
->  	$(BUILD) $(FLAGS_PYTHON_EMBED)
->  
-> -test-libpython-version:
-> +test-libpython-version.bin:
->  	$(BUILD) $(FLAGS_PYTHON_EMBED)
->  
-> -test-libbfd:
-> +test-libbfd.bin:
->  	$(BUILD) -DPACKAGE='"perf"' -lbfd -ldl
->  
-> -test-liberty:
-> +test-liberty.bin:
->  	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='"perf"' -lbfd -ldl -liberty
->  
-> -test-liberty-z:
-> +test-liberty-z.bin:
->  	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='"perf"' -lbfd -ldl -liberty -lz
->  
-> -test-cplus-demangle:
-> +test-cplus-demangle.bin:
->  	$(BUILD) -liberty
->  
-> -test-on-exit:
-> +test-on-exit.bin:
->  	$(BUILD)
->  
-> -test-backtrace:
-> +test-backtrace.bin:
->  	$(BUILD)
->  
-> -test-timerfd:
-> +test-timerfd.bin:
->  	$(BUILD)
->  
->  -include *.d
-> -- 
-> 1.8.5.2
+This results in an interesting "overflow" condition where irqs are "assigned" to a CPU but are not handled.
+
+For example, when downing cpus on a 1-64 logical processor system:
+
+<snip>
+[  232.021745] smpboot: CPU 61 is now offline
+[  238.480275] smpboot: CPU 62 is now offline
+[  245.991080] ------------[ cut here ]------------
+[  245.996270] WARNING: CPU: 0 PID: 0 at net/sched/sch_generic.c:264 dev_watchdog+0x246/0x250()
+[  246.005688] NETDEV WATCHDOG: p786p1 (ixgbe): transmit queue 0 timed out
+[  246.013070] Modules linked in: lockd sunrpc iTCO_wdt iTCO_vendor_support sb_edac ixgbe microcode e1000e pcspkr joydev edac_core lpc_ich ioatdma ptp mdio mfd_core i2c_i801 dca pps_core i2c_core wmi acpi_cpufreq isci libsas scsi_transport_sas
+[  246.037633] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0+ #14
+[  246.044451] Hardware name: Intel Corporation S4600LH ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
+[  246.057371]  0000000000000009 ffff88081fa03d40 ffffffff8164fbf6 ffff88081fa0ee48
+[  246.065728]  ffff88081fa03d90 ffff88081fa03d80 ffffffff81054ecc ffff88081fa13040
+[  246.074073]  0000000000000000 ffff88200cce0000 0000000000000040 0000000000000000
+[  246.082430] Call Trace:
+[  246.085174]  <IRQ>  [<ffffffff8164fbf6>] dump_stack+0x46/0x58
+[  246.091633]  [<ffffffff81054ecc>] warn_slowpath_common+0x8c/0xc0
+[  246.098352]  [<ffffffff81054fb6>] warn_slowpath_fmt+0x46/0x50
+[  246.104786]  [<ffffffff815710d6>] dev_watchdog+0x246/0x250
+[  246.110923]  [<ffffffff81570e90>] ? dev_deactivate_queue.constprop.31+0x80/0x80
+[  246.119097]  [<ffffffff8106092a>] call_timer_fn+0x3a/0x110
+[  246.125224]  [<ffffffff8106280f>] ? update_process_times+0x6f/0x80
+[  246.132137]  [<ffffffff81570e90>] ? dev_deactivate_queue.constprop.31+0x80/0x80
+[  246.140308]  [<ffffffff81061db0>] run_timer_softirq+0x1f0/0x2a0
+[  246.146933]  [<ffffffff81059a80>] __do_softirq+0xe0/0x220
+[  246.152976]  [<ffffffff8165fedc>] call_softirq+0x1c/0x30
+[  246.158920]  [<ffffffff810045f5>] do_softirq+0x55/0x90
+[  246.164670]  [<ffffffff81059d35>] irq_exit+0xa5/0xb0
+[  246.170227]  [<ffffffff8166062a>] smp_apic_timer_interrupt+0x4a/0x60
+[  246.177324]  [<ffffffff8165f40a>] apic_timer_interrupt+0x6a/0x70
+[  246.184041]  <EOI>  [<ffffffff81505a1b>] ? cpuidle_enter_state+0x5b/0xe0
+[  246.191559]  [<ffffffff81505a17>] ? cpuidle_enter_state+0x57/0xe0
+[  246.198374]  [<ffffffff81505b5d>] cpuidle_idle_call+0xbd/0x200
+[  246.204900]  [<ffffffff8100b7ae>] arch_cpu_idle+0xe/0x30
+[  246.210846]  [<ffffffff810a47b0>] cpu_startup_entry+0xd0/0x250
+[  246.217371]  [<ffffffff81646b47>] rest_init+0x77/0x80
+[  246.223028]  [<ffffffff81d09e8e>] start_kernel+0x3ee/0x3fb
+[  246.229165]  [<ffffffff81d0989f>] ? repair_env_string+0x5e/0x5e
+[  246.235787]  [<ffffffff81d095a5>] x86_64_start_reservations+0x2a/0x2c
+[  246.242990]  [<ffffffff81d0969f>] x86_64_start_kernel+0xf8/0xfc
+[  246.249610] ---[ end trace fb74fdef54d79039 ]---
+[  246.254807] ixgbe 0000:c2:00.0 p786p1: initiating reset due to tx timeout
+[  246.262489] ixgbe 0000:c2:00.0 p786p1: Reset adapter
+Last login: Mon Nov 11 08:35:14 from 10.18.17.119
+[root@(none) ~]# [  246.792676] ixgbe 0000:c2:00.0 p786p1: detected SFP+: 5
+[  249.231598] ixgbe 0000:c2:00.0 p786p1: NIC Link is Up 10 Gbps, Flow Control: RX/TX
+[  246.792676] ixgbe 0000:c2:00.0 p786p1: detected SFP+: 5
+[  249.231598] ixgbe 0000:c2:00.0 p786p1: NIC Link is Up 10 Gbps, Flow Control: RX/TX
+
+(last lines keep repeating.  ixgbe driver is dead until module reload.)
+
+If the downed cpu has more vectors than are free on the remaining cpus on the
+system, it is possible that some vectors are "orphaned" even though they are
+assigned to a cpu.  In this case, since the ixgbe driver had a watchdog, the
+watchdog fired and notified that something was wrong.
+
+This patch adds a function, check_vectors(), to compare the number of vectors
+on the CPU going down and compares it to the number of vectors available on
+the system.  If there aren't enough vectors for the CPU to go down, an
+error is returned and propogated back to userspace.
+
+v2: Do not need to look at percpu irqs
+v3: Need to check affinity to prevent counting of MSIs in IOAPIC Lowest
+    Priority Mode
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Yang Zhang <yang.z.zhang@Intel.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: janet.morgan@intel.com
+Cc: tony.luck@intel.com
+Cc: ruiv.wang@gmail.com
+Cc: gong.chen@linux.intel.com
+---
+ arch/x86/include/asm/irq.h |    1 +
+ arch/x86/kernel/irq.c      |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/smpboot.c  |    6 ++++++
+ 3 files changed, 51 insertions(+)
+
+diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
+index 0ea10f27..dfd7372 100644
+--- a/arch/x86/include/asm/irq.h
++++ b/arch/x86/include/asm/irq.h
+@@ -25,6 +25,7 @@ extern void irq_ctx_init(int cpu);
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+ #include <linux/cpumask.h>
++extern int check_vectors(void);
+ extern void fixup_irqs(void);
+ extern void irq_force_complete_move(int);
+ #endif
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 22d0687..483f111 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -262,6 +262,50 @@ __visible void smp_trace_x86_platform_ipi(struct pt_regs *regs)
+ EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
++/*
++ * This cpu is going to be removed and its vectors migrated to the remaining
++ * online cpus.  Check to see if there are enough vectors in the remaining cpus.
++ */
++int check_vectors(void)
++{
++	int irq, cpu;
++	unsigned int vector, this_count, count;
++	struct irq_desc *desc;
++	struct irq_data *data;
++	struct cpumask *affinity;
++
++	this_count = 0;
++	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
++		irq = __this_cpu_read(vector_irq[vector]);
++		if (irq >= 0) {
++			desc = irq_to_desc(irq);
++			data = irq_desc_get_irq_data(desc);
++			affinity = data->affinity;
++			if (irq_has_action(irq) || !irqd_is_per_cpu(data) ||
++			    !cpumask_subset(affinity, cpu_online_mask))
++				this_count++;
++		}
++	}
++
++	count = 0;
++	for_each_online_cpu(cpu) {
++		if (cpu == smp_processor_id())
++			continue;
++		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
++		     vector++) {
++			if (per_cpu(vector_irq, cpu)[vector] < 0)
++				count++;
++		}
++	}
++
++	if (count < this_count) {
++		pr_warn("CPU %d disable failed: CPU has %u vectors assigned and there are only %u available.\n",
++			smp_processor_id(), this_count, count);
++		return -ERANGE;
++	}
++	return 0;
++}
++
+ /* A cpu has been removed from cpu_online_mask.  Reset irq affinities. */
+ void fixup_irqs(void)
+ {
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 85dc05a..7ac6654 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1312,6 +1312,12 @@ void cpu_disable_common(void)
+ 
+ int native_cpu_disable(void)
+ {
++	int ret;
++
++	ret = check_vectors();
++	if (ret)
++		return ret;
++
+ 	clear_local_APIC();
+ 
+ 	cpu_disable_common();
+-- 
+1.7.9.3
+
