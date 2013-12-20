@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab3LTDj7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 22:39:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48757 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832Ab3LTDj5 (ORCPT
+	id S1753380Ab3LTDlN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 22:41:13 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:33519 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838Ab3LTDlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 22:39:57 -0500
-Date: Thu, 19 Dec 2013 19:40:04 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ravi Patel <rapatel@apm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com
-Subject: Re: [PATCH 0/4] misc: xgene: Add support for APM X-Gene SoC Queue
- Manager/Traffic Manager
-Message-ID: <20131220034004.GA8160@kroah.com>
-References: <1387507503-7565-1-git-send-email-rapatel@apm.com>
- <20131220032217.GC32310@kroah.com>
- <CAN1v_PsibDTwQ9_ZxRnBtJA46BPne6fTuS_9TddWPZt6ewwgQQ@mail.gmail.com>
+	Thu, 19 Dec 2013 22:41:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAN1v_PsibDTwQ9_ZxRnBtJA46BPne6fTuS_9TddWPZt6ewwgQQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Date: Fri, 20 Dec 2013 11:41:11 +0800
+Message-ID: <CAPgLHd-H27vdFP857hs5CqnQdgT6XSW+CrtoXodMRHPX8f+N3A@mail.gmail.com>
+Subject: [PATCH] staging: lustre: fix return value check in capa_hmac()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: gregkh@linuxfoundation.org, andreas.dilger@intel.com,
+        sachin.kamat@linaro.org, tao.peng@emc.com
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-A: No.
-Q: Should I include quotations after my reply?
+In case of error, the function crypto_alloc_hash() returns ERR_PTR()
+and never returns NULL. The NULL test in the return value check
+should be replaced with IS_ERR().
 
-http://daringfireball.net/2007/07/on_top
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/staging/lustre/lustre/obdclass/capa.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-On Thu, Dec 19, 2013 at 07:27:35PM -0800, Ravi Patel wrote:
-> APM X-Gene SoC Ethernet driver is planned to be submitted on Dec 20 2013.
-> Ethernet driver will be using these exported API's from QMTM driver.
+diff --git a/drivers/staging/lustre/lustre/obdclass/capa.c b/drivers/staging/lustre/lustre/obdclass/capa.c
+index 68d797b..039232d 100644
+--- a/drivers/staging/lustre/lustre/obdclass/capa.c
++++ b/drivers/staging/lustre/lustre/obdclass/capa.c
+@@ -273,10 +273,10 @@ int capa_hmac(__u8 *hmac, struct lustre_capa *capa, __u8 *key)
+ 	alg = &capa_hmac_algs[capa_alg(capa)];
+ 
+ 	tfm = crypto_alloc_hash(alg->ha_name, 0, 0);
+-	if (!tfm) {
++	if (IS_ERR(tfm)) {
+ 		CERROR("crypto_alloc_tfm failed, check whether your kernel"
+ 		       "has crypto support!\n");
+-		return -ENOMEM;
++		return PTR_ERR(tfm);
+ 	}
+ 	keylen = alg->ha_keylen;
+ 
 
-Please submit a user of the api as part of the series, otherwise we
-can't evaluate if it's really the correct thing to do or not.
-
-> The APM X-Gene SoC Ethernet driver is going to live in drivers/net/ethernet/apm
-> /xgene.
-
-So this is a "bus"?  How is the ethernet device going to show up in
-sysfs as a parent of what as this isn't part of the driver model?
-
-greg k-h
