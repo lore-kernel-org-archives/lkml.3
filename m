@@ -1,79 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797Ab3LTSUK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 13:20:10 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:41923 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab3LTSUI (ORCPT
+	id S1753623Ab3LTSX3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 13:23:29 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:52607 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751039Ab3LTSX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 13:20:08 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Cc: kvm@vger.kernel.org, gleb@kernel.org, agraf@suse.de
-Subject: [GIT PULL] KVM changes for 3.13-rc5
-Date: Fri, 20 Dec 2013 19:19:51 +0100
-Message-Id: <1387563591-2137-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Fri, 20 Dec 2013 13:23:27 -0500
+Date: Fri, 20 Dec 2013 13:23:23 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com
+Subject: Re: [PATCH 09/13] sched: Add bandwidth management for sched_dl
+Message-ID: <20131220132323.524cf2b1@gandalf.local.home>
+In-Reply-To: <20131220174200.GX16438@laptop.programming.kicks-ass.net>
+References: <20131217122720.950475833@infradead.org>
+	<20131217123353.180539582@infradead.org>
+	<20131218165508.GB30183@twins.programming.kicks-ass.net>
+	<20131220171343.GL2480@laptop.programming.kicks-ass.net>
+	<20131220123707.44fb7192@gandalf.local.home>
+	<20131220174200.GX16438@laptop.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Fri, 20 Dec 2013 18:42:00 +0100
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-The following changes since commit 319e2e3f63c348a9b66db4667efa73178e18b17d:
+> On Fri, Dec 20, 2013 at 12:37:07PM -0500, Steven Rostedt wrote:
+> > On Fri, 20 Dec 2013 18:13:43 +0100
+> > Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > 
+> > > @@ -4985,6 +4942,23 @@ migration_call(struct notifier_block *nf
+> > >  	unsigned long flags;
+> > >  	struct rq *rq = cpu_rq(cpu);
+> > >  
+> > > +	switch (action) {
+> > > +	case CPU_DOWN_PREPARE: /* explicitly allow suspend */
+> > > +		{
+> > > +			struct dl_bw *dl_b = dl_bw_of(cpu);
+> > > +			int cpus = dl_bw_cpus(cpu);
+> > > +			bool overflow;
+> > > +
+> > > +			raw_spin_lock_irqsave(&dl_b->lock, flags);
+> > > +			overflow = __dl_overflow(dl_b, cpus-1, 0, 0);
+> > > +			raw_spin_unlock_irqrestore(&dl_b->lock, flags);
+> > > +
+> > > +			if (overflow)
+> > > +				return notifier_from_errno(-EBUSY);
+> > 
+> > Is it possible to have a race here to create a new deadline task that
+> > may work with cpus but not cpus-1? That is, if a new deadline task is
+> > currently being created as a CPU is going offline, this check happens
+> > first while the creation is spinning on the dl_b->lock, and it sets
+> > overflow to false, then once the lock is released, the new deadline
+> > task makes the condition true.
+> > 
+> > Should the system call have a get_online_cpus() somewhere?
+> 
+> No, should be all good; the entire admission control is serialized by
+> that dl_b->lock, and its a raw_spin_lock (as can be seen from the above)
+> which already very much excludes hotplug.
 
-  Linux 3.13-rc4 (2013-12-15 12:31:33 -0800)
+I'm saying what stops this?
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
+	CPU 0			CPU 1
+	-----			-----
+ sched_setattr()
+ dl_overflow()
+ cpus = __dl_span_weight()
 
-for you to fetch changes up to 5e6d26cf4857a98032a4b71b13d5b33163803523:
+			  cpu_down()
+			  raw_spin_lock()
+ raw_spin_lock() /* blocks */
 
-  Merge tag 'signed-for-3.13' of git://github.com/agraf/linux-2.6 into kvm-master (2013-12-20 19:13:58 +0100)
 
-----------------------------------------------------------------
+			  overflow = __dl_overflow(cpus-1);
+			  raw_spin_unlock();
 
-The PPC folks had a large amount of changes queued for 3.13, and now they
-are fixing the bugs.
+ /* gets lock */
+ __dl_overflow(cpus) /* all OK! */
 
-----------------------------------------------------------------
-Alexander Graf (4):
-      KVM: PPC: Book3S: PR: Don't clobber our exit handler id
-      KVM: PPC: Book3S: PR: Export kvmppc_copy_to|from_svcpu
-      KVM: PPC: Book3S: PR: Make svcpu -> vcpu store preempt savvy
-      KVM: PPC: Book3S: PR: Enable interrupts earlier
 
-Aneesh Kumar K.V (1):
-      powerpc: book3s: kvm: Don't abuse host r2 in exit path
 
-Paolo Bonzini (1):
-      Merge tag 'signed-for-3.13' of git://github.com/agraf/linux-2.6 into kvm-master
+			  /* cpus goes to cpus - 1 making
+			     __dl_overflow() not OK anymore */
 
-Paul Mackerras (5):
-      KVM: PPC: Book3S HV: Fix physical address calculations
-      KVM: PPC: Book3S HV: Refine barriers in guest entry/exit
-      KVM: PPC: Book3S HV: Make tbacct_lock irq-safe
-      KVM: PPC: Book3S HV: Take SRCU read lock around kvm_read_guest() call
-      KVM: PPC: Book3S HV: Don't drop low-order page address bits
 
-Scott Wood (1):
-      powerpc/kvm/booke: Fix build break due to stack frame size warning
+-- Steve
 
-pingfan liu (1):
-      powerpc: kvm: fix rare but potential deadlock scene
-
- arch/powerpc/include/asm/kvm_book3s.h     |  4 ++++
- arch/powerpc/include/asm/kvm_book3s_asm.h |  2 ++
- arch/powerpc/include/asm/switch_to.h      |  2 +-
- arch/powerpc/kernel/asm-offsets.c         |  1 +
- arch/powerpc/kernel/process.c             | 32 +++++++++++++++----------------
- arch/powerpc/kvm/book3s_64_mmu_hv.c       | 18 +++++++++++++----
- arch/powerpc/kvm/book3s_hv.c              | 24 +++++++++++++----------
- arch/powerpc/kvm/book3s_hv_rm_mmu.c       |  9 +++++++--
- arch/powerpc/kvm/book3s_hv_rmhandlers.S   | 23 ++++++++++++----------
- arch/powerpc/kvm/book3s_interrupts.S      | 19 ++++++++++--------
- arch/powerpc/kvm/book3s_pr.c              | 22 +++++++++++++++++++++
- arch/powerpc/kvm/book3s_rmhandlers.S      |  6 +-----
- arch/powerpc/kvm/booke.c                  | 12 ++++++------
- 13 files changed, 112 insertions(+), 62 deletions(-)
