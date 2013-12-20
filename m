@@ -1,94 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab3LTWj7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 17:39:59 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:48104 "EHLO bear.ext.ti.com"
+	id S1753263Ab3LTW4c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 17:56:32 -0500
+Received: from mga09.intel.com ([134.134.136.24]:27558 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810Ab3LTWj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 17:39:57 -0500
-Message-ID: <52B4C71D.9030904@ti.com>
-Date: Fri, 20 Dec 2013 17:39:25 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751256Ab3LTW4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 17:56:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,524,1384329600"; 
+   d="scan'208";a="455722986"
+Date: Fri, 20 Dec 2013 14:56:24 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Michel Lespinasse <walken@google.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@Intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@Intel.com,
+        tony.luck@Intel.com, ruiv.wang@gmail.com, gong.chen@linux.intel.com
+Subject: Re: [PATCH] x86: Add check for number of available vectors before
+ CPU down [v3]
+Message-ID: <20131220225624.GD22695@tassilo.jf.intel.com>
+References: <1387554609-9823-1-git-send-email-prarit@redhat.com>
 MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm/ARM: fix ARMs __ffs() to conform to avoid warning
- with NO_BOOTMEM
-References: <1386981486-3173-1-git-send-email-santosh.shilimkar@ti.com>
-In-Reply-To: <1386981486-3173-1-git-send-email-santosh.shilimkar@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387554609-9823-1-git-send-email-prarit@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell,
+On Fri, Dec 20, 2013 at 10:50:09AM -0500, Prarit Bhargava wrote:
+> I tested across various systems with both the linux.git and linux-next.git
+> trees and do not see any false positives.  The patch behaves as expected on
+> a system with 590 IRQs allocated at boot time; the system refuses to down cpu
+> 62.
 
-On Friday 13 December 2013 07:38 PM, Santosh Shilimkar wrote:
-> Building ARM with NO_BOOTMEM generates below warning.
-> 
-> mm/nobootmem.c: In function _____free_pages_memory___:
-> mm/nobootmem.c:88:11: warning: comparison of distinct pointer types lacks a cast
-> 
-> 	order = min(MAX_ORDER - 1UL, __ffs(start));
-> 
-> ARM's __ffs() differs from other architectures in that it ends up being
-> an int, whereas almost everyone else is unsigned long.
-> 
-> So fix ARMs __ffs() to conform to other architectures. Suggested by
-> Russell King <linux@arm.linux.org.uk>
-> 
-> Some more details in below thread -
-> 	https://lkml.org/lkml/2013/12/9/807
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
-Is this patch inline with what we discussed off-list ?
-If you ack it, it can go into the Andrews tree to kill that one last
-warning with the memblock series. Thanks
+I read the patch and it looks good to me
 
+I haven't double checked, but I'm assuming the hot plug locks are held
+while you are doing this.
 
->  arch/arm/include/asm/bitops.h |   23 +++++++++++++++++++----
->  1 file changed, 19 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
-> index e691ec9..5f41d81 100644
-> --- a/arch/arm/include/asm/bitops.h
-> +++ b/arch/arm/include/asm/bitops.h
-> @@ -270,10 +270,25 @@ static inline int fls(int x)
->  	return ret;
->  }
->  
-> -#define __fls(x) (fls(x) - 1)
-> -#define ffs(x) ({ unsigned long __t = (x); fls(__t & -__t); })
-> -#define __ffs(x) (ffs(x) - 1)
-> -#define ffz(x) __ffs( ~(x) )
-> +static inline unsigned long __fls(unsigned long x)
-> +{
-> +	return fls(x) - 1;
-> +}
-> +
-> +static inline int ffs(int x)
-> +{
-> +	return fls(x & -x);
-> +}
-> +
-> +static inline unsigned long __ffs(unsigned long x)
-> +{
-> +	return ffs(x) - 1;
-> +}
-> +
-> +static inline unsigned long ffz(unsigned long x)
-> +{
-> +	return __ffs(~x);
-> +}
->  
->  #endif
->  
-> 
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
 
+-Andi
