@@ -1,251 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab3LTVme (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 16:42:34 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:44660 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753757Ab3LTVmc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 16:42:32 -0500
-Message-ID: <52B4B9C9.3030603@linaro.org>
-Date: Fri, 20 Dec 2013 22:42:33 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1755136Ab3LTVoZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 16:44:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48306 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753130Ab3LTVoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 16:44:22 -0500
+Message-ID: <52B4BA0A.1030902@zytor.com>
+Date: Fri, 20 Dec 2013 13:43:38 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>, rjw@rjwysocki.net
-CC: lenb@kernel.org, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        kyungmin.park@samsung.com
-Subject: Re: [PATCH v2 8/9] intel_idle: use the common cpuidle_[un]register()
- routines
-References: <1387565251-7051-1-git-send-email-b.zolnierkie@samsung.com> <1387565251-7051-9-git-send-email-b.zolnierkie@samsung.com>
-In-Reply-To: <1387565251-7051-9-git-send-email-b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: joeyli <jlee@suse.com>, Alessandro Zummo <a.zummo@towertech.it>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
+        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
+        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        x86@kernel.org,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, Borislav Petkov <bp@suse.de>
+Subject: Re: [RFC PATCH 00/14] Support timezone of ACPI TAD and EFI TIME
+References: <1387439053-8711-1-git-send-email-jlee@suse.com> <1387517916.3539.4446.camel@linux-s257.site> <52B4B242.5010002@zytor.com> <2787644.ytU7M33B4r@vostro.rjw.lan>
+In-Reply-To: <2787644.ytU7M33B4r@vostro.rjw.lan>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2013 07:47 PM, Bartlomiej Zolnierkiewicz wrote:
-> It is now possible to use the common cpuidle_[un]register() routines
-> (instead of open-coding them) so do it.
+On 12/20/2013 01:45 PM, Rafael J. Wysocki wrote:
+> 
+> My understanding, however, is that to use the TAD, we don't actually need to
+> create a struct acpi_device for it.  We just need a handle to the ACPICA
+> object which can be found using acpi_get_devices() as soon as the namespace
+> has been extracted from the DSDT and friends.  That in turn happens in
+> acpi_early_init(), which is called from start_kernel() right before
+> efi_late_init().
+> 
+> Is that early enough?
+> 
 
-Just an addition:
+Possibly... will have to investigate.  I would also ask if the same
+applies to the PNP0B0x devices -- all we really need there is the
+presence/absence indication and the I/O port base.
 
-The cpuidle_register common routine calls cpuidle_register_driver which 
-initialize the driver's cpumask to cpu_possible_mask if not set (which 
-is the default on most platform) and right after it uses this mask to 
-register the cpuidle devices. That's why the cpu hotplug does not need 
-to register the device unlike before this patch where the cpumask was 
-cpu_online_mask. So we can't fall in the "Some systems can hotplug a cpu 
-at runtime after the kernel has booted" case.
+	-hpa
 
-Reviewed-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Len Brown <lenb@kernel.org>
-> ---
->   drivers/idle/intel_idle.c | 114 ++++++++++++----------------------------------
->   1 file changed, 29 insertions(+), 85 deletions(-)
->
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index 524d07b..a1a4dbd 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -93,10 +93,8 @@ struct idle_cpu {
->   };
->
->   static const struct idle_cpu *icpu;
-> -static struct cpuidle_device __percpu *intel_idle_cpuidle_devices;
->   static int intel_idle(struct cpuidle_device *dev,
->   			struct cpuidle_driver *drv, int index);
-> -static int intel_idle_cpu_init(int cpu);
->
->   static struct cpuidle_state *cpuidle_state_table;
->
-> @@ -400,11 +398,27 @@ static void __setup_broadcast_timer(void *arg)
->   	clockevents_notify(reason, &cpu);
->   }
->
-> +static void auto_demotion_disable(void *dummy)
-> +{
-> +	unsigned long long msr_bits;
-> +
-> +	rdmsrl(MSR_NHM_SNB_PKG_CST_CFG_CTL, msr_bits);
-> +	msr_bits &= ~(icpu->auto_demotion_disable_flags);
-> +	wrmsrl(MSR_NHM_SNB_PKG_CST_CFG_CTL, msr_bits);
-> +}
-> +static void c1e_promotion_disable(void *dummy)
-> +{
-> +	unsigned long long msr_bits;
-> +
-> +	rdmsrl(MSR_IA32_POWER_CTL, msr_bits);
-> +	msr_bits &= ~0x2;
-> +	wrmsrl(MSR_IA32_POWER_CTL, msr_bits);
-> +}
-> +
->   static int cpu_hotplug_notify(struct notifier_block *n,
->   			      unsigned long action, void *hcpu)
->   {
->   	int hotcpu = (unsigned long)hcpu;
-> -	struct cpuidle_device *dev;
->
->   	switch (action & ~CPU_TASKS_FROZEN) {
->   	case CPU_ONLINE:
-> @@ -416,11 +430,15 @@ static int cpu_hotplug_notify(struct notifier_block *n,
->   		/*
->   		 * Some systems can hotplug a cpu at runtime after
->   		 * the kernel has booted, we have to initialize the
-> -		 * driver in this case
-> +		 * hardware in this case.
->   		 */
-> -		dev = per_cpu_ptr(intel_idle_cpuidle_devices, hotcpu);
-> -		if (!dev->registered)
-> -			intel_idle_cpu_init(hotcpu);
-> +		if (icpu->auto_demotion_disable_flags)
-> +			smp_call_function_single(hotcpu, auto_demotion_disable,
-> +						NULL, 1);
-> +
-> +		if (icpu->disable_promotion_to_c1e)
-> +			smp_call_function_single(hotcpu, c1e_promotion_disable,
-> +						NULL, 1);
->
->   		break;
->   	}
-> @@ -431,23 +449,6 @@ static struct notifier_block cpu_hotplug_notifier = {
->   	.notifier_call = cpu_hotplug_notify,
->   };
->
-> -static void auto_demotion_disable(void *dummy)
-> -{
-> -	unsigned long long msr_bits;
-> -
-> -	rdmsrl(MSR_NHM_SNB_PKG_CST_CFG_CTL, msr_bits);
-> -	msr_bits &= ~(icpu->auto_demotion_disable_flags);
-> -	wrmsrl(MSR_NHM_SNB_PKG_CST_CFG_CTL, msr_bits);
-> -}
-> -static void c1e_promotion_disable(void *dummy)
-> -{
-> -	unsigned long long msr_bits;
-> -
-> -	rdmsrl(MSR_IA32_POWER_CTL, msr_bits);
-> -	msr_bits &= ~0x2;
-> -	wrmsrl(MSR_IA32_POWER_CTL, msr_bits);
-> -}
-> -
->   static const struct idle_cpu idle_cpu_nehalem = {
->   	.state_table = nehalem_cstates,
->   	.auto_demotion_disable_flags = NHM_C1_AUTO_DEMOTE | NHM_C3_AUTO_DEMOTE,
-> @@ -560,23 +561,6 @@ static int __init intel_idle_probe(void)
->   }
->
->   /*
-> - * intel_idle_cpuidle_devices_uninit()
-> - * unregister, free cpuidle_devices
-> - */
-> -static void intel_idle_cpuidle_devices_uninit(void)
-> -{
-> -	int i;
-> -	struct cpuidle_device *dev;
-> -
-> -	for_each_online_cpu(i) {
-> -		dev = per_cpu_ptr(intel_idle_cpuidle_devices, i);
-> -		cpuidle_unregister_device(dev);
-> -	}
-> -
-> -	free_percpu(intel_idle_cpuidle_devices);
-> -	return;
-> -}
-> -/*
->    * intel_idle_cpuidle_driver_init()
->    * allocate, initialize cpuidle_states
->    */
-> @@ -632,37 +616,9 @@ static int __init intel_idle_cpuidle_driver_init(void)
->   }
->
->
-> -/*
-> - * intel_idle_cpu_init()
-> - * allocate, initialize, register cpuidle_devices
-> - * @cpu: cpu/core to initialize
-> - */
-> -static int intel_idle_cpu_init(int cpu)
-> -{
-> -	struct cpuidle_device *dev;
-> -
-> -	dev = per_cpu_ptr(intel_idle_cpuidle_devices, cpu);
-> -
-> -	dev->cpu = cpu;
-> -
-> -	if (cpuidle_register_device(dev)) {
-> -		pr_debug(PREFIX "cpuidle_register_device %d failed!\n", cpu);
-> -		intel_idle_cpuidle_devices_uninit();
-> -		return -EIO;
-> -	}
-> -
-> -	if (icpu->auto_demotion_disable_flags)
-> -		smp_call_function_single(cpu, auto_demotion_disable, NULL, 1);
-> -
-> -	if (icpu->disable_promotion_to_c1e)
-> -		smp_call_function_single(cpu, c1e_promotion_disable, NULL, 1);
-> -
-> -	return 0;
-> -}
-> -
->   static int __init intel_idle_init(void)
->   {
-> -	int retval, i;
-> +	int retval;
->
->   	/* Do not load intel_idle at all for now if idle= is passed */
->   	if (boot_option_idle_override != IDLE_NO_OVERRIDE)
-> @@ -673,7 +629,8 @@ static int __init intel_idle_init(void)
->   		return retval;
->
->   	intel_idle_cpuidle_driver_init();
-> -	retval = cpuidle_register_driver(&intel_idle_driver);
-> +
-> +	retval = cpuidle_register(&intel_idle_driver, NULL);
->   	if (retval) {
->   		struct cpuidle_driver *drv = cpuidle_get_driver();
->   		printk(KERN_DEBUG PREFIX "intel_idle yielding to %s",
-> @@ -681,17 +638,6 @@ static int __init intel_idle_init(void)
->   		return retval;
->   	}
->
-> -	intel_idle_cpuidle_devices = alloc_percpu(struct cpuidle_device);
-> -	if (intel_idle_cpuidle_devices == NULL)
-> -		return -ENOMEM;
-> -
-> -	for_each_online_cpu(i) {
-> -		retval = intel_idle_cpu_init(i);
-> -		if (retval) {
-> -			cpuidle_unregister_driver(&intel_idle_driver);
-> -			return retval;
-> -		}
-> -	}
->   	register_cpu_notifier(&cpu_hotplug_notifier);
->
->   	return 0;
-> @@ -699,9 +645,7 @@ static int __init intel_idle_init(void)
->
->   static void __exit intel_idle_exit(void)
->   {
-> -	intel_idle_cpuidle_devices_uninit();
-> -	cpuidle_unregister_driver(&intel_idle_driver);
-> -
-> +	cpuidle_unregister(&intel_idle_driver);
->
->   	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
->   		on_each_cpu(__setup_broadcast_timer, (void *)false, 1);
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
 
