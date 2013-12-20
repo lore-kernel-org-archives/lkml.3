@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932943Ab3LTN0H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 08:26:07 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:36027 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932924Ab3LTN0D (ORCPT
+	id S932903Ab3LTNZo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 08:25:44 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:20769 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932883Ab3LTNZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 08:26:03 -0500
-X-AuditID: cbfee61b-b7f456d000006dfd-e0-52b445590d10
+	Fri, 20 Dec 2013 08:25:39 -0500
+X-AuditID: cbfee61b-b7f456d000006dfd-d5-52b44552d9eb
 From: Kamil Debski <k.debski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         linux-usb@vger.kernel.org, devicetree@vger.kernel.org
@@ -18,24 +18,24 @@ Cc: kyungmin.park@samsung.com, kishon@ti.com, t.figa@samsung.com,
         av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
         matt.porter@linaro.org, k.debski@samsung.com,
         tjakobi@math.uni-bielefeld.de, stern@rowland.harvard.edu
-Subject: [PATCH RFC alternative ver 2] phy: Exynos 421x USB 2.0 PHY support
-Date: Fri, 20 Dec 2013 14:24:17 +0100
-Message-id: <1387545857-9472-12-git-send-email-k.debski@samsung.com>
+Subject: [PATCH RFC alternative ver 1] phy: Exynos 421x USB 2.0 PHY support
+Date: Fri, 20 Dec 2013 14:24:16 +0100
+Message-id: <1387545857-9472-11-git-send-email-k.debski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1387545857-9472-1-git-send-email-k.debski@samsung.com>
 References: <1387545857-9472-1-git-send-email-k.debski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t9jQd1I1y1BBl0zxC2W7L7BajH/yDlW
-	i/43C1kt2q4cZLe4vPASq8WP1xfYLC487WGzONv0Bii2aw6bxYzz+5gsFi1rZbZYe+Quu8XZ
-	/ttsFhObprFbnN/SyWRx+E07q8WE30Bt62e8ZrFoW/2B1aLj7EF2BxGPy329TB47Z91l97hz
-	bQ+bx79j7B6z7/5g9OjbsorR4/iN7UwenzfJBXBEcdmkpOZklqUW6dslcGXsWruFsWBdccWp
-	3+oNjO0JXYycHBICJhJHj15jhLDFJC7cW8/WxcjFISQwnVFi7u2V7BBOB5NE8+8jrF2MHBxs
-	ApoSq+55gDSICNRITLl1BayGWaCLWWLCttNsIAlhAW+JPQsmMYHYLAKqEp8v3gSL8wq4SJxs
-	mg82R0JAQWLOJBuQMCdQeObiRWAlQgLOEr/PPmKdwMi7gJFhFaNoakFyQXFSeq6RXnFibnFp
-	Xrpecn7uJkZwwD+T3sG4qsHiEKMAB6MSD2+B/uYgIdbEsuLK3EOMEhzMSiK8/dpbgoR4UxIr
-	q1KL8uOLSnNSiw8xSnOwKInzHmy1DhQSSE8sSc1OTS1ILYLJMnFwSjUw6qyTVXNn0eJ6K60n
-	XhgnzHzk8ZW04z/FtEOidKqFV3DZv4r86q0ot/oGK2fgIf4WKYtwO2nzhB22+23uzZUKfbD8
-	V8PiG+I32UqNb18VWGYz79Gtl7O2s06b5de/XXZ24TLBhARtR/Hm2KtcWrcX3z3PPafZ0/XG
-	P7PJEQZztujzqSYYFusosRRnJBpqMRcVJwIAADG3NnQCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9jQd0g1y1BBp9PKlos2X2D1WL+kXOs
+	Fv1vFrJatF05yG5xeeElVosfry+wWVx42sNmcbbpDVBs1xw2ixnn9zFZLFrWymyx9shddouz
+	/bfZLCY2TWO3OL+lk8ni8Jt2VosJv4Ha1s94zWLRtvoDq0XH2YPsDiIel/t6mTx2zrrL7nHn
+	2h42j3/H2D1m3/3B6NG3ZRWjx/Eb25k8Pm+SC+CI4rJJSc3JLEst0rdL4MrYdPAeS8HbJsaK
+	h0s3MDYwtud2MXJySAiYSKx4dIUFwhaTuHBvPVsXIxeHkMB0Rolrd1ZAOR1MEl3vjwM5HBxs
+	ApoSq+55gDSICNRITLl1hR2khlmgi1liwrbTbCAJYQFviQVT97KD2CwCqhLTr08H28Ar4CJx
+	Zdp6JpA5EgIKEnMm2YCEOYHCMxcvAmsVEnCW+H32EesERt4FjAyrGEVTC5ILipPSc430ihNz
+	i0vz0vWS83M3MYKD/pn0DsZVDRaHGAU4GJV4eAv0NwcJsSaWFVfmHmKU4GBWEuHt194SJMSb
+	klhZlVqUH19UmpNafIhRmoNFSZz3YKt1oJBAemJJanZqakFqEUyWiYNTqoHR/eCb7KDoD5FG
+	h2/vWnNzcT2j8qIi8/X2s4QFW7mL2RbbRH9Y+P7OhQ1qz3WfHMo6tHTuxs6ux4bubKdP132b
+	yOGbLPg6m2tZQeCxO07771veP5L11Nv0yITbsnOV1nSsOrMyo7judeZbznr+BIs1tbd3rn/5
+	5GzlwSCDpIPLMquztHanHX7kpcRSnJFoqMVcVJwIAGZG5RN2AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -48,24 +48,43 @@ Signed-off-by: Kamil Debski <k.debski@samsung.com>
 ---
 Hi,
 
-This is the second alternative version. Please look at
-"[PATCH RFC alternative ver 1] phy: Exynos 421x USB 2.0 PHY support" for
-detailed description.
+Me and Kishon were discussing for quite a long time the way how Exynos 4
+should be handled. I have decided to post the original patches and try
+to make an alternative version with support for Exynos 4210 and 4212 joined
+in one file. I have prepared two versions. The first one has 506 lines (vs
+563 when two files are used). When doing the second version I was a little
+more aggresive in removing code. This was done at a cost of adding if's
+deciding which SoC version the driver is dealing with in some internal functions.
+This resulted in a better number of removed lines - the second version has
+only 452 lines (vs 563 original and 506 version 1).
+
+Personally I like the original approach. One of my goals was to create a driver
+that would be clear and easy to understand. I see that this was done at a cost of
+having the code a little longer.
+
+The first alternative version mostly was done by removing duplicate defines of
+register values. The code clarity suffers a bit, but is still acceptable in my
+opinion.
+
+As to the second alternative version. It has the fewest lines, but I am not an
+enthusiast of using "if this is SoC" in functions.
+
+Anyway - please have a look at these two alternative versions in addition to
+looking at the original patch "phy: Add new Exynos USB PHY driver".
 
 Best wishes,
 Kamil Debski
 ---
- drivers/phy/phy-exynos4212-usb2.c |  452 +++++++++++++++++++++++++++++++++++++
- drivers/phy/phy-samsung-usb2.h    |    1 +
- 2 files changed, 453 insertions(+)
+ drivers/phy/phy-exynos4212-usb2.c |  506 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 506 insertions(+)
  create mode 100644 drivers/phy/phy-exynos4212-usb2.c
 
 diff --git a/drivers/phy/phy-exynos4212-usb2.c b/drivers/phy/phy-exynos4212-usb2.c
 new file mode 100644
-index 0000000..8f7578a
+index 0000000..3fa22d0
 --- /dev/null
 +++ b/drivers/phy/phy-exynos4212-usb2.c
-@@ -0,0 +1,452 @@
+@@ -0,0 +1,506 @@
 +/*
 + * Samsung SoC USB 1.1/2.0 PHY driver - Exynos 4210 and 4212 support
 + *
@@ -212,12 +231,20 @@ index 0000000..8f7578a
 +#define EXYNOS_421x_MODE_SWITCH_DEVICE		0
 +#define EXYNOS_421x_MODE_SWITCH_HOST		1
 +
-+enum exynos421x_phy_id {
-+	EXYNOS421x_DEVICE,
-+	EXYNOS421x_HOST,
-+	EXYNOS421x_HSIC0,
-+	EXYNOS421x_HSIC1,
-+	EXYNOS421x_NUM_PHYS,
++enum exynos4210_phy_id {
++	EXYNOS4210_DEVICE,
++	EXYNOS4210_HOST,
++	EXYNOS4210_HSIC0,
++	EXYNOS4210_HSIC1,
++	EXYNOS4210_NUM_PHYS,
++};
++
++enum exynos4212_phy_id {
++	EXYNOS4212_DEVICE,
++	EXYNOS4212_HOST,
++	EXYNOS4212_HSIC0,
++	EXYNOS4212_HSIC1,
++	EXYNOS4212_NUM_PHYS,
 +};
 +
 +/*
@@ -280,49 +307,56 @@ index 0000000..8f7578a
 +	return 0;
 +}
 +
-+static void exynos421x_isol(struct samsung_usb2_phy_instance *inst, bool on)
++static void exynos4210_isol(struct samsung_usb2_phy_instance *inst, bool on)
 +{
 +	struct samsung_usb2_phy_driver *drv = inst->drv;
 +	u32 offset;
 +	u32 mask;
 +
-+	if (inst->cfg->is_exynos4212) {
-+		switch (inst->cfg->id) {
-+		case EXYNOS421x_DEVICE:
-+		case EXYNOS421x_HOST:
-+			offset = EXYNOS_4212_USB_ISOL_OFFSET;
-+			mask = EXYNOS_4212_USB_ISOL_OTG;
-+			break;
-+		case EXYNOS421x_HSIC0:
-+			offset = EXYNOS_4212_USB_ISOL_HSIC0_OFFSET;
-+			mask = EXYNOS_4212_USB_ISOL_HSIC0;
-+			break;
-+		case EXYNOS421x_HSIC1:
-+			offset = EXYNOS_4212_USB_ISOL_HSIC1_OFFSET;
-+			mask = EXYNOS_4212_USB_ISOL_HSIC1;
-+			break;
-+		default:
-+			return;
-+		};
-+	} else {
-+		switch (inst->cfg->id) {
-+		case EXYNOS421x_DEVICE:
-+			offset = EXYNOS_4210_USB_ISOL_DEVICE_OFFSET;
-+			mask = EXYNOS_4210_USB_ISOL_DEVICE;
-+			break;
-+		case EXYNOS421x_HOST:
-+			offset = EXYNOS_4210_USB_ISOL_HOST_OFFSET;
-+			mask = EXYNOS_4210_USB_ISOL_HOST;
-+			break;
-+		default:
-+			return;
-+		}
-+	}
++	switch (inst->cfg->id) {
++	case EXYNOS4210_DEVICE:
++		offset = EXYNOS_4210_USB_ISOL_DEVICE_OFFSET;
++		mask = EXYNOS_4210_USB_ISOL_DEVICE;
++		break;
++	case EXYNOS4210_HOST:
++		offset = EXYNOS_4210_USB_ISOL_HOST_OFFSET;
++		mask = EXYNOS_4210_USB_ISOL_HOST;
++		break;
++	default:
++		return;
++	};
 +
 +	regmap_update_bits(drv->reg_pmu, offset, mask, on ? 0 : mask);
 +}
 +
-+static void exynos421x_phy_pwr(struct samsung_usb2_phy_instance *inst, bool on)
++static void exynos4212_isol(struct samsung_usb2_phy_instance *inst, bool on)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	u32 offset;
++	u32 mask;
++
++	switch (inst->cfg->id) {
++	case EXYNOS4212_DEVICE:
++	case EXYNOS4212_HOST:
++		offset = EXYNOS_4212_USB_ISOL_OFFSET;
++		mask = EXYNOS_4212_USB_ISOL_OTG;
++		break;
++	case EXYNOS4212_HSIC0:
++		offset = EXYNOS_4212_USB_ISOL_HSIC0_OFFSET;
++		mask = EXYNOS_4212_USB_ISOL_HSIC0;
++		break;
++	case EXYNOS4212_HSIC1:
++		offset = EXYNOS_4212_USB_ISOL_HSIC1_OFFSET;
++		mask = EXYNOS_4212_USB_ISOL_HSIC1;
++		break;
++	default:
++		return;
++	};
++
++	regmap_update_bits(drv->reg_pmu, offset, mask, on ? 0 : mask);
++}
++
++static void exynos4210_phy_pwr(struct samsung_usb2_phy_instance *inst, bool on)
 +{
 +	struct samsung_usb2_phy_driver *drv = inst->drv;
 +	u32 rstbits = 0;
@@ -330,55 +364,31 @@ index 0000000..8f7578a
 +	u32 rst;
 +	u32 pwr;
 +
-+	if (inst->cfg->is_exynos4212) {
-+		switch (inst->cfg->id) {
-+		case EXYNOS421x_DEVICE:
-+			phypwr =	EXYNOS_421x_UPHYPWR_PHY0;
-+			rstbits =	EXYNOS_421x_URSTCON_PHY0;
-+			break;
-+		case EXYNOS421x_HOST:
-+			phypwr =	EXYNOS_421x_UPHYPWR_PHY1;
-+			rstbits =	EXYNOS_4212_URSTCON_HOST_PHY;
-+			break;
-+		case EXYNOS421x_HSIC0:
-+			phypwr =	EXYNOS_4212_UPHYPWR_HSCI0;
-+			rstbits =	EXYNOS_4212_URSTCON_HSIC1 |
-+					EXYNOS_4212_URSTCON_HOST_LINK_P0 |
-+					EXYNOS_4212_URSTCON_HOST_PHY;
-+			break;
-+		case EXYNOS421x_HSIC1:
-+			phypwr =	EXYNOS_4212_UPHYPWR_HSCI1;
-+			rstbits =	EXYNOS_4212_URSTCON_HSIC1 |
-+					EXYNOS_4212_URSTCON_HOST_LINK_P1;
-+			break;
-+		};
-+	} else {
-+		switch (inst->cfg->id) {
-+		case EXYNOS421x_DEVICE:
-+			phypwr =	EXYNOS_421x_UPHYPWR_PHY0;
-+			rstbits =	EXYNOS_421x_URSTCON_PHY0;
-+			break;
-+		case EXYNOS421x_HOST:
-+			phypwr =	EXYNOS_421x_UPHYPWR_PHY1;
-+			rstbits =	EXYNOS_4210_URSTCON_PHY1_ALL |
-+					EXYNOS_4210_URSTCON_PHY1_P0 |
-+					EXYNOS_4210_URSTCON_PHY1_P1P2 |
-+					EXYNOS_4210_URSTCON_HOST_LINK_ALL |
-+					EXYNOS_4210_URSTCON_HOST_LINK_P0;
-+			writel(on, drv->reg_phy + EXYNOS_4210_UPHY1CON);
-+			break;
-+		case EXYNOS421x_HSIC0:
-+			phypwr =	EXYNOS_4210_UPHYPWR_HSCI0;
-+			rstbits =	EXYNOS_4210_URSTCON_PHY1_P1P2 |
-+					EXYNOS_4210_URSTCON_HOST_LINK_P1;
-+			break;
-+		case EXYNOS421x_HSIC1:
-+			phypwr =	EXYNOS_4210_UPHYPWR_HSCI1;
-+			rstbits =	EXYNOS_4210_URSTCON_PHY1_P1P2 |
-+					EXYNOS_4210_URSTCON_HOST_LINK_P2;
-+			break;
-+		};
-+	}
++	switch (inst->cfg->id) {
++	case EXYNOS4210_DEVICE:
++		phypwr =	EXYNOS_421x_UPHYPWR_PHY0;
++		rstbits =	EXYNOS_421x_URSTCON_PHY0;
++		break;
++	case EXYNOS4210_HOST:
++		phypwr =	EXYNOS_421x_UPHYPWR_PHY1;
++		rstbits =	EXYNOS_4210_URSTCON_PHY1_ALL |
++				EXYNOS_4210_URSTCON_PHY1_P0 |
++				EXYNOS_4210_URSTCON_PHY1_P1P2 |
++				EXYNOS_4210_URSTCON_HOST_LINK_ALL |
++				EXYNOS_4210_URSTCON_HOST_LINK_P0;
++		writel(on, drv->reg_phy + EXYNOS_4210_UPHY1CON);
++		break;
++	case EXYNOS4210_HSIC0:
++		phypwr =	EXYNOS_4210_UPHYPWR_HSCI0;
++		rstbits =	EXYNOS_4210_URSTCON_PHY1_P1P2 |
++				EXYNOS_4210_URSTCON_HOST_LINK_P1;
++		break;
++	case EXYNOS4210_HSIC1:
++		phypwr =	EXYNOS_4210_UPHYPWR_HSCI1;
++		rstbits =	EXYNOS_4210_URSTCON_PHY1_P1P2 |
++				EXYNOS_4210_URSTCON_HOST_LINK_P2;
++		break;
++	};
 +
 +	if (on) {
 +		writel(inst->clk_reg_val, drv->reg_phy + EXYNOS_421x_UPHYCLK);
@@ -400,39 +410,105 @@ index 0000000..8f7578a
 +	}
 +}
 +
-+static int exynos421x_power_on(struct samsung_usb2_phy_instance *inst)
++static void exynos4212_phy_pwr(struct samsung_usb2_phy_instance *inst, bool on)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	u32 rstbits = 0;
++	u32 phypwr = 0;
++	u32 rst;
++	u32 pwr;
++
++	switch (inst->cfg->id) {
++	case EXYNOS4212_DEVICE:
++		phypwr =	EXYNOS_421x_UPHYPWR_PHY0;
++		rstbits =	EXYNOS_421x_URSTCON_PHY0;
++		break;
++	case EXYNOS4212_HOST:
++		phypwr =	EXYNOS_421x_UPHYPWR_PHY1;
++		rstbits =	EXYNOS_4212_URSTCON_HOST_PHY;
++		break;
++	case EXYNOS4212_HSIC0:
++		phypwr =	EXYNOS_4212_UPHYPWR_HSCI0;
++		rstbits =	EXYNOS_4212_URSTCON_HSIC1 |
++				EXYNOS_4212_URSTCON_HOST_LINK_P0 |
++				EXYNOS_4212_URSTCON_HOST_PHY;
++		break;
++	case EXYNOS4212_HSIC1:
++		phypwr =	EXYNOS_4212_UPHYPWR_HSCI1;
++		rstbits =	EXYNOS_4212_URSTCON_HSIC1 |
++				EXYNOS_4212_URSTCON_HOST_LINK_P1;
++		break;
++	};
++
++	if (on) {
++		writel(inst->clk_reg_val, drv->reg_phy + EXYNOS_421x_UPHYCLK);
++
++		pwr = readl(drv->reg_phy + EXYNOS_421x_UPHYPWR);
++		pwr &= ~phypwr;
++		writel(pwr, drv->reg_phy + EXYNOS_421x_UPHYPWR);
++
++		rst = readl(drv->reg_phy + EXYNOS_421x_UPHYRST);
++		rst |= rstbits;
++		writel(rst, drv->reg_phy + EXYNOS_421x_UPHYRST);
++		udelay(10);
++		rst &= ~rstbits;
++		writel(rst, drv->reg_phy + EXYNOS_421x_UPHYRST);
++	} else {
++		pwr = readl(drv->reg_phy + EXYNOS_421x_UPHYPWR);
++		pwr |= phypwr;
++		writel(pwr, drv->reg_phy + EXYNOS_421x_UPHYPWR);
++	}
++}
++
++static int exynos4210_power_on(struct samsung_usb2_phy_instance *inst)
++{
++	/* Order of initialisation is important - first power then isolation */
++	exynos4210_phy_pwr(inst, 1);
++	exynos4210_isol(inst, 0);
++
++	return 0;
++}
++
++static int exynos4210_power_off(struct samsung_usb2_phy_instance *inst)
++{
++	exynos4210_isol(inst, 1);
++	exynos4210_phy_pwr(inst, 0);
++
++	return 0;
++}
++
++static int exynos4212_power_on(struct samsung_usb2_phy_instance *inst)
 +{
 +	struct samsung_usb2_phy_driver *drv = inst->drv;
 +
 +	inst->enabled = 1;
-+	exynos421x_phy_pwr(inst, 1);
-+	exynos421x_isol(inst, 0);
++	exynos4212_phy_pwr(inst, 1);
++	exynos4212_isol(inst, 0);
 +
 +	/* Power on the device, as it is necessary for HSIC to work */
-+	if (inst->cfg->is_exynos4212 && inst->cfg->id == EXYNOS421x_HSIC0) {
++	if (inst->cfg->id == EXYNOS4212_HSIC0) {
 +		struct samsung_usb2_phy_instance *device =
-+					&drv->instances[EXYNOS421x_DEVICE];
-+		exynos421x_phy_pwr(device, 1);
-+		exynos421x_isol(device, 0);
++					&drv->instances[EXYNOS4212_DEVICE];
++		exynos4212_phy_pwr(device, 1);
++		exynos4212_isol(device, 0);
 +	}
 +
 +	return 0;
 +}
 +
-+static int exynos421x_power_off(struct samsung_usb2_phy_instance *inst)
++static int exynos4212_power_off(struct samsung_usb2_phy_instance *inst)
 +{
 +	struct samsung_usb2_phy_driver *drv = inst->drv;
 +	struct samsung_usb2_phy_instance *device =
-+					&drv->instances[EXYNOS421x_DEVICE];
++					&drv->instances[EXYNOS4212_DEVICE];
 +
 +	inst->enabled = 0;
-+	exynos421x_isol(inst, 1);
-+	exynos421x_phy_pwr(inst, 0);
++	exynos4212_isol(inst, 1);
++	exynos4212_phy_pwr(inst, 0);
 +
-+	if (inst->cfg->is_exynos4212 && inst->cfg->id == EXYNOS421x_HSIC0 &&
-+							!device->enabled) {
-+		exynos421x_isol(device, 1);
-+		exynos421x_phy_pwr(device, 0);
++	if (inst->cfg->id == EXYNOS4212_HSIC0 && !device->enabled) {
++		exynos4212_isol(device, 1);
++		exynos4212_phy_pwr(device, 0);
 +	}
 +
 +	return 0;
@@ -441,95 +517,80 @@ index 0000000..8f7578a
 +static const struct samsung_usb2_common_phy exynos4210_phys[] = {
 +	{
 +		.label		= "device",
-+		.id		= EXYNOS421x_DEVICE,
++		.id		= EXYNOS4210_DEVICE,
 +		.rate_to_clk	= exynos4210_rate_to_clk,
-+		.power_on	= exynos421x_power_on,
-+		.power_off	= exynos421x_power_off,
++		.power_on	= exynos4210_power_on,
++		.power_off	= exynos4210_power_off,
 +	},
 +	{
 +		.label		= "host",
-+		.id		= EXYNOS421x_HOST,
++		.id		= EXYNOS4210_HOST,
 +		.rate_to_clk	= exynos4210_rate_to_clk,
-+		.power_on	= exynos421x_power_on,
-+		.power_off	= exynos421x_power_off,
++		.power_on	= exynos4210_power_on,
++		.power_off	= exynos4210_power_off,
 +	},
 +	{
 +		.label		= "hsic0",
-+		.id		= EXYNOS421x_HSIC0,
++		.id		= EXYNOS4210_HSIC0,
 +		.rate_to_clk	= exynos4210_rate_to_clk,
-+		.power_on	= exynos421x_power_on,
-+		.power_off	= exynos421x_power_off,
++		.power_on	= exynos4210_power_on,
++		.power_off	= exynos4210_power_off,
 +	},
 +	{
 +		.label		= "hsic1",
-+		.id		= EXYNOS421x_HSIC1,
++		.id		= EXYNOS4210_HSIC1,
 +		.rate_to_clk	= exynos4210_rate_to_clk,
-+		.power_on	= exynos421x_power_on,
-+		.power_off	= exynos421x_power_off,
++		.power_on	= exynos4210_power_on,
++		.power_off	= exynos4210_power_off,
 +	},
 +	{},
 +};
 +
 +const struct samsung_usb2_phy_config exynos4210_usb2_phy_config = {
-+	.num_phys		= EXYNOS421x_NUM_PHYS,
++	.num_phys		= EXYNOS4210_NUM_PHYS,
 +	.phys			= exynos4210_phys,
 +	.has_mode_switch	= 1,
 +};
 +
++
 +static const struct samsung_usb2_common_phy exynos4212_phys[] = {
 +	{
 +		.label		= "device",
-+		.id		= EXYNOS421x_DEVICE,
++		.id		= EXYNOS4212_DEVICE,
 +		.rate_to_clk	= exynos4212_rate_to_clk,
-+		.power_on	= exynos421x_power_on,
-+		.power_off	= exynos421x_power_off,
-+		.is_exynos4212	= 1,
++		.power_on	= exynos4212_power_on,
++		.power_off	= exynos4212_power_off,
 +	},
 +	{
 +		.label		= "host",
-+		.id		= EXYNOS421x_HOST,
++		.id		= EXYNOS4212_HOST,
 +		.rate_to_clk	= exynos4212_rate_to_clk,
-+		.power_on	= exynos421x_power_on,
-+		.power_off	= exynos421x_power_off,
-+		.is_exynos4212	= 1,
++		.power_on	= exynos4212_power_on,
++		.power_off	= exynos4212_power_off,
 +	},
 +	{
 +		.label		= "hsic0",
-+		.id		= EXYNOS421x_HSIC0,
++		.id		= EXYNOS4212_HSIC0,
 +		.rate_to_clk	= exynos4212_rate_to_clk,
-+		.power_on	= exynos421x_power_on,
-+		.power_off	= exynos421x_power_off,
-+		.is_exynos4212	= 1,
++		.power_on	= exynos4212_power_on,
++		.power_off	= exynos4212_power_off,
 +	},
 +	{
 +		.label		= "hsic1",
-+		.id		= EXYNOS421x_HSIC1,
++		.id		= EXYNOS4212_HSIC1,
 +		.rate_to_clk	= exynos4212_rate_to_clk,
-+		.power_on	= exynos421x_power_on,
-+		.power_off	= exynos421x_power_off,
-+		.is_exynos4212	= 1,
++		.power_on	= exynos4212_power_on,
++		.power_off	= exynos4212_power_off,
 +	},
 +	{},
 +};
 +
 +const struct samsung_usb2_phy_config exynos4212_usb2_phy_config = {
-+	.num_phys		= EXYNOS421x_NUM_PHYS,
++	.num_phys		= EXYNOS4212_NUM_PHYS,
 +	.phys			= exynos4212_phys,
 +	.has_mode_switch	= 1,
 +};
 +
-diff --git a/drivers/phy/phy-samsung-usb2.h b/drivers/phy/phy-samsung-usb2.h
-index ab89f91..db02692 100644
---- a/drivers/phy/phy-samsung-usb2.h
-+++ b/drivers/phy/phy-samsung-usb2.h
-@@ -52,6 +52,7 @@ struct samsung_usb2_common_phy {
- 	int (*power_off)(struct samsung_usb2_phy_instance *);
- 	unsigned int id;
- 	char *label;
-+	bool is_exynos4212;
- };
- 
- 
 -- 
 1.7.9.5
 
