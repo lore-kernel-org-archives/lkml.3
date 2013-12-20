@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab3LTXSv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 18:18:51 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:18555 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397Ab3LTXSu (ORCPT
+	id S1754190Ab3LTXUU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 18:20:20 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:60741 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753755Ab3LTXUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 18:18:50 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: venkat.x.venkatsubra@oracle.com, davem@davemloft.net
-Cc: rds-devel@oss.oracle.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] rds: prevent dereference of a NULL device in rds_iw_laddr_check
-Date: Fri, 20 Dec 2013 18:18:40 -0500
-Message-Id: <1387581520-10272-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.3.2
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 20 Dec 2013 18:20:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <87a9fvqfs4.fsf@xmission.com>
+References: <20131121190350.GC17070@kroah.com>
+	<20131121190620.GA25951@srcf.ucam.org>
+	<20131121191305.GK16208@redhat.com>
+	<20131121191907.GA26366@srcf.ucam.org>
+	<20131122185706.GK4046@redhat.com>
+	<87vbzju6ql.fsf@xmission.com>
+	<20131125163920.GC23094@redhat.com>
+	<87fvqj2vxz.fsf@xmission.com>
+	<20131126142759.GA5473@redhat.com>
+	<20131219125439.GA6379@lst.de>
+	<20131220141917.GB27063@redhat.com>
+	<87a9fvqfs4.fsf@xmission.com>
+Date: Fri, 20 Dec 2013 15:20:16 -0800
+X-Google-Sender-Auth: M0plK3xcir9joIBn0abYDTqklA4
+Message-ID: <CAGXu5jKJ88J-++nvkPVvghkXbN+_mB=T1siSDF7yoXQ-d-ONxg@mail.gmail.com>
+Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
+ kernel kexec
+From: Kees Cook <keescook@chromium.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Torsten Duwe <duwe@lst.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <greg@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>, kexec@lists.infradead.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Peter Jones <pjones@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Binding might result in a NULL device which is later dereferenced
-without checking.
+On Fri, Dec 20, 2013 at 3:11 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Vivek Goyal <vgoyal@redhat.com> writes:
+>
+>> On Thu, Dec 19, 2013 at 01:54:39PM +0100, Torsten Duwe wrote:
+>>> On Tue, Nov 26, 2013 at 09:27:59AM -0500, Vivek Goyal wrote:
+>
+>>> IMO it's up to user land to search lists of certificates, and present
+>>> only the final chain of trust to the kernel for checking.
+>>>
+>>> ELF is the preferred format for most sane OSes and firmware, and a detached
+>>> signature would probably be simplest to check. If we have the choice,
+>>> without restrictions from braindead boot loaders, ELF should be first.
+>>> And if the pesigning isn't usable and another sig is needed anyway,
+>>> why not apply that to vmlinux(.gz) ?
+>>
+>> I have yet to look deeper into it that if we can sign elf images and
+>> just use elf loader. And can use space extract the elf image out of
+>> a bzImage and pass it to kernel.
+>>
+>> Even if it is doable, one disadvantage seemed to be that extracted
+>> elf images will have to be written to a file so thta it's file descriptor
+>> can be passed to kernel. And that assumed writable root and we chrome
+>> folks seems to have setups where root is not writable.
+>
+> In that case the chrome folks would simply have to use an ELF format
+> kernel and not a bzImage.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- net/rds/iw.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+If we're doing fd origin verification (not signatures), can't we
+continue to use a regular bzImage?
 
-diff --git a/net/rds/iw.c b/net/rds/iw.c
-index 7826d46..0298920 100644
---- a/net/rds/iw.c
-+++ b/net/rds/iw.c
-@@ -239,7 +239,8 @@ static int rds_iw_laddr_check(__be32 addr)
- 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
- 	/* due to this, we will claim to support IB devices unless we
- 	   check node_type. */
--	if (ret || cm_id->device->node_type != RDMA_NODE_RNIC)
-+	if (ret || !cm_id->device ||
-+            cm_id->device->node_type != RDMA_NODE_RNIC)
- 		ret = -EADDRNOTAVAIL;
- 
- 	rdsdebug("addr %pI4 ret %d node type %d\n",
+-Kees
+
 -- 
-1.8.3.2
-
+Kees Cook
+Chrome OS Security
