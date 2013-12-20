@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab3LTKhf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 05:37:35 -0500
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:36120 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755116Ab3LTKhc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 05:37:32 -0500
-X-Greylist: delayed 481 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Dec 2013 05:37:32 EST
-From: Andreas Frembs <andreas.frembs@studium.uni-erlangen.de>
-To: andreas.frembs@studium.uni-erlangen.de
-Cc: matthias.schoepe@studium.uni-erlangen.de, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-kernel@i4.cs.fau.de
-Subject: [PATCH 1/3] rtl8192e: Fixing checkpatch errors
-Date: Fri, 20 Dec 2013 11:29:08 +0100
-Message-Id: <1387535350-27442-2-git-send-email-andreas.frembs@studium.uni-erlangen.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1387535350-27442-1-git-send-email-andreas.frembs@studium.uni-erlangen.de>
-References: <1387535350-27442-1-git-send-email-andreas.frembs@studium.uni-erlangen.de>
+	id S1756712Ab3LTKkp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 05:40:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16470 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755720Ab3LTKkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 05:40:43 -0500
+Date: Fri, 20 Dec 2013 10:04:13 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
+        David Laight <David.Laight@aculab.com>, Mark Lord <kernel@start.ca>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v4 9/9] PCI/MSI: Introduce pci_auto_enable_msi*() family
+ helpers
+Message-ID: <20131220090412.GA28367@dhcp-26-207.brq.redhat.com>
+References: <cover.1387140921.git.agordeev@redhat.com>
+ <bbf6f73ef3e16e5dfd7d41fc1e4412f641acb0f3.1387140921.git.agordeev@redhat.com>
+ <20131218003002.GA15119@google.com>
+ <20131218132349.GA29552@dhcp-26-207.brq.redhat.com>
+ <CAErSpo6Km5N+Cfpaj5JEsb966rwcBjrAT4SFvG6Q9QkwkDFXCA@mail.gmail.com>
+ <20131219134244.GA32238@dhcp-26-207.brq.redhat.com>
+ <CAErSpo66Jh-8sbQr13r1LknfKWMt1zBd9xhm46XpCcW-X_TqnA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo66Jh-8sbQr13r1LknfKWMt1zBd9xhm46XpCcW-X_TqnA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following checkpatch errors from rtllib_endianfree.h:
- - ERROR: Macros with complex values should be enclosed in parenthesis
+On Thu, Dec 19, 2013 at 02:37:22PM -0700, Bjorn Helgaas wrote:
+> On Thu, Dec 19, 2013 at 6:42 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
+> > On Wed, Dec 18, 2013 at 11:58:47AM -0700, Bjorn Helgaas wrote:
+> >> If rc == 13 and the device can only use 8, the extra 5 would be
+> >> ignored and wasted.
+> >>
+> >> If the waste is unacceptable, the driver can try this:
+> >>
+> >>     rc = pci_enable_msix_range(dev->pdev, dev->irqs, 16, 16);
+> >>     if (rc < 0) {
+> >>         rc = pci_enable_msix_range(dev->pdev, dev->irqs, 8, 8);
+> >>         if (rc < 0) {
+> >>             rc = pci_enable_msix_range(dev->pdev, dev->irqs, 4, 4);
+> >>             ...
+> >>     }
+> >
+> > I have troubles with this fallback logic. On each failed step we get an
+> > error and we do not know if this is indeed an error or an indication of
+> > insufficient MSI resources. Even -ENOSPC would not tell much, since it
+> > could be thrown from a lower level.
+> >
+> > By contrast, with the tri-state return value we can distinguish and bail
+> > out on errors right away.
+> 
+> I thought the main point of this was to get rid of interfaces that
+> were prone to misuse, and tri-state return values was a big part of
+> that.  All we really care about in the driver is success/failure.  I'm
+> not sure there's much to be gained by analyzing *why* we failed, and I
+> think it tends to make uncommon error paths more complicated than
+> necessary.  If we fail four times instead of bailing out after the
+> first failure, well, that doesn't sound terrible to me.  The last
+> failure can log the errno, which is enough for debugging.
 
-Signed-off-by: Andreas Frembs <andreas.frembs@studium.uni-erlangen.de>
-Signed-off-by: Matthias Schoepe <matthias.schoepe@studium.uni-erlangen.de>
----
- drivers/staging/rtl8192e/rtllib_endianfree.h | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Sure, the main point is to get rid of try-state interfaces. I just afraid
+to throw out the baby with the bath water for unusual devices (which we do
+not have in the tree).
 
-diff --git a/drivers/staging/rtl8192e/rtllib_endianfree.h b/drivers/staging/rtl8192e/rtllib_endianfree.h
-index b268605..39b8204 100644
---- a/drivers/staging/rtl8192e/rtllib_endianfree.h
-+++ b/drivers/staging/rtl8192e/rtllib_endianfree.h
-@@ -33,9 +33,9 @@
- #define ReadEF2Byte(_ptr)		EF2Byte(*((u16 *)(_ptr)))
- #define ReadEF4Byte(_ptr)		EF4Byte(*((u32 *)(_ptr)))
- 
--#define WriteEF1Byte(_ptr, _val)	(*((u8 *)(_ptr))) = EF1Byte(_val)
--#define WriteEF2Byte(_ptr, _val)	(*((u16 *)(_ptr))) = EF2Byte(_val)
--#define WriteEF4Byte(_ptr, _val)	(*((u32 *)(_ptr))) = EF4Byte(_val)
-+#define WriteEF1Byte(_ptr, _val)	((*((u8 *)(_ptr))) = EF1Byte(_val))
-+#define WriteEF2Byte(_ptr, _val)	((*((u16 *)(_ptr))) = EF2Byte(_val))
-+#define WriteEF4Byte(_ptr, _val)	((*((u32 *)(_ptr))) = EF4Byte(_val))
- #if BYTE_ORDER == __MACHINE_LITTLE_ENDIAN
- #define H2N1BYTE(_val)	((u8)(_val))
- #define H2N2BYTE(_val)	(((((u16)(_val))&0x00ff)<<8)|\
+I can only identify two downsides of the approach above - (a) repeated error
+logging in a platform code (i.e. caused by -ENOMEM) and (b) repeated attempts
+to enable MSI when the platform already reported a fatal error.
+
+I think if a device needs an extra magic to enable MSI (i.e. writing to
+specific registers etc.) it would be manageable with pci_enable_msix_range(),
+but may be I am missing something?
+
+So my thought is may be we deprecate the tri-state interfaces, but do not
+do it immediately.
+
 -- 
-1.8.1.2
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
