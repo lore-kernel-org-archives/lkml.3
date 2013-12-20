@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932847Ab3LTNb4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 08:31:56 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:6981 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932797Ab3LTNZP (ORCPT
+	id S932887Ab3LTNc2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 08:32:28 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:48523 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932712Ab3LTNcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 08:25:15 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 20 Dec 2013 05:26:26 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <anton@enomsg.org>, <lee.jones@linaro.org>
-CC: <dwmw2@infradead.org>, <mark.rutland@arm.com>, <rob@landley.net>,
-        <ijc+devicetree@hellion.org.uk>, <swarren@nvidia.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2 1/2] mfd: AS3722: add dt node properties for system power controller
-Date: Fri, 20 Dec 2013 18:53:59 +0530
-Message-ID: <1387545840-2844-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 20 Dec 2013 08:32:23 -0500
+Date: Fri, 20 Dec 2013 08:32:20 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Nigel Cunningham <nigel@nigelcunningham.com.au>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
+        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH wq/for-3.14 2/2] workqueue: implement @drain for
+ workqueue_set_max_active()
+Message-ID: <20131220133220.GB4298@htj.dyndns.org>
+References: <20131213174932.GA27070@htj.dyndns.org>
+ <1735137.dNmBz0IqxU@vostro.rjw.lan>
+ <20131219233720.GE22725@htj.dyndns.org>
+ <2641617.ixtfWHNgaa@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2641617.ixtfWHNgaa@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ams AS3722 device supports the power off by turning off its all rails.
+Hello, Rafael.
 
-Add dt node properties to enable this functionality on this device.
+On Fri, Dec 20, 2013 at 02:31:37AM +0100, Rafael J. Wysocki wrote:
+> > If this looks good to you, I'll commit it to wq/for-3.14 and we can at
+> > least start to clean up things.
+> 
+> Yes, it does.
+> 
+> So with that I need to do workqueue_set_max_active(wq, WQ_FROZEN_ACTIVE) during
+> suspend and then workqueue_set_max_active(wq, WQ_DFL_ACTIVE) during resume on
+> my workqueue, right?
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Tested-by: Stephen Warren <swarren@nvidia.com>
----
-Changes form V1:
-- Rephrase sentence and mention that propery is boolean type.
-- Added Tested by.
+Yeah, you can also do workqueue_set_max_active(wq, 0) during resume to
+restore the default value, which is what's used by alloc_workqueue()
+anyway.
 
- Documentation/devicetree/bindings/mfd/as3722.txt |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+I'll apply the two patches to wq/for-3.14 once David reviews them or
+if you wanna take them through the pm tree, that's fine too.  I don't
+have anything scheduled for wq for the next merge window.
 
-diff --git a/Documentation/devicetree/bindings/mfd/as3722.txt b/Documentation/devicetree/bindings/mfd/as3722.txt
-index fc2191e..8edcb9b 100644
---- a/Documentation/devicetree/bindings/mfd/as3722.txt
-+++ b/Documentation/devicetree/bindings/mfd/as3722.txt
-@@ -112,6 +112,15 @@ Following are properties of regulator subnode.
- 		ams,enable-tracking: Enable tracking with SD1, only supported
- 			by LDO3.
- 
-+Power-off:
-+=========
-+AS3722 supports the system power off by turning off all its rail. This
-+is provided through pm_power_off.
-+The device node should have the following properties to enable this
-+functionality
-+ams,system-power-controller: Boolean, to enable the power off functionality
-+        through this device.
-+
- Example:
- --------
- #include <dt-bindings/mfd/as3722.h>
-@@ -120,6 +129,8 @@ ams3722 {
- 	compatible = "ams,as3722";
- 	reg = <0x48>;
- 
-+	ams,system-power-controller;
-+
- 	interrupt-parent = <&intc>;
- 	interrupt-controller;
- 	#interrupt-cells = <2>;
+Thanks.
+
 -- 
-1.7.9.5
-
+tejun
