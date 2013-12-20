@@ -1,115 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab3LTEhF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 23:37:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56130 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab3LTEhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 23:37:03 -0500
-Date: Thu, 19 Dec 2013 23:36:32 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: John Johansen <john.johansen@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Peter Zijlstra <peterz@infradead.org>, Eric Paris <eparis@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] apparmor: remove the "task" arg from
- may_change_ptraced_domain()
-Message-ID: <20131220043632.GA14884@madcap2.tricolour.ca>
-References: <20131218194338.GB23692@madcap2.tricolour.ca>
- <20131218201940.GA9694@redhat.com>
+	id S1753866Ab3LTEms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 23:42:48 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:44608 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088Ab3LTEmq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 23:42:46 -0500
+Message-ID: <52B3CABE.1080903@hitachi.com>
+Date: Fri, 20 Dec 2013 13:42:38 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131218201940.GA9694@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v6 06/22] [BUGFIX] x86: Prohibit probing on memcpy/memset
+References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal> <20131219090409.14309.25677.stgit@kbuild-fedora.novalocal> <CAGdX0WFKYHqXrVQ6LBw0YgH_H6cP=LZVCBe1iOvEXsHQPD8Zmg@mail.gmail.com> <52B3AD7D.2020104@hitachi.com> <CAGdX0WENxTPhFDtcEW6LFhk1SNZc6mEK+JsCDOJmfK8_PS1rxg@mail.gmail.com>
+In-Reply-To: <CAGdX0WENxTPhFDtcEW6LFhk1SNZc6mEK+JsCDOJmfK8_PS1rxg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/12/18, Oleg Nesterov wrote:
-> On 12/18, Richard Guy Briggs wrote:
-> >
-> > Bcc: rgb@redhat.com
-> > Subject: Re: [PATCH] apparmor: remove the "task" arg from
-> >  may_change_ptraced_domain()
-> > Reply-To:
-> > In-Reply-To: <20130926132519.GY13968@madcap2.tricolour.ca>
+(2013/12/20 12:07), Jovi Zhangwei wrote:
+> On Fri, Dec 20, 2013 at 10:37 AM, Masami Hiramatsu
+> <masami.hiramatsu.pt@hitachi.com> wrote:
+>> Hi Jovi,
+>>
+>> (2013/12/19 18:37), Jovi Zhangwei wrote:
+>>> Hi Masami,
+>>>
+>>> On Thu, Dec 19, 2013 at 5:04 PM, Masami Hiramatsu
+>>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>> memcpy/memset functions are fundamental functions and
+>>>> those are involved in kprobe's exception handling.
+>>>> Prohibit probing on them to avoid kernel crash.
+>>>>
+>>> Would you please let me know the LKML link of that bugfix, I cannot
+>>> find it in my LKML fold.
+>>
+>> Yeah, that was found in my testing environment.
+>>
+>>> No objection on this patch. :) just want to know more, It seems there
+>>> have no problem to probe memcpy in my box, maybe I didn't hit the
+>>> crash code path.
+>>
+>> Ah, I see. Originally the problem happened when I put a probe on
+>> __memcpy. And it looks the instances of memcpy and __memcpy are
+>> same on x86-64. Thus I decided to blacklist both. (memset/__memset too)
+>> Have you ever tried to probe __memcpy on your box?
+>>
+> Hmm, still no crash, __memcpy and __memset are both tested.
 > 
-> The subject is empty ;) I changed it to match the above.
-
-HTH?!?  Thanks for adding it.  (more below...)
-
-> > On 13/09/26, Richard Guy Briggs wrote:
-> > > On Tue, Sep 24, 2013 at 06:44:42PM +0200, Oleg Nesterov wrote:
-> > > > On 09/23, Richard Guy Briggs wrote:
-> > > > >
-> > > > > On Mon, Sep 16, 2013 at 04:20:35PM +0200, Oleg Nesterov wrote:
-> > > > > > Unless task == current ptrace_parent(task) is not safe even under
-> > > > > > rcu_read_lock() and most of the current users are not right.
-> > > > >
-> > > > > Could you point to an explanation of this?
-> > > >
-> > > > If this task exits before rcu_read_lock() ->parent can point to the
-> > > > already freed/reused memory.
-> > >
-> > > Ok, understood.  So even though the task may have exited, the task
-> > > struct pointer is still valid, but not the contents of the task struct
-> > > to which it points.
-> >
-> > [The thread also relates to the patch
-> > 	"pid: get ppid pid_t of task in init_pid_ns safely"
-> > in which sys_getppid() (which appears safe) is replaced with something that
-> > references the init_pid_ns rather than current's pid_ns.]
-> >
-> > So, in the general case, that call is not safe, and we should at least
-> > remove the task_struct argument.
+> I use below kprobe related config:
 > 
-> I changed my mind, please see the recent discussion with Paul:
-> 
-> 	http://marc.info/?t=138626281900001
-> 
-> instead we should document why ptrace_parent() is safe without pid_alive().
+> CONFIG_KPROBES=y
+> CONFIG_JUMP_LABEL=y
+> CONFIG_OPTPROBES=y
+> CONFIG_KPROBES_ON_FTRACE=y
 
-Interesting.  I wasn't aware of pid_alive(), but that would certainly
-help.
+Hmm, I've added some debugging options.
 
-> I hope that the change in apparmor was fine anyway.
+CONFIG_SLUB_DEBUG=y
+CONFIG_X86_DEBUGCTLMSR=y
+CONFIG_PNP_DEBUG_MESSAGES=y
+CONFIG_DEBUG_INFO=y
+CONFIG_DEBUG_FS=y
+CONFIG_DEBUG_KERNEL=y
+CONFIG_DEBUG_STACK_USAGE=y
+CONFIG_DEBUG_MEMORY_INIT=y
+CONFIG_DEBUG_STACKOVERFLOW=y
+CONFIG_DEBUG_SPINLOCK=y
+CONFIG_DEBUG_MUTEXES=y
+CONFIG_DEBUG_LOCK_ALLOC=y
+CONFIG_DEBUG_LOCKDEP=y
+CONFIG_DEBUG_BUGVERBOSE=y
+CONFIG_DEBUG_RODATA=y
+CONFIG_DEBUG_BOOT_PARAMS=y
 
-Yes, I'm fine with apparmor change, if it was deemed that the ppid
-wasn't needed.  If it is, then it should use this new task_ppid_nr().
-Better yet I think to generalize it to anticipate auditd in containers.
+I guess some of them might cause it.
 
-> Otherwise I can't understand your email, at least right now... I do not
-> know how/where audit uses parent/real_parent.
+Thank you,
 
-It uses real_parent to include the ppid number of a process in a couple
-of log records.
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-> But yes, unless tsk == current, the usage of tsk->*parent is not safe even
-> under rcu_read_lock() unless you verify that this task was not unhashed.
 
-As I said, the only case I can see is in copy_process() when a signal is
-pending when neither CLONE_PARENT nor CLONE_THREAD is passed to it.
-Still, that is enough to need to check it.
-
-> ptrace_parent() is safe because it checks ->ptrace. Previously I thought
-> we should not rely on this, but the additional pid_alive() looks ugly so
-> it would be better to simply document this. I'll send the patch.
-
-So what are you saying?  I should use pid_alive() inside the
-rcu_read_lock() to verify it is not unhashed since I don't have anything
-to do with ->ptrace or any other task lock?  In fact, the answer is
-under my nose in __task_pid_nr_ns(), which already uses this approach.
-And rcu_read_lock() can be nested.
-
-> Oleg.
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
