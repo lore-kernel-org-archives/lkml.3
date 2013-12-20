@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030313Ab3LTOXj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 09:23:39 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:40650 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030242Ab3LTOXZ (ORCPT
+	id S1422661Ab3LTOXz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 09:23:55 -0500
+Received: from demumfd002.nsn-inter.net ([93.183.12.31]:13220 "EHLO
+	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030204Ab3LTOXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 09:23:25 -0500
-Date: Fri, 20 Dec 2013 09:23:21 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Nigel Cunningham <nigel@nigelcunningham.com.au>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, tomaz.solc@tablix.org,
-        aaron.lu@intel.com, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
+	Fri, 20 Dec 2013 09:23:54 -0500
+From: Aaro Koskinen <aaro.koskinen@nsn.com>
+To: "Hans J. Koch" <hjk@hansjkoch.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH wq/for-3.14 2/2] workqueue: implement @drain for
- workqueue_set_max_active()
-Message-ID: <20131220142321.GC4298@htj.dyndns.org>
-References: <20131213174932.GA27070@htj.dyndns.org>
- <2641617.ixtfWHNgaa@vostro.rjw.lan>
- <20131220133220.GB4298@htj.dyndns.org>
- <1811935.VrHgpxyl42@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1811935.VrHgpxyl42@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        linux-kernel@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>
+Cc: Aaro Koskinen <aaro.koskinen@nsn.com>
+Subject: [PATCH] uio: fix devm_request_irq usage
+Date: Fri, 20 Dec 2013 16:19:47 +0200
+Message-Id: <1387549187-10068-1-git-send-email-aaro.koskinen@nsn.com>
+X-Mailer: git-send-email 1.8.5.1
+X-purgate-type: clean
+X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
+X-purgate: clean
+X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
+X-purgate-size: 1057
+X-purgate-ID: 151667::1387549425-00001A6F-92379B3A/0-0/0-0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 02:56:09PM +0100, Rafael J. Wysocki wrote:
-> On Friday, December 20, 2013 08:32:20 AM Tejun Heo wrote:
-> > Hello, Rafael.
-> > 
-> > On Fri, Dec 20, 2013 at 02:31:37AM +0100, Rafael J. Wysocki wrote:
-> > > > If this looks good to you, I'll commit it to wq/for-3.14 and we can at
-> > > > least start to clean up things.
-> > > 
-> > > Yes, it does.
-> > > 
-> > > So with that I need to do workqueue_set_max_active(wq, WQ_FROZEN_ACTIVE) during
-> > > suspend and then workqueue_set_max_active(wq, WQ_DFL_ACTIVE) during resume on
-> > > my workqueue, right?
-> > 
-> > Yeah, you can also do workqueue_set_max_active(wq, 0) during resume to
-> > restore the default value, which is what's used by alloc_workqueue()
-> > anyway.
+Commit e6789cd3dfb553077606ccafeb05e0043f072481 (uio: Simplify uio error
+path by using devres functions) converted uio to use devm_request_irq().
+This introduced a change in behaviour since the IRQ is associated with
+the parent device instead of the created UIO device. The IRQ will remain
+active after uio_unregister_device() is called, and some drivers will
+crash because of this. The patch fixes this.
 
-Oops, it sould be obvious but just in case.  The call to use during
-suspend is workqueue_set_max_active(wq, WQ_FROZEN_ACTIVE, true). :)
+Signed-off-by: Aaro Koskinen <aaro.koskinen@nsn.com>
+---
+ drivers/uio/uio.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index f7beb6e..a673e5b 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -847,7 +847,7 @@ int __uio_register_device(struct module *owner,
+ 	info->uio_dev = idev;
+ 
+ 	if (info->irq && (info->irq != UIO_IRQ_CUSTOM)) {
+-		ret = devm_request_irq(parent, info->irq, uio_interrupt,
++		ret = devm_request_irq(idev->dev, info->irq, uio_interrupt,
+ 				  info->irq_flags, info->name, idev);
+ 		if (ret)
+ 			goto err_request_irq;
 -- 
-tejun
+1.8.5.1
+
