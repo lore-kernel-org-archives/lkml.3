@@ -1,52 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab3LTSBI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 13:01:08 -0500
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:43486 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575Ab3LTSBG (ORCPT
+	id S1753055Ab3LTSCE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 13:02:04 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:45477 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752004Ab3LTSCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 13:01:06 -0500
-Date: Fri, 20 Dec 2013 20:01:13 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Aaro Koskinen <aaro.koskinen@nsn.com>, "Hans J. Koch" <hjk@hansjkoch.de>,
-        linux-kernel@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH] uio: fix devm_request_irq usage
-Message-ID: <20131220180113.GF2881@blackmetal.musicnaut.iki.fi>
-References: <1387549187-10068-1-git-send-email-aaro.koskinen@nsn.com>
- <20131220164913.GA29422@kroah.com>
+	Fri, 20 Dec 2013 13:02:02 -0500
+Date: Fri, 20 Dec 2013 15:01:54 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "David A. Long" <dave.long@linaro.org>, systemtap@sourceware.org,
+        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH -tip  2/3] perf-probe: Support dwarf on uprobe events
+Message-ID: <20131220180154.GB28878@ghostprotocols.net>
+References: <20131220100255.7169.19384.stgit@kbuild-fedora.novalocal>
+ <20131220100259.7169.57512.stgit@kbuild-fedora.novalocal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131220164913.GA29422@kroah.com>
+In-Reply-To: <20131220100259.7169.57512.stgit@kbuild-fedora.novalocal>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Em Fri, Dec 20, 2013 at 10:02:59AM +0000, Masami Hiramatsu escreveu:
+> Support dwarf(debuginfo) based operations for uprobe events.
+> With this change, perf probe can analyze debuginfo of user
+> application binary to set up new uprobe event.
+> This allows perf-probe --add/--line works with -x option.
+> (Actually, --vars has already accepted -x option)
 
-On Fri, Dec 20, 2013 at 08:49:13AM -0800, Greg Kroah-Hartman wrote:
-> On Fri, Dec 20, 2013 at 04:19:47PM +0200, Aaro Koskinen wrote:
-> > Commit e6789cd3dfb553077606ccafeb05e0043f072481 (uio: Simplify uio error
-> > path by using devres functions) converted uio to use devm_request_irq().
-> > This introduced a change in behaviour since the IRQ is associated with
-> > the parent device instead of the created UIO device. The IRQ will remain
-> > active after uio_unregister_device() is called, and some drivers will
-> > crash because of this. The patch fixes this.
+Can you provide an example?
+
+Showing output from commands when new features are implemented can speed
+up the process of having it used :-)
+
+- Arnaldo
+ 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> ---
+>  tools/perf/builtin-probe.c    |    2 
+>  tools/perf/util/probe-event.c |  230 +++++++++++++++++++++++++++--------------
+>  2 files changed, 155 insertions(+), 77 deletions(-)
 > 
-> What drivers crash because of this?  Any in-kernel drivers?
-
-I saw a crash with Intel DPDK (http://www.dpdk.org/) igb_uio
-driver. Basically, they do:
-
-	uio_unregister_device
-	pci_disable_msix <-- this will BUG() if there is an active IRQ
-
-I cannot test any of the in-tree UIO drivers, but at least some
-of them seem to release resources the IRQ handler might use after
-uio_unregister_device(). So if the IRQ fires results would not probably
-be very good.
-
-A.
+> diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+> index b40d064..7fc566a 100644
+> --- a/tools/perf/builtin-probe.c
+> +++ b/tools/perf/builtin-probe.c
+> @@ -420,7 +420,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+>  	}
+>  
+>  #ifdef HAVE_DWARF_SUPPORT
+> -	if (params.show_lines && !params.uprobes) {
+> +	if (params.show_lines) {
+>  		if (params.mod_events) {
+>  			pr_err("  Error: Don't use --line with"
+>  			       " --add/--del.\n");
+> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> index 05be5de..e27cecb 100644
+> --- a/tools/perf/util/probe-event.c
+> +++ b/tools/perf/util/probe-event.c
+> @@ -186,6 +186,90 @@ static int init_user_exec(void)
+>  	return ret;
+>  }
+>  
+> +static const char *__target_symbol;
+> +static struct symbol *__result_sym;
+> +
+> +static int filter_target_symbol(struct map *map __maybe_unused,
+> +				struct symbol *sym)
+> +{
+> +	if (strcmp(__target_symbol, sym->name) == 0) {
+> +		__result_sym = sym;
+> +		return 0;
+> +	}
+> +	return 1;
+> +}
+> +
+> +/* Find the offset of the symbol in the executable binary */
+> +static int find_symbol_offset(const char *exec, const char *function,
+> +			      unsigned long *offs)
+> +{
+> +	struct symbol *sym;
+> +	struct map *map = NULL;
+> +	int ret = -EINVAL;
+> +
+> +	if (!offs)
+> +		return -EINVAL;
+> +
+> +	map = dso__new_map(exec);
+> +	if (!map) {
+> +		pr_warning("Cannot find appropriate DSO for %s.\n", exec);
+> +		goto out;
+> +	}
+> +	pr_debug("Search %s in %s\n", function, exec);
+> +	__target_symbol = function;
+> +	__result_sym = NULL;
+> +	if (map__load(map, filter_target_symbol)) {
+> +		pr_err("Failed to find %s in %s.\n", function, exec);
+> +		goto out;
+> +	}
+> +	sym = __result_sym;
+> +	if (!sym) {
+> +		pr_warning("Cannot find %s in DSO %s\n", function, exec);
+> +		goto out;
+> +	}
+> +
+> +	*offs = (map->start > sym->start) ?  map->start : 0;
+> +	*offs += sym->start + map->pgoff;
+> +	ret = 0;
+> +out:
+> +	if (map) {
+> +		dso__delete(map->dso);
+> +		map__delete(map);
+> +	}
+> +	return ret;
+> +}
+> +
+> +static int convert_exec_to_group(const char *exec, char **result)
+> +{
+> +	char *ptr1, *ptr2, *exec_copy;
+> +	char buf[64];
+> +	int ret;
+> +
+> +	exec_copy = strdup(exec);
+> +	if (!exec_copy)
+> +		return -ENOMEM;
+> +
+> +	ptr1 = basename(exec_copy);
+> +	if (!ptr1) {
+> +		ret = -EINVAL;
+> +		goto out;
+> +	}
+> +
+> +	ptr2 = strpbrk(ptr1, "-._");
+> +	if (ptr2)
+> +		*ptr2 = '\0';
+> +	ret = e_snprintf(buf, 64, "%s_%s", PERFPROBE_GROUP, ptr1);
+> +	if (ret < 0)
+> +		goto out;
+> +
+> +	*result = strdup(buf);
+> +	ret = *result ? 0 : -ENOMEM;
+> +
+> +out:
+> +	free(exec_copy);
+> +	return ret;
+> +}
+> +
+>  static int convert_to_perf_probe_point(struct probe_trace_point *tp,
+>  					struct perf_probe_point *pp)
+>  {
+> @@ -261,6 +345,45 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
+>  	return 0;
+>  }
+>  
+> +static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
+> +					  int ntevs, const char *exec,
+> +					  const char *group)
+> +{
+> +	int i, ret = 0;
+> +	unsigned long offset;
+> +	char buf[32];
+> +
+> +	if (!exec)
+> +		return 0;
+> +
+> +	for (i = 0; i < ntevs && ret >= 0; i++) {
+> +		/* Get proper offset */
+> +		ret = find_symbol_offset(exec, tevs[i].point.symbol, &offset);
+> +		if (ret < 0)
+> +			break;
+> +		offset += tevs[i].point.offset;
+> +		tevs[i].point.offset = 0;
+> +		free(tevs[i].point.symbol);
+> +		ret = e_snprintf(buf, 32, "0x%lx", offset);
+> +		if (ret < 0)
+> +			break;
+> +		tevs[i].point.module = strdup(exec);
+> +		tevs[i].point.symbol = strdup(buf);
+> +		if (!tevs[i].point.symbol || !tevs[i].point.module) {
+> +			ret = -ENOMEM;
+> +			break;
+> +		}
+> +		/* Replace group name if not given */
+> +		if (!group) {
+> +			free(tevs[i].group);
+> +			ret = convert_exec_to_group(exec, &tevs[i].group);
+> +		}
+> +		tevs[i].uprobes = true;
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+>  static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
+>  					    int ntevs, const char *module)
+>  {
+> @@ -305,15 +428,6 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+>  	struct debuginfo *dinfo;
+>  	int ntevs, ret = 0;
+>  
+> -	if (pev->uprobes) {
+> -		if (need_dwarf) {
+> -			pr_warning("Debuginfo-analysis is not yet supported"
+> -					" with -x/--exec option.\n");
+> -			return -ENOSYS;
+> -		}
+> -		return convert_name_to_addr(pev, target);
+> -	}
+> -
+>  	dinfo = open_debuginfo(target);
+>  
+>  	if (!dinfo) {
+> @@ -332,9 +446,14 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+>  
+>  	if (ntevs > 0) {	/* Succeeded to find trace events */
+>  		pr_debug("find %d probe_trace_events.\n", ntevs);
+> -		if (target)
+> -			ret = add_module_to_probe_trace_events(*tevs, ntevs,
+> -							       target);
+> +		if (target) {
+> +			if (pev->uprobes)
+> +				ret = add_exec_to_probe_trace_events(*tevs,
+> +						 ntevs, target, pev->group);
+> +			else
+> +				ret = add_module_to_probe_trace_events(*tevs,
+> +						 ntevs, target);
+> +		}
+>  		return ret < 0 ? ret : ntevs;
+>  	}
+>  
+> @@ -654,9 +773,6 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+>  		return -ENOSYS;
+>  	}
+>  
+> -	if (pev->uprobes)
+> -		return convert_name_to_addr(pev, target);
+> -
+>  	return 0;
+>  }
+>  
+> @@ -1916,11 +2032,26 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+>  	int ret = 0, i;
+>  	struct probe_trace_event *tev;
+>  
+> +	if (pev->uprobes)
+> +		if (!pev->group) {
+> +			ret = convert_exec_to_group(target, &pev->group);
+> +			if (ret != 0) {
+> +				pr_warning("Failed to make group name.\n");
+> +				return ret;
+> +			}
+> +		}
+> +
+>  	/* Convert perf_probe_event with debuginfo */
+>  	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, target);
+>  	if (ret != 0)
+>  		return ret;	/* Found in debuginfo or got an error */
+>  
+> +	if (pev->uprobes) {
+> +		ret = convert_name_to_addr(pev, target);
+> +		if (ret < 0)
+> +			return ret;
+> +	}
+> +
+>  	/* Allocate trace event buffer */
+>  	tev = *tevs = zalloc(sizeof(struct probe_trace_event));
+>  	if (tev == NULL)
+> @@ -2279,88 +2410,35 @@ int show_available_funcs(const char *target, struct strfilter *_filter,
+>  static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
+>  {
+>  	struct perf_probe_point *pp = &pev->point;
+> -	struct symbol *sym;
+> -	struct map *map = NULL;
+> -	char *function = NULL;
+>  	int ret = -EINVAL;
+> -	unsigned long long vaddr = 0;
+> +	unsigned long vaddr = 0;
+>  
+>  	if (!pp->function) {
+>  		pr_warning("No function specified for uprobes");
+>  		goto out;
+>  	}
+>  
+> -	function = strdup(pp->function);
+> -	if (!function) {
+> -		pr_warning("Failed to allocate memory by strdup.\n");
+> -		ret = -ENOMEM;
+> -		goto out;
+> -	}
+> -
+> -	map = dso__new_map(exec);
+> -	if (!map) {
+> -		pr_warning("Cannot find appropriate DSO for %s.\n", exec);
+> -		goto out;
+> -	}
+> -	available_func_filter = strfilter__new(function, NULL);
+> -	if (map__load(map, filter_available_functions)) {
+> -		pr_err("Failed to load map.\n");
+> -		goto out;
+> -	}
+> -
+> -	sym = map__find_symbol_by_name(map, function, NULL);
+> -	if (!sym) {
+> -		pr_warning("Cannot find %s in DSO %s\n", function, exec);
+> +	ret = find_symbol_offset(exec, pp->function, &vaddr);
+> +	if (ret < 0)
+>  		goto out;
+> -	}
+>  
+> -	if (map->start > sym->start)
+> -		vaddr = map->start;
+> -	vaddr += sym->start + pp->offset + map->pgoff;
+> +	vaddr += pp->offset;
+>  	pp->offset = 0;
+>  
+>  	if (!pev->event) {
+> -		pev->event = function;
+> -		function = NULL;
+> -	}
+> -	if (!pev->group) {
+> -		char *ptr1, *ptr2, *exec_copy;
+> -
+> -		pev->group = zalloc(sizeof(char *) * 64);
+> -		exec_copy = strdup(exec);
+> -		if (!exec_copy) {
+> -			ret = -ENOMEM;
+> -			pr_warning("Failed to copy exec string.\n");
+> -			goto out;
+> -		}
+> +		pev->event = pp->function;
+> +	} else
+> +		free(pp->function);
+>  
+> -		ptr1 = strdup(basename(exec_copy));
+> -		if (ptr1) {
+> -			ptr2 = strpbrk(ptr1, "-._");
+> -			if (ptr2)
+> -				*ptr2 = '\0';
+> -			e_snprintf(pev->group, 64, "%s_%s", PERFPROBE_GROUP,
+> -					ptr1);
+> -			free(ptr1);
+> -		}
+> -		free(exec_copy);
+> -	}
+> -	free(pp->function);
+>  	pp->function = zalloc(sizeof(char *) * MAX_PROBE_ARGS);
+>  	if (!pp->function) {
+>  		ret = -ENOMEM;
+>  		pr_warning("Failed to allocate memory by zalloc.\n");
+>  		goto out;
+>  	}
+> -	e_snprintf(pp->function, MAX_PROBE_ARGS, "0x%llx", vaddr);
+> +	e_snprintf(pp->function, MAX_PROBE_ARGS, "0x%lx", vaddr);
+>  	ret = 0;
+>  
+>  out:
+> -	if (map) {
+> -		dso__delete(map->dso);
+> -		map__delete(map);
+> -	}
+> -	if (function)
+> -		free(function);
+>  	return ret;
+>  }
+> 
