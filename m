@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab3LTEWJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 23:22:09 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:40778 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753550Ab3LTEWG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 23:22:06 -0500
-Message-ID: <52B3C5E6.2040802@hitachi.com>
-Date: Fri, 20 Dec 2013 13:21:58 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1754046Ab3LTEWx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 23:22:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39411 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752682Ab3LTEWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 23:22:51 -0500
+Message-ID: <52B3C5F0.1060303@zytor.com>
+Date: Thu, 19 Dec 2013 20:22:08 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v6 00/22] kprobes: introduce NOKPROBE_SYMBOL(), cleanup
- and fixes crash bugs
-References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal> <y0m38loefhx.fsf@fche.csb>
-In-Reply-To: <y0m38loefhx.fsf@fche.csb>
+To: joeyli <jlee@suse.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
+        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
+        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        x86@kernel.org,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, Borislav Petkov <bp@suse.de>
+Subject: Re: [RFC PATCH 00/14] Support timezone of ACPI TAD and EFI TIME
+References: <1387439053-8711-1-git-send-email-jlee@suse.com>	 <52B309EB.90300@zytor.com> <1387512357.3539.4317.camel@linux-s257.site>
+In-Reply-To: <1387512357.3539.4317.camel@linux-s257.site>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/20 5:46), Frank Ch. Eigler wrote:
+On 12/19/2013 08:05 PM, joeyli wrote:
 > 
-> Hi, Masami -
+> Then that means the priority of PNP0B0x is higher then "CMOS RTC Not
+> Present" flag. ACPI spec doesn't have clear definition on this.
 > 
-> 
-> masami.hiramatsu.pt wrote:
-> 
->> Here is the version 6 of NOKPROBE_SYMBOL series. :)
->> [...]
-> 
-> Some preliminary results from building these on top of tip/master on
-> x86-64.  
-> 
-> # stap -te "probe kprobe.function("*") {}"
-> 
-> starts up OK, without crashes, which looks like great progress.
 
-That's a good news :)
+According to the Microsoft requirements documents, such a platform is
+broken and shouldn't exist.
 
->  But a
-> closer look indicates that the insertion of kprobes is taking about
-> three (!!) orders of magnitude longer than before, as judged by the
-> rate of increase of 'wc -l /sys/kernel/debug/kprobes/list'.
-
-Right, because kprobes are not designed for thousands of probes.
-
->  So, one
-> has to let the thing run for several hours just to get all the kprobes
-> inserted, never mind letting stress-testing begin.
+> I look forward to Borislav's "EFI runtime mapping" to fix the physical
+> address accessing issue of EFI time service on x86_64 machines. I tested
+> his patches on a issue machine and it works for walk around BIOS bug.
 > 
-> For reference, here's the steady-state "perf top" output during all this
-> insertion work:
+> Can we use EFI time services on x86_64 after Borislav's patches accepted
+> to mainline?
 > 
->  54.81%  [kernel]                    [k] _raw_spin_unlock_irqrestore
->  38.13%  [kernel]                    [k] __slab_alloc
->   1.11%  [kernel]                    [k] kprobe_ftrace_handler
->   0.88%  [kernel]                    [k] _raw_spin_unlock_irq
 
-Hmm, interesting. Those probes are registered as disabled?
-Thank you,
+No.
 
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+	-hpa
 
 
