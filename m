@@ -1,43 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab3LTPdE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 10:33:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52416 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693Ab3LTPdA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 10:33:00 -0500
-Date: Fri, 20 Dec 2013 07:33:09 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Cc: fengguang.wu@intel.com, jim.epost@gmail.com, sfr@canb.auug.org.au,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kbuild-all@01.org
-Subject: Re: [PATCH 2/2] GenWQE: Replace dynamic_hex_dump with
- print_hex_dump_debug
-Message-ID: <20131220153309.GA21797@kroah.com>
-References: <CA+r1Zhimt7Xusnc4kkkVqfoRhfZRnreMmZqaN7WP7rSpZ3XTvw@mail.gmail.com>
- <1387553171-31469-2-git-send-email-haver@linux.vnet.ibm.com>
+	id S1753056Ab3LTPjA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 10:39:00 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:25417 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751325Ab3LTPi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 10:38:59 -0500
+X-IronPort-AV: E=Sophos;i="4.95,521,1384300800"; 
+   d="asc'?scan'208";a="86590905"
+Message-ID: <1387553932.23792.75.camel@Solace>
+Subject: Re: [Xen-devel] [PATCH v2 0/2] xen: vnuma introduction for pv guest
+From: Dario Faggioli <dario.faggioli@citrix.com>
+To: Elena Ufimtseva <ufimtseva@gmail.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <akpm@linux-foundation.org>, <wency@cn.fujitsu.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tangchen@cn.fujitsu.com>, <mingo@redhat.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        xen-devel <xen-devel@lists.xenproject.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>,
+        Ian Campbell <ian.campbell@citrix.com>
+Date: Fri, 20 Dec 2013 16:38:52 +0100
+In-Reply-To: <CAEr7rXjnkeYSCRmvvFyx06Q4rccfBD__-GzkrbJhUeEOjsT8Pg@mail.gmail.com>
+References: <1384806350-12651-1-git-send-email-ufimtseva@gmail.com>
+	 <20131119153837.GA5966@phenom.dumpdata.com>
+	 <1384885783.15360.40.camel@Solace>
+	 <CAEr7rXiCL-MagPwn76ZdTOJH03M8GCrKF2fGw0YWdnPZK332CA@mail.gmail.com>
+	 <CAEr7rXjgFi17vuV91R7=U4rkOKCMOw95kgWu0A0+yrfgHpR6Ow@mail.gmail.com>
+	 <1386206018.3926.138.camel@Abyss>
+	 <CAEr7rXiOeBCzSmbkKDPqaSt3H85wciOiG0z=-Lbi73_Lx6AkVg@mail.gmail.com>
+	 <CAEr7rXjnkeYSCRmvvFyx06Q4rccfBD__-GzkrbJhUeEOjsT8Pg@mail.gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="=-i50Dk+erqDRCabyQ4SpP"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387553171-31469-2-git-send-email-haver@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 04:26:11PM +0100, Frank Haverkamp wrote:
-> As requested by Greg, replacing the hexdump function from dynamic_debug.h
-> with one defined in printk.h. I hope I picked the right one.
+--=-i50Dk+erqDRCabyQ4SpP
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-No, just use the "%*ph" modifier for printk.
+On ven, 2013-12-20 at 02:48 -0500, Elena Ufimtseva wrote:
+> On Fri, Dec 20, 2013 at 2:39 AM, Elena Ufimtseva <ufimtseva@gmail.com> wr=
+ote:
+>
+> > Dario, what tools did you use to test NUMA on xen? Maybe there is
+> > something I can use as well?
+> > Here http://lwn.net/Articles/558593/ Mel Gorman uses specjbb and jvm,
+> > I though I can run something similar.
+>=20
+> And of course, more details will follow... :)
+>=20
+Yeah, well, during early investigation, I also used basically just
+SpecJBB. See here:
+http://blog.xen.org/index.php/2012/04/26/numa-and-xen-part-1-introduction/
+http://blog.xen.org/index.php/2012/05/16/numa-and-xen-part-ii-scheduling-an=
+d-placement/
 
-So, you can do it all on just one line:
-  	scnprintf(prefix, sizeof(prefix), "%s %s: %*ph\n",
-  		  GENWQE_DEVNAME, pci_name(pci_dev), size, buff);
+For benchmarking our NUMA aware scheduling solution, in Xen, I used
+SpecJBB, sysbench and LMbench:
+http://blog.xen.org/index.php/2012/05/16/numa-and-xen-part-ii-scheduling-an=
+d-placement/
 
-And even then, do you really need this genwqe_hexdump() function at all
-anymore?  What is it used for?
+The trickiest part is have the benchmark(s) of choice running
+concurrently is a bunch of VMs on the same host. I used some hand
+crafted scripts at the time, very specific to my own environment.
 
-greg k-h
+I'm working on abstracting that and putting together something more easy
+to be shared and used outside my attic. :-P
+
+Regards,
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+-----------------------------------------------------------------
+Dario Faggioli, Ph.D, http://about.me/dario.faggioli
+Senior Software Engineer, Citrix Systems R&D Ltd., Cambridge (UK)
+
+
+--=-i50Dk+erqDRCabyQ4SpP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iEYEABECAAYFAlK0ZIwACgkQk4XaBE3IOsRR7wCfQ/T8h6m1DknPlY0+g1Bp0RNB
+cO8AnR1+v9xJoDvNQqWDxu4VDC5QIUOR
+=oQPk
+-----END PGP SIGNATURE-----
+
+--=-i50Dk+erqDRCabyQ4SpP--
