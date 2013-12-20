@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab3LTWau (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 17:30:50 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:57097 "EHLO comal.ext.ti.com"
+	id S1754707Ab3LTWgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 17:36:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57676 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754721Ab3LTWas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 17:30:48 -0500
-Message-ID: <52B4C4FF.1020009@ti.com>
-Date: Fri, 20 Dec 2013 17:30:23 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751810Ab3LTWgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 17:36:23 -0500
+Date: Fri, 20 Dec 2013 23:36:17 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: David Herrmann <dh.herrmann@gmail.com>
+cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] HID: input: fix input sysfs path for hid devices
+In-Reply-To: <CANq1E4QrPAJ7zNdN51PGQD5tkD_gTYfRoHOg7=zwVvnu-xOR0g@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1312202335300.11949@pobox.suse.cz>
+References: <1387469113-4129-1-git-send-email-benjamin.tissoires@redhat.com> <CANq1E4QrPAJ7zNdN51PGQD5tkD_gTYfRoHOg7=zwVvnu-xOR0g@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v3 08/23] mm/memblock: Add memblock memory allocation
- apis
-References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com> <1386625856-12942-9-git-send-email-santosh.shilimkar@ti.com> <20131213213735.GM27070@htj.dyndns.org> <52ABABDA.4020808@ti.com> <20131214110844.GB17954@htj.dyndns.org> <52ACB608.3050802@ti.com>
-In-Reply-To: <52ACB608.3050802@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 14 December 2013 02:48 PM, Santosh Shilimkar wrote:
-> On Saturday 14 December 2013 06:08 AM, Tejun Heo wrote:
->> Hello, Santosh.
->>
->> On Fri, Dec 13, 2013 at 07:52:42PM -0500, Santosh Shilimkar wrote:
->>>>> +static void * __init memblock_virt_alloc_internal(
->>>>> +				phys_addr_t size, phys_addr_t align,
->>>>> +				phys_addr_t min_addr, phys_addr_t max_addr,
->>>>> +				int nid)
->>>>> +{
->>>>> +	phys_addr_t alloc;
->>>>> +	void *ptr;
->>>>> +
->>>>> +	if (nid == MAX_NUMNODES)
->>>>> +		pr_warn("%s: usage of MAX_NUMNODES is depricated. Use NUMA_NO_NODE\n",
->>>>> +			__func__);
->>>>
->>>> Why not use WARN_ONCE()?  Also, shouldn't nid be set to NUMA_NO_NODE
->>>> here?
->>>>
->>> You want all the users using MAX_NUMNODES to know about it so that
->>> the wrong usage can be fixed. WARN_ONCE will hide that.
->>
->> Well, it doesn't really help anyone to be printing multiple messages
->> without any info on who was the caller and if this thing is gonna be
->> in mainline triggering of the warning should be rare anyway.  It's
->> more of a tool to gather one-off cases in the wild.  WARN_ONCE()
->> usually is the better choice as otherwise the warnings can swamp the
->> machine and console output in certain cases.
->>
-> Fair enough.
->  
->>>> ...
->>>>> +	if (nid != NUMA_NO_NODE) {
->>>>
->>>> Otherwise, the above test is broken.
->>>>
->>> So the idea was just to warn the users and allow them to fix
->>> the code. Well we are just allowing the existing users of using
->>> either MAX_NUMNODES or NUMA_NO_NODE continue to work. Thats what
->>> we discussed, right ?
->>
->> Huh?  Yeah, sure.  You're testing @nid against MAX_NUMNODES at the
->> beginning of the function.  If it's MAX_NUMNODES, you print a warning
->> but nothing else, so the if() conditional above, which should succeed,
->> would fail.  Am I missing sth here?
->>
-> I get it now. Sorry I missed your point in first part. We will fix this.
-> 
-Posted an incremental fix based on above discussion. You have been
-copied on the patch.
+On Thu, 19 Dec 2013, David Herrmann wrote:
 
-Regards,
-Santosh
+> <benjamin.tissoires@redhat.com> wrote:
+> > we used to set the parent of the input device as the parent of
+> > the hid bus. This was introduced when we created hid as a real bus, and
+> > to keep backward compatibility. Now, it's time to proper set the parent
+> > so that sysfs has an idea of which input device is attached to
+> > which hid device.
+> >
+> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> > ---
+> >
+> > Hi Jiri,
+> >
+> > well, the regression test did not showed anything bad, and a look at the hid
+> > drivers also showed that no drivers should be armed by that.
+> >
+> > I think this is valuable because it will give a better understanding of the
+> > actual mapping hardware/inputs. Like a touchscreen with pen + touch will have
+> > the same hid parent, and I expect X/Wayland to be able to detect this at some
+> > point to keep the mapping correctly between the two input devices and the screen.
+> >
+> > I also need that for hid-replay, so that I can be sure which input is attached
+> > to which uhid device, and give up the heuristics I currently use.
+> 
+> I was just wondering where we have multiple HID devices on a single
+> parent, but yeah, uhid is a good example. I actually have no
+> objections to this patch and it looks fine. But I cannot tell whether
+> anyone relies on this.
+> 
+> I'd say we should give it a try.
+
+Agreed, let's take it for 3.14, and if anyone complains about breakage 
+caused by this (which I don't expect), we'll revert to the previous state.
+
+-- 
+Jiri Kosina
+SUSE Labs
