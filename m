@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab3LTKlS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 05:41:18 -0500
-Received: from softlayer.compulab.co.il ([50.23.254.55]:34499 "EHLO
-	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755186Ab3LTKlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 05:41:15 -0500
-Message-ID: <52B41EC7.1070704@compulab.co.il>
-Date: Fri, 20 Dec 2013 12:41:11 +0200
-From: Denis Turischev <denis.turischev@compulab.co.il>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1756619Ab3LTKmP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 05:42:15 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:5525 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388Ab3LTKmM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 05:42:12 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 20 Dec 2013 02:43:24 -0800
+Message-ID: <52B41F1B.3030005@nvidia.com>
+Date: Fri, 20 Dec 2013 18:42:35 +0800
+From: bilhuang <bilhuang@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v1] xhci: Switch Intel Lynx Point ports to EHCI on shutdown
-References: <52B31EDA.60908@compulab.co.il> <52B327D5.3080805@compulab.co.il> <20131219182110.GC3573@xanatos>
-In-Reply-To: <20131219182110.GC3573@xanatos>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v5 1/1] cpufreq: tegra: Re-model Tegra20 cpufreq driver
+References: <1387451926-21373-1-git-send-email-bilhuang@nvidia.com>	<CAKohpomCPJYd+d_NnM9gxwQ7bH6C6=iLxbiWZbfNcjZ8Bi+2wA@mail.gmail.com>	<52B41B18.30302@nvidia.com> <CAKohpontQwTc4KP7XMvtkvS2sQTyF+ngXnXfbJ1ev+MLEp-H0g@mail.gmail.com>
+In-Reply-To: <CAKohpontQwTc4KP7XMvtkvS2sQTyF+ngXnXfbJ1ev+MLEp-H0g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: -unknown-@compulab.co.il|compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Also, which kernel are you experiencing this issue on?  In 3.12, I
-> queued a separate patch to deal with spurious reboot issues on Lynx
-> Point:
-> 
-> commit 638298dc66ea36623dbc2757a24fc2c4ab41b016
-> Author: Takashi Iwai <tiwai@suse.de>
-> Date:   Thu Sep 12 08:11:06 2013 +0200
-> 
->     xhci: Fix spurious wakeups after S5 on Haswell
->     
->     Haswell LynxPoint and LynxPoint-LP with the recent Intel BIOS show
->     mysterious wakeups after shutdown occasionally.  After discussing with
->     BIOS engineers, they explained that the new BIOS expects that the
->     wakeup sources are cleared and set to D3 for all wakeup devices when
->     the system is going to sleep or power off, but the current xhci driver
->     doesn't do this properly (partly intentionally).
->     
->     This patch introduces a new quirk, XHCI_SPURIOUS_WAKEUP, for
->     fixing the spurious wakeups at S5 by calling xhci_reset() in the xhci
->     shutdown ops as done in xhci_stop(), and setting the device to PCI D3
->     at shutdown and remove ops.
->     
->     The PCI D3 call is based on the initial fix patch by Oliver Neukum.
->     
->     [Note: Sarah changed the quirk name from XHCI_HSW_SPURIOUS_WAKEUP to
->     XHCI_SPURIOUS_WAKEUP, since none of the other quirks have system names
->     in them.  Sarah also fixed a collision with a quirk submitted around the
->     same time, by changing the xhci->quirks bit from 17 to 18.]
->     
->     This patch should be backported to kernels as old as 3.0, that
->     contain the commit 1c12443ab8eba71a658fae4572147e56d1f84f66 "xhci: Add
->     Lynx Point to list of Intel switchable hosts."
->     
->     Cc: Oliver Neukum <oneukum@suse.de>
->     Signed-off-by: Takashi Iwai <tiwai@suse.de>
->     Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
->     Cc: stable@vger.kernel.org
-> 
-> This patch is in 3.12, but a patch to narrow the quirk to only apply HP systems
-> will hit 3.13 shortly:
-
-Sorry, I indeed tested not on the latest kernel version, Ubuntu 3.13-rc3 has this patch and it works
-for me.
-
-Denis
-
+On 12/20/2013 06:33 PM, Viresh Kumar wrote:
+> On 20 December 2013 15:55, bilhuang <bilhuang@nvidia.com> wrote:
+>> Don't you think it worth creating a file here so this can be shared to
+>> arm64?
+>
+> We will see how to handle virtual devices when we will start getting
+> arm64 SoCs. Probably we might end up writing a single file in cpufreq,
+> if required, that will create virtual devices for every arm64 platform..
+>
+> So, some people might use it and others wouldn't.. But no platform
+> specific files for such stuff. So, the best we can do for now is to move
+> these to platform code as we are talking about arm32 SoC's for now
+> which do have a mach-* directory..
+>
+OK thanks, this is suggested by Stephen earlier, I'll let him comment in 
+case he might think otherwise.
