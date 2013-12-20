@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab3LTKDk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 05:03:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53008 "EHLO mx1.redhat.com"
+	id S1756099Ab3LTKEL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 05:04:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17393 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755718Ab3LTKDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 05:03:31 -0500
+	id S1755716Ab3LTKDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 05:03:23 -0500
 From: Dave Young <dyoung@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
@@ -14,154 +14,167 @@ Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
         kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
         matt@console-pimps.org, toshi.kani@hp.com, akpm@linux-foundation.org,
         mingo@kernel.org, msalter@redhat.com, leif.lindholm@linaro.org
-Subject: [PATCH v7 02/12] efi: Use early_memremap and early_memunmap to fix sparse warnings
-Date: Fri, 20 Dec 2013 18:02:12 +0800
-Message-Id: <1387533742-18018-3-git-send-email-dyoung@redhat.com>
-In-Reply-To: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
-References: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
+Subject: [PATCH v7 00/12] kexec kernel efi runtime support
+Date: Fri, 20 Dec 2013 18:02:10 +0800
+Message-Id: <1387533742-18018-1-git-send-email-dyoung@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a lot of sparse warnings for early_memremap and early_ioummap
-in arch/x86/platform/efi/efi.c and drivers/firmware/efi/efi.c.
+Here is the V7 patchset for supporting kexec kernel efi runtime.
+Per pervious discussion I pass the 1st kernel efi runtime mapping
+via setup_data to 2nd kernel. Besides of the runtime mapping
+info I also pass the fw_vendor, runtime, config table, smbios
+physical address in setup_data. EFI spec mentioned fw_vendor,
+runtime, config table addresses will be converted to virt address
+after entering virtual mode, but we will use it as physical address
+in efi_init. For smbios EFI spec did not mention about the address
+updating, but during my test on a HP workstation, the bios will
+convert it to Virt addr, thus pass it in setup_data as well.
 
-early_memremap is for mapping kernel memory instead of io memory, but
-the early_memremap returns void __iomem pointer and early_iounmap accepts
-__iomem pointer as argument. Sparse checking is not happy with the mismatch.
+For fw_vendor, runtime, config table, I export them in /sys/firmware/
+efi/, smbios is already in /sys/firmware/efi/systab.
 
-Also there's several early_ioremap callbacks which need to be changed to
-early_memremap because they are actually mapping kernel memory.
+For efi runtime mapping I add a new directory /sys/firmware/efi/
+runtime-map/ like below
+[dave@darkstar ~]$ tree /sys/firmware/efi/runtime-map/
+/sys/firmware/efi/runtime-map/
+|__ 0
+|   |__ attribute
+|   |__ num_pages
+|   |__ phys_addr
+|   |__ type
+|   |__ virt_addr
+|__ 1
+[snip]
 
-Previous patch fixed the early_memremap function to return a normal pointer
-instead of __iomem pointer. Also introduced a new function early_memunmap
-which accept normal pointer as the argument.
+kexec-tools will assemble them as setup_data and pass to 2nd kernel.
+I will send userspace patches as well.
 
-This patch is fixing the sparse warnings as below:
-1. use early_memremap instead of early_ioremap
-2. use early_memunmap instead of early_iounmap
+Limitation is I only write support for x86_64, test on below machines:
+Lenovo thinkpad t420
+Dell inspiron 14 - 3421
+HP Z420 workstation
+Qemu + OVMF
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
-Acked-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/platform/efi/efi.c | 20 ++++++++++----------
- drivers/firmware/efi/efi.c  |  4 ++--
- 2 files changed, 12 insertions(+), 12 deletions(-)
+The patches are based on linus tree + tip master + matt's efi master tree
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 7d8cacc..b1e07a4 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -456,7 +456,7 @@ void __init efi_unmap_memmap(void)
- {
- 	clear_bit(EFI_MEMMAP, &x86_efi_facility);
- 	if (memmap.map) {
--		early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
-+		early_memunmap(memmap.map, memmap.nr_map * memmap.desc_size);
- 		memmap.map = NULL;
- 	}
- }
-@@ -493,7 +493,7 @@ static int __init efi_systab_init(void *phys)
- 		efi_system_table_64_t *systab64;
- 		u64 tmp = 0;
- 
--		systab64 = early_ioremap((unsigned long)phys,
-+		systab64 = early_memremap((unsigned long)phys,
- 					 sizeof(*systab64));
- 		if (systab64 == NULL) {
- 			pr_err("Couldn't map the system table!\n");
-@@ -524,7 +524,7 @@ static int __init efi_systab_init(void *phys)
- 		efi_systab.tables = systab64->tables;
- 		tmp |= systab64->tables;
- 
--		early_iounmap(systab64, sizeof(*systab64));
-+		early_memunmap(systab64, sizeof(*systab64));
- #ifdef CONFIG_X86_32
- 		if (tmp >> 32) {
- 			pr_err("EFI data located above 4GB, disabling EFI.\n");
-@@ -534,7 +534,7 @@ static int __init efi_systab_init(void *phys)
- 	} else {
- 		efi_system_table_32_t *systab32;
- 
--		systab32 = early_ioremap((unsigned long)phys,
-+		systab32 = early_memremap((unsigned long)phys,
- 					 sizeof(*systab32));
- 		if (systab32 == NULL) {
- 			pr_err("Couldn't map the system table!\n");
-@@ -555,7 +555,7 @@ static int __init efi_systab_init(void *phys)
- 		efi_systab.nr_tables = systab32->nr_tables;
- 		efi_systab.tables = systab32->tables;
- 
--		early_iounmap(systab32, sizeof(*systab32));
-+		early_memunmap(systab32, sizeof(*systab32));
- 	}
- 
- 	efi.systab = &efi_systab;
-@@ -586,7 +586,7 @@ static int __init efi_runtime_init(void)
- 	 * address of several of the EFI runtime functions, needed to
- 	 * set the firmware into virtual mode.
- 	 */
--	runtime = early_ioremap((unsigned long)efi.systab->runtime,
-+	runtime = early_memremap((unsigned long)efi.systab->runtime,
- 				sizeof(efi_runtime_services_t));
- 	if (!runtime) {
- 		pr_err("Could not map the runtime service table!\n");
-@@ -606,7 +606,7 @@ static int __init efi_runtime_init(void)
- 	 * virtual mode.
- 	 */
- 	efi.get_time = phys_efi_get_time;
--	early_iounmap(runtime, sizeof(efi_runtime_services_t));
-+	early_memunmap(runtime, sizeof(efi_runtime_services_t));
- 
- 	return 0;
- }
-@@ -614,7 +614,7 @@ static int __init efi_runtime_init(void)
- static int __init efi_memmap_init(void)
- {
- 	/* Map the EFI memory map */
--	memmap.map = early_ioremap((unsigned long)memmap.phys_map,
-+	memmap.map = early_memremap((unsigned long)memmap.phys_map,
- 				   memmap.nr_map * memmap.desc_size);
- 	if (memmap.map == NULL) {
- 		pr_err("Could not map the memory map!\n");
-@@ -656,14 +656,14 @@ void __init efi_init(void)
- 	/*
- 	 * Show what we know for posterity
- 	 */
--	c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
-+	c16 = tmp = early_memremap(efi.systab->fw_vendor, 2);
- 	if (c16) {
- 		for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
- 			vendor[i] = *c16++;
- 		vendor[i] = '\0';
- 	} else
- 		pr_err("Could not map the firmware vendor!\n");
--	early_iounmap(tmp, 2);
-+	early_memunmap(tmp, 2);
- 
- 	pr_info("EFI v%u.%.02u by %s\n",
- 		efi.systab->hdr.revision >> 16,
-diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
-index 2e2fbde..b716a66 100644
---- a/drivers/firmware/efi/efi.c
-+++ b/drivers/firmware/efi/efi.c
-@@ -253,7 +253,7 @@ int __init efi_config_init(efi_config_table_type_t *arch_tables)
- 			if (table64 >> 32) {
- 				pr_cont("\n");
- 				pr_err("Table located above 4GB, disabling EFI.\n");
--				early_iounmap(config_tables,
-+				early_memunmap(config_tables,
- 					       efi.systab->nr_tables * sz);
- 				return -EINVAL;
- 			}
-@@ -269,6 +269,6 @@ int __init efi_config_init(efi_config_table_type_t *arch_tables)
- 		tablep += sz;
- 	}
- 	pr_cont("\n");
--	early_iounmap(config_tables, efi.systab->nr_tables * sz);
-+	early_memunmap(config_tables, efi.systab->nr_tables * sz);
- 	return 0;
- }
+Changes from v1:
+ - add one flag in xloadflags, so kexec-tools can safely load old kernel
+   without efi support.
+ - coding style fixes
+ - function name for map phys_addr to fixed virt_addr
+ - Add ABI documentation for sysfs files
+
+Changes from v2:
+ - 01/09: a new patch to remove unused variables in __map_region function
+       catched by Toshi Kani
+ - 09/09: a new patch to export x86 boot_params to sysfs instead of use
+       debugfs files
+ - Matt: reuse __map_region instead do same thing in another function.
+      add a wrapper function efi_map_region_fixed [02/09]
+      check return value of krealloc
+      sysfs dir name s/efi-runtime-map/runtime-map [06/09]
+      use desc_size in efi_runtime_map
+      for the xloadflags defination: +&& defined(CONFIG_KEXEC)
+ - Greg: sysfs : one file one value for fw_vendor, runtime, tables. [05/09]
+      Document them in ABI testing
+ - HPA:  Document the new xloadflag
+ - Also there's other function cleanup and improvement for error handling.
+
+Changes from v3:
+ - Greg: sysfs code move to use __ATTR_RO and attr_group
+ - Boris: comments and code alignment
+
+ - Added 3 new patches below
+ 10-print-efi-runtime-memmap.patch
+  - 10/12: print only runtime ranges in case EFI_DEBUG printing
+ 11-reserve-setup-data-late.patch
+  - fix a bug of kdump kernel, move function for reserving setup data
+    ranges late after parsing memmap= cmdline params because kdump kernel
+    will pass exact memmap late.
+ 12-x86-kdebugfs-use-ioremap.patch
+  - fix a bug of x86/kernel/kdebugfs.c, use ioremap instead of __va for
+    low mem because __va does not work for exact memmap=
+
+Changes from V4:
+ - variable efi_setup in 09/14 is changed to the physical address instead
+   of the virtual address because it will be not iounmapped until entering
+   virtual mode, it's too long and could cause leak.
+ - sparse warnings fixes (Matt):
+   Added 2 new patches to addressing sparse warnings:
+   01/14: x86-mm-sparse-warning-fix-for-early_memremap.patch
+   02/14: efi-use-early_memremap-and-early_memunmap.patch
+ - krealloc fixes (Boris)
+ - rebase on top of Linus tree + Matt's efi master tree (Boris)
+ - a lot of documention/spelling fixes (Boris)
+ - share function save_runtime_map in 1st/2nd kernel code (Matt)
+ - style and other fixes detail see the patch changelog themselves.
+
+Changes from V5:
+ - add efi_runtime_map_setup() and remove the extern variables thus other
+   arches can reuse the runtime_map exporting code. (Matt)
+ - check efi_reuse_config return value. (Matt)
+ - move parse_efi_setup to efi_$(BITS).c (Boris)
+ - call efi_runtime_map_init in efisubsys_init (Boris)
+ - save_runtime_map cleanup. (Boris)
+
+Changes from V6:
+ - update memmap in userspace to the saved runtime map, thus kernel code
+   become cleaner.
+   - patch 08: simplify save_runtime_map.
+   - patch 09: simplify efi_map_regions and efi_map_regions_fixed.
+ - remove the patch to handle print_efi_memmap for kexec kernel 
+ - remove the last patch for fixing __va usage in kdebugfs since I can not
+   reproduce it in kdump kernel, it should be addressed seperately.
+ - patch 06 (efi: cleanup efi_enter_virtual_mode function):
+   add a share function get_systab_virt_addr()
+ - rebase to latest mainline tree
+
+The patches stay in kexec-efi-testing branch of below repo for testing:
+https://github.com/daveyoung/linux.git
+
+Dave Young (12):
+  x86/mm: sparse warning fix for early_memremap
+  efi: Use early_memremap and early_memunmap to fix sparse warnings
+  efi: remove unused variables in __map_region
+  efi: add a wrapper function efi_map_region_fixed
+  efi: reserve boot service fix
+  efi: cleanup efi_enter_virtual_mode function
+  efi: export more efi table variable to sysfs
+  efi: export efi runtime memory mapping to sysfs
+  efi: passing kexec necessary efi data via setup_data
+  x86: add xloadflags bit for efi runtime support on kexec
+  x86: export x86 boot_params to sysfs
+  x86: reserve setup_data ranges late after parsing memmap cmdline
+
+ Documentation/ABI/testing/sysfs-firmware-efi       |  20 ++
+ .../ABI/testing/sysfs-firmware-efi-runtime-map     |  34 ++
+ Documentation/ABI/testing/sysfs-kernel-boot_params |  38 +++
+ Documentation/x86/boot.txt                         |   3 +
+ arch/x86/boot/header.S                             |   9 +-
+ arch/x86/include/asm/efi.h                         |  14 +
+ arch/x86/include/asm/io.h                          |   3 +-
+ arch/x86/include/uapi/asm/bootparam.h              |   2 +
+ arch/x86/kernel/Makefile                           |   1 +
+ arch/x86/kernel/ksysfs.c                           | 339 ++++++++++++++++++++
+ arch/x86/kernel/setup.c                            |   7 +-
+ arch/x86/mm/ioremap.c                              |  10 +-
+ arch/x86/platform/efi/efi.c                        | 345 ++++++++++++++++-----
+ arch/x86/platform/efi/efi_32.c                     |   3 +
+ arch/x86/platform/efi/efi_64.c                     |  22 +-
+ drivers/firmware/efi/Kconfig                       |  11 +
+ drivers/firmware/efi/Makefile                      |   1 +
+ drivers/firmware/efi/efi.c                         |  49 ++-
+ drivers/firmware/efi/runtime-map.c                 | 181 +++++++++++
+ include/linux/efi.h                                |  16 +
+ 20 files changed, 1010 insertions(+), 98 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-firmware-efi
+ create mode 100644 Documentation/ABI/testing/sysfs-firmware-efi-runtime-map
+ create mode 100644 Documentation/ABI/testing/sysfs-kernel-boot_params
+ create mode 100644 arch/x86/kernel/ksysfs.c
+ create mode 100644 drivers/firmware/efi/runtime-map.c
+
 -- 
 1.8.3.1
 
