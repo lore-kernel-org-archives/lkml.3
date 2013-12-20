@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab3LTEYV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 23:24:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49011 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088Ab3LTEYT (ORCPT
+	id S1754214Ab3LTEY3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 23:24:29 -0500
+Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:25030
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752088Ab3LTEY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 23:24:19 -0500
-Date: Thu, 19 Dec 2013 20:24:26 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ravi Patel <rapatel@apm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
-        Keyur Chudgar <kchudgar@apm.com>
-Subject: Re: [PATCH 2/4] misc: xgene: Add base driver for APM X-Gene SoC
- Queue Manager/Traffic Manager
-Message-ID: <20131220042426.GA21726@kroah.com>
-References: <1387507503-7565-1-git-send-email-rapatel@apm.com>
- <1387507503-7565-3-git-send-email-rapatel@apm.com>
- <20131220032133.GB32310@kroah.com>
- <CAN1v_PuBZHN85xTodfSZ-+H4Wdj0T8kSFUJB56KVj9xFH3--JQ@mail.gmail.com>
+	Thu, 19 Dec 2013 23:24:26 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>
+CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ASoC: fsl-sai: Remove fsl_sai_remove()
+Date: Fri, 20 Dec 2013 11:32:14 +0800
+Message-ID: <1387510334-19866-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN1v_PuBZHN85xTodfSZ-+H4Wdj0T8kSFUJB56KVj9xFH3--JQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There is no need of this function and makes the code slightly shorter
 
-A: Top-posting.
-Q: What is the most annoying thing in e-mail?
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ sound/soc/fsl/fsl_sai.c | 11 -----------
+ 1 file changed, 11 deletions(-)
 
-http://daringfireball.net/2007/07/on_top
+diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
+index 50a797e..1868ec3 100644
+--- a/sound/soc/fsl/fsl_sai.c
++++ b/sound/soc/fsl/fsl_sai.c
+@@ -385,19 +385,8 @@ static int fsl_sai_dai_probe(struct snd_soc_dai *cpu_dai)
+ 	return 0;
+ }
+ 
+-static int fsl_sai_dai_remove(struct snd_soc_dai *cpu_dai)
+-{
+-	cpu_dai->playback_dma_data = NULL;
+-	cpu_dai->capture_dma_data = NULL;
+-
+-	snd_soc_dai_set_drvdata(cpu_dai, NULL);
+-
+-	return 0;
+-}
+-
+ static struct snd_soc_dai_driver fsl_sai_dai = {
+ 	.probe = fsl_sai_dai_probe,
+-	.remove = fsl_sai_dai_remove,
+ 	.playback = {
+ 		.channels_min = 1,
+ 		.channels_max = 2,
+-- 
+1.8.4
 
-On Thu, Dec 19, 2013 at 07:41:13PM -0800, Ravi Patel wrote:
-> There is no need to talk to this driver from userspace.
-> It is a device which is used by other IO devices to communicate with each
-> other, including CPU.
-> For example, if CPU (software) wants to send a message to Ethernet HW (i.e.
-> send packet),
-> it used this driver to enqueue a message to Ethernet.
-> In other direction, if Ethernet HW receives a packet, it uses QM/TM device to
-> send message to
-> CPU (software) to process packet.
 
-So it's a "bus" type of thing, right?
-
-My question of "why isn't this reflected in the driver model" still
-stands.
-
-thanks,
-
-greg k-h
