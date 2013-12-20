@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab3LTTKY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 14:10:24 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38548 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab3LTTJd (ORCPT
+	id S1756365Ab3LTTKW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 14:10:22 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:37429 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753743Ab3LTTJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 14:09:33 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 25/35] tools lib traceevent: Use global QUIET_CLEAN build output
-Date: Fri, 20 Dec 2013 16:09:00 -0300
-Message-Id: <1387566550-3524-26-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1387566550-3524-1-git-send-email-acme@infradead.org>
-References: <1387566550-3524-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 20 Dec 2013 14:09:35 -0500
+From: David Brown <davidb@codeaurora.org>
+To: arm@kernel.org
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        David Brown <davidb@codeaurora.org>
+Subject: [PATCH 3/7] defconfig: msm_defconfig: Enable CONFIG_ARCH_MSM8974
+Date: Fri, 20 Dec 2013 11:09:16 -0800
+Message-Id: <1387566560-23948-4-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1387566560-23948-1-git-send-email-davidb@codeaurora.org>
+References: <1387566560-23948-1-git-send-email-davidb@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Rohit Vaswani <rvaswani@codeaurora.org>
 
-Using global QUIET_CLEAN build output variable and so we could have only
-single clean message:
+This patch enables MSM8974 build support.
 
-  CLEAN libtraceevent
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1387460527-15030-9-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+Signed-off-by: David Brown <davidb@codeaurora.org>
 ---
- tools/lib/traceevent/Makefile | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/arm/configs/msm_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 8ea4368381f0..3496c9ce84d4 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -328,8 +328,9 @@ install_plugins: $(PLUGINS)
- install: install_lib
- 
- clean:
--	$(RM) *.o *~ $(TARGETS) *.a *.so $(VERSION_FILES) .*.d
--	$(RM) TRACEEVENT-CFLAGS tags TAGS
-+	$(call QUIET_CLEAN, libtraceevent) \
-+		$(RM) *.o *~ $(TARGETS) *.a *.so $(VERSION_FILES) .*.d \
-+		$(RM) TRACEEVENT-CFLAGS tags TAGS
- 
- endif # skip-makefile
- 
+diff --git a/arch/arm/configs/msm_defconfig b/arch/arm/configs/msm_defconfig
+index 690b5f9..0ed32e5 100644
+--- a/arch/arm/configs/msm_defconfig
++++ b/arch/arm/configs/msm_defconfig
+@@ -20,6 +20,7 @@ CONFIG_PARTITION_ADVANCED=y
+ CONFIG_ARCH_MSM=y
+ CONFIG_ARCH_MSM8X60=y
+ CONFIG_ARCH_MSM8960=y
++CONFIG_ARCH_MSM8974=y
+ CONFIG_SMP=y
+ CONFIG_PREEMPT=y
+ CONFIG_AEABI=y
 -- 
-1.8.1.4
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
