@@ -1,313 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab3LTDKy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 22:10:54 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:46917 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab3LTDK1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 22:10:27 -0500
-Date: Wed, 18 Dec 2013 16:21:50 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        mukesh.rathor@oracle.com, jbeulich@suse.com
-Subject: Re: [Xen-devel] [PATCH v11 10/12] xen/pvh: Piggyback on PVHVM for
- grant driver.
-Message-ID: <20131218212150.GE11717@phenom.dumpdata.com>
-References: <1387313503-31362-1-git-send-email-konrad.wilk@oracle.com>
- <1387313503-31362-11-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.02.1312181831560.8667@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312181831560.8667@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1753363Ab3LTDLW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 22:11:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46435 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752098Ab3LTDLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 22:11:21 -0500
+Message-ID: <1387509074.2919.36.camel@localhost>
+Subject: Re: [PATCH] audit: listen in all network namespaces
+From: Eric Paris <eparis@redhat.com>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
+        Steve Grubb <sgrubb@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Date: Thu, 19 Dec 2013 22:11:14 -0500
+In-Reply-To: <52B3AF8F.5040607@cn.fujitsu.com>
+References: <1374006760-7687-1-git-send-email-rgb@redhat.com>
+		 <52B26F1A.9070308@cn.fujitsu.com>
+	 <1387478422.29366.33.camel@flatline.rdu.redhat.com>
+	 <52B3AF8F.5040607@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 18, 2013 at 06:46:56PM +0000, Stefano Stabellini wrote:
-> On Tue, 17 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> > In PVH the shared grant frame is the PFN and not MFN,
-> > hence its mapped via the same code path as HVM.
+On Fri, 2013-12-20 at 10:46 +0800, Gao feng wrote:
+> On 12/20/2013 02:40 AM, Eric Paris wrote:
+> > On Thu, 2013-12-19 at 11:59 +0800, Gao feng wrote:
+> >> On 07/17/2013 04:32 AM, Richard Guy Briggs wrote:
+
+> >> we have to store audit_sock
+> >> into auditns(auditns will be passed to kauditd_send_skb),
+> >> this will cause auditns have to get a reference of netns.
+> >> and for some reason(netfilter audit target), netns will
+> >> get reference of auditns too. this is terrible...
 > > 
-> > The allocation of the grant frame is done differently - we
-> > do not use the early platform-pci driver and have an
-> > ioremap area - instead we use balloon memory and stitch
-> > all of the non-contingous pages in a virtualized area.
+> > I'm not sure I agree/understand this entirely...
 > > 
-> > That means when we call the hypervisor to replace the GMFN
-> > with a XENMAPSPACE_grant_table type, we need to lookup the
-> > old PFN for every iteration instead of assuming a flat
-> > contingous PFN allocation.
-> > 
-> > Lastly, we only use v1 for grants. This is because PVHVM
-> > is not able to use v2 due to no XENMEM_add_to_physmap
-> > calls on the error status page (see commit
-> > 69e8f430e243d657c2053f097efebc2e2cd559f0
-> >  xen/granttable: Disable grant v2 for HVM domains.)
-> > 
-> > Until that is implemented this workaround has to
-> > be in place.
-> > 
-> > Also per suggestions by Stefano utilize the PVHVM paths
-> > as they share common functionality.
-> > 
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  drivers/xen/gntdev.c       |  2 +-
-> >  drivers/xen/grant-table.c  | 80 ++++++++++++++++++++++++++++++++++++++++++----
-> >  drivers/xen/platform-pci.c |  2 +-
-> >  include/xen/grant_table.h  |  2 +-
-> >  4 files changed, 76 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-> > index e41c79c..073b4a1 100644
-> > --- a/drivers/xen/gntdev.c
-> > +++ b/drivers/xen/gntdev.c
-> > @@ -846,7 +846,7 @@ static int __init gntdev_init(void)
-> >  	if (!xen_domain())
-> >  		return -ENODEV;
-> >  
-> > -	use_ptemod = xen_pv_domain();
-> > +	use_ptemod = !xen_feature(XENFEAT_auto_translated_physmap);
-> >  
-> >  	err = misc_register(&gntdev_miscdev);
-> >  	if (err != 0) {
-> > diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> > index aa846a4..c0ded9f 100644
-> > --- a/drivers/xen/grant-table.c
-> > +++ b/drivers/xen/grant-table.c
-> > @@ -47,6 +47,7 @@
-> >  #include <xen/interface/xen.h>
-> >  #include <xen/page.h>
-> >  #include <xen/grant_table.h>
-> > +#include <xen/balloon.h>
-> >  #include <xen/interface/memory.h>
-> >  #include <xen/hvc-console.h>
-> >  #include <xen/swiotlb-xen.h>
-> > @@ -66,8 +67,8 @@ static unsigned int boot_max_nr_grant_frames;
-> >  static int gnttab_free_count;
-> >  static grant_ref_t gnttab_free_head;
-> >  static DEFINE_SPINLOCK(gnttab_list_lock);
-> > -unsigned long xen_hvm_resume_frames;
-> > -EXPORT_SYMBOL_GPL(xen_hvm_resume_frames);
-> > +unsigned long xen_auto_xlat_grant_frames;
-> > +EXPORT_SYMBOL_GPL(xen_auto_xlat_grant_frames);
-> >  
-> >  static union {
-> >  	struct grant_entry_v1 *v1;
-> > @@ -1060,7 +1061,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
-> >  	unsigned int nr_gframes = end_idx + 1;
-> >  	int rc;
-> >  
-> > -	if (xen_hvm_domain()) {
-> > +	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-> >  		struct xen_add_to_physmap xatp;
-> >  		unsigned int i = end_idx;
-> >  		rc = 0;
-> > @@ -1069,10 +1070,24 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
-> >  		 * index, ensuring that the table will grow only once.
-> >  		 */
-> >  		do {
-> > +			unsigned long vaddr;
-> > +			unsigned int level;
-> > +			pte_t *pte;
-> > +
-> >  			xatp.domid = DOMID_SELF;
-> >  			xatp.idx = i;
-> >  			xatp.space = XENMAPSPACE_grant_table;
-> > -			xatp.gpfn = (xen_hvm_resume_frames >> PAGE_SHIFT) + i;
-> > +
-> > +			/*
-> > +			 * Don't assume the memory is contingous. Lookup each.
-> > +			 */
-> > +			vaddr = xen_auto_xlat_grant_frames + (i * PAGE_SIZE);
-> > +			if (xen_hvm_domain())
-> > +				xatp.gpfn = vaddr >> PAGE_SHIFT;
-> > +			else {
-> > +				pte = lookup_address(vaddr, &level);
 > 
-> lookup_address is x86 only. I added an empty implementation under
-> arch/arm to be able to compile stuff under drivers/xen but I would like
-> to get rid of it.
-> If you can't find a way to replace lookup_address with something that
-> works on arm and arm64 too, you could always turn
-> xen_auto_xlat_grant_frames into an array and store the pfns there.
+> Yes, the audit_sock is created and destroyed by net namespace,
+> so if auditns wants to use audit_sock, it must prevent netns
+> from being destroyed. so auditns has to get reference of netns.
 
-Yeah, that would work nicely too. Thought we would have to store the
-size somewhere. Maybe a struct then.
+Namespace == mind blown.  Ok, so:
 
-struct xlat_grant_frames {
-	int	nr;
-	xen_pfn_t	*array;
-	struct page	*page;
-};
+ auditd in audit_ns2 and net_ns2. <--- ONLY process in net_ns2
+ some process in audit_ns2 and net_ns3
 
-> 
-> 
-> > +				xatp.gpfn = pte_mfn(*pte);
-> 
-> Do you actually need the mfn here? Don't you just need the pfn?
+Lets assume that auditd is killed improperly/dies.  Because the last
+process in net_ns2 is gone net_ns2 is invalid/freed.
 
-Just (pte.pte & ~PAGE_FLAGS) >> PAGE_SHIFT.
+Today in the kernel the way we detect auditd is gone is by using the
+socket and getting ECONNREFUSSED.  So here you think that audit_ns2
+should hold a reference on net_ns2, to make sure that socket is always
+valid.
 
-> 
-> 
-> 
-> > +			}
-> >  			rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp);
-> >  			if (rc != 0) {
-> >  				pr_warn("grant table add_to_physmap failed, err=%d\n",
-> > @@ -1135,7 +1150,7 @@ static void gnttab_request_version(void)
-> >  	int rc;
-> >  	struct gnttab_set_version gsv;
-> >  
-> > -	if (xen_hvm_domain())
-> > +	if (xen_hvm_domain() || xen_feature(XENFEAT_auto_translated_physmap))
-> 
-> just turn this to
-> 
-> if (xen_feature(XENFEAT_auto_translated_physmap))
+I instead propose that we could run all audit_ns and reset the audit_pid
+in that namespace and the audit_sock in the namespace to 0/null inside
+audit_net_exit.  Since obviously if the net_ns disappeared, the auditd
+which was running in any audit namespace in that net_ns isn't running
+any more.  We didn't need to hold a reference on the net_ns.  We just
+have to clear the skb_queue, reset the audit_pid to 0, and reset the
+socket to NULL...
 
-Hmm, I would rather actually keep that until I fix the underlaying issue
-of why v2 can't be used. And then we can get rid of this workaround.
+Maybe the one magic socket is the right answer.  I'm not arguing against
+your solution.  I'm really trying to understand why we are going that
+way...
 
-> 
-> 
-> >  		gsv.version = 1;
-> >  	else
-> >  		gsv.version = 2;
-> > @@ -1161,6 +1176,46 @@ static void gnttab_request_version(void)
-> >  	pr_info("Grant tables using version %d layout\n", grant_table_version);
-> >  }
-> >  
-> > +static int xlated_setup_gnttab_pages(unsigned long nr_grant_frames,
-> > +				     unsigned long max, void *addr)
-> > +{
-> > +	struct page **pages;
-> > +	unsigned long *pfns;
-> > +	int rc, i;
-> > +
-> > +	pages = kcalloc(nr_grant_frames, sizeof(pages[0]), GFP_KERNEL);
-> > +	if (!pages)
-> > +		return -ENOMEM;
-> > +
-> > +	pfns = kcalloc(nr_grant_frames, sizeof(pfns[0]), GFP_KERNEL);
-> > +	if (!pfns) {
-> > +		kfree(pages);
-> > +		return -ENOMEM;
-> > +	}
-> > +	rc = alloc_xenballooned_pages(nr_grant_frames, pages, 0 /* lowmem */);
-> > +	if (rc) {
-> > +		pr_warn("%s Couldn't balloon alloc %ld pfns rc:%d\n", __func__,
-> > +			nr_grant_frames, rc);
-> > +		kfree(pages);
-> > +		kfree(pfns);
-> > +		return rc;
-> > +	}
-> > +	for (i = 0; i < nr_grant_frames; i++)
-> > +		pfns[i] = page_to_pfn(pages[i]);
-> > +
-> > +	rc = arch_gnttab_map_shared(pfns, nr_grant_frames, max, addr);
-> > +
-> > +	kfree(pages);
-> > +	kfree(pfns);
-> > +	if (rc) {
-> > +		pr_warn("%s Couldn't map %ld pfns rc:%d\n", __func__,
-> > +			nr_grant_frames, rc);
-> > +		free_xenballooned_pages(nr_grant_frames, pages);
-> > +		return rc;
-> > +	}
-> > +	return rc;
-> > +}
-> 
-> Please move this function somewhere under arch/x86/xen and call it from
-> xen_start_kernel, it doesn't belong to common code.
+> and in some case, netns will get reference of auditns too. this
+> is complex than making audit_sock global and getting rid of this
+> reference.
 
-<nods>
+This I haven't even started to try to wrap my head around...
 
-Actually, looking at how the xen-platform-pci does it. I am wondering
-if that can be just made in one function that will do the right
-thing.
-
-Can the xen-platform-pci use balloon pages instead of the MMIO BARs?
-Or would that be a waste of memory?
-
-> 
-> 
-> >  static int gnttab_setup(void)
-> >  {
-> >  	unsigned int max_nr_gframes;
-> > @@ -1169,15 +1224,26 @@ static int gnttab_setup(void)
-> >  	if (max_nr_gframes < nr_grant_frames)
-> >  		return -ENOSYS;
-> >  
-> > +	if (xen_feature(XENFEAT_auto_translated_physmap) && !xen_auto_xlat_grant_frames) {
-> > +		/*
-> > +		 * xen_auto_xlat_grant_frames is setup for PVHVM by
-> > +		 * alloc_xen_mmio by the time this is called.
-> > +		 */
-> > +		int rc = xlated_setup_gnttab_pages(max_nr_gframes, max_nr_gframes,
-> > +						   &gnttab_shared.addr);
-> > +		if (rc)
-> > +			return rc;
-> > +		xen_auto_xlat_grant_frames = (unsigned long)gnttab_shared.addr;
-> > +	}
-> 
-> I think you should do this from arch/x86/xen. When gnttab_setup is
-> called in your guest, xen_auto_xlat_grant_frames should have already
-> been setup correctly.
-
-<nods> And have some early init that sets this up.
-
-> 
-> 
-> >  	if (xen_pv_domain())
-> >  		return gnttab_map(0, nr_grant_frames - 1);
-> >  
-> >  	if (gnttab_shared.addr == NULL) {
-> > -		gnttab_shared.addr = xen_remap(xen_hvm_resume_frames,
-> > +		gnttab_shared.addr = xen_remap(xen_auto_xlat_grant_frames,
-> >  						PAGE_SIZE * max_nr_gframes);
-> >  		if (gnttab_shared.addr == NULL) {
-> >  			pr_warn("Failed to ioremap gnttab share frames (addr=0x%08lx)!\n",
-> > -					xen_hvm_resume_frames);
-> > +					xen_auto_xlat_grant_frames);
-> >  			return -ENOMEM;
-> >  		}
-> >  	}
-> > diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
-> > index 2f3528e..44bc5a6 100644
-> > --- a/drivers/xen/platform-pci.c
-> > +++ b/drivers/xen/platform-pci.c
-> > @@ -154,7 +154,7 @@ static int platform_pci_init(struct pci_dev *pdev,
-> >  	}
-> >  
-> >  	max_nr_gframes = gnttab_max_grant_frames();
-> > -	xen_hvm_resume_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
-> > +	xen_auto_xlat_grant_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
-> >  	ret = gnttab_init();
-> >  	if (ret)
-> >  		goto out;
-> > diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-> > index 694dcaf..24280ac 100644
-> > --- a/include/xen/grant_table.h
-> > +++ b/include/xen/grant_table.h
-> > @@ -178,7 +178,7 @@ int arch_gnttab_map_status(uint64_t *frames, unsigned long nr_gframes,
-> >  			   grant_status_t **__shared);
-> >  void arch_gnttab_unmap(void *shared, unsigned long nr_gframes);
-> >  
-> > -extern unsigned long xen_hvm_resume_frames;
-> > +extern unsigned long xen_auto_xlat_grant_frames;
-> >  unsigned int gnttab_max_grant_frames(void);
-> >  
-> >  #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
-> 
-> You need to s/xen_hvm_resume_frames/xen_auto_xlat_grant_frames under
-> arch/arm/xen too.
-
-Right. Thanks for reminding me!
