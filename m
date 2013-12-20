@@ -1,57 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab3LTIt6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 03:49:58 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:45364 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071Ab3LTIt5 (ORCPT
+	id S1755111Ab3LTIxY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 03:53:24 -0500
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:52990 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971Ab3LTIxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 03:49:57 -0500
-Date: Fri, 20 Dec 2013 09:49:53 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86: intel-mid: sfi_handle_*_dev() should check for
- pdata error code
-Message-ID: <20131220084953.GB21133@gmail.com>
-References: <1387244246-20714-1-git-send-email-david.a.cohen@linux.intel.com>
- <1387518179-4316-1-git-send-email-david.a.cohen@linux.intel.com>
- <1387518179-4316-2-git-send-email-david.a.cohen@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387518179-4316-2-git-send-email-david.a.cohen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Dec 2013 03:53:23 -0500
+X-Greylist: delayed 488 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Dec 2013 03:53:23 EST
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+To: David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
+        <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Subject: [PATCH 1/1] x86/iommu: use bit structures for context_entry
+Date: Fri, 20 Dec 2013 16:45:01 +0800
+Message-Id: <1387529101-29769-1-git-send-email-zhen-hual@hp.com>
+X-Mailer: git-send-email 1.8.4.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There is a structure named context_entry used by intel iommu, and there
+are some bit operations on it. Use bit structure may make these operations
+easy.
+Also the function context_set_address_root may cause problem because it uses
+ |= operation, not set the new value. And this patch can fix it.
 
-* David Cohen <david.a.cohen@linux.intel.com> wrote:
+Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+---
+ drivers/iommu/intel-iommu.c | 37 +++++++++++++++++++++++++++----------
+ 1 file changed, 27 insertions(+), 10 deletions(-)
 
-> Prevent sfi_handle_*_dev() to register device in case
-> intel_mid_sfi_get_pdata() failed to execute.
-> 
-> Since 'NULL' is a valid return value, this patch makes
-> sfi_handle_*_dev() functions to use IS_ERR() to validate returned pdata.
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 43b9bfe..65cd480 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -221,47 +221,64 @@ get_context_addr_from_root(struct root_entry *root)
+  * 8-23: domain id
+  */
+ struct context_entry {
+-	u64 lo;
+-	u64 hi;
++	union {
++		struct {
++			u64	present:1,
++				fpd:1,
++				translation_type:2,
++				reserved_l:8,
++				asr:52;
++		};
++		u64 lo;
++	};
++	union {
++		struct {
++			u64	aw:3,
++				avail:4,
++				reserved_h1:1,
++				did:16,
++				reserved_h2:40;
++		};
++		u64 hi;
++	};
+ };
+ 
+ static inline bool context_present(struct context_entry *context)
+ {
+-	return (context->lo & 1);
++	return context->present;
+ }
+ static inline void context_set_present(struct context_entry *context)
+ {
+-	context->lo |= 1;
++	context->present = 1;
+ }
+ 
+ static inline void context_set_fault_enable(struct context_entry *context)
+ {
+-	context->lo &= (((u64)-1) << 2) | 1;
++	context->fpd = 1;
+ }
+ 
+ static inline void context_set_translation_type(struct context_entry *context,
+ 						unsigned long value)
+ {
+-	context->lo &= (((u64)-1) << 4) | 3;
+-	context->lo |= (value & 3) << 2;
++	context->translation_type = value;
+ }
+ 
+ static inline void context_set_address_root(struct context_entry *context,
+ 					    unsigned long value)
+ {
+-	context->lo |= value & VTD_PAGE_MASK;
++	context->asr = value >> VTD_PAGE_SHIFT
+ }
+ 
+ static inline void context_set_address_width(struct context_entry *context,
+ 					     unsigned long value)
+ {
+-	context->hi |= value & 7;
++	context->aw  = value;
+ }
+ 
+ static inline void context_set_domain_id(struct context_entry *context,
+ 					 unsigned long value)
+ {
+-	context->hi |= (value & ((1 << 16) - 1)) << 8;
++	context->did = value;
+ }
+ 
+ static inline void context_clear_entry(struct context_entry *context)
+-- 
+1.8.4.3
 
-Is this bug triggering in practice? If not then please say so in the 
-changelog. If yes then is this patch desired for v3.13 merging and 
-also please fix the changelog to conform to the standard changelog 
-style:
-
- - first describe the symptoms of the bug - how does a user notice?
-
- - then describe how the code behaves today and how that is causing
-   the bug
-
- - and then only describe how it's fixed.
-
-The first item is the most important one - while developers 
-(naturally) tend to concentrate on the least important point, the last 
-one.
-
-Thanks,
-
-	Ingo
