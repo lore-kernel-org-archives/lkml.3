@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab3LTLar (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 06:30:47 -0500
-Received: from mail-by2lp0238.outbound.protection.outlook.com ([207.46.163.238]:21680
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756662Ab3LTLap convert rfc822-to-8bit (ORCPT
+	id S1756850Ab3LTLax (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 06:30:53 -0500
+Received: from mail-bn1lp0153.outbound.protection.outlook.com ([207.46.163.153]:19654
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756662Ab3LTLat convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 06:30:45 -0500
+	Fri, 20 Dec 2013 06:30:49 -0500
 From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
 To: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
         "pawel.moll@arm.com" <pawel.moll@arm.com>,
@@ -23,23 +23,23 @@ CC: "broonie@kernel.org" <broonie@kernel.org>,
 	<linux-arm-kernel@lists.infradead.org>,
         "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
         "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-Subject: RE: [PATCHv4 3/4] ARM: dts: Enable SAI ALSA SoC DAI device for
- Vybrid VF610 TOWER board.
-Thread-Topic: [PATCHv4 3/4] ARM: dts: Enable SAI ALSA SoC DAI device for
- Vybrid VF610 TOWER board.
-Thread-Index: AQHO/SbtfTE4gHYBOUWxURPn3FEtAZpc8tqA
-Date: Fri, 20 Dec 2013 11:30:43 +0000
-Message-ID: <e130ad7ed4b64bc198d69762edbd8d4b@BY2PR03MB505.namprd03.prod.outlook.com>
+Subject: RE: [PATCHv4 2/4] ARM: dts: Add Freescale SAI ALSA SoC Digital
+ Audio Interface node for VF610.
+Thread-Topic: [PATCHv4 2/4] ARM: dts: Add Freescale SAI ALSA SoC Digital
+ Audio Interface node for VF610.
+Thread-Index: AQHO/Sa+uGbX95GUw0WP/tIzSnlqC5pc72xg
+Date: Fri, 20 Dec 2013 11:30:33 +0000
+Message-ID: <96d8b47fd8c14c11a1cd12d5810177ca@BY2PR03MB505.namprd03.prod.outlook.com>
 References: <1387501387-2151-1-git-send-email-Li.Xiubo@freescale.com>
- <1387501387-2151-3-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1387501387-2151-3-git-send-email-Li.Xiubo@freescale.com>
+ <1387501387-2151-2-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1387501387-2151-2-git-send-email-Li.Xiubo@freescale.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 x-originating-ip: [123.151.195.49]
 x-forefront-prvs: 0066D63CE6
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(199002)(189002)(51704005)(50986001)(33646001)(46102001)(74876001)(74706001)(47736001)(47976001)(49866001)(4396001)(74316001)(74366001)(76482001)(15202345003)(51856001)(53806001)(54356001)(63696002)(81542001)(19580405001)(19580395003)(81342001)(15975445006)(79102001)(54316002)(83322001)(65816001)(80976001)(66066001)(80022001)(81816001)(81686001)(69226001)(31966008)(87266001)(85306002)(74502001)(74662001)(47446002)(85852003)(59766001)(77982001)(87936001)(76576001)(76786001)(76796001)(56776001)(90146001)(83072002)(2656002)(56816005)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB507;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(199002)(189002)(51704005)(50986001)(33646001)(46102001)(74876001)(74706001)(47736001)(47976001)(49866001)(4396001)(74316001)(74366001)(76482001)(15202345003)(51856001)(53806001)(54356001)(63696002)(81542001)(19580405001)(19580395003)(81342001)(15975445006)(79102001)(54316002)(83322001)(65816001)(80976001)(66066001)(80022001)(81816001)(81686001)(69226001)(31966008)(87266001)(85306002)(74502001)(74662001)(47446002)(85852003)(59766001)(77982001)(87936001)(76576001)(76786001)(76796001)(56776001)(90146001)(83072002)(2656002)(56816005)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB506;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -59,33 +59,31 @@ Xiubo
 
 
 
-> Subject: [PATCHv4 3/4] ARM: dts: Enable SAI ALSA SoC DAI device for Vybrid
-> VF610 TOWER board.
+> Subject: [PATCHv4 2/4] ARM: dts: Add Freescale SAI ALSA SoC Digital Audio
+> Interface node for VF610.
 > 
-> This patch adds and enables the SAI device.
+> This patch adds the SAI's edma mux Tx and Rx support.
 > 
 > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> Signed-off-by: Jingchang Lu <b35083@freescale.com>
 > ---
->  arch/arm/boot/dts/vf610-twr.dts | 6 ++++++
->  1 file changed, 6 insertions(+)
+>  arch/arm/boot/dts/vf610.dtsi | 3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
-> index c8047ca..e60c20c 100644
-> --- a/arch/arm/boot/dts/vf610-twr.dts
-> +++ b/arch/arm/boot/dts/vf610-twr.dts
-> @@ -74,6 +74,12 @@
->  	status = "okay";
->  };
+> diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
+> index e84d84c..2d6ddd0 100644
+> --- a/arch/arm/boot/dts/vf610.dtsi
+> +++ b/arch/arm/boot/dts/vf610.dtsi
+> @@ -166,6 +166,9 @@
+>  				interrupts = <0 86 0x04>;
+>  				clocks = <&clks VF610_CLK_SAI2>;
+>  				clock-names = "sai";
+> +				dma-names = "tx", "rx";
+> +				dmas = <&edma0 0 VF610_EDMA_MUXID0_SAI2_TX>,
+> +					<&edma0 0 VF610_EDMA_MUXID0_SAI2_RX>;
+>  				status = "disabled";
+>  			};
 > 
-> +&sai2 {
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&pinctrl_sai2_1>;
-> +	status = "okay";
-> +};
-> +
->  &uart1 {
->  	pinctrl-names = "default";
->  	pinctrl-0 = <&pinctrl_uart1_1>;
 > --
 > 1.8.4
 > 
