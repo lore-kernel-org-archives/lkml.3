@@ -1,49 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab3LTTy0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 14:54:26 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:37054 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab3LTTyZ (ORCPT
+	id S1753726Ab3LTTzb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 14:55:31 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36796 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab3LTTz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 14:54:25 -0500
+	Fri, 20 Dec 2013 14:55:29 -0500
+Date: Fri, 20 Dec 2013 20:55:27 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: rjw@rjwysocki.net, len.brown@intel.com, sarah.a.sharp@linux.intel.com,
+        gregkh@linuxfoundation.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        santosh.shilimkar@ti.com
+Subject: Re: [RFC/PATCH 1/3] pm: make PM macros more smart
+Message-ID: <20131220195527.GA25927@amd.pavel.ucw.cz>
+References: <1386911905-2366-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1386911905-2366-2-git-send-email-david.a.cohen@linux.intel.com>
+ <20131215175112.GA23298@Nokia-N900>
+ <20131215192508.GA10514@psi-dev26.jf.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1387567810.2704.19.camel@buesod1.americas.hpqcorp.net>
-References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
-	<1387478746-5436-5-git-send-email-davidlohr@hp.com>
-	<CA+55aFxY_sMes2=0tz0qTKH5-fpAaLji_xd9CdU-u2JxxNN6pA@mail.gmail.com>
-	<1387567810.2704.19.camel@buesod1.americas.hpqcorp.net>
-Date: Fri, 20 Dec 2013 11:54:24 -0800
-X-Google-Sender-Auth: IW8qz-Pejrxu6XGR36IJiqpDd74
-Message-ID: <CA+55aFwj_zWyUb8w3nqoWbmRXcHSsuYD2BrJ+aD8x7A0Sg6ZXw@mail.gmail.com>
-Subject: Re: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
-        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Tom Vaden <tom.vaden@hp.com>, "Norton, Scott J" <scott.norton@hp.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131215192508.GA10514@psi-dev26.jf.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 11:30 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
->
-> So we'd need the barrier right after the ticket increment (ie: the xadd
-> TICKET_LOCK_INC in x86), and cannot rely on the barrier after the lock
-> is taken as we could miss waiters that are just spinning trying to take
-> it. Is this implicitly guaranteed across all archs?
+On Sun 2013-12-15 11:25:08, David Cohen wrote:
+> On Sun, Dec 15, 2013 at 06:51:12PM +0100, Pavel Machek wrote:
+> > On Thu 2013-12-12 21:18:23, David Cohen wrote:
+> > > This patch makes SET_SYSTEM_SLEEP_PM_OPS() and SET_RUNTIME_PM_OPS() more
+> > > smart.
+> > > 
+> > > Despite those macros check for '#ifdef CONFIG_PM_SLEEP/RUNTIME' to avoid
+> > > setting the callbacks when such #ifdef's aren't defined, they don't
+> > > handle compiler to avoid messages like that:
+> > > 
+> > > drivers/usb/host/xhci-plat.c:200:12: warning: ???xhci_plat_suspend??? defined but not used [-Wunused-function]
+> > > drivers/usb/host/xhci-plat.c:208:12: warning: ???xhci_plat_resume??? defined but not used [-Wunused-function]
+> > > 
+> > > As result, those macros get rid of #ifdef's when setting callbacks but
+> > > not when implementing them.
+> > > 
+> > > With this patch, drivers using SET_*_PM_OPS() macros don't need to #ifdef
+> > > the callbacks implementation as well.
+> > 
+> > Well... Interesting trickery, but it means that resulting kernel
+> > will be bigge due to the dead functions no?
+> 
+> Actually, it doesn't get bigger. Before sending the patch I did this
+> dummy test app:
+> 
+> --------------------------------------------------------------------------------
+> #include <stdio.h>
+> 
+> #define USE_IT_OR_LOOSE_IT(fn)  ((void *)((unsigned long)(fn) - (unsigned long)(fn)))
+> 
+> #ifdef MAKE_ME_NULL
+> static int func1(int a)
+> {
+>         printf("Hey!!\n");
+>         return 0;
+> }
+> #endif
 
-Not necessarily. But I don't see why threads spinning on it would be
-special? If you spin on things, you've already updated the head
-counter, so even spinners *are* visible, even if they haven't actually
-gotten the lock yet.
+I thought that point of this patch series was getting rid of the
+#ifdefs around the function...? Now I'm confused.
 
-                 Linus
+> struct global_data {
+>         int (*func)(int);
+> };
+> 
+> static struct global_data gd = {
+> #ifdef MAKE_ME_NULL
+>         .func = USE_IT_OR_LOOSE_IT(func1),
+
+If you have ifdef around the function, why do you need magic here? Why
+not
+
+	.func = func1
+
+?
+
+Basically the warning tells you that you want the ifdef around the
+function, too... (Otherwise you waste space). That seems like good
+warning.
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
