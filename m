@@ -1,115 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab3LTIxY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 03:53:24 -0500
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:52990 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971Ab3LTIxX (ORCPT
+	id S1755196Ab3LTIyw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 03:54:52 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49640 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754589Ab3LTIyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 03:53:23 -0500
-X-Greylist: delayed 488 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Dec 2013 03:53:23 EST
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Subject: [PATCH 1/1] x86/iommu: use bit structures for context_entry
-Date: Fri, 20 Dec 2013 16:45:01 +0800
-Message-Id: <1387529101-29769-1-git-send-email-zhen-hual@hp.com>
-X-Mailer: git-send-email 1.8.4.3
+	Fri, 20 Dec 2013 03:54:51 -0500
+Date: Fri, 20 Dec 2013 09:54:26 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
+        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        Tom Vaden <tom.vaden@hp.com>, "Norton, Scott J" <scott.norton@hp.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
+Message-ID: <20131220085426.GZ21999@twins.programming.kicks-ass.net>
+References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
+ <1387478746-5436-5-git-send-email-davidlohr@hp.com>
+ <CA+55aFxY_sMes2=0tz0qTKH5-fpAaLji_xd9CdU-u2JxxNN6pA@mail.gmail.com>
+ <1387496569.8363.12.camel@buesod1.americas.hpqcorp.net>
+ <CA+55aFyay84UKWEbAZ=8bT-KV5gq-+1fWgS52gRQv=qZJzMSOQ@mail.gmail.com>
+ <1387506141.8363.47.camel@buesod1.americas.hpqcorp.net>
+ <CA+55aFyrZmG6rNpY22OK3UQi18e=4UQyh8a3tpxY+QVCbNxXkw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyrZmG6rNpY22OK3UQi18e=4UQyh8a3tpxY+QVCbNxXkw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a structure named context_entry used by intel iommu, and there
-are some bit operations on it. Use bit structure may make these operations
-easy.
-Also the function context_set_address_root may cause problem because it uses
- |= operation, not set the new value. And this patch can fix it.
+On Thu, Dec 19, 2013 at 07:13:09PM -0800, Linus Torvalds wrote:
+> I think we might have to order the two reads with an smp_rmb - making
+> sure that we check the lock state first - but I think it should be
+> otherwise pretty solid.
 
-Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
----
- drivers/iommu/intel-iommu.c | 37 +++++++++++++++++++++++++++----------
- 1 file changed, 27 insertions(+), 10 deletions(-)
+> Yeah, I said "spin_contended()" myself initially, but it needs to be
+> "spin_is_locked()". It's hopefully unlikely to ever actually be
+> contended (which in ticket lock terms is "head is _more_ than one away
+> from the tail").
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 43b9bfe..65cd480 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -221,47 +221,64 @@ get_context_addr_from_root(struct root_entry *root)
-  * 8-23: domain id
-  */
- struct context_entry {
--	u64 lo;
--	u64 hi;
-+	union {
-+		struct {
-+			u64	present:1,
-+				fpd:1,
-+				translation_type:2,
-+				reserved_l:8,
-+				asr:52;
-+		};
-+		u64 lo;
-+	};
-+	union {
-+		struct {
-+			u64	aw:3,
-+				avail:4,
-+				reserved_h1:1,
-+				did:16,
-+				reserved_h2:40;
-+		};
-+		u64 hi;
-+	};
- };
- 
- static inline bool context_present(struct context_entry *context)
- {
--	return (context->lo & 1);
-+	return context->present;
- }
- static inline void context_set_present(struct context_entry *context)
- {
--	context->lo |= 1;
-+	context->present = 1;
- }
- 
- static inline void context_set_fault_enable(struct context_entry *context)
- {
--	context->lo &= (((u64)-1) << 2) | 1;
-+	context->fpd = 1;
- }
- 
- static inline void context_set_translation_type(struct context_entry *context,
- 						unsigned long value)
- {
--	context->lo &= (((u64)-1) << 4) | 3;
--	context->lo |= (value & 3) << 2;
-+	context->translation_type = value;
- }
- 
- static inline void context_set_address_root(struct context_entry *context,
- 					    unsigned long value)
- {
--	context->lo |= value & VTD_PAGE_MASK;
-+	context->asr = value >> VTD_PAGE_SHIFT
- }
- 
- static inline void context_set_address_width(struct context_entry *context,
- 					     unsigned long value)
- {
--	context->hi |= value & 7;
-+	context->aw  = value;
- }
- 
- static inline void context_set_domain_id(struct context_entry *context,
- 					 unsigned long value)
- {
--	context->hi |= (value & ((1 << 16) - 1)) << 8;
-+	context->did = value;
- }
- 
- static inline void context_clear_entry(struct context_entry *context)
--- 
-1.8.4.3
+
+Right, which would give us something like:
+
+  LOCK m		is_locked m
+  list_{add,del}	RMB
+  UNLOCK m		list_empty
+
+Where the rmb matches the release/unlock. This guarantees that when we
+see the unlock we must also see the list modification.
+
 
