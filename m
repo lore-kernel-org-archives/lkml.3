@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab3LTHeG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 02:34:06 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:63198 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457Ab3LTHeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 02:34:04 -0500
-X-Greylist: delayed 88855 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Dec 2013 02:34:04 EST
+	id S1754640Ab3LTHgr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 02:36:47 -0500
+Received: from mga14.intel.com ([143.182.124.37]:47569 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754089Ab3LTHgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 02:36:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,519,1384329600"; 
+   d="asc'?scan'208";a="329237363"
+Date: Fri, 20 Dec 2013 02:18:20 -0500
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86-ML <x86@kernel.org>,
+        Michel Lespinasse <walken@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@intel.com,
+        "Yu, Fenghua" <fenghua.yu@intel.com>
+Subject: Re: [PATCH] x86: Add check for number of available vectors before
+ CPU down [v2]
+Message-ID: <20131220071820.GC4571@gchen.bj.intel.com>
+Mail-Followup-To: Prarit Bhargava <prarit@redhat.com>,
+	Tony Luck <tony.luck@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	X86-ML <x86@kernel.org>, Michel Lespinasse <walken@google.com>,
+	Andi Kleen <ak@linux.intel.com>,
+	Seiji Aguchi <seiji.aguchi@hds.com>,
+	Yang Zhang <yang.z.zhang@intel.com>,
+	Paul Gortmaker <paul.gortmaker@windriver.com>,
+	janet.morgan@intel.com, "Yu, Fenghua" <fenghua.yu@intel.com>
+References: <1387394945-5704-1-git-send-email-prarit@redhat.com>
+ <CA+8MBbKHZ0i0mEYLUrmWwaofvnRcxc7Dvm+w0CfZf2uQydjdjQ@mail.gmail.com>
+ <CA+8MBbLMFW5fnUdgNRFpPv9+U1DqB5AeoDOV44kZHozibxjqSg@mail.gmail.com>
+ <52B336D4.8010809@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CACh+v5MUsYW-=qaVubzt8CWRGxibKDB3PjMZ6AaeDYgeTNzONA@mail.gmail.com>
-References: <1387239745-2890-1-git-send-email-jjhiblot@traphandler.com>
- <CAAVeFuKAGfnnsbtBg=zfmciyMdZHgrX_EpecqPjG=oO6rZdWag@mail.gmail.com> <CACh+v5MUsYW-=qaVubzt8CWRGxibKDB3PjMZ6AaeDYgeTNzONA@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Fri, 20 Dec 2013 16:33:41 +0900
-Message-ID: <CAAVeFuJ=s8e8g5LG2CVAkS3guj-HRUYrwKxywFxq36sNpAjQGQ@mail.gmail.com>
-Subject: Re: [PATCH] Tracing events with GPIOs
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="da4uJneut+ArUgXk"
+Content-Disposition: inline
+In-Reply-To: <52B336D4.8010809@redhat.com>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 8:38 PM, Jean-Jacques Hiblot
-<jjhiblot@traphandler.com> wrote:
-> 2013/12/19 Alexandre Courbot <gnurou@gmail.com>:
->> The problems I can see so far:
->>
->> - Using gpiod, GPIOs are not specified as integers, but are typically
->> mapped to a given (device, function) pair (device can be NULL) using
->> device tree/platform data/ACPI and obtained by the corresponding
->> device driver through gpiod_get(). You would need to find a different
->> way to specify GPIOs, maybe using the gpio_chip's label and the GPIO
->> hardware number.
->>
->> - Even if you do so, there is currently no way to arbitrarily obtain a
->> GPIO that has not been explicitly mapped to a (device, function), and
->> IIUC you need to specify the tracing GPIO freely from user-space. This
->> hints that we will need to add a function that is sensibly the same as
->> gpio_request_one() to the gpiod API, but I wonder if that does not
->> defeats the purpose somehow.
->
-> This is something I was wondering about for another reason. In many
-> cases the GPIOs that are physically available for probing will be
-> limited to the GPIOs already assigned a function (backlight control
-> for example), others are usually not routed except in eval boards or
-> early prototypes. And consequently those GPIOs will be requested by a
-> driver long before a probe is set.
-> It would be nice not to have to remove the driver to be able to use
-> this GPIO  as a probe. Maybe a gpiod_steal() interface and a flag
-> indicating that the GPIO can be safely stolen?
 
-Mmm an explicit way to hijack a GPIO does not sound very safe. Do you
-have concrete cases where you need to do so? I guess most boards you
-may want to use this patch with would have at least some spare GPIOs
-with pins somewhere on the board for this kind of purpose.
+--da4uJneut+ArUgXk
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, Dec 19, 2013 at 01:11:32PM -0500, Prarit Bhargava wrote:
+>=20
+> Yep.  The question really is this: is the irq mapped to a single vector or
+> multiple vectors. (I think)
+>=20
+> P.
+>=20
+Yes, this is the original thought I want to express on the bugzilla. On an
+ideal environment, without irq balance, all vector_irq should own same
+values, say, 0xffffffff. So when one CPU is off-lined, your patch will
+considers no places to contain these to-be-migrated irqs but the fact is
+they are shared on different CPUs. So if we can answer this question,
+the answer will be clear :-).
+
+--da4uJneut+ArUgXk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSs+88AAoJEI01n1+kOSLHnoQP/1SX85O4Zgdi7duhLhcXVmu8
+cffN1N15mfgQe+AH3Z9MyqaB7dP64DavR7YsoGHIz4XUMgsr255+NiDIov8HmgKt
+7Cf8T/MFQ6Orp/+iV6wZK/fahQqRP58j4o3R0yY7wvggV77t8CyEtUfilHxANaen
+veONg2ai7wfD/QRz866MqiN073FHLWB6On9Oyuf9t/3CACWp34+57WJXLNaPJfrK
+0OmbSD/XM2nPnz/u4096sEDAz+kXfW04sMuc3WDD6+M+S3su22SEdvNvKOPJRWH8
+5gSu4fPSSan1LEqUfsqBTrqBRgzEZJCXnJeIQCuequvhy0L47qxcHjzNMlHFLmhw
+X+bCNwrqeirra0YdvSOSyoSn5/I17j1nrozrJYUAOy9dX6PS6HZPIuIm+mz9GTvi
+IcsTJ6n4wlWJZLAiwCTplj2/FWyKkprJPkKdsdIL+IVlRxwBK4VRi4Rw/CXFqSGO
+Ni16qxJsxFJKCMzUtAAYZYj/UrpLn/kIDnAeJJDs4wAhMvgIYHgF80LgK/8BceP3
+Q9recg3flG2N3GION+6tJsFsqp20FjcsbkEuk/yGn7HjUdXDj/Z6dj4FRqoueQiT
++XHBMFshfsg3lqTW6ZdAVnyUhHcxFlwM4tygJWn+LUe8/0Wj+7NpqO/MrBKKOPHz
+XDJsHr6sG7iAqN3L15nT
+=UJJS
+-----END PGP SIGNATURE-----
+
+--da4uJneut+ArUgXk--
