@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445Ab3LTC54 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 21:57:56 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:40112 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896Ab3LTC5y (ORCPT
+	id S1753070Ab3LTDA0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 22:00:26 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:37142 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204Ab3LTDAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 21:57:54 -0500
-Message-ID: <1387508269.10796.1.camel@phoenix>
-Subject: [PATCH] regulator: as3722: Don't set min_uV/uV_step/linear_min_sel
- for linear_ranges
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Fri, 20 Dec 2013 10:57:49 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Dec 2013 22:00:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <5282A255.5090904@linux.intel.com>
+References: <1383069507-27574-1-git-send-email-david.a.cohen@linux.intel.com>
+	<5282A255.5090904@linux.intel.com>
+Date: Fri, 20 Dec 2013 11:00:23 +0800
+Message-ID: <CAA+hA=SuhppL9Ejm1NSRrNmYZ_sE3Xnzf2gLSVYkFf7msEZNHw@mail.gmail.com>
+Subject: Re: [RFC/PATCH 0/2] mmc: sdhci: Workaround Intel Merrifield issue for HS200
+From: Dong Aisheng <dongas86@gmail.com>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: Chris Ball <cjb@laptop.org>, Adrian Hunter <adrian.hunter@intel.com>,
+        gregkh@linuxfoundation.org,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        chuanxiao.dong@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These settings are not used when using linear_ranges and it makes the code
-looks confusing. Thus remove them.
+On Wed, Nov 13, 2013 at 5:49 AM, David Cohen
+<david.a.cohen@linux.intel.com> wrote:
+> On 10/29/2013 10:58 AM, David Cohen wrote:
+>>
+>> Hi,
+>>
+>> SDHCI used to work well on Intel Merrifield until this patch was applied:
+>>
+>> commit 156e14b126ffb6f040bc6f1aff3c51077e42a744
+>> Author: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+>> Date:   Wed Jun 12 08:16:38 2013 +0200
+>>
+>>      mmc: sdhci: fix caps2 for HS200
+>>
+>>      Although the HC supports HS200 (eMMC) the caps2 are always zero; this
+>>      means there's no way to use the super speed mode (when init the
+>> card).
+>>
+>>      If the HC support SDR104, for SD3.0, so it also supports HS200 for
+>> eMMC
+>>      and this patch just sets the MMC_CAP2_HS200 in the host caps2 field.
+>>
+>> Looks like there is a hw issue with unknown root cause so far.
+>>
+>> Is it acceptable to have the quirk I'm proposing to workaround the issue?
+>
+>
+> Ping. Any comments here?
+>
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/as3722-regulator.c | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/drivers/regulator/as3722-regulator.c b/drivers/regulator/as3722-regulator.c
-index b9f1d24..27fe63c 100644
---- a/drivers/regulator/as3722-regulator.c
-+++ b/drivers/regulator/as3722-regulator.c
-@@ -842,9 +842,6 @@ static int as3722_regulator_probe(struct platform_device *pdev)
- 				ops = &as3722_ldo_extcntrl_ops;
- 			else
- 				ops = &as3722_ldo_ops;
--			as3722_regs->desc[id].min_uV = 825000;
--			as3722_regs->desc[id].uV_step = 25000;
--			as3722_regs->desc[id].linear_min_sel = 1;
- 			as3722_regs->desc[id].enable_time = 500;
- 			as3722_regs->desc[id].linear_ranges = as3722_ldo_ranges;
- 			as3722_regs->desc[id].n_linear_ranges =
--- 
-1.8.1.2
+Chris,
+Can you pick this one?
+IMX also needs this quirk for imx6q/dl since it can not meet HS200
+timing requirement.
 
 
+David,
+Is the unkonwn hw issue in your patch #2 resolved now?
+If yes, you may not need this quirk.
+I could resend it with your sign-off with IMX patches.
 
+Regards
+Dong Aisheng
+
+> Br, David Cohen
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
