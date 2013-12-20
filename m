@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab3LTAw1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 19:52:27 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:62711 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756516Ab3LTAw0 (ORCPT
+	id S1756824Ab3LTAzZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 19:55:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47348 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756362Ab3LTAzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 19:52:26 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmIHAGeUs1J5LHyk/2dsb2JhbABZgwu0YIVdgRcXdIIlAQEBBDocIxAIAw4KCSUPBSUDIROIA8p9FxaOfAeDI4ETBJgVkhWDPyg
-Date: Fri, 20 Dec 2013 11:51:14 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        tomaz.solc@tablix.org, aaron.lu@intel.com,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: Writeback threads and freezable
-Message-ID: <20131220005114.GE31386@dastard>
-References: <20131213174932.GA27070@htj.dyndns.org>
- <20131214015343.GP31386@dastard>
- <20131214202324.GA4020@htj.dyndns.org>
- <20131216035652.GY31386@dastard>
- <20131216125124.GC32509@htj.dyndns.org>
- <20131216125604.GD32509@htj.dyndns.org>
- <20131218003510.GD20579@dastard>
- <20131218114343.GA4324@htj.dyndns.org>
- <20131219040821.GW31386@dastard>
- <20131219162411.GD16994@htj.dyndns.org>
+	Thu, 19 Dec 2013 19:55:23 -0500
+Date: Thu, 19 Dec 2013 16:55:26 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: How to reserve pci bus numbers for hotplug?
+Message-ID: <20131220005526.GB17307@kroah.com>
+References: <CAMxnaaWgUPRb3L2aKpUu62F73GR2iXOfd6LUnTkU0O=Gq-E_sQ@mail.gmail.com>
+ <20131214220145.GA27585@kroah.com>
+ <CAMxnaaXzvxTJc+fP_E9fQhMTsVcj2PCJCsp=PNae3Pv47JONdQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131219162411.GD16994@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMxnaaXzvxTJc+fP_E9fQhMTsVcj2PCJCsp=PNae3Pv47JONdQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 11:24:11AM -0500, Tejun Heo wrote:
-> Yo, Dave.
+On Sat, Dec 14, 2013 at 11:15:39PM +0100, Andreas Noever wrote:
+> On Sat, Dec 14, 2013 at 11:01 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Thu, Dec 12, 2013 at 12:37:50AM +0100, Andreas Noever wrote:
+> >>
+> >> If I could get Linux to assign enough resources (bus numbers for now)
+> >> then I could drop the acpi_osi parameter and make thunderbolt work
+> >> after suspend... So, is there an easy way to fix this? (Quirks,
+> >> reconfiguring bus number assignments from a platform driver, ...?)
+> >
+> > I think you are going to have to do a lot more here, what is needed is a
+> > whole connection manager for Thunderbolt, emulating what the BIOS does,
+> > in order to get all of this working properly.
+> >
+> > But don't let that stop you from trying, however the work involved is
+> > really not trivial at all.
+> >
+> > good luck,
+> >
+> > greg k-h
 > 
-> On Thu, Dec 19, 2013 at 03:08:21PM +1100, Dave Chinner wrote:
-> > > If knowing that the underlying device has gone away somehow helps
-> > > filesystem, maybe we can expose that interface and avoid flushing
-> > > after hotunplug but that merely hides the possible deadlock scenario
-> > > that you're concerned about.  Nothing is really solved.
-> > 
-> > Except that a user of the block device has been informed that it is
-> > now gone and has been freed from under it. i.e. we can *immediately*
-> > inform the user that their mounted filesystem is now stuffed and
-> > supress all the errors that are going to occur as a result of
-> > sync_filesystem() triggering IO failures all over the place and then
-> > having to react to that.i
-> 
-> Please note that there's no real "immediacy" in that it's inherently
-> racy and that the extent of the usefulness of such notification can't
-> reach much further than suppressing error messages.
+> Actually the thunderbolt part is already working (for non chaining
+> devices, see https://lkml.org/lkml/2013/11/28/492 if you are
+> interested). I can completely bootstrap the tb side of things. The
+> only problem is that if power has been cut by the firmware (during
+> boot without osi_acpi=Darwin or after a suspend/resume cycle) then
+> Linux does not allocate enough PCI resources...
 
-So says you. What about btrfs, which might use such a notification
-to start replicating metadata and data to other devices to maintain
-redundancy levels? Or even XFS, which might have a real-time device
-go away - that's not a fatal error for the filesystem, but we sure
-as hell want the user to know about it and be able to set a flag
-indicating access to data in real-time files need to be errored out
-at the .aio_write level rather than some time later when writeback
-fails with EIO and the application cannot capture the IO error.
+Ah, that's nice to know, I didn't realize that.
 
-Seriously, Tejun, you need to stop focussing on tearing apart
-micro-examples and consider the wider context of the issue that the
-examples are being used to demonstrate.  The notifications being
-talked about here are already being delivered to userspace because
-there are OS management applications that need to know about devices
-going away. Filesystems are no different - there's all sorts of
-optimisations we can make if we get such a notification.
+There should be some Intel people around on the list that has access to
+a Thunderbolt monitor for testing.  Or, if needed, I can see if I can
+expense one, as it would be good to get this working :)
 
-Cheers,
+thanks,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+greg k-h
