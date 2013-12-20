@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756712Ab3LTKkp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 05:40:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16470 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755720Ab3LTKkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 05:40:43 -0500
-Date: Fri, 20 Dec 2013 10:04:13 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
-        David Laight <David.Laight@aculab.com>, Mark Lord <kernel@start.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v4 9/9] PCI/MSI: Introduce pci_auto_enable_msi*() family
- helpers
-Message-ID: <20131220090412.GA28367@dhcp-26-207.brq.redhat.com>
-References: <cover.1387140921.git.agordeev@redhat.com>
- <bbf6f73ef3e16e5dfd7d41fc1e4412f641acb0f3.1387140921.git.agordeev@redhat.com>
- <20131218003002.GA15119@google.com>
- <20131218132349.GA29552@dhcp-26-207.brq.redhat.com>
- <CAErSpo6Km5N+Cfpaj5JEsb966rwcBjrAT4SFvG6Q9QkwkDFXCA@mail.gmail.com>
- <20131219134244.GA32238@dhcp-26-207.brq.redhat.com>
- <CAErSpo66Jh-8sbQr13r1LknfKWMt1zBd9xhm46XpCcW-X_TqnA@mail.gmail.com>
+	id S1756753Ab3LTKlS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 05:41:18 -0500
+Received: from softlayer.compulab.co.il ([50.23.254.55]:34499 "EHLO
+	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755186Ab3LTKlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 05:41:15 -0500
+Message-ID: <52B41EC7.1070704@compulab.co.il>
+Date: Fri, 20 Dec 2013 12:41:11 +0200
+From: Denis Turischev <denis.turischev@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo66Jh-8sbQr13r1LknfKWMt1zBd9xhm46XpCcW-X_TqnA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v1] xhci: Switch Intel Lynx Point ports to EHCI on shutdown
+References: <52B31EDA.60908@compulab.co.il> <52B327D5.3080805@compulab.co.il> <20131219182110.GC3573@xanatos>
+In-Reply-To: <20131219182110.GC3573@xanatos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: -unknown-@compulab.co.il|compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 02:37:22PM -0700, Bjorn Helgaas wrote:
-> On Thu, Dec 19, 2013 at 6:42 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
-> > On Wed, Dec 18, 2013 at 11:58:47AM -0700, Bjorn Helgaas wrote:
-> >> If rc == 13 and the device can only use 8, the extra 5 would be
-> >> ignored and wasted.
-> >>
-> >> If the waste is unacceptable, the driver can try this:
-> >>
-> >>     rc = pci_enable_msix_range(dev->pdev, dev->irqs, 16, 16);
-> >>     if (rc < 0) {
-> >>         rc = pci_enable_msix_range(dev->pdev, dev->irqs, 8, 8);
-> >>         if (rc < 0) {
-> >>             rc = pci_enable_msix_range(dev->pdev, dev->irqs, 4, 4);
-> >>             ...
-> >>     }
-> >
-> > I have troubles with this fallback logic. On each failed step we get an
-> > error and we do not know if this is indeed an error or an indication of
-> > insufficient MSI resources. Even -ENOSPC would not tell much, since it
-> > could be thrown from a lower level.
-> >
-> > By contrast, with the tri-state return value we can distinguish and bail
-> > out on errors right away.
+> Also, which kernel are you experiencing this issue on?  In 3.12, I
+> queued a separate patch to deal with spurious reboot issues on Lynx
+> Point:
 > 
-> I thought the main point of this was to get rid of interfaces that
-> were prone to misuse, and tri-state return values was a big part of
-> that.  All we really care about in the driver is success/failure.  I'm
-> not sure there's much to be gained by analyzing *why* we failed, and I
-> think it tends to make uncommon error paths more complicated than
-> necessary.  If we fail four times instead of bailing out after the
-> first failure, well, that doesn't sound terrible to me.  The last
-> failure can log the errno, which is enough for debugging.
+> commit 638298dc66ea36623dbc2757a24fc2c4ab41b016
+> Author: Takashi Iwai <tiwai@suse.de>
+> Date:   Thu Sep 12 08:11:06 2013 +0200
+> 
+>     xhci: Fix spurious wakeups after S5 on Haswell
+>     
+>     Haswell LynxPoint and LynxPoint-LP with the recent Intel BIOS show
+>     mysterious wakeups after shutdown occasionally.  After discussing with
+>     BIOS engineers, they explained that the new BIOS expects that the
+>     wakeup sources are cleared and set to D3 for all wakeup devices when
+>     the system is going to sleep or power off, but the current xhci driver
+>     doesn't do this properly (partly intentionally).
+>     
+>     This patch introduces a new quirk, XHCI_SPURIOUS_WAKEUP, for
+>     fixing the spurious wakeups at S5 by calling xhci_reset() in the xhci
+>     shutdown ops as done in xhci_stop(), and setting the device to PCI D3
+>     at shutdown and remove ops.
+>     
+>     The PCI D3 call is based on the initial fix patch by Oliver Neukum.
+>     
+>     [Note: Sarah changed the quirk name from XHCI_HSW_SPURIOUS_WAKEUP to
+>     XHCI_SPURIOUS_WAKEUP, since none of the other quirks have system names
+>     in them.  Sarah also fixed a collision with a quirk submitted around the
+>     same time, by changing the xhci->quirks bit from 17 to 18.]
+>     
+>     This patch should be backported to kernels as old as 3.0, that
+>     contain the commit 1c12443ab8eba71a658fae4572147e56d1f84f66 "xhci: Add
+>     Lynx Point to list of Intel switchable hosts."
+>     
+>     Cc: Oliver Neukum <oneukum@suse.de>
+>     Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>     Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+>     Cc: stable@vger.kernel.org
+> 
+> This patch is in 3.12, but a patch to narrow the quirk to only apply HP systems
+> will hit 3.13 shortly:
 
-Sure, the main point is to get rid of try-state interfaces. I just afraid
-to throw out the baby with the bath water for unusual devices (which we do
-not have in the tree).
+Sorry, I indeed tested not on the latest kernel version, Ubuntu 3.13-rc3 has this patch and it works
+for me.
 
-I can only identify two downsides of the approach above - (a) repeated error
-logging in a platform code (i.e. caused by -ENOMEM) and (b) repeated attempts
-to enable MSI when the platform already reported a fatal error.
+Denis
 
-I think if a device needs an extra magic to enable MSI (i.e. writing to
-specific registers etc.) it would be manageable with pci_enable_msix_range(),
-but may be I am missing something?
-
-So my thought is may be we deprecate the tri-state interfaces, but do not
-do it immediately.
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
