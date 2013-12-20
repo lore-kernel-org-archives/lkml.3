@@ -1,52 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905Ab3LTTNE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 14:13:04 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:55989 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756862Ab3LTTNA (ORCPT
+	id S932198Ab3LTTKe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 14:10:34 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38569 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754081Ab3LTTJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 14:13:00 -0500
-Subject: Re: [PATCH 1/2] GenWQE: Fix endian issues detected by sparse
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Reply-To: haver@linux.vnet.ibm.com
-To: fengguang.wu@intel.com
-Cc: jim.epost@gmail.com, sfr@canb.auug.org.au, gregkh@linuxfoundation.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kbuild-all@01.org
-In-Reply-To: <1387553171-31469-1-git-send-email-haver@linux.vnet.ibm.com>
-References: <CA+r1Zhimt7Xusnc4kkkVqfoRhfZRnreMmZqaN7WP7rSpZ3XTvw@mail.gmail.com>
-	 <1387553171-31469-1-git-send-email-haver@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Fri, 20 Dec 2013 20:12:53 +0100
-Message-ID: <1387566773.1847.28.camel@oc7383187364.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13122019-4966-0000-0000-000007E56EF4
+	Fri, 20 Dec 2013 14:09:37 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 23/35] tools lib traceevent: Use global QUIET_LINK build output
+Date: Fri, 20 Dec 2013 16:08:58 -0300
+Message-Id: <1387566550-3524-24-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1387566550-3524-1-git-send-email-acme@infradead.org>
+References: <1387566550-3524-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+From: Jiri Olsa <jolsa@redhat.com>
 
-Am Freitag, den 20.12.2013, 16:26 +0100 schrieb Frank Haverkamp:
-> +++ b/drivers/misc/genwqe/card_utils.c
-> @@ -59,7 +59,7 @@ int __genwqe_writeq(struct genwqe_dev *c
->         if (cd->mmio == NULL)
->                 return -EIO;
-> 
-> -       __raw_writeq(cpu_to_be64((val)), (cd->mmio + byte_offs));
-> +       __raw_writeq((__force u32)cpu_to_be64(val), cd->mmio +
-> byte_offs);
+Using global QUIET_LINK build output variable and getting rid of local
+print_static_lib_build, print_plugin_build and print_shared_lib_compile.
 
-what a pity. I introduced here a wrong cast to u32 and not to u64 what
-it should have been. I will send a fix, once I have tried it out.
+We no longer distinguish between shared and static library in the build
+message. It's differenced by the built file suffix, like:
 
-Regards
+  $ make
+    ...
+    LINK     libtraceevent.a
+    LINK     libtraceevent.so
 
-Frank
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1387460527-15030-7-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/lib/traceevent/Makefile | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
+
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 24203cc14649..51be8ab76f9f 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -152,14 +152,9 @@ override CFLAGS += $(udis86-flags) -D_GNU_SOURCE
+ 
+ ifeq ($(VERBOSE),1)
+   Q =
+-  print_shared_lib_compile =
+-  print_plugin_build =
+   print_install =
+ else
+   Q = @
+-  print_shared_lib_compile =	echo '  BUILD    SHARED LIB '$(OBJ);
+-  print_plugin_build =		echo '  BUILD    PLUGIN '$(OBJ);
+-  print_static_lib_build =	echo '  BUILD    STATIC LIB '$(OBJ);
+   print_install =		echo '  INSTALL  '$1;
+ endif
+ 
+@@ -216,10 +211,10 @@ all: all_cmd
+ all_cmd: $(CMD_TARGETS)
+ 
+ libtraceevent.so: $(PEVENT_LIB_OBJS)
+-	$(Q)$(do_compile_shared_library)
++	$(QUIET_LINK)$(CC) --shared $^ -o $@
+ 
+ libtraceevent.a: $(PEVENT_LIB_OBJS)
+-	$(Q)$(do_build_static_lib)
++	$(QUIET_LINK)$(RM) $@; $(AR) rcs $@ $^
+ 
+ plugins: $(PLUGINS)
+ 
+@@ -230,7 +225,7 @@ $(PLUGIN_OBJS): %.o : $(src)/%.c
+ 	$(QUIET_CC_FPIC)$(CC) -c $(CFLAGS) -fPIC -o $@ $<
+ 
+ $(PLUGINS): %.so: %.o
+-	$(Q)$(do_plugin_build)
++	$(QUIET_LINK)$(CC) $(CFLAGS) -shared -nostartfiles -o $@ $<
+ 
+ define make_version.h
+ 	(echo '/* This file is automatically generated. Do not modify. */';		\
+-- 
+1.8.1.4
 
