@@ -1,136 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab3LTM1d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 07:27:33 -0500
-Received: from mailout2.zih.tu-dresden.de ([141.30.67.73]:42213 "EHLO
-	mailout2.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755929Ab3LTM1b (ORCPT
+	id S932315Ab3LTMha (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 07:37:30 -0500
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:64633 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932130Ab3LTMh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 07:27:31 -0500
-Message-ID: <52B437AA.4090102@tu-dresden.de>
-Date: Fri, 20 Dec 2013 13:27:22 +0100
-From: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 20 Dec 2013 07:37:28 -0500
+Date: Fri, 20 Dec 2013 13:35:55 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Mark Zhang <nvmarkzhang@gmail.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        swarren@nvidia.com, will.deacon@arm.com, grant.likely@linaro.org,
+        robherring2@gmail.com, joro@8bytes.org, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, lorenzo.pieralisi@arm.com,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        galak@codeaurora.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv7 06/12] ARM: tegra: create a DT header defining SWGROUP
+ ID
+Message-ID: <20131220123554.GQ27787@ulmo.nvidia.com>
+References: <1386835033-4701-1-git-send-email-hdoyu@nvidia.com>
+ <1386835033-4701-7-git-send-email-hdoyu@nvidia.com>
+ <52B1568F.1050305@gmail.com>
+ <52B1CCF1.2040907@wwwdotorg.org>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        thomas.ilsche@tu-dresden.de, linux-kernel@vger.kernel.org,
-        Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH] Perf: Correct Assumptions about Sample Timestamps in
- Passes
-References: <528484CB.7@tu-dresden.de> <20131114083930.GC16543@gmail.com> <528490DE.4080204@tu-dresden.de> <20131114100552.GA5064@gmail.com> <528E1EE6.9040407@tu-dresden.de> <20131127135137.GA24403@gmail.com>
-In-Reply-To: <20131127135137.GA24403@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TUD-Virus-Scanned: mailout2.zih.tu-dresden.de
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/YnR2r17TIEndSCI"
+Content-Disposition: inline
+In-Reply-To: <52B1CCF1.2040907@wwwdotorg.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--/YnR2r17TIEndSCI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 27.11.2013 14:51, Ingo Molnar wrote:
-> 
-> * Joseph Schuchart <joseph.schuchart@tu-dresden.de> wrote:
-> 
->> Sorry for my delayed reply, it's been a busy week and I really wanted to
->> give Ingo's idea below some thought. Please find my comments below.
->>
->>>>> If done that way then AFAICS we could even eliminate the 
->>>>> ->max_timestamps[NR_CPUS] array.
->>>>
->>>> I can understand your performance concerns. However, I am not 
->>>> sure how we can determine the minimal max_timestamp of all cpus 
->>>> without storing the information on a per-cpu basis first. 
->>>> Accumulating it on the fly would only lead to a global 
->>>> max_timestamp. [...]
->>>
->>> Ok. So this:
->>>
->>> +static inline void set_next_flush(struct perf_session *session)
->>> +{
->>> +       int i;
->>> +       u64 min_max_timestamp = session->ordered_samples.max_timestamps[0];
->>> +       for (i = 1; i < MAX_NR_CPUS; i++) {
->>> +               if (min_max_timestamp > session->ordered_samples.max_timestamps[i])
->>> +                       min_max_timestamp = session->ordered_samples.max_timestamps[i];
->>> +       }
->>> +       session->ordered_samples.next_flush = min_max_timestamp;
->>> +}
->>>
->>> which should IMHO be written in a bit clearer form as:
->>>
->>> static inline void set_next_flush(struct perf_session *session)
->>> {
->>> 	u64 *timestamps = session->ordered_samples.max_timestamps;
->>> 	u64 min_timestamp = timestamps[0];
->>>  	int i;
->>>
->>> 	for (i = 1; i < MAX_NR_CPUS; i++) {
->>> 		if (min_timestamp > timestamps[i])
->>> 			min_timestamp = timestamps[i];
->>> 	}
->>>
->>> 	session->ordered_samples.next_flush = min_timestamp;
->>> }
->>
->> Agreed.
->>
->>>
->>> calculates the minimum of the max_timestamps[] array, right?
->>>
->>> Now, the max_timestamps[] array gets modified only in a single 
->>> place, from the sample timestamps, via:
->>>
->>> 	os->max_timestamps[sample->cpu] = timestamp;
->>>
->>> My suggestion was an identity transformation: to calculate the 
->>> minimum of the array when the max_timestamps[] array is modified. 
->>> A new minimum happens if the freshly written value is smaller 
->>> than the current minimum.
->>
->> I am really not sure how this would work since I don't see where we 
->> could make progress while flushing if the max_timestamp is only 
->> replaced with a smaller one but is never increased. IMO, it is 
->> necessary to distinguish between timestamps of different cpus to 
->> determine the next_flush timestamp across all cpus in each pass. I 
->> have tried to come up with a working implementation of your idea but 
->> do not see a way to safely increase the value of max_timestamp 
->> (without making assumptions about the order of timestamps between 
->> cpus and passes).
-> 
-> Mine isn't really an 'idea' - I did to the code what I see an identity 
-> transformation, a change that does not change the principle or the 
-> working of the code.
-> 
-> And after the identity transformation your code seems to have 
-> simplified down significantly - at which point I was wondering.
-> 
-> If what I did is _not_ an identity transformation then please point 
-> out where I break your logic. (it might easily be some really simple 
-> misundestanding on my part.)
+On Wed, Dec 18, 2013 at 09:27:29AM -0700, Stephen Warren wrote:
+> On 12/18/2013 01:02 AM, Mark Zhang wrote:
+> > On 12/12/2013 03:57 PM, Hiroshi Doyu wrote:
+> >> Create a header file to define the swgroup IDs used by the IOMMU(SMMU)
+> >> binding. "swgroup" is a group of H/W clients which a Tegra SoC
+> >> supports. This unique ID can be used to calculate MC_SMMU_<swgroup
+> >> name>_ASID_0 register offset and MC_<swgroup name>_HOTRESET_*_0
+> >> register bit. This will allow the same header to be used by both
+> >> device tree files, and drivers implementing this binding, which
+> >> guarantees that the two stay in sync. This also makes device trees
+> >> more readable by using names instead of magic numbers. For HOTRESET
+> >> bit shifting we need another conversion table, which will come later.
+>=20
+> >> diff --git a/include/dt-bindings/memory/tegra-swgroup.h b/include/dt-b=
+indings/memory/tegra-swgroup.h
+>=20
+> >> +#define TEGRA_SWGROUP_MPE	11	/* 0x264 */
+> >> +#define TEGRA_SWGROUP_MSENC	SWGROUP_MPE
+> >=20
+> > Need to change this to:
+> >=20
+> > #define TEGRA_SWGROUP_MSENC	11
+> >=20
+> > The reason is that, this makes "TEGRA_SWGROUP_BIT" doesn't work. So if I
+> > write "TEGRA_SWGROUP_CELLS(MSENC)" in dt, that causes a dt compiling er=
+ror.
+>=20
+> I guess it's because TEGRA_SWGROUP_BIT needs to expand its argument
+> twice, which can be done.
+>=20
+> That all said, just defining all the names directly to constants is
+> probably the most direct fix.
 
-I know this comes late, but: As far as I can see, your change does not
-preserve the logic of the code I suggested. The idea was to first gather
-all the maximum timestamps of all cpus (that is, the last timestamp seen
-on each cpu) and then determine the minimum of these maxima. These are
-two distinct steps that I think cannot be combined in one update. Your
-change would only compute the minimum of all timestamps without
-determining the maximum of each process and hence no progress is
-guaranteed. Sorry for not being more precise earlier, I hope this
-explanation is clearer now :)
+Erm... isn't this simply a typo, where:
 
-Please let me know if you think my explanation is incorrect at some
-point or if anything is still unclear.
+	#define TEGRA_SWGROUP_MSENC	SWGROUP_MPE
 
-Thanks
-Joseph
+should simply be
 
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+	#define TEGRA_SWGROUP_MSENC	TEGRA_SWGROUP_MPE
+
+?
+
+That certainly works for me.
+
+Thierry
+
+--/YnR2r17TIEndSCI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJStDmqAAoJEN0jrNd/PrOh9BIQALPILmOS+sOZHWzYK2s4I/Ge
+8hsKWaHXgXODuRBhvOX0rqtGeK0QuvLZxtHTm1dW6wAjVvV4S/0cGAEM096dpkG8
+vcCacog+nBn/WO5uC/6ZWrCGPohWw0QbcASq4X9WA45LQp2bEqdJVV2d6DB0NMWz
+8l5ZLeQQJait6hEFgGxnT3elU7g431ujpfZLjUHLJbQcLuNF+8JAIFHn0bgNT/fQ
+/TUwDPUa6ylCYihrZ1DrJWgdqqg9gJDaUsGWlVeKfHg3PLSMHWryl5MV8HLWLTyr
+Pvt+pNPKcAkKUWxhfxFyzsYysarPUAAPgwctwDHOAhzE2NhtfFv71oU58o8o9VtR
+3AyTpRB3OkcFmIbdWYSjRdnrQSoftHcSCXB88VULTcN13C1bdD1IOu7RsjvATrEn
+UE8ReuMLe1cikhZU/C6a3NZZRC2Wjd4U86zwB3mHaW+Sfg4Ju4wNpZADJjB7Xupe
+wR4wY2r4FT5c5vDhIIX6qEM7FUVv3pEgYZPp2u++70DqPz5L4gCDhPEbGvurcMlC
+4Km3bSpdCIhoNSkJ8tSnYe0Ly3MYzYss4hFrSkV6VT8GqBrSaR8qI00e3NMBkoHa
+1TsjNWwRIfG0AXDFHTW6B73KLKSSvrroSw78v1JoI8H90duaHCgRxdy/fApd64Y6
+6zzBadJliF6TBspY7sTw
+=12YX
+-----END PGP SIGNATURE-----
+
+--/YnR2r17TIEndSCI--
