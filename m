@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124Ab3LTIaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 03:30:22 -0500
-Received: from alt-proxy17.mail.unifiedlayer.com ([66.147.241.60]:59409 "HELO
-	alt-proxy17.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751383Ab3LTIaU (ORCPT
+	id S1755250Ab3LTIbS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 03:31:18 -0500
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:58806 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755013Ab3LTIbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 03:30:20 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Dec 2013 03:30:20 EST
-Message-ID: <1387527808.4022.6.camel@slavad-ubuntu>
-Subject: Re: [PATCH] fs/nilfs2: Integer overflow in nilfs_ioctl_wrap_copy()
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-Reply-To: slava@dubeyko.com
-To: Wenliang Fan <fanwlexca@gmail.com>
-Cc: konishi.ryusuke@lab.ntt.co.jp, linux-nilfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 20 Dec 2013 12:23:28 +0400
-In-Reply-To: <1387525568-30025-1-git-send-email-fanwlexca@gmail.com>
-References: <1387525568-30025-1-git-send-email-fanwlexca@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 109.188.126.151 authed with slava@dubeyko.com}
+	Fri, 20 Dec 2013 03:31:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <52B3CABE.1080903@hitachi.com>
+References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
+	<20131219090409.14309.25677.stgit@kbuild-fedora.novalocal>
+	<CAGdX0WFKYHqXrVQ6LBw0YgH_H6cP=LZVCBe1iOvEXsHQPD8Zmg@mail.gmail.com>
+	<52B3AD7D.2020104@hitachi.com>
+	<CAGdX0WENxTPhFDtcEW6LFhk1SNZc6mEK+JsCDOJmfK8_PS1rxg@mail.gmail.com>
+	<52B3CABE.1080903@hitachi.com>
+Date: Fri, 20 Dec 2013 16:31:13 +0800
+Message-ID: <CAGdX0WEev84sOyu-uzkDOmQFi_=mza7cPzyC0VkRZe0fD_1+jQ@mail.gmail.com>
+Subject: Re: [PATCH -tip v6 06/22] [BUGFIX] x86: Prohibit probing on memcpy/memset
+From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-12-20 at 15:46 +0800, Wenliang Fan wrote:
-> The local variable 'pos' comes from userspace. If a large number was
-> passed, there would be an integer overflow in the following line:
-> 	pos += n;
-> 
+On Fri, Dec 20, 2013 at 12:42 PM, Masami Hiramatsu
+<masami.hiramatsu.pt@hitachi.com> wrote:
+> (2013/12/20 12:07), Jovi Zhangwei wrote:
+>> On Fri, Dec 20, 2013 at 10:37 AM, Masami Hiramatsu
+>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>> Hi Jovi,
+>>>
+>>> (2013/12/19 18:37), Jovi Zhangwei wrote:
+>>>> Hi Masami,
+>>>>
+>>>> On Thu, Dec 19, 2013 at 5:04 PM, Masami Hiramatsu
+>>>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>>> memcpy/memset functions are fundamental functions and
+>>>>> those are involved in kprobe's exception handling.
+>>>>> Prohibit probing on them to avoid kernel crash.
+>>>>>
+>>>> Would you please let me know the LKML link of that bugfix, I cannot
+>>>> find it in my LKML fold.
+>>>
+>>> Yeah, that was found in my testing environment.
+>>>
+>>>> No objection on this patch. :) just want to know more, It seems there
+>>>> have no problem to probe memcpy in my box, maybe I didn't hit the
+>>>> crash code path.
+>>>
+>>> Ah, I see. Originally the problem happened when I put a probe on
+>>> __memcpy. And it looks the instances of memcpy and __memcpy are
+>>> same on x86-64. Thus I decided to blacklist both. (memset/__memset too)
+>>> Have you ever tried to probe __memcpy on your box?
+>>>
+>> Hmm, still no crash, __memcpy and __memset are both tested.
+>>
+>> I use below kprobe related config:
+>>
+>> CONFIG_KPROBES=y
+>> CONFIG_JUMP_LABEL=y
+>> CONFIG_OPTPROBES=y
+>> CONFIG_KPROBES_ON_FTRACE=y
+>
+> Hmm, I've added some debugging options.
+>
+> CONFIG_SLUB_DEBUG=y
+> CONFIG_X86_DEBUGCTLMSR=y
+> CONFIG_PNP_DEBUG_MESSAGES=y
+> CONFIG_DEBUG_INFO=y
+> CONFIG_DEBUG_FS=y
+> CONFIG_DEBUG_KERNEL=y
+> CONFIG_DEBUG_STACK_USAGE=y
+> CONFIG_DEBUG_MEMORY_INIT=y
+> CONFIG_DEBUG_STACKOVERFLOW=y
+> CONFIG_DEBUG_SPINLOCK=y
+> CONFIG_DEBUG_MUTEXES=y
+> CONFIG_DEBUG_LOCK_ALLOC=y
+> CONFIG_DEBUG_LOCKDEP=y
+> CONFIG_DEBUG_BUGVERBOSE=y
+> CONFIG_DEBUG_RODATA=y
+> CONFIG_DEBUG_BOOT_PARAMS=y
+>
+> I guess some of them might cause it.
+>
+I recompiled the kernel with those config enabled, unfortunately still no crash,
+I tested on 3.13.0-rc4, a fedora kvm box.
 
-What about check before enter into the cycle? If you are talking about
-possible huge number then you can receive huge number from userspace
-before entering in the cycle.
-
-Thanks,
-Vyacheslav Dubeyko.
-
-> Signed-off-by: Wenliang Fan <fanwlexca@gmail.com>
-> ---
->  fs/nilfs2/ioctl.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
-> index b44bdb2..b2bac9a 100644
-> --- a/fs/nilfs2/ioctl.c
-> +++ b/fs/nilfs2/ioctl.c
-> @@ -90,8 +90,13 @@ static int nilfs_ioctl_wrap_copy(struct the_nilfs *nilfs,
->  		total += nr;
->  		if ((size_t)nr < n)
->  			break;
-> -		if (pos == ppos)
-> +		if (pos == ppos) {
-> +			if (pos > ULONG_MAX - n) {
-> +				ret = -EINVAL;
-> +				break;
-> +			}
->  			pos += n;
-> +		}
->  	}
->  	argv->v_nmembs = total;
->  
-
-
+Jovi
