@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab3LTXLR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 18:11:17 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:41807 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab3LTXLO (ORCPT
+	id S1754433Ab3LTXLb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 18:11:31 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:39693 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753726Ab3LTXLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 18:11:14 -0500
+	Fri, 20 Dec 2013 18:11:15 -0500
 From: Matias Bjorling <m@bjorling.me>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org,
         =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
-Subject: [PATCH 2/3] null_blk: set use_per_node_hctx param to false
-Date: Sat, 21 Dec 2013 00:11:00 +0100
-Message-Id: <1387581061-25987-3-git-send-email-m@bjorling.me>
+Subject: [PATCH 3/3] null_blk: support submit_queues on use_per_node_hctx
+Date: Sat, 21 Dec 2013 00:11:01 +0100
+Message-Id: <1387581061-25987-4-git-send-email-m@bjorling.me>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1387581061-25987-1-git-send-email-m@bjorling.me>
 References: <1387581061-25987-1-git-send-email-m@bjorling.me>
@@ -26,50 +26,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matias Bjørling <m@bjorling.me>
 
-The defaults for the module is to instantiate itself with blk-mq and a
-submit queue for each CPU node in the system.
+In the case of both the submit_queues param and use_per_node_hctx param
+are used. We limit the number af submit_queues to the number of online
+nodes.
 
-To save resources, initialize instead with a single submit queue.
+If the submit_queues is a multiple of nr_online_nodes, its trivial. Simply map
+them to the nodes. For example: 8 submit queues are mapped as node0[0,1],
+node1[2,3], ...
+If uneven, we are left with an uneven number of submit_queues that must be
+mapped. These are mapped toward the first node and onward. E.g. 5
+submit queues mapped onto 4 nodes are mapped as node0[0,1], node1[2], ...
 
 Signed-off-by: Matias Bjorling <m@bjorling.me>
 ---
- Documentation/block/null_blk.txt | 9 +++++----
- drivers/block/null_blk.c         | 4 ++--
- 2 files changed, 7 insertions(+), 6 deletions(-)
+ drivers/block/null_blk.c | 39 +++++++++++++++++++++++++++++++++++----
+ 1 file changed, 35 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/block/null_blk.txt b/Documentation/block/null_blk.txt
-index 5603dad..b2830b4 100644
---- a/Documentation/block/null_blk.txt
-+++ b/Documentation/block/null_blk.txt
-@@ -65,7 +65,8 @@ hw_queue_depth=[0..qdepth]: Default: 64
- 
- III: Multi-queue specific parameters
- 
--use_per_node_hctx=[0/1]: Default: 1
--  If 1, the multi-queue block layer is instantiated with a hardware dispatch
--  queue for each CPU node in the system. If 0, it is instantiated with the
--  number of queues defined in the submit_queues parameter.
-+use_per_node_hctx=[0/1]: Default: 0
-+  0: The number of submit queues are set to the value of the submit_queues
-+     parameter.
-+  1: The multi-queue block layer is instantiated with a hardware dispatch
-+     queue for each CPU node in the system.
 diff --git a/drivers/block/null_blk.c b/drivers/block/null_blk.c
-index 8f2e7c3..9b0311b 100644
+index 9b0311b..528f4e4 100644
 --- a/drivers/block/null_blk.c
 +++ b/drivers/block/null_blk.c
-@@ -101,9 +101,9 @@ static int hw_queue_depth = 64;
- module_param(hw_queue_depth, int, S_IRUGO);
- MODULE_PARM_DESC(hw_queue_depth, "Queue depth for each hardware queue. Default: 64");
+@@ -1,4 +1,5 @@
+ #include <linux/module.h>
++
+ #include <linux/moduleparam.h>
+ #include <linux/sched.h>
+ #include <linux/fs.h>
+@@ -346,8 +347,37 @@ static int null_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *rq)
  
--static bool use_per_node_hctx = true;
-+static bool use_per_node_hctx = false;
- module_param(use_per_node_hctx, bool, S_IRUGO);
--MODULE_PARM_DESC(use_per_node_hctx, "Use per-node allocation for hardware context queues. Default: true");
-+MODULE_PARM_DESC(use_per_node_hctx, "Use per-node allocation for hardware context queues. Default: false");
- 
- static void put_tag(struct nullb_queue *nq, unsigned int tag)
+ static struct blk_mq_hw_ctx *null_alloc_hctx(struct blk_mq_reg *reg, unsigned int hctx_index)
  {
+-	return kzalloc_node(sizeof(struct blk_mq_hw_ctx), GFP_KERNEL,
+-				hctx_index);
++	int b_size = DIV_ROUND_UP(reg->nr_hw_queues, nr_online_nodes);
++	int tip = (reg->nr_hw_queues % nr_online_nodes);
++	int node = 0, i, n;
++
++	/*
++	 * Split submit queues evenly wrt to the number of nodes. If uneven,
++	 * fill the first buckets with one extra, until the rest is filled with
++	 * no extra.
++	 */
++	for (i = 0, n = 1; i < hctx_index; i++, n++) {
++		if (n % b_size == 0) {
++			n = 0;
++			node++;
++
++			tip--;
++			if (!tip)
++				b_size = reg->nr_hw_queues / nr_online_nodes;
++		}
++	}
++
++	/*
++	 * A node might not be online, therefore map the relative node id to the
++	 * real node id.
++	 */
++	for_each_online_node(n) {
++		if (!node)
++			break;
++		node--;
++	}
++
++	return kzalloc_node(sizeof(struct blk_mq_hw_ctx), GFP_KERNEL, n);
+ }
+ 
+ static void null_free_hctx(struct blk_mq_hw_ctx *hctx, unsigned int hctx_index)
+@@ -591,10 +621,11 @@ static int __init null_init(void)
+ #endif
+ 
+ 	if (queue_mode == NULL_Q_MQ && use_per_node_hctx) {
+-		if (submit_queues > 0)
++		if (submit_queues < nr_online_nodes) {
+ 			pr_warn("null_blk: submit_queues param is set to %u.",
+ 							nr_online_nodes);
+-		submit_queues = nr_online_nodes;
++			submit_queues = nr_online_nodes;
++		}
+ 	} else if (submit_queues > nr_cpu_ids)
+ 		submit_queues = nr_cpu_ids;
+ 	else if (!submit_queues)
 -- 
 1.8.3.2
 
