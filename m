@@ -1,133 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab3LTHnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 02:43:55 -0500
-Received: from smtprelay01.ispgateway.de ([80.67.31.35]:55577 "EHLO
-	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754613Ab3LTHny (ORCPT
+	id S1754869Ab3LTHqX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 02:46:23 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:63928 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754372Ab3LTHqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 02:43:54 -0500
-From: Christian Riesch <christian.riesch@omicron.at>
-To: linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org,
-        Christian Riesch <christian.riesch@omicron.at>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Amul Kumar Saha <amul.saha@samsung.com>
-Subject: [PATCH v2 2/2] mtd: Fix the behavior of otp write if there is not enough room for data
-Date: Fri, 20 Dec 2013 08:36:33 +0100
-Message-Id: <1387524993-3353-3-git-send-email-christian.riesch@omicron.at>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1387524993-3353-1-git-send-email-christian.riesch@omicron.at>
-References: <1387524993-3353-1-git-send-email-christian.riesch@omicron.at>
-X-Df-Sender: Y2hyaXN0aWFuQHJpZXNjaC5hdA==
+	Fri, 20 Dec 2013 02:46:21 -0500
+From: Wenliang Fan <fanwlexca@gmail.com>
+To: konishi.ryusuke@lab.ntt.co.jp
+Cc: linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wenliang Fan <fanwlexca@gmail.com>
+Subject: [PATCH] fs/nilfs2: Integer overflow in nilfs_ioctl_wrap_copy()
+Date: Fri, 20 Dec 2013 15:46:08 +0800
+Message-Id: <1387525568-30025-1-git-send-email-fanwlexca@gmail.com>
+X-Mailer: git-send-email 1.8.5.rc1.28.g7061504
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An OTP write shall write as much data as possible to the OTP memory
-and return the number of bytes that have actually been written.
-If no data could be written at all due to lack of OTP memory,
-return -ENOSPC.
+The local variable 'pos' comes from userspace. If a large number was
+passed, there would be an integer overflow in the following line:
+	pos += n;
 
-Signed-off-by: Christian Riesch <christian.riesch@omicron.at>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Amul Kumar Saha <amul.saha@samsung.com>
+Signed-off-by: Wenliang Fan <fanwlexca@gmail.com>
 ---
- drivers/mtd/chips/cfi_cmdset_0001.c |   13 +++++++++++--
- drivers/mtd/devices/mtd_dataflash.c |   13 +++++--------
- drivers/mtd/mtdchar.c               |    7 +++++++
- drivers/mtd/onenand/onenand_base.c  |   10 +++++++++-
- 4 files changed, 32 insertions(+), 11 deletions(-)
+ fs/nilfs2/ioctl.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mtd/chips/cfi_cmdset_0001.c b/drivers/mtd/chips/cfi_cmdset_0001.c
-index 7aa581f..cf423a6 100644
---- a/drivers/mtd/chips/cfi_cmdset_0001.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0001.c
-@@ -2387,8 +2387,17 @@ static int cfi_intelext_write_user_prot_reg(struct mtd_info *mtd, loff_t from,
- 					    size_t len, size_t *retlen,
- 					     u_char *buf)
- {
--	return cfi_intelext_otp_walk(mtd, from, len, retlen,
--				     buf, do_otp_write, 1);
-+	int ret;
-+
-+	ret = cfi_intelext_otp_walk(mtd, from, len, retlen,
-+				    buf, do_otp_write, 1);
-+
-+	/* if no data could be written due to lack of OTP memory,
-+	   return ENOSPC */
-+	if (!ret && len && !(*retlen))
-+		return -ENOSPC;
-+
-+	return ret;
- }
- 
- static int cfi_intelext_lock_user_prot_reg(struct mtd_info *mtd,
-diff --git a/drivers/mtd/devices/mtd_dataflash.c b/drivers/mtd/devices/mtd_dataflash.c
-index 09c69ce..5236d85 100644
---- a/drivers/mtd/devices/mtd_dataflash.c
-+++ b/drivers/mtd/devices/mtd_dataflash.c
-@@ -545,14 +545,11 @@ static int dataflash_write_user_otp(struct mtd_info *mtd,
- 	struct dataflash	*priv = mtd->priv;
- 	int			status;
- 
--	if (len > 64)
--		return -EINVAL;
--
--	/* Strictly speaking, we *could* truncate the write ... but
--	 * let's not do that for the only write that's ever possible.
--	 */
--	if ((from + len) > 64)
--		return -EINVAL;
-+	if ((from + len) > 64) {
-+		len = 64 - from;
-+		if (len <= 0)
-+			return -ENOSPC;
-+	}
- 
- 	/* OUT: OP_WRITE_SECURITY, 3 zeroes, 64 data-or-zero bytes
- 	 * IN:  ignore all
-diff --git a/drivers/mtd/mtdchar.c b/drivers/mtd/mtdchar.c
-index 0edb0ca..db99031 100644
---- a/drivers/mtd/mtdchar.c
-+++ b/drivers/mtd/mtdchar.c
-@@ -323,6 +323,13 @@ static ssize_t mtdchar_write(struct file *file, const char __user *buf, size_t c
- 		default:
- 			ret = mtd_write(mtd, *ppos, len, &retlen, kbuf);
- 		}
-+		/* return -ENOSPC only if no data was written */
-+		if ((ret == -ENOSPC) && (total_retlen)) {
-+			ret = 0;
-+			retlen = 0;
-+			/* drop the remaining data */
-+			count = 0;
+diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
+index b44bdb2..b2bac9a 100644
+--- a/fs/nilfs2/ioctl.c
++++ b/fs/nilfs2/ioctl.c
+@@ -90,8 +90,13 @@ static int nilfs_ioctl_wrap_copy(struct the_nilfs *nilfs,
+ 		total += nr;
+ 		if ((size_t)nr < n)
+ 			break;
+-		if (pos == ppos)
++		if (pos == ppos) {
++			if (pos > ULONG_MAX - n) {
++				ret = -EINVAL;
++				break;
++			}
+ 			pos += n;
 +		}
- 		if (!ret) {
- 			*ppos += retlen;
- 			total_retlen += retlen;
-diff --git a/drivers/mtd/onenand/onenand_base.c b/drivers/mtd/onenand/onenand_base.c
-index 419c538..6c49a6f 100644
---- a/drivers/mtd/onenand/onenand_base.c
-+++ b/drivers/mtd/onenand/onenand_base.c
-@@ -3316,7 +3316,15 @@ static int onenand_read_user_prot_reg(struct mtd_info *mtd, loff_t from,
- static int onenand_write_user_prot_reg(struct mtd_info *mtd, loff_t from,
- 			size_t len, size_t *retlen, u_char *buf)
- {
--	return onenand_otp_walk(mtd, from, len, retlen, buf, do_otp_write, MTD_OTP_USER);
-+	int ret;
-+	ret = onenand_otp_walk(mtd, from, len, retlen, buf, do_otp_write, MTD_OTP_USER);
-+
-+	/* if no data could be written due to lack of OTP memory,
-+	   return ENOSPC */
-+	if (!ret && len && !(*retlen))
-+		return -ENOSPC;
-+
-+	return ret;
- }
+ 	}
+ 	argv->v_nmembs = total;
  
- /**
 -- 
-1.7.9.5
+1.8.5.rc1.28.g7061504
 
