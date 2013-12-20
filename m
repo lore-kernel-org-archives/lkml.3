@@ -1,104 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab3LTDpF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 22:45:05 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:38266 "EHLO song.cn.fujitsu.com"
+	id S1753519Ab3LTDpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 22:45:42 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:39762 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751832Ab3LTDpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 22:45:03 -0500
+	id S1753216Ab3LTDpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 22:45:41 -0500
 X-IronPort-AV: E=Sophos;i="4.95,517,1384272000"; 
-   d="scan'208";a="9295356"
-Message-ID: <52B3BD74.7040204@cn.fujitsu.com>
-Date: Fri, 20 Dec 2013 11:45:56 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
+   d="scan'208";a="9295360"
+Message-ID: <52B3BD59.5010207@cn.fujitsu.com>
+Date: Fri, 20 Dec 2013 11:45:29 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>
-CC: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
-        Steve Grubb <sgrubb@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH] audit: listen in all network namespaces
-References: <1374006760-7687-1-git-send-email-rgb@redhat.com>		 <52B26F1A.9070308@cn.fujitsu.com>	 <1387478422.29366.33.camel@flatline.rdu.redhat.com>	 <52B3AF8F.5040607@cn.fujitsu.com> <1387509074.2919.36.camel@localhost>
-In-Reply-To: <1387509074.2919.36.camel@localhost>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Jan Stancek <jstancek@redhat.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [BUG] LTP test case readahead01 fails after commit 63d0f0a3c7
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/20 11:44:26,
+ 2013/12/20 11:45:02,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/20 11:44:28,
-	Serialize complete at 2013/12/20 11:44:28
+ 2013/12/20 11:45:04,
+	Serialize complete at 2013/12/20 11:45:04
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2013 11:11 AM, Eric Paris wrote:
-> On Fri, 2013-12-20 at 10:46 +0800, Gao feng wrote:
->> On 12/20/2013 02:40 AM, Eric Paris wrote:
->>> On Thu, 2013-12-19 at 11:59 +0800, Gao feng wrote:
->>>> On 07/17/2013 04:32 AM, Richard Guy Briggs wrote:
-> 
->>>> we have to store audit_sock
->>>> into auditns(auditns will be passed to kauditd_send_skb),
->>>> this will cause auditns have to get a reference of netns.
->>>> and for some reason(netfilter audit target), netns will
->>>> get reference of auditns too. this is terrible...
->>>
->>> I'm not sure I agree/understand this entirely...
->>>
->>
->> Yes, the audit_sock is created and destroyed by net namespace,
->> so if auditns wants to use audit_sock, it must prevent netns
->> from being destroyed. so auditns has to get reference of netns.
-> 
-> Namespace == mind blown.  Ok, so:
-> 
->  auditd in audit_ns2 and net_ns2. <--- ONLY process in net_ns2
->  some process in audit_ns2 and net_ns3
-> 
-> Lets assume that auditd is killed improperly/dies.  Because the last
-> process in net_ns2 is gone net_ns2 is invalid/freed.
-> 
-> Today in the kernel the way we detect auditd is gone is by using the
-> socket and getting ECONNREFUSSED.  So here you think that audit_ns2
-> should hold a reference on net_ns2, to make sure that socket is always
-> valid.
-> 
-> I instead propose that we could run all audit_ns and reset the audit_pid
-> in that namespace and the audit_sock in the namespace to 0/null inside
-> audit_net_exit.  Since obviously if the net_ns disappeared, the auditd
-> which was running in any audit namespace in that net_ns isn't running
-> any more.  We didn't need to hold a reference on the net_ns.  We just
-> have to clear the skb_queue, reset the audit_pid to 0, and reset the
-> socket to NULL...
+Hi AKPM and folks,
 
-multi auditns can share the same netns. it happens if you unshare
-auditns. if you want to reset audit_sock to null inside audit_net_exit,
-you have to maintain a list in netns, this list contains the auditnss
-whose audit_sock is created in this netns. so you can foreach this
-list and reset the audit socks of audit nss.
+LTP test readahead syscall return value like this:
 
-Above is unsharing auditns, consider unsharing netns. auditd is running
-in auditns1 and netns1, and then who-know-why the auditd call unshare(CLONE_NEWNET)
-to change it's netns from netns1 to new netns2. so the netns1 is released
-and auditns->audit_sock being reset to NULL. the auditd cannot receive
-the audit log. auditd will in chaos, "I'm still alive, why kernel think
-I'm die?"
+=====================
+static void test_invalid_fd(void)
+{
+	int fd[2];
 
-So maybe you will say, we can reset the audit_sock of netns2 to auditns.
-ok, this is a way. but how can we decide if we should reset the auditns->audit_sock?
-when we create the new netns, the old netns is still alive, so the auditns->audit_sock
-is still valid in that time.
+	tst_resm(TINFO, "test_invalid_fd pipe");
+	if (pipe(fd) < 0)
+		tst_resm(TBROK | TERRNO, "Failed to create pipe");
+	TEST(ltp_syscall(__NR_readahead, fd[0], 0, getpagesize()));
+	check_ret(-1);
+	check_errno(EINVAL);
+	close(fd[0]);
+	close(fd[1]);
 
-I don't know if there are some other problems we should consider.
-it is too complex..
+	tst_resm(TINFO, "test_invalid_fd socket");
+	fd[0] = socket(AF_INET, SOCK_STREAM, 0);
+	if (fd[0] < 0)
+		tst_resm(TBROK | TERRNO, "Failed to create socket");
+	TEST(ltp_syscall(__NR_readahead, fd[0], 0, getpagesize()));
+	check_ret(-1);
+	check_errno(EINVAL);
+	close(fd[0]);
+}
+====================================
+FULL case code: https://github.com/linux-test-project/ltp/blob/master/testcases/kernel/syscalls/readahead/readahead01.c
 
-> 
-> Maybe the one magic socket is the right answer.  I'm not arguing against
-> your solution.  I'm really trying to understand why we are going that
-> way...
-> 
 
-That's why we should discuss :)
+This case passed before the following kernel commit[1],
+it means kernel will return -1 with errno=EINVAL. But after
+this commit[1], kernel will return 0 here.
+
+The different between before and after this commit[1] is that:
+BEFORE:
+=============
+do_readahead():
+if (!mapping || !mapping->a_ops || !mapping->a_ops->readpage)
+	return EINVAL;
+============
+
+AFTER:
+======================
+do_readahead():
+if (!mapping || !mapping->a_ops)
+	return EINVAL;
+
+And followed with:
+
+force_page_cache_readahead():
+if (unlikely(!mapping->a_ops->readpage && !mapping->a_ops->readpages))
+		return -EINVAL;
+=====================
+
+I think you must know which is right?
+
+
+
+
+Thanks,
+Wanlong Gao
+
+
+
+[1]:
+commit 63d0f0a3c7e1281fd79268a8d988167eff607fb6
+Author: Andrew Morton <akpm@linux-foundation.org>
+Date:   Tue Nov 12 15:07:09 2013 -0800
+
+    mm/readahead.c:do_readhead(): don't check for ->readpage
+    
+    The callee force_page_cache_readahead() already does this and unlike
+    do_readahead(), force_page_cache_readahead() remembers to check for
+    ->readpages() as well.
+    
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+diff --git a/mm/readahead.c b/mm/readahead.c
+index e4ed041..5024183 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -569,7 +569,7 @@ static ssize_t
+ do_readahead(struct address_space *mapping, struct file *filp,
+             pgoff_t index, unsigned long nr)
+ {
+-       if (!mapping || !mapping->a_ops || !mapping->a_ops->readpage)
++       if (!mapping || !mapping->a_ops)
+                return -EINVAL;
+ 
+        force_page_cache_readahead(mapping, filp, index, nr);
 
