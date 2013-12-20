@@ -1,118 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932257Ab3LTB6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 20:58:37 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58719 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932197Ab3LTB6G (ORCPT
+	id S932237Ab3LTB6f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 20:58:35 -0500
+Received: from [213.199.154.186] ([213.199.154.186]:29484 "EHLO
+	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S932190Ab3LTB5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 20:58:06 -0500
-X-AuditID: 9c930179-b7bedae000000f15-e4-52b3a42beb78
-Date: Fri, 20 Dec 2013 10:58:10 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v3 13/14] mm, hugetlb: retry if failed to allocate and
- there is concurrent user
-Message-ID: <20131220015810.GA1084@lge.com>
-References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1387349640-8071-14-git-send-email-iamjoonsoo.kim@lge.com>
- <20131219170202.0df2d82a2adefa3ab616bdaa@linux-foundation.org>
+	Thu, 19 Dec 2013 20:57:54 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <alsa-devel@alsa-project.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCHv4 4/4] Documentation: Add device tree bindings for Freescale SAI.
+Date: Fri, 20 Dec 2013 09:03:07 +0800
+Message-ID: <1387501387-2151-4-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1387501387-2151-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1387501387-2151-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131219170202.0df2d82a2adefa3ab616bdaa@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 05:02:02PM -0800, Andrew Morton wrote:
-> On Wed, 18 Dec 2013 15:53:59 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> 
-> > If parallel fault occur, we can fail to allocate a hugepage,
-> > because many threads dequeue a hugepage to handle a fault of same address.
-> > This makes reserved pool shortage just for a little while and this cause
-> > faulting thread who can get hugepages to get a SIGBUS signal.
-> > 
-> > To solve this problem, we already have a nice solution, that is,
-> > a hugetlb_instantiation_mutex. This blocks other threads to dive into
-> > a fault handler. This solve the problem clearly, but it introduce
-> > performance degradation, because it serialize all fault handling.
-> > 
-> > Now, I try to remove a hugetlb_instantiation_mutex to get rid of
-> > performance degradation.
-> 
-> So the whole point of the patch is to improve performance, but the
-> changelog doesn't include any performance measurements!
-> 
-> Please, run some quantitative tests and include a nice summary of the
-> results in the changelog.
-> 
-> This is terribly important, because if the performance benefit is
-> infinitesimally small or negative, the patch goes into the bit bucket ;)
+This adds the Document for Freescale SAI driver under
+Documentation/devicetree/bindings/sound/.
 
-Hello, Andrew, Davidlohr.
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ .../devicetree/bindings/sound/fsl-sai.txt          | 40 ++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/sound/fsl-sai.txt
 
-Yes, I should include the peformance measurements.
-I can measure it on artificial circumstance, but I think that the best is
-Davidlohr who reported the issue checks the performance improvement.
-https://lkml.org/lkml/2013/7/12/428
+diff --git a/Documentation/devicetree/bindings/sound/fsl-sai.txt b/Documentation/devicetree/bindings/sound/fsl-sai.txt
+new file mode 100644
+index 0000000..ca49ad1
+--- /dev/null
++++ b/Documentation/devicetree/bindings/sound/fsl-sai.txt
+@@ -0,0 +1,40 @@
++Freescale Synchronous Audio Interface (SAI).
++
++The SAI is based on I2S module that used communicating with audio codecs,
++which provides a synchronous audio interface that supports fullduplex
++serial interfaces with frame synchronization such as I2S, AC97, TDM, and
++codec/DSP interfaces.
++
++
++Required properties:
++- compatible: Compatible list, contains "fsl,vf610-sai".
++- reg: Offset and length of the register set for the device.
++- clocks: Must contain an entry for each entry in clock-names.
++- clock-names : Must include the "sai" entry.
++- dmas : Generic dma devicetree binding as described in
++  Documentation/devicetree/bindings/dma/dma.txt.
++- dma-names : Two dmas have to be defined, "tx" and "rx".
++- pinctrl-names: Must contain a "default" entry.
++- pinctrl-NNN: One property must exist for each entry in pinctrl-names.
++  See ../pinctrl/pinctrl-bindings.txt for details of the property values.
++- big-endian-regs: If this property is absent, the little endian mode will
++  be in use as default, or the big endian mode will be in use for all the
++  device registers.
++- big-endian-data: If this property is absent, the little endian mode will
++  be in use as default, or the big endian mode will be in use for all the
++  fifo data.
++
++Example:
++sai2: sai@40031000 {
++	      compatible = "fsl,vf610-sai";
++	      reg = <0x40031000 0x1000>;
++	      pinctrl-names = "default";
++	      pinctrl-0 = <&pinctrl_sai2_1>;
++	      clocks = <&clks VF610_CLK_SAI2>;
++	      clock-names = "sai";
++	      dma-names = "tx", "rx";
++	      dmas = <&edma0 0 VF610_EDMA_MUXID0_SAI2_TX>,
++		   <&edma0 0 VF610_EDMA_MUXID0_SAI2_RX>;
++	      big-endian_regs;
++	      big-endian_data;
++};
+-- 
+1.8.4
 
-Davidlohr, could you measure it on your testing environment where you
-originally reported the issue?
 
-> 
-> > For achieving it, at first, we should ensure that
-> > no one get a SIGBUS if there are enough hugepages.
-> > 
-> > For this purpose, if we fail to allocate a new hugepage when there is
-> > concurrent user, we return just 0, instead of VM_FAULT_SIGBUS. With this,
-> > these threads defer to get a SIGBUS signal until there is no
-> > concurrent user, and so, we can ensure that no one get a SIGBUS if there
-> > are enough hugepages.
-> 
-> So if I'm understanding this correctly...  if N threads all generate a
-> fault against the same address, they will all dive in and allocate a
-> hugepage, will then do an enormous memcpy into that page and will then
-> attempt to instantiate the page in pagetables.  All threads except one
-> will lose the race and will free the page again!  This sounds terribly
-> inefficient; it would be useful to write a microbenchmark which
-> triggers this scenario so we can explore the impact.
-
-Yes, you understand correctly, I think.
-
-I have an idea to prevent this overhead. It is that marking page when it
-is zeroed and unmarking when it is mapped to page table. If page mapping
-is failed due to current thread, the zeroed page will keep the marker and
-later we can determine if it is zeroed or not.
-
-If you want to include this functionality in this series, I can do it ;)
-Please let me know your decision.
-
-> I'm wondering if a better solution to all of this would be to make
-> hugetlb_instantiation_mutex an array of, say, 1024 mutexes and index it
-> with a hash of the faulting address.  That will 99.9% solve the
-> performance issue which you believe exists without introducing this new
-> performance issue?
-
-Yes, that approach would solve the performance issue.
-IIRC, you already suggested this idea roughly 6 months ago and it is
-implemented by Davidlohr. I remembered that there is a race issue on
-COW case with this approach. See following link for more information.
-https://lkml.org/lkml/2013/8/7/142
-
-And we need 1-3 patches to prevent other theorectical race issue
-regardless any approaches.
-
-Thanks.
