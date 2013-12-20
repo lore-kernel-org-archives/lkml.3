@@ -1,134 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271Ab3LTLgJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 06:36:09 -0500
-Received: from mga01.intel.com ([192.55.52.88]:59022 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755820Ab3LTLgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 06:36:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,520,1384329600"; 
-   d="scan'208";a="453256860"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH] mm: do not allocate page->ptl dynamically, if spinlock_t fits to long
-Date: Fri, 20 Dec 2013 13:35:58 +0200
-Message-Id: <1387539358-7302-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.8.5.2
+	id S1030195Ab3LTLga (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 06:36:30 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:48421 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030181Ab3LTLg3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 06:36:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131220094139.24233.9630.stgit@yunodevel>
+References: <20131220094134.24233.2969.stgit@yunodevel> <20131220094139.24233.9630.stgit@yunodevel>
+From: Kay Sievers <kay@vrfy.org>
+Date: Fri, 20 Dec 2013 12:36:08 +0100
+Message-ID: <CAPXgP12dLpz=gUOAox5BxHU2nq0a6eJyvNSUpaTmR5Z+k-EzwQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] printk: Delete LOG_NEWLINE flag for structured printk
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Tejun Heo <tj@kernel.org>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In struct page we have enough space to fit long-size page->ptl
-there, but we use dynamically-allocated page->ptl if
-size(spinlock_t) > sizeof(int). It hurts 64-bit architectures with
-CONFIG_GENERIC_LOCKBREAK, where sizeof(spinlock_t) == 8, but it
-easily fits into struct page.
+On Fri, Dec 20, 2013 at 10:41 AM, Yoshihiro YUNOMAE
+<yoshihiro.yunomae.ez@hitachi.com> wrote:
+> Delete LOG_NEWLINE flag for structured printk.
+> When structured printk is used, the next printk message is output in a new line
+> from patch c313af145b9bc4fb8e8e0c83b8cfc10e1b894a50. However, in a following
+> pseudo SCSI error test, the device information and the detail information are
+> divided:
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Acked-by: Hugh Dickins <hughd@google.com>
----
- include/linux/lockref.h  | 2 +-
- include/linux/mm.h       | 6 +++---
- include/linux/mm_types.h | 3 ++-
- kernel/bounds.c          | 2 +-
- mm/memory.c              | 2 +-
- 5 files changed, 8 insertions(+), 7 deletions(-)
+This is wrong. Please do not apply. Racy ontinuation lines and
+strutured logging should not be mixed. Continuation lines are a nice
+kernel hack for debugging, useful to have, but cannot be trusted by
+userspace. The entire purpose of structured logging is to have
+trustable atomic logging messages, the both facilities should not be
+mixed.
 
-diff --git a/include/linux/lockref.h b/include/linux/lockref.h
-index c8929c3832db..4bfde0e99ed5 100644
---- a/include/linux/lockref.h
-+++ b/include/linux/lockref.h
-@@ -19,7 +19,7 @@
- 
- #define USE_CMPXCHG_LOCKREF \
- 	(IS_ENABLED(CONFIG_ARCH_USE_CMPXCHG_LOCKREF) && \
--	 IS_ENABLED(CONFIG_SMP) && !BLOATED_SPINLOCKS)
-+	 IS_ENABLED(CONFIG_SMP) && SPINLOCK_SIZE <= 4)
- 
- struct lockref {
- 	union {
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 1cedd000cf29..35527173cf50 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1317,7 +1317,7 @@ static inline pmd_t *pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long a
- #endif /* CONFIG_MMU && !__ARCH_HAS_4LEVEL_HACK */
- 
- #if USE_SPLIT_PTE_PTLOCKS
--#if BLOATED_SPINLOCKS
-+#if ALLOC_SPLIT_PTLOCKS
- extern bool ptlock_alloc(struct page *page);
- extern void ptlock_free(struct page *page);
- 
-@@ -1325,7 +1325,7 @@ static inline spinlock_t *ptlock_ptr(struct page *page)
- {
- 	return page->ptl;
- }
--#else /* BLOATED_SPINLOCKS */
-+#else /* ALLOC_SPLIT_PTLOCKS */
- static inline bool ptlock_alloc(struct page *page)
- {
- 	return true;
-@@ -1339,7 +1339,7 @@ static inline spinlock_t *ptlock_ptr(struct page *page)
- {
- 	return &page->ptl;
- }
--#endif /* BLOATED_SPINLOCKS */
-+#endif /* ALLOC_SPLIT_PTLOCKS */
- 
- static inline spinlock_t *pte_lockptr(struct mm_struct *mm, pmd_t *pmd)
- {
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index bd299418a934..494b328c2a61 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -26,6 +26,7 @@ struct address_space;
- #define USE_SPLIT_PTE_PTLOCKS	(NR_CPUS >= CONFIG_SPLIT_PTLOCK_CPUS)
- #define USE_SPLIT_PMD_PTLOCKS	(USE_SPLIT_PTE_PTLOCKS && \
- 		IS_ENABLED(CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK))
-+#define ALLOC_SPLIT_PTLOCKS	(SPINLOCK_SIZE > BITS_PER_LONG/8)
- 
- /*
-  * Each physical page in the system has a struct page associated with
-@@ -155,7 +156,7 @@ struct page {
- 						 * system if PG_buddy is set.
- 						 */
- #if USE_SPLIT_PTE_PTLOCKS
--#if BLOATED_SPINLOCKS
-+#if ALLOC_SPLIT_PTLOCKS
- 		spinlock_t *ptl;
- #else
- 		spinlock_t ptl;
-diff --git a/kernel/bounds.c b/kernel/bounds.c
-index 5253204afdca..9fd4246b04b8 100644
---- a/kernel/bounds.c
-+++ b/kernel/bounds.c
-@@ -22,6 +22,6 @@ void foo(void)
- #ifdef CONFIG_SMP
- 	DEFINE(NR_CPUS_BITS, ilog2(CONFIG_NR_CPUS));
- #endif
--	DEFINE(BLOATED_SPINLOCKS, sizeof(spinlock_t) > sizeof(int));
-+	DEFINE(SPINLOCK_SIZE, sizeof(spinlock_t));
- 	/* End of constants */
- }
-diff --git a/mm/memory.c b/mm/memory.c
-index 5d9025f3b3e1..b6e211b779d0 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -4271,7 +4271,7 @@ void copy_user_huge_page(struct page *dst, struct page *src,
- }
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
- 
--#if USE_SPLIT_PTE_PTLOCKS && BLOATED_SPINLOCKS
-+#if ALLOC_SPLIT_PTLOCKS
- bool ptlock_alloc(struct page *page)
- {
- 	spinlock_t *ptl;
--- 
-1.8.5.2
-
+Thanks,
+Kay
