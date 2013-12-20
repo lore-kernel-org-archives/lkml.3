@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419Ab3LTH4s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 02:56:48 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:50319 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755328Ab3LTH4p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 02:56:45 -0500
-X-Originating-IP: 50.43.14.201
-Date: Thu, 19 Dec 2013 23:56:35 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Joe Perches <joe@perches.com>
-Cc: Ravi Patel <rapatel@apm.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Andy Whitcroft <apw@canonical.com>, Kumar Sankaran <ksankaran@apm.com>,
-        Loc Ho <lho@apm.com>, Keyur Chudgar <kchudgar@apm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: checkpatch.pl error might be false positive
-Message-ID: <20131220075634.GA21784@leaf>
-References: <CAN1v_PvS3dH6HVQ90d=3cfsSdMgieyoDNp3VN-vrHv-aqSFEAw@mail.gmail.com>
- <1387491348.2353.20.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387491348.2353.20.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754960Ab3LTHzw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 02:55:52 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:11489 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754538Ab3LTHzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 02:55:00 -0500
+X-IronPort-AV: E=Sophos;i="4.95,519,1384272000"; 
+   d="scan'208";a="9296750"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, namhyung.kim@lge.com, jolsa@redhat.com,
+        dsahern@gmail.com, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 5/7] perf tools: Do not synthesize the treads of default guest.
+Date: Fri, 20 Dec 2013 15:53:00 -0500
+Message-Id: <e9ddb5dac6f963169657218b12ceb3c2030f54e8.1387572416.git.yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <cover.1387572416.git.yangds.fnst@cn.fujitsu.com>
+References: <cover.1387572416.git.yangds.fnst@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/20 15:54:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/20 15:54:24,
+	Serialize complete at 2013/12/20 15:54:24
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 02:15:48PM -0800, Joe Perches wrote:
-> On Thu, 2013-12-19 at 13:01 -0800, Ravi Patel wrote:
-> > My name is Ravi Patel and I am working for AppliedMicro.
-> > I am planning to submit APM X-Gene SoC QMTM drivers to open source after
-> > running checkpatch.pl
-> > I am seeing following error saying remove FSF address from my patch, which
-> > I don't have in my source/header files.
-> > 
-> > ERROR: Do not include the paragraph about writing to the Free Software
-> > Foundation's mailing address from the sample GPL notice. The FSF has
-> > changed addresses in the past, and may do so again. Linux already includes
-> > a copy of the GPL.
-> > #1580: FILE: include/misc/xgene/xgene_qmtm.h:19:
-> > + * You should have received a copy of the GNU General Public License$
-> > 
-> > Here is my License banner in xgene_qmtm.h
-> > There are no tabs in my banner
-> > 
-> > /*
-> >  * AppliedMicro X-Gene SOC Queue Manager/Traffic Manager driver
-> >  *
-> >  * Copyright (c) 2013 Applied Micro Circuits Corporation.
-> >  * Author: Ravi Patel <rapatel@apm.com>
-> >  *         Keyur Chudgar <kchudgar@apm.com>
-> >  *         Fushen Chen <fchen@apm.com>
-> >  *
-> >  * This program is free software; you can redistribute  it and/or modify it
-> >  * under  the terms of  the GNU General  Public License as published by the
-> >  * Free Software Foundation;  either version 2 of the  License, or (at your
-> >  * option) any later version.
-> >  *
-> >  * This program is distributed in the hope that it will be useful,
-> >  * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> >  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> >  * GNU General Public License for more details.
-> >  *
-> >  * You should have received a copy of the GNU General Public License
-> >  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> >  *
-> >  */
-> > 
-> > Can you please check if the error is false positive.
-> 
-> Josh?
-> 
-> Is the intent that the "copy of the GNU General Public License"
-> statement should also be removed?
+As the default guest is designed to handle orphan kernel symboles
+with --guestkallsysms and --guestmoudles, it has no user space. So we
+should skip synthesizing threads if machine is default guest.
 
-While it does seem preferable to drop that paragraph, it isn't nearly as
-important as dropping the mailing address.  The match on "You should
-have received a copy" should probably be reduced to CHK level or
-dropped.
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+ tools/perf/util/event.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-> Jesse had a question recently about the appropriateness of the
-> removal given the license text.
-> 
-> http://www.spinics.net/lists/netdev/msg262152.html
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 93c6701..598b73e 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -133,6 +133,9 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+ 		goto out;
+ 	}
+ 
++	if (machine__is_default_guest(machine))
++		return 0;
++
+ 	snprintf(filename, sizeof(filename), "%s/proc/%d/task",
+ 		 machine->root_dir, pid);
+ 
+@@ -183,6 +186,9 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 	FILE *fp;
+ 	int rc = 0;
+ 
++	if (machine__is_default_guest(machine))
++		return 0;
++
+ 	snprintf(filename, sizeof(filename), "%s/proc/%d/maps",
+ 		 machine->root_dir, pid);
+ 
+@@ -409,6 +415,9 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+ 	if (mmap_event == NULL)
+ 		goto out_free_comm;
+ 
++	if (machine__is_default_guest(machine))
++		return 0;
++
+ 	snprintf(proc_path, sizeof(proc_path), "%s/proc", machine->root_dir);
+ 	proc = opendir(proc_path);
+ 
+-- 
+1.8.2.1
 
-Changing the license text is not OK (though the FSF has said it's OK to
-make new licenses based on the legal text minus the preamble and sample
-instructions, but that doesn't apply here).
-
-But that's not the same as the license *notice*, to which the "but
-changing it is not allowed" does not apply.
-
-- Josh Triplett
