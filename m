@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422721Ab3LTN2d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 08:28:33 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:34104 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1160999Ab3LTN23 (ORCPT
+	id S1161015Ab3LTNao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 08:30:44 -0500
+Received: from smtp-vbr6.xs4all.nl ([194.109.24.26]:3770 "EHLO
+	smtp-vbr6.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422817Ab3LTNak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 08:28:29 -0500
-Date: Fri, 20 Dec 2013 08:28:24 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Laight <David.Laight@aculab.com>, Mark Lord <kernel@start.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v4 9/9] PCI/MSI: Introduce pci_auto_enable_msi*() family
- helpers
-Message-ID: <20131220132824.GA4298@htj.dyndns.org>
-References: <cover.1387140921.git.agordeev@redhat.com>
- <bbf6f73ef3e16e5dfd7d41fc1e4412f641acb0f3.1387140921.git.agordeev@redhat.com>
- <20131218003002.GA15119@google.com>
- <20131218132349.GA29552@dhcp-26-207.brq.redhat.com>
- <CAErSpo6Km5N+Cfpaj5JEsb966rwcBjrAT4SFvG6Q9QkwkDFXCA@mail.gmail.com>
- <20131219134244.GA32238@dhcp-26-207.brq.redhat.com>
- <CAErSpo66Jh-8sbQr13r1LknfKWMt1zBd9xhm46XpCcW-X_TqnA@mail.gmail.com>
- <20131220090412.GA28367@dhcp-26-207.brq.redhat.com>
+	Fri, 20 Dec 2013 08:30:40 -0500
+Message-ID: <52B4466A.2020700@xs4all.nl>
+Date: Fri, 20 Dec 2013 14:30:18 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131220090412.GA28367@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: Hans Verkuil <hans.verkuil@cisco.com>, devel@driverdev.osuosl.org,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        LMML <linux-media@vger.kernel.org>
+Subject: Re: [PATCH] media: davinci_vpfe: fix build error
+References: <1387293923-27236-1-git-send-email-prabhakar.csengg@gmail.com> <CA+V-a8sdCuO1U3Egn62g_QivmVUEXzF4RgKbi-Ksm7JZEY-KKA@mail.gmail.com> <52B43DB0.8020107@xs4all.nl> <CA+V-a8tzXtPS5pjGqpno74-9s3gruJhBJ+WD23n1w2jsR7uZGA@mail.gmail.com>
+In-Reply-To: <CA+V-a8tzXtPS5pjGqpno74-9s3gruJhBJ+WD23n1w2jsR7uZGA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Prabhakar,
 
-On Fri, Dec 20, 2013 at 10:04:13AM +0100, Alexander Gordeev wrote:
-> I can only identify two downsides of the approach above - (a) repeated error
-> logging in a platform code (i.e. caused by -ENOMEM) and (b) repeated attempts
-> to enable MSI when the platform already reported a fatal error.
+On 12/20/2013 02:02 PM, Prabhakar Lad wrote:
+> Hi Hans,
+> 
+> On Fri, Dec 20, 2013 at 6:23 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+>> I just made a patch myself that I added to the pull request I just posted.
+>>
+>> You didn't CC me or CC the linux-media list when you posted your patch, so I
+>> never saw it.
+>>
+> I dont know why this patch didnt make up in linux-media but its
+> present DLOS [1].
 
-I don't think (a) is likely as long as only -ENOSPC is retried, which
-also solves (b).
+If it's not mailed to linux-media, then it doesn't end up in linux-media patchwork,
+and then I won't see it when I process pending patches.
 
-Thanks.
+While I am subscribed to DLOS I do not actually read it unless I know there is
+something that I need to pay attention to.
 
--- 
-tejun
+> I posted it the same day when you pinged me about this issue.
+
+I was a bit surprised that I didn't see a patch for this, you are very prompt
+normally :-)
+
+> Anyway your patch
+> too didnt reach me and I also cannot find it in the ML. May be you
+> directly issued the pull ?
+
+I directly issued the pull. It was such a trivial change. 
+
+Regards,
+
+	Hans
+
+> 
+> [1] https://patchwork.kernel.org/patch/3362211/
+> 
+> Regards,
+> --Prabhakar Lad
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
