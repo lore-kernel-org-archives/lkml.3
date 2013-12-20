@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab3LTTBh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 14:01:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3016 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754734Ab3LTTBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 14:01:35 -0500
-Date: Fri, 20 Dec 2013 20:01:57 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] pid: change task_struct::pid to read-only
-Message-ID: <20131220190157.GA1452@redhat.com>
-References: <8aa73d2b884439496f87d5f34c12ba9b4b40f7e5.1377032086.git.rgb@redhat.com> <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com> <20131217153611.GA18321@redhat.com> <20131217154004.GA21656@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131217154004.GA21656@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752668Ab3LTTJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 14:09:30 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38443 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866Ab3LTTJ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 14:09:27 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 08/35] perf top: Use hist_entry__inc_addr_sample
+Date: Fri, 20 Dec 2013 16:08:43 -0300
+Message-Id: <1387566550-3524-9-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1387566550-3524-1-git-send-email-acme@infradead.org>
+References: <1387566550-3524-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard, Peter,
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-sorry I deleted your emails by accident, so I am replying to my email.
+Since it has a hist_entry, no need to skip the hist layer and use the
+underlying symbol one.
 
-Sure, ASSIGN_CONST() looks "dangerous". Still to me it is safer than
-"(pid_t*)&(tsk->pid)" done by hand. And yes, it is visible to grep.
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-txsgu9umb0i86ijk888r1a0o@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-top.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-But the main point, it is much more readable. Just look at the change
-below,
-
-On 12/17, Oleg Nesterov wrote:
->
-> > >  	if (!thread_group_leader(tsk)) {
-> > >  		struct task_struct *leader = tsk->group_leader;
-> > > +		/* tast_struct::pid is const pid_t, hence the ugly cast */
-> > > +		pid_t *pid_p = (pid_t*)&(tsk->pid);
-> > >
-> > >  		sig->notify_count = -1;	/* for exit_notify() */
-> > >  		for (;;) {
-> > > @@ -950,7 +952,7 @@ static int de_thread(struct task_struct *tsk)
-> > >  		 * Note: The old leader also uses this pid until release_task
-> > >  		 *       is called.  Odd but simple and correct.
-> > >  		 */
-> > > -		tsk->pid = leader->pid;
-> > > +		*pid_p = leader->pid;
-
-Isn't it ugly to add the temporary? And this temporary is the pointer.
-ASSIGN_CONST(task->pid, leader->pid) is self-documenting and clear.
-
-The only problem is that
-
-	#define ASSIGN_CONST(l, r)      (*(typeof(r) *)&(l) = (r))
-
-obviously can't work in this case ;) We need something more clever.
-
-Oleg.
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 73df9c05bad9..2c6cb66f5358 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -190,7 +190,7 @@ static void perf_top__record_precise_ip(struct perf_top *top,
+ 		return;
+ 
+ 	ip = he->ms.map->map_ip(he->ms.map, ip);
+-	err = symbol__inc_addr_samples(sym, he->ms.map, counter, ip);
++	err = hist_entry__inc_addr_samples(he, counter, ip);
+ 
+ 	pthread_mutex_unlock(&notes->lock);
+ 
+-- 
+1.8.1.4
 
