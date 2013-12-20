@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798Ab3LTTRw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 14:17:52 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:35463 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756558Ab3LTTRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 14:17:48 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] [media] go7007-loader: fix usb_dev leak
-Date: Fri, 20 Dec 2013 23:17:32 +0400
-Message-Id: <1387567052-23938-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.3.2
+	id S1755838Ab3LTTJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 14:09:59 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38494 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab3LTTJ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 14:09:29 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 35/35] perf stat: Do not show stats if workload fails
+Date: Fri, 20 Dec 2013 16:09:10 -0300
+Message-Id: <1387566550-3524-36-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1387566550-3524-1-git-send-email-acme@infradead.org>
+References: <1387566550-3524-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is usb_get_dev() in go7007_loader_probe(),
-but there is no usb_put_dev() anywhere.
+From: David Ahern <dsahern@gmail.com>
 
-Found by Linux Driver Verification project (linuxtesting.org).
+Currently perf-stat attempts to show counter stats even if the workload
+is bogus:
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+  $ perf stat -- foo
+  foo: No such file or directory
+
+   Performance counter stats for 'foo':
+
+       <not counted>      task-clock
+       <not counted>      context-switches
+       <not counted>      cpu-migrations
+       <not counted>      page-faults
+       <not counted>      cycles
+       <not counted>      stalled-cycles-frontend
+       <not counted>      stalled-cycles-backend
+       <not counted>      instructions
+       <not counted>      branches
+       <not counted>      branch-misses
+
+         0.009769943 seconds time elapsed
+
+It is impossible to differentiate all the failure modes, but it seems
+reasonable that if the workload handling fails, perf-stat should not try
+to print stats.
+
+With this change:
+
+  $ perf stat  -v -- foo
+  Failed to start workload
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1387518748-25340-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/staging/media/go7007/go7007-loader.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ tools/perf/builtin-stat.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/media/go7007/go7007-loader.c b/drivers/staging/media/go7007/go7007-loader.c
-index f846ad5819dc..2b15952e4c18 100644
---- a/drivers/staging/media/go7007/go7007-loader.c
-+++ b/drivers/staging/media/go7007/go7007-loader.c
-@@ -60,7 +60,7 @@ static int go7007_loader_probe(struct usb_interface *interface,
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index dab98b50c9fe..d6e6a0b031d9 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -586,7 +586,11 @@ static int __run_perf_stat(int argc, const char **argv)
+ 	clock_gettime(CLOCK_MONOTONIC, &ref_time);
  
- 	if (usbdev->descriptor.bNumConfigurations != 1) {
- 		dev_err(&interface->dev, "can't handle multiple config\n");
--		return -ENODEV;
-+		goto failed2;
- 	}
+ 	if (forks) {
+-		perf_evlist__start_workload(evsel_list);
++		if (perf_evlist__start_workload(evsel_list) != 0) {
++			pr_err("Failed to start workload\n");
++			return -1;
++		}
++
+ 		handle_initial_delay();
  
- 	vendor = le16_to_cpu(usbdev->descriptor.idVendor);
-@@ -109,6 +109,7 @@ static int go7007_loader_probe(struct usb_interface *interface,
- 	return 0;
+ 		if (interval) {
+@@ -1793,7 +1797,10 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 				run_idx + 1);
  
- failed2:
-+	usb_put_dev(usbdev);
- 	dev_err(&interface->dev, "probe failed\n");
- 	return -ENODEV;
- }
-@@ -116,6 +117,7 @@ failed2:
- static void go7007_loader_disconnect(struct usb_interface *interface)
- {
- 	dev_info(&interface->dev, "disconnect\n");
-+	usb_put_dev(interface_to_usbdev(interface));
- 	usb_set_intfdata(interface, NULL);
- }
- 
+ 		status = run_perf_stat(argc, argv);
+-		if (forever && status != -1) {
++		if (status < 0)
++			break;
++
++		if (forever) {
+ 			print_stat(argc, argv);
+ 			perf_stat__reset_stats(evsel_list);
+ 		}
 -- 
-1.8.3.2
+1.8.1.4
 
