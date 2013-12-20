@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422680Ab3LTOIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 09:08:47 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:58371 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422647Ab3LTOIq (ORCPT
+	id S1422715Ab3LTOKL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 09:10:11 -0500
+Received: from www.linutronix.de ([62.245.132.108]:32948 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161004Ab3LTOKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 09:08:46 -0500
-Date: Fri, 20 Dec 2013 15:08:42 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: dietmar.eggemann@arm.com
-Cc: mingo@redhat.com, vincent.guittot@linaro.org, morten.rasmussen@arm.com,
-        chris.redpath@arm.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 8/8] sched: remove scheduler domain naming
-Message-ID: <20131220140842.GW16438@laptop.programming.kicks-ass.net>
-References: <1386936688-29113-1-git-send-email-dietmar.eggemann@arm.com>
- <1386936688-29113-9-git-send-email-dietmar.eggemann@arm.com>
+	Fri, 20 Dec 2013 09:10:09 -0500
+Date: Fri, 20 Dec 2013 15:10:08 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Pavel Vasilyev <pavel@pavlinux.ru>
+Cc: RT <linux-rt-users@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.12.5 CRASH/FREEZE
+Message-ID: <20131220141008.GE10249@linutronix.de>
+References: <52A9CC77.20904@linaro.org>
+ <52AA1CC0.30307@pavlinux.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1386936688-29113-9-git-send-email-dietmar.eggemann@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <52AA1CC0.30307@pavlinux.ru>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 12:11:28PM +0000, dietmar.eggemann@arm.com wrote:
-> From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-> 
-> In case the arch is allowed to define the conventional scheduler domain
-> topology level (i.e. the one without SD_NUMA topology flag) layout, it is
-> not feasible any more for the scheduler to name these levels.  Therefore,
-> this patch gets rid of of the sched_domain_topology_level structure
-> member 'name' and the corresponding SD_INIT_NAME macro.  It was only used
-> when CONFIG_SCHED_DEBUG was set any way.
+* Pavel Vasilyev | 2013-12-13 00:29:52 [+0400]:
 
-Right, so for debug purposes it might be convenient to keep it; we could
-simply put it in the topology array, something like:
+>On startup, if USB webcam (uvcvideo) attached in usb-hole
+>
+>NMI backtrace for cpu 0
+>CPU: 0 PID: 35 Comm: irq/43-xhci_hcd Not tainted 3.12.5-plx #6
 
- { cpu_smt_mask, SD_SHARE_CPU_POWER | SD_SHARE_PKG_RESOURCE, SD_NAME(smt) },
+> [<c13aa59c>] xhci_queue_isoc_tx_prepare+0x39c/0x950
+> [<c139d35f>] xhci_urb_enqueue+0x22f/0x540
+> [<c1375745>] usb_hcd_submit_urb+0x65/0x280
+> [<c13777a0>] usb_submit_urb+0x170/0x3a0
+> [<c13e1ee8>] uvc_video_complete+0xb8/0xd0
+> [<c1374625>] __usb_hcd_giveback_urb+0x45/0xa0
+> [<c1374bd8>] usb_hcd_giveback_urb+0x38/0xf0
+> [<c13a84cf>] handle_tx_event+0x3af/0xda0
+> [<c13a9082>] xhci_irq+0x1a2/0x6c0
+> [<c13a95aa>] xhci_msi_irq+0xa/0x10
+> [<c1084c31>] irq_forced_thread_fn+0x21/0x70
+> [<c1085046>] irq_thread+0x106/0x220
+> [<c1057110>] kthread+0xd0/0xe0
+> [<c15083b7>] ret_from_kernel_thread+0x1b/0x28
 
-which would still allow us to make it go away on !debug, but does
-provide us with a nice label to print for the debug topology prints.
+This looks like uvc is resubmitting the URB on completion. Nothing
+unusual. Howver it seems that then CPU gets stuck in
+xhci_queue_isoc_tx_prepare() for some reason. Could you try map c13aa59c
+to the source line? Something like
+  addr2lin -e xhci-hcd.ko -i c13aa59c
 
-Alternatively we could do something like:
+should do the trick but of the module of this trace.
+What does the -plx stand for in localversion? Do you have any custom
+patches on your kernel?
 
-#define SD_mask(name, flags) \
-	{ cpu_##name##_mask, (flags), .name = #name }
-
-to further reduce typing.
+Sebastian
