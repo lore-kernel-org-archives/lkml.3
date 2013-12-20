@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab3LTJNN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 04:13:13 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:44656 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755022Ab3LTJNF (ORCPT
+	id S1755633Ab3LTJOm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 04:14:42 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:58201 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754613Ab3LTJOh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 04:13:05 -0500
-Date: Fri, 20 Dec 2013 12:12:55 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Wenliang Fan <fanwlexca@gmail.com>
-Cc: gregkh <gregkh@linuxfoundation.org>, klmckinney1 <klmckinney1@gmail.com>,
-        tulinizer <tulinizer@gmail.com>, devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/staging/bcm: Integer overflow
-Message-ID: <20131220091255.GR5443@mwanda>
-References: <1387523596-29543-1-git-send-email-fanwlexca@gmail.com>
- <20131220081633.GL28413@mwanda>
- <CAPLUJPaJiiaervQTPoYES3C9mvTx2gGGXizrEMN3GA6jY=b0Mw@mail.gmail.com>
+	Fri, 20 Dec 2013 04:14:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPLUJPaJiiaervQTPoYES3C9mvTx2gGGXizrEMN3GA6jY=b0Mw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1386941755.17095.2.camel@phoenix>
+References: <1386941755.17095.2.camel@phoenix>
+Date: Fri, 20 Dec 2013 10:14:36 +0100
+Message-ID: <CACRpkdZEagq1xBuj7QCYkA2-961OPseNOQH3upTfASaxUk_ZTg@mail.gmail.com>
+Subject: Re: [RFT][PATCH] pinctrl: msm: Fix set gpio setting
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 04:51:45PM +0800, Wenliang Fan wrote:
-> Thanks for your advice.
-> But the variable 'psFlash2xReadWrite->offset' in '
-> *drivers/staging/bcm/nvm.c*:validateFlash2xReadWrite()' is also comes from
-> user space, which would cause an integer overflow in the following line:
-> 
-> if ((uiSectStartOffset + psFlash2xReadWrite->offset + uiNumOfBytes) <=
-> uiSectEndOffset)
-> 
-> in '*drivers/staging/bcm/**nvm.c*: validateFlash2xReadWrite()',
-> and another integer overflow in the following line:
-> 
-> 
-> ReadOffset = ReadOffset + ReadBytes; (or WriteOffset = WriteOffset +
-> WriteBytes;)
-> 
-> in '*drivers/staging/bcm/**Bcmchar.c*: bcm_char_ioctl()'.
-> 
+On Fri, Dec 13, 2013 at 2:35 PM, Axel Lin <axel.lin@ingics.com> wrote:
 
-Alright, fine.  But the new check is messy.  Do it like this:
+> Set g->out_bit bit for gpio output high, clear g->out_bit bit for gpio output
+> low.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+> Hi Bjorn,
+> I don't have the datasheet, just found current code does not make sense
+> because current code unconditionally set BIT(g->out_bit) in msm_gpio_set.
+> I assume setting g->out_bit bit for gpio output high, clear the bit
+> for gpio output low.
+> Please check if this patch is correct.
 
-	/* these are user controlled and can lead to integer overflows */
-	if (psFlash2xReadWrite->offset > uiSectEndOffset)
-		return false;
-	if (uiNumOfBytes > uiSectEndOffset)
-		return false;
-	if (uiSectStartOffset + psFlash2xReadWrite->offset + uiNumOfBytes > uiSectEndOffset)
-		return false;
+I've tentatively applied this as Björn is busy right now, and I got a
+sort-of-ack over IRC. If it turns out to be problematic we can revisit
+this later.
 
-	return true;
-
-That way each step is simpler to understand.  People are too fond of
-compound conditions... *grumble*.
-
-regards,
-dan carpenter
-
+Yours,
+Linus Walleij
