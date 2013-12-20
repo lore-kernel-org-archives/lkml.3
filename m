@@ -1,448 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab3LTVPX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 16:15:23 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:52222 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754173Ab3LTVPU (ORCPT
+	id S1755254Ab3LTVQB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 16:16:01 -0500
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:55590
+	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755091Ab3LTVP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 16:15:20 -0500
-Date: Fri, 20 Dec 2013 16:01:32 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless 2012-12-20
-Message-ID: <20131220210132.GB15392@tuxdriver.com>
+	Fri, 20 Dec 2013 16:15:59 -0500
+Date: Fri, 20 Dec 2013 21:15:57 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Eric Paris <eparis@redhat.com>,
+        Richard Guy Briggs <rgb@redhat.com>,
+        containers@lists.linux-foundation.org,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, ebiederm@xmission.com
+Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
+Message-ID: <20131220211557.GA418@mail.hallyn.com>
+References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
+ <529EE877.7030701@cn.fujitsu.com>
+ <20131206221241.GD22445@mail.hallyn.com>
+ <52A52599.3070502@cn.fujitsu.com>
+ <20131209182619.GD6849@sergelap>
+ <52A6CDE1.8090404@cn.fujitsu.com>
+ <20131210165152.GA6028@sergelap>
+ <1386705056.23829.13.camel@flatline.rdu.redhat.com>
+ <20131210203648.GA5835@mail.hallyn.com>
+ <52AE75D7.4020604@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <52AE75D7.4020604@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+Quoting Gao feng (gaofeng@cn.fujitsu.com):
+> On 12/11/2013 04:36 AM, Serge E. Hallyn wrote:
+> > Quoting Eric Paris (eparis@redhat.com):
+> >> On Tue, 2013-12-10 at 10:51 -0600, Serge Hallyn wrote:
+> >>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
+> >>>> On 12/10/2013 02:26 AM, Serge Hallyn wrote:
+> >>>>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
+> >>>>>> On 12/07/2013 06:12 AM, Serge E. Hallyn wrote:
+> >>>>>>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
+> >>>>>>>> Hi
+> >>>>>>>>
+> >>>>>>>> On 10/24/2013 03:31 PM, Gao feng wrote:
+> >>>>>>>>> Here is the v1 patchset: http://lwn.net/Articles/549546/
+> >>>>>>>>>
+> >>>>>>>>> The main target of this patchset is allowing user in audit
+> >>>>>>>>> namespace to generate the USER_MSG type of audit message,
+> >>>>>>>>> some userspace tools need to generate audit message, or
+> >>>>>>>>> these tools will broken.
+> >>>>>>>>>
+> >>>>>>>>
+> >>>>>>>> I really need this feature, right now,some process such as
+> >>>>>>>> logind are broken in container becase we leak of this feature.
+> >>>>>>>
+> >>>>>>> Your set doesn't address loginuid though right?  How exactly do you
+> >>>>>>> expect to do that?  If user violates MAC policy and audit msg is
+> >>>>>>> sent to init user ns by mac subsys, you need the loginuid from
+> >>>>>>> init_audit_ns.  where will that be stored if you allow updates
+> >>>>>>> of loginuid in auditns?
+> >>>>>>>
+> >>>>>> This patchset doesn't include the loginuid part.
+> >>>>>>
+> >>>>>> the loginuid is stored in task as before.
+> >>>>>> In my opinion, when task creates a new audit namespace, this task's
+> >>>>>> loginuid will be reset to zero, so the children tasks can set their
+> >>>>>> loginuid. Does this change break the MAC?
+> >>>>>
+> >>>>> I think so, yes.  In an LSPP selinux environment, if the task
+> >>>>> manages to trigger an selinux deny rule which is audited, then
+> >>>>> the loginuid must make sense on the host.  Now presumably it
+> >>>>> will get translated to the mapped host uid, and we can figure
+> >>>>> out the host uid owning it through /etc/subuid.  But that adds
+> >>>>> /etc/subuid as a new part of the TCB without any warning <shrug>
+> >>>>> So in that sense, for LSPP, it breaks it.
+> >>>>>
+> >>>>
+> >>>> Looks like my opinion is incorrect.
+> >>>>
+> >>>> In the audit-next tree, Eric added a new audit feature to allow privileged
+> >>>> user to disable AUDIT_LOGINUID_IMMUTABLE. after AUDIT_LOGINUID_IMMUTABLE
+> >>>> is disabled, the privileged user can reset/set the loginuid of task. I
+> >>>> think this way is safe since only privileged user can do the change.
+> >>>>
+> >>>> So I will not change the loginuid part.
+> >>>>
+> >>>> Thanks for your information Serge :)
+> >>>
+> >>> Unfortunately this makes the patchset much less compelling :)  The
+> >>> problem I was looking into is that a container running in a user
+> >>> namespace cannot (bc he has ns_capable(CAP_AUDIT_*) but not
+> >>> capable(CAP_AUDIT_*)) set loginuids at all.
+> >>>
+> >>> Which from an LSPP pov is correct;  which is why I was hoping you were
+> >>> going to have the audit namespaces be hierarchical, with a task in a
+> >>> level 2 audit ns having two loginuids - one in his own auditns, and
+> >>> one in the initial one.
+> >>
+> >> Right now user namespace + audit is just total crud.  We all know
+> >> this...  (I'm not sure pid is must better, but I digress)   All thoughts
+> >> around loginuid in the kernel right this very moment only make sense in
+> >> the initial user namespace and all permission checks are in the initial
+> >> user namespace as well.
+> >>
+> >> I think I'm a proponent of the hierarchical approach to audit
+> >> namespaces.  An audit namespace would hold a reference to the
+> >> pid/user/whatever namespace it was created in/with.  Each audit
+> >> namespace should have it's own set of filter rules, etc.  Instead of
+> >> just storing 'loginuid' we store 'loginuid+user namespace'.   When the
+> > 
+> > So long as the kernel stores the kuid_t (which the only sane thing to
+> > do) that is a non-issue.
+> > 
+> >> kernel creates a record it should translate the loginuid to the
+> >> namespace of the audit namespace and send the record.
+> > 
+> > Yup, that should go without saying.  Use kuid_t in kernel and translate
+> > at the kernel-user boundary.
+> > 
+> 
+> I can implement audit namespace as a hierarchy, give per auditns a level value
+> and a pointer which point to parent auditns.
+> 
+> but for the loginuid part, I think we can implement it after we push the audit
+> ns into the upstream.
+> 
+> Is this ok?
 
-Please consider pulling this batch of fixes for the 3.13 stream...
+Well as I"ve said the loginuid part is the only one that interests
+me.  I'll be out most of the rest of the year, but I'll review any
+patchset you send for what seems to me to be correctness :)
 
-For the mac80211 bits, Johannes says:
-
-"Here's a fix for another potential radiotap parser buffer overrun thanks
-to Evan Huus, and a fix for a cfg80211 warning in a certain corner case
-(reconnecting to the same BSS)."
-
-For the bluetooth bits, Gustavo says:
-
-"Two patches in this pull request. An important fix from Marcel in the
-permission check for HCI User Channels, there was a extra check for
-CAP_NET_RAW, and it was now removed. These channels should only require
-CAP_NET_ADMIN. The other patch is a device id addition."
-
-On top of that...
-
-Sujith Manoharan provides a workaround for a hardware problem that
-can result in lost interrupts.
-
-Larry Finger fixes an oops when unloading the rtlwifi driver (Red
-Hat bug 852761).
-
-Mathy Vanhoef fixes a somewhat minor MAC address privacy issue
-(CVE-2013-4579).
-
-Please let me know if there are problems!
-
-Thanks,
-
-John
-
----
-
-The following changes since commit 965cdea825693c821d200e38fac9402cde6dce6a:
-
-  dccp: catch failed request_module call in dccp_probe init (2013-12-19 19:25:50 -0500)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-davem
-
-for you to fetch changes up to 76ae07df2520d2f26c565747ad40c9e993b16cf7:
-
-  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless into for-davem (2013-12-20 15:40:06 -0500)
-
-----------------------------------------------------------------
-
-Johannes Berg (1):
-      radiotap: fix bitmap-end-finding buffer overrun
-
-John W. Linville (3):
-      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
-      Merge branch 'for-upstream' of git://git.kernel.org/.../bluetooth/bluetooth
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-
-Larry Finger (1):
-      rtlwifi: pci: Fix oops on driver unload
-
-Marcel Holtmann (1):
-      Bluetooth: Fix HCI User Channel permission check in hci_sock_sendmsg
-
-Marco Piazza (1):
-      Bluetooth: Add support for Toshiba Bluetooth device [0930:0220]
-
-Mathy Vanhoef (1):
-      ath9k_htc: properly set MAC address and BSSID mask
-
-Sujith Manoharan (1):
-      ath9k: Fix interrupt handling for the AR9002 family
-
-Ujjal Roy (1):
-      cfg80211: fix WARN_ON for re-association to the expired BSS
-
- drivers/bluetooth/ath3k.c                     |  2 ++
- drivers/bluetooth/btusb.c                     |  1 +
- drivers/net/wireless/ath/ath9k/ar9002_mac.c   | 52 ++++++++++++++++++++++-----
- drivers/net/wireless/ath/ath9k/htc_drv_main.c | 25 ++++++++-----
- drivers/net/wireless/ath/ath9k/main.c         |  5 +--
- drivers/net/wireless/rtlwifi/pci.c            |  4 ++-
- net/bluetooth/hci_sock.c                      | 26 ++++++++------
- net/wireless/radiotap.c                       |  4 +++
- net/wireless/sme.c                            | 22 ++++++------
- 9 files changed, 101 insertions(+), 40 deletions(-)
-
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index 6bfc1bb318f6..dceb85f8d9a8 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -87,6 +87,7 @@ static const struct usb_device_id ath3k_table[] = {
- 	{ USB_DEVICE(0x0CF3, 0xE004) },
- 	{ USB_DEVICE(0x0CF3, 0xE005) },
- 	{ USB_DEVICE(0x0930, 0x0219) },
-+	{ USB_DEVICE(0x0930, 0x0220) },
- 	{ USB_DEVICE(0x0489, 0xe057) },
- 	{ USB_DEVICE(0x13d3, 0x3393) },
- 	{ USB_DEVICE(0x0489, 0xe04e) },
-@@ -129,6 +130,7 @@ static const struct usb_device_id ath3k_blist_tbl[] = {
- 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0xe005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0930, 0x0220), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe04e), .driver_info = BTUSB_ATH3012 },
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index c0ff34f2d2df..3980fd18f6ea 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -154,6 +154,7 @@ static const struct usb_device_id blacklist_table[] = {
- 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0xe005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0930, 0x0220), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe04e), .driver_info = BTUSB_ATH3012 },
-diff --git a/drivers/net/wireless/ath/ath9k/ar9002_mac.c b/drivers/net/wireless/ath/ath9k/ar9002_mac.c
-index 8d78253c26ce..a366d6b4626f 100644
---- a/drivers/net/wireless/ath/ath9k/ar9002_mac.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9002_mac.c
-@@ -76,9 +76,16 @@ static bool ar9002_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked)
- 				mask2 |= ATH9K_INT_CST;
- 			if (isr2 & AR_ISR_S2_TSFOOR)
- 				mask2 |= ATH9K_INT_TSFOOR;
-+
-+			if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
-+				REG_WRITE(ah, AR_ISR_S2, isr2);
-+				isr &= ~AR_ISR_BCNMISC;
-+			}
- 		}
- 
--		isr = REG_READ(ah, AR_ISR_RAC);
-+		if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)
-+			isr = REG_READ(ah, AR_ISR_RAC);
-+
- 		if (isr == 0xffffffff) {
- 			*masked = 0;
- 			return false;
-@@ -97,11 +104,23 @@ static bool ar9002_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked)
- 
- 			*masked |= ATH9K_INT_TX;
- 
--			s0_s = REG_READ(ah, AR_ISR_S0_S);
-+			if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED) {
-+				s0_s = REG_READ(ah, AR_ISR_S0_S);
-+				s1_s = REG_READ(ah, AR_ISR_S1_S);
-+			} else {
-+				s0_s = REG_READ(ah, AR_ISR_S0);
-+				REG_WRITE(ah, AR_ISR_S0, s0_s);
-+				s1_s = REG_READ(ah, AR_ISR_S1);
-+				REG_WRITE(ah, AR_ISR_S1, s1_s);
-+
-+				isr &= ~(AR_ISR_TXOK |
-+					 AR_ISR_TXDESC |
-+					 AR_ISR_TXERR |
-+					 AR_ISR_TXEOL);
-+			}
-+
- 			ah->intr_txqs |= MS(s0_s, AR_ISR_S0_QCU_TXOK);
- 			ah->intr_txqs |= MS(s0_s, AR_ISR_S0_QCU_TXDESC);
--
--			s1_s = REG_READ(ah, AR_ISR_S1_S);
- 			ah->intr_txqs |= MS(s1_s, AR_ISR_S1_QCU_TXERR);
- 			ah->intr_txqs |= MS(s1_s, AR_ISR_S1_QCU_TXEOL);
- 		}
-@@ -114,13 +133,15 @@ static bool ar9002_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked)
- 		*masked |= mask2;
- 	}
- 
--	if (AR_SREV_9100(ah))
--		return true;
--
--	if (isr & AR_ISR_GENTMR) {
-+	if (!AR_SREV_9100(ah) && (isr & AR_ISR_GENTMR)) {
- 		u32 s5_s;
- 
--		s5_s = REG_READ(ah, AR_ISR_S5_S);
-+		if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED) {
-+			s5_s = REG_READ(ah, AR_ISR_S5_S);
-+		} else {
-+			s5_s = REG_READ(ah, AR_ISR_S5);
-+		}
-+
- 		ah->intr_gen_timer_trigger =
- 				MS(s5_s, AR_ISR_S5_GENTIMER_TRIG);
- 
-@@ -133,8 +154,21 @@ static bool ar9002_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked)
- 		if ((s5_s & AR_ISR_S5_TIM_TIMER) &&
- 		    !(pCap->hw_caps & ATH9K_HW_CAP_AUTOSLEEP))
- 			*masked |= ATH9K_INT_TIM_TIMER;
-+
-+		if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
-+			REG_WRITE(ah, AR_ISR_S5, s5_s);
-+			isr &= ~AR_ISR_GENTMR;
-+		}
- 	}
- 
-+	if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
-+		REG_WRITE(ah, AR_ISR, isr);
-+		REG_READ(ah, AR_ISR);
-+	}
-+
-+	if (AR_SREV_9100(ah))
-+		return true;
-+
- 	if (sync_cause) {
- 		ath9k_debug_sync_cause(common, sync_cause);
- 		fatal_int =
-diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_main.c b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-index 9a2657fdd9cc..608d739d1378 100644
---- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-@@ -127,21 +127,26 @@ static void ath9k_htc_bssid_iter(void *data, u8 *mac, struct ieee80211_vif *vif)
- 	struct ath9k_vif_iter_data *iter_data = data;
- 	int i;
- 
--	for (i = 0; i < ETH_ALEN; i++)
--		iter_data->mask[i] &= ~(iter_data->hw_macaddr[i] ^ mac[i]);
-+	if (iter_data->hw_macaddr != NULL) {
-+		for (i = 0; i < ETH_ALEN; i++)
-+			iter_data->mask[i] &= ~(iter_data->hw_macaddr[i] ^ mac[i]);
-+	} else {
-+		iter_data->hw_macaddr = mac;
-+	}
- }
- 
--static void ath9k_htc_set_bssid_mask(struct ath9k_htc_priv *priv,
-+static void ath9k_htc_set_mac_bssid_mask(struct ath9k_htc_priv *priv,
- 				     struct ieee80211_vif *vif)
- {
- 	struct ath_common *common = ath9k_hw_common(priv->ah);
- 	struct ath9k_vif_iter_data iter_data;
- 
- 	/*
--	 * Use the hardware MAC address as reference, the hardware uses it
--	 * together with the BSSID mask when matching addresses.
-+	 * Pick the MAC address of the first interface as the new hardware
-+	 * MAC address. The hardware will use it together with the BSSID mask
-+	 * when matching addresses.
- 	 */
--	iter_data.hw_macaddr = common->macaddr;
-+	iter_data.hw_macaddr = NULL;
- 	memset(&iter_data.mask, 0xff, ETH_ALEN);
- 
- 	if (vif)
-@@ -153,6 +158,10 @@ static void ath9k_htc_set_bssid_mask(struct ath9k_htc_priv *priv,
- 		ath9k_htc_bssid_iter, &iter_data);
- 
- 	memcpy(common->bssidmask, iter_data.mask, ETH_ALEN);
-+
-+	if (iter_data.hw_macaddr)
-+		memcpy(common->macaddr, iter_data.hw_macaddr, ETH_ALEN);
-+
- 	ath_hw_setbssidmask(common);
- }
- 
-@@ -1063,7 +1072,7 @@ static int ath9k_htc_add_interface(struct ieee80211_hw *hw,
- 		goto out;
- 	}
- 
--	ath9k_htc_set_bssid_mask(priv, vif);
-+	ath9k_htc_set_mac_bssid_mask(priv, vif);
- 
- 	priv->vif_slot |= (1 << avp->index);
- 	priv->nvifs++;
-@@ -1128,7 +1137,7 @@ static void ath9k_htc_remove_interface(struct ieee80211_hw *hw,
- 
- 	ath9k_htc_set_opmode(priv);
- 
--	ath9k_htc_set_bssid_mask(priv, vif);
-+	ath9k_htc_set_mac_bssid_mask(priv, vif);
- 
- 	/*
- 	 * Stop ANI only if there are no associated station interfaces.
-diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
-index 74f452c7b166..21aa09e0e825 100644
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -965,8 +965,9 @@ void ath9k_calculate_iter_data(struct ieee80211_hw *hw,
- 	struct ath_common *common = ath9k_hw_common(ah);
- 
- 	/*
--	 * Use the hardware MAC address as reference, the hardware uses it
--	 * together with the BSSID mask when matching addresses.
-+	 * Pick the MAC address of the first interface as the new hardware
-+	 * MAC address. The hardware will use it together with the BSSID mask
-+	 * when matching addresses.
- 	 */
- 	memset(iter_data, 0, sizeof(*iter_data));
- 	memset(&iter_data->mask, 0xff, ETH_ALEN);
-diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
-index 0f494444bcd1..5a53195d016b 100644
---- a/drivers/net/wireless/rtlwifi/pci.c
-+++ b/drivers/net/wireless/rtlwifi/pci.c
-@@ -740,6 +740,8 @@ static void _rtl_pci_rx_interrupt(struct ieee80211_hw *hw)
- 	};
- 	int index = rtlpci->rx_ring[rx_queue_idx].idx;
- 
-+	if (rtlpci->driver_is_goingto_unload)
-+		return;
- 	/*RX NORMAL PKT */
- 	while (count--) {
- 		/*rx descriptor */
-@@ -1636,6 +1638,7 @@ static void rtl_pci_stop(struct ieee80211_hw *hw)
- 	 */
- 	set_hal_stop(rtlhal);
- 
-+	rtlpci->driver_is_goingto_unload = true;
- 	rtlpriv->cfg->ops->disable_interrupt(hw);
- 	cancel_work_sync(&rtlpriv->works.lps_change_work);
- 
-@@ -1653,7 +1656,6 @@ static void rtl_pci_stop(struct ieee80211_hw *hw)
- 	ppsc->rfchange_inprogress = true;
- 	spin_unlock_irqrestore(&rtlpriv->locks.rf_ps_lock, flags);
- 
--	rtlpci->driver_is_goingto_unload = true;
- 	rtlpriv->cfg->ops->hw_disable(hw);
- 	/* some things are not needed if firmware not available */
- 	if (!rtlpriv->max_fw_size)
-diff --git a/net/bluetooth/hci_sock.c b/net/bluetooth/hci_sock.c
-index 6a6c8bb4fd72..7552f9e3089c 100644
---- a/net/bluetooth/hci_sock.c
-+++ b/net/bluetooth/hci_sock.c
-@@ -940,8 +940,22 @@ static int hci_sock_sendmsg(struct kiocb *iocb, struct socket *sock,
- 	bt_cb(skb)->pkt_type = *((unsigned char *) skb->data);
- 	skb_pull(skb, 1);
- 
--	if (hci_pi(sk)->channel == HCI_CHANNEL_RAW &&
--	    bt_cb(skb)->pkt_type == HCI_COMMAND_PKT) {
-+	if (hci_pi(sk)->channel == HCI_CHANNEL_USER) {
-+		/* No permission check is needed for user channel
-+		 * since that gets enforced when binding the socket.
-+		 *
-+		 * However check that the packet type is valid.
-+		 */
-+		if (bt_cb(skb)->pkt_type != HCI_COMMAND_PKT &&
-+		    bt_cb(skb)->pkt_type != HCI_ACLDATA_PKT &&
-+		    bt_cb(skb)->pkt_type != HCI_SCODATA_PKT) {
-+			err = -EINVAL;
-+			goto drop;
-+		}
-+
-+		skb_queue_tail(&hdev->raw_q, skb);
-+		queue_work(hdev->workqueue, &hdev->tx_work);
-+	} else if (bt_cb(skb)->pkt_type == HCI_COMMAND_PKT) {
- 		u16 opcode = get_unaligned_le16(skb->data);
- 		u16 ogf = hci_opcode_ogf(opcode);
- 		u16 ocf = hci_opcode_ocf(opcode);
-@@ -972,14 +986,6 @@ static int hci_sock_sendmsg(struct kiocb *iocb, struct socket *sock,
- 			goto drop;
- 		}
- 
--		if (hci_pi(sk)->channel == HCI_CHANNEL_USER &&
--		    bt_cb(skb)->pkt_type != HCI_COMMAND_PKT &&
--		    bt_cb(skb)->pkt_type != HCI_ACLDATA_PKT &&
--		    bt_cb(skb)->pkt_type != HCI_SCODATA_PKT) {
--			err = -EINVAL;
--			goto drop;
--		}
--
- 		skb_queue_tail(&hdev->raw_q, skb);
- 		queue_work(hdev->workqueue, &hdev->tx_work);
- 	}
-diff --git a/net/wireless/radiotap.c b/net/wireless/radiotap.c
-index a271c27fac77..722da616438c 100644
---- a/net/wireless/radiotap.c
-+++ b/net/wireless/radiotap.c
-@@ -124,6 +124,10 @@ int ieee80211_radiotap_iterator_init(
- 	/* find payload start allowing for extended bitmap(s) */
- 
- 	if (iterator->_bitmap_shifter & (1<<IEEE80211_RADIOTAP_EXT)) {
-+		if ((unsigned long)iterator->_arg -
-+		    (unsigned long)iterator->_rtheader + sizeof(uint32_t) >
-+		    (unsigned long)iterator->_max_length)
-+			return -EINVAL;
- 		while (get_unaligned_le32(iterator->_arg) &
- 					(1 << IEEE80211_RADIOTAP_EXT)) {
- 			iterator->_arg += sizeof(uint32_t);
-diff --git a/net/wireless/sme.c b/net/wireless/sme.c
-index 65f800890d70..d3c5bd7c6b51 100644
---- a/net/wireless/sme.c
-+++ b/net/wireless/sme.c
-@@ -632,6 +632,16 @@ void __cfg80211_connect_result(struct net_device *dev, const u8 *bssid,
- 	}
- #endif
- 
-+	if (!bss && (status == WLAN_STATUS_SUCCESS)) {
-+		WARN_ON_ONCE(!wiphy_to_dev(wdev->wiphy)->ops->connect);
-+		bss = cfg80211_get_bss(wdev->wiphy, NULL, bssid,
-+				       wdev->ssid, wdev->ssid_len,
-+				       WLAN_CAPABILITY_ESS,
-+				       WLAN_CAPABILITY_ESS);
-+		if (bss)
-+			cfg80211_hold_bss(bss_from_pub(bss));
-+	}
-+
- 	if (wdev->current_bss) {
- 		cfg80211_unhold_bss(wdev->current_bss);
- 		cfg80211_put_bss(wdev->wiphy, &wdev->current_bss->pub);
-@@ -649,16 +659,8 @@ void __cfg80211_connect_result(struct net_device *dev, const u8 *bssid,
- 		return;
- 	}
- 
--	if (!bss) {
--		WARN_ON_ONCE(!wiphy_to_dev(wdev->wiphy)->ops->connect);
--		bss = cfg80211_get_bss(wdev->wiphy, NULL, bssid,
--				       wdev->ssid, wdev->ssid_len,
--				       WLAN_CAPABILITY_ESS,
--				       WLAN_CAPABILITY_ESS);
--		if (WARN_ON(!bss))
--			return;
--		cfg80211_hold_bss(bss_from_pub(bss));
--	}
-+	if (WARN_ON(!bss))
-+		return;
- 
- 	wdev->current_bss = bss_from_pub(bss);
- 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+> >> It's a pretty major rewrite, but at least it makes sense.  Things like
+> >> AVC's might show up in multiple audit logs, but in every log they would
+> >> make sense to the admin of that namespace...
+> >>
+> >> But what the hell do I know...
+> > 
+> > Exactly how it would all affect selinux.  I'm happy it seems we agree.
+> 
+> This idea looks good to me, I will Investigate this. :)
+> 
+> Thanks.
