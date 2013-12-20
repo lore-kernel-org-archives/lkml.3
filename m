@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab3LTA0d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 19:26:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:52706 "EHLO mga09.intel.com"
+	id S1756818Ab3LTA1a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 19:27:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16864 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753602Ab3LTA0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 19:26:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,516,1384329600"; 
-   d="scan'208";a="427524622"
-Message-ID: <1387499182.3510.43.camel@dvhart-mobl4.amr.corp.intel.com>
-Subject: Re: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
-From: Darren Hart <dvhart@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
-        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Tom Vaden <tom.vaden@hp.com>, "Norton, Scott J" <scott.norton@hp.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Thu, 19 Dec 2013 16:26:22 -0800
-In-Reply-To: <CA+55aFyUd4Mhy8Rsbv=etahBCrQyWeZSLxW9sL0uCF0hCXkHfQ@mail.gmail.com>
-References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
-	 <1387478746-5436-5-git-send-email-davidlohr@hp.com>
-	 <CA+55aFxY_sMes2=0tz0qTKH5-fpAaLji_xd9CdU-u2JxxNN6pA@mail.gmail.com>
-	 <1387496569.8363.12.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFyay84UKWEbAZ=8bT-KV5gq-+1fWgS52gRQv=qZJzMSOQ@mail.gmail.com>
-	 <CA+55aFyUd4Mhy8Rsbv=etahBCrQyWeZSLxW9sL0uCF0hCXkHfQ@mail.gmail.com>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753602Ab3LTA12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 19:27:28 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Kristen Carlson Accardi <kristen@linux.intel.com>
+Subject: [PATCH] turbostat, servers do not support uncore power register
+Date: Thu, 19 Dec 2013 19:27:22 -0500
+Message-Id: <1387499242-30364-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-19 at 16:04 -0800, Linus Torvalds wrote:
-> On Thu, Dec 19, 2013 at 3:53 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> >  - in queue_lock(), immediately before getting the spinlock (which
-> > will do the SAME ATOMIC INCREMENT, except it's just doing it on a
-> > different member of the structure, namely the spinlock head)
-> 
-> Ok, so there's the "q->lock_ptr = &hb->lock" assignment in between,
-> but if the ordering of that is critical, it should be documented in
-> the memory ordering rules, because it sure is subtle and not obviously
-> visible anywhere..
+>From the Intel Software Developer's Manual section 14.7.4,
 
-I'm trying to look into this to confirm, but it will require some time
-for me to page that all in. There are some issues with respect to the
-lock_ptr that are documented in the other functions (like unqueue_me),
-but I *think* they are mostly on the other end of the operation and may
-not be an issue here... 
+"For server platforms, PP1 domain is not supported, but its PP0 domain
+supports the MSR_PP0_PERF_STATUS interface."
 
-q->lock_ptr == 0 also indicates "woken" state.
+When I run 'turbostat ls' I see the following error:
 
-I will spend some time on this to try and get a definitive answer.
+/dev/cpu/0/msr offset 0x641 read failed
 
+because the server doesn't support the MSR_PP1_ENERGY_STATUS
+register (0x641).  This patch implements a get_msr_nowarn() which suppresses the
+above warning and then sets !RAPL_GFX.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Len Brown <len.brown@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Kristen Carlson Accardi <kristen@linux.intel.com>
+---
+ tools/power/x86/turbostat/turbostat.c |   23 ++++++++++++++++++-----
+ 1 file changed, 18 insertions(+), 5 deletions(-)
+
+diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
+index 9d77f13..ff505c2 100644
+--- a/tools/power/x86/turbostat/turbostat.c
++++ b/tools/power/x86/turbostat/turbostat.c
+@@ -219,7 +219,7 @@ int cpu_migrate(int cpu)
+ 		return 0;
+ }
+ 
+-int get_msr(int cpu, off_t offset, unsigned long long *msr)
++int _get_msr(int cpu, off_t offset, unsigned long long *msr, int warn)
+ {
+ 	ssize_t retval;
+ 	char pathname[32];
+@@ -234,13 +234,25 @@ int get_msr(int cpu, off_t offset, unsigned long long *msr)
+ 	close(fd);
+ 
+ 	if (retval != sizeof *msr) {
+-		fprintf(stderr, "%s offset 0x%zx read failed\n", pathname, offset);
++		if (warn)
++			fprintf(stderr, "%s offset 0x%zx read failed\n",
++				pathname, offset);
+ 		return -1;
+ 	}
+ 
+ 	return 0;
+ }
+ 
++int get_msr(int cpu, off_t offset, unsigned long long *msr)
++{
++	return _get_msr(cpu, offset, msr, 1);
++}
++
++int get_msr_nowarn(int cpu, off_t offset, unsigned long long *msr)
++{
++	return _get_msr(cpu, offset, msr, 0);
++}
++
+ void print_header(void)
+ {
+ 	if (show_pkg)
+@@ -953,9 +965,10 @@ int get_counters(struct thread_data *t, struct core_data *c, struct pkg_data *p)
+ 		p->energy_dram = msr & 0xFFFFFFFF;
+ 	}
+ 	if (do_rapl & RAPL_GFX) {
+-		if (get_msr(cpu, MSR_PP1_ENERGY_STATUS, &msr))
+-			return -16;
+-		p->energy_gfx = msr & 0xFFFFFFFF;
++		if (get_msr_nowarn(cpu, MSR_PP1_ENERGY_STATUS, &msr))
++			do_rapl &= ~RAPL_GFX; /* unsupported on servers */
++		else
++			p->energy_gfx = msr & 0xFFFFFFFF;
+ 	}
+ 	if (do_rapl & RAPL_PKG_PERF_STATUS) {
+ 		if (get_msr(cpu, MSR_PKG_PERF_STATUS, &msr))
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
-
+1.7.9.3
 
