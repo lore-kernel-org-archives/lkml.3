@@ -1,49 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab3LTEbm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 23:31:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39500 "EHLO mail.zytor.com"
+	id S1753022Ab3LTEhF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 23:37:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56130 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752088Ab3LTEbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 23:31:40 -0500
-Message-ID: <52B3C7F8.3040901@zytor.com>
-Date: Thu, 19 Dec 2013 20:30:48 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751809Ab3LTEhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 23:37:03 -0500
+Date: Thu, 19 Dec 2013 23:36:32 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: John Johansen <john.johansen@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Peter Zijlstra <peterz@infradead.org>, Eric Paris <eparis@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] apparmor: remove the "task" arg from
+ may_change_ptraced_domain()
+Message-ID: <20131220043632.GA14884@madcap2.tricolour.ca>
+References: <20131218194338.GB23692@madcap2.tricolour.ca>
+ <20131218201940.GA9694@redhat.com>
 MIME-Version: 1.0
-To: joeyli <jlee@suse.com>, Matt Fleming <matt@console-pimps.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC PATCH 06/14] rtc-efi: register rtc-efi device when EFI enabled
-References: <1387439515-8926-1-git-send-email-jlee@suse.com>	 <1387439515-8926-7-git-send-email-jlee@suse.com>	 <20131219140918.GF3145@console-pimps.org> <1387513491.3539.4345.camel@linux-s257.site>
-In-Reply-To: <1387513491.3539.4345.camel@linux-s257.site>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131218201940.GA9694@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2013 08:24 PM, joeyli wrote:
+On 13/12/18, Oleg Nesterov wrote:
+> On 12/18, Richard Guy Briggs wrote:
+> >
+> > Bcc: rgb@redhat.com
+> > Subject: Re: [PATCH] apparmor: remove the "task" arg from
+> >  may_change_ptraced_domain()
+> > Reply-To:
+> > In-Reply-To: <20130926132519.GY13968@madcap2.tricolour.ca>
 > 
-> I agreed, but userspace application should not be too often to access
-> RTC. Maybe only when system boot and set timezone.
+> The subject is empty ;) I changed it to match the above.
+
+HTH?!?  Thanks for adding it.  (more below...)
+
+> > On 13/09/26, Richard Guy Briggs wrote:
+> > > On Tue, Sep 24, 2013 at 06:44:42PM +0200, Oleg Nesterov wrote:
+> > > > On 09/23, Richard Guy Briggs wrote:
+> > > > >
+> > > > > On Mon, Sep 16, 2013 at 04:20:35PM +0200, Oleg Nesterov wrote:
+> > > > > > Unless task == current ptrace_parent(task) is not safe even under
+> > > > > > rcu_read_lock() and most of the current users are not right.
+> > > > >
+> > > > > Could you point to an explanation of this?
+> > > >
+> > > > If this task exits before rcu_read_lock() ->parent can point to the
+> > > > already freed/reused memory.
+> > >
+> > > Ok, understood.  So even though the task may have exited, the task
+> > > struct pointer is still valid, but not the contents of the task struct
+> > > to which it points.
+> >
+> > [The thread also relates to the patch
+> > 	"pid: get ppid pid_t of task in init_pid_ns safely"
+> > in which sys_getppid() (which appears safe) is replaced with something that
+> > references the init_pid_ns rather than current's pid_ns.]
+> >
+> > So, in the general case, that call is not safe, and we should at least
+> > remove the task_struct argument.
 > 
+> I changed my mind, please see the recent discussion with Paul:
+> 
+> 	http://marc.info/?t=138626281900001
+> 
+> instead we should document why ptrace_parent() is safe without pid_alive().
 
-This is, quite frankly, an idiotic argument.  Userspace doesn't access
-the RTC, the kernel does, and if the underlying implementation is broken
-it doesn't matter if it is accessed one time or a thousand.  For the
-record, in most cases the RTC gets accessed about every 15 minutes to
-update the time based on network time.
+Interesting.  I wasn't aware of pid_alive(), but that would certainly
+help.
 
-	-hpa
+> I hope that the change in apparmor was fine anyway.
 
+Yes, I'm fine with apparmor change, if it was deemed that the ppid
+wasn't needed.  If it is, then it should use this new task_ppid_nr().
+Better yet I think to generalize it to anticipate auditd in containers.
 
+> Otherwise I can't understand your email, at least right now... I do not
+> know how/where audit uses parent/real_parent.
+
+It uses real_parent to include the ppid number of a process in a couple
+of log records.
+
+> But yes, unless tsk == current, the usage of tsk->*parent is not safe even
+> under rcu_read_lock() unless you verify that this task was not unhashed.
+
+As I said, the only case I can see is in copy_process() when a signal is
+pending when neither CLONE_PARENT nor CLONE_THREAD is passed to it.
+Still, that is enough to need to check it.
+
+> ptrace_parent() is safe because it checks ->ptrace. Previously I thought
+> we should not rely on this, but the additional pid_alive() looks ugly so
+> it would be better to simply document this. I'll send the patch.
+
+So what are you saying?  I should use pid_alive() inside the
+rcu_read_lock() to verify it is not unhashed since I don't have anything
+to do with ->ptrace or any other task lock?  In fact, the answer is
+under my nose in __task_pid_nr_ns(), which already uses this approach.
+And rcu_read_lock() can be nested.
+
+> Oleg.
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
