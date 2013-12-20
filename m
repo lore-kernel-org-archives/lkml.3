@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab3LTIK5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 03:10:57 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:61705 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754099Ab3LTIK4 (ORCPT
+	id S1754438Ab3LTIOE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 03:14:04 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:49997 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610Ab3LTIOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 03:10:56 -0500
-From: rjying <rjying@gmail.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Barry Song <21cnbao@gmail.com>,
-        RongJun Ying <Rongjun.Ying@csr.com>,
-        Binghua Duan <Binghua.Duan@csr.com>,
-        Rongjun Ying <rongjun.ying@csr.com>
-Subject: [PATCH 1/1] extcon: gpio: Add power resume support
-Date: Fri, 20 Dec 2013 16:09:47 +0800
-Message-Id: <1387526987-12455-1-git-send-email-rongjun.ying@csr.com>
-X-Mailer: git-send-email 1.7.5.4
+	Fri, 20 Dec 2013 03:14:01 -0500
+Date: Fri, 20 Dec 2013 09:13:57 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCHSET 0/7] perf tools: A couple of TUI improvements (v2)
+Message-ID: <20131220081357.GB12937@gmail.com>
+References: <1387516278-17024-1-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387516278-17024-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rongjun Ying <rongjun.ying@csr.com>
 
-After system resume, need send extcon uevent to userspace
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
-Change-Id: I32a9e1c6646035f95765bba79a7acaccb8ce45a7
+> Hello,
+> 
+> I was playing with TUI code and added two new windows.  One for
+> showing log messages and another for showing header information.
+> (Maybe they can be implemented on the GTK code too someday.)
+> 
+>  * changes from v1)
+>   - fix segfault on perf top (Ingo)
+>   - split print function handling patch (Arnaldo)
+>   - add filtering support on log window (Jiri, Ingo)
+> 
+> 
+> I put the patches on 'perf/tui-v2' branch in my tree:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> 
+> Any feedbacks are more than welcome, thanks
+> Namhyung
 
-Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
----
- drivers/extcon/extcon-gpio.c |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+Looks pretty good now!
 
-diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
-index 7e0dff5..d916522 100644
---- a/drivers/extcon/extcon-gpio.c
-+++ b/drivers/extcon/extcon-gpio.c
-@@ -159,12 +159,29 @@ static int gpio_extcon_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM_SLEEP
-+static int gpio_extcon_resume(struct device *dev)
-+{
-+	struct gpio_extcon_data *extcon_data;
-+
-+	extcon_data = dev_get_drvdata(dev);
-+	queue_delayed_work(system_power_efficient_wq, &extcon_data->work,
-+			      extcon_data->debounce_jiffies);
-+	return 0;
-+}
-+#endif
-+
-+static const struct dev_pm_ops gpio_extcon_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(NULL, gpio_extcon_resume)
-+};
-+
- static struct platform_driver gpio_extcon_driver = {
- 	.probe		= gpio_extcon_probe,
- 	.remove		= gpio_extcon_remove,
- 	.driver		= {
- 		.name	= "extcon-gpio",
- 		.owner	= THIS_MODULE,
-+		.pm = &gpio_extcon_pm_ops,
- 	},
- };
- 
--- 
-1.7.5.4
+I found four small inconsistencies:
 
+ - in 'perf top' the '?' help text states that there's an 'i' key, but
+   that key does nothing.
+
+ - filtering support would be useful in the 'log' window as well :-)
+
+ - in both 'perf top' and 'perf report' neither the 'i' nor the 'l'
+   window shows any help window, so one has to guess that '/' does the
+   filtering.
+
+ - the hotkeys in the help window used to be ordered alphabetically - 
+   they aren't anymore.
+
+While testing 'perf top' I also found three new features which would 
+be very nice to have, in case you are interested in implementing them:
+
+ - it would be nice to have a hotkey to start/stop data collection on
+   demand, and another hotkey to reset the data. SysProf has this 
+   feature, and it's a convenient workflow to have a separate 'data 
+   collection' period (possibly done without any screen refresh, so 
+   that data collection does not disturb the measured workload), and 
+   a quiet 'look at all the data that is not being changed' period. 
+   Especially with fast changing workloads the latter can be useful.
+
+ - it would be nice if 'perf report' had a 'view raw trace' window as 
+   well, with filtering. That would be roughly equivalent to the 'perf
+   report -D' output [but one line per trace entry, i.e. no hex dump
+   shown by default], all available within the TUI. With filtering
+   that would be a pretty good way to look at various details.
+
+ - it might also be useful if it was possible to save a perf.data from 
+   a 'perf top' session - and to start a 'perf top' session from a 
+   specific perf.data [and with data collection disabled]. I.e. allow 
+   intermediate modes between 'perf top', 'perf report' and 'perf 
+   record' profiling workflows, all in a single TUI.
+
+Thanks,
+
+	Ingo
