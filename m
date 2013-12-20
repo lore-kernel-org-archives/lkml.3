@@ -1,178 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab3LTTA3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 14:00:29 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:49387 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753678Ab3LTTAA (ORCPT
+	id S1754214Ab3LTTAk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 14:00:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53632 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956Ab3LTTAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 14:00:00 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        stable <stable@vger.kernel.org>
-Subject: [PATCH 3/3] timekeeping: Avoid possible deadlock from clock_was_set_delayed
-Date: Fri, 20 Dec 2013 10:59:46 -0800
-Message-Id: <1387565986-11738-4-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1387565986-11738-1-git-send-email-john.stultz@linaro.org>
-References: <1387565986-11738-1-git-send-email-john.stultz@linaro.org>
+	Fri, 20 Dec 2013 14:00:35 -0500
+Date: Fri, 20 Dec 2013 11:00:44 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ravi Patel <rapatel@apm.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>, arnd@arndb.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        jcm@redhat.com, patches@apm.com
+Subject: Re: [PATCH 0/4] misc: xgene: Add support for APM X-Gene SoC Queue
+ Manager/Traffic Manager
+Message-ID: <20131220190044.GB26584@kroah.com>
+References: <1387507503-7565-1-git-send-email-rapatel@apm.com>
+ <1387561576.1549.5.camel@bwh-desktop.uk.level5networks.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387561576.1549.5.camel@bwh-desktop.uk.level5networks.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of normal operaions, the hrtimer subsystem frequently calls
-into the timekeeping code, creating a locking order of
-  hrtimer locks -> timekeeping locks
+On Fri, Dec 20, 2013 at 05:46:16PM +0000, Ben Hutchings wrote:
+> > CONFIDENTIALITY NOTICE: This e-mail message, including any attachments, 
+> > is for the sole use of the intended recipient(s) and contains information
+> > that is confidential and proprietary to Applied Micro Circuits Corporation or its subsidiaries. 
+> > It is to be used solely for the purpose of furthering the parties' business relationship. 
+> > All unauthorized review, use, disclosure or distribution is prohibited. 
+> > If you are not the intended recipient, please contact the sender by reply e-mail 
+> > and destroy all copies of the original message.
+> 
+> Well this definitely has nothing to do with any business relationship
+> that may exist between AMCC and Solarflare, so please don't send any
+> more of these messages either directly or via netdev.
 
-clock_was_set_delayed() was suppoed to allow us to avoid deadlocks
-between the timekeeping the hrtimer subsystem, so that we could
-notify the hrtimer subsytem the time had changed while holding
-the timekeeping locks. This was done by scheduling delayed work
-that would run later once we were out of the timekeeing code.
+Ah crap, that means I have to delete these all from my mailboxes as
+well.
 
-But unfortunately the lock chains are complex enoguh that in
-scheduling delayed work, we end up eventually trying to grab
-an hrtimer lock.
+Ravi, I can't take any patch or communication that has this type of
+footer as it's in direct contradiction with open source development
+practices and the license of our code.
 
-Sasha Levin noticed this in testing when the new seqlock lockdep
-enablement triggered the following (somewhat abrieviated) message:
+Please fix your email system.
 
-[  251.100221] ======================================================
-[  251.100221] [ INFO: possible circular locking dependency detected ]
-[  251.100221] 3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4053 Not tainted
-[  251.101967] -------------------------------------------------------
-[  251.101967] kworker/10:1/4506 is trying to acquire lock:
-[  251.101967]  (timekeeper_seq){----..}, at: [<ffffffff81160e96>] retrigger_next_event+0x56/0x70
-[  251.101967]
-[  251.101967] but task is already holding lock:
-[  251.101967]  (hrtimer_bases.lock#11){-.-...}, at: [<ffffffff81160e7c>] retrigger_next_event+0x3c/0x70
-[  251.101967]
-[  251.101967] which lock already depends on the new lock.
-[  251.101967]
-[  251.101967]
-[  251.101967] the existing dependency chain (in reverse order) is:
-[  251.101967]
--> #5 (hrtimer_bases.lock#11){-.-...}:
-[snipped]
--> #4 (&rt_b->rt_runtime_lock){-.-...}:
-[snipped]
--> #3 (&rq->lock){-.-.-.}:
-[snipped]
--> #2 (&p->pi_lock){-.-.-.}:
-[snipped]
--> #1 (&(&pool->lock)->rlock){-.-...}:
-[  251.101967]        [<ffffffff81194803>] validate_chain+0x6c3/0x7b0
-[  251.101967]        [<ffffffff81194d9d>] __lock_acquire+0x4ad/0x580
-[  251.101967]        [<ffffffff81194ff2>] lock_acquire+0x182/0x1d0
-[  251.101967]        [<ffffffff84398500>] _raw_spin_lock+0x40/0x80
-[  251.101967]        [<ffffffff81153e69>] __queue_work+0x1a9/0x3f0
-[  251.101967]        [<ffffffff81154168>] queue_work_on+0x98/0x120
-[  251.101967]        [<ffffffff81161351>] clock_was_set_delayed+0x21/0x30
-[  251.101967]        [<ffffffff811c4bd1>] do_adjtimex+0x111/0x160
-[  251.101967]        [<ffffffff811e2711>] compat_sys_adjtimex+0x41/0x70
-[  251.101967]        [<ffffffff843a4b49>] ia32_sysret+0x0/0x5
-[  251.101967]
--> #0 (timekeeper_seq){----..}:
-[snipped]
-[  251.101967] other info that might help us debug this:
-[  251.101967]
-[  251.101967] Chain exists of:
-  timekeeper_seq --> &rt_b->rt_runtime_lock --> hrtimer_bases.lock#11
-
-[  251.101967]  Possible unsafe locking scenario:
-[  251.101967]
-[  251.101967]        CPU0                    CPU1
-[  251.101967]        ----                    ----
-[  251.101967]   lock(hrtimer_bases.lock#11);
-[  251.101967]                                lock(&rt_b->rt_runtime_lock);
-[  251.101967]                                lock(hrtimer_bases.lock#11);
-[  251.101967]   lock(timekeeper_seq);
-[  251.101967]
-[  251.101967]  *** DEADLOCK ***
-[  251.101967]
-[  251.101967] 3 locks held by kworker/10:1/4506:
-[  251.101967]  #0:  (events){.+.+.+}, at: [<ffffffff81154960>] process_one_work+0x200/0x530
-[  251.101967]  #1:  (hrtimer_work){+.+...}, at: [<ffffffff81154960>] process_one_work+0x200/0x530
-[  251.101967]  #2:  (hrtimer_bases.lock#11){-.-...}, at: [<ffffffff81160e7c>] retrigger_next_event+0x3c/0x70
-[  251.101967]
-[  251.101967] stack backtrace:
-[  251.101967] CPU: 10 PID: 4506 Comm: kworker/10:1 Not tainted 3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4053
-[  251.101967] Workqueue: events clock_was_set_work
-
-So the best solution is to avoid calling clock_was_set_delayed() while
-holding the timekeeping lock, and instead using a flag variable to
-decide if we should call clock_was_set() once we've released the locks.
-
-This works for the case here, where the do_adjtimex() was the deadlock
-trigger point. Unfortuantely, in update_wall_time() we still hold
-the jiffies lock, which would deadlock with the ipi triggered by
-clock_was_set(), preventing us from calling it even after we drop the
-timekeeping lock. So instead call clock_was_set_delayed() at that point.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: stable <stable@vger.kernel.org> #3.10+
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- kernel/time/timekeeping.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index d4c78f0..41564cc 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1278,7 +1278,6 @@ static inline unsigned int accumulate_nsecs_to_secs(struct timekeeper *tk)
- 
- 			__timekeeping_set_tai_offset(tk, tk->tai_offset - leap);
- 
--			clock_was_set_delayed();
- 			clock_was_set = TK_CLOCK_WAS_SET;
- 		}
- 	}
-@@ -1442,6 +1441,19 @@ static void update_wall_time(void)
- 	write_seqcount_end(&timekeeper_seq);
- out:
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
-+	if (clock_was_set) {
-+		/*
-+		 * XXX -  I'd rather we just call clock_was_set(), but
-+		 * since we're currently holding the jiffies lock, calling
-+		 * clock_was_set would trigger an ipi which would then grab
-+		 * the jiffies lock and we'd deadlock. :(
-+		 * The right solution should probably be droping
-+		 * the jiffies lock before calling update_wall_time
-+		 * but that requires some rework of the tick sched
-+		 * code.
-+		 */
-+		clock_was_set_delayed();
-+	}
- }
- 
- /**
-@@ -1702,11 +1714,13 @@ int do_adjtimex(struct timex *txc)
- 	if (tai != orig_tai) {
- 		__timekeeping_set_tai_offset(tk, tai);
- 		timekeeping_update(tk, TK_MIRROR | TK_CLOCK_WAS_SET);
--		clock_was_set_delayed();
- 	}
- 	write_seqcount_end(&timekeeper_seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
- 
-+	if (tai != orig_tai)
-+		clock_was_set();
-+
- 	ntp_notify_cmos_timer();
- 
- 	return ret;
--- 
-1.8.3.2
-
+greg k-h
