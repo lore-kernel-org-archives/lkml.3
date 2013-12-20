@@ -1,53 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441Ab3LTF1l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 00:27:41 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:51487
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751039Ab3LTF1k (ORCPT
+	id S1752474Ab3LTFcE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 00:32:04 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:46410 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284Ab3LTFcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 00:27:40 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <broonie@kernel.org>
-CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ASoC: fsl-sai: Use snd_soc_dai_init_dma_data()
-Date: Fri, 20 Dec 2013 12:35:33 +0800
-Message-ID: <1387514133-17463-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
+	Fri, 20 Dec 2013 00:32:01 -0500
+Message-ID: <52B3D64A.7000002@gmail.com>
+Date: Thu, 19 Dec 2013 22:31:54 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, acme@ghostprotocols.net
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] perf tools: Fix bug for perf kvm report without guestmount.
+References: <52A7637E.8080007@cn.fujitsu.com> <1387211216-19794-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+In-Reply-To: <1387211216-19794-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Makes the code slightly shorter
+On 12/16/13, 9:26 AM, Dongsheng Yang wrote:
+> Currently, if we use perf kvm --guestkallsyms --guestmodules report,
+> we can not get the perf information from perf data file. The all sample
+> are shown as unknown.
+>
+> Reproducing steps:
+> 	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
+> 	[ perf record: Woken up 1 times to write data ]
+> 	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
+> 	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
+> 	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
+>
+> This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
+>
+> commit 207b5792696206663a38e525b9793644895bad3b
+> Author: David Ahern <dsahern@gmail.com>
+> Date:   Sun Jul 1 16:11:37 2012 -0600
+>
+>      perf kvm: Fix regression with guest machine creation
+>
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index c3e399b..56142d0 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -926,7 +926,7 @@ static struct machine *
+>                  else
+>                          pid = event->ip.pid;
+>
+> -               return perf_session__find_machine(session, pid);
+> +               return perf_session__findnew_machine(session, pid);
+>          }
+>
+>          return perf_session__find_host_machine(session);
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- sound/soc/fsl/fsl_sai.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Adding the diff to the commit message confuses git-am. Resubmit the 
+patch with just the commit id that introduced the change.
 
-diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
-index 50a797e..9c89f97 100644
---- a/sound/soc/fsl/fsl_sai.c
-+++ b/sound/soc/fsl/fsl_sai.c
-@@ -377,8 +377,8 @@ static int fsl_sai_dai_probe(struct snd_soc_dai *cpu_dai)
- {
- 	struct fsl_sai *sai = dev_get_drvdata(cpu_dai->dev);
- 
--	cpu_dai->playback_dma_data = &sai->dma_params_tx;
--	cpu_dai->capture_dma_data = &sai->dma_params_rx;
-+	snd_soc_dai_init_dma_data(cpu_dai, &sai->dma_params_tx,
-+				&sai->dma_params_rx);
- 
- 	snd_soc_dai_set_drvdata(cpu_dai, sai);
- 
--- 
-1.8.4
+> In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
+> which has the same pid, if no machine found, deliver it to *default* guest. But if we use
+> perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
+> and added. Then the default guest which with pid == 0 will never get a symbol.
+>
+> And because the new machine initialized here has no kernel map created, the symbol delivered to
+> it will be marked as "unknown".
+>
+> This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
+>
+> Verification steps:
+> 	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
+> 	[ perf record: Woken up 1 times to write data ]
+> 	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
+> 	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
+> 	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
+> 	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
+> 	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
+> 	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
+> 	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
+> 	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
+> 	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
+> 	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
+>
+> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+> ---
+>      Changelog since V1:
+>          * More commit message.
+>
+>   tools/perf/util/session.c | 7 ++++++-
+>   1 file changed, 6 insertions(+), 1 deletion(-)
+>
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 989b2e3..a12dfdd 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -830,6 +830,7 @@ static struct machine *
+>   					       struct perf_sample *sample)
+>   {
+>   	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+> +	struct machine *machine;
+>
+>   	if (perf_guest &&
+>   	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
+> @@ -842,7 +843,11 @@ static struct machine *
+>   		else
+>   			pid = sample->pid;
+>
+> -		return perf_session__findnew_machine(session, pid);
+> +		machine = perf_session__find_machine(session, pid);
+> +		if (!machine)
+> +			machine = perf_session__findnew_machine(session,
+> +						DEFAULT_GUEST_KERNEL_ID);
+> +		return machine;
+>   	}
+>
+>   	return &session->machines.host;
+>
+
+And for this change you can add an
+Acked-by: David Ahern <dsahern@gmail.com>
+
+So this patch fixes the behavior for defaulting to a guest machine with 
+the --guestkallsyms / --guestmodules options. And for the curious, last 
+properly working version of perf-kvm for --guestkallsyms + 
+--guestmodules options is v3.2. Thanks for digging into it the regression.
+
+With this patch the only degradation for these options appears to be the 
+comm change. I'd like to see it stay [guest/<pid>], but was not able to 
+find a quick solution for that.
+
+David
+
 
 
