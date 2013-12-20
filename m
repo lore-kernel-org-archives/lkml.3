@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab3LTW4c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 17:56:32 -0500
-Received: from mga09.intel.com ([134.134.136.24]:27558 "EHLO mga09.intel.com"
+	id S1754259Ab3LTXFq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 18:05:46 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:58218 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751256Ab3LTW4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 17:56:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,524,1384329600"; 
-   d="scan'208";a="455722986"
-Date: Fri, 20 Dec 2013 14:56:24 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Michel Lespinasse <walken@google.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Yang Zhang <yang.z.zhang@Intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>, janet.morgan@Intel.com,
-        tony.luck@Intel.com, ruiv.wang@gmail.com, gong.chen@linux.intel.com
-Subject: Re: [PATCH] x86: Add check for number of available vectors before
- CPU down [v3]
-Message-ID: <20131220225624.GD22695@tassilo.jf.intel.com>
-References: <1387554609-9823-1-git-send-email-prarit@redhat.com>
+	id S1751039Ab3LTXFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 18:05:45 -0500
+Message-ID: <52B4CD2B.3080100@ti.com>
+Date: Fri, 20 Dec 2013 18:05:15 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387554609-9823-1-git-send-email-prarit@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] mm/ARM: fix ARMs __ffs() to conform to avoid warning
+ with NO_BOOTMEM
+References: <1386981486-3173-1-git-send-email-santosh.shilimkar@ti.com> <52B4C71D.9030904@ti.com> <20131220225541.GN4360@n2100.arm.linux.org.uk>
+In-Reply-To: <20131220225541.GN4360@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 20, 2013 at 10:50:09AM -0500, Prarit Bhargava wrote:
-> I tested across various systems with both the linux.git and linux-next.git
-> trees and do not see any false positives.  The patch behaves as expected on
-> a system with 590 IRQs allocated at boot time; the system refuses to down cpu
-> 62.
+On Friday 20 December 2013 05:55 PM, Russell King - ARM Linux wrote:
+> On Fri, Dec 20, 2013 at 05:39:25PM -0500, Santosh Shilimkar wrote:
+>> Russell,
+>>
+>> On Friday 13 December 2013 07:38 PM, Santosh Shilimkar wrote:
+>>> Building ARM with NO_BOOTMEM generates below warning.
+>>>
+>>> mm/nobootmem.c: In function _____free_pages_memory___:
+>>> mm/nobootmem.c:88:11: warning: comparison of distinct pointer types lacks a cast
+>>>
+>>> 	order = min(MAX_ORDER - 1UL, __ffs(start));
+>>>
+>>> ARM's __ffs() differs from other architectures in that it ends up being
+>>> an int, whereas almost everyone else is unsigned long.
+>>>
+>>> So fix ARMs __ffs() to conform to other architectures. Suggested by
+>>> Russell King <linux@arm.linux.org.uk>
+>>>
+>>> Some more details in below thread -
+>>> 	https://lkml.org/lkml/2013/12/9/807
+>>>
+>>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>>> Cc: Russell King <linux@arm.linux.org.uk>
+>>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>> ---
+>> Is this patch inline with what we discussed off-list ?
+> 
+> It is.
+> 
+>> If you ack it, it can go into the Andrews tree to kill that one last
+>> warning with the memblock series. Thanks
+> 
+> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+>
+Great !!
+ 
+Andrew,
+Can you please pick the $subject patch as well in your
+mm tree ? Thanks
 
-I read the patch and it looks good to me
-
-I haven't double checked, but I'm assuming the hot plug locks are held
-while you are doing this.
-
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-
--Andi
+regards,
+Santosh
