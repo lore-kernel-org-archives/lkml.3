@@ -1,102 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161009Ab3LTNnh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 08:43:37 -0500
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:38034 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932522Ab3LTNng (ORCPT
+	id S1030208Ab3LTNqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 08:46:37 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:36193 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030186Ab3LTNqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 08:43:36 -0500
-From: Fabio Estevam <festevam@gmail.com>
-To: broonie@kernel.org
-Cc: linux-kernel@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] regulator: tps51632-regulator: Fix spelling
-Date: Fri, 20 Dec 2013 11:43:21 -0200
-Message-Id: <1387547001-32564-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Fri, 20 Dec 2013 08:46:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <52B4466A.2020700@xs4all.nl>
+References: <1387293923-27236-1-git-send-email-prabhakar.csengg@gmail.com>
+ <CA+V-a8sdCuO1U3Egn62g_QivmVUEXzF4RgKbi-Ksm7JZEY-KKA@mail.gmail.com>
+ <52B43DB0.8020107@xs4all.nl> <CA+V-a8tzXtPS5pjGqpno74-9s3gruJhBJ+WD23n1w2jsR7uZGA@mail.gmail.com>
+ <52B4466A.2020700@xs4all.nl>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Fri, 20 Dec 2013 19:16:13 +0530
+Message-ID: <CA+V-a8tDZd3eKiJUKogTEJAuvYEn7a5HRberoeSpzFj-0DVfAA@mail.gmail.com>
+Subject: Re: [PATCH] media: davinci_vpfe: fix build error
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>, devel@driverdev.osuosl.org,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        LMML <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+Hi Hans,
 
-Fix the 'VOLATGE' spell error.
+On Fri, Dec 20, 2013 at 7:00 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> Hi Prabhakar,
+>
+> On 12/20/2013 02:02 PM, Prabhakar Lad wrote:
+>> Hi Hans,
+>>
+>> On Fri, Dec 20, 2013 at 6:23 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+>>> I just made a patch myself that I added to the pull request I just posted.
+>>>
+>>> You didn't CC me or CC the linux-media list when you posted your patch, so I
+>>> never saw it.
+>>>
+>> I dont know why this patch didnt make up in linux-media but its
+>> present DLOS [1].
+>
+> If it's not mailed to linux-media, then it doesn't end up in linux-media patchwork,
+> and then I won't see it when I process pending patches.
+>
+> While I am subscribed to DLOS I do not actually read it unless I know there is
+> something that I need to pay attention to.
+>
+This didnt land into linux-media becuase may be I sent it throught TI's network
+I usually send it via my home network.
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/regulator/tps51632-regulator.c | 28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+>> I posted it the same day when you pinged me about this issue.
+>
+> I was a bit surprised that I didn't see a patch for this, you are very prompt
+> normally :-)
+>
+ :)
+>> Anyway your patch
+>> too didnt reach me and I also cannot find it in the ML. May be you
+>> directly issued the pull ?
+>
+> I directly issued the pull. It was such a trivial change.
+>
+No problem as long as its fixed :)
 
-diff --git a/drivers/regulator/tps51632-regulator.c b/drivers/regulator/tps51632-regulator.c
-index 3486be9..b3764f5 100644
---- a/drivers/regulator/tps51632-regulator.c
-+++ b/drivers/regulator/tps51632-regulator.c
-@@ -70,16 +70,16 @@
- #define TPS51632_POWER_STATE_SINGLE_PHASE_CCM	0x1
- #define TPS51632_POWER_STATE_SINGLE_PHASE_DCM	0x2
- 
--#define TPS51632_MIN_VOLATGE			500000
--#define TPS51632_MAX_VOLATGE			1520000
--#define TPS51632_VOLATGE_STEP_10mV		10000
--#define TPS51632_VOLATGE_STEP_20mV		20000
-+#define TPS51632_MIN_VOLTAGE			500000
-+#define TPS51632_MAX_VOLTAGE			1520000
-+#define TPS51632_VOLTAGE_STEP_10mV		10000
-+#define TPS51632_VOLTAGE_STEP_20mV		20000
- #define TPS51632_MAX_VSEL			0x7F
- #define TPS51632_MIN_VSEL			0x19
- #define TPS51632_DEFAULT_RAMP_DELAY		6000
- #define TPS51632_VOLT_VSEL(uV)					\
--		(DIV_ROUND_UP(uV - TPS51632_MIN_VOLATGE,	\
--			TPS51632_VOLATGE_STEP_10mV) +		\
-+		(DIV_ROUND_UP(uV - TPS51632_MIN_VOLTAGE,	\
-+			TPS51632_VOLTAGE_STEP_10mV) +		\
- 			TPS51632_MIN_VSEL)
- 
- /* TPS51632 chip information */
-@@ -243,9 +243,9 @@ static struct tps51632_regulator_platform_data *
- 	pdata->dvfs_step_20mV = of_property_read_bool(np, "ti,dvfs-step-20mV");
- 
- 	pdata->base_voltage_uV = pdata->reg_init_data->constraints.min_uV ? :
--					TPS51632_MIN_VOLATGE;
-+					TPS51632_MIN_VOLTAGE;
- 	pdata->max_voltage_uV = pdata->reg_init_data->constraints.max_uV ? :
--					TPS51632_MAX_VOLATGE;
-+					TPS51632_MAX_VOLTAGE;
- 	return pdata;
- }
- #else
-@@ -284,15 +284,15 @@ static int tps51632_probe(struct i2c_client *client,
- 	}
- 
- 	if (pdata->enable_pwm_dvfs) {
--		if ((pdata->base_voltage_uV < TPS51632_MIN_VOLATGE) ||
--		    (pdata->base_voltage_uV > TPS51632_MAX_VOLATGE)) {
-+		if ((pdata->base_voltage_uV < TPS51632_MIN_VOLTAGE) ||
-+		    (pdata->base_voltage_uV > TPS51632_MAX_VOLTAGE)) {
- 			dev_err(&client->dev, "Invalid base_voltage_uV setting\n");
- 			return -EINVAL;
- 		}
- 
- 		if ((pdata->max_voltage_uV) &&
--		    ((pdata->max_voltage_uV < TPS51632_MIN_VOLATGE) ||
--		     (pdata->max_voltage_uV > TPS51632_MAX_VOLATGE))) {
-+		    ((pdata->max_voltage_uV < TPS51632_MIN_VOLTAGE) ||
-+		     (pdata->max_voltage_uV > TPS51632_MAX_VOLTAGE))) {
- 			dev_err(&client->dev, "Invalid max_voltage_uV setting\n");
- 			return -EINVAL;
- 		}
-@@ -308,8 +308,8 @@ static int tps51632_probe(struct i2c_client *client,
- 	tps->desc.name = client->name;
- 	tps->desc.id = 0;
- 	tps->desc.ramp_delay = TPS51632_DEFAULT_RAMP_DELAY;
--	tps->desc.min_uV = TPS51632_MIN_VOLATGE;
--	tps->desc.uV_step = TPS51632_VOLATGE_STEP_10mV;
-+	tps->desc.min_uV = TPS51632_MIN_VOLTAGE;
-+	tps->desc.uV_step = TPS51632_VOLTAGE_STEP_10mV;
- 	tps->desc.linear_min_sel = TPS51632_MIN_VSEL;
- 	tps->desc.n_voltages = TPS51632_MAX_VSEL + 1;
- 	tps->desc.ops = &tps51632_dcdc_ops;
--- 
-1.8.1.2
-
+Thanks,
+--Prabhakar Lad
