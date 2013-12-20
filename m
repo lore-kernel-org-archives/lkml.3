@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab3LTWgZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 17:36:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57676 "EHLO mx2.suse.de"
+	id S1754952Ab3LTWj7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 17:39:59 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:48104 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810Ab3LTWgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 17:36:23 -0500
-Date: Fri, 20 Dec 2013 23:36:17 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: David Herrmann <dh.herrmann@gmail.com>
-cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] HID: input: fix input sysfs path for hid devices
-In-Reply-To: <CANq1E4QrPAJ7zNdN51PGQD5tkD_gTYfRoHOg7=zwVvnu-xOR0g@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1312202335300.11949@pobox.suse.cz>
-References: <1387469113-4129-1-git-send-email-benjamin.tissoires@redhat.com> <CANq1E4QrPAJ7zNdN51PGQD5tkD_gTYfRoHOg7=zwVvnu-xOR0g@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751810Ab3LTWj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 17:39:57 -0500
+Message-ID: <52B4C71D.9030904@ti.com>
+Date: Fri, 20 Dec 2013 17:39:25 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Russell King <linux@arm.linux.org.uk>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] mm/ARM: fix ARMs __ffs() to conform to avoid warning
+ with NO_BOOTMEM
+References: <1386981486-3173-1-git-send-email-santosh.shilimkar@ti.com>
+In-Reply-To: <1386981486-3173-1-git-send-email-santosh.shilimkar@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Dec 2013, David Herrmann wrote:
+Russell,
 
-> <benjamin.tissoires@redhat.com> wrote:
-> > we used to set the parent of the input device as the parent of
-> > the hid bus. This was introduced when we created hid as a real bus, and
-> > to keep backward compatibility. Now, it's time to proper set the parent
-> > so that sysfs has an idea of which input device is attached to
-> > which hid device.
-> >
-> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> > ---
-> >
-> > Hi Jiri,
-> >
-> > well, the regression test did not showed anything bad, and a look at the hid
-> > drivers also showed that no drivers should be armed by that.
-> >
-> > I think this is valuable because it will give a better understanding of the
-> > actual mapping hardware/inputs. Like a touchscreen with pen + touch will have
-> > the same hid parent, and I expect X/Wayland to be able to detect this at some
-> > point to keep the mapping correctly between the two input devices and the screen.
-> >
-> > I also need that for hid-replay, so that I can be sure which input is attached
-> > to which uhid device, and give up the heuristics I currently use.
+On Friday 13 December 2013 07:38 PM, Santosh Shilimkar wrote:
+> Building ARM with NO_BOOTMEM generates below warning.
 > 
-> I was just wondering where we have multiple HID devices on a single
-> parent, but yeah, uhid is a good example. I actually have no
-> objections to this patch and it looks fine. But I cannot tell whether
-> anyone relies on this.
+> mm/nobootmem.c: In function _____free_pages_memory___:
+> mm/nobootmem.c:88:11: warning: comparison of distinct pointer types lacks a cast
 > 
-> I'd say we should give it a try.
+> 	order = min(MAX_ORDER - 1UL, __ffs(start));
+> 
+> ARM's __ffs() differs from other architectures in that it ends up being
+> an int, whereas almost everyone else is unsigned long.
+> 
+> So fix ARMs __ffs() to conform to other architectures. Suggested by
+> Russell King <linux@arm.linux.org.uk>
+> 
+> Some more details in below thread -
+> 	https://lkml.org/lkml/2013/12/9/807
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> ---
+Is this patch inline with what we discussed off-list ?
+If you ack it, it can go into the Andrews tree to kill that one last
+warning with the memblock series. Thanks
 
-Agreed, let's take it for 3.14, and if anyone complains about breakage 
-caused by this (which I don't expect), we'll revert to the previous state.
 
--- 
-Jiri Kosina
-SUSE Labs
+>  arch/arm/include/asm/bitops.h |   23 +++++++++++++++++++----
+>  1 file changed, 19 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
+> index e691ec9..5f41d81 100644
+> --- a/arch/arm/include/asm/bitops.h
+> +++ b/arch/arm/include/asm/bitops.h
+> @@ -270,10 +270,25 @@ static inline int fls(int x)
+>  	return ret;
+>  }
+>  
+> -#define __fls(x) (fls(x) - 1)
+> -#define ffs(x) ({ unsigned long __t = (x); fls(__t & -__t); })
+> -#define __ffs(x) (ffs(x) - 1)
+> -#define ffz(x) __ffs( ~(x) )
+> +static inline unsigned long __fls(unsigned long x)
+> +{
+> +	return fls(x) - 1;
+> +}
+> +
+> +static inline int ffs(int x)
+> +{
+> +	return fls(x & -x);
+> +}
+> +
+> +static inline unsigned long __ffs(unsigned long x)
+> +{
+> +	return ffs(x) - 1;
+> +}
+> +
+> +static inline unsigned long ffz(unsigned long x)
+> +{
+> +	return __ffs(~x);
+> +}
+>  
+>  #endif
+>  
+> 
+
