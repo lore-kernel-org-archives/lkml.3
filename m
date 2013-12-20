@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab3LTBcm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 20:32:42 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63535 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756362Ab3LTBcl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 20:32:41 -0500
-X-AuditID: 9c930197-b7cefae000007949-5e-52b39e37ee59
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/6] perf report: Use pr_*() functions if possible
-References: <1387436411-20160-1-git-send-email-namhyung@kernel.org>
-	<1387436411-20160-2-git-send-email-namhyung@kernel.org>
-	<20131219133047.GK4819@ghostprotocols.net>
-Date: Fri, 20 Dec 2013 10:32:39 +0900
-In-Reply-To: <20131219133047.GK4819@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Thu, 19 Dec 2013 10:30:47 -0300")
-Message-ID: <87iouke288.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1756900Ab3LTBe5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 20:34:57 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:44829 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756516Ab3LTBe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 20:34:56 -0500
+X-IronPort-AV: E=Sophos;i="4.95,516,1384272000"; 
+   d="scan'208";a="9294465"
+Message-ID: <52B39EF3.5020202@cn.fujitsu.com>
+Date: Fri, 20 Dec 2013 09:35:47 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Eric Paris <eparis@redhat.com>
+CC: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
+        Steve Grubb <sgrubb@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH] audit: listen in all network namespaces
+References: <1374006760-7687-1-git-send-email-rgb@redhat.com>	 <52B26F1A.9070308@cn.fujitsu.com> <1387478422.29366.33.camel@flatline.rdu.redhat.com>
+In-Reply-To: <1387478422.29366.33.camel@flatline.rdu.redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/20 09:34:17,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/20 09:34:22,
+	Serialize complete at 2013/12/20 09:34:22
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Dec 2013 10:30:47 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Dec 19, 2013 at 04:00:06PM +0900, Namhyung Kim escreveu:
->> -	if (verbose > 3)
->> -		perf_session__fprintf(session, stdout);
->> +	if (use_browser == 0) {
->> +		if (verbose > 3)
->> +			perf_session__fprintf(session, stdout);
->>  
->> -	if (verbose > 2)
->> -		perf_session__fprintf_dsos(session, stdout);
->> +		if (verbose > 2)
->> +			perf_session__fprintf_dsos(session, stdout);
->>  
->> -	if (dump_trace) {
->> -		perf_session__fprintf_nr_events(session, stdout);
->> -		return 0;
->> +		if (dump_trace) {
->> +			perf_session__fprintf_nr_events(session, stdout);
->> +			return 0;
->> +		}
->>  	}
->
-> This should be in a different patch, one that is related just to
-> dump_trace, i.e. if -D, aka dump_trace (right?) is enabled, then
-> probably we won't be initializing the TUI/GUI, no?
+On 12/20/2013 02:40 AM, Eric Paris wrote:
+> On Thu, 2013-12-19 at 11:59 +0800, Gao feng wrote:
+>> On 07/17/2013 04:32 AM, Richard Guy Briggs wrote:
+>>> Convert audit from only listening in init_net to use register_pernet_subsys()
+>>> to dynamically manage the netlink socket list.
+>>>
+>>> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+>>> ---
+>>
+>> I think it's the time for us to discuss if we should revert this
+>> commit, since this one prevent me from continuing to achieve
+>> audit namespace.
+>>
+>>
+>> The major problem is in kaudit_send_skb, we have no idea which
+>> audit sock the skb should send to.
+> 
+> right, we have problems here no matter what...
+> 
+> If we stick with the current approach you will need to know socket +
+> portid.  With your approach one only needs to know portid.  Since these
+> are can both be part of the audit_ns structure I don't see a huge
+> difference...
+> 
+>> we have to store audit_sock
+>> into auditns(auditns will be passed to kauditd_send_skb),
+>> this will cause auditns have to get a reference of netns.
+>> and for some reason(netfilter audit target), netns will
+>> get reference of auditns too. this is terrible...
+> 
+> I'm not sure I agree/understand this entirely...
+> 
 
-Yes, the dump_trace will make use_browser = 0.  So I just moved it under
-the if (use_browser == 0).
+My brain must be destroyed, I need to think about if auditns
+should get reference of netns. it's not clear to me now. :(
+but I intend to think you are right.
 
->
-> So having a patch that deals just with conversions of fprintf ->
-> pr_{err,etc} and another that deals with dump_trace related seems to be
-> the best course of action.
+>> So why not we revert this one, and use a very simple one to
+>> replace it? the below patch will save us from the refer to
+>> each other case, achieve the same effect.
+>>
+>> what's your opinion?
+> 
+> Help me go all the way back to the beginning.  What's our end goal here
+> again?
+> 
+> When thinking about this I realized we have another problem that I don't
+> think we've considered.  Which makes me lean away from the single
+> socket/kauditd  :(
+> 
+> I we have one socket and one kauditd ANY auditd can completely freeze
+> the audit system.  Which seems problematic, especially if there isn't
+> equal levels of trust between the different namespaces...  If one auditd
+> gets hung (intentionally or not) the kernel will never send another
+> audit message....
+> 
+> Makes me think we really need a kauditd thread per namespace, possibly
+> an skb queue per namespace.  At which point an audit socket per
+> namespace makes a lot of sense too....
+> 
 
-Okay, I'll split this into two.
+You are right, and My prototype supports per kauditd/auditd/sbk queue per
+audit namespace. one auditd freeze in one auditns will not affect audit
+subsystem in another auditns.
 
-Thanks,
-Namhyung
+Thanks!
