@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab3LTIyw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 03:54:52 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49640 "EHLO
+	id S1755051Ab3LTI65 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 03:58:57 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49697 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754589Ab3LTIyv (ORCPT
+	with ESMTP id S1753541Ab3LTI64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 03:54:51 -0500
-Date: Fri, 20 Dec 2013 09:54:26 +0100
+	Fri, 20 Dec 2013 03:58:56 -0500
+Date: Fri, 20 Dec 2013 09:58:46 +0100
 From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
-        Jason Low <jason.low2@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Tom Vaden <tom.vaden@hp.com>, "Norton, Scott J" <scott.norton@hp.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
-Message-ID: <20131220085426.GZ21999@twins.programming.kicks-ass.net>
-References: <1387478746-5436-1-git-send-email-davidlohr@hp.com>
- <1387478746-5436-5-git-send-email-davidlohr@hp.com>
- <CA+55aFxY_sMes2=0tz0qTKH5-fpAaLji_xd9CdU-u2JxxNN6pA@mail.gmail.com>
- <1387496569.8363.12.camel@buesod1.americas.hpqcorp.net>
- <CA+55aFyay84UKWEbAZ=8bT-KV5gq-+1fWgS52gRQv=qZJzMSOQ@mail.gmail.com>
- <1387506141.8363.47.camel@buesod1.americas.hpqcorp.net>
- <CA+55aFyrZmG6rNpY22OK3UQi18e=4UQyh8a3tpxY+QVCbNxXkw@mail.gmail.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] pid: change task_struct::pid to read-only
+Message-ID: <20131220085846.GA21999@twins.programming.kicks-ass.net>
+References: <8aa73d2b884439496f87d5f34c12ba9b4b40f7e5.1377032086.git.rgb@redhat.com>
+ <ae3d74e79649d9e4962d0da030fb4852ddc5b8d1.1387227114.git.rgb@redhat.com>
+ <20131217095801.GF21999@twins.programming.kicks-ass.net>
+ <20131220044826.GF14944@madcap2.tricolour.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyrZmG6rNpY22OK3UQi18e=4UQyh8a3tpxY+QVCbNxXkw@mail.gmail.com>
+In-Reply-To: <20131220044826.GF14944@madcap2.tricolour.ca>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 07:13:09PM -0800, Linus Torvalds wrote:
-> I think we might have to order the two reads with an smp_rmb - making
-> sure that we check the lock state first - but I think it should be
-> otherwise pretty solid.
+On Thu, Dec 19, 2013 at 11:48:26PM -0500, Richard Guy Briggs wrote:
+> On 13/12/17, Peter Zijlstra wrote:
+> > On Mon, Dec 16, 2013 at 04:03:38PM -0500, Richard Guy Briggs wrote:
+> > > task->pid is only ever assigned once (well ok, twice).  For system health and
+> > > secure logging confidence, make it const to make it much more intentional when
+> > > it is being changed.
+> > > ---
+> > > 
+> > > Peter, as you had suggested, does this approach work for you in terms of making
+> > > task_struct::pid a lot more difficult to accidentally change to try to preserve
+> > > its integrity?
+> > 
+> > Yeah, looks good to me.
+> 
+> Ok, who would carry this patch?  You?  AKPM?  Me?
 
-> Yeah, I said "spin_contended()" myself initially, but it needs to be
-> "spin_is_locked()". It's hopefully unlikely to ever actually be
-> contended (which in ticket lock terms is "head is _more_ than one away
-> from the tail").
+Andrew seems to be the him who carries PID stuff. I don't think I can make
+a case that its scheduler related.
 
+> Any opinions about Oleg's macro idea?
 
-Right, which would give us something like:
-
-  LOCK m		is_locked m
-  list_{add,del}	RMB
-  UNLOCK m		list_empty
-
-Where the rmb matches the release/unlock. This guarantees that when we
-see the unlock we must also see the list modification.
+I'm undecided.. on the one hand the macro makes it too easy to change
+const stuff, on the other hand it makes it explicit and easily
+greppable.
 
 
