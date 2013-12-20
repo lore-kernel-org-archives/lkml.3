@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab3LTDfJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 22:35:09 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:15914 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753042Ab3LTDfH (ORCPT
+	id S1753217Ab3LTDj7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 22:39:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48757 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832Ab3LTDj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 22:35:07 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmIHACO6s1J5LHyk/2dsb2JhbABZgwu0YoVdgRgXdIIlAQEBAwE6HCMQCAMOCgklDwUlAyETG4dhB8pzFxaOfAeDI4ETBJgVikyHSYM/KA
-Date: Fri, 20 Dec 2013 14:35:02 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Dave Chinner <dchinner@redhat.com>, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [fs] inode_lru_isolate(): Move counter increment into spinlock
- section
-Message-ID: <20131220033502.GF31386@dastard>
-References: <00000143072add16-956bfa6c-d7d5-4df9-aabc-05a904a0edc4-000000@email.amazonses.com>
- <20131219042322.GX31386@dastard>
- <alpine.DEB.2.10.1312190921450.4238@nuc>
+	Thu, 19 Dec 2013 22:39:57 -0500
+Date: Thu, 19 Dec 2013 19:40:04 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ravi Patel <rapatel@apm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com
+Subject: Re: [PATCH 0/4] misc: xgene: Add support for APM X-Gene SoC Queue
+ Manager/Traffic Manager
+Message-ID: <20131220034004.GA8160@kroah.com>
+References: <1387507503-7565-1-git-send-email-rapatel@apm.com>
+ <20131220032217.GC32310@kroah.com>
+ <CAN1v_PsibDTwQ9_ZxRnBtJA46BPne6fTuS_9TddWPZt6ewwgQQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1312190921450.4238@nuc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAN1v_PsibDTwQ9_ZxRnBtJA46BPne6fTuS_9TddWPZt6ewwgQQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 09:26:12AM -0600, Christoph Lameter wrote:
-> On Thu, 19 Dec 2013, Dave Chinner wrote:
-> 
-> > On Wed, Dec 18, 2013 at 07:24:46PM +0000, Christoph Lameter wrote:
-> > > The counter increment in inode_lru_isolate is happening after
-> > > spinlocks have been dropped with preemption on using __count_vm_events
-> > > making counter increment races possible.
-> >
-> > That's a nasty, undocumented problem that __count_vm_events() has.
-> 
-> AFACIT that is a pretty well established and known issue. It only
-> affects cases where the fallback code for the counter increments is used.
 
-Maybe for mm developers. Not so filesystem people, and certainly not
-the person who made the last set of modifications, even though I do
-spend a fair bit of time around the fringes of the MM code...
+A: No.
+Q: Should I include quotations after my reply?
 
-> > Nobody who is modifying the fs/inode.c code is likely to know about
-> > this, so just moving the code under an unrelated lock is not
-> > sufficient to prevent this from happening again. Hence I'd prefer
-> > that you just change it to use count_vm_events() rather than try to
-> > be tricksy by replacing the landmine in the code that we've already
-> > stepped on once.
-> 
-> I have a patchset here that is supposed to be merged soon that will detect
-> these cases.
-> 
-> Moving the code is IMHO the simplest solution. count_vm_events
-> will have to disable interrupts on platforms that do not support fast RMV
-> operations otherwise.
+http://daringfireball.net/2007/07/on_top
 
-If count_vm_events requires irqs to be disabled to behave correctly,
-then putting __count_vm_events under a spin lock is still not irq
-safe. Either way, this isn't in a performance critical path, so I'd
-much prefer the simpler, safer option be used rather than leave a
-landmine for other unsuspecting developers.
+On Thu, Dec 19, 2013 at 07:27:35PM -0800, Ravi Patel wrote:
+> APM X-Gene SoC Ethernet driver is planned to be submitted on Dec 20 2013.
+> Ethernet driver will be using these exported API's from QMTM driver.
 
-Cheers,
+Please submit a user of the api as part of the series, otherwise we
+can't evaluate if it's really the correct thing to do or not.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+> The APM X-Gene SoC Ethernet driver is going to live in drivers/net/ethernet/apm
+> /xgene.
+
+So this is a "bus"?  How is the ethernet device going to show up in
+sysfs as a parent of what as this isn't part of the driver model?
+
+greg k-h
