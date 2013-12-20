@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab3LTB6f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 20:58:35 -0500
-Received: from [213.199.154.186] ([213.199.154.186]:29484 "EHLO
-	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S932190Ab3LTB5y (ORCPT
+	id S932224Ab3LTB6d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 20:58:33 -0500
+Received: from [213.199.154.204] ([213.199.154.204]:32776 "EHLO
+	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S932065Ab3LTB5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 20:57:54 -0500
+	Thu, 19 Dec 2013 20:57:50 -0500
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+X-SpamScore: 1
+X-BigFish: VS1(z551bizzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
 From: Xiubo Li <Li.Xiubo@freescale.com>
 To: <broonie@kernel.org>, <alsa-devel@alsa-project.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCHv4 4/4] Documentation: Add device tree bindings for Freescale SAI.
-Date: Fri, 20 Dec 2013 09:03:07 +0800
-Message-ID: <1387501387-2151-4-git-send-email-Li.Xiubo@freescale.com>
+Subject: [PATCHv4 3/4] ARM: dts: Enable SAI ALSA SoC DAI device for Vybrid VF610 TOWER board.
+Date: Fri, 20 Dec 2013 09:03:06 +0800
+Message-ID: <1387501387-2151-3-git-send-email-Li.Xiubo@freescale.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1387501387-2151-1-git-send-email-Li.Xiubo@freescale.com>
 References: <1387501387-2151-1-git-send-email-Li.Xiubo@freescale.com>
@@ -27,61 +27,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the Document for Freescale SAI driver under
-Documentation/devicetree/bindings/sound/.
+This patch adds and enables the SAI device.
 
 Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- .../devicetree/bindings/sound/fsl-sai.txt          | 40 ++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/sound/fsl-sai.txt
+ arch/arm/boot/dts/vf610-twr.dts | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/sound/fsl-sai.txt b/Documentation/devicetree/bindings/sound/fsl-sai.txt
-new file mode 100644
-index 0000000..ca49ad1
---- /dev/null
-+++ b/Documentation/devicetree/bindings/sound/fsl-sai.txt
-@@ -0,0 +1,40 @@
-+Freescale Synchronous Audio Interface (SAI).
-+
-+The SAI is based on I2S module that used communicating with audio codecs,
-+which provides a synchronous audio interface that supports fullduplex
-+serial interfaces with frame synchronization such as I2S, AC97, TDM, and
-+codec/DSP interfaces.
-+
-+
-+Required properties:
-+- compatible: Compatible list, contains "fsl,vf610-sai".
-+- reg: Offset and length of the register set for the device.
-+- clocks: Must contain an entry for each entry in clock-names.
-+- clock-names : Must include the "sai" entry.
-+- dmas : Generic dma devicetree binding as described in
-+  Documentation/devicetree/bindings/dma/dma.txt.
-+- dma-names : Two dmas have to be defined, "tx" and "rx".
-+- pinctrl-names: Must contain a "default" entry.
-+- pinctrl-NNN: One property must exist for each entry in pinctrl-names.
-+  See ../pinctrl/pinctrl-bindings.txt for details of the property values.
-+- big-endian-regs: If this property is absent, the little endian mode will
-+  be in use as default, or the big endian mode will be in use for all the
-+  device registers.
-+- big-endian-data: If this property is absent, the little endian mode will
-+  be in use as default, or the big endian mode will be in use for all the
-+  fifo data.
-+
-+Example:
-+sai2: sai@40031000 {
-+	      compatible = "fsl,vf610-sai";
-+	      reg = <0x40031000 0x1000>;
-+	      pinctrl-names = "default";
-+	      pinctrl-0 = <&pinctrl_sai2_1>;
-+	      clocks = <&clks VF610_CLK_SAI2>;
-+	      clock-names = "sai";
-+	      dma-names = "tx", "rx";
-+	      dmas = <&edma0 0 VF610_EDMA_MUXID0_SAI2_TX>,
-+		   <&edma0 0 VF610_EDMA_MUXID0_SAI2_RX>;
-+	      big-endian_regs;
-+	      big-endian_data;
+diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
+index c8047ca..e60c20c 100644
+--- a/arch/arm/boot/dts/vf610-twr.dts
++++ b/arch/arm/boot/dts/vf610-twr.dts
+@@ -74,6 +74,12 @@
+ 	status = "okay";
+ };
+ 
++&sai2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_sai2_1>;
++	status = "okay";
 +};
++
+ &uart1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_uart1_1>;
 -- 
 1.8.4
 
