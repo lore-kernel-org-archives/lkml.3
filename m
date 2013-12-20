@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab3LTTVV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 14:21:21 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38460 "EHLO
+	id S932215Ab3LTTVX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 14:21:23 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38471 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab3LTTJ2 (ORCPT
+	with ESMTP id S1751738Ab3LTTJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Dec 2013 14:09:28 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/35] perf inject: Handle output file via perf_data_file object
-Date: Fri, 20 Dec 2013 16:08:48 -0300
-Message-Id: <1387566550-3524-14-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 06/35] perf hists: Leave symbol addr hist bucket auto alloc to symbol layer
+Date: Fri, 20 Dec 2013 16:08:41 -0300
+Message-Id: <1387566550-3524-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1387566550-3524-1-git-send-email-acme@infradead.org>
 References: <1387566550-3524-1-git-send-email-acme@infradead.org>
@@ -28,156 +29,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Using the perf_data_file object to handle output file processing.
+Since now symbol__addr_inc_samples() does the auto alloc, no need to do
+it prior to calling hist_entry__inc_addr_samples.
 
-No functional change intended.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-01j9ophd7tntmgrxa40uqjjm@git.kernel.org
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-6ife7xq2kef1nn017m04b3id@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-inject.c | 65 +++++++++++++++++++--------------------------
- 1 file changed, 27 insertions(+), 38 deletions(-)
+ tools/perf/builtin-annotate.c | 10 +---------
+ tools/perf/builtin-report.c   | 38 ++++----------------------------------
+ 2 files changed, 5 insertions(+), 43 deletions(-)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 6a2508589460..c9f6d74e1fd7 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -22,14 +22,13 @@
- #include <linux/list.h>
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 6fd52c8fa682..4136f9970fd5 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -69,15 +69,7 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
+ 	if (he == NULL)
+ 		return -ENOMEM;
  
- struct perf_inject {
--	struct perf_tool tool;
--	bool		 build_ids;
--	bool		 sched_stat;
--	const char	 *input_name;
--	int		 pipe_output,
--			 output;
--	u64		 bytes_written;
--	struct list_head samples;
-+	struct perf_tool	tool;
-+	bool			build_ids;
-+	bool			sched_stat;
-+	const char		*input_name;
-+	struct perf_data_file	output;
-+	u64			bytes_written;
-+	struct list_head	samples;
- };
- 
- struct event_entry {
-@@ -42,21 +41,14 @@ static int perf_event__repipe_synth(struct perf_tool *tool,
- 				    union perf_event *event)
- {
- 	struct perf_inject *inject = container_of(tool, struct perf_inject, tool);
--	uint32_t size;
--	void *buf = event;
-+	ssize_t size;
- 
--	size = event->header.size;
+-	ret = 0;
+-	if (he->ms.sym != NULL) {
+-		struct annotation *notes = symbol__annotation(he->ms.sym);
+-		if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
+-			return -ENOMEM;
 -
--	while (size) {
--		int ret = write(inject->output, buf, size);
--		if (ret < 0)
--			return -errno;
--
--		size -= ret;
--		buf += ret;
--		inject->bytes_written += ret;
+-		ret = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
 -	}
-+	size = perf_data_file__write(&inject->output, event,
-+				     event->header.size);
-+	if (size < 0)
-+		return -errno;
+-
++	ret = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+ 	evsel->hists.stats.total_period += sample->period;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+ 	return ret;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index b75fc361b9bd..0615a63ae355 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -122,23 +122,9 @@ static int perf_report__add_mem_hist_entry(struct perf_tool *tool,
+ 	if (!he)
+ 		return -ENOMEM;
  
-+	inject->bytes_written += size;
- 	return 0;
+-	/*
+-	 * In the TUI browser, we are doing integrated annotation,
+-	 * so we don't allocate the extra space needed because the stdio
+-	 * code will not use it.
+-	 */
+-	if (sort__has_sym && he->ms.sym && use_browser > 0) {
+-		struct annotation *notes = symbol__annotation(he->ms.sym);
+-
+-		assert(evsel != NULL);
+-
+-		if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
+-			goto out;
+-
+-		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+-		if (err)
+-			goto out;
+-	}
++	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
++	if (err)
++		goto out;
+ 
+ 	mx = he->mem_info;
+ 	err = symbol__inc_addr_samples(mx->daddr.sym, mx->daddr.map,
+@@ -259,26 +245,10 @@ static int perf_evsel__add_hist_entry(struct perf_tool *tool,
+ 		if (err)
+ 			return err;
+ 	}
+-	/*
+-	 * Only in the TUI browser we are doing integrated annotation,
+-	 * so we don't allocated the extra space needed because the stdio
+-	 * code will not use it.
+-	 */
+-	if (he->ms.sym != NULL && use_browser == 1 && sort__has_sym) {
+-		struct annotation *notes = symbol__annotation(he->ms.sym);
+-
+-		assert(evsel != NULL);
+-
+-		err = -ENOMEM;
+-		if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
+-			goto out;
+-
+-		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+-	}
+ 
++	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+ 	evsel->hists.stats.total_period += sample->period;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+-out:
+ 	return err;
  }
  
-@@ -80,7 +72,7 @@ static int perf_event__repipe_attr(struct perf_tool *tool,
- 	if (ret)
- 		return ret;
- 
--	if (!inject->pipe_output)
-+	if (&inject->output.is_pipe)
- 		return 0;
- 
- 	return perf_event__repipe_synth(tool, event);
-@@ -355,6 +347,7 @@ static int __cmd_inject(struct perf_inject *inject)
- 		.path = inject->input_name,
- 		.mode = PERF_DATA_MODE_READ,
- 	};
-+	struct perf_data_file *file_out = &inject->output;
- 
- 	signal(SIGINT, sig_handler);
- 
-@@ -391,14 +384,14 @@ static int __cmd_inject(struct perf_inject *inject)
- 		}
- 	}
- 
--	if (!inject->pipe_output)
--		lseek(inject->output, session->header.data_offset, SEEK_SET);
-+	if (!file_out->is_pipe)
-+		lseek(file_out->fd, session->header.data_offset, SEEK_SET);
- 
- 	ret = perf_session__process_events(session, &inject->tool);
- 
--	if (!inject->pipe_output) {
-+	if (!file_out->is_pipe) {
- 		session->header.data_size = inject->bytes_written;
--		perf_session__write_header(session, session->evlist, inject->output, true);
-+		perf_session__write_header(session, session->evlist, file_out->fd, true);
- 	}
- 
- 	perf_session__delete(session);
-@@ -427,14 +420,17 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- 		},
- 		.input_name  = "-",
- 		.samples = LIST_HEAD_INIT(inject.samples),
-+		.output = {
-+			.path = "-",
-+			.mode = PERF_DATA_MODE_WRITE,
-+		},
- 	};
--	const char *output_name = "-";
- 	const struct option options[] = {
- 		OPT_BOOLEAN('b', "build-ids", &inject.build_ids,
- 			    "Inject build-ids into the output stream"),
- 		OPT_STRING('i', "input", &inject.input_name, "file",
- 			   "input file name"),
--		OPT_STRING('o', "output", &output_name, "file",
-+		OPT_STRING('o', "output", &inject.output.path, "file",
- 			   "output file name"),
- 		OPT_BOOLEAN('s', "sched-stat", &inject.sched_stat,
- 			    "Merge sched-stat and sched-switch for getting events "
-@@ -456,16 +452,9 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (argc)
- 		usage_with_options(inject_usage, options);
- 
--	if (!strcmp(output_name, "-")) {
--		inject.pipe_output = 1;
--		inject.output = STDOUT_FILENO;
--	} else {
--		inject.output = open(output_name, O_CREAT | O_WRONLY | O_TRUNC,
--						  S_IRUSR | S_IWUSR);
--		if (inject.output < 0) {
--			perror("failed to create output file");
--			return -1;
--		}
-+	if (perf_data_file__open(&inject.output)) {
-+		perror("failed to create output file");
-+		return -1;
- 	}
- 
- 	if (symbol__init() < 0)
 -- 
 1.8.1.4
 
