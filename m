@@ -1,100 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab3LTPjA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Dec 2013 10:39:00 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:25417 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325Ab3LTPi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Dec 2013 10:38:59 -0500
-X-IronPort-AV: E=Sophos;i="4.95,521,1384300800"; 
-   d="asc'?scan'208";a="86590905"
-Message-ID: <1387553932.23792.75.camel@Solace>
-Subject: Re: [Xen-devel] [PATCH v2 0/2] xen: vnuma introduction for pv guest
-From: Dario Faggioli <dario.faggioli@citrix.com>
-To: Elena Ufimtseva <ufimtseva@gmail.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <akpm@linux-foundation.org>, <wency@cn.fujitsu.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tangchen@cn.fujitsu.com>, <mingo@redhat.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        xen-devel <xen-devel@lists.xenproject.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>,
-        Ian Campbell <ian.campbell@citrix.com>
-Date: Fri, 20 Dec 2013 16:38:52 +0100
-In-Reply-To: <CAEr7rXjnkeYSCRmvvFyx06Q4rccfBD__-GzkrbJhUeEOjsT8Pg@mail.gmail.com>
-References: <1384806350-12651-1-git-send-email-ufimtseva@gmail.com>
-	 <20131119153837.GA5966@phenom.dumpdata.com>
-	 <1384885783.15360.40.camel@Solace>
-	 <CAEr7rXiCL-MagPwn76ZdTOJH03M8GCrKF2fGw0YWdnPZK332CA@mail.gmail.com>
-	 <CAEr7rXjgFi17vuV91R7=U4rkOKCMOw95kgWu0A0+yrfgHpR6Ow@mail.gmail.com>
-	 <1386206018.3926.138.camel@Abyss>
-	 <CAEr7rXiOeBCzSmbkKDPqaSt3H85wciOiG0z=-Lbi73_Lx6AkVg@mail.gmail.com>
-	 <CAEr7rXjnkeYSCRmvvFyx06Q4rccfBD__-GzkrbJhUeEOjsT8Pg@mail.gmail.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="=-i50Dk+erqDRCabyQ4SpP"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+	id S1753809Ab3LTPmI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Dec 2013 10:42:08 -0500
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:39341 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751709Ab3LTPmG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Dec 2013 10:42:06 -0500
+Date: Fri, 20 Dec 2013 16:41:46 +0100
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Galbraith <bitbucket@online.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
+Message-ID: <20131220154146.GA18672@breakpoint.cc>
+References: <1383228427.5272.36.camel@marge.simpson.net>
+ <alpine.DEB.2.02.1311061842160.23353@ionos.tec.linutronix.de>
+ <1383794799.5441.16.camel@marge.simpson.net>
+ <1383798668.5441.25.camel@marge.simpson.net>
+ <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-i50Dk+erqDRCabyQ4SpP
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 07.11.13, Thomas Gleixner wrote:
+> below should address that issue. If that works on mainline we can
+> adapt it for RT (needs a trylock(&base->lock) there).
 
-On ven, 2013-12-20 at 02:48 -0500, Elena Ufimtseva wrote:
-> On Fri, Dec 20, 2013 at 2:39 AM, Elena Ufimtseva <ufimtseva@gmail.com> wr=
-ote:
->
-> > Dario, what tools did you use to test NUMA on xen? Maybe there is
-> > something I can use as well?
-> > Here http://lwn.net/Articles/558593/ Mel Gorman uses specjbb and jvm,
-> > I though I can run something similar.
->=20
-> And of course, more details will follow... :)
->=20
-Yeah, well, during early investigation, I also used basically just
-SpecJBB. See here:
-http://blog.xen.org/index.php/2012/04/26/numa-and-xen-part-1-introduction/
-http://blog.xen.org/index.php/2012/05/16/numa-and-xen-part-ii-scheduling-an=
-d-placement/
+okay, so this is waht I'm going to take for -RT:
 
-For benchmarking our NUMA aware scheduling solution, in Xen, I used
-SpecJBB, sysbench and LMbench:
-http://blog.xen.org/index.php/2012/05/16/numa-and-xen-part-ii-scheduling-an=
-d-placement/
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index 79a7a35..bdbf77db 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -461,9 +461,8 @@ extern int schedule_hrtimeout_range_clock(ktime_t *expires,
+ 		unsigned long delta, const enum hrtimer_mode mode, int clock);
+ extern int schedule_hrtimeout(ktime_t *expires, const enum hrtimer_mode mode);
+ 
+-/* Soft interrupt function to run the hrtimer queues: */
++/* Called from the periodic timer tick */
+ extern void hrtimer_run_queues(void);
+-extern void hrtimer_run_pending(void);
+ 
+ /* Bootup initialization: */
+ extern void __init hrtimers_init(void);
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index c383841..7aa442e 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1694,30 +1694,6 @@ static void run_hrtimer_softirq(struct softirq_action *h)
+ }
+ 
+ /*
+- * Called from timer softirq every jiffy, expire hrtimers:
+- *
+- * For HRT its the fall back code to run the softirq in the timer
+- * softirq context in case the hrtimer initialization failed or has
+- * not been done yet.
+- */
+-void hrtimer_run_pending(void)
+-{
+-	if (hrtimer_hres_active())
+-		return;
+-
+-	/*
+-	 * This _is_ ugly: We have to check in the softirq context,
+-	 * whether we can switch to highres and / or nohz mode. The
+-	 * clocksource switch happens in the timer interrupt with
+-	 * xtime_lock held. Notification from there only sets the
+-	 * check bit in the tick_oneshot code, otherwise we might
+-	 * deadlock vs. xtime_lock.
+-	 */
+-	if (tick_check_oneshot_change(!hrtimer_is_hres_enabled()))
+-		hrtimer_switch_to_hres();
+-}
+-
+-/*
+  * Called from hardirq context every jiffy
+  */
+ void hrtimer_run_queues(void)
+@@ -1730,6 +1706,13 @@ void hrtimer_run_queues(void)
+ 	if (hrtimer_hres_active())
+ 		return;
+ 
++	/*
++	 * Check whether we can switch to highres mode.
++	 */
++	if (tick_check_oneshot_change(!hrtimer_is_hres_enabled())
++	    && hrtimer_switch_to_hres())
++		return;
++
+ 	for (index = 0; index < HRTIMER_MAX_CLOCK_BASES; index++) {
+ 		base = &cpu_base->clock_base[index];
+ 		if (!timerqueue_getnext(&base->active))
+diff --git a/kernel/timer.c b/kernel/timer.c
+index b06c647..46467be 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1443,8 +1443,6 @@ static void run_timer_softirq(struct softirq_action *h)
+ 	irq_work_run();
+ #endif
+ 
+-	hrtimer_run_pending();
+-
+ 	if (time_after_eq(jiffies, base->timer_jiffies))
+ 		__run_timers(base);
+ }
+@@ -1454,8 +1452,27 @@ static void run_timer_softirq(struct softirq_action *h)
+  */
+ void run_local_timers(void)
+ {
++	struct tvec_base *base = __this_cpu_read(tvec_bases);
++
+ 	hrtimer_run_queues();
+-	raise_softirq(TIMER_SOFTIRQ);
++	/*
++	 * We can access this lockless as we are in the timer
++	 * interrupt. If there are no timers queued, nothing to do in
++	 * the timer softirq.
++	 */
++	if (!spin_do_trylock(&base->lock)) {
++		raise_softirq(TIMER_SOFTIRQ);
++		return;
++	}
++	if (!base->active_timers)
++		goto out;
++
++	/* Check whether the next pending timer has expired */
++	if (time_before_eq(base->next_timer, jiffies))
++		raise_softirq(TIMER_SOFTIRQ);
++out:
++	rt_spin_unlock_after_trylock_in_irq(&base->lock);
++
+ }
+ 
+ #ifdef __ARCH_WANT_SYS_ALARM
+-- 
+1.8.5.1
 
-The trickiest part is have the benchmark(s) of choice running
-concurrently is a bunch of VMs on the same host. I used some hand
-crafted scripts at the time, very specific to my own environment.
-
-I'm working on abstracting that and putting together something more easy
-to be shared and used outside my attic. :-P
-
-Regards,
-Dario
-
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
------------------------------------------------------------------
-Dario Faggioli, Ph.D, http://about.me/dario.faggioli
-Senior Software Engineer, Citrix Systems R&D Ltd., Cambridge (UK)
-
-
---=-i50Dk+erqDRCabyQ4SpP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iEYEABECAAYFAlK0ZIwACgkQk4XaBE3IOsRR7wCfQ/T8h6m1DknPlY0+g1Bp0RNB
-cO8AnR1+v9xJoDvNQqWDxu4VDC5QIUOR
-=oQPk
------END PGP SIGNATURE-----
-
---=-i50Dk+erqDRCabyQ4SpP--
+Sebastian
