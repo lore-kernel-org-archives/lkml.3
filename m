@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab3LTBA6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 20:00:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63700 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756362Ab3LTBA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 20:00:56 -0500
-Date: Thu, 19 Dec 2013 20:00:42 -0500
-From: Dave Jones <davej@redhat.com>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Kent Overstreet <kmo@daterainc.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@gentwo.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: bad page state in 3.13-rc4
-Message-ID: <20131220010042.GA32112@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Benjamin LaHaise <bcrl@kvack.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Kent Overstreet <kmo@daterainc.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-mm <linux-mm@kvack.org>, Christoph Lameter <cl@gentwo.org>,
-	Al Viro <viro@zeniv.linux.org.uk>
-References: <20131219155313.GA25771@redhat.com>
- <CA+55aFyoXCDNfHb+r5b=CgKQLPA1wrU_Tmh4ROZNEt5TPjpODA@mail.gmail.com>
- <20131219181134.GC25385@kmo-pixel>
- <20131219182920.GG30640@kvack.org>
- <CA+55aFzCo_r7ZGHk+zqUjmCW2w7-7z9oxEJjhR66tZ4qZPxnvw@mail.gmail.com>
- <20131219192621.GA9228@kvack.org>
- <CA+55aFz=tEkVAx9VndtCXApDxcw+5T-BxMsVuXp+vMSb05f8Aw@mail.gmail.com>
- <20131219195352.GB9228@kvack.org>
- <20131219202416.GA14519@redhat.com>
- <20131219233854.GD10905@kvack.org>
+	id S1756868Ab3LTBBb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 20:01:31 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:39312 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756362Ab3LTBBJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Dec 2013 20:01:09 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+QTxxZMorDLb5V4SQO8ga2ylqjKZZszzk=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 5EE804F79E3
+Date: Thu, 19 Dec 2013 19:57:58 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Arnaud Ebalard <arno@natisbad.org>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, rtc-linux@googlegroups.com,
+        Pawel Moll <pawel.moll@arm.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Peter Huewe <peter.huewe@infineon.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thierry Reding <treding@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Can someone Ack and queue a patch for RTC subsytem?
+Message-ID: <20131220005758.GA2609@titan.lakedaemon.net>
+References: <87siton6ke.fsf@natisbad.org>
+ <20131219164624.GV2609@titan.lakedaemon.net>
+ <87sitoka39.fsf@natisbad.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131219233854.GD10905@kvack.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87sitoka39.fsf@natisbad.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 06:38:54PM -0500, Benjamin LaHaise wrote:
- > On Thu, Dec 19, 2013 at 03:24:16PM -0500, Dave Jones wrote:
- > > Yes. Note the original trace in this thread was a VM_BUG_ON(atomic_read(&page->_count) <= 0);
- > > 
- > > Right after these crashes btw, the box locks up solid. So bad that traces don't
- > > always make it over usb-serial. Annoying.
- > 
- > I think I finally have an idea what's going on now.  Kent's changes in 
- > e34ecee2ae791df674dfb466ce40692ca6218e43 are broken and result in a memory 
- > leak of the aio kioctx.  This eventually leads to the system running out of 
- > memory, which ends up triggering the otherwise hard to hit error paths in 
- > aio_setup_ring().  Linus' suggested changes should fix the badness in the 
- > aio_setup_ring(), but more work has to be done to fix up the percpu 
- > reference counting tie in with the aio code.  I'll fix this up in the 
- > morning if nobody beats me to it over night, as I'm just heading out right 
- > now.
+On Thu, Dec 19, 2013 at 06:46:18PM +0100, Arnaud Ebalard wrote:
+> Hi,
+> 
+> Jason Cooper <jason@lakedaemon.net> writes:
+> 
+> > On Thu, Dec 19, 2013 at 05:34:09PM +0100, Arnaud Ebalard wrote:
+> >> I have a very simple driver (support for reading and setting the time)
+> >> for a RTC chip (Intersil ISL 12057) but cannot find anyone to get it
+> >> Acked and queued for v3.14. In v3.14, there should be at least three
+> >> users of the driver (ReadyNAS 102, 104 and 2120) if I meet -rc5 cutoff
+> >> for associated .dts changes.
+> >
+> > The -rc5 cutoff isn't a hard line.  It's also mvebu-specific.  eg, We
+> > need things _posted_ a week or so before arm-soc's cutoff of -rc6 so we
+> > have time to get the pull request in.  If it needs to go through
+> > mvebu/arm-soc, once it's posted, you're good.
+> 
+> I understand. But I guess you will not (for valid reason) accept .dts
+> changes to reference a rtc driver that is not on good track towards
+> -next. This is the issue I try and solve.
 
-That would explain why I'm having difficulty repeating it in a hurry if it
-takes hours of runtime for the leak to reach a point where it becomes a problem.
+Just a subtle note here.  If the binding is stabilized, I don't mind
+taking the dts changes.  However, if we have time, I prefer to wait for
+the whole series to be hashed out.  You never know which resolutions
+will end up revisiting the bindings you thought were good. :)
 
-	Dave
+So, it's technically not a requirement for the whole driver to be
+settled, but it is a good idea.
 
+thx,
+
+Jason.
