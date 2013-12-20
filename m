@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756887Ab3LTBCH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Dec 2013 20:02:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47359 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756362Ab3LTBCE (ORCPT
+	id S1756777Ab3LTBFV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Dec 2013 20:05:21 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:64023 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756362Ab3LTBFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Dec 2013 20:02:04 -0500
-Date: Thu, 19 Dec 2013 17:02:02 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v3 13/14] mm, hugetlb: retry if failed to allocate and
- there is concurrent user
-Message-Id: <20131219170202.0df2d82a2adefa3ab616bdaa@linux-foundation.org>
-In-Reply-To: <1387349640-8071-14-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1387349640-8071-14-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Dec 2013 20:05:20 -0500
+X-AuditID: 9c93017e-b7c17ae000003961-87-52b397cd4bf8
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 10/17] tracing/probes: Move 'symbol' fetch method to kprobes
+References: <1387168336-13213-1-git-send-email-namhyung@kernel.org>
+	<1387168336-13213-11-git-send-email-namhyung@kernel.org>
+	<20131218152338.56c10937@gandalf.local.home>
+	<87d2ktfg5q.fsf@sejong.aot.lge.com>
+	<20131219091830.5719b195@gandalf.local.home>
+Date: Fri, 20 Dec 2013 10:05:17 +0900
+In-Reply-To: <20131219091830.5719b195@gandalf.local.home> (Steven Rostedt's
+	message of "Thu, 19 Dec 2013 09:18:30 -0500")
+Message-ID: <87zjnwe3hu.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Dec 2013 15:53:59 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+Hi Steve,
 
-> If parallel fault occur, we can fail to allocate a hugepage,
-> because many threads dequeue a hugepage to handle a fault of same address.
-> This makes reserved pool shortage just for a little while and this cause
-> faulting thread who can get hugepages to get a SIGBUS signal.
-> 
-> To solve this problem, we already have a nice solution, that is,
-> a hugetlb_instantiation_mutex. This blocks other threads to dive into
-> a fault handler. This solve the problem clearly, but it introduce
-> performance degradation, because it serialize all fault handling.
-> 
-> Now, I try to remove a hugetlb_instantiation_mutex to get rid of
-> performance degradation.
+On Thu, 19 Dec 2013 09:18:30 -0500, Steven Rostedt wrote:
+> On Thu, 19 Dec 2013 16:34:09 +0900
+> Namhyung Kim <namhyung@kernel.org> wrote:
+>
+>> Hi Steve,
+>> 
+>> On Wed, 18 Dec 2013 15:23:38 -0500, Steven Rostedt wrote:
+>> > On Mon, 16 Dec 2013 13:32:09 +0900
+>> > Namhyung Kim <namhyung@kernel.org> wrote:
+>> >
+>> >> index 5395d37e5e72..adc9ac70fd3c 100644
+>> >> --- a/kernel/trace/trace_uprobe.c
+>> >> +++ b/kernel/trace/trace_uprobe.c
+>> >> @@ -115,6 +115,14 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
+>> >>  #define fetch_stack_string_size	NULL
+>> >>  
+>> >>  
+>> >> +/* uprobes don't support symbol fetch methods */
+>> >
+>> > "uprobes does not support symbol fetch methods"
+>> 
+>> I was confused since the "uprobes" looks like a plural..
+>> 
+>
+> Heh, yeah I guess it can be. I was thinking of it as singular. I was
+> thinking of ftrace, perf, kprobes, uprobes, all being the same. As in
+> "kprobes system" or "uprobes system". I implicitly added in my mind
+> "system" to that sentence.
+>
+>  uprobes (system) does not support fetch methods
+>
+> But I guess one can think of it as each individual uprobe does not
+> support fetch methods, so "uprobes do not support fetch methods" would
+> then be correct.
+>
+> But still, I would use the full "do not" as the "don't" here just
+> sounds funny to me (sounds like a boxer talking "Dey don't do dat to
+> me! Dey don't support fetch methods either!")
 
-So the whole point of the patch is to improve performance, but the
-changelog doesn't include any performance measurements!
+Okay, will use "do not" in the next version (if needed :) ).
 
-Please, run some quantitative tests and include a nice summary of the
-results in the changelog.
-
-This is terribly important, because if the performance benefit is
-infinitesimally small or negative, the patch goes into the bit bucket ;)
-
-> For achieving it, at first, we should ensure that
-> no one get a SIGBUS if there are enough hugepages.
-> 
-> For this purpose, if we fail to allocate a new hugepage when there is
-> concurrent user, we return just 0, instead of VM_FAULT_SIGBUS. With this,
-> these threads defer to get a SIGBUS signal until there is no
-> concurrent user, and so, we can ensure that no one get a SIGBUS if there
-> are enough hugepages.
-
-So if I'm understanding this correctly...  if N threads all generate a
-fault against the same address, they will all dive in and allocate a
-hugepage, will then do an enormous memcpy into that page and will then
-attempt to instantiate the page in pagetables.  All threads except one
-will lose the race and will free the page again!  This sounds terribly
-inefficient; it would be useful to write a microbenchmark which
-triggers this scenario so we can explore the impact.
-
-I'm wondering if a better solution to all of this would be to make
-hugetlb_instantiation_mutex an array of, say, 1024 mutexes and index it
-with a hash of the faulting address.  That will 99.9% solve the
-performance issue which you believe exists without introducing this new
-performance issue?
+Thanks,
+Namhyung
